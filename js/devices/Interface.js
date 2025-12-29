@@ -197,7 +197,6 @@ export class Interface extends Observable {
         let tries = 0;
         while(mac==null && tries < 3) {
             let retries = 0;
-            console.log("Do it!");
             this._doArpRequest(ip);
             while(mac==null && retries < 10) {
                 await sleep(SimControl.tick);
