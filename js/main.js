@@ -8,6 +8,7 @@ import { PC } from "./simulation/PC.js";
 import { Router } from "./simulation/Router.js";
 import { Switch } from "./simulation/Switch.js";
 import { Link } from "./simulation/Link.js";
+import { TCPSocket } from "./devices/IPForwarder.js";
 
 
 
@@ -50,7 +51,8 @@ sim.addObject(new Link(pc3,sw1));
 sim.addObject(new Link(sw1,router1));
 sim.addObject(new Link(router1,pc4));
 
-var port4 = '';
+/** @type {TCPSocket} */
+var port4;
 
 async function hey() {
 
@@ -60,43 +62,31 @@ async function hey() {
     let port2 = pc4.device.openUDPSocket(0,9999);
     console.log(await pc4.device.recvUDPSocket(port2));
 
-
-    let port3 = pc4.device.openTCPSocket(0,80);
+    let port3 = pc4.device.openTCPServerSocket(0,80);
     port4 = await pc1.device.connectTCPSocket(IPOctetsToNumber(20,0,0,11),80);
-    
 
+    pc1.device.sendTCPSocket(port4,new TextEncoder().encode("GET / HTTP/1.0\r\nHost: example.com\r\n\r\n"));
 
-    /*await pc1.device.send({
-        dst: IPOctetsToNumber(20,0,0,1),
-        protocol:1,
-        payload: new ICMPPacket({
-            type: 8,
-            code: 0,
-            identifier: 1234,
-            sequence: 1,
-            payload: new Uint8Array([1,2,3,4,5,6,7,8,9,10])
-        }).pack()
-    });
+   
+    let test = await pc4.device.acceptTCPSocket(port3);
 
-    await pc1.device.send({
-        dst: IPOctetsToNumber(20,0,0,11),
-        protocol:1,
-        payload: new ICMPPacket({
-            type: 8,
-            code: 0,
-            identifier: 1235,
-            sequence: 1,
-            payload: new Uint8Array([1,2,3,4,5,6,7,8,9,10])
-        }).pack()
-    });
-    */
+    if(test!=null) {
+        await pc1.device.recvTCPConn(test);
+        pc4.device.sendTCPSocket(test,new TextEncoder().encode(
+            "HTTP/1.0 200 OK\r\n" +
+            "Content-Type: text/plain\r\n" +
+            "Content-Length: 10\r\n" +
+            "\r\n" +
+            "Hallo Welt"
+        ));
+    }
 }
 
 window.setTimeout(hey,1000);
 async function hey3() {
-    pc1.device.closeTCPConn(port4);
+    pc1.device.closeTCPSocket(port4);
 }
-window.setTimeout(hey3,5000);
+window.setTimeout(hey3,10000);
 
 
 async function hey2() {
@@ -105,4 +95,4 @@ async function hey2() {
 
 }
 
-window.setTimeout(hey2,10000);
+window.setTimeout(hey2,15000);
