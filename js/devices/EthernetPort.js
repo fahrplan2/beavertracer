@@ -1,7 +1,9 @@
+//@ts-check
 
 import { EthernetFrame } from "../pdu/EthernetFrame.js";
 import { Observable } from "./Observeable.js";
 import { LoggedFrame } from "../pcap/loggedFrame.js";
+import { EthernetLink } from "./EthernetLink.js";
 
 
 /**
@@ -15,9 +17,11 @@ export class EthernetPort extends Observable {
     /** @type {Array<EthernetFrame>} */
     inBuffer=[];
 
-
     /** @type {Array<LoggedFrame>} */
     loggedFrames=[];
+
+    /** @type {EthernetLink|Null} */
+    linkref=null;
 
     /**
      * 
@@ -43,10 +47,11 @@ export class EthernetPort extends Observable {
     }
 
     getNextOutgoingFrame() {
-        if(this.outBuffer.length == 0) {
+        let frame = this.outBuffer.shift();
+        if(frame==null) {
             return null;
         }
-        return this.outBuffer.shift().pack();
+        return frame.pack();
     }
 
     getNextIncomingFrame() {
@@ -54,5 +59,20 @@ export class EthernetPort extends Observable {
             return null;
         }
         return this.inBuffer.shift();
+    }
+
+    /**
+     * 
+     * @param {EthernetLink} link 
+     */
+    link(link) {
+        this.linkref = link;
+    }
+
+    unlink() {
+        this.linkref = null;
+        this.inBuffer = [];
+        this.outBuffer = [];
+        this.loggedFrames = [];
     }
 }

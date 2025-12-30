@@ -4,7 +4,7 @@ import { isEqualUint8, MACToNumber } from "../helpers.js";
 import { EthernetPort } from "./EthernetPort.js";
 import { Observable } from "./Observeable.js";
 
-export class Switch extends Observable {
+export class SwitchBackplane extends Observable {
    
     /** @type {Array<EthernetPort>} */
     #ports = [];
@@ -36,6 +36,20 @@ export class Switch extends Observable {
      */
     getPort(index) {
         return this.#ports[index];
+    }
+
+    /**
+     * gives a free Port from this device
+     * @returns {EthernetPort|null} free Port
+     */
+
+    getNextFreePort() {
+        for(let i=0;i<this.#ports.length;i++) {
+            if(this.#ports[i].linkref == null) {
+                return this.#ports[i];
+            }
+        }
+        return null;
     }
 
     update() {

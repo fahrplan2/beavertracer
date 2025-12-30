@@ -89,6 +89,9 @@ export class NetworkInterface extends Observable {
     update() {
         let frame = this.port.getNextIncomingFrame();
 
+        /*console.log(this.name+": recieved");
+        console.log(frame);*/
+
         if(frame==null){
             return;
         }

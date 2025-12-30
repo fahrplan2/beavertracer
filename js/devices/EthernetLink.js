@@ -5,7 +5,7 @@ import { EthernetPort } from "./EthernetPort.js";
 /**
  * This class simulates a simple physical link between two ports
  */
-export class Link {
+export class EthernetLink {
 
     #portA;
     #portB;
@@ -30,14 +30,11 @@ export class Link {
         } 
 
         this.#portA = A;
+        A.link(this);
         this.#portB = B;
+        B.link(this);
     }
     
-    step() {
-        this.step1();
-        this.step2();
-    }
-
     step1() {
         this._startTransfer();    
     }
@@ -45,7 +42,6 @@ export class Link {
     step2() {
         this._endTransfer();
     }
-
 
     _startTransfer() {
         this.#AtoB = this.#portA.getNextOutgoingFrame();
@@ -61,5 +57,10 @@ export class Link {
             this.#portA.recieve(this.#BtoA);
             this.#BtoA = null;
         }
+    }
+
+    destroy() {
+        this.#portA.unlink();
+        this.#portB.unlink();
     }
 }

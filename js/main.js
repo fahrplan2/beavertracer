@@ -1,75 +1,62 @@
 //@ts-check
 
-import { Link } from "./devices/Link.js";
+import { EthernetLink } from "./devices/EthernetLink.js";
 import { IPOctetsToNumber } from "./helpers.js";
 import { SimControl } from "./SimControl.js";
-import { Switch } from "./devices/Switch.js";
+import { SwitchBackplane } from "./devices/SwitchBackplane.js";
 import { IPForwarder } from "./devices/IPForwarder.js";
 import { ICMPPacket } from "./pdu/ICMPPacket.js";
 import { Pcap } from "./pcap/pcap.js";
+import { PC } from "./simulation/PC.js";
+import { Router } from "./simulation/Router.js";
+import { Switch } from "./simulation/Switch.js";
+import { Link } from "./simulation/Link.js";
 
 
 
-let test1 = new IPForwarder(1,"PC1");
-test1.configureInterface(0,{ip: IPOctetsToNumber(10,0,0,10), netmask: IPOctetsToNumber(255,0,0,0)});
-test1.addRoute(IPOctetsToNumber(0,0,0,0),IPOctetsToNumber(0,0,0,0),0,IPOctetsToNumber(10,0,0,1));
 
-let test2 = new IPForwarder(1,"PC2");
-test2.configureInterface(0,{ip: IPOctetsToNumber(10,0,0,11), netmask: IPOctetsToNumber(255,0,0,0)});
-test2.addRoute(IPOctetsToNumber(0,0,0,0),IPOctetsToNumber(0,0,0,0),0,IPOctetsToNumber(10,0,0,1));
+let sim = new SimControl();
 
-let test3 = new IPForwarder(1,"PC3");
-test3.configureInterface(0,{ip: IPOctetsToNumber(10,0,0,12), netmask: IPOctetsToNumber(255,0,0,0)});
-test3.addRoute(IPOctetsToNumber(0,0,0,0),IPOctetsToNumber(0,0,0,0),0,IPOctetsToNumber(10,0,0,1));
+let pc1 = new PC("PC1");
+let pc2 = new PC("PC2");
+let pc3 = new PC("PC3");
+let pc4 = new PC("PC4");
 
-let router = new IPForwarder(2,"Router1");
-router.configureInterface(0,{ip: IPOctetsToNumber(10,0,0,1), netmask: IPOctetsToNumber(255,0,0,0)});
-router.configureInterface(1,{ip: IPOctetsToNumber(20,0,0,1), netmask: IPOctetsToNumber(255,0,0,0)});
+pc1.device.configureInterface(0,{ip: IPOctetsToNumber(10,0,0,11), netmask: IPOctetsToNumber(255,0,0,0)});
+pc1.device.addRoute(IPOctetsToNumber(0,0,0,0),IPOctetsToNumber(0,0,0,0),0,IPOctetsToNumber(10,0,0,1));
 
-let test4 = new IPForwarder(1,"PC4");
-test4.configureInterface(0,{ip: IPOctetsToNumber(20,0,0,10), netmask: IPOctetsToNumber(255,0,0,0)});
-test4.addRoute(IPOctetsToNumber(0,0,0,0),IPOctetsToNumber(0,0,0,0),0,IPOctetsToNumber(20,0,0,1));
+pc2.device.configureInterface(0,{ip: IPOctetsToNumber(10,0,0,12), netmask: IPOctetsToNumber(255,0,0,0)});
+pc2.device.addRoute(IPOctetsToNumber(0,0,0,0),IPOctetsToNumber(0,0,0,0),0,IPOctetsToNumber(10,0,0,1));
 
+pc3.device.configureInterface(0,{ip: IPOctetsToNumber(10,0,0,13), netmask: IPOctetsToNumber(255,0,0,0)});
+pc3.device.addRoute(IPOctetsToNumber(0,0,0,0),IPOctetsToNumber(0,0,0,0),0,IPOctetsToNumber(10,0,0,1));
 
-let switch1 = new Switch(4);
+pc4.device.configureInterface(0,{ip: IPOctetsToNumber(20,0,0,11), netmask: IPOctetsToNumber(255,0,0,0)});
+pc4.device.addRoute(IPOctetsToNumber(0,0,0,0),IPOctetsToNumber(0,0,0,0),0,IPOctetsToNumber(20,0,0,1));
 
-/** @type {Array<Link>} */
-let links = [];
-
-
-links.push(new Link(test1.getInterface(0).port,switch1.getPort(0)));
-links.push(new Link(test2.getInterface(0).port,switch1.getPort(1)));
-links.push(new Link(test3.getInterface(0).port,switch1.getPort(2)));
-links.push(new Link(router.getInterface(0).port,switch1.getPort(3)));
-links.push(new Link(router.getInterface(1).port,test4.getInterface(0).port));
-
-router.forwarding=true;
+sim.addObject(pc1);
+sim.addObject(pc2);
+sim.addObject(pc3);
+sim.addObject(pc4);
 
 
+let router1 = new Router("Router1");
+router1.device.configureInterface(0,{ip: IPOctetsToNumber(10,0,0,1), netmask: IPOctetsToNumber(255,0,0,0)});
+router1.device.configureInterface(1,{ip: IPOctetsToNumber(20,0,0,1), netmask: IPOctetsToNumber(255,0,0,0)});
+router1.device.forwarding=true;
 
-function step() {
-    window.setTimeout(step,SimControl.tick);
+sim.addObject(router1);
+let sw1 = new Switch("Switch1");
 
-    links.forEach(element => {
-        element.step1();
-    });
-    links.forEach(element => {
-        element.step2();
-    });
-}
-
-
-window.setTimeout(step,SimControl.tick);
-
+sim.addObject(new Link(pc1,sw1));
+sim.addObject(new Link(pc2,sw1));
+sim.addObject(new Link(pc3,sw1));
+sim.addObject(new Link(sw1,router1));
+sim.addObject(new Link(router1,pc4));
 
 
 async function hey() {
-    /*await test1.send(IPOctetsToNumber(127,0,0,1),23,new Uint8Array([1,2,3,4]));
-    await test1.send(IPOctetsToNumber(10,0,0,1),23,new Uint8Array([1,2,3,4]));
-    await test1.send(IPOctetsToNumber(20,0,0,1),23,new Uint8Array([1,2,3,4]));
-    await test1.send(IPOctetsToNumber(20,0,0,10),23,new Uint8Array([1,2,3,4]));*/
-
-    await test1.send({
+    await pc1.device.send({
         dst: IPOctetsToNumber(20,0,0,1),
         protocol:1,
         payload: new ICMPPacket({
@@ -81,8 +68,8 @@ async function hey() {
         }).pack()
     });
 
-    await test1.send({
-        dst: IPOctetsToNumber(20,0,0,10),
+    await pc1.device.send({
+        dst: IPOctetsToNumber(20,0,0,11),
         protocol:1,
         payload: new ICMPPacket({
             type: 8,
@@ -98,7 +85,7 @@ async function hey() {
 window.setTimeout(hey,1000);
 
 
-
+/*
 async function hey2() {
     let p = new Pcap(test1.getInterface(0).port.loggedFrames);
     p.downloadFile();
@@ -106,3 +93,4 @@ async function hey2() {
 }
 
 window.setTimeout(hey2,10000);
+*/

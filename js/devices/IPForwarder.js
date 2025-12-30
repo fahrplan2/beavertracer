@@ -5,6 +5,7 @@ import { IPv4Packet } from "../pdu/IPv4Packet.js";
 import { NetworkInterface } from "./NetworkInterface.js";
 import { Observable } from "./Observeable.js";
 import { ICMPPacket } from "../pdu/ICMPPacket.js";
+import { EthernetPort } from "./EthernetPort.js";
 
 
 
@@ -308,6 +309,21 @@ export class IPForwarder extends Observable{
      */
     getInterface(i) {
         return this.#interfaces[i];
+    }
+
+    /**
+     * 
+     * @returns {EthernetPort|Null}
+     */
+
+    getNextFreeInterfacePort() {
+        for(let i=0;i<this.#interfaces.length;i++) {
+            const port = this.#interfaces[i].port;
+            if(port.linkref==null) {
+                return port;
+            }
+        }
+        return null;
     }
 
     
