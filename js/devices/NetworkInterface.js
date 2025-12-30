@@ -8,8 +8,6 @@ import { Observable } from "./Observeable.js";
 import { SimControl } from "../SimControl.js";
 import { IPv4Packet } from "../pdu/IPv4Packet.js";
 
-
-
 /**
  * This class simulates an "IP endpoint".
  * 

@@ -2,16 +2,12 @@
 
 import { IPOctetsToNumber } from "./helpers.js";
 import { SimControl } from "./SimControl.js";
-import { ICMPPacket } from "./pdu/ICMPPacket.js";
 import { Pcap } from "./pcap/pcap.js";
 import { PC } from "./simulation/PC.js";
 import { Router } from "./simulation/Router.js";
 import { Switch } from "./simulation/Switch.js";
 import { Link } from "./simulation/Link.js";
 import { TCPSocket } from "./devices/IPForwarder.js";
-
-
-
 
 let sim = new SimControl();
 
