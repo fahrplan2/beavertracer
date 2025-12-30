@@ -1,5 +1,4 @@
 import { EthernetFrame } from "../pdu/EthernetFrame.js";
-import { Link } from "./Link.js";
 import { Observable } from "./Observeable.js";
 
 
@@ -15,6 +14,10 @@ export class EthernetPort extends Observable {
     inBuffer=[];
 
 
+    /** @type {Array<Uint8Array>} */
+    packetlog=[];
+
+
     /**
      * 
      * @param {EthernetFrame} frame 
@@ -24,6 +27,7 @@ export class EthernetPort extends Observable {
             throw new Error("Can only send EthernetFrame");
         }
         this.outBuffer.push(frame);
+        this.packetlog.push(frame.pack());
     }
 
     /**
@@ -34,6 +38,8 @@ export class EthernetPort extends Observable {
         let frame = EthernetFrame.fromBytes(bytes);
         this.inBuffer.push(frame);
         this.doUpdate();
+
+        this.packetlog.push(bytes);
     }
 
     getNextOutgoingFrame() {

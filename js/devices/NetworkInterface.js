@@ -50,7 +50,8 @@ export class NetworkInterface extends Observable {
 
         //Generate a random MAC-Address for this interface
         this.mac = new Uint8Array(6);
-        for(let i=0;i<6;i++) {
+        this.mac[0] = 0xAA; //private use MAC; does not collide with "real" ones
+        for(let i=1;i<6;i++) {
             this.mac[i] = Math.floor(Math.random() * 256);
         }
 

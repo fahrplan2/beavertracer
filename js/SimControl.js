@@ -1,6 +1,6 @@
 export class SimControl {
 
 
-    static tick = 1000;
+    static tick = 100;
 
 }
