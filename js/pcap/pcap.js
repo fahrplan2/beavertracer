@@ -1,17 +1,15 @@
 //@ts-check
 
+import { LoggedFrame } from "./loggedFrame.js";
+
 export class Pcap {
     
-    /**
-     * @type {Array<Uint8Array>}
-     */
-
     #framelog;
     #filename;
 
     /**
      * 
-     * @param {Array<Uint8Array>} framelog 
+     * @param {Array<LoggedFrame>} framelog
      * @param {String} filename 
      */
 
@@ -34,7 +32,7 @@ export class Pcap {
 
         // Set link's href to point to the Blob URL
         link.href = blobUrl;
-        link.download = 'filename.pcap';
+        link.download = this.#filename;
 
         // Append link to the body
         document.body.appendChild(link);
@@ -53,6 +51,26 @@ export class Pcap {
         document.body.removeChild(link);
     }
 
+    /**
+     * converts a Timestamp to a PCAP Timestamp
+     * @param {*} timestamp 
+     * @returns 
+     */
+
+    _TimestampToPcapTimestamp(timestamp) {
+        const tsSec = Math.floor(timestamp / 1000);            // seconds since epoch
+        const tsUsec = (timestamp % 1000) * 1000;               // microseconds
+
+        const buffer = new ArrayBuffer(8);
+        const view = new DataView(buffer);
+
+        // PCAP uses LITTLE-ENDIAN
+        view.setUint32(0, tsSec, true);   // ts_sec
+        view.setUint32(4, tsUsec, true);  // ts_usec
+
+        return new Uint8Array(buffer);
+    }
+
     _writeData() {
         //Be reminded: PCAP Header Data is in little endian!
         let data = [];
@@ -64,17 +82,11 @@ export class Pcap {
         data.push(new Uint8Array([0x00, 0x00, 0x04, 0x00]));        //snaplen
         data.push(new Uint8Array([0x01, 0x00, 0x00, 0x50]));        //FSCF, Linktype
         
-        let timestamp = new Uint8Array([0x00, 0x00, 0x00, 0x00]);
-        let timestamp2 = new Uint8Array([0x00, 0x00, 0x00, 0x00]);
-
-        console.log(this.#framelog);
         for(let i=0; i<this.#framelog.length; i++) {
-            
-            let bytes = this.#framelog[i];
+            let bytes = this.#framelog[i].data;
             let caplength = new Uint32Array([bytes.length]);
 
-            data.push(timestamp);
-            data.push(timestamp2);
+            data.push(this._TimestampToPcapTimestamp(this.#framelog[i].timestamp));
             data.push(caplength);
             data.push(caplength);  //twice, because captured length = original length (pcap file format)
 

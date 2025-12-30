@@ -20,7 +20,6 @@ class Route {
 
 export class IPForwarder extends Observable{
 
-
     /** @type {Array<NetworkInterface>} */
     #interfaces = [];
 
@@ -67,7 +66,6 @@ export class IPForwarder extends Observable{
                     packet.src=IPNumberToUint8(IPOctetsToNumber(127,0,0,1));
                 }
 
-
                 //accept the packet
                 this.accept(packet);
                 return;
@@ -80,34 +78,34 @@ export class IPForwarder extends Observable{
             throw new Error(this.name + ": TTL is zero and ICMP is not implemented yet");
         }
 
+        //find the correct route
         for(let bits=32;bits>=0;bits--) {
             const netmask = prefixToNetmask(bits);
             for(let i=0;i<this.routingTable.length;i++) {
                 const r = this.routingTable[i];
 
                 if(((dstip & netmask) == r.dst) && netmask == r.netmask) {
-                    //loopback interface (has id = "-1" and is not a real interface)
+                    //destination is a loopback interface (has id = "-1" and is not a real interface)
                     if(r.interf==-1) {
+
                         //set sourceaddress if packet was internal
                         if(internal && IPUInt8ToNumber(packet.src)==0) {
                            packet.src=IPNumberToUint8(IPOctetsToNumber(127,0,0,1));
                         }
-
                         //accept the packet
                         this.hostQueue.push(packet);
                         this.accept(packet);
                         return;
                     }
 
-                    //Was it in external or internal packet?
+                    //Do not forward packets, if forwarding is disabled
+                    if(!internal && !this.forwarding) {
+                        return;
+                    }
+
+                    //add soruce address if the packet still does not have one
                     if(internal && IPUInt8ToNumber(packet.src)==0) {
-                        //set sourceaddress if packet was internal (src==0.0.0.0)
                         packet.src = IPNumberToUint8(this.#interfaces[r.interf].ip);
-                    } else {
-                        //skip packet if external and we are not forwarding
-                        if(!this.forwarding) {
-                            return;
-                        }
                     }
 
                     let mac;

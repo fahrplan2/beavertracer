@@ -38,6 +38,10 @@ export class NetworkInterface extends Observable {
     /** @type {Array<IPv4Packet>} */
     inQueue = [];
 
+
+    /** @type {Array<Number>} */
+    _activeARPResolvers = [];
+
     /**
      * 
      * @param {Object} [opts]
@@ -88,9 +92,6 @@ export class NetworkInterface extends Observable {
         if(frame==null){
             return;
         }
-
-        console.log(this.name + ": Recieved at " + IPNumberToOctets(this.ip) );
-        console.log(frame);
 
         switch(frame.etherType) {
             case 0x800:  //IPv4
@@ -223,6 +224,20 @@ export class NetworkInterface extends Observable {
      */
     async resolveIP(ip) {
         let mac = this.arpTable.get(ip);
+
+        //Check if there is a antother resolver still runnuing and wait for it to finish
+        if(mac==null && this._activeARPResolvers.includes(ip)) {
+            let retries = 0;
+            while(mac==null && retries < 30) {
+                await sleep(SimControl.tick);
+                mac = this.arpTable.get(ip);
+                retries++;
+            }
+            return mac;
+        }
+
+        //start a new resolver
+        this._activeARPResolvers.push(ip);
         let tries = 0;
         while(mac==null && tries < 3) {
             let retries = 0;
@@ -234,6 +249,9 @@ export class NetworkInterface extends Observable {
             }
             tries++;
         }
+
+        //remove this resolver from the active List
+        this._activeARPResolvers = this._activeARPResolvers.filter(elem => elem == ip);
         return mac;
     }
 

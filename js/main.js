@@ -100,7 +100,7 @@ window.setTimeout(hey,1000);
 
 
 async function hey2() {
-    let p = new Pcap(test1.getInterface(0).port.packetlog);
+    let p = new Pcap(test1.getInterface(0).port.loggedFrames);
     p.downloadFile();
 
 }
