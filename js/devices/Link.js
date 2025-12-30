@@ -3,7 +3,7 @@
 import { EthernetPort } from "./EthernetPort.js";
 
 /**
- * This class simulates a simple physical link ("Layer 1") between two ports
+ * This class simulates a simple physical link between two ports
  */
 export class Link {
 

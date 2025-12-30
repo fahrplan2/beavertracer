@@ -50,7 +50,12 @@ export function assertLenU8(x, len, name = "field") {
  */
 
 export function IPOctetsToNumber(a, b, c, d) {
-    return ((a & 0xFF) << 24) + ((b & 0xFF) << 16) + ((c & 0xFF) << 8) + (d & 0xFF);
+    return (
+        ((a & 0xFF) << 24) |
+        ((b & 0xFF) << 16) |
+        ((c & 0xFF) << 8)  |
+        (d & 0xFF)
+    ) >>> 0;
 }
 
 /**
@@ -60,12 +65,15 @@ export function IPOctetsToNumber(a, b, c, d) {
  */
 
 export function IPNumberToOctets(ip) {
-    const a = (ip & 0xFF000000) >> 24;
-    const b = (ip & 0x00FF0000) >> 16;
-    const c = (ip & 0x0000FF00) >> 8;
-    const d = (ip & 0x000000FF);
-    return [a, b, c, d];
+    ip >>>= 0;
+    return [
+        (ip >>> 24) & 0xFF,
+        (ip >>> 16) & 0xFF,
+        (ip >>> 8)  & 0xFF,
+        ip & 0xFF
+    ];
 }
+
 
 /**
  * Converts an IPNumber into an UInt8Array
@@ -84,7 +92,6 @@ export function IPNumberToUint8(ip) {
 export function IPUInt8ToNumber(ip) {
     return IPOctetsToNumber(ip[0], ip[1], ip[2], ip[3]);
 }
-
 
 /**
  * 
@@ -129,4 +136,21 @@ export function isEqualUint8(a, b) {
         }
     }
     return true;
+}
+
+
+/**
+ * 
+ * @param {Number} bits 
+ * @returns 
+ */
+
+export function prefixToNetmask(bits) {
+    if (bits < 0 || bits > 32) {
+        throw new RangeError("Prefix must be between 0 and 32");
+    }
+
+    if (bits === 0) return 0;
+
+    return (0xFFFFFFFF << (32 - bits)) >>> 0;
 }

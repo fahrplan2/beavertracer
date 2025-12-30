@@ -11,10 +11,11 @@ import { IPv4Packet } from "../pdu/IPv4Packet.js";
 
 
 /**
- * This class simulates a Layer 3 "interface"
+ * This class simulates an "IP endpoint".
+ * 
  */
 
-export class Interface extends Observable {
+export class NetworkInterface extends Observable {
 
     /** @type {Uint8Array} */
     mac;
@@ -23,19 +24,26 @@ export class Interface extends Observable {
     port;
 
     /** @type {Number} */
-    ip;
+    ip=0;
 
     /** @type {Number} */
-    netmask;
+    netmask=0;
 
     /** @type {Map<Number,Uint8Array>} */
-    arpTable;
+    arpTable=new Map();
+
+    /** @type {String} */
+    name='';
+
+    /** @type {Array<IPv4Packet>} */
+    inQueue = [];
 
     /**
      * 
      * @param {Object} [opts]
      * @param {Number} [opts.ip] ip
      * @param {Number} [opts.netmask] netmask
+     * @param {String} [opts.name] name of the interface
      */
     constructor(opts = {}) {
         super();
@@ -45,12 +53,32 @@ export class Interface extends Observable {
         for(let i=0;i<6;i++) {
             this.mac[i] = Math.floor(Math.random() * 256);
         }
+
         this.port = new EthernetPort();
         this.port.subscribe(this);
+
+        this.configure(opts);
+    }
+
+    /**
+     * 
+     * @param {Object} [opts]
+     * @param {Number} [opts.ip] ip
+     * @param {Number} [opts.netmask] netmask
+     * @param {String} [opts.name] name of the interface
+     */
+    configure(opts={}) {
         this.ip = (opts.ip ?? IPOctetsToNumber(192,168,0,10));
         this.netmask = (opts.netmask ?? IPOctetsToNumber(255,255,255,0));
+        // @ts-ignore   //KleC: aktuell wird toHex() nicht als gültige Funktion erkannt. Im Firefox geht es.
+        this.name = (opts.name ?? 'enx'+this.mac.toHex());
+
+        //Clear ARP-Cache
         this.arpTable = new Map();
         this.arpTable.set(this.ip,this.mac);
+
+        //Clear Queues
+        this.inQueue=[];
     }
 
     update() {
@@ -60,7 +88,7 @@ export class Interface extends Observable {
             return;
         }
 
-        console.log("Recieved at " + IPNumberToOctets(this.ip) + " MAC: " + this.mac);
+        console.log(this.name + ": Recieved at " + IPNumberToOctets(this.ip) );
         console.log(frame);
 
         switch(frame.etherType) {
@@ -117,11 +145,11 @@ export class Interface extends Observable {
      * @param {IPv4Packet} packet
      */
     _handleIPv4(packet) {
-        
+        //Put this in the input-queue and notify the next layer
+        this.inQueue.push(packet);
+        this.doUpdate();
     }
     
-
-
     /**
      * sends a (raw) ethernet frame
      * @param {Uint8Array} dstMac 
@@ -210,23 +238,13 @@ export class Interface extends Observable {
 
     /**
      * sends an ipv4 Packet
+     * @param {Uint8Array} dstMac
      * @param {Number} ip 
      * @param {Number} protocol
      * @param {Uint8Array} payload 
      */
 
-    async sendIPv4Packet(ip,protocol,payload) {
-        //check if the IPv4Packet is in the same network
-        if((ip & this.netmask) != (this.ip & this.netmask)) {
-            throw new Error("We need to route this packet, but we can't at the moment");
-        }
-
-        const dstMac = await this.resolveIP(ip);
-
-        if(dstMac == null) {
-            return false;
-        }
-        
+    async sendIPv4Packet(dstMac,ip,protocol,payload) {
         const packet = new IPv4Packet({
             dst:IPNumberToUint8(ip),
             src:IPNumberToUint8(this.ip),
@@ -237,4 +255,10 @@ export class Interface extends Observable {
         this.sendFrame(dstMac, 0x800, packet.pack());
 
     }
+
+    getNextPacket() {
+        return this.inQueue.shift();
+    }
+
+
 }
