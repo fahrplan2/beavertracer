@@ -1,10 +1,7 @@
 //@ts-check
 
-import { EthernetLink } from "./devices/EthernetLink.js";
 import { IPOctetsToNumber } from "./helpers.js";
 import { SimControl } from "./SimControl.js";
-import { SwitchBackplane } from "./devices/SwitchBackplane.js";
-import { IPForwarder } from "./devices/IPForwarder.js";
 import { ICMPPacket } from "./pdu/ICMPPacket.js";
 import { Pcap } from "./pcap/pcap.js";
 import { PC } from "./simulation/PC.js";
@@ -39,7 +36,6 @@ sim.addObject(pc2);
 sim.addObject(pc3);
 sim.addObject(pc4);
 
-
 let router1 = new Router("Router1");
 router1.device.configureInterface(0,{ip: IPOctetsToNumber(10,0,0,1), netmask: IPOctetsToNumber(255,0,0,0)});
 router1.device.configureInterface(1,{ip: IPOctetsToNumber(20,0,0,1), netmask: IPOctetsToNumber(255,0,0,0)});
@@ -54,9 +50,23 @@ sim.addObject(new Link(pc3,sw1));
 sim.addObject(new Link(sw1,router1));
 sim.addObject(new Link(router1,pc4));
 
+var port4 = '';
 
 async function hey() {
-    await pc1.device.send({
+
+    let port = pc1.device.openUDPSocket(0,9999);
+    pc1.device.sendUDPSocket(port,IPOctetsToNumber(20,0,0,11),9999,new Uint8Array([1,2,3,4]));
+
+    let port2 = pc4.device.openUDPSocket(0,9999);
+    console.log(await pc4.device.recvUDPSocket(port2));
+
+
+    let port3 = pc4.device.openTCPSocket(0,80);
+    port4 = await pc1.device.connectTCPSocket(IPOctetsToNumber(20,0,0,11),80);
+    
+
+
+    /*await pc1.device.send({
         dst: IPOctetsToNumber(20,0,0,1),
         protocol:1,
         payload: new ICMPPacket({
@@ -79,18 +89,20 @@ async function hey() {
             payload: new Uint8Array([1,2,3,4,5,6,7,8,9,10])
         }).pack()
     });
-
+    */
 }
 
 window.setTimeout(hey,1000);
+async function hey3() {
+    pc1.device.closeTCPConn(port4);
+}
+window.setTimeout(hey3,5000);
 
 
-/*
 async function hey2() {
-    let p = new Pcap(test1.getInterface(0).port.loggedFrames);
+    let p = new Pcap(pc1.device.getInterface(0).port.loggedFrames);
     p.downloadFile();
 
 }
 
 window.setTimeout(hey2,10000);
-*/

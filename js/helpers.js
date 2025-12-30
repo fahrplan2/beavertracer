@@ -1,8 +1,5 @@
 //@ts-check
 
-import { SimControl } from "./SimControl.js";
-
-
 /**
  * checks if the object is an UInt8Array
  * @param {Object} x 

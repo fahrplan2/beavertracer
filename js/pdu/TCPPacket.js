@@ -83,6 +83,16 @@ export class TCPPacket {
   static FLAG_CWR = 0x80;
 
   /**
+   * 
+   * @param {Number} mask 
+   * @returns 
+   */
+  hasFlag(mask) {
+    return (this.flags & mask) !== 0;
+  }
+
+
+  /**
    * Parse TCP segment from bytes (no pseudo-header validation here).
    *
    * @param {Uint8Array} bytes

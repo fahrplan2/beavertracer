@@ -52,7 +52,7 @@ export class IPv4Packet {
     // May be overwritten in pack() to match header+payload.
     this.totalLength = (opts.totalLength ?? 0) & 0xffff;
 
-    this.identification = (opts.identification ?? 0) & 0xffff;
+    this.identification = (opts.identification ?? Math.floor(Math.random()*65535)) & 0xffff;
 
     this.flags = (opts.flags ?? 0) & 0x07;
     this.fragmentOffset = (opts.fragmentOffset ?? 0) & 0x1fff;
