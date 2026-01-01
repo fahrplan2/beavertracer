@@ -1,6 +1,6 @@
 //@ts-check
 
-import { OS } from "../devices/OS.js";
+import { OS } from "../apps/OS.js";
 import { SimulatedObject } from "./SimulatedObject.js";
 
 export class PC extends SimulatedObject {

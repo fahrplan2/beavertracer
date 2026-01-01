@@ -1,10 +1,11 @@
 //@ts-check
 
-import { GenericProcess } from "../apps/GenericProcess.js";
-import { IPForwarder } from "./IPForwarder.js";
-import { HelloWorldApp } from "../apps/HalloWeltProgram.js";
-import { AboutApp } from "../apps/AboutApp.js";
-import { IPv4ConfigApp } from "../apps/IPv4ConfigApp.js";
+import { GenericProcess } from "./GenericProcess.js";
+import { IPForwarder } from "../devices/IPForwarder.js";
+import { HelloWorldApp } from "./HalloWeltApp.js";
+import { AboutApp } from "./AboutApp.js";
+import { IPv4ConfigApp } from "./IPv4ConfigApp.js";
+import { UDPEchoApp } from "./UDPEchoApp.js";
 
 export class OS {
     name;
@@ -41,6 +42,7 @@ export class OS {
         this.registerMenuItem("Hallo Welt",this.exec(HelloWorldApp));
         this.registerMenuItem("About",this.exec(AboutApp));
         this.registerMenuItem("IPv4Config",this.exec(IPv4ConfigApp));
+        this.registerMenuItem("UDPEchoApp",this.exec(UDPEchoApp));
     }
 
 

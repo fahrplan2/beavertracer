@@ -22,10 +22,27 @@ export class UDPSocket {
     port = 0;
     bindaddr = 0;
 
-    /** @type {Array<Uint8Array>} */
+    /**
+     *  @type {Array<{
+     *   src: number,
+     *   dst: number,
+     *   srcPort: number,
+     *   dstPort: number,
+     *   payload: Uint8Array
+     * }>} 
+     */
     in = [];
 
-    /** @type {Array<(value: Uint8Array|null) => void>} */
+    /** 
+     * @type {Array<(value: {
+     *   src: number,
+     *   dst: number,
+     *   srcPort: number,
+     *   dstPort: number,
+     *   payload: Uint8Array
+     * } | null) => void>} 
+     */
+
     waiters = [];
 }
 
@@ -288,7 +305,7 @@ export class IPForwarder extends Observable {
         conn.theiracc = 0;
         conn.peerIP = dstIP;
         conn.peerPort = dstPort;
-        
+
         //TODO: WARNING! This is a hack!
         const myIP = this.interfaces[0].ip;
         const key = this._tcpKey(myIP, srcPort, dstIP, dstPort);
@@ -696,21 +713,29 @@ export class IPForwarder extends Observable {
      */
 
     _handleUDP(packet) {
-        let datagram = UDPPacket.fromBytes(packet.payload);
-        let socket = this.udpSockets.get(datagram.dstPort);
+        const datagram = UDPPacket.fromBytes(packet.payload);
+        const socket = this.udpSockets.get(datagram.dstPort);
 
         if (socket == null) {
             return;
         }
 
+        const msg = {
+            src: IPUInt8ToNumber(packet.src), 
+            dst: IPUInt8ToNumber(packet.dst), 
+            srcPort: datagram.srcPort,     
+            dstPort: datagram.dstPort,     
+            payload: datagram.payload      
+        };
+
         const resolve = socket.waiters.shift();
         if (resolve != null) {
-            resolve(datagram.payload);
-        }
-        else {
-            socket.in.push(datagram.payload);
+            resolve(msg);
+        } else {
+            socket.in.push(msg);
         }
     }
+
 
 
     /****************************************************** COMMON **********************************/

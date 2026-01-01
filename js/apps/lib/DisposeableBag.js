@@ -1,6 +1,12 @@
 //@ts-check
 
 export class DisposableBag {
+
+  /**
+   * This class helps to disable all timers and events, when the App looses foreground effect
+   * 
+   */
+
   constructor() {
     /** @type {Array<() => void>} */
     this._fns = [];
@@ -13,7 +19,7 @@ export class DisposableBag {
   }
 
   dispose() {
-    // in umgekehrter Reihenfolge ist oft angenehmer
+    //reverse order
     for (let i = this._fns.length - 1; i >= 0; i--) {
       try { this._fns[i](); } catch (e) { console.warn(e); }
     }

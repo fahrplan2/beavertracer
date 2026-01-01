@@ -1,4 +1,4 @@
-import { OS } from "../devices/OS.js";
+import { OS } from "./OS.js";
 
 export class GenericProcess {
   /** @type {string} */
