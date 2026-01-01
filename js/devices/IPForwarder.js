@@ -59,7 +59,7 @@ export class TCPSocket {
 export class IPForwarder extends Observable {
 
     /** @type {Array<NetworkInterface>} */
-    #interfaces = [];
+    interfaces = [];
 
     /** @type {Array<IPv4Packet>} */
     hostQueue = [];
@@ -89,7 +89,7 @@ export class IPForwarder extends Observable {
         super();
         for (let i = 0; i < numberOfInterfaces; i++) {
             const interf = new NetworkInterface({ name: 'eth' + i });
-            this.#interfaces.push(interf);
+            this.interfaces.push(interf);
             interf.subscribe(this);
         }
         this.name = name;
@@ -105,8 +105,8 @@ export class IPForwarder extends Observable {
         const dstip = IPUInt8ToNumber(packet.dst);
 
         //check if we are the destination, then accept the packet in our queue
-        for (let i = 0; i < this.#interfaces.length; i++) {
-            const myip = this.#interfaces[i].ip;
+        for (let i = 0; i < this.interfaces.length; i++) {
+            const myip = this.interfaces[i].ip;
             if (dstip == myip) {
                 //set sourceaddress if packet was internal
                 if (internal && IPUInt8ToNumber(packet.src) == 0) {
@@ -154,15 +154,15 @@ export class IPForwarder extends Observable {
 
                     //add soruce address if the packet still does not have one
                     if (internal && IPUInt8ToNumber(packet.src) == 0) {
-                        packet.src = IPNumberToUint8(this.#interfaces[r.interf].ip);
+                        packet.src = IPNumberToUint8(this.interfaces[r.interf].ip);
                     }
 
                     let mac;
                     //can we reach the destiation directly?
                     if (r.nexthop == 0) {
-                        mac = await this.#interfaces[r.interf].resolveIP(dstip);
+                        mac = await this.interfaces[r.interf].resolveIP(dstip);
                     } else {
-                        mac = await this.#interfaces[r.interf].resolveIP(r.nexthop);
+                        mac = await this.interfaces[r.interf].resolveIP(r.nexthop);
                     }
 
                     if (mac == null) {
@@ -171,7 +171,7 @@ export class IPForwarder extends Observable {
                     }
 
                     //forward the packet
-                    this.#interfaces[r.interf].sendFrame(mac, 0x0800, packet.pack());
+                    this.interfaces[r.interf].sendFrame(mac, 0x0800, packet.pack());
                     return;
                 }
             }
@@ -253,7 +253,7 @@ export class IPForwarder extends Observable {
         if (!socket) return;
         if (socket.state !== "ESTABLISHED") return;
 
-        const myIP = this.#interfaces[0].ip; // oder conn.localIP speichern
+        const myIP = this.interfaces[0].ip; // oder conn.localIP speichern
 
         this._sendTCP({
             srcIP: myIP,
@@ -290,7 +290,7 @@ export class IPForwarder extends Observable {
         conn.peerPort = dstPort;
         
         //TODO: WARNING! This is a hack!
-        const myIP = this.#interfaces[0].ip;
+        const myIP = this.interfaces[0].ip;
         const key = this._tcpKey(myIP, srcPort, dstIP, dstPort);
         conn.key = key;
         this.tcpConns.set(key, conn);
@@ -777,7 +777,7 @@ export class IPForwarder extends Observable {
      * @param {String} [opts.name] name of the interface
      */
     configureInterface(i = 0, opts = {}) {
-        if (this.#interfaces[i] == null) {
+        if (this.interfaces[i] == null) {
             return;
         }
         const ip = (opts.ip ?? IPOctetsToNumber(192, 168, 0, 10));
@@ -785,13 +785,13 @@ export class IPForwarder extends Observable {
 
         //TODO: assertIP and netmask!
 
-        this.#interfaces[i].configure(opts);
+        this.interfaces[i].configure(opts);
         this._updateAutoRoutes();
     }
 
     update() {
-        for (let i = 0; i < this.#interfaces.length; i++) {
-            let packet = this.#interfaces[i].getNextPacket();
+        for (let i = 0; i < this.interfaces.length; i++) {
+            let packet = this.interfaces[i].getNextPacket();
 
             if (packet == null) {
                 continue;
@@ -862,11 +862,11 @@ export class IPForwarder extends Observable {
     _updateAutoRoutes() {
         this.routingTable = this.routingTable.filter(r => !r.auto);
 
-        for (let i = 0; i < this.#interfaces.length; i++) {
+        for (let i = 0; i < this.interfaces.length; i++) {
             //Add the known routes
             const r = new Route();
-            const ip = this.#interfaces[i].ip;
-            const netmask = this.#interfaces[i].netmask;
+            const ip = this.interfaces[i].ip;
+            const netmask = this.interfaces[i].netmask;
 
             r.dst = ip & netmask; //network address
             r.netmask = netmask;
@@ -891,7 +891,7 @@ export class IPForwarder extends Observable {
      * @returns 
      */
     getInterface(i) {
-        return this.#interfaces[i];
+        return this.interfaces[i];
     }
 
     /**
@@ -900,8 +900,8 @@ export class IPForwarder extends Observable {
      */
 
     getNextFreeInterfacePort() {
-        for (let i = 0; i < this.#interfaces.length; i++) {
-            const port = this.#interfaces[i].port;
+        for (let i = 0; i < this.interfaces.length; i++) {
+            const port = this.interfaces[i].port;
             if (port.linkref == null) {
                 return port;
             }

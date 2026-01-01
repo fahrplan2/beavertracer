@@ -5,30 +5,65 @@ import { SimulatedObject } from "./simulation/SimulatedObject.js";
 
 export class SimControl {
     static tick = 100;
-    static drawtick = 100;
 
     /** @type { Array<SimulatedObject> } */
     simobjects;
+    endStep = false;
 
-    endStep=false;
+    /** @type {SimulatedObject|null} */
+    focusedObject = null;
 
-    constructor() {
-        this.simobjects=[];
-        window.setTimeout(() => this.draw(), SimControl.tick);
-        window.setTimeout(() => this.step(), SimControl.drawtick);
+    /** @type {HTMLElement|null} */
+    root;
 
+    /**
+     * 
+     * @param {HTMLElement|null} root 
+     */
+    constructor(root) {
+        this.simobjects = [];
+        this.root = root;
+        window.setTimeout(() => this.step(), SimControl.tick);
     }
 
-    draw() {
-        window.setTimeout(() => this.draw(), SimControl.drawtick);
+    /**
+     * 
+     */
+    render() {
+        const root = this.root;
+        if (!root) return;
+
+        root.replaceChildren();
+
+        if (!this.focusedObject) {
+            const el = document.createElement("div");
+            el.textContent = "NO Focus";
+            root.appendChild(el);
+            return;
+        }
+
+        if (!this.simobjects.includes(this.focusedObject)) {
+            return;
+        }
+
+        root.appendChild(this.focusedObject.render());
+    }
+
+    /**
+     * 
+     * @param {SimulatedObject} obj 
+     */
+    setFocus(obj) {
+        this.focusedObject = obj;
+        this.render();
     }
 
     step() {
         try {
-            for(let i=0;i<this.simobjects.length;i++) {
+            for (let i = 0; i < this.simobjects.length; i++) {
                 const x = this.simobjects[i];
                 if (x instanceof Link) {
-                    if(this.endStep) {
+                    if (this.endStep) {
                         x.step2();
                     } else {
                         x.step1();
@@ -47,10 +82,9 @@ export class SimControl {
      * @param {SimulatedObject} obj 
      */
     addObject(obj) {
-        if(this.simobjects.includes(obj)) {
+        if (this.simobjects.includes(obj)) {
             return;
         }
         this.simobjects.push(obj);
     }
-       
 }

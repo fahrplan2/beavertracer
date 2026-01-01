@@ -7,7 +7,6 @@ import { Router } from "./Router.js";
 import { Switch } from "./Switch.js";
 import { PC } from "./PC.js";
 
-
 export class Link extends SimulatedObject {
 
     link;
@@ -43,7 +42,7 @@ export class Link extends SimulatedObject {
             return obj.device.getNextFreeInterfacePort();
         }
         if(obj instanceof PC) {
-            return obj.ipforwarder.getNextFreeInterfacePort();
+            return obj.os.ipforwarder.getNextFreeInterfacePort();
         }
         return null;
     }

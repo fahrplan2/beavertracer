@@ -1,20 +1,17 @@
 //@ts-check
 
-import { IPForwarder } from "../devices/IPForwarder.js";
+import { OS } from "../devices/OS.js";
 import { SimulatedObject } from "./SimulatedObject.js";
 
-export class PC extends SimulatedObject{
+export class PC extends SimulatedObject {
 
-    ipforwarder;
-    
+    os;
 
-    /**
-     * 
-     * @param {String} name 
-     */
-    constructor(name="PC") {
+    constructor(name='PC'){
         super(name);
-        this.ipforwarder = new IPForwarder(1,name);
+        this.root.classList.add("pc");
+        this.os = new OS(name);
+        this.os.mount(this.root);
     }
-
+    
 }
