@@ -9,69 +9,16 @@ import { EthernetPort } from "./EthernetPort.js";
 import { UDPPacket } from "../pdu/UDPPacket.js";
 import { TCPPacket } from "../pdu/TCPPacket.js";
 
-export class Route {
-    /** @type {Number} */
-    dst = 0;
-    netmask = 0;
-    nexthop = 0;
-    interf = 0;
-    auto = true;
-}
-
-export class UDPSocket {
-    port = 0;
-    bindaddr = 0;
-
-    /**
-     *  @type {Array<{
-     *   src: number,
-     *   dst: number,
-     *   srcPort: number,
-     *   dstPort: number,
-     *   payload: Uint8Array
-     * }>} 
-     */
-    in = [];
-
-    /** 
-     * @type {Array<(value: {
-     *   src: number,
-     *   dst: number,
-     *   srcPort: number,
-     *   dstPort: number,
-     *   payload: Uint8Array
-     * } | null) => void>} 
-     */
-
-    waiters = [];
-}
-
-export class TCPSocket {
-    port = 0;
-    bindaddr = 0;
-    key = '';
-
-    peerIP = 0;
-    peerPort = 0;
-
-    /** @type {"LISTEN"|"SYN-RECEIVED"|"ESTABLISHED"|"CLOSED"|"SYN-SENT"|"FIN-WAIT-1"|"FIN-WAIT-2"|"LAST-ACK"|"CLOSE-WAIT"} */
-    state = "CLOSED";
-
-    myacc = 0;     // our next seq to send
-    theiracc = 0;  // next seq we expect from peer
-
-    /** @type {Array<Uint8Array>} */
-    in = [];
-
-    /** @type {Array<(value: Uint8Array|null) => void>} */
-    waiters = [];
-
-    /** @type {Array<TCPSocket>} */
-    acceptQueue = [];
-
-    /** @type {Array<(value: TCPSocket|null) => void>} */
-    acceptWaiters = [];
-}
+/**
+ * TODO:
+ * 
+ * 1.
+ * Es gibt zwei Stellen im Code die mit HACK markiert sind, die nicht mehr funktionieren werden
+ * sobald man eine TCP-Verbindung auf einem anderen als dem ersten Interface starten möchte.
+ * 
+ * Dazu fählt eine Routinglogik, die greift, bevor man das Paket routet, das fehlt hier leider noch
+ * 
+ */
 
 export class IPForwarder extends Observable {
 
@@ -138,8 +85,10 @@ export class IPForwarder extends Observable {
 
         //We are routing the packet, so we need to decrement the TTL by one.
         packet.ttl = packet.ttl - 1;
+
+        //ICMP-Error if ttl is zero
         if (packet.ttl == 0) {
-            console.warn(this.name + ": TTL is zero and ICMP is not implemented yet");
+            this._sendICMPError(packet, 11, 0);
             return;
         }
 
@@ -165,7 +114,7 @@ export class IPForwarder extends Observable {
 
                     //Do not forward packets, if forwarding is disabled
                     if (!internal && !this.forwarding) {
-                        console.warn(this.name + ": Packet was not forwarded, forwarding was disabled");
+                        console.warn("Packet forwarding is disabled on this host");
                         return;
                     }
 
@@ -182,8 +131,9 @@ export class IPForwarder extends Observable {
                         mac = await this.interfaces[r.interf].resolveIP(r.nexthop);
                     }
 
+                    //ICMP: Host unreachable
                     if (mac == null) {
-                        console.warn(this.name + ": Host not reachable and ICMP not implemented yet");
+                        this._sendICMPError(packet, 3, 1);
                         return;
                     }
 
@@ -193,16 +143,18 @@ export class IPForwarder extends Observable {
                 }
             }
         }
-        console.warn(this.name + ": Host not reachable and ICMP not implemented yet");
+        //Network is unreachable/unrouteable
+        this._sendICMPError(packet, 3, 0);
     }
 
 
     /****************************************************** TCP **********************************/
 
     /**
-     * opens a TCP Socket
-     * @param {Number} bindaddr 
-     * @param {Number} port
+     * opens a TCP Server Socket
+     * @param {number} bindaddr 
+     * @param {number} port
+     * @return {number} reference to the created socket
      */
     openTCPServerSocket(bindaddr, port) {
         if (this.tcpSockets.get(port) != null) throw new Error("Port is in use");
@@ -220,33 +172,35 @@ export class IPForwarder extends Observable {
 
     /**
      * Waits for an incoming TCP connection on a listening port (like accept()).
-    * Resolves to a connected TCPSocket, or null if the listening socket was closed.
-    * @param {number} port
-    * @returns {Promise<TCPSocket|null>}
+     * Resolves to a connected TCPSocket, or null if the listening socket was closed.
+     * @param {number} ref numeric reference to the ServerSocket
+     * @returns {Promise<string|null>} Promise, which resolves as soon as someone connects
      */
 
-    acceptTCPSocket(port) {
-        const listen = this.tcpSockets.get(port);
+    acceptTCPConn(ref) {
+        const listen = this.tcpSockets.get(ref);
         if (!listen) throw new Error("Port not in use!");
         if (listen.state !== "LISTEN") throw new Error("Socket is not LISTEN");
 
         if (listen.acceptQueue.length > 0) {
-            return Promise.resolve(listen.acceptQueue.shift() ?? null);
+            const conn = listen.acceptQueue.shift() ?? null;
+            return Promise.resolve(conn ? conn.key : null);
         }
 
         return new Promise((resolve) => {
-            listen.acceptWaiters.push(resolve);
+            listen.acceptWaiters.push((conn) => resolve(conn ? conn.key : null));
         });
     }
 
+
     /**
-     * closes a TCP Server socket
-     * @param {Number} port 
+     * closes a TCP Server Server socket
+     * @param {number} ref numeric reference to the socket
      * @returns 
      */
 
-    closeTCPServerSocket(port) {
-        const socket = this.tcpSockets.get(port);
+    closeTCPServerSocket(ref) {
+        const socket = this.tcpSockets.get(ref);
         if (!socket) return;
 
         if (socket.state === "LISTEN") {
@@ -254,47 +208,22 @@ export class IPForwarder extends Observable {
                 socket.acceptWaiters.shift()?.(null);
             }
             socket.acceptQueue.length = 0;
-            this.tcpSockets.delete(port);
+            this.tcpSockets.delete(ref);
             return;
         }
 
         throw new Error("Can only close LISTEN sockets");
     }
 
-    /**
-     * Close a TCP connection
-     * @param {TCPSocket} socket
-     */
-
-    closeTCPSocket(socket) {
-        if (!socket) return;
-        if (socket.state !== "ESTABLISHED") return;
-
-        const myIP = this.interfaces[0].ip; // oder conn.localIP speichern
-
-        this._sendTCP({
-            srcIP: myIP,
-            dstIP: socket.peerIP,
-            srcPort: socket.port,
-            dstPort: socket.peerPort,
-            seq: socket.myacc,
-            ack: socket.theiracc,
-            flags: TCPPacket.FLAG_FIN | TCPPacket.FLAG_ACK,
-            payload: new Uint8Array()
-        });
-        socket.myacc += 1;
-        socket.state = "FIN-WAIT-1";
-
-    }
 
     /**
-     * 
-     * @param {*} dstIP 
-     * @param {*} dstPort 
+     * starts a TCP connection
+     * @param {*} dstIP IP Adress
+     * @param {*} dstPort Port
      * @returns 
      */
 
-    async connectTCPSocket(dstIP, dstPort) {
+    async connectTCPConn(dstIP, dstPort) {
         const srcPort = this._allocEphemeralPort();
 
         const conn = new TCPSocket();
@@ -340,45 +269,87 @@ export class IPForwarder extends Observable {
         return conn;
     }
 
+
+    /**
+     * helper funkction for searching a key
+     * @param {string} key 
+     * @param {string} fnName 
+     * @returns 
+     */
+    _searchTCPConn(key, fnName) {
+        const conn = this.tcpConns.get(key);
+        if (!conn) throw new Error(`${fnName}: Connection not found: ${key}`);
+        return conn;
+    }
+
     /**
     * Read from a TCP connection by key.
     * Resolves with payload, or null if closed.
-    * @param {TCPSocket} socket
-    * @returns {Promise<Uint8Array|null>}
+    * @param {string} key key to the connection
+    * @returns {Promise<Uint8Array|null>} promise resolves as soon as data comes in
     */
 
-    recvTCPConn(socket) {
-        if (!socket) {
-            throw new Error("Connection not found!");
-        }
-        if (socket.in.length > 0) {
-            return Promise.resolve(socket.in.shift() ?? null);
-        }
-        return new Promise((resolve) => socket.waiters.push(resolve));
+    recvTCPConn(key) {
+        const conn = this._searchTCPConn(key, "recvTCPConn");
+
+        if (conn.in.length > 0) return Promise.resolve(conn.in.shift() ?? null);
+        return new Promise((resolve) => conn.waiters.push(resolve));
     }
 
 
     /**
-     * Send data on an established TCP connection.
-     * @param {TCPSocket} socket
-     * @param {Uint8Array} data
+     * Sends data on an established TCP connection.
+     * @param {string} key key to the connection
+     * @param {Uint8Array} data data to send
      */
-    sendTCPSocket(socket, data) {
-        if (!socket) throw new Error("Connection not found!");
-        if (socket.state !== "ESTABLISHED") throw new Error("Not established");
+    sendTCPConn(key, data) {
+        const conn = this._searchTCPConn(key, "sendTCPSocket");
+        if (conn.state !== "ESTABLISHED") throw new Error("Not established");
+
+        //TODO: This is a hack
+        const myIP = this.interfaces[0].ip;
 
         this._sendTCP({
-            srcIP: 0,
-            dstIP: socket.peerIP,
-            srcPort: socket.port,
-            dstPort: socket.peerPort,
-            seq: socket.myacc,
-            ack: socket.theiracc,
+            srcIP: myIP,
+            dstIP: conn.peerIP,
+            srcPort: conn.port,
+            dstPort: conn.peerPort,
+            seq: conn.myacc,
+            ack: conn.theiracc,
             flags: TCPPacket.FLAG_ACK,
             payload: data
         });
 
-        socket.myacc += data.length;
+        conn.myacc += data.length;
+    }
+
+    /**
+     * Closes a TCP connection
+     * @param {string} key key to the connectiom
+     */
+
+    closeTCPConn(key) {
+        const conn = this.tcpConns.get(key);
+        if (!conn) return;
+        if (conn.state !== "ESTABLISHED") return;
+
+        //TODO: Warning: This is a hack!
+        const myIP = this.interfaces[0].ip;
+
+        this._sendTCP({
+            srcIP: myIP,
+            dstIP: conn.peerIP,
+            srcPort: conn.port,
+            dstPort: conn.peerPort,
+            seq: conn.myacc,
+            ack: conn.theiracc,
+            flags: TCPPacket.FLAG_FIN | TCPPacket.FLAG_ACK,
+            payload: new Uint8Array()
+        });
+
+        conn.myacc += 1;
+        conn.state = "FIN-WAIT-1";
+
     }
 
     /**
@@ -721,11 +692,11 @@ export class IPForwarder extends Observable {
         }
 
         const msg = {
-            src: IPUInt8ToNumber(packet.src), 
-            dst: IPUInt8ToNumber(packet.dst), 
-            srcPort: datagram.srcPort,     
-            dstPort: datagram.dstPort,     
-            payload: datagram.payload      
+            src: IPUInt8ToNumber(packet.src),
+            dst: IPUInt8ToNumber(packet.dst),
+            srcPort: datagram.srcPort,
+            dstPort: datagram.dstPort,
+            payload: datagram.payload
         };
 
         const resolve = socket.waiters.shift();
@@ -736,7 +707,81 @@ export class IPForwarder extends Observable {
         }
     }
 
+    /****************************************************** ICMP ************************************/
 
+    /**
+     * 
+     * @param {IPv4Packet} original 
+     * @param {number} type 
+     * @param {number} code 
+     * @returns 
+     */
+    _sendICMPError(original, type, code) {
+        const src = IPUInt8ToNumber(original.src);
+        const dst = IPUInt8ToNumber(original.dst);
+
+        //Do not reply to 0.0.0.0
+        if (src == 0) {
+            return;
+        }
+
+        //Do not generate Errors if the original is an ICMP packet
+        if (original.protocol==1) {
+            return;
+        }
+
+        //ICMP takes the fist 8 Bytes from the packet in the response part
+        const quotedLen = Math.min(original.payload.length, 8);
+        const quoted = new Uint8Array(original.pack().slice(0, original.ihl*4 + quotedLen));
+
+        const icmpPayload = quoted; 
+        const icmp = new ICMPPacket({ type, code, payload: icmpPayload }).pack();
+
+        this.send({
+            dst: src,
+            src: dst,          
+            protocol: 1,
+            payload: icmp
+        });
+    }
+
+    /**
+     * 
+     * @param {IPv4Packet} packet 
+     */
+    _handleICMP(packet) {
+        const icmp = ICMPPacket.fromBytes(packet.payload);
+
+        switch (icmp.type) {
+            case 0: //Echo reply
+
+                break;
+            case 3: //Destination unreachable
+
+                break;
+            case 8: //Echo request
+                if (icmp.code != 0) {
+                    throw new Error("ICMP-Code not understood");
+                }
+                this.send({
+                    dst: IPUInt8ToNumber(packet.src),
+                    src: IPUInt8ToNumber(packet.dst),
+                    protocol: 1,
+                    payload: new ICMPPacket({
+                        type: 0,
+                        code: 0,
+                        identifier: icmp.identifier,
+                        payload: icmp.payload,
+                        sequence: icmp.sequence
+                    }).pack()
+                });
+                break;
+            case 11: //TTL excceded
+                break;
+            default:
+                throw new Error("ICMP-Type not understood");
+        }
+    }
 
     /****************************************************** COMMON **********************************/
 
@@ -846,44 +891,6 @@ export class IPForwarder extends Observable {
         this.routingTable.push(r);
     }
 
-    /**
-     * 
-     * @param {IPv4Packet} packet 
-     */
-    _handleICMP(packet) {
-        const icmp = ICMPPacket.fromBytes(packet.payload);
-
-        switch (icmp.type) {
-            case 0: //Echo reply
-
-                break;
-            case 3: //Destination unreachable
-
-                break;
-            case 8: //Echo request
-                if (icmp.code != 0) {
-                    throw new Error("ICMP-Code not understood");
-                }
-                this.send({
-                    dst: IPUInt8ToNumber(packet.src),
-                    src: IPUInt8ToNumber(packet.dst),
-                    protocol: 1,
-                    payload: new ICMPPacket({
-                        type: 0,
-                        code: 0,
-                        identifier: icmp.identifier,
-                        payload: icmp.payload,
-                        sequence: icmp.sequence
-                    }).pack()
-                });
-                break;
-            case 11: //TTL excceded
-                break;
-            default:
-                throw new Error("ICMP-Type not understood");
-        }
-    }
-
     _updateAutoRoutes() {
         this.routingTable = this.routingTable.filter(r => !r.auto);
 
@@ -936,4 +943,70 @@ export class IPForwarder extends Observable {
 
 
 
+}
+
+
+
+export class Route {
+    /** @type {Number} */
+    dst = 0;
+    netmask = 0;
+    nexthop = 0;
+    interf = 0;
+    auto = true;
+}
+
+export class UDPSocket {
+    port = 0;
+    bindaddr = 0;
+
+    /**
+     *  @type {Array<{
+     *   src: number,
+     *   dst: number,
+     *   srcPort: number,
+     *   dstPort: number,
+     *   payload: Uint8Array
+     * }>} 
+     */
+    in = [];
+
+    /** 
+     * @type {Array<(value: {
+     *   src: number,
+     *   dst: number,
+     *   srcPort: number,
+     *   dstPort: number,
+     *   payload: Uint8Array
+     * } | null) => void>} 
+     */
+
+    waiters = [];
+}
+
+export class TCPSocket {
+    port = 0;
+    bindaddr = 0;
+    key = '';
+
+    peerIP = 0;
+    peerPort = 0;
+
+    /** @type {"LISTEN"|"SYN-RECEIVED"|"ESTABLISHED"|"CLOSED"|"SYN-SENT"|"FIN-WAIT-1"|"FIN-WAIT-2"|"LAST-ACK"|"CLOSE-WAIT"} */
+    state = "CLOSED";
+
+    myacc = 0;     // our next seq to send
+    theiracc = 0;  // next seq we expect from peer
+
+    /** @type {Array<Uint8Array>} */
+    in = [];
+
+    /** @type {Array<(value: Uint8Array|null) => void>} */
+    waiters = [];
+
+    /** @type {Array<TCPSocket>} */
+    acceptQueue = [];
+
+    /** @type {Array<(value: TCPSocket|null) => void>} */
+    acceptWaiters = [];
 }

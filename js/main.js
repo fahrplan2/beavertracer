@@ -9,6 +9,11 @@ import { Switch } from "./simulation/Switch.js";
 import { Link } from "./simulation/Link.js";
 import { TCPSocket } from "./devices/IPForwarder.js";
 
+import { initLocale, t, setLocale } from './i18n/index.js';
+
+
+initLocale();
+setLocale("de");
 
 let sim = new SimControl(document.getElementById("simcontrol"));
 
