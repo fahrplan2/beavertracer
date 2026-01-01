@@ -43,7 +43,7 @@ export class Link extends SimulatedObject {
             return obj.device.getNextFreeInterfacePort();
         }
         if(obj instanceof PC) {
-            return obj.device.getNextFreeInterfacePort();
+            return obj.ipforwarder.getNextFreeInterfacePort();
         }
         return null;
     }

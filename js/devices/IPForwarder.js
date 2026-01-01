@@ -3,7 +3,7 @@
 import { IPNumberToUint8, IPOctetsToNumber, IPUInt8ToNumber, prefixToNetmask } from "../helpers.js";
 import { IPv4Packet } from "../pdu/IPv4Packet.js";
 import { NetworkInterface } from "./NetworkInterface.js";
-import { Observable } from "./Observeable.js";
+import { Observable } from "../common/Observeable.js";
 import { ICMPPacket } from "../pdu/ICMPPacket.js";
 import { EthernetPort } from "./EthernetPort.js";
 import { UDPPacket } from "../pdu/UDPPacket.js";

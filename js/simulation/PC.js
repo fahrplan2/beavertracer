@@ -5,7 +5,8 @@ import { SimulatedObject } from "./SimulatedObject.js";
 
 export class PC extends SimulatedObject{
 
-    device;
+    ipforwarder;
+    
 
     /**
      * 
@@ -13,7 +14,7 @@ export class PC extends SimulatedObject{
      */
     constructor(name="PC") {
         super(name);
-        this.device = new IPForwarder(1,name);
+        this.ipforwarder = new IPForwarder(1,name);
     }
 
 }

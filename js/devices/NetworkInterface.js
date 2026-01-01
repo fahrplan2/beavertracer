@@ -4,7 +4,7 @@ import { EthernetPort } from "./EthernetPort.js";
 import { EthernetFrame } from "../pdu/EthernetFrame.js"
 import { IPOctetsToNumber, IPNumberToOctets, sleep, IPNumberToUint8, IPUInt8ToNumber, isEqualUint8 } from "../helpers.js";
 import { ArpPacket } from "../pdu/ArpPacket.js";
-import { Observable } from "./Observeable.js";
+import { Observable } from "../common/Observeable.js";
 import { SimControl } from "../SimControl.js";
 import { IPv4Packet } from "../pdu/IPv4Packet.js";
 
