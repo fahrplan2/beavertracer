@@ -7,14 +7,14 @@ import { EthernetPort } from "./EthernetPort.js";
  */
 export class EthernetLink {
 
-    #portA;
-    #portB;
+    portA;
+    portB;
 
     /** @type {*} */
-    #AtoB;
+    AtoB;
 
     /** @type {*} */
-    #BtoA;
+    BtoA;
 
     /**
      * 
@@ -29,9 +29,9 @@ export class EthernetLink {
             throw new Error("Link must be connected to a Port")
         } 
 
-        this.#portA = A;
+        this.portA = A;
         A.link(this);
-        this.#portB = B;
+        this.portB = B;
         B.link(this);
     }
     
@@ -44,23 +44,23 @@ export class EthernetLink {
     }
 
     _startTransfer() {
-        this.#AtoB = this.#portA.getNextOutgoingFrame();
-        this.#BtoA = this.#portB.getNextOutgoingFrame();
+        this.AtoB = this.portA.getNextOutgoingFrame();
+        this.BtoA = this.portB.getNextOutgoingFrame();
     }
 
     _endTransfer() {
-        if(this.#AtoB != null) {
-            this.#portB.recieve(this.#AtoB);
-            this.#AtoB = null;
+        if(this.AtoB != null) {
+            this.portB.recieve(this.AtoB);
+            this.AtoB = null;
         }
-        if(this.#BtoA != null) {
-            this.#portA.recieve(this.#BtoA);
-            this.#BtoA = null;
+        if(this.BtoA != null) {
+            this.portA.recieve(this.BtoA);
+            this.BtoA = null;
         }
     }
 
     destroy() {
-        this.#portA.unlink();
-        this.#portB.unlink();
+        this.portA.unlink();
+        this.portB.unlink();
     }
 }

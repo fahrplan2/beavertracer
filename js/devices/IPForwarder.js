@@ -25,9 +25,6 @@ export class IPForwarder extends Observable {
     /** @type {Array<NetworkInterface>} */
     interfaces = [];
 
-    /** @type {Array<IPv4Packet>} */
-    hostQueue = [];
-
     /** @type {Array<Route>} */
     routingTable = [];
 
@@ -41,6 +38,11 @@ export class IPForwarder extends Observable {
 
     /** @type {Map<String,TCPSocket>} */
     tcpConns = new Map();
+
+    /** @type {Map<string,any>} */
+    _pendingEcho = new Map();
+    /** @type {number} */
+    _nextIcmpId = (Math.random() * 0xffff) | 0;
 
     name = '';
 
@@ -68,6 +70,15 @@ export class IPForwarder extends Observable {
     async route(packet, internal = false) {
         const dstip = IPUInt8ToNumber(packet.dst);
 
+        //check if the destination is localnet.
+        if ((dstip & 0xff000000) == 0x7f000000) { //127.x.x.x
+            if (internal && IPUInt8ToNumber(packet.src) === 0) {
+                packet.src = IPNumberToUint8(IPOctetsToNumber(127, 0, 0, 1));
+            }
+            this.accept(packet);
+            return;
+        }
+
         //check if we are the destination, then accept the packet in our queue
         for (let i = 0; i < this.interfaces.length; i++) {
             const myip = this.interfaces[i].ip;
@@ -83,15 +94,6 @@ export class IPForwarder extends Observable {
             }
         }
 
-        //We are routing the packet, so we need to decrement the TTL by one.
-        packet.ttl = packet.ttl - 1;
-
-        //ICMP-Error if ttl is zero
-        if (packet.ttl == 0) {
-            this._sendICMPError(packet, 11, 0);
-            return;
-        }
-
         //find the correct route
         for (let bits = 32; bits >= 0; bits--) {
             const netmask = prefixToNetmask(bits);
@@ -101,21 +103,28 @@ export class IPForwarder extends Observable {
                 if (((dstip & netmask) == r.dst) && netmask == r.netmask) {
                     //destination is a loopback interface (has id = "-1" and is not a real interface)
                     if (r.interf == -1) {
-
                         //set sourceaddress if packet was internal
                         if (internal && IPUInt8ToNumber(packet.src) == 0) {
                             packet.src = IPNumberToUint8(IPOctetsToNumber(127, 0, 0, 1));
                         }
                         //accept the packet
-                        this.hostQueue.push(packet);
                         this.accept(packet);
                         return;
                     }
 
-                    //Do not forward packets, if forwarding is disabled
-                    if (!internal && !this.forwarding) {
-                        console.warn("Packet forwarding is disabled on this host");
-                        return;
+                    if (!internal) {
+                        //Check if forwarding is enabled
+                        if (!this.forwarding) {
+                            console.warn("Packet forwarding is disabled on this host");
+                            return;
+                        }
+
+                        //decrement TTL
+                        packet.ttl = packet.ttl - 1;
+                        if (packet.ttl <= 0) {
+                            this._sendICMPError(packet, 11, 0);
+                            return;
+                        }
                     }
 
                     //add soruce address if the packet still does not have one
@@ -710,6 +719,59 @@ export class IPForwarder extends Observable {
     /****************************************************** ICMP ************************************/
 
     /**
+     * @param {number} dstIpNum
+     * @param {{timeoutMs?: number, payload?: Uint8Array, identifier?: number, sequence?: number}} [opt]
+     * @returns {Promise<{bytes:number, ttl:number, timeMs:number, identifier:number, sequence:number}>}
+     */
+    async icmpEcho(dstIpNum, opt = {}) {
+        const timeoutMs = opt.timeoutMs ?? 1000;
+        const identifier = opt.identifier ?? (this._nextIcmpId = (this._nextIcmpId + 1) & 0xffff);
+        const sequence = opt.sequence ?? (Math.random() * 0xffff) | 0;
+        const payload = opt.payload ?? new Uint8Array(32); // beliebig
+
+        const key = this._icmpEchoKey(dstIpNum, identifier, sequence);
+        const t0 = (typeof performance !== "undefined" ? performance.now() : Date.now());
+
+        return new Promise((resolve, reject) => {
+            const timer = setTimeout(() => {
+                this._pendingEcho.delete(key);
+                reject(new Error("timeout"));
+            }, timeoutMs);
+
+            this._pendingEcho.set(key, { resolve, reject, timer, t0 });
+
+            const icmp = new ICMPPacket({
+                type: 8,
+                code: 0,
+                identifier,
+                sequence,
+                payload,
+            }).pack();
+
+            this.send({
+                dst: dstIpNum,
+                // src: musst du ggf. je nach Interface/Routing setzen – ich nehme hier mal “deine lokale IP”
+                // Wenn du das schon automatisch machst, weglassen oder korrekt bestimmen:
+                // src: this._getLocalSrcFor(dstIpNum),
+                protocol: 1,
+                payload: icmp,
+            });
+        }).then((r) => {
+            const t1 = (typeof performance !== "undefined" ? performance.now() : Date.now());
+            return { ...r, timeMs: Math.max(0, Math.round(t1 - t0)) };
+        });
+    }
+
+    /**
+     * @param {number} dst
+     * @param {number} id
+     * @param {number} seq
+     */
+    _icmpEchoKey(dst, id, seq) {
+        console.log(`${dst}|${id}|${seq}`);
+        return `${dst}|${id}|${seq}`;
+    }
+    /**
      * 
      * @param {IPv4Packet} original 
      * @param {number} type 
@@ -726,20 +788,20 @@ export class IPForwarder extends Observable {
         }
 
         //Do not generate Errors if the original is an ICMP packet
-        if (original.protocol==1) {
+        if (original.protocol == 1) {
             return;
         }
 
         //ICMP takes the fist 8 Bytes from the packet in the response part
         const quotedLen = Math.min(original.payload.length, 8);
-        const quoted = new Uint8Array(original.pack().slice(0, original.ihl*4 + quotedLen));
+        const quoted = new Uint8Array(original.pack().slice(0, original.ihl * 4 + quotedLen));
 
-        const icmpPayload = quoted; 
+        const icmpPayload = quoted;
         const icmp = new ICMPPacket({ type, code, payload: icmpPayload }).pack();
 
         this.send({
             dst: src,
-            src: dst,          
+            src: dst,
             protocol: 1,
             payload: icmp
         });
@@ -751,10 +813,42 @@ export class IPForwarder extends Observable {
      */
     _handleICMP(packet) {
         const icmp = ICMPPacket.fromBytes(packet.payload);
+        console.debug("ICMP IN", {
+            ip_src: IPUInt8ToNumber(packet.src),
+            ip_dst: IPUInt8ToNumber(packet.dst),
+            ttl: packet.ttl,
+            len: packet.payload?.length,
+            icmp_type: icmp.type,
+            icmp_code: icmp.code,
+            id: icmp.identifier,
+            seq: icmp.sequence
+        });
 
         switch (icmp.type) {
-            case 0: //Echo reply
+            case 0:  // Echo reply
+                const remote = IPUInt8ToNumber(packet.src); // Reply kommt "von" remote
+                const id = icmp.identifier ?? 0;
+                const seq = icmp.sequence ?? 0;
 
+                const key = this._icmpEchoKey(remote, id, seq);
+                const pending = this._pendingEcho.get(key);
+
+                if (!pending) {
+                    // Debug: Reply ohne wartenden Request (Key-Mismatch oder zu spät)
+                    console.warn("ICMP echo reply without pending request", { key, remote, id, seq });
+                    break;
+                }
+
+                clearTimeout(pending.timer);
+                this._pendingEcho.delete(key);
+
+                pending.resolve({
+                    bytes: packet.payload?.length ?? 0, // oder 64, wie du es darstellen willst
+                    ttl: packet.ttl ?? 64,
+                    identifier: id,
+                    sequence: seq,
+                    timeMs: 0, // wird in icmpEcho().then(...) überschrieben
+                });
                 break;
             case 3: //Destination unreachable
 
@@ -790,8 +884,8 @@ export class IPForwarder extends Observable {
      * @param {IPv4Packet} packet 
      */
     accept(packet) {
-        /*console.log(this.name + ": Accepted packet");
-        console.log(packet);*/
+        console.debug(this.name + ": Accepted packet");
+        console.debug(packet);
 
         switch (packet.protocol) {
             case 1: //ICMP
@@ -823,7 +917,7 @@ export class IPForwarder extends Observable {
         const dst = (opts.dst ?? 0);
         const src = (opts.src ?? 0);
         const protocol = (opts.protocol ?? 0);
-        const ttl = (opts.ttl ?? 65);
+        const ttl = (opts.ttl ?? 64);
         const payload = (opts.payload ?? new Uint8Array());
 
 
@@ -834,6 +928,8 @@ export class IPForwarder extends Observable {
             payload: payload,
             ttl: ttl
         });
+
+        console.debug("IP OUT", { dst, src, protocol, ttl: packet.ttl, payloadLen: payload.length });
 
         this.route(packet, true).catch(console.error);
     }

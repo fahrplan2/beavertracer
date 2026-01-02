@@ -6,10 +6,14 @@ import { HelloWorldApp } from "./HalloWeltApp.js";
 import { AboutApp } from "./AboutApp.js";
 import { IPv4ConfigApp } from "./IPv4ConfigApp.js";
 import { UDPEchoApp } from "./UDPEchoApp.js";
+import { TerminalApp } from "./TerminalApp.js";
+import { VirtualFileSystem } from "./lib/VirtualFileSystem.js";
+import { TextEditorApp } from "./TextEditorApp.js";
 
 export class OS {
     name;
     ipforwarder;
+    fs = new VirtualFileSystem();
 
     /** @type {HTMLElement} */
     root = document.createElement("div");
@@ -43,6 +47,8 @@ export class OS {
         this.registerMenuItem("About",this.exec(AboutApp));
         this.registerMenuItem("IPv4Config",this.exec(IPv4ConfigApp));
         this.registerMenuItem("UDPEchoApp",this.exec(UDPEchoApp));
+        this.registerMenuItem("TerminalApp",this.exec(TerminalApp));
+        this.registerMenuItem("TextEditorApp",this.exec(TextEditorApp));
     }
 
 

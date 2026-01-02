@@ -15,7 +15,7 @@ import { initLocale, t, setLocale } from './i18n/index.js';
 initLocale();
 setLocale("de");
 
-let sim = new SimControl(document.getElementById("simcontrol"));
+let sim = new SimControl(document.getElementById("simcontrol2"),document.getElementById("simcontrol"));
 
 var pc1 = new PC("PC1");
 var pc2 = new PC("PC2");
@@ -34,15 +34,20 @@ sim.addObject(pc3);
 sim.addObject(pc4);
 sim.addObject(new Link(pc1,pc2));
 
+
+pc1.x = 80;  
+pc1.y = 120;
+pc2.x = 360; 
+pc2.y = 220;
+
 sim.setFocus(pc1);
 
-function hey() {
+/*function hey() {
     pc2.os.ipforwarder.sendUDPSocket(port,IPOctetsToNumber(192,168,0,1),7,new Uint8Array([65,66,67,68,69,70,71,72,73,74]));    
-
-    window.setTimeout(hey,2000);
+    window.setTimeout(hey,2000);    
 }
 
-window.setTimeout(hey,2000);
+window.setTimeout(hey,2000);*/
 
 
 /*let pc1 = new PC("PC1");

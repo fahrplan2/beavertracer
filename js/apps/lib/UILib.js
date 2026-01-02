@@ -1,5 +1,10 @@
 //@ts-check
 
+
+/**
+ * This class has many static helper functions to create standard DOM - Elements
+ * 
+ */
 export class UILib {
   /**
    * Create a DOM element with optional class/text/attrs/children.
@@ -112,11 +117,48 @@ export class UILib {
         }
         if (opts.value != null) el.value = opts.value;
         if (opts.onChange) {
-            el.addEventListener("change", () => opts.onChange?.(el.value));
+          el.addEventListener("change", () => opts.onChange?.(el.value));
         }
       },
     });
     return s;
+  }
+
+  /**
+   * Textarea element.
+   * @param {Object} [opts]
+   * @param {string} [opts.value]
+   * @param {(value: string) => void} [opts.onChange]
+   * @param {(value: string) => void} [opts.onInput]
+   * @param {string|string[]} [opts.className]
+   * @param {string} [opts.rows]
+   * @param {string} [opts.cols]
+   * @param {string} [opts.placeholder]
+   * @returns {HTMLTextAreaElement}
+   */
+  static textarea(opts = {}) {
+    /** @type {HTMLTextAreaElement} */
+    const ta = UILib.el("textarea", {
+      className: opts.className ?? "input",
+      attrs: {
+        rows: (opts.rows ?? "5"),
+        cols: (opts.cols ?? "20"),
+        placeholder: (opts.placeholder ?? ""),
+      },
+      init: (el) => {
+        if (opts.value != null) el.value = opts.value;
+
+        if (opts.onInput) {
+          el.addEventListener("input", () => opts.onInput?.(el.value));
+        }
+
+        if (opts.onChange) {
+          el.addEventListener("change", () => opts.onChange?.(el.value));
+        }
+      },
+    });
+
+    return ta;
   }
 
   /**

@@ -16,16 +16,16 @@ export class Link extends SimulatedObject {
      * @param {SimulatedObject} A 
      * @param {SimulatedObject} B 
      */
-    constructor(A,B) {
+    constructor(A, B) {
         super('Link');
 
-        const portA=this._getNextFreePortFromObject(A);
-        const portB=this._getNextFreePortFromObject(B);
+        const portA = this._getNextFreePortFromObject(A);
+        const portB = this._getNextFreePortFromObject(B);
 
-        if(portA==null||portB==null) {
+        if (portA == null || portB == null) {
             throw new Error("No free ports availbie");
         }
-        this.link=new EthernetLink(portA, portB);
+        this.link = new EthernetLink(portA, portB);
     }
 
     /**
@@ -35,13 +35,13 @@ export class Link extends SimulatedObject {
      */
 
     _getNextFreePortFromObject(obj) {
-        if(obj instanceof Switch) {
+        if (obj instanceof Switch) {
             return obj.device.getNextFreePort();
         }
-        if(obj instanceof Router) {
+        if (obj instanceof Router) {
             return obj.device.getNextFreeInterfacePort();
         }
-        if(obj instanceof PC) {
+        if (obj instanceof PC) {
             return obj.os.ipforwarder.getNextFreeInterfacePort();
         }
         return null;
@@ -57,5 +57,10 @@ export class Link extends SimulatedObject {
 
     destroy() {
         this.link.destroy();
+    }
+
+    renderIcon() {
+        const dummy = document.createElement("div");
+        return dummy;
     }
 }

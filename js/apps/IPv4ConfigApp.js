@@ -1,28 +1,9 @@
 //@ts-check
 
 import { GenericProcess } from "./GenericProcess.js";
-import { DisposableBag } from "./lib/DisposeableBag.js";
+import { CleanupBag } from "./lib/CleanupBag.js";
 import { UILib } from "./lib/UILib.js";
 
-/**
- * @param {string} s
- * @returns {number|null}
- */
-function ipv4ToNumber(s) {
-  const m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(s.trim());
-  if (!m) return null;
-  const a = [m[1], m[2], m[3], m[4]].map(Number);
-  if (a.some(n => !Number.isInteger(n) || n < 0 || n > 255)) return null;
-  return (((a[0] << 24) >>> 0) + (a[1] << 16) + (a[2] << 8) + a[3]) >>> 0;
-}
-
-/**
- * @param {number} n
- * @returns {string}
- */
-function numberToIpv4(n) {
-  return `${(n >>> 24) & 255}.${(n >>> 16) & 255}.${(n >>> 8) & 255}.${n & 255}`;
-}
 
 export class IPv4ConfigApp extends GenericProcess {
   /** @type {HTMLSelectElement|null} */ ifSel = null;
@@ -30,8 +11,8 @@ export class IPv4ConfigApp extends GenericProcess {
   /** @type {HTMLInputElement|null} */ maskEl = null;
   /** @type {HTMLElement|null} */ msgEl = null;
 
-  /** @type {DisposableBag} */
-  bag = new DisposableBag();
+  /** @type {CleanupBag} */
+  bag = new CleanupBag();
 
   run() {
     this.title = "IPv4 Config";
@@ -152,4 +133,24 @@ export class IPv4ConfigApp extends GenericProcess {
       this._setMsg("Apply failed: " + (e instanceof Error ? e.message : String(e)));
     }
   }
+}
+
+/**
+ * @param {string} s
+ * @returns {number|null}
+ */
+function ipv4ToNumber(s) {
+  const m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(s.trim());
+  if (!m) return null;
+  const a = [m[1], m[2], m[3], m[4]].map(Number);
+  if (a.some(n => !Number.isInteger(n) || n < 0 || n > 255)) return null;
+  return (((a[0] << 24) >>> 0) + (a[1] << 16) + (a[2] << 8) + a[3]) >>> 0;
+}
+
+/**
+ * @param {number} n
+ * @returns {string}
+ */
+function numberToIpv4(n) {
+  return `${(n >>> 24) & 255}.${(n >>> 16) & 255}.${(n >>> 8) & 255}.${n & 255}`;
 }

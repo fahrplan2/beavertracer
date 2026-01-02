@@ -1,5 +1,5 @@
-import de from "./locales/de.json";
-import en from "./locales/en.json";
+import de from "./locales/de.js";
+import en from "./locales/en.js";
 
 const dicts = { de, en };
 const fallback = "en";

@@ -1,4 +1,6 @@
-{
+//@ts-check
+
+export default {
   "app.title": "Networksimulation",
   "menu.start": "Start",
 

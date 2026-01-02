@@ -2,12 +2,12 @@
 
 import { GenericProcess } from "./GenericProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
-import { DisposableBag } from "./lib/DisposeableBag.js";
+import { CleanupBag } from "./lib/CleanupBag.js";
 
 export class HelloWorldApp extends GenericProcess {
 
-    /** @type {DisposableBag} */
-    bag = new DisposableBag();
+    /** @type {CleanupBag} */
+    bag = new CleanupBag();
 
     /** @type {HTMLElement|null} */
     msgEl = null;
@@ -58,7 +58,9 @@ export class HelloWorldApp extends GenericProcess {
     }
 
     _renderText() {
-        if (!this.msgEl) return;
+        if (!this.msgEl) {
+            return;
+        }
 
         this.msgEl.textContent =
             `OS: ${this.os.name}\n` +

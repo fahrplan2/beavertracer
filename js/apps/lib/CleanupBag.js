@@ -1,9 +1,9 @@
 //@ts-check
 
-export class DisposableBag {
+export class CleanupBag {
 
   /**
-   * This class helps to disable all timers and events, when the App looses foreground effect
+   * This class helps to disable all timers and events, when the App looses foreground
    * 
    */
 
