@@ -3,5 +3,18 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
+  },
+  "name": "networksim2",
+  "description": "",
+  "version": "0.0.1",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.lgsit.de/klec/networksim.git"
+  },
+  "author": "Christian Klein",
+  "license": "MIT",
+  "devDependencies": {
+    "vite": "^7.3.0"
   }
 }
