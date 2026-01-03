@@ -1,11 +1,5 @@
 // @ts-check
 
-//
-//DISCLAIMER: The code in this file was completly written by AI
-//
-
-
-
 /**
  * @typedef {HTMLElement | Document | Window} EventTargetLike
  */
@@ -13,33 +7,46 @@
 /**
  * @typedef {Object} DraggableOptions
  * @property {HTMLElement=} handle
- *   Element that starts the drag (e.g. title bar). Defaults to `el`.
  * @property {HTMLElement | null=} boundary
- *   Optional boundary element. If provided, `el` is clamped inside its padding box.
- *   If omitted/null, no boundary clamping is applied by default.
  * @property {boolean=} clampToViewport
- *   If true and `boundary` is null/undefined, clamps to the viewport. Default: false.
  * @property {boolean=} preventTextSelection
- *   If true, temporarily disables text selection during drag. Default: true.
  * @property {boolean=} setCursor
- *   If true, sets cursor on handle to grab/grabbing. Default: true.
  * @property {(state: { dragging: boolean, x: number, y: number, event: PointerEvent }) => void=} onMove
- *   Called after each move with the current translate (x,y) in pixels.
+ * @property {(info: { x:number, y:number, event: PointerEvent }) => void=} onClick
+ * @property {(info: { x:number, y:number, event: PointerEvent }) => void=} onDragStart
+ * @property {(info: { x:number, y:number, event: PointerEvent }) => void=} onDragEnd
  * @property {EventTargetLike=} moveTarget
- *   Where to listen for pointermove/pointerup. Default: window.
  * @property {string=} cancelSelector
- *   If the pointerdown originates within an element matching this selector (via closest()),
- *   the drag will NOT start. Useful for buttons/links/inputs inside the handle.
- *   Default includes common interactive elements + `[data-no-drag]`.
+ * @property {number=} dragThreshold
+ * @property {boolean=} longPressToDrag
+ * @property {number=} longPressDelay
  */
 
 /**
  * @typedef {Object} DraggableController
- * @property {() => void} destroy Remove all listeners and restore temporary styles.
- * @property {() => {x:number, y:number}} getPosition Current translate position in px.
- * @property {(pos:{x?:number, y?:number}) => void} setPosition Set translate position in px.
- * @property {() => boolean} isDragging Whether a drag is currently active.
+ * @property {() => void} destroy
+ * @property {() => {x:number, y:number}} getPosition
+ * @property {(pos:{x?:number, y?:number}) => void} setPosition
+ * @property {() => boolean} isDragging
  */
+
+/**
+ * Minimal interface so @ts-check doesn't freak out on unions.
+ * @typedef {Object} ListenerTarget
+ * @property {(type: string, listener: EventListenerOrEventListenerObject, options?: any) => void} addEventListener
+ * @property {(type: string, listener: EventListenerOrEventListenerObject, options?: any) => void} removeEventListener
+ */
+
+/**
+ * @param {EventTargetLike} t
+ * @returns {ListenerTarget}
+ */
+function asListenerTarget(t) {
+  // All of HTMLElement/Document/Window implement add/removeEventListener at runtime.
+
+  //@ts-ignore
+  return (t);
+}
 
 /**
  * Parse current translate from computed transform (matrix).
@@ -65,16 +72,6 @@ function getCurrentTranslate(el) {
  */
 function applyTranslate(el, x, y) {
   el.style.transform = `translate(${x}px, ${y}px)`;
-}
-
-/**
- * Clamp value.
- * @param {number} v
- * @param {number} min
- * @param {number} max
- */
-function clamp(v, min, max) {
-  return Math.min(max, Math.max(min, v));
 }
 
 /**
@@ -110,19 +107,9 @@ function clampTranslate(el, proposed, current, boundary, clampToViewport) {
     const br = parseFloat(cs.borderRightWidth) || 0;
     const bb = parseFloat(cs.borderBottomWidth) || 0;
 
-    box = {
-      left: b.left + bl,
-      top: b.top + bt,
-      right: b.right - br,
-      bottom: b.bottom - bb,
-    };
+    box = { left: b.left + bl, top: b.top + bt, right: b.right - br, bottom: b.bottom - bb };
   } else if (clampToViewport) {
-    box = {
-      left: 0,
-      top: 0,
-      right: window.innerWidth,
-      bottom: window.innerHeight,
-    };
+    box = { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight };
   } else {
     return proposed;
   }
@@ -151,10 +138,8 @@ function clampTranslate(el, proposed, current, boundary, clampToViewport) {
 }
 
 /**
- * Make an element draggable (transform-based) with optional cancelSelector.
- *
- * @param {HTMLElement} el The element that should move.
- * @param {DraggableOptions=} options Options.
+ * @param {HTMLElement} el
+ * @param {DraggableOptions=} options
  * @returns {DraggableController}
  */
 export function makeDraggable(el, options = {}) {
@@ -169,6 +154,9 @@ export function makeDraggable(el, options = {}) {
     preventTextSelection = true,
     setCursor = true,
     onMove,
+    onClick,
+    onDragStart,
+    onDragEnd,
     moveTarget = window,
     cancelSelector = [
       "button",
@@ -181,21 +169,16 @@ export function makeDraggable(el, options = {}) {
       "[contenteditable='true']",
       "[data-no-drag]",
     ].join(","),
+    dragThreshold = 6,
+    longPressToDrag = false,
+    longPressDelay = 350,
   } = options;
 
   if (!(handle instanceof HTMLElement)) {
     throw new TypeError("makeDraggable: options.handle must be an HTMLElement");
   }
 
-  let dragging = false;
-  /** @type {number | null} */
-  let activePointerId = null;
-
-  let startPointerX = 0;
-  let startPointerY = 0;
-
-  let startTranslate = getCurrentTranslate(el);
-  let currentTranslate = { ...startTranslate };
+  const mt = asListenerTarget(moveTarget);
 
   const prev = {
     userSelect: document.documentElement.style.userSelect,
@@ -206,41 +189,66 @@ export function makeDraggable(el, options = {}) {
   if (!handle.style.touchAction) handle.style.touchAction = "none";
   if (setCursor && !handle.style.cursor) handle.style.cursor = "grab";
 
+  let dragging = false;
+  let dragStarted = false;
+
+  /** @type {number | null} */
+  let activePointerId = null;
+
+  let startPointerX = 0;
+  let startPointerY = 0;
+
+  let startTranslate = getCurrentTranslate(el);
+  let currentTranslate = { ...startTranslate };
+
+  /** @type {ReturnType<typeof window.setTimeout> | null} */
+  let longPressTimer = null;
+
+  let dragAllowed = false;
+
+  function clearLongPressTimer() {
+    if (longPressTimer != null) {
+      window.clearTimeout(longPressTimer);
+      longPressTimer = null;
+    }
+  }
+
   /**
-   * Returns true if this pointerdown should NOT start a drag due to cancelSelector.
    * @param {PointerEvent} e
+   * @returns {boolean}
    */
   function isCanceledBySelector(e) {
     const tgt = e.target;
     if (!(tgt instanceof Element)) return false;
-    // Only cancel if the target is inside the handle; otherwise closest() could match outside in weird cases.
     if (!handle.contains(tgt)) return false;
     if (!cancelSelector) return false;
     try {
       return Boolean(tgt.closest(cancelSelector));
     } catch {
-      // If the selector is invalid, don't block dragging.
       return false;
     }
+  }
+
+  /**
+   * @param {boolean} on
+   */
+  function setDraggingStyles(on) {
+    if (setCursor) handle.style.cursor = on ? "grabbing" : (prev.cursor || "grab");
+    if (preventTextSelection) document.documentElement.style.userSelect = on ? "none" : prev.userSelect;
   }
 
   /**
    * @param {PointerEvent} e
    */
   function onPointerDown(e) {
-    // Only primary mouse button
     if (e.pointerType === "mouse" && e.button !== 0) return;
-
-    // Option 1: Don't start drag when clicking interactive elements inside the handle.
     if (isCanceledBySelector(e)) return;
 
-    dragging = true;
     activePointerId = e.pointerId;
-
     handle.setPointerCapture(activePointerId);
 
-    if (setCursor) handle.style.cursor = "grabbing";
-    if (preventTextSelection) document.documentElement.style.userSelect = "none";
+    dragging = true;
+    dragStarted = false;
 
     startPointerX = e.clientX;
     startPointerY = e.clientY;
@@ -248,16 +256,42 @@ export function makeDraggable(el, options = {}) {
     startTranslate = getCurrentTranslate(el);
     currentTranslate = { ...startTranslate };
 
+    dragAllowed = !longPressToDrag || e.pointerType === "mouse";
+    clearLongPressTimer();
+
+    if (!dragAllowed) {
+      longPressTimer = window.setTimeout(() => {
+        dragAllowed = true;
+      }, longPressDelay);
+    }
   }
 
   /**
    * @param {PointerEvent} e
    */
   function onPointerMove(e) {
-    if (!dragging || e.pointerId !== activePointerId) return;
+    if (!dragging) return;
+    if (activePointerId == null) return;
+    if (e.pointerId !== activePointerId) return;
 
     const dx = e.clientX - startPointerX;
     const dy = e.clientY - startPointerY;
+
+    if (!dragAllowed) {
+      if (Math.hypot(dx, dy) > dragThreshold) clearLongPressTimer();
+      return;
+    }
+
+    if (!dragStarted) {
+      if (Math.hypot(dx, dy) < dragThreshold) return;
+      dragStarted = true;
+      clearLongPressTimer();
+      setDraggingStyles(true);
+
+      if (typeof onDragStart === "function") {
+        onDragStart({ x: currentTranslate.x, y: currentTranslate.y, event: e });
+      }
+    }
 
     let proposed = { x: startTranslate.x + dx, y: startTranslate.y + dy };
     proposed = clampTranslate(el, proposed, currentTranslate, boundary, clampToViewport);
@@ -273,44 +307,54 @@ export function makeDraggable(el, options = {}) {
   /**
    * @param {PointerEvent} e
    */
-  function endDrag(e) {
-    if (!dragging || e.pointerId !== activePointerId) return;
+  function endDragOrClick(e) {
+    if (!dragging) return;
+    if (activePointerId == null) return;
+    if (e.pointerId !== activePointerId) return;
+
+    clearLongPressTimer();
+
+    const didDrag = dragStarted;
 
     dragging = false;
+    dragStarted = false;
 
-    if (setCursor) handle.style.cursor = prev.cursor || "grab";
-    if (preventTextSelection) document.documentElement.style.userSelect = prev.userSelect;
+    setDraggingStyles(false);
 
     try {
-      if (activePointerId != null) handle.releasePointerCapture(activePointerId);
+      handle.releasePointerCapture(activePointerId);
     } catch {
       // ignore
     }
     activePointerId = null;
 
-    if (typeof onMove === "function") {
-      onMove({ dragging: false, x: currentTranslate.x, y: currentTranslate.y, event: e });
+    if (didDrag) {
+      if (typeof onMove === "function") {
+        onMove({ dragging: false, x: currentTranslate.x, y: currentTranslate.y, event: e });
+      }
+      if (typeof onDragEnd === "function") {
+        onDragEnd({ x: currentTranslate.x, y: currentTranslate.y, event: e });
+      }
+    } else {
+      if (typeof onClick === "function") {
+        onClick({ x: currentTranslate.x, y: currentTranslate.y, event: e });
+      }
     }
   }
 
   handle.addEventListener("pointerdown", onPointerDown);
-
-  // @ts-ignore - EventTargetLike union; runtime supports add/removeEventListener.
-  moveTarget.addEventListener("pointermove", onPointerMove);
-  // @ts-ignore
-  moveTarget.addEventListener("pointerup", endDrag);
-  // @ts-ignore
-  moveTarget.addEventListener("pointercancel", endDrag);
+  mt.addEventListener("pointermove", /** @type {EventListener} */ (onPointerMove));
+  mt.addEventListener("pointerup", /** @type {EventListener} */ (endDragOrClick));
+  mt.addEventListener("pointercancel", /** @type {EventListener} */ (endDragOrClick));
 
   return {
     destroy() {
+      clearLongPressTimer();
+
       handle.removeEventListener("pointerdown", onPointerDown);
-      // @ts-ignore
-      moveTarget.removeEventListener("pointermove", onPointerMove);
-      // @ts-ignore
-      moveTarget.removeEventListener("pointerup", endDrag);
-      // @ts-ignore
-      moveTarget.removeEventListener("pointercancel", endDrag);
+      mt.removeEventListener("pointermove", /** @type {EventListener} */ (onPointerMove));
+      mt.removeEventListener("pointerup", /** @type {EventListener} */ (endDragOrClick));
+      mt.removeEventListener("pointercancel", /** @type {EventListener} */ (endDragOrClick));
 
       if (setCursor) handle.style.cursor = prev.cursor;
       handle.style.touchAction = prev.touchAction;
@@ -333,7 +377,7 @@ export function makeDraggable(el, options = {}) {
     },
 
     isDragging() {
-      return dragging;
+      return dragging && dragStarted;
     },
   };
 }

@@ -59,6 +59,9 @@ export class NetworkInterface extends Observable {
 
         this.port = new EthernetPort();
         this.port.subscribe(this);
+        
+        // @ts-ignore   //KleC: aktuell wird toHex() nicht als gültige Funktion erkannt. Im Firefox geht es.
+        this.name = (opts.name ?? 'enx'+this.mac.toHex());
 
         this.configure(opts);
     }
@@ -71,10 +74,9 @@ export class NetworkInterface extends Observable {
      * @param {String} [opts.name] name of the interface
      */
     configure(opts={}) {
+        console.log(opts);
         this.ip = (opts.ip ?? IPOctetsToNumber(192,168,0,10));
         this.netmask = (opts.netmask ?? IPOctetsToNumber(255,255,255,0));
-        // @ts-ignore   //KleC: aktuell wird toHex() nicht als gültige Funktion erkannt. Im Firefox geht es.
-        this.name = (opts.name ?? 'enx'+this.mac.toHex());
 
         //Clear ARP-Cache
         this.arpTable = new Map();

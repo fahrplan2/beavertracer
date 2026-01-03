@@ -3,6 +3,7 @@
 import { t } from '../i18n/index.js';
 import { makeDraggable } from '../lib/dragabble.js';
 import { makeWindow, bringToFront } from '../lib/windowmanager.js';
+import { SimControl } from '../SimControl.js';
 
 export class SimulatedObject {
 
@@ -34,6 +35,7 @@ export class SimulatedObject {
     py = 120;
 
     panelOpen = false;
+
 
     /**
      * callback when the panal was created
@@ -132,20 +134,13 @@ export class SimulatedObject {
     wireIconInteractions() {
         if (!this.iconEl) return;
 
-        //toggle panel
-        this.iconEl.addEventListener("dblclick", (e) => {
-            const t = e.target;
-            this.setPanelOpen(!this.panelOpen);
-
-            //TODO: Window should open in a good spot
-            /*this.px = e.clientX;
-            this.py = e.clientY;
-            this._applyPositions();*/
-        });
-
-        //make icon traggable
+        //make icon traggable and toggle the panel
         makeDraggable(this.iconEl, {
-            handle: this.iconEl
+            handle: this.iconEl,
+            onClick: () => {
+                this.setPanelOpen(!this.panelOpen);
+            },
+            boundary: SimControl.movementBoundary
         });
     }
 
@@ -156,7 +151,8 @@ export class SimulatedObject {
         const handle = this.panelEl.querySelector('.sim-panel-header');
         if (handle instanceof HTMLElement) {
             makeDraggable(this.panelEl, {
-                handle: handle
+                handle: handle,
+                boundary: SimControl.movementBoundary
             });
         }
         makeWindow(this.panelEl);

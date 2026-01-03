@@ -3,27 +3,14 @@
 import { GenericProcess } from "./GenericProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
 import { CleanupBag } from "./lib/CleanupBag.js";
+import { registerBuiltins } from "./terminal/commands/index.js";
+
 
 /**
- * @typedef {{
- *   app: TerminalApp,
- *   os: any,
- *   pid: number,
- *   env: Record<string, string>,
- *   cwd: string,
- *   setCwd: (cwd: string) => void,
- *   println: (text?: string) => void,
- *   clear: () => void,
- *   terminate: () => void,
- * }} ShellContext
+ * @typedef {import("./terminal/commands/types.js").ShellContext} ShellContext
+ * @typedef {import("./terminal/commands/types.js").Command} Command
  */
 
-/**
- * @typedef {{
- *   name: string,
- *   run: (ctx: ShellContext, args: string[]) => (string|void|Promise<string|void>)
- * }} Command
- */
 
 export class TerminalApp extends GenericProcess {
     /** @type {CleanupBag} */
@@ -32,9 +19,6 @@ export class TerminalApp extends GenericProcess {
     /** @type {HTMLPreElement|null} */
     outEl = null;
 
-    /** @type {HTMLInputElement|null} */
-    inEl = null;
-
     /** @type {string[]} */
     history = [];
 
@@ -42,17 +26,48 @@ export class TerminalApp extends GenericProcess {
     historyIndex = 0;
 
     /** @type {string} */
-    cwd = "/";
+    cwd = "/home";
 
     /** @type {Record<string, string>} */
     env = {
         USER: "user",
-        HOST: "sim-os",
+        HOST: this.os.name,
         TERM: "xterm-ish",
     };
 
     /** @type {Map<string, Command>} */
     commands = new Map();
+
+    // ---------------------------
+    // Terminal geometry
+    // ---------------------------
+
+    /** @type {number} */
+    cols = 80;
+
+    /** @type {number} */
+    rows = 25;
+
+    /** @type {number} */
+    scrollbackLimit = 2000;
+
+    /** @type {string[]} visible rows only, each exactly `cols` chars */
+    screen = [];
+
+    /** @type {string[]} */
+    scrollback = [];
+
+    /** Output cursor (where the next output character would go) */
+    /** @type {number} */
+    outX = 0;
+
+    /** @type {number} */
+    outY = 0;
+
+    // ---------------------------
+    // Input editor (logical single line)
+    // Visually it wraps in the screen overlay
+    // ---------------------------
 
     /** @type {string} */
     lineBuffer = "";
@@ -60,20 +75,45 @@ export class TerminalApp extends GenericProcess {
     /** @type {number} */
     cursor = 0;
 
-    /** @type {string[]} */
-    lines = [];
-
     /** @type {boolean} if a command is running (like ping) */
     busy = false;
+
+    // ---------------------------
+    // Abort controll managment (CTRL+C)
+    // ---------------------------
+    /** @type {AbortSignal} */
+    signal;
+
+    /** @type {(fn: () => void) => void} */
+    onInterrupt;
+
+    /** @type {AbortController|null} */
+    currentAbort = null;
+
+    /** @type {(() => void)[]} */
+    interruptHandlers = [];
+
+    // ---------------------------
+    // Cursor Blink
+    // ---------------------------
+    /** @type {boolean} */
+    cursorVisible = true;
+
+    /** @type {number | null} */
+    blinkTimer = null;
+
 
     run() {
         this.title = "Terminal";
         this.root.classList.add("app", "app-terminal");
         this._registerBuiltins();
 
-        if (this.lines.length === 0) {
-            this.lines.push(`Welcome to ${this.env.HOST}`, "");
-        }
+        this._resetScreen();
+
+        this.println(`Welcome to ${this.env.HOST}`);
+        this.println("");
+        this.println(`Use the command "help" to get a list of known commands.`);
+        this.println("");
     }
 
     /**
@@ -86,46 +126,115 @@ export class TerminalApp extends GenericProcess {
         const term = /** @type {HTMLPreElement} */ (
             UI.el("pre", {
                 className: "term",
-                attrs: { tabindex: "0" }, // <-- wichtig
+                attrs: { tabindex: "0" },
             })
         );
 
         this.outEl = term;
+        this.root.replaceChildren(term);
 
-        const panel = UI.panel("Terminal", [
-            term,
-        ]);
+        this.bag.on(term, "keydown", (ev) => this._onKeyDown(/** @type {KeyboardEvent} */(ev)));
+        this._startCursorBlink();
 
-        this.root.replaceChildren(panel);
-        this.bag.on(term, "keydown", (ev) => this._onKeyDown(/** @type {KeyboardEvent}*/(ev)));
         this._renderScreen();
-
         queueMicrotask(() => term.focus());
     }
 
     onUnmount() {
+        this._stopCursorBlink();
         this.bag.dispose();
         this.outEl = null;
-        this.inEl = null;
         super.onUnmount();
     }
 
     // ---------------------------
-    // Output helpers
+    // Screen / scrollback
     // ---------------------------
 
-    _println(text = "") {
-        this.lines.push(text);
+    _resetScreen() {
+        this.scrollback = [];
+        this.screen = Array.from({ length: this.rows }, () => " ".repeat(this.cols));
+        this.outX = 0;
+        this.outY = 0;
+    }
+
+    /** @param {string} line */
+    _pushScrollback(line) {
+        this.scrollback.push(line);
+        if (this.scrollback.length > this.scrollbackLimit) {
+            this.scrollback.splice(0, this.scrollback.length - this.scrollbackLimit);
+        }
+    }
+
+    /** Scroll visible screen up by 1 line. Top line goes to scrollback. */
+    _scrollUp() {
+        this._pushScrollback(this.screen[0]);
+        this.screen.shift();
+        this.screen.push(" ".repeat(this.cols));
+        if (this.outY > 0) this.outY--;
+    }
+
+    // ---------------------------
+    // Output writing with wrapping
+    // ---------------------------
+
+    /**
+     * Write text (no implicit newline). Supports \n and \r. Auto-wraps at cols.
+     * @param {string} text
+     */
+    print(text = "") {
+        for (const ch of text) {
+            if (ch === "\n") {
+                this._newline();
+                continue;
+            }
+            if (ch === "\r") {
+                this.outX = 0;
+                continue;
+            }
+            this._putChar(ch);
+        }
         this._renderScreen();
     }
 
-    _scrollToBottom() {
-        if (!this.outEl) return;
-        this.outEl.scrollTop = this.outEl.scrollHeight;
+    /**
+     * Print line with newline.
+     * @param {string} text
+     */
+    println(text = "") {
+        this.print(text + "\n");
+    }
+
+    _newline() {
+        this.outX = 0;
+        this.outY++;
+        if (this.outY >= this.rows) {
+            this._scrollUp();
+            this.outY = this.rows - 1;
+        }
+    }
+
+    /** @param {string} ch */
+    _putChar(ch) {
+        // soft wrap
+        if (this.outX >= this.cols) {
+            this._newline();
+        }
+
+        if (this.outY >= this.rows) {
+            this._scrollUp();
+            this.outY = this.rows - 1;
+        }
+
+        const row = this.screen[this.outY];
+        this.screen[this.outY] = row.slice(0, this.outX) + ch + row.slice(this.outX + 1);
+
+        this.outX++;
+        // next char will wrap if needed
     }
 
     _clear() {
-        this.lines = [];
+        this._resetScreen();
         this.lineBuffer = "";
         this.cursor = 0;
         this._renderScreen();
@@ -137,18 +246,6 @@ export class TerminalApp extends GenericProcess {
         return `${user}@${host}:${this.cwd}$ `;
     }
 
-    /**
-     * 
-     * @param {string} v 
-     * @returns 
-     */
-
-    _setInputValue(v) {
-        if (!this.inEl) return;
-        this.inEl.value = v;
-        this.inEl.setSelectionRange(v.length, v.length);
-    }
-
     // ---------------------------
     // Input handling
     // ---------------------------
@@ -157,10 +254,24 @@ export class TerminalApp extends GenericProcess {
      * @param {KeyboardEvent} ev
      */
     _onKeyDown(ev) {
+        // Ctrl+C
+        if ((ev.ctrlKey || ev.metaKey) && (ev.key === "c" || ev.key === "C")) {
+            ev.preventDefault();
+            this._interrupt();
+            return;
+        }
+
+        // On interaction, show cursor immediatel
+        if (!this.busy) {
+            this.cursorVisible = true;
+        }
+
+        // if busy, ignore typing (like your previous behavior)
         if (this.busy) {
             ev.preventDefault();
             return;
         }
+
         if (ev.key.length === 1 && !ev.ctrlKey && !ev.metaKey) {
             ev.preventDefault();
             this._insert(ev.key);
@@ -200,28 +311,22 @@ export class TerminalApp extends GenericProcess {
 
             case "Tab":
                 ev.preventDefault();
-                //TODO: Auto complete, not for now
+                // TODO: autocomplete
                 break;
 
             case "l":
                 if (ev.ctrlKey || ev.metaKey) {
                     ev.preventDefault();
                     this._clear();
-                    this._renderScreen();
                 }
                 break;
         }
     }
 
-    /**
-     * 
-     * @param {string} ch 
-     */
+    /** @param {string} ch */
     _insert(ch) {
         this.lineBuffer =
-            this.lineBuffer.slice(0, this.cursor) +
-            ch +
-            this.lineBuffer.slice(this.cursor);
+            this.lineBuffer.slice(0, this.cursor) + ch + this.lineBuffer.slice(this.cursor);
         this.cursor++;
         this._renderScreen();
     }
@@ -229,19 +334,23 @@ export class TerminalApp extends GenericProcess {
     _backspace() {
         if (this.cursor === 0) return;
         this.lineBuffer =
-            this.lineBuffer.slice(0, this.cursor - 1) +
-            this.lineBuffer.slice(this.cursor);
+            this.lineBuffer.slice(0, this.cursor - 1) + this.lineBuffer.slice(this.cursor);
         this.cursor--;
+        this._renderScreen();
+    }
+
+    /**
+     * 
+     * @param {number} delta 
+     */
+    _moveCursor(delta) {
+        this.cursor = Math.max(0, Math.min(this.lineBuffer.length, this.cursor + delta));
         this._renderScreen();
     }
 
     _historyUp() {
         if (this.history.length === 0) return;
-
-        if (this.historyIndex > 0) {
-            this.historyIndex--;
-        }
-
+        if (this.historyIndex > 0) this.historyIndex--;
         this.lineBuffer = this.history[this.historyIndex] ?? "";
         this.cursor = this.lineBuffer.length;
         this._renderScreen();
@@ -250,86 +359,145 @@ export class TerminalApp extends GenericProcess {
     _historyDown() {
         if (this.history.length === 0) return;
 
-        if (this.historyIndex < this.history.length) {
-            this.historyIndex++;
-        }
+        if (this.historyIndex < this.history.length) this.historyIndex++;
 
-        if (this.historyIndex === this.history.length) {
-            this.lineBuffer = "";
-        } else {
-            this.lineBuffer = this.history[this.historyIndex] ?? "";
-        }
-
+        this.lineBuffer =
+            this.historyIndex === this.history.length ? "" : this.history[this.historyIndex] ?? "";
         this.cursor = this.lineBuffer.length;
-        this._renderScreen();
-    }
-
-    /**
-     * 
-     * @param {number} delta 
-     */
-
-    _moveCursor(delta) {
-        this.cursor = Math.max(0, Math.min(this.lineBuffer.length, this.cursor + delta));
         this._renderScreen();
     }
 
     _commitLine() {
         const line = this.lineBuffer;
 
-        this.lines.push(this._promptString() + line);
+        // Commit prompt + line into the REAL buffer (this will wrap/scroll for real)
+        this.println(this._promptString() + line);
 
         const trimmed = line.trim();
-        if (trimmed.length > 0) {
-            this.history.push(trimmed);
-        }
+        if (trimmed.length > 0) this.history.push(trimmed);
         this.historyIndex = this.history.length;
 
         this.lineBuffer = "";
         this.cursor = 0;
 
-        // WICHTIG: Busy an, und prompt NICHT anzeigen
         this.busy = true;
         this._renderScreen();
 
-        void this._handleLine(line)
-            .finally(() => {
-                this.busy = false;
-                this._renderScreen(); // prompt erscheint erst jetzt wieder
-            });
+        this.currentAbort = new AbortController();
+        this.interruptHandlers = [];
+
+        void this._handleLine(line).finally(() => {
+            this.busy = false;
+            this._renderScreen();
+        });
     }
+
+    // ---------------------------
+    // Render (overlay prompt+input into the current screen)
+    // ---------------------------
 
     _renderScreen() {
         if (!this.outEl) return;
 
-        // Wenn busy: KEIN Prompt/Editorzeile anzeigen.
+        // Clone base screen
+        /** @type {string[]} */
+        const tmp = this.screen.slice();
+
+        // If busy: just show output buffer (no overlay cursor)
         if (this.busy) {
-            this.outEl.textContent = (this.lines.length ? this.lines.join("\n") + "\n" : "");
-            this._scrollToBottom();
+            this.outEl.textContent = tmp.join("\n");
             return;
         }
 
-        const before = this.lineBuffer.slice(0, this.cursor);
-        const after = this.lineBuffer.slice(this.cursor);
-        const editLine = this._promptString() + before + "▉" + after;
+        const prompt = this._promptString();
+        const full = prompt + this.lineBuffer;
 
-        this.outEl.textContent =
-            (this.lines.length ? this.lines.join("\n") + "\n" : "") +
-            editLine;
+        const cursorPos = prompt.length + this.cursor; // index in `full`
 
-        this._scrollToBottom();
+        let x = this.outX;
+        let y = this.outY;
+
+        const visScrollUp = () => {
+            tmp.shift();
+            tmp.push(" ".repeat(this.cols));
+            y = Math.max(0, y - 1);
+        };
+
+        // Track cursor cell, but draw it AFTER text is rendered
+        let cursorX = x;
+        let cursorY = y;
+
+        const ensureVisible = () => {
+            // wrap
+            if (x >= this.cols) {
+                x = 0;
+                y++;
+            }
+            // scroll if needed
+            if (y >= this.rows) {
+                visScrollUp();
+                y = this.rows - 1;
+            }
+        };
+
+        // Render all chars
+        for (let i = 0; i < full.length; i++) {
+            // If cursor is *before* this character, it sits at current x/y
+            if (i === cursorPos) {
+                cursorX = x;
+                cursorY = y;
+            }
+
+            ensureVisible();
+
+            const ch = full[i];
+            tmp[y] = tmp[y].slice(0, x) + ch + tmp[y].slice(x + 1);
+            x++;
+        }
+
+        // Cursor at end-of-line (after last char)
+        if (cursorPos === full.length) {
+            // cursor sits where the next char would go
+            cursorX = x;
+            cursorY = y;
+            // normalize in case it's exactly at cols
+            if (cursorX >= this.cols) {
+                cursorX = 0;
+                cursorY++;
+            }
+            if (cursorY >= this.rows) {
+                // visually scroll one line to make room
+                visScrollUp();
+                cursorY = this.rows - 1;
+            }
+        }
+
+        // Paint cursor block last (so it cannot be overwritten)
+        if (cursorY >= this.rows) {
+            // just in case
+            cursorY = this.rows - 1;
+        }
+        if (cursorX >= this.cols) {
+            cursorX = this.cols - 1;
+        }
+        if (this.cursorVisible) {
+            tmp[cursorY] = tmp[cursorY].slice(0, cursorX) + "▉" + tmp[cursorY].slice(cursorX + 1);
+        }
+
+        this.outEl.textContent = tmp.join("\n");
     }
+
+
+    // ---------------------------
+    // Command execution
+    // ---------------------------
 
     /**
      * @param {string} line
      */
     async _handleLine(line) {
         const trimmed = line.trim();
-
-        if (trimmed.length === 0) {
-            this._renderScreen();
-            return;
-        }
+        if (trimmed.length === 0) return;
 
         const { cmd, args } = this._parse(trimmed);
 
@@ -340,31 +508,34 @@ export class TerminalApp extends GenericProcess {
             env: this.env,
             cwd: this.cwd,
             setCwd: (cwd) => { this.cwd = cwd; },
-            println: (t) => this._println(t ?? ""),
+            println: (t) => this.println(t ?? ""),
             clear: () => this._clear(),
             terminate: () => this.terminate(),
+
+            signal: this.currentAbort?.signal ?? new AbortController().signal,
+            onInterrupt: (fn) => { this.interruptHandlers.push(fn); },
         });
 
         const entry = this.commands.get(cmd);
         if (!entry) {
-            this._println(`command not found: ${cmd}`);
-            this._renderScreen();
+            ctx.println(`command not found: ${cmd}`);
             return;
         }
 
         try {
             const res = await entry.run(ctx, args);
-            if (typeof res === "string" && res.length) this._println(res);
+            if (typeof res === "string" && res.length) ctx.println(res);
         } catch (e) {
-            this._println(`error: ${e instanceof Error ? e.message : String(e)}`);
+            // Ignore abort “errors”
+            if (ctx.signal.aborted) return;
+
+            ctx.println(`error: ${e instanceof Error ? e.message : String(e)}`);
         }
 
-        this._renderScreen();
     }
 
     /**
-     * Very small parser: supports quotes "like this" and 'like this'.
-     * No escapes yet.
+     * Very small parser: supports quotes "like this" and 'like this'. No escapes.
      * @param {string} line
      */
     _parse(line) {
@@ -377,11 +548,8 @@ export class TerminalApp extends GenericProcess {
             const ch = line[i];
 
             if (quote) {
-                if (ch === quote) {
-                    quote = null;
-                } else {
-                    cur += ch;
-                }
+                if (ch === quote) quote = null;
+                else cur += ch;
                 continue;
             }
 
@@ -399,6 +567,7 @@ export class TerminalApp extends GenericProcess {
                 cur += ch;
             }
         }
+
         if (cur.length) tokens.push(cur);
 
         const cmd = tokens[0] ?? "";
@@ -407,357 +576,55 @@ export class TerminalApp extends GenericProcess {
     }
 
     // ---------------------------
-    // Commands
+    // Built-in commands
     // ---------------------------
 
     _registerBuiltins() {
-        /** @param {Command} c */
-        const add = (c) => this.commands.set(c.name, c);
-
-        add({
-            name: "help",
-            run: () => {
-                const names = [...this.commands.keys()].sort();
-                return [
-                    "Built-in commands:",
-                    "  " + names.join("  "),
-                ].join("\n");
-            },
-        });
-
-        add({
-            name: "echo",
-            run: (_ctx, args) => args.join(" "),
-        });
-
-        add({
-            name: "clear",
-            run: (ctx) => { ctx.clear(); },
-        });
-
-        add({
-            name: "date",
-            run: () => new Date().toString(),
-        });
-
-        add({
-            name: "uname",
-            run: (ctx, args) => {
-                const a = args[0] ?? "";
-                if (a === "-a") return `SimOS ${ctx.os?.name ?? "UnknownOS"} pid=${ctx.pid}`;
-                return `${ctx.os?.name ?? "SimOS"}`;
-            },
-        });
-
-        add({
-            name: "whoami",
-            run: (ctx) => ctx.env.USER ?? "user",
-        });
-
-        add({
-            name: "pwd",
-            run: (ctx) => ctx.cwd,
-        });
-
-        add({
-            name: "cd",
-            run: (ctx, args) => {
-                const fs = ctx.os.fs;
-                if (!fs) return "cd: no filesystem";
-
-                const target = args[0] ?? "/home";
-                const abs = fs.resolve(ctx.cwd, target);
-
-                const st = fs.stat(abs);
-                if (st.type !== "dir") return `cd: not a directory: ${target}`;
-
-                ctx.setCwd(abs);
-            },
-        });
-
-        add({
-            name: "ls",
-            run: (ctx, args) => {
-                const fs = ctx.os.fs;
-                if (!fs) return "ls: no filesystem";
-
-                const p = args[0] ?? ctx.cwd;
-                const abs = fs.resolve(ctx.cwd, p);
-                const st = fs.stat(abs);
-
-                if (st.type === "file") return p;
-                return fs.readdir(abs).join("  ");
-            },
-        });
-
-        add({
-            name: "cat",
-            run: (ctx, args) => {
-                const fs = ctx.os.fs;
-                if (!fs) return "cat: no filesystem";
-                if (!args[0]) return "usage: cat <file>";
-
-                const abs = fs.resolve(ctx.cwd, args[0]);
-                return fs.readFile(abs);
-            },
-        });
-
-        add({
-            name: "touch",
-            run: (ctx, args) => {
-                const fs = ctx.os.fs;
-                if (!fs) return "touch: no filesystem";
-                if (args.length === 0) return "usage: touch <file> [...]";
-
-                for (const p of args) {
-                    const abs = fs.resolve(ctx.cwd, p);
-
-                    // writeFile überschreibt oder legt neu an
-                    // wir lassen vorhandenen Inhalt bewusst leer, falls neu
-                    if (!fs.exists(abs)) {
-                        fs.writeFile(abs, "");
-                    } else {
-                        // mtime "aktualisieren": read + write same content
-                        const data = fs.readFile(abs);
-                        fs.writeFile(abs, data);
-                    }
-                }
-            },
-        });
-
-        add({
-            name: "mkdir",
-            run: (ctx, args) => {
-                const fs = ctx.os.fs;
-                if (!fs) return "mkdir: no filesystem";
-                if (args.length === 0) return "usage: mkdir [-p] <dir> [...]";
-
-                let recursive = false;
-                const paths = [];
-
-                for (const a of args) {
-                    if (a === "-p") recursive = true;
-                    else paths.push(a);
-                }
-
-                if (paths.length === 0) return "mkdir: missing operand";
-
-                for (const p of paths) {
-                    const abs = fs.resolve(ctx.cwd, p);
-                    fs.mkdir(abs, { recursive });
-                }
-            },
-        });
-        add({
-            name: "ping",
-            run: (ctx, args) => this._cmdPing(ctx, args),
-        });
-
-    }
-
-    /**
-     * @param {string} cwd
-     * @param {string} target
-     */
-    _resolvePath(cwd, target) {
-        if (target.startsWith("/")) return this._normalizePath(target);
-        return this._normalizePath(cwd.replace(/\/+$/, "") + "/" + target);
-    }
-
-    /**
-     * @param {string} p
-     */
-    _normalizePath(p) {
-        const parts = p.split("/").filter(Boolean);
-        /** @type {string[]} */
-        const stack = [];
-        for (const part of parts) {
-            if (part === ".") continue;
-            if (part === "..") stack.pop();
-            else stack.push(part);
-        }
-        return "/" + stack.join("/");
+        registerBuiltins(this);
     }
 
 
-    /**
-     * ping [-c count] [-i interval] [-W timeout] <host>
-     *
-     * -c <count>    Anzahl der Pakete
-     * -i <seconds>  Intervall zwischen Paketen (float erlaubt)
-     * -W <seconds>  Timeout pro Paket (float erlaubt)
-     *
-     * @param {string[]} argv
-     * @returns {string | {host: string, count: number, intervalMs: number, timeoutMs: number}}
-     */
-    _parsePingArgs(argv) {
-        const args = [...argv];
+    _interrupt() {
+        // Print ^C like a real terminal
+        this.println("^C");
 
-        let count = 4;
-        let intervalMs = 1000;
-        let timeoutMs = 1000;
-        let host = "";
+        // Clear current input buffer
+        this.lineBuffer = "";
+        this.cursor = 0;
 
-        const usage = () => "usage: ping [-c count] [-i interval] [-W timeout] <host>";
-
-        const take = () => args.shift();
-
-        while (args.length) {
-            const a = args[0];
-
-            if (a === "-c") {
-                args.shift();
-                const v = Number(take());
-                if (!Number.isFinite(v) || v <= 0) return "ping: invalid count";
-                count = Math.floor(v);
-                // niemals mehr als 4
-                if (count > 4) count = 4;
-                continue;
-            }
-
-            if (a === "-i") {
-                args.shift();
-                const v = Number(take());
-                if (!Number.isFinite(v) || v <= 0) return "ping: invalid interval";
-                intervalMs = Math.max(1, Math.floor(v * 1000));
-                continue;
-            }
-
-            if (a === "-W") {
-                args.shift();
-                const v = Number(take());
-                if (!Number.isFinite(v) || v <= 0) return "ping: invalid timeout";
-                timeoutMs = Math.max(1, Math.floor(v * 1000));
-                continue;
-            }
-
-            host = take() ?? "";
-            break;
+        // Call optional interrupt handlers (rarely needed, but nice)
+        for (const fn of this.interruptHandlers.splice(0)) {
+            try { fn(); } catch { /* ignore */ }
         }
 
-        if (!host) return usage();
-        return { host, count, intervalMs, timeoutMs };
+        // Abort running command if any
+        if (this.currentAbort && !this.currentAbort.signal.aborted) {
+            this.currentAbort.abort();
+        }
+
+        // Unbusy immediately so prompt returns
+        this.busy = false;
+        this._renderScreen();
     }
 
+    _startCursorBlink() {
+        this._stopCursorBlink(); // defensive
+        this.cursorVisible = true;
 
+        this.blinkTimer = window.setInterval(() => {
+            // If busy, you can either keep blinking off, or do nothing.
+            // Doing nothing avoids re-render spam while commands run.
+            if (this.busy) return;
 
-
-    /************************************ PING ***********************************/
-
-    /**
-     * ping [-c count] [-i interval] [-W timeout] <host>
-     * Nutzt ctx.os.ipforwarder.icmpEcho(...)
-     *
-     * Erwartet: ctx.os.ipforwarder.icmpEcho(dstIpNum, { timeoutMs, identifier?, sequence?, payload? })
-     * -> Promise<{ bytes:number, ttl:number, timeMs:number, identifier:number, sequence:number }>
-     *
-     * @param {ShellContext} ctx
-     * @param {string[]} args
-     */
-    async _cmdPing(ctx, args) {
-        const opt = this._parsePingArgs(args);
-        if (typeof opt === "string") return opt;
-
-        const { host, count, intervalMs, timeoutMs } = opt;
-
-        // --- helpers: IPv4 string <-> number (network order)
-        /** @param {string} s */
-        const ipStringToNumber = (s) => {
-            const m = /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/.exec(s);
-            if (!m) return null;
-            const a = m.slice(1).map((x) => Number(x));
-            if (a.some((n) => !Number.isFinite(n) || n < 0 || n > 255)) return null;
-            // >>> 0 to keep unsigned
-            return (((a[0] << 24) | (a[1] << 16) | (a[2] << 8) | a[3]) >>> 0);
-        };
-
-        /** @param {number} n */
-        const ipNumberToString = (n) => {
-            const a = (n >>> 24) & 255;
-            const b = (n >>> 16) & 255;
-            const c = (n >>> 8) & 255;
-            const d = n & 255;
-            return `${a}.${b}.${c}.${d}`;
-        };
-
-        /** @param {number} ms */
-        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-        const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
-
-        // --- resolve host -> dst as number
-        let dstNum = ipStringToNumber(host);
-
-        if (dstNum == null) {
-            // Prefer OS DNS if present
-            const dns = ctx.os?.dns;
-            if (dns?.resolve) {
-                const resolved = await dns.resolve(host); // can be string or number, depending on your impl
-                if (typeof resolved === "number") dstNum = resolved >>> 0;
-                else if (typeof resolved === "string") dstNum = ipStringToNumber(resolved);
-            }
-        }
-
-        if (dstNum == null) {
-            return `ping: cannot resolve ${host}`;
-        }
-
-        const dstStr = ipNumberToString(dstNum);
-
-        // --- pick a stable identifier for this ping run
-        const identifier = (Math.random() * 0xffff) | 0;
-
-        ctx.println(`PING ${host} (${dstStr}) 56(84) bytes of data.`);
-
-        let transmitted = 0;
-        let received = 0;
-        let minMs = Infinity;
-        let maxMs = 0;
-        let sumMs = 0;
-
-        const started = now();
-
-        for (let seq = 1; seq <= count; seq++) {
-            transmitted++;
-
-            try {
-                // payload: 56 bytes "data" (typisch bei ping)
-                const payload = new Uint8Array(56);
-
-                const res = await ctx.os.ipforwarder.icmpEcho(dstNum, {
-                    timeoutMs,
-                    identifier,
-                    sequence: seq & 0xffff,
-                    payload,
-                });
-
-                received++;
-
-                const t = Math.max(0, Math.round(res.timeMs ?? 0));
-                minMs = Math.min(minMs, t);
-                maxMs = Math.max(maxMs, t);
-                sumMs += t;
-
-                const ttl = res.ttl ?? 64;
-                const bytes = res.bytes ?? (56 + 8); // data + icmp header fallback
-
-                ctx.println(`${bytes} bytes from ${dstStr}: icmp_seq=${seq} ttl=${ttl} time=${t} ms`);
-            } catch (e) {
-                ctx.println(`Request timeout for icmp_seq ${seq}`);
-            }
-
-            if (seq < count) await sleep(intervalMs);
-        }
-
-        const elapsedMs = Math.max(1, Math.round(now() - started));
-        const lossPct = Math.round(((transmitted - received) / transmitted) * 100);
-        const avgMs = received ? (sumMs / received) : 0;
-
-        ctx.println("");
-        ctx.println(`--- ${host} ping statistics ---`);
-        ctx.println(`${transmitted} packets transmitted, ${received} received, ${lossPct}% packet loss, time ${elapsedMs}ms`);
-        if (received) {
-            ctx.println(`rtt min/avg/max = ${Math.round(minMs)}/${Math.round(avgMs)}/${Math.round(maxMs)} ms`);
-        }
+            this.cursorVisible = !this.cursorVisible;
+            this._renderScreen();
+        }, 500);
     }
 
+    _stopCursorBlink() {
+        if (this.blinkTimer != null) {
+            clearInterval(this.blinkTimer);
+            this.blinkTimer = null;
+        }
+    }
 }

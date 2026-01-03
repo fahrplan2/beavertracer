@@ -89,8 +89,6 @@ export class Link extends SimulatedObject {
         line.style.width = `${length}px`;
         line.style.left = `${x1}px`;
         line.style.top = `${y1}px`;
-
-        // Try angle first; if it's mirrored, use -angle
         line.style.transform = `rotate(${angle}deg)`;
     }
 }

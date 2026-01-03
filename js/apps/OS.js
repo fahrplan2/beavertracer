@@ -30,6 +30,9 @@ export class OS {
     /** @type {HTMLElement|null} */
     host = null;
 
+    /** @type {String} title of the current app */
+    title;
+
     /**
      * 
      * @param {string} name 
@@ -40,6 +43,7 @@ export class OS {
         this.root.classList.add("os-root");
         this._init();
         this._requestRender();
+        this.title = "";
     }
 
     _init() {
@@ -174,10 +178,6 @@ export class OS {
         const el = document.createElement("div");
         el.classList.add("menu");
 
-        const title = document.createElement("h3");
-        title.textContent = this.name;
-        el.appendChild(title);
-
         for (const item of this._menuItems) {
             const btn = document.createElement("button");
             btn.textContent = item.title;
@@ -207,6 +207,11 @@ export class OS {
         back.onclick = () => this.unfocus();
 
         bar.appendChild(back);
+
+        const title = document.createElement("div");
+        title.classList.add("os-frame-title");
+        title.textContent = (this._getFocusedApp()?.title ?? "Untitled");
+        bar.appendChild(title);
 
         frame.appendChild(bar);
         frame.appendChild(appRoot);

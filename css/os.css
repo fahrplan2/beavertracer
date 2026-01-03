@@ -1,7 +1,18 @@
 .app-terminal .term {
-  white-space: pre-wrap;
+  font-family: "Monospace regular","Courier New", monospace;
+  font-size: 18px;
+  line-height: 18px;
+  white-space: pre;
+  overflow: hidden;
+  background-color: #202020;
+  color: #00FF00;
+  padding: 7px;
+}
+
+.app-terminal .term:focus {
   outline: none;
-  font-family: monospace;
-  overflow: auto;
-  height: 100%;
+}
+
+.app-terminal .term::selection {
+  background: rgba(255, 255, 255, 0.2);
 }

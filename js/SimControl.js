@@ -21,6 +21,12 @@ export class SimControl {
     /** @type {HTMLDivElement|null} */
     nodesLayer = null;
 
+
+    /**
+     * @type {HTMLElement|null} movement Boundary for user drag&drop
+     */
+    static movementBoundary;
+
     /**
      * 
      * @param {HTMLElement|null} root 
@@ -48,9 +54,6 @@ export class SimControl {
             console.error(error instanceof Error ? error.message : String(error));
         }
         this.endStep = !this.endStep;
-
-        //this.redrawLinks();
-
         window.setTimeout(() => this.step(), SimControl.tick);
     }
 
@@ -62,7 +65,6 @@ export class SimControl {
         this.simobjects.push(obj);
         this.render();
     }
-
 
     /**
      * 
@@ -96,6 +98,8 @@ export class SimControl {
         }
 
         this.redrawLinks();
+
+        SimControl.movementBoundary = root;
     }
 
     redrawLinks() {
