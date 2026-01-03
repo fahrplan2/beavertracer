@@ -2,10 +2,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview",
-    "electron:run": "npm run build && electron .",
-    "dist:win": "npm run build && electron-builder --win",
-    "dist:mac": "npm run build && electron-builder --mac"
+    "preview": "vite preview"
   },
   "name": "networksim",
   "description": "",
@@ -18,8 +15,6 @@
   "author": "Christian Klein",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^30.0.0",
-    "electron-builder": "^24.0.0",
     "vite": "^4.5.14"
   },
   "build": {
@@ -32,18 +27,6 @@
       "dist/**",
       "electron/**",
       "package.json"
-    ],
-    "directories": {
-      "buildResources": "public"
-    },
-    "win": {
-      "target": "dir"
-   },
-    "mac": {
-      "target": [
-        "zip"
-      ],
-      "icon": "public/icon.png"
-    }
+    ]
   }
 }
