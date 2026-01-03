@@ -37,7 +37,7 @@ export class OS {
      * 
      * @param {string} name 
      */
-    constructor(name = "LOS") {
+    constructor(name = "OS") {
         this.name = name;
         this.ipforwarder = new IPForwarder(1, name);
         this.root.classList.add("os-root");
@@ -51,7 +51,6 @@ export class OS {
         this.registerMenuItem(t("apps.name.texteditor"), this.exec(TextEditorApp));
         this.registerMenuItem(t("apps.name.ipv4config"), this.exec(IPv4ConfigApp));
         this.registerMenuItem(t("apps.name.udpecho"), this.exec(UDPEchoApp));
-        this.registerMenuItem(t("apps.name.texteditor"), this.exec(TextEditorApp));
         this.registerMenuItem(t("apps.name.about"), this.exec(AboutApp));
     }
 

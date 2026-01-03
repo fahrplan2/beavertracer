@@ -287,6 +287,7 @@ export function makeDraggable(el, options = {}) {
     clearLongPressTimer();
 
     if (!dragAllowed) {
+      //@ts-ignore   //TODO: Prüfen, warum
       longPressTimer = window.setTimeout(() => {
         dragAllowed = true;
       }, longPressDelay);
