@@ -2,11 +2,8 @@
 
 export default {
   "app.title": "Netzwerksimulation",
-  "menu.start": "Start",
 
 
-
-
-
+  "panel.close": "Schließen",
   "lang.name" : "Deutsch"
 }

@@ -1,5 +1,9 @@
 //@ts-check
 
+import { t } from '../i18n/index.js';
+import { makeDraggable } from '../lib/dragabble.js';
+import { makeWindow, bringToFront } from '../lib/windowmanager.js';
+
 export class SimulatedObject {
 
     name;
@@ -9,78 +13,197 @@ export class SimulatedObject {
     /** @type {HTMLElement} */
     root;
 
-    /** @type {number} */
-    x = 50;
-
-    /** @type {number} */
-    y = 50;
+    /** @type {HTMLElement|null} */
+    iconEl = null;
 
     /** @type {HTMLElement|null} */
-    el = null;
+    panelEl = null;
+
+    /** @type {HTMLElement|null} */
+    panelHeaderEl = null;
+
+    /** @type {number} icon position */
+    x = 50;
+    /** @type {number} icon position */
+    y = 50;
+
+    /** @type {number} panel position */
+    px = 220;
+
+    /** @type {number} panel osition */
+    py = 120;
+
+    panelOpen = false;
 
     /**
-     * 
-     * @param {String} name 
+     * callback when the panal was created
+     * must be used e.g. for os->mount()
+     * @type {((body: HTMLElement) => void) | undefined}
+     */
+    onPanelCreated;
+
+    /**
+     * @param {String} name
      */
     constructor(name) {
         this.name = name;
-        this.id = SimulatedObject.idnumber;
-        SimulatedObject.idnumber++;
+        this.id = SimulatedObject.idnumber++;
         this.root = document.createElement("div");
         this.root.classList.add("sim-object");
     }
 
     /**
-     * 
+     * builds the SimulatedObject
+     * with a visible panel
      * @returns {HTMLElement}
      */
     render() {
+        //Icon
+        if (!this.iconEl) {
+            this.iconEl = this.buildIcon();
+            this.root.appendChild(this.iconEl);
+            this.wireIconInteractions();
+        }
+
+        //Panel
+        if (!this.panelEl) {
+            this.panelEl = this.buildPanel();
+            this.root.appendChild(this.panelEl);
+            this.wirePanelInteractions();
+        }
+
+        this._applyPositions();
+        this._applyPanelVisibility();
+
         return this.root;
     }
 
-    /**
-      * @returns {HTMLElement}
-      */
-    renderIcon() {
-        const root = document.createElement("div");
-        root.className = "sim-node";
-        root.style.left = this.x + "px";
-        root.style.top = this.y + "px";
+    buildIcon() {
+        const icon = document.createElement("div");
+        icon.className = "sim-node";
+        icon.dataset.objid = String(this.id);
 
         const title = document.createElement("div");
         title.className = "title";
         title.textContent = this.name;
-        root.appendChild(title);
+        icon.appendChild(title);
 
-        const portL = document.createElement("div");
-        portL.className = "sim-port left";
-        portL.dataset.port = "left";
-        root.appendChild(portL);
+        return icon;
+    }
 
-        const portR = document.createElement("div");
-        portR.className = "sim-port right";
-        portR.dataset.port = "right";
-        root.appendChild(portR);
+    buildPanel() {
+        const panel = document.createElement("div");
+        panel.className = "sim-panel";
 
-        this.el = root;
-        return root;
+        const header = document.createElement("div");
+        header.className = "sim-panel-header";
+
+        const title = document.createElement("div");
+        title.className = "sim-panel-title";
+        title.textContent = this.name;
+
+        const close = document.createElement("button");
+        close.className = "sim-panel-close";
+        close.type = "button";
+        close.textContent = "×";
+        close.title = t("panel.close");
+
+        header.appendChild(title);
+        header.appendChild(close);
+
+        const body = document.createElement("div");
+        body.className = "sim-panel-body";
+
+        panel.appendChild(header);
+        panel.appendChild(body);
+
+        this.panelHeaderEl = header;
+
+        close.addEventListener("click", (e) => {
+            e.stopPropagation();
+            this.setPanelOpen(false);
+        });
+
+        this.onPanelCreated?.(body);
+
+        return panel;
+    }
+
+    wireIconInteractions() {
+        if (!this.iconEl) return;
+
+        //toggle panel
+        this.iconEl.addEventListener("dblclick", (e) => {
+            const t = e.target;
+            this.setPanelOpen(!this.panelOpen);
+
+            //TODO: Window should open in a good spot
+            /*this.px = e.clientX;
+            this.py = e.clientY;
+            this._applyPositions();*/
+        });
+
+        //make icon traggable
+        makeDraggable(this.iconEl, {
+            handle: this.iconEl
+        });
+    }
+
+    wirePanelInteractions() {
+        if (!this.panelEl) return;
+
+        //make panel draggable
+        const handle = this.panelEl.querySelector('.sim-panel-header');
+        if (handle instanceof HTMLElement) {
+            makeDraggable(this.panelEl, {
+                handle: handle
+            });
+        }
+        makeWindow(this.panelEl);
     }
 
     /**
-     * Port-Position in Workspace-Koordinaten
-     * @param {"left"|"right"} which
+     * 
+     * @param {boolean} open 
      */
-    getPortPosition(which) {
-        if (!this.el) return { x: this.x, y: this.y };
-        const port = this.el.querySelector(`.sim-port.${which}`);
-        if (!(port instanceof HTMLElement)) {
-            // fallback: center
-            return { x: this.x + 55, y: this.y + 35 };
-        }
-
-        const r = port.getBoundingClientRect();
-        // Achtung: wir rechnen später relativ zum Workspace um -> siehe SimControl
-        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    setPanelOpen(open) {
+        this.panelOpen = open;
+        this._applyPositions();
+        this._applyPanelVisibility();
     }
 
+    _applyPanelVisibility() {
+        if (!this.panelEl) return;
+        this.panelEl.style.display = this.panelOpen ? "block" : "none";
+        if (this.panelOpen) {
+            bringToFront(this.panelEl);
+        }
+    }
+
+    _applyPositions() {
+        if (this.iconEl) {
+            this.iconEl.style.left = this.x + "px";
+            this.iconEl.style.top = this.y + "px";
+        }
+        if (this.panelEl) {
+            this.panelEl.style.left = this.px + "px";
+            this.panelEl.style.top = this.py + "px";
+        }
+    }
+
+    getX() {
+        if (!this.iconEl) {
+            return 0;
+        }
+        const rect = this.iconEl.getBoundingClientRect();
+        return rect.left + rect.width / 2;
+    }
+
+    getY() {
+        if (!this.iconEl) {
+            return 0;
+        }
+        const rect = this.iconEl.getBoundingClientRect();
+        return rect.top + rect.height / 2;
+    }
 }

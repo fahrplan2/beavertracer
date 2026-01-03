@@ -151,7 +151,7 @@ export class OS {
         if (view.pid !== 0) {
             const app = this._getFocusedApp();
             if (app && view.appRoot) {
-                app.onMount(view.appRoot);   // ✅ App bekommt ihr eigenes Root
+                app.onMount(view.appRoot); 
             }
         }
 
@@ -189,18 +189,23 @@ export class OS {
     }
 
     /**
-     * 
+     * wraps a frame and a back button around the app
      * @param {HTMLElement} appRoot 
      * @returns 
      */
 
     _wrapWithFrame(appRoot) {
         const frame = document.createElement("div");
+        frame.classList.add("os-frame");
 
         const bar = document.createElement("div");
         const back = document.createElement("button");
+
+        back.classList.add("os-button-back");
         back.textContent = "← Menü";
+
         back.onclick = () => this.unfocus();
+
         bar.appendChild(back);
 
         frame.appendChild(bar);

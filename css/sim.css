@@ -1,0 +1,90 @@
+.sim-root {
+  position: relative;
+  width: 100%;
+  height: 80vh;
+  border: 1px solid #333;
+  overflow: hidden;
+  user-select: none;
+}
+
+.sim-nodes {
+  position: absolute;
+  inset: 0;
+}
+
+.sim-node {
+  position: absolute;
+  width: 110px;
+  height: 70px;
+  border: 2px solid #222;
+  border-radius: 10px;
+  background: #f3f3f3;
+  display: grid;
+  place-items: center;
+  cursor: grab;
+  z-index: 5;
+}
+
+.sim-node .title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.sim-object {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.sim-panel {
+  position: absolute;
+  width: 360px;
+  height: 240px;
+  border: 2px solid #222;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .2);
+  overflow: hidden;
+  pointer-events: auto;
+  z-index: 10;
+}
+
+.sim-panel-header {
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  background: #eee;
+  cursor: grab;
+}
+
+.sim-panel-header:active {
+  cursor: grabbing;
+}
+
+.sim-panel-title {
+  font-weight: 600;
+}
+
+.sim-panel-close {
+  font-size: 22px;
+  line-height: 22px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.sim-panel-body {
+  padding: 10px;
+  height: calc(100% - 38px);
+  overflow: auto;
+}
+
+.sim-link {
+    position: fixed; 
+    height: 2px;
+    background: red;
+    transform-origin: 0 50%;
+    pointer-events: none;
+}

@@ -1,0 +1,7 @@
+.app-terminal .term {
+  white-space: pre-wrap;
+  outline: none;
+  font-family: monospace;
+  overflow: auto;
+  height: 100%;
+}

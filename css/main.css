@@ -1,113 +1,14 @@
-.sim-root {
-  position: relative;
-  width: 100%;
-  height: 80vh;
-  border: 1px solid #333;
-  overflow: hidden;
-  user-select: none;
-}
-
-.sim-links {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;  /* makes nodes clickable */
-}
-
-.sim-nodes {
-  position: absolute;
-  inset: 0;
-}
-
-.sim-node {
-  position: absolute;
-  width: 110px;
-  height: 70px;
-  border: 2px solid #222;
-  border-radius: 10px;
-  background: #f3f3f3;
-  display: grid;
-  place-items: center;
-  cursor: grab;
-}
-
-.sim-node:active {
-  cursor: grabbing;
-}
-
-.sim-node .title {
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.sim-port {
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  background: #222;
-  border-radius: 50%;
-}
-
-.sim-port.right { right: -5px; top: 50%; transform: translateY(-50%); }
-.sim-port.left  { left:  -5px; top: 50%; transform: translateY(-50%); }
-
-/* Links */
-.sim-links line {
-  stroke: #111;
-  stroke-width: 2;
-}
+@import "sim.css"; /* SimIcon, SimPanel */
+@import "os.css";  /* OS */
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-.app-terminal .term {
-  white-space: pre-wrap;
-  outline: none;
-  font-family: monospace;
-  overflow: auto;
-  height: 100%;
-}
 
 
 
 .fp-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.35);
+  background: rgba(0, 0, 0, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -132,7 +33,7 @@
 
 .fp-list {
   overflow: auto;
-  border: 1px solid rgba(255,255,255,0.12);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   padding: 6px;
   min-height: 220px;
@@ -146,12 +47,17 @@
 }
 
 .fp-item:hover {
-  background: rgba(255,255,255,0.08);
+  background: rgba(255, 255, 255, 0.08);
 }
 
-.fp-dir::before { content: "📁 "; }
-.fp-file::before { content: "📄 "; }
+.fp-dir::before {
+  content: "📁 ";
+}
+
+.fp-file::before {
+  content: "📄 ";
+}
 
 .fp-item.is-selected {
-  background: rgba(255,255,255,0.14);
+  background: rgba(255, 255, 255, 0.14);
 }

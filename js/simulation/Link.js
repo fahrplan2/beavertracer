@@ -10,6 +10,8 @@ import { PC } from "./PC.js";
 export class Link extends SimulatedObject {
 
     link;
+    A;
+    B;
 
     /**
      * 
@@ -25,6 +27,8 @@ export class Link extends SimulatedObject {
         if (portA == null || portB == null) {
             throw new Error("No free ports availbie");
         }
+        this.A = A;
+        this.B = B;
         this.link = new EthernetLink(portA, portB);
     }
 
@@ -59,8 +63,34 @@ export class Link extends SimulatedObject {
         this.link.destroy();
     }
 
-    renderIcon() {
-        const dummy = document.createElement("div");
-        return dummy;
+    /**@override */
+    render() {
+        this.root.className = "sim-link";
+        this.root.textContent = this.name;
+        return this.root;
+    }
+
+    redrawLinks() {
+        if (!this.root || !(this.root instanceof HTMLElement)) return;
+
+        const line = this.root;
+
+        const x1 = this.A.getX();
+        const y1 = this.A.getY();
+        const x2 = this.B.getX();
+        const y2 = this.B.getY();
+
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+
+        const length = Math.hypot(dx, dy);
+        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+        line.style.width = `${length}px`;
+        line.style.left = `${x1}px`;
+        line.style.top = `${y1}px`;
+
+        // Try angle first; if it's mirrored, use -angle
+        line.style.transform = `rotate(${angle}deg)`;
     }
 }

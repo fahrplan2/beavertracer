@@ -11,7 +11,11 @@ export class PC extends SimulatedObject {
         super(name);
         this.root.classList.add("pc");
         this.os = new OS(name);
-        this.os.mount(this.root);
+
+        /**@param {HTMLElement} body */
+        this.onPanelCreated = (body) => {
+            this.os.mount(body);
+        };
     }
     
 }
