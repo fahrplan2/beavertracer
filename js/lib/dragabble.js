@@ -5,9 +5,17 @@
  */
 
 /**
+ * boundary can be:
+ * - HTMLElement (static)
+ * - null/undefined (no boundary)
+ * - () => HTMLElement|null (dynamic / late-bound boundary)
+ * @typedef {HTMLElement | null | undefined | (() => HTMLElement | null)} BoundaryLike
+ */
+
+/**
  * @typedef {Object} DraggableOptions
  * @property {HTMLElement=} handle
- * @property {HTMLElement | null=} boundary
+ * @property {BoundaryLike=} boundary
  * @property {boolean=} clampToViewport
  * @property {boolean=} preventTextSelection
  * @property {boolean=} setCursor
@@ -42,10 +50,22 @@
  * @returns {ListenerTarget}
  */
 function asListenerTarget(t) {
-  // All of HTMLElement/Document/Window implement add/removeEventListener at runtime.
-
   //@ts-ignore
-  return (t);
+  return t;
+}
+
+/**
+ * Resolve BoundaryLike to an actual HTMLElement|null (dynamic supported).
+ * @param {BoundaryLike} boundaryLike
+ * @returns {HTMLElement|null}
+ */
+function resolveBoundary(boundaryLike) {
+  try {
+    if (typeof boundaryLike === "function") return boundaryLike() ?? null;
+    return boundaryLike instanceof HTMLElement ? boundaryLike : null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -81,11 +101,11 @@ function applyTranslate(el, x, y) {
  * @param {HTMLElement} el
  * @param {{x:number, y:number}} proposed
  * @param {{x:number, y:number}} current
- * @param {HTMLElement | null | undefined} boundary
+ * @param {BoundaryLike} boundaryLike
  * @param {boolean} clampToViewport
  * @returns {{x:number, y:number}}
  */
-function clampTranslate(el, proposed, current, boundary, clampToViewport) {
+function clampTranslate(el, proposed, current, boundaryLike, clampToViewport) {
   const elRectNow = el.getBoundingClientRect();
 
   const dx = proposed.x - current.x;
@@ -99,8 +119,15 @@ function clampTranslate(el, proposed, current, boundary, clampToViewport) {
   /** @type {{left:number, top:number, right:number, bottom:number} | null} */
   let box = null;
 
+  const boundary = resolveBoundary(boundaryLike);
+
   if (boundary instanceof HTMLElement) {
     const b = boundary.getBoundingClientRect();
+
+    // If boundary has no size yet (e.g. freshly re-rendered), do NOT clamp.
+    // Clamping to a 0×0 box makes everything snap to the box edge (looks like 0,0).
+    if (b.width < 2 || b.height < 2) return proposed;
+
     const cs = getComputedStyle(boundary);
     const bl = parseFloat(cs.borderLeftWidth) || 0;
     const bt = parseFloat(cs.borderTopWidth) || 0;

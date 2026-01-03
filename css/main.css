@@ -1,3 +1,9 @@
 @import "sim.css"; /* SimIcon, SimPanel */
 @import "os.css";  /* OS */
 @import "apps.css"; /* OS-App-specific stuff */
+
+
+:root {
+    /* Set this one. Works great with OKLCH (recommended). */
+    --primary: oklch(62.489% 0.15353 245.072);
+}

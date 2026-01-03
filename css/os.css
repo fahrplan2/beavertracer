@@ -3,9 +3,6 @@
    Change ONLY --primary.
    ========================= */
 :root {
-    /* Set this one. Works great with OKLCH (recommended). */
-    --primary: oklch(70.604% 0.15584 239.38);
-
     /* Derived colors (auto) */
     --primary-strong: color-mix(in oklch, var(--primary), black 18%);
     --primary-soft: color-mix(in oklch, var(--primary), white 78%);
@@ -168,7 +165,8 @@
    ========================= */
 
 .process-root button,
-.os-button-back {
+.os-button-back,
+.sim-toolbar button {
     appearance: none;
     border: 1px solid color-mix(in oklch, var(--text), transparent 84%);
     background: color-mix(in oklch, white, var(--primary) 10%);
@@ -185,20 +183,24 @@
 }
 
 .process-root button:hover,
-.os-button-back:hover {
+.os-button-back:hover,
+.sim-toolbar button:hover {
     background: color-mix(in oklch, var(--primary), white 86%);
     border-color: color-mix(in oklch, var(--primary), var(--text) 80%);
     box-shadow: 0 6px 14px rgba(0, 0, 0, 0.10);
 }
 
 .process-root button:active,
-.os-button-back:active {
+.os-button-back:active,
+.sim-toolbar button:active {
     transform: translateY(1px);
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.10);
 }
 
 /* Disabled */
-.process-root button:disabled {
+.process-root button:disabled,
+.os-button-back:disabled,
+.sim-toolbar button:disabled {
     cursor: not-allowed;
     opacity: 0.55;
     box-shadow: none;

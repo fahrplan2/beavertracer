@@ -74,7 +74,6 @@ export class NetworkInterface extends Observable {
      * @param {String} [opts.name] name of the interface
      */
     configure(opts={}) {
-        console.log(opts);
         this.ip = (opts.ip ?? IPOctetsToNumber(192,168,0,10));
         this.netmask = (opts.netmask ?? IPOctetsToNumber(255,255,255,0));
 

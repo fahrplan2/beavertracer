@@ -43,6 +43,7 @@
   resize: none;          /* not resizable */
   font-family: "Monospace regular","Courier New", monospace;
   box-sizing: border-box;
+  background-color: white;
 }
 
 .app-editor .editor-area {

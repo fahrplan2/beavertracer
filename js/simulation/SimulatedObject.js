@@ -140,7 +140,7 @@ export class SimulatedObject {
             onClick: () => {
                 this.setPanelOpen(!this.panelOpen);
             },
-            boundary: SimControl.movementBoundary
+            boundary: () => SimControl.movementBoundary
         });
     }
 
@@ -152,7 +152,7 @@ export class SimulatedObject {
         if (handle instanceof HTMLElement) {
             makeDraggable(this.panelEl, {
                 handle: handle,
-                boundary: SimControl.movementBoundary
+                boundary: () => SimControl.movementBoundary
             });
         }
         makeWindow(this.panelEl);

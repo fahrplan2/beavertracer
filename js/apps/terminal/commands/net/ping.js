@@ -3,6 +3,7 @@
 import { ipNumberToString, ipStringToNumber } from "../lib/ip.js";
 import { sleep, nowMs } from "../lib/time.js";
 import { sleepAbortable } from "../lib/abort.js";
+import { SimControl } from "../../../../SimControl.js";
 
 /** @type {import("../types.js").Command} */
 export const ping = {
@@ -11,8 +12,8 @@ export const ping = {
         // parse args (same semantics you had)
         const argv = [...args];
         let count = 4;
-        let intervalMs = 1000;
-        let timeoutMs = 1000;
+        let intervalMs = 5*SimControl.tick;
+        let timeoutMs = 50*SimControl.tick;
         let host = "";
 
         const usage = () => "usage: ping [-c count] [-i interval] [-W timeout] <host>";
@@ -115,7 +116,7 @@ export const ping = {
                 ctx.println(`Request timeout for icmp_seq ${seq}`);
             }
 
-            if (seq < count) await sleep(intervalMs);
+            if (seq < count) await sleepAbortable(intervalMs, ctx.signal);
         }
 
         const elapsedMs = Math.max(1, Math.round(nowMs() - started));
