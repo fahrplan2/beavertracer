@@ -76,7 +76,7 @@
 }
 
 .sim-panel-body {
-  padding: 10px;
+  padding: 0px;
   height: calc(100% - 38px);
   overflow: auto;
 }

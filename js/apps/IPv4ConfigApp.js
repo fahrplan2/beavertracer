@@ -49,7 +49,7 @@ export class IPv4ConfigApp extends GenericProcess {
     const loadBtn = UILib.button("Load", () => this._load());
     const applyBtn = UILib.button("Apply", () => this._apply(), { primary: true });
 
-    const panel = UILib.panel("IPv4 Configurator", [
+    const panel = UILib.panel([
       UILib.row("Interface", ifSel),
       UILib.row("IP", ipEl),
       UILib.row("Netmask", maskEl),

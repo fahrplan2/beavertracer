@@ -96,7 +96,7 @@ export class UDPEchoApp extends GenericProcess {
 
     const status = UI.el("div", { className: "msg" });
 
-    const panel = UI.panel("UDP Echo Server", [
+    const panel = UI.panel([
       UI.row("Listen Port", portInput),
       UI.buttonRow([start, stop, clear, close]),
       status,

@@ -181,17 +181,16 @@ export class UILib {
 
   /**
    * Simple panel container with title.
-   * @param {string} title
    * @param {Array<HTMLElement|Node|string|null|undefined|false>} children
    * @param {Object} [opts]
    * @param {string|string[]} [opts.className]
    * @returns {HTMLDivElement}
    */
-  static panel(title, children, opts = {}) {
+  static panel(children, opts = {}) {
     /** @type {HTMLDivElement} */
     const p = UILib.el("div", {
       className: opts.className ?? "panel",
-      children: [UILib.el("h3", { text: title }), ...children],
+      children: children,
     });
     return p;
   }

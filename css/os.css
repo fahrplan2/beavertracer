@@ -1,18 +1,352 @@
-.app-terminal .term {
-  font-family: "Monospace regular","Courier New", monospace;
-  font-size: 18px;
-  line-height: 18px;
-  white-space: pre;
-  overflow: hidden;
-  background-color: #202020;
-  color: #00FF00;
-  padding: 7px;
+/* =========================
+   One-knob theme
+   Change ONLY --primary.
+   ========================= */
+:root {
+    /* Set this one. Works great with OKLCH (recommended). */
+    --primary: oklch(70.604% 0.15584 239.38);
+
+    /* Derived colors (auto) */
+    --primary-strong: color-mix(in oklch, var(--primary), black 18%);
+    --primary-soft: color-mix(in oklch, var(--primary), white 78%);
+    --primary-tint: color-mix(in oklch, var(--primary), white 88%);
+
+    /* Background gradient based on primary */
+    --bg1: color-mix(in oklch, var(--primary), white 92%);
+    --bg2: color-mix(in oklch, var(--primary), white 82%);
+
+    /* Surfaces & text */
+    --surface: color-mix(in oklch, white, var(--primary) 90%);
+    --surface-strong: color-mix(in oklch, white, var(--primary) 10%);
+
+    --text: #142033;
+    --muted: color-mix(in oklch, var(--text), transparent 40%);
+
+    /* Elevation */
+    --shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
+    --shadow-soft: 0 6px 14px rgba(0, 0, 0, 0.10);
 }
 
-.app-terminal .term:focus {
-  outline: none;
+/* Background */
+.os-root {
+    width: 100%;
+    height: 100%;
+    background:
+        radial-gradient(900px 500px at 20% 0%,
+            color-mix(in oklch, var(--bg1), white 30%) 0%,
+            transparent 60%),
+        linear-gradient(to bottom, var(--bg1), var(--bg2));
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--text);
 }
 
-.app-terminal .term::selection {
-  background: rgba(255, 255, 255, 0.2);
+/* ------- Menu (Android launcher vibe) ------- */
+.menu {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 22px;
+    padding: 26px;
+    justify-items: center;
+}
+
+.menu button {
+    appearance: none;
+    border: none;
+    background: none;
+
+    width: 110px;
+    height: 138px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+
+    cursor: pointer;
+    border-radius: 18px;
+
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 650;
+    text-align: center;
+    line-height: 1.2;
+
+    transition: background 0.15s ease, transform 0.05s ease;
+}
+
+/* Icon tile derived from primary */
+.menu button::before {
+    content: "";
+    width: 62px;
+    height: 62px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+
+    border-radius: 18px;
+    background:
+        radial-gradient(18px 18px at 30% 25%, rgba(255, 255, 255, 0.85), transparent 60%),
+        linear-gradient(135deg, var(--primary-soft), var(--primary));
+
+    box-shadow: var(--shadow-soft);
+}
+
+.menu button:hover {
+    background: color-mix(in oklch, var(--primary), white 90%);
+}
+
+.menu button:active {
+    transform: scale(0.96);
+    background: color-mix(in oklch, var(--primary), white 85%);
+}
+
+.menu button:focus-visible {
+    outline: 2px solid var(--primary-strong);
+    outline-offset: 4px;
+}
+
+/* ------- Window frame (matches menu) ------- */
+.os-frame {
+    overflow: hidden;
+    background: var(--surface-strong);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(10px);
+}
+
+/* Title bar: subtle surface + accent */
+.os-frame-bar {
+    display: flex;
+    align-items: center;
+    height: 44px;
+    padding: 0 14px;
+
+    background: var(--surface);
+    border-bottom: 1px solid color-mix(in oklch, var(--text), transparent 88%);
+}
+
+.os-frame-title {
+    flex: 1;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 750;
+    color: var(--text);
+    letter-spacing: 0.2px;
+    pointer-events: none;
+}
+
+
+
+/************** SYSTEM WIDE THEME *******************/
+
+/* =========================
+   System baseline (scoped)
+   Apply to UI inside .process-root
+   ========================= */
+
+.process-root {
+    /* spacing + typography baseline */
+    padding: 14px;
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+/* make form controls inherit font by default */
+.process-root :is(button, input, select, textarea) {
+    font: inherit;
+    color: inherit;
+}
+
+/* consistent focus ring */
+.process-root :is(button, a, input, select, textarea, summary):focus-visible {
+    outline: 2px solid var(--primary-strong);
+    outline-offset: 3px;
+}
+
+/* =========================
+   Buttons
+   ========================= */
+
+.process-root button,
+.os-button-back {
+    appearance: none;
+    border: 1px solid color-mix(in oklch, var(--text), transparent 84%);
+    background: color-mix(in oklch, white, var(--primary) 10%);
+    color: var(--text);
+
+    padding: 8px 12px;
+    border-radius: 3px;
+    padding-left: 10px;
+    cursor: pointer;
+    user-select: none;
+
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+    transition: background 0.15s ease, transform 0.05s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.process-root button:hover,
+.os-button-back:hover {
+    background: color-mix(in oklch, var(--primary), white 86%);
+    border-color: color-mix(in oklch, var(--primary), var(--text) 80%);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.10);
+}
+
+.process-root button:active,
+.os-button-back:active {
+    transform: translateY(1px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.10);
+}
+
+/* Disabled */
+.process-root button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+    box-shadow: none;
+}
+
+/* Primary button opt-in:
+   <button class="primary">OK</button> */
+.process-root button.primary {
+    border-color: color-mix(in oklch, var(--primary), black 10%);
+    background: linear-gradient(to bottom,
+            color-mix(in oklch, var(--primary), white 12%),
+            var(--primary));
+    color: white;
+}
+
+.process-root button.primary:hover {
+    background: linear-gradient(to bottom,
+            color-mix(in oklch, var(--primary-strong), white 16%),
+            var(--primary-strong));
+}
+
+/* Destructive opt-in:
+   <button class="danger">Delete</button> */
+.process-root button.danger {
+    --danger: oklch(0.62 0.2 25);
+    border-color: color-mix(in oklch, var(--danger), black 12%);
+    background: color-mix(in oklch, var(--danger), white 85%);
+}
+
+.process-root button.danger:hover {
+    background: color-mix(in oklch, var(--danger), white 75%);
+}
+
+/* =========================
+   Inputs / Textareas / Selects
+   ========================= */
+
+.process-root :is(input, textarea, select) {
+    appearance: none;
+    width: auto;
+    /* don’t force 100% globally */
+    max-width: 100%;
+
+    background: var(--surface-strong);
+    border: 1px solid color-mix(in oklch, var(--text), transparent 82%);
+    border-radius: 12px;
+
+    padding: 8px 10px;
+
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.65) inset,
+        0 0 0 0 rgba(0, 0, 0, 0);
+
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.process-root textarea {
+    min-height: 90px;
+    resize: vertical;
+}
+
+/* Placeholder */
+.process-root :is(input, textarea)::placeholder {
+    color: var(--muted);
+}
+
+/* “Active” field state */
+.process-root :is(input, textarea, select):focus {
+    border-color: color-mix(in oklch, var(--primary), var(--text) 80%);
+    box-shadow:
+        0 0 0 4px color-mix(in oklch, var(--primary), transparent 82%),
+        0 1px 0 rgba(255, 255, 255, 0.65) inset;
+}
+
+/* Disabled fields */
+.process-root :is(input, textarea, select):disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: color-mix(in oklch, var(--surface-strong), black 4%);
+}
+
+/* =========================
+   Select: custom arrow
+   ========================= */
+
+.process-root select {
+    padding-right: 34px;
+    background-image:
+        linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+        linear-gradient(135deg, var(--muted) 50%, transparent 50%),
+        linear-gradient(to right, transparent, transparent);
+    background-position:
+        calc(100% - 18px) 55%,
+        calc(100% - 12px) 55%,
+        0 0;
+    background-size:
+        6px 6px,
+        6px 6px,
+        100% 100%;
+    background-repeat: no-repeat;
+}
+
+/* =========================
+   Checkboxes / radios
+   ========================= */
+
+.process-root input[type="checkbox"],
+.process-root input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border-radius: 6px;
+    vertical-align: middle;
+}
+
+.process-root input[type="radio"] {
+    border-radius: 999px;
+}
+
+/* Checked state */
+.process-root input[type="checkbox"]:checked,
+.process-root input[type="radio"]:checked {
+    border-color: color-mix(in oklch, var(--primary), black 10%);
+    background: var(--primary);
+    box-shadow: 0 0 0 4px color-mix(in oklch, var(--primary), transparent 82%);
+}
+
+/* =========================
+   Links + separators + small helpers
+   ========================= */
+
+.process-root a {
+    color: var(--primary-strong);
+    text-decoration: none;
+}
+
+.process-root a:hover {
+    text-decoration: underline;
+}
+
+.process-root hr {
+    border: none;
+    height: 1px;
+    background: color-mix(in oklch, var(--text), transparent 88%);
+    margin: 14px 0;
+}
+
+/* Nice default spacing for common blocks */
+.process-root :is(p, ul, ol) {
+    margin: 0 0 10px;
 }

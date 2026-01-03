@@ -70,6 +70,7 @@ export class Link extends SimulatedObject {
         return this.root;
     }
 
+
     redrawLinks() {
         if (!this.root || !(this.root instanceof HTMLElement)) return;
 

@@ -43,7 +43,7 @@ export class VirtualFileSystem {
       mtime: now,
     };
 
-    // optional default tree
+    //Default File System
     this.mkdir("/home", { recursive: true });
     this.mkdir("/bin", { recursive: true });
     this.writeFile("/home/notes.txt", "hello vfs\n");
@@ -214,5 +214,66 @@ export class VirtualFileSystem {
       if (next.type !== "dir") throw new Error("not a directory: " + abs);
       cur = next;
     }
+  }
+
+   /**
+   * Remove a file (POSIX-like unlink). Fails if path is a directory.
+   * @param {string} path
+   */
+  unlink(path) {
+    const abs = this._normalize(path);
+    if (abs === "/") throw new Error("cannot unlink /");
+
+    const { parent, name } = this._getParent(abs);
+    const node = parent.children.get(name);
+
+    if (!node) throw new Error("no such file or directory: " + abs);
+    if (node.type !== "file") throw new Error("is a directory: " + abs);
+
+    parent.children.delete(name);
+    parent.mtime = Date.now();
+  }
+
+   /**
+   * Remove a directory.
+   * By default, the directory must be empty.
+   *
+   * @param {string} path
+   * @param {{ recursive?: boolean }} [opts]
+   */
+  rmdir(path, opts = {}) {
+    const abs = this._normalize(path);
+    if (abs === "/") throw new Error("cannot remove root directory");
+
+    const { parent, name } = this._getParent(abs);
+    const node = parent.children.get(name);
+
+    if (!node) throw new Error("no such file or directory: " + abs);
+    if (node.type !== "dir") throw new Error("not a directory: " + abs);
+
+    if (!opts.recursive && node.children.size > 0) {
+      throw new Error("directory not empty: " + abs);
+    }
+
+    if (opts.recursive) {
+      this._removeTree(node);
+    }
+
+    parent.children.delete(name);
+    parent.mtime = Date.now();
+  }
+
+  /**
+   * Recursively remove directory contents (internal helper)
+   * @param {DirNode} dir
+   */
+  _removeTree(dir) {
+    for (const child of dir.children.values()) {
+      if (child.type === "dir") {
+        this._removeTree(child);
+      }
+      // files are just dropped
+    }
+    dir.children.clear();
   }
 }

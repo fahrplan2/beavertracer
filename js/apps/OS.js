@@ -2,13 +2,13 @@
 
 import { GenericProcess } from "./GenericProcess.js";
 import { IPForwarder } from "../devices/IPForwarder.js";
-import { HelloWorldApp } from "./HalloWeltApp.js";
 import { AboutApp } from "./AboutApp.js";
 import { IPv4ConfigApp } from "./IPv4ConfigApp.js";
 import { UDPEchoApp } from "./UDPEchoApp.js";
 import { TerminalApp } from "./TerminalApp.js";
 import { VirtualFileSystem } from "./lib/VirtualFileSystem.js";
 import { TextEditorApp } from "./TextEditorApp.js";
+import { t } from "../i18n/index.js";
 
 export class OS {
     name;
@@ -47,12 +47,12 @@ export class OS {
     }
 
     _init() {
-        this.registerMenuItem("Hallo Welt",this.exec(HelloWorldApp));
-        this.registerMenuItem("About",this.exec(AboutApp));
-        this.registerMenuItem("IPv4Config",this.exec(IPv4ConfigApp));
-        this.registerMenuItem("UDPEchoApp",this.exec(UDPEchoApp));
-        this.registerMenuItem("TerminalApp",this.exec(TerminalApp));
-        this.registerMenuItem("TextEditorApp",this.exec(TextEditorApp));
+        this.registerMenuItem(t("apps.name.terminal"), this.exec(TerminalApp));
+        this.registerMenuItem(t("apps.name.texteditor"), this.exec(TextEditorApp));
+        this.registerMenuItem(t("apps.name.ipv4config"), this.exec(IPv4ConfigApp));
+        this.registerMenuItem(t("apps.name.udpecho"), this.exec(UDPEchoApp));
+        this.registerMenuItem(t("apps.name.texteditor"), this.exec(TextEditorApp));
+        this.registerMenuItem(t("apps.name.about"), this.exec(AboutApp));
     }
 
 
@@ -155,7 +155,7 @@ export class OS {
         if (view.pid !== 0) {
             const app = this._getFocusedApp();
             if (app && view.appRoot) {
-                app.onMount(view.appRoot); 
+                app.onMount(view.appRoot);
             }
         }
 
@@ -199,19 +199,20 @@ export class OS {
         frame.classList.add("os-frame");
 
         const bar = document.createElement("div");
-        const back = document.createElement("button");
+        bar.classList.add("os-frame-bar");
 
+
+        const back = document.createElement("button");
         back.classList.add("os-button-back");
         back.textContent = "← Menü";
-
         back.onclick = () => this.unfocus();
-
         bar.appendChild(back);
 
         const title = document.createElement("div");
         title.classList.add("os-frame-title");
         title.textContent = (this._getFocusedApp()?.title ?? "Untitled");
         bar.appendChild(title);
+
 
         frame.appendChild(bar);
         frame.appendChild(appRoot);
