@@ -1,0 +1,412 @@
+/* =========================
+   One-knob theme
+   Change ONLY --primary.
+   ========================= */
+:root {
+    /* Derived colors (auto) */
+    --primary-strong: color-mix(in oklch, var(--primary), black 18%);
+    --primary-soft: color-mix(in oklch, var(--primary), white 78%);
+    --primary-tint: color-mix(in oklch, var(--primary), white 88%);
+
+    /* Background gradient based on primary */
+    --bg1: color-mix(in oklch, var(--primary), white 92%);
+    --bg2: color-mix(in oklch, var(--primary), white 82%);
+
+    /* Surfaces & text */
+    --surface: color-mix(in oklch, white, var(--primary) 90%);
+    --surface-strong: color-mix(in oklch, white, var(--primary) 10%);
+
+    --text: #142033;
+    --muted: color-mix(in oklch, var(--text), transparent 40%);
+
+    /* Elevation */
+    --shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
+    --shadow-soft: 0 6px 14px rgba(0, 0, 0, 0.10);
+}
+
+/* Background */
+.os-root {
+    width: 100%;
+    height: 100%;
+    background:
+        radial-gradient(900px 500px at 20% 0%,
+            color-mix(in oklch, var(--bg1), white 30%) 0%,
+            transparent 60%),
+        linear-gradient(to bottom, var(--bg1), var(--bg2));
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--text);
+}
+
+/* ------- Menu (Android launcher vibe) ------- */
+.menu {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 12px;
+    padding: 20px;
+}
+
+.menu button {
+    appearance: none;
+    border: none;
+    background: none;
+
+    width: 110px;
+    height: 118px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+
+    cursor: pointer;
+    border-radius: 18px;
+
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 650;
+    text-align: center;
+    line-height: 1.2;
+
+    transition: background 0.15s ease, transform 0.05s ease;
+}
+
+/* Icon tile derived from primary */
+.menu button::before {
+    content: "";
+    width: 62px;
+    height: 62px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+
+    border-radius: 18px;
+    background:
+        radial-gradient(18px 18px at 30% 25%, rgba(255, 255, 255, 0.85), transparent 60%),
+        linear-gradient(135deg, var(--primary-soft), var(--primary));
+
+    box-shadow: var(--shadow-soft);
+}
+
+/* Icon auf der Kachel */
+.menu button::after {
+    content: "";
+    position: absolute;
+
+    width: 40px;
+    height: 40px;
+
+    /* exakt mittig auf der 62px-Kachel */
+    top: 21px;            /* 10px (Tile margin-top) + (62-40)/2 */
+    left: 50%;
+    transform: translateX(-50%);
+
+    background: currentColor;
+    opacity: 0.95;
+
+    -webkit-mask: var(--icon) center / contain no-repeat;
+    mask: var(--icon) center / contain no-repeat;
+
+    filter: drop-shadow(0 1px 0 rgba(255,255,255,0.35));
+
+    pointer-events: none;
+}
+
+/* damit Text/Spacing weiterhin stimmt */
+.menu button {
+    position: relative;
+}
+
+.menu button:hover {
+    background: color-mix(in oklch, var(--primary), white 90%);
+}
+
+.menu button:active {
+    transform: scale(0.96);
+    background: color-mix(in oklch, var(--primary), white 85%);
+}
+
+.menu button:focus-visible {
+    outline: 2px solid var(--primary-strong);
+    outline-offset: 4px;
+}
+
+/* ------- Window frame (matches menu) ------- */
+.os-frame {
+    overflow: hidden;
+    background: var(--surface-strong);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(10px);
+}
+
+/* Title bar: subtle surface + accent */
+.os-frame-bar {
+    display: flex;
+    align-items: center;
+    height: 44px;
+    padding: 0 14px;
+
+    background: var(--surface);
+    border-bottom: 1px solid color-mix(in oklch, var(--text), transparent 88%);
+}
+
+.os-frame-title {
+    flex: 1;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 750;
+    color: var(--text);
+    letter-spacing: 0.2px;
+    pointer-events: none;
+}
+
+
+
+/************** SYSTEM WIDE THEME *******************/
+
+/* =========================
+   System baseline (scoped)
+   Apply to UI inside .process-root
+   ========================= */
+
+.process-root {
+    /* spacing + typography baseline */
+    padding: 14px;
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+/* make form controls inherit font by default */
+.process-root :is(button, input, select, textarea) {
+    font: inherit;
+    color: inherit;
+}
+
+/* consistent focus ring */
+.process-root :is(button, a, input, select, textarea, summary):focus-visible {
+    outline: 2px solid var(--primary-strong);
+    outline-offset: 3px;
+}
+
+/* =========================
+   Buttons
+   ========================= */
+
+.process-root button,
+.os-button-back,
+.sim-toolbar button {
+    appearance: none;
+    border: 1px solid color-mix(in oklch, var(--text), transparent 84%);
+    background: color-mix(in oklch, white, var(--primary) 10%);
+    color: var(--text);
+
+    padding: 8px 12px;
+    border-radius: 3px;
+    padding-left: 10px;
+    cursor: pointer;
+    user-select: none;
+
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+    transition: background 0.15s ease, transform 0.05s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.process-root button:hover,
+.os-button-back:hover,
+.sim-toolbar button:hover {
+    background: color-mix(in oklch, var(--primary), white 86%);
+    border-color: color-mix(in oklch, var(--primary), var(--text) 80%);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.10);
+}
+
+.process-root button:active,
+.os-button-back:active,
+.sim-toolbar button:active {
+    transform: translateY(1px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.10);
+}
+
+/* Disabled */
+.process-root button:disabled,
+.os-button-back:disabled,
+.sim-toolbar button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+    box-shadow: none;
+}
+
+/* Primary button opt-in:
+   <button class="primary">OK</button> */
+.process-root button.primary {
+    border-color: color-mix(in oklch, var(--primary), black 10%);
+    background: linear-gradient(to bottom,
+            color-mix(in oklch, var(--primary), white 12%),
+            var(--primary));
+    color: white;
+}
+
+.process-root button.primary:hover {
+    background: linear-gradient(to bottom,
+            color-mix(in oklch, var(--primary-strong), white 16%),
+            var(--primary-strong));
+}
+
+/* Destructive opt-in:
+   <button class="danger">Delete</button> */
+.process-root button.danger {
+    --danger: oklch(0.62 0.2 25);
+    border-color: color-mix(in oklch, var(--danger), black 12%);
+    background: color-mix(in oklch, var(--danger), white 85%);
+}
+
+.process-root button.danger:hover {
+    background: color-mix(in oklch, var(--danger), white 75%);
+}
+
+/* =========================
+   Inputs / Textareas / Selects
+   ========================= */
+
+.process-root :is(input, textarea, select) {
+    appearance: none;
+    width: auto;
+    /* don’t force 100% globally */
+    max-width: 100%;
+
+    background: var(--surface-strong);
+    border: 1px solid color-mix(in oklch, var(--text), transparent 82%);
+    border-radius: 12px;
+
+    padding: 8px 10px;
+
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.65) inset,
+        0 0 0 0 rgba(0, 0, 0, 0);
+
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.process-root textarea {
+    min-height: 90px;
+    resize: vertical;
+}
+
+/* Placeholder */
+.process-root :is(input, textarea)::placeholder {
+    color: var(--muted);
+}
+
+/* “Active” field state */
+.process-root :is(input, textarea, select):focus {
+    border-color: color-mix(in oklch, var(--primary), var(--text) 80%);
+    box-shadow:
+        0 0 0 4px color-mix(in oklch, var(--primary), transparent 82%),
+        0 1px 0 rgba(255, 255, 255, 0.65) inset;
+}
+
+/* Disabled fields */
+.process-root :is(input, textarea, select):disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: color-mix(in oklch, var(--surface-strong), black 4%);
+}
+
+/* =========================
+   Select: custom arrow
+   ========================= */
+
+.process-root select {
+    padding-right: 34px;
+    background-image:
+        linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+        linear-gradient(135deg, var(--muted) 50%, transparent 50%),
+        linear-gradient(to right, transparent, transparent);
+    background-position:
+        calc(100% - 18px) 55%,
+        calc(100% - 12px) 55%,
+        0 0;
+    background-size:
+        6px 6px,
+        6px 6px,
+        100% 100%;
+    background-repeat: no-repeat;
+}
+
+/* =========================
+   Checkboxes / radios
+   ========================= */
+
+.process-root input[type="checkbox"],
+.process-root input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border-radius: 6px;
+    vertical-align: middle;
+}
+
+.process-root input[type="radio"] {
+    border-radius: 999px;
+}
+
+/* Checked state */
+.process-root input[type="checkbox"]:checked,
+.process-root input[type="radio"]:checked {
+    border-color: color-mix(in oklch, var(--primary), black 10%);
+    background: var(--primary);
+    box-shadow: 0 0 0 4px color-mix(in oklch, var(--primary), transparent 82%);
+}
+
+/* =========================
+   Links + separators + small helpers
+   ========================= */
+
+.process-root a {
+    color: var(--primary-strong);
+    text-decoration: none;
+}
+
+.process-root a:hover {
+    text-decoration: underline;
+}
+
+.process-root hr {
+    border: none;
+    height: 1px;
+    background: color-mix(in oklch, var(--text), transparent 88%);
+    margin: 14px 0;
+}
+
+/* Nice default spacing for common blocks */
+.process-root :is(p, ul, ol) {
+    margin: 0 0 10px;
+}
+
+
+/* =========================
+   Menu Icons (mask SVGs)
+   ========================= */
+
+/* Terminal > >_ */
+.menu button[data-icon="terminal"] {
+  --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm2 3 4 4-4 4 1.4 1.4L11.8 12 6.4 6.6 5 8zm6 8h6v-2h-6v2z'/%3E%3C/svg%3E");
+}
+
+/* Texteditor > lines */
+.menu button[data-icon="texteditor"] {
+  --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 3h12l4 4v14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm11 1.5V8h3.5L15 4.5zM6 11h12v2H6v-2zm0 4h12v2H6v-2zm0-8h6v2H6V7z'/%3E%3C/svg%3E");
+}
+
+/* Settings / Network / Tools > gear */
+.menu button[data-icon="settings"] {
+  --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.4 7.4 0 0 0-1.63-.94l-.36-2.54A.5.5 0 0 0 13.9 1h-3.8a.5.5 0 0 0-.49.42l-.36 2.54c-.58.23-1.12.54-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.71 7.48a.5.5 0 0 0 .12.64l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L2.83 14.52a.5.5 0 0 0-.12.64l1.92 3.32c.13.22.39.3.6.22l2.39-.96c.5.4 1.05.71 1.63.94l.36 2.54c.04.24.25.42.49.42h3.8c.24 0 .45-.18.49-.42l.36-2.54c.58-.23 1.12-.54 1.63-.94l2.39.96c.22.09.47 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58zM12 15.5A3.5 3.5 0 1 1 12 8a3.5 3.5 0 0 1 0 7.5z'/%3E%3C/svg%3E");
+}
+
+/* Browser > Sparktail (Beaver) */
+.menu button[data-icon="browser"] {
+  --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2c-4.4 0-8 3.1-8 7 0 2.6 1.6 4.9 4 6.1V22l2.5-1.5L13 22v-6.9c2.4-1.2 4-3.5 4-6.1 0-3.9-3.6-7-8-7zm-3 6a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm6 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm-6.5 4h7v2h-7v-2z'/%3E%3C/svg%3E");
+}
+
+/* About > info */
+.menu button[data-icon="about"] {
+  --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M11 17h2v-6h-2v6zm0-8h2V7h-2v2zm1-7C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z'/%3E%3C/svg%3E");
+}

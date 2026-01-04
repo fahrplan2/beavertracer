@@ -1,56 +1,208 @@
 //@ts-check
-
-import { Link } from "./simulation/Link.js";
 import { SimulatedObject } from "./simulation/SimulatedObject.js";
+import { Link } from "./simulation/Link.js";
+import { PCapViewer } from "./pcap/PCapViewer.js";
+import { TabController } from "./TabControler.js";
 
 export class SimControl {
-    static tick = 100;
-    static drawtick = 100;
+    static tick = 500;
 
-    /** @type { Array<SimulatedObject> } */
+    /** @type {Array<SimulatedObject>} */
     simobjects;
+    endStep = false;
 
-    endStep=false;
+    /** @type {HTMLElement|null} */
+    root;
 
-    constructor() {
-        this.simobjects=[];
-        window.setTimeout(() => this.draw(), SimControl.tick);
-        window.setTimeout(() => this.step(), SimControl.drawtick);
+    /** @type {HTMLDivElement|null} */
+    nodesLayer = null;
 
+    /** @type {number|null} */
+    timeoutId = null;
+
+    isPaused = false;
+
+    tickId = 0;
+
+    /**
+     * @type {HTMLElement|null} movement Boundary for user drag&drop
+     */
+    static movementBoundary;
+
+    /**
+     * @type {PCapViewer}
+     */
+    static pcapViewer;
+
+    /**
+     * @type {TabController}
+     */
+
+    static tabControler;
+
+    /**
+     * @param {HTMLElement|null} root
+     */
+    constructor(root) {
+        this.simobjects = [];
+        this.root = root;
+        this.render();
+        this.scheduleNextStep();
+        this._startRafLoop();
     }
 
-    draw() {
-        window.setTimeout(() => this.draw(), SimControl.drawtick);
+    scheduleNextStep() {
+        if (this.timeoutId !== null) window.clearTimeout(this.timeoutId);
+        if(this.isPaused) return;
+        this.timeoutId = window.setTimeout(() => this.step(), SimControl.tick);
     }
 
     step() {
         try {
-            for(let i=0;i<this.simobjects.length;i++) {
+            for (let i = 0; i < this.simobjects.length; i++) {
                 const x = this.simobjects[i];
                 if (x instanceof Link) {
-                    if(this.endStep) {
+                    if (this.endStep) {
                         x.step2();
                     } else {
                         x.step1();
+                        this.tickId++;
                     }
                 }
             }
         } catch (error) {
             console.error(error instanceof Error ? error.message : String(error));
         }
+
+        this.redrawLinks();
         this.endStep = !this.endStep;
-        window.setTimeout(() => this.step(), SimControl.tick);
+        this.scheduleNextStep();
+    }
+
+    /** @param {SimulatedObject} obj */
+    addObject(obj) {
+        if (this.simobjects.includes(obj)) return;
+        this.simobjects.push(obj);
+        this.render();
+    }
+
+    /** @param {SimulatedObject} obj */
+    setFocus(obj) {
+        // @ts-ignore (falls focusedObject nicht typisiert ist)
+        this.focusedObject = obj;
+        this.render();
     }
 
     /**
-     * 
-     * @param {SimulatedObject} obj 
+     * @param {number} ms 
      */
-    addObject(obj) {
-        if(this.simobjects.includes(obj)) {
-            return;
-        }
-        this.simobjects.push(obj);
+    setTick(ms) {
+        // sinnvolle Grenzen
+        SimControl.tick = Math.max(16, Math.min(5000, Math.round(ms)));
+        this.render(); // Toolbar-Label aktualisieren
+        this.scheduleNextStep(); // sofort neue Geschwindigkeit übernehmen
     }
-       
+
+    togglePause() {
+        this.isPaused = !this.isPaused;
+        this.render(); // Button-Text aktualisieren
+        this.scheduleNextStep();
+    }
+
+    render() {
+        const root = this.root;
+        if (!root) return;
+
+        root.replaceChildren();
+        root.classList.add("sim-root");
+
+        // ====== Toolbar oben ======
+        const toolbar = document.createElement("div");
+        toolbar.className = "sim-toolbar";
+        root.appendChild(toolbar);
+
+        // Play/Pause
+        const btnPause = document.createElement("button");
+        btnPause.type = "button";
+        btnPause.textContent = this.isPaused ? " Play" : "Pause";
+        btnPause.addEventListener("click", () => this.togglePause());
+        toolbar.appendChild(btnPause);
+
+        // Speed buttons
+        const speeds = [
+            { label: "0.25×", ms: 4000 },
+            { label: "0.5×", ms: 2000 },
+            { label: "1×", ms: 1000 },
+            { label: "2×", ms: 500 },
+            { label: "4×", ms: 250 },
+        ];
+
+        for (const s of speeds) {
+            const b = document.createElement("button");
+            b.type = "button";
+            b.textContent = s.label;
+            if (SimControl.tick === s.ms) b.classList.add("active");
+            b.addEventListener("click", () => this.setTick(s.ms));
+            toolbar.appendChild(b);
+        }
+
+        // ====== Nodes Layer ======
+        const nodes = document.createElement("div");
+        nodes.className = "sim-nodes";
+        root.appendChild(nodes);
+        this.nodesLayer = nodes;
+        SimControl.movementBoundary = nodes;
+
+        for (const obj of this.simobjects) {
+            const el = obj.render();
+            el.addEventListener("pointermove", () => {
+                this.redrawLinks();
+            });
+            nodes.appendChild(el);
+        }
+
+        this.redrawLinks();
+
+    }
+
+    redrawLinks() {
+        for (const obj of this.simobjects) {
+            if (obj instanceof Link) {
+                obj.redrawLinks();
+            }
+        }
+
+    }
+
+    running = true;
+
+    last = performance.now();
+
+    _startRafLoop() {
+        if (this._rafId != null) return;
+
+        this._rafLastTs = performance.now();
+
+        const loop = (ts) => {
+            this._rafId = requestAnimationFrame(loop);
+
+            const dt = ts - this._rafLastTs;
+            this._rafLastTs = ts;
+
+            // 1) Packet-Progress nur fortschreiben, wenn NICHT pausiert
+            if (!this.isPaused) {
+                for (const obj of this.simobjects) {
+                    if (obj instanceof Link) obj.advance(dt);
+                }
+            }
+
+            // 2) Rendern darf gerne IMMER laufen (damit Klick/Inspect geht)
+            for (const obj of this.simobjects) {
+                if (obj instanceof Link) obj.renderPacket();
+            }
+        };
+
+        this._rafId = requestAnimationFrame(loop);
+    }
 }
+
