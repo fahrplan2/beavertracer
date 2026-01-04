@@ -21,7 +21,7 @@ The script scans the source code for calls to the `t("…")` function and compar
 
 ```bash
 npm install -D @babel/parser
-````
+```
 
 ### Usage
 
@@ -47,5 +47,3 @@ node scripts/check-i18n.mjs \
   t(`app.title`)
   ```
 * Dynamic keys such as `t("menu." + id)` are intentionally ignored.
-
-```
