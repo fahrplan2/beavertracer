@@ -37,6 +37,10 @@ export class SimulatedObject {
     panelOpen = false;
 
 
+    /** @type {Set<SimulatedObject>} */
+    static instances = new Set();
+
+
     /**
      * callback when the panal was created
      * must be used e.g. for os->mount()
@@ -52,6 +56,7 @@ export class SimulatedObject {
         this.id = SimulatedObject.idnumber++;
         this.root = document.createElement("div");
         this.root.classList.add("sim-object");
+        SimulatedObject.instances.add(this);
     }
 
     /**
@@ -138,6 +143,8 @@ export class SimulatedObject {
         makeDraggable(this.iconEl, {
             handle: this.iconEl,
             onClick: () => {
+                //do not open while we are in EditMode
+                if (SimControl.isEditMode) return;
                 this.setPanelOpen(!this.panelOpen);
             },
             boundary: () => SimControl.movementBoundary
@@ -163,6 +170,9 @@ export class SimulatedObject {
      * @param {boolean} open 
      */
     setPanelOpen(open) {
+        //do not open when allready open or in Edit Mode
+        if (open && SimControl.isEditMode) return;
+
         this.panelOpen = open;
         this._applyPositions();
         this._applyPanelVisibility();
@@ -188,18 +198,55 @@ export class SimulatedObject {
     }
 
     getX() {
-        if (!this.iconEl) {
-            return 0;
-        }
+        if (!this.iconEl) return 0;
+
         const rect = this.iconEl.getBoundingClientRect();
+        const boundary = SimControl.movementBoundary;
+
+        if (boundary instanceof HTMLElement) {
+            const b = boundary.getBoundingClientRect();
+
+            // local to boundary content box:
+            return (rect.left - b.left) + boundary.scrollLeft - boundary.clientLeft + rect.width / 2;
+        }
+
         return rect.left + rect.width / 2;
     }
 
     getY() {
-        if (!this.iconEl) {
-            return 0;
-        }
+        if (!this.iconEl) return 0;
+
         const rect = this.iconEl.getBoundingClientRect();
+        const boundary = SimControl.movementBoundary;
+
+        if (boundary instanceof HTMLElement) {
+            const b = boundary.getBoundingClientRect();
+
+            // local to boundary content box:
+            return (rect.top - b.top) + boundary.scrollTop - boundary.clientTop + rect.height / 2;
+        }
+
         return rect.top + rect.height / 2;
+    }
+
+    destroy() {
+        SimulatedObject.instances.delete(this);
+        this.root.remove();
+    }
+
+    static closeAllPanels() {
+        for (const obj of SimulatedObject.instances) {
+            obj.setPanelOpen(false);
+        }
+    }
+
+    toJSON() {
+        return {
+            id: this.id,
+            name: this.name,
+            x: this.x, y: this.y,
+            px: this.px, py: this.py,
+            panelOpen: this.panelOpen
+        };
     }
 }

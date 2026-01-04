@@ -14,7 +14,7 @@ export class Switch extends SimulatedObject {
      */
     constructor(name) {
         super(name);
-        this.device = new SwitchBackplane(4);
+        this.device = new SwitchBackplane(16);
     }
 
 }

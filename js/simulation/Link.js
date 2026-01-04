@@ -51,9 +51,10 @@ export class Link extends SimulatedObject {
     this.root.className = "sim-link";
     this.root.textContent = "";
     this.root.style.transformOrigin = "0 0";
+    this.root.dataset.objid = String(this.id); 
     return this.root;
   }
-
+  
   destroy() {
     for (const p of this._packets) p.el.remove();
     this._packets = [];
