@@ -2,8 +2,33 @@
 @import "os.css";  /* OS */
 @import "apps.css"; /* OS-App-specific stuff */
 
+@import "pcapviewer.css"; /* PCAPViewer */
 
 :root {
     /* Set this one. Works great with OKLCH (recommended). */
     --primary: oklch(62.489% 0.15353 245.072);
+}
+
+.tabs {
+    margin-bottom: 1em;
+}
+
+.tab {
+    padding: 0.5em 1em;
+    margin-right: 0.5em;
+    cursor: pointer;
+}
+
+.tab.active {
+    font-weight: bold;
+}
+
+.tab-content {
+    display: none;
+    width: 100%;
+    height: 80vh;
+}
+
+.tab-content.active {
+    display: flex;
 }

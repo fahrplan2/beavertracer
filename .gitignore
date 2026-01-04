@@ -20,3 +20,7 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+
+
+#Wiregasm build artifacts
+public/wiregasm/

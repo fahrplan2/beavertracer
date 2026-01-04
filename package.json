@@ -13,8 +13,9 @@
     "url": "https://gitlab.lgsit.de/klec/networksim.git"
   },
   "author": "Christian Klein",
-  "license": "MIT",
+  "license": "GPL",
   "devDependencies": {
+    "@babel/parser": "^7.28.5",
     "vite": "^4.5.14"
   },
   "build": {
@@ -28,5 +29,8 @@
       "electron/**",
       "package.json"
     ]
+  },
+  "dependencies": {
+    "@goodtools/wiregasm": "^1.9.0"
   }
 }

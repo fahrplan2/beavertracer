@@ -13,7 +13,7 @@ import { SimpleTCPServerApp } from "./SimpleTCPServerApp.js";
 import { SimpleTCPClientApp } from "./SimpleTCPClientApp.js";
 import { SparktailHTTPClientApp } from "./SparktailHTTPClientApp.js";
 import { SimpleHTTPServerApp } from "./SimpleHTTPServerApp.js";
-import { PcapDownloaderApp } from "./PCAPDownloaderApp.js";
+import { PacketSnifferApp } from "./PacketSnifferApp.js";
 
 export class OS {
 
@@ -61,7 +61,7 @@ export class OS {
         this.registerMenuItem(t("apps.name.browser"), this.exec(SparktailHTTPClientApp), 'browser');
         this.registerMenuItem(t("apps.name.httpserver"), this.exec(SimpleHTTPServerApp),'settings');
         this.registerMenuItem(t("apps.name.udpecho"), this.exec(UDPEchoApp), 'settings');
-        this.registerMenuItem(t("apps.name.pcapdownloader"), this.exec(PcapDownloaderApp), 'settings');
+        this.registerMenuItem(t("apps.name.pcapdownloader"), this.exec(PacketSnifferApp), 'settings');
         this.registerMenuItem(t("apps.name.about"), this.exec(AboutApp), 'about');
     }
 

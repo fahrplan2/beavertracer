@@ -3,9 +3,9 @@
 import { GenericProcess } from "./GenericProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
 import { CleanupBag } from "./lib/CleanupBag.js";
-import { Pcap } from "../pcap/pcap.js";
-
-// import { Pcap } from "./net/Pcap.js"; // falls nicht global
+import { Pcap } from "../pcap/Pcap.js";
+import { SimControl } from "../SimControl.js";
+import { t } from "../i18n/index.js";
 
 /**
  * @param {any} iface
@@ -28,7 +28,7 @@ function ifaceLoggedFrames(iface) {
     : [];
 }
 
-export class PcapDownloaderApp extends GenericProcess {
+export class PacketSnifferApp extends GenericProcess {
   /** @type {CleanupBag} */
   bag = new CleanupBag();
 
@@ -36,8 +36,8 @@ export class PcapDownloaderApp extends GenericProcess {
   listEl = null;
 
   run() {
-    this.title = "PCAP Downloader";
-    this.root.classList.add("app", "app-pcap-downloader");
+    this.title = t("app.packetsniffer.title");
+    this.root.classList.add("app", "app-packetsniffer");
   }
 
   /**
@@ -47,11 +47,9 @@ export class PcapDownloaderApp extends GenericProcess {
     super.onMount(root);
     this.bag.dispose();
 
-    const refreshBtn = UI.button("Refresh", () => this._render(), { primary: true });
     this.listEl = UI.el("div");
 
     const panel = UI.panel([
-      UI.buttonRow([refreshBtn]),
       this.listEl,
     ]);
 
@@ -74,7 +72,7 @@ export class PcapDownloaderApp extends GenericProcess {
       : [];
 
     if (!ifaces.length) {
-      this.listEl.textContent = "(no interfaces)";
+      this.listEl.textContent = t("app.packetsniffer.nointerface");
       return;
     }
 
@@ -82,19 +80,22 @@ export class PcapDownloaderApp extends GenericProcess {
 
     for (let i = 0; i < ifaces.length; i++) {
       const iface = ifaces[i];
-      const name = typeof iface?.name === "string" ? iface.name : "(unnamed)";
+      const name = typeof iface?.name === "string" ? iface.name : t("app.packetsniffer.unnamed");
       const port = ifacePort(iface);
       const frames = ifaceLoggedFrames(iface);
 
       const filename =
         `iface-${i}-${name.replaceAll(/[^a-zA-Z0-9_\-\.]/g, "_")}-port-${port ?? "unknown"}.pcap`;
 
+
+      const text = t("app.packetsniffer.show")
+
       const btn = UI.button(
-        `Download PCAP – ${name}${port != null ? ` :${port}` : ""}`,
+        text + ` – ${name}${port != null ? ` :${port}` : ""}`,
         () => {
-          // @ts-ignore
           const pcap = new Pcap(frames, filename);
-          pcap.downloadFile();
+          SimControl.pcapViewer.loadBytes(pcap.generateBytes());
+          SimControl.tabControler.gotoTab("pcapviewer");
         },
         { primary: true }
       );

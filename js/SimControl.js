@@ -1,6 +1,8 @@
 //@ts-check
 import { SimulatedObject } from "./simulation/SimulatedObject.js";
 import { Link } from "./simulation/Link.js";
+import { PCapViewer } from "./pcap/PCapViewer.js";
+import { TabController } from "./TabControler.js";
 
 export class SimControl {
     static tick = 500;
@@ -11,9 +13,6 @@ export class SimControl {
 
     /** @type {HTMLElement|null} */
     root;
-
-    /** @type {HTMLElement|null} */
-    Fieldroot;
 
     /** @type {HTMLDivElement|null} */
     nodesLayer = null;
@@ -31,13 +30,22 @@ export class SimControl {
     static movementBoundary;
 
     /**
-     * @param {HTMLElement|null} root
-     * @param {HTMLElement|null} Fieldroot
+     * @type {PCapViewer}
      */
-    constructor(root, Fieldroot) {
+    static pcapViewer;
+
+    /**
+     * @type {TabController}
+     */
+
+    static tabControler;
+
+    /**
+     * @param {HTMLElement|null} root
+     */
+    constructor(root) {
         this.simobjects = [];
         this.root = root;
-        this.Fieldroot = Fieldroot;
         this.render();
         this.scheduleNextStep();
         this._startRafLoop();
@@ -102,7 +110,7 @@ export class SimControl {
     }
 
     render() {
-        const root = this.Fieldroot;
+        const root = this.root;
         if (!root) return;
 
         root.replaceChildren();
