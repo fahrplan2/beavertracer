@@ -1,11 +1,11 @@
 //@ts-check
 
-import { EthernetPort } from "../devices/EthernetPort.js";
 import { EthernetLink } from "../devices/EthernetLink.js";
-import { SimulatedObject } from "./SimulatedObject.js";
-import { Router } from "./Router.js";
-import { Switch } from "./Switch.js";
+import { EthernetPort } from "../devices/EthernetPort.js";
 import { PC } from "./PC.js";
+import { Router } from "./Router.js";
+import { SimulatedObject } from "./SimulatedObject.js";
+import { Switch } from "./Switch.js";
 
 export class Link extends SimulatedObject {
   /** @type {EthernetLink} */
@@ -13,88 +13,133 @@ export class Link extends SimulatedObject {
 
   /** @type {SimulatedObject} */
   A;
-
   /** @type {SimulatedObject} */
   B;
 
-  // Packet-DOM (full duplex)
-  /** @type {HTMLDivElement|null} */
-  packetElAtoB = null;
+  /** @type {number} */
+  _stepMs = 200;
 
-  /** @type {HTMLDivElement|null} */
-  packetElBtoA = null;
+  /** @type {number} */
+  _pad = 8;
+
+  /** @type {boolean} */
+  _paused = false;
 
   /**
-   * @param {SimulatedObject} A
-   * @param {SimulatedObject} B
+   * @type {Array<{
+   *   el: HTMLDivElement,
+   *   dir: "AtoB"|"BtoA",
+   *   data: Uint8Array,
+   *   progress: number
+   * }>}
    */
+  _packets = [];
+
   constructor(A, B) {
     super("Link");
 
     const portA = this._getNextFreePortFromObject(A);
     const portB = this._getNextFreePortFromObject(B);
-
-    if (portA == null || portB == null) {
-      throw new Error("No free ports available");
-    }
+    if (portA == null || portB == null) throw new Error("No free ports available");
 
     this.A = A;
     this.B = B;
     this.link = new EthernetLink(portA, portB);
   }
 
-  /**
-   * @param {SimulatedObject} obj
-   * @return {EthernetPort|null}
-   */
-  _getNextFreePortFromObject(obj) {
-    if (obj instanceof Switch) {
-      return obj.device.getNextFreePort();
-    }
-    if (obj instanceof Router) {
-      return obj.device.getNextFreeInterfacePort();
-    }
-    if (obj instanceof PC) {
-      return obj.os.ipforwarder.getNextFreeInterfacePort();
-    }
-    return null;
-  }
-
-  step1() {
-    this.link.step1();
-  }
-
-  step2() {
-    this.link.step2();
-  }
-
-  destroy() {
-    this.link.destroy();
-  }
-
-  /** @override */
   render() {
     this.root.className = "sim-link";
     this.root.textContent = "";
-
-    // wichtig für Rotation der Linie
     this.root.style.transformOrigin = "0 0";
-
-    // --- Packet A -> B ---
-    const pAtoB = document.createElement("div");
-    pAtoB.className = "sim-packet sim-packet-atob";
-    pAtoB.style.display = "none";
-    this.root.appendChild(pAtoB);
-    this.packetElAtoB = pAtoB;
-
-    // --- Packet B -> A ---
-    const pBtoA = document.createElement("div");
-    pBtoA.className = "sim-packet sim-packet-btoa";
-    pBtoA.style.display = "none";
-    this.root.appendChild(pBtoA);
-    this.packetElBtoA = pBtoA;
-
     return this.root;
+  }
+
+  destroy() {
+    for (const p of this._packets) p.el.remove();
+    this._packets = [];
+    this.link.destroy();
+  }
+
+  /** Wird vom Controller gesetzt */
+  setPaused(paused) {
+    this._paused = paused;
+  }
+
+  /** Wird vom Controller gesetzt */
+  setStepMs(stepMs) {
+    this._stepMs = stepMs;
+  }
+
+  /** Simulation: Phase 1 */
+  step1() {
+    this.link.step1();
+
+    const a = this.link.AtoB ?? null;
+    const b = this.link.BtoA ?? null;
+
+    if (a) this._startInFlight("AtoB", a);
+    if (b) this._startInFlight("BtoA", b);
+  }
+
+  /** Simulation: Phase 2 */
+  step2() {
+    this.link.step2();
+
+    // in deinem Modell: nach step2 ist nix mehr "in-flight"
+    for (const p of this._packets) p.el.remove();
+    this._packets = [];
+  }
+
+  _startInFlight(dir, data) {
+    // pro Richtung max 1 Packet (du kannst später auf multi erweitern)
+    for (const p of this._packets) {
+      if (p.dir === dir) p.el.remove();
+    }
+    this._packets = this._packets.filter(p => p.dir !== dir);
+
+    if (!this.root) return;
+
+    const el = document.createElement("div");
+    el.className = "sim-packet";
+    el.style.display = "";
+    el.title = "Click to log frame bytes";
+    el.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      console.log(`[Packet ${dir}]`, data);
+    });
+
+    this.root.appendChild(el);
+    this._packets.push({ el, dir, data, progress: 0 });
+  }
+
+  /** Subtick: Fortschritt (Simulation+Render) */
+  advance(dtMs) {
+    if (this._paused) return;
+
+    const dp = dtMs / this._stepMs; // 1.0 pro stepMs
+    for (const p of this._packets) {
+      p.progress = Math.min(1, p.progress + dp);
+    }
+  }
+
+  /** Render: nur Position setzen */
+  renderPacket() {
+    if (!this.root) return;
+
+    const lengthPx = this.root.getBoundingClientRect().width;
+    if (!Number.isFinite(lengthPx) || lengthPx <= 0) return;
+
+    const from = this._pad;
+    const to = Math.max(this._pad, lengthPx - this._pad);
+
+    for (const p of this._packets) {
+      const x = p.dir === "AtoB"
+        ? (from + (to - from) * p.progress)
+        : (to - (to - from) * p.progress);
+
+      p.el.style.left = `${x}px`;
+      p.el.style.display = "";
+    }
   }
 
   redrawLinks() {
@@ -117,56 +162,11 @@ export class Link extends SimulatedObject {
     this.root.style.transform = `rotate(${angle}deg)`;
   }
 
-  /**
-   * Startet pro Tick die CSS-Paketanimation.
-   * Das Paket läuft in einem Step vollständig über den Link.
-   *
-   * @param {number} stepMs Dauer des Simulationsteps in ms
-   */
-  renderPacket(stepMs) {
-    if (!this.root || !this.packetElAtoB || !this.packetElBtoA) return;
-
-    // Wenn AtoB/BtoA Queues sind, ggf. auf .length > 0 ändern
-    const hasAtoB = !!this.link.AtoB;
-    const hasBtoA = !!this.link.BtoA;
-
-    // Step-Dauer an CSS übergeben
-    this.root.style.setProperty("--step-ms", `${stepMs}ms`);
-    this.root.style.setProperty("--pad", `8px`);
-
-    // --- A -> B ---
-    this._togglePacketAnimation(
-      this.packetElAtoB,
-      hasAtoB,
-      "sim-packet--run-atob"
-    );
-
-    // --- B -> A ---
-    this._togglePacketAnimation(
-      this.packetElBtoA,
-      hasBtoA,
-      "sim-packet--run-btoa"
-    );
-  }
-
-  /**
-   * Startet oder stoppt eine CSS-Animation zuverlässig.
-   * @param {HTMLElement} el
-   * @param {boolean} active
-   * @param {string} runClass
-   */
-  _togglePacketAnimation(el, active, runClass) {
-    if (!active) {
-      el.classList.remove(runClass);
-      el.style.display = "none";
-      return;
-    }
-
-    el.style.display = "";
-
-    // Animation pro Tick neu starten
-    el.classList.remove(runClass);
-    void el.offsetWidth; // reflow erzwingen
-    el.classList.add(runClass);
+  /** @param {SimulatedObject} obj @return {EthernetPort|null} */
+  _getNextFreePortFromObject(obj) {
+    if (obj instanceof Switch) return obj.device.getNextFreePort();
+    if (obj instanceof Router) return obj.device.getNextFreeInterfacePort();
+    if (obj instanceof PC) return obj.os.ipforwarder.getNextFreeInterfacePort();
+    return null;
   }
 }

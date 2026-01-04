@@ -3,7 +3,7 @@ import { SimulatedObject } from "./simulation/SimulatedObject.js";
 import { Link } from "./simulation/Link.js";
 
 export class SimControl {
-    static tick = 1000;
+    static tick = 500;
 
     /** @type {Array<SimulatedObject>} */
     simobjects;
@@ -23,6 +23,8 @@ export class SimControl {
 
     isPaused = false;
 
+    tickId = 0;
+
     /**
      * @type {HTMLElement|null} movement Boundary for user drag&drop
      */
@@ -38,11 +40,12 @@ export class SimControl {
         this.Fieldroot = Fieldroot;
         this.render();
         this.scheduleNextStep();
+        this._startRafLoop();
     }
 
     scheduleNextStep() {
         if (this.timeoutId !== null) window.clearTimeout(this.timeoutId);
-        if (this.isPaused) return;
+        if(this.isPaused) return;
         this.timeoutId = window.setTimeout(() => this.step(), SimControl.tick);
     }
 
@@ -51,8 +54,12 @@ export class SimControl {
             for (let i = 0; i < this.simobjects.length; i++) {
                 const x = this.simobjects[i];
                 if (x instanceof Link) {
-                    if (this.endStep) x.step2?.();
-                    else x.step1?.();
+                    if (this.endStep) {
+                        x.step2();
+                    } else {
+                        x.step1();
+                        this.tickId++;
+                    }
                 }
             }
         } catch (error) {
@@ -78,6 +85,9 @@ export class SimControl {
         this.render();
     }
 
+    /**
+     * @param {number} ms 
+     */
     setTick(ms) {
         // sinnvolle Grenzen
         SimControl.tick = Math.max(16, Math.min(5000, Math.round(ms)));
@@ -106,7 +116,7 @@ export class SimControl {
         // Play/Pause
         const btnPause = document.createElement("button");
         btnPause.type = "button";
-        btnPause.textContent = this.isPaused ? "▶ Play" : "⏸ Pause";
+        btnPause.textContent = this.isPaused ? " Play" : "Pause";
         btnPause.addEventListener("click", () => this.togglePause());
         toolbar.appendChild(btnPause);
 
@@ -144,15 +154,47 @@ export class SimControl {
         }
 
         this.redrawLinks();
-        
+
     }
 
     redrawLinks() {
         for (const obj of this.simobjects) {
             if (obj instanceof Link) {
                 obj.redrawLinks();
-                obj.renderPacket(SimControl.tick);
             }
         }
+
+    }
+
+    running = true;
+
+    last = performance.now();
+
+    _startRafLoop() {
+        if (this._rafId != null) return;
+
+        this._rafLastTs = performance.now();
+
+        const loop = (ts) => {
+            this._rafId = requestAnimationFrame(loop);
+
+            const dt = ts - this._rafLastTs;
+            this._rafLastTs = ts;
+
+            // 1) Packet-Progress nur fortschreiben, wenn NICHT pausiert
+            if (!this.isPaused) {
+                for (const obj of this.simobjects) {
+                    if (obj instanceof Link) obj.advance(dt);
+                }
+            }
+
+            // 2) Rendern darf gerne IMMER laufen (damit Klick/Inspect geht)
+            for (const obj of this.simobjects) {
+                if (obj instanceof Link) obj.renderPacket();
+            }
+        };
+
+        this._rafId = requestAnimationFrame(loop);
     }
 }
+

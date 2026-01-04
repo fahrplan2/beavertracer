@@ -9,8 +9,14 @@ import { TerminalApp } from "./TerminalApp.js";
 import { VirtualFileSystem } from "./lib/VirtualFileSystem.js";
 import { TextEditorApp } from "./TextEditorApp.js";
 import { t } from "../i18n/index.js";
+import { SimpleTCPServerApp } from "./SimpleTCPServerApp.js";
+import { SimpleTCPClientApp } from "./SimpleTCPClientApp.js";
+import { SparktailHTTPClientApp } from "./SparktailHTTPClientApp.js";
+import { SimpleHTTPServerApp } from "./SimpleHTTPServerApp.js";
+import { PcapDownloaderApp } from "./PCAPDownloaderApp.js";
 
 export class OS {
+
     name;
     ipforwarder;
     fs = new VirtualFileSystem();
@@ -47,11 +53,16 @@ export class OS {
     }
 
     _init() {
-        this.registerMenuItem(t("apps.name.terminal"), this.exec(TerminalApp));
-        this.registerMenuItem(t("apps.name.texteditor"), this.exec(TextEditorApp));
-        this.registerMenuItem(t("apps.name.ipv4config"), this.exec(IPv4ConfigApp));
-        this.registerMenuItem(t("apps.name.udpecho"), this.exec(UDPEchoApp));
-        this.registerMenuItem(t("apps.name.about"), this.exec(AboutApp));
+        this.registerMenuItem(t("apps.name.terminal"), this.exec(TerminalApp),'terminal');
+        this.registerMenuItem(t("apps.name.texteditor"), this.exec(TextEditorApp), 'texteditor');
+        this.registerMenuItem(t("apps.name.ipv4config"), this.exec(IPv4ConfigApp), 'settings');
+        this.registerMenuItem(t("apps.name.simpletcpserver"), this.exec(SimpleTCPServerApp), 'settings');
+        this.registerMenuItem(t("apps.name.simpletcpclient"), this.exec(SimpleTCPClientApp), 'settings');
+        this.registerMenuItem(t("apps.name.browser"), this.exec(SparktailHTTPClientApp), 'browser');
+        this.registerMenuItem(t("apps.name.httpserver"), this.exec(SimpleHTTPServerApp),'settings');
+        this.registerMenuItem(t("apps.name.udpecho"), this.exec(UDPEchoApp), 'settings');
+        this.registerMenuItem(t("apps.name.pcapdownloader"), this.exec(PcapDownloaderApp), 'settings');
+        this.registerMenuItem(t("apps.name.about"), this.exec(AboutApp), 'about');
     }
 
 
@@ -180,6 +191,7 @@ export class OS {
         for (const item of this._menuItems) {
             const btn = document.createElement("button");
             btn.textContent = item.title;
+            btn.setAttribute("data-icon",item.dataIcon);
             btn.onclick = () => this.focus(item.pid);
             el.appendChild(btn);
         }
@@ -223,10 +235,11 @@ export class OS {
      * 
      * @param {string} title 
      * @param {number} pid 
+     * @param {string} icon
      */
 
-    registerMenuItem(title, pid) {
-        this._menuItems.push(new MenuItem({ title, pid }));
+    registerMenuItem(title, pid, icon) {
+        this._menuItems.push(new MenuItem({ title, pid, dataIcon:icon }));
         if (this.focusID === 0) this._requestRender();
     }
 
@@ -242,16 +255,21 @@ class MenuItem {
     /**@type {number} */
     pid = 0;
 
+    /**@type {string} */
+    dataIcon;
+
     /**
      * 
      * @param {Object} [opts] 
      * @param {string} [opts.title]
      * @param {new (...args: any[]) => any} [opts.ClassName]
      * @param {number} [opts.pid]
+     * @param {string} [opts.dataIcon]
      */
 
     constructor(opts = {}) {
         this.title = (opts.title ?? 'No Title');
         this.pid = (opts.pid ?? 0);
+        this.dataIcon = (opts.dataIcon ?? 'default')
     }
 }

@@ -1,0 +1,121 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Sparktail</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: #0b0f14;
+      color: #e8eef6;
+    }
+    .wrap { padding: 22px; max-width: 920px; margin: 0 auto; }
+    .card {
+      background: #0f1722;
+      border: 1px solid #243244;
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 8px 30px rgba(0,0,0,.35);
+    }
+    h1 { margin: 0 0 6px; font-size: 28px; letter-spacing: .2px; }
+    .sub { margin: 0 0 16px; color: #b7c5d8; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+    .pill {
+      display: inline-block;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid #2a3a50;
+      background: #0b1220;
+      color: #d7e2f2;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .pill:hover { border-color: #3e5776; }
+    .kbd {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 6px;
+      border: 1px solid #2a3a50;
+      background: #0b1220;
+      color: #cfe0f6;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .tile {
+      border: 1px solid #243244;
+      border-radius: 14px;
+      padding: 14px;
+      background: #0c1422;
+    }
+    .tile h3 { margin: 0 0 6px; font-size: 14px; color: #cfe0f6; }
+    .tile p { margin: 0; color: #b7c5d8; font-size: 13px; line-height: 1.4; }
+    .foot { margin-top: 16px; color: #8ea3bd; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>🦫 Sparktail</h1>
+      <p class="sub">Minimaler HTTP-Client • <span class="kbd">about:start</span></p>
+
+      <div class="row">
+        <a class="pill" data-nav="http://127.0.0.1/">http://127.0.0.1/</a>
+        <a class="pill" data-nav="http://example.com/">http://example.com/</a>
+        <a class="pill" data-nav="http://neverssl.com/">http://neverssl.com/</a>
+      </div>
+
+      <div class="grid">
+        <div class="tile">
+          <h3>Quick tip</h3>
+          <p>Nur <b>http://</b> ist erlaubt. Für Debug: Tabs <b>Headers</b> und <b>Source</b>.</p>
+        </div>
+        <div class="tile">
+          <h3>Navigation</h3>
+          <p><b>←</b>/<b>→</b> für History, <b>⟳</b> lädt erneut, <b>Stop</b> bricht ab.</p>
+        </div>
+        <div class="tile">
+          <h3>Rendering</h3>
+          <p>Preview nur für HTML-ish Content-Type. Sonst zeigt Preview eine Info und Source den Text.</p>
+        </div>
+      </div>
+
+      <div class="foot">Sparktail rendert externe Seiten ohne Skripte (iframe sandbox ohne allow-scripts).</div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      function nav(url) {
+        try {
+          parent.postMessage({ __sparktail: true, type: "navigate", url: String(url || "") }, "*");
+        } catch (e) {}
+      }
+
+      document.addEventListener("click", function (ev) {
+        var t = ev.target;
+        while (t && t !== document.documentElement) {
+          if (t && t.getAttribute) {
+            var u = t.getAttribute("data-nav");
+            if (u) {
+              ev.preventDefault();
+              nav(u);
+              return;
+            }
+          }
+          t = t.parentNode;
+        }
+      }, true);
+    })();
+  </script>
+</body>
+</html>

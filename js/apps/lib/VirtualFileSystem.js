@@ -47,6 +47,23 @@ export class VirtualFileSystem {
     this.mkdir("/home", { recursive: true });
     this.mkdir("/bin", { recursive: true });
     this.writeFile("/home/notes.txt", "hello vfs\n");
+
+    this.mkdir("/var/www", { recursive: true });
+    if (!this.exists("/var/www/index.html")) {
+      this.writeFile("/var/www/index.html", 
+`<!doctype html>
+<html>
+    <head>
+      <meta charset="utf-8" />
+      <title>Hello from SimpleHTTPServer</title>
+    </head>
+    <body>
+      <h1>It works!</h1>
+    <p>Served from /var/www/index.html</p>
+    </body>
+</html>
+`);
+    }
   }
 
   // -------------------------
@@ -216,10 +233,10 @@ export class VirtualFileSystem {
     }
   }
 
-   /**
-   * Remove a file (POSIX-like unlink). Fails if path is a directory.
-   * @param {string} path
-   */
+  /**
+  * Remove a file (POSIX-like unlink). Fails if path is a directory.
+  * @param {string} path
+  */
   unlink(path) {
     const abs = this._normalize(path);
     if (abs === "/") throw new Error("cannot unlink /");
@@ -234,13 +251,13 @@ export class VirtualFileSystem {
     parent.mtime = Date.now();
   }
 
-   /**
-   * Remove a directory.
-   * By default, the directory must be empty.
-   *
-   * @param {string} path
-   * @param {{ recursive?: boolean }} [opts]
-   */
+  /**
+  * Remove a directory.
+  * By default, the directory must be empty.
+  *
+  * @param {string} path
+  * @param {{ recursive?: boolean }} [opts]
+  */
   rmdir(path, opts = {}) {
     const abs = this._normalize(path);
     if (abs === "/") throw new Error("cannot remove root directory");

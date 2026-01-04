@@ -13,7 +13,11 @@ export default {
   "apps.name.ipv4config": "IP Settings",
   "apps.name.udpecho" : "UDP Echo",
   "apps.name.about" : "About",
-
+  "apps.name.simpletcpclient": "Simple Client",
+  "apps.name.simpletcpserver": "Echo Server",
+  "apps.name.httpserver" : "Webserver",
+  "apps.name.browser" : "Browser",
+  "apps.name.pcapdownloader" : "PCapDownloader",
 
   "texteditorapp.windowTitle": "Editor",
   "texteditorapp.noFilesystem": "No filesystem available.",

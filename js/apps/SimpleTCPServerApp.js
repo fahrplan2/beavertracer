@@ -16,7 +16,6 @@ function nowStamp(n = Date.now()) {
  * @param {number} ip
  */
 function ipToString(ip) {
-  // ip is unsigned 32-bit number
   return `${(ip >>> 24) & 255}.${(ip >>> 16) & 255}.${(ip >>> 8) & 255}.${ip & 255}`;
 }
 
@@ -35,7 +34,30 @@ function hexPreview(data) {
   return s;
 }
 
-export class UDPEchoApp extends GenericProcess {
+/**
+ * Parses your conn key format: `${localIP}:${localPort}>${remoteIP}:${remotePort}`
+ * @param {string} key
+ */
+function parseTCPKey(key) {
+  // example: "3232235530:12345>3232235521:54321"
+  const m = /^(\d+):(\d+)>(\d+):(\d+)$/.exec(key);
+  if (!m) {
+    return {
+      localIP: 0, localPort: 0,
+      remoteIP: 0, remotePort: 0,
+      ok: false
+    };
+  }
+  return {
+    localIP: Number(m[1]) >>> 0,
+    localPort: Number(m[2]) | 0,
+    remoteIP: Number(m[3]) >>> 0,
+    remotePort: Number(m[4]) | 0,
+    ok: true
+  };
+}
+
+export class SimpleTCPServerApp extends GenericProcess {
   /** @type {CleanupBag} */
   bag = new CleanupBag();
 
@@ -43,7 +65,7 @@ export class UDPEchoApp extends GenericProcess {
   port = 7;
 
   /** @type {number|null} */
-  socketPort = null;
+  listenPort = null;
 
   /** @type {boolean} */
   running = false;
@@ -63,10 +85,13 @@ export class UDPEchoApp extends GenericProcess {
   /** @type {HTMLButtonElement|null} */
   stopBtn = null;
 
+  /** @type {Set<string>} */
+  conns = new Set();
+
   run() {
-    this.title = "UDP Echo";
-    this.root.classList.add("app", "app-udp-echo");
-    // NICHT automatisch starten – User entscheidet (kannst du ändern)
+    this.title = "Simple TCP Server";
+    this.root.classList.add("app", "app-simple-tcp-server");
+    // not auto-starting
   }
 
   /**
@@ -104,16 +129,15 @@ export class UDPEchoApp extends GenericProcess {
 
     this.root.replaceChildren(panel);
 
-    // UI-Status initial
     this._syncButtons();
     this._renderLog();
 
-    // Update status line while mounted (small heartbeat)
     this.bag.interval(() => {
       status.textContent =
         `PID: ${this.pid}\n` +
         `Running: ${this.running}\n` +
-        `Port: ${this.socketPort ?? "-"}\n` +
+        `Port: ${this.listenPort ?? "-"}\n` +
+        `Connections: ${this.conns.size}\n` +
         `Log entries: ${this.log.length}`;
     }, 300);
   }
@@ -128,7 +152,6 @@ export class UDPEchoApp extends GenericProcess {
   }
 
   destroy() {
-    // ensure background loop is stopped + socket closed
     this._stop();
     super.destroy();
   }
@@ -141,8 +164,6 @@ export class UDPEchoApp extends GenericProcess {
 
   _renderLog() {
     if (!this.logEl) return;
-
-    // show last N lines
     const maxLines = 200;
     const lines = this.log.length > maxLines ? this.log.slice(-maxLines) : this.log;
     this.logEl.textContent = lines.join("\n");
@@ -153,10 +174,7 @@ export class UDPEchoApp extends GenericProcess {
    */
   _appendLog(line) {
     this.log.push(line);
-    // keep memory bounded
     if (this.log.length > 2000) this.log.splice(0, this.log.length - 2000);
-
-    // Only repaint UI when visible (but keep log always)
     if (this.mounted) this._renderLog();
   }
 
@@ -175,17 +193,17 @@ export class UDPEchoApp extends GenericProcess {
     if (this.running) return;
 
     try {
-      // bindaddr must be 0 (0.0.0.0)
-      const port = this.os.ipforwarder.openUDPSocket(0, this.port);
-      this.socketPort = port;
+      const port = this.os.ipforwarder.openTCPServerSocket(0, this.port);
+      this.listenPort = port;
       this.running = true;
-      this._appendLog(`[${nowStamp()}] Listening on 0.0.0.0:${port}`);
+
+      this._appendLog(`[${nowStamp()}] Listening (TCP) on 0.0.0.0:${port}`);
       this._syncButtons();
 
-      // background receive loop
-      this._recvLoop();
+      // background accept loop
+      this._acceptLoop();
     } catch (e) {
-      this.socketPort = null;
+      this.listenPort = null;
       this.running = false;
       this._syncButtons();
       this._appendLog(`[${nowStamp()}] ERROR start failed: ${e instanceof Error ? e.message : String(e)}`);
@@ -193,16 +211,22 @@ export class UDPEchoApp extends GenericProcess {
   }
 
   _stop() {
-    if (!this.running && this.socketPort == null) return;
+    if (!this.running && this.listenPort == null) return;
 
-    const port = this.socketPort;
+    const port = this.listenPort;
     this.running = false;
-    this.socketPort = null;
+    this.listenPort = null;
+
+    // best-effort close active conns (FIN)
+    for (const key of Array.from(this.conns)) {
+      try { this.os.ipforwarder.closeTCPConn(key); } catch { /* ignore */ }
+      this.conns.delete(key);
+    }
 
     if (port != null) {
       try {
-        this.os.ipforwarder.closeUDPSocket(port);
-        this._appendLog(`[${nowStamp()}] Stopped (port ${port} closed)`);
+        this.os.ipforwarder.closeTCPServerSocket(port);
+        this._appendLog(`[${nowStamp()}] Stopped (listen port ${port} closed)`);
       } catch (e) {
         this._appendLog(`[${nowStamp()}] ERROR stop: ${e instanceof Error ? e.message : String(e)}`);
       }
@@ -211,49 +235,81 @@ export class UDPEchoApp extends GenericProcess {
     this._syncButtons();
   }
 
-  async _recvLoop() {
-    // note: closeUDPSocket resolves waiters with null -> we exit gracefully
-    while (this.running && this.socketPort != null) {
-      const port = this.socketPort;
+  async _acceptLoop() {
+    while (this.running && this.listenPort != null) {
+      const port = this.listenPort;
 
-      /** @type {any} */
-      let pkt = null;
+      /** @type {string|null} */
+      let key = null;
       try {
-        pkt = await this.os.ipforwarder.recvUDPSocket(port);
+        key = await this.os.ipforwarder.acceptTCPConn(port);
       } catch (e) {
-        this._appendLog(`[${nowStamp()}] ERROR recv: ${e instanceof Error ? e.message : String(e)}`);
+        this._appendLog(`[${nowStamp()}] ERROR accept: ${e instanceof Error ? e.message : String(e)}`);
         continue;
       }
 
-      // socket closed / stop signaled
-      if (!this.running || this.socketPort == null) break;
-      if (pkt == null) break;
+      if (!this.running || this.listenPort == null) break;
+      if (key == null) break; // server socket closed
 
-      // We assume pkt has: src, srcPort, payload (Uint8Array)
-      // If your structure differs, tell me the exact shape and I adapt.
-      const srcIp = typeof pkt.src === "number" ? pkt.src : 0;
-      const srcPort = typeof pkt.srcPort === "number" ? pkt.srcPort : 0;
+      this.conns.add(key);
 
-      /** @type {Uint8Array} */
-      const data =
-        pkt.payload instanceof Uint8Array
-          ? pkt.payload
-          : (pkt.data instanceof Uint8Array ? pkt.data : new Uint8Array());
+      const info = parseTCPKey(key);
+      const who = info.ok
+        ? `${ipToString(info.remoteIP)}:${info.remotePort}`
+        : key;
 
-      this._appendLog(
-        `[${nowStamp()}] RX from ${ipToString(srcIp)}:${srcPort} len=${data.length} hex=${hexPreview(data)}`
-      );
+      this._appendLog(`[${nowStamp()}] CONNECT ${who}`);
 
-      // echo back
-      try {
-        this.os.ipforwarder.sendUDPSocket(port, srcIp, srcPort, data);
-        this._appendLog(`[${nowStamp()}] TX echo to ${ipToString(srcIp)}:${srcPort} len=${data.length}`);
-      } catch (e) {
-        this._appendLog(`[${nowStamp()}] ERROR send: ${e instanceof Error ? e.message : String(e)}`);
-      }
+      // handle each connection concurrently
+      this._connEchoLoop(key).catch((e) => {
+        this._appendLog(`[${nowStamp()}] ERROR conn loop: ${e instanceof Error ? e.message : String(e)}`);
+      });
     }
 
-    // loop ends: ensure buttons reflect state
     this._syncButtons();
+  }
+
+  /**
+   * @param {string} key
+   */
+  async _connEchoLoop(key) {
+    const info = parseTCPKey(key);
+    const who = info.ok ? `${ipToString(info.remoteIP)}:${info.remotePort}` : key;
+
+    try {
+      while (this.running) {
+        /** @type {Uint8Array|null} */
+        let data = null;
+        try {
+          data = await this.os.ipforwarder.recvTCPConn(key);
+        } catch (e) {
+          this._appendLog(`[${nowStamp()}] ERROR recv ${who}: ${e instanceof Error ? e.message : String(e)}`);
+          break;
+        }
+
+        if (!this.running) break;
+        if (data == null) break; // peer closed or connection gone
+
+        this._appendLog(
+          `[${nowStamp()}] RX ${who} len=${data.length} hex=${hexPreview(data)}`
+        );
+
+        try {
+          this.os.ipforwarder.sendTCPConn(key, data);
+          this._appendLog(`[${nowStamp()}] TX echo ${who} len=${data.length}`);
+        } catch (e) {
+          this._appendLog(`[${nowStamp()}] ERROR send ${who}: ${e instanceof Error ? e.message : String(e)}`);
+          break;
+        }
+      }
+    } finally {
+      this.conns.delete(key);
+
+      // make sure we FIN if still around
+      try { this.os.ipforwarder.closeTCPConn(key); } catch { /* ignore */ }
+
+      this._appendLog(`[${nowStamp()}] DISCONNECT ${who}`);
+      this._syncButtons();
+    }
   }
 }

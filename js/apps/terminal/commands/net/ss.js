@@ -7,7 +7,6 @@ function u32(n) { return (n >>> 0); }
 
 /** @param {number} ip */
 function fmtIP(ip) {
-  // treat 0 as wildcard
   if (!ip) return "0.0.0.0";
   return ipNumberToString(u32(ip));
 }
@@ -22,11 +21,9 @@ export const ss = {
     const showTCP = !args.includes("-u");
     const showUDP = !args.includes("-t");
 
-    // header
     ctx.println("Netid  State         Local Address:Port          Peer Address:Port           Info");
 
     if (showUDP) {
-      // udpSockets: Map<Number, UDPSocket>
       for (const sock of ipf.udpSockets?.values?.() ?? []) {
         const local = `${fmtIP(sock.bindaddr ?? 0)}:${sock.port ?? 0}`;
         const peer = "*:*";
@@ -36,23 +33,30 @@ export const ss = {
     }
 
     if (showTCP) {
-      // tcpSockets: Map<number, TCPSocket>  (listening or bound)
+      // 1) LISTEN sockets only (avoid printing connected client sockets here)
       for (const sock of ipf.tcpSockets?.values?.() ?? []) {
+        const state = String(sock.state ?? "UNKNOWN");
+        if (state !== "LISTEN") continue;
+
         const local = `${fmtIP(sock.bindaddr ?? 0)}:${sock.port ?? 0}`;
-        const peer = (sock.peerIP || sock.peerPort)
-          ? `${fmtIP(sock.peerIP ?? 0)}:${sock.peerPort ?? 0}`
-          : "*:*";
-        const st = String(sock.state ?? "UNKNOWN").padEnd(13);
+        const peer = "*:*";
+        const st = state.padEnd(13);
         const rxq = (sock.in?.length ?? 0);
         const aq = (sock.acceptQueue?.length ?? 0);
         ctx.println(`tcp    ${st} ${local.padEnd(27)} ${peer.padEnd(27)} rxq=${rxq} aq=${aq}`);
       }
 
-      // tcpConns: Map<String, TCPSocket> (established connections)
+      // 2) Connections (ESTABLISHED, SYN-*, FIN-*, etc.)
+      //    If you only want established, filter state === "ESTABLISHED".
       for (const sock of ipf.tcpConns?.values?.() ?? []) {
+        const state = String(sock.state ?? "UNKNOWN");
+        if (state === "LISTEN") continue; // just in case
+
+        // NOTE: bindaddr is 0 for client sockets in your hack; localIP is not stored.
+        // If you want accurate local IP, add conn.localIP in connectTCPConn/_handleTCP.
         const local = `${fmtIP(sock.bindaddr ?? 0)}:${sock.port ?? 0}`;
         const peer = `${fmtIP(sock.peerIP ?? 0)}:${sock.peerPort ?? 0}`;
-        const st = String(sock.state ?? "UNKNOWN").padEnd(13);
+        const st = state.padEnd(13);
         const rxq = (sock.in?.length ?? 0);
         ctx.println(`tcp    ${st} ${local.padEnd(27)} ${peer.padEnd(27)} rxq=${rxq}`);
       }

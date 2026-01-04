@@ -8,6 +8,7 @@ import { ICMPPacket } from "../pdu/ICMPPacket.js";
 import { EthernetPort } from "./EthernetPort.js";
 import { UDPPacket } from "../pdu/UDPPacket.js";
 import { TCPPacket } from "../pdu/TCPPacket.js";
+import { SimControl } from "../SimControl.js";
 
 /**
  * TODO:
@@ -244,36 +245,66 @@ export class IPForwarder extends Observable {
         conn.peerIP = dstIP;
         conn.peerPort = dstPort;
 
-        //TODO: WARNING! This is a hack!
+        // TODO hack: choose outgoing IP properly
         const myIP = this.interfaces[0].ip;
+
         const key = this._tcpKey(myIP, srcPort, dstIP, dstPort);
         conn.key = key;
-        this.tcpConns.set(key, conn);
 
-        // Client-seitige Socket-Registrierung
+        this.tcpConns.set(key, conn);
         this.tcpSockets.set(srcPort, conn);
 
-        //sent a syn
-        this._sendTCP({
-            srcIP: myIP,
-            dstIP,
-            srcPort,
-            dstPort,
-            seq: conn.myacc,
-            ack: 0,
-            flags: TCPPacket.FLAG_SYN,
-            payload: new Uint8Array()
-        });
+        // send initial SYN
+        const sendSyn = () => {
+            this._sendTCP({
+                srcIP: myIP,
+                dstIP,
+                srcPort,
+                dstPort,
+                seq: conn.myacc,
+                ack: 0,
+                flags: TCPPacket.FLAG_SYN,
+                payload: new Uint8Array()
+            });
+        };
 
+        sendSyn();
         conn.myacc += 1;
 
-        await (/** @type {Promise<void>} */(new Promise((resolve, reject) => {
-            const check = () => {
-                if (conn.state === "ESTABLISHED") resolve();
-                else setTimeout(check, 0);
-            };
-            check();
-        })));
+        // retransmit SYN a few times
+        let tries = 0;
+        const maxTries = 3;          
+        const rtoMs = 20*SimControl.tick;
+        conn._synTimer = setInterval(() => {
+            if (conn.state !== "SYN-SENT") return;
+            tries++;
+            if (tries >= maxTries) {
+                // fail connect
+                clearInterval(conn._synTimer);
+                conn._synTimer = null;
+                this._tcpDestroy(key, conn, "connect timeout (SYN-SENT)");
+                return;
+            }
+            // resend SYN with same seq (RFC-ish)
+            this._sendTCP({
+                srcIP: myIP,
+                dstIP,
+                srcPort,
+                dstPort,
+                seq: conn.myacc - 1, // because we already incremented after first SYN
+                ack: 0,
+                flags: TCPPacket.FLAG_SYN,
+                payload: new Uint8Array()
+            });
+        }, rtoMs);
+
+        // wait until established OR timeout destroys it
+        await new Promise((resolve, reject) => {
+            conn.connectWaiters.push((err) => (err ? reject(err) : resolve()));
+            // if something already happened (rare), resolve immediately
+            if (conn.state === "ESTABLISHED") resolve();
+            if (conn.state === "CLOSED") reject(new Error("connect failed"));
+        });
 
         return conn;
     }
@@ -358,7 +389,37 @@ export class IPForwarder extends Observable {
 
         conn.myacc += 1;
         conn.state = "FIN-WAIT-1";
+        this._tcpStartAckWatchdog(conn.key, conn, "FIN-WAIT-1 stuck");
 
+    }
+
+    /**
+     * Fully closes and removes a TCP connection and frees its port.
+     * @param {string} key
+     * @param {TCPSocket} conn
+     * @param {string} reason
+     */
+    _tcpDestroy(key, conn, reason = "closed") {
+        // stop timers
+        if (conn._synTimer != null) { clearInterval(conn._synTimer); conn._synTimer = null; }
+        if (conn._fin2Timer != null) { clearTimeout(conn._fin2Timer); conn._fin2Timer = null; }
+
+        // wake readers
+        while (conn.waiters.length) conn.waiters.shift()?.(null);
+
+        // wake connect() waiters (if any)
+        while (conn.connectWaiters.length) conn.connectWaiters.shift()?.(new Error(reason));
+
+        if (conn._ackTimer != null) { clearTimeout(conn._ackTimer); conn._ackTimer = null; }
+
+        conn.state = "CLOSED";
+
+        // remove from conn map
+        this.tcpConns.delete(key);
+
+        // IMPORTANT: free the port entry if this socket is registered there
+        const s = this.tcpSockets.get(conn.port);
+        if (s === conn) this.tcpSockets.delete(conn.port);
     }
 
     /**
@@ -384,195 +445,59 @@ export class IPForwarder extends Observable {
     }
 
     /**
-     * handels an incoming TCP packet
-     * @param {IPv4Packet} packet 
-     * @returns 
-     */
-    _handleTCP(packet) {
-        const tcp = TCPPacket.fromBytes(packet.payload);
-        const syn = tcp.hasFlag(TCPPacket.FLAG_SYN);
-        const ack = tcp.hasFlag(TCPPacket.FLAG_ACK);
-        const fin = tcp.hasFlag(TCPPacket.FLAG_FIN);
-        const rst = tcp.hasFlag(TCPPacket.FLAG_RST);
+      * Very high ACK timeout; defaults safely if SimControl isn't present.
+      * @returns {number}
+      */
+    _tcpAckTimeoutMs() {
+        const tick =
+            SimControl.tick ?? 10;
 
-        const ipSrc = IPUInt8ToNumber(packet.src);
-        const ipDst = IPUInt8ToNumber(packet.dst);
-
-        const localIP = ipDst;
-        const localPort = tcp.dstPort;
-        const remoteIP = ipSrc;
-        const remotePort = tcp.srcPort;
-        const key = this._tcpKey(localIP, localPort, remoteIP, remotePort);
-
-        let conn = this.tcpConns.get(key);
-
-        if (!conn) {
-            //LISTEN -> SYN-RECEIVED (we are getting SYN and sending ACK)
-            if (syn && !ack) {
-                const listen = this.tcpSockets.get(tcp.dstPort);
-                if (!listen || listen.state !== "LISTEN") return;
-
-                conn = new TCPSocket();
-                conn.port = tcp.dstPort;
-                conn.bindaddr = listen.bindaddr;
-                conn.state = "SYN-RECEIVED";
-                conn.theiracc = tcp.seq + 1;
-                conn.myacc = 1000; // TODO randomize
-                conn.peerIP = ipSrc;
-                conn.peerPort = tcp.srcPort;
-                conn.key = key;
-
-                this.tcpConns.set(key, conn);
-
-                this._sendTCP({
-                    srcIP: ipDst, dstIP: ipSrc,
-                    srcPort: tcp.dstPort, dstPort: tcp.srcPort,
-                    seq: conn.myacc,
-                    ack: conn.theiracc,
-                    flags: TCPPacket.FLAG_SYN | TCPPacket.FLAG_ACK,
-                    payload: new Uint8Array()
-                });
-
-                conn.myacc += 1;
-            }
-            return;
-        }
-
-        // --- RST handling ---
-        if (rst) {
-            //cowardly closes the port
-            while (conn.waiters.length) conn.waiters.shift()?.(null);
-            conn.state = "CLOSED";
-            this.tcpConns.delete(key);
-            return;
-        }
-
-        // --- FIN handling ---
-        if (fin) {
-            if (tcp.seq === conn.theiracc) conn.theiracc += 1;
-
-            if (conn.state === "FIN-WAIT-1" || conn.state === "FIN-WAIT-2") {
-                this._sendTCP({
-                    srcIP: ipDst,
-                    dstIP: ipSrc,
-                    srcPort: tcp.dstPort,
-                    dstPort: tcp.srcPort,
-                    seq: conn.myacc,           // seq bleibt, kein Verbrauch
-                    ack: conn.theiracc,
-                    flags: TCPPacket.FLAG_ACK,
-                    payload: new Uint8Array()
-                });
-
-                while (conn.waiters.length) conn.waiters.shift()?.(null);
-                conn.state = "CLOSED";
-                this.tcpConns.delete(key);
-                return;
-            }
-        }
-
-        if (conn.state === "SYN-RECEIVED") {
-            if (ack && tcp.ack === conn.myacc) {
-                conn.state = "ESTABLISHED";
-                conn.peerIP = ipSrc;
-                conn.peerPort = tcp.srcPort;
-
-                const listen = this.tcpSockets.get(conn.port);
-                if (listen && listen.state === "LISTEN") {
-                    const aw = listen.acceptWaiters.shift();
-                    if (aw) {
-                        aw(conn);
-                    } else {
-                        listen.acceptQueue.push(conn);
-                    }
-                }
-            }
-            return;
-        }
-
-        // --- Client side: SYN+ACK received ---
-        if (conn && conn.state === "SYN-SENT") {
-            if (syn && ack && tcp.ack === conn.myacc) {
-                conn.theiracc = tcp.seq + 1;
-                conn.state = "ESTABLISHED";
-
-                //send ACK
-                this._sendTCP({
-                    srcIP: ipDst,
-                    dstIP: ipSrc,
-                    srcPort: tcp.dstPort,
-                    dstPort: tcp.srcPort,
-                    seq: conn.myacc,
-                    ack: conn.theiracc,
-                    flags: TCPPacket.FLAG_ACK,
-                    payload: new Uint8Array()
-                });
-            }
-            return;
-        }
-
-        if (conn.state === "FIN-WAIT-1") {
-            if (ack && tcp.ack === conn.myacc) {
-                conn.state = "FIN-WAIT-2";
-            }
-        }
-
-        if (conn.state !== "ESTABLISHED") return;
-
-        const payload = tcp.payload ?? new Uint8Array();
-
-        // In-order check
-        if (tcp.seq !== conn.theiracc) {
-            // Out-of-order -> ACK what we expect (okay)
-            this._sendTCP({
-                srcIP: ipDst, dstIP: ipSrc,
-                srcPort: tcp.dstPort, dstPort: tcp.srcPort,
-                seq: conn.myacc,
-                ack: conn.theiracc,
-                flags: TCPPacket.FLAG_ACK,
-                payload: new Uint8Array()
-            });
-            return;
-        }
-
-        // ACK-only segment? -> do not ACK back
-        if (payload.length === 0 && !syn && !fin && !rst) {
-            return;
-        }
-
-        // Consume payload (if any)
-        if (payload.length > 0) {
-            conn.theiracc += payload.length;
-
-            const resolve = conn.waiters.shift();
-            if (resolve) resolve(payload);
-            else conn.in.push(payload);
-        }
-
-        // ACK, what we have comsumed
-        this._sendTCP({
-            srcIP: ipDst, dstIP: ipSrc,
-            srcPort: tcp.dstPort, dstPort: tcp.srcPort,
-            seq: conn.myacc,
-            ack: conn.theiracc,
-            flags: TCPPacket.FLAG_ACK,
-            payload: new Uint8Array()
-        });
+        return Math.max(1, (tick | 0) * 100);
     }
 
     /**
-     * sends a packet via tcp
-     *
-     * @param {Object} [opts]                    
-     * @param {number} [opts.srcIP]              
-     * @param {number} [opts.dstIP]              
-     * @param {number} [opts.srcPort]            
-     * @param {number} [opts.dstPort]            
-     * @param {number} [opts.seq]                
-     * @param {number} [opts.ack]                
-     * @param {number} [opts.flags]              
-     * @param {Uint8Array} [opts.payload] 
-     */
+     * Start (or restart) an ACK watchdog for a conn; on timeout, destroy it.
+     * @param {string} key
+     * @param {TCPSocket} conn
+     * @param {string} reason
+    */
+
+    _tcpStartAckWatchdog(key, conn, reason) {
+        if (conn._ackTimer != null) clearTimeout(conn._ackTimer);
+
+        const ms = this._tcpAckTimeoutMs();
+        conn._ackTimer = setTimeout(() => {
+            if (conn._ackTimer == null) return; // already cleared
+            // Only kill if still waiting in an ACK-dependent state
+            if (conn.state === "SYN-RECEIVED" || conn.state === "FIN-WAIT-1") {
+                this._tcpDestroy(key, conn, `${reason} (ACK timeout ${ms}ms)`);
+            }
+        }, ms);
+    }
+
+    /** @param {TCPSocket} conn */
+    _tcpStopAckWatchdog(conn) {
+        if (conn._ackTimer != null) {
+            clearTimeout(conn._ackTimer);
+            conn._ackTimer = null;
+        }
+    }
+
+
+    /** 
+     * sends a packet via tcp * 
+     * @param {Object} [opts] 
+     * @param {number} [opts.srcIP]  
+     * @param {number} [opts.dstIP] 
+     * @param {number} [opts.srcPort] 
+     * @param {number} [opts.dstPort] 
+     * @param {number} [opts.seq] 
+     * @param {number} [opts.ack]
+     * @param {number} [opts.flags] 
+     * @param {Uint8Array} [opts.payload] */
+
     _sendTCP(opts = {}) {
+
         const {
             srcIP,
             dstIP,
@@ -581,24 +506,233 @@ export class IPForwarder extends Observable {
             seq,
             ack,
             flags,
-            payload
+            payload 
         } = opts;
-
-        const tcpBytes = new TCPPacket({
-            srcPort,
-            dstPort,
-            seq,
-            ack,
-            flags,
-            payload
-        }).pack();
+        const tcpBytes = new TCPPacket({ 
+            srcPort, 
+            dstPort, 
+            seq, 
+            ack, 
+            flags, 
+            payload }
+        ).pack();
 
         this.send({
             dst: dstIP,
             src: srcIP,
-            protocol: 6, // TCP
+            protocol: 6,
             payload: tcpBytes
         });
+    }
+
+
+    /**
+     * handles an incoming TCP packet
+     * @param {IPv4Packet} packet
+     */
+    _handleTCP(packet) {
+        const tcp = TCPPacket.fromBytes(packet.payload);
+
+        const syn = tcp.hasFlag(TCPPacket.FLAG_SYN);
+        const ack = tcp.hasFlag(TCPPacket.FLAG_ACK);
+        const fin = tcp.hasFlag(TCPPacket.FLAG_FIN);
+        const rst = tcp.hasFlag(TCPPacket.FLAG_RST);
+
+        const ipSrc = IPUInt8ToNumber(packet.src);
+        const ipDst = IPUInt8ToNumber(packet.dst);
+
+        // Our local endpoint is dst of packet; remote endpoint is src of packet.
+        const localIP = ipDst;
+        const localPort = tcp.dstPort;
+        const remoteIP = ipSrc;
+        const remotePort = tcp.srcPort;
+
+        const key = this._tcpKey(localIP, localPort, remoteIP, remotePort);
+
+        /** @type {TCPSocket | undefined} */
+        let conn = this.tcpConns.get(key);
+
+        // -------------------------------------------------------------------------
+        // 0) No existing connection -> possibly a new inbound connection to LISTEN
+        // -------------------------------------------------------------------------
+        if (!conn) {
+            // Only SYN (without ACK) can create a new server-side connection.
+            if (!(syn && !ack)) return;
+
+            const listen = this.tcpSockets.get(localPort);
+            if (!listen || listen.state !== "LISTEN") return;
+
+            conn = new TCPSocket();
+            conn.port = localPort;
+            conn.bindaddr = listen.bindaddr;
+            conn.state = "SYN-RECEIVED";
+            conn.peerIP = remoteIP;
+            conn.peerPort = remotePort;
+            conn.theiracc = tcp.seq + 1;
+            conn.myacc = 1000; // TODO randomize
+            conn.key = key;
+
+            this.tcpConns.set(key, conn);
+
+            // Send SYN+ACK
+            this._sendTCP({
+                srcIP: localIP,
+                dstIP: remoteIP,
+                srcPort: localPort,
+                dstPort: remotePort,
+                seq: conn.myacc,
+                ack: conn.theiracc,
+                flags: TCPPacket.FLAG_SYN | TCPPacket.FLAG_ACK,
+                payload: new Uint8Array(),
+            });
+            conn.myacc += 1;
+
+            // Wait for the final ACK (high timeout)
+            this._tcpStartAckWatchdog(key, conn, "SYN-RECEIVED stuck");
+            return;
+        }
+
+        // -------------------------------------------------------------------------
+        // 1) RST: immediate teardown
+        // -------------------------------------------------------------------------
+        if (rst) {
+            this._tcpDestroy(key, conn, "RST");
+            return;
+        }
+
+        // Helper: send pure ACK reflecting what we consumed/expect.
+        const sendAck = () => {
+            this._sendTCP({
+                srcIP: localIP,
+                dstIP: remoteIP,
+                srcPort: localPort,
+                dstPort: remotePort,
+                seq: conn.myacc,
+                ack: conn.theiracc,
+                flags: TCPPacket.FLAG_ACK,
+                payload: new Uint8Array(),
+            });
+        };
+
+        // Helper: FIN ACK + close (used for FIN-WAIT-1/2)
+        const ackFinAndClose = () => {
+            sendAck();
+            this._tcpDestroy(key, conn, "peer FIN");
+        };
+
+        // -------------------------------------------------------------------------
+        // 2) Client handshake: SYN-SENT -> ESTABLISHED on SYN+ACK
+        // -------------------------------------------------------------------------
+        if (conn.state === "SYN-SENT") {
+            // Expect SYN+ACK that acknowledges our SYN (ack == conn.myacc)
+            if (syn && ack && tcp.ack === conn.myacc) {
+                conn.theiracc = tcp.seq + 1;
+                conn.state = "ESTABLISHED";
+
+                // stop SYN retransmit timer
+                if (conn._synTimer != null) { clearInterval(conn._synTimer); conn._synTimer = null; }
+
+                // resolve connect() awaiters
+                while (conn.connectWaiters.length) conn.connectWaiters.shift()?.(null);
+
+                // send final ACK
+                sendAck();
+            }
+            return;
+        }
+
+        // -------------------------------------------------------------------------
+        // 3) Server handshake: SYN-RECEIVED -> ESTABLISHED on final ACK
+        // -------------------------------------------------------------------------
+        if (conn.state === "SYN-RECEIVED") {
+            if (ack && tcp.ack === conn.myacc) {
+                conn.state = "ESTABLISHED";
+                this._tcpStopAckWatchdog(conn);
+
+                // publish to accept()
+                const listen = this.tcpSockets.get(conn.port);
+                if (listen && listen.state === "LISTEN") {
+                    const aw = listen.acceptWaiters.shift();
+                    if (aw) aw(conn);
+                    else listen.acceptQueue.push(conn);
+                }
+            }
+            return;
+        }
+
+        // -------------------------------------------------------------------------
+        // 4) Closing states (active close side)
+        // -------------------------------------------------------------------------
+
+        // FIN received anytime in FIN-WAIT-1 or FIN-WAIT-2: ACK + close
+        if (fin && (conn.state === "FIN-WAIT-1" || conn.state === "FIN-WAIT-2")) {
+            if (tcp.seq === conn.theiracc) conn.theiracc += 1;
+            ackFinAndClose();
+            return;
+        }
+
+        // FIN-WAIT-1 -> FIN-WAIT-2 when our FIN is ACKed
+        if (conn.state === "FIN-WAIT-1") {
+            if (ack && tcp.ack === conn.myacc) {
+                conn.state = "FIN-WAIT-2";
+                this._tcpStopAckWatchdog(conn);
+
+                // FIN-WAIT-2 timeout cleanup (avoid stuck sockets)
+                if (conn._fin2Timer != null) clearTimeout(conn._fin2Timer);
+                conn._fin2Timer = setTimeout(() => {
+                    if (conn.state === "FIN-WAIT-2") {
+                        this._tcpDestroy(key, conn, "FIN-WAIT-2 timeout");
+                    }
+                }, 10 * SimControl.tick);
+            }
+            // While we are closing, we ignore data path here.
+            return;
+        }
+
+        // If we're in FIN-WAIT-2 and get only ACK/data etc, we ignore (until FIN arrives or timeout fires)
+        if (conn.state === "FIN-WAIT-2") {
+            // Could optionally ACK in-order data here, but simplest is to ignore.
+            return;
+        }
+
+        // -------------------------------------------------------------------------
+        // 5) Established data path
+        // -------------------------------------------------------------------------
+        if (conn.state !== "ESTABLISHED") return;
+
+        // FIN received in ESTABLISHED (passive close) — currently you don't implement CLOSE-WAIT/LAST-ACK.
+        // For now: ACK + close (simple, a bit unrealistic but consistent with your minimal stack).
+        if (fin) {
+            if (tcp.seq === conn.theiracc) conn.theiracc += 1;
+            sendAck();
+            this._tcpDestroy(key, conn, "peer FIN (ESTABLISHED)");
+            return;
+        }
+
+        const payload = tcp.payload ?? new Uint8Array();
+
+        // Out-of-order -> ACK what we expect
+        if (tcp.seq !== conn.theiracc) {
+            sendAck();
+            return;
+        }
+
+        // Pure ACK-only segment -> ignore
+        if (payload.length === 0 && !syn && !fin && !rst) {
+            return;
+        }
+
+        // Consume payload
+        if (payload.length > 0) {
+            conn.theiracc += payload.length;
+
+            const resolve = conn.waiters.shift();
+            if (resolve) resolve(payload);
+            else conn.in.push(payload);
+        }
+
+        // ACK consumed bytes
+        sendAck();
     }
 
     /****************************************************** UDP **********************************/
@@ -724,7 +858,7 @@ export class IPForwarder extends Observable {
      * @returns {Promise<{bytes:number, ttl:number, timeMs:number, identifier:number, sequence:number}>}
      */
     async icmpEcho(dstIpNum, opt = {}) {
-        const timeoutMs = opt.timeoutMs ?? 1000;
+        const timeoutMs = opt.timeoutMs ?? 20 * SimControl.tick;
         const identifier = opt.identifier ?? (this._nextIcmpId = (this._nextIcmpId + 1) & 0xffff);
         const sequence = opt.sequence ?? (Math.random() * 0xffff) | 0;
         const payload = opt.payload ?? new Uint8Array(32); // beliebig
@@ -1105,4 +1239,17 @@ export class TCPSocket {
 
     /** @type {Array<(value: TCPSocket|null) => void>} */
     acceptWaiters = [];
+
+    /** @type {any} */
+    _ackTimer = null;
+
+    /** @type {any} */
+    _synTimer = null;
+
+    /** @type {any} */
+    _fin2Timer = null;
+
+    /** @type {Array<(err: Error|null) => void>} */
+    connectWaiters = [];
+
 }
