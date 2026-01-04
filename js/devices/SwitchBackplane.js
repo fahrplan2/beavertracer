@@ -2,7 +2,7 @@
 
 import { isEqualUint8, MACToNumber } from "../helpers.js";
 import { EthernetPort } from "./EthernetPort.js";
-import { Observable } from "./Observeable.js";
+import { Observable } from "../common/Observeable.js";
 
 export class SwitchBackplane extends Observable {
    

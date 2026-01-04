@@ -1,0 +1,350 @@
+/************************************ TERMINAL ***********************/
+.app-terminal .term {
+  font-family: "Monospace regular","Courier New", monospace;
+  font-size: 18px;
+  line-height: 18px;
+  white-space: pre;
+  overflow: hidden;
+  background-color: #202020;
+  color: #00FF00;
+  padding: 7px;
+}
+
+.app-terminal .term:focus {
+  outline: none;
+}
+
+.app-terminal .term::selection {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+
+
+/************************************* BROWSER **********************/
+.app-sparktail-http {
+  padding: 6px;
+  color: var(--text);
+}
+
+/* ---------------------------------------------------------
+   Chrome / Address bar (NO button styling!)
+   --------------------------------------------------------- */
+.app-sparktail-http .sparktail-chrome {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+
+  background: linear-gradient(180deg, var(--bg1), var(--bg2));
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+
+/* Address bar: browser-like white */
+.app-sparktail-http .sparktail-chrome input {
+  flex: 1;
+  min-width: 120px;
+
+  padding: 10px 14px;
+  border-radius: 999px;
+
+  background: white;
+  color: var(--text);
+
+  border: 1px solid var(--primary-soft);
+  outline: none;
+
+  font-family: ui-sans-serif, system-ui;
+  font-size: 14px;
+}
+
+.app-sparktail-http .sparktail-chrome input::placeholder {
+  color: var(--muted);
+}
+
+.app-sparktail-http .sparktail-chrome input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-tint);
+}
+
+/* Loading indicator */
+.app-sparktail-http .sparktail-throbber {
+  width: 26px;
+  text-align: center;
+  user-select: none;
+  color: var(--muted);
+}
+
+/* =========================================================
+   Sparktail HTTP – Browser Look (statusbar minimal & bottom)
+   ========================================================= */
+
+.app-sparktail-http {
+  padding: 6px;
+  color: var(--text);
+
+  /* erlaubt eine Footer-Statuszeile */
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* ---------------------------------------------------------
+   Chrome / Address bar
+   --------------------------------------------------------- */
+.app-sparktail-http .sparktail-chrome {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+
+  background: linear-gradient(180deg, var(--bg1), var(--bg2));
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+
+/* Address bar */
+.app-sparktail-http .sparktail-chrome input {
+  flex: 1;
+  min-width: 120px;
+
+  padding: 10px 14px;
+  border-radius: 999px;
+
+  background: white;
+  color: var(--text);
+
+  border: 1px solid var(--primary-soft);
+  outline: none;
+
+  font-family: ui-sans-serif, system-ui;
+  font-size: 14px;
+}
+
+.app-sparktail-http .sparktail-chrome input::placeholder {
+  color: var(--muted);
+}
+
+.app-sparktail-http .sparktail-chrome input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-tint);
+}
+
+/* Throbber */
+.app-sparktail-http .sparktail-throbber {
+  width: 26px;
+  text-align: center;
+  user-select: none;
+  color: var(--muted);
+}
+
+/* ---------------------------------------------------------
+   Main content area grows
+   --------------------------------------------------------- */
+.app-sparktail-http .panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+}
+
+/* ---------------------------------------------------------
+   Preview / Devtools
+   --------------------------------------------------------- */
+.app-sparktail-http iframe.sparktail-preview {
+  background: white;
+  border-radius: 12px !important;
+  box-shadow: var(--shadow);
+}
+
+.app-sparktail-http textarea.sparktail-source,
+.app-sparktail-http textarea.sparktail-headers,
+.app-sparktail-http .sparktail-log {
+  background: var(--surface);
+  color: var(--text);
+
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+
+  padding: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+               "Liberation Mono", monospace;
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+
+/* ---------------------------------------------------------
+   Tabs
+   --------------------------------------------------------- */
+.app-sparktail-http .button-row {
+  margin-top: 8px;
+  gap: 8px;
+}
+
+/* ---------------------------------------------------------
+   Status bar – bottom, plain text, no decoration
+   --------------------------------------------------------- */
+.app-sparktail-http .sparktail-status {
+  margin-top: auto;
+  padding: 6px 10px;
+
+  background: none;
+  border: none;
+  box-shadow: none;
+
+  color: var(--muted);
+  font-family: ui-sans-serif, system-ui;
+  font-size: 12px;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/************************************ EDITOR ***********************/
+
+
+.app-editor,
+.app-editor .panel,
+.app-editor .panel > * {
+  min-height: 0; /* important for flex children to shrink correctly */
+}
+
+.app-editor .panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.app-editor .editor-area {
+  flex: 1 1 auto;
+  min-height: 30rem;   
+  width: 100%;
+  resize: none;          /* not resizable */
+  font-family: "Monospace regular","Courier New", monospace;
+  box-sizing: border-box;
+  background-color: white;
+}
+
+.app-editor .editor-area {
+  white-space: pre;
+  overflow: auto;
+}
+
+.app-editor .editor-area:focus,
+.app-editor .editor-area:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+
+/* Ensure the app/process root can size children properly */
+.app-editor {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Picker takes over the app area (no absolute positioning) */
+.fp-screen {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+/* Dialog box */
+.fp-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  width: min(36rem, 100%);
+  max-height: 80vh;
+
+  padding: 0.75rem;
+  box-sizing: border-box;
+}
+
+/* Title */
+.fp-title {
+  font-weight: 600;
+  user-select: none;
+}
+
+/* Filename input */
+.fp-name {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Scrollable list */
+.fp-list {
+  flex: 1 1 auto;
+  min-height: 10rem;
+  overflow: auto;
+
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+/* Items */
+.fp-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 4px;
+}
+
+/* Non-invasive hover/selection (no hardcoded colors) */
+.fp-item:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+.fp-item.is-selected {
+  background: color-mix(in srgb, currentColor 16%, transparent);
+}
+
+/* Icons */
+.fp-item::before {
+  width: 1.25em;
+  text-align: center;
+  flex: 0 0 auto;
+  opacity: 0.85;
+}
+.fp-dir::before { content: "📁"; }
+.fp-file::before { content: "📄"; }
+
+
+.msg {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 12.5px;
+  line-height: 1.4;
+
+  /*background: #0e1116;*/
+  color: #d7dce2;
+
+  border: 1px solid #2a2f3a;
+  border-radius: 6px;
+
+  padding: 8px 10px;
+  margin: 4px 0;
+
+  white-space: pre;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  max-height: 240px;
+}

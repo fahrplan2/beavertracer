@@ -4,7 +4,7 @@ import { EthernetPort } from "./EthernetPort.js";
 import { EthernetFrame } from "../pdu/EthernetFrame.js"
 import { IPOctetsToNumber, IPNumberToOctets, sleep, IPNumberToUint8, IPUInt8ToNumber, isEqualUint8 } from "../helpers.js";
 import { ArpPacket } from "../pdu/ArpPacket.js";
-import { Observable } from "./Observeable.js";
+import { Observable } from "../common/Observeable.js";
 import { SimControl } from "../SimControl.js";
 import { IPv4Packet } from "../pdu/IPv4Packet.js";
 
@@ -59,6 +59,9 @@ export class NetworkInterface extends Observable {
 
         this.port = new EthernetPort();
         this.port.subscribe(this);
+        
+        // @ts-ignore   //KleC: aktuell wird toHex() nicht als gültige Funktion erkannt. Im Firefox geht es.
+        this.name = (opts.name ?? 'enx'+this.mac.toHex());
 
         this.configure(opts);
     }
@@ -73,8 +76,6 @@ export class NetworkInterface extends Observable {
     configure(opts={}) {
         this.ip = (opts.ip ?? IPOctetsToNumber(192,168,0,10));
         this.netmask = (opts.netmask ?? IPOctetsToNumber(255,255,255,0));
-        // @ts-ignore   //KleC: aktuell wird toHex() nicht als gültige Funktion erkannt. Im Firefox geht es.
-        this.name = (opts.name ?? 'enx'+this.mac.toHex());
 
         //Clear ARP-Cache
         this.arpTable = new Map();

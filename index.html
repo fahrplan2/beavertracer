@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <link rel="icon" href="data:,">
+    <title>Test Page</title>
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    <h1>Hallo Welt.</h1>
+
+    <div class="tabs">
+        <button class="tab active" data-target="simcontrol">Simulation</button>
+        <button class="tab" data-target="pcapviewer">PCAP Viewer</button>
+    </div>
+
+    <div id="simcontrol" class="tab-content active sim-root"></div>
+    <div id="pcapviewer" class="tab-content"></div>
+</body>
+</html>
+
+<script type="module" src="js/main.js"></script>
+

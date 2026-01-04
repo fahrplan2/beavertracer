@@ -1,0 +1,147 @@
+/* Root layout */
+.pcapviewer-root{
+  display: grid;
+  grid-template-rows: auto 1fr;
+  font-family: system-ui, sans-serif;
+
+  width: 100%;
+  height: 100vh;
+  border: 1px solid #333;
+  overflow: hidden;
+  user-select: none;
+
+}
+
+.pcapviewer-toolbar{
+  display:flex;
+  gap:8px;
+  padding:8px;
+  border-bottom:1px solid #ddd;
+  align-items:center;
+}
+
+.pcapviewer-filter{
+  flex:1;
+  padding:6px 8px;
+}
+
+.pcapviewer-status{
+  opacity: 0.8;
+  font-size: 12px;
+}
+
+/* Main layout */
+.pcapviewer-layout{
+  display:grid;
+  grid-template-rows: 1fr 1fr;
+  min-height: 0;
+}
+
+.pcapviewer-bottom{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:8px;
+  padding:8px;
+  min-height:0;
+}
+
+.pcapviewer-pane{
+  border:1px solid #ddd;
+  overflow:auto;
+  min-height:0;
+}
+
+/* Table */
+.pcapviewer-table{
+  width:100%;
+  border-collapse: collapse;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+
+.pcapviewer-table th,
+.pcapviewer-table td{
+  border-bottom:1px solid #eee;
+  padding:6px 8px;
+  white-space: nowrap;
+}
+
+.pcapviewer-row{ cursor:pointer; }
+.pcapviewer-row--ignored{ opacity: 0.55; }
+.pcapviewer-row--marked{ font-weight: 600; }
+
+/* Don’t override Wiregasm bg colors; use outline for selection */
+.pcapviewer-row--selected{
+  outline: 2px solid rgba(0,0,0,0.25);
+  outline-offset: -2px;
+}
+
+/* Tree + raw share monospace like table */
+.pcapviewer-pane--tree,
+.pcapviewer-pane--raw{
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+
+.pcapviewer-treepane{ padding: 8px; }
+.pcapviewer-rawpane{ margin:0; padding:8px; }
+
+/* Tree */
+.pcapviewer-tree-title{
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.pcapviewer-tree ul{
+  list-style: none;
+  margin: 0;
+  padding-left: 14px;
+}
+
+.pcapviewer-tree-node{
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: default;
+  user-select: none;
+}
+
+.pcapviewer-tree-node:hover{
+  background: rgba(0,0,0,0.06);
+}
+
+.pcapviewer-tree-twisty{
+  width: 16px;
+  text-align: center;
+  opacity: 0.85;
+  cursor: pointer;
+}
+
+.pcapviewer-tree-label{
+  white-space: pre-wrap;
+  word-break: break-word;
+  cursor: pointer;
+}
+
+.pcapviewer-tree-children{
+  margin-left: 10px;
+  border-left: 1px solid rgba(0,0,0,0.12);
+  padding-left: 10px;
+}
+
+.pcapviewer-tree-leaf .pcapviewer-tree-twisty{
+  opacity: 0.25;
+  cursor: default;
+}
+
+.pcapviewer-selected{
+  background: rgba(0,0,0,0.10);
+  outline: 1px solid rgba(0,0,0,0.12);
+}
+
+/* Collapse rule: class sits on LI */
+.pcapviewer-tree li.pcapviewer-collapsed > .pcapviewer-tree-children{
+  display: none;
+}
