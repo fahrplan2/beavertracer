@@ -1,11 +1,15 @@
 //@ts-check
 
+import { t } from "../i18n/index.js";
 import { GenericProcess } from "./GenericProcess.js";
 import { CleanupBag } from "./lib/CleanupBag.js";
 import { UILib } from "./lib/UILib.js";
 
 
 export class IPv4ConfigApp extends GenericProcess {
+
+  title=t("app.ipv4config.title");
+
   /** @type {HTMLSelectElement|null} */ ifSel = null;
   /** @type {HTMLInputElement|null} */ ipEl = null;
   /** @type {HTMLInputElement|null} */ maskEl = null;
@@ -15,7 +19,6 @@ export class IPv4ConfigApp extends GenericProcess {
   bag = new CleanupBag();
 
   run() {
-    this.title = "IPv4 Config";
     this.root.classList.add("app", "app-ipv4");
   }
 
@@ -28,7 +31,7 @@ export class IPv4ConfigApp extends GenericProcess {
     // If this instance was mounted before, make sure we start clean.
     this.bag.dispose();
 
-    const fwd = this.os.ipforwarder;
+    const fwd = this.os.net;
     const ifs = fwd?.interfaces ?? [];
 
     const msg = UILib.el("div", { className: "msg" });
@@ -95,7 +98,7 @@ export class IPv4ConfigApp extends GenericProcess {
   }
 
   _load() {
-    const fwd = this.os.ipforwarder;
+    const fwd = this.os.net;
     if (!fwd?.interfaces) return;
 
     const i = this._idx();
@@ -113,7 +116,7 @@ export class IPv4ConfigApp extends GenericProcess {
   }
 
   _apply() {
-    const fwd = this.os.ipforwarder;
+    const fwd = this.os.net;
     if (!fwd) return this._setMsg("No ipforwarder on OS.");
 
     const i = this._idx();

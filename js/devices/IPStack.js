@@ -21,7 +21,7 @@ import { SimControl } from "../SimControl.js";
  * 
  */
 
-export class IPForwarder extends Observable {
+export class IPStack extends Observable {
 
     /** @type {Array<NetworkInterface>} */
     interfaces = [];

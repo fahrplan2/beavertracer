@@ -3,6 +3,7 @@
 import { GenericProcess } from "./GenericProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
 import { CleanupBag } from "./lib/CleanupBag.js";
+import { t } from "../i18n/index.js";
 
 /**
  * @param {number} n
@@ -58,6 +59,9 @@ function parseTCPKey(key) {
 }
 
 export class SimpleTCPServerApp extends GenericProcess {
+
+  title = t("app.simpletcpserver.title");
+
   /** @type {CleanupBag} */
   bag = new CleanupBag();
 
@@ -89,7 +93,6 @@ export class SimpleTCPServerApp extends GenericProcess {
   conns = new Set();
 
   run() {
-    this.title = "Simple TCP Server";
     this.root.classList.add("app", "app-simple-tcp-server");
     // not auto-starting
   }
@@ -193,7 +196,7 @@ export class SimpleTCPServerApp extends GenericProcess {
     if (this.running) return;
 
     try {
-      const port = this.os.ipforwarder.openTCPServerSocket(0, this.port);
+      const port = this.os.net.openTCPServerSocket(0, this.port);
       this.listenPort = port;
       this.running = true;
 
@@ -219,13 +222,13 @@ export class SimpleTCPServerApp extends GenericProcess {
 
     // best-effort close active conns (FIN)
     for (const key of Array.from(this.conns)) {
-      try { this.os.ipforwarder.closeTCPConn(key); } catch { /* ignore */ }
+      try { this.os.net.closeTCPConn(key); } catch { /* ignore */ }
       this.conns.delete(key);
     }
 
     if (port != null) {
       try {
-        this.os.ipforwarder.closeTCPServerSocket(port);
+        this.os.net.closeTCPServerSocket(port);
         this._appendLog(`[${nowStamp()}] Stopped (listen port ${port} closed)`);
       } catch (e) {
         this._appendLog(`[${nowStamp()}] ERROR stop: ${e instanceof Error ? e.message : String(e)}`);
@@ -242,7 +245,7 @@ export class SimpleTCPServerApp extends GenericProcess {
       /** @type {string|null} */
       let key = null;
       try {
-        key = await this.os.ipforwarder.acceptTCPConn(port);
+        key = await this.os.net.acceptTCPConn(port);
       } catch (e) {
         this._appendLog(`[${nowStamp()}] ERROR accept: ${e instanceof Error ? e.message : String(e)}`);
         continue;
@@ -281,7 +284,7 @@ export class SimpleTCPServerApp extends GenericProcess {
         /** @type {Uint8Array|null} */
         let data = null;
         try {
-          data = await this.os.ipforwarder.recvTCPConn(key);
+          data = await this.os.net.recvTCPConn(key);
         } catch (e) {
           this._appendLog(`[${nowStamp()}] ERROR recv ${who}: ${e instanceof Error ? e.message : String(e)}`);
           break;
@@ -295,7 +298,7 @@ export class SimpleTCPServerApp extends GenericProcess {
         );
 
         try {
-          this.os.ipforwarder.sendTCPConn(key, data);
+          this.os.net.sendTCPConn(key, data);
           this._appendLog(`[${nowStamp()}] TX echo ${who} len=${data.length}`);
         } catch (e) {
           this._appendLog(`[${nowStamp()}] ERROR send ${who}: ${e instanceof Error ? e.message : String(e)}`);
@@ -306,7 +309,7 @@ export class SimpleTCPServerApp extends GenericProcess {
       this.conns.delete(key);
 
       // make sure we FIN if still around
-      try { this.os.ipforwarder.closeTCPConn(key); } catch { /* ignore */ }
+      try { this.os.net.closeTCPConn(key); } catch { /* ignore */ }
 
       this._appendLog(`[${nowStamp()}] DISCONNECT ${who}`);
       this._syncButtons();

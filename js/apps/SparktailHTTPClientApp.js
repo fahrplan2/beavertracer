@@ -8,6 +8,7 @@ import { SimControl } from "../SimControl.js";
 
 //@ts-ignore   Import ist raw für vite
 import startPage from "./assets/about-start.html?raw"
+import { t } from "../i18n/index.js";
 
 
 /**
@@ -303,6 +304,9 @@ function normalizeUrlInput(input) {
 }
 
 export class SparktailHTTPClientApp extends GenericProcess {
+
+    title = t("app.sparktail.title");
+
     /** @type {CleanupBag} */
     bag = new CleanupBag();
 
@@ -367,7 +371,6 @@ export class SparktailHTTPClientApp extends GenericProcess {
     historyIndex = -1;
 
     run() {
-        this.title = "Sparktail (HTTP)";
         this.root.classList.add("app", "app-sparktail-http");
     }
 
@@ -633,7 +636,7 @@ export class SparktailHTTPClientApp extends GenericProcess {
         const key = this.connKey;
         this.connKey = null;
         if (key) {
-            try { this.os.ipforwarder.closeTCPConn(key); } catch { /* ignore */ }
+            try { this.os.net.closeTCPConn(key); } catch { /* ignore */ }
         }
         this._append(`[${nowStamp()}] STOP`);
         this._setStatus("Stopp.");
@@ -733,7 +736,7 @@ export class SparktailHTTPClientApp extends GenericProcess {
         let key = null;
 
         try {
-            const conn = await withTimeout(this.os.ipforwarder.connectTCPConn(dstIP, port), timeout, "Connect");
+            const conn = await withTimeout(this.os.net.connectTCPConn(dstIP, port), timeout, "Connect");
             key = conn?.key;
             if (typeof key !== "string" || !key) throw new Error("connectTCPConn lieferte keinen connection key");
             this.connKey = key;
@@ -758,7 +761,7 @@ export class SparktailHTTPClientApp extends GenericProcess {
 
         const reqBytes = encodeUTF8(request);
         try {
-            this.os.ipforwarder.sendTCPConn(key, reqBytes);
+            this.os.net.sendTCPConn(key, reqBytes);
             this._append(`[${nowStamp()}] -> ${host}:${port} GET ${path} (len=${reqBytes.length} hex=${hexPreview(reqBytes)})`);
         } catch (e) {
             const msg = e instanceof Error ? e.message : String(e);
@@ -774,7 +777,7 @@ export class SparktailHTTPClientApp extends GenericProcess {
 
         try {
             while (this.loading && this.requestSeq === seq && this.connKey === key) {
-                const data = await withTimeout(this.os.ipforwarder.recvTCPConn(key), timeout, "Recv");
+                const data = await withTimeout(this.os.net.recvTCPConn(key), timeout, "Recv");
                 if (data == null) break; // remote closed
 
                 chunks.push(data);
@@ -793,7 +796,7 @@ export class SparktailHTTPClientApp extends GenericProcess {
         }
 
         // Close conn
-        try { this.os.ipforwarder.closeTCPConn(key); } catch { /* ignore */ }
+        try { this.os.net.closeTCPConn(key); } catch { /* ignore */ }
         if (this.connKey === key) this.connKey = null;
 
         // If cancelled, stop quietly

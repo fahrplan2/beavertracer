@@ -26,10 +26,10 @@ var pc3 = new PC("PC3");
 var pc4 = new PC("PC4");
 var sw1 = new Switch("Switch 1");
 
-pc1.os.ipforwarder.configureInterface(0, { ip: IPOctetsToNumber(192, 168, 0, 1), netmask: IPOctetsToNumber(255, 255, 255, 0) });
-pc2.os.ipforwarder.configureInterface(0, { ip: IPOctetsToNumber(192, 168, 0, 2), netmask: IPOctetsToNumber(255, 255, 255, 0) });
+pc1.os.net.configureInterface(0, { ip: IPOctetsToNumber(192, 168, 0, 1), netmask: IPOctetsToNumber(255, 255, 255, 0) });
+pc2.os.net.configureInterface(0, { ip: IPOctetsToNumber(192, 168, 0, 2), netmask: IPOctetsToNumber(255, 255, 255, 0) });
 
-var port = pc2.os.ipforwarder.openUDPSocket(0, 9999);
+var port = pc2.os.net.openUDPSocket(0, 9999);
 
 
 console.log(sim);

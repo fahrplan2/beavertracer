@@ -1,12 +1,14 @@
 //@ts-check
+import { t } from "../i18n/index.js";
 import { GenericProcess } from "./GenericProcess.js";
 
 export class AboutApp extends GenericProcess {
     /** @type {number|null} */
     timer = null;
 
+    title=t("app.about.title");
+
     run() {
-        this.title = "About";
         this.root.classList.add("app-about");
     }
 

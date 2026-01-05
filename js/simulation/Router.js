@@ -1,6 +1,6 @@
 //@ts-check
 
-import { IPForwarder } from "../devices/IPForwarder.js";
+import { IPStack } from "../devices/IPStack.js";
 import { SimulatedObject } from "./SimulatedObject.js";
 
 export class Router extends SimulatedObject {
@@ -13,6 +13,6 @@ export class Router extends SimulatedObject {
      */
     constructor(name='Router') {
         super(name);
-        this.device = new IPForwarder(2,name);
+        this.device = new IPStack(2,name);
     }
 }

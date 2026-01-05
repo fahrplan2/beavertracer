@@ -4,6 +4,7 @@ import { GenericProcess } from "./GenericProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
 import { CleanupBag } from "./lib/CleanupBag.js";
 import { registerBuiltins } from "./terminal/commands/index.js";
+import { t } from "../i18n/index.js";
 
 
 /**
@@ -13,6 +14,8 @@ import { registerBuiltins } from "./terminal/commands/index.js";
 
 
 export class TerminalApp extends GenericProcess {
+
+    title = t("app.terminal.title");
     /** @type {CleanupBag} */
     bag = new CleanupBag();
 
@@ -104,7 +107,6 @@ export class TerminalApp extends GenericProcess {
 
 
     run() {
-        this.title = "Terminal";
         this.root.classList.add("app", "app-terminal");
         this._registerBuiltins();
 

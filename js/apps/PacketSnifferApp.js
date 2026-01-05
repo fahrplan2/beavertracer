@@ -29,6 +29,8 @@ function ifaceLoggedFrames(iface) {
 }
 
 export class PacketSnifferApp extends GenericProcess {
+  title = t("app.packetsniffer.title");
+  
   /** @type {CleanupBag} */
   bag = new CleanupBag();
 
@@ -36,7 +38,6 @@ export class PacketSnifferApp extends GenericProcess {
   listEl = null;
 
   run() {
-    this.title = t("app.packetsniffer.title");
     this.root.classList.add("app", "app-packetsniffer");
   }
 
@@ -67,8 +68,8 @@ export class PacketSnifferApp extends GenericProcess {
   _render() {
     if (!this.listEl) return;
 
-    const ifaces = Array.isArray(this.os?.ipforwarder?.interfaces)
-      ? this.os.ipforwarder.interfaces
+    const ifaces = Array.isArray(this.os?.net?.interfaces)
+      ? this.os.net.interfaces
       : [];
 
     if (!ifaces.length) {

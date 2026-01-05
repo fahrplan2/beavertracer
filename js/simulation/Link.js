@@ -167,7 +167,7 @@ export class Link extends SimulatedObject {
   _getNextFreePortFromObject(obj) {
     if (obj instanceof Switch) return obj.device.getNextFreePort();
     if (obj instanceof Router) return obj.device.getNextFreeInterfacePort();
-    if (obj instanceof PC) return obj.os.ipforwarder.getNextFreeInterfacePort();
+    if (obj instanceof PC) return obj.os.net.getNextFreeInterfacePort();
     return null;
   }
 }

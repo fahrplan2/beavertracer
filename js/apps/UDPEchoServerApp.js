@@ -3,6 +3,7 @@
 import { GenericProcess } from "./GenericProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
 import { CleanupBag } from "./lib/CleanupBag.js";
+import { t } from "../i18n/index.js";
 
 /**
  * @param {number} n
@@ -35,7 +36,9 @@ function hexPreview(data) {
   return s;
 }
 
-export class UDPEchoApp extends GenericProcess {
+export class UDPEchoServerApp extends GenericProcess {
+
+  title = t("app.udpechoserver.title");
   /** @type {CleanupBag} */
   bag = new CleanupBag();
 
@@ -64,7 +67,6 @@ export class UDPEchoApp extends GenericProcess {
   stopBtn = null;
 
   run() {
-    this.title = "UDP Echo";
     this.root.classList.add("app", "app-udp-echo");
     // NICHT automatisch starten – User entscheidet (kannst du ändern)
   }
@@ -176,7 +178,7 @@ export class UDPEchoApp extends GenericProcess {
 
     try {
       // bindaddr must be 0 (0.0.0.0)
-      const port = this.os.ipforwarder.openUDPSocket(0, this.port);
+      const port = this.os.net.openUDPSocket(0, this.port);
       this.socketPort = port;
       this.running = true;
       this._appendLog(`[${nowStamp()}] Listening on 0.0.0.0:${port}`);
@@ -201,7 +203,7 @@ export class UDPEchoApp extends GenericProcess {
 
     if (port != null) {
       try {
-        this.os.ipforwarder.closeUDPSocket(port);
+        this.os.net.closeUDPSocket(port);
         this._appendLog(`[${nowStamp()}] Stopped (port ${port} closed)`);
       } catch (e) {
         this._appendLog(`[${nowStamp()}] ERROR stop: ${e instanceof Error ? e.message : String(e)}`);
@@ -219,7 +221,7 @@ export class UDPEchoApp extends GenericProcess {
       /** @type {any} */
       let pkt = null;
       try {
-        pkt = await this.os.ipforwarder.recvUDPSocket(port);
+        pkt = await this.os.net.recvUDPSocket(port);
       } catch (e) {
         this._appendLog(`[${nowStamp()}] ERROR recv: ${e instanceof Error ? e.message : String(e)}`);
         continue;
@@ -246,7 +248,7 @@ export class UDPEchoApp extends GenericProcess {
 
       // echo back
       try {
-        this.os.ipforwarder.sendUDPSocket(port, srcIp, srcPort, data);
+        this.os.net.sendUDPSocket(port, srcIp, srcPort, data);
         this._appendLog(`[${nowStamp()}] TX echo to ${ipToString(srcIp)}:${srcPort} len=${data.length}`);
       } catch (e) {
         this._appendLog(`[${nowStamp()}] ERROR send: ${e instanceof Error ? e.message : String(e)}`);

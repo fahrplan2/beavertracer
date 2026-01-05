@@ -4,6 +4,7 @@ import { GenericProcess } from "./GenericProcess.js";
 import { CleanupBag } from "./lib/CleanupBag.js";
 import { UILib as UI } from "./lib/UILib.js";
 import { SimControl } from "../SimControl.js"; // ggf. Pfad anpassen
+import { t } from "../i18n/index.js";
 
 /**
  * @param {number} n
@@ -164,11 +165,14 @@ function withTimeout(p, ms, label) {
 }
 
 export class SimpleHTTPServerApp extends GenericProcess {
+  
+  title = t("app.simplehttpserver.title");
+
   /** @type {CleanupBag} */
   bag = new CleanupBag();
 
   /** @type {number} */
-  port = 8080;
+  port = 80;
 
   /** @type {string} */
   docRoot = "/var/www/";
@@ -321,7 +325,7 @@ export class SimpleHTTPServerApp extends GenericProcess {
 
     if (ref != null) {
       try {
-        this.os.ipforwarder.closeTCPServerSocket(ref);
+        this.os.net.closeTCPServerSocket(ref);
       } catch (e) {
         this._append(`[${nowStamp()}] ERROR stop: ${e instanceof Error ? e.message : String(e)}`);
       }
@@ -364,7 +368,7 @@ export class SimpleHTTPServerApp extends GenericProcess {
 
     let ref = null;
     try {
-      ref = this.os.ipforwarder.openTCPServerSocket(0, this.port); // bind 0.0.0.0
+      ref = this.os.net.openTCPServerSocket(0, this.port); // bind 0.0.0.0
     } catch (e) {
       this._append(`[${nowStamp()}] ERROR openTCPServerSocket: ${e instanceof Error ? e.message : String(e)}`);
       return;
@@ -392,7 +396,7 @@ export class SimpleHTTPServerApp extends GenericProcess {
       let connKey = null;
 
       try {
-        connKey = await this.os.ipforwarder.acceptTCPConn(ref);
+        connKey = await this.os.net.acceptTCPConn(ref);
       } catch (e) {
         if (this.running && this.runSeq === seq) {
           this._append(`[${nowStamp()}] ERROR accept: ${e instanceof Error ? e.message : String(e)}`);
@@ -409,7 +413,7 @@ export class SimpleHTTPServerApp extends GenericProcess {
       // handle connection concurrently
       this._handleConn(seq, connKey).catch((e) => {
         this._append(`[${nowStamp()}] ERROR conn: ${e instanceof Error ? e.message : String(e)}`);
-        try { this.os.ipforwarder.closeTCPConn(connKey); } catch { /* ignore */ }
+        try { this.os.net.closeTCPConn(connKey); } catch { /* ignore */ }
       });
     }
   }
@@ -420,7 +424,7 @@ export class SimpleHTTPServerApp extends GenericProcess {
    * @param {string} connKey
    */
   async _handleConn(seq, connKey) {
-    const ipf = this.os.ipforwarder;
+    const ipf = this.os.net;
     const timeout = this._timeoutMs();
 
     // Read until header end

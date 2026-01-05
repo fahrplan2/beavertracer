@@ -3,6 +3,7 @@
 import { GenericProcess } from "./GenericProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
 import { CleanupBag } from "./lib/CleanupBag.js";
+import { t } from "../i18n/index.js";
 
 /**
  * @param {number} n
@@ -108,6 +109,9 @@ function decodeUTF8(b) {
 }
 
 export class SimpleTCPClientApp extends GenericProcess {
+
+  title = t("app.simpletcpclient.title");
+
   /** @type {CleanupBag} */
   bag = new CleanupBag();
 
@@ -148,7 +152,6 @@ export class SimpleTCPClientApp extends GenericProcess {
   sendBtn = null;
 
   run() {
-    this.title = "Simple TCP Client";
     this.root.classList.add("app", "app-simple-tcp-client");
   }
 
@@ -311,7 +314,7 @@ export class SimpleTCPClientApp extends GenericProcess {
     }
 
     try {
-      const conn = await this.os.ipforwarder.connectTCPConn(dstIP, this.port);
+      const conn = await this.os.net.connectTCPConn(dstIP, this.port);
 
       // connectTCPConn returns a TCPSocket; but we only need its key
       const key = conn?.key;
@@ -345,7 +348,7 @@ export class SimpleTCPClientApp extends GenericProcess {
 
     if (key) {
       try {
-        this.os.ipforwarder.closeTCPConn(key);
+        this.os.net.closeTCPConn(key);
         this._append(`[${nowStamp()}] DISCONNECT requested`);
       } catch (e) {
         this._append(`[${nowStamp()}] ERROR disconnect: ${e instanceof Error ? e.message : String(e)}`);
@@ -366,7 +369,7 @@ export class SimpleTCPClientApp extends GenericProcess {
     const who = info.ok ? `${ipToString(info.remoteIP)}:${info.remotePort}` : this.connKey;
 
     try {
-      this.os.ipforwarder.sendTCPConn(this.connKey, data);
+      this.os.net.sendTCPConn(this.connKey, data);
       this._append(`[${nowStamp()}] ME -> ${who}: "${msg}" (len=${data.length} hex=${hexPreview(data)})`);
       if (this.msgEl) this.msgEl.value = "";
     } catch (e) {
@@ -385,7 +388,7 @@ export class SimpleTCPClientApp extends GenericProcess {
       /** @type {Uint8Array|null} */
       let data = null;
       try {
-        data = await this.os.ipforwarder.recvTCPConn(key);
+        data = await this.os.net.recvTCPConn(key);
       } catch (e) {
         this._append(`[${nowStamp()}] ERROR recv: ${e instanceof Error ? e.message : String(e)}`);
         break;
