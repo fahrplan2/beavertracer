@@ -75,9 +75,10 @@ export class OS {
      */
     _init() {
         const launchlist = 
-            [TerminalApp, TextEditorApp, IPv4ConfigApp, SimpleTCPClientApp, SimpleTCPServerApp, SimpleHTTPServerApp, SparktailHTTPClientApp, UDPEchoServerApp, PacketSnifferApp, AboutApp];
+            [TerminalApp, TextEditorApp, IPv4ConfigApp, SimpleTCPClientApp, SimpleTCPServerApp, 
+            SimpleHTTPServerApp, SparktailHTTPClientApp, UDPEchoServerApp, PacketSnifferApp, AboutApp];
 
-        launchlist.forEach( (e) => this.exec(e) );
+        launchlist.forEach((e) => this.exec(e));
     }
 
 

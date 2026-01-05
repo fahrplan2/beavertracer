@@ -18,4 +18,6 @@ export class PC extends SimulatedObject {
         };
     }
     
+    // Looking for the code of the PC? Look in ../apps/OS.js.
+
 }
