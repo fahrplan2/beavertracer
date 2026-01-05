@@ -2,7 +2,7 @@
 
 import { GenericProcess } from "./GenericProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
-import { CleanupBag } from "./lib/CleanupBag.js";
+import { Disposer } from "./lib/Disposer.js";
 import { t } from "../i18n/index.js";
 
 /**
@@ -39,8 +39,8 @@ function hexPreview(data) {
 export class UDPEchoServerApp extends GenericProcess {
 
   title = t("app.udpechoserver.title");
-  /** @type {CleanupBag} */
-  bag = new CleanupBag();
+  /** @type {Disposer} */
+  bag = new Disposer();
 
   /** @type {number} */
   port = 7;

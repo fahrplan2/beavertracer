@@ -2,7 +2,7 @@
 
 import { GenericProcess } from "./GenericProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
-import { CleanupBag } from "./lib/CleanupBag.js";
+import { Disposer } from "./lib/Disposer.js";
 import { SimControl } from "../SimControl.js";
 
 
@@ -307,8 +307,8 @@ export class SparktailHTTPClientApp extends GenericProcess {
 
     title = t("app.sparktail.title");
 
-    /** @type {CleanupBag} */
-    bag = new CleanupBag();
+    /** @type {Disposer} */
+    bag = new Disposer();
 
     /** @type {string} */
     url = "about:start";

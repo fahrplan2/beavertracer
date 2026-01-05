@@ -1,6 +1,6 @@
 //@ts-check
 
-export class CleanupBag {
+export class Disposer {
 
   /**
    * This class helps to disable all timers and events, when the App looses foreground
@@ -12,7 +12,9 @@ export class CleanupBag {
     this._fns = [];
   }
 
-  /** @param {() => void} fn */
+  /** 
+   * @param {() => void} fn 
+   */
   add(fn) {
     this._fns.push(fn);
     return fn;

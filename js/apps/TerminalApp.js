@@ -2,7 +2,7 @@
 
 import { GenericProcess } from "./GenericProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
-import { CleanupBag } from "./lib/CleanupBag.js";
+import { Disposer } from "./lib/Disposer.js";
 import { registerBuiltins } from "./terminal/commands/index.js";
 import { t } from "../i18n/index.js";
 
@@ -16,8 +16,8 @@ import { t } from "../i18n/index.js";
 export class TerminalApp extends GenericProcess {
 
     title = t("app.terminal.title");
-    /** @type {CleanupBag} */
-    bag = new CleanupBag();
+    /** @type {Disposer} */
+    bag = new Disposer();
 
     /** @type {HTMLPreElement|null} */
     outEl = null;

@@ -2,7 +2,7 @@
 
 import { t } from "../i18n/index.js";
 import { GenericProcess } from "./GenericProcess.js";
-import { CleanupBag } from "./lib/CleanupBag.js";
+import { Disposer } from "./lib/Disposer.js";
 import { UILib } from "./lib/UILib.js";
 
 
@@ -15,8 +15,8 @@ export class IPv4ConfigApp extends GenericProcess {
   /** @type {HTMLInputElement|null} */ maskEl = null;
   /** @type {HTMLElement|null} */ msgEl = null;
 
-  /** @type {CleanupBag} */
-  bag = new CleanupBag();
+  /** @type {Disposer} */
+  bag = new Disposer();
 
   run() {
     this.root.classList.add("app", "app-ipv4");

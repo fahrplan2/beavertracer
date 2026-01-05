@@ -26,8 +26,43 @@
  * }} DirNode
  */
 
+/**
+ * JSON-serializable representation of a file node.
+ * @typedef {{
+ *   type: "file",
+ *   name: string,
+ *   data: string,
+ *   mtime: number,
+ *   ctime: number,
+ * }} SerializedFileNode
+ */
+
+/**
+ * JSON-serializable representation of a directory node.
+ * @typedef {{
+ *   type: "dir",
+ *   name: string,
+ *   children: SerializedVfsNode[],
+ *   mtime: number,
+ *   ctime: number,
+ * }} SerializedDirNode
+ */
+
+/** @typedef {SerializedFileNode | SerializedDirNode} SerializedVfsNode */
 /** @typedef {FileNode|DirNode} VfsNode */
 
+/**
+ * In-memory virtual file system with a minimal POSIX-like API.
+ *
+ * Supports directories and plain text files with basic metadata (ctime/mtime).
+ * Paths are normalized (., ..) and most operations throw on invalid paths.
+ *
+ * @example
+ * const vfs = new VirtualFileSystem();
+ * vfs.mkdir("/tmp", { recursive: true });
+ * vfs.writeFile("/tmp/hello.txt", "hi");
+ * console.log(vfs.readFile("/tmp/hello.txt")); // "hi"
+ */
 export class VirtualFileSystem {
   /** @type {DirNode} */
   root;
@@ -50,8 +85,8 @@ export class VirtualFileSystem {
 
     this.mkdir("/var/www", { recursive: true });
     if (!this.exists("/var/www/index.html")) {
-      this.writeFile("/var/www/index.html", 
-`<!doctype html>
+      this.writeFile("/var/www/index.html",
+        `<!doctype html>
 <html>
     <head>
       <meta charset="utf-8" />
@@ -145,6 +180,7 @@ export class VirtualFileSystem {
   // -------------------------
 
   /**
+   * Queries information about a file or directory
    * @param {string} path
    * @returns {{ type: NodeType, size: number, mtime: number, ctime: number }}
    */
@@ -157,6 +193,7 @@ export class VirtualFileSystem {
   }
 
   /**
+   * checks if a path exists
    * @param {string} path
    */
   exists(path) {
@@ -164,6 +201,7 @@ export class VirtualFileSystem {
   }
 
   /**
+   * reads a directory and returns all contens
    * @param {string} path
    */
   readdir(path) {
@@ -173,6 +211,7 @@ export class VirtualFileSystem {
   }
 
   /**
+   * reads a file and returns the content of the file
    * @param {string} path
    */
   readFile(path) {
@@ -182,6 +221,7 @@ export class VirtualFileSystem {
   }
 
   /**
+   * writes a file
    * @param {string} path
    * @param {string} data
    */
@@ -209,6 +249,7 @@ export class VirtualFileSystem {
   }
 
   /**
+   * makes a directory
    * @param {string} path
    * @param {{recursive?: boolean}} [opts]
    */
@@ -253,7 +294,8 @@ export class VirtualFileSystem {
 
   /**
   * Remove a directory.
-  * By default, the directory must be empty.
+  * By default, the directory must be empty, but it can invoke a recursive function
+  * if so specified
   *
   * @param {string} path
   * @param {{ recursive?: boolean }} [opts]
@@ -292,5 +334,87 @@ export class VirtualFileSystem {
       // files are just dropped
     }
     dir.children.clear();
+  }
+
+ 
+
+  /**
+   * Serialize the VFS into a JSON-compatible tree object.
+   * @returns {SerializedDirNode}
+   */
+  toJSON() {
+    /** @param {VfsNode} node @returns {SerializedVfsNode} */
+    const serialize = (node) => {
+      if (node.type === "file") {
+        return {
+          type: "file",
+          name: node.name,
+          data: node.data,
+          ctime: node.ctime,
+          mtime: node.mtime,
+        };
+      }
+      return {
+        type: "dir",
+        name: node.name,
+        ctime: node.ctime,
+        mtime: node.mtime,
+        children: [...node.children.values()].map(serialize),
+      };
+    };
+
+    // root is always a dir
+    return /** @type {SerializedDirNode} */ (serialize(this.root));
+  }
+
+  /**
+   * Restore a VFS instance from a serialized JSON tree object.
+   * Bypasses the constructor (so it won't create the default FS layout).
+   *
+   * @param {SerializedDirNode} json
+   * @returns {VirtualFileSystem}
+   */
+  static fromJSON(json) {
+    if (!json || json.type !== "dir") {
+      throw new Error("Invalid VFS JSON: root must be a directory");
+    }
+
+    /** @param {SerializedVfsNode} node @param {DirNode|null} parent @returns {VfsNode} */
+    const build = (node, parent) => {
+      if (node.type === "file") {
+        /** @type {FileNode} */
+        const file = {
+          type: "file",
+          name: node.name,
+          parent,
+          data: node.data,
+          ctime: node.ctime,
+          mtime: node.mtime,
+        };
+        return file;
+      }
+
+      /** @type {DirNode} */
+      const dir = {
+        type: "dir",
+        name: node.name,
+        parent,
+        children: new Map(),
+        ctime: node.ctime,
+        mtime: node.mtime,
+      };
+
+      for (const child of node.children) {
+        const childNode = build(child, dir);
+        dir.children.set(childNode.name, childNode);
+      }
+
+      return dir;
+    };
+
+    /** @type {VirtualFileSystem} */
+    const vfs = Object.create(VirtualFileSystem.prototype);
+    vfs.root = /** @type {DirNode} */ (build(json, null));
+    return vfs;
   }
 }

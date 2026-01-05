@@ -2,7 +2,7 @@
 
 import { GenericProcess } from "./GenericProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
-import { CleanupBag } from "./lib/CleanupBag.js";
+import { Disposer } from "./lib/Disposer.js";
 import { Pcap } from "../pcap/Pcap.js";
 import { SimControl } from "../SimControl.js";
 import { t } from "../i18n/index.js";
@@ -31,8 +31,8 @@ function ifaceLoggedFrames(iface) {
 export class PacketSnifferApp extends GenericProcess {
   title = t("app.packetsniffer.title");
   
-  /** @type {CleanupBag} */
-  bag = new CleanupBag();
+  /** @type {Disposer} */
+  bag = new Disposer();
 
   /** @type {HTMLElement|null} */
   listEl = null;
