@@ -11,53 +11,55 @@
 /* PCAPViewer */
 
 :root {
-    --primary: oklch(62.489% 0.15353 245.072);
+  --primary: oklch(62.489% 0.15353 245.072);
 
-    --primary-strong: color-mix(in oklch, var(--primary), black 18%);
-    --primary-soft: color-mix(in oklch, var(--primary), white 78%);
-    --primary-tint: color-mix(in oklch, var(--primary), white 88%);
+  --primary-strong: color-mix(in oklch, var(--primary), black 18%);
+  --primary-soft: color-mix(in oklch, var(--primary), white 78%);
+  --primary-tint: color-mix(in oklch, var(--primary), white 88%);
 
-    /* Background gradient based on primary */
-    --bg1: color-mix(in oklch, var(--primary), white 92%);
-    --bg2: color-mix(in oklch, var(--primary), white 82%);
+  --bg1: color-mix(in oklch, var(--primary), white 92%);
+  --bg2: color-mix(in oklch, var(--primary), white 82%);
 
-    /* Surfaces & text */
-    --surface: color-mix(in oklch, white, var(--primary) 90%);
-    --surface-strong: color-mix(in oklch, white, var(--primary) 10%);
+  --surface: color-mix(in oklch, white, var(--primary) 90%);
+  --surface-strong: color-mix(in oklch, white, var(--primary) 10%);
 
-    --text: #142033;
-    --muted: color-mix(in oklch, var(--text), transparent 40%);
+  --text: #142033;
+  --muted: color-mix(in oklch, var(--text), transparent 40%);
 
-    /* Elevation */
-    --shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
-    --shadow-soft: 0 6px 14px rgba(0, 0, 0, 0.10);
+  --shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
+  --shadow-soft: 0 6px 14px rgba(0, 0, 0, 0.10);
 
-    --border: #ccc;
-    --bg: #f5f5f5;
+  --border: #ccc;
+  --bg: #f5f5f5;
 
-    /* Semantic status colors (OK / Warning / Danger) */
-    --ok: oklch(70% 0.17 145);
-    /* grün */
-    --warning: oklch(78% 0.17 85);
-    /* gelb */
-    --danger: oklch(62% 0.20 25);
-    /* rot */
+  --ok: oklch(70% 0.17 145);
+  --warning: oklch(78% 0.17 85);
+  --danger: oklch(62% 0.20 25);
 
-    --ok-strong: color-mix(in oklch, var(--ok), black 18%);
-    --ok-soft: color-mix(in oklch, var(--ok), white 78%);
-    --ok-tint: color-mix(in oklch, var(--ok), white 88%);
+  --ok-strong: color-mix(in oklch, var(--ok), black 18%);
+  --ok-soft: color-mix(in oklch, var(--ok), white 78%);
+  --ok-tint: color-mix(in oklch, var(--ok), white 88%);
 
-    --warning-strong: color-mix(in oklch, var(--warning), black 18%);
-    --warning-soft: color-mix(in oklch, var(--warning), white 78%);
-    --warning-tint: color-mix(in oklch, var(--warning), white 88%);
+  --warning-strong: color-mix(in oklch, var(--warning), black 18%);
+  --warning-soft: color-mix(in oklch, var(--warning), white 78%);
+  --warning-tint: color-mix(in oklch, var(--warning), white 88%);
 
-    --danger-strong: color-mix(in oklch, var(--danger), black 18%);
-    --danger-soft: color-mix(in oklch, var(--danger), white 78%);
-    --danger-tint: color-mix(in oklch, var(--danger), white 88%);
+  --danger-strong: color-mix(in oklch, var(--danger), black 18%);
+  --danger-soft: color-mix(in oklch, var(--danger), white 78%);
+  --danger-tint: color-mix(in oklch, var(--danger), white 88%);
 
-    /* Optional: focus ring */
-    --focus: color-mix(in oklch, var(--primary), white 30%);
+  --focus: color-mix(in oklch, var(--primary), white 30%);
+
+  /* Small derived tokens (so we don't hardcode colors elsewhere) */
+  --ui-border: color-mix(in oklch, var(--text), transparent 78%);
+  --ui-border-strong: color-mix(in oklch, var(--text), transparent 65%);
+  --ui-card: color-mix(in oklch, var(--surface), var(--text) 6%);
+  --ui-card-hover: color-mix(in oklch, var(--surface), var(--text) 10%);
+  --ui-active: color-mix(in oklch, var(--primary), white 72%);
+  --ui-active-border: color-mix(in oklch, var(--primary), var(--text) 30%);
+  --ui-line: color-mix(in oklch, var(--text), transparent 55%);
 }
+
 
 body {
     margin: 0;

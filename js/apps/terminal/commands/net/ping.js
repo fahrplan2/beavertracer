@@ -52,8 +52,8 @@ export const ping = {
 
         if (!host) return usage();
 
-        const ipf = ctx.os?.ipforwarder;
-        if (!ipf?.icmpEcho) return "ping: no ipforwarder";
+        const ipf = ctx.os.net;
+        if (!ipf?.icmpEcho) return "ping: no network driver";
 
         // resolve
         let dstNum = ipStringToNumber(host);

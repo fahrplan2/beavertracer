@@ -23,7 +23,7 @@ function ifacePort(iface) {
  * @returns {any[]}
  */
 function ifaceLoggedFrames(iface) {
-  return Array.isArray(iface?.port?.loggedFrames)
+  return Array.isArray(iface.port.loggedFrames)
     ? iface.port.loggedFrames
     : [];
 }

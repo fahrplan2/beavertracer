@@ -2,7 +2,18 @@
 
 import { VirtualFileSystem } from "../apps/lib/VirtualFileSystem.js";
 import { IPStack } from "../devices/IPStack.js";
+import { Pcap } from "../pcap/Pcap.js";
+import { SimControl } from "../SimControl.js";
 import { SimulatedObject } from "./SimulatedObject.js";
+
+
+/**
+ * @typedef {Object} PortDescriptor
+ * @property {string} key
+ * @property {string} label
+ * @property {import("../devices/EthernetPort.js").EthernetPort} port
+ */
+
 
 /* ----------------------------- helpers ----------------------------- */
 
@@ -279,13 +290,38 @@ export class Router extends SimulatedObject {
         ifacePanel.appendChild(grid);
 
         // actions row (delete)
+
         const actions = document.createElement("div");
         actions.className = "router-if-actions";
 
+        /* ---- PCAP button ---- */
+        const pcapBtn = document.createElement("button");
+        pcapBtn.className = "router-if-pcap";
+        pcapBtn.textContent = "Mitschnitt anzeigen";
+
+        pcapBtn.addEventListener("click", () => {
+            const iface = this._getSelectedIface();
+            if (!iface || !iface.port) return;
+
+            const frames = iface.port.loggedFrames || [];
+            if (!frames.length) {
+                alert("Kein Mitschnitt vorhanden.");
+                return;
+            }
+
+            const filename = `${this.name}-${iface.name}.pcap`;
+            const pcap = new Pcap(frames, filename);
+
+            SimControl.pcapViewer.loadBytes(pcap.generateBytes());
+            SimControl.tabControler.gotoTab("pcapviewer");
+        });
+
+        actions.appendChild(pcapBtn);
+
+        /* ---- Delete button ---- */
         const delBtn = document.createElement("button");
         delBtn.className = "router-if-del";
         delBtn.textContent = "Interface löschen";
-        this._delIfBtn = delBtn;
 
         actions.appendChild(delBtn);
         ifacePanel.appendChild(actions);
@@ -859,4 +895,41 @@ export class Router extends SimulatedObject {
         addBtn.disabled = !hasIfaces;
         updateAddState();
     }
+
+
+    toJSON() {
+        return {
+            ...super.toJSON(),
+            kind: "Router",
+            net: this.net.toJSON(),
+        };
+    }
+
+    /** @param {any} n */
+    static fromJSON(n) {
+        const obj = new Router(n.name ?? "Router");
+        obj._applyBaseJSON(n);
+        if (n.net) obj.net = IPStack.fromJSON(n.net);
+        return obj;
+    }
+
+    /** @returns {PortDescriptor[]} */
+    listPorts() {
+        const ifs = this.net?.interfaces ?? [];
+        return ifs.map((nic, i) => ({
+            key: `eth${i}`,
+            label: `eth${i}`,
+            port: nic.port,
+        }));
+    }
+
+    /** @param {string} key */
+    getPortByKey(key) {
+        const m = /^eth(\d+)$/.exec(key);
+        if (!m) return null;
+        const i = Number(m[1]);
+        const nic = (this.net?.interfaces ?? [])[i];
+        return nic?.port ?? null;
+    }
+
 }

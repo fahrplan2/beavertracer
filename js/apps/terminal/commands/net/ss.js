@@ -15,8 +15,8 @@ function fmtIP(ip) {
 export const ss = {
   name: "ss",
   run: (ctx, args) => {
-    const ipf = ctx.os?.ipforwarder;
-    if (!ipf) return "ss: no ipforwarder";
+    const ipf = ctx.os.net;
+    if (!ipf) return "ss: no network driver";
 
     const showTCP = !args.includes("-u");
     const showUDP = !args.includes("-t");

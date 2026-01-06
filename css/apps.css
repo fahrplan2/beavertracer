@@ -329,12 +329,9 @@
 
 
 .msg {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-family: "Courier New", monospace;
   font-size: 12.5px;
   line-height: 1.4;
-
-  /*background: #0e1116;*/
-  color: #d7dce2;
 
   border: 1px solid #2a2f3a;
   border-radius: 6px;

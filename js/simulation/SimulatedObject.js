@@ -6,6 +6,29 @@ import { makeDraggable } from '../lib/dragabble.js';
 import { makeWindow, bringToFront } from '../lib/windowmanager.js';
 import { SimControl } from '../SimControl.js';
 
+
+/**
+ * @typedef {{
+ *  kind: string,
+ *  id: number,
+ * }} BaseJSON
+ *
+ * @typedef {BaseJSON & {
+ *  name: string,
+ *  x: number, y: number,
+ *  px: number, py: number,
+ *  panelOpen: boolean
+ * }} NodeJSON
+ *
+ * @typedef {BaseJSON & {
+ *  a: number,
+ *  b: number
+ * }} LinkJSON
+ *
+ * @typedef {NodeJSON | LinkJSON} SceneObjectJSON
+ */
+
+
 export class SimulatedObject {
 
     name;
@@ -14,9 +37,6 @@ export class SimulatedObject {
 
     /** @type {SimControl} */
     simcontrol;
-
-    /** @type {VirtualFileSystem} */
-    fs;
 
     /** @type {HTMLElement} */
     root;
@@ -154,7 +174,12 @@ export class SimulatedObject {
                 if (SimControl.isEditMode) return;
                 this.setPanelOpen(!this.panelOpen);
             },
-            boundary: () => SimControl.movementBoundary
+            boundary: () => SimControl.movementBoundary,
+            onDragEnd: ({ x, y }) => {
+                this.x = x;
+                this.y = y;
+                this.simcontrol?.redrawLinks?.();
+            }
         });
     }
 
@@ -166,7 +191,11 @@ export class SimulatedObject {
         if (handle instanceof HTMLElement) {
             makeDraggable(this.panelEl, {
                 handle: handle,
-                boundary: () => SimControl.movementBoundary
+                boundary: () => SimControl.movementBoundary,
+                onDragEnd: ({ x, y }) => {
+                    this.px = x;
+                    this.py = y;
+                }
             });
         }
         makeWindow(this.panelEl);
@@ -194,13 +223,12 @@ export class SimulatedObject {
     }
 
     _applyPositions() {
+
         if (this.iconEl) {
-            this.iconEl.style.left = this.x + "px";
-            this.iconEl.style.top = this.y + "px";
+            this.iconEl.style.transform = `translate(${this.x}px, ${this.y}px)`;
         }
         if (this.panelEl) {
-            this.panelEl.style.left = this.px + "px";
-            this.panelEl.style.top = this.py + "px";
+            this.panelEl.style.transform = `translate(${this.px}px, ${this.py}px)`;
         }
     }
 
@@ -278,14 +306,44 @@ export class SimulatedObject {
         }
     }
 
+
+    /**
+     * @returns {SceneObjectJSON}
+     */
+
     toJSON() {
         return {
+            kind: this.constructor?.name ?? "SimulatedObject",
             id: this.id,
             name: this.name,
             x: this.x, y: this.y,
             px: this.px, py: this.py,
-            panelOpen: this.panelOpen,
-            fs: this.fs
+            panelOpen: !!this.panelOpen,
         };
     }
+
+    /** @param {any} n */
+    _applyBaseJSON(n) {
+        this.id = Number(n.id);
+        this.name = String(n.name ?? this.name);
+        this.x = Number(n.x ?? this.x);
+        this.y = Number(n.y ?? this.y);
+        this.px = Number(n.px ?? this.px);
+        this.py = Number(n.py ?? this.py);
+        this.panelOpen = !!n.panelOpen;
+    }
+
+    /**
+     * Port API (optional capability):
+     * Geräte mit Ports (PC/Router/Switch) überschreiben das.
+     *
+     * @returns {Array<{ key: string, label: string, port: any }>}
+     */
+    listPorts() { return []; }
+
+    /**
+     * @param {string} key
+     * @returns {any|null}
+     */
+    getPortByKey(key) { return null; }
 }

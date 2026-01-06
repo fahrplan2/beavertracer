@@ -7,6 +7,13 @@ import { PC } from "./simulation/PC.js";
 import { Switch } from "./simulation/Switch.js";
 import { Router } from "./simulation/Router.js";
 
+/**
+ * @typedef {Object} PortDescriptor
+ * @property {string} key
+ * @property {string} label
+ * @property {any} port
+ */
+
 export class SimControl {
     static tick = 500;
 
@@ -24,12 +31,12 @@ export class SimControl {
     /** @type {number|null} */
     timeoutId = null;
 
-    isPaused = false;
+    isPaused = true;
 
     tickId = 0;
 
     /** @type {boolean} */
-    static isEditMode = false;
+    static isEditMode = true;
 
     /** @type {"select"|"place-pc"|"place-switch"|"place-router"|"link"|"delete"} */
     tool = "select";
@@ -64,6 +71,10 @@ export class SimControl {
      */
 
     static tabControler;
+
+
+    /** @type {string|null} */
+    linkStartKey = null;
 
     /**
      * @param {HTMLElement|null} root
@@ -121,19 +132,23 @@ export class SimControl {
     }
 
     /**
-     * @param {number} ms 
+     * @param {number} ms
      */
     setTick(ms) {
-        // sinnvolle Grenzen
         SimControl.tick = Math.max(16, Math.min(5000, Math.round(ms)));
-        this.render(); // Toolbar-Label aktualisieren
-        this.scheduleNextStep(); // sofort neue Geschwindigkeit übernehmen
+
+        // IMPORTANT: selecting a speed means "start / resume"
+        this.isPaused = false;
+
+        this.render();
+        this.scheduleNextStep();
     }
 
-    togglePause() {
-        this.isPaused = !this.isPaused;
-        this.render(); // Button-Text aktualisieren
-        this.scheduleNextStep();
+    pause() {
+        if (this.isPaused) return;
+        this.isPaused = true;
+        this.render();
+        this.scheduleNextStep(); // will stop scheduling due to isPaused
     }
 
     render() {
@@ -213,33 +228,110 @@ export class SimControl {
 
         // --- Edit group
         addSeparator();
-        const gEdit = addGroup("Edit");
+        const gMode = addGroup("Mode");
 
-        // Edit toggle
+        // Edit button
         const btnEdit = document.createElement("button");
         btnEdit.type = "button";
-        btnEdit.textContent = SimControl.isEditMode ? "Exit Edit" : "Edit";
+        btnEdit.textContent = "Edit";
+        if (SimControl.isEditMode) btnEdit.classList.add("active");
         btnEdit.addEventListener("click", () => {
-            SimControl.isEditMode = !SimControl.isEditMode;
-            this.tool = "select";
-            if (this.root) {
-                this.root.classList.toggle("edit-mode", SimControl.isEditMode);
-                this.root.dataset.tool = this.tool;
+            if (SimControl.isEditMode) {
+                // leaving edit mode → stay paused, user must choose speed
+                SimControl.isEditMode = false;
+                if (this.root) {
+                    this.root.classList.remove("edit-mode");
+                    delete this.root.dataset.tool;
+                }
+                this.render();
+            } else {
+                this.enterEditMode();
             }
-            SimulatedObject.closeAllPanels();
-
-            //Delete Cursor "icon"
-            if (!SimControl.isEditMode) {
-                delete this.root.dataset.tool;
-            }
-            this._cancelLinking();
-            this._removeGhostNode();
-            this.render();
         });
-        gEdit.appendChild(btnEdit);
+        gMode.appendChild(btnEdit);
 
-        // Tool buttons (only show in edit mode)
+        // Run button
+        const btnRun = document.createElement("button");
+        btnRun.type = "button";
+        btnRun.textContent = "Run";
+        if (!SimControl.isEditMode) btnRun.classList.add("active");
+        btnRun.addEventListener("click", () => {
+            if (SimControl.isEditMode) {
+                SimControl.isEditMode = false;
+                this.tool = "select";
+                this.isPaused = false;
+                if (this.root) {
+                    this.root.classList.remove("edit-mode");
+                    delete this.root.dataset.tool;
+                }
+                this._cancelLinking();
+                this._removeGhostNode();
+                this.render();
+                this.scheduleNextStep();
+            }
+        });
+        gMode.appendChild(btnRun);
+
+
+
+        if (!SimControl.isEditMode) {
+            addSeparator();
+            const gSpeeds = addGroup("Speed");
+
+            // Pause (only pauses)
+            const btnPause = document.createElement("button");
+            btnPause.type = "button";
+            btnPause.textContent = "Pause";
+            btnPause.disabled = this.isPaused; // optional: disable if already paused
+            btnPause.addEventListener("click", () => this.pause());
+            gSpeeds.appendChild(btnPause);
+
+            // Speed buttons (also start/resume)
+            const speeds = [
+                { label: "0.25×", ms: 2000 },
+                { label: "0.5×", ms: 1000 },
+                { label: "1×", ms: 500 },
+                { label: "2×", ms: 200 },
+                { label: "4×", ms: 100 },
+                { label: "8×", ms: 50 },
+            ];
+
+            for (const s of speeds) {
+                const b = document.createElement("button");
+                b.type = "button";
+                b.textContent = s.label;
+                if (SimControl.tick === s.ms) b.classList.add("active");
+
+                // Clicking a speed sets tick + starts simulation
+                b.addEventListener("click", () => this.setTick(s.ms));
+
+                gSpeeds.appendChild(b);
+            }
+        }
+
+        //End of toolbar
+
+        //********* BODY (SIDEBAR + NODES) ***************
+        const body = document.createElement("div");
+        body.className = "sim-body";
+        root.appendChild(body);
+
+        // Left sidebar (only in edit mode)
         if (SimControl.isEditMode) {
+            const sidebar = document.createElement("div");
+            sidebar.className = "sim-sidebar";
+            body.appendChild(sidebar);
+
+            // Tools header (optional)
+            const h = document.createElement("div");
+            h.className = "sim-sidebar-title";
+            h.textContent = "Edit Tools";
+            sidebar.appendChild(h);
+
+            const toolsWrap = document.createElement("div");
+            toolsWrap.className = "sim-sidebar-tools";
+            sidebar.appendChild(toolsWrap);
+
             const tools = [
                 ["select", "Select"],
                 ["place-pc", "PC"],
@@ -252,61 +344,28 @@ export class SimControl {
             for (const [id, label] of tools) {
                 const b = document.createElement("button");
                 b.type = "button";
+                b.className = "sim-sidebar-btn";
                 b.textContent = label;
                 if (this.tool === id) b.classList.add("active");
                 b.addEventListener("click", () => {
                     this.tool = /** @type {any} */ (id);
-                    if (this.root) {
-                        this.root.dataset.tool = this.tool;
-                    }
-
+                    if (this.root) this.root.dataset.tool = this.tool;
 
                     if (this.tool !== "link") this._cancelLinking();
                     if (!(this.tool === "place-pc" || this.tool === "place-switch" || this.tool === "place-router")) {
                         this._removeGhostNode();
                     }
-
                     this.render();
                 });
-                gEdit.appendChild(b);
+                toolsWrap.appendChild(b);
             }
         }
 
-        addSeparator();
-        const gSpeeds = addGroup("Speed");
-
-        // Play/Pause
-        const btnPause = document.createElement("button");
-        btnPause.type = "button";
-        btnPause.textContent = this.isPaused ? " Play" : "Pause";
-        btnPause.addEventListener("click", () => this.togglePause());
-        gSpeeds.appendChild(btnPause);
-
-        // Speed buttons
-        const speeds = [
-            { label: "0.25×", ms: 2000 },
-            { label: "0.5×", ms: 1000 },
-            { label: "1×", ms: 500 },
-            { label: "2×", ms: 200 },
-            { label: "4×", ms: 100 },
-            { label: "8×", ms: 50 },
-        ];
-
-        for (const s of speeds) {
-            const b = document.createElement("button");
-            b.type = "button";
-            b.textContent = s.label;
-            if (SimControl.tick === s.ms) b.classList.add("active");
-            b.addEventListener("click", () => this.setTick(s.ms));
-            gSpeeds.appendChild(b);
-        }
-
-        //End of toolbar
-
-        //********* NODES LAYER ***************
+        // Nodes layer goes into body (right side)
         const nodes = document.createElement("div");
         nodes.className = "sim-nodes";
-        root.appendChild(nodes);
+        body.appendChild(nodes);
+
         this.nodesLayer = nodes;
         SimControl.movementBoundary = nodes;
 
@@ -350,29 +409,10 @@ export class SimControl {
     }
 
     saveScene() {
-        const nodes = [];
-        const links = [];
-
-        for (const o of this.simobjects) {
-            if (o instanceof Link) {
-                links.push({ id: o.id, type: "Link", a: o.A.id, b: o.B.id });
-            } else {
-                nodes.push({
-                    id: o.id,
-                    type: o.constructor?.name ?? "Node",
-                    name: o.name,
-                    x: o.x, y: o.y,
-                    px: o.px, py: o.py,
-                    panelOpen: !!o.panelOpen
-                });
-            }
-        }
-
         return {
-            version: 1,
+            version: 3,
             tick: SimControl.tick,
-            nodes,
-            links
+            objects: this.simobjects.map(o => o.toJSON()),
         };
     }
 
@@ -389,64 +429,54 @@ export class SimControl {
         URL.revokeObjectURL(url);
     }
 
-    /** @param {any} scene */
     loadScene(scene) {
-        // basic validation
-        if (!scene || !Array.isArray(scene.nodes) || !Array.isArray(scene.links)) {
+
+        //@ts-ignore
+        const REGISTRY = new Map([
+            ["PC", PC],
+            ["Router", Router],
+            ["Switch", Switch],
+            // Link handled separately because it needs byId
+        ]);
+
+        if (!scene || !Array.isArray(scene.objects)) {
             console.warn("Invalid scene file");
             return;
         }
 
-        // destroy old links (cleanup EthernetLink)
-        for (const o of this.simobjects) {
-            if (o instanceof Link) o.destroy();
-        }
+        // cleanup old links properly
+        for (const o of this.simobjects) if (o instanceof Link) o.destroy();
         this.simobjects = [];
-
-        /** @type {Map<number, SimulatedObject>} */
-        const byId = new Map();
-        let maxId = 0;
 
         // restore tick
         if (typeof scene.tick === "number") SimControl.tick = scene.tick;
 
-        // create nodes first
-        for (const n of scene.nodes) {
-            /** @type {SimulatedObject|null} */
-            let obj = null;
+        /** @type {Map<number, SimulatedObject>} */
+        const byId = new Map();
 
-            // IMPORTANT: since you used constructor?.name above, map it back here
-            if (n.type === "PC") obj = new PC(n.name ?? "PC");
-            else if (n.type === "Switch") obj = new Switch(n.name ?? "Switch");
-            else if (n.type === "Router") obj = new Router(n.name ?? "Router");
-            else {
-                console.warn("Unknown node type", n.type);
+        let maxId = 0;
+
+        // 1) create nodes first
+        for (const n of scene.objects) {
+            if (!n || n.kind === "Link") continue;
+
+            const Ctor = REGISTRY.get(String(n.kind));
+            if (!Ctor || typeof Ctor.fromJSON !== "function") {
+                console.warn("Unknown kind", n.kind);
                 continue;
             }
 
-            // force id + ui state
-            obj.id = Number(n.id);
-            obj.name = n.name ?? obj.name;
-            obj.x = Number(n.x ?? obj.x);
-            obj.y = Number(n.y ?? obj.y);
-            obj.px = Number(n.px ?? obj.px);
-            obj.py = Number(n.py ?? obj.py);
-            obj.panelOpen = !!n.panelOpen;
-
+            const obj = Ctor.fromJSON(n);
             byId.set(obj.id, obj);
             this.simobjects.push(obj);
             if (obj.id > maxId) maxId = obj.id;
         }
 
-        // create links
-        for (const l of scene.links) {
-            const A = byId.get(Number(l.a));
-            const B = byId.get(Number(l.b));
-            if (!A || !B) continue;
-
+        // 2) create links
+        for (const l of scene.objects) {
+            if (!l || l.kind !== "Link") continue;
             try {
-                const link = new Link(A, B);
-                link.id = Number(l.id);
+                const link = Link.fromJSON(l, byId);
                 this.simobjects.push(link);
                 if (link.id > maxId) maxId = link.id;
             } catch (e) {
@@ -454,13 +484,11 @@ export class SimControl {
             }
         }
 
-        // fix id generator to avoid collisions
+        // 3) fix id generator
         SimulatedObject.idnumber = maxId + 1;
 
-        // reset edit transient UI
-        this._cancelLinking();
-        this._removeGhostNode();
-        this.render();
+        // reset transient UI
+        this.enterEditMode();
         this.redrawLinks();
     }
 
@@ -486,25 +514,18 @@ export class SimControl {
     }
 
     newScene() {
-        // cleanup links properly
+        // cleanup links
         for (const o of this.simobjects) {
             if (o instanceof Link) o.destroy();
         }
 
-        // clear objects
         this.simobjects = [];
-
-        // reset ID generator
         SimulatedObject.idnumber = 0;
 
-        // reset editor transient state
-        this._cancelLinking();
-        this._removeGhostNode();
         SimControl.tick = 500;
-        this.isPaused = false;
-        SimControl.isEditMode = false;
+        this.isPaused = true;
 
-        this.render();
+        this.enterEditMode();
     }
 
     running = true;
@@ -568,16 +589,32 @@ export class SimControl {
 
     _cancelLinking() {
         this.linkStart = null;
+        this.linkStartKey = null;
         if (this.ghostLink) this.ghostLink.remove();
         this.ghostLink = null;
     }
 
+
     _ensureGhostLink() {
         if (!this.nodesLayer) return;
         if (this.ghostLink) return;
+
         const g = document.createElement("div");
         g.className = "sim-link sim-link-ghost";
         g.style.pointerEvents = "none";
+        g.style.transformOrigin = "0 0";
+
+        const hit = document.createElement("div");
+        hit.className = "sim-link-hit";
+        hit.style.pointerEvents = "none"; // ghost darf niemals clicks fangen
+
+        const line = document.createElement("div");
+        line.className = "sim-link-line";
+        line.style.pointerEvents = "none";
+
+        g.appendChild(hit);
+        g.appendChild(line);
+
         this.nodesLayer.appendChild(g);
         this.ghostLink = g;
     }
@@ -642,7 +679,7 @@ export class SimControl {
 
 
     /** @param {PointerEvent} ev */
-    _onPointerDown(ev) {
+    async _onPointerDown(ev) {
         if (!SimControl.isEditMode) return;
 
         const obj = this._getObjFromEvent(ev);
@@ -665,29 +702,57 @@ export class SimControl {
             return;
         }
 
-        // LINK tool: 2-click
         if (this.tool === "link") {
-            if (!obj) return; // must click a node icon
+            if (!obj) return;
             ev.preventDefault();
             ev.stopPropagation();
 
+            // First click: pick A port (dialog only if >=2 ports; auto if exactly 1)
             if (!this.linkStart) {
+                const pickA = await this._pickPortForObjectAt(obj, ev.clientX + 8, ev.clientY + 8);
+                if (!pickA) return;
+
                 this.linkStart = obj;
+                this.linkStartKey = pickA.key;
+
                 this._ensureGhostLink();
                 const p = this._getLocalPoint(ev);
                 this._updateGhost(p.x, p.y);
                 return;
             }
 
-            // second click
+            // Clicking same node cancels
             if (obj === this.linkStart) {
-                // clicking same node cancels
                 this._cancelLinking();
                 return;
             }
 
+            const A = this.linkStart;
+            const AKey = this.linkStartKey;
+            if (!AKey) {
+                this._cancelLinking();
+                return;
+            }
+
+            // Second click: pick B port
+            const pickB = await this._pickPortForObjectAt(obj, ev.clientX + 8, ev.clientY + 8);
+            if (!pickB) return;
+
+            const B = obj;
+            const BKey = pickB.key;
+
             try {
-                const l = new Link(this.linkStart, obj);
+                const portA = A.getPortByKey(AKey);
+                const portB = B.getPortByKey(BKey);
+
+                if (!portA || !portB) throw new Error("Selected port not found");
+
+                // At this point ports must be free (dialog disabled occupied),
+                // but keep sanity check anyway:
+                if (!this._isPortFree(portA)) throw new Error(`Port ${AKey} is already in use`);
+                if (!this._isPortFree(portB)) throw new Error(`Port ${BKey} is already in use`);
+
+                const l = new Link(A, portA, AKey, B, portB, BKey);
                 this.addObject(l);
             } catch (e) {
                 console.warn("Cannot create link:", e);
@@ -699,30 +764,29 @@ export class SimControl {
 
         // PLACE tools: click empty canvas places
         if (this.tool.startsWith("place-")) {
-            if (obj || link) return; // don't place on top of objects
-
+            if (obj || link) return;
             if (!this.ghostNodeEl || !this.ghostReady) return;
 
             const p = this._getLocalPoint(ev);
 
-            /** @type {SimulatedObject|null} */
             let newObj = null;
             if (this.tool === "place-pc") newObj = new PC("PC");
             if (this.tool === "place-switch") newObj = new Switch("Switch");
             if (this.tool === "place-router") newObj = new Router("Router");
-
             if (!newObj) return;
 
-            // place at click
-            newObj.x = p.x;
-            newObj.y = p.y;
+            const w = this.ghostNodeEl.offsetWidth || 0;
+            const h = this.ghostNodeEl.offsetHeight || 0;
+
+            newObj.x = p.x - w / 2;
+            newObj.y = p.y - h / 2;
 
             this.addObject(newObj);
             this.redrawLinks();
-
             this._removeGhostNode();
             return;
         }
+
 
         // SELECT tool
         if (this.tool === "select") {
@@ -736,30 +800,35 @@ export class SimControl {
         if (!this.nodesLayer) return;
 
         if (!this.ghostNodeEl || this.ghostNodeType !== type) {
-            // rebuild if type changed
             this._removeGhostNode();
 
-            const el = document.createElement("div");
-            el.className = "sim-node sim-node-ghost";
+            /** @type {SimulatedObject|null} */
+            let tmp = null;
+            if (type === "place-pc") tmp = new PC("PC");
+            if (type === "place-switch") tmp = new Switch("Switch");
+            if (type === "place-router") tmp = new Router("Router");
+            if (!tmp) return;
+
+            const el = tmp.buildIcon();
+
+            // Ghost: gleicher Node, aber nicht klickbar + absolute positioning
+            el.classList.add("sim-node-ghost");
             el.style.position = "absolute";
-            el.style.pointerEvents = "none"; // IMPORTANT: don't block clicks
+            el.style.pointerEvents = "none";
             el.style.left = "0px";
             el.style.top = "0px";
 
-            const title = document.createElement("div");
-            title.className = "title";
-            title.textContent =
-                type === "place-pc" ? "PC" :
-                    type === "place-switch" ? "Switch" :
-                        "Router";
+            // Ghost soll nicht als echtes Objekt erkannt werden
+            delete el.dataset.objid;
 
-            el.appendChild(title);
-
-            // Put it in the same coordinate space as real nodes
             this.nodesLayer.appendChild(el);
 
-            this.ghostNodeEl = el;
+            this.ghostNodeEl = /** @type {HTMLDivElement} */ (el);
             this.ghostNodeType = type;
+            this.ghostReady = false;
+
+            // Dummy wieder aus instances raus (DOM vom Ghost bleibt!)
+            tmp.destroy();
         }
     }
 
@@ -781,6 +850,121 @@ export class SimControl {
         this.ghostNodeEl.style.top = `${y - h / 2}px`;
 
         this.ghostReady = true;
+    }
+
+    /** @param {any} obj @returns {PortDescriptor[]} */
+    _getPorts(obj) {
+        if (typeof obj?.listPorts === "function") return obj.listPorts();
+        return [];
+    }
+
+    /** @param {any} port */
+    _isPortFree(port) {
+        if (typeof port?.isFree === "function") return port.isFree();
+        return port?.linkref == null;
+    }
+
+    /**
+ * @param {SimulatedObject} obj
+ * @param {number} x screen coords
+ * @param {number} y screen coords
+ * @returns {Promise<{key:string, port:any} | null>}
+ */
+    _pickPortForObjectAt(obj, x, y) {
+        return new Promise((resolve) => {
+            const ports = this._getPorts(obj);
+
+            if (ports.length === 1) {
+                resolve({ key: ports[0].key, port: ports[0].port });
+                return;
+            }
+            if (ports.length === 0) {
+                resolve(null);
+                return;
+            }
+
+            let done = false;
+
+            const panel = document.createElement("div");
+            panel.className = "sim-port-picker";
+            panel.style.position = "fixed";
+
+            // start position (we'll clamp after measuring)
+            panel.style.left = `${x}px`;
+            panel.style.top = `${y}px`;
+
+            const cleanup = (result) => {
+                if (done) return;
+                done = true;
+                document.removeEventListener("pointerdown", onOutside, { capture: true });
+                window.removeEventListener("keydown", onKeyDown);
+                panel.remove();
+                resolve(result ?? null);
+            };
+
+            const onOutside = (ev) => {
+                // click outside closes
+                if (!panel.contains(/** @type {Node} */(ev.target))) cleanup(null);
+            };
+
+            const onKeyDown = (ev) => {
+                if (ev.key === "Escape") cleanup(null);
+            };
+
+            for (const d of ports) {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = "sim-port-chip";
+
+                const free = this._isPortFree(d.port);
+                btn.disabled = !free;
+                btn.textContent = d.label;
+                if (!free) btn.classList.add("in-use");
+
+                btn.addEventListener("click", (ev) => {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    cleanup({ key: d.key, port: d.port });
+                });
+
+                panel.appendChild(btn);
+            }
+
+            document.body.appendChild(panel);
+
+            // clamp into viewport after it has a size
+            const r = panel.getBoundingClientRect();
+            const pad = 8;
+            const maxLeft = window.innerWidth - r.width - pad;
+            const maxTop = window.innerHeight - r.height - pad;
+            panel.style.left = `${Math.max(pad, Math.min(x, maxLeft))}px`;
+            panel.style.top = `${Math.max(pad, Math.min(y, maxTop))}px`;
+
+            document.addEventListener("pointerdown", onOutside, { capture: true });
+            window.addEventListener("keydown", onKeyDown);
+        });
+    }
+
+    enterEditMode() {
+        SimControl.isEditMode = true;
+
+        // pause simulation
+        this.isPaused = true;
+
+        // reset tool state
+        this.tool = "select";
+
+        // cancel transient UI
+        this._cancelLinking();
+        this._removeGhostNode();
+
+        if (this.root) {
+            this.root.classList.add("edit-mode");
+            this.root.dataset.tool = this.tool;
+        }
+
+        SimulatedObject.closeAllPanels();
+        this.render();
     }
 }
 

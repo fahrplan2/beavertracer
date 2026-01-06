@@ -11,24 +11,24 @@ import { EthernetLink } from "./EthernetLink.js";
  */
 export class EthernetPort extends Observable {
 
-     /** @type {Array<EthernetFrame>} */
-    outBuffer=[];
+    /** @type {Array<EthernetFrame>} */
+    outBuffer = [];
 
     /** @type {Array<EthernetFrame>} */
-    inBuffer=[];
+    inBuffer = [];
 
     /** @type {Array<LoggedFrame>} */
-    loggedFrames=[];
+    loggedFrames = [];
 
     /** @type {EthernetLink|Null} */
-    linkref=null;
+    linkref = null;
 
     /**
      * 
      * @param {EthernetFrame} frame 
      */
-    send(frame){
-        if(! (frame instanceof EthernetFrame)) {
+    send(frame) {
+        if (!(frame instanceof EthernetFrame)) {
             throw new Error("Can only send EthernetFrame");
         }
         this.outBuffer.push(frame);
@@ -48,14 +48,14 @@ export class EthernetPort extends Observable {
 
     getNextOutgoingFrame() {
         let frame = this.outBuffer.shift();
-        if(frame==null) {
+        if (frame == null) {
             return null;
         }
         return frame.pack();
     }
 
     getNextIncomingFrame() {
-        if(this.inBuffer.length == 0) {
+        if (this.inBuffer.length == 0) {
             return null;
         }
         return this.inBuffer.shift();
@@ -74,5 +74,15 @@ export class EthernetPort extends Observable {
         this.inBuffer = [];
         this.outBuffer = [];
         this.loggedFrames = [];
+    }
+
+    /** @returns {boolean} */
+    isFree() { 
+        return this.linkref == null; 
+    }
+
+    /** @returns {boolean} */
+    isLinked() { 
+        return this.linkref != null; 
     }
 }

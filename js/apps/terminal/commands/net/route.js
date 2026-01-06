@@ -40,8 +40,8 @@ function ifaceName(ipf, idx) {
 export const route = {
   name: "route",
   run: (ctx, args) => {
-    const ipf = ctx.os?.ipforwarder;
-    if (!ipf) return "route: no ipforwarder";
+    const ipf = ctx.os.net;
+    if (!ipf) return "route: no network driver";
 
     const rt = ipf.routingTable ?? [];
     const sub = args[0] ?? "show";
@@ -94,7 +94,7 @@ export const route = {
         // name lookup
         const ifaces = ipf.interfaces ?? [];
         for (let i = 0; i < ifaces.length; i++) {
-          const name = ifaces[i]?.name ?? `eth${i}`;
+          const name = ifaces[i].name ?? `eth${i}`;
           if (name === ifSel) { ifIndex = i; break; }
         }
       }

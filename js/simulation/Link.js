@@ -1,11 +1,17 @@
+// Link.js
 //@ts-check
-
 import { EthernetLink } from "../devices/EthernetLink.js";
-import { EthernetPort } from "../devices/EthernetPort.js";
-import { PC } from "./PC.js";
-import { Router } from "./Router.js";
 import { SimulatedObject } from "./SimulatedObject.js";
-import { Switch } from "./Switch.js";
+
+
+/** @typedef {import("../devices/EthernetPort.js").EthernetPort} EthernetPort */
+
+/**
+ * @typedef {Object} PortProvider
+ * @property {(key: string) => EthernetPort|null} getPortByKey
+ * @property {() => Array<{key:string,label:string,port:EthernetPort}>} listPorts
+ */
+
 
 export class Link extends SimulatedObject {
   /** @type {EthernetLink} */
@@ -15,6 +21,11 @@ export class Link extends SimulatedObject {
   A;
   /** @type {SimulatedObject} */
   B;
+
+  /** @type {string} */
+  portAKey;
+  /** @type {string} */
+  portBKey;
 
   /** @type {number} */
   _stepMs = 200;
@@ -35,15 +46,24 @@ export class Link extends SimulatedObject {
    */
   _packets = [];
 
-  constructor(A, B) {
+  /**
+   * @param {SimulatedObject} A
+   * @param {any} portA
+   * @param {string} portAKey
+   * @param {SimulatedObject} B
+   * @param {any} portB
+   * @param {string} portBKey
+   */
+  constructor(A, portA, portAKey, B, portB, portBKey) {
     super("Link");
 
-    const portA = this._getNextFreePortFromObject(A);
-    const portB = this._getNextFreePortFromObject(B);
-    if (portA == null || portB == null) throw new Error("No free ports available");
+    if (!portA || !portB) throw new Error("Missing ports");
 
     this.A = A;
     this.B = B;
+    this.portAKey = portAKey;
+    this.portBKey = portBKey;
+
     this.link = new EthernetLink(portA, portB);
     this.link.link = this;
   }
@@ -52,48 +72,48 @@ export class Link extends SimulatedObject {
     this.root.className = "sim-link";
     this.root.textContent = "";
     this.root.style.transformOrigin = "0 0";
-    this.root.dataset.objid = String(this.id); 
+    this.root.dataset.objid = String(this.id);
+
+    // clear & rebuild children
+    this.root.replaceChildren();
+
+    const hit = document.createElement("div");
+    hit.className = "sim-link-hit";
+
+    const line = document.createElement("div");
+    line.className = "sim-link-line";
+
+    // hit catches clicks, line is only visual
+    this.root.appendChild(hit);
+    this.root.appendChild(line);
+
     return this.root;
   }
-  
+
   destroy() {
     for (const p of this._packets) p.el.remove();
     this._packets = [];
     this.link.destroy();
   }
 
-  /** Wird vom Controller gesetzt */
-  setPaused(paused) {
-    this._paused = paused;
-  }
+  setPaused(paused) { this._paused = paused; }
+  setStepMs(stepMs) { this._stepMs = stepMs; }
 
-  /** Wird vom Controller gesetzt */
-  setStepMs(stepMs) {
-    this._stepMs = stepMs;
-  }
-
-  /** Simulation: Phase 1 */
   step1() {
     this.link.step1();
-
     const a = this.link.AtoB ?? null;
     const b = this.link.BtoA ?? null;
-
     if (a) this._startInFlight("AtoB", a);
     if (b) this._startInFlight("BtoA", b);
   }
 
-  /** Simulation: Phase 2 */
   step2() {
     this.link.step2();
-
-    // in deinem Modell: nach step2 ist nix mehr "in-flight"
     for (const p of this._packets) p.el.remove();
     this._packets = [];
   }
 
   _startInFlight(dir, data) {
-    // pro Richtung max 1 Packet (du kannst später auf multi erweitern)
     for (const p of this._packets) {
       if (p.dir === dir) p.el.remove();
     }
@@ -114,20 +134,14 @@ export class Link extends SimulatedObject {
     this._packets.push({ el, dir, data, progress: 0 });
   }
 
-  /** Subtick: Fortschritt (Simulation+Render) */
   advance(dtMs) {
     if (this._paused) return;
-
-    const dp = dtMs / this._stepMs; // 1.0 pro stepMs
-    for (const p of this._packets) {
-      p.progress = Math.min(1, p.progress + dp);
-    }
+    const dp = dtMs / this._stepMs;
+    for (const p of this._packets) p.progress = Math.min(1, p.progress + dp);
   }
 
-  /** Render: nur Position setzen */
   renderPacket() {
     if (!this.root) return;
-
     const lengthPx = this.root.getBoundingClientRect().width;
     if (!Number.isFinite(lengthPx) || lengthPx <= 0) return;
 
@@ -138,7 +152,6 @@ export class Link extends SimulatedObject {
       const x = p.dir === "AtoB"
         ? (from + (to - from) * p.progress)
         : (to - (to - from) * p.progress);
-
       p.el.style.left = `${x}px`;
       p.el.style.display = "";
     }
@@ -164,11 +177,44 @@ export class Link extends SimulatedObject {
     this.root.style.transform = `rotate(${angle}deg)`;
   }
 
-  /** @param {SimulatedObject} obj @return {EthernetPort|null} */
-  _getNextFreePortFromObject(obj) {
-    if (obj instanceof Switch) return obj.device.getNextFreePort();
-    if (obj instanceof Router) return obj.net.getNextFreeInterfacePort();
-    if (obj instanceof PC) return obj.os.net.getNextFreeInterfacePort();
-    return null;
+  toJSON() {
+    return {
+      kind: "Link",
+      id: this.id,
+      a: this.A.id,
+      b: this.B.id,
+      portA: this.portAKey,
+      portB: this.portBKey,
+    };
+  }
+
+  /**
+   * @param {any} n
+   * @param {Map<number, SimulatedObject>} byId
+   */
+  static fromJSON(n, byId) {
+    const A0 = byId.get(Number(n.a));
+    const B0 = byId.get(Number(n.b));
+    if (!A0 || !B0) throw new Error("Link endpoints missing");
+
+    /** @type {SimulatedObject & PortProvider} */
+    const A = /** @type {any} */ (A0);
+    /** @type {SimulatedObject & PortProvider} */
+    const B = /** @type {any} */ (B0);
+
+    if (typeof A.getPortByKey !== "function" || typeof B.getPortByKey !== "function") {
+      throw new Error("Endpoint does not implement Port API");
+    }
+
+    const portAKey = String(n.portA ?? "");
+    const portBKey = String(n.portB ?? "");
+    const portA = A.getPortByKey(portAKey);
+    const portB = B.getPortByKey(portBKey);
+
+    if (!portA || !portB) throw new Error("Ports missing for link");
+
+    const obj = new Link(A, portA, portAKey, B, portB, portBKey);
+    obj.id = Number(n.id);
+    return obj;
   }
 }

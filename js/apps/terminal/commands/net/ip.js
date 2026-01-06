@@ -54,8 +54,8 @@ function findIface(ifaces, sel) {
 export const ip = {
   name: "ip",
   run: (ctx, args) => {
-    const ipf = ctx.os?.ipforwarder;
-    if (!ipf) return "ip: no ipforwarder";
+    const ipf = ctx.os.net;
+    if (!ipf) return "ip: no net driver";
 
     const ifaces = ipf.interfaces ?? [];
     const sub = args[0] ?? "a";

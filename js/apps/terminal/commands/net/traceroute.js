@@ -52,8 +52,8 @@ export const traceroute = {
 
         if (!host) return usage();
 
-        const ipf = ctx.os?.ipforwarder;
-        if (!ipf?.icmpEcho) return "traceroute: no ipforwarder";
+        const ipf = ctx.os.net;
+        if (!ipf?.icmpEcho) return "traceroute: no network driver";
 
         // resolve
         let dstNum = ipStringToNumber(host);

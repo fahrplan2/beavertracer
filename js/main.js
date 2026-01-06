@@ -43,11 +43,6 @@ sim.addObject(pc4);
 sim.addObject(sw1);
 sim.addObject(ro1);
 
-sim.addObject(new Link(pc1, sw1));
-sim.addObject(new Link(pc2, sw1));
-sim.addObject(new Link(pc3, sw1));
-sim.addObject(new Link(pc4, sw1));
-
 
 pc1.x = 50; pc1.y = 50;
 pc2.x = 450; pc2.y = 50;

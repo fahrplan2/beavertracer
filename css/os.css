@@ -167,8 +167,7 @@
    ========================= */
 
 .process-root button,
-.os-button-back,
-.sim-toolbar button {
+.os-button-back {
     appearance: none;
     border: 1px solid color-mix(in oklch, var(--text), transparent 84%);
     background: color-mix(in oklch, white, var(--primary) 10%);
@@ -185,24 +184,21 @@
 }
 
 .process-root button:hover,
-.os-button-back:hover,
-.sim-toolbar button:hover {
+.os-button-back:hover {
     background: color-mix(in oklch, var(--primary), white 86%);
     border-color: color-mix(in oklch, var(--primary), var(--text) 80%);
     box-shadow: 0 6px 14px rgba(0, 0, 0, 0.10);
 }
 
 .process-root button:active,
-.os-button-back:active,
-.sim-toolbar button:active {
+.os-button-back:active {
     transform: translateY(1px);
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.10);
 }
 
 /* Disabled */
 .process-root button:disabled,
-.os-button-back:disabled,
-.sim-toolbar button:disabled {
+.os-button-back:disabled {
     cursor: not-allowed;
     opacity: 0.55;
     box-shadow: none;
