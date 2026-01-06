@@ -59,11 +59,13 @@ export class OS {
 
     /**
      * @param {string} name name of the os to use, acts as hostname until DNS is loaded.
+     * @param {VirtualFileSystem} fs
+     * @param {IPStack} net
      */
-    constructor(name = "OS") {
+    constructor(name = "OS", fs, net) {
         this.name = name;
-        this.net = new IPStack(1, name);
-        this.fs = new VirtualFileSystem();
+        this.net = net;
+        this.fs = fs;
         this.root.classList.add("os-root");
         this._init();
         this.title = "";

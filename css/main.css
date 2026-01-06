@@ -1,12 +1,18 @@
-@import "sim.css"; /* SimIcon, SimPanel */
-@import "os.css";  /* OS */
-@import "apps.css"; /* OS-App-specific stuff */
+@import "sim.css";
+/* SimIcon, SimPanel */
+@import "os.css";
+/* OS */
+@import "apps.css";
+/* OS-App-specific stuff */
+@import "router.css";
+/* OS-App-specific stuff */
 
-@import "pcapviewer.css"; /* PCAPViewer */
+@import "pcapviewer.css";
+/* PCAPViewer */
 
 :root {
     --primary: oklch(62.489% 0.15353 245.072);
-    
+
     --primary-strong: color-mix(in oklch, var(--primary), black 18%);
     --primary-soft: color-mix(in oklch, var(--primary), white 78%);
     --primary-tint: color-mix(in oklch, var(--primary), white 88%);
@@ -28,6 +34,29 @@
 
     --border: #ccc;
     --bg: #f5f5f5;
+
+    /* Semantic status colors (OK / Warning / Danger) */
+    --ok: oklch(70% 0.17 145);
+    /* grün */
+    --warning: oklch(78% 0.17 85);
+    /* gelb */
+    --danger: oklch(62% 0.20 25);
+    /* rot */
+
+    --ok-strong: color-mix(in oklch, var(--ok), black 18%);
+    --ok-soft: color-mix(in oklch, var(--ok), white 78%);
+    --ok-tint: color-mix(in oklch, var(--ok), white 88%);
+
+    --warning-strong: color-mix(in oklch, var(--warning), black 18%);
+    --warning-soft: color-mix(in oklch, var(--warning), white 78%);
+    --warning-tint: color-mix(in oklch, var(--warning), white 88%);
+
+    --danger-strong: color-mix(in oklch, var(--danger), black 18%);
+    --danger-soft: color-mix(in oklch, var(--danger), white 78%);
+    --danger-tint: color-mix(in oklch, var(--danger), white 88%);
+
+    /* Optional: focus ring */
+    --focus: color-mix(in oklch, var(--primary), white 30%);
 }
 
 body {
@@ -71,7 +100,8 @@ body {
     background: var(--surface);
     font-weight: bold;
     position: relative;
-    top: 1px; /* sitzt optisch vor dem Content */
+    top: 1px;
+    /* sitzt optisch vor dem Content */
 }
 
 /* Content-Bereich */
@@ -89,16 +119,15 @@ body {
 
 
 .toolbar {
-  flex: 0 0 auto;
-  gap: 8px;
-  align-items: center;
-  padding: 8px;
-  border-bottom: 1px solid #ccc;
-  user-select: none;
-  background-color: var(--surface); 
+    flex: 0 0 auto;
+    gap: 8px;
+    align-items: center;
+    padding: 8px;
+    border-bottom: 1px solid #ccc;
+    user-select: none;
+    background-color: var(--surface);
 }
 
 .content {
     flex: 1 0 auto;
 }
-

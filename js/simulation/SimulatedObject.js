@@ -1,5 +1,6 @@
 //@ts-check
 
+import { VirtualFileSystem } from '../apps/lib/VirtualFileSystem.js';
 import { t } from '../i18n/index.js';
 import { makeDraggable } from '../lib/dragabble.js';
 import { makeWindow, bringToFront } from '../lib/windowmanager.js';
@@ -10,6 +11,12 @@ export class SimulatedObject {
     name;
     id;
     static idnumber = 0;
+
+    /** @type {SimControl} */
+    simcontrol;
+
+    /** @type {VirtualFileSystem} */
+    fs;
 
     /** @type {HTMLElement} */
     root;
@@ -240,13 +247,45 @@ export class SimulatedObject {
         }
     }
 
+    /**
+     * sets the name of the object and replaces the name in the visible positions
+     * @param {string} name
+     */
+
+    setName(name) {
+        this.name = name;
+
+        // Icon-Titel aktualisieren
+        if (this.iconEl) {
+            const title = this.iconEl.querySelector('.title');
+            if (title) {
+                title.textContent = name;
+            } else {
+                // Fallback: Icon neu bauen
+                this.iconEl.remove();
+                this.iconEl = this.buildIcon();
+                this.root.appendChild(this.iconEl);
+                this.wireIconInteractions();
+            }
+        }
+
+        // Panel-Titel aktualisieren
+        if (this.panelEl) {
+            const title = this.panelEl.querySelector('.sim-panel-title');
+            if (title) {
+                title.textContent = name;
+            }
+        }
+    }
+
     toJSON() {
         return {
             id: this.id,
             name: this.name,
             x: this.x, y: this.y,
             px: this.px, py: this.py,
-            panelOpen: this.panelOpen
+            panelOpen: this.panelOpen,
+            fs: this.fs
         };
     }
 }

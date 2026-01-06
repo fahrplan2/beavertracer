@@ -9,6 +9,7 @@ import { Link } from "./simulation/Link.js";
 import { initLocale, t, setLocale } from './i18n/index.js';
 import { PCapViewer } from "./pcap/PCapViewer.js";
 import { TabController } from "./TabControler.js";
+import { Router } from "./simulation/Router.js";
 
 
 initLocale();
@@ -25,6 +26,7 @@ var pc2 = new PC("PC2");
 var pc3 = new PC("PC3");
 var pc4 = new PC("PC4");
 var sw1 = new Switch("Switch 1");
+var ro1 = new Router("Router 1");
 
 pc1.os.net.configureInterface(0, { ip: IPOctetsToNumber(192, 168, 0, 1), netmask: IPOctetsToNumber(255, 255, 255, 0) });
 pc2.os.net.configureInterface(0, { ip: IPOctetsToNumber(192, 168, 0, 2), netmask: IPOctetsToNumber(255, 255, 255, 0) });
@@ -39,6 +41,7 @@ sim.addObject(pc2);
 sim.addObject(pc3);
 sim.addObject(pc4);
 sim.addObject(sw1);
+sim.addObject(ro1);
 
 sim.addObject(new Link(pc1, sw1));
 sim.addObject(new Link(pc2, sw1));

@@ -45,6 +45,7 @@ export class Link extends SimulatedObject {
     this.A = A;
     this.B = B;
     this.link = new EthernetLink(portA, portB);
+    this.link.link = this;
   }
 
   render() {

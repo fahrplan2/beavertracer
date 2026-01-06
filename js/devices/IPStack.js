@@ -63,6 +63,98 @@ export class IPStack extends Observable {
         this._updateAutoRoutes();
     }
 
+
+    /**
+     * searches for a free eth-Number
+     * @returns {number}
+     */
+    _getFreeEthIndex() {
+        const used = new Set();
+
+        for (const i of this.interfaces) {
+            const m = /^eth(\d+)$/.exec(i.name);
+            if (m) used.add(Number(m[1]));
+        }
+
+        let n = 0;
+        while (used.has(n)) n++;
+        return n;
+    }
+
+    addNewInterface() {
+        const idx = this._getFreeEthIndex();
+        const interf = new NetworkInterface({ name: `eth${idx}` });
+
+        this.interfaces.push(interf);
+        interf.subscribe(this);
+
+        this._updateAutoRoutes();
+    }
+
+
+    /**
+     * Delets a network interface, tries to clean up all associated structures
+     *
+     * @param {string} name
+     */
+
+    deleteInterface(name) {
+        const idx = this.interfaces.findIndex(i => i.name === name);
+        if (idx === -1) {
+            console.warn("deleteInterface: interface not found", name);
+            return;
+        }
+
+        const interf = this.interfaces[idx];
+
+        // 1) destroy ethernet link
+        if (interf.port.linkref != null) {
+            interf.port.linkref.link.simcontrol.deleteObject(interf.port.linkref.link);
+        }
+
+        // 2) destroy all TCP-connections
+        for (const [key, conn] of this.tcpConns.entries()) {
+            //TODO: If there are interface-specific bound TCP rules, we need to do more
+            this._tcpDestroy(key, conn, `interface ${name} removed`);
+        }
+
+        // 3) close all TCP sockets
+        for (const [port, sock] of this.tcpSockets.entries()) {
+            if (sock.state === "LISTEN") {
+                this.closeTCPServerSocket(port);
+            }
+        }
+
+        // 4) close all UDP sockets
+        for (const port of this.udpSockets.keys()) {
+            this.closeUDPSocket(port);
+        }
+
+        // 5) cleanup routing table
+        this.routingTable = this.routingTable.filter(r => {
+            if (r.interf === idx) {
+                if (!r.auto) {
+                    console.warn("deleteInterface: removing manual route", r);
+                }
+                return false;
+            }
+            return true;
+        });
+
+        // 6) now delete the interface
+        this.interfaces.splice(idx, 1);
+
+        // 7) correct the routing table interfaces
+        for (const r of this.routingTable) {
+            if (r.interf > idx) {
+                r.interf -= 1;
+            }
+        }
+
+        // 8) update automatic routes
+        this._updateAutoRoutes();
+    }
+
     /**
      * 
      * @param {IPv4Packet} packet 
@@ -273,8 +365,8 @@ export class IPStack extends Observable {
 
         // retransmit SYN a few times
         let tries = 0;
-        const maxTries = 3;          
-        const rtoMs = 20*SimControl.tick;
+        const maxTries = 3;
+        const rtoMs = 20 * SimControl.tick;
         conn._synTimer = setInterval(() => {
             if (conn.state !== "SYN-SENT") return;
             tries++;
@@ -506,15 +598,16 @@ export class IPStack extends Observable {
             seq,
             ack,
             flags,
-            payload 
+            payload
         } = opts;
-        const tcpBytes = new TCPPacket({ 
-            srcPort, 
-            dstPort, 
-            seq, 
-            ack, 
-            flags, 
-            payload }
+        const tcpBytes = new TCPPacket({
+            srcPort,
+            dstPort,
+            seq,
+            ack,
+            flags,
+            payload
+        }
         ).pack();
 
         this.send({
@@ -1121,6 +1214,37 @@ export class IPStack extends Observable {
         this.routingTable.push(r);
     }
 
+    /**
+     * deletes an route. Can not delete auto-routes
+     *
+     * @param {number} dst
+     * @param {number} netmask
+     * @param {number} interf
+     * @param {number} nexthop
+     */
+
+    delRoute(dst, netmask, interf, nexthop) {
+        const anyMatch = this.routingTable.some(r =>
+            r.dst === dst &&
+            r.netmask === netmask &&
+            r.interf === interf &&
+            r.nexthop === nexthop
+        );
+
+        let removed = 0;
+        this.routingTable = this.routingTable.filter(r => {
+            const matchManual =
+                !r.auto &&
+                r.dst === dst &&
+                r.netmask === netmask &&
+                r.interf === interf &&
+                r.nexthop === nexthop;
+
+            if (matchManual) removed++;
+            return !matchManual;
+        });
+    }
+
     _updateAutoRoutes() {
         this.routingTable = this.routingTable.filter(r => !r.auto);
 
@@ -1172,6 +1296,86 @@ export class IPStack extends Observable {
     }
 
 
+    toJSON() {
+        return {
+            name: this.name,
+            forwarding: !!this.forwarding,
+
+            interfaces: this.interfaces.map((itf) => ({
+                name: itf.name,
+                ip: itf.ip ?? 0,
+                netmask: itf.netmask ?? 0,
+            })),
+
+            // store only manual routes; auto routes are derived
+            routes: this.routingTable
+                .filter(r => !r.auto)
+                .map(r => ({
+                    dst: r.dst,
+                    netmask: r.netmask,
+                    interf: r.interf,
+                    nexthop: r.nexthop,
+                })),
+        };
+    }
+
+    /**
+     * @param {any} json
+     * @returns {IPStack}
+     */
+    static fromJSON(json) {
+        if (!json || typeof json !== "object") {
+            throw new Error("IPStack.fromJSON: invalid json");
+        }
+
+        const ifs = Array.isArray(json.interfaces) ? json.interfaces : [];
+        const stack = new IPStack(0, String(json.name ?? ""));
+
+        stack.forwarding = !!json.forwarding;
+
+        // create interfaces in the stored order with stored names
+        stack.interfaces = [];
+        for (let i = 0; i < ifs.length; i++) {
+            const row = ifs[i] ?? {};
+            const name = String(row.name ?? `eth${i}`);
+            const interf = new NetworkInterface({ name });
+            stack.interfaces.push(interf);
+            interf.subscribe(stack);
+        }
+
+        // configure IP/netmask
+        for (let i = 0; i < stack.interfaces.length; i++) {
+            const row = ifs[i] ?? {};
+            stack.configureInterface(i, {
+                name: stack.interfaces[i].name,
+                ip: Number(row.ip ?? 0),
+                netmask: Number(row.netmask ?? 0),
+            });
+        }
+
+        // rebuild auto routes
+        stack._updateAutoRoutes();
+
+        // restore manual routes
+        const routes = Array.isArray(json.routes) ? json.routes : [];
+        for (const rr of routes) {
+            if (!rr || typeof rr !== "object") continue;
+
+            const dst = Number(rr.dst ?? 0);
+            const netmask = Number(rr.netmask ?? 0);
+            const interf = Number(rr.interf ?? 0);
+            const nexthop = Number(rr.nexthop ?? 0);
+
+            if (interf !== -1 && (interf < 0 || interf >= stack.interfaces.length)) {
+                console.warn("IPStack.fromJSON: skipping route with invalid interf index", rr);
+                continue;
+            }
+
+            stack.addRoute(dst, netmask, interf, nexthop);
+        }
+
+        return stack;
+    }
 
 }
 
@@ -1251,5 +1455,6 @@ export class TCPSocket {
 
     /** @type {Array<(err: Error|null) => void>} */
     connectWaiters = [];
+
 
 }

@@ -11,7 +11,8 @@ export class SimControl {
     static tick = 500;
 
     /** @type {Array<SimulatedObject>} */
-    simobjects;
+    static simobjects;
+
     endStep = false;
 
     /** @type {HTMLElement|null} */
@@ -107,8 +108,10 @@ export class SimControl {
     addObject(obj) {
         if (this.simobjects.includes(obj)) return;
         this.simobjects.push(obj);
+        obj.simcontrol = this;
         this.render();
     }
+
 
     /** @param {SimulatedObject} obj */
     setFocus(obj) {
@@ -598,7 +601,7 @@ export class SimControl {
     }
 
     /** @param {SimulatedObject} obj */
-    _deleteObject(obj) {
+    deleteObject(obj) {
         // cancel pending link if needed
         if (this.linkStart === obj) this._cancelLinking();
 
@@ -650,13 +653,13 @@ export class SimControl {
             if (link instanceof Link) {
                 ev.preventDefault();
                 ev.stopPropagation();
-                this._deleteObject(link);
+                this.deleteObject(link);
                 return;
             }
             if (obj) {
                 ev.preventDefault();
                 ev.stopPropagation();
-                this._deleteObject(obj);
+                this.deleteObject(obj);
                 return;
             }
             return;

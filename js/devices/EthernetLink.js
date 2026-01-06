@@ -1,5 +1,6 @@
 //@ts-check
 
+import { Link } from "../simulation/Link.js";
 import { EthernetPort } from "./EthernetPort.js";
 
 /**
@@ -9,6 +10,9 @@ export class EthernetLink {
 
     portA;
     portB;
+
+    /** @type { Link } */
+    link;
 
     /** @type {*} */
     AtoB;
