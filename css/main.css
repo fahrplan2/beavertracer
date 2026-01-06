@@ -11,7 +11,7 @@
 /* PCAPViewer */
 
 :root {
-  --primary: oklch(62.489% 0.15353 245.072);
+  --primary: oklch(75.749% 0.12002 208.169);
 
   --primary-strong: color-mix(in oklch, var(--primary), black 18%);
   --primary-soft: color-mix(in oklch, var(--primary), white 78%);
