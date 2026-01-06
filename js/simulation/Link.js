@@ -140,81 +140,84 @@ export class Link extends SimulatedObject {
     for (const p of this._packets) p.progress = Math.min(1, p.progress + dp);
   }
 
-  renderPacket() {
-    if (!this.root) return;
-    const lengthPx = this.root.getBoundingClientRect().width;
-    if (!Number.isFinite(lengthPx) || lengthPx <= 0) return;
+renderPacket() {
+  if (!this.root) return;
 
-    const from = this._pad;
-    const to = Math.max(this._pad, lengthPx - this._pad);
+  const lengthPx = this.root.offsetWidth;
+  if (!Number.isFinite(lengthPx) || lengthPx <= 0) return;
 
-    for (const p of this._packets) {
-      const x = p.dir === "AtoB"
-        ? (from + (to - from) * p.progress)
-        : (to - (to - from) * p.progress);
-      p.el.style.left = `${x}px`;
-      p.el.style.display = "";
-    }
+  const from = this._pad;
+  const to = Math.max(this._pad, lengthPx - this._pad);
+
+  for (const p of this._packets) {
+    const x = p.dir === "AtoB"
+      ? (from + (to - from) * p.progress)
+      : (to - (to - from) * p.progress);
+
+    p.el.style.left = `${x}px`;
+    p.el.style.display = "";
   }
+}
 
-  redrawLinks() {
-    if (!this.root || !(this.root instanceof HTMLElement)) return;
 
-    const x1 = this.A.getX();
-    const y1 = this.A.getY();
-    const x2 = this.B.getX();
-    const y2 = this.B.getY();
+redrawLinks() {
+  if (!this.root || !(this.root instanceof HTMLElement)) return;
 
-    const dx = x2 - x1;
-    const dy = y2 - y1;
+  const x1 = this.A.getX();
+  const y1 = this.A.getY();
+  const x2 = this.B.getX();
+  const y2 = this.B.getY();
 
-    const length = Math.hypot(dx, dy);
-    const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+  const dx = x2 - x1;
+  const dy = y2 - y1;
 
-    this.root.style.width = `${length}px`;
-    this.root.style.left = `${x1}px`;
-    this.root.style.top = `${y1}px`;
-    this.root.style.transform = `rotate(${angle}deg)`;
-  }
+  const length = Math.hypot(dx, dy);
+  const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
 
-  toJSON() {
-    return {
-      kind: "Link",
-      id: this.id,
-      a: this.A.id,
-      b: this.B.id,
-      portA: this.portAKey,
-      portB: this.portBKey,
-    };
-  }
+  this.root.style.width = `${length}px`;
+  this.root.style.left = `${x1}px`;
+  this.root.style.top = `${y1}px`;
+  this.root.style.transform = `rotate(${angle}deg)`;
+}
+
+toJSON() {
+  return {
+    kind: "Link",
+    id: this.id,
+    a: this.A.id,
+    b: this.B.id,
+    portA: this.portAKey,
+    portB: this.portBKey,
+  };
+}
 
   /**
    * @param {any} n
    * @param {Map<number, SimulatedObject>} byId
    */
   static fromJSON(n, byId) {
-    const A0 = byId.get(Number(n.a));
-    const B0 = byId.get(Number(n.b));
-    if (!A0 || !B0) throw new Error("Link endpoints missing");
+  const A0 = byId.get(Number(n.a));
+  const B0 = byId.get(Number(n.b));
+  if (!A0 || !B0) throw new Error("Link endpoints missing");
 
-    /** @type {SimulatedObject & PortProvider} */
-    const A = /** @type {any} */ (A0);
-    /** @type {SimulatedObject & PortProvider} */
-    const B = /** @type {any} */ (B0);
+  /** @type {SimulatedObject & PortProvider} */
+  const A = /** @type {any} */ (A0);
+  /** @type {SimulatedObject & PortProvider} */
+  const B = /** @type {any} */ (B0);
 
-    if (typeof A.getPortByKey !== "function" || typeof B.getPortByKey !== "function") {
-      throw new Error("Endpoint does not implement Port API");
-    }
-
-    const portAKey = String(n.portA ?? "");
-    const portBKey = String(n.portB ?? "");
-    const portA = A.getPortByKey(portAKey);
-    const portB = B.getPortByKey(portBKey);
-
-    if (!portA || !portB) throw new Error("Ports missing for link");
-
-    const obj = new Link(A, portA, portAKey, B, portB, portBKey);
-    obj.id = Number(n.id);
-    return obj;
+  if (typeof A.getPortByKey !== "function" || typeof B.getPortByKey !== "function") {
+    throw new Error("Endpoint does not implement Port API");
   }
+
+  const portAKey = String(n.portA ?? "");
+  const portBKey = String(n.portB ?? "");
+  const portA = A.getPortByKey(portAKey);
+  const portB = B.getPortByKey(portBKey);
+
+  if (!portA || !portB) throw new Error("Ports missing for link");
+
+  const obj = new Link(A, portA, portAKey, B, portB, portBKey);
+  obj.id = Number(n.id);
+  return obj;
+}
 }

@@ -11,7 +11,7 @@
 /* PCAPViewer */
 
 :root {
-  --primary: oklch(75.749% 0.12002 208.169);
+  --primary: oklch(79.941% 0.03316 239.566);
 
   --primary-strong: color-mix(in oklch, var(--primary), black 18%);
   --primary-soft: color-mix(in oklch, var(--primary), white 78%);
@@ -21,7 +21,7 @@
   --bg2: color-mix(in oklch, var(--primary), white 82%);
 
   --surface: color-mix(in oklch, white, var(--primary) 90%);
-  --surface-strong: color-mix(in oklch, white, var(--primary) 10%);
+  --surface-strong: color-mix(in oklch, white, var(--primary) 50%);
 
   --text: #142033;
   --muted: color-mix(in oklch, var(--text), transparent 40%);

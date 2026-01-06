@@ -6,6 +6,8 @@ import { Pcap } from "../pcap/Pcap.js";
 import { SimControl } from "../SimControl.js";
 import { SimulatedObject } from "./SimulatedObject.js";
 
+import { RouterUI } from "./RouterUI.js";
+import { DOMBuilder } from "../lib/DomBuilder.js";
 
 /**
  * @typedef {Object} PortDescriptor
@@ -13,7 +15,6 @@ import { SimulatedObject } from "./SimulatedObject.js";
  * @property {string} label
  * @property {import("../devices/EthernetPort.js").EthernetPort} port
  */
-
 
 /* ----------------------------- helpers ----------------------------- */
 
@@ -78,11 +79,11 @@ export class Router extends SimulatedObject {
     /** @type {IPStack} */
     net;
 
+    /** @type {RouterUI} */
+    ui;
+
     /** @type {HTMLElement|null} */
     _panelBody = null;
-
-    /** @type {HTMLDivElement|null} */
-    _hostEl = null;
 
     /** @type {number|null} */
     _linkPollTimer = null;
@@ -123,7 +124,16 @@ export class Router extends SimulatedObject {
     constructor(name = "Router") {
         super(name);
         this.net = new IPStack(2, name);
+        this.net.forwarding = true; //we are a router after all
         this.fs = new VirtualFileSystem();
+
+        this.ui = new RouterUI({
+            onRename: (newName) => {
+                if (!newName || newName === this.name) return;
+                this.setName(newName);
+                this.net.name = newName;
+            },
+        });
 
         /** @param {HTMLElement} body */
         this.onPanelCreated = (body) => {
@@ -132,87 +142,102 @@ export class Router extends SimulatedObject {
         };
     }
 
+    toJSON() {
+        return {
+            ...super.toJSON(),
+            kind: "Router",
+            net: this.net.toJSON(),
+        };
+    }
+
+
+    /** @param {any} n */
+    static fromJSON(n) {
+        const obj = new Router(n.name ?? "Router");
+        obj._applyBaseJSON(n);
+        if (n.net) obj.net = IPStack.fromJSON(n.net);
+        return obj;
+    }
+
+    /** @returns {PortDescriptor[]} */
+    listPorts() {
+        const ifs = this.net?.interfaces ?? [];
+        return ifs.map((nic, i) => ({
+            key: `eth${i}`,
+            label: `eth${i}`,
+            port: nic.port,
+        }));
+    }
+
+    /** @param {string} key */
+    getPortByKey(key) {
+        const m = /^eth(\d+)$/.exec(key);
+        if (!m) return null;
+        const i = Number(m[1]);
+        const nic = (this.net?.interfaces ?? [])[i];
+        return nic?.port ?? null;
+    }
+
     /* ------------------------------ UI ------------------------------ */
 
     mount(panelBody) {
         // Stop previous polling (avoid multiple timers after remount)
         this._stopLinkPolling();
 
-        // Ensure we only render into our own host element
-        if (!this._hostEl) {
-            this._hostEl = document.createElement("div");
-            this._hostEl.className = "router-ui";
-            panelBody.appendChild(this._hostEl);
-        } else if (this._hostEl.parentElement !== panelBody) {
-            panelBody.appendChild(this._hostEl);
-        }
+        // Render static shell
+        this.ui.renderShell(panelBody, { routerName: this.name });
 
-        const host = this._hostEl;
-        host.innerHTML = "";
-        host.style.display = "flex";
-        host.style.flexDirection = "column";
-        host.style.gap = "12px";
+        // Wire refs
+        this._nameInput = this.ui.nameInput;
+        this._tabsBar = this.ui.tabsBar;
+        this._selectedIfaceLabel = this.ui.selectedIfaceLabel;
+        this._ifacePanel = this.ui.ifacePanel;
 
-        /* -------- Router Name Editor -------- */
+        this._ipInput = this.ui.ipInput;
+        this._maskInput = this.ui.maskInput;
+        this._cidrInput = this.ui.cidrInput;
+        this._saveIfBtn = this.ui.saveIfBtn;
 
-        const nameRow = document.createElement("div");
-        nameRow.className = "router-name-row";
+        this._routesHost = this.ui.routesHost;
 
-        const nameLabel = document.createElement("label");
-        nameLabel.textContent = "Router-Name:";
-        nameRow.appendChild(nameLabel);
+        // (Re-)build tabs and interface panel actions
+        this._renderInterfaceTabs();
+        this._renderInterfaceActions();
 
-        const nameInput = document.createElement("input");
-        nameInput.value = this.name;
-        this._nameInput = nameInput;
-        nameRow.appendChild(nameInput);
-
-        const nameBtn = document.createElement("button");
-        nameBtn.textContent = "Übernehmen";
-        nameRow.appendChild(nameBtn);
-
-        nameBtn.addEventListener("click", () => {
-            const newName = nameInput.value.trim();
-            if (!newName || newName === this.name) return;
-            this.setName(newName);
-            this.net.name = newName;
-        });
-
-        nameInput.addEventListener("keydown", (e) => {
-            if (e.key === "Enter") nameBtn.click();
-        });
-
-        host.appendChild(nameRow);
-
-        /* -------- Interfaces (Tabs) -------- */
-
-        const ifCard = document.createElement("div");
-        ifCard.className = "router-card";
-
-        const tabsBar = document.createElement("div");
-        tabsBar.className = "router-tabs";
-        this._tabsBar = tabsBar;
-        this._tabRefs.clear();
+        // Form wiring (input listeners + save handler)
+        this._wireInterfaceForm();
 
         // pick/keep selection
         if (!this._selectedIfaceName || !this.net.interfaces.some((i) => i.name === this._selectedIfaceName)) {
             this._selectedIfaceName = this.net.interfaces[0]?.name ?? null;
         }
 
+        // Apply selection + initial load
+        this._applyTabSelection();
+        this._loadSelectedInterfaceIntoForm();
+        this._updateInterfaceFormState();
+
+        // Render routes
+        this._renderRoutes();
+
+        // Start polling link status
+        this._startLinkPolling();
+    }
+
+    _renderInterfaceTabs() {
+        const tabsBar = this._tabsBar;
+        if (!tabsBar) return;
+
+        DOMBuilder.clear(tabsBar);
+        this._tabRefs.clear();
+
         // build tabs
         for (const iface of this.net.interfaces) {
-            const btn = document.createElement("button");
-            btn.type = "button";
-            btn.className = "router-tab";
+            const btn = DOMBuilder.button("", { className: "router-tab" });
             btn.dataset.name = iface.name;
 
-            const label = document.createElement("span");
-            label.className = "router-tab-label";
-            label.textContent = iface.name;
-
-            const badge = document.createElement("span");
-            badge.className = "router-tab-badge status-unknown";
-            badge.textContent = "unbekannt";
+            const label = DOMBuilder.el("span", { className: "router-tab-label", text: iface.name });
+            const badge = DOMBuilder.el("span", { className: "router-tab-badge status-unknown", text: "unbekannt" });
 
             btn.appendChild(label);
             btn.appendChild(badge);
@@ -229,76 +254,28 @@ export class Router extends SimulatedObject {
         }
 
         // plus tab
-        const plusBtn = document.createElement("button");
-        plusBtn.type = "button";
-        plusBtn.className = "router-tab router-tab-plus";
-        plusBtn.textContent = "+";
-        plusBtn.title = "Interface hinzufügen";
+        const plusBtn = DOMBuilder.button("+", { className: "router-tab router-tab-plus", title: "Interface hinzufügen" });
         plusBtn.addEventListener("click", () => {
             if (typeof this.net.addNewInterface !== "function") {
                 alert("net.addNewInterface() fehlt noch.");
                 return;
             }
             this.net.addNewInterface();
-            // keep selection: newly created one is likely last
             this._selectedIfaceName = this.net.interfaces[this.net.interfaces.length - 1]?.name ?? this._selectedIfaceName;
             if (this._panelBody) this.mount(this._panelBody);
         });
 
         tabsBar.appendChild(plusBtn);
-        ifCard.appendChild(tabsBar);
+    }
 
-        const selLabel = document.createElement("div");
-        selLabel.className = "router-selected-iface";
-        this._selectedIfaceLabel = selLabel;
-        ifCard.appendChild(selLabel);
+    _renderInterfaceActions() {
+        const actionsHost = this.ui.ifaceActions;
+        if (!actionsHost) return;
 
-        // interface panel (content)
-        const ifacePanel = document.createElement("div");
-        ifacePanel.className = "router-if-panel";
-        this._ifacePanel = ifacePanel;
+        DOMBuilder.clear(actionsHost);
 
-        // form grid
-        const grid = document.createElement("div");
-        grid.className = "router-if-grid";
-
-        const ipIn = document.createElement("input");
-        ipIn.className = "router-if-ip";
-        ipIn.placeholder = "IP";
-        this._ipInput = ipIn;
-
-        const maskIn = document.createElement("input");
-        maskIn.className = "router-if-mask";
-        maskIn.placeholder = "Netmask";
-        this._maskInput = maskIn;
-
-        const cidrIn = document.createElement("input");
-        cidrIn.className = "router-if-cidr";
-        cidrIn.placeholder = "/CIDR";
-        this._cidrInput = cidrIn;
-
-        const saveBtn = document.createElement("button");
-        saveBtn.className = "router-if-save";
-        saveBtn.textContent = "Speichern";
-        this._saveIfBtn = saveBtn;
-
-        grid.appendChild(ipIn);
-        grid.appendChild(maskIn);
-        grid.appendChild(cidrIn);
-        grid.appendChild(saveBtn);
-
-        ifacePanel.appendChild(grid);
-
-        // actions row (delete)
-
-        const actions = document.createElement("div");
-        actions.className = "router-if-actions";
-
-        /* ---- PCAP button ---- */
-        const pcapBtn = document.createElement("button");
-        pcapBtn.className = "router-if-pcap";
-        pcapBtn.textContent = "Mitschnitt anzeigen";
-
+        // PCAP button
+        const pcapBtn = DOMBuilder.button("Mitschnitt anzeigen", { className: "router-if-pcap" });
         pcapBtn.addEventListener("click", () => {
             const iface = this._getSelectedIface();
             if (!iface || !iface.port) return;
@@ -315,27 +292,48 @@ export class Router extends SimulatedObject {
             SimControl.pcapViewer.loadBytes(pcap.generateBytes());
             SimControl.tabControler.gotoTab("pcapviewer");
         });
+        actionsHost.appendChild(pcapBtn);
 
-        actions.appendChild(pcapBtn);
+        // Delete button
+        const delBtn = DOMBuilder.button("Interface löschen", { className: "router-if-del" });
+        this._delIfBtn = delBtn;
 
-        /* ---- Delete button ---- */
-        const delBtn = document.createElement("button");
-        delBtn.className = "router-if-del";
-        delBtn.textContent = "Interface löschen";
+        delBtn.addEventListener("click", () => {
+            const name = this._selectedIfaceName;
+            if (!name) return;
 
-        actions.appendChild(delBtn);
-        ifacePanel.appendChild(actions);
+            if (typeof this.net.deleteInterface !== "function") {
+                alert("net.deleteInterface(name) fehlt noch.");
+                return;
+            }
 
-        ifCard.appendChild(ifacePanel);
-        host.appendChild(ifCard);
+            const ok = confirm(`Interface "${name}" wirklich löschen?`);
+            if (!ok) return;
 
-        // Interface form events
+            this.net.deleteInterface(name);
+
+            // move selection
+            this._selectedIfaceName = this.net.interfaces[0]?.name ?? null;
+            if (this._panelBody) this.mount(this._panelBody);
+        });
+
+        actionsHost.appendChild(delBtn);
+    }
+
+    _wireInterfaceForm() {
+        const ipIn = this._ipInput;
+        const maskIn = this._maskInput;
+        const cidrIn = this._cidrInput;
+        const saveBtn = this._saveIfBtn;
+
+        if (!ipIn || !maskIn || !cidrIn || !saveBtn) return;
+
         const onInput = () => this._updateInterfaceFormState();
 
         ipIn.addEventListener("input", onInput);
 
         maskIn.addEventListener("input", () => {
-            // update CIDR display when netmask parses (even if invalid netmask contiguity, CIDR might be "")
+            // update CIDR display when netmask parses
             try {
                 const m = ipStrToNum(maskIn.value);
                 const c = netmaskToCidr(m);
@@ -362,48 +360,6 @@ export class Router extends SimulatedObject {
         });
 
         saveBtn.addEventListener("click", () => this._applyInterfaceForm());
-
-        delBtn.addEventListener("click", () => {
-            const name = this._selectedIfaceName;
-            if (!name) return;
-
-            if (typeof this.net.deleteInterface !== "function") {
-                alert("net.deleteInterface(name) fehlt noch.");
-                return;
-            }
-
-            const ok = confirm(`Interface "${name}" wirklich löschen?`);
-            if (!ok) return;
-
-            this.net.deleteInterface(name);
-
-            // move selection
-            this._selectedIfaceName = this.net.interfaces[0]?.name ?? null;
-            if (this._panelBody) this.mount(this._panelBody);
-        });
-
-        /* -------- Routing Table -------- */
-
-        const rtTitle = document.createElement("h4");
-        rtTitle.textContent = "Routingtabelle";
-        rtTitle.style.margin = "0";
-        host.appendChild(rtTitle);
-
-        const routesHost = document.createElement("div");
-        routesHost.className = "router-routes";
-        this._routesHost = routesHost;
-        host.appendChild(routesHost);
-
-        // Apply selection + initial load
-        this._applyTabSelection();
-        this._loadSelectedInterfaceIntoForm();
-        this._updateInterfaceFormState();
-
-        // Render routes
-        this._renderRoutes();
-
-        // Start polling link status
-        this._startLinkPolling();
     }
 
     /* ------------------------ Tabs & status polling ------------------------ */
@@ -431,7 +387,6 @@ export class Router extends SimulatedObject {
     }
 
     _startLinkPolling() {
-        // initial update immediately
         this._updateAllTabStatuses();
 
         this._linkPollTimer = window.setInterval(() => {
@@ -895,41 +850,4 @@ export class Router extends SimulatedObject {
         addBtn.disabled = !hasIfaces;
         updateAddState();
     }
-
-
-    toJSON() {
-        return {
-            ...super.toJSON(),
-            kind: "Router",
-            net: this.net.toJSON(),
-        };
-    }
-
-    /** @param {any} n */
-    static fromJSON(n) {
-        const obj = new Router(n.name ?? "Router");
-        obj._applyBaseJSON(n);
-        if (n.net) obj.net = IPStack.fromJSON(n.net);
-        return obj;
-    }
-
-    /** @returns {PortDescriptor[]} */
-    listPorts() {
-        const ifs = this.net?.interfaces ?? [];
-        return ifs.map((nic, i) => ({
-            key: `eth${i}`,
-            label: `eth${i}`,
-            port: nic.port,
-        }));
-    }
-
-    /** @param {string} key */
-    getPortByKey(key) {
-        const m = /^eth(\d+)$/.exec(key);
-        if (!m) return null;
-        const i = Number(m[1]);
-        const nic = (this.net?.interfaces ?? [])[i];
-        return nic?.port ?? null;
-    }
-
 }
