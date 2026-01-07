@@ -214,7 +214,7 @@
 
   border: 2px solid var(--ui-border-strong);
   border-radius: 10px;
-  background: var(--surface-strong);
+  background: var(--grey);
 
   display: grid;
   place-items: center;
@@ -331,35 +331,35 @@
   pointer-events: none;
 }
 
-/* packet */
 .sim-packets-layer {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: 300;
+  z-index: 300; 
 }
 
-.sim-link .sim-packet {
+.sim-packet {
   position: absolute;
-  top: 50%;
+  top: 0;
   left: 0;
-  z-index: 350;
 
-  transform: translate(-50%, -50%);
   width: 84px;
   height: 84px;
 
-  pointer-events: auto;
+  transform: translate(-50%, -50%);
+  pointer-events: auto; /* clickable */
   cursor: pointer;
+
   color: var(--danger);
 }
 
-.sim-link .sim-packet::before {
+.sim-packet::before {
   content: "✉";
   display: inline-block;
   font-size: 80px;
   line-height: 1;
   color: currentColor;
+  text-align: center;
 }
 
 /* =========================================================

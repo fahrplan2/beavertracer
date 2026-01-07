@@ -1,0 +1,114 @@
+/* This file provides global styles */
+:root {
+  --primary: oklch(59.918% 0.11975 261.034);
+
+  --primary-strong: color-mix(in oklch, var(--primary), black 18%);
+  --primary-soft: color-mix(in oklch, var(--primary), white 78%);
+  --primary-tint: color-mix(in oklch, var(--primary), white 88%);
+
+  --bg1: color-mix(in oklch, var(--primary), white 92%);
+  --bg2: color-mix(in oklch, var(--primary), white 82%);
+
+  --surface: color-mix(in oklch, white, var(--primary) 90%);
+  --surface-strong: color-mix(in oklch, white, var(--primary) 50%);
+
+  --text: #142033;
+  --muted: color-mix(in oklch, var(--text), transparent 40%);
+
+  /* nodes etc. */
+  --grey: oklch(87.61% 0.0001 271.152);
+
+
+
+  --shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
+  --shadow-soft: 0 6px 14px rgba(0, 0, 0, 0.10);
+
+  --border: #ccc;
+  --bg: #f5f5f5;
+
+  --ok: oklch(70% 0.17 145);
+  --warning: oklch(78% 0.17 85);
+  --danger: oklch(62% 0.20 25);
+
+  --ok-strong: color-mix(in oklch, var(--ok), black 18%);
+  --ok-soft: color-mix(in oklch, var(--ok), white 78%);
+  --ok-tint: color-mix(in oklch, var(--ok), white 88%);
+
+  --warning-strong: color-mix(in oklch, var(--warning), black 18%);
+  --warning-soft: color-mix(in oklch, var(--warning), white 78%);
+  --warning-tint: color-mix(in oklch, var(--warning), white 88%);
+
+  --danger-strong: color-mix(in oklch, var(--danger), black 18%);
+  --danger-soft: color-mix(in oklch, var(--danger), white 78%);
+  --danger-tint: color-mix(in oklch, var(--danger), white 88%);
+
+  --focus: color-mix(in oklch, var(--primary), white 30%);
+
+  --ui-border: color-mix(in oklch, var(--text), transparent 78%);
+  --ui-border-strong: color-mix(in oklch, var(--text), transparent 65%);
+  --ui-card: color-mix(in oklch, var(--surface), var(--text) 6%);
+  --ui-card-hover: color-mix(in oklch, var(--surface), var(--text) 10%);
+  --ui-active: white;
+  --ui-active-border: white;
+  --ui-line: color-mix(in oklch, var(--text), transparent 55%);
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: sans-serif;
+}
+
+h4 {
+  background-color: var(--primary);
+  font-size: 16px;
+  padding: 7px;
+}
+
+input,
+select {
+  border: 1px solid color-mix(in oklch, var(--border), var(--text) 8%);
+  border-radius: 4px;
+  padding: 6px 8px;
+  color: var(--text);
+}
+
+input::placeholder {
+  color: var(--muted);
+}
+
+button {
+  border: 1px solid color-mix(in oklch, var(--border), var(--text) 10%);
+  border-radius: 4px;
+  padding: 6px 10px;
+  background: var(--bg-strong);
+  color: var(--text);
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--primary-strong);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.sim-panel-body {
+    padding: 2px;
+}

@@ -6,6 +6,9 @@ import { Disposer } from "./lib/Disposer.js";
 import { t } from "../i18n/index.js";
 
 export class TextEditorApp extends GenericProcess {
+
+  title = t("apps.editor.title");
+
   /** @type {Disposer} */
   bag = new Disposer();
 
@@ -128,7 +131,7 @@ export class TextEditorApp extends GenericProcess {
       }
     });
 
-    const header = UI.el("div", {
+    const statusBar = UI.el("div", {
       className: "editor-header",
       children: [
         status,
@@ -144,8 +147,8 @@ export class TextEditorApp extends GenericProcess {
 
     const panel = UI.panel([
       actions,
-      header,
       ta,
+      statusBar,
     ]);
 
     this.mainView = panel;
@@ -273,6 +276,12 @@ export class TextEditorApp extends GenericProcess {
     this.pickerCallback = onSelect;
     this.pickerCwd = this.pickerCwd || this.cwd || "/";
 
+    // Show current path
+    const pathBar = UI.el("div", {
+      className: "fp-path",
+      text: this.pickerCwd,
+    });
+
     // ---- Build picker UI ----
     const dialog = UI.el("div", { className: "fp-dialog" });
 
@@ -336,6 +345,8 @@ export class TextEditorApp extends GenericProcess {
     const renderList = () => {
       list.replaceChildren();
 
+      pathBar.textContent = this.pickerCwd;
+
       if (this.pickerCwd !== "/") {
         const up = UI.el("div", { className: "fp-item fp-dir", text: t("texteditorapp.picker.item.up") });
         this.pickerBag.on(up, "click", () => {
@@ -386,6 +397,7 @@ export class TextEditorApp extends GenericProcess {
 
     dialog.appendChild(title);
     if (nameInput) dialog.appendChild(nameInput);
+    dialog.appendChild(pathBar);
     dialog.appendChild(list);
     dialog.appendChild(buttons);
 

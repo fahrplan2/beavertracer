@@ -1,16 +1,3 @@
-/* Router base */
-.router-ui {
-  color: var(--text);
-}
-
-/* Card / surfaces */
-.router-card {
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 10px;
-  box-shadow: var(--shadow-soft);
-}
-
 .router-name-row {
   display: flex;
   gap: 8px;
@@ -120,38 +107,6 @@
   gap: 8px;
 }
 
-/* Inputs & buttons: light token styling */
-.router-ui input,
-.router-ui select {
-  border: 1px solid color-mix(in oklch, var(--border), var(--text) 8%);
-  border-radius: 4px;
-  padding: 6px 8px;
-  color: var(--text);
-}
-
-.router-ui input::placeholder {
-  color: var(--muted);
-}
-
-.router-ui button {
-  border: 1px solid color-mix(in oklch, var(--border), var(--text) 10%);
-  border-radius: 4px;
-  padding: 6px 10px;
-  background: var(--bg-strong);
-  color: var(--text);
-  cursor: pointer;
-}
-
-.router-ui button:hover:not(:disabled) {
-  background: color-mix(in oklch, var(--bg-strong), var(--primary) 12%);
-  border-color: var(--primary-strong);
-}
-
-.router-ui button:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-
 /* Routing table */
 .router-routes-table {
   width: 100%;
@@ -188,26 +143,18 @@
   color: var(--muted);
 }
 
-.router-route-auto input:disabled,
-.router-route-auto select:disabled,
-.router-route-auto button:disabled {
-  background: transparent;
-  border: 1px dashed color-mix(in oklch, var(--border), var(--text) 10%);
-  color: inherit;
-}
-
 /* Dirty highlight: warning tint */
 .router-route-dirty td {
-  background: var(--warning-tint);
+  background: var(--warning);
 }
 
 /* Add-row distinct: primary tint */
 .router-route-add-row td {
-  background: var(--primary-tint);
+  background: var(--primary);
 }
 
 .router-route-add-dirty td {
-  background: var(--primary-soft);
+  background: var(--primary);
 }
 
 /* Invalid inputs: danger ring */

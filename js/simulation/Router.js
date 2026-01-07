@@ -6,7 +6,6 @@ import { Pcap } from "../pcap/Pcap.js";
 import { SimControl } from "../SimControl.js";
 import { SimulatedObject } from "./SimulatedObject.js";
 
-import { RouterUI } from "./RouterUI.js";
 import { DOMBuilder } from "../lib/DomBuilder.js";
 
 /**
@@ -79,9 +78,6 @@ export class Router extends SimulatedObject {
     /** @type {IPStack} */
     net;
 
-    /** @type {RouterUI} */
-    ui;
-
     /** @type {HTMLElement|null} */
     _panelBody = null;
 
@@ -107,6 +103,9 @@ export class Router extends SimulatedObject {
     /** @type {HTMLDivElement|null} */
     _ifacePanel = null;
 
+    /** @type {HTMLDivElement|null} */
+    _ifaceActionsHost = null;
+
     /** @type {HTMLInputElement|null} */
     _ipInput = null;
     /** @type {HTMLInputElement|null} */
@@ -124,16 +123,8 @@ export class Router extends SimulatedObject {
     constructor(name = "Router") {
         super(name);
         this.net = new IPStack(2, name);
-        this.net.forwarding = true; //we are a router after all
+        this.net.forwarding = true; // we are a router after all
         this.fs = new VirtualFileSystem();
-
-        this.ui = new RouterUI({
-            onRename: (newName) => {
-                if (!newName || newName === this.name) return;
-                this.setName(newName);
-                this.net.name = newName;
-            },
-        });
 
         /** @param {HTMLElement} body */
         this.onPanelCreated = (body) => {
@@ -149,7 +140,6 @@ export class Router extends SimulatedObject {
             net: this.net.toJSON(),
         };
     }
-
 
     /** @param {any} n */
     static fromJSON(n) {
@@ -184,21 +174,82 @@ export class Router extends SimulatedObject {
         // Stop previous polling (avoid multiple timers after remount)
         this._stopLinkPolling();
 
-        // Render static shell
-        this.ui.renderShell(panelBody, { routerName: this.name });
+        // Build static shell directly here (Option B)
+        panelBody.innerHTML = "";
 
-        // Wire refs
-        this._nameInput = this.ui.nameInput;
-        this._tabsBar = this.ui.tabsBar;
-        this._selectedIfaceLabel = this.ui.selectedIfaceLabel;
-        this._ifacePanel = this.ui.ifacePanel;
+        const host = DOMBuilder.div("router-ui");
+        host.style.display = "flex";
+        host.style.flexDirection = "column";
+        host.style.gap = "12px";
+        panelBody.appendChild(host);
 
-        this._ipInput = this.ui.ipInput;
-        this._maskInput = this.ui.maskInput;
-        this._cidrInput = this.ui.cidrInput;
-        this._saveIfBtn = this.ui.saveIfBtn;
+        /* ===================== Allgemeine Einstellungen ===================== */
+        host.appendChild(DOMBuilder.h4("Allgemeine Einstellungen"));
 
-        this._routesHost = this.ui.routesHost;
+        const nameRow = DOMBuilder.div("router-name-row");
+
+        const nameLabel = DOMBuilder.label("Router-Name:");
+        const nameInput = DOMBuilder.input({ value: this.name });
+        this._nameInput = nameInput;
+
+        const nameBtn = DOMBuilder.button("Übernehmen");
+
+        nameBtn.addEventListener("click", () => {
+            const newName = nameInput.value.trim();
+            if (!newName || newName === this.name) return;
+            this.setName(newName);
+            this.net.name = newName;
+        });
+
+        nameInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") nameBtn.click();
+        });
+
+        nameRow.append(nameLabel, nameInput, nameBtn);
+        host.appendChild(nameRow);
+
+        /* ============================ Interfaces ============================ */
+        host.appendChild(DOMBuilder.h4("Interfaces"));
+
+        const ifCard = DOMBuilder.div("router-card");
+
+        const tabsBar = DOMBuilder.div("router-tabs");
+        this._tabsBar = tabsBar;
+
+        const selLabel = DOMBuilder.div("router-selected-iface");
+        this._selectedIfaceLabel = selLabel;
+
+        const ifacePanel = DOMBuilder.div("router-if-panel");
+        this._ifacePanel = ifacePanel;
+
+        const grid = DOMBuilder.div("router-if-grid");
+
+        const ipIn = DOMBuilder.input({ className: "router-if-ip", placeholder: "IP" });
+        const maskIn = DOMBuilder.input({ className: "router-if-mask", placeholder: "Netmask" });
+        const cidrIn = DOMBuilder.input({ className: "router-if-cidr", placeholder: "/CIDR" });
+        const saveBtn = DOMBuilder.button("Speichern", { className: "router-if-save" });
+
+        this._ipInput = ipIn;
+        this._maskInput = maskIn;
+        this._cidrInput = cidrIn;
+        this._saveIfBtn = saveBtn;
+
+        grid.append(ipIn, maskIn, cidrIn, saveBtn);
+        ifacePanel.appendChild(grid);
+
+        const actionsHost = DOMBuilder.div("router-if-actions");
+        this._ifaceActionsHost = actionsHost;
+        ifacePanel.appendChild(actionsHost);
+
+        ifCard.append(tabsBar, selLabel, ifacePanel);
+        host.appendChild(ifCard);
+
+        /* =========================== Routingtabelle ========================== */
+        host.appendChild(DOMBuilder.h4("Routingtabelle"));
+
+        const routesHost = DOMBuilder.div("router-routes");
+        this._routesHost = routesHost;
+        host.appendChild(routesHost);
 
         // (Re-)build tabs and interface panel actions
         this._renderInterfaceTabs();
@@ -269,7 +320,7 @@ export class Router extends SimulatedObject {
     }
 
     _renderInterfaceActions() {
-        const actionsHost = this.ui.ifaceActions;
+        const actionsHost = this._ifaceActionsHost;
         if (!actionsHost) return;
 
         DOMBuilder.clear(actionsHost);

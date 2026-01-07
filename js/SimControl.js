@@ -15,25 +15,65 @@ import { Router } from "./simulation/Router.js";
  */
 
 export class SimControl {
-    static tick = 500;
 
-    /** @type {Array<SimulatedObject>} */
+
+    /**
+     * @type {Array<SimulatedObject>} array of all simulated objects
+     */
     static simobjects;
 
+    /**
+     * @type {TabController} reference to the tabcontroller
+     */
+
+    static tabControler;
+
+    /**
+     * @type {PCapViewer} reference to the pcapviewer
+     */
+    static pcapViewer;
+
+
+    /**
+     * @type {number} simulation speed
+     */
+    static tick = 500;
+
+    /**
+     * @type {number} ID of the simulation step
+     */
+    tickId = 0;
+
+    /**
+     * @type {boolean} is the simulation paused?
+     */
+    isPaused = true;
+
+    /**
+     * @type {boolean} are we in a endstep? (false=step1, true=step2)
+     */
     endStep = false;
 
-    /** @type {HTMLElement|null} */
+    /**
+     * @type {HTMLElement|null} HTML-Element where everything gets renderd into
+     */
     root;
 
     /** @type {HTMLDivElement|null} */
     nodesLayer = null;
 
+    /** @type {HTMLDivElement|null} */
+    static packetsLayer = null;
+
     /** @type {number|null} */
     timeoutId = null;
 
-    isPaused = true;
+    /**
+     * @type {HTMLElement|null} movement Boundary for user drag&drop (so that it stays inside root element)
+     */
+    static movementBoundary;
 
-    tickId = 0;
+    /**** EDIT MODE Variables *****/
 
     /** @type {boolean} */
     static isEditMode = true;
@@ -56,23 +96,6 @@ export class SimControl {
     /** @type {boolean} */
     ghostReady = false;
 
-    /**
-     * @type {HTMLElement|null} movement Boundary for user drag&drop
-     */
-    static movementBoundary;
-
-    /**
-     * @type {PCapViewer}
-     */
-    static pcapViewer;
-
-    /**
-     * @type {TabController}
-     */
-
-    static tabControler;
-
-
     /** @type {string|null} */
     linkStartKey = null;
 
@@ -87,23 +110,33 @@ export class SimControl {
         this._startRafLoop();
     }
 
+    /**
+     * queues and sets timeout for the next step in the simulation
+     * @returns 
+     */
     scheduleNextStep() {
         if (this.timeoutId !== null) window.clearTimeout(this.timeoutId);
         if (this.isPaused) return;
         this.timeoutId = window.setTimeout(() => this.step(), SimControl.tick);
     }
 
+    /**
+     * advances the simulation in 1 step
+     */
     step() {
         try {
             for (let i = 0; i < this.simobjects.length; i++) {
                 const x = this.simobjects[i];
+
+                //Links have two internal steps which need to be called "abwechselnd"
                 if (x instanceof Link) {
-                    if (this.endStep) {
+                    //if (this.endStep) {
                         x.step2();
-                    } else {
                         x.step1();
                         this.tickId++;
-                    }
+                    //} else {
+                    //    
+                    //}
                 }
             }
         } catch (error) {
@@ -115,7 +148,10 @@ export class SimControl {
         this.scheduleNextStep();
     }
 
-    /** @param {SimulatedObject} obj */
+    /**
+     *  adds a object to the simulation
+     *  @param {SimulatedObject} obj 
+     */
     addObject(obj) {
         if (this.simobjects.includes(obj)) return;
         this.simobjects.push(obj);
@@ -123,34 +159,68 @@ export class SimControl {
         this.render();
     }
 
+    /**
+     *  deletes an object form the simulation
+     *  @param {SimulatedObject} obj 
+     */
+    deleteObject(obj) {
+        // cancel pending link if needed
+        if (this.linkStart === obj) this._cancelLinking();
 
-    /** @param {SimulatedObject} obj */
+        // remove attached links first
+        const attachedLinks = this.simobjects.filter(o =>
+            o instanceof Link && (o.A === obj || o.B === obj)
+        );
+
+        for (const l of attachedLinks) l.destroy();
+        if (obj instanceof Link) obj.destroy();
+
+        const toRemove = new Set([obj, ...attachedLinks]);
+        this.simobjects = this.simobjects.filter(o => !toRemove.has(o));
+
+        this.render();
+    }
+
+
+    /**
+     *  sets Focus of an object 
+     *  @param {SimulatedObject} obj 
+     */
     setFocus(obj) {
-        // @ts-ignore (falls focusedObject nicht typisiert ist)
         this.focusedObject = obj;
         this.render();
     }
 
     /**
+     * 
      * @param {number} ms
      */
     setTick(ms) {
+        //no effect while in edit mode
+        if (SimControl.isEditMode) {
+            return;
+        }
         SimControl.tick = Math.max(16, Math.min(5000, Math.round(ms)));
 
-        // IMPORTANT: selecting a speed means "start / resume"
-        this.isPaused = false;
-
+        this.isPaused = false; //unpause
         this.render();
         this.scheduleNextStep();
     }
 
+    /**
+     * pauses the simulation
+     */
     pause() {
         if (this.isPaused) return;
         this.isPaused = true;
         this.render();
-        this.scheduleNextStep(); // will stop scheduling due to isPaused
+        this.scheduleNextStep(); // will stop scheduling
     }
 
+    /**
+     * renders the SIM
+     * @returns 
+     */
     render() {
         const root = this.root;
         if (!root) return;
@@ -203,7 +273,7 @@ export class SimControl {
         btnNew.textContent = "New";
         btnNew.addEventListener("click", () => {
             if (!confirm("Discard current simulation and start a new one?")) return;
-            this.newScene();
+            this.new();
         });
         gProject.appendChild(btnNew);
 
@@ -213,7 +283,7 @@ export class SimControl {
         btnLoad.textContent = "Load";
         btnLoad.addEventListener("click", () => {
             if (!confirm("Discard current simulation and load another one?")) return;
-            this.openLoadDialog();
+            this.open();
         });
         gProject.appendChild(btnLoad);
 
@@ -221,7 +291,7 @@ export class SimControl {
         const btnSave = document.createElement("button");
         btnSave.type = "button";
         btnSave.textContent = "Save";
-        btnSave.addEventListener("click", () => this.downloadScene());
+        btnSave.addEventListener("click", () => this.download());
         gProject.appendChild(btnSave);
 
 
@@ -288,12 +358,12 @@ export class SimControl {
 
             // Speed buttons (also start/resume)
             const speeds = [
-                { label: "0.25×", ms: 2000 },
-                { label: "0.5×", ms: 1000 },
-                { label: "1×", ms: 500 },
-                { label: "2×", ms: 200 },
-                { label: "4×", ms: 100 },
-                { label: "8×", ms: 50 },
+                { label: "0.25×", ms: 1000 },
+                { label: "0.5×", ms: 500 },
+                { label: "1×", ms: 250 },
+                { label: "2×", ms: 125 },
+                { label: "4×", ms: 62 },
+                { label: "8×", ms: 32 },
             ];
 
             for (const s of speeds) {
@@ -322,7 +392,7 @@ export class SimControl {
             sidebar.className = "sim-sidebar";
             body.appendChild(sidebar);
 
-            // Tools header (optional)
+            // Tools header
             const h = document.createElement("div");
             h.className = "sim-sidebar-title";
             h.textContent = "Edit Tools";
@@ -369,6 +439,21 @@ export class SimControl {
         this.nodesLayer = nodes;
         SimControl.movementBoundary = nodes;
 
+        const packetsLayer = document.createElement("div");
+        packetsLayer.className = "sim-packets-layer";
+        nodes.appendChild(packetsLayer);
+
+        SimControl.packetsLayer = packetsLayer;
+
+        // re-attach packet elements after rerender
+        for (const obj of this.simobjects) {
+            if (obj instanceof Link) {
+                for (const p of obj._packets) {
+                    SimControl.packetsLayer.appendChild(p.el);
+                }
+            }
+        }
+
         for (const obj of this.simobjects) {
             const el = obj.render();
             el.addEventListener("pointermove", () => {
@@ -400,6 +485,10 @@ export class SimControl {
 
     }
 
+
+    /**
+     * redraw all links (after drag&drop or other changes)
+     */
     redrawLinks() {
         for (const obj of this.simobjects) {
             if (obj instanceof Link) {
@@ -408,7 +497,13 @@ export class SimControl {
         }
     }
 
-    saveScene() {
+    /***************************** SAVE AND LOAD **********************************/
+
+    /**
+     * saves the simulation state
+     * @returns 
+     */
+    toJSON() {
         return {
             version: 3,
             tick: SimControl.tick,
@@ -416,8 +511,8 @@ export class SimControl {
         };
     }
 
-    downloadScene() {
-        const json = JSON.stringify(this.saveScene(), null, 2);
+    download() {
+        const json = JSON.stringify(this.toJSON(), null, 2);
         const blob = new Blob([json], { type: "application/json" });
         const url = URL.createObjectURL(blob);
 
@@ -429,17 +524,21 @@ export class SimControl {
         URL.revokeObjectURL(url);
     }
 
-    loadScene(scene) {
-
+    /**
+     * restore a state
+     * @param {*} state 
+     * @returns 
+     */
+    restore(state) {
         //@ts-ignore
         const REGISTRY = new Map([
             ["PC", PC],
             ["Router", Router],
             ["Switch", Switch],
-            // Link handled separately because it needs byId
+            // Link handled separately
         ]);
 
-        if (!scene || !Array.isArray(scene.objects)) {
+        if (!state || !Array.isArray(state.objects)) {
             console.warn("Invalid scene file");
             return;
         }
@@ -449,7 +548,7 @@ export class SimControl {
         this.simobjects = [];
 
         // restore tick
-        if (typeof scene.tick === "number") SimControl.tick = scene.tick;
+        if (typeof state.tick === "number") SimControl.tick = state.tick;
 
         /** @type {Map<number, SimulatedObject>} */
         const byId = new Map();
@@ -457,23 +556,23 @@ export class SimControl {
         let maxId = 0;
 
         // 1) create nodes first
-        for (const n of scene.objects) {
+        for (const n of state.objects) {
             if (!n || n.kind === "Link") continue;
 
-            const Ctor = REGISTRY.get(String(n.kind));
-            if (!Ctor || typeof Ctor.fromJSON !== "function") {
+            const node = REGISTRY.get(String(n.kind));
+            if (!node || typeof node.fromJSON !== "function") {
                 console.warn("Unknown kind", n.kind);
                 continue;
             }
 
-            const obj = Ctor.fromJSON(n);
+            const obj = node.fromJSON(n);
             byId.set(obj.id, obj);
             this.simobjects.push(obj);
             if (obj.id > maxId) maxId = obj.id;
         }
 
         // 2) create links
-        for (const l of scene.objects) {
+        for (const l of state.objects) {
             if (!l || l.kind !== "Link") continue;
             try {
                 const link = Link.fromJSON(l, byId);
@@ -487,24 +586,28 @@ export class SimControl {
         // 3) fix id generator
         SimulatedObject.idnumber = maxId + 1;
 
-        // reset transient UI
+        // resets the ui
         this.enterEditMode();
+        this.isPaused = true;
         this.redrawLinks();
     }
 
-    openLoadDialog() {
+    /**
+     * shows a open dialog and loads a state
+     */
+    open() {
         const input = document.createElement("input");
         input.type = "file";
         input.accept = "application/json,.json";
 
         input.addEventListener("change", async () => {
-            const file = input.files?.[0];
+            const file = input.files[0];
             if (!file) return;
 
             try {
                 const text = await file.text();
                 const scene = JSON.parse(text);
-                this.loadScene(scene);
+                this.restore(scene);
             } catch (e) {
                 console.error("Load failed:", e);
             }
@@ -513,7 +616,10 @@ export class SimControl {
         input.click();
     }
 
-    newScene() {
+    /**
+     * creates a new state
+     */
+    new() {
         // cleanup links
         for (const o of this.simobjects) {
             if (o instanceof Link) o.destroy();
@@ -528,8 +634,9 @@ export class SimControl {
         this.enterEditMode();
     }
 
-    running = true;
 
+    /*************************** ANIMATION LOOP FOR PACKETS **********************************/
+    running = true;
     last = performance.now();
 
     _startRafLoop() {
@@ -554,6 +661,31 @@ export class SimControl {
         };
 
         this._rafId = requestAnimationFrame(loop);
+    }
+
+
+    /***************************** EDIT MODE **********************************/
+
+    /**
+     * enters editMode
+     */
+    enterEditMode() {
+        SimControl.isEditMode = true;
+
+        this.isPaused = true;
+
+        // reset tool state
+        this.tool = "select";
+        this._cancelLinking();
+        this._removeGhostNode();
+
+        if (this.root) {
+            this.root.classList.add("edit-mode");
+            this.root.dataset.tool = this.tool;
+        }
+
+        SimulatedObject.closeAllPanels();
+        this.render();
     }
 
     /** @param {PointerEvent} ev */
@@ -593,7 +725,6 @@ export class SimControl {
         if (this.ghostLink) this.ghostLink.remove();
         this.ghostLink = null;
     }
-
 
     _ensureGhostLink() {
         if (!this.nodesLayer) return;
@@ -635,25 +766,6 @@ export class SimControl {
         this.ghostLink.style.top = `${y1}px`;
         this.ghostLink.style.transformOrigin = "0 0";
         this.ghostLink.style.transform = `rotate(${angle}deg)`;
-    }
-
-    /** @param {SimulatedObject} obj */
-    deleteObject(obj) {
-        // cancel pending link if needed
-        if (this.linkStart === obj) this._cancelLinking();
-
-        // remove attached links first
-        const attachedLinks = this.simobjects.filter(o =>
-            o instanceof Link && (o.A === obj || o.B === obj)
-        );
-
-        for (const l of attachedLinks) l.destroy();
-        if (obj instanceof Link) obj.destroy();
-
-        const toRemove = new Set([obj, ...attachedLinks]);
-        this.simobjects = this.simobjects.filter(o => !toRemove.has(o));
-
-        this.render();
     }
 
     /** @param {PointerEvent} ev */
@@ -852,24 +964,31 @@ export class SimControl {
         this.ghostReady = true;
     }
 
-    /** @param {any} obj @returns {PortDescriptor[]} */
+    /** 
+     * helper function to try to call listPorts() on an object
+     * @param {any} obj @returns {PortDescriptor[]} 
+     */
     _getPorts(obj) {
-        if (typeof obj?.listPorts === "function") return obj.listPorts();
+        if (typeof obj.listPorts === "function") return obj.listPorts();
         return [];
     }
 
-    /** @param {any} port */
+    /** 
+     * helper function to try to call isFree();
+     * @param {any} port 
+     */
     _isPortFree(port) {
-        if (typeof port?.isFree === "function") return port.isFree();
-        return port?.linkref == null;
+        if (typeof port.isFree === "function") return port.isFree();
+        return port.linkref == null;
     }
 
     /**
- * @param {SimulatedObject} obj
- * @param {number} x screen coords
- * @param {number} y screen coords
- * @returns {Promise<{key:string, port:any} | null>}
- */
+     * shows the port selection tool when connecting two nodes with more than one port
+     * @param {SimulatedObject} obj
+     * @param {number} x screen coords
+     * @param {number} y screen coords
+     * @returns {Promise<{key:string, port:any} | null>}
+     */
     _pickPortForObjectAt(obj, x, y) {
         return new Promise((resolve) => {
             const ports = this._getPorts(obj);
@@ -945,26 +1064,6 @@ export class SimControl {
         });
     }
 
-    enterEditMode() {
-        SimControl.isEditMode = true;
 
-        // pause simulation
-        this.isPaused = true;
-
-        // reset tool state
-        this.tool = "select";
-
-        // cancel transient UI
-        this._cancelLinking();
-        this._removeGhostNode();
-
-        if (this.root) {
-            this.root.classList.add("edit-mode");
-            this.root.dataset.tool = this.tool;
-        }
-
-        SimulatedObject.closeAllPanels();
-        this.render();
-    }
 }
 

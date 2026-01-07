@@ -24,7 +24,7 @@ export const ss = {
     ctx.println("Netid  State         Local Address:Port          Peer Address:Port           Info");
 
     if (showUDP) {
-      for (const sock of ipf.udpSockets?.values?.() ?? []) {
+      for (const sock of ipf.udp.sockets.values?.() ?? []) {
         const local = `${fmtIP(sock.bindaddr ?? 0)}:${sock.port ?? 0}`;
         const peer = "*:*";
         const q = (sock.in?.length ?? 0);
@@ -34,7 +34,7 @@ export const ss = {
 
     if (showTCP) {
       // 1) LISTEN sockets only (avoid printing connected client sockets here)
-      for (const sock of ipf.tcpSockets?.values?.() ?? []) {
+      for (const sock of ipf.sockets.values?.() ?? []) {
         const state = String(sock.state ?? "UNKNOWN");
         if (state !== "LISTEN") continue;
 
@@ -48,7 +48,7 @@ export const ss = {
 
       // 2) Connections (ESTABLISHED, SYN-*, FIN-*, etc.)
       //    If you only want established, filter state === "ESTABLISHED".
-      for (const sock of ipf.tcpConns?.values?.() ?? []) {
+      for (const sock of ipf.tcp.conns.values?.() ?? []) {
         const state = String(sock.state ?? "UNKNOWN");
         if (state === "LISTEN") continue; // just in case
 

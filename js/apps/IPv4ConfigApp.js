@@ -5,14 +5,13 @@ import { GenericProcess } from "./GenericProcess.js";
 import { Disposer } from "./lib/Disposer.js";
 import { UILib } from "./lib/UILib.js";
 
-
 export class IPv4ConfigApp extends GenericProcess {
-
-  title=t("app.ipv4config.title");
+  title = t("app.ipv4config.title");
 
   /** @type {HTMLSelectElement|null} */ ifSel = null;
   /** @type {HTMLInputElement|null} */ ipEl = null;
   /** @type {HTMLInputElement|null} */ maskEl = null;
+  /** @type {HTMLInputElement|null} */ gwEl = null;
   /** @type {HTMLElement|null} */ msgEl = null;
 
   /** @type {Disposer} */
@@ -27,66 +26,62 @@ export class IPv4ConfigApp extends GenericProcess {
    */
   onMount(root) {
     super.onMount(root);
-
-    // If this instance was mounted before, make sure we start clean.
     this.bag.dispose();
 
-    const fwd = this.os.net;
-    const ifs = fwd?.interfaces ?? [];
+    const net = this.os.net;
+    const ifs = net?.interfaces ?? [];
 
     const msg = UILib.el("div", { className: "msg" });
     this.msgEl = msg;
 
     const ifSel = UILib.select(
       ifs.map((itf, i) => ({ value: String(i), label: `${i} – ${itf?.name ?? `if${i}`}` })),
-      {} // we'll bind change via bag.on below
+      {}
     );
 
-    const ipEl = UILib.input({ placeholder: "192.168.0.10" });
-    const maskEl = UILib.input({ placeholder: "255.255.255.0" });
+    // No placeholder/hint text
+    const ipEl = UILib.input({ placeholder: "" });
+    const maskEl = UILib.input({ placeholder: "" });
+    const gwEl = UILib.input({ placeholder: "" });
 
     this.ifSel = ifSel;
     this.ipEl = ipEl;
     this.maskEl = maskEl;
+    this.gwEl = gwEl;
 
-    const loadBtn = UILib.button("Load", () => this._load());
     const applyBtn = UILib.button("Apply", () => this._apply(), { primary: true });
 
     const panel = UILib.panel([
       UILib.row("Interface", ifSel),
       UILib.row("IP", ipEl),
       UILib.row("Netmask", maskEl),
-      UILib.buttonRow([loadBtn, applyBtn]),
+      UILib.row("Gateway", gwEl),
+      UILib.buttonRow([applyBtn]),
       msg,
     ]);
 
     this.root.replaceChildren(panel);
 
-    // Bind events using DisposableBag (auto cleanup on unmount)
     this.bag.on(ifSel, "change", () => this._load());
 
     if (ifs.length === 0) {
       this._setMsg("No interfaces available.");
-      loadBtn.disabled = true;
       applyBtn.disabled = true;
       return;
     }
 
+    ifSel.value = "0";
     this._load();
   }
 
   onUnmount() {
     this.bag.dispose();
-
-    this.ifSel = this.ipEl = this.maskEl = null;
+    this.ifSel = this.ipEl = this.maskEl = this.gwEl = null;
     this.msgEl = null;
-
     super.onUnmount();
   }
 
-  /**
-   * @param {string} s
-   */
+  /** @param {string} s */
   _setMsg(s) {
     if (this.msgEl) this.msgEl.textContent = s;
   }
@@ -98,30 +93,35 @@ export class IPv4ConfigApp extends GenericProcess {
   }
 
   _load() {
-    const fwd = this.os.net;
-    if (!fwd?.interfaces) return;
+    const net = this.os.net;
+    if (!net?.interfaces) return;
 
     const i = this._idx();
-    const itf = fwd.interfaces[i];
+    const itf = net.interfaces[i];
     if (!itf) return this._setMsg(`Interface ${i} not found.`);
 
-    // Assuming the interface stores numeric ip/netmask.
     const ipN = itf.ip ?? null;
     const maskN = itf.netmask ?? null;
 
     if (this.ipEl) this.ipEl.value = (typeof ipN === "number") ? numberToIpv4(ipN) : "";
     if (this.maskEl) this.maskEl.value = (typeof maskN === "number") ? numberToIpv4(maskN) : "";
 
+    // Load per-interface default gateway from net.routes
+    const gw = getDefaultGatewayForIface(net, i);
+    if (this.gwEl) this.gwEl.value = (gw != null) ? numberToIpv4(gw) : "";
+
     this._setMsg(`Loaded interface ${i}.`);
   }
 
   _apply() {
-    const fwd = this.os.net;
-    if (!fwd) return this._setMsg("No ipforwarder on OS.");
+    const net = this.os.net;
+    if (!net) return this._setMsg("No net driver on OS.");
 
     const i = this._idx();
+
     const ipStr = (this.ipEl?.value ?? "").trim();
     const maskStr = (this.maskEl?.value ?? "").trim();
+    const gwStr = (this.gwEl?.value ?? "").trim();
 
     const ip = ipv4ToNumber(ipStr);
     if (ip === null) return this._setMsg("Invalid IP address.");
@@ -129,9 +129,34 @@ export class IPv4ConfigApp extends GenericProcess {
     const netmask = ipv4ToNumber(maskStr);
     if (netmask === null) return this._setMsg("Invalid netmask.");
 
+    if (!isValidNetmask32(netmask)) {
+      return this._setMsg("Invalid netmask (must be contiguous bits, e.g. 255.255.255.0).");
+    }
+
+    // Gateway optional; if entered must be valid
+    let gw = null;
+    if (gwStr !== "") {
+      const gwN = ipv4ToNumber(gwStr);
+      if (gwN === null) return this._setMsg("Invalid gateway address.");
+      if ((gwN >>> 0) === 0) return this._setMsg("Gateway must not be 0.0.0.0.");
+      gw = gwN >>> 0;
+    }
+
     try {
-      fwd.configureInterface(i, { ip, netmask });
-      this._setMsg(`Applied: if${i} = ${ipStr} / ${maskStr}`);
+      net.configureInterface(i, { ip: (ip >>> 0), netmask: (netmask >>> 0) });
+
+      // Delete existing default route(s) for THIS interface, then add new one (if any)
+      clearDefaultGatewayForIface(net, i);
+
+      if (gw != null) {
+        // addRoute(dst=0, netmask=0, interf=i, nexthop=gw)
+        net.addRoute(0, 0, i, gw);
+      }
+
+      this._setMsg(
+        `Applied: if${i} = ${ipStr} / ${maskStr}` +
+        (gw != null ? `, gw ${gwStr}` : ", gw (cleared)")
+      );
     } catch (e) {
       this._setMsg("Apply failed: " + (e instanceof Error ? e.message : String(e)));
     }
@@ -155,5 +180,80 @@ function ipv4ToNumber(s) {
  * @returns {string}
  */
 function numberToIpv4(n) {
-  return `${(n >>> 24) & 255}.${(n >>> 16) & 255}.${(n >>> 8) & 255}.${n & 255}`;
+  const x = n >>> 0;
+  return `${(x >>> 24) & 255}.${(x >>> 16) & 255}.${(x >>> 8) & 255}.${x & 255}`;
+}
+
+/**
+ * Netmask must be contiguous ones then zeros (e.g. 255.255.255.0).
+ * @param {number} mask
+ */
+function isValidNetmask32(mask) {
+  const m = mask >>> 0;
+  const inv = (~m) >>> 0;
+  return ((inv & ((inv + 1) >>> 0)) >>> 0) === 0;
+}
+
+/**
+ * @param {any} net
+ * @returns {any[]}
+ */
+function getRoutes(net) {
+  return Array.isArray(net?.routingTable) ? net.routingTable : [];
+}
+
+
+/**
+ * Default route for iface = dst=0, netmask=0, interf=<iface>.
+ * Optionally prefer user-set routes (auto=false) if duplicates exist.
+ * @param {any} net
+ * @param {number} ifaceIdx
+ * @returns {number|null}
+ */
+function getDefaultGatewayForIface(net, ifaceIdx) {
+  const routes = getRoutes(net);
+  for (const r of routes) {
+    if (
+      r &&
+      (r.dst === 0) &&
+      (r.netmask === 0) &&
+      (r.interf === ifaceIdx)
+    ) {
+      return r.nexthop >>> 0;
+    }
+  }
+  return null;
+}
+
+
+/**
+ * Delete existing default route(s) for THIS interface.
+ * Requirement: call delRoute() before setting a new default gw.
+ * We don't know delRoute signature; we attempt common patterns.
+ * @param {any} net
+ * @param {number} ifaceIdx
+ */
+function clearDefaultGatewayForIface(net, ifaceIdx) {
+  const routes = getRoutes(net).filter(r =>
+    r &&
+    ((r.dst >>> 0) === 0) &&
+    ((r.netmask >>> 0) === 0) &&
+    (r.interf === ifaceIdx)
+  );
+
+  if (routes.length === 0) {
+    // still "call delRoute before setting" (best-effort)
+    try { net.delRoute(0, 0, ifaceIdx); return; } catch {}
+    try { net.delRoute(0, 0); } catch {}
+    return;
+  }
+
+  for (const r of routes) {
+    const nh = (typeof r.nexthop === "number") ? (r.nexthop >>> 0) : undefined;
+
+    // try most specific first
+    try { net.delRoute(0, 0, ifaceIdx, nh); continue; } catch {}
+    try { net.delRoute(0, 0, ifaceIdx); continue; } catch {}
+    try { net.delRoute(0, 0); } catch {}
+  }
 }

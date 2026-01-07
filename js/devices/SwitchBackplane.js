@@ -10,7 +10,7 @@ export class SwitchBackplane extends Observable {
     ports = [];
 
     /** @type {Map<BigInt,Number>} */
-    #sat=new Map();
+    sat=new Map();
 
     /**
      * @param {Number} numberOfPorts
@@ -61,7 +61,7 @@ export class SwitchBackplane extends Observable {
             }
 
             //Learn the MAC
-            this.#sat.set(MACToNumber(frame.srcMac),i);
+            this.sat.set(MACToNumber(frame.srcMac),i);
 
             //We have a broadcast-frame, forward everywehre except sender
             if(isEqualUint8(frame.dstMac,new Uint8Array([255,255,255,255,255,255]))) {
@@ -75,7 +75,7 @@ export class SwitchBackplane extends Observable {
             }
 
             //Try to forward to one specific port from the SAT
-            const port = this.#sat.get(MACToNumber(frame.dstMac));
+            const port = this.sat.get(MACToNumber(frame.dstMac));
 
             if(port==null) {
                 //defaults to "everyone but sender", if mac is unknown
