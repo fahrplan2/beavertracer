@@ -394,5 +394,9 @@ export default {
   "switch.sat.empty": "La SAT è ancora vuota.",
   "textbox.text": "Testo",
   "textbox.title": "Casella di testo",
-  "textbox.hint": "supporta Mini-Markdown come **grassetto**, *corsivo* ecc."
+  "textbox.hint": "supporta Mini-Markdown come **grassetto**, *corsivo* ecc.",
+  "tabs.buildRun": "Compila ed Esegui",
+  "tabs.analyze": "Analizza",
+  "tabs.learn": "Impara",
+  "tabs.about": "Informazioni"
 };

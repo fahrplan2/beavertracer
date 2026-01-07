@@ -390,5 +390,9 @@ export default {
   "switch.sat.empty": "SAT je stále prázdna.",
   "textbox.text": "Text",
   "textbox.title": "Textové pole",
-  "textbox.hint": "podporuje Mini-Markdown ako **tučný**, *kurzíva* atď."
+  "textbox.hint": "podporuje Mini-Markdown ako **tučný**, *kurzíva* atď.",
+  "tabs.buildRun": "Skompilovať a spustiť",
+  "tabs.analyze": "Analyzovať",
+  "tabs.learn": "Učiť sa",
+  "tabs.about": "O programe"
 };

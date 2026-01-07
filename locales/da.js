@@ -390,5 +390,9 @@ export default {
   "switch.sat.empty": "SAT er stadig tom.",
   "textbox.text": "Tekst",
   "textbox.title": "Tekstboks",
-  "textbox.hint": "understøtter Mini-Markdown som **fed**, *kursiv* osv."
+  "textbox.hint": "understøtter Mini-Markdown som **fed**, *kursiv* osv.",
+  "tabs.buildRun": "Byg og kør",
+  "tabs.analyze": "Analyser",
+  "tabs.learn": "Lær",
+  "tabs.about": "Om"
 };

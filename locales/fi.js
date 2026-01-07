@@ -390,5 +390,9 @@ export default {
   "switch.sat.empty": "SAT on vielä tyhjä.",
   "textbox.text": "Teksti",
   "textbox.title": "Tekstikenttä",
-  "textbox.hint": "tukee Mini-Markdownia, kuten **lihavoitu**, *kursivoitu* jne."
+  "textbox.hint": "tukee Mini-Markdownia, kuten **lihavoitu**, *kursivoitu* jne.",
+  "tabs.buildRun": "Kokoa ja suorita",
+  "tabs.analyze": "Analysoi",
+  "tabs.learn": "Opiskele",
+  "tabs.about": "Tietoja"
 };

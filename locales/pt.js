@@ -390,5 +390,9 @@ export default {
   "switch.sat.empty": "A SAT ainda está vazia.",
   "textbox.text": "Texto",
   "textbox.title": "Caixa de texto",
-  "textbox.hint": "suporta Mini-Markdown como **negrito**, *itálico* etc."
+  "textbox.hint": "suporta Mini-Markdown como **negrito**, *itálico* etc.",
+  "tabs.buildRun": "Compilar e Executar",
+  "tabs.analyze": "Analisar",
+  "tabs.learn": "Aprender",
+  "tabs.about": "Sobre"
 };

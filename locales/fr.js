@@ -396,5 +396,9 @@ export default {
   "textbox.title": "Zone de texte",
   "textbox.hint": "prend en charge Mini-Markdown comme **gras**, *italique*, etc.",
   "sim.langswitch.confirmdiscard": "Abandonner la simulation en cours et changer de langue ?",
-  "sim.language": "Langue"
+  "sim.language": "Langue",
+  "tabs.buildRun": "Construire et exécuter",
+  "tabs.analyze": "Analyser",
+  "tabs.learn": "Apprendre",
+  "tabs.about": "À propos"
 };

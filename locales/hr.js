@@ -390,5 +390,9 @@ export default {
   "switch.sat.empty": "SAT je još prazan.",
   "textbox.text": "Tekst",
   "textbox.title": "Tekstualni okvir",
-  "textbox.hint": "podržava Mini-Markdown kao **podebljano**, *kurziv* itd."
+  "textbox.hint": "podržava Mini-Markdown kao **podebljano**, *kurziv* itd.",
+  "tabs.buildRun": "Sastavi i pokreni",
+  "tabs.analyze": "Analiziraj",
+  "tabs.learn": "Nauči",
+  "tabs.about": "O nama"
 };

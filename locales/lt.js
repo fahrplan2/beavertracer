@@ -390,5 +390,9 @@ export default {
   "switch.sat.empty": "SAT dar tuščias.",
   "textbox.text": "Tekstas",
   "textbox.title": "Teksto laukas",
-  "textbox.hint": "palaiko Mini-Markdown, pvz., **paryškintas**, *kursyvas* ir kt."
+  "textbox.hint": "palaiko Mini-Markdown, pvz., **paryškintas**, *kursyvas* ir kt.",
+  "tabs.buildRun": "Statyti ir vykdyti",
+  "tabs.analyze": "Analizuoti",
+  "tabs.learn": "Mokytis",
+  "tabs.about": "Apie"
 };

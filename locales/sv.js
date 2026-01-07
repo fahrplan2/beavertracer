@@ -390,5 +390,9 @@ export default {
   "switch.sat.empty": "SAT är fortfarande tom.",
   "textbox.text": "Text",
   "textbox.title": "Textruta",
-  "textbox.hint": "stöder Mini-Markdown som **fetstil**, *kursiv* osv."
+  "textbox.hint": "stöder Mini-Markdown som **fetstil**, *kursiv* osv.",
+  "tabs.buildRun": "Bygg och Kör",
+  "tabs.analyze": "Analysera",
+  "tabs.learn": "Lär dig",
+  "tabs.about": "Om"
 };

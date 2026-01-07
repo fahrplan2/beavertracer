@@ -390,5 +390,9 @@ export default {
   "switch.sat.empty": "De SAT is nog leeg.",
   "textbox.text": "Tekst",
   "textbox.title": "Tekstvak",
-  "textbox.hint": "ondersteunt Mini-Markdown zoals **vet**, *schuin* enz."
+  "textbox.hint": "ondersteunt Mini-Markdown zoals **vet**, *schuin* enz.",
+  "tabs.buildRun": "Bouwen en Uitvoeren",
+  "tabs.analyze": "Analyseren",
+  "tabs.learn": "Leren",
+  "tabs.about": "Over"
 };
