@@ -5,7 +5,10 @@
     "moduleResolution": "Bundler",
     "allowJs": true,
     "checkJs": true,
-    "noEmit": true
+    //"noEmit": true,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "outDir": "headers"
   },
-  "include": ["**/*.js", "scripts/check-i18n.mjs"]
+  "include": ["js/**/*.js"]
 }

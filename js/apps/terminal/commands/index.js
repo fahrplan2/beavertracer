@@ -4,6 +4,8 @@ import { help } from "./misc/help.js";
 import { echo } from "./misc/echo.js";
 import { clear } from "./misc/clear.js";
 import { date } from "./misc/date.js";
+import { exit } from "./misc/exit.js";
+
 import { uname } from "./misc/uname.js";
 import { whoami } from "./misc/whoami.js";
 import { pwd } from "./misc/pwd.js";
@@ -25,6 +27,7 @@ import { netstat } from "./net/netstat.js";
 
 import { ping } from "./net/ping.js";
 import { traceroute } from "./net/traceroute.js";
+import { arp } from "./net/arp.js";
 
 /**
  * @param {import("../../TerminalApp.js").TerminalApp} app
@@ -34,6 +37,7 @@ export function registerBuiltins(app) {
         help,
         echo,
         clear,
+        exit,
         date,
         uname,
         whoami,
@@ -49,6 +53,7 @@ export function registerBuiltins(app) {
         cp,
         mv,
 
+        arp,
         ip,
         route,
         ss,

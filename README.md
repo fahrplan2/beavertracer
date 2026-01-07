@@ -1,16 +1,21 @@
-# Projektname
+# Beaver Tracer
 
-TODO: Projektbeschreibung
+BEAVER TRACER is a browser-based, interactive simulator and analyzer for IP-based computer networks.
+It is designed for educational use and focuses on making network communication transparent by modeling all interactions down to the Ethernet frame level.
+
+Instead of abstract message passing, BEAVER TRACER represents network activity as explicit protocol data units (PDUs). This allows users to inspect, trace, and analyze network behavior in a Wireshark-like manner directly in the browser, without installing any software.
+
+The simulator runs entirely on web technologies (including WebAssembly) and is intended for classroom use, self-study, and demonstrations. It enables learners to explore how Ethernet, ARP, IP, TCP/UDP and higher-layer protocols interact.
+
+The project was inspired by "Lernsoftware FILIUS", while following a completely new internal technical approach.
 
 ---
 
-## Voraussetzungen
+## Requirements
 
-- Node.js ≥ 18
-- npm
-- Aktueller Browser mit WebAssembly-Support
-
----
+* Node.js ≥ 18
+* npm
+* A modern browser with WebAssembly support
 
 ## Installation
 
@@ -20,9 +25,9 @@ npm install
 
 ---
 
-## Entwicklung
+## Development
 
-Für lokale Entwicklung **Vite Dev Server verwenden**:
+For local development, **use the Vite dev server**:
 
 ```bash
 npm run dev
@@ -32,7 +37,7 @@ npm run dev
 
 ## Build
 
-Erzeugt ein produktionsfertiges Bundle im Ordner `dist/`:
+Creates a production-ready bundle in the `dist/` directory:
 
 ```bash
 npm run build
@@ -42,7 +47,7 @@ npm run build
 
 ## Preview
 
-Startet einen standalone-Webserver (vite), der die JS und WASM-Dateien korrekt ausliefert:
+Starts a standalone web server (Vite) that correctly serves the JS and WASM files:
 
 ```bash
 npm run preview
@@ -52,35 +57,38 @@ npm run preview
 
 ## WebAssembly (Wiregasm)
 
-Dieses Projekt nutzt **@goodtools/wiregasm**, ein WebAssembly-Modul.
+This project uses **@goodtools/wiregasm**, a WebAssembly module.
 
-Beim Build werden folgende Dateien automatisch nach
-`public/wiregasm/` kopiert:
+During the build process, the following files are automatically copied to
+`public/wiregasm/`:
 
 * `wiregasm.wasm`
 * `wiregasm.data`
 
-Diese sind zur Laufzeit unter folgendem Pfad erreichbar:
+They are available at runtime under the following paths:
 
 ```
 ./wiregasm/wiregasm.wasm
 ./wiregasm/wiregasm.data
 ```
 
-Der verwendete Server **muss** folgende MIME-Types korrekt setzen:
+The server used **must** correctly set the following MIME types:
 
-| Dateiendung | MIME-Type                  |
-| ----------- | -------------------------- |
-| `.wasm`     | `application/wasm`         |
-| `.data`     | `application/octet-stream` |
+| File extension | MIME type                  |
+| -------------- | -------------------------- |
+| `.wasm`        | `application/wasm`         |
+| `.data`        | `application/octet-stream` |
 
 ---
 
-## Lizenz
+## License
 
 GPLv2
 
 ---
 
-## Sonstiges
+## Credits
 
+see "About" tab inside the app.
+
+---

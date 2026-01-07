@@ -1,12 +1,14 @@
 //@ts-check
 
+import { t } from "../../../../i18n/index.js";
+
 /** @type {import("../types.js").Command} */
 export const mv = {
   name: "mv",
   run: (ctx, args) => {
     const fs = ctx.os.fs;
-    if (!fs) return "mv: no filesystem";
-    if (args.length < 2) return "usage: mv <src>... <dst>";
+    if (!fs) return t("app.terminal.commands.mv.err.noFilesystem");
+    if (args.length < 2) return t("app.terminal.commands.mv.usage");
 
     const dstArg = args[args.length - 1];
     const srcArgs = args.slice(0, -1);
@@ -27,13 +29,22 @@ export const mv = {
     };
 
     const copyOne = (srcAbs, dstAbsLocal) => {
-      if (!fs.exists(srcAbs)) throw new Error(`mv: cannot stat '${srcAbs}': No such file or directory`);
+      if (!fs.exists(srcAbs)) {
+        throw new Error(
+          t("app.terminal.commands.mv.err.cannotStat", { path: srcAbs })
+        );
+      }
       const st = fs.stat(srcAbs);
 
       if (st.type === "dir") {
         if (!fs.exists(dstAbsLocal)) fs.mkdir(dstAbsLocal, { recursive: true });
         else if (fs.stat(dstAbsLocal).type !== "dir") {
-          throw new Error(`mv: cannot overwrite non-directory '${dstAbsLocal}' with directory '${srcAbs}'`);
+          throw new Error(
+            t("app.terminal.commands.mv.err.overwriteNonDir", {
+              dst: dstAbsLocal,
+              src: srcAbs,
+            })
+          );
         }
 
         for (const name of fs.readdir(srcAbs)) {
@@ -46,7 +57,9 @@ export const mv = {
       fs.writeFile(dstAbsLocal, data);
     };
 
-    if (srcArgs.length > 1 && !dstIsDir) return `mv: target '${dstArg}' is not a directory`;
+    if (srcArgs.length > 1 && !dstIsDir) {
+      return t("app.terminal.commands.mv.err.targetNotDir", { target: dstArg });
+    }
 
     for (const srcArg of srcArgs) {
       const srcAbs = fs.resolve(ctx.cwd, srcArg);

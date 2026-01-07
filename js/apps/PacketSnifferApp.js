@@ -2,7 +2,7 @@
 
 import { GenericProcess } from "./GenericProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
-import { CleanupBag } from "./lib/CleanupBag.js";
+import { Disposer } from "./lib/Disposer.js";
 import { Pcap } from "../pcap/Pcap.js";
 import { SimControl } from "../SimControl.js";
 import { t } from "../i18n/index.js";
@@ -23,20 +23,23 @@ function ifacePort(iface) {
  * @returns {any[]}
  */
 function ifaceLoggedFrames(iface) {
-  return Array.isArray(iface?.port?.loggedFrames)
+  return Array.isArray(iface.port.loggedFrames)
     ? iface.port.loggedFrames
     : [];
 }
 
 export class PacketSnifferApp extends GenericProcess {
-  /** @type {CleanupBag} */
-  bag = new CleanupBag();
+  get title() {
+    return t("app.packetsniffer.title");
+  }
+
+  /** @type {Disposer} */
+  disposer = new Disposer();
 
   /** @type {HTMLElement|null} */
   listEl = null;
 
   run() {
-    this.title = t("app.packetsniffer.title");
     this.root.classList.add("app", "app-packetsniffer");
   }
 
@@ -45,7 +48,7 @@ export class PacketSnifferApp extends GenericProcess {
    */
   onMount(root) {
     super.onMount(root);
-    this.bag.dispose();
+    this.disposer.dispose();
 
     this.listEl = UI.el("div");
 
@@ -59,7 +62,7 @@ export class PacketSnifferApp extends GenericProcess {
   }
 
   onUnmount() {
-    this.bag.dispose();
+    this.disposer.dispose();
     this.listEl = null;
     super.onUnmount();
   }
@@ -67,8 +70,8 @@ export class PacketSnifferApp extends GenericProcess {
   _render() {
     if (!this.listEl) return;
 
-    const ifaces = Array.isArray(this.os?.ipforwarder?.interfaces)
-      ? this.os.ipforwarder.interfaces
+    const ifaces = Array.isArray(this.os?.net?.interfaces)
+      ? this.os.net.interfaces
       : [];
 
     if (!ifaces.length) {
@@ -87,11 +90,10 @@ export class PacketSnifferApp extends GenericProcess {
       const filename =
         `iface-${i}-${name.replaceAll(/[^a-zA-Z0-9_\-\.]/g, "_")}-port-${port ?? "unknown"}.pcap`;
 
+      const portSuffix = (port != null) ? `:${port}` : "";
 
-      const text = t("app.packetsniffer.show")
-
-      const btn = UI.button(
-        text + ` – ${name}${port != null ? ` :${port}` : ""}`,
+      const btnShow = UI.button(
+        t("app.packetsniffer.button.show", { name, port: portSuffix }),
         () => {
           const pcap = new Pcap(frames, filename);
           SimControl.pcapViewer.loadBytes(pcap.generateBytes());
@@ -100,7 +102,18 @@ export class PacketSnifferApp extends GenericProcess {
         { primary: true }
       );
 
-      buttons.push(btn);
+      buttons.push(btnShow);
+
+      const btnDownload = UI.button(
+        t("app.packetsniffer.button.download", { name, port: portSuffix }),
+        () => {
+          const pcap = new Pcap(frames, filename);
+          pcap.downloadFile();
+        },
+        { primary: true }
+      );
+
+      buttons.push(btnDownload);
     }
 
     this.listEl.replaceChildren(...buttons);

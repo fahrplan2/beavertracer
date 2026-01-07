@@ -3,5 +3,5 @@
 /** @type {import("../types.js").Command} */
 export const whoami = {
   name: "whoami",
-  run: (ctx) => ctx.env.USER ?? "user",
+  run: (ctx) => ctx.env.USER,
 };

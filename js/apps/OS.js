@@ -1,10 +1,10 @@
 //@ts-check
 
 import { GenericProcess } from "./GenericProcess.js";
-import { IPForwarder } from "../devices/IPForwarder.js";
+import { IPStack } from "../devices/IPStack.js";
 import { AboutApp } from "./AboutApp.js";
 import { IPv4ConfigApp } from "./IPv4ConfigApp.js";
-import { UDPEchoApp } from "./UDPEchoApp.js";
+import { UDPEchoServerApp } from "./UDPEchoServerApp.js";
 import { TerminalApp } from "./TerminalApp.js";
 import { VirtualFileSystem } from "./lib/VirtualFileSystem.js";
 import { TextEditorApp } from "./TextEditorApp.js";
@@ -17,17 +17,35 @@ import { PacketSnifferApp } from "./PacketSnifferApp.js";
 
 export class OS {
 
+    /**
+     * @type {string} name for the OS. Will act as hostname if dns is not present
+     */
     name;
-    ipforwarder;
-    fs = new VirtualFileSystem();
 
-    /** @type {HTMLElement} */
+    /**
+     * @type {IPStack} a instance of the OS-IP Stack 
+     */
+    net;
+
+    /**
+     * @type {VirtualFileSystem} the filesystem of this system
+     */
+    fs;
+
+    /** 
+     * @type {HTMLElement} Element where everything gets renderd into
+     */
     root = document.createElement("div");
 
-    /** @type {Array<GenericProcess>} */
+    /** 
+     * @type {Array<GenericProcess>} list of all running apps
+     */
     runningApps = [];
-    focusID = 0;
 
+    /**
+     * @type {number} current foreground app
+     */
+    focusID = 0;
     mountedPid = 0;
 
     /** @type {Array<MenuItem>} */
@@ -40,29 +58,29 @@ export class OS {
     title;
 
     /**
-     * 
-     * @param {string} name 
+     * @param {string} name name of the os to use, acts as hostname until DNS is loaded.
+     * @param {VirtualFileSystem} fs
+     * @param {IPStack} net
      */
-    constructor(name = "OS") {
+    constructor(name = "OS", fs, net) {
         this.name = name;
-        this.ipforwarder = new IPForwarder(1, name);
+        this.net = net;
+        this.fs = fs;
         this.root.classList.add("os-root");
-        this._init();
-        this._requestRender();
+        this._registerApps();
         this.title = "";
+        this.render();
     }
 
-    _init() {
-        this.registerMenuItem(t("apps.name.terminal"), this.exec(TerminalApp),'terminal');
-        this.registerMenuItem(t("apps.name.texteditor"), this.exec(TextEditorApp), 'texteditor');
-        this.registerMenuItem(t("apps.name.ipv4config"), this.exec(IPv4ConfigApp), 'settings');
-        this.registerMenuItem(t("apps.name.simpletcpserver"), this.exec(SimpleTCPServerApp), 'settings');
-        this.registerMenuItem(t("apps.name.simpletcpclient"), this.exec(SimpleTCPClientApp), 'settings');
-        this.registerMenuItem(t("apps.name.browser"), this.exec(SparktailHTTPClientApp), 'browser');
-        this.registerMenuItem(t("apps.name.httpserver"), this.exec(SimpleHTTPServerApp),'settings');
-        this.registerMenuItem(t("apps.name.udpecho"), this.exec(UDPEchoApp), 'settings');
-        this.registerMenuItem(t("apps.name.pcapdownloader"), this.exec(PacketSnifferApp), 'settings');
-        this.registerMenuItem(t("apps.name.about"), this.exec(AboutApp), 'about');
+    /**
+     * helper function to init the OS. Will register and start the apps
+     */
+    _registerApps() {
+        const launchlist = 
+            [IPv4ConfigApp, TerminalApp, TextEditorApp, SimpleTCPClientApp, SimpleTCPServerApp, 
+            SimpleHTTPServerApp, SparktailHTTPClientApp, UDPEchoServerApp, PacketSnifferApp, AboutApp];
+
+        launchlist.forEach((e) => this.exec(e));
     }
 
 
@@ -75,7 +93,8 @@ export class OS {
         const app = new ClassName(this, ...params);
         this.runningApps.push(app);
         app.run();
-        this._requestRender();
+        this.updateMenu();
+        this.render();
         return app.pid;
     }
 
@@ -100,7 +119,7 @@ export class OS {
 
         this.runningApps = this.runningApps.filter(a => a.pid != pid);
         app.destroy();
-        this._requestRender();
+        this.render();
     }
 
     /**
@@ -108,7 +127,7 @@ export class OS {
      */
     unfocus() {
         this.focusID = 0;
-        this._requestRender();
+        this.render();
     }
 
     /**
@@ -117,10 +136,11 @@ export class OS {
      */
     focus(pid) {
         this.focusID = pid;
-        this._requestRender();
+        this.render();
     }
 
     /**
+     * returns the active App
      * @returns {{ ui: HTMLElement, appRoot: HTMLElement|null, pid: number }}
      */
     _getActiveView() {
@@ -151,7 +171,11 @@ export class OS {
         }
     }
 
-    _requestRender() {
+    /**
+     * renders the screen
+     * @returns {HTMLElement} Element where everything gets renderd into
+     */
+    render() {
         const nextPid = this.focusID;
 
         if (this.mountedPid !== 0 && this.mountedPid !== nextPid) {
@@ -168,20 +192,15 @@ export class OS {
                 app.onMount(view.appRoot);
             }
         }
-
         this.mountedPid = nextPid;
-    }
-    /**
-     * 
-     * @returns {HTMLElement}
-     */
-    render() {
+
         return this.root;
     }
 
+
     /**
-     * renders the menu
-     * @returns {HTMLElement}
+     * renders the main menu
+     * @returns {HTMLElement} Element where everything gets renderd into
      */
 
     _renderMenu() {
@@ -191,7 +210,7 @@ export class OS {
         for (const item of this._menuItems) {
             const btn = document.createElement("button");
             btn.textContent = item.title;
-            btn.setAttribute("data-icon",item.dataIcon);
+            btn.setAttribute("data-icon", item.dataIcon);
             btn.onclick = () => this.focus(item.pid);
             el.appendChild(btn);
         }
@@ -201,8 +220,8 @@ export class OS {
 
     /**
      * wraps a frame and a back button around the app
-     * @param {HTMLElement} appRoot 
-     * @returns 
+     * @param {HTMLElement} appRoot Element containing the App Root
+     * @returns {HTMLElement} Element with frame decorations
      */
 
     _wrapWithFrame(appRoot) {
@@ -215,15 +234,14 @@ export class OS {
 
         const back = document.createElement("button");
         back.classList.add("os-button-back");
-        back.textContent = "← Menü";
+        back.textContent = t("os.back");
         back.onclick = () => this.unfocus();
         bar.appendChild(back);
 
         const title = document.createElement("div");
         title.classList.add("os-frame-title");
-        title.textContent = (this._getFocusedApp()?.title ?? "Untitled");
+        title.textContent = (this._getFocusedApp()?.title ?? t("os.untitled"));
         bar.appendChild(title);
-
 
         frame.appendChild(bar);
         frame.appendChild(appRoot);
@@ -232,15 +250,22 @@ export class OS {
     }
 
     /**
-     * 
-     * @param {string} title 
-     * @param {number} pid 
-     * @param {string} icon
+     * adds an application to the main menu
+     * @param {string} title Title to show in the Menu
+     * @param {number} pid PID of the process 
+     * @param {string} icon which icon to usw
      */
 
-    registerMenuItem(title, pid, icon) {
-        this._menuItems.push(new MenuItem({ title, pid, dataIcon:icon }));
-        if (this.focusID === 0) this._requestRender();
+    _registerMenuItem(title, pid, icon) {
+        this._menuItems.push(new MenuItem({ title, pid, dataIcon: icon }));
+        if (this.focusID === 0) this.render();
+    }
+
+    updateMenu() {
+        this._menuItems = [];
+        this.runningApps.forEach( (app) => {
+            this._registerMenuItem(app.title, app.pid, app.icon);
+        })
     }
 
     _getFocusedApp() {
@@ -248,27 +273,30 @@ export class OS {
     }
 }
 
+/**
+ * Helper class to represent a menu item
+ */
 class MenuItem {
 
-    /**@type {string} */
+    /**@type {string} Title of the entry */
     title;
-    /**@type {number} */
+    /**@type {number} associated pid */
     pid = 0;
 
-    /**@type {string} */
+    /**@type {string} icon of the menu item*/
     dataIcon;
 
     /**
      * 
      * @param {Object} [opts] 
-     * @param {string} [opts.title]
+     * @param {string} [opts.title] title of the entry
      * @param {new (...args: any[]) => any} [opts.ClassName]
-     * @param {number} [opts.pid]
-     * @param {string} [opts.dataIcon]
+     * @param {number} [opts.pid] pid
+     * @param {string} [opts.dataIcon] icon
      */
 
     constructor(opts = {}) {
-        this.title = (opts.title ?? 'No Title');
+        this.title = (opts.title ?? t("os.notitle"));
         this.pid = (opts.pid ?? 0);
         this.dataIcon = (opts.dataIcon ?? 'default')
     }

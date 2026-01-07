@@ -1,5 +1,6 @@
 //@ts-check
 
+import { t } from "../../../../i18n/index.js";
 import { ipNumberToString } from "../lib/ip.js";
 
 /** @param {number} n */
@@ -15,50 +16,68 @@ function fmtIP(ip) {
 export const ss = {
   name: "ss",
   run: (ctx, args) => {
-    const ipf = ctx.os?.ipforwarder;
-    if (!ipf) return "ss: no ipforwarder";
+    const ipf = ctx.os.net;
+    if (!ipf) return t("app.terminal.commands.ss.err.noNetworkDriver");
 
     const showTCP = !args.includes("-u");
     const showUDP = !args.includes("-t");
 
-    ctx.println("Netid  State         Local Address:Port          Peer Address:Port           Info");
+    ctx.println(t("app.terminal.commands.ss.out.header"));
 
     if (showUDP) {
-      for (const sock of ipf.udpSockets?.values?.() ?? []) {
+      for (const sock of ipf.udp.sockets.values?.() ?? []) {
         const local = `${fmtIP(sock.bindaddr ?? 0)}:${sock.port ?? 0}`;
         const peer = "*:*";
         const q = (sock.in?.length ?? 0);
-        ctx.println(`udp    UNCONN        ${local.padEnd(27)} ${peer.padEnd(27)} rxq=${q}`);
+        ctx.println(
+          t("app.terminal.commands.ss.out.udpLine", {
+            local: local.padEnd(27),
+            peer: peer.padEnd(27),
+            rxq: q,
+          })
+        );
       }
     }
 
     if (showTCP) {
-      // 1) LISTEN sockets only (avoid printing connected client sockets here)
-      for (const sock of ipf.tcpSockets?.values?.() ?? []) {
+      // 1) LISTEN sockets only
+      for (const sock of ipf.sockets.values?.() ?? []) {
         const state = String(sock.state ?? "UNKNOWN");
         if (state !== "LISTEN") continue;
 
         const local = `${fmtIP(sock.bindaddr ?? 0)}:${sock.port ?? 0}`;
         const peer = "*:*";
-        const st = state.padEnd(13);
         const rxq = (sock.in?.length ?? 0);
         const aq = (sock.acceptQueue?.length ?? 0);
-        ctx.println(`tcp    ${st} ${local.padEnd(27)} ${peer.padEnd(27)} rxq=${rxq} aq=${aq}`);
+
+        ctx.println(
+          t("app.terminal.commands.ss.out.tcpListenLine", {
+            state: state.padEnd(13),
+            local: local.padEnd(27),
+            peer: peer.padEnd(27),
+            rxq,
+            aq,
+          })
+        );
       }
 
-      // 2) Connections (ESTABLISHED, SYN-*, FIN-*, etc.)
-      //    If you only want established, filter state === "ESTABLISHED".
-      for (const sock of ipf.tcpConns?.values?.() ?? []) {
+      // 2) Connections
+      for (const sock of ipf.tcp.conns.values?.() ?? []) {
         const state = String(sock.state ?? "UNKNOWN");
-        if (state === "LISTEN") continue; // just in case
+        if (state === "LISTEN") continue;
 
-        // NOTE: bindaddr is 0 for client sockets in your hack; localIP is not stored.
-        // If you want accurate local IP, add conn.localIP in connectTCPConn/_handleTCP.
         const local = `${fmtIP(sock.bindaddr ?? 0)}:${sock.port ?? 0}`;
         const peer = `${fmtIP(sock.peerIP ?? 0)}:${sock.peerPort ?? 0}`;
-        const st = state.padEnd(13);
         const rxq = (sock.in?.length ?? 0);
-        ctx.println(`tcp    ${st} ${local.padEnd(27)} ${peer.padEnd(27)} rxq=${rxq}`);
+
+        ctx.println(
+          t("app.terminal.commands.ss.out.tcpConnLine", {
+            state: state.padEnd(13),
+            local: local.padEnd(27),
+            peer: peer.padEnd(27),
+            rxq,
+          })
+        );
       }
     }
   },

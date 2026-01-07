@@ -1,12 +1,14 @@
 //@ts-check
 
+import { t } from "../../../../i18n/index.js";
+
 /** @type {import("../types.js").Command} */
 export const cp = {
   name: "cp",
   run: (ctx, args) => {
     const fs = ctx.os.fs;
-    if (!fs) return "cp: no filesystem";
-    if (args.length === 0) return "usage: cp [-r] <src>... <dst>";
+    if (!fs) return t("app.terminal.commands.cp.err.noFilesystem");
+    if (args.length === 0) return t("app.terminal.commands.cp.usage");
 
     let recursive = false;
     const paths = [];
@@ -15,7 +17,9 @@ export const cp = {
       else paths.push(a);
     }
 
-    if (paths.length < 2) return "cp: missing destination file operand";
+    if (paths.length < 2) {
+      return t("app.terminal.commands.cp.err.missingDestination");
+    }
 
     const dstArg = paths[paths.length - 1];
     const srcArgs = paths.slice(0, -1);
@@ -25,19 +29,37 @@ export const cp = {
     const dstIsDir = dstExists && fs.stat(dstAbs).type === "dir";
 
     const copyOne = (srcAbs, dstAbsLocal) => {
-      if (!fs.exists(srcAbs)) throw new Error(`cp: cannot stat '${srcAbs}': No such file or directory`);
+      if (!fs.exists(srcAbs)) {
+        throw new Error(
+          t("app.terminal.commands.cp.err.noSuchFile", { path: srcAbs })
+        );
+      }
+
       const st = fs.stat(srcAbs);
 
       if (st.type === "dir") {
-        if (!recursive) throw new Error(`cp: -r not specified; omitting directory '${srcAbs}'`);
+        if (!recursive) {
+          throw new Error(
+            t("app.terminal.commands.cp.err.omitDirectory", { path: srcAbs })
+          );
+        }
 
-        if (!fs.exists(dstAbsLocal)) fs.mkdir(dstAbsLocal, { recursive: true });
-        else if (fs.stat(dstAbsLocal).type !== "dir") {
-          throw new Error(`cp: cannot overwrite non-directory '${dstAbsLocal}' with directory '${srcAbs}'`);
+        if (!fs.exists(dstAbsLocal)) {
+          fs.mkdir(dstAbsLocal, { recursive: true });
+        } else if (fs.stat(dstAbsLocal).type !== "dir") {
+          throw new Error(
+            t("app.terminal.commands.cp.err.overwriteNonDir", {
+              dst: dstAbsLocal,
+              src: srcAbs,
+            })
+          );
         }
 
         for (const name of fs.readdir(srcAbs)) {
-          copyOne(fs.resolve(srcAbs, name), fs.resolve(dstAbsLocal, name));
+          copyOne(
+            fs.resolve(srcAbs, name),
+            fs.resolve(dstAbsLocal, name)
+          );
         }
         return;
       }
@@ -46,17 +68,24 @@ export const cp = {
       fs.writeFile(dstAbsLocal, data);
     };
 
-    if (srcArgs.length > 1 && !dstIsDir) return `cp: target '${dstArg}' is not a directory`;
+    if (srcArgs.length > 1 && !dstIsDir) {
+      return t("app.terminal.commands.cp.err.targetNotDir", { target: dstArg });
+    }
 
     for (const srcArg of srcArgs) {
       const srcAbs = fs.resolve(ctx.cwd, srcArg);
       let finalDst = dstAbs;
+
       if (dstIsDir) {
         const base = srcArg.split("/").filter(Boolean).pop() ?? srcArg;
         finalDst = fs.resolve(dstAbs, base);
       }
-      try { copyOne(srcAbs, finalDst); }
-      catch (e) { return e instanceof Error ? e.message : String(e); }
+
+      try {
+        copyOne(srcAbs, finalDst);
+      } catch (e) {
+        return e instanceof Error ? e.message : String(e);
+      }
     }
   },
 };

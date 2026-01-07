@@ -1,6 +1,6 @@
 /************************************ TERMINAL ***********************/
 .app-terminal .term {
-  font-family: "Monospace regular","Courier New", monospace;
+  font-family: "Courier New", monospace;
   font-size: 18px;
   line-height: 18px;
   white-space: pre;
@@ -247,6 +247,10 @@
   flex-direction: column;
 }
 
+
+
+/************************************** FILE PICKER ****************************************/
+
 /* Picker takes over the app area (no absolute positioning) */
 .fp-screen {
   flex: 1 1 auto;
@@ -327,14 +331,31 @@
 .fp-dir::before { content: "📁"; }
 .fp-file::before { content: "📄"; }
 
+.fp-path{
+  font-family: "Courier New", monospace;
+  opacity: .8;
+  margin: 6px 0 10px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(0,0,0,.08);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+
+
+
+
+
+
+
 
 .msg {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-family: "Courier New", monospace;
   font-size: 12.5px;
   line-height: 1.4;
-
-  /*background: #0e1116;*/
-  color: #d7dce2;
 
   border: 1px solid #2a2f3a;
   border-radius: 6px;
