@@ -63,7 +63,6 @@ export class IPStack extends Observable {
                 if (!out || out.interfIndex === -1) return 0;
                 return out.srcIp >>> 0;
             },
-            tickMs: () => (SimControl.tick ?? 10),
         });
 
         this.udp = new UdpEngine({
@@ -415,7 +414,6 @@ export class IPStack extends Observable {
      * @param {number} seq
      */
     _icmpEchoKey(dst, id, seq) {
-        console.log(`${dst}|${id}|${seq}`);
         return `${dst}|${id}|${seq}`;
     }
     /**

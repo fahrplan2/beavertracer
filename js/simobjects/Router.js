@@ -7,6 +7,7 @@ import { SimControl } from "../SimControl.js";
 import { SimulatedObject } from "./SimulatedObject.js";
 
 import { DOMBuilder } from "../lib/DomBuilder.js";
+import { t } from "../i18n/index.js";
 
 /**
  * @typedef {Object} PortDescriptor
@@ -120,7 +121,7 @@ export class Router extends SimulatedObject {
     /** @type {HTMLDivElement|null} */
     _routesHost = null;
 
-    constructor(name = "Router") {
+    constructor(name = t("router.title")) {
         super(name);
         this.net = new IPStack(2, name);
         this.net.forwarding = true; // we are a router after all

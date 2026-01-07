@@ -1,6 +1,6 @@
 //@ts-check
 
-import { Link } from "../simulation/Link.js";
+import { Link } from "../simobjects/Link.js";
 import { EthernetPort } from "./EthernetPort.js";
 
 /**

@@ -3,6 +3,7 @@
 import { SwitchBackplane } from "../devices/SwitchBackplane.js";
 import { SimulatedObject } from "./SimulatedObject.js";
 import { DOMBuilder } from "../lib/DomBuilder.js";
+import { t } from "../i18n/index.js";
 
 /**
  * Kleine Helper fürs SAT-Rendering
@@ -45,7 +46,7 @@ export class Switch extends SimulatedObject {
     /**
      * @param {String} name
      */
-    constructor(name) {
+    constructor(name = t("switch.title")) {
         super(name);
         this.device = new SwitchBackplane(16);
 

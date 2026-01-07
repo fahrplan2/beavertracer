@@ -3,6 +3,7 @@
 import { VirtualFileSystem } from "../apps/lib/VirtualFileSystem.js";
 import { OS } from "../apps/OS.js";
 import { IPStack } from "../devices/IPStack.js";
+import { t } from "../i18n/index.js";
 import { SimulatedObject } from "./SimulatedObject.js";
 
 
@@ -28,7 +29,7 @@ export class PC extends SimulatedObject {
     /** @type {OS} */
     os;
 
-    constructor(name = "PC") {
+    constructor(name = t("pc.title")) {
         super(name);
         this.root.classList.add("pc");
 

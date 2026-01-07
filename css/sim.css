@@ -29,7 +29,113 @@
   min-height: 0;
   position: relative;
   overflow: hidden;
+  z-index: 10;
 }
+
+
+/* =========================================================
+   SIMULATED OBJECTS (ICON + PANEL)
+   ========================================================= */
+.sim-object {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+/* Node icon */
+.sim-node {
+  position: absolute;
+  width: 110px;
+  height: 70px;
+
+  border: 2px solid var(--ui-border-strong);
+  border-radius: 10px;
+  background: var(--grey);
+
+  display: grid;
+  place-items: center;
+
+  cursor: grab;
+  z-index: 200;
+  color: var(--text);
+}
+
+.sim-node .title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* Ghost node overlay */
+.sim-node.sim-node-ghost {
+  opacity: 0.75;
+  filter: none;
+}
+
+.sim-node.sim-node-ghost::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: color-mix(in oklch, var(--surface), white 55%);
+  pointer-events: none;
+}
+
+/* Panel */
+.sim-panel {
+  position: absolute;
+  min-width: 400px;
+  min-height: 200px;
+  max-width: 1000px;
+  max-height: 1000px;
+
+  border: 2px solid var(--ui-border-strong);
+  border-radius: 12px;
+  background: var(--bg);
+
+  box-shadow: var(--shadow);
+  overflow: auto;
+
+  pointer-events: auto;
+  z-index: 1000;
+
+}
+
+.sim-panel-header {
+  height: 38px;
+  padding: 0 10px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  background: color-mix(in oklch, var(--surface-strong), var(--text) 6%);
+  cursor: grab;
+}
+
+.sim-panel-header:active {
+  cursor: grabbing;
+}
+
+.sim-panel-title {
+  font-weight: 600;
+}
+
+.sim-panel-close {
+  font-size: 22px;
+  line-height: 22px;
+
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.sim-panel-body {
+  padding: 0;
+  height: calc(100% - 38px);
+  overflow: hidden;
+}
+
 
 /* =========================================================
    TOP TOOLBAR
@@ -43,11 +149,13 @@
 
   background-color: var(--surface); /* requested */
   user-select: none;
+  align-items: stretch;
 }
 
 .sim-toolbar-group {
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
 
   border: 1px solid var(--ui-border);
   border-radius: 10px;
@@ -58,7 +166,10 @@
   font-size: 11px;
   font-weight: 600;
   opacity: 0.7;
-  margin-bottom: 6px;
+
+  min-height: 14px;      
+  margin-bottom: 6px;    
+  line-height: 1.2;
 
   user-select: none;
   pointer-events: none;
@@ -72,11 +183,28 @@
   gap: 6px;
 }
 
+.sim-toolbar-branding-group {
+  display: flex;
+  flex-direction: row;      /* überschreibt column */
+  align-items: center;      /* vertikal */
+  justify-content: center;  /* horizontal */
+}
+
+.sim-toolbar-branding {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  padding: 0 12px;
+  color: var(--text);
+
+  white-space: nowrap;
+  user-select: none;
+}
+
 /* =========================================================
    EDIT SIDEBAR
    ========================================================= */
 .sim-sidebar {
-  flex: 0 0 190px;
   padding: 10px;
   overflow: auto;
 
@@ -99,10 +227,6 @@
   gap: 8px;
 }
 
-/* =========================================================
-   UNIFIED BUTTON STYLE (toolbar + sidebar)
-   NOTE: keep this AFTER toolbar/sidebar so it wins.
-   ========================================================= */
 .sim-toolbar button,
 .sim-sidebar-btn {
   position: relative;
@@ -114,7 +238,7 @@
   gap: 4px;
 
   height: 56px;
-  min-width: 88px;
+  min-width: 56px;
   padding: 8px 12px;
 
   border-radius: 10px;
@@ -128,11 +252,6 @@
   white-space: nowrap;
 
   transition: transform 80ms ease, background 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
-}
-
-.sim-sidebar-btn {
-  width: 100%;
-  min-width: 0;
 }
 
 .sim-toolbar button::before,
@@ -198,106 +317,6 @@
 }
 
 /* =========================================================
-   SIMULATED OBJECTS (ICON + PANEL)
-   ========================================================= */
-.sim-object {
-  position: absolute;
-  left: 0;
-  top: 0;
-}
-
-/* Node icon */
-.sim-node {
-  position: absolute;
-  width: 110px;
-  height: 70px;
-
-  border: 2px solid var(--ui-border-strong);
-  border-radius: 10px;
-  background: var(--grey);
-
-  display: grid;
-  place-items: center;
-
-  cursor: grab;
-  z-index: 200;
-  color: var(--text);
-}
-
-.sim-node .title {
-  font-weight: 600;
-  font-size: 14px;
-}
-
-/* Ghost node overlay */
-.sim-node.sim-node-ghost {
-  opacity: 0.75;
-  filter: none;
-}
-
-.sim-node.sim-node-ghost::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: color-mix(in oklch, var(--surface), white 55%);
-  pointer-events: none;
-}
-
-/* Panel */
-.sim-panel {
-  position: absolute;
-  min-width: 600px;
-  min-height: 200px;
-
-  border: 2px solid var(--ui-border-strong);
-  border-radius: 12px;
-  background: var(--bg);
-
-  box-shadow: var(--shadow);
-  overflow: hidden;
-
-  pointer-events: auto;
-  z-index: 1000;
-}
-
-.sim-panel-header {
-  height: 38px;
-  padding: 0 10px;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  background: color-mix(in oklch, var(--surface-strong), var(--text) 6%);
-  cursor: grab;
-}
-
-.sim-panel-header:active {
-  cursor: grabbing;
-}
-
-.sim-panel-title {
-  font-weight: 600;
-}
-
-.sim-panel-close {
-  font-size: 22px;
-  line-height: 22px;
-
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  color: var(--text);
-}
-
-.sim-panel-body {
-  padding: 0;
-  height: calc(100% - 38px);
-  overflow: auto;
-}
-
-/* =========================================================
    LINKS + HITBOX + PACKETS
    ========================================================= */
 .sim-link {
@@ -360,56 +379,6 @@
   line-height: 1;
   color: currentColor;
   text-align: center;
-}
-
-/* =========================================================
-   MODALS
-   ========================================================= */
-.sim-modal-overlay {
-  position: fixed;
-  inset: 0;
-
-  background: color-mix(in oklch, var(--text), transparent 70%);
-  display: grid;
-  place-items: center;
-
-  z-index: 9999;
-}
-
-.sim-modal {
-  background: var(--surface-strong);
-  border-radius: 10px;
-  padding: 14px;
-  min-width: 360px;
-  box-shadow: var(--shadow);
-  border: 1px solid var(--ui-border);
-}
-
-.sim-modal-title {
-  font-weight: 600;
-  margin-bottom: 10px;
-}
-
-.sim-modal-row {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
-.sim-modal-row select {
-  flex: 1;
-}
-
-.sim-modal-hint {
-  color: var(--muted);
-  font-size: 12px;
-  margin-bottom: 12px;
-}
-
-.sim-modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
 }
 
 /* =========================================================
@@ -515,3 +484,48 @@
      -webkit-mask-image: url("icons/play.svg");
    }
 */
+
+
+
+
+
+/* --- Rect overlay --- */
+.sim-rect {
+  position: absolute; /* base uses transform for x/y, that's fine */
+  box-sizing: border-box;
+
+  border: 2px solid rgba(255, 204, 0, 0.6);
+  border-radius: 8px;
+
+  /* fill comes from inline style background rgba(...) */
+  background: rgba(255, 204, 0, 0.25);
+
+  /* allow resizing after placement */
+  resize: both;
+  overflow: hidden;
+  z-index: 0;
+}
+
+/* Ghost rectangle shown while placing */
+.sim-rect-ghost {
+  resize: none;
+  overflow: hidden;
+  border-style: dashed;
+  opacity: 0.65;
+}
+
+/* Panel inputs */
+.sim-rect-color {
+  width: 100%;
+  height: 34px;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.sim-rect-opacity {
+  width: 100%;
+}
+
+
+

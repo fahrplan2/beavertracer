@@ -59,7 +59,7 @@ export class TextEditorApp extends GenericProcess {
   }
 
   run() {
-    this.title = t("texteditorapp.windowTitle");
+    this.title = t("app.texteditor.windowTitle");
     this.root.classList.add("app", "app-editor");
   }
 
@@ -73,7 +73,7 @@ export class TextEditorApp extends GenericProcess {
     const fs = this.os.fs;
     if (!fs) {
       this.root.replaceChildren(UI.panel([
-        UI.el("div", { className: "text", text: t("texteditorapp.noFilesystem") }),
+        UI.el("div", { className: "text", text: t("app.texteditor.noFilesystem") }),
       ]));
       return;
     }
@@ -139,10 +139,10 @@ export class TextEditorApp extends GenericProcess {
     });
 
     const actions = UI.buttonRow([
-      UI.button(t("texteditorapp.button.new"), () => this._newFile()),
-      UI.button(t("texteditorapp.button.open"), () => this._openPicker()),
-      UI.button(t("texteditorapp.button.save"), () => this._save(), { primary: true }),
-      UI.button(t("texteditorapp.button.saveAs"), () => this._saveAs()),
+      UI.button(t("app.texteditor.button.new"), () => this._newFile()),
+      UI.button(t("app.texteditor.button.open"), () => this._openPicker()),
+      UI.button(t("app.texteditor.button.save"), () => this._save(), { primary: true }),
+      UI.button(t("app.texteditor.button.saveAs"), () => this._saveAs()),
     ]);
 
     const panel = UI.panel([
@@ -170,10 +170,10 @@ export class TextEditorApp extends GenericProcess {
   _renderStatus() {
     if (!this.statusEl) return;
 
-    let name = t("texteditorapp.status.newFile");
+    let name = t("app.texteditor.status.newFile");
     if (this.path !== "") name = this.path;
 
-    const mod = this.modified ? t("texteditorapp.status.modified") : "";
+    const mod = this.modified ? t("app.texteditor.status.modified") : "";
     this.statusEl.textContent = `${name} ${mod}`.trim();
   }
 
@@ -211,7 +211,7 @@ export class TextEditorApp extends GenericProcess {
       return true;
     } catch {
       if (this.statusEl) {
-        this.statusEl.textContent = t("texteditorapp.save.failed", { path: absPath });
+        this.statusEl.textContent = t("app.texteditor.save.failed", { path: absPath });
       }
       return false;
     }
@@ -240,7 +240,7 @@ export class TextEditorApp extends GenericProcess {
     if (!this.ta) return;
 
     if (this.modified) {
-      const ok = window.confirm(t("texteditorapp.confirm.discardNew"));
+      const ok = window.confirm(t("app.texteditor.confirm.discardNew"));
       if (!ok) return;
     }
 
@@ -288,8 +288,8 @@ export class TextEditorApp extends GenericProcess {
     const title = UI.el("div", {
       className: "fp-title",
       text: mode === "open"
-        ? t("texteditorapp.picker.title.open")
-        : t("texteditorapp.picker.title.save"),
+        ? t("app.texteditor.picker.title.open")
+        : t("app.texteditor.picker.title.save"),
     });
 
     /** @type {HTMLInputElement|null} */
@@ -300,7 +300,7 @@ export class TextEditorApp extends GenericProcess {
         className: "input fp-name",
         attrs: {
           type: "text",
-          placeholder: t("texteditorapp.picker.placeholder.filename"),
+          placeholder: t("app.texteditor.picker.placeholder.filename"),
           value: this.path ? this._baseName(this.path) : "",
         },
       }));
@@ -323,7 +323,7 @@ export class TextEditorApp extends GenericProcess {
       const abs = fs.resolve(this.pickerCwd, filename);
 
       if (mode === "save" && fs.exists(abs)) {
-        const ok = window.confirm(t("texteditorapp.confirm.overwrite"));
+        const ok = window.confirm(t("app.texteditor.confirm.overwrite"));
         if (!ok) return;
       }
 
@@ -334,12 +334,12 @@ export class TextEditorApp extends GenericProcess {
     const buttons = UI.buttonRow([
       UI.button(
         mode === "open"
-          ? t("texteditorapp.picker.button.open")
-          : t("texteditorapp.picker.button.save"),
+          ? t("app.texteditor.picker.button.open")
+          : t("app.texteditor.picker.button.save"),
         () => doConfirm(),
         { primary: true }
       ),
-      UI.button(t("texteditorapp.picker.button.cancel"), () => this._closePicker()),
+      UI.button(t("app.texteditor.picker.button.cancel"), () => this._closePicker()),
     ]);
 
     const renderList = () => {
@@ -348,7 +348,7 @@ export class TextEditorApp extends GenericProcess {
       pathBar.textContent = this.pickerCwd;
 
       if (this.pickerCwd !== "/") {
-        const up = UI.el("div", { className: "fp-item fp-dir", text: t("texteditorapp.picker.item.up") });
+        const up = UI.el("div", { className: "fp-item fp-dir", text: t("app.texteditor.picker.item.up") });
         this.pickerBag.on(up, "click", () => {
           this.pickerCwd = this._dirOf(this.pickerCwd);
           selectedFile = null;
@@ -443,7 +443,7 @@ export class TextEditorApp extends GenericProcess {
     if (!fs || !this.ta) return;
 
     if (this.modified) {
-      const ok = window.confirm(t("texteditorapp.confirm.discardOpen"));
+      const ok = window.confirm(t("app.texteditor.confirm.discardOpen"));
       if (!ok) return;
     }
 

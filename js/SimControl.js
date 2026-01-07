@@ -1,11 +1,14 @@
 //@ts-check
-import { SimulatedObject } from "./simulation/SimulatedObject.js";
-import { Link } from "./simulation/Link.js";
+import { SimulatedObject } from "./simobjects/SimulatedObject.js";
+import { Link } from "./simobjects/Link.js";
 import { PCapViewer } from "./pcap/PCapViewer.js";
 import { TabController } from "./TabControler.js";
-import { PC } from "./simulation/PC.js";
-import { Switch } from "./simulation/Switch.js";
-import { Router } from "./simulation/Router.js";
+import { PC } from "./simobjects/PC.js";
+import { Switch } from "./simobjects/Switch.js";
+import { Router } from "./simobjects/Router.js";
+import { TextBox } from "./simobjects/TextBox.js";
+import { RectOverlay } from "./simobjects/RectOverlay.js";
+import { t } from "./i18n/index.js";
 
 /**
  * @typedef {Object} PortDescriptor
@@ -15,7 +18,6 @@ import { Router } from "./simulation/Router.js";
  */
 
 export class SimControl {
-
 
     /**
      * @type {Array<SimulatedObject>} array of all simulated objects
@@ -32,7 +34,6 @@ export class SimControl {
      * @type {PCapViewer} reference to the pcapviewer
      */
     static pcapViewer;
-
 
     /**
      * @type {number} simulation speed
@@ -78,7 +79,7 @@ export class SimControl {
     /** @type {boolean} */
     static isEditMode = true;
 
-    /** @type {"select"|"place-pc"|"place-switch"|"place-router"|"link"|"delete"} */
+    /** @type {"select"|"place-pc"|"place-switch"|"place-router"|"place-text"|"place-rect"|"link"|"delete"} */
     tool = "select";
 
     /** @type {SimulatedObject|null} */
@@ -90,7 +91,7 @@ export class SimControl {
     /** @type {HTMLDivElement|null} */
     ghostNodeEl = null;
 
-    /** @type {"place-pc"|"place-switch"|"place-router"|null} */
+    /** @type {"place-pc"|"place-switch"|"place-router"|"place-text"|"place-rect"|null} */
     ghostNodeType = null;
 
     /** @type {boolean} */
@@ -131,9 +132,9 @@ export class SimControl {
                 //Links have two internal steps which need to be called "abwechselnd"
                 if (x instanceof Link) {
                     //if (this.endStep) {
-                        x.step2();
-                        x.step1();
-                        this.tickId++;
+                    x.step2();
+                    x.step1();
+                    this.tickId++;
                     //} else {
                     //    
                     //}
@@ -228,13 +229,23 @@ export class SimControl {
         root.replaceChildren();
         root.classList.add("sim-root");
 
-        //*********** TOOLBAR ***********
-
-
+        //*********** TOOLBAR (TOP) ***********
         const toolbar = document.createElement("div");
         toolbar.className = "sim-toolbar";
         root.appendChild(toolbar);
 
+        // === Branding (left side) ===
+
+        // Branding group (left, styled like other groups)
+        const brandingGroup = document.createElement("div");
+        brandingGroup.className = "sim-toolbar-group sim-toolbar-branding-group";
+
+        toolbar.appendChild(brandingGroup);
+
+        const branding = document.createElement("div");
+        branding.className = "sim-toolbar-branding";
+        branding.textContent = t("name");
+        brandingGroup.appendChild(branding);
 
         /** @param {string} title */
         const addGroup = (title) => {
@@ -266,7 +277,6 @@ export class SimControl {
         addSeparator();
         const gProject = addGroup("Project");
 
-
         // New
         const btnNew = document.createElement("button");
         btnNew.type = "button";
@@ -294,8 +304,6 @@ export class SimControl {
         btnSave.addEventListener("click", () => this.download());
         gProject.appendChild(btnSave);
 
-
-
         // --- Edit group
         addSeparator();
         const gMode = addGroup("Mode");
@@ -307,7 +315,6 @@ export class SimControl {
         if (SimControl.isEditMode) btnEdit.classList.add("active");
         btnEdit.addEventListener("click", () => {
             if (SimControl.isEditMode) {
-                // leaving edit mode → stay paused, user must choose speed
                 SimControl.isEditMode = false;
                 if (this.root) {
                     this.root.classList.remove("edit-mode");
@@ -342,8 +349,6 @@ export class SimControl {
         });
         gMode.appendChild(btnRun);
 
-
-
         if (!SimControl.isEditMode) {
             addSeparator();
             const gSpeeds = addGroup("Speed");
@@ -352,8 +357,8 @@ export class SimControl {
             const btnPause = document.createElement("button");
             btnPause.type = "button";
             btnPause.textContent = "Pause";
-            btnPause.disabled = this.isPaused; // optional: disable if already paused
             btnPause.addEventListener("click", () => this.pause());
+            if (this.isPaused) btnPause.classList.add("active");
             gSpeeds.appendChild(btnPause);
 
             // Speed buttons (also start/resume)
@@ -370,7 +375,7 @@ export class SimControl {
                 const b = document.createElement("button");
                 b.type = "button";
                 b.textContent = s.label;
-                if (SimControl.tick === s.ms) b.classList.add("active");
+                if (SimControl.tick === s.ms && !this.isPaused) b.classList.add("active");
 
                 // Clicking a speed sets tick + starts simulation
                 b.addEventListener("click", () => this.setTick(s.ms));
@@ -404,10 +409,12 @@ export class SimControl {
 
             const tools = [
                 ["select", "Select"],
+                ["link", "Link"],
                 ["place-pc", "PC"],
                 ["place-switch", "Switch"],
                 ["place-router", "Router"],
-                ["link", "Link"],
+                ["place-text", "TextBox"],
+                ["place-rect", "Rectangle"],
                 ["delete", "Delete"],
             ];
 
@@ -422,7 +429,7 @@ export class SimControl {
                     if (this.root) this.root.dataset.tool = this.tool;
 
                     if (this.tool !== "link") this._cancelLinking();
-                    if (!(this.tool === "place-pc" || this.tool === "place-switch" || this.tool === "place-router")) {
+                    if (!(this.tool === "place-pc" || this.tool === "place-switch" || this.tool === "place-router" || this.tool === "place-text" || this.tool === "place-rect")) {
                         this._removeGhostNode();
                     }
                     this.render();
@@ -471,10 +478,22 @@ export class SimControl {
 
             // cancel link with right click
             this.nodesLayer.oncontextmenu = (ev) => {
-                if (SimControl.isEditMode && this.tool === "link" && this.linkStart) {
+
+                if (!SimControl.isEditMode) return;
+
+                // If a tool is active, right-click = cancel tool
+                if (this.tool !== "select") {
                     ev.preventDefault();
+
                     this._cancelLinking();
+                    this._removeGhostNode();
+
+                    this.tool = "select";
+                    if (this.root) this.root.dataset.tool = this.tool;
+
+                    this.render();
                 }
+
             };
 
             // ESC cancels link
@@ -535,6 +554,8 @@ export class SimControl {
             ["PC", PC],
             ["Router", Router],
             ["Switch", Switch],
+            ["TextBox", TextBox],
+            ["RectOverlay", RectOverlay],
             // Link handled separately
         ]);
 
@@ -775,7 +796,7 @@ export class SimControl {
         const p = this._getLocalPoint(ev);
 
         // Ghost for placing nodes
-        if (this.tool === "place-pc" || this.tool === "place-switch" || this.tool === "place-router") {
+        if (this.tool === "place-pc" || this.tool === "place-router" || this.tool === "place-switch" || this.tool === "place-text" || this.tool === "place-rect") {
             this._ensureGhostNode(this.tool);
             this._moveGhostNode(p.x, p.y);
         } else {
@@ -796,6 +817,19 @@ export class SimControl {
 
         const obj = this._getObjFromEvent(ev);
         const link = this._getLinkFromEvent(ev); // may be null
+
+        //right click should cancel the tool
+        if (ev.button === 2 && !obj && !link && this.tool !== "select") {
+            // cancel any transient state first
+            this._cancelLinking();
+            this._removeGhostNode();
+
+            this.tool = "select";
+            if (this.root) this.root.dataset.tool = this.tool;
+            ev.preventDefault();
+            this.render();
+            return;
+        }
 
         // DELETE tool: click link or node
         if (this.tool === "delete") {
@@ -882,9 +916,11 @@ export class SimControl {
             const p = this._getLocalPoint(ev);
 
             let newObj = null;
-            if (this.tool === "place-pc") newObj = new PC("PC");
-            if (this.tool === "place-switch") newObj = new Switch("Switch");
-            if (this.tool === "place-router") newObj = new Router("Router");
+            if (this.tool === "place-pc") newObj = new PC();
+            if (this.tool === "place-switch") newObj = new Switch();
+            if (this.tool === "place-router") newObj = new Router();
+            if (this.tool === "place-text") newObj = new TextBox();
+            if (this.tool === "place-rect") newObj = new RectOverlay();
             if (!newObj) return;
 
             const w = this.ghostNodeEl.offsetWidth || 0;
@@ -907,7 +943,7 @@ export class SimControl {
     }
 
 
-    /** @param {"place-pc"|"place-switch"|"place-router"} type */
+    /** @param {"place-pc"|"place-switch"|"place-router"|"place-text"|"place-rect"} type */
     _ensureGhostNode(type) {
         if (!this.nodesLayer) return;
 
@@ -916,9 +952,11 @@ export class SimControl {
 
             /** @type {SimulatedObject|null} */
             let tmp = null;
-            if (type === "place-pc") tmp = new PC("PC");
-            if (type === "place-switch") tmp = new Switch("Switch");
-            if (type === "place-router") tmp = new Router("Router");
+            if (type === "place-pc") tmp = new PC();
+            if (type === "place-switch") tmp = new Switch();
+            if (type === "place-router") tmp = new Router();
+            if (type === "place-text") tmp = new TextBox();
+            if (type === "place-rect") tmp = new RectOverlay();
             if (!tmp) return;
 
             const el = tmp.buildIcon();
@@ -1063,7 +1101,4 @@ export class SimControl {
             window.addEventListener("keydown", onKeyDown);
         });
     }
-
-
 }
-

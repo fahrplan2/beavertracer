@@ -1,0 +1,74 @@
+/* minimarkdown.css */
+
+.minimarkdown-h1 {
+  font-size: 1.45em;
+  font-weight: 750;
+  margin: 0.65em 0 0.3em;
+}
+
+.minimarkdown-h2 {
+  font-size: 1.25em;
+  font-weight: 700;
+  margin: 0.6em 0 0.25em;
+}
+
+.minimarkdown-h3 {
+  font-size: 1.1em;
+  font-weight: 650;
+  margin: 0.5em 0 0.2em;
+}
+
+.minimarkdown-paragraph {
+  margin: 0.25em 0;
+  line-height: 1.45;
+}
+
+/* Inline code styling (applies everywhere inside minimarkdown blocks) */
+.minimarkdown-paragraph code,
+.minimarkdown-table code,
+.minimarkdown-h1 code,
+.minimarkdown-h2 code,
+.minimarkdown-h3 code,
+.minimarkdown-ul code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  background: rgba(0, 0, 0, 0.06);
+  padding: 0.1em 0.3em;
+  border-radius: 4px;
+  font-size: 0.95em;
+}
+
+/* Unordered lists */
+.minimarkdown-ul {
+  margin: 0.35em 0 0.35em 1.25em;
+  padding: 0;
+  line-height: 1.45;
+}
+
+.minimarkdown-li {
+  margin: 0.15em 0;
+}
+
+/* Tables */
+.minimarkdown-table {
+  border-collapse: collapse;
+  margin: 0.45em 0;
+  width: 100%;
+  font-size: 0.95em;
+}
+
+.minimarkdown-table th,
+.minimarkdown-table td {
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  padding: 0.3em 0.5em;
+  vertical-align: top;
+  text-align: center;
+}
+
+.minimarkdown-table th {
+  font-weight: 650;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.minimarkdown-table tr:nth-child(even) td {
+  background: rgba(0, 0, 0, 0.02);
+}

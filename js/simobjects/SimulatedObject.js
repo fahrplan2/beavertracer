@@ -92,13 +92,6 @@ export class SimulatedObject {
      * @returns {HTMLElement}
      */
     render() {
-        //Icon
-        if (!this.iconEl) {
-            this.iconEl = this.buildIcon();
-            this.root.appendChild(this.iconEl);
-            this.wireIconInteractions();
-        }
-
         //Panel
         if (!this.panelEl) {
             this.panelEl = this.buildPanel();
@@ -106,6 +99,13 @@ export class SimulatedObject {
             this.wirePanelInteractions();
         }
 
+        //Icon
+        if (!this.iconEl) {
+            this.iconEl = this.buildIcon();
+            this.root.appendChild(this.iconEl);
+            this.wireIconInteractions();
+        }
+        
         this._applyPositions();
         this._applyPanelVisibility();
 
@@ -170,8 +170,6 @@ export class SimulatedObject {
         makeDraggable(this.iconEl, {
             handle: this.iconEl,
             onClick: () => {
-                //do not open while we are in EditMode
-                if (SimControl.isEditMode) return;
                 this.setPanelOpen(!this.panelOpen);
             },
             boundary: () => SimControl.movementBoundary,

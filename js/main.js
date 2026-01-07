@@ -2,14 +2,14 @@
 
 import { IPOctetsToNumber } from "./helpers.js";
 import { SimControl } from "./SimControl.js";
-import { PC } from "./simulation/PC.js"
-import { Switch } from "./simulation/Switch.js";
-import { Link } from "./simulation/Link.js";
+import { PC } from "./simobjects/PC.js"
+import { Switch } from "./simobjects/Switch.js";
+import { Link } from "./simobjects/Link.js";
 
 import { initLocale, t, setLocale } from './i18n/index.js';
 import { PCapViewer } from "./pcap/PCapViewer.js";
 import { TabController } from "./TabControler.js";
-import { Router } from "./simulation/Router.js";
+import { Router } from "./simobjects/Router.js";
 
 
 initLocale();
@@ -22,7 +22,7 @@ SimControl.tabControler = new TabController();
 
 sim.restore({
   "version": 3,
-  "tick": 250,
+  "tick": 32,
   "objects": [
     {
       "kind": "PC",
@@ -192,8 +192,8 @@ sim.restore({
       "kind": "Switch",
       "id": 4,
       "name": "Switch 1",
-      "x": 185,
-      "y": 238,
+      "x": 184,
+      "y": 235,
       "px": 220,
       "py": 120,
       "panelOpen": false
@@ -392,12 +392,64 @@ sim.restore({
     {
       "kind": "Switch",
       "id": 18,
-      "name": "Switch",
+      "name": "Switch 2",
       "x": 718,
       "y": 237,
       "px": 220,
       "py": 120,
       "panelOpen": false
+    },
+    {
+      "kind": "RectOverlay",
+      "id": 24,
+      "name": "Rect",
+      "x": 33,
+      "y": 87,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "w": 475,
+      "h": 291,
+      "color": "#ffcc00",
+      "opacity": 0.25
+    },
+    {
+      "kind": "RectOverlay",
+      "id": 27,
+      "name": "Rect",
+      "x": 514,
+      "y": 88,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "w": 461,
+      "h": 289,
+      "color": "#2ec27e",
+      "opacity": 0.25
+    },
+    {
+      "kind": "TextBox",
+      "id": 30,
+      "name": "Text",
+      "x": 47.5,
+      "y": 324.5,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "text": "**Netzwerk A**\n192.168.0.0/24",
+      "showTitle": false
+    },
+    {
+      "kind": "TextBox",
+      "id": 32,
+      "name": "Text",
+      "x": 844.5,
+      "y": 323.5,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "text": "**Netzwerk B**\n192.168.1.0/24",
+      "showTitle": false
     },
     {
       "kind": "Link",
@@ -446,6 +498,18 @@ sim.restore({
       "b": 18,
       "portA": "eth0",
       "portB": "sw2"
+    },
+    {
+      "kind": "TextBox",
+      "id": 34,
+      "name": "Text",
+      "x": 415.5,
+      "y": 12.5,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "text": "# Beispielnetzwerk",
+      "showTitle": false
     }
   ]
 });
