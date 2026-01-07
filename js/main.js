@@ -5,9 +5,22 @@ import { TabController } from "./TabControler.js";
 import { SimControl } from "./SimControl.js";
 import { PCapViewer } from "./pcap/PCapViewer.js";
 
+/**
+ * @returns {string}
+ */
+export function version() {
+  try {
+    //@ts-ignore
+    return import.meta.env?.VITE_APP_VERSION || "development";
+  } catch {
+    return "development";
+  }
+}
 
 
+console.log("[Beaver Tracer] Version: "+version());
 initLocale();
+
 var sim = new SimControl(document.getElementById("simcontrol"));
 var viewer = new PCapViewer(document.getElementById("pcapviewer"), { autoSelectFirst: true });
 
