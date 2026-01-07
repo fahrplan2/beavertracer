@@ -390,5 +390,9 @@ export default {
   "switch.sat.empty": "Tablica SAT jest nadal pusta.",
   "textbox.text": "Tekst",
   "textbox.title": "Pole tekstowe",
-  "textbox.hint": "obsługuje Mini-Markdown takie jak **pogrubienie**, *kursywa* itd."
+  "textbox.hint": "obsługuje Mini-Markdown takie jak **pogrubienie**, *kursywa* itd.",
+  "tabs.buildRun": "Kompiluj i uruchom",
+  "tabs.analyze": "Analizuj",
+  "tabs.learn": "Ucz się",
+  "tabs.about": "O programie"
 };

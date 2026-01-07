@@ -390,5 +390,9 @@ export default {
   "switch.sat.empty": "Tá an TSA fós folamh.",
   "textbox.text": "Téacs",
   "textbox.title": "Bosca téacs",
-  "textbox.hint": "tacaíonn sé le Mini-Markdown cosúil le **láidir**, *lithreach* srl."
+  "textbox.hint": "tacaíonn sé le Mini-Markdown cosúil le **láidir**, *lithreach* srl.",
+  "tabs.buildRun": "Tógáil agus Rith",
+  "tabs.analyze": "Anailís",
+  "tabs.learn": "Foghlaim",
+  "tabs.about": "Fúinn"
 };

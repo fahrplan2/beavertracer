@@ -390,5 +390,9 @@ export default {
   "switch.sat.empty": "Tabulka SAT je stále prázdná.",
   "textbox.text": "Text",
   "textbox.title": "Textové pole",
-  "textbox.hint": "podporuje Mini-Markdown jako **tučný**, *kurzíva* atd."
+  "textbox.hint": "podporuje Mini-Markdown jako **tučný**, *kurzíva* atd.",
+  "tabs.buildRun": "Sestavit a spustit",
+  "tabs.analyze": "Analyzovat",
+  "tabs.learn": "Učit se",
+  "tabs.about": "O aplikaci"
 };

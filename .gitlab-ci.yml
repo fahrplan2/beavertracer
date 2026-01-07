@@ -1,5 +1,24 @@
+# .gitlab-ci.yml
+#
+# Builds:
+#  - on branch "development" (build artifacts only)
+#  - on tags (release build with version taken from tag)
+#
+# Deploys:
+#  - ONLY on tags (production deploy)
+#
+# Required CI/CD variables in GitLab (Settings -> CI/CD -> Variables):
+#  - SSH_PRIVATE_KEY   (masked; ideally protected)
+#  - DEPLOY_HOST       (e.g. "example.com")
+#  - DEPLOY_USER       (e.g. "deploy")
+#  - DEPLOY_PATH       (e.g. "/var/www/networksim")
+#
+# Optional:
+#  - DEPLOY_PORT       (default 22)
+
 stages:
   - build
+  - deploy
 
 default:
   image: node:20
@@ -21,28 +40,25 @@ build_dev:
       export VITE_APP_VERSION="$CI_COMMIT_SHORT_SHA"
       npm run build
   artifacts:
-    expire_in: 7 days
+    expire_in: 31 days
     paths:
       - dist/
   rules:
     - if: '$CI_COMMIT_BRANCH == "development"'
+    - when: never
 
-build_release_tag:
+build_release:
   stage: build
+  image: node:20
   script:
-    - |
-      VERSION="${CI_COMMIT_TAG#v}"
-      echo "Release tag: $CI_COMMIT_TAG -> version: $VERSION"
-
-      npm version "$VERSION" --no-git-tag-version
-
-      export VITE_APP_VERSION="$VERSION"
-      npm run build
+    - npm ci
+    - VERSION="${CI_COMMIT_TAG#v}"
+    - npm version "$VERSION" --no-git-tag-version
+    - export VITE_APP_VERSION="$VERSION"
+    - npm run build
   artifacts:
-    expire_in: 30 days
     paths:
       - dist/
-      - package.json
-      - package-lock.json
+    expire_in: 1 year
   rules:
     - if: '$CI_COMMIT_TAG'

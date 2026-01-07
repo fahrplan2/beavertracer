@@ -390,5 +390,9 @@ export default {
   "switch.sat.empty": "Таблицата на комутатора все още е празна.",
   "textbox.text": "Текст",
   "textbox.title": "Текстово поле",
-  "textbox.hint": "поддържа Mini-Markdown като **удебелен**, *курсив* и др."
+  "textbox.hint": "поддържа Mini-Markdown като **удебелен**, *курсив* и др.",
+  "tabs.buildRun": "Компилирай и Стартирай",
+  "tabs.analyze": "Анализирай",
+  "tabs.learn": "Научи",
+  "tabs.about": "Относно"
 };

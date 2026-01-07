@@ -390,5 +390,9 @@ export default {
   "switch.sat.empty": "SAT on veel tühi.",
   "textbox.text": "Tekst",
   "textbox.title": "Tekstikast",
-  "textbox.hint": "toetab Mini-Markdowni nagu **paks**, *kursiiv* jms."
+  "textbox.hint": "toetab Mini-Markdowni nagu **paks**, *kursiiv* jms.",
+  "tabs.buildRun": "Koosta ja käivita",
+  "tabs.analyze": "Analüüsi",
+  "tabs.learn": "Õpi",
+  "tabs.about": "Teave"
 };

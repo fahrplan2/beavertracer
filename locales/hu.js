@@ -390,5 +390,9 @@ export default {
   "switch.sat.empty": "A SAT még üres.",
   "textbox.text": "Szöveg",
   "textbox.title": "Szövegdoboz",
-  "textbox.hint": "támogatja a Mini-Markdown formátumot, például **félkövér**, *dőlt* stb."
+  "textbox.hint": "támogatja a Mini-Markdown formátumot, például **félkövér**, *dőlt* stb.",
+  "tabs.buildRun": "Build és Futtatás",
+  "tabs.analyze": "Elemzés",
+  "tabs.learn": "Tanulás",
+  "tabs.about": "Névjegy"
 };
