@@ -2,7 +2,7 @@
 import { SimulatedObject } from "./simobjects/SimulatedObject.js";
 import { Link } from "./simobjects/Link.js";
 import { PCapViewer } from "./pcap/PCapViewer.js";
-import { TabController } from "./TabControler.js";
+import { TabController } from "./TabController.js";
 import { PC } from "./simobjects/PC.js";
 import { Switch } from "./simobjects/Switch.js";
 import { Router } from "./simobjects/Router.js";

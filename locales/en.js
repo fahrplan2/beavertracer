@@ -486,6 +486,12 @@ export default {
 
   "switch.sat.empty": "The SAT is still empty.",
 
+
+  "tabs.buildRun": "Build and Run",
+  "tabs.analyze": "Analyze",
+  "tabs.learn": "Learn",
+  "tabs.about": "About",
+
   "textbox.text": "Text",
   "textbox.title": "Textbox",
   "textbox.hint": "supports Mini-Markdown like **bold**, *italic* etc.",

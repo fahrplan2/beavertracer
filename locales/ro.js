@@ -390,5 +390,9 @@ export default {
   "switch.sat.empty": "Tabelul SAT este încă gol.",
   "textbox.text": "Text",
   "textbox.title": "Casetă text",
-  "textbox.hint": "suportă Mini-Markdown precum **bold**, *italic* etc."
+  "textbox.hint": "suportă Mini-Markdown precum **bold**, *italic* etc.",
+  "tabs.buildRun": "Construiește și rulează",
+  "tabs.analyze": "Analizează",
+  "tabs.learn": "Învață",
+  "tabs.about": "Despre"
 };

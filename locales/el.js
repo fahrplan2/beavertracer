@@ -390,5 +390,9 @@ export default {
   "switch.sat.empty": "Ο SAT είναι ακόμα άδειος.",
   "textbox.text": "Κείμενο",
   "textbox.title": "Πεδίο κειμένου",
-  "textbox.hint": "υποστηρίζει Mini-Markdown όπως **έντονα**, *πλάγια* κτλ."
+  "textbox.hint": "υποστηρίζει Mini-Markdown όπως **έντονα**, *πλάγια* κτλ.",
+  "tabs.buildRun": "Δημιουργία και Εκτέλεση",
+  "tabs.analyze": "Ανάλυση",
+  "tabs.learn": "Μάθετε",
+  "tabs.about": "Σχετικά"
 };

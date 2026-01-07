@@ -390,5 +390,9 @@ export default {
   "switch.sat.empty": "Tabela SAT je še prazna.",
   "textbox.text": "Besedilo",
   "textbox.title": "Besedilno polje",
-  "textbox.hint": "podpira Mini-Markdown, kot so **krepko**, *ležeče* itd."
+  "textbox.hint": "podpira Mini-Markdown, kot so **krepko**, *ležeče* itd.",
+  "tabs.buildRun": "Sestavi in zaženi",
+  "tabs.analyze": "Analiziraj",
+  "tabs.learn": "Uči se",
+  "tabs.about": "O programu"
 };

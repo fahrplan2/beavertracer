@@ -390,5 +390,9 @@ export default {
   "switch.sat.empty": "Is-SAT għadu vojt.",
   "textbox.text": "Test",
   "textbox.title": "Kutella tat-test",
-  "textbox.hint": "jappoġġja Mini-Markdown bħal **bold**, *italic* eċċ."
+  "textbox.hint": "jappoġġja Mini-Markdown bħal **bold**, *italic* eċċ.",
+  "tabs.buildRun": "Ibni u Ħaddem",
+  "tabs.analyze": "Analiża",
+  "tabs.learn": "Tgħallem",
+  "tabs.about": "Dwar"
 };
