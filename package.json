@@ -1,7 +1,7 @@
 {
   "scripts": {
     "dev": "vite",
-    "prebuild": "mkdir -p public/vendor && cp -f node_modules/@goodtools/wiregasm/**/*.wasm public/vendor/ 2>/dev/null || true",
+    "prebuild": "mkdir -p public/wiregasm && find node_modules/@goodtools/wiregasm -maxdepth 10 \\( -name '*.wasm' -o -name '*.data' \\) -type f -exec cp -f {} public/wiregasm/ \\;", 
     "build": "vite build",
     "preview": "vite preview"
   },
