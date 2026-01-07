@@ -1,0 +1,165 @@
+.router-name-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Selected iface label (under tabs) */
+.router-selected-iface {
+  margin: 6px 0 10px 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Tabs: browser-like, tokenized */
+.router-tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  border-bottom: 1px solid color-mix(in oklch, var(--border), var(--text) 8%);
+  margin-bottom: 10px;
+  padding: 0;
+}
+
+.router-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 6px 10px;
+  margin: 0;
+
+  border: 1px solid color-mix(in oklch, var(--border), var(--text) 8%);
+  border-bottom: none;
+
+  border-radius: 4px 4px 0 0;
+  background: var(--bg-strong);
+
+  cursor: pointer;
+  user-select: none;
+
+  position: relative;
+  top: 1px;
+  color: var(--text);
+}
+
+.router-tab + .router-tab {
+  margin-left: -1px; /* shared border */
+}
+
+.router-tab.is-active {
+  border-color: color-mix(in oklch, var(--border), var(--text) 18%);
+  z-index: 2;
+  top: 0;
+}
+
+.router-tab-plus {
+  min-width: 34px;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.router-tab-label {
+  font-weight: 600;
+}
+
+/* Badge: uses semantic tokens */
+.router-tab-badge {
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 11px;
+  line-height: 1.2;
+  border: 1px solid color-mix(in oklch, var(--border), var(--text) 8%);
+  color: var(--text);
+}
+
+.router-tab-badge.status-up {
+  background: var(--ok-tint);
+  border-color: var(--ok-strong);
+}
+
+.router-tab-badge.status-down {
+  background: var(--danger-tint);
+  border-color: var(--danger-strong);
+}
+
+.router-tab-badge.status-unknown {
+  background: color-mix(in oklch, var(--bg), var(--text) 5%);
+  border-color: color-mix(in oklch, var(--border), var(--text) 10%);
+}
+
+/* Interface panel */
+.router-if-panel.is-disabled {
+  opacity: 0.7;
+}
+
+.router-if-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 120px auto;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.router-if-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Routing table */
+.router-routes-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid color-mix(in oklch, var(--border), var(--text) 8%);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.router-routes-table th,
+.router-routes-table td {
+  padding: 6px;
+  border: none;
+}
+
+.router-routes-table thead tr {
+  border-bottom: 1px solid color-mix(in oklch, var(--border), var(--text) 14%);
+  background: var(--bg-strong);
+}
+
+.router-routes-table tbody tr {
+  border-top: 1px solid color-mix(in oklch, var(--border), var(--text) 6%);
+}
+
+.router-route-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* Auto routes: use muted + dashed */
+.router-route-auto {
+  opacity: 0.7;
+  font-style: italic;
+  color: var(--muted);
+}
+
+/* Dirty highlight: warning tint */
+.router-route-dirty td {
+  background: var(--warning);
+}
+
+/* Add-row distinct: primary tint */
+.router-route-add-row td {
+  background: var(--primary);
+}
+
+.router-route-add-dirty td {
+  background: var(--primary);
+}
+
+/* Invalid inputs: danger ring */
+.is-invalid {
+  outline: 2px solid var(--danger-strong);
+  outline-offset: 1px;
+}
+

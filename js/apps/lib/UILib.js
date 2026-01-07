@@ -3,6 +3,7 @@
 
 /**
  * This class has many static helper functions to create standard DOM - Elements
+ * which is usefull for the OSApps.
  * 
  */
 export class UILib {

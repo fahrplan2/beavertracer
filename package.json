@@ -16,6 +16,7 @@
   "license": "GPL",
   "devDependencies": {
     "@babel/parser": "^7.28.5",
+    "typescript": "^5.9.3",
     "vite": "^4.5.14"
   },
   "build": {
@@ -31,6 +32,7 @@
     ]
   },
   "dependencies": {
-    "@goodtools/wiregasm": "^1.9.0"
+    "@goodtools/wiregasm": "^1.9.0",
+    "recast": "^0.23.11"
   }
 }

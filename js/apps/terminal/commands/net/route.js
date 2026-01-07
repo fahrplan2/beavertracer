@@ -1,5 +1,6 @@
 //@ts-check
 
+import { t } from "../../../../i18n/index.js";
 import { ipNumberToString, ipStringToNumber } from "../lib/ip.js";
 
 /** @param {number} n */
@@ -40,23 +41,23 @@ function ifaceName(ipf, idx) {
 export const route = {
   name: "route",
   run: (ctx, args) => {
-    const ipf = ctx.os?.ipforwarder;
-    if (!ipf) return "route: no ipforwarder";
+    const ipf = ctx.os.net;
+    if (!ipf) return t("app.terminal.commands.route.err.noNetworkDriver");
 
     const rt = ipf.routingTable ?? [];
     const sub = args[0] ?? "show";
 
     if (sub === "show" || sub === "list" || sub === "-n") {
-      if (rt.length === 0) return "route: routing table empty";
+      if (rt.length === 0) return t("app.terminal.commands.route.err.emptyTable");
 
-      ctx.println("Destination        Netmask            Gateway            Iface  Auto");
+      ctx.println(t("app.terminal.commands.route.out.tableHeader"));
       for (const r of rt) {
         const dst = ipNumberToString(u32(r.dst ?? 0));
         const mask = ipNumberToString(u32(r.netmask ?? 0));
         const gw = ipNumberToString(u32(r.nexthop ?? 0));
 
         const ifn = ifaceName(ipf, Number(r.interf ?? 0));
-        const auto = (r.auto ? "yes" : "no");
+        const auto = (r.auto ? t("app.terminal.commands.route.out.autoYes") : t("app.terminal.commands.route.out.autoNo"));
 
         ctx.println(
           `${dst.padEnd(18)} ${mask.padEnd(18)} ${gw.padEnd(18)} ${ifn.padEnd(6)} ${auto}`
@@ -75,14 +76,14 @@ export const route = {
       const ifSel = args[5];
 
       if (!(cidr && via === "via" && gwStr && dev === "dev" && ifSel)) {
-        return "usage: route add <dst>/<prefix> via <gateway> dev <ifIndex|ifName|lo>";
+        return t("app.terminal.commands.route.usage.add");
       }
 
       const parsed = parseCidr(cidr);
-      if (!parsed) return "route: invalid destination cidr";
+      if (!parsed) return t("app.terminal.commands.route.err.invalidDestinationCidr");
 
       const gw = ipStringToNumber(gwStr);
-      if (gw == null) return "route: invalid gateway ip";
+      if (gw == null) return t("app.terminal.commands.route.err.invalidGatewayIp");
 
       let ifIndex = -999;
 
@@ -94,23 +95,23 @@ export const route = {
         // name lookup
         const ifaces = ipf.interfaces ?? [];
         for (let i = 0; i < ifaces.length; i++) {
-          const name = ifaces[i]?.name ?? `eth${i}`;
+          const name = ifaces[i].name ?? `eth${i}`;
           if (name === ifSel) { ifIndex = i; break; }
         }
       }
 
       if (ifIndex !== -1) {
         if (!Number.isFinite(ifIndex) || ifIndex < 0 || ifIndex >= (ipf.interfaces?.length ?? 0)) {
-          return `route: invalid interface: ${ifSel}`;
+          return t("app.terminal.commands.route.err.invalidInterface", { iface: ifSel });
         }
       }
 
       const netmask = prefixToNetmask32(parsed.prefix);
 
-      //use the kernel API
+      // use the kernel API
       ipf.addRoute(parsed.ip, netmask, ifIndex, u32(gw));
 
-      ctx.println("ok: route added");
+      ctx.println(t("app.terminal.commands.route.out.okAdded"));
       return;
     }
 
@@ -118,10 +119,10 @@ export const route = {
     // (simple removal from table; your IPForwarder doesn't have delRoute)
     if (sub === "del" || sub === "delete") {
       const cidr = args[1];
-      if (!cidr) return "usage: route del <dst>/<prefix>";
+      if (!cidr) return t("app.terminal.commands.route.usage.del");
 
       const parsed = parseCidr(cidr);
-      if (!parsed) return "route: invalid destination cidr";
+      if (!parsed) return t("app.terminal.commands.route.err.invalidDestinationCidr");
 
       const mask = prefixToNetmask32(parsed.prefix);
 
@@ -131,10 +132,10 @@ export const route = {
       );
       const removed = before - ipf.routingTable.length;
 
-      ctx.println(`ok: removed ${removed}`);
+      ctx.println(t("app.terminal.commands.route.out.okRemoved", { count: removed }));
       return;
     }
 
-    return "usage: route [show] | route add ... | route del ...";
+    return t("app.terminal.commands.route.usage.main");
   },
 };

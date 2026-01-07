@@ -45,6 +45,9 @@
  * @property {(type: string, listener: EventListenerOrEventListenerObject, options?: any) => void} removeEventListener
  */
 
+
+let suppressNextClick = false;
+
 /**
  * @param {EventTargetLike} t
  * @returns {ListenerTarget}
@@ -165,6 +168,31 @@ function clampTranslate(el, proposed, current, boundaryLike, clampToViewport) {
 }
 
 /**
+ * If element is CSS-resizable, and pointer is on the resize handle corner,
+ * we should NOT start dragging (let browser handle resize).
+ *
+ * @param {HTMLElement} targetEl
+ * @param {PointerEvent} e
+ * @param {number} sizePx
+ */
+function isOnResizeHandle(targetEl, e, sizePx = 16) {
+  const cs = getComputedStyle(targetEl);
+  if (!cs || cs.resize === "none") return false;
+
+  // Only bottom-right resize corner for resize:both or horizontal/vertical.
+  // (Browser handle is usually bottom-right anyway.)
+  const r = targetEl.getBoundingClientRect();
+  const x = e.clientX - r.left;
+  const y = e.clientY - r.top;
+
+  // If element has 0 size, ignore
+  if (r.width < 2 || r.height < 2) return false;
+
+  return x >= r.width - sizePx && y >= r.height - sizePx;
+}
+
+
+/**
  * @param {HTMLElement} el
  * @param {DraggableOptions=} options
  * @returns {DraggableController}
@@ -270,6 +298,15 @@ export function makeDraggable(el, options = {}) {
   function onPointerDown(e) {
     if (e.pointerType === "mouse" && e.button !== 0) return;
     if (isCanceledBySelector(e)) return;
+
+    //18 is the number of pixels, it is hard coded here...
+    if (isOnResizeHandle(el, e, 18)) {
+      // Let browser handle resize, but prevent SimControl from reacting (focus/render)
+      suppressNextClick = true; // <-- important
+      e.stopPropagation();
+      return;
+    }
+ 
 
     activePointerId = e.pointerId;
     handle.setPointerCapture(activePointerId);

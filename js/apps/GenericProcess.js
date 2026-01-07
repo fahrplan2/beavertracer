@@ -1,9 +1,14 @@
+import { t } from "../i18n/index.js";
 import { OS } from "./OS.js";
 
 export class GenericProcess {
-  /** @type {string} */
-  title = "";
+  get title() {
+    return t("app.generic.title");
+  }
 
+  /** @type {string} icon of the app */
+  icon = "settings"; //Generic Icon
+  
   /** @type {number} */
   pid;
 
@@ -72,6 +77,7 @@ export class GenericProcess {
   }
 
   /**
+   * terminates the process
    */
   terminate() {
     this.os.exit(this.pid);

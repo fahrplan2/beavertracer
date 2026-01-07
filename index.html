@@ -1,23 +1,47 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
     <meta charset="utf-8">
     <link rel="icon" href="data:,">
-    <title>Test Page</title>
-    <link rel="stylesheet" href="css/main.css">
+    <title>Netzwerksimulator</title>
+    <link rel="stylesheet" href="css/index.css">
 </head>
-<body>
-    <h1>Hallo Welt.</h1>
 
+<body>
     <div class="tabs">
-        <button class="tab active" data-target="simcontrol">Simulation</button>
-        <button class="tab" data-target="pcapviewer">PCAP Viewer</button>
+        <button class="tab active" data-target="simcontrol">Build and Run</button>
+        <button class="tab" data-target="pcapviewer">Analyze</button>
+        <button class="tab" data-target="learn">Learn</button>
+        <button class="tab" data-target="about">About</button>
     </div>
 
     <div id="simcontrol" class="tab-content active sim-root"></div>
     <div id="pcapviewer" class="tab-content"></div>
+
+    <div id="about" class="tab-content">
+        <div class="content">
+            <h2>Beaver Tracer (working title)</h2>
+            <p><i>developed by <b>Christian Klein</b></i></p>
+            <p>Version: 0.0.1 (development)</p>
+            <h3>Credits</h3>
+            Many thanks to <a href="https://github.com/good-tools/wiregasm">Good-Tools</a> for their Wiregasm project,
+            which is used in this application.<br>
+            <br>
+            And thank YOU for using my stuff.<br>
+            <br>
+            <h3>Licence</h3>
+            <p>
+                This program is free software; you can redistribute it and/or modify it under the terms of the GNU
+                General Public License as published by the Free Software Foundation; either version 2 of the License, or
+                (at your option) any later version.<br>
+                This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
+                the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public
+                License for more details.
+            </p>
+        </div>
+    </div>
 </body>
+
 </html>
-
 <script type="module" src="js/main.js"></script>
-

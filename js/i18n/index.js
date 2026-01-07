@@ -1,74 +1,110 @@
 //@ts-check
 
-import de from "./locales/de.js";
-import en from "./locales/en.js";
+/**
+ * All available translations (auto-loaded)
+ * @type {Record<string, TranslationDict>}
+ */
+const dicts = {};
+
+// @ts-ignore
+const modules = import.meta.glob("../../locales/*.js", { eager: true });
+
+for (const path in modules) {
+  const m = modules[path];
+  const code = path.match(/\/([a-z]{2})\.js$/)?.[1];
+  if (!code) continue;
+  dicts[code] = m.default;
+}
+
+export { dicts };
+
 
 /**
  * @typedef {Record<string, string>} TranslationDict
+ * @typedef {{ key: string, label: string }} LocaleDescriptor
  */
-
-/**
- * All available translations
- * @type {Record<string, TranslationDict>}
- */
-let dicts = { de, en };
 let fallback = "en";
+
+/** @type {string} */
 let locale = "de";
 
+/** @type {Set<(loc:string)=>void>} */
+const listeners = new Set();
+
 /**
- * tries to sets a locale
- * @param {*} next 
+ * Returns all locales that exist in dicts, with label coming from each locale's own dict ("lang.name")
+ * @returns {{key:string, label:string}[]}
  */
+export function getLocales() {
+  const keys = Object.keys(dicts);
+
+  /** @param {string} loc @param {string} key */
+  const lookupInLocale = (loc, key) => {
+    const primary = dicts[loc];
+    const fb = dicts[fallback];
+    return primary?.[key] ?? fb?.[key] ?? `[[${key}]]`;
+  };
+
+  return keys.map((k) => ({
+    key: k,
+    label: lookupInLocale(k, "lang.name"),
+  }));
+}
+
 
 export function setLocale(next) {
-    locale = next ?? fallback;
+  const available = dicts[next] ? next : fallback;
+  locale = available;
+
+  // persist
+  try {
+    localStorage.setItem("sim_locale", locale);
+  } catch { /* ignore */ }
+
+  // notify
+  for (const fn of listeners) {
+    try { fn(locale); } catch { /* ignore */ }
+  }
 }
 
 export function getLocale() {
-    return locale;
+  return locale;
 }
 
-/**
- * Replaces `{key}` placeholders in a template string with values from `params`.
- *
- * @param {string} template - The template string containing `{key}` placeholders.
- * @param {Record<string, unknown>} [params] - Values to substitute into the template.
- * @returns {string} The formatted string.
- */
+/** subscribe to changes (returns unsubscribe) */
+export function onLocaleChange(fn) {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+
 function format(template, params) {
-    if (!params) return template;
-    return template.replace(/\{(\w+)\}/g, 
-        /**
-         * @param {string} _ - Full match (unused)
-         * @param {string} key - Placeholder key without braces
-         * @returns {string}
-         */
-        (_, key) =>
-        params[key] !== undefined ? String(params[key]) : `{${key}}`
-    );
+  if (!params) return template;
+  return template.replace(/\{(\w+)\}/g, (_, key) =>
+    params[key] !== undefined ? String(params[key]) : `{${key}}`
+  );
 }
 
-/**
- * Looks up a translation for a key.
- *
- * @param {string} key - Translation key
- * @param {Record<string, unknown>} [params] - Parameters for placeholder insertion
- * @returns {string}
- */
 export function t(key, params) {
-    const primaryDict = dicts[locale] ?? dicts[fallback];
-    const fallbackDict = dicts[fallback];
-
-    const template = primaryDict[key] ?? fallbackDict?.[key] ?? "[["+key+"]]"; // key sichtbar = Debug
-    return format(template, params);
+  const primaryDict = dicts[locale] ?? dicts[fallback];
+  const fallbackDict = dicts[fallback];
+  const template = primaryDict[key] ?? fallbackDict?.[key] ?? "[[" + key + "]]";
+  return format(template, params);
 }
 
-/**
- * inits the locale System
- */
 export function initLocale() {
-    const browser = navigator.language?.split("-")[0]; // "de-DE" -> "de"
-    setLocale(browser ?? "de");
+  // 1) saved
+  try {
+    const saved = localStorage.getItem("sim_locale");
+    if (saved && dicts[saved]) {
+      locale = saved;
+      return;
+    }
+  } catch { /* ignore */ }
+
+  // 2) browser
+  const browser = navigator.language?.split("-")[0];
+  if (browser && dicts[browser]) locale = browser;
+  else locale = "de";
 }
 
 /**

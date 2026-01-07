@@ -1,57 +1,522 @@
 //@ts-check
 
-import { IPOctetsToNumber } from "./helpers.js";
-import { SimControl } from "./SimControl.js";
-import { PC } from "./simulation/PC.js"
-import { Switch } from "./simulation/Switch.js";
-import { Link } from "./simulation/Link.js";
-
 import { initLocale, t, setLocale } from './i18n/index.js';
-import { PCapViewer } from "./pcap/PCapViewer.js";
 import { TabController } from "./TabControler.js";
+import { SimControl } from "./SimControl.js";
+import { PCapViewer } from "./pcap/PCapViewer.js";
+
+/**
+ * @returns {string}
+ */
+export function version() {
+  try {
+    //@ts-ignore
+    return import.meta.env?.VITE_APP_VERSION || "development";
+  } catch {
+    return "development";
+  }
+}
 
 
+console.log("[Beaver Tracer] Version: "+version());
 initLocale();
-setLocale("de");
+
 var sim = new SimControl(document.getElementById("simcontrol"));
 var viewer = new PCapViewer(document.getElementById("pcapviewer"), { autoSelectFirst: true });
 
 SimControl.pcapViewer = viewer;
 SimControl.tabControler = new TabController();
 
-
-var pc1 = new PC("PC1");
-var pc2 = new PC("PC2");
-var pc3 = new PC("PC3");
-var pc4 = new PC("PC4");
-var sw1 = new Switch("Switch 1");
-
-pc1.os.ipforwarder.configureInterface(0, { ip: IPOctetsToNumber(192, 168, 0, 1), netmask: IPOctetsToNumber(255, 255, 255, 0) });
-pc2.os.ipforwarder.configureInterface(0, { ip: IPOctetsToNumber(192, 168, 0, 2), netmask: IPOctetsToNumber(255, 255, 255, 0) });
-
-var port = pc2.os.ipforwarder.openUDPSocket(0, 9999);
-
-
-console.log(sim);
-
-sim.addObject(pc1);
-sim.addObject(pc2);
-sim.addObject(pc3);
-sim.addObject(pc4);
-sim.addObject(sw1);
-
-sim.addObject(new Link(pc1, sw1));
-sim.addObject(new Link(pc2, sw1));
-sim.addObject(new Link(pc3, sw1));
-sim.addObject(new Link(pc4, sw1));
-
-
-pc1.x = 50; pc1.y = 50;
-pc2.x = 450; pc2.y = 50;
-pc3.x = 50; pc3.y = 450;
-pc4.x = 450; pc4.y = 450;
-sw1.x = 250; sw1.y = 250;
-
-
-sim.setFocus(pc1);
-
+sim.restore({
+  "version": 3,
+  "tick": 32,
+  "objects": [
+    {
+      "kind": "PC",
+      "id": 0,
+      "name": "PC1",
+      "x": 69,
+      "y": 122,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "net": {
+        "name": "PC1",
+        "forwarding": false,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": 3232235531,
+            "netmask": 4294967040
+          }
+        ],
+        "routes": [
+          {
+            "dst": 0,
+            "netmask": 0,
+            "interf": 0,
+            "nexthop": 3232235521
+          }
+        ]
+      },
+      "fs": {
+        "type": "dir",
+        "name": "",
+        "ctime": 1767703885861,
+        "mtime": 1767703885861,
+        "children": [
+          {
+            "type": "dir",
+            "name": "home",
+            "ctime": 1767703885861,
+            "mtime": 1767703885861,
+            "children": [
+              {
+                "type": "file",
+                "name": "notes.txt",
+                "data": "hello vfs\n",
+                "ctime": 1767703885861,
+                "mtime": 1767703885861
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "bin",
+            "ctime": 1767703885861,
+            "mtime": 1767703885861,
+            "children": []
+          },
+          {
+            "type": "dir",
+            "name": "var",
+            "ctime": 1767703885861,
+            "mtime": 1767703885861,
+            "children": [
+              {
+                "type": "dir",
+                "name": "www",
+                "ctime": 1767703885861,
+                "mtime": 1767703885861,
+                "children": [
+                  {
+                    "type": "file",
+                    "name": "index.html",
+                    "data": "<!doctype html>\n<html>\n    <head>\n      <meta charset=\"utf-8\" />\n      <title>Hello from SimpleHTTPServer</title>\n    </head>\n    <body>\n      <h1>It works!</h1>\n    <p>Served from /var/www/index.html</p>\n    </body>\n</html>\n",
+                    "ctime": 1767703885861,
+                    "mtime": 1767703885861
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "PC",
+      "id": 1,
+      "name": "PC2",
+      "x": 275,
+      "y": 125,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "net": {
+        "name": "PC2",
+        "forwarding": false,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": 3232235532,
+            "netmask": 4294967040
+          }
+        ],
+        "routes": [
+          {
+            "dst": 0,
+            "netmask": 0,
+            "interf": 0,
+            "nexthop": 3232235521
+          }
+        ]
+      },
+      "fs": {
+        "type": "dir",
+        "name": "",
+        "ctime": 1767703885864,
+        "mtime": 1767703885864,
+        "children": [
+          {
+            "type": "dir",
+            "name": "home",
+            "ctime": 1767703885864,
+            "mtime": 1767703885864,
+            "children": [
+              {
+                "type": "file",
+                "name": "notes.txt",
+                "data": "hello vfs\n",
+                "ctime": 1767703885864,
+                "mtime": 1767703885864
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "bin",
+            "ctime": 1767703885864,
+            "mtime": 1767703885864,
+            "children": []
+          },
+          {
+            "type": "dir",
+            "name": "var",
+            "ctime": 1767703885864,
+            "mtime": 1767703885864,
+            "children": [
+              {
+                "type": "dir",
+                "name": "www",
+                "ctime": 1767703885864,
+                "mtime": 1767703885864,
+                "children": [
+                  {
+                    "type": "file",
+                    "name": "index.html",
+                    "data": "<!doctype html>\n<html>\n    <head>\n      <meta charset=\"utf-8\" />\n      <title>Hello from SimpleHTTPServer</title>\n    </head>\n    <body>\n      <h1>It works!</h1>\n    <p>Served from /var/www/index.html</p>\n    </body>\n</html>\n",
+                    "ctime": 1767703885864,
+                    "mtime": 1767703885864
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "Switch",
+      "id": 4,
+      "name": "Switch 1",
+      "x": 184,
+      "y": 235,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false
+    },
+    {
+      "kind": "Router",
+      "id": 9,
+      "name": "Router",
+      "x": 454,
+      "y": 236,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "net": {
+        "name": "Router",
+        "forwarding": true,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": 3232235521,
+            "netmask": 4294967040
+          },
+          {
+            "name": "eth1",
+            "ip": 3232235777,
+            "netmask": 4294967040
+          }
+        ],
+        "routes": []
+      }
+    },
+    {
+      "kind": "PC",
+      "id": 13,
+      "name": "PC3",
+      "x": 599,
+      "y": 132,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "net": {
+        "name": "PC",
+        "forwarding": false,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": 3232235787,
+            "netmask": 4294967040
+          }
+        ],
+        "routes": [
+          {
+            "dst": 0,
+            "netmask": 0,
+            "interf": 0,
+            "nexthop": 3232235777
+          }
+        ]
+      },
+      "fs": {
+        "type": "dir",
+        "name": "",
+        "ctime": 1767704009087,
+        "mtime": 1767704009087,
+        "children": [
+          {
+            "type": "dir",
+            "name": "home",
+            "ctime": 1767704009087,
+            "mtime": 1767704009087,
+            "children": [
+              {
+                "type": "file",
+                "name": "notes.txt",
+                "data": "hello vfs\n",
+                "ctime": 1767704009087,
+                "mtime": 1767704009087
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "bin",
+            "ctime": 1767704009087,
+            "mtime": 1767704009087,
+            "children": []
+          },
+          {
+            "type": "dir",
+            "name": "var",
+            "ctime": 1767704009087,
+            "mtime": 1767704009087,
+            "children": [
+              {
+                "type": "dir",
+                "name": "www",
+                "ctime": 1767704009087,
+                "mtime": 1767704009087,
+                "children": [
+                  {
+                    "type": "file",
+                    "name": "index.html",
+                    "data": "<!doctype html>\n<html>\n    <head>\n      <meta charset=\"utf-8\" />\n      <title>Hello from SimpleHTTPServer</title>\n    </head>\n    <body>\n      <h1>It works!</h1>\n    <p>Served from /var/www/index.html</p>\n    </body>\n</html>\n",
+                    "ctime": 1767704009087,
+                    "mtime": 1767704009087
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "PC",
+      "id": 15,
+      "name": "PC4",
+      "x": 821,
+      "y": 133,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "net": {
+        "name": "PC",
+        "forwarding": false,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": 3232235788,
+            "netmask": 4294967040
+          }
+        ],
+        "routes": [
+          {
+            "dst": 0,
+            "netmask": 0,
+            "interf": 0,
+            "nexthop": 3232235777
+          }
+        ]
+      },
+      "fs": {
+        "type": "dir",
+        "name": "",
+        "ctime": 1767704012478,
+        "mtime": 1767704012478,
+        "children": [
+          {
+            "type": "dir",
+            "name": "home",
+            "ctime": 1767704012478,
+            "mtime": 1767704012478,
+            "children": [
+              {
+                "type": "file",
+                "name": "notes.txt",
+                "data": "hello vfs\n",
+                "ctime": 1767704012478,
+                "mtime": 1767704012478
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "bin",
+            "ctime": 1767704012478,
+            "mtime": 1767704012478,
+            "children": []
+          },
+          {
+            "type": "dir",
+            "name": "var",
+            "ctime": 1767704012478,
+            "mtime": 1767704012478,
+            "children": [
+              {
+                "type": "dir",
+                "name": "www",
+                "ctime": 1767704012478,
+                "mtime": 1767704012478,
+                "children": [
+                  {
+                    "type": "file",
+                    "name": "index.html",
+                    "data": "<!doctype html>\n<html>\n    <head>\n      <meta charset=\"utf-8\" />\n      <title>Hello from SimpleHTTPServer</title>\n    </head>\n    <body>\n      <h1>It works!</h1>\n    <p>Served from /var/www/index.html</p>\n    </body>\n</html>\n",
+                    "ctime": 1767704012478,
+                    "mtime": 1767704012478
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "Switch",
+      "id": 18,
+      "name": "Switch 2",
+      "x": 718,
+      "y": 237,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false
+    },
+    {
+      "kind": "RectOverlay",
+      "id": 24,
+      "name": "Rect",
+      "x": 33,
+      "y": 87,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "w": 475,
+      "h": 291,
+      "color": "#ffcc00",
+      "opacity": 0.25
+    },
+    {
+      "kind": "RectOverlay",
+      "id": 27,
+      "name": "Rect",
+      "x": 514,
+      "y": 88,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "w": 461,
+      "h": 289,
+      "color": "#2ec27e",
+      "opacity": 0.25
+    },
+    {
+      "kind": "TextBox",
+      "id": 30,
+      "name": "Text",
+      "x": 47.5,
+      "y": 324.5,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "text": "**Netzwerk A**\n192.168.0.0/24",
+      "showTitle": false
+    },
+    {
+      "kind": "TextBox",
+      "id": 32,
+      "name": "Text",
+      "x": 844.5,
+      "y": 323.5,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "text": "**Netzwerk B**\n192.168.1.0/24",
+      "showTitle": false
+    },
+    {
+      "kind": "Link",
+      "id": 6,
+      "a": 0,
+      "b": 4,
+      "portA": "eth0",
+      "portB": "sw0"
+    },
+    {
+      "kind": "Link",
+      "id": 7,
+      "a": 1,
+      "b": 4,
+      "portA": "eth0",
+      "portB": "sw1"
+    },
+    {
+      "kind": "Link",
+      "id": 11,
+      "a": 4,
+      "b": 9,
+      "portA": "sw2",
+      "portB": "eth0"
+    },
+    {
+      "kind": "Link",
+      "id": 20,
+      "a": 9,
+      "b": 18,
+      "portA": "eth1",
+      "portB": "sw0"
+    },
+    {
+      "kind": "Link",
+      "id": 21,
+      "a": 13,
+      "b": 18,
+      "portA": "eth0",
+      "portB": "sw1"
+    },
+    {
+      "kind": "Link",
+      "id": 22,
+      "a": 15,
+      "b": 18,
+      "portA": "eth0",
+      "portB": "sw2"
+    },
+    {
+      "kind": "TextBox",
+      "id": 34,
+      "name": "Text",
+      "x": 415.5,
+      "y": 12.5,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "text": "# Beispielnetzwerk",
+      "showTitle": false
+    }
+  ]
+});
