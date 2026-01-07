@@ -1,9 +1,11 @@
 {
   "scripts": {
     "dev": "vite",
+    "prebuild": "mkdir -p public/vendor && cp -f node_modules/@goodtools/wiregasm/**/*.wasm public/vendor/ 2>/dev/null || true",
     "build": "vite build",
     "preview": "vite preview"
   },
+
   "name": "networksim",
   "description": "",
   "version": "0.0.1",
@@ -22,12 +24,8 @@
   "build": {
     "appId": "de.chklein.networksim",
     "productName": "Netzwerksimulator",
-    "extraMetadata": {
-      "main": "electron/main.cjs"
-    },
     "files": [
       "dist/**",
-      "electron/**",
       "package.json"
     ]
   },

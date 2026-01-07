@@ -4,21 +4,9 @@
 #  - on branch "development" (build artifacts only)
 #  - on tags (release build with version taken from tag)
 #
-# Deploys:
-#  - ONLY on tags (production deploy)
-#
-# Required CI/CD variables in GitLab (Settings -> CI/CD -> Variables):
-#  - SSH_PRIVATE_KEY   (masked; ideally protected)
-#  - DEPLOY_HOST       (e.g. "example.com")
-#  - DEPLOY_USER       (e.g. "deploy")
-#  - DEPLOY_PATH       (e.g. "/var/www/networksim")
-#
-# Optional:
-#  - DEPLOY_PORT       (default 22)
 
 stages:
   - build
-  - deploy
 
 default:
   image: node:20
