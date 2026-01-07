@@ -1,3 +1,4 @@
+//@ts-check
 import { defineConfig } from "vite";
 import fs from "node:fs";
 import path from "node:path";
@@ -5,6 +6,9 @@ import path from "node:path";
 function wiregasmAssets() {
   const files = ["wiregasm.wasm", "wiregasm.data"];
 
+  /**
+   * @param {string} root
+   */
   function copyAssets(root) {
     const srcDir = path.join(root, "node_modules", "@goodtools", "wiregasm", "dist");
     const dstDir = path.join(root, "public", "wiregasm");
@@ -29,6 +33,9 @@ function wiregasmAssets() {
   return {
     name: "wiregasm-assets",
     apply: "serve", // dev
+    /**
+     * @param {{ root: string; }} config
+     */
     configResolved(config) {
       const root = config.root ?? process.cwd();
       copyAssets(root);
