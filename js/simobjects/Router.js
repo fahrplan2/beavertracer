@@ -69,8 +69,8 @@ function markInvalid(el, isInvalid) {
 /** deterministic via EthernetPort.linkref */
 function getInterfaceLinkStatus(iface) {
     const port = iface?.port;
-    if (!port) return { text: "unbekannt", state: "unknown" };
-    return port.linkref ? { text: "verbunden", state: "up" } : { text: "getrennt", state: "down" };
+    if (!port) return { text: t("router.unknown"), state: "unknown" };
+    return port.linkref ? { text: t("router.stateup"), state: "up" } : { text: t("router.statedown"), state: "down" };
 }
 
 /* ------------------------------ Router ----------------------------- */
@@ -185,15 +185,15 @@ export class Router extends SimulatedObject {
         panelBody.appendChild(host);
 
         /* ===================== Allgemeine Einstellungen ===================== */
-        host.appendChild(DOMBuilder.h4("Allgemeine Einstellungen"));
+        host.appendChild(DOMBuilder.h4(t("router.genericsettingstitle")));
 
         const nameRow = DOMBuilder.div("router-name-row");
 
-        const nameLabel = DOMBuilder.label("Router-Name:");
+        const nameLabel = DOMBuilder.label(t("router.name"));
         const nameInput = DOMBuilder.input({ value: this.name });
         this._nameInput = nameInput;
 
-        const nameBtn = DOMBuilder.button("Übernehmen");
+        const nameBtn = DOMBuilder.button(t("router.apply"));
 
         nameBtn.addEventListener("click", () => {
             const newName = nameInput.value.trim();
@@ -210,7 +210,7 @@ export class Router extends SimulatedObject {
         host.appendChild(nameRow);
 
         /* ============================ Interfaces ============================ */
-        host.appendChild(DOMBuilder.h4("Interfaces"));
+        host.appendChild(DOMBuilder.h4(t("router.interfaces")));
 
         const ifCard = DOMBuilder.div("router-card");
 
@@ -228,7 +228,7 @@ export class Router extends SimulatedObject {
         const ipIn = DOMBuilder.input({ className: "router-if-ip", placeholder: "IP" });
         const maskIn = DOMBuilder.input({ className: "router-if-mask", placeholder: "Netmask" });
         const cidrIn = DOMBuilder.input({ className: "router-if-cidr", placeholder: "/CIDR" });
-        const saveBtn = DOMBuilder.button("Speichern", { className: "router-if-save" });
+        const saveBtn = DOMBuilder.button(t("router.save"), { className: "router-if-save" });
 
         this._ipInput = ipIn;
         this._maskInput = maskIn;
@@ -246,7 +246,7 @@ export class Router extends SimulatedObject {
         host.appendChild(ifCard);
 
         /* =========================== Routingtabelle ========================== */
-        host.appendChild(DOMBuilder.h4("Routingtabelle"));
+        host.appendChild(DOMBuilder.h4(t("router.routingtable")));
 
         const routesHost = DOMBuilder.div("router-routes");
         this._routesHost = routesHost;
@@ -289,7 +289,7 @@ export class Router extends SimulatedObject {
             btn.dataset.name = iface.name;
 
             const label = DOMBuilder.el("span", { className: "router-tab-label", text: iface.name });
-            const badge = DOMBuilder.el("span", { className: "router-tab-badge status-unknown", text: "unbekannt" });
+            const badge = DOMBuilder.el("span", { className: "router-tab-badge status-unknown", text: t("router.unknown") });
 
             btn.appendChild(label);
             btn.appendChild(badge);
@@ -306,12 +306,8 @@ export class Router extends SimulatedObject {
         }
 
         // plus tab
-        const plusBtn = DOMBuilder.button("+", { className: "router-tab router-tab-plus", title: "Interface hinzufügen" });
+        const plusBtn = DOMBuilder.button("+", { className: "router-tab router-tab-plus", title: t("router.addinterface")});
         plusBtn.addEventListener("click", () => {
-            if (typeof this.net.addNewInterface !== "function") {
-                alert("net.addNewInterface() fehlt noch.");
-                return;
-            }
             this.net.addNewInterface();
             this._selectedIfaceName = this.net.interfaces[this.net.interfaces.length - 1]?.name ?? this._selectedIfaceName;
             if (this._panelBody) this.mount(this._panelBody);
@@ -327,14 +323,14 @@ export class Router extends SimulatedObject {
         DOMBuilder.clear(actionsHost);
 
         // PCAP button
-        const pcapBtn = DOMBuilder.button("Mitschnitt anzeigen", { className: "router-if-pcap" });
+        const pcapBtn = DOMBuilder.button(t("router.showpacketlog"), { className: "router-if-pcap" });
         pcapBtn.addEventListener("click", () => {
             const iface = this._getSelectedIface();
             if (!iface || !iface.port) return;
 
             const frames = iface.port.loggedFrames || [];
             if (!frames.length) {
-                alert("Kein Mitschnitt vorhanden.");
+                alert(t("router.nopacketlog"));
                 return;
             }
 
@@ -347,19 +343,14 @@ export class Router extends SimulatedObject {
         actionsHost.appendChild(pcapBtn);
 
         // Delete button
-        const delBtn = DOMBuilder.button("Interface löschen", { className: "router-if-del" });
+        const delBtn = DOMBuilder.button(t("router.deleteinterface"), { className: "router-if-del" });
         this._delIfBtn = delBtn;
 
         delBtn.addEventListener("click", () => {
             const name = this._selectedIfaceName;
             if (!name) return;
 
-            if (typeof this.net.deleteInterface !== "function") {
-                alert("net.deleteInterface(name) fehlt noch.");
-                return;
-            }
-
-            const ok = confirm(`Interface "${name}" wirklich löschen?`);
+            const ok = confirm(t("router.confirminterfacedelete", { name: name}));
             if (!ok) return;
 
             this.net.deleteInterface(name);
@@ -433,8 +424,8 @@ export class Router extends SimulatedObject {
 
         if (this._selectedIfaceLabel) {
             this._selectedIfaceLabel.textContent = this._selectedIfaceName
-                ? `Ausgewählt: ${this._selectedIfaceName}`
-                : "Kein Interface ausgewählt";
+                ? this._selectedIfaceName
+                : t("router.nointerfaceselected");
         }
     }
 
@@ -471,7 +462,7 @@ export class Router extends SimulatedObject {
 
     _ifaceNameToIndex(name) {
         const idx = this.net.interfaces.findIndex((i) => i.name === name);
-        if (idx < 0) throw new Error("Unbekanntes Interface: " + name);
+        if (idx < 0) throw new Error("Unknown interface " + name);
         return idx;
     }
 
@@ -591,15 +582,14 @@ export class Router extends SimulatedObject {
         table.className = "router-routes-table";
 
         const thead = document.createElement("thead");
-        thead.innerHTML = `
-      <tr>
-        <th>dst</th>
-        <th>netmask</th>
-        <th>nexthop</th>
-        <th>interface</th>
-        <th>auto</th>
-        <th>actions</th>
-      </tr>`;
+        thead.innerHTML = "<tr>"+
+        "<th>"+t("router.routingtable.dst")+"</th>"+
+        "<th>"+t("router.routingtable.netmask")+"</th>"+
+        "<th>"+t("router.routingtable.nexthop")+"</th>"+
+        "<th>"+t("router.routingtable.interface")+"</th>"+
+        "<th>"+t("router.routingtable.auto")+"</th>"+
+        "<th>"+t("router.routingtable.actions")+"</th>"+
+        "</tr>";
         table.appendChild(thead);
 
         const tbody = document.createElement("tbody");
@@ -626,14 +616,14 @@ export class Router extends SimulatedObject {
             nh.disabled = auto;
 
             const autoTd = document.createElement("td");
-            autoTd.textContent = auto ? "yes" : "no";
+            autoTd.textContent = auto ? t("router.routingtable.yes") : t("router.routingtable.no");
 
             const save = document.createElement("button");
-            save.textContent = "Save";
+            save.textContent = t("router.routingtable.save");
             save.disabled = true;
 
             const del = document.createElement("button");
-            del.textContent = "Delete";
+            del.textContent = t("router.routingtable.delete");
             del.disabled = auto;
 
             // interface cell
@@ -662,7 +652,7 @@ export class Router extends SimulatedObject {
                 } else {
                     const bad = document.createElement("option");
                     bad.value = "";
-                    bad.textContent = "(missing)";
+                    bad.textContent = "("+t("router.routingtable.missing")+")";
                     ifSel.insertBefore(bad, ifSel.firstChild);
                     ifSel.value = "";
                 }
@@ -725,11 +715,6 @@ export class Router extends SimulatedObject {
                 const old = this.net.routingTable[idx];
                 if (old.auto) return;
 
-                if (typeof this.net.delRoute !== "function") {
-                    alert("delRoute() fehlt noch im IPStack.");
-                    return;
-                }
-
                 try {
                     const newDst = ipStrToNum(dst.value);
                     const newMask = ipStrToNum(mask.value);
@@ -742,7 +727,7 @@ export class Router extends SimulatedObject {
 
                     let newInterf = old.interf;
                     if (old.interf !== -1 && ifSel) {
-                        if (!ifSel.value) throw new Error("Interface fehlt (route zeigt auf gelöschtes Interface)");
+                        if (!ifSel.value) throw new Error("missing interface or route points to a deleted interface");
                         newInterf = this._ifaceNameToIndex(ifSel.value);
                     }
 
@@ -758,11 +743,6 @@ export class Router extends SimulatedObject {
             del.addEventListener("click", () => {
                 const old = this.net.routingTable[idx];
                 if (old.auto) return;
-
-                if (typeof this.net.delRoute !== "function") {
-                    alert("delRoute() fehlt noch im IPStack.");
-                    return;
-                }
 
                 this.net.delRoute(old.dst, old.netmask, old.interf, old.nexthop);
                 this._renderRoutes();
@@ -815,10 +795,10 @@ export class Router extends SimulatedObject {
         addIf.disabled = !hasIfaces;
 
         const addAuto = document.createElement("td");
-        addAuto.textContent = "no";
+        addAuto.textContent = t("router.routingtable.no");
 
         const addBtn = document.createElement("button");
-        addBtn.textContent = "Add Route";
+        addBtn.textContent = t("router.routingtable.add");
 
         const parseMaybe = (v, fallbackStr) => {
             const t = v.trim();

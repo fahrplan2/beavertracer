@@ -156,20 +156,22 @@ function internalHtml(title, details) {
  */
 function withTimeout(p, ms, label) {
   return new Promise((resolve, reject) => {
-    const t = setTimeout(() => reject(new Error(`${label} timeout (${ms}ms)`)), Math.max(1, ms | 0));
+    const tmr = setTimeout(() => reject(new Error(t("app.simplehttpserver.err.timeout", { label, ms }))), Math.max(1, ms | 0));
     p.then(
-      (v) => { clearTimeout(t); resolve(v); },
-      (e) => { clearTimeout(t); reject(e); }
+      (v) => { clearTimeout(tmr); resolve(v); },
+      (e) => { clearTimeout(tmr); reject(e); }
     );
   });
 }
 
 export class SimpleHTTPServerApp extends GenericProcess {
-  
-  title = t("app.simplehttpserver.title");
+
+  get title() {
+    return t("app.simplehttpserver.title");
+  }
 
   /** @type {Disposer} */
-  bag = new Disposer();
+  disposer = new Disposer();
 
   /** @type {number} */
   port = 80;
@@ -205,7 +207,6 @@ export class SimpleHTTPServerApp extends GenericProcess {
   stopBtn = null;
 
   run() {
-    this.title = "Simple HTTP Server";
     this.root.classList.add("app", "app-simple-http-server");
   }
 
@@ -214,15 +215,15 @@ export class SimpleHTTPServerApp extends GenericProcess {
    */
   onMount(root) {
     super.onMount(root);
-    this.bag.dispose();
+    this.disposer.dispose();
 
-    const portInput = UI.input({ placeholder: "Port (1..65535)", value: String(this.port) });
-    const rootInput = UI.input({ placeholder: "Document Root", value: String(this.docRoot) });
+    const portInput = UI.input({ placeholder: t("app.simplehttpserver.placeholder.port"), value: String(this.port) });
+    const rootInput = UI.input({ placeholder: t("app.simplehttpserver.placeholder.docRoot"), value: String(this.docRoot) });
     this.portEl = portInput;
     this.rootEl = rootInput;
 
-    const start = UI.button("Start", () => this._startFromUI(), { primary: true });
-    const stop = UI.button("Stop", () => this._stop(), {});
+    const start = UI.button(t("app.simplehttpserver.button.start"), () => this._startFromUI(), { primary: true });
+    const stop = UI.button(t("app.simplehttpserver.button.stop"), () => this._stop(), {});
     this.startBtn = start;
     this.stopBtn = stop;
 
@@ -231,11 +232,15 @@ export class SimpleHTTPServerApp extends GenericProcess {
     this.logEl = logBox;
 
     const panel = UI.panel([
-      UI.row("Port", portInput),
-      UI.row("Document Root", rootInput),
-      UI.buttonRow([start, stop, UI.button("Clear Log", () => { this.log = []; this._renderLog(); }, {})]),
+      UI.row(t("app.simplehttpserver.label.port"), portInput),
+      UI.row(t("app.simplehttpserver.label.docRoot"), rootInput),
+      UI.buttonRow([
+        start,
+        stop,
+        UI.button(t("app.simplehttpserver.button.clearLog"), () => { this.log = []; this._renderLog(); }, {})
+      ]),
       status,
-      UI.el("div", { text: "Log:" }),
+      UI.el("div", { text: t("app.simplehttpserver.label.log") }),
       logBox,
     ]);
 
@@ -243,19 +248,19 @@ export class SimpleHTTPServerApp extends GenericProcess {
     this._syncUI();
     this._renderLog();
 
-    this.bag.interval(() => {
+    this.disposer.interval(() => {
       status.textContent =
-        `PID: ${this.pid}\n` +
-        `Running: ${this.running}\n` +
-        `Port: ${this.port}\n` +
-        `DocRoot: ${this.docRoot}\n` +
-        `ServerRef: ${this.serverRef ?? "-"}\n` +
-        `Log entries: ${this.log.length}`;
+        t("app.simplehttpserver.status.pid", { pid: this.pid }) + "\n" +
+        t("app.simplehttpserver.status.running", { running: this.running }) + "\n" +
+        t("app.simplehttpserver.status.port", { port: this.port }) + "\n" +
+        t("app.simplehttpserver.status.docRoot", { docRoot: this.docRoot }) + "\n" +
+        t("app.simplehttpserver.status.serverRef", { serverRef: (this.serverRef ?? "-") }) + "\n" +
+        t("app.simplehttpserver.status.logEntries", { n: this.log.length });
     }, 300);
   }
 
   onUnmount() {
-    this.bag.dispose();
+    this.disposer.dispose();
     this.logEl = null;
     this.portEl = null;
     this.rootEl = null;
@@ -304,7 +309,7 @@ export class SimpleHTTPServerApp extends GenericProcess {
 
     const port = Number(portStr);
     if (!Number.isInteger(port) || port < 1 || port > 65535) {
-      this._append(`[${nowStamp()}] ERROR invalid port: "${portStr}"`);
+      this._append(t("app.simplehttpserver.log.invalidPort", { time: nowStamp(), portStr }));
       return;
     }
 
@@ -327,11 +332,12 @@ export class SimpleHTTPServerApp extends GenericProcess {
       try {
         this.os.net.closeTCPServerSocket(ref);
       } catch (e) {
-        this._append(`[${nowStamp()}] ERROR stop: ${e instanceof Error ? e.message : String(e)}`);
+        const reason = (e instanceof Error ? e.message : String(e));
+        this._append(t("app.simplehttpserver.log.stopError", { time: nowStamp(), reason }));
       }
     }
 
-    this._append(`[${nowStamp()}] STOPPED`);
+    this._append(t("app.simplehttpserver.log.stopped", { time: nowStamp() }));
   }
 
   _ensureDocroot() {
@@ -370,7 +376,8 @@ export class SimpleHTTPServerApp extends GenericProcess {
     try {
       ref = this.os.net.openTCPServerSocket(0, this.port); // bind 0.0.0.0
     } catch (e) {
-      this._append(`[${nowStamp()}] ERROR openTCPServerSocket: ${e instanceof Error ? e.message : String(e)}`);
+      const reason = (e instanceof Error ? e.message : String(e));
+      this._append(t("app.simplehttpserver.log.openSocketError", { time: nowStamp(), reason }));
       return;
     }
 
@@ -379,7 +386,7 @@ export class SimpleHTTPServerApp extends GenericProcess {
     this._syncUI();
 
     const seq = ++this.runSeq;
-    this._append(`[${nowStamp()}] LISTEN :${this.port} (docRoot=${this.docRoot})`);
+    this._append(t("app.simplehttpserver.log.listen", { time: nowStamp(), port: this.port, docRoot: this.docRoot }));
 
     this._acceptLoop(seq, ref);
   }
@@ -389,8 +396,6 @@ export class SimpleHTTPServerApp extends GenericProcess {
    * @param {number} ref
    */
   async _acceptLoop(seq, ref) {
-    const timeout = this._timeoutMs();
-
     while (this.running && this.runSeq === seq && this.serverRef === ref) {
       /** @type {string|null} */
       let connKey = null;
@@ -399,7 +404,8 @@ export class SimpleHTTPServerApp extends GenericProcess {
         connKey = await this.os.net.acceptTCPConn(ref);
       } catch (e) {
         if (this.running && this.runSeq === seq) {
-          this._append(`[${nowStamp()}] ERROR accept: ${e instanceof Error ? e.message : String(e)}`);
+          const reason = (e instanceof Error ? e.message : String(e));
+          this._append(t("app.simplehttpserver.log.acceptError", { time: nowStamp(), reason }));
         }
         continue;
       }
@@ -412,7 +418,8 @@ export class SimpleHTTPServerApp extends GenericProcess {
 
       // handle connection concurrently
       this._handleConn(seq, connKey).catch((e) => {
-        this._append(`[${nowStamp()}] ERROR conn: ${e instanceof Error ? e.message : String(e)}`);
+        const reason = (e instanceof Error ? e.message : String(e));
+        this._append(t("app.simplehttpserver.log.connError", { time: nowStamp(), reason }));
         try { this.os.net.closeTCPConn(connKey); } catch { /* ignore */ }
       });
     }
@@ -443,15 +450,18 @@ export class SimpleHTTPServerApp extends GenericProcess {
 
       if (total > limit) break;
 
-      const buf = concatChunks(chunks);
-      if (indexOfBytes(buf, headerNeedle) >= 0) break;
+      const buf2 = concatChunks(chunks);
+      if (indexOfBytes(buf2, headerNeedle) >= 0) break;
     }
 
     const buf = concatChunks(chunks);
     const idx = indexOfBytes(buf, headerNeedle);
 
     if (idx < 0) {
-      const body = internalHtml("400 Bad Request", "Header Ende nicht gefunden oder Header > 64KiB.");
+      const body = internalHtml(
+        t("app.simplehttpserver.http.400.title"),
+        t("app.simplehttpserver.http.400.details")
+      );
       const resp = buildResponse(400, "Bad Request", {
         "Date": new Date().toUTCString(),
         "Server": "SimpleHTTPServer/1.0",
@@ -471,7 +481,10 @@ export class SimpleHTTPServerApp extends GenericProcess {
 
     const m = /^([A-Z]+)\s+(\S+)\s+HTTP\/1\.[01]$/.exec(reqLine);
     if (!m) {
-      const body = internalHtml("400 Bad Request", `Ungültige Request-Line:\n${reqLine}`);
+      const body = internalHtml(
+        t("app.simplehttpserver.http.400.title"),
+        t("app.simplehttpserver.http.400.invalidRequestLine", { reqLine })
+      );
       const resp = buildResponse(400, "Bad Request", {
         "Date": new Date().toUTCString(),
         "Server": "SimpleHTTPServer/1.0",
@@ -489,7 +502,10 @@ export class SimpleHTTPServerApp extends GenericProcess {
     const target = m[2];
 
     if (method !== "GET" && method !== "HEAD") {
-      const body = internalHtml("405 Method Not Allowed", `Nur GET/HEAD sind unterstützt.\nDu hast gesendet: ${method}`);
+      const body = internalHtml(
+        t("app.simplehttpserver.http.405.title"),
+        t("app.simplehttpserver.http.405.details", { method })
+      );
       const resp = buildResponse(405, "Method Not Allowed", {
         "Date": new Date().toUTCString(),
         "Server": "SimpleHTTPServer/1.0",
@@ -500,7 +516,7 @@ export class SimpleHTTPServerApp extends GenericProcess {
 
       ipf.sendTCPConn(connKey, resp);
       ipf.closeTCPConn(connKey);
-      this._append(`[${nowStamp()}] 405 ${method} ${target}`);
+      this._append(t("app.simplehttpserver.log.methodNotAllowed", { time: nowStamp(), method, target }));
       return;
     }
 
@@ -512,7 +528,10 @@ export class SimpleHTTPServerApp extends GenericProcess {
     const text = this._readFileText(fsPath);
 
     if (text == null) {
-      const body = internalHtml("404 Not Found", `Datei nicht gefunden:\n${norm}\n\nFS-Pfad:\n${fsPath}`);
+      const body = internalHtml(
+        t("app.simplehttpserver.http.404.title"),
+        t("app.simplehttpserver.http.404.details", { norm, fsPath })
+      );
       const resp = buildResponse(404, "Not Found", {
         "Date": new Date().toUTCString(),
         "Server": "SimpleHTTPServer/1.0",
@@ -523,7 +542,7 @@ export class SimpleHTTPServerApp extends GenericProcess {
 
       ipf.sendTCPConn(connKey, resp);
       ipf.closeTCPConn(connKey);
-      this._append(`[${nowStamp()}] 404 ${method} ${norm}`);
+      this._append(t("app.simplehttpserver.log.notFound", { time: nowStamp(), method, norm }));
       return;
     }
 
@@ -541,6 +560,6 @@ export class SimpleHTTPServerApp extends GenericProcess {
 
     ipf.sendTCPConn(connKey, resp);
     ipf.closeTCPConn(connKey);
-    this._append(`[${nowStamp()}] 200 ${method} ${norm} (${data.length} bytes)`);
+    this._append(t("app.simplehttpserver.log.ok", { time: nowStamp(), method, norm, bytes: data.length }));
   }
 }

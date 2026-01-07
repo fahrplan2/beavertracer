@@ -102,7 +102,7 @@ function decodeUTF8(b) {
 function parseHttpUrl(url) {
   const s = url.trim();
   if (!s.toLowerCase().startsWith("http://")) {
-    return { ok: false, error: "Nur http:// ist erlaubt (kein https://)." };
+    return { ok: false, error: t("app.sparktail.err.onlyHttp") };
   }
 
   const rest = s.slice("http://".length);
@@ -110,7 +110,7 @@ function parseHttpUrl(url) {
   const authority = slash >= 0 ? rest.slice(0, slash) : rest;
   const path = slash >= 0 ? rest.slice(slash) : "/";
 
-  if (!authority) return { ok: false, error: "Host fehlt in der URL." };
+  if (!authority) return { ok: false, error: t("app.sparktail.err.missingHostInUrl") };
 
   // host:port?
   let host = authority;
@@ -129,7 +129,7 @@ function parseHttpUrl(url) {
   }
 
   host = host.trim();
-  if (!host) return { ok: false, error: "Host ist leer." };
+  if (!host) return { ok: false, error: t("app.sparktail.err.hostEmpty") };
 
   return { ok: true, host, port, path };
 }
@@ -195,7 +195,10 @@ function parseHeaders(headerText) {
  */
 function withTimeout(p, ms, label) {
   return new Promise((resolve, reject) => {
-    const tmr = setTimeout(() => reject(new Error(`${label} timeout (${ms}ms)`)), Math.max(0, ms | 0));
+    const tmr = setTimeout(
+      () => reject(new Error(t("app.sparktail.err.timeout", { label, ms }))),
+      Math.max(0, ms | 0)
+    );
     p.then(
       (v) => {
         clearTimeout(tmr);
@@ -290,9 +293,9 @@ class TcpBufferedReader {
   /** @returns {Promise<void>} */
   async _fill() {
     if (this.closed) return;
-    if (this._isCancelled()) throw new Error("cancelled");
+    if (this._isCancelled()) throw new Error(t("app.sparktail.err.cancelled"));
 
-    const chunk = await withTimeout(this._recv(), this._timeoutMs, "Recv");
+    const chunk = await withTimeout(this._recv(), this._timeoutMs, t("app.sparktail.label.recv"));
     if (chunk == null) {
       this.closed = true;
       return;
@@ -315,9 +318,9 @@ class TcpBufferedReader {
         this.buf = this.buf.subarray(end);
         return out;
       }
-      if (this.buf.length > maxBytes) throw new Error("readUntil exceeded maxBytes");
+      if (this.buf.length > maxBytes) throw new Error(t("app.sparktail.err.readUntilExceeded", { maxBytes }));
       await this._fill();
-      if (this.closed) throw new Error("EOF");
+      if (this.closed) throw new Error(t("app.sparktail.err.eof"));
     }
   }
 
@@ -329,7 +332,7 @@ class TcpBufferedReader {
   async readExactly(n) {
     while (this.buf.length < n) {
       await this._fill();
-      if (this.closed) throw new Error("EOF");
+      if (this.closed) throw new Error(t("app.sparktail.err.eof"));
     }
     const out = this.buf.subarray(0, n);
     this.buf = this.buf.subarray(n);
@@ -354,7 +357,7 @@ class TcpBufferedReader {
    */
   async readToClose(limit = 2 * 1024 * 1024) {
     while (!this.closed) {
-      if (this.buf.length > limit) throw new Error("Body too large");
+      if (this.buf.length > limit) throw new Error(t("app.sparktail.err.bodyTooLarge"));
       await this._fill();
     }
     const out = this.buf;
@@ -364,10 +367,12 @@ class TcpBufferedReader {
 }
 
 export class SparktailHTTPClientApp extends GenericProcess {
-  title = t("app.sparktail.title");
+  get title() {
+    return t("app.sparktail.title");
+  }
 
   /** @type {Disposer} */
-  bag = new Disposer();
+  disposer = new Disposer();
 
   /** @type {string} */
   url = "about:start";
@@ -438,10 +443,10 @@ export class SparktailHTTPClientApp extends GenericProcess {
    */
   onMount(root) {
     super.onMount(root);
-    this.bag.dispose();
+    this.disposer.dispose();
 
     const urlInput = UI.input({
-      placeholder: "about:start oder http://host[:port]/path",
+      placeholder: t("app.sparktail.placeholder.url"),
       value: String(this.url),
     });
     this.urlEl = urlInput;
@@ -451,12 +456,12 @@ export class SparktailHTTPClientApp extends GenericProcess {
     });
 
     /** @type {HTMLButtonElement} */
-    const back = UI.button("←", () => this._navTo(this.historyIndex - 1), {});
+    const back = UI.button(t("app.sparktail.button.back"), () => this._navTo(this.historyIndex - 1), {});
     /** @type {HTMLButtonElement} */
-    const fwd = UI.button("→", () => this._navTo(this.historyIndex + 1), {});
+    const fwd = UI.button(t("app.sparktail.button.forward"), () => this._navTo(this.historyIndex + 1), {});
     /** @type {HTMLButtonElement} */
     const reload = UI.button(
-      "⟳",
+      t("app.sparktail.button.reload"),
       () => {
         const u = (this.urlEl?.value ?? this.url).trim();
         if (u) this._navigate(normalizeUrlInput(u), false /* already in history */);
@@ -468,9 +473,9 @@ export class SparktailHTTPClientApp extends GenericProcess {
     this.reloadBtn = reload;
 
     /** @type {HTMLButtonElement} */
-    const go = UI.button("Go", () => this._goFromUI(), { primary: true });
+    const go = UI.button(t("app.sparktail.button.go"), () => this._goFromUI(), { primary: true });
     /** @type {HTMLButtonElement} */
-    const stop = UI.button("Stop", () => this._stop(), {});
+    const stop = UI.button(t("app.sparktail.button.stop"), () => this._stop(), {});
     this.goBtn = go;
     this.stopBtn = stop;
 
@@ -482,26 +487,11 @@ export class SparktailHTTPClientApp extends GenericProcess {
 
     // Tabs (devtools-ish)
     const tabRow = UI.buttonRow([
-      UI.button("Preview", () => {
-        this.tab = "preview";
-        this._renderTab();
-      }, {}),
-      UI.button("Source", () => {
-        this.tab = "source";
-        this._renderTab();
-      }, {}),
-      UI.button("Headers", () => {
-        this.tab = "headers";
-        this._renderTab();
-      }, {}),
-      UI.button("Log", () => {
-        this.tab = "log";
-        this._renderTab();
-      }, {}),
-      UI.button("Clear Log", () => {
-        this.log = [];
-        this._renderLog();
-      }, {}),
+      UI.button(t("app.sparktail.tab.preview"), () => { this.tab = "preview"; this._renderTab(); }, {}),
+      UI.button(t("app.sparktail.tab.source"), () => { this.tab = "source"; this._renderTab(); }, {}),
+      UI.button(t("app.sparktail.tab.headers"), () => { this.tab = "headers"; this._renderTab(); }, {}),
+      UI.button(t("app.sparktail.tab.log"), () => { this.tab = "log"; this._renderTab(); }, {}),
+      UI.button(t("app.sparktail.button.clearLog"), () => { this.log = []; this._renderLog(); }, {}),
     ]);
 
     // Content areas
@@ -562,7 +552,7 @@ export class SparktailHTTPClientApp extends GenericProcess {
       }
     };
     window.addEventListener("message", onMsg);
-    this.bag.add(() => window.removeEventListener("message", onMsg));
+    this.disposer.add(() => window.removeEventListener("message", onMsg));
 
     // initialize history with initial url
     this._pushHistory(this.url);
@@ -570,20 +560,20 @@ export class SparktailHTTPClientApp extends GenericProcess {
     this._syncUI();
     this._renderTab();
     this._renderLog();
-    this._setStatus("Bereit.");
+    this._setStatus(t("app.sparktail.status.ready"));
 
     // show start page immediately
     this._fetchUrl(this.url);
 
     // throbber tick
-    this.bag.interval(() => {
+    this.disposer.interval(() => {
       if (!this.throbberEl) return;
-      this.throbberEl.textContent = this.loading ? "⏳" : "";
+      this.throbberEl.textContent = this.loading ? t("app.sparktail.throbber.loading") : "";
     }, 120);
   }
 
   onUnmount() {
-    this.bag.dispose();
+    this.disposer.dispose();
     this.logEl = null;
     this.urlEl = null;
     this.goBtn = null;
@@ -668,8 +658,8 @@ export class SparktailHTTPClientApp extends GenericProcess {
   _goFromUI() {
     const raw = (this.urlEl?.value ?? "").trim();
     if (!raw) {
-      this._append(`[${nowStamp()}] ERROR URL ist leer`);
-      this._setStatus("Fehler: URL ist leer.");
+      this._append(t("app.sparktail.log.urlEmpty", { time: nowStamp() }));
+      this._setStatus(t("app.sparktail.status.errorUrlEmpty"));
       return;
     }
 
@@ -717,8 +707,8 @@ export class SparktailHTTPClientApp extends GenericProcess {
         /* ignore */
       }
     }
-    this._append(`[${nowStamp()}] STOP`);
-    this._setStatus("Stopp.");
+    this._append(t("app.sparktail.log.stop", { time: nowStamp() }));
+    this._setStatus(t("app.sparktail.status.stopped"));
   }
 
   /**
@@ -763,14 +753,14 @@ export class SparktailHTTPClientApp extends GenericProcess {
     if (this.headersEl) this.headersEl.value = "";
     this.tab = "preview";
     this._renderTab();
-    this._setStatus(`Lade: ${url}`);
+    this._setStatus(t("app.sparktail.status.loading", { url }));
 
     // about:* pages are internal
     const utrim = url.trim();
     if (utrim.toLowerCase() === "about:start") {
       this._showStartPage();
-      this._append(`[${nowStamp()}] about:start`);
-      this._setStatus("Startseite.");
+      this._append(t("app.sparktail.log.aboutStart", { time: nowStamp() }));
+      this._setStatus(t("app.sparktail.status.startPage"));
       this.loading = false;
       this._syncUI();
       return;
@@ -781,10 +771,10 @@ export class SparktailHTTPClientApp extends GenericProcess {
 
     const parsed = parseHttpUrl(url);
     if (!parsed.ok) {
-      this._showInternalPage("Ungültige URL", parsed.error);
+      this._showInternalPage(t("app.sparktail.page.invalidUrl.title"), parsed.error);
       this.loading = false;
       this._syncUI();
-      this._setStatus(`Ungültige URL: ${parsed.error}`);
+      this._setStatus(t("app.sparktail.status.invalidUrl", { error: parsed.error }));
       return;
     }
 
@@ -798,19 +788,22 @@ export class SparktailHTTPClientApp extends GenericProcess {
       if (anyThis.dns && typeof anyThis.dns.resolve === "function") {
         return await anyThis.dns.resolve(name);
       }
-      throw new Error(`DNS nicht verfügbar (kann "${name}" nicht auflösen)`);
+      throw new Error(t("app.sparktail.err.dnsNotAvailable", { name }));
     };
 
     let dstIP = 0;
     try {
-      dstIP = await withTimeout(resolveHostToIP(host, dnsResolve), timeout, "DNS");
+      dstIP = await withTimeout(resolveHostToIP(host, dnsResolve), timeout, t("app.sparktail.label.dns"));
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      this._append(`[${nowStamp()}] ERROR DNS "${host}": ${msg}`);
-      this._showInternalPage("DNS Fehler", `Host "${host}" konnte nicht aufgelöst werden.\n\n${msg}`);
+      this._append(t("app.sparktail.log.dnsError", { time: nowStamp(), host, msg }));
+      this._showInternalPage(
+        t("app.sparktail.page.dnsError.title"),
+        t("app.sparktail.page.dnsError.body", { host, msg })
+      );
       this.loading = false;
       this._syncUI();
-      this._setStatus(`DNS Fehler: ${host}`);
+      this._setStatus(t("app.sparktail.status.dnsError", { host }));
       return;
     }
 
@@ -818,18 +811,21 @@ export class SparktailHTTPClientApp extends GenericProcess {
     let key = null;
 
     try {
-      const conn = await withTimeout(this.os.net.connectTCPConn(dstIP, port), timeout, "Connect");
+      const conn = await withTimeout(this.os.net.connectTCPConn(dstIP, port), timeout, t("app.sparktail.label.connect"));
       key = conn?.key;
-      if (typeof key !== "string" || !key) throw new Error("connectTCPConn lieferte keinen connection key");
+      if (typeof key !== "string" || !key) throw new Error(t("app.sparktail.err.noConnKey"));
       this.connKey = key;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      this._append(`[${nowStamp()}] ERROR connect ${ipToString(dstIP)}:${port}: ${msg}`);
-      this._showInternalPage("Socket Fehler", `Verbindung zu ${host}:${port} fehlgeschlagen.\n\n${msg}`);
+      this._append(t("app.sparktail.log.connectError", { time: nowStamp(), ip: ipToString(dstIP), port, msg }));
+      this._showInternalPage(
+        t("app.sparktail.page.socketError.title"),
+        t("app.sparktail.page.socketError.body", { host, port, msg })
+      );
       this.loading = false;
       this.connKey = null;
       this._syncUI();
-      this._setStatus(`Socket Fehler: ${host}:${port}`);
+      this._setStatus(t("app.sparktail.status.socketError", { host, port }));
       return;
     }
 
@@ -844,13 +840,18 @@ export class SparktailHTTPClientApp extends GenericProcess {
     const reqBytes = encodeUTF8(request);
     try {
       this.os.net.sendTCPConn(key, reqBytes);
-      this._append(
-        `[${nowStamp()}] -> ${host}:${port} GET ${path} (len=${reqBytes.length} hex=${hexPreview(reqBytes)})`
-      );
+      this._append(t("app.sparktail.log.request", {
+        time: nowStamp(),
+        host,
+        port,
+        path,
+        len: reqBytes.length,
+        hex: hexPreview(reqBytes),
+      }));
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      this._append(`[${nowStamp()}] ERROR send: ${msg}`);
-      this._showInternalPage("Send Fehler", msg);
+      this._append(t("app.sparktail.log.sendError", { time: nowStamp(), msg }));
+      this._showInternalPage(t("app.sparktail.page.sendError.title"), msg);
       this._stop();
       return;
     }
@@ -904,9 +905,13 @@ export class SparktailHTTPClientApp extends GenericProcess {
           const semi = line.indexOf(";");
           const hex = (semi >= 0 ? line.slice(0, semi) : line).trim();
 
-          if (!/^[0-9a-fA-F]+$/.test(hex)) throw new Error(`Chunked parse: invalid chunk-size "${line}"`);
+          if (!/^[0-9a-fA-F]+$/.test(hex)) {
+            throw new Error(t("app.sparktail.err.chunkedInvalidChunkSize", { line }));
+          }
           const size = parseInt(hex, 16);
-          if (!Number.isFinite(size) || size < 0) throw new Error(`Chunked parse: invalid size "${hex}"`);
+          if (!Number.isFinite(size) || size < 0) {
+            throw new Error(t("app.sparktail.err.chunkedInvalidSize", { hex }));
+          }
 
           if (size === 0) {
             // Trailer headers until empty line
@@ -920,28 +925,28 @@ export class SparktailHTTPClientApp extends GenericProcess {
           const chunk = await r.readExactly(size);
           out.push(chunk);
           total += chunk.length;
-          if (total > bodyLimit) throw new Error(`Body-Limit überschritten (> ${bodyLimit} bytes).`);
+          if (total > bodyLimit) throw new Error(t("app.sparktail.err.bodyLimitExceeded", { bodyLimit }));
 
           const crlf = await r.readExactly(2);
-          if (crlf[0] !== 13 || crlf[1] !== 10) throw new Error("Chunked parse: missing CRLF after chunk");
+          if (crlf[0] !== 13 || crlf[1] !== 10) throw new Error(t("app.sparktail.err.chunkedMissingCrlf"));
         }
 
         bodyBytes = concatChunks(out);
       } else if (cl && /^\d+$/.test(cl.trim())) {
         const want = Number(cl.trim());
-        if (!Number.isFinite(want) || want < 0) throw new Error("Invalid Content-Length");
-        if (want > bodyLimit) throw new Error(`Body-Limit überschritten (> ${bodyLimit} bytes).`);
+        if (!Number.isFinite(want) || want < 0) throw new Error(t("app.sparktail.err.invalidContentLength"));
+        if (want > bodyLimit) throw new Error(t("app.sparktail.err.bodyLimitExceeded", { bodyLimit }));
 
         bodyBytes = await r.readExactly(want);
       } else {
         // Fallback: no length known. Read until close.
         bodyBytes = await r.readToClose(bodyLimit + 256 * 1024);
-        if (bodyBytes.length > bodyLimit) throw new Error(`Body-Limit überschritten (> ${bodyLimit} bytes).`);
+        if (bodyBytes.length > bodyLimit) throw new Error(t("app.sparktail.err.bodyLimitExceeded", { bodyLimit }));
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      this._append(`[${nowStamp()}] ERROR recv: ${msg}`);
-      this._showInternalPage("Timeout/Recv Fehler", msg);
+      this._append(t("app.sparktail.log.recvError", { time: nowStamp(), msg }));
+      this._showInternalPage(t("app.sparktail.page.recvError.title"), msg);
       this._stop();
       return;
     } finally {
@@ -961,25 +966,28 @@ export class SparktailHTTPClientApp extends GenericProcess {
 
     // Render / display
     if (bodyBytes.length > bodyLimit) {
-      this._showInternalPage("Body zu groß", `Body hat ${bodyBytes.length} bytes, Limit ist ${bodyLimit} bytes.`);
+      this._showInternalPage(
+        t("app.sparktail.page.bodyTooLarge.title"),
+        t("app.sparktail.page.bodyTooLarge.body", { bytes: bodyBytes.length, bodyLimit })
+      );
       this.loading = false;
       this._syncUI();
-      this._setStatus(`HTTP ${statusCode}: Body zu groß.`);
+      this._setStatus(t("app.sparktail.status.bodyTooLarge", { statusCode }));
       return;
     }
 
     const bodyText = decodeUTF8(bodyBytes);
 
     if (statusCode !== 200 && statusCode !== 404) {
-      this._append(`[${nowStamp()}] HTTP ${statusCode} ${reason} (nicht gerendert)`);
+      this._append(t("app.sparktail.log.httpNotRendered", { time: nowStamp(), statusCode, reason }));
       this._showInternalPage(
-        "Nicht unterstützt",
-        `Sparktail rendert derzeit nur 200 und 404.\n\nErhalten: HTTP ${statusCode} ${reason}\n\nTipp: Schau in den Headers/Source Tab.`
+        t("app.sparktail.page.notSupported.title"),
+        t("app.sparktail.page.notSupported.body", { statusCode, reason })
       );
       if (this.sourceEl) this.sourceEl.value = bodyText;
 
-      const ct = headers["content-type"] || "(unknown)";
-      this._setStatus(`HTTP ${statusCode} ${reason} • ${bodyBytes.length} bytes • ${ct}`);
+      const ct = headers["content-type"] || t("app.sparktail.value.unknown");
+      this._setStatus(t("app.sparktail.status.httpSummary", { statusCode, reason, bytes: bodyBytes.length, ct }));
 
       this.loading = false;
       this._syncUI();
@@ -993,15 +1001,17 @@ export class SparktailHTTPClientApp extends GenericProcess {
         this.previewFrame.srcdoc = bodyText;
       } else {
         this.previewFrame.srcdoc = internalErrorPage(
-          `HTTP ${statusCode}`,
-          `Content-Type: ${headers["content-type"] || "(unknown)"}\n\nPreview ist für Nicht-HTML deaktiviert.\n\nSource enthält die Rohdaten als Text.`
+          t("app.sparktail.page.nonHtml.title", { statusCode }),
+          t("app.sparktail.page.nonHtml.body", {
+            ct: headers["content-type"] || t("app.sparktail.value.unknown"),
+          })
         );
       }
     }
 
-    const ct = headers["content-type"] || "(unknown)";
-    this._append(`[${nowStamp()}] HTTP ${statusCode} ${reason} (body=${bodyBytes.length} bytes)`);
-    this._setStatus(`HTTP ${statusCode} ${reason} • ${bodyBytes.length} bytes • ${ct}`);
+    const ct = headers["content-type"] || t("app.sparktail.value.unknown");
+    this._append(t("app.sparktail.log.httpOk", { time: nowStamp(), statusCode, reason, bytes: bodyBytes.length }));
+    this._setStatus(t("app.sparktail.status.httpSummary", { statusCode, reason, bytes: bodyBytes.length, ct }));
 
     this.loading = false;
     this._syncUI();
@@ -1026,7 +1036,7 @@ export class SparktailHTTPClientApp extends GenericProcess {
     const html = startPage;
     if (this.previewFrame) this.previewFrame.srcdoc = html;
     if (this.sourceEl) this.sourceEl.value = html;
-    if (this.headersEl) this.headersEl.value = "about:start (internal)\r\n";
+    if (this.headersEl) this.headersEl.value = t("app.sparktail.headers.aboutStart");
     this.tab = "preview";
     this._renderTab();
   }

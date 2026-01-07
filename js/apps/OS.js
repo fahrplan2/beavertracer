@@ -67,7 +67,7 @@ export class OS {
         this.net = net;
         this.fs = fs;
         this.root.classList.add("os-root");
-        this._init();
+        this._registerApps();
         this.title = "";
         this.render();
     }
@@ -75,9 +75,9 @@ export class OS {
     /**
      * helper function to init the OS. Will register and start the apps
      */
-    _init() {
+    _registerApps() {
         const launchlist = 
-            [TerminalApp, TextEditorApp, IPv4ConfigApp, SimpleTCPClientApp, SimpleTCPServerApp, 
+            [IPv4ConfigApp, TerminalApp, TextEditorApp, SimpleTCPClientApp, SimpleTCPServerApp, 
             SimpleHTTPServerApp, SparktailHTTPClientApp, UDPEchoServerApp, PacketSnifferApp, AboutApp];
 
         launchlist.forEach((e) => this.exec(e));
@@ -91,9 +91,9 @@ export class OS {
      */
     exec(ClassName, ...params) {
         const app = new ClassName(this, ...params);
-        this.registerMenuItem(app.title, app.pid, app.icon);
         this.runningApps.push(app);
         app.run();
+        this.updateMenu();
         this.render();
         return app.pid;
     }
@@ -256,9 +256,16 @@ export class OS {
      * @param {string} icon which icon to usw
      */
 
-    registerMenuItem(title, pid, icon) {
+    _registerMenuItem(title, pid, icon) {
         this._menuItems.push(new MenuItem({ title, pid, dataIcon: icon }));
         if (this.focusID === 0) this.render();
+    }
+
+    updateMenu() {
+        this._menuItems = [];
+        this.runningApps.forEach( (app) => {
+            this._registerMenuItem(app.title, app.pid, app.icon);
+        })
     }
 
     _getFocusedApp() {

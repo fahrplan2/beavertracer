@@ -6,7 +6,11 @@ import { Disposer } from "./lib/Disposer.js";
 import { UILib } from "./lib/UILib.js";
 
 export class IPv4ConfigApp extends GenericProcess {
-  title = t("app.ipv4config.title");
+
+  get title() {
+    return t("app.ipv4config.title");
+  }
+
 
   /** @type {HTMLSelectElement|null} */ ifSel = null;
   /** @type {HTMLInputElement|null} */ ipEl = null;
@@ -15,7 +19,7 @@ export class IPv4ConfigApp extends GenericProcess {
   /** @type {HTMLElement|null} */ msgEl = null;
 
   /** @type {Disposer} */
-  bag = new Disposer();
+  disposer = new Disposer();
 
   run() {
     this.root.classList.add("app", "app-ipv4");
@@ -26,7 +30,7 @@ export class IPv4ConfigApp extends GenericProcess {
    */
   onMount(root) {
     super.onMount(root);
-    this.bag.dispose();
+    this.disposer.dispose();
 
     const net = this.os.net;
     const ifs = net?.interfaces ?? [];
@@ -49,23 +53,23 @@ export class IPv4ConfigApp extends GenericProcess {
     this.maskEl = maskEl;
     this.gwEl = gwEl;
 
-    const applyBtn = UILib.button("Apply", () => this._apply(), { primary: true });
+    const applyBtn = UILib.button(t("app.ipv4config.button.apply"), () => this._apply(), { primary: true });
 
     const panel = UILib.panel([
-      UILib.row("Interface", ifSel),
-      UILib.row("IP", ipEl),
-      UILib.row("Netmask", maskEl),
-      UILib.row("Gateway", gwEl),
+      UILib.row(t("app.ipv4config.label.interface"), ifSel),
+      UILib.row(t("app.ipv4config.label.ip"), ipEl),
+      UILib.row(t("app.ipv4config.label.netmask"), maskEl),
+      UILib.row(t("app.ipv4config.label.gateway"), gwEl),
       UILib.buttonRow([applyBtn]),
       msg,
     ]);
 
     this.root.replaceChildren(panel);
 
-    this.bag.on(ifSel, "change", () => this._load());
+    this.disposer.on(ifSel, "change", () => this._load());
 
     if (ifs.length === 0) {
-      this._setMsg("No interfaces available.");
+      this._setMsg(t("app.ipv4config.msg.noInterfaces"));
       applyBtn.disabled = true;
       return;
     }
@@ -75,7 +79,7 @@ export class IPv4ConfigApp extends GenericProcess {
   }
 
   onUnmount() {
-    this.bag.dispose();
+    this.disposer.dispose();
     this.ifSel = this.ipEl = this.maskEl = this.gwEl = null;
     this.msgEl = null;
     super.onUnmount();
@@ -98,7 +102,7 @@ export class IPv4ConfigApp extends GenericProcess {
 
     const i = this._idx();
     const itf = net.interfaces[i];
-    if (!itf) return this._setMsg(`Interface ${i} not found.`);
+    if (!itf) return this._setMsg(t("app.ipv4config.msg.interfaceNotFound", { i }));
 
     const ipN = itf.ip ?? null;
     const maskN = itf.netmask ?? null;
@@ -110,12 +114,12 @@ export class IPv4ConfigApp extends GenericProcess {
     const gw = getDefaultGatewayForIface(net, i);
     if (this.gwEl) this.gwEl.value = (gw != null) ? numberToIpv4(gw) : "";
 
-    this._setMsg(`Loaded interface ${i}.`);
+    this._setMsg(t("app.ipv4config.msg.loadedInterface", { i }));
   }
 
   _apply() {
     const net = this.os.net;
-    if (!net) return this._setMsg("No net driver on OS.");
+    if (!net) return this._setMsg(t("app.ipv4config.err.noNetDriver"));
 
     const i = this._idx();
 
@@ -124,21 +128,21 @@ export class IPv4ConfigApp extends GenericProcess {
     const gwStr = (this.gwEl?.value ?? "").trim();
 
     const ip = ipv4ToNumber(ipStr);
-    if (ip === null) return this._setMsg("Invalid IP address.");
+    if (ip === null) return this._setMsg(t("app.ipv4config.err.invalidIp"));
 
     const netmask = ipv4ToNumber(maskStr);
-    if (netmask === null) return this._setMsg("Invalid netmask.");
+    if (netmask === null) return this._setMsg(t("app.ipv4config.err.invalidNetmask"));
 
     if (!isValidNetmask32(netmask)) {
-      return this._setMsg("Invalid netmask (must be contiguous bits, e.g. 255.255.255.0).");
+      return this._setMsg(t("app.ipv4config.err.invalidNetmaskContiguous"));
     }
 
     // Gateway optional; if entered must be valid
     let gw = null;
     if (gwStr !== "") {
       const gwN = ipv4ToNumber(gwStr);
-      if (gwN === null) return this._setMsg("Invalid gateway address.");
-      if ((gwN >>> 0) === 0) return this._setMsg("Gateway must not be 0.0.0.0.");
+      if (gwN === null) return this._setMsg(t("app.ipv4config.err.invalidGateway"));
+      if ((gwN >>> 0) === 0) return this._setMsg(t("app.ipv4config.err.gatewayZero"));
       gw = gwN >>> 0;
     }
 
@@ -154,11 +158,13 @@ export class IPv4ConfigApp extends GenericProcess {
       }
 
       this._setMsg(
-        `Applied: if${i} = ${ipStr} / ${maskStr}` +
-        (gw != null ? `, gw ${gwStr}` : ", gw (cleared)")
+        gw != null
+          ? t("app.ipv4config.msg.appliedWithGw", { i, ip: ipStr, netmask: maskStr, gw: gwStr })
+          : t("app.ipv4config.msg.appliedGwCleared", { i, ip: ipStr, netmask: maskStr })
       );
     } catch (e) {
-      this._setMsg("Apply failed: " + (e instanceof Error ? e.message : String(e)));
+      const reason = (e instanceof Error ? e.message : String(e));
+      this._setMsg(t("app.ipv4config.err.applyFailed", { reason }));
     }
   }
 }
@@ -202,7 +208,6 @@ function getRoutes(net) {
   return Array.isArray(net?.routingTable) ? net.routingTable : [];
 }
 
-
 /**
  * Default route for iface = dst=0, netmask=0, interf=<iface>.
  * Optionally prefer user-set routes (auto=false) if duplicates exist.
@@ -225,7 +230,6 @@ function getDefaultGatewayForIface(net, ifaceIdx) {
   return null;
 }
 
-
 /**
  * Delete existing default route(s) for THIS interface.
  * Requirement: call delRoute() before setting a new default gw.
@@ -243,8 +247,8 @@ function clearDefaultGatewayForIface(net, ifaceIdx) {
 
   if (routes.length === 0) {
     // still "call delRoute before setting" (best-effort)
-    try { net.delRoute(0, 0, ifaceIdx); return; } catch {}
-    try { net.delRoute(0, 0); } catch {}
+    try { net.delRoute(0, 0, ifaceIdx); return; } catch { }
+    try { net.delRoute(0, 0); } catch { }
     return;
   }
 
@@ -252,8 +256,8 @@ function clearDefaultGatewayForIface(net, ifaceIdx) {
     const nh = (typeof r.nexthop === "number") ? (r.nexthop >>> 0) : undefined;
 
     // try most specific first
-    try { net.delRoute(0, 0, ifaceIdx, nh); continue; } catch {}
-    try { net.delRoute(0, 0, ifaceIdx); continue; } catch {}
-    try { net.delRoute(0, 0); } catch {}
+    try { net.delRoute(0, 0, ifaceIdx, nh); continue; } catch { }
+    try { net.delRoute(0, 0, ifaceIdx); continue; } catch { }
+    try { net.delRoute(0, 0); } catch { }
   }
 }

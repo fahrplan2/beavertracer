@@ -8,7 +8,7 @@ import { Switch } from "./simobjects/Switch.js";
 import { Router } from "./simobjects/Router.js";
 import { TextBox } from "./simobjects/TextBox.js";
 import { RectOverlay } from "./simobjects/RectOverlay.js";
-import { t } from "./i18n/index.js";
+import { t, getLocale, setLocale, getLocales, onLocaleChange } from "./i18n/index.js";
 
 /**
  * @typedef {Object} PortDescriptor
@@ -100,6 +100,14 @@ export class SimControl {
     /** @type {string|null} */
     linkStartKey = null;
 
+
+    /** @type {null|(()=>void)} */
+    _langCleanup = null;
+
+    /** @type {null|(()=>void)} */
+    _unsubLocale = null;
+
+
     /**
      * @param {HTMLElement|null} root
      */
@@ -107,6 +115,8 @@ export class SimControl {
         this.simobjects = [];
         this.root = root;
         this.render();
+
+        //change when locale changes
         this.scheduleNextStep();
         this._startRafLoop();
     }
@@ -275,14 +285,14 @@ export class SimControl {
 
         // --- Project group
         addSeparator();
-        const gProject = addGroup("Project");
+        const gProject = addGroup(t("sim.project"));
 
         // New
         const btnNew = document.createElement("button");
         btnNew.type = "button";
-        btnNew.textContent = "New";
+        btnNew.textContent = t("sim.new");
         btnNew.addEventListener("click", () => {
-            if (!confirm("Discard current simulation and start a new one?")) return;
+            if (!confirm(t("sim.discardandnewwarning"))) return;
             this.new();
         });
         gProject.appendChild(btnNew);
@@ -290,9 +300,9 @@ export class SimControl {
         // Load
         const btnLoad = document.createElement("button");
         btnLoad.type = "button";
-        btnLoad.textContent = "Load";
+        btnLoad.textContent = t("sim.load");
         btnLoad.addEventListener("click", () => {
-            if (!confirm("Discard current simulation and load another one?")) return;
+            if (!confirm(t("sim.discardandloadwarning"))) return;
             this.open();
         });
         gProject.appendChild(btnLoad);
@@ -300,18 +310,18 @@ export class SimControl {
         // Save
         const btnSave = document.createElement("button");
         btnSave.type = "button";
-        btnSave.textContent = "Save";
+        btnSave.textContent = t("sim.save");
         btnSave.addEventListener("click", () => this.download());
         gProject.appendChild(btnSave);
 
         // --- Edit group
         addSeparator();
-        const gMode = addGroup("Mode");
+        const gMode = addGroup(t("sim.mode"));
 
         // Edit button
         const btnEdit = document.createElement("button");
         btnEdit.type = "button";
-        btnEdit.textContent = "Edit";
+        btnEdit.textContent = t("sim.edit");
         if (SimControl.isEditMode) btnEdit.classList.add("active");
         btnEdit.addEventListener("click", () => {
             if (SimControl.isEditMode) {
@@ -330,7 +340,7 @@ export class SimControl {
         // Run button
         const btnRun = document.createElement("button");
         btnRun.type = "button";
-        btnRun.textContent = "Run";
+        btnRun.textContent = t("sim.run");
         if (!SimControl.isEditMode) btnRun.classList.add("active");
         btnRun.addEventListener("click", () => {
             if (SimControl.isEditMode) {
@@ -351,12 +361,12 @@ export class SimControl {
 
         if (!SimControl.isEditMode) {
             addSeparator();
-            const gSpeeds = addGroup("Speed");
+            const gSpeeds = addGroup(t("sim.speed"));
 
             // Pause (only pauses)
             const btnPause = document.createElement("button");
             btnPause.type = "button";
-            btnPause.textContent = "Pause";
+            btnPause.textContent = t("sim.pause");
             btnPause.addEventListener("click", () => this.pause());
             if (this.isPaused) btnPause.classList.add("active");
             gSpeeds.appendChild(btnPause);
@@ -384,6 +394,23 @@ export class SimControl {
             }
         }
 
+        addSeparator();
+        const gLang = addGroup(t("sim.language"));
+
+        // Language button
+        const langBtn = document.createElement("button");
+        langBtn.type = "button";
+        langBtn.className = "sim-toolbar-langbtn";
+        langBtn.textContent = "🌐";
+        langBtn.addEventListener("click", (ev) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            this._openLanguageDialog(langBtn);
+        });
+        gLang.appendChild(langBtn);
+
+
+
         //End of toolbar
 
         //********* BODY (SIDEBAR + NODES) ***************
@@ -400,7 +427,7 @@ export class SimControl {
             // Tools header
             const h = document.createElement("div");
             h.className = "sim-sidebar-title";
-            h.textContent = "Edit Tools";
+            h.textContent = t("sim.edittools");
             sidebar.appendChild(h);
 
             const toolsWrap = document.createElement("div");
@@ -408,14 +435,14 @@ export class SimControl {
             sidebar.appendChild(toolsWrap);
 
             const tools = [
-                ["select", "Select"],
-                ["link", "Link"],
-                ["place-pc", "PC"],
-                ["place-switch", "Switch"],
-                ["place-router", "Router"],
-                ["place-text", "TextBox"],
-                ["place-rect", "Rectangle"],
-                ["delete", "Delete"],
+                ["select", t("sim.tool.select")],
+                ["link", t("sim.tool.link")],
+                ["place-pc", t("sim.tool.pc")],
+                ["place-switch", t("sim.tool.switch")],
+                ["place-router", t("sim.tool.router")],
+                ["place-text", t("sim.tool.textbox")],
+                ["place-rect", t("sim.tool.rectangle")],
+                ["delete", t("sim.tool.delete")],
             ];
 
             for (const [id, label] of tools) {
@@ -516,6 +543,97 @@ export class SimControl {
         }
     }
 
+    /** @type {HTMLDivElement|null} */
+    _langPanel = null;
+
+    _openLanguageDialog(anchorEl) {
+        // toggle
+        if (this._langPanel) {
+            this._closeLanguageDialog();
+            return;
+        }
+
+        const panel = document.createElement("div");
+        panel.className = "sim-lang-picker";
+        panel.style.position = "fixed";
+
+        const locales = getLocales();
+        const current = getLocale();
+
+        for (const loc of locales) {
+            const b = document.createElement("button");
+            b.type = "button";
+            b.className = "sim-lang-option";
+            b.textContent = loc.label;
+
+            if (loc.key === current) b.classList.add("active");
+
+            b.addEventListener("click", (ev) => {
+                ev.preventDefault();
+                ev.stopPropagation();
+
+                if (loc.key === getLocale()) {
+                    this._closeLanguageDialog();
+                    return;
+                }
+
+                const oldLoc = getLocale();
+                setLocale(loc.key);
+                const ok = confirm(t("sim.langswitch.confirmdiscard"));
+                if (!ok) {
+                    setLocale(oldLoc);
+                    return;
+                }
+
+                setLocale(loc.key);
+                window.location.reload();
+            });
+
+            panel.appendChild(b);
+        }
+
+        document.body.appendChild(panel);
+        this._langPanel = panel;
+
+        // position near button
+        const ar = anchorEl.getBoundingClientRect();
+        const r = panel.getBoundingClientRect();
+        const pad = 8;
+
+        let left = ar.left;
+        let top = ar.bottom + 6;
+
+        // clamp
+        left = Math.max(pad, Math.min(left, window.innerWidth - r.width - pad));
+        top = Math.max(pad, Math.min(top, window.innerHeight - r.height - pad));
+
+        panel.style.left = `${left}px`;
+        panel.style.top = `${top}px`;
+
+        const onOutside = (ev) => {
+            if (!panel.contains(/** @type {Node} */(ev.target))) this._closeLanguageDialog();
+        };
+        const onKey = (ev) => {
+            if (ev.key === "Escape") this._closeLanguageDialog();
+        };
+
+        this._langCleanup = () => {
+            document.removeEventListener("pointerdown", onOutside, { capture: true });
+            window.removeEventListener("keydown", onKey);
+        };
+
+        document.addEventListener("pointerdown", onOutside, { capture: true });
+        window.addEventListener("keydown", onKey);
+    }
+
+    _closeLanguageDialog() {
+        if (this._langCleanup) this._langCleanup();
+        this._langCleanup = null;
+
+        if (this._langPanel) this._langPanel.remove();
+        this._langPanel = null;
+    }
+
     /***************************** SAVE AND LOAD **********************************/
 
     /**
@@ -560,7 +678,7 @@ export class SimControl {
         ]);
 
         if (!state || !Array.isArray(state.objects)) {
-            console.warn("Invalid scene file");
+            alert(t("sim.invalidfilewarning"));
             return;
         }
 
@@ -630,7 +748,7 @@ export class SimControl {
                 const scene = JSON.parse(text);
                 this.restore(scene);
             } catch (e) {
-                console.error("Load failed:", e);
+                alert(t("sim.loadfailederror"));
             }
         });
 

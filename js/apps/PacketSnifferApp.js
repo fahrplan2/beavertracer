@@ -29,10 +29,12 @@ function ifaceLoggedFrames(iface) {
 }
 
 export class PacketSnifferApp extends GenericProcess {
-  title = t("app.packetsniffer.title");
-  
+  get title() {
+    return t("app.packetsniffer.title");
+  }
+
   /** @type {Disposer} */
-  bag = new Disposer();
+  disposer = new Disposer();
 
   /** @type {HTMLElement|null} */
   listEl = null;
@@ -46,7 +48,7 @@ export class PacketSnifferApp extends GenericProcess {
    */
   onMount(root) {
     super.onMount(root);
-    this.bag.dispose();
+    this.disposer.dispose();
 
     this.listEl = UI.el("div");
 
@@ -60,7 +62,7 @@ export class PacketSnifferApp extends GenericProcess {
   }
 
   onUnmount() {
-    this.bag.dispose();
+    this.disposer.dispose();
     this.listEl = null;
     super.onUnmount();
   }
@@ -88,11 +90,10 @@ export class PacketSnifferApp extends GenericProcess {
       const filename =
         `iface-${i}-${name.replaceAll(/[^a-zA-Z0-9_\-\.]/g, "_")}-port-${port ?? "unknown"}.pcap`;
 
+      const portSuffix = (port != null) ? `:${port}` : "";
 
-      const text = t("app.packetsniffer.show")
-
-      const btn = UI.button(
-        text + ` – ${name}${port != null ? ` :${port}` : ""}`,
+      const btnShow = UI.button(
+        t("app.packetsniffer.button.show", { name, port: portSuffix }),
         () => {
           const pcap = new Pcap(frames, filename);
           SimControl.pcapViewer.loadBytes(pcap.generateBytes());
@@ -101,7 +102,18 @@ export class PacketSnifferApp extends GenericProcess {
         { primary: true }
       );
 
-      buttons.push(btn);
+      buttons.push(btnShow);
+
+      const btnDownload = UI.button(
+        t("app.packetsniffer.button.download", { name, port: portSuffix }),
+        () => {
+          const pcap = new Pcap(frames, filename);
+          pcap.downloadFile();
+        },
+        { primary: true }
+      );
+
+      buttons.push(btnDownload);
     }
 
     this.listEl.replaceChildren(...buttons);

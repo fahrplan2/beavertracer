@@ -105,7 +105,7 @@ export class SimulatedObject {
             this.root.appendChild(this.iconEl);
             this.wireIconInteractions();
         }
-        
+
         this._applyPositions();
         this._applyPanelVisibility();
 
@@ -303,6 +303,16 @@ export class SimulatedObject {
             }
         }
     }
+
+    /**
+     * destroys UI objects. Only when changing languages or doing something extreme
+     */
+    invalidateUI() {
+        this.root.replaceChildren();
+        this.panelEl = null;
+        this.iconEl = null;
+    }
+
 
 
     /**

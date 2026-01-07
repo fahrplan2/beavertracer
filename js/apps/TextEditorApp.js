@@ -7,10 +7,12 @@ import { t } from "../i18n/index.js";
 
 export class TextEditorApp extends GenericProcess {
 
-  title = t("apps.editor.title");
+  get title() {
+    return t("app.texteditor.title");
+  }
 
   /** @type {Disposer} */
-  bag = new Disposer();
+  disposer = new Disposer();
 
   /** @type {Disposer} */
   pickerBag = new Disposer();
@@ -59,7 +61,6 @@ export class TextEditorApp extends GenericProcess {
   }
 
   run() {
-    this.title = t("app.texteditor.windowTitle");
     this.root.classList.add("app", "app-editor");
   }
 
@@ -68,7 +69,7 @@ export class TextEditorApp extends GenericProcess {
    */
   onMount(root) {
     super.onMount(root);
-    this.bag.dispose();
+    this.disposer.dispose();
 
     const fs = this.os.fs;
     if (!fs) {
@@ -114,13 +115,13 @@ export class TextEditorApp extends GenericProcess {
     this._renderStatus();
 
     // Mark modified on input
-    this.bag.on(ta, "input", () => {
+    this.disposer.on(ta, "input", () => {
       this.modified = (ta.value !== this.original);
       this._renderStatus();
     });
 
     // Keyboard shortcuts: Ctrl+S save
-    this.bag.on(ta, "keydown", (ev) => {
+    this.disposer.on(ta, "keydown", (ev) => {
       const e = /** @type {KeyboardEvent} */ (ev);
 
       // Ctrl+S
@@ -160,7 +161,7 @@ export class TextEditorApp extends GenericProcess {
   }
 
   onUnmount() {
-    this.bag.dispose();
+    this.disposer.dispose();
     this.pickerBag.dispose();
     this.ta = null;
     this.statusEl = null;

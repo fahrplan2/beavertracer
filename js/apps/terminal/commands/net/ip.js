@@ -1,5 +1,6 @@
 //@ts-check
 
+import { t } from "../../../../i18n/index.js";
 import { ipNumberToString, ipStringToNumber } from "../lib/ip.js";
 
 /** @param {number} n */
@@ -55,14 +56,14 @@ export const ip = {
   name: "ip",
   run: (ctx, args) => {
     const ipf = ctx.os.net;
-    if (!ipf) return "ip: no net driver";
+    if (!ipf) return t("app.terminal.commands.ip.err.noNetDriver");
 
     const ifaces = ipf.interfaces ?? [];
     const sub = args[0] ?? "a";
 
     // Show (default)
     if (sub === "a" || sub === "addr" || sub === "address" || sub === "show" || sub === "-a") {
-      if (ifaces.length === 0) return "ip: no interfaces";
+      if (ifaces.length === 0) return t("app.terminal.commands.ip.err.noInterfaces");
 
       for (let i = 0; i < ifaces.length; i++) {
         const itf = ifaces[i];
@@ -71,10 +72,17 @@ export const ip = {
         const ipNum = (typeof itf?.ip === "number") ? u32(itf.ip) : 0;
         const maskNum = (typeof itf?.netmask === "number") ? u32(itf.netmask) : 0;
 
-        const up = (typeof itf?.up === "boolean") ? (itf.up ? "UP" : "DOWN") : "UNKNOWN";
+        const up = (typeof itf?.up === "boolean")
+          ? (itf.up ? t("app.terminal.commands.ip.state.up") : t("app.terminal.commands.ip.state.down"))
+          : t("app.terminal.commands.ip.state.unknown");
 
-        ctx.println(`${i}: ${name}  ${up}`);
-        ctx.println(`    inet ${ipNumberToString(ipNum)}  netmask ${ipNumberToString(maskNum)}`);
+        ctx.println(t("app.terminal.commands.ip.out.ifaceLine", { idx: i, name, state: up }));
+        ctx.println(t("app.terminal.commands.ip.out.inetLine", {
+          ip: ipNumberToString(ipNum),
+          netmask: ipNumberToString(maskNum),
+          inetLabel: t("app.terminal.commands.ip.out.inetLabel"),
+          netmaskLabel: t("app.terminal.commands.ip.out.netmaskLabel"),
+        }));
       }
       return;
     }
@@ -84,13 +92,13 @@ export const ip = {
     if (sub === "set") {
       const sel = args[1];
       const cidr = args[2];
-      if (!sel || !cidr) return "usage: ip set <ifaceIndex|ifaceName> <ip>/<prefix>";
+      if (!sel || !cidr) return t("app.terminal.commands.ip.usage.set");
 
       const hit = findIface(ifaces, sel);
-      if (!hit) return `ip: unknown interface: ${sel}`;
+      if (!hit) return t("app.terminal.commands.ip.err.unknownInterface", { iface: sel });
 
       const parsed = parseCidr(cidr);
-      if (!parsed) return "ip: invalid cidr (expected A.B.C.D/len)";
+      if (!parsed) return t("app.terminal.commands.ip.err.invalidCidr");
 
       const netmask = prefixToNetmask32(parsed.prefix);
 
@@ -102,13 +110,15 @@ export const ip = {
       });
 
       const itf = ipf.interfaces[hit.idx];
-      ctx.println(
-        `ok: ${ifaceLabel(itf, hit.idx)} = ${ipNumberToString(u32(itf.ip))}/${parsed.prefix}`
-      );
+      ctx.println(t("app.terminal.commands.ip.out.okSet", {
+        iface: ifaceLabel(itf, hit.idx),
+        ip: ipNumberToString(u32(itf.ip)),
+        prefix: parsed.prefix,
+      }));
       return;
     }
 
     // Optional: ip route show (delegates to route command later)
-    return "usage: ip [a|addr|show] | ip set <iface> <ip>/<prefix>";
+    return t("app.terminal.commands.ip.usage.main");
   },
 };

@@ -38,9 +38,12 @@ function hexPreview(data) {
 
 export class UDPEchoServerApp extends GenericProcess {
 
-  title = t("app.udpechoserver.title");
+  get title() {
+    return t("app.udpechoserver.title");
+  }
+
   /** @type {Disposer} */
-  bag = new Disposer();
+  disposer = new Disposer();
 
   /** @type {number} */
   port = 7;
@@ -76,17 +79,17 @@ export class UDPEchoServerApp extends GenericProcess {
    */
   onMount(root) {
     super.onMount(root);
-    this.bag.dispose();
+    this.disposer.dispose();
 
-    const portInput = UI.input({ placeholder: "Port (1..65535)", value: String(this.port) });
+    const portInput = UI.input({ placeholder: t("app.udpechoserver.placeholder.port"), value: String(this.port) });
     this.portEl = portInput;
 
     /** @type {HTMLButtonElement} */
-    const start = UI.button("Start", () => this._startFromUI(), { primary: true });
+    const start = UI.button(t("app.udpechoserver.button.start"), () => this._startFromUI(), { primary: true });
     /** @type {HTMLButtonElement} */
-    const stop = UI.button("Stop", () => this._stop(), {});
+    const stop = UI.button(t("app.udpechoserver.button.stop"), () => this._stop(), {});
     /** @type {HTMLButtonElement} */
-    const clear = UI.button("Clear Log", () => { this.log = []; this._renderLog(); }, {});
+    const clear = UI.button(t("app.udpechoserver.button.clearLog"), () => { this.log = []; this._renderLog(); }, {});
 
     this.startBtn = start;
     this.stopBtn = stop;
@@ -97,10 +100,10 @@ export class UDPEchoServerApp extends GenericProcess {
     const status = UI.el("div", { className: "msg" });
 
     const panel = UI.panel([
-      UI.row("Listen Port", portInput),
+      UI.row(t("app.udpechoserver.label.listenPort"), portInput),
       UI.buttonRow([start, stop, clear]),
       status,
-      UI.el("div", { text: "Log:" }),
+      UI.el("div", { text: t("app.udpechoserver.label.log") }),
       logBox,
     ]);
 
@@ -111,17 +114,17 @@ export class UDPEchoServerApp extends GenericProcess {
     this._renderLog();
 
     // Update status line while mounted (small heartbeat)
-    this.bag.interval(() => {
+    this.disposer.interval(() => {
       status.textContent =
-        `PID: ${this.pid}\n` +
-        `Running: ${this.running}\n` +
-        `Port: ${this.socketPort ?? "-"}\n` +
-        `Log entries: ${this.log.length}`;
+        t("app.udpechoserver.status.pid", { pid: this.pid }) + "\n" +
+        t("app.udpechoserver.status.running", { running: this.running }) + "\n" +
+        t("app.udpechoserver.status.port", { port: (this.socketPort ?? "-") }) + "\n" +
+        t("app.udpechoserver.status.logEntries", { n: this.log.length });
     }, 300);
   }
 
   onUnmount() {
-    this.bag.dispose();
+    this.disposer.dispose();
     this.logEl = null;
     this.portEl = null;
     this.startBtn = null;
@@ -166,7 +169,7 @@ export class UDPEchoServerApp extends GenericProcess {
     const s = (this.portEl?.value ?? "").trim();
     const p = Number(s);
     if (!Number.isInteger(p) || p < 1 || p > 65535) {
-      this._appendLog(`[${nowStamp()}] ERROR invalid port: "${s}"`);
+      this._appendLog(t("app.udpechoserver.log.invalidPort", { time: nowStamp(), portStr: s }));
       return;
     }
     this.port = p;
@@ -181,7 +184,7 @@ export class UDPEchoServerApp extends GenericProcess {
       const port = this.os.net.openUDPSocket(0, this.port);
       this.socketPort = port;
       this.running = true;
-      this._appendLog(`[${nowStamp()}] Listening on 0.0.0.0:${port}`);
+      this._appendLog(t("app.udpechoserver.log.listening", { time: nowStamp(), port }));
       this._syncButtons();
 
       // background receive loop
@@ -190,7 +193,8 @@ export class UDPEchoServerApp extends GenericProcess {
       this.socketPort = null;
       this.running = false;
       this._syncButtons();
-      this._appendLog(`[${nowStamp()}] ERROR start failed: ${e instanceof Error ? e.message : String(e)}`);
+      const reason = (e instanceof Error ? e.message : String(e));
+      this._appendLog(t("app.udpechoserver.log.startFailed", { time: nowStamp(), reason }));
     }
   }
 
@@ -204,9 +208,10 @@ export class UDPEchoServerApp extends GenericProcess {
     if (port != null) {
       try {
         this.os.net.closeUDPSocket(port);
-        this._appendLog(`[${nowStamp()}] Stopped (port ${port} closed)`);
+        this._appendLog(t("app.udpechoserver.log.stopped", { time: nowStamp(), port }));
       } catch (e) {
-        this._appendLog(`[${nowStamp()}] ERROR stop: ${e instanceof Error ? e.message : String(e)}`);
+        const reason = (e instanceof Error ? e.message : String(e));
+        this._appendLog(t("app.udpechoserver.log.stopError", { time: nowStamp(), reason }));
       }
     }
 
@@ -223,7 +228,8 @@ export class UDPEchoServerApp extends GenericProcess {
       try {
         pkt = await this.os.net.recvUDPSocket(port);
       } catch (e) {
-        this._appendLog(`[${nowStamp()}] ERROR recv: ${e instanceof Error ? e.message : String(e)}`);
+        const reason = (e instanceof Error ? e.message : String(e));
+        this._appendLog(t("app.udpechoserver.log.recvError", { time: nowStamp(), reason }));
         continue;
       }
 
@@ -242,16 +248,26 @@ export class UDPEchoServerApp extends GenericProcess {
           ? pkt.payload
           : (pkt.data instanceof Uint8Array ? pkt.data : new Uint8Array());
 
-      this._appendLog(
-        `[${nowStamp()}] RX from ${ipToString(srcIp)}:${srcPort} len=${data.length} hex=${hexPreview(data)}`
-      );
+      this._appendLog(t("app.udpechoserver.log.rx", {
+        time: nowStamp(),
+        ip: ipToString(srcIp),
+        srcPort,
+        len: data.length,
+        hex: hexPreview(data),
+      }));
 
       // echo back
       try {
         this.os.net.sendUDPSocket(port, srcIp, srcPort, data);
-        this._appendLog(`[${nowStamp()}] TX echo to ${ipToString(srcIp)}:${srcPort} len=${data.length}`);
+        this._appendLog(t("app.udpechoserver.log.txEcho", {
+          time: nowStamp(),
+          ip: ipToString(srcIp),
+          srcPort,
+          len: data.length,
+        }));
       } catch (e) {
-        this._appendLog(`[${nowStamp()}] ERROR send: ${e instanceof Error ? e.message : String(e)}`);
+        const reason = (e instanceof Error ? e.message : String(e));
+        this._appendLog(t("app.udpechoserver.log.sendError", { time: nowStamp(), reason }));
       }
     }
 

@@ -100,15 +100,15 @@ export class Switch extends SimulatedObject {
         this._host = host;
 
         // ---- Allgemein ----
-        host.appendChild(DOMBuilder.h4("Allgemeine Einstellungen"));
+        host.appendChild(DOMBuilder.h4(t("switch.genericsettings")));
 
         const nameRow = DOMBuilder.div("switch-name-row");
 
-        const nameLabel = DOMBuilder.label("Switch-Name:");
+        const nameLabel = DOMBuilder.label(t("switch.name")+": ");
         const nameInput = DOMBuilder.input({ value: this.name });
         this._nameInput = nameInput;
 
-        const nameBtn = DOMBuilder.button("Übernehmen");
+        const nameBtn = DOMBuilder.button(t("switch.apply"));
         nameBtn.addEventListener("click", () => {
             const newName = nameInput.value.trim();
             if (!newName || newName === this.name) return;
@@ -123,7 +123,7 @@ export class Switch extends SimulatedObject {
         host.appendChild(nameRow);
 
         // ---- SAT / "ARP"-Tabelle ----
-        host.appendChild(DOMBuilder.h4("SAT (MAC-Lerntabelle)"));
+        host.appendChild(DOMBuilder.h4(t("switch.sat")));
 
         const satCard = DOMBuilder.div("switch-card");
         const satHost = DOMBuilder.div("switch-sat");
@@ -164,12 +164,11 @@ export class Switch extends SimulatedObject {
         table.className = "switch-sat-table";
 
         const thead = document.createElement("thead");
-        thead.innerHTML = `
-            <tr>
-                <th>MAC</th>
-                <th>Port</th>
-            </tr>
-        `;
+        thead.innerHTML = "<tr>"+
+            "<th>"+t("switch.sat.mac")+"</th>"+
+            "<th>"+t("switch.sat.port")+"</th>"+
+            "</tr>";
+    
         table.appendChild(thead);
 
         const tbody = document.createElement("tbody");
@@ -189,7 +188,7 @@ export class Switch extends SimulatedObject {
             const tr = document.createElement("tr");
             const td = document.createElement("td");
             td.colSpan = 2;
-            td.textContent = "Noch keine Einträge (Switch lernt beim Empfang von Frames).";
+            td.textContent = t("switch.sat.empty");
             td.style.opacity = "0.8";
             tr.appendChild(td);
             tbody.appendChild(tr);

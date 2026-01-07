@@ -144,7 +144,7 @@
   display: flex;
   flex: 0 0 auto;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
   padding: 8px;
 
   background-color: var(--surface); /* requested */
@@ -188,18 +188,39 @@
   flex-direction: row;      /* überschreibt column */
   align-items: center;      /* vertikal */
   justify-content: center;  /* horizontal */
+  max-width: 72px;
 }
 
 .sim-toolbar-branding {
+  position: relative;
   font-size: 18px;
   font-weight: 700;
   letter-spacing: 0.2px;
   padding: 0 12px;
   color: var(--text);
-
-  white-space: nowrap;
   user-select: none;
+  text-align: center;
+  z-index: 0;
 }
+
+.sim-toolbar-branding::after {
+  content: "🦫";
+
+  position: absolute;
+  inset: 0;                       
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 60px;                
+  opacity: 0.30;                  
+
+  pointer-events: none;           
+  z-index: -1;                     
+ }
+
+
+
 
 /* =========================================================
    EDIT SIDEBAR
@@ -529,3 +550,30 @@
 
 
 
+sim-toolbar-langbtn {
+  margin-left: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+
+.sim-lang-picker {
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 10px;
+  background: var(--bg);
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+}
+
+.sim-lang-option {
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.sim-lang-option.active {
+  outline: 2px solid rgba(255,255,255,0.25);
+}

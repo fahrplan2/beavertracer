@@ -1,19 +1,13 @@
 //@ts-check
 
-import { IPOctetsToNumber } from "./helpers.js";
-import { SimControl } from "./SimControl.js";
-import { PC } from "./simobjects/PC.js"
-import { Switch } from "./simobjects/Switch.js";
-import { Link } from "./simobjects/Link.js";
-
 import { initLocale, t, setLocale } from './i18n/index.js';
-import { PCapViewer } from "./pcap/PCapViewer.js";
 import { TabController } from "./TabControler.js";
-import { Router } from "./simobjects/Router.js";
+import { SimControl } from "./SimControl.js";
+import { PCapViewer } from "./pcap/PCapViewer.js";
+
 
 
 initLocale();
-setLocale("de");
 var sim = new SimControl(document.getElementById("simcontrol"));
 var viewer = new PCapViewer(document.getElementById("pcapviewer"), { autoSelectFirst: true });
 

@@ -110,10 +110,13 @@ function decodeUTF8(b) {
 
 export class SimpleTCPClientApp extends GenericProcess {
 
-  title = t("app.simpletcpclient.title");
+
+  get title() {
+    return t("app.simpletcpclient.title");
+  }
 
   /** @type {Disposer} */
-  bag = new Disposer();
+  disposer = new Disposer();
 
   /** @type {string} */
   host = "127.0.0.1";
@@ -160,32 +163,32 @@ export class SimpleTCPClientApp extends GenericProcess {
    */
   onMount(root) {
     super.onMount(root);
-    this.bag.dispose();
+    this.disposer.dispose();
 
-    const hostInput = UI.input({ placeholder: "Host / Address", value: String(this.host) });
-    const portInput = UI.input({ placeholder: "Port (1..65535)", value: String(this.port) });
+    const hostInput = UI.input({ placeholder: t("app.simpletcpclient.placeholder.host"), value: String(this.host) });
+    const portInput = UI.input({ placeholder: t("app.simpletcpclient.placeholder.port"), value: String(this.port) });
     this.hostEl = hostInput;
     this.portEl = portInput;
 
     /** @type {HTMLButtonElement} */
-    const connect = UI.button("Connect", () => this._connectFromUI(), { primary: true });
+    const connect = UI.button(t("app.simpletcpclient.button.connect"), () => this._connectFromUI(), { primary: true });
     /** @type {HTMLButtonElement} */
-    const disconnect = UI.button("Disconnect", () => this._disconnect(), {});
+    const disconnect = UI.button(t("app.simpletcpclient.button.disconnect"), () => this._disconnect(), {});
     this.connectBtn = connect;
     this.disconnectBtn = disconnect;
 
     const chatLog = UI.el("div", { className: "msg" });
     this.logEl = chatLog;
 
-    const msgInput = UI.input({ placeholder: "Type a message…", value: "" });
+    const msgInput = UI.input({ placeholder: t("app.simpletcpclient.placeholder.message"), value: "" });
     this.msgEl = /** @type {HTMLInputElement} */ (msgInput);
 
     /** @type {HTMLButtonElement} */
-    const send = UI.button("Send", () => this._sendFromUI(), { primary: true });
+    const send = UI.button(t("app.simpletcpclient.button.send"), () => this._sendFromUI(), { primary: true });
     this.sendBtn = send;
 
     // allow Enter to send
-    this.bag.on(msgInput, "keydown", (ev) => {
+    this.disposer.on(msgInput, "keydown", (ev) => {
       if (ev instanceof KeyboardEvent && ev.key === "Enter") {
         ev.preventDefault();
         this._sendFromUI();
@@ -195,14 +198,17 @@ export class SimpleTCPClientApp extends GenericProcess {
     const status = UI.el("div", { className: "msg" });
 
     const panel = UI.panel([
-      UI.row("Host", hostInput),
-      UI.row("Port", portInput),
+      UI.row(t("app.simpletcpclient.label.host"), hostInput),
+      UI.row(t("app.simpletcpclient.label.port"), portInput),
       UI.buttonRow([connect, disconnect]),
       status,
-      UI.el("div", { text: "Chat:" }),
+      UI.el("div", { text: t("app.simpletcpclient.label.chat") }),
       chatLog,
-      UI.row("Message", msgInput),
-      UI.buttonRow([send, UI.button("Clear Chat", () => { this.log = []; this._renderLog(); }, {})]),
+      UI.row(t("app.simpletcpclient.label.message"), msgInput),
+      UI.buttonRow([
+        send,
+        UI.button(t("app.simpletcpclient.button.clearChat"), () => { this.log = []; this._renderLog(); }, {})
+      ]),
     ]);
 
     this.root.replaceChildren(panel);
@@ -210,7 +216,7 @@ export class SimpleTCPClientApp extends GenericProcess {
     this._syncUI();
     this._renderLog();
 
-    this.bag.interval(() => {
+    this.disposer.interval(() => {
       const peer =
         this.connKey ? (() => {
           const info = parseTCPKey(this.connKey);
@@ -218,15 +224,15 @@ export class SimpleTCPClientApp extends GenericProcess {
         })() : "-";
 
       status.textContent =
-        `PID: ${this.pid}\n` +
-        `Connected: ${this.connected}\n` +
-        `Peer: ${peer}\n` +
-        `Chat entries: ${this.log.length}`;
+        t("app.simpletcpclient.status.pid", { pid: this.pid }) + "\n" +
+        t("app.simpletcpclient.status.connected", { connected: this.connected }) + "\n" +
+        t("app.simpletcpclient.status.peer", { peer }) + "\n" +
+        t("app.simpletcpclient.status.chatEntries", { n: this.log.length });
     }, 300);
   }
 
   onUnmount() {
-    this.bag.dispose();
+    this.disposer.dispose();
     this.logEl = null;
     this.hostEl = null;
     this.portEl = null;
@@ -277,11 +283,11 @@ export class SimpleTCPClientApp extends GenericProcess {
     const port = Number(portStr);
 
     if (!host) {
-      this._append(`[${nowStamp()}] ERROR host is empty`);
+      this._append(t("app.simpletcpclient.log.hostEmpty", { time: nowStamp() }));
       return;
     }
     if (!Number.isInteger(port) || port < 1 || port > 65535) {
-      this._append(`[${nowStamp()}] ERROR invalid port: "${portStr}"`);
+      this._append(t("app.simpletcpclient.log.invalidPort", { time: nowStamp(), portStr }));
       return;
     }
 
@@ -302,14 +308,15 @@ export class SimpleTCPClientApp extends GenericProcess {
       if (anyThis.dns && typeof anyThis.dns.resolve === "function") {
         return await anyThis.dns.resolve(name);
       }
-      throw new Error(`DNS not available (cannot resolve "${name}")`);
+      throw new Error(t("app.simpletcpclient.err.dnsNotAvailable", { name }));
     };
 
     let dstIP = 0;
     try {
       dstIP = await resolveHostToIP(this.host, dnsResolve);
     } catch (e) {
-      this._append(`[${nowStamp()}] ERROR resolve host "${this.host}": ${e instanceof Error ? e.message : String(e)}`);
+      const reason = (e instanceof Error ? e.message : String(e));
+      this._append(t("app.simpletcpclient.log.resolveError", { time: nowStamp(), host: this.host, reason }));
       return;
     }
 
@@ -318,7 +325,7 @@ export class SimpleTCPClientApp extends GenericProcess {
 
       // connectTCPConn returns a TCPSocket; but we only need its key
       const key = conn?.key;
-      if (typeof key !== "string" || !key) throw new Error("connectTCPConn did not return a connection key");
+      if (typeof key !== "string" || !key) throw new Error(t("app.simpletcpclient.err.noConnKey"));
 
       this.connKey = key;
       this.connected = true;
@@ -326,7 +333,7 @@ export class SimpleTCPClientApp extends GenericProcess {
 
       const info = parseTCPKey(key);
       const who = info.ok ? `${ipToString(info.remoteIP)}:${info.remotePort}` : key;
-      this._append(`[${nowStamp()}] CONNECTED to ${who}`);
+      this._append(t("app.simpletcpclient.log.connected", { time: nowStamp(), who }));
 
       // start background receive loop
       this._recvLoop(key);
@@ -334,7 +341,8 @@ export class SimpleTCPClientApp extends GenericProcess {
       this.connKey = null;
       this.connected = false;
       this._syncUI();
-      this._append(`[${nowStamp()}] ERROR connect failed: ${e instanceof Error ? e.message : String(e)}`);
+      const reason = (e instanceof Error ? e.message : String(e));
+      this._append(t("app.simpletcpclient.log.connectFailed", { time: nowStamp(), reason }));
     }
   }
 
@@ -349,9 +357,10 @@ export class SimpleTCPClientApp extends GenericProcess {
     if (key) {
       try {
         this.os.net.closeTCPConn(key);
-        this._append(`[${nowStamp()}] DISCONNECT requested`);
+        this._append(t("app.simpletcpclient.log.disconnectRequested", { time: nowStamp() }));
       } catch (e) {
-        this._append(`[${nowStamp()}] ERROR disconnect: ${e instanceof Error ? e.message : String(e)}`);
+        const reason = (e instanceof Error ? e.message : String(e));
+        this._append(t("app.simpletcpclient.log.disconnectError", { time: nowStamp(), reason }));
       }
     }
   }
@@ -370,10 +379,17 @@ export class SimpleTCPClientApp extends GenericProcess {
 
     try {
       this.os.net.sendTCPConn(this.connKey, data);
-      this._append(`[${nowStamp()}] ME -> ${who}: "${msg}" (len=${data.length} hex=${hexPreview(data)})`);
+      this._append(t("app.simpletcpclient.log.sent", {
+        time: nowStamp(),
+        who,
+        msg,
+        len: data.length,
+        hex: hexPreview(data),
+      }));
       if (this.msgEl) this.msgEl.value = "";
     } catch (e) {
-      this._append(`[${nowStamp()}] ERROR send: ${e instanceof Error ? e.message : String(e)}`);
+      const reason = (e instanceof Error ? e.message : String(e));
+      this._append(t("app.simpletcpclient.log.sendError", { time: nowStamp(), reason }));
     }
   }
 
@@ -390,18 +406,25 @@ export class SimpleTCPClientApp extends GenericProcess {
       try {
         data = await this.os.net.recvTCPConn(key);
       } catch (e) {
-        this._append(`[${nowStamp()}] ERROR recv: ${e instanceof Error ? e.message : String(e)}`);
+        const reason = (e instanceof Error ? e.message : String(e));
+        this._append(t("app.simpletcpclient.log.recvError", { time: nowStamp(), reason }));
         break;
       }
 
       if (!this.connected || this.connKey !== key) break;
       if (data == null) {
-        this._append(`[${nowStamp()}] REMOTE CLOSED ${who}`);
+        this._append(t("app.simpletcpclient.log.remoteClosed", { time: nowStamp(), who }));
         break;
       }
 
       const text = decodeUTF8(data);
-      this._append(`[${nowStamp()}] ${who} -> ME: "${text}" (len=${data.length} hex=${hexPreview(data)})`);
+      this._append(t("app.simpletcpclient.log.received", {
+        time: nowStamp(),
+        who,
+        text,
+        len: data.length,
+        hex: hexPreview(data),
+      }));
     }
 
     // if loop exits while still marked connected, force local disconnect state
@@ -409,7 +432,7 @@ export class SimpleTCPClientApp extends GenericProcess {
       this.connected = false;
       this.connKey = null;
       this._syncUI();
-      this._append(`[${nowStamp()}] DISCONNECTED`);
+      this._append(t("app.simpletcpclient.log.disconnected", { time: nowStamp() }));
     }
   }
 }

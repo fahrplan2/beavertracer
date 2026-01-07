@@ -15,9 +15,12 @@ import { t } from "../i18n/index.js";
 
 export class TerminalApp extends GenericProcess {
 
-    title = t("app.terminal.title");
+    get title() {
+        return t("app.terminal.title");
+    }
+
     /** @type {Disposer} */
-    bag = new Disposer();
+    disposer = new Disposer();
 
     /** @type {HTMLPreElement|null} */
     outEl = null;
@@ -112,9 +115,9 @@ export class TerminalApp extends GenericProcess {
 
         this._resetScreen();
 
-        this.println(`Welcome to ${this.env.HOST}`);
+        this.println(t("app.terminal.welcome", { host: this.env.HOST }));
         this.println("");
-        this.println(`Use the command "help" to get a list of known commands.`);
+        this.println(t("app.terminal.hintHelp", { cmd: "help" }));
         this.println("");
     }
 
@@ -123,7 +126,7 @@ export class TerminalApp extends GenericProcess {
      */
     onMount(root) {
         super.onMount(root);
-        this.bag.dispose();
+        this.disposer.dispose();
 
         const term = /** @type {HTMLPreElement} */ (
             UI.el("pre", {
@@ -135,7 +138,7 @@ export class TerminalApp extends GenericProcess {
         this.outEl = term;
         this.root.replaceChildren(term);
 
-        this.bag.on(term, "keydown", (ev) => this._onKeyDown(/** @type {KeyboardEvent} */(ev)));
+        this.disposer.on(term, "keydown", (ev) => this._onKeyDown(/** @type {KeyboardEvent} */(ev)));
         this._startCursorBlink();
 
         this._renderScreen();
@@ -144,7 +147,7 @@ export class TerminalApp extends GenericProcess {
 
     onUnmount() {
         this._stopCursorBlink();
-        this.bag.dispose();
+        this.disposer.dispose();
         this.outEl = null;
         super.onUnmount();
     }
@@ -342,8 +345,8 @@ export class TerminalApp extends GenericProcess {
     }
 
     /**
-     * 
-     * @param {number} delta 
+     *
+     * @param {number} delta
      */
     _moveCursor(delta) {
         this.cursor = Math.max(0, Math.min(this.lineBuffer.length, this.cursor + delta));
@@ -510,7 +513,7 @@ export class TerminalApp extends GenericProcess {
             env: this.env,
             cwd: this.cwd,
             setCwd: (cwd) => { this.cwd = cwd; },
-            println: (t) => this.println(t ?? ""),
+            println: (t2) => this.println(t2 ?? ""),
             clear: () => this._clear(),
             terminate: () => this.terminate(),
 
@@ -520,7 +523,7 @@ export class TerminalApp extends GenericProcess {
 
         const entry = this.commands.get(cmd);
         if (!entry) {
-            ctx.println(`command not found: ${cmd}`);
+            ctx.println(t("app.terminal.err.commandNotFound", { cmd }));
             return;
         }
 
@@ -531,7 +534,7 @@ export class TerminalApp extends GenericProcess {
             // Ignore abort “errors”
             if (ctx.signal.aborted) return;
 
-            ctx.println(`error: ${e instanceof Error ? e.message : String(e)}`);
+            ctx.println(t("app.terminal.err.errorPrefix", { msg: (e instanceof Error ? e.message : String(e)) }));
         }
 
     }
@@ -588,7 +591,7 @@ export class TerminalApp extends GenericProcess {
 
     _interrupt() {
         // Print ^C like a real terminal
-        this.println("^C");
+        this.println(t("app.terminal.interrupt"));
 
         // Clear current input buffer
         this.lineBuffer = "";

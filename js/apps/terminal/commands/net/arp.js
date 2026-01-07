@@ -1,5 +1,6 @@
 //@ts-check
 
+import { t } from "../../../../i18n/index.js";
 import { ipNumberToString } from "../lib/ip.js";
 
 /** @param {number} n */
@@ -46,10 +47,10 @@ export const arp = {
   name: "arp",
   run: (ctx, args) => {
     const net = ctx.os.net;
-    if (!net) return "arp: no net driver";
+    if (!net) return t("app.terminal.commands.arp.err.noNetDriver");
 
     const ifaces = net.interfaces;
-    if (ifaces.length === 0) return "arp: no interfaces";
+    if (ifaces.length === 0) return t("app.terminal.commands.arp.err.noInterfaces");
 
     const sub = args[0] ?? "show";
 
@@ -63,7 +64,7 @@ export const arp = {
     const targets = [];
     if (sel) {
       const hit = findIface(ifaces, sel);
-      if (!hit) return `arp: unknown interface: ${sel}`;
+      if (!hit) return t("app.terminal.commands.arp.err.unknownInterface", { iface: sel });
       targets.push(hit);
     } else {
       for (let i = 0; i < ifaces.length; i++) targets.push({ idx: i, itf: ifaces[i] });
@@ -77,15 +78,15 @@ export const arp = {
       const table = itf?.arpTable ?? null;
 
       if (!(table instanceof Map)) {
-        ctx.println(`${name}: (no arp table)`);
+        ctx.println(t("app.terminal.commands.arp.msg.noArpTable", { iface: name }));
         continue;
       }
 
       const entries = [...table.entries()].sort((a, b) => (u32(a[0]) - u32(b[0])));
 
-      ctx.println(`${name}:`);
+      ctx.println(t("app.terminal.commands.arp.msg.header", { iface: name }));
       if (entries.length === 0) {
-        ctx.println("  (empty)");
+        ctx.println(t("app.terminal.commands.arp.msg.empty"));
         continue;
       }
 
