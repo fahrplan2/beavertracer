@@ -18,7 +18,7 @@ export class SwitchBackplane extends Observable {
     constructor(numberOfPorts) {
         super();
         for(let i=0;i<numberOfPorts;i++) {
-            this.addPort(new EthernetPort());
+            this.addPort(new EthernetPort(""+i));
         }
     }   
 

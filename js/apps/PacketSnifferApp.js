@@ -96,8 +96,10 @@ export class PacketSnifferApp extends GenericProcess {
         t("app.packetsniffer.button.show", { name, port: portSuffix }),
         () => {
           const pcap = new Pcap(frames, filename);
-          SimControl.pcapViewer.loadBytes(pcap.generateBytes());
-          SimControl.tabControler.gotoTab("pcapviewer");
+
+          //SimControl.pcapViewer.loadBytes(pcap.generateBytes());
+          //SimControl.tabControler.gotoTab("pcapviewer");
+          
         },
         { primary: true }
       );

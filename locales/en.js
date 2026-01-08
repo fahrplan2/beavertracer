@@ -43,7 +43,6 @@ export default {
   "app.simpletcpserver.title": "TCP Echo-Server",
 
 
-  "app.simplehttpserver.appTitle": "Simple HTTP Server",
   "app.simplehttpserver.placeholder.port": "Port (1..65535)",
   "app.simplehttpserver.placeholder.docRoot": "Document Root",
 
@@ -456,6 +455,8 @@ export default {
   "sim.speed": "Speed",
   "sim.pause": "Pause",
   "sim.edittools": "Edit tools",
+  "sim.about" : "About",
+  "sim.trace" : "Trace",
 
   "sim.invalidfilewarning": "Invalid file format or unsupported save file format.",
   "sim.loadfailederror": "Load operation failed.",
@@ -485,12 +486,6 @@ export default {
   "switch.sat.port": "Port",
 
   "switch.sat.empty": "The SAT is still empty.",
-
-
-  "tabs.buildRun": "Build and Run",
-  "tabs.analyze": "Analyze",
-  "tabs.learn": "Learn",
-  "tabs.about": "About",
 
   "textbox.text": "Text",
   "textbox.title": "Textbox",

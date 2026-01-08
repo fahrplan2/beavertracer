@@ -4,6 +4,7 @@ import { VirtualFileSystem } from "../apps/lib/VirtualFileSystem.js";
 import { OS } from "../apps/OS.js";
 import { IPStack } from "../devices/IPStack.js";
 import { t } from "../i18n/index.js";
+import { SimControl } from "../SimControl.js";
 import { SimulatedObject } from "./SimulatedObject.js";
 
 
@@ -17,6 +18,8 @@ import { SimulatedObject } from "./SimulatedObject.js";
 
 export class PC extends SimulatedObject {
 
+    kind="PC";
+
     /** @type {IPStack} */
     get net() {
         return this.os.net;
@@ -28,6 +31,10 @@ export class PC extends SimulatedObject {
 
     /** @type {OS} */
     os;
+
+    /** 
+     * @param {string} name
+     */
 
     constructor(name = t("pc.title")) {
         super(name);
@@ -80,5 +87,18 @@ export class PC extends SimulatedObject {
         const i = Number(m[1]);
         const nic = (this.net?.interfaces ?? [])[i];
         return nic?.port ?? null;
+    }
+
+    /**
+     * 
+     * @param {boolean} open 
+     */
+    setPanelOpen(open) {
+        super.setPanelOpen(open);
+
+        //Focus menu, when the panel was opend
+        if(open==true) {
+            this.os.unfocus();
+        }
     }
 }

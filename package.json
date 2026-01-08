@@ -15,14 +15,14 @@
     "url": "https://gitlab.lgsit.de/klec/networksim.git"
   },
   "author": "Christian Klein",
-  "license": "GPL",
+  "license": "GPLv2",
   "devDependencies": {
     "@babel/parser": "^7.28.5",
     "typescript": "^5.9.3",
     "vite": "^4.5.14"
   },
   "build": {
-    "appId": "de.chklein.networksim",
+    "appId": "eu.chklein.networksim",
     "productName": "Netzwerksimulator",
     "files": [
       "dist/**",

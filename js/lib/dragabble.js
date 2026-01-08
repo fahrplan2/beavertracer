@@ -28,6 +28,7 @@
  * @property {number=} dragThreshold
  * @property {boolean=} longPressToDrag
  * @property {number=} longPressDelay
+ * @property {(() => boolean)=} canDrag
  */
 
 /**
@@ -128,7 +129,6 @@ function clampTranslate(el, proposed, current, boundaryLike, clampToViewport) {
     const b = boundary.getBoundingClientRect();
 
     // If boundary has no size yet (e.g. freshly re-rendered), do NOT clamp.
-    // Clamping to a 0×0 box makes everything snap to the box edge (looks like 0,0).
     if (b.width < 2 || b.height < 2) return proposed;
 
     const cs = getComputedStyle(boundary);
@@ -168,9 +168,6 @@ function clampTranslate(el, proposed, current, boundaryLike, clampToViewport) {
 }
 
 /**
- * If element is CSS-resizable, and pointer is on the resize handle corner,
- * we should NOT start dragging (let browser handle resize).
- *
  * @param {HTMLElement} targetEl
  * @param {PointerEvent} e
  * @param {number} sizePx
@@ -179,13 +176,10 @@ function isOnResizeHandle(targetEl, e, sizePx = 16) {
   const cs = getComputedStyle(targetEl);
   if (!cs || cs.resize === "none") return false;
 
-  // Only bottom-right resize corner for resize:both or horizontal/vertical.
-  // (Browser handle is usually bottom-right anyway.)
   const r = targetEl.getBoundingClientRect();
   const x = e.clientX - r.left;
   const y = e.clientY - r.top;
 
-  // If element has 0 size, ignore
   if (r.width < 2 || r.height < 2) return false;
 
   return x >= r.width - sizePx && y >= r.height - sizePx;
@@ -227,6 +221,7 @@ export function makeDraggable(el, options = {}) {
     dragThreshold = 6,
     longPressToDrag = false,
     longPressDelay = 350,
+    canDrag = () => true,
   } = options;
 
   if (!(handle instanceof HTMLElement)) {
@@ -260,6 +255,8 @@ export function makeDraggable(el, options = {}) {
   let longPressTimer = null;
 
   let dragAllowed = false;
+
+  let dragEnabledForPointer = true;
 
   function clearLongPressTimer() {
     if (longPressTimer != null) {
@@ -299,14 +296,19 @@ export function makeDraggable(el, options = {}) {
     if (e.pointerType === "mouse" && e.button !== 0) return;
     if (isCanceledBySelector(e)) return;
 
+    // If canDrag says no, we still want click handling, but no drag.
+    try {
+      dragEnabledForPointer = (typeof canDrag === "function") ? !!canDrag() : true;
+    } catch {
+      dragEnabledForPointer = true;
+    }
+
     //18 is the number of pixels, it is hard coded here...
     if (isOnResizeHandle(el, e, 18)) {
-      // Let browser handle resize, but prevent SimControl from reacting (focus/render)
       suppressNextClick = true; // <-- important
       e.stopPropagation();
       return;
     }
- 
 
     activePointerId = e.pointerId;
     handle.setPointerCapture(activePointerId);
@@ -319,6 +321,13 @@ export function makeDraggable(el, options = {}) {
 
     startTranslate = getCurrentTranslate(el);
     currentTranslate = { ...startTranslate };
+
+    // if dragging disabled: behave like "click-only"
+    if (!dragEnabledForPointer) {
+      dragAllowed = false;
+      clearLongPressTimer();
+      return;
+    }
 
     dragAllowed = !longPressToDrag || e.pointerType === "mouse";
     clearLongPressTimer();
@@ -338,6 +347,9 @@ export function makeDraggable(el, options = {}) {
     if (!dragging) return;
     if (activePointerId == null) return;
     if (e.pointerId !== activePointerId) return;
+
+    // drag disabled for this pointer -> ignore movement (still can click on pointerup)
+    if (!dragEnabledForPointer) return;
 
     const dx = e.clientX - startPointerX;
     const dy = e.clientY - startPointerY;
@@ -392,6 +404,9 @@ export function makeDraggable(el, options = {}) {
       // ignore
     }
     activePointerId = null;
+
+    // reset per pointer gate
+    dragEnabledForPointer = true;
 
     if (didDrag) {
       if (typeof onMove === "function") {
