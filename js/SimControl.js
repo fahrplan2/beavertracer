@@ -10,6 +10,7 @@ import { TextBox } from "./simobjects/TextBox.js";
 import { RectOverlay } from "./simobjects/RectOverlay.js";
 import { t, getLocale, setLocale, getLocales, onLocaleChange } from "./i18n/index.js";
 import { StaticPageLoader } from "./StaticPageLoader.js";
+import { PCapController } from "./pcap/PCapControler.js";
 
 /**
  * @typedef {Object} PortDescriptor
@@ -29,6 +30,11 @@ export class SimControl {
      */
 
     tabControler;
+
+    /**
+     * @type {PCapController} 
+     */
+    pcapController;
 
     /**
      * @type {PCapViewer} reference to the pcapviewer
@@ -84,22 +90,25 @@ export class SimControl {
     tool = "select";
 
     /** @type {SimulatedObject|null} */
-    linkStart = null;
+    _linkStart = null;
 
     /** @type {HTMLDivElement|null} */
-    ghostLink = null;
+    _ghostLink = null;
 
     /** @type {HTMLDivElement|null} */
-    ghostNodeEl = null;
+    _ghostNodeEl = null;
 
     /** @type {"place-pc"|"place-switch"|"place-router"|"place-text"|"place-rect"|null} */
-    ghostNodeType = null;
+    _ghostNodeType = null;
 
     /** @type {boolean} */
-    ghostReady = false;
+    _ghostReady = false;
 
     /** @type {string|null} */
-    linkStartKey = null;
+    _linkStartKey = null;
+
+    /** @type {HTMLElement|null} */
+    _deleteHoverEl = null;
 
 
     /** @type {null|(()=>void)} */
@@ -115,6 +124,9 @@ export class SimControl {
     constructor(root) {
         this.simobjects = [];
         this.root = root;
+
+        this.pcapViewer = new PCapViewer(null);
+        this.pcapController = new PCapController(this.pcapViewer);
 
         this.render();
 
@@ -178,7 +190,7 @@ export class SimControl {
      */
     deleteObject(obj) {
         // cancel pending link if needed
-        if (this.linkStart === obj) this._cancelLinking();
+        if (this._linkStart === obj) this._cancelLinking();
 
         // remove attached links first
         const attachedLinks = this.simobjects.filter(o =>
@@ -292,7 +304,7 @@ export class SimControl {
         btnEdit.textContent = t("sim.edit");
         if (this.mode === "edit") btnEdit.classList.add("active");
         btnEdit.addEventListener("click", () => {
-            if(this.mode!=="edit") {
+            if (this.mode !== "edit") {
                 this.tabControler.gotoTab("sim");
             }
             this._enterEditMode();
@@ -340,7 +352,7 @@ export class SimControl {
             }
             this.tabControler.gotoTab("trace");
             this.mode = "trace";
-            
+
             this.render();
 
         });
@@ -348,7 +360,7 @@ export class SimControl {
 
 
         // --- Project group (New, Open, Save)
-        if (this.mode==="edit") {
+        if (this.mode === "edit") {
 
             addSeparator();
             const gProject = addGroup(t("sim.project"));
@@ -382,7 +394,7 @@ export class SimControl {
         }
 
         //Speed bar if not in Editmode
-        if (this.mode==="run") {
+        if (this.mode === "run") {
             addSeparator();
             const gSpeeds = addGroup(t("sim.speed"));
 
@@ -436,15 +448,15 @@ export class SimControl {
         const aboutBtn = document.createElement("button");
         aboutBtn.type = "button";
         aboutBtn.className = "sim-toolbar-aboutbtn";
-        if(this.mode==="about") { aboutBtn.classList.add("active"); }
+        if (this.mode === "about") { aboutBtn.classList.add("active"); }
         aboutBtn.textContent = t("sim.about");
         aboutBtn.addEventListener("click", (ev) => {
-            if(this.mode==="edit") {
+            if (this.mode === "edit") {
                 this._leaveEditMode;
             }
             this.pause();
             this.tabControler.gotoTab("about");
-            this.mode="about";
+            this.mode = "about";
             this.render();
         });
         gLang.appendChild(aboutBtn);
@@ -454,14 +466,13 @@ export class SimControl {
         //********* BODY (SIDEBAR + NODES) ***************
         const simbody = document.createElement("div");
         simbody.className = "sim-body";
-        if(this.mode==="run" || this.mode==="edit") {
+        if (this.mode === "run" || this.mode === "edit") {
             simbody.classList.add("active"); //for tabs
         }
         simbody.id = "sim";
-        root.appendChild(simbody);
 
         // Left sidebar (only in edit mode)
-        if (this.mode==="edit") {
+        if (this.mode === "edit") {
             const sidebar = document.createElement("div");
             sidebar.className = "sim-sidebar";
             simbody.appendChild(sidebar);
@@ -548,7 +559,7 @@ export class SimControl {
             // cancel link with right click
             this.nodesLayer.oncontextmenu = (ev) => {
 
-                if (this.mode!=="edit") return;
+                if (this.mode !== "edit") return;
 
                 // If a tool is active, right-click = cancel tool
                 if (this.tool !== "select") {
@@ -574,32 +585,49 @@ export class SimControl {
         /** TAB CONTROLLER */
         this.tabControler = new TabController();
 
+
+
+
+
+
         //****************** PCAP VIEWER ********************************/
 
-        const tracerbody = document.createElement("div");
-        tracerbody.className = "analyzer";
-        tracerbody.classList.add("tab-content"); //for tabs
-        tracerbody.id = "tracer";
-        root.appendChild(tracerbody);
+        if (this.mode === "trace") {
+            const tracerbody = document.createElement("div");
+            tracerbody.className = "analyzer";
+            tracerbody.classList.add("tab-content"); //for tabs
+            tracerbody.id = "tracer";
+            root.appendChild(tracerbody);
 
-        new PCapViewer(tracerbody);
+            this.pcapViewer.setMount(tracerbody);
+            tracerbody.classList.add("active");
+            this.pcapViewer.render();
+
+        }
 
         //****************** ABOUT ********************************/
 
-        const aboutbody = document.createElement("div");
-        aboutbody.className = "about";
-        aboutbody.id = "about";
-        aboutbody.classList.add("tab-content");
+        if (this.mode === "about") {
+            const aboutbody = document.createElement("div");
+            aboutbody.className = "about";
+            aboutbody.id = "about";
+            aboutbody.classList.add("tab-content");
+            new StaticPageLoader().load(aboutbody, "/pages/about/index.html");
+            aboutbody.classList.add("active");
+            root.appendChild(aboutbody);
+        }
 
-        //TODO: This is not good, we are loading the page too many times....
-        new StaticPageLoader().load(aboutbody, "/pages/about/index.html");
-        root.appendChild(aboutbody);
+        if (this.mode === "run") {
+            simbody.classList.add("active");
+            root.appendChild(simbody);
+            this.redrawLinks();
+        }
 
-
-        if(this.mode==="run") { simbody.classList.add("active"); }
-        if(this.mode==="edit") { simbody.classList.add("active"); }
-        if(this.mode==="trace") { tracerbody.classList.add("active"); }
-        if(this.mode==="about") { aboutbody.classList.add("active"); }
+        if (this.mode === "edit") {
+            simbody.classList.add("active");
+            root.appendChild(simbody);
+            this.redrawLinks();
+        }
 
     }
 
@@ -787,9 +815,8 @@ export class SimControl {
         for (const l of state.objects) {
             if (!l || l.kind !== "Link") continue;
             try {
-                const link = Link.fromJSON(l, byId);
+                const link = Link.fromJSON(l, byId, this);
                 this.simobjects.push(link);
-                link.simcontrol = this;
                 if (link.id > maxId) maxId = link.id;
             } catch (e) {
                 console.warn("Failed to recreate link:", e);
@@ -883,7 +910,7 @@ export class SimControl {
      * enters editMode
      */
     _enterEditMode() {
-        this.mode="edit";
+        this.mode = "edit";
 
         this.isPaused = true;
 
@@ -891,6 +918,7 @@ export class SimControl {
         this.tool = "select";
         this._cancelLinking();
         this._removeGhostNode();
+        this._clearDeleteHover();
 
         if (this.root) {
             this.root.classList.add("edit-mode");
@@ -905,6 +933,7 @@ export class SimControl {
         this.tool = "select";
         this._cancelLinking();
         this._removeGhostNode();
+        this._clearDeleteHover();
     }
 
     /** @param {PointerEvent} ev */
@@ -939,15 +968,15 @@ export class SimControl {
     }
 
     _cancelLinking() {
-        this.linkStart = null;
-        this.linkStartKey = null;
-        if (this.ghostLink) this.ghostLink.remove();
-        this.ghostLink = null;
+        this._linkStart = null;
+        this._linkStartKey = null;
+        if (this._ghostLink) this._ghostLink.remove();
+        this._ghostLink = null;
     }
 
     _ensureGhostLink() {
         if (!this.nodesLayer) return;
-        if (this.ghostLink) return;
+        if (this._ghostLink) return;
 
         const g = document.createElement("div");
         g.className = "sim-link sim-link-ghost";
@@ -966,30 +995,30 @@ export class SimControl {
         g.appendChild(line);
 
         this.nodesLayer.appendChild(g);
-        this.ghostLink = g;
+        this._ghostLink = g;
     }
 
     /** @param {number} endX local coords @param {number} endY local coords */
     _updateGhost(endX, endY) {
-        if (!this.ghostLink || !this.linkStart) return;
-        const x1 = this.linkStart.getX();
-        const y1 = this.linkStart.getY();
+        if (!this._ghostLink || !this._linkStart) return;
+        const x1 = this._linkStart.getX();
+        const y1 = this._linkStart.getY();
 
         const dx = endX - x1;
         const dy = endY - y1;
         const length = Math.hypot(dx, dy);
         const angle = Math.atan2(dy, dx) * 180 / Math.PI;
 
-        this.ghostLink.style.width = `${length}px`;
-        this.ghostLink.style.left = `${x1}px`;
-        this.ghostLink.style.top = `${y1}px`;
-        this.ghostLink.style.transformOrigin = "0 0";
-        this.ghostLink.style.transform = `rotate(${angle}deg)`;
+        this._ghostLink.style.width = `${length}px`;
+        this._ghostLink.style.left = `${x1}px`;
+        this._ghostLink.style.top = `${y1}px`;
+        this._ghostLink.style.transformOrigin = "0 0";
+        this._ghostLink.style.transform = `rotate(${angle}deg)`;
     }
 
     /** @param {PointerEvent} ev */
     _onPointerMove(ev) {
-        if (this.mode!=="edit") return;
+        if (this.mode !== "edit") return;
 
         const p = this._getLocalPoint(ev);
 
@@ -1002,16 +1031,23 @@ export class SimControl {
         }
 
         // Ghost for linking
-        if (this.tool === "link" && this.linkStart) {
+        if (this.tool === "link" && this._linkStart) {
             this._ensureGhostLink();
             this._updateGhost(p.x, p.y);
+        }
+
+        // delete-tool hover highlight
+        if (this.tool === "delete") {
+            this._setDeleteHover(this._getHoverTargetEl(ev));
+        } else {
+            this._clearDeleteHover();
         }
     }
 
 
     /** @param {PointerEvent} ev */
     async _onPointerDown(ev) {
-        if (this.mode!=="edit") return;
+        if (this.mode !== "edit") return;
 
         const obj = this._getObjFromEvent(ev);
         const link = this._getLinkFromEvent(ev); // may be null
@@ -1031,6 +1067,9 @@ export class SimControl {
 
         // DELETE tool: click link or node
         if (this.tool === "delete") {
+            const targetEl = this._getHoverTargetEl(ev);
+            this._clearDeleteHover();
+
             if (link instanceof Link) {
                 ev.preventDefault();
                 ev.stopPropagation();
@@ -1052,12 +1091,12 @@ export class SimControl {
             ev.stopPropagation();
 
             // First click: pick A port (dialog only if >=2 ports; auto if exactly 1)
-            if (!this.linkStart) {
+            if (!this._linkStart) {
                 const pickA = await this._pickPortForObjectAt(obj, ev.clientX + 8, ev.clientY + 8);
                 if (!pickA) return;
 
-                this.linkStart = obj;
-                this.linkStartKey = pickA.key;
+                this._linkStart = obj;
+                this._linkStartKey = pickA.key;
 
                 this._ensureGhostLink();
                 const p = this._getLocalPoint(ev);
@@ -1066,13 +1105,13 @@ export class SimControl {
             }
 
             // Clicking same node cancels
-            if (obj === this.linkStart) {
+            if (obj === this._linkStart) {
                 this._cancelLinking();
                 return;
             }
 
-            const A = this.linkStart;
-            const AKey = this.linkStartKey;
+            const A = this._linkStart;
+            const AKey = this._linkStartKey;
             if (!AKey) {
                 this._cancelLinking();
                 return;
@@ -1096,7 +1135,8 @@ export class SimControl {
                 if (!this._isPortFree(portA)) throw new Error(`Port ${AKey} is already in use`);
                 if (!this._isPortFree(portB)) throw new Error(`Port ${BKey} is already in use`);
 
-                const l = new Link(A, portA, AKey, B, portB, BKey);
+                const l = new Link(A, portA, AKey, B, portB, BKey, this);
+                l.simcontrol = this;
                 this.addObject(l);
             } catch (e) {
                 console.warn("Cannot create link:", e);
@@ -1108,8 +1148,7 @@ export class SimControl {
 
         // PLACE tools: click empty canvas places
         if (this.tool.startsWith("place-")) {
-            if (obj || link) return;
-            if (!this.ghostNodeEl || !this.ghostReady) return;
+            if (!this._ghostNodeEl || !this._ghostReady) return;
 
             const p = this._getLocalPoint(ev);
 
@@ -1121,8 +1160,8 @@ export class SimControl {
             if (this.tool === "place-rect") newObj = new RectOverlay();
             if (!newObj) return;
 
-            const w = this.ghostNodeEl.offsetWidth || 0;
-            const h = this.ghostNodeEl.offsetHeight || 0;
+            const w = this._ghostNodeEl.offsetWidth || 0;
+            const h = this._ghostNodeEl.offsetHeight || 0;
 
             newObj.x = p.x - w / 2;
             newObj.y = p.y - h / 2;
@@ -1130,7 +1169,7 @@ export class SimControl {
             this.addObject(newObj);
             this.redrawLinks();
             this._removeGhostNode();
-            this.tool="select";
+            this.tool = "select";
             this.render();
             return;
         }
@@ -1147,7 +1186,7 @@ export class SimControl {
     _ensureGhostNode(type) {
         if (!this.nodesLayer) return;
 
-        if (!this.ghostNodeEl || this.ghostNodeType !== type) {
+        if (!this._ghostNodeEl || this._ghostNodeType !== type) {
             this._removeGhostNode();
 
             /** @type {SimulatedObject|null} */
@@ -1173,9 +1212,9 @@ export class SimControl {
 
             this.nodesLayer.appendChild(el);
 
-            this.ghostNodeEl = /** @type {HTMLDivElement} */ (el);
-            this.ghostNodeType = type;
-            this.ghostReady = false;
+            this._ghostNodeEl = /** @type {HTMLDivElement} */ (el);
+            this._ghostNodeType = type;
+            this._ghostReady = false;
 
             // Dummy wieder aus instances raus (DOM vom Ghost bleibt!)
             tmp.destroy();
@@ -1183,23 +1222,23 @@ export class SimControl {
     }
 
     _removeGhostNode() {
-        if (this.ghostNodeEl) this.ghostNodeEl.remove();
-        this.ghostNodeEl = null;
-        this.ghostNodeType = null;
-        this.ghostReady = false;
+        if (this._ghostNodeEl) this._ghostNodeEl.remove();
+        this._ghostNodeEl = null;
+        this._ghostNodeType = null;
+        this._ghostReady = false;
     }
 
     /** @param {number} x local coords @param {number} y local coords */
     _moveGhostNode(x, y) {
-        if (!this.ghostNodeEl) return;
+        if (!this._ghostNodeEl) return;
 
-        const w = this.ghostNodeEl.offsetWidth || 0;
-        const h = this.ghostNodeEl.offsetHeight || 0;
+        const w = this._ghostNodeEl.offsetWidth || 0;
+        const h = this._ghostNodeEl.offsetHeight || 0;
 
-        this.ghostNodeEl.style.left = `${x - w / 2}px`;
-        this.ghostNodeEl.style.top = `${y - h / 2}px`;
+        this._ghostNodeEl.style.left = `${x - w / 2}px`;
+        this._ghostNodeEl.style.top = `${y - h / 2}px`;
 
-        this.ghostReady = true;
+        this._ghostReady = true;
     }
 
     /** 
@@ -1302,9 +1341,37 @@ export class SimControl {
         });
     }
 
+    /** @param {HTMLElement|null} el */
+    _setDeleteHover(el) {
+        if (this._deleteHoverEl === el) return;
+
+        if (this._deleteHoverEl) this._deleteHoverEl.classList.remove("sim-delete-hover");
+        this._deleteHoverEl = el;
+
+        if (this._deleteHoverEl) this._deleteHoverEl.classList.add("sim-delete-hover");
+    }
+
+    _clearDeleteHover() {
+        this._setDeleteHover(null);
+    }
+
+    /** find the clickable root element for node/link under cursor */
+    _getHoverTargetEl(ev) {
+        const t = /** @type {HTMLElement} */ (ev.target);
+        // nodes: anything with data-objid (your icons already have this)
+        const nodeEl = t.closest("[data-objid]");
+        if (nodeEl) return /** @type {HTMLElement} */ (nodeEl);
+
+        // links: your _getLinkFromEvent expects .sim-link with data-objid
+        const linkEl = t.closest(".sim-link");
+        if (linkEl && linkEl.getAttribute("data-objid")) return /** @type {HTMLElement} */ (linkEl);
+
+        return null;
+    }
+
     closeAllPanels() {
         for (const obj of this.simobjects) {
-            if(obj instanceof SimulatedObject) {
+            if (obj instanceof SimulatedObject) {
                 obj.setPanelOpen(false);
             }
         }

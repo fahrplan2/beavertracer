@@ -1,7 +1,7 @@
 //@ts-check
 
 export const defaultSimulation = {
-  "version": 3,
+  "version": 4,
   "tick": 32,
   "objects": [
     {

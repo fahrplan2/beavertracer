@@ -124,7 +124,7 @@ export class Router extends SimulatedObject {
     _routesHost = null;
 
     constructor(name = t("router.title")) {
-        super(name);
+        super(name = t("router.title"));
         this.net = new IPStack(2, name);
         this.net.forwarding = true; // we are a router after all
         this.fs = new VirtualFileSystem();
@@ -336,10 +336,6 @@ export class Router extends SimulatedObject {
                 return;
             }
 
-            const filename = `${this.name}-${iface.name}.pcap`;
-            const pcap = new Pcap(frames, filename);
-
-            this.simcontrol.pcapViewer.loadBytes(pcap.generateBytes());
             this.simcontrol.tabControler.gotoTab("tracer");
         });
         actionsHost.appendChild(pcapBtn);

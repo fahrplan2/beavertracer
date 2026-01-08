@@ -57,8 +57,9 @@ export class Link extends SimulatedObject {
    * @param {SimulatedObject} B
    * @param {any} portB
    * @param {string} portBKey
+   * @param {SimControl} simcontrol
    */
-  constructor(A, portA, portAKey, B, portB, portBKey) {
+  constructor(A, portA, portAKey, B, portB, portBKey, simcontrol) {
     super("Link");
 
     if (!portA || !portB) throw new Error("Missing ports");
@@ -70,6 +71,11 @@ export class Link extends SimulatedObject {
 
     this.link = new EthernetLink(portA, portB);
     this.link.link = this;
+
+    this.simcontrol = simcontrol;
+
+    this.simcontrol.pcapController.addIf(this.A.name + ": "+this.link.portA.name);
+    this.simcontrol.pcapController.addIf(this.B.name + ": "+this.link.portB.name);
   }
 
   render() {
@@ -98,6 +104,8 @@ export class Link extends SimulatedObject {
     for (const p of this._packets) p.el.remove();
     this._packets = [];
     this.link.destroy();
+    this.simcontrol.pcapController.removeIf(this.A.name + ": "+this.link.portA.name);
+    this.simcontrol.pcapController.removeIf(this.B.name + ": "+this.link.portB.name);
   }
 
   setPaused(paused) { this._paused = paused; }
@@ -107,11 +115,27 @@ export class Link extends SimulatedObject {
     this.link.step1();
     const a = this.link.AtoB ?? null;
     const b = this.link.BtoA ?? null;
-    if (a) this._startInFlight("AtoB", a);
-    if (b) this._startInFlight("BtoA", b);
+    if (a) {
+      this._startInFlight("AtoB", a);
+      this.simcontrol.pcapController.updateIf(this.A.name + ": "+this.link.portA.name, this.link.portA.loggedFrames);
+    }
+    if (b) {
+      this._startInFlight("BtoA", b);
+      this.simcontrol.pcapController.updateIf(this.B.name + ": "+this.link.portB.name, this.link.portA.loggedFrames);
+    }
   }
 
   step2() {
+
+    //Update Traces
+    const a = this.link.AtoB ?? null;
+    const b = this.link.BtoA ?? null;
+    if (a) {
+      this.simcontrol.pcapController.updateIf(this.A.name + ": "+this.link.portA.name, this.link.portA.loggedFrames);
+    }
+    if (b) {
+      this.simcontrol.pcapController.updateIf(this.B.name + ": "+this.link.portB.name, this.link.portA.loggedFrames);
+    }
     this.link.step2();
     for (const p of this._packets) p.el.remove();
     this._packets = [];
@@ -199,8 +223,9 @@ export class Link extends SimulatedObject {
   /**
    * @param {any} n
    * @param {Map<number, SimulatedObject>} byId
+   * @param {SimControl} simcontrol
    */
-  static fromJSON(n, byId) {
+  static fromJSON(n, byId, simcontrol) {
     const A0 = byId.get(Number(n.a));
     const B0 = byId.get(Number(n.b));
     if (!A0 || !B0) throw new Error("Link endpoints missing");
@@ -221,7 +246,7 @@ export class Link extends SimulatedObject {
 
     if (!portA || !portB) throw new Error("Ports missing for link");
 
-    const obj = new Link(A, portA, portAKey, B, portB, portBKey);
+    const obj = new Link(A, portA, portAKey, B, portB, portBKey, simcontrol);
     obj.id = Number(n.id);
     return obj;
   }

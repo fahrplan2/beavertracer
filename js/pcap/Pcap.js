@@ -19,11 +19,9 @@ export class Pcap {
         this.#filename = filename;
     }
 
-
     generateBytes() {
         return this._writeData(); // Uint8Array
     }
-
 
     downloadFile() {
         //Credit for this function: https://dev.to/nombrekeff/download-file-from-blob-21ho
