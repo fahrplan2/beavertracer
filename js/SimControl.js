@@ -9,6 +9,7 @@ import { Router } from "./simobjects/Router.js";
 import { TextBox } from "./simobjects/TextBox.js";
 import { RectOverlay } from "./simobjects/RectOverlay.js";
 import { t, getLocale, setLocale, getLocales, onLocaleChange } from "./i18n/index.js";
+import { StaticPageLoader } from "./StaticPageLoader.js";
 
 /**
  * @typedef {Object} PortDescriptor
@@ -18,22 +19,21 @@ import { t, getLocale, setLocale, getLocales, onLocaleChange } from "./i18n/inde
  */
 
 export class SimControl {
-
     /**
      * @type {Array<SimulatedObject>} array of all simulated objects
      */
-    static simobjects;
+    simobjects;
 
     /**
      * @type {TabController} reference to the tabcontroller
      */
 
-    static tabControler;
+    tabControler;
 
     /**
      * @type {PCapViewer} reference to the pcapviewer
      */
-    static pcapViewer;
+    pcapViewer;
 
     /**
      * @type {number} simulation speed
@@ -72,12 +72,13 @@ export class SimControl {
     /**
      * @type {HTMLElement|null} movement Boundary for user drag&drop (so that it stays inside root element)
      */
-    static movementBoundary;
+    movementBoundary;
+
+
 
     /**** EDIT MODE Variables *****/
-
-    /** @type {boolean} */
-    static isEditMode = true;
+    /** @type {"edit"|"run"|"trace"|"about"} */
+    mode = "edit";
 
     /** @type {"select"|"place-pc"|"place-switch"|"place-router"|"place-text"|"place-rect"|"link"|"delete"} */
     tool = "select";
@@ -114,6 +115,7 @@ export class SimControl {
     constructor(root) {
         this.simobjects = [];
         this.root = root;
+
         this.render();
 
         //change when locale changes
@@ -207,8 +209,8 @@ export class SimControl {
      * @param {number} ms
      */
     setTick(ms) {
-        //no effect while in edit mode
-        if (SimControl.isEditMode) {
+        //no effect while not in run mode
+        if (this.mode !== "run") {
             return;
         }
         SimControl.tick = Math.max(16, Math.min(5000, Math.round(ms)));
@@ -243,8 +245,6 @@ export class SimControl {
         const toolbar = document.createElement("div");
         toolbar.className = "sim-toolbar";
         root.appendChild(toolbar);
-
-        // === Branding (left side) ===
 
         // Branding group (left, styled like other groups)
         const brandingGroup = document.createElement("div");
@@ -282,38 +282,6 @@ export class SimControl {
             toolbar.appendChild(sep);
         };
 
-
-        // --- Project group
-        addSeparator();
-        const gProject = addGroup(t("sim.project"));
-
-        // New
-        const btnNew = document.createElement("button");
-        btnNew.type = "button";
-        btnNew.textContent = t("sim.new");
-        btnNew.addEventListener("click", () => {
-            if (!confirm(t("sim.discardandnewwarning"))) return;
-            this.new();
-        });
-        gProject.appendChild(btnNew);
-
-        // Load
-        const btnLoad = document.createElement("button");
-        btnLoad.type = "button";
-        btnLoad.textContent = t("sim.load");
-        btnLoad.addEventListener("click", () => {
-            if (!confirm(t("sim.discardandloadwarning"))) return;
-            this.open();
-        });
-        gProject.appendChild(btnLoad);
-
-        // Save
-        const btnSave = document.createElement("button");
-        btnSave.type = "button";
-        btnSave.textContent = t("sim.save");
-        btnSave.addEventListener("click", () => this.download());
-        gProject.appendChild(btnSave);
-
         // --- Edit group
         addSeparator();
         const gMode = addGroup(t("sim.mode"));
@@ -322,18 +290,12 @@ export class SimControl {
         const btnEdit = document.createElement("button");
         btnEdit.type = "button";
         btnEdit.textContent = t("sim.edit");
-        if (SimControl.isEditMode) btnEdit.classList.add("active");
+        if (this.mode === "edit") btnEdit.classList.add("active");
         btnEdit.addEventListener("click", () => {
-            if (SimControl.isEditMode) {
-                SimControl.isEditMode = false;
-                if (this.root) {
-                    this.root.classList.remove("edit-mode");
-                    delete this.root.dataset.tool;
-                }
-                this.render();
-            } else {
-                this.enterEditMode();
+            if(this.mode!=="edit") {
+                this.tabControler.gotoTab("sim");
             }
+            this._enterEditMode();
         });
         gMode.appendChild(btnEdit);
 
@@ -341,25 +303,86 @@ export class SimControl {
         const btnRun = document.createElement("button");
         btnRun.type = "button";
         btnRun.textContent = t("sim.run");
-        if (!SimControl.isEditMode) btnRun.classList.add("active");
+        if (this.mode === "run") btnRun.classList.add("active");
         btnRun.addEventListener("click", () => {
-            if (SimControl.isEditMode) {
-                SimControl.isEditMode = false;
-                this.tool = "select";
-                this.isPaused = false;
-                if (this.root) {
-                    this.root.classList.remove("edit-mode");
-                    delete this.root.dataset.tool;
-                }
-                this._cancelLinking();
-                this._removeGhostNode();
-                this.render();
-                this.scheduleNextStep();
+            //leave edit mode
+            if (this.mode === "edit") {
+                this._leaveEditMode();
+            } else {
+                this.pause();
             }
+
+            this.tabControler.gotoTab("sim");
+            this.mode = "run";
+            this.isPaused = false;
+            if (this.root) {
+                this.root.classList.remove("edit-mode");
+                delete this.root.dataset.tool;
+            }
+
+            this.render();
+            this.scheduleNextStep();
+
         });
         gMode.appendChild(btnRun);
 
-        if (!SimControl.isEditMode) {
+        // Trace Button
+        const btnTrace = document.createElement("button");
+        btnRun.type = "button";
+        btnRun.textContent = t("sim.trace");
+        if (this.mode === "trace") btnRun.classList.add("active");
+        btnRun.addEventListener("click", () => {
+            //leave edit mode
+            if (this.mode === "edit") {
+                this._leaveEditMode();
+            } else {
+                this.pause();  //just in case
+            }
+            this.tabControler.gotoTab("trace");
+            this.mode = "trace";
+            
+            this.render();
+
+        });
+        gMode.appendChild(btnRun);
+
+
+        // --- Project group (New, Open, Save)
+        if (this.mode==="edit") {
+
+            addSeparator();
+            const gProject = addGroup(t("sim.project"));
+
+            // New
+            const btnNew = document.createElement("button");
+            btnNew.type = "button";
+            btnNew.textContent = t("sim.new");
+            btnNew.addEventListener("click", () => {
+                if (!confirm(t("sim.discardandnewwarning"))) return;
+                this.new();
+            });
+            gProject.appendChild(btnNew);
+
+            // Load
+            const btnLoad = document.createElement("button");
+            btnLoad.type = "button";
+            btnLoad.textContent = t("sim.load");
+            btnLoad.addEventListener("click", () => {
+                if (!confirm(t("sim.discardandloadwarning"))) return;
+                this.open();
+            });
+            gProject.appendChild(btnLoad);
+
+            // Save
+            const btnSave = document.createElement("button");
+            btnSave.type = "button";
+            btnSave.textContent = t("sim.save");
+            btnSave.addEventListener("click", () => this.download());
+            gProject.appendChild(btnSave);
+        }
+
+        //Speed bar if not in Editmode
+        if (this.mode==="run") {
             addSeparator();
             const gSpeeds = addGroup(t("sim.speed"));
 
@@ -409,20 +432,39 @@ export class SimControl {
         });
         gLang.appendChild(langBtn);
 
-
+        // InfoButton
+        const aboutBtn = document.createElement("button");
+        aboutBtn.type = "button";
+        aboutBtn.className = "sim-toolbar-aboutbtn";
+        if(this.mode==="about") { aboutBtn.classList.add("active"); }
+        aboutBtn.textContent = t("sim.about");
+        aboutBtn.addEventListener("click", (ev) => {
+            if(this.mode==="edit") {
+                this._leaveEditMode;
+            }
+            this.pause();
+            this.tabControler.gotoTab("about");
+            this.mode="about";
+            this.render();
+        });
+        gLang.appendChild(aboutBtn);
 
         //End of toolbar
 
         //********* BODY (SIDEBAR + NODES) ***************
-        const body = document.createElement("div");
-        body.className = "sim-body";
-        root.appendChild(body);
+        const simbody = document.createElement("div");
+        simbody.className = "sim-body";
+        if(this.mode==="run" || this.mode==="edit") {
+            simbody.classList.add("active"); //for tabs
+        }
+        simbody.id = "sim";
+        root.appendChild(simbody);
 
         // Left sidebar (only in edit mode)
-        if (SimControl.isEditMode) {
+        if (this.mode==="edit") {
             const sidebar = document.createElement("div");
             sidebar.className = "sim-sidebar";
-            body.appendChild(sidebar);
+            simbody.appendChild(sidebar);
 
             // Tools header
             const h = document.createElement("div");
@@ -468,10 +510,10 @@ export class SimControl {
         // Nodes layer goes into body (right side)
         const nodes = document.createElement("div");
         nodes.className = "sim-nodes";
-        body.appendChild(nodes);
+        simbody.appendChild(nodes);
 
         this.nodesLayer = nodes;
-        SimControl.movementBoundary = nodes;
+        this.movementBoundary = nodes;
 
         const packetsLayer = document.createElement("div");
         packetsLayer.className = "sim-packets-layer";
@@ -506,7 +548,7 @@ export class SimControl {
             // cancel link with right click
             this.nodesLayer.oncontextmenu = (ev) => {
 
-                if (!SimControl.isEditMode) return;
+                if (this.mode!=="edit") return;
 
                 // If a tool is active, right-click = cancel tool
                 if (this.tool !== "select") {
@@ -528,6 +570,34 @@ export class SimControl {
                 if (ev.key === "Escape") this._cancelLinking();
             };
         }
+
+        /** TAB CONTROLLER */
+        this.tabControler = new TabController();
+
+        //****************** PCAP VIEWER ********************************/
+
+        const tracerbody = document.createElement("div");
+        tracerbody.className = "analyzer";
+        tracerbody.classList.add("tab-content"); //for tabs
+        tracerbody.id = "tracer";
+        root.appendChild(tracerbody);
+
+        new PCapViewer(tracerbody);
+
+        //****************** ABOUT ********************************/
+
+        const aboutbody = document.createElement("div");
+        aboutbody.className = "about";
+        aboutbody.id = "about";
+        aboutbody.classList.add("tab-content");
+        new StaticPageLoader().load(aboutbody, "/pages/about/index.html");
+        root.appendChild(aboutbody);
+
+
+        if(this.mode==="run") { simbody.classList.add("active"); }
+        if(this.mode==="edit") { simbody.classList.add("active"); }
+        if(this.mode==="trace") { tracerbody.classList.add("active"); }
+        if(this.mode==="about") { aboutbody.classList.add("active"); }
 
     }
 
@@ -642,7 +712,7 @@ export class SimControl {
      */
     toJSON() {
         return {
-            version: 3,
+            version: 4,
             tick: SimControl.tick,
             objects: this.simobjects.map(o => o.toJSON()),
         };
@@ -707,6 +777,7 @@ export class SimControl {
             const obj = node.fromJSON(n);
             byId.set(obj.id, obj);
             this.simobjects.push(obj);
+            obj.simcontrol = this;
             if (obj.id > maxId) maxId = obj.id;
         }
 
@@ -716,6 +787,7 @@ export class SimControl {
             try {
                 const link = Link.fromJSON(l, byId);
                 this.simobjects.push(link);
+                link.simcontrol = this;
                 if (link.id > maxId) maxId = link.id;
             } catch (e) {
                 console.warn("Failed to recreate link:", e);
@@ -726,7 +798,7 @@ export class SimControl {
         SimulatedObject.idnumber = maxId + 1;
 
         // resets the ui
-        this.enterEditMode();
+        this._enterEditMode();
         this.isPaused = true;
         this.redrawLinks();
     }
@@ -770,7 +842,7 @@ export class SimControl {
         SimControl.tick = 500;
         this.isPaused = true;
 
-        this.enterEditMode();
+        this._enterEditMode();
     }
 
 
@@ -808,8 +880,8 @@ export class SimControl {
     /**
      * enters editMode
      */
-    enterEditMode() {
-        SimControl.isEditMode = true;
+    _enterEditMode() {
+        this.mode="edit";
 
         this.isPaused = true;
 
@@ -823,8 +895,14 @@ export class SimControl {
             this.root.dataset.tool = this.tool;
         }
 
-        SimulatedObject.closeAllPanels();
+        this.closeAllPanels();
         this.render();
+    }
+
+    _leaveEditMode() {
+        this.tool = "select";
+        this._cancelLinking();
+        this._removeGhostNode();
     }
 
     /** @param {PointerEvent} ev */
@@ -909,7 +987,7 @@ export class SimControl {
 
     /** @param {PointerEvent} ev */
     _onPointerMove(ev) {
-        if (!SimControl.isEditMode) return;
+        if (this.mode!=="edit") return;
 
         const p = this._getLocalPoint(ev);
 
@@ -931,7 +1009,7 @@ export class SimControl {
 
     /** @param {PointerEvent} ev */
     async _onPointerDown(ev) {
-        if (!SimControl.isEditMode) return;
+        if (this.mode!=="edit") return;
 
         const obj = this._getObjFromEvent(ev);
         const link = this._getLinkFromEvent(ev); // may be null
@@ -1050,6 +1128,8 @@ export class SimControl {
             this.addObject(newObj);
             this.redrawLinks();
             this._removeGhostNode();
+            this.tool="select";
+            this.render();
             return;
         }
 
@@ -1218,5 +1298,13 @@ export class SimControl {
             document.addEventListener("pointerdown", onOutside, { capture: true });
             window.addEventListener("keydown", onKeyDown);
         });
+    }
+
+    closeAllPanels() {
+        for (const obj of this.simobjects) {
+            if(obj instanceof SimulatedObject) {
+                obj.setPanelOpen(false);
+            }
+        }
     }
 }

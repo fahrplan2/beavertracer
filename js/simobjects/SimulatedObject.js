@@ -32,6 +32,7 @@ import { SimControl } from '../SimControl.js';
 export class SimulatedObject {
 
     name;
+    kind="SimulatedObject"; //needed for generating save id
     id;
     static idnumber = 0;
 
@@ -57,16 +58,10 @@ export class SimulatedObject {
 
     /** @type {number} panel position */
     px = 220;
-
     /** @type {number} panel osition */
     py = 120;
 
     panelOpen = false;
-
-
-    /** @type {Set<SimulatedObject>} */
-    static instances = new Set();
-
 
     /**
      * callback when the panal was created
@@ -83,7 +78,6 @@ export class SimulatedObject {
         this.id = SimulatedObject.idnumber++;
         this.root = document.createElement("div");
         this.root.classList.add("sim-object");
-        SimulatedObject.instances.add(this);
     }
 
     /**
@@ -169,10 +163,13 @@ export class SimulatedObject {
         //make icon traggable and toggle the panel
         makeDraggable(this.iconEl, {
             handle: this.iconEl,
+            canDrag: () => {
+                return (this.simcontrol?.mode === "edit");
+            },
             onClick: () => {
                 this.setPanelOpen(!this.panelOpen);
             },
-            boundary: () => SimControl.movementBoundary,
+            boundary: () => this.simcontrol.movementBoundary,
             onDragEnd: ({ x, y }) => {
                 this.x = x;
                 this.y = y;
@@ -189,7 +186,7 @@ export class SimulatedObject {
         if (handle instanceof HTMLElement) {
             makeDraggable(this.panelEl, {
                 handle: handle,
-                boundary: () => SimControl.movementBoundary,
+                boundary: () => this.simcontrol.movementBoundary,
                 onDragEnd: ({ x, y }) => {
                     this.px = x;
                     this.py = y;
@@ -205,7 +202,7 @@ export class SimulatedObject {
      */
     setPanelOpen(open) {
         //do not open when allready open or in Edit Mode
-        if (open && SimControl.isEditMode) return;
+        if (open && this.simcontrol.mode==="edit") return;
 
         this.panelOpen = open;
         this._applyPositions();
@@ -234,7 +231,7 @@ export class SimulatedObject {
         if (!this.iconEl) return 0;
 
         const rect = this.iconEl.getBoundingClientRect();
-        const boundary = SimControl.movementBoundary;
+        const boundary = this.simcontrol.movementBoundary;
 
         if (boundary instanceof HTMLElement) {
             const b = boundary.getBoundingClientRect();
@@ -250,7 +247,7 @@ export class SimulatedObject {
         if (!this.iconEl) return 0;
 
         const rect = this.iconEl.getBoundingClientRect();
-        const boundary = SimControl.movementBoundary;
+        const boundary = this.simcontrol.movementBoundary;
 
         if (boundary instanceof HTMLElement) {
             const b = boundary.getBoundingClientRect();
@@ -263,14 +260,7 @@ export class SimulatedObject {
     }
 
     destroy() {
-        SimulatedObject.instances.delete(this);
         this.root.remove();
-    }
-
-    static closeAllPanels() {
-        for (const obj of SimulatedObject.instances) {
-            obj.setPanelOpen(false);
-        }
     }
 
     /**
@@ -321,7 +311,7 @@ export class SimulatedObject {
 
     toJSON() {
         return {
-            kind: this.constructor?.name ?? "SimulatedObject",
+            kind: this.kind,
             id: this.id,
             name: this.name,
             x: this.x, y: this.y,

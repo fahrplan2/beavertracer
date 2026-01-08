@@ -67,16 +67,39 @@ export class StaticPageLoader {
    * @returns {string[]}
    */
   #buildCandidates(baseUrl, locale) {
-    const m = baseUrl.match(/^(.*\/)([^\/]+)\.([a-z0-9]+)$/i);
+    // allow optional directory (so "index.html" also matches)
+    const m = baseUrl.match(/^(?:(.*\/))?([^\/]+)\.([a-z0-9]+)$/i);
     if (!m) return [baseUrl];
 
-    const [, dir, name, ext] = m;
+    const dir = m[1] ?? "";      // "" if no directory
+    const name = m[2];
+    const ext = m[3];
+
     const norm = (locale || "").trim();
     const lang = norm.includes("-") ? norm.split("-")[0] : norm;
 
     /** @type {string[]} */
     const out = [];
 
+    // If it's index.html (your special case), do exactly the order you want:
+    // locale -> lang -> fallback -> base
+    if (name.toLowerCase() === "index") {
+      if (norm) out.push(`${dir}${name}.${norm}.${ext}`);
+      if (lang && lang !== norm) out.push(`${dir}${name}.${lang}.${ext}`);
+
+      if (
+        this.#fallbackLocale &&
+        this.#fallbackLocale !== lang &&
+        this.#fallbackLocale !== norm
+      ) {
+        out.push(`${dir}${name}.${this.#fallbackLocale}.${ext}`);
+      }
+
+      out.push(baseUrl);
+      return out;
+    }
+
+    // For non-index pages, keep existing behavior (same ordering)
     if (norm) out.push(`${dir}${name}.${norm}.${ext}`);
     if (lang && lang !== norm) out.push(`${dir}${name}.${lang}.${ext}`);
 
@@ -91,7 +114,7 @@ export class StaticPageLoader {
     out.push(baseUrl);
     return out;
   }
-
+  
   /**
    * @param {string[]} urls
    * @returns {Promise<{ url: string, html: string } | null>}

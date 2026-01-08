@@ -15,6 +15,9 @@ import { SimulatedObject } from "./SimulatedObject.js";
 
 
 export class Link extends SimulatedObject {
+
+  kind="Link";
+
   /** @type {EthernetLink} */
   link;
 

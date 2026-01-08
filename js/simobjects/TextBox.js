@@ -5,6 +5,9 @@ import { t } from "../i18n/index.js";
 import { MiniMarkdown } from "../lib/MiniMarkdown.js";
 
 export class TextBox extends SimulatedObject {
+
+  kind="TextBox";
+
   /** @type {string} */
   text = "Note";
 
@@ -103,7 +106,7 @@ export class TextBox extends SimulatedObject {
     this.iconEl.addEventListener(
       "click",
       (ev) => {
-        if (!SimControl.isEditMode) return;
+        if (this.simcontrol.mode!=="edit") return;
 
         ev.preventDefault();
         ev.stopPropagation();
@@ -118,6 +121,9 @@ export class TextBox extends SimulatedObject {
    * TextBox panels may open in EditMode.
    */
   setPanelOpen(open) {
+
+    if(this.simcontrol.mode!=="edit") return;
+
     this.panelOpen = open;
     this._applyPositions();
     this._applyPanelVisibility();

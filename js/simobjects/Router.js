@@ -76,6 +76,8 @@ function getInterfaceLinkStatus(iface) {
 /* ------------------------------ Router ----------------------------- */
 
 export class Router extends SimulatedObject {
+    kind = 'Router';
+
     /** @type {IPStack} */
     net;
 
@@ -337,8 +339,8 @@ export class Router extends SimulatedObject {
             const filename = `${this.name}-${iface.name}.pcap`;
             const pcap = new Pcap(frames, filename);
 
-            SimControl.pcapViewer.loadBytes(pcap.generateBytes());
-            SimControl.tabControler.gotoTab("pcapviewer");
+            this.simcontrol.pcapViewer.loadBytes(pcap.generateBytes());
+            this.simcontrol.tabControler.gotoTab("tracer");
         });
         actionsHost.appendChild(pcapBtn);
 
