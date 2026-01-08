@@ -1,4 +1,3 @@
-//@ts-check
 import { defineConfig } from "vite";
 import fs from "node:fs";
 import path from "node:path";
@@ -53,12 +52,15 @@ function wiregasmAssets() {
 export default defineConfig({
   base: "./",
 
-  //@ts-ignore
   plugins: [wiregasmAssets()],
 
   resolve: {
     alias: {
       ws: path.resolve(__dirname, "shimws.js"),
+      fs: false,
+      path: false,
+      crypto: false,
+      child_process: false
     },
   },
 
