@@ -57,10 +57,6 @@ export default defineConfig({
   resolve: {
     alias: {
       ws: path.resolve(__dirname, "shimws.js"),
-      fs: false,
-      path: false,
-      crypto: false,
-      child_process: false
     },
   },
 
