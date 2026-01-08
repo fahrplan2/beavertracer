@@ -17,7 +17,7 @@ function getArg(name, fallback) {
 }
 
 const SRC_DIR = path.resolve(getArg("--src", "./"));
-const LOCALE_FILE = path.resolve(getArg("--locale", "./js/i18n/locales/en.js"));
+const LOCALE_FILE = path.resolve(getArg("--locale", "./locales/en.js"));
 const EXTENSIONS = new Set(
   getArg("--ext", "js,jsx,ts,tsx")
     .split(",")
