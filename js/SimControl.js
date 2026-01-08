@@ -328,10 +328,10 @@ export class SimControl {
 
         // Trace Button
         const btnTrace = document.createElement("button");
-        btnRun.type = "button";
-        btnRun.textContent = t("sim.trace");
-        if (this.mode === "trace") btnRun.classList.add("active");
-        btnRun.addEventListener("click", () => {
+        btnTrace.type = "button";
+        btnTrace.textContent = t("sim.trace");
+        if (this.mode === "trace") btnTrace.classList.add("active");
+        btnTrace.addEventListener("click", () => {
             //leave edit mode
             if (this.mode === "edit") {
                 this._leaveEditMode();
@@ -344,7 +344,7 @@ export class SimControl {
             this.render();
 
         });
-        gMode.appendChild(btnRun);
+        gMode.appendChild(btnTrace);
 
 
         // --- Project group (New, Open, Save)
@@ -590,6 +590,8 @@ export class SimControl {
         aboutbody.className = "about";
         aboutbody.id = "about";
         aboutbody.classList.add("tab-content");
+
+        //TODO: This is not good, we are loading the page too many times....
         new StaticPageLoader().load(aboutbody, "/pages/about/index.html");
         root.appendChild(aboutbody);
 
