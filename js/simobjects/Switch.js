@@ -25,8 +25,11 @@ function macBigIntToPretty(macBig) {
 }
 
 export class Switch extends SimulatedObject {
+
+    kind="Switch";
+
     /** @type {SwitchBackplane} */
-    device;
+    backplane;
 
     /** @type {HTMLElement|null} */
     _panelBody = null;
@@ -48,7 +51,7 @@ export class Switch extends SimulatedObject {
      */
     constructor(name = t("switch.title")) {
         super(name);
-        this.device = new SwitchBackplane(16);
+        this.backplane = new SwitchBackplane(16);
 
         /** @param {HTMLElement} body */
         this.onPanelCreated = (body) => {
@@ -69,7 +72,7 @@ export class Switch extends SimulatedObject {
     }
 
     listPorts() {
-        const ports = this.device?.ports ?? [];
+        const ports = this.backplane?.ports ?? [];
         return ports.map((p, i) => ({
             key: `sw${i}`,
             label: `port ${i + 1}`,
@@ -82,7 +85,7 @@ export class Switch extends SimulatedObject {
         const m = /^sw(\d+)$/.exec(key);
         if (!m) return null;
         const i = Number(m[1]);
-        return (this.device?.ports ?? [])[i] ?? null;
+        return (this.backplane?.ports ?? [])[i] ?? null;
     }
 
     /* ------------------------------ UI ------------------------------ */
@@ -155,8 +158,8 @@ export class Switch extends SimulatedObject {
     _renderSAT() {
         if (!this._satHost) return;
 
-        const sat = this.device?.sat;
-        const ports = this.device?.ports ?? [];
+        const sat = this.backplane?.sat;
+        const ports = this.backplane?.ports ?? [];
 
         this._satHost.innerHTML = "";
 

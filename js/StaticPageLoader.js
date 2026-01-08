@@ -1,6 +1,8 @@
 //@ts-check
 
 import { getLocale, initLocale } from "./i18n/index.js";
+import { version } from "./version.js";
+
 
 /**
  * Loads localized static HTML fragments into containers.
@@ -10,7 +12,7 @@ export class StaticPageLoader {
   #fallbackLocale;
 
   /** @type {Map<string, string>} */
-  #cache = new Map();
+  static #cache = new Map();
 
   /**
    * @param {{
@@ -19,6 +21,14 @@ export class StaticPageLoader {
    */
   constructor(opts = {}) {
     this.#fallbackLocale = opts.fallbackLocale ?? "en";
+  }
+
+  /**
+   * 
+   * @param {*} html 
+   */
+  _replaceTags(html) {
+    return String(html).replace(/\{VERSION\}/g, String(version()));
   }
 
   /**
@@ -38,8 +48,8 @@ export class StaticPageLoader {
     const candidates = this.#buildCandidates(baseUrl, locale);
 
     const cacheKey = candidates.join("|");
-    if (cache && this.#cache.has(cacheKey)) {
-      root.innerHTML = this.#cache.get(cacheKey);
+    if (cache && StaticPageLoader.#cache.has(cacheKey)) {
+      root.innerHTML = StaticPageLoader.#cache.get(cacheKey);
       return;
     }
 
@@ -51,8 +61,10 @@ export class StaticPageLoader {
         return;
       }
 
+      res.html = this._replaceTags(res.html);
+
       root.innerHTML = res.html;
-      if (cache) this.#cache.set(cacheKey, res.html);
+      if (cache) StaticPageLoader.#cache.set(cacheKey, res.html);
       onLoaded?.(root, { url: res.url });
     } finally {
       delete root.dataset.loading;
@@ -67,16 +79,39 @@ export class StaticPageLoader {
    * @returns {string[]}
    */
   #buildCandidates(baseUrl, locale) {
-    const m = baseUrl.match(/^(.*\/)([^\/]+)\.([a-z0-9]+)$/i);
+    // allow optional directory (so "index.html" also matches)
+    const m = baseUrl.match(/^(?:(.*\/))?([^\/]+)\.([a-z0-9]+)$/i);
     if (!m) return [baseUrl];
 
-    const [, dir, name, ext] = m;
+    const dir = m[1] ?? "";      // "" if no directory
+    const name = m[2];
+    const ext = m[3];
+
     const norm = (locale || "").trim();
     const lang = norm.includes("-") ? norm.split("-")[0] : norm;
 
     /** @type {string[]} */
     const out = [];
 
+    // If it's index.html (your special case), do exactly the order you want:
+    // locale -> lang -> fallback -> base
+    if (name.toLowerCase() === "index") {
+      if (norm) out.push(`${dir}${name}.${norm}.${ext}`);
+      if (lang && lang !== norm) out.push(`${dir}${name}.${lang}.${ext}`);
+
+      if (
+        this.#fallbackLocale &&
+        this.#fallbackLocale !== lang &&
+        this.#fallbackLocale !== norm
+      ) {
+        out.push(`${dir}${name}.${this.#fallbackLocale}.${ext}`);
+      }
+
+      out.push(baseUrl);
+      return out;
+    }
+
+    // For non-index pages, keep existing behavior (same ordering)
     if (norm) out.push(`${dir}${name}.${norm}.${ext}`);
     if (lang && lang !== norm) out.push(`${dir}${name}.${lang}.${ext}`);
 
@@ -99,23 +134,11 @@ export class StaticPageLoader {
   async #fetchFirstExisting(urls) {
     for (const url of urls) {
       try {
-        // HEAD first (cheap existence check)
-        const head = await fetch(url, { method: "HEAD" });
-        if (!head.ok) continue;
-
-        const res = await fetch(url);
+        const res = await fetch(url, { method: "GET" });
         if (!res.ok) continue;
-
         return { url, html: await res.text() };
       } catch {
-        // Some dev servers don’t like HEAD → try GET directly
-        try {
-          const res = await fetch(url);
-          if (!res.ok) continue;
-          return { url, html: await res.text() };
-        } catch {
-          /* ignore */
-        }
+        /* ignore */
       }
     }
     return null;

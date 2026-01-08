@@ -1,4 +1,3 @@
-//@ts-check
 import { defineConfig } from "vite";
 import fs from "node:fs";
 import path from "node:path";
@@ -53,7 +52,6 @@ function wiregasmAssets() {
 export default defineConfig({
   base: "./",
 
-  //@ts-ignore
   plugins: [wiregasmAssets()],
 
   resolve: {

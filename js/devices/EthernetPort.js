@@ -23,6 +23,19 @@ export class EthernetPort extends Observable {
     /** @type {EthernetLink|Null} */
     linkref = null;
 
+    /** @type {string} */
+
+    name;
+
+    /**
+     * 
+     * @param {string} name 
+     */
+    constructor(name) {
+        super();
+        this.name = name;
+    }
+
     /**
      * 
      * @param {EthernetFrame} frame 

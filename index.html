@@ -10,29 +10,7 @@
 </head>
 
 <body>
-    <div class="tabs">
-        <button class="tab active" data-target="simcontrol" data-i18n="tabs.buildRun">
-            Build and Run
-        </button>
-        <button class="tab" data-target="pcapviewer" data-i18n="tabs.analyze">
-            Analyze
-        </button>
-        <button class="tab" data-target="learn" data-i18n="tabs.learn">
-            Learn
-        </button>
-        <button class="tab" data-target="about" data-i18n="tabs.about">
-            About
-        </button>
-    </div>
-    </div>
-
-    <main class="tab-container">
-        <div id="simcontrol" class="tab-content active sim-root" role="tabpanel"></div>
-        <div id="pcapviewer" class="tab-content" role="tabpanel"></div>
-        <div id="learn" class="tab-content" role="tabpanel" aria-busy="false"></div>
-        <div id="about" class="tab-content" role="tabpanel" aria-busy="false"></div>
-    </main>
-
+    <div id="simcontrol" class="sim-root"></div>
     <script type="module" src="js/main.js"></script>
 </body>
 

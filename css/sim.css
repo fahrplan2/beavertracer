@@ -483,18 +483,31 @@
 }
 
 .sim-root.edit-mode[data-tool="link"] .sim-node.no-free-port {
-  cursor: not-allowed;
+  cursor: not-allowed !important;;
   opacity: 0.4;
 }
 
-/* delete tool */
+.sim-root.edit-mode[data-tool="delete"] .sim-nodes {
+  cursor: default;
+}
+
 .sim-root.edit-mode[data-tool="delete"] .sim-node,
-.sim-root.edit-mode[data-tool="delete"] .sim-node * {
+.sim-root.edit-mode[data-tool="delete"] .sim-link-hit {
   cursor: not-allowed !important;
 }
 
-.sim-root.edit-mode[data-tool="delete"] .sim-link-hit {
-  cursor: not-allowed;
+.sim-delete-hover {
+  outline: 2px solid rgba(255, 60, 60, 0.95);
+  box-shadow: 0 0 0 3px rgba(255, 60, 60, 0.25), 0 0 16px rgba(255, 60, 60, 0.55);
+}
+
+/* Optional: make link line glow too (depends on your DOM structure) */
+.sim-link.sim-delete-hover .sim-link-line {
+  box-shadow: 0 0 10px rgba(255, 60, 60, 0.9);
+}
+
+.sim-delete-hover {
+  cursor: not-allowed !important;
 }
 
 /* =========================================================
@@ -577,3 +590,6 @@ sim-toolbar-langbtn {
 .sim-lang-option.active {
   outline: 2px solid rgba(255,255,255,0.25);
 }
+
+
+

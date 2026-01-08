@@ -31,6 +31,8 @@ export class RectOverlay extends SimulatedObject {
   static DEFAULT_W = 220;
   static DEFAULT_H = 140;
 
+  kind="RectOverlay";
+
   /** @type {number} */
   w = RectOverlay.DEFAULT_W;
 
@@ -46,6 +48,9 @@ export class RectOverlay extends SimulatedObject {
   /** @type {ResizeObserver|null} */
   _ro = null;
 
+  /**
+   * @param {string} name 
+   */
   constructor(name = t("rect.title")) {
     super(name);
   }
@@ -169,10 +174,6 @@ export class RectOverlay extends SimulatedObject {
     this.iconEl.addEventListener(
       "click",
       (ev) => {
-        // Only allow panel open via click when SELECT tool is active (EditMode)
-        if (!SimControl.isEditMode) return;
-        if (this.simcontrol?.tool !== "select") return;
-
         ev.preventDefault();
         ev.stopPropagation();
         this.setPanelOpen(true);
@@ -186,6 +187,8 @@ export class RectOverlay extends SimulatedObject {
    * @param {boolean} open
    */
   setPanelOpen(open) {
+    if (this.simcontrol.mode !== "edit") return;
+    if (this.simcontrol.tool !== "select") return;
     this.panelOpen = open;
     this._applyPositions();
     this._applyPanelVisibility();
