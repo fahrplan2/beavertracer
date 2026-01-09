@@ -33,6 +33,7 @@ export class SimulatedObject {
 
     name;
     kind="SimulatedObject"; //needed for generating save id
+    icon="fa-heart";
     id;
     static idnumber = 0;
 
@@ -111,9 +112,17 @@ export class SimulatedObject {
         icon.className = "sim-node";
         icon.dataset.objid = String(this.id);
 
-        const title = document.createElement("div");
+        // 1) icon
+        const iconEl = document.createElement("i");
+        iconEl.classList.add("fas");
+        if (icon) iconEl.classList.add(this.icon);
+
+        // 2) text
+        const title = document.createElement("span");
         title.className = "title";
         title.textContent = this.name;
+
+        icon.appendChild(iconEl);
         icon.appendChild(title);
 
         return icon;

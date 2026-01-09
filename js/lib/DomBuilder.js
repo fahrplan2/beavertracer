@@ -129,4 +129,72 @@ export class DOMBuilder {
     static td(child) {
         return DOMBuilder.el("td", { children: [child] });
     }
+
+    /**
+      * Creates a toolbar button group with a label.
+      *
+      * @param {string} title - Group label text
+      * @param {HTMLElement} toolbar - Parent toolbar element
+      * @returns {HTMLDivElement} buttons container (append buttons here)
+      */
+
+    static buttongroup(title, toolbar) {
+        const group = document.createElement("div");
+        group.className = "sim-toolbar-group";
+
+        const label = document.createElement("div");
+        label.className = "sim-toolbar-group-label";
+        label.textContent = title;
+
+        const buttons = document.createElement("div");
+        buttons.className = "sim-toolbar-buttons";
+
+        group.appendChild(label);
+        group.appendChild(buttons);
+        toolbar.appendChild(group);
+
+        return buttons;
+    }
+
+    /**
+     * Creates a toolbar button with optional icon and active state.
+     *
+     * @param {Object} opts
+     * @param {string} opts.label - Button text
+     * @param {() => void} opts.onClick - Click handler
+     * @param {string} [opts.icon] - Optional icon classes
+     * @param {boolean} [opts.active=false] - Whether button starts active
+     * @param {string} [opts.className] - Additional CSS classes
+     * @returns {HTMLButtonElement}
+     */
+
+    static iconbutton({
+        label,
+        onClick,
+        icon,
+        active = false,
+        className = ""
+    }) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+
+        if (className) btn.classList.add(...className.split(" ").filter(Boolean));
+        if (active) btn.classList.add("active");
+
+        // 1) icon
+        const iconEl = document.createElement("i");
+        iconEl.classList.add("fas");
+        if (icon) iconEl.classList.add(icon);
+
+        // 2) text
+        const textEl = document.createElement("span");
+        textEl.textContent = label;
+
+        btn.appendChild(iconEl);
+        btn.appendChild(textEl);
+
+        btn.addEventListener("click", onClick);
+
+        return btn;
+    }
 }

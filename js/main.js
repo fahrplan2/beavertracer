@@ -6,7 +6,7 @@ import { defaultSimulation } from "./defaultsim.js";
 
 
 
-
+//******************* MAIN ENTRY POINT ************************/
 
 initLocale();
 
