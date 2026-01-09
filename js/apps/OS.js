@@ -13,8 +13,8 @@ import { SimpleTCPServerApp } from "./SimpleTCPServerApp.js";
 import { SimpleTCPClientApp } from "./SimpleTCPClientApp.js";
 import { SparktailHTTPClientApp } from "./SparktailHTTPClientApp.js";
 import { SimpleHTTPServerApp } from "./SimpleHTTPServerApp.js";
-import { PacketSnifferApp } from "./PacketSnifferApp.js";
 import { DNSServerApp } from "./DNSServerApp.js";
+import { DNSResolver } from "./lib/DNSResolver.js";
 
 export class OS {
 
@@ -37,6 +37,11 @@ export class OS {
      * @type {HTMLElement} Element where everything gets renderd into
      */
     root = document.createElement("div");
+
+    /**
+     * @type {DNSResolver} our dns resolver
+     */
+    dns = new DNSResolver(this,null);
 
     /** 
      * @type {Array<GenericProcess>} list of all running apps

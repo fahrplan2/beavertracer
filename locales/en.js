@@ -37,6 +37,12 @@ export default {
   "app.ipv4config.err.invalidGateway": "Invalid gateway address.",
   "app.ipv4config.err.gatewayZero": "Gateway must not be 0.0.0.0.",
   "app.ipv4config.err.applyFailed": "Apply failed: {reason}",
+  "app.ipv4config.label.dnsServer": "DNS server",
+  "app.ipv4config.err.invalidDnsServer": "Invalid DNS server address",
+  "app.ipv4config.msg.appliedWithGwDns":
+    "Applied interface {i}: IP {ip}, netmask {netmask}, gateway {gw}, DNS {dns}",
+  "app.ipv4config.msg.appliedGwClearedDns":
+    "Applied interface {i}: IP {ip}, netmask {netmask}, gateway cleared, DNS {dns}",
 
   "app.packetsniffer.nointerface": "No interface",
   "app.packetsniffer.title": "Packet Sniffer",
