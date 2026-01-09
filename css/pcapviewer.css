@@ -3,9 +3,10 @@
   display: grid;
   grid-template-rows: auto auto 1fr;
   font-family: system-ui, sans-serif;
+  box-sizing: border-box;
 
   width: 100%;
-  height: 100vh;
+  height: 100%;
   border-left: 1px solid #333;
   border-right: 1px solid #333;
   border-bottom: 1px solid #333;
@@ -35,16 +36,40 @@
 /* Main layout */
 .pcapviewer-layout {
   display: grid;
-  grid-template-rows: 1fr 1fr;
+  grid-template-rows: minmax(80px, 1fr) 5px minmax(120px, 1fr);
   min-height: 0;
 }
 
+/* Splitter */
+.pcapviewer-splitter {
+  cursor: row-resize;
+  background: transparent;
+  position: relative;
+}
+
+.pcapviewer-splitter::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 2px;
+  height: 1px;
+  background: var(--border, #ccc);
+}
+
+/* Hover feedback like Wireshark */
+.pcapviewer-splitter:hover::before {
+  background: #888;
+}
+
+
 .pcapviewer-bottom {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  grid-template-columns: minmax(180px, 1fr) 8px minmax(180px, 1fr);
+  gap: 0;          /* wichtig: der Splitter IST die Lücke */
   padding: 8px;
   min-height: 0;
+  overflow: hidden;    /* <-- wichtig: Container darf nie wachsen */
 }
 
 .pcapviewer-pane {
@@ -228,4 +253,50 @@
 
 .pcapviewer-tab-close:hover {
   opacity: 1;
+}
+
+
+.pcapviewer-vsplitter {
+  cursor: col-resize;
+  background: transparent;
+  position: relative;
+  touch-action: none;
+}
+
+.pcapviewer-vsplitter::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 3px;
+  width: 1px;
+  background: var(--border, #ccc);
+}
+
+.pcapviewer-vsplitter:hover::before {
+  background: #888;
+}
+
+
+/* allow grid children to shrink instead of forcing grid/container to grow */
+.pcapviewer-layout,
+.pcapviewer-bottom,
+.pcapviewer-pane {
+  min-width: 0;
+}
+
+/* specifically for the bottom grid children */
+.pcapviewer-bottom > * {
+  min-width: 0;
+}
+
+/* optional but recommended: prevent long content from expanding layout */
+.pcapviewer-pane--raw,
+.pcapviewer-pane--tree {
+  overflow: auto;
+}
+
+.pcapviewer-hexbyte--hl {
+  background: rgba(129, 137, 13, 0.45);
+  border-radius: 3px;
 }

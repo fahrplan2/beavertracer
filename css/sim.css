@@ -32,6 +32,10 @@
   z-index: 10;
 }
 
+#tracer {
+  height: 100%;
+}
+
 
 /* =========================================================
    SIMULATED OBJECTS (ICON + PANEL)

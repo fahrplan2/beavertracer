@@ -1,10 +1,8 @@
 // @ts-check
 import loadWiregasm from "@goodtools/wiregasm/dist/wiregasm";
 
-/**
- * @typedef {any} WiregasmModule
- * @typedef {any} DissectSession
- */
+/** @typedef {any} WiregasmModule */
+/** @typedef {any} DissectSession */
 
 /**
  * @typedef {{
@@ -14,6 +12,7 @@ import loadWiregasm from "@goodtools/wiregasm/dist/wiregasm";
  *   initialFilter?: string;
  *   autoSelectFirst?: boolean;
  *   onSessionClosed?: (name: string) => void;
+ *   hideComputedTreeNodes?: boolean; 
  * }} PCAPViewerOptions
  */
 
@@ -35,38 +34,68 @@ import loadWiregasm from "@goodtools/wiregasm/dist/wiregasm";
  *   hasCapture: boolean;
  *   needsRender: boolean;
  *   pendingAutoSelect: boolean;
- *   pcapPath:string
- * }} SessionState 
+ *   pcapPath: string;
+ * }} SessionState
+ */
+
+/**
+ * @typedef {{
+ *   containerSel: string;
+ *   splitterSel: string;
+ *   primaryPaneSel: string;
+ *   splitSizePx: number;
+ *   minA: number;
+ *   minB: number;
+ *   axis: "x" | "y";
+ *   cursor: "col-resize" | "row-resize";
+ *   storageKey: string;
+ *   getRatio: () => number|null;
+ *   setRatio: (v: number|null) => void;
+ *   getAbort: () => AbortController|null;
+ *   setAbort: (ac: AbortController|null) => void;
+ * }} SplitConfig
  */
 
 export class PCapViewer {
   /** @type {HTMLElement|null} */ #mount;
   /** @type {PCAPViewerOptions} */ #opt;
 
-  /** @type {WiregasmModule|null} */ #wg = null;
+  /** @type {number} */ #LIMIT;
 
+  // Wiregasm
+  /** @type {WiregasmModule|null} */ #wg = null;
+  /** @type {Promise<WiregasmModule>|null} */ #wgPromise = null;
+  /** @type {boolean} */ #wgInited = false;
+
+  // Sessions
   /** @type {Map<string, SessionState>} */ #sessions = new Map();
   /** @type {string|null} */ #activeName = null;
 
-  /** @type {number} */ #LIMIT;
-
   // DOM refs
   /** @type {HTMLElement|null} */ #root = null;
+  /** @type {HTMLElement|null} */ #tabsEl = null;
   /** @type {HTMLTableSectionElement|null} */ #tableBody = null;
   /** @type {HTMLInputElement|null} */ #filterEl = null;
   /** @type {HTMLElement|null} */ #statusEl = null;
   /** @type {HTMLElement|null} */ #treePane = null;
   /** @type {HTMLPreElement|null} */ #rawPane = null;
 
-  /** @type {HTMLElement|null} */ #tabsEl = null;
-
+  // UI state
   /** @type {number} */ #filterTimer = 0;
 
-  /** @type {Promise<WiregasmModule>|null} */ #wgPromise = null;
-  /** @type {boolean} */ #wgInited = false;
+  // Splitters (ratios + listener lifetime)
+  /** @type {number|null} */ #hSplitRatio = null;
+  /** @type {AbortController|null} */ #hSplitAbort = null;
+
+  /** @type {number|null} */ #vSplitRatio = null;
+  /** @type {AbortController|null} */ #vSplitAbort = null;
+
+  /** @type {Uint8Array|null} */ #activeFrameBytes = null;
+  /** @type {{start:number,length:number,ds:number}|null} */ #activeFieldRange = null;
+
 
   /**
-   * @param {HTMLElement} mountElement
+   * @param {HTMLElement|null} mountElement
    * @param {PCAPViewerOptions} [options]
    */
   constructor(mountElement, options = {}) {
@@ -75,54 +104,50 @@ export class PCapViewer {
     this.#LIMIT = options.limit ?? 200;
   }
 
-  // -------------------- Public API --------------------
+  // ======================================================================
+  // Public API
+  // ======================================================================
 
-  /**
- * Change where the viewer renders into.
- * Does NOT automatically render.
- * @param {HTMLElement|null} el
- */
+  /** @param {HTMLElement|null} el */
   setMount(el) {
     this.#mount = el;
   }
 
-  /**
-   * Ensure the viewer is rendered into the current mount element.
-   * Safe to call multiple times; it will re-render the shell if needed.
-   */
+  /** Render (or re-render) into current mount */
   render() {
     if (!this.#mount) return;
 
-    // If we previously rendered somewhere else, remove old root
+    // If rendered elsewhere, detach old root
     if (this.#root && this.#root.parentElement && this.#root.parentElement !== this.#mount) {
       this.#root.parentElement.removeChild(this.#root);
       this.#root = null;
     }
 
-    // If not rendered yet, or mount changed/cleared, render again
+    // Create shell if needed
     if (!this.#root || this.#root.parentElement !== this.#mount) {
       this.#renderShell();
       this.#wireUI();
+
+      // wire splitters (safe even if missing)
+      //@ts-ignore
+      this.#wireSplitter(this.#makeHSplitConfig());
+      //@ts-ignore
+      this.#wireSplitter(this.#makeVSplitConfig());
     }
 
-    // Repaint active session data into the (new) DOM
     this.#renderTabs();
     this.#renderActiveSession();
   }
 
-  /**
-   * Create a new session (tab). If name exists, does nothing.
-   * Does NOT automatically load a capture.
-   * By default, the first created session becomes active.
-   * @param {string} name
-   */
+  /** @param {string} name */
   newSession(name) {
     this.render();
+
     name = String(name ?? "").trim();
     if (!name) throw new Error("newSession(name): name must be non-empty");
     if (this.#sessions.has(name)) return;
 
-    const safeName = name.replaceAll(/[^a-zA-Z0-9._-]/g, "_");
+    const safe = name.replaceAll(/[^a-zA-Z0-9._-]/g, "_");
 
     const s = /** @type {SessionState} */ ({
       name,
@@ -134,32 +159,26 @@ export class PCapViewer {
       hasCapture: false,
       needsRender: false,
       pendingAutoSelect: this.#opt.autoSelectFirst ?? true,
-      pcapPath: `/uploads/${safeName}.pcap`,
+      pcapPath: `/uploads/${safe}.pcap`,
     });
 
     this.#sessions.set(name, s);
-
-    // If it's the first session, make it active
     if (!this.#activeName) this.#activeName = name;
 
     this.#renderTabs();
     this.#renderActiveSession();
   }
 
-  /**
-   * Switch the active tab/session.
-   * @param {string} name
-   */
+  /** @param {string} name */
   switchTab(name) {
     if (!this.#sessions.has(name)) throw new Error(`switchTab: session '${name}' not found`);
     this.#activeName = name;
 
-    this.render(); // if you added the mount/dynamic render logic
+    this.render();
 
     const s = this.#active();
     if (s?.sess && s.needsRender) {
       s.needsRender = false;
-
       this.#loadAndRenderFramesForActive();
 
       if (s.pendingAutoSelect) {
@@ -175,23 +194,15 @@ export class PCapViewer {
     this.#renderTabs();
   }
 
-
-  /**
-   * Close a session (tab) and delete underlying dissect session if present.
-   * If closing active tab, activates a neighbor (arbitrary first remaining).
-   * @param {string} name
-   */
+  /** @param {string} name */
   closeSession(name) {
     const s = this.#sessions.get(name);
     if (!s) return;
 
-    try {
-      if (s.sess) s.sess.delete();
-    } catch { }
+    try { s.sess?.delete?.(); } catch { }
     s.sess = null;
 
     this.#sessions.delete(name);
-
     try { this.#wg?.FS.unlink(s.pcapPath); } catch { }
 
     if (this.#activeName === name) {
@@ -202,32 +213,28 @@ export class PCapViewer {
     this.#renderTabs();
     this.#renderActiveSession();
 
-    try {
-      this.#opt.onSessionClosed?.(name);
-    } catch (e) {
-      // don’t break viewer if user callback throws
+    try { this.#opt.onSessionClosed?.(name); } catch (e) {
       console.error("onSessionClosed threw", e);
     }
   }
 
   /**
-   * Load PCAP bytes into a named session. Does NOT switch the active tab.
-   * If that session is active, it re-renders immediately.
+   * Load bytes into a named session (does not switch).
+   * Renders only if that tab is active; otherwise marks dirty.
    * @param {string} name
    * @param {Uint8Array} pcapBytes
    * @param {LoadBytesOptions} [opts]
    */
-
   async loadBytes(name, pcapBytes, opts = {}) {
     this.render();
+
     const s = this.#sessions.get(name);
     if (!s) throw new Error(`loadBytes: session '${name}' not found`);
 
-    const filter = (opts.filter ?? s.filter ?? "").trim();
-    s.filter = filter;
+    s.filter = (opts.filter ?? s.filter ?? "").trim();
+    s.pendingAutoSelect = opts.autoSelectFirst ?? this.#opt.autoSelectFirst ?? true;
 
-    // only reflect filter input if this session is currently active
-    if (this.#activeName === name && this.#filterEl) this.#filterEl.value = filter;
+    if (this.#activeName === name && this.#filterEl) this.#filterEl.value = s.filter;
 
     this.#setStatus("Loading Wiregasm…");
     await this.#initWiregasm();
@@ -235,44 +242,31 @@ export class PCapViewer {
     this.#setStatus("Loading PCAP…");
     this.#loadPcapBytesIntoSession(s, pcapBytes);
 
+    // reset session state
     s.skip = 0;
     s.selectedNo = null;
     s.selectedTreeEl = null;
     s.hasCapture = true;
 
-    // Render if this is the active session; otherwise just update status/tabs.
-    if (this.#activeName === name) {
-      this.#setStatus("Rendering…");
-      this.#loadAndRenderFramesForActive();
+    // inactive => do not render
+    if (this.#activeName !== name) {
+      s.needsRender = true;
+      this.#renderTabs();
+      this.#setStatus("Ready");
+      return;
+    }
 
-      const autoSel = opts.autoSelectFirst ?? this.#opt.autoSelectFirst ?? true;
+    // active => render now
+    s.needsRender = false;
+    this.#setStatus("Rendering…");
+    this.#loadAndRenderFramesForActive();
 
-      s.skip = 0;
-      s.selectedNo = null;
-      s.selectedTreeEl = null;
-      s.hasCapture = true;
-
-      // If not active: delay render
-      if (this.#activeName !== name) {
-        s.needsRender = true;
-        this.#renderTabs();       // optional: update tab indicator
-        this.#setStatus("Ready"); // or "Loaded (inactive)"
-        return;
-      }
-
-      // Active: render now
-      s.needsRender = false;
-      this.#setStatus("Rendering…");
-      this.#loadAndRenderFramesForActive();
-
-
-      if (autoSel) {
-        const first = this.#getFirstVisibleFrameNo();
-        if (typeof first === "number") {
-          s.selectedNo = first;
-          this.#loadAndRenderFrameDetailsForActive(first);
-          this.#highlightSelectedRow(first);
-        }
+    if (s.pendingAutoSelect) {
+      const first = this.#getFirstVisibleFrameNo();
+      if (typeof first === "number") {
+        s.selectedNo = first;
+        this.#loadAndRenderFrameDetailsForActive(first);
+        this.#highlightSelectedRow(first);
       }
     }
 
@@ -280,37 +274,31 @@ export class PCapViewer {
     this.#setStatus("Ready");
   }
 
-  /**
-   * Clean up DOM and all sessions.
-   */
   destroy() {
     if (this.#filterTimer) window.clearTimeout(this.#filterTimer);
 
     for (const s of this.#sessions.values()) {
-      try {
-        if (s.sess) s.sess.delete();
-      } catch { }
+      try { s.sess?.delete?.(); } catch { }
       s.sess = null;
     }
     this.#sessions.clear();
     this.#activeName = null;
 
+    // abort splitter listeners
+    this.#hSplitAbort?.abort();
+    this.#vSplitAbort?.abort();
+
     if (this.#root?.parentElement) this.#root.parentElement.removeChild(this.#root);
     this.#root = null;
   }
 
-  // -------------------- Internal: active session --------------------
-
-  /** @returns {SessionState|null} */
-  #active() {
-    if (!this.#activeName) return null;
-    return this.#sessions.get(this.#activeName) ?? null;
-  }
-
-  // -------------------- Rendering shell --------------------
+  // ======================================================================
+  // Shell / UI Wiring
+  // ======================================================================
 
   #renderShell() {
     if (!this.#mount) return;
+
     const root = document.createElement("div");
     root.className = "pcapviewer-root";
     root.innerHTML = `
@@ -335,10 +323,15 @@ export class PCapViewer {
           </table>
         </div>
 
+        <div class="pcapviewer-splitter"></div>
+
         <div class="pcapviewer-bottom">
           <div class="pcapviewer-pane pcapviewer-pane--tree">
             <div class="pcapviewer-treepane"></div>
           </div>
+
+          <div class="pcapviewer-vsplitter"></div>
+
           <div class="pcapviewer-pane pcapviewer-pane--raw">
             <pre class="pcapviewer-rawpane">Select a packet…</pre>
           </div>
@@ -356,9 +349,6 @@ export class PCapViewer {
     this.#statusEl = /** @type {HTMLElement} */ (root.querySelector(".pcapviewer-status"));
     this.#treePane = /** @type {HTMLElement} */ (root.querySelector(".pcapviewer-treepane"));
     this.#rawPane = /** @type {HTMLPreElement} */ (root.querySelector(".pcapviewer-rawpane"));
-
-    this.#renderTabs();
-    this.#renderActiveSession();
   }
 
   #wireUI() {
@@ -393,7 +383,15 @@ export class PCapViewer {
     });
   }
 
-  // -------------------- Tabs --------------------
+  // ======================================================================
+  // Tabs / Active Session Rendering
+  // ======================================================================
+
+  /** @returns {SessionState|null} */
+  #active() {
+    if (!this.#activeName) return null;
+    return this.#sessions.get(this.#activeName) ?? null;
+  }
 
   #renderTabs() {
     if (!this.#tabsEl) return;
@@ -411,15 +409,19 @@ export class PCapViewer {
 
     for (const name of names) {
       const s = this.#sessions.get(name);
+
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "pcapviewer-tab" + (name === this.#activeName ? " pcapviewer-tab--active" : "");
-      btn.textContent = name + (s?.hasCapture ? "" : " •");
       btn.title = s?.hasCapture ? name : `${name} (no capture loaded)`;
+
+      // label + dirty marker
+      const label = document.createElement("span");
+      label.textContent = name + (s?.hasCapture ? "" : " •");
+      btn.appendChild(label);
 
       btn.addEventListener("click", () => this.switchTab(name));
 
-      // optional close "x" inside
       const x = document.createElement("span");
       x.className = "pcapviewer-tab-close";
       x.textContent = "×";
@@ -437,10 +439,8 @@ export class PCapViewer {
   #renderActiveSession() {
     const s = this.#active();
 
-    // update filter input to active session filter
     if (this.#filterEl) this.#filterEl.value = s?.filter ?? "";
 
-    // render either empty state or frames
     if (!s || !s.sess) {
       this.#renderTable([], 0);
       if (this.#treePane) this.#treePane.textContent = s ? "No capture loaded in this session." : "No active session.";
@@ -450,6 +450,7 @@ export class PCapViewer {
     }
 
     this.#loadAndRenderFramesForActive();
+
     if (typeof s.selectedNo === "number") {
       this.#loadAndRenderFrameDetailsForActive(s.selectedNo);
       this.#highlightSelectedRow(s.selectedNo);
@@ -459,14 +460,9 @@ export class PCapViewer {
     }
   }
 
-  // -------------------- Status helpers --------------------
-
-  /** @param {string} txt */
-  #setStatus(txt) {
-    if (this.#statusEl) this.#statusEl.textContent = txt;
-  }
-
-  // -------------------- Wiregasm init/session --------------------
+  // ======================================================================
+  // Wiregasm init + loading
+  // ======================================================================
 
   async #initWiregasm() {
     if (this.#wg && this.#wgInited) return;
@@ -492,7 +488,6 @@ export class PCapViewer {
     }
   }
 
-
   /** @param {SessionState} s @param {Uint8Array} pcapBytes */
   #loadPcapBytesIntoSession(s, pcapBytes) {
     if (!this.#wg) throw new Error("Wiregasm not initialized");
@@ -500,168 +495,16 @@ export class PCapViewer {
     this.#wg.FS.mkdirTree("/uploads");
     this.#wg.FS.writeFile(s.pcapPath, pcapBytes);
 
-    if (s.sess) {
-      try {
-        s.sess.delete();
-      } catch { }
-      s.sess = null;
-    }
-
+    try { s.sess?.delete?.(); } catch { }
     s.sess = new this.#wg.DissectSession(s.pcapPath);
 
     const ret = s.sess.load();
     if (ret?.code !== 0) throw new Error("sess.load() failed: " + JSON.stringify(ret));
   }
 
-  // -------------------- Embind / unwrap --------------------
-
-  /**
-   * @param {any} value
-   * @param {{maxDepth?: number, release?: boolean}} [opt]
-   */
-  #unwrapAll(value, opt = {}) {
-    const { maxDepth = 50, release = false } = opt;
-    /** @type {WeakMap<object, any>} */
-    const seen = new WeakMap();
-
-    const isPrimitive = (x) => x == null || (typeof x !== "object" && typeof x !== "function");
-    const isVector = (x) => x && typeof x === "object" && typeof x.size === "function" && typeof x.get === "function";
-    const isIterable = (x) => x && typeof x[Symbol.iterator] === "function";
-
-    const tryRelease = (x) => {
-      if (!release) return;
-      try {
-        if (x && typeof x.delete === "function") x.delete();
-      } catch { }
-    };
-
-    /** @param {any} x @param {number} depth */
-    const unwrap = (x, depth) => {
-      if (isPrimitive(x)) return x;
-      if (depth > maxDepth) return "[[maxDepth]]";
-
-      if (typeof x === "object" || typeof x === "function") {
-        if (seen.has(x)) return seen.get(x);
-      }
-
-      if (isVector(x)) {
-        const n = x.size();
-        const out = new Array(n);
-        seen.set(x, out);
-        for (let i = 0; i < n; i++) out[i] = unwrap(x.get(i), depth + 1);
-        tryRelease(x);
-        return out;
-      }
-
-      if (x && typeof x === "object" && typeof x.entries === "function") {
-        try {
-          const ent = x.entries();
-          if (isIterable(ent)) {
-            const out = {};
-            seen.set(x, out);
-            for (const [k, v] of ent) out[String(unwrap(k, depth + 1))] = unwrap(v, depth + 1);
-            tryRelease(ent);
-            tryRelease(x);
-            return out;
-          }
-        } catch { }
-      }
-
-      if (x && typeof x === "object" && typeof x.keys === "function" && typeof x.get === "function") {
-        try {
-          const ks = x.keys();
-          const keysArr = unwrap(ks, depth + 1);
-          if (Array.isArray(keysArr)) {
-            const out = {};
-            seen.set(x, out);
-            for (const k of keysArr) {
-              let v;
-              try {
-                v = x.get(k);
-              } catch {
-                v = x.get(String(k));
-              }
-              out[String(k)] = unwrap(v, depth + 1);
-            }
-            tryRelease(ks);
-            tryRelease(x);
-            return out;
-          }
-        } catch { }
-      }
-
-      //@ts-ignore
-      if (ArrayBuffer.isView(x) && !(x instanceof DataView)) return Array.from(x);
-
-      if (Array.isArray(x)) {
-        const out = new Array(x.length);
-        seen.set(x, out);
-        for (let i = 0; i < x.length; i++) out[i] = unwrap(x[i], depth + 1);
-        return out;
-      }
-
-      if (typeof x === "function") return undefined;
-
-      const out = {};
-      seen.set(x, out);
-
-      for (const k of Object.keys(x)) {
-        const v = x[k];
-        if (typeof v === "function") continue;
-        out[k] = unwrap(v, depth + 1);
-      }
-
-      for (const k of [
-        "label", "text", "name", "filter", "start", "length",
-        "tree", "children", "items", "subtree",
-        "no", "num", "number", "time", "rel_time", "abs_time", "time_relative",
-        "src", "source", "dst", "destination", "proto", "protocol", "protocols",
-        "info", "summary", "columns", "bg", "fg", "marked", "ignored"
-      ]) {
-        if (k in out) continue;
-        try {
-          if (k in x) {
-            const v = x[k];
-            if (typeof v === "function") continue;
-            out[k] = unwrap(v, depth + 1);
-          }
-        } catch { }
-      }
-
-      return out;
-    };
-
-    return unwrap(value, 0);
-  }
-
-  /** @param {any} v */
-  #asArray(v) {
-    const u = this.#unwrapAll(v);
-    return Array.isArray(u) ? u : (u ? Object.values(u) : []);
-  }
-
-  // -------------------- Colors --------------------
-
-  /** @param {number} n */
-  #wiregasmColorToCss(n) {
-    if (typeof n !== "number" || !Number.isFinite(n) || n <= 0) return null;
-
-    if (n > 0xFFFFFF) {
-      const a = (n >>> 24) & 0xFF;
-      const r = (n >>> 16) & 0xFF;
-      const g = (n >>> 8) & 0xFF;
-      const b = n & 0xFF;
-      const alpha = Math.max(0, Math.min(1, a / 255));
-      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-    }
-
-    const r = (n >>> 16) & 0xFF;
-    const g = (n >>> 8) & 0xFF;
-    const b = n & 0xFF;
-    return `rgb(${r}, ${g}, ${b})`;
-  }
-
-  // -------------------- Frames & table --------------------
+  // ======================================================================
+  // Frames & Table
+  // ======================================================================
 
   #getFramesPlainForActive() {
     const s = this.#active();
@@ -674,10 +517,22 @@ export class PCapViewer {
     return { frames, matched: plain?.matched ?? frames.length };
   }
 
+  #loadAndRenderFramesForActive() {
+    const s = this.#active();
+    const { frames, matched } = this.#getFramesPlainForActive();
+    this.#renderTable(frames, matched);
+
+    if (!s) return;
+    this.#setStatus(`Active: ${s.name} • shown: ${frames.length} (skip ${s.skip}) / matched ${matched}`);
+  }
+
   /** @param {any} rawRow */
   #rowView(rawRow) {
-    const cols = Array.isArray(rawRow?.columns) ? rawRow.columns : (Array.isArray(rawRow?._raw?.columns) ? rawRow._raw.columns : null);
+    const cols = Array.isArray(rawRow?.columns)
+      ? rawRow.columns
+      : (Array.isArray(rawRow?._raw?.columns) ? rawRow._raw.columns : null);
 
+    // columns: [No, Time, Source, Destination, Protocol, Length, Info]
     if (cols && cols.length >= 6) {
       return {
         no: Number(cols[0]) || (rawRow.no ?? rawRow.num ?? rawRow.number),
@@ -701,21 +556,11 @@ export class PCapViewer {
     };
   }
 
-  #loadAndRenderFramesForActive() {
-    const s = this.#active();
-    const { frames, matched } = this.#getFramesPlainForActive();
-    this.#renderTable(frames, matched);
-
-    if (!s) return;
-    this.#setStatus(`Active: ${s.name} • shown: ${frames.length} (skip ${s.skip}) / matched ${matched}`);
-  }
-
   /** @param {any[]} frames @param {number} matched */
   #renderTable(frames, matched) {
     if (!this.#tableBody) return;
 
     this.#tableBody.innerHTML = "";
-
     const s = this.#active();
 
     for (const r0 of frames) {
@@ -730,7 +575,6 @@ export class PCapViewer {
 
       if (r0?.ignored) tr.classList.add("pcapviewer-row--ignored");
       if (r0?.marked) tr.classList.add("pcapviewer-row--marked");
-
       if (s && r.no === s.selectedNo) tr.classList.add("pcapviewer-row--selected");
 
       tr.innerHTML = `
@@ -772,14 +616,15 @@ export class PCapViewer {
     }
   }
 
-  // -------------------- Frame details: tree + raw --------------------
+  // ======================================================================
+  // Frame details: Tree + Raw
+  // ======================================================================
 
   /** @param {number} no */
   #getFramePlainForActive(no) {
     const s = this.#active();
     if (!s?.sess) return null;
-    const d = s.sess.getFrame(no);
-    return this.#unwrapAll(d);
+    return this.#unwrapAll(s.sess.getFrame(no));
   }
 
   /** @param {number} no */
@@ -795,7 +640,6 @@ export class PCapViewer {
     this.#treePane.innerHTML = "";
 
     const s = this.#active();
-
     if (!details) {
       this.#treePane.textContent = "Select a packet…";
       return;
@@ -819,29 +663,44 @@ export class PCapViewer {
 
     const wrapper = document.createElement("div");
     wrapper.className = "pcapviewer-tree";
-    wrapper.appendChild(this.#buildTree(treeRoot, 0));
+    wrapper.appendChild(this.#buildTree(treeRoot));
     this.#treePane.appendChild(wrapper);
   }
 
-  /**
-   * All nodes collapsed initially.
-   * @param {any[]|any} nodeOrArray
-   * @param {number} depth
-   */
-  #buildTree(nodeOrArray, depth = 0) {
+  /** @param {any[]|any} nodeOrArray */
+  /** @param {any[]|any} nodeOrArray */
+  #buildTree(nodeOrArray) {
     const ul = document.createElement("ul");
     const nodes = Array.isArray(nodeOrArray) ? nodeOrArray : [nodeOrArray];
 
     for (const n of nodes) {
       if (!n) continue;
 
-      const li = document.createElement("li");
-
       const kidsRaw = n.tree ?? n.children ?? n.items ?? n.subtree ?? null;
       const kids = Array.isArray(kidsRaw) ? kidsRaw : (kidsRaw ? [kidsRaw] : []);
       const hasKids = kids.length > 0;
 
+      const hideComputed = this.#opt.hideComputedTreeNodes ?? true; // default: hide for teaching
+      const isComputed = this.#isComputedTreeNode(n);
+
+      // ✅ If computed: hide it, but keep its children (promote)
+      if (hideComputed && isComputed) {
+        if (hasKids) {
+          // append children directly at this level
+          ul.appendChild(this.#buildTree(kids));
+        }
+        // if it has no kids -> just skip it entirely
+        continue;
+      }
+
+      // ----- normal rendering below (your existing code) -----
+      const li = document.createElement("li");
       const row = document.createElement("div");
+
+      const start = Number(n.start ?? 0);
+      const length = Number(n.length ?? 0);
+      const ds = Number(n.data_source_idx ?? 0);
+
       row.className = "pcapviewer-tree-node" + (hasKids ? "" : " pcapviewer-tree-leaf");
 
       const twisty = document.createElement("div");
@@ -849,6 +708,8 @@ export class PCapViewer {
 
       const label = document.createElement("div");
       label.className = "pcapviewer-tree-label";
+
+      // No more [] here (since we hide those nodes anyway)
       label.textContent = String(n.label ?? n.text ?? n.name ?? "(node)");
 
       row.appendChild(twisty);
@@ -858,7 +719,7 @@ export class PCapViewer {
       if (hasKids) {
         const childWrap = document.createElement("div");
         childWrap.className = "pcapviewer-tree-children";
-        childWrap.appendChild(this.#buildTree(kids, depth + 1));
+        childWrap.appendChild(this.#buildTree(kids));
         li.appendChild(childWrap);
 
         li.classList.add("pcapviewer-collapsed");
@@ -869,23 +730,21 @@ export class PCapViewer {
           twisty.textContent = collapsedNow ? "▸" : "▾";
         };
 
-        twisty.addEventListener("click", (ev) => {
-          ev.stopPropagation();
-          toggle();
-        });
-        label.addEventListener("click", (ev) => {
-          ev.stopPropagation();
-          toggle();
-        });
+        twisty.addEventListener("click", (ev) => { ev.stopPropagation(); toggle(); });
+        label.addEventListener("click", (ev) => { ev.stopPropagation(); toggle(); });
       } else {
         twisty.textContent = "•";
       }
 
+      // hover/click highlight stays as you have it:
+      row.addEventListener("pointerenter", () => this.#highlightHexRange(start, length, ds));
+      row.addEventListener("pointerleave", () => this.#highlightHexRange(0, 0, ds));
       row.addEventListener("click", (ev) => {
         ev.stopPropagation();
+        this.#highlightHexRange(start, length, ds);
         const s = this.#active();
         if (!s) return;
-        if (s.selectedTreeEl) s.selectedTreeEl.classList.remove("pcapviewer-selected");
+        s.selectedTreeEl?.classList.remove("pcapviewer-selected");
         row.classList.add("pcapviewer-selected");
         s.selectedTreeEl = row;
       });
@@ -910,14 +769,310 @@ export class PCapViewer {
 
     if (typeof b64 === "string" && b64.length) {
       const bytes = this.#b64ToBytes(b64);
-      this.#rawPane.textContent = this.#toHex(bytes);
+      this.#activeFrameBytes = bytes;
+      this.#activeFieldRange = null;
+      this.#renderHexHtml(bytes);     // NEW (instead of textContent)
       return;
     }
+
 
     this.#rawPane.textContent = JSON.stringify(details, null, 2);
   }
 
-  // -------------------- Small helpers --------------------
+  // ======================================================================
+  // Splitters (generic)
+  // ======================================================================
+
+  #makeHSplitConfig() {
+    /** @type {SplitConfig} */
+    return {
+      containerSel: ".pcapviewer-layout",
+      splitterSel: ".pcapviewer-splitter",
+      primaryPaneSel: ".pcapviewer-pane--table",
+      splitSizePx: 5,
+      minA: 80,
+      minB: 120,
+      axis: "y",
+      cursor: "row-resize",
+      storageKey: "pcapviewer.splitRatio.v1",
+      getRatio: () => this.#hSplitRatio,
+      setRatio: (v) => { this.#hSplitRatio = v; },
+      getAbort: () => this.#hSplitAbort,
+      setAbort: (ac) => { this.#hSplitAbort = ac; },
+    };
+  }
+
+  #makeVSplitConfig() {
+    /** @type {SplitConfig} */
+    return {
+      containerSel: ".pcapviewer-bottom",
+      splitterSel: ".pcapviewer-vsplitter",
+      primaryPaneSel: ".pcapviewer-pane--tree",
+      splitSizePx: 8,
+      minA: 180,
+      minB: 180,
+      axis: "x",
+      cursor: "col-resize",
+      storageKey: "pcapviewer.vSplitRatio.v1",
+      getRatio: () => this.#vSplitRatio,
+      setRatio: (v) => { this.#vSplitRatio = v; },
+      getAbort: () => this.#vSplitAbort,
+      setAbort: (ac) => { this.#vSplitAbort = ac; },
+    };
+  }
+
+  /** @param {SplitConfig} cfg */
+  #wireSplitter(cfg) {
+    const root = this.#root;
+    if (!root) return;
+
+    const splitter = /** @type {HTMLElement|null} */ (root.querySelector(cfg.splitterSel));
+    const container = /** @type {HTMLElement|null} */ (root.querySelector(cfg.containerSel));
+    const paneA = /** @type {HTMLElement|null} */ (root.querySelector(cfg.primaryPaneSel));
+    if (!splitter || !container || !paneA) return;
+
+    // cleanup old listeners
+    cfg.getAbort()?.abort();
+    const ac = new AbortController();
+    cfg.setAbort(ac);
+    const { signal } = ac;
+
+    const applyPx = (aPx) => {
+      const SPLIT = cfg.splitSizePx;
+      const minA = cfg.minA;
+      const minB = cfg.minB;
+
+      const rect = container.getBoundingClientRect();
+      const total = cfg.axis === "y" ? rect.height : rect.width;
+
+      const maxA = Math.max(minA, total - SPLIT - minB);
+      const clampedA = Math.max(minA, Math.min(maxA, aPx));
+      const bPx = Math.max(minB, total - SPLIT - clampedA);
+
+      if (cfg.axis === "y") {
+        container.style.gridTemplateRows = `${clampedA}px ${SPLIT}px ${bPx}px`;
+      } else {
+        container.style.gridTemplateColumns = `${clampedA}px ${SPLIT}px ${bPx}px`;
+      }
+
+      const usable = Math.max(1, total - SPLIT);
+      const ratio = clampedA / usable;
+      cfg.setRatio(ratio);
+
+      try { localStorage.setItem(cfg.storageKey, String(ratio)); } catch { }
+    };
+
+    const restore = () => {
+      let ratio = cfg.getRatio();
+
+      if (ratio == null) {
+        try {
+          const s = localStorage.getItem(cfg.storageKey);
+          const v = s != null ? Number(s) : NaN;
+          if (Number.isFinite(v) && v > 0 && v < 1) ratio = v;
+        } catch { }
+      }
+
+      if (ratio == null) ratio = 0.5;
+
+      const rect = container.getBoundingClientRect();
+      const total = cfg.axis === "y" ? rect.height : rect.width;
+      const usable = Math.max(1, total - cfg.splitSizePx);
+      applyPx(ratio * usable);
+    };
+
+    // restore after layout settled
+    requestAnimationFrame(restore);
+
+    let startPos = 0;
+    let startAPx = 0;
+
+    const onMove = (e) => {
+      const delta = (cfg.axis === "y" ? e.clientY : e.clientX) - startPos;
+      applyPx(startAPx + delta);
+    };
+
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove, true);
+      window.removeEventListener("pointerup", onUp, true);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+
+    splitter.addEventListener("pointerdown", (e) => {
+      startPos = cfg.axis === "y" ? e.clientY : e.clientX;
+      startAPx = cfg.axis === "y"
+        ? paneA.getBoundingClientRect().height
+        : paneA.getBoundingClientRect().width;
+
+      splitter.setPointerCapture?.(e.pointerId);
+
+      document.body.style.cursor = cfg.cursor;
+      document.body.style.userSelect = "none";
+
+      window.addEventListener("pointermove", onMove, true);
+      window.addEventListener("pointerup", onUp, true);
+    }, { signal });
+
+    const ro = new ResizeObserver(() => {
+      const ratio = cfg.getRatio();
+      if (ratio == null) return;
+      const rect = container.getBoundingClientRect();
+      const total = cfg.axis === "y" ? rect.height : rect.width;
+      const usable = Math.max(1, total - cfg.splitSizePx);
+      applyPx(ratio * usable);
+    });
+    ro.observe(container);
+
+    signal.addEventListener("abort", () => ro.disconnect(), { once: true });
+  }
+
+  // ======================================================================
+  // Embind / unwrap
+  // ======================================================================
+
+  /**
+   * @param {any} value
+   * @param {{maxDepth?: number, release?: boolean}} [opt]
+   */
+  #unwrapAll(value, opt = {}) {
+    const { maxDepth = 50, release = false } = opt;
+    /** @type {WeakMap<object, any>} */
+    const seen = new WeakMap();
+
+    const isPrimitive = (x) => x == null || (typeof x !== "object" && typeof x !== "function");
+    const isVector = (x) => x && typeof x === "object" && typeof x.size === "function" && typeof x.get === "function";
+    const isIterable = (x) => x && typeof x[Symbol.iterator] === "function";
+
+    const tryRelease = (x) => {
+      if (!release) return;
+      try { if (x && typeof x.delete === "function") x.delete(); } catch { }
+    };
+
+    const unwrap = (x, depth) => {
+      if (isPrimitive(x)) return x;
+      if (depth > maxDepth) return "[[maxDepth]]";
+
+      if ((typeof x === "object" || typeof x === "function") && seen.has(x)) return seen.get(x);
+
+      if (isVector(x)) {
+        const n = x.size();
+        const out = new Array(n);
+        seen.set(x, out);
+        for (let i = 0; i < n; i++) out[i] = unwrap(x.get(i), depth + 1);
+        tryRelease(x);
+        return out;
+      }
+
+      if (x && typeof x === "object" && typeof x.entries === "function") {
+        try {
+          const ent = x.entries();
+          if (isIterable(ent)) {
+            const out = {};
+            seen.set(x, out);
+            for (const [k, v] of ent) out[String(unwrap(k, depth + 1))] = unwrap(v, depth + 1);
+            tryRelease(ent);
+            tryRelease(x);
+            return out;
+          }
+        } catch { }
+      }
+
+      if (x && typeof x === "object" && typeof x.keys === "function" && typeof x.get === "function") {
+        try {
+          const ks = x.keys();
+          const keysArr = unwrap(ks, depth + 1);
+          if (Array.isArray(keysArr)) {
+            const out = {};
+            seen.set(x, out);
+            for (const k of keysArr) {
+              let v;
+              try { v = x.get(k); } catch { v = x.get(String(k)); }
+              out[String(k)] = unwrap(v, depth + 1);
+            }
+            tryRelease(ks);
+            tryRelease(x);
+            return out;
+          }
+        } catch { }
+      }
+
+      // @ts-ignore
+      if (ArrayBuffer.isView(x) && !(x instanceof DataView)) return Array.from(x);
+      if (Array.isArray(x)) {
+        const out = new Array(x.length);
+        seen.set(x, out);
+        for (let i = 0; i < x.length; i++) out[i] = unwrap(x[i], depth + 1);
+        return out;
+      }
+
+      if (typeof x === "function") return undefined;
+
+      const out = {};
+      seen.set(x, out);
+
+      for (const k of Object.keys(x)) {
+        const v = x[k];
+        if (typeof v === "function") continue;
+        out[k] = unwrap(v, depth + 1);
+      }
+
+      for (const k of [
+        "label", "text", "name", "filter", "start", "length",
+        "tree", "children", "items", "subtree",
+        "no", "num", "number", "time", "rel_time", "abs_time", "time_relative",
+        "src", "source", "dst", "destination", "proto", "protocol", "protocols",
+        "info", "summary", "columns", "bg", "fg", "marked", "ignored",
+      ]) {
+        if (k in out) continue;
+        try {
+          if (k in x) {
+            const v = x[k];
+            if (typeof v === "function") continue;
+            out[k] = unwrap(v, depth + 1);
+          }
+        } catch { }
+      }
+
+      return out;
+    };
+
+    return unwrap(value, 0);
+  }
+
+  /** @param {any} v */
+  #asArray(v) {
+    const u = this.#unwrapAll(v);
+    return Array.isArray(u) ? u : (u ? Object.values(u) : []);
+  }
+
+  // ======================================================================
+  // Colors + small helpers
+  // ======================================================================
+
+  /** @param {number} n */
+  #wiregasmColorToCss(n) {
+    if (typeof n !== "number" || !Number.isFinite(n) || n <= 0) return null;
+
+    if (n > 0xFFFFFF) {
+      const a = (n >>> 24) & 0xFF;
+      const r = (n >>> 16) & 0xFF;
+      const g = (n >>> 8) & 0xFF;
+      const b = n & 0xFF;
+      const alpha = Math.max(0, Math.min(1, a / 255));
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    const r = (n >>> 16) & 0xFF;
+    const g = (n >>> 8) & 0xFF;
+    const b = n & 0xFF;
+    return `rgb(${r}, ${g}, ${b})`;
+  }
+
+  /** @param {string} txt */
+  #setStatus(txt) {
+    if (this.#statusEl) this.#statusEl.textContent = txt;
+  }
 
   /** @param {string} s */
   #escapeHtml(s) {
@@ -933,16 +1088,51 @@ export class PCapViewer {
   }
 
   /** @param {Uint8Array} bytes */
-  #toHex(bytes) {
-    let out = "";
-    for (let i = 0; i < bytes.length; i += 16) {
-      const chunk = bytes.slice(i, i + 16);
-      out += Array.from(chunk)
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join(" ")
-        .toUpperCase();
-      out += "\n";
+  #renderHexHtml(bytes) {
+    if (!this.#rawPane) return;
+
+    // Build once: 16 bytes per line
+    let html = "";
+    for (let i = 0; i < bytes.length; i++) {
+      if (i % 16 === 0) {
+        if (i !== 0) html += "\n";
+      } else {
+        html += " ";
+      }
+      const hex = bytes[i].toString(16).padStart(2, "0").toUpperCase();
+      html += `<span class="pcapviewer-hexbyte" data-i="${i}">${hex}</span>`;
     }
-    return out;
+
+    this.#rawPane.innerHTML = html;
   }
+
+  #highlightHexRange(start, length, ds) {
+    if (!this.#rawPane) return;
+    if (!this.#activeFrameBytes) return;       // only ds0 supported in this minimal version
+    if (ds !== 0) return;
+
+    // Clear old highlight
+    for (const el of this.#rawPane.querySelectorAll(".pcapviewer-hexbyte--hl")) {
+      el.classList.remove("pcapviewer-hexbyte--hl");
+    }
+
+    // If no range -> nothing to highlight
+    if (!(length > 0)) return;
+
+    const end = Math.min(this.#activeFrameBytes.length, start + length);
+    for (let i = start; i < end; i++) {
+      const el = this.#rawPane.querySelector(`.pcapviewer-hexbyte[data-i="${i}"]`);
+      if (el) el.classList.add("pcapviewer-hexbyte--hl");
+    }
+
+  }
+
+  /** @param {any} n */
+  #isComputedTreeNode(n) {
+    const start = Number(n?.start ?? 0);
+    const length = Number(n?.length ?? 0);
+    return start === 0 && length === 0;
+  }
+
+
 }
