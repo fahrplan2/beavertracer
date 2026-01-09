@@ -2,8 +2,6 @@
 
 import { VirtualFileSystem } from "../apps/lib/VirtualFileSystem.js";
 import { IPStack } from "../devices/IPStack.js";
-import { Pcap } from "../pcap/Pcap.js";
-import { SimControl } from "../SimControl.js";
 import { SimulatedObject } from "./SimulatedObject.js";
 
 import { DOMBuilder } from "../lib/DomBuilder.js";
@@ -76,6 +74,7 @@ function getInterfaceLinkStatus(iface) {
 /* ------------------------------ Router ----------------------------- */
 
 export class Router extends SimulatedObject {
+    icon = "my-icon-router";
     kind = 'Router';
 
     /** @type {IPStack} */

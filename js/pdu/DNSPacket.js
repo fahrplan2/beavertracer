@@ -106,6 +106,7 @@ export class DNSPacket {
   static TYPE_NS = 2;
   static TYPE_CNAME = 5;
   static TYPE_PTR = 12;
+  static TYPE_MX = 15;
   static TYPE_TXT = 16;
   static TYPE_AAAA = 28;
 
@@ -285,7 +286,7 @@ export class DNSPacket {
    * @param {number} rdataOffset
    * @param {number} type
    * @param {Uint8Array} rdataBytes
-   * @returns {Uint8Array|string|string[]}
+   * @returns 
    */
   static _decodeRData(fullMsg, rdataOffset, type, rdataBytes) {
     if (type === DNSPacket.TYPE_A) {
@@ -313,6 +314,13 @@ export class DNSPacket {
         i += len;
       }
       return texts;
+    }
+    if (type === DNSPacket.TYPE_MX) {
+      // MX RDATA: preference (u16) + exchange (domain name)
+      if (rdataBytes.length < 3) return new Uint8Array(rdataBytes);
+      const pref = (rdataBytes[0] << 8) | rdataBytes[1];
+      const nameRes = DNSPacket._readName(fullMsg, rdataOffset + 2);
+      return { preference: pref, exchange: nameRes.name };
     }
     return new Uint8Array(rdataBytes);
   }
@@ -378,6 +386,21 @@ export class DNSPacket {
         bufs.push(out);
       }
       return DNSPacket._concat(bufs);
+    }
+    if (type === DNSPacket.TYPE_MX) {
+      // data: { preference: number, exchange: string }
+      if (!data || typeof data !== "object") throw new Error("MX data must be object");
+      const pref = Number(data.preference ?? 0);
+      const exchange = String(data.exchange ?? "");
+      if (!Number.isInteger(pref) || pref < 0 || pref > 65535) throw new Error("MX.preference must be 0..65535");
+      if (!exchange) throw new Error("MX.exchange required");
+
+      const nameBytes = DNSPacket._writeName(exchange);
+      const out = new Uint8Array(2 + nameBytes.length);
+      out[0] = (pref >> 8) & 0xff;
+      out[1] = pref & 0xff;
+      out.set(nameBytes, 2);
+      return out;
     }
 
     if (!(data instanceof Uint8Array)) {

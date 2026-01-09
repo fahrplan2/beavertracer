@@ -13,6 +13,12 @@ export default {
   "app.about.heading.systemInfo": "System info",
   "app.about.body.systemInfo": "OS: {os}\nPID: {pid}\nRunning apps: {runningApps}\nFocusID: {focusID}\nTime: {time}",
 
+  "app.dnsd.button.save": "save",
+  "app.dnsd.button.start": "start",
+  "app.dnsd.button.stop": "stop",
+  "app.dnsd.label.log": "Log",
+  "app.dnsd.title": "DNS-Server",
+
   "app.ipv4config.title": "IP Settings",
   "app.ipv4config.button.apply": "Apply",
   "app.ipv4config.label.interface": "Interface",
@@ -285,6 +291,16 @@ export default {
   "app.terminal.commands.arp.msg.header": "{iface}:",
   "app.terminal.commands.arp.msg.empty": "  (empty)",
 
+
+  "app.terminal.commands.dig.usage": "usage: dig [@server] name [type] [+short] [-t TYPE] [+time=N] [+tries=N] [-p PORT]",
+
+  "app.terminal.commands.dig.err.noUdp": "UDP networking not available",
+  "app.terminal.commands.dig.err.invalidPort": "Invalid port number",
+  "app.terminal.commands.dig.err.invalidTime": "Invalid timeout value",
+  "app.terminal.commands.dig.err.invalidTries": "Invalid number of tries",
+  "app.terminal.commands.dig.err.cannotResolveServer": "Cannot resolve DNS server {host}",
+  "app.terminal.commands.dig.out.timeout": ";; connection timed out; no servers could be reached (server {server}#{port})",
+
   "app.terminal.commands.ip.err.noNetDriver": "ip: no net driver",
   "app.terminal.commands.ip.err.noInterfaces": "ip: no interfaces",
   "app.terminal.commands.ip.err.unknownInterface": "ip: unknown interface: {iface}",
@@ -445,6 +461,7 @@ export default {
   "router.routingtable.yes": "yes",
   "router.routingtable.missing": "missing",
 
+  "sim.common": "Common",
   "sim.new": "New",
   "sim.load": "Load",
   "sim.save": "Save",
@@ -454,9 +471,9 @@ export default {
   "sim.project": "Project",
   "sim.speed": "Speed",
   "sim.pause": "Pause",
-  "sim.edittools": "Edit tools",
   "sim.about" : "About",
   "sim.trace" : "Trace",
+  "sim.reset" : "Reset",
 
   "sim.invalidfilewarning": "Invalid file format or unsupported save file format.",
   "sim.loadfailederror": "Load operation failed.",
@@ -484,6 +501,14 @@ export default {
   "switch.sat": "Switch Adress Table (SAT)",
   "switch.sat.mac": "MAC",
   "switch.sat.port": "Port",
+
+
+  "switch.features": "Features",
+  "switch.stp.disabled": "STP is disabled",
+  "switch.stp.enable": "enable Spanning Tree Protocol (STP)",
+  "switch.stp.status": "STP status",
+  "switch.vlan.config": "VLAN configuration",
+  "switch.vlan.enable": "enable VLAN",
 
   "switch.sat.empty": "The SAT is still empty.",
 

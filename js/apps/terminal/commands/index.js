@@ -28,6 +28,7 @@ import { netstat } from "./net/netstat.js";
 import { ping } from "./net/ping.js";
 import { traceroute } from "./net/traceroute.js";
 import { arp } from "./net/arp.js";
+import { dig } from "./net/dig.js";
 
 /**
  * @param {import("../../TerminalApp.js").TerminalApp} app
@@ -54,6 +55,7 @@ export function registerBuiltins(app) {
         mv,
 
         arp,
+        dig,
         ip,
         route,
         ss,
