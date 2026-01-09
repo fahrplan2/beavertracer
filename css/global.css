@@ -134,3 +134,7 @@ textarea:focus {
 .sim-panel-body {
     padding: 2px;
 }
+
+.about {
+  overflow: auto;
+}
