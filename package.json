@@ -1,11 +1,10 @@
 {
   "scripts": {
     "dev": "vite",
-    "prebuild": "mkdir -p public/wiregasm && find node_modules/@goodtools/wiregasm -maxdepth 10 \\( -name '*.wasm' -o -name '*.data' \\) -type f -exec cp -f {} public/wiregasm/ \\;", 
+    "prebuild": "mkdir -p public/wiregasm && find node_modules/@goodtools/wiregasm -maxdepth 10 \\( -name '*.wasm' -o -name '*.data' \\) -type f -exec cp -f {} public/wiregasm/ \\;",
     "build": "vite build",
     "preview": "vite preview"
   },
-
   "name": "networksim",
   "description": "",
   "version": "0.0.1",
@@ -30,6 +29,7 @@
     ]
   },
   "dependencies": {
+    "@fortawesome/fontawesome-free": "^7.1.0",
     "@goodtools/wiregasm": "^1.9.0",
     "recast": "^0.23.11"
   }

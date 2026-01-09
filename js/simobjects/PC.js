@@ -19,6 +19,7 @@ import { SimulatedObject } from "./SimulatedObject.js";
 export class PC extends SimulatedObject {
 
     kind="PC";
+    icon="fa-desktop";
 
     /** @type {IPStack} */
     get net() {

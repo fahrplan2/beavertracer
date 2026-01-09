@@ -263,7 +263,7 @@
   gap: 4px;
 
   height: 56px;
-  min-width: 56px;
+  width: 70px;
   padding: 8px 12px;
 
   border-radius: 10px;
@@ -279,25 +279,14 @@
   transition: transform 80ms ease, background 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
 }
 
-.sim-toolbar button::before,
-.sim-sidebar-btn::before {
-  content: "";
-  width: 18px;
-  height: 18px;
-  display: block;
 
-  background-color: currentColor;
+/**** Font Awesome Stuff ****/
 
-  mask-repeat: no-repeat;
-  mask-position: center;
-  mask-size: contain;
-
-  -webkit-mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  -webkit-mask-size: contain;
-
-  opacity: 0.9;
+.sim-toolbar-buttons .fas,
+.sim-sidebar-btn .fas {
+    font-size: 25px;
 }
+
 
 /* Active */
 .sim-toolbar button.active,
@@ -514,19 +503,6 @@
   cursor: not-allowed !important;
 }
 
-/* =========================================================
-   HOWTO: Include Icon in Buttons
-   =========================================================
-   .sim-ico-run::before {
-     mask-image: url("icons/play.svg");
-     -webkit-mask-image: url("icons/play.svg");
-   }
-*/
-
-
-
-
-
 /* --- Rect overlay --- */
 .sim-rect {
   position: absolute; /* base uses transform for x/y, that's fine */
@@ -594,6 +570,21 @@ sim-toolbar-langbtn {
 .sim-lang-option.active {
   outline: 2px solid rgba(255,255,255,0.25);
 }
+
+
+
+
+.fa-play {
+  color: green;
+}
+
+/* Colors for icons */
+.fa-ban {
+  color: var(--danger);
+}
+
+
+
 
 
 
