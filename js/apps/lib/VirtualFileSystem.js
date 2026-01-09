@@ -79,6 +79,7 @@ export class VirtualFileSystem {
     };
 
     //Default File System
+    this.mkdir("/etc", { recursive: true });
     this.mkdir("/home", { recursive: true });
     this.mkdir("/bin", { recursive: true });
     this.writeFile("/home/notes.txt", "hello vfs\n");

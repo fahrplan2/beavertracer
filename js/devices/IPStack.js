@@ -86,6 +86,73 @@ export class IPStack extends Observable {
         return bits;
     }
 
+    _isLimitedBroadcast(ip) {
+        return (ip >>> 0) === 0xffffffff;
+    }
+
+    /**
+     * Pick a sane source IP for locally generated traffic.
+     * @param {number} dstIpNum
+     * @returns {number} src ip (0 if none)
+     */
+    _pickSrcIp(dstIpNum) {
+        const dst = dstIpNum >>> 0;
+
+        // Loopback destination -> loopback src
+        if ((dst & 0xff000000) === 0x7f000000) {
+            return IPOctetsToNumber(127, 0, 0, 1) >>> 0;
+        }
+
+        // If destination is one of our interface addresses, use that
+        for (const itf of this.interfaces) {
+            if ((itf.ip >>> 0) === dst && (itf.ip >>> 0) !== 0) {
+                return itf.ip >>> 0;
+            }
+        }
+
+        // Otherwise choose src based on routing (longest prefix match)
+        const out = this._resolveOutgoing(dst);
+        if (out && (out.srcIp >>> 0) !== 0) return out.srcIp >>> 0;
+
+        return 0;
+    }
+
+    /**
+     * @param {number} ip
+     */
+    _isLoopback(ip) {
+        return ((ip >>> 0) & 0xff000000) === 0x7f000000;
+    }
+
+    /**
+     * @param {number} ip
+     * @param {number} ifIp
+     * @param {number} ifMask
+     */
+    _isDirectedBroadcastForInterface(ip, ifIp, ifMask) {
+        const nm = ifMask >>> 0;
+        const addr = ifIp >>> 0;
+        if (addr === 0 || nm === 0) return false;
+        const net = (addr & nm) >>> 0;
+        const bcast = (net | (~nm >>> 0)) >>> 0;
+        return ((ip >>> 0) === bcast);
+    }
+
+    /**
+     * Returns interface index if dst is a directed broadcast of that interface.
+     * @param {number} dstIp
+     * @returns {number} index or -1
+     */
+    _findDirectedBroadcastInterface(dstIp) {
+        const dst = dstIp >>> 0;
+        for (let i = 0; i < this.interfaces.length; i++) {
+            const itf = this.interfaces[i];
+            if (this._isDirectedBroadcastForInterface(dst, itf.ip, itf.netmask)) return i;
+        }
+        return -1;
+    }
+
+
     /**
      * Resolve outgoing interface + next hop + suitable src IP for a given destination.
      * Longest-prefix match over this.routingTable.
@@ -143,18 +210,6 @@ export class IPStack extends Observable {
             srcIp,
             prefixBits: bestBits,
         };
-    }
-
-    /**
-     * Extract local src IP from a TCP conn key.
-     * key format: `${srcIP}:${srcPort}>${dstIP}:${dstPort}`
-     * @param {string} key
-     * @returns {number|null}
-     */
-    _tcpLocalIpFromKey(key) {
-        const m = /^(\d+):(\d+)>(\d+):(\d+)$/.exec(key);
-        if (!m) return null;
-        return (Number(m[1]) >>> 0);
     }
 
     /**
@@ -256,9 +311,7 @@ export class IPStack extends Observable {
 
         //check if the destination is localnet.
         if ((dstip & 0xff000000) == 0x7f000000) { //127.x.x.x
-            if (internal && IPUInt8ToNumber(packet.src) === 0) {
-                packet.src = IPNumberToUint8(IPOctetsToNumber(127, 0, 0, 1));
-            }
+            if (!internal) return; // drop inbound loopback
             this.accept(packet);
             return;
         }
@@ -267,77 +320,100 @@ export class IPStack extends Observable {
         for (let i = 0; i < this.interfaces.length; i++) {
             const myip = this.interfaces[i].ip;
             if (dstip == myip) {
-                //set sourceaddress if packet was internal
-                if (internal && IPUInt8ToNumber(packet.src) == 0) {
-                    packet.src = IPNumberToUint8(IPOctetsToNumber(127, 0, 0, 1));
-                }
-
                 //accept the packet
                 this.accept(packet);
                 return;
             }
         }
 
-        //find the correct route
-        for (let bits = 32; bits >= 0; bits--) {
-            const netmask = prefixToNetmask(bits);
-            for (let i = 0; i < this.routingTable.length; i++) {
-                const r = this.routingTable[i];
+        // --- Broadcast handling ---
+        const isLimited = this._isLimitedBroadcast(dstip);
+        const bIf = this._findDirectedBroadcastInterface(dstip);
 
-                if (((dstip & netmask) == r.dst) && netmask == r.netmask) {
-                    //destination is a loopback interface (has id = "-1" and is not a real interface)
-                    if (r.interf == -1) {
-                        //set sourceaddress if packet was internal
-                        if (internal && IPUInt8ToNumber(packet.src) == 0) {
-                            packet.src = IPNumberToUint8(IPOctetsToNumber(127, 0, 0, 1));
-                        }
-                        //accept the packet
-                        this.accept(packet);
-                        return;
-                    }
+        if (internal) {
+            // internal: send broadcasts out on all links, do NOT accept() them
+            if (isLimited) {
+                const bmac = new Uint8Array([255, 255, 255, 255, 255, 255]);
 
-                    if (!internal) {
-                        //Check if forwarding is enabled
-                        if (!this.forwarding) {
-                            console.warn("Packet forwarding is disabled on this host");
-                            return;
-                        }
+                for (let i = 0; i < this.interfaces.length; i++) {
+                    const itf = this.interfaces[i];
+                    const ifIp = (itf.ip >>> 0);
+                    if (ifIp === 0) continue; // unconfigured
 
-                        //decrement TTL
-                        packet.ttl = packet.ttl - 1;
-                        if (packet.ttl <= 0) {
-                            this._sendICMPError(packet, 11, 0);
-                            return;
-                        }
-                    }
+                    const srcIp = (IPUInt8ToNumber(packet.src) >>> 0) !== 0
+                        ? (IPUInt8ToNumber(packet.src) >>> 0)
+                        : ifIp;
 
-                    //add soruce address if the packet still does not have one
-                    if (internal && IPUInt8ToNumber(packet.src) == 0) {
-                        packet.src = IPNumberToUint8(this.interfaces[r.interf].ip);
-                    }
+                    const p2 = new IPv4Packet({
+                        dst: packet.dst,              
+                        src: IPNumberToUint8(srcIp),
+                        protocol: packet.protocol,
+                        payload: packet.payload,
+                        ttl: packet.ttl,
+                    });
 
-                    let mac;
-                    //can we reach the destiation directly?
-                    if (r.nexthop == 0) {
-                        mac = await this.interfaces[r.interf].resolveIP(dstip);
-                    } else {
-                        mac = await this.interfaces[r.interf].resolveIP(r.nexthop);
-                    }
-
-                    //ICMP: Host unreachable
-                    if (mac == null) {
-                        this._sendICMPError(packet, 3, 1);
-                        return;
-                    }
-
-                    //forward the packet
-                    this.interfaces[r.interf].sendFrame(mac, 0x0800, packet.pack());
-                    return;
+                    itf.sendFrame(bmac, 0x0800, p2.pack());
                 }
+                return;
+            }
+
+            if (bIf !== -1) {
+                if (IPUInt8ToNumber(packet.src) === 0) {
+                    packet.src = IPNumberToUint8(this.interfaces[bIf].ip >>> 0);
+                }
+
+                const bmac = new Uint8Array([255, 255, 255, 255, 255, 255]);
+                this.interfaces[bIf].sendFrame(bmac, 0x0800, packet.pack());
+                return;
+            }
+        } else {
+            // inbound: deliver broadcasts locally, never forward them
+            if (isLimited || bIf !== -1) {
+                this.accept(packet);
+                return;
             }
         }
-        //Network is unreachable/unrouteable
-        this._sendICMPError(packet, 3, 0);
+        // --- end broadcast handling ---
+
+        const out = this._resolveOutgoing(dstip);
+        if (!out) {
+            this._sendICMPError(packet, 3, 0); // net unreachable
+            return;
+        }
+
+        if (out.interfIndex === -1) {
+            // loopback route
+            this.accept(packet);
+            return;
+        }
+
+        if (!internal) {
+            if (!this.forwarding) {
+                console.warn("Packet forwarding is disabled on this host");
+                return;
+            }
+
+            packet.ttl = packet.ttl - 1;
+            if (packet.ttl <= 0) {
+                this._sendICMPError(packet, 11, 0);
+                return;
+            }
+        }
+
+        // Next hop resolution
+        const r = out.route;
+        const interf = this.interfaces[out.interfIndex];
+
+        const nh = (r.nexthop >>> 0) === 0 ? dstip : (r.nexthop >>> 0);
+        const mac = await interf.resolveIP(nh);
+
+        if (mac == null) {
+            this._sendICMPError(packet, 3, 1); // host unreachable
+            return;
+        }
+
+        interf.sendFrame(mac, 0x0800, packet.pack());
+        return;
     }
 
     /****************************************************** TCP **********************************/
@@ -437,6 +513,12 @@ export class IPStack extends Observable {
             return;
         }
 
+        // Never generate ICMP errors for packets sent to limited broadcast
+        if (this._isLimitedBroadcast(dst)) return;
+
+        // Never generate ICMP errors for directed broadcast destinations
+        if (this._findDirectedBroadcastInterface(dst) !== -1) return;
+
         //ICMP takes the fist 8 Bytes from the packet in the response part
         const quotedLen = Math.min(original.payload.length, 8);
         const quoted = new Uint8Array(original.pack().slice(0, original.ihl * 4 + quotedLen));
@@ -498,10 +580,14 @@ export class IPStack extends Observable {
             case 3: //Destination unreachable
 
                 break;
-            case 8: //Echo request
-                if (icmp.code != 0) {
-                    throw new Error("ICMP-Code not understood");
+            case 8: { // Echo request
+                if (icmp.code != 0) throw new Error("ICMP-Code not understood");
+
+                const dst = IPUInt8ToNumber(packet.dst);
+                if (this._isLimitedBroadcast(dst) || this._findDirectedBroadcastInterface(dst) !== -1) {
+                    return; // don't reply to broadcast pings
                 }
+
                 this.send({
                     dst: IPUInt8ToNumber(packet.src),
                     src: IPUInt8ToNumber(packet.dst),
@@ -515,6 +601,7 @@ export class IPStack extends Observable {
                     }).pack()
                 });
                 break;
+            }
             case 11: //TTL excceded
                 break;
             default:
@@ -558,8 +645,11 @@ export class IPStack extends Observable {
      * @param {Uint8Array} [opts.payload] payload
      */
     async send(opts = {}) {
-        const dst = (opts.dst ?? 0);
-        const src = (opts.src ?? 0);
+        const dst = (opts.dst ?? 0) >>> 0;
+        let src = (opts.src ?? 0) >>> 0;
+        if (src === 0) {
+            src = this._pickSrcIp(dst);
+        }
         const protocol = (opts.protocol ?? 0);
         const ttl = (opts.ttl ?? 64);
         const payload = (opts.payload ?? new Uint8Array());

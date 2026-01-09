@@ -104,15 +104,15 @@ export class NetworkInterface extends Observable {
                 break;
 
             case 0x8100:  //VLAN
-                throw new Error("Unimplemented yet");
+                console.log("Unimplemented yet");
                 break;
 
             case 0x86DD:   //IPv6
-                throw new Error("Unimplemented yet");
+                console.log("Unimplemented yet");
                 break;
 
             default:
-                throw new Error("Unimplemented yet");
+                console.log("Unimplemented yet");
         }
     }
 

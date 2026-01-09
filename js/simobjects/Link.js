@@ -121,22 +121,23 @@ export class Link extends SimulatedObject {
     }
     if (b) {
       this._startInFlight("BtoA", b);
-      this.simcontrol.pcapController.updateIf(this.B.name + ": "+this.link.portB.name, this.link.portA.loggedFrames);
+      this.simcontrol.pcapController.updateIf(this.B.name + ": "+this.link.portB.name, this.link.portB.loggedFrames);
     }
   }
 
   step2() {
-
     //Update Traces
     const a = this.link.AtoB ?? null;
     const b = this.link.BtoA ?? null;
+
+    this.link.step2();
+
     if (a) {
-      this.simcontrol.pcapController.updateIf(this.A.name + ": "+this.link.portA.name, this.link.portA.loggedFrames);
+      this.simcontrol.pcapController.updateIf(this.B.name + ": "+this.link.portB.name, this.link.portB.loggedFrames);
     }
     if (b) {
-      this.simcontrol.pcapController.updateIf(this.B.name + ": "+this.link.portB.name, this.link.portA.loggedFrames);
+      this.simcontrol.pcapController.updateIf(this.A.name + ": "+this.link.portA.name, this.link.portA.loggedFrames);
     }
-    this.link.step2();
     for (const p of this._packets) p.el.remove();
     this._packets = [];
   }

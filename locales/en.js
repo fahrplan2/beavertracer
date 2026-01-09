@@ -285,6 +285,16 @@ export default {
   "app.terminal.commands.arp.msg.header": "{iface}:",
   "app.terminal.commands.arp.msg.empty": "  (empty)",
 
+
+  "app.terminal.commands.dig.usage": "usage: dig [@server] name [type] [+short] [-t TYPE] [+time=N] [+tries=N] [-p PORT]",
+
+  "app.terminal.commands.dig.err.noUdp": "UDP networking not available",
+  "app.terminal.commands.dig.err.invalidPort": "Invalid port number",
+  "app.terminal.commands.dig.err.invalidTime": "Invalid timeout value",
+  "app.terminal.commands.dig.err.invalidTries": "Invalid number of tries",
+  "app.terminal.commands.dig.err.cannotResolveServer": "Cannot resolve DNS server {host}",
+  "app.terminal.commands.dig.out.timeout": ";; connection timed out; no servers could be reached (server {server}#{port})",
+
   "app.terminal.commands.ip.err.noNetDriver": "ip: no net driver",
   "app.terminal.commands.ip.err.noInterfaces": "ip: no interfaces",
   "app.terminal.commands.ip.err.unknownInterface": "ip: unknown interface: {iface}",
@@ -485,6 +495,14 @@ export default {
   "switch.sat": "Switch Adress Table (SAT)",
   "switch.sat.mac": "MAC",
   "switch.sat.port": "Port",
+
+
+  "switch.features": "Features",
+  "switch.stp.disabled": "STP is disabled",
+  "switch.stp.enable": "enable Spanning Tree Protocol (STP)",
+  "switch.stp.status": "STP status",
+  "switch.vlan.config": "VLAN configuration",
+  "switch.vlan.enable": "enable VLAN",
 
   "switch.sat.empty": "The SAT is still empty.",
 

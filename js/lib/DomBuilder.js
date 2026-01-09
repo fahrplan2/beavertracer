@@ -76,15 +76,24 @@ export class DOMBuilder {
      * @param {string} [opts.value]
      * @param {string} [opts.placeholder]
      * @param {boolean} [opts.disabled]
+     * @param {string} [opts.type]      
      * @returns {HTMLInputElement}
      */
     static input(opts = {}) {
-        const i = /** @type {HTMLInputElement} */ (DOMBuilder.el("input", { className: opts.className }));
+        const i = /** @type {HTMLInputElement} */ (
+            DOMBuilder.el("input", {
+                className: opts.className
+            })
+        );
+
+        if (opts.type != null) i.type = opts.type;
         if (opts.value != null) i.value = String(opts.value);
         if (opts.placeholder != null) i.placeholder = String(opts.placeholder);
         if (opts.disabled != null) i.disabled = !!opts.disabled;
+
         return i;
     }
+
 
     /**
      * @param {string} text

@@ -154,23 +154,16 @@ export class SimControl {
      * advances the simulation in 1 step
      */
     step() {
-        try {
-            for (let i = 0; i < this.simobjects.length; i++) {
-                const x = this.simobjects[i];
+        for (let i = 0; i < this.simobjects.length; i++) {
+            const x = this.simobjects[i];
 
-                //Links have two internal steps which need to be called "abwechselnd"
-                if (x instanceof Link) {
-                    //if (this.endStep) {
-                    x.step2();
-                    x.step1();
-                    this.tickId++;
-                    //} else {
-                    //    
-                    //}
-                }
+            //Links have two internal steps which need to be called "abwechselnd"
+            if (x instanceof Link) {
+                //if (this.endStep) {
+                x.step2();
+                x.step1();
+                this.tickId++;
             }
-        } catch (error) {
-            console.error(error instanceof Error ? error.message : String(error));
         }
 
         this.redrawLinks();
@@ -355,9 +348,7 @@ export class SimControl {
                 //leave edit mode
                 if (this.mode === "edit") {
                     this._leaveEditMode();
-                } else {
-                    this.pause();  //just in case
-                }
+                } 
                 this.tabControler.gotoTab("trace");
                 this.mode = "trace";
 
@@ -443,7 +434,7 @@ export class SimControl {
                 icon: "fa-arrow-rotate-left",
                 onClick: () => {
                     this.restore(this.toJSON());
-                    this.mode="run";
+                    this.mode = "run";
                     this.pause();
                 }
             }));
