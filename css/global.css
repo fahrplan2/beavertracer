@@ -30,6 +30,10 @@
   --warning: oklch(78% 0.17 85);
   --danger: oklch(62% 0.20 25);
 
+  --green: var(--ok);
+  --blue:  oklch(34.125% 0.19032 270.352);
+  --white: #FFFFFF;
+  
   --ok-strong: color-mix(in oklch, var(--ok), black 18%);
   --ok-soft: color-mix(in oklch, var(--ok), white 78%);
   --ok-tint: color-mix(in oklch, var(--ok), white 88%);
