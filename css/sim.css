@@ -192,39 +192,44 @@
   flex-direction: row;      /* überschreibt column */
   align-items: center;      /* vertikal */
   justify-content: center;  /* horizontal */
-  max-width: 72px;
+  max-width: 90px;
+  border: none;
 }
 
 .sim-toolbar-branding {
   position: relative;
-  font-size: 18px;
+  height: 100%;
+  font-size: 25px;
   font-weight: 700;
   letter-spacing: 0.2px;
   padding: 0 12px;
   color: var(--text);
   user-select: none;
   text-align: center;
+  display: flex;
+  align-items: center;      /* vertical center */
+  justify-content: center;  /* horizontal center */
   z-index: 0;
 }
 
 .sim-toolbar-branding::after {
-  content: "🦫";
-
+  content: "";
   position: absolute;
-  inset: 0;                       
+  inset: 0;
+
   display: flex;
   align-items: center;
   justify-content: center;
 
-  font-size: 60px;                
-  opacity: 0.30;                  
+  background-image: url("/beaver.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 70px 70px;
 
-  pointer-events: none;           
-  z-index: -1;                     
- }
-
-
-
+  opacity: 0.40;
+  pointer-events: none;
+  z-index: -1;
+}
 
 /* =========================================================
    EDIT SIDEBAR
@@ -572,10 +577,16 @@ sim-toolbar-langbtn {
 }
 
 
+.sim-node .fas {
+  font-size: 32px;
+}
 
+.fa-desktop {
+  color: var(--blue);
+}
 
 .fa-play {
-  color: green;
+  color: var(--green);
 }
 
 /* Colors for icons */
