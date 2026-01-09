@@ -55,7 +55,7 @@ export const defaultSimulation = {
           },
           {
             "type": "dir",
-            "name": "bin",
+            "name": "etc",
             "ctime": 1767703885861,
             "mtime": 1767703885861,
             "children": []
@@ -137,7 +137,7 @@ export const defaultSimulation = {
           },
           {
             "type": "dir",
-            "name": "bin",
+            "name": "etc",
             "ctime": 1767703885864,
             "mtime": 1767703885864,
             "children": []
@@ -256,7 +256,7 @@ export const defaultSimulation = {
           },
           {
             "type": "dir",
-            "name": "bin",
+            "name": "etc",
             "ctime": 1767704009087,
             "mtime": 1767704009087,
             "children": []
@@ -338,7 +338,7 @@ export const defaultSimulation = {
           },
           {
             "type": "dir",
-            "name": "bin",
+            "name": "etc",
             "ctime": 1767704012478,
             "mtime": 1767704012478,
             "children": []

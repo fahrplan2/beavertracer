@@ -27,6 +27,15 @@ export class EthernetPort extends Observable {
 
     name;
 
+    /** @type {"tagged"|"untagged"} */
+    vlanMode = "untagged";
+
+    /** Port VLAN ID for untagged ingress / untagged membership */
+    pvid = 1;
+
+    /** @type {Set<number>} */
+    allowedVlans = new Set([1]);
+
     /**
      * 
      * @param {string} name 
@@ -34,6 +43,19 @@ export class EthernetPort extends Observable {
     constructor(name) {
         super();
         this.name = name;
+    }
+
+
+    setTagged(allowed = [1], pvid = 1) {
+        this.vlanMode = "tagged";
+        this.allowedVlans = new Set(allowed);
+        this.pvid = pvid;
+    }
+
+    setUntagged(pvid = 1) {
+        this.vlanMode = "untagged";
+        this.pvid = pvid;
+        // allowedVlans not used
     }
 
     /**
@@ -55,8 +77,8 @@ export class EthernetPort extends Observable {
     recieve(bytes) {
         let frame = EthernetFrame.fromBytes(bytes);
         this.inBuffer.push(frame);
-        this.doUpdate();
         this.loggedFrames.push(new LoggedFrame(bytes));
+        this.doUpdate();
     }
 
     getNextOutgoingFrame() {
@@ -80,6 +102,7 @@ export class EthernetPort extends Observable {
      */
     link(link) {
         this.linkref = link;
+        this.doUpdate();
     }
 
     unlink() {
@@ -87,15 +110,16 @@ export class EthernetPort extends Observable {
         this.inBuffer = [];
         this.outBuffer = [];
         this.loggedFrames = [];
+        this.doUpdate();
     }
 
     /** @returns {boolean} */
-    isFree() { 
-        return this.linkref == null; 
+    isFree() {
+        return this.linkref == null;
     }
 
     /** @returns {boolean} */
-    isLinked() { 
-        return this.linkref != null; 
+    isLinked() {
+        return this.linkref != null;
     }
 }

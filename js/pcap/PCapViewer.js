@@ -39,6 +39,7 @@ import { SplitGrid } from "./lib/SplitGrid.js";
  *   pendingAutoSelect: boolean;
  *   pcapPath: string;
  *   hidden: boolean;
+ *   loadSeq: number;
  * }} SessionState
  */
 
@@ -164,7 +165,8 @@ export class PCapViewer {
       needsRender: false,
       pendingAutoSelect: this.#opt.autoSelectFirst ?? true,
       pcapPath: `/uploads/${safe}.pcap`,
-      hidden: true
+      hidden: true,
+      loadSeq: 0,
     });
 
     this.#sessions.set(name, s);
@@ -266,19 +268,21 @@ export class PCapViewer {
     const s = this.#sessions.get(name);
     if (!s) throw new Error(`loadBytes: session '${name}' not found`);
 
+    const mySeq = ++s.loadSeq;          // ✅ claim “latest”
+    const stillLatest = () => s.loadSeq === mySeq;
+
     s.filter = (opts.filter ?? s.filter ?? "").trim();
     s.pendingAutoSelect = opts.autoSelectFirst ?? this.#opt.autoSelectFirst ?? true;
 
     if (this.#activeName === name && this.#filterEl) this.#filterEl.value = s.filter;
 
-    const wasmUrl = this.#opt.locateWasm ?? "/wiregasm/wiregasm.wasm";
-    const dataUrl = this.#opt.locateData ?? "/wiregasm/wiregasm.data";
-
     this.#setStatus("Loading Wiregasm…");
     await this.#initWiregasm();
-    
+    if (!stillLatest()) return;         // ✅ stale completion -> ignore
+
     this.#setStatus("Loading PCAP…");
     this.#loadPcapBytesIntoSession(s, pcapBytes);
+    if (!stillLatest()) return;
 
     // reset session state
     s.skip = 0;
@@ -286,7 +290,6 @@ export class PCapViewer {
     s.selectedTreeEl = null;
     s.hasCapture = true;
 
-    // inactive => do not render
     if (this.#activeName !== name) {
       s.needsRender = true;
       this.#renderTabs();
@@ -294,10 +297,10 @@ export class PCapViewer {
       return;
     }
 
-    // active => render now
     s.needsRender = false;
     this.#setStatus("Rendering…");
     this.#loadAndRenderFramesForActive();
+    if (!stillLatest()) return;
 
     if (s.pendingAutoSelect) {
       const first = this.#getFirstVisibleFrameNo();
@@ -311,6 +314,7 @@ export class PCapViewer {
     this.#renderTabs();
     this.#setStatus("Ready");
   }
+
 
   destroy() {
     if (this.#filterTimer) window.clearTimeout(this.#filterTimer);

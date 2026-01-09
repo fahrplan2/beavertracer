@@ -14,6 +14,7 @@ import { SimpleTCPClientApp } from "./SimpleTCPClientApp.js";
 import { SparktailHTTPClientApp } from "./SparktailHTTPClientApp.js";
 import { SimpleHTTPServerApp } from "./SimpleHTTPServerApp.js";
 import { PacketSnifferApp } from "./PacketSnifferApp.js";
+import { DNSServerApp } from "./DNSServerApp.js";
 
 export class OS {
 
@@ -78,7 +79,7 @@ export class OS {
     _registerApps() {
         const launchlist = 
             [IPv4ConfigApp, TerminalApp, TextEditorApp, SimpleTCPClientApp, SimpleTCPServerApp, 
-            SimpleHTTPServerApp, SparktailHTTPClientApp, UDPEchoServerApp, PacketSnifferApp, AboutApp];
+            SimpleHTTPServerApp, SparktailHTTPClientApp, UDPEchoServerApp, DNSServerApp, AboutApp];
 
         launchlist.forEach((e) => this.exec(e));
     }
