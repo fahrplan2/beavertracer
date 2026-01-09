@@ -2,7 +2,7 @@
 
 export const defaultSimulation = {
   "version": 4,
-  "tick": 32,
+  "tick": 250,
   "objects": [
     {
       "kind": "PC",
