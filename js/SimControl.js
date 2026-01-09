@@ -255,6 +255,10 @@ export class SimControl {
         const root = this.root;
         if (!root) return;
 
+
+        const prevScrollLeft = this.nodesLayer?.scrollLeft ?? 0;
+        const prevScrollTop = this.nodesLayer?.scrollTop ?? 0;
+
         root.replaceChildren();
         root.classList.add("sim-root");
 
@@ -434,6 +438,17 @@ export class SimControl {
                     }
                 }));
             }
+            gSpeeds.appendChild(DOMBuilder.iconbutton({
+                label: t("sim.reset"),
+                icon: "fa-arrow-rotate-left",
+                onClick: () => {
+                    this.restore(this.toJSON());
+                    this.mode="run";
+                    this.pause();
+                }
+            }));
+
+
         }
 
         addSeparator();
@@ -490,8 +505,8 @@ export class SimControl {
                 ["select", t("sim.tool.select"), "fa-arrow-pointer"],
                 ["link", t("sim.tool.link"), "fa-link"],
                 ["place-pc", t("sim.tool.pc"), "fa-desktop"],
-                ["place-switch", t("sim.tool.switch"), "fa-heart"],
-                ["place-router", t("sim.tool.router"), "fa-heart"],
+                ["place-switch", t("sim.tool.switch"), "my-icon-switch"],
+                ["place-router", t("sim.tool.router"), "my-icon-router"],
                 ["place-text", t("sim.tool.textbox"), "fa-t"],
                 ["place-rect", t("sim.tool.rectangle"), "fa-square"],
                 ["delete", t("sim.tool.delete"), "fa-ban"],
@@ -614,8 +629,8 @@ export class SimControl {
             aboutbody.className = "about";
             aboutbody.id = "about";
             aboutbody.classList.add("tab-content");
-            new StaticPageLoader().load(aboutbody, "/pages/about/index.html");
             aboutbody.classList.add("active");
+            new StaticPageLoader().load(aboutbody, "/pages/about/index.html");
             root.appendChild(aboutbody);
         }
 
@@ -630,6 +645,12 @@ export class SimControl {
             root.appendChild(simbody);
             this.redrawLinks();
         }
+
+        queueMicrotask(() => {
+            if (!this.nodesLayer) return;
+            this.nodesLayer.scrollLeft = prevScrollLeft;
+            this.nodesLayer.scrollTop = prevScrollTop;
+        });
 
     }
 
@@ -828,9 +849,8 @@ export class SimControl {
         // 3) fix id generator
         SimulatedObject.idnumber = maxId + 1;
 
-        // resets the ui
-        this._enterEditMode();
         this.isPaused = true;
+        this.render();
         this.redrawLinks();
     }
 

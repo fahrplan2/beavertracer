@@ -27,6 +27,7 @@ function macBigIntToPretty(macBig) {
 export class Switch extends SimulatedObject {
 
     kind="Switch";
+    icon = "my-icon-switch";
 
     /** @type {SwitchBackplane} */
     backplane;

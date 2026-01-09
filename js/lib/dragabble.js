@@ -147,24 +147,12 @@ function clampTranslate(el, proposed, current, boundaryLike, clampToViewport) {
   let clampedX = proposed.x;
   let clampedY = proposed.y;
 
-  const boxW = box.right - box.left;
-  const boxH = box.bottom - box.top;
-
-  if (elRectNow.width <= boxW) {
-    if (nextLeft < box.left) clampedX += (box.left - nextLeft);
-    if (nextRight > box.right) clampedX -= (nextRight - box.right);
-  } else {
-    if (nextLeft !== box.left) clampedX += (box.left - nextLeft);
-  }
-
-  if (elRectNow.height <= boxH) {
-    if (nextTop < box.top) clampedY += (box.top - nextTop);
-    if (nextBottom > box.bottom) clampedY -= (nextBottom - box.bottom);
-  } else {
-    if (nextTop !== box.top) clampedY += (box.top - nextTop);
-  }
+  // only prevent leaving west/north
+  if (nextLeft < box.left) clampedX += (box.left - nextLeft);
+  if (nextTop < box.top) clampedY += (box.top - nextTop);
 
   return { x: clampedX, y: clampedY };
+
 }
 
 /**
@@ -191,7 +179,15 @@ function isOnResizeHandle(targetEl, e, sizePx = 16) {
  * @param {DraggableOptions=} options
  * @returns {DraggableController}
  */
+
 export function makeDraggable(el, options = {}) {
+  const autoScrollMargin = 40; // px from edge to start scrolling
+  const autoScrollStep = 18;   // px per frame (tune)
+  let autoScrollRaf = /** @type {number|null} */ (null);
+
+  /** @type {{x:number, y:number, event: PointerEvent} | null} */
+  let lastPointer = null;
+
   if (!(el instanceof HTMLElement)) {
     throw new TypeError("makeDraggable: el must be an HTMLElement");
   }
@@ -228,6 +224,11 @@ export function makeDraggable(el, options = {}) {
     throw new TypeError("makeDraggable: options.handle must be an HTMLElement");
   }
 
+  /** @type {HTMLElement|null} */
+  let activeBoundaryEl = null;
+  let startScrollLeft = 0;
+  let startScrollTop = 0;
+
   const mt = asListenerTarget(moveTarget);
 
   const prev = {
@@ -255,13 +256,75 @@ export function makeDraggable(el, options = {}) {
   let longPressTimer = null;
 
   let dragAllowed = false;
-
   let dragEnabledForPointer = true;
 
   function clearLongPressTimer() {
     if (longPressTimer != null) {
       window.clearTimeout(longPressTimer);
       longPressTimer = null;
+    }
+  }
+
+  function stopAutoScrollLoop() {
+    if (autoScrollRaf != null) cancelAnimationFrame(autoScrollRaf);
+    autoScrollRaf = null;
+  }
+
+  function startAutoScrollLoop() {
+    if (autoScrollRaf != null) return;
+
+    const tick = () => {
+      autoScrollRaf = requestAnimationFrame(tick);
+
+      if (!dragging || !dragStarted || !activeBoundaryEl || !lastPointer) return;
+
+      // 1) Scroll container (if pointer near edge)
+      const r = activeBoundaryEl.getBoundingClientRect();
+      let sx = 0, sy = 0;
+
+      if (lastPointer.x < r.left + autoScrollMargin) sx = -1;
+      else if (lastPointer.x > r.right - autoScrollMargin) sx = 1;
+
+      if (lastPointer.y < r.top + autoScrollMargin) sy = -1;
+      else if (lastPointer.y > r.bottom - autoScrollMargin) sy = 1;
+
+      if (sx) activeBoundaryEl.scrollLeft += sx * autoScrollStep;
+      if (sy) activeBoundaryEl.scrollTop  += sy * autoScrollStep;
+
+      // 2) IMPORTANT: keep element under cursor even if mouse doesn't move
+      updatePositionFromClientXY(lastPointer.x, lastPointer.y, lastPointer.event);
+    };
+
+    autoScrollRaf = requestAnimationFrame(tick);
+  }
+
+  /**
+   * Compute & apply translate from a client-space pointer position.
+   * This is the single source of truth used by both pointermove and RAF auto-scroll.
+   * @param {number} clientX
+   * @param {number} clientY
+   * @param {PointerEvent} ev
+   */
+  function updatePositionFromClientXY(clientX, clientY, ev) {
+    if (!dragging || !dragStarted) return;
+
+    const dxPointer = clientX - startPointerX;
+    const dyPointer = clientY - startPointerY;
+
+    const scrollDx = activeBoundaryEl ? (activeBoundaryEl.scrollLeft - startScrollLeft) : 0;
+    const scrollDy = activeBoundaryEl ? (activeBoundaryEl.scrollTop - startScrollTop) : 0;
+
+    const dx = dxPointer + scrollDx;
+    const dy = dyPointer + scrollDy;
+
+    let proposed = { x: startTranslate.x + dx, y: startTranslate.y + dy };
+    proposed = clampTranslate(el, proposed, currentTranslate, boundary, clampToViewport);
+
+    currentTranslate = proposed;
+    applyTranslate(el, currentTranslate.x, currentTranslate.y);
+
+    if (typeof onMove === "function") {
+      onMove({ dragging: true, x: currentTranslate.x, y: currentTranslate.y, event: ev });
     }
   }
 
@@ -303,9 +366,9 @@ export function makeDraggable(el, options = {}) {
       dragEnabledForPointer = true;
     }
 
-    //18 is the number of pixels, it is hard coded here...
+    // Ignore resize handle drag start
     if (isOnResizeHandle(el, e, 18)) {
-      suppressNextClick = true; // <-- important
+      suppressNextClick = true;
       e.stopPropagation();
       return;
     }
@@ -319,10 +382,16 @@ export function makeDraggable(el, options = {}) {
     startPointerX = e.clientX;
     startPointerY = e.clientY;
 
+    activeBoundaryEl = resolveBoundary(boundary);
+    startScrollLeft = activeBoundaryEl ? activeBoundaryEl.scrollLeft : 0;
+    startScrollTop  = activeBoundaryEl ? activeBoundaryEl.scrollTop  : 0;
+
     startTranslate = getCurrentTranslate(el);
     currentTranslate = { ...startTranslate };
 
-    // if dragging disabled: behave like "click-only"
+    lastPointer = { x: e.clientX, y: e.clientY, event: e };
+
+    // click-only mode
     if (!dragEnabledForPointer) {
       dragAllowed = false;
       clearLongPressTimer();
@@ -333,7 +402,7 @@ export function makeDraggable(el, options = {}) {
     clearLongPressTimer();
 
     if (!dragAllowed) {
-      //@ts-ignore   //TODO: Prüfen, warum
+      //@ts-ignore
       longPressTimer = window.setTimeout(() => {
         dragAllowed = true;
       }, longPressDelay);
@@ -347,20 +416,22 @@ export function makeDraggable(el, options = {}) {
     if (!dragging) return;
     if (activePointerId == null) return;
     if (e.pointerId !== activePointerId) return;
-
-    // drag disabled for this pointer -> ignore movement (still can click on pointerup)
     if (!dragEnabledForPointer) return;
 
-    const dx = e.clientX - startPointerX;
-    const dy = e.clientY - startPointerY;
+    lastPointer = { x: e.clientX, y: e.clientY, event: e };
+
+    // threshold check based only on pointer delta
+    const dx0 = e.clientX - startPointerX;
+    const dy0 = e.clientY - startPointerY;
 
     if (!dragAllowed) {
-      if (Math.hypot(dx, dy) > dragThreshold) clearLongPressTimer();
+      if (Math.hypot(dx0, dy0) > dragThreshold) clearLongPressTimer();
       return;
     }
 
     if (!dragStarted) {
-      if (Math.hypot(dx, dy) < dragThreshold) return;
+      if (Math.hypot(dx0, dy0) < dragThreshold) return;
+
       dragStarted = true;
       clearLongPressTimer();
       setDraggingStyles(true);
@@ -368,17 +439,13 @@ export function makeDraggable(el, options = {}) {
       if (typeof onDragStart === "function") {
         onDragStart({ x: currentTranslate.x, y: currentTranslate.y, event: e });
       }
+
+      // start edge auto-scroll once real dragging begins
+      startAutoScrollLoop();
     }
 
-    let proposed = { x: startTranslate.x + dx, y: startTranslate.y + dy };
-    proposed = clampTranslate(el, proposed, currentTranslate, boundary, clampToViewport);
-
-    currentTranslate = proposed;
-    applyTranslate(el, currentTranslate.x, currentTranslate.y);
-
-    if (typeof onMove === "function") {
-      onMove({ dragging: true, x: currentTranslate.x, y: currentTranslate.y, event: e });
-    }
+    // update element immediately for responsiveness
+    updatePositionFromClientXY(e.clientX, e.clientY, e);
   }
 
   /**
@@ -390,6 +457,7 @@ export function makeDraggable(el, options = {}) {
     if (e.pointerId !== activePointerId) return;
 
     clearLongPressTimer();
+    stopAutoScrollLoop();
 
     const didDrag = dragStarted;
 
@@ -403,9 +471,11 @@ export function makeDraggable(el, options = {}) {
     } catch {
       // ignore
     }
-    activePointerId = null;
 
-    // reset per pointer gate
+    activePointerId = null;
+    activeBoundaryEl = null;
+    lastPointer = null;
+
     dragEnabledForPointer = true;
 
     if (didDrag) {
@@ -430,6 +500,8 @@ export function makeDraggable(el, options = {}) {
   return {
     destroy() {
       clearLongPressTimer();
+      stopAutoScrollLoop();
+      lastPointer = null;
 
       handle.removeEventListener("pointerdown", onPointerDown);
       mt.removeEventListener("pointermove", /** @type {EventListener} */ (onPointerMove));

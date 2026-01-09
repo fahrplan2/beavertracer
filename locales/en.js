@@ -445,6 +445,7 @@ export default {
   "router.routingtable.yes": "yes",
   "router.routingtable.missing": "missing",
 
+  "sim.common": "Common",
   "sim.new": "New",
   "sim.load": "Load",
   "sim.save": "Save",
@@ -454,9 +455,9 @@ export default {
   "sim.project": "Project",
   "sim.speed": "Speed",
   "sim.pause": "Pause",
-  "sim.edittools": "Edit tools",
   "sim.about" : "About",
   "sim.trace" : "Trace",
+  "sim.reset" : "Reset",
 
   "sim.invalidfilewarning": "Invalid file format or unsupported save file format.",
   "sim.loadfailederror": "Load operation failed.",
