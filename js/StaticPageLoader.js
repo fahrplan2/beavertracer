@@ -1,11 +1,16 @@
 //@ts-check
 
-import { getLocale, initLocale } from "./i18n/index.js";
+import { getLocale } from "./i18n/index.js";
 import { version } from "./version.js";
 
-
 /**
- * Loads localized static HTML fragments into containers.
+ * Vite-bundled static HTML fragment loader.
+ *
+ * Public URLs:
+ *   /pages/about/index.html
+ *
+ * Filesystem:
+ *   src/pages/about/index.html
  */
 export class StaticPageLoader {
   /** @type {string} */
@@ -15,17 +20,23 @@ export class StaticPageLoader {
   static #cache = new Map();
 
   /**
-   * @param {{
-   *   fallbackLocale?: string
-   * }} [opts]
+   * All fragments under src/pages as raw strings.
+   * Keys look like "/pages/about/index.html"
+   *
+   * @type {Record<string, () => Promise<string>>}
+   */
+  //@ts-ignore
+  static #modules = import.meta.glob("/pages/**/*.html", { as: "raw" });
+
+  /**
+   * @param {{ fallbackLocale?: string }} [opts]
    */
   constructor(opts = {}) {
     this.#fallbackLocale = opts.fallbackLocale ?? "en";
   }
 
   /**
-   * 
-   * @param {*} html 
+   * @param {string} html
    */
   _replaceTags(html) {
     return String(html).replace(/\{VERSION\}/g, String(version()));
@@ -49,22 +60,23 @@ export class StaticPageLoader {
 
     const cacheKey = candidates.join("|");
     if (cache && StaticPageLoader.#cache.has(cacheKey)) {
-      root.innerHTML = StaticPageLoader.#cache.get(cacheKey);
+      root.innerHTML = StaticPageLoader.#cache.get(cacheKey) || "";
+      onLoaded?.(root, { url: candidates[0] || baseUrl });
       return;
     }
 
     root.dataset.loading = "true";
     try {
-      const res = await this.#fetchFirstExisting(candidates);
+      const res = await this.#loadFirstExisting(candidates);
       if (!res) {
         root.innerHTML = `<div class="content"><p>Page not found.</p></div>`;
         return;
       }
 
-      res.html = this._replaceTags(res.html);
+      const html = this._replaceTags(res.html);
+      root.innerHTML = html;
 
-      root.innerHTML = res.html;
-      if (cache) StaticPageLoader.#cache.set(cacheKey, res.html);
+      if (cache) StaticPageLoader.#cache.set(cacheKey, html);
       onLoaded?.(root, { url: res.url });
     } finally {
       delete root.dataset.loading;
@@ -79,11 +91,10 @@ export class StaticPageLoader {
    * @returns {string[]}
    */
   #buildCandidates(baseUrl, locale) {
-    // allow optional directory (so "index.html" also matches)
     const m = baseUrl.match(/^(?:(.*\/))?([^\/]+)\.([a-z0-9]+)$/i);
     if (!m) return [baseUrl];
 
-    const dir = m[1] ?? "";      // "" if no directory
+    const dir = m[1] ?? "";
     const name = m[2];
     const ext = m[3];
 
@@ -93,8 +104,7 @@ export class StaticPageLoader {
     /** @type {string[]} */
     const out = [];
 
-    // If it's index.html (your special case), do exactly the order you want:
-    // locale -> lang -> fallback -> base
+    // index.html special case
     if (name.toLowerCase() === "index") {
       if (norm) out.push(`${dir}${name}.${norm}.${ext}`);
       if (lang && lang !== norm) out.push(`${dir}${name}.${lang}.${ext}`);
@@ -111,7 +121,7 @@ export class StaticPageLoader {
       return out;
     }
 
-    // For non-index pages, keep existing behavior (same ordering)
+    // non-index pages
     if (norm) out.push(`${dir}${name}.${norm}.${ext}`);
     if (lang && lang !== norm) out.push(`${dir}${name}.${lang}.${ext}`);
 
@@ -128,17 +138,19 @@ export class StaticPageLoader {
   }
 
   /**
-   * @param {string[]} urls
+   * @param {string[]} urls keys into #modules
    * @returns {Promise<{ url: string, html: string } | null>}
    */
-  async #fetchFirstExisting(urls) {
+  async #loadFirstExisting(urls) {
     for (const url of urls) {
+      const loader = StaticPageLoader.#modules[url];
+      if (!loader) continue;
+
       try {
-        const res = await fetch(url, { method: "GET" });
-        if (!res.ok) continue;
-        return { url, html: await res.text() };
+        const html = await loader();
+        return { url, html: String(html) };
       } catch {
-        /* ignore */
+        // ignore
       }
     }
     return null;
