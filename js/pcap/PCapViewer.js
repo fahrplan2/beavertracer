@@ -1,8 +1,11 @@
 // @ts-check
 import loadWiregasm from "@goodtools/wiregasm/dist/wiregasm";
+import { TabPicker } from "./lib/TabPicker.js";
+import { SplitGrid } from "./lib/SplitGrid.js";
 
 /** @typedef {any} WiregasmModule */
 /** @typedef {any} DissectSession */
+
 
 /**
  * @typedef {{
@@ -35,6 +38,7 @@ import loadWiregasm from "@goodtools/wiregasm/dist/wiregasm";
  *   needsRender: boolean;
  *   pendingAutoSelect: boolean;
  *   pcapPath: string;
+ *   hidden: boolean;
  * }} SessionState
  */
 
@@ -87,12 +91,14 @@ export class PCapViewer {
   /** @type {number|null} */ #hSplitRatio = null;
   /** @type {AbortController|null} */ #hSplitAbort = null;
 
-  /** @type {number|null} */ #vSplitRatio = null;
-  /** @type {AbortController|null} */ #vSplitAbort = null;
-
   /** @type {Uint8Array|null} */ #activeFrameBytes = null;
-  /** @type {{start:number,length:number,ds:number}|null} */ #activeFieldRange = null;
 
+  /** @type {boolean} */ #tabPickerOpen = false;
+  /** @type {AbortController|null} */ #tabPickerAbort = null;
+
+  /** @type {string|null} */ #pickerDevice = null;
+  /** @type {TabPicker} */ #tabPicker = new TabPicker();
+  /** @type {SplitGrid} */ #splitGrid = new SplitGrid();
 
   /**
    * @param {HTMLElement|null} mountElement
@@ -130,9 +136,7 @@ export class PCapViewer {
 
       // wire splitters (safe even if missing)
       //@ts-ignore
-      this.#wireSplitter(this.#makeHSplitConfig());
-      //@ts-ignore
-      this.#wireSplitter(this.#makeVSplitConfig());
+      this.#splitGrid.wire(this.#root, this.#makeHSplitConfig());
     }
 
     this.#renderTabs();
@@ -160,21 +164,48 @@ export class PCapViewer {
       needsRender: false,
       pendingAutoSelect: this.#opt.autoSelectFirst ?? true,
       pcapPath: `/uploads/${safe}.pcap`,
+      hidden: true
     });
 
     this.#sessions.set(name, s);
-    if (!this.#activeName) this.#activeName = name;
-
     this.#renderTabs();
     this.#renderActiveSession();
   }
 
+  /** Hide a tab (session remains alive). */
+  hideTab(name) {
+    const s = this.#sessions.get(name);
+    if (!s) return;
+
+    s.hidden = true;
+
+    // If hiding the active tab, pick another visible tab (or none)
+    if (this.#activeName === name) {
+      const nextVisible = Array.from(this.#sessions.values())
+        .filter(x => !x.hidden)
+        .map(x => x.name)
+        .sort((a, b) => a.localeCompare(b))[0] ?? null;
+
+      this.#activeName = nextVisible;
+    }
+
+    this.#closeTabPicker();
+    this.#renderTabs();
+    this.#renderActiveSession();
+  }
+
+
   /** @param {string} name */
   switchTab(name) {
     if (!this.#sessions.has(name)) throw new Error(`switchTab: session '${name}' not found`);
+
+    const ss = this.#sessions.get(name);
+    if (ss) ss.hidden = false;
+
     this.#activeName = name;
 
     this.render();
+    this.#closeTabPicker();
 
     const s = this.#active();
     if (s?.sess && s.needsRender) {
@@ -196,6 +227,7 @@ export class PCapViewer {
 
   /** @param {string} name */
   closeSession(name) {
+    this.#closeTabPicker();
     const s = this.#sessions.get(name);
     if (!s) return;
 
@@ -206,8 +238,11 @@ export class PCapViewer {
     try { this.#wg?.FS.unlink(s.pcapPath); } catch { }
 
     if (this.#activeName === name) {
-      const next = this.#sessions.keys().next();
-      this.#activeName = next.done ? null : next.value;
+      const nextVisible = Array.from(this.#sessions.values())
+        .filter(x => !x.hidden)
+        .map(x => x.name)
+        .sort((a, b) => a.localeCompare(b))[0] ?? null;
+      this.#activeName = nextVisible;
     }
 
     this.#renderTabs();
@@ -236,9 +271,12 @@ export class PCapViewer {
 
     if (this.#activeName === name && this.#filterEl) this.#filterEl.value = s.filter;
 
+    const wasmUrl = this.#opt.locateWasm ?? "/wiregasm/wiregasm.wasm";
+    const dataUrl = this.#opt.locateData ?? "/wiregasm/wiregasm.data";
+
     this.#setStatus("Loading Wiregasm…");
     await this.#initWiregasm();
-
+    
     this.#setStatus("Loading PCAP…");
     this.#loadPcapBytesIntoSession(s, pcapBytes);
 
@@ -277,6 +315,10 @@ export class PCapViewer {
   destroy() {
     if (this.#filterTimer) window.clearTimeout(this.#filterTimer);
 
+    this.#tabPickerAbort?.abort();
+    this.#tabPickerAbort = null;
+    this.#closeTabPicker();
+
     for (const s of this.#sessions.values()) {
       try { s.sess?.delete?.(); } catch { }
       s.sess = null;
@@ -284,9 +326,7 @@ export class PCapViewer {
     this.#sessions.clear();
     this.#activeName = null;
 
-    // abort splitter listeners
-    this.#hSplitAbort?.abort();
-    this.#vSplitAbort?.abort();
+    this.#splitGrid.destroy();
 
     if (this.#root?.parentElement) this.#root.parentElement.removeChild(this.#root);
     this.#root = null;
@@ -329,8 +369,6 @@ export class PCapViewer {
           <div class="pcapviewer-pane pcapviewer-pane--tree">
             <div class="pcapviewer-treepane"></div>
           </div>
-
-          <div class="pcapviewer-vsplitter"></div>
 
           <div class="pcapviewer-pane pcapviewer-pane--raw">
             <pre class="pcapviewer-rawpane">Select a packet…</pre>
@@ -396,44 +434,64 @@ export class PCapViewer {
   #renderTabs() {
     if (!this.#tabsEl) return;
 
-    const names = Array.from(this.#sessions.keys());
+    const all = Array.from(this.#sessions.values());
+    const visible = all.filter(s => !s.hidden);
+
     this.#tabsEl.innerHTML = "";
+    const empty = document.createElement("div");
+    empty.className = "pcapviewer-tabs-title";
+    empty.textContent = "Traces:";
+    this.#tabsEl.appendChild(empty);
 
-    if (names.length === 0) {
-      const empty = document.createElement("div");
-      empty.className = "pcapviewer-tabs-empty";
-      empty.textContent = "No sessions. Call newSession(name).";
-      this.#tabsEl.appendChild(empty);
-      return;
+    // If no visible tabs, show a small hint (but still show +)
+    if (visible.length === 0) {
+
+    } else {
+      for (const s of visible) {
+        const name = s.name;
+
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "pcapviewer-tab" + (name === this.#activeName ? " pcapviewer-tab--active" : "");
+        btn.title = s.hasCapture ? name : `${name} (no capture loaded)`;
+
+        const label = document.createElement("span");
+        label.textContent = name + (s.hasCapture ? "" : " •");
+        btn.appendChild(label);
+
+        btn.addEventListener("click", () => this.switchTab(name));
+
+        const x = document.createElement("span");
+        x.className = "pcapviewer-tab-close";
+        x.textContent = "X";
+        x.title = "Hide tab";
+        x.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          this.hideTab(name);
+        });
+
+        btn.appendChild(x);
+        this.#tabsEl.appendChild(btn);
+      }
     }
 
-    for (const name of names) {
-      const s = this.#sessions.get(name);
+    // ---- "+" picker at the end ----
+    const plusWrap = document.createElement("div");
+    plusWrap.className = "pcapviewer-tabplus";
 
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "pcapviewer-tab" + (name === this.#activeName ? " pcapviewer-tab--active" : "");
-      btn.title = s?.hasCapture ? name : `${name} (no capture loaded)`;
+    const plusBtn = document.createElement("button");
+    plusBtn.type = "button";
+    plusBtn.className = "pcapviewer-tab pcapviewer-tab--plus";
+    plusBtn.textContent = "+";
+    plusBtn.title = "Show a tab…";
+    plusBtn.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      this.#tabPickerOpen = !this.#tabPickerOpen;
+      this.#renderTabPicker(plusBtn);
+    });
 
-      // label + dirty marker
-      const label = document.createElement("span");
-      label.textContent = name + (s?.hasCapture ? "" : " •");
-      btn.appendChild(label);
-
-      btn.addEventListener("click", () => this.switchTab(name));
-
-      const x = document.createElement("span");
-      x.className = "pcapviewer-tab-close";
-      x.textContent = "×";
-      x.title = "Close session";
-      x.addEventListener("click", (ev) => {
-        ev.stopPropagation();
-        this.closeSession(name);
-      });
-
-      btn.appendChild(x);
-      this.#tabsEl.appendChild(btn);
-    }
+    plusWrap.appendChild(plusBtn);
+    this.#tabsEl.appendChild(plusWrap);
   }
 
   #renderActiveSession() {
@@ -459,6 +517,25 @@ export class PCapViewer {
       if (this.#rawPane) this.#rawPane.textContent = "Select a packet…";
     }
   }
+
+  #renderTabPicker(anchorEl) {
+    if (!this.#tabPickerOpen) return;
+
+    this.#tabPicker.open(anchorEl, {
+      sessions: Array.from(this.#sessions.values()).map(s => ({ name: s.name, hidden: !!s.hidden })),
+      activeName: this.#activeName,
+      pickerDevice: this.#pickerDevice,
+      setPickerDevice: (d) => { this.#pickerDevice = d; },
+      onPick: (name) => this.switchTab(name),
+      onClose: () => this.#closeTabPicker(),
+    });
+  }
+
+  #closeTabPicker() {
+    this.#tabPickerOpen = false;
+    this.#tabPicker.close();
+  }
+
 
   // ======================================================================
   // Wiregasm init + loading
@@ -770,7 +847,6 @@ export class PCapViewer {
     if (typeof b64 === "string" && b64.length) {
       const bytes = this.#b64ToBytes(b64);
       this.#activeFrameBytes = bytes;
-      this.#activeFieldRange = null;
       this.#renderHexHtml(bytes);     // NEW (instead of textContent)
       return;
     }
@@ -800,131 +876,6 @@ export class PCapViewer {
       getAbort: () => this.#hSplitAbort,
       setAbort: (ac) => { this.#hSplitAbort = ac; },
     };
-  }
-
-  #makeVSplitConfig() {
-    /** @type {SplitConfig} */
-    return {
-      containerSel: ".pcapviewer-bottom",
-      splitterSel: ".pcapviewer-vsplitter",
-      primaryPaneSel: ".pcapviewer-pane--tree",
-      splitSizePx: 8,
-      minA: 180,
-      minB: 180,
-      axis: "x",
-      cursor: "col-resize",
-      storageKey: "pcapviewer.vSplitRatio.v1",
-      getRatio: () => this.#vSplitRatio,
-      setRatio: (v) => { this.#vSplitRatio = v; },
-      getAbort: () => this.#vSplitAbort,
-      setAbort: (ac) => { this.#vSplitAbort = ac; },
-    };
-  }
-
-  /** @param {SplitConfig} cfg */
-  #wireSplitter(cfg) {
-    const root = this.#root;
-    if (!root) return;
-
-    const splitter = /** @type {HTMLElement|null} */ (root.querySelector(cfg.splitterSel));
-    const container = /** @type {HTMLElement|null} */ (root.querySelector(cfg.containerSel));
-    const paneA = /** @type {HTMLElement|null} */ (root.querySelector(cfg.primaryPaneSel));
-    if (!splitter || !container || !paneA) return;
-
-    // cleanup old listeners
-    cfg.getAbort()?.abort();
-    const ac = new AbortController();
-    cfg.setAbort(ac);
-    const { signal } = ac;
-
-    const applyPx = (aPx) => {
-      const SPLIT = cfg.splitSizePx;
-      const minA = cfg.minA;
-      const minB = cfg.minB;
-
-      const rect = container.getBoundingClientRect();
-      const total = cfg.axis === "y" ? rect.height : rect.width;
-
-      const maxA = Math.max(minA, total - SPLIT - minB);
-      const clampedA = Math.max(minA, Math.min(maxA, aPx));
-      const bPx = Math.max(minB, total - SPLIT - clampedA);
-
-      if (cfg.axis === "y") {
-        container.style.gridTemplateRows = `${clampedA}px ${SPLIT}px ${bPx}px`;
-      } else {
-        container.style.gridTemplateColumns = `${clampedA}px ${SPLIT}px ${bPx}px`;
-      }
-
-      const usable = Math.max(1, total - SPLIT);
-      const ratio = clampedA / usable;
-      cfg.setRatio(ratio);
-
-      try { localStorage.setItem(cfg.storageKey, String(ratio)); } catch { }
-    };
-
-    const restore = () => {
-      let ratio = cfg.getRatio();
-
-      if (ratio == null) {
-        try {
-          const s = localStorage.getItem(cfg.storageKey);
-          const v = s != null ? Number(s) : NaN;
-          if (Number.isFinite(v) && v > 0 && v < 1) ratio = v;
-        } catch { }
-      }
-
-      if (ratio == null) ratio = 0.5;
-
-      const rect = container.getBoundingClientRect();
-      const total = cfg.axis === "y" ? rect.height : rect.width;
-      const usable = Math.max(1, total - cfg.splitSizePx);
-      applyPx(ratio * usable);
-    };
-
-    // restore after layout settled
-    requestAnimationFrame(restore);
-
-    let startPos = 0;
-    let startAPx = 0;
-
-    const onMove = (e) => {
-      const delta = (cfg.axis === "y" ? e.clientY : e.clientX) - startPos;
-      applyPx(startAPx + delta);
-    };
-
-    const onUp = () => {
-      window.removeEventListener("pointermove", onMove, true);
-      window.removeEventListener("pointerup", onUp, true);
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-    };
-
-    splitter.addEventListener("pointerdown", (e) => {
-      startPos = cfg.axis === "y" ? e.clientY : e.clientX;
-      startAPx = cfg.axis === "y"
-        ? paneA.getBoundingClientRect().height
-        : paneA.getBoundingClientRect().width;
-
-      splitter.setPointerCapture?.(e.pointerId);
-
-      document.body.style.cursor = cfg.cursor;
-      document.body.style.userSelect = "none";
-
-      window.addEventListener("pointermove", onMove, true);
-      window.addEventListener("pointerup", onUp, true);
-    }, { signal });
-
-    const ro = new ResizeObserver(() => {
-      const ratio = cfg.getRatio();
-      if (ratio == null) return;
-      const rect = container.getBoundingClientRect();
-      const total = cfg.axis === "y" ? rect.height : rect.width;
-      const usable = Math.max(1, total - cfg.splitSizePx);
-      applyPx(ratio * usable);
-    });
-    ro.observe(container);
-
-    signal.addEventListener("abort", () => ro.disconnect(), { once: true });
   }
 
   // ======================================================================
@@ -1133,6 +1084,4 @@ export class PCapViewer {
     const length = Number(n?.length ?? 0);
     return start === 0 && length === 0;
   }
-
-
 }
