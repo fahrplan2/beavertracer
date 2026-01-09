@@ -13,6 +13,12 @@ export default {
   "app.about.heading.systemInfo": "System info",
   "app.about.body.systemInfo": "OS: {os}\nPID: {pid}\nRunning apps: {runningApps}\nFocusID: {focusID}\nTime: {time}",
 
+  "app.dnsd.button.save": "save",
+  "app.dnsd.button.start": "start",
+  "app.dnsd.button.stop": "stop",
+  "app.dnsd.label.log": "Log",
+  "app.dnsd.title": "DNS-Server",
+
   "app.ipv4config.title": "IP Settings",
   "app.ipv4config.button.apply": "Apply",
   "app.ipv4config.label.interface": "Interface",
