@@ -11,6 +11,9 @@ import { RectOverlay } from "./simobjects/RectOverlay.js";
 import { t, getLocale, setLocale, getLocales, onLocaleChange } from "./i18n/index.js";
 import { StaticPageLoader } from "./StaticPageLoader.js";
 import { PCapController } from "./pcap/PCapControler.js";
+import { DOMBuilder } from "./lib/DomBuilder.js";
+
+
 
 /**
  * @typedef {Object} PortDescriptor
@@ -296,172 +299,173 @@ export class SimControl {
             toolbar.appendChild(sep);
         };
 
-        // --- Edit group
+        //EDIT GROUP
         addSeparator();
-        const gMode = addGroup(t("sim.mode"));
+        const gMode = DOMBuilder.buttongroup(t("sim.mode"), toolbar);
 
-        // Edit button
-        const btnEdit = document.createElement("button");
-        btnEdit.type = "button";
-        btnEdit.textContent = t("sim.edit");
-        if (this.mode === "edit") btnEdit.classList.add("active");
-        btnEdit.addEventListener("click", () => {
-            if (this.mode !== "edit") {
+        //Edit
+        gMode.appendChild(DOMBuilder.iconbutton({
+            label: t("sim.edit"),
+            icon: "fa-pencil",
+            active: this.mode === "edit",
+            onClick: () => {
+                if (this.mode !== "edit") {
+                    this.tabControler.gotoTab("sim");
+                }
+                this._enterEditMode();
+            }
+        }));
+
+        //Run
+        gMode.appendChild(DOMBuilder.iconbutton({
+            label: t("sim.run"),
+            icon: "fa-play",
+            active: this.mode === "run",
+            onClick: () => {
+                if (this.mode === "edit") {
+                    this._leaveEditMode();
+                } else {
+                    this.pause();
+                }
+
                 this.tabControler.gotoTab("sim");
+                this.mode = "run";
+                this.isPaused = false;
+
+                if (this.root) {
+                    this.root.classList.remove("edit-mode");
+                    delete this.root.dataset.tool;
+                }
+
+                this.render();
+                this.scheduleNextStep();
             }
-            this._enterEditMode();
-        });
-        gMode.appendChild(btnEdit);
+        }));
 
-        // Run button
-        const btnRun = document.createElement("button");
-        btnRun.type = "button";
-        btnRun.textContent = t("sim.run");
-        if (this.mode === "run") btnRun.classList.add("active");
-        btnRun.addEventListener("click", () => {
-            //leave edit mode
-            if (this.mode === "edit") {
-                this._leaveEditMode();
-            } else {
-                this.pause();
+        //Trace
+        gMode.appendChild(DOMBuilder.iconbutton({
+            label: t("sim.trace"),
+            icon: "fa-magnifying-glass",
+            active: this.mode === "trace",
+            onClick: () => {
+                //leave edit mode
+                if (this.mode === "edit") {
+                    this._leaveEditMode();
+                } else {
+                    this.pause();  //just in case
+                }
+                this.tabControler.gotoTab("trace");
+                this.mode = "trace";
+
+                this.render();
             }
+        }));
 
-            this.tabControler.gotoTab("sim");
-            this.mode = "run";
-            this.isPaused = false;
-            if (this.root) {
-                this.root.classList.remove("edit-mode");
-                delete this.root.dataset.tool;
-            }
-
-            this.render();
-            this.scheduleNextStep();
-
-        });
-        gMode.appendChild(btnRun);
-
-        // Trace Button
-        const btnTrace = document.createElement("button");
-        btnTrace.type = "button";
-        btnTrace.textContent = t("sim.trace");
-        if (this.mode === "trace") btnTrace.classList.add("active");
-        btnTrace.addEventListener("click", () => {
-            //leave edit mode
-            if (this.mode === "edit") {
-                this._leaveEditMode();
-            } else {
-                this.pause();  //just in case
-            }
-            this.tabControler.gotoTab("trace");
-            this.mode = "trace";
-
-            this.render();
-
-        });
-        gMode.appendChild(btnTrace);
-
-
-        // --- Project group (New, Open, Save)
+        //PROJECT GROUP
         if (this.mode === "edit") {
 
             addSeparator();
-            const gProject = addGroup(t("sim.project"));
+            const gProject = DOMBuilder.buttongroup(t("sim.project"), toolbar);
 
-            // New
-            const btnNew = document.createElement("button");
-            btnNew.type = "button";
-            btnNew.textContent = t("sim.new");
-            btnNew.addEventListener("click", () => {
-                if (!confirm(t("sim.discardandnewwarning"))) return;
-                this.new();
-            });
-            gProject.appendChild(btnNew);
+            //New
+            gProject.appendChild(DOMBuilder.iconbutton({
+                label: t("sim.new"),
+                icon: "fa-file",
+                onClick: () => {
+                    if (!confirm(t("sim.discardandnewwarning"))) return;
+                    this.new();
+                }
+            }));
 
-            // Load
-            const btnLoad = document.createElement("button");
-            btnLoad.type = "button";
-            btnLoad.textContent = t("sim.load");
-            btnLoad.addEventListener("click", () => {
-                if (!confirm(t("sim.discardandloadwarning"))) return;
-                this.open();
-            });
-            gProject.appendChild(btnLoad);
+            //Load
+            gProject.appendChild(DOMBuilder.iconbutton({
+                label: t("sim.load"),
+                icon: "fa-file-arrow-up",
+                onClick: () => {
+                    if (!confirm(t("sim.discardandloadwarning"))) return;
+                    this.open();
+                }
+            }));
 
             // Save
-            const btnSave = document.createElement("button");
-            btnSave.type = "button";
-            btnSave.textContent = t("sim.save");
-            btnSave.addEventListener("click", () => this.download());
-            gProject.appendChild(btnSave);
+            gProject.appendChild(DOMBuilder.iconbutton({
+                label: t("sim.save"),
+                icon: "fa-file-arrow-down",
+                onClick: () => {
+                    this.download();
+                }
+            }));
         }
 
-        //Speed bar if not in Editmode
+        //SPEED BAR
         if (this.mode === "run") {
             addSeparator();
-            const gSpeeds = addGroup(t("sim.speed"));
+            const gSpeeds = DOMBuilder.buttongroup(t("sim.speed"), toolbar);
 
             // Pause (only pauses)
-            const btnPause = document.createElement("button");
-            btnPause.type = "button";
-            btnPause.textContent = t("sim.pause");
-            btnPause.addEventListener("click", () => this.pause());
-            if (this.isPaused) btnPause.classList.add("active");
-            gSpeeds.appendChild(btnPause);
+
+            gSpeeds.appendChild(DOMBuilder.iconbutton({
+                label: t("sim.pause"),
+                icon: "fa-pause",
+                active: this.isPaused,
+                onClick: () => {
+                    this.pause();
+                }
+            }));
+
 
             // Speed buttons (also start/resume)
             const speeds = [
-                { label: "0.25×", ms: 1000 },
-                { label: "0.5×", ms: 500 },
-                { label: "1×", ms: 250 },
-                { label: "2×", ms: 125 },
-                { label: "4×", ms: 62 },
-                { label: "8×", ms: 32 },
+                { label: "0.25×", ms: 1000, icon: "fa-1" },
+                { label: "0.5×", ms: 500, icon: "fa-2" },
+                { label: "1×", ms: 250, icon: "fa-3" },
+                { label: "2×", ms: 125, icon: "fa-4" },
+                { label: "4×", ms: 62, icon: "fa-5" },
+                { label: "8×", ms: 32, icon: "fa-6" },
             ];
 
             for (const s of speeds) {
-                const b = document.createElement("button");
-                b.type = "button";
-                b.textContent = s.label;
-                if (SimControl.tick === s.ms && !this.isPaused) b.classList.add("active");
-
-                // Clicking a speed sets tick + starts simulation
-                b.addEventListener("click", () => this.setTick(s.ms));
-
-                gSpeeds.appendChild(b);
+                gSpeeds.appendChild(DOMBuilder.iconbutton({
+                    label: s.label,
+                    active: SimControl.tick === s.ms && !this.isPaused,
+                    icon: s.icon,
+                    onClick: () => {
+                        this.setTick(s.ms)
+                    }
+                }));
             }
         }
 
         addSeparator();
-        const gLang = addGroup(t("sim.language"));
 
-        // Language button
-        const langBtn = document.createElement("button");
-        langBtn.type = "button";
-        langBtn.className = "sim-toolbar-langbtn";
-        langBtn.textContent = "🌐";
-        langBtn.addEventListener("click", (ev) => {
-            ev.preventDefault();
-            ev.stopPropagation();
-            this._openLanguageDialog(langBtn);
-        });
-        gLang.appendChild(langBtn);
+        const gCommon = DOMBuilder.buttongroup(t("sim.common"), toolbar);
 
-        // InfoButton
-        const aboutBtn = document.createElement("button");
-        aboutBtn.type = "button";
-        aboutBtn.className = "sim-toolbar-aboutbtn";
-        if (this.mode === "about") { aboutBtn.classList.add("active"); }
-        aboutBtn.textContent = t("sim.about");
-        aboutBtn.addEventListener("click", (ev) => {
-            if (this.mode === "edit") {
-                this._leaveEditMode;
+        // Language
+        gCommon.appendChild(DOMBuilder.iconbutton({
+            label: t("sim.language"),
+            icon: "fa-language",
+            onClick: (ev) => {
+                ev.preventDefault();
+                ev.stopPropagation();
+                this._openLanguageDialog(gCommon);
             }
-            this.pause();
-            this.tabControler.gotoTab("about");
-            this.mode = "about";
-            this.render();
-        });
-        gLang.appendChild(aboutBtn);
+        }));
+
+        //About
+        gCommon.appendChild(DOMBuilder.iconbutton({
+            label: t("sim.about"),
+            icon: "fa-circle-question",
+            active: this.mode === "about",
+            onClick: () => {
+                if (this.mode === "edit") {
+                    this._leaveEditMode;
+                }
+                this.pause();
+                this.tabControler.gotoTab("about");
+                this.mode = "about";
+                this.render();
+            }
+        }));
 
         //End of toolbar
 
@@ -478,44 +482,40 @@ export class SimControl {
             const sidebar = document.createElement("div");
             sidebar.className = "sim-sidebar";
             simbody.appendChild(sidebar);
-
-            // Tools header
-            const h = document.createElement("div");
-            h.className = "sim-sidebar-title";
-            h.textContent = t("sim.edittools");
-            sidebar.appendChild(h);
-
             const toolsWrap = document.createElement("div");
             toolsWrap.className = "sim-sidebar-tools";
             sidebar.appendChild(toolsWrap);
 
             const tools = [
-                ["select", t("sim.tool.select")],
-                ["link", t("sim.tool.link")],
-                ["place-pc", t("sim.tool.pc")],
-                ["place-switch", t("sim.tool.switch")],
-                ["place-router", t("sim.tool.router")],
-                ["place-text", t("sim.tool.textbox")],
-                ["place-rect", t("sim.tool.rectangle")],
-                ["delete", t("sim.tool.delete")],
+                ["select", t("sim.tool.select"), "fa-arrow-pointer"],
+                ["link", t("sim.tool.link"), "fa-link"],
+                ["place-pc", t("sim.tool.pc"), "fa-desktop"],
+                ["place-switch", t("sim.tool.switch"), "fa-heart"],
+                ["place-router", t("sim.tool.router"), "fa-heart"],
+                ["place-text", t("sim.tool.textbox"), "fa-t"],
+                ["place-rect", t("sim.tool.rectangle"), "fa-square"],
+                ["delete", t("sim.tool.delete"), "fa-ban"],
             ];
 
-            for (const [id, label] of tools) {
-                const b = document.createElement("button");
-                b.type = "button";
-                b.className = "sim-sidebar-btn";
-                b.textContent = label;
-                if (this.tool === id) b.classList.add("active");
-                b.addEventListener("click", () => {
-                    this.tool = /** @type {any} */ (id);
-                    if (this.root) this.root.dataset.tool = this.tool;
+            for (const [id, label, icon] of tools) {
 
-                    if (this.tool !== "link") this._cancelLinking();
-                    if (!(this.tool === "place-pc" || this.tool === "place-switch" || this.tool === "place-router" || this.tool === "place-text" || this.tool === "place-rect")) {
-                        this._removeGhostNode();
+                const b = DOMBuilder.iconbutton({
+                    className: "sim-sidebar-btn",
+                    label: label,
+                    icon: icon,
+                    active: this.tool === id,
+                    onClick: () => {
+                        this.tool = /** @type {any} */ (id);
+                        if (this.root) this.root.dataset.tool = this.tool;
+
+                        if (this.tool !== "link") this._cancelLinking();
+                        if (!(this.tool === "place-pc" || this.tool === "place-switch" || this.tool === "place-router" || this.tool === "place-text" || this.tool === "place-rect")) {
+                            this._removeGhostNode();
+                        }
+                        this.render();
                     }
-                    this.render();
                 });
+
                 toolsWrap.appendChild(b);
             }
         }
