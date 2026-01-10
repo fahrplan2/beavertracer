@@ -74,8 +74,8 @@ export class Link extends SimulatedObject {
 
     this.simcontrol = simcontrol;
 
-    this.simcontrol.pcapController.addIf(this.A.name + ": "+this.link.portA.name);
-    this.simcontrol.pcapController.addIf(this.B.name + ": "+this.link.portB.name);
+    this.simcontrol.pcapController.addIf(this.A.id + ": "+this.link.portA.name);
+    this.simcontrol.pcapController.addIf(this.B.id + ": "+this.link.portB.name);
   }
 
   render() {
@@ -104,8 +104,8 @@ export class Link extends SimulatedObject {
     for (const p of this._packets) p.el.remove();
     this._packets = [];
     this.link.destroy();
-    this.simcontrol.pcapController.removeIf(this.A.name + ": "+this.link.portA.name);
-    this.simcontrol.pcapController.removeIf(this.B.name + ": "+this.link.portB.name);
+    this.simcontrol.pcapController.removeIf(this.A.id + ": "+this.link.portA.name);
+    this.simcontrol.pcapController.removeIf(this.B.id + ": "+this.link.portB.name);
   }
 
   setPaused(paused) { this._paused = paused; }
@@ -117,11 +117,11 @@ export class Link extends SimulatedObject {
     const b = this.link.BtoA ?? null;
     if (a) {
       this._startInFlight("AtoB", a);
-      this.simcontrol.pcapController.updateIf(this.A.name + ": "+this.link.portA.name, this.link.portA.loggedFrames);
+      this.simcontrol.pcapController.updateIf(this.A.id + ": "+this.link.portA.name, this.link.portA.loggedFrames);
     }
     if (b) {
       this._startInFlight("BtoA", b);
-      this.simcontrol.pcapController.updateIf(this.B.name + ": "+this.link.portB.name, this.link.portB.loggedFrames);
+      this.simcontrol.pcapController.updateIf(this.B.id + ": "+this.link.portB.name, this.link.portB.loggedFrames);
     }
   }
 
@@ -133,10 +133,10 @@ export class Link extends SimulatedObject {
     this.link.step2();
 
     if (a) {
-      this.simcontrol.pcapController.updateIf(this.B.name + ": "+this.link.portB.name, this.link.portB.loggedFrames);
+      this.simcontrol.pcapController.updateIf(this.B.id + ": "+this.link.portB.name, this.link.portB.loggedFrames);
     }
     if (b) {
-      this.simcontrol.pcapController.updateIf(this.A.name + ": "+this.link.portA.name, this.link.portA.loggedFrames);
+      this.simcontrol.pcapController.updateIf(this.A.id + ": "+this.link.portA.name, this.link.portA.loggedFrames);
     }
     for (const p of this._packets) p.el.remove();
     this._packets = [];
