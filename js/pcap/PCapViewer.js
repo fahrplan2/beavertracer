@@ -2,6 +2,7 @@
 import loadWiregasm from "@goodtools/wiregasm/dist/wiregasm";
 import { TabPicker } from "./lib/TabPicker.js";
 import { SplitGrid } from "./lib/SplitGrid.js";
+import { SimControl } from "../SimControl.js";
 
 /** @typedef {any} WiregasmModule */
 /** @typedef {any} DissectSession */
@@ -16,6 +17,7 @@ import { SplitGrid } from "./lib/SplitGrid.js";
  *   autoSelectFirst?: boolean;
  *   onSessionClosed?: (name: string) => void;
  *   hideComputedTreeNodes?: boolean; 
+ *   simControl?: SimControl;
  * }} PCAPViewerOptions
  */
 
@@ -460,7 +462,13 @@ export class PCapViewer {
         btn.title = s.hasCapture ? name : `${name} (no capture loaded)`;
 
         const label = document.createElement("span");
-        label.textContent = name + (s.hasCapture ? "" : " •");
+        if(this.#opt.simControl) {
+          //Getting the real name
+          const realname = this.#opt.simControl.simobjects.filter(e => e.id==parseInt(name))[0].name;
+          label.textContent = realname+":"+name.split(":")[1] + (s.hasCapture ? "" : " •");
+        } else {
+          label.textContent = name + (s.hasCapture ? "" : " •");
+        }
         btn.appendChild(label);
 
         btn.addEventListener("click", () => this.switchTab(name));

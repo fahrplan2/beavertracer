@@ -129,7 +129,8 @@ export class SimControl {
         this.root = root;
 
         this.pcapViewer = new PCapViewer(null, {
-            hideComputedTreeNodes: true
+            hideComputedTreeNodes: true,
+            simControl: this
         });
         this.pcapController = new PCapController(this.pcapViewer);
 
