@@ -5,7 +5,7 @@
     "build": "vite build",
     "preview": "vite preview"
   },
-  "name": "networksim",
+  "name": "beavertracer",
   "description": "",
   "version": "0.0.1",
   "main": "electron/main.cjs",
