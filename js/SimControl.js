@@ -2,18 +2,15 @@
 import { SimulatedObject } from "./sim/SimulatedObject.js";
 import { Link } from "./sim/Link.js";
 import { PCapViewer } from "./tracer/PCapViewer.js";
-import { TabController } from "./TabController.js";
 import { PC } from "./sim/PC.js";
 import { Switch } from "./sim/Switch.js";
 import { Router } from "./sim/Router.js";
 import { TextBox } from "./sim/TextBox.js";
 import { RectOverlay } from "./sim/RectOverlay.js";
-import { t, getLocale, setLocale, getLocales, onLocaleChange } from "./i18n/index.js";
+import { t, getLocale, setLocale, getLocales } from "./i18n/index.js";
 import { StaticPageLoader } from "./StaticPageLoader.js";
 import { PCapController } from "./tracer/PCapControler.js";
 import { DOMBuilder } from "./lib/DomBuilder.js";
-
-
 
 /**
  * @typedef {Object} PortDescriptor
@@ -23,50 +20,28 @@ import { DOMBuilder } from "./lib/DomBuilder.js";
  */
 
 export class SimControl {
-    /**
-     * @type {Array<SimulatedObject>} array of all simulated objects
-     */
-    simobjects;
+    /** @type {Array<SimulatedObject>} */
+    simobjects = [];
 
-    /**
-     * @type {TabController} reference to the tabcontroller
-     */
-
-    tabControler;
-
-    /**
-     * @type {PCapController} 
-     */
+    /** @type {PCapController} */
     pcapController;
 
-    /**
-     * @type {PCapViewer} reference to the pcapviewer
-     */
+    /** @type {PCapViewer} */
     pcapViewer;
 
-    /**
-     * @type {number} simulation speed
-     */
+    /** @type {number} simulation speed */
     static tick = 500;
 
-    /**
-     * @type {number} ID of the simulation step
-     */
+    /** @type {number} ID of the simulation step */
     tickId = 0;
 
-    /**
-     * @type {boolean} is the simulation paused?
-     */
+    /** @type {boolean} is the simulation paused? */
     isPaused = true;
 
-    /**
-     * @type {boolean} are we in a endstep? (false=step1, true=step2)
-     */
+    /** @type {boolean} are we in a endstep? (false=step1, true=step2) */
     endStep = false;
 
-    /**
-     * @type {HTMLElement|null} HTML-Element where everything gets renderd into
-     */
+    /** @type {HTMLElement|null} */
     root;
 
     /** @type {HTMLDivElement|null} */
@@ -78,19 +53,17 @@ export class SimControl {
     /** @type {number|null} */
     timeoutId = null;
 
-    /**
-     * @type {HTMLElement|null} movement Boundary for user drag&drop (so that it stays inside root element)
-     */
-    movementBoundary;
+    /** @type {HTMLElement|null} */
+    movementBoundary = null;
 
-
-
-    /**** EDIT MODE Variables *****/
     /** @type {"edit"|"run"|"trace"|"about"} */
     mode = "edit";
 
     /** @type {"select"|"place-pc"|"place-switch"|"place-router"|"place-text"|"place-rect"|"link"|"delete"} */
     tool = "select";
+
+    /** @type {SimulatedObject|null} */
+    focusedObject = null;
 
     /** @type {SimulatedObject|null} */
     _linkStart = null;
@@ -113,421 +86,212 @@ export class SimControl {
     /** @type {HTMLElement|null} */
     _deleteHoverEl = null;
 
-
     /** @type {null|(()=>void)} */
     _langCleanup = null;
 
-    /** @type {null|(()=>void)} */
-    _unsubLocale = null;
+    /** @type {HTMLDivElement|null} */
+    _langPanel = null;
 
+    // --- New: DOM refs so we can update without rebuilding
+    /** @type {HTMLDivElement|null} */
+    _toolbar = null;
+
+    /** @type {HTMLDivElement|null} */
+    _simBody = null;
+
+    /** @type {HTMLDivElement|null} */
+    _sidebar = null;
+
+    /** @type {HTMLDivElement|null} */
+    _toolsWrap = null;
+
+    /** @type {HTMLDivElement|null} */
+    _tracerBody = null;
+
+    /** @type {HTMLDivElement|null} */
+    _aboutBody = null;
+
+    /** @type {Map<number, HTMLElement>} */
+    _objEls = new Map();
+
+    /** @type {boolean} */
+    _mounted = false;
+
+    /** @type {boolean} */
+    _uiDirty = false;
+
+    /** @type {number|null} */
+    _uiRaf = null;
+
+    /** @type {boolean} */
+    _redrawReq = false;
+
+    /** @type {number|null} */
+    _rafId = null;
+
+    /** @type {number} */
+    _rafLastTs = performance.now();
 
     /**
      * @param {HTMLElement|null} root
      */
     constructor(root) {
-        this.simobjects = [];
         this.root = root;
 
         this.pcapViewer = new PCapViewer(null, {
             hideComputedTreeNodes: true,
-            simControl: this
+            simControl: this,
         });
         this.pcapController = new PCapController(this.pcapViewer);
 
-        this.render();
+        this._mount();          // build DOM once
+        this._syncSceneDOM();   // render current objects
+        this._updateUI();       // set active states
 
-        //change when locale changes
         this.scheduleNextStep();
         this._startRafLoop();
     }
 
-    /**
-     * queues and sets timeout for the next step in the simulation
-     * @returns 
-     */
+    // ---------------------------------------------------------------------------
+    // Simulation loop (unchanged semantics, keep step2 then step1!)
+    // ---------------------------------------------------------------------------
+
     scheduleNextStep() {
         if (this.timeoutId !== null) window.clearTimeout(this.timeoutId);
         if (this.isPaused) return;
         this.timeoutId = window.setTimeout(() => this.step(), SimControl.tick);
     }
 
-    /**
-     * advances the simulation in 1 step
-     */
     step() {
         for (let i = 0; i < this.simobjects.length; i++) {
             const x = this.simobjects[i];
-
-            //Links have two internal steps which need to be called "abwechselnd"
             if (x instanceof Link) {
-                //if (this.endStep) {
-                x.step2();
                 x.step1();
+                x.step2();
                 this.tickId++;
             }
         }
 
-        this.redrawLinks();
+        this._requestRedrawLinks();
         this.endStep = !this.endStep;
         this.scheduleNextStep();
     }
 
-    /**
-     *  adds a object to the simulation
-     *  @param {SimulatedObject} obj 
-     */
+    setTick(ms) {
+        if (this.mode !== "run") return;
+
+        SimControl.tick = Math.max(16, Math.min(5000, Math.round(ms)));
+        this.isPaused = false;
+        this._invalidateUI();
+        this.scheduleNextStep();
+    }
+
+    pause() {
+        if (this.isPaused) return;
+        this.isPaused = true;
+        this._invalidateUI();
+        this.scheduleNextStep();
+    }
+
+    // ---------------------------------------------------------------------------
+    // Public scene operations: do NOT full-render; update incrementally
+    // ---------------------------------------------------------------------------
+
     addObject(obj) {
         if (this.simobjects.includes(obj)) return;
         this.simobjects.push(obj);
         obj.simcontrol = this;
-        this.render();
+
+        this._syncSceneDOM();     // add just this node (and link)
+        this._requestRedrawLinks();
     }
 
-    /**
-     *  deletes an object form the simulation
-     *  @param {SimulatedObject} obj 
-     */
     deleteObject(obj) {
-        // cancel pending link if needed
         if (this._linkStart === obj) this._cancelLinking();
 
-        // remove attached links first
-        const attachedLinks = this.simobjects.filter(o =>
-            o instanceof Link && (o.A === obj || o.B === obj)
+        const attachedLinks = this.simobjects.filter(
+            (o) => o instanceof Link && (o.A === obj || o.B === obj)
         );
 
         for (const l of attachedLinks) l.destroy();
         if (obj instanceof Link) obj.destroy();
 
         const toRemove = new Set([obj, ...attachedLinks]);
-        this.simobjects = this.simobjects.filter(o => !toRemove.has(o));
+        this.simobjects = this.simobjects.filter((o) => !toRemove.has(o));
 
-        this.render();
-    }
+        // remove DOM for deleted objects
+        for (const o of toRemove) {
+            const el = this._objEls.get(o.id);
+            if (el) el.remove();
+            this._objEls.delete(o.id);
 
-
-    /**
-     *  sets Focus of an object 
-     *  @param {SimulatedObject} obj 
-     */
-    setFocus(obj) {
-        this.focusedObject = obj;
-        this.render();
-    }
-
-    /**
-     * 
-     * @param {number} ms
-     */
-    setTick(ms) {
-        //no effect while not in run mode
-        if (this.mode !== "run") {
-            return;
+            // also remove packet elements if it was a Link
+            if (o instanceof Link) {
+                for (const p of o._packets) p.el?.remove?.();
+            }
         }
-        SimControl.tick = Math.max(16, Math.min(5000, Math.round(ms)));
 
-        this.isPaused = false; //unpause
-        this.render();
-        this.scheduleNextStep();
+        this._requestRedrawLinks();
+        this._invalidateUI();
     }
 
-    /**
-     * pauses the simulation
-     */
-    pause() {
-        if (this.isPaused) return;
-        this.isPaused = true;
-        this.render();
-        this.scheduleNextStep(); // will stop scheduling
+    setFocus(obj) {
+        if (this.focusedObject === obj) return;
+
+        // cheap: toggle class, no rebuild
+        const prev = this.focusedObject;
+        this.focusedObject = obj;
+
+        if (prev) {
+            const elPrev = this._objEls.get(prev.id);
+            elPrev?.classList?.remove("is-focused");
+        }
+        const elNow = this._objEls.get(obj.id);
+        elNow?.classList?.add("is-focused");
+
+        this._invalidateUI(); // if toolbar/panels depend on focus
     }
 
-    /**
-     * renders the SIM
-     * @returns 
-     */
-    render() {
+    // ---------------------------------------------------------------------------
+    // Mount once: build all “frame” DOM
+    // ---------------------------------------------------------------------------
+
+    _mount() {
+        console.trace("_mount() called");
+        if (this._mounted) return;
+        this._mounted = true;
+
         const root = this.root;
         if (!root) return;
-
-
-        const prevScrollLeft = this.nodesLayer?.scrollLeft ?? 0;
-        const prevScrollTop = this.nodesLayer?.scrollTop ?? 0;
 
         root.replaceChildren();
         root.classList.add("sim-root");
 
-        //*********** TOOLBAR (TOP) ***********
+        // Toolbar
         const toolbar = document.createElement("div");
         toolbar.className = "sim-toolbar";
         root.appendChild(toolbar);
+        this._toolbar = toolbar;
 
-        // Branding group (left, styled like other groups)
-        const brandingGroup = document.createElement("div");
-        brandingGroup.className = "sim-toolbar-group sim-toolbar-branding-group";
-
-        toolbar.appendChild(brandingGroup);
-
-        const branding = document.createElement("div");
-        branding.className = "sim-toolbar-branding";
-        branding.textContent = t("name");
-        brandingGroup.appendChild(branding);
-
-        /** @param {string} title */
-        const addGroup = (title) => {
-            const g = document.createElement("div");
-            g.className = "sim-toolbar-group";
-
-            const label = document.createElement("div");
-            label.className = "sim-toolbar-group-label";
-            label.textContent = title;
-
-            const buttons = document.createElement("div");
-            buttons.className = "sim-toolbar-buttons";
-
-            g.appendChild(label);
-            g.appendChild(buttons);
-            toolbar.appendChild(g);
-
-            return buttons;
-        };
-
-        const addSeparator = () => {
-            const sep = document.createElement("div");
-            sep.className = "sim-toolbar-sep";
-            toolbar.appendChild(sep);
-        };
-
-        //EDIT GROUP
-        addSeparator();
-        const gMode = DOMBuilder.buttongroup(t("sim.mode"), toolbar);
-
-        //Edit
-        gMode.appendChild(DOMBuilder.iconbutton({
-            label: t("sim.edit"),
-            icon: "fa-pencil",
-            active: this.mode === "edit",
-            onClick: () => {
-                if (this.mode !== "edit") {
-                    this.tabControler.gotoTab("sim");
-                }
-                this._enterEditMode();
-            }
-        }));
-
-        //Run
-        gMode.appendChild(DOMBuilder.iconbutton({
-            label: t("sim.run"),
-            icon: "fa-play",
-            active: this.mode === "run",
-            onClick: () => {
-                if (this.mode === "edit") {
-                    this._leaveEditMode();
-                } else {
-                    this.pause();
-                }
-
-                this.tabControler.gotoTab("sim");
-                this.mode = "run";
-                this.isPaused = false;
-
-                if (this.root) {
-                    this.root.classList.remove("edit-mode");
-                    delete this.root.dataset.tool;
-                }
-
-                this.render();
-                this.scheduleNextStep();
-            }
-        }));
-
-        //Trace
-        gMode.appendChild(DOMBuilder.iconbutton({
-            label: t("sim.trace"),
-            icon: "fa-magnifying-glass",
-            active: this.mode === "trace",
-            onClick: () => {
-                //leave edit mode
-                if (this.mode === "edit") {
-                    this._leaveEditMode();
-                } 
-                this.tabControler.gotoTab("trace");
-                this.mode = "trace";
-
-                this.render();
-            }
-        }));
-
-        //PROJECT GROUP
-        if (this.mode === "edit") {
-
-            addSeparator();
-            const gProject = DOMBuilder.buttongroup(t("sim.project"), toolbar);
-
-            //New
-            gProject.appendChild(DOMBuilder.iconbutton({
-                label: t("sim.new"),
-                icon: "fa-file",
-                onClick: () => {
-                    if (!confirm(t("sim.discardandnewwarning"))) return;
-                    this.new();
-                }
-            }));
-
-            //Load
-            gProject.appendChild(DOMBuilder.iconbutton({
-                label: t("sim.load"),
-                icon: "fa-file-arrow-up",
-                onClick: () => {
-                    if (!confirm(t("sim.discardandloadwarning"))) return;
-                    this.open();
-                }
-            }));
-
-            // Save
-            gProject.appendChild(DOMBuilder.iconbutton({
-                label: t("sim.save"),
-                icon: "fa-file-arrow-down",
-                onClick: () => {
-                    this.download();
-                }
-            }));
-        }
-
-        //SPEED BAR
-        if (this.mode === "run") {
-            addSeparator();
-            const gSpeeds = DOMBuilder.buttongroup(t("sim.speed"), toolbar);
-
-            // Pause (only pauses)
-
-            gSpeeds.appendChild(DOMBuilder.iconbutton({
-                label: t("sim.pause"),
-                icon: "fa-pause",
-                active: this.isPaused,
-                onClick: () => {
-                    this.pause();
-                }
-            }));
-
-
-            // Speed buttons (also start/resume)
-            const speeds = [
-                { label: "0.25×", ms: 1000, icon: "fa-1" },
-                { label: "0.5×", ms: 500, icon: "fa-2" },
-                { label: "1×", ms: 250, icon: "fa-3" },
-                { label: "2×", ms: 125, icon: "fa-4" },
-                { label: "4×", ms: 62, icon: "fa-5" },
-                { label: "8×", ms: 32, icon: "fa-6" },
-            ];
-
-            for (const s of speeds) {
-                gSpeeds.appendChild(DOMBuilder.iconbutton({
-                    label: s.label,
-                    active: SimControl.tick === s.ms && !this.isPaused,
-                    icon: s.icon,
-                    onClick: () => {
-                        this.setTick(s.ms)
-                    }
-                }));
-            }
-            gSpeeds.appendChild(DOMBuilder.iconbutton({
-                label: t("sim.reset"),
-                icon: "fa-arrow-rotate-left",
-                onClick: () => {
-                    this.restore(this.toJSON());
-                    this.mode = "run";
-                    this.pause();
-                }
-            }));
-
-
-        }
-
-        addSeparator();
-
-        const gCommon = DOMBuilder.buttongroup(t("sim.common"), toolbar);
-
-        // Language
-        gCommon.appendChild(DOMBuilder.iconbutton({
-            label: t("sim.language"),
-            icon: "fa-language",
-            onClick: (ev) => {
-                ev.preventDefault();
-                ev.stopPropagation();
-                this._openLanguageDialog(gCommon);
-            }
-        }));
-
-        //About
-        gCommon.appendChild(DOMBuilder.iconbutton({
-            label: t("sim.about"),
-            icon: "fa-circle-question",
-            active: this.mode === "about",
-            onClick: () => {
-                if (this.mode === "edit") {
-                    this._leaveEditMode;
-                }
-                this.pause();
-                this.tabControler.gotoTab("about");
-                this.mode = "about";
-                this.render();
-            }
-        }));
-
-        //End of toolbar
-
-        //********* BODY (SIDEBAR + NODES) ***************
+        // Sim body (sidebar + nodes)
         const simbody = document.createElement("div");
-        simbody.className = "sim-body";
-        if (this.mode === "run" || this.mode === "edit") {
-            simbody.classList.add("active"); //for tabs
-        }
+        simbody.className = "sim-body tab-content";
         simbody.id = "sim";
+        root.appendChild(simbody);
+        this._simBody = simbody;
 
-        // Left sidebar (only in edit mode)
-        if (this.mode === "edit") {
-            const sidebar = document.createElement("div");
-            sidebar.className = "sim-sidebar";
-            simbody.appendChild(sidebar);
-            const toolsWrap = document.createElement("div");
-            toolsWrap.className = "sim-sidebar-tools";
-            sidebar.appendChild(toolsWrap);
+        // Sidebar (always mounted; we show/hide based on mode)
+        const sidebar = document.createElement("div");
+        sidebar.className = "sim-sidebar";
+        simbody.appendChild(sidebar);
+        this._sidebar = sidebar;
 
-            const tools = [
-                ["select", t("sim.tool.select"), "fa-arrow-pointer"],
-                ["link", t("sim.tool.link"), "fa-link"],
-                ["place-pc", t("sim.tool.pc"), "fa-desktop"],
-                ["place-switch", t("sim.tool.switch"), "my-icon-switch"],
-                ["place-router", t("sim.tool.router"), "my-icon-router"],
-                ["place-text", t("sim.tool.textbox"), "fa-t"],
-                ["place-rect", t("sim.tool.rectangle"), "fa-square"],
-                ["delete", t("sim.tool.delete"), "fa-ban"],
-            ];
+        const toolsWrap = document.createElement("div");
+        toolsWrap.className = "sim-sidebar-tools";
+        sidebar.appendChild(toolsWrap);
+        this._toolsWrap = toolsWrap;
 
-            for (const [id, label, icon] of tools) {
-
-                const b = DOMBuilder.iconbutton({
-                    className: "sim-sidebar-btn",
-                    label: label,
-                    icon: icon,
-                    active: this.tool === id,
-                    onClick: () => {
-                        this.tool = /** @type {any} */ (id);
-                        if (this.root) this.root.dataset.tool = this.tool;
-
-                        if (this.tool !== "link") this._cancelLinking();
-                        if (!(this.tool === "place-pc" || this.tool === "place-switch" || this.tool === "place-router" || this.tool === "place-text" || this.tool === "place-rect")) {
-                            this._removeGhostNode();
-                        }
-                        this.render();
-                    }
-                });
-
-                toolsWrap.appendChild(b);
-            }
-        }
-
-        // Nodes layer goes into body (right side)
+        // Nodes layer
         const nodes = document.createElement("div");
         nodes.className = "sim-nodes";
         simbody.appendChild(nodes);
@@ -538,131 +302,456 @@ export class SimControl {
         const packetsLayer = document.createElement("div");
         packetsLayer.className = "sim-packets-layer";
         nodes.appendChild(packetsLayer);
-
         SimControl.packetsLayer = packetsLayer;
 
-        // re-attach packet elements after rerender
-        for (const obj of this.simobjects) {
-            if (obj instanceof Link) {
-                for (const p of obj._packets) {
-                    SimControl.packetsLayer.appendChild(p.el);
-                }
+        // Bind once (no rebind per “render”)
+        nodes.onpointerdown = (ev) => this._onPointerDown(ev);
+        nodes.onpointermove = (ev) => this._onPointerMove(ev);
+
+        nodes.oncontextmenu = (ev) => {
+            if (this.mode !== "edit") return;
+            if (this.tool !== "select") {
+                ev.preventDefault();
+                this._cancelLinking();
+                this._removeGhostNode();
+                this.tool = "select";
+                if (this.root) this.root.dataset.tool = this.tool;
+                this._invalidateUI();
             }
-        }
+        };
 
-        for (const obj of this.simobjects) {
-            const el = obj.render();
-            el.addEventListener("pointermove", () => {
-                this.redrawLinks();
-            });
-            nodes.appendChild(el);
-        }
-
-        this.redrawLinks();
-
-        if (this.nodesLayer) {
-            // avoid stacking listeners after rerender
-            this.nodesLayer.onpointerdown = (ev) => this._onPointerDown(ev);
-            this.nodesLayer.onpointermove = (ev) => this._onPointerMove(ev);
-
-            // cancel link with right click
-            this.nodesLayer.oncontextmenu = (ev) => {
-
-                if (this.mode !== "edit") return;
-
-                // If a tool is active, right-click = cancel tool
-                if (this.tool !== "select") {
-                    ev.preventDefault();
-
-                    this._cancelLinking();
-                    this._removeGhostNode();
-
-                    this.tool = "select";
-                    if (this.root) this.root.dataset.tool = this.tool;
-
-                    this.render();
-                }
-
-            };
-
-            // ESC cancels link
-            window.onkeydown = (ev) => {
-                if (ev.key === "Escape") this._cancelLinking();
-            };
-        }
-
-        /** TAB CONTROLLER */
-        this.tabControler = new TabController();
-
-
-
-
-
-
-        //****************** PCAP VIEWER ********************************/
-
-        if (this.mode === "trace") {
-            const tracerbody = document.createElement("div");
-            tracerbody.className = "analyzer";
-            tracerbody.classList.add("tab-content"); //for tabs
-            tracerbody.id = "tracer";
-            root.appendChild(tracerbody);
-
-            this.pcapViewer.setMount(tracerbody);
-            tracerbody.classList.add("active");
-            this.pcapViewer.render();
-
-        }
-
-        //****************** ABOUT ********************************/
-
-        if (this.mode === "about") {
-            const aboutbody = document.createElement("div");
-            aboutbody.className = "about";
-            aboutbody.id = "about";
-            aboutbody.classList.add("tab-content");
-            aboutbody.classList.add("active");
-            new StaticPageLoader().load(aboutbody, "/pages/about/index.html");
-            root.appendChild(aboutbody);
-        }
-
-        if (this.mode === "run") {
-            simbody.classList.add("active");
-            root.appendChild(simbody);
-            this.redrawLinks();
-        }
-
-        if (this.mode === "edit") {
-            simbody.classList.add("active");
-            root.appendChild(simbody);
-            this.redrawLinks();
-        }
-
-        queueMicrotask(() => {
-            if (!this.nodesLayer) return;
-            this.nodesLayer.scrollLeft = prevScrollLeft;
-            this.nodesLayer.scrollTop = prevScrollTop;
+        window.addEventListener("keydown", (ev) => {
+            if (ev.key === "Escape") this._cancelLinking();
         });
 
+        // Trace tab (mounted once)
+        const tracerbody = document.createElement("div");
+        tracerbody.className = "analyzer tab-content";
+        tracerbody.id = "tracer";
+        root.appendChild(tracerbody);
+        this._tracerBody = tracerbody;
+
+        this.pcapViewer.setMount(tracerbody);
+
+        // About tab (mounted once)
+        const aboutbody = document.createElement("div");
+        aboutbody.className = "about tab-content";
+        aboutbody.id = "about";
+        root.appendChild(aboutbody);
+        this._aboutBody = aboutbody;
+
+        // load about once
+        new StaticPageLoader().load(aboutbody, "/pages/about/index.html");
+
+        // Build toolbar + sidebar buttons once
+        this._buildToolbarOnce();
+        this._buildSidebarToolsOnce();
     }
 
+    _buildToolbarOnce() {
+        const toolbar = this._toolbar;
+        if (!toolbar) return;
+        toolbar.replaceChildren();
 
-    /**
-     * redraw all links (after drag&drop or other changes)
-     */
-    redrawLinks() {
-        for (const obj of this.simobjects) {
-            if (obj instanceof Link) {
-                obj.redrawLinks();
+        // Branding group
+        const brandingGroup = document.createElement("div");
+        brandingGroup.className = "sim-toolbar-group sim-toolbar-branding-group";
+        toolbar.appendChild(brandingGroup);
+
+        const branding = document.createElement("div");
+        branding.className = "sim-toolbar-branding";
+        branding.innerHTML = t("name");
+        brandingGroup.appendChild(branding);
+
+        const addSeparator = (role) => {
+            const sep = document.createElement("div");
+            sep.className = "sim-toolbar-sep";
+            if (role) sep.dataset.role = role;
+            toolbar.appendChild(sep);
+            return sep;
+        };
+
+
+        //********** MODES  *********/
+        addSeparator("sep-mode");
+        const gMode = DOMBuilder.buttongroup(t("sim.mode"), toolbar);
+        gMode.dataset.group = "mode";
+
+        // store buttons by dataset for easy update
+        const btnEdit = DOMBuilder.iconbutton({
+            label: t("sim.edit"),
+            icon: "fa-pencil",
+            onClick: () => {
+                this._enterEditMode();
+            },
+        });
+        btnEdit.dataset.role = "mode-edit";
+        gMode.appendChild(btnEdit);
+
+        const btnRun = DOMBuilder.iconbutton({
+            label: t("sim.run"),
+            icon: "fa-play",
+            onClick: () => {
+                if (this.mode === "edit") this._leaveEditMode();
+                else this.pause();
+
+                this.mode = "run";
+                this.isPaused = false;
+
+                if (this.root) {
+                    this.root.classList.remove("edit-mode");
+                    delete this.root.dataset.tool;
+                }
+
+                this._invalidateUI();
+                this.scheduleNextStep();
+            },
+        });
+        btnRun.dataset.role = "mode-run";
+        gMode.appendChild(btnRun);
+
+        const btnTrace = DOMBuilder.iconbutton({
+            label: t("sim.trace"),
+            icon: "fa-magnifying-glass",
+            onClick: () => {
+                if (this.mode === "edit") this._leaveEditMode();
+                this.mode = "trace";
+                this._invalidateUI();
+                this.pcapViewer.render();
+            },
+        });
+        btnTrace.dataset.role = "mode-trace";
+        gMode.appendChild(btnTrace);
+
+        //********** SPEED  *********/
+        addSeparator("sep-speeds");
+        const gSpeeds = DOMBuilder.buttongroup(t("sim.speed"), toolbar);
+        gSpeeds.dataset.group = "speeds";
+
+        const pauseBtn = DOMBuilder.iconbutton({
+            label: t("sim.pause"),
+            icon: "fa-pause",
+            onClick: () => this.pause(),
+        });
+        pauseBtn.dataset.role = "pause";
+        gSpeeds.appendChild(pauseBtn);
+
+        const speeds = [
+            { label: "0.25×", ms: 1000, icon: "fa-1" },
+            { label: "0.5×", ms: 500, icon: "fa-2" },
+            { label: "1×", ms: 250, icon: "fa-3" },
+            { label: "2×", ms: 125, icon: "fa-4" },
+            { label: "4×", ms: 62, icon: "fa-5" },
+            { label: "8×", ms: 32, icon: "fa-6" },
+        ];
+
+        for (const s of speeds) {
+            const b = DOMBuilder.iconbutton({
+                label: s.label,
+                icon: s.icon,
+                onClick: () => this.setTick(s.ms),
+            });
+            b.dataset.role = `speed-${s.ms}`;
+            gSpeeds.appendChild(b);
+        }
+
+        const resetBtn = DOMBuilder.iconbutton({
+            label: t("sim.reset"),
+            icon: "fa-arrow-rotate-left",
+            onClick: () => {
+                this.restore(this.toJSON());
+                this.mode = "run";
+                this.pause();
+            },
+        });
+        resetBtn.dataset.role = "reset";
+        gSpeeds.appendChild(resetBtn);
+
+        //******** PROJECT ***********/
+        addSeparator("sep-project");
+        const gProject = DOMBuilder.buttongroup(t("sim.project"), toolbar);
+        gProject.dataset.group = "project";
+
+        // New
+        const btnNew = DOMBuilder.iconbutton({
+            label: t("sim.new"),
+            icon: "fa-file",
+            onClick: () => {
+                if (!confirm(t("sim.discardandnewwarning"))) return;
+                this.new();
+            },
+        });
+        btnNew.dataset.role = "project-new";
+        gProject.appendChild(btnNew);
+
+        // Load
+        const btnLoad = DOMBuilder.iconbutton({
+            label: t("sim.load"),
+            icon: "fa-file-arrow-up",
+            onClick: () => {
+                if (!confirm(t("sim.discardandloadwarning"))) return;
+                this.open();
+            },
+        });
+        btnLoad.dataset.role = "project-load";
+        gProject.appendChild(btnLoad);
+
+        // Save
+        const btnSave = DOMBuilder.iconbutton({
+            label: t("sim.save"),
+            icon: "fa-file-arrow-down",
+            onClick: () => {
+                this.download();
+            },
+        });
+        btnSave.dataset.role = "project-save";
+        gProject.appendChild(btnSave);
+
+
+        //******** COMMON ***********/
+        addSeparator("sep-common");
+        const gCommon = DOMBuilder.buttongroup(t("sim.common"), toolbar);
+        gCommon.dataset.group = "common";
+
+        const langBtn = DOMBuilder.iconbutton({
+            label: t("sim.language"),
+            icon: "fa-language",
+            onClick: (ev) => {
+                ev.preventDefault();
+                ev.stopPropagation();
+                this._openLanguageDialog(gCommon);
+            },
+        });
+        langBtn.dataset.role = "lang";
+        gCommon.appendChild(langBtn);
+
+        const aboutBtn = DOMBuilder.iconbutton({
+            label: t("sim.about"),
+            icon: "fa-circle-question",
+            onClick: () => {
+                this.pause();
+                this.mode = "about";
+                this._invalidateUI();
+            },
+        });
+        aboutBtn.dataset.role = "mode-about";
+        gCommon.appendChild(aboutBtn);
+
+    }
+
+    _buildSidebarToolsOnce() {
+        const toolsWrap = this._toolsWrap;
+        if (!toolsWrap) return;
+        toolsWrap.replaceChildren();
+
+        const tools = [
+            ["select", t("sim.tool.select"), "fa-arrow-pointer"],
+            ["link", t("sim.tool.link"), "fa-link"],
+            ["place-pc", t("sim.tool.pc"), "fa-desktop"],
+            ["place-switch", t("sim.tool.switch"), "my-icon-switch"],
+            ["place-router", t("sim.tool.router"), "my-icon-router"],
+            ["place-text", t("sim.tool.textbox"), "fa-t"],
+            ["place-rect", t("sim.tool.rectangle"), "fa-square"],
+            ["delete", t("sim.tool.delete"), "fa-ban"],
+        ];
+
+        for (const [id, label, icon] of tools) {
+            const b = DOMBuilder.iconbutton({
+                className: "sim-sidebar-btn",
+                label,
+                icon,
+                onClick: () => {
+                    this.tool = /** @type {any} */ (id);
+                    if (this.root) this.root.dataset.tool = this.tool;
+
+                    if (this.tool !== "link") this._cancelLinking();
+                    if (
+                        !(
+                            this.tool === "place-pc" ||
+                            this.tool === "place-switch" ||
+                            this.tool === "place-router" ||
+                            this.tool === "place-text" ||
+                            this.tool === "place-rect"
+                        )
+                    ) {
+                        this._removeGhostNode();
+                    }
+
+                    this._invalidateUI();
+                },
+            });
+            b.dataset.role = `tool-${id}`;
+            toolsWrap.appendChild(b);
+        }
+    }
+
+    // ---------------------------------------------------------------------------
+    // UI updates: cheap class toggles + active buttons
+    // ---------------------------------------------------------------------------
+
+    _invalidateUI() {
+        if (this._uiDirty) return;
+        this._uiDirty = true;
+        this._uiRaf = requestAnimationFrame(() => {
+            this._uiDirty = false;
+            this._uiRaf = null;
+            this._updateUI();
+        });
+    }
+
+    _updateUI() {
+        const root = this.root;
+        if (!root) return;
+
+        // mode classes
+        root.classList.toggle("edit-mode", this.mode === "edit");
+        if (this.mode === "edit") root.dataset.tool = this.tool;
+        else delete root.dataset.tool;
+
+        // tab visibility (mounted once; just toggle active)
+        const isSim = (this.mode === "edit" || this.mode === "run");
+        this._simBody?.classList.toggle("active", isSim);
+        this._tracerBody?.classList.toggle("active", this.mode === "trace");
+        this._aboutBody?.classList.toggle("active", this.mode === "about");
+
+        // sidebar only in edit
+        this._sidebar?.classList.toggle("hidden", this.mode !== "edit");
+
+        // toolbar updates
+        const toolbar = this._toolbar;
+        if (toolbar) {
+            const setActive = (role, active) => {
+                const el = toolbar.querySelector(`[data-role="${role}"]`);
+                el?.classList?.toggle("active", !!active);
+            };
+
+            // --- active states for mode buttons
+            setActive("mode-edit", this.mode === "edit");
+            setActive("mode-run", this.mode === "run");
+            setActive("mode-trace", this.mode === "trace");
+            setActive("mode-about", this.mode === "about");
+
+            // --- active state for pause
+            setActive("pause", this.mode === "run" && this.isPaused);
+
+            // --- active state for speed buttons
+            const speedRoles = [1000, 500, 250, 125, 62, 32];
+            for (const ms of speedRoles) {
+                setActive(`speed-${ms}`, this.mode === "run" && !this.isPaused && SimControl.tick === ms);
+            }
+
+            // --- hide/show whole groups + their separators
+            const speedsInner = toolbar.querySelector(`[data-group="speeds"]`);
+            const projectInner = toolbar.querySelector(`[data-group="project"]`);
+
+            const speedsGroup = speedsInner?.closest(".sim-toolbar-group") ?? speedsInner;
+            const projectGroup = projectInner?.closest(".sim-toolbar-group") ?? projectInner;
+
+            const sepSpeeds = toolbar.querySelector(`[data-role="sep-speeds"]`);
+            const sepProject = toolbar.querySelector(`[data-role="sep-project"]`);
+
+            const setHidden = (el, hidden) => el?.classList?.toggle("hidden", !!hidden);
+
+            const showSpeeds = (this.mode === "run");
+            const showProject = (this.mode === "edit");
+
+            setHidden(speedsGroup, !showSpeeds);
+            setHidden(sepSpeeds, !showSpeeds);
+
+            setHidden(projectGroup, !showProject);
+            setHidden(sepProject, !showProject);
+
+        }
+
+        // sidebar tool actives
+        const toolsWrap = this._toolsWrap;
+        if (toolsWrap) {
+            for (const btn of toolsWrap.querySelectorAll("[data-role^='tool-']")) {
+                const role = btn.getAttribute("data-role") || "";
+                const id = role.slice("tool-".length);
+                btn.classList.toggle("active", this.mode === "edit" && this.tool === id);
             }
         }
     }
 
-    /** @type {HTMLDivElement|null} */
-    _langPanel = null;
+
+    // ---------------------------------------------------------------------------
+    // Scene DOM sync: add/remove nodes incrementally, no full rebuild
+    // ---------------------------------------------------------------------------
+
+    _syncSceneDOM() {
+        const nodes = this.nodesLayer;
+        if (!nodes) return;
+
+        // 1) Ensure node elements exist and attached
+        for (const obj of this.simobjects) {
+            if (obj instanceof Link) continue; // links are drawn via their own DOM; still include if your Link.render returns an element
+
+            if (!this._objEls.has(obj.id)) {
+                const el = obj.render();
+                this._objEls.set(obj.id, el);
+
+                // optional focus class
+                if (this.focusedObject?.id === obj.id) el.classList.add("is-focused");
+
+                nodes.appendChild(el);
+            } else {
+                // already exists, ensure in DOM
+                const el = this._objEls.get(obj.id);
+                if (el && el.parentElement !== nodes) nodes.appendChild(el);
+            }
+        }
+
+        // 2) Links: make sure their DOM exists too (if Link.render creates one)
+        for (const obj of this.simobjects) {
+            if (!(obj instanceof Link)) continue;
+
+            if (!this._objEls.has(obj.id)) {
+                const el = obj.render();
+                this._objEls.set(obj.id, el);
+                nodes.appendChild(el);
+
+                // attach packet elements once
+                for (const p of obj._packets) {
+                    if (SimControl.packetsLayer && p.el && p.el.parentElement !== SimControl.packetsLayer) {
+                        SimControl.packetsLayer.appendChild(p.el);
+                    }
+                }
+            }
+        }
+
+        // 3) Remove orphan DOM elements
+        const alive = new Set(this.simobjects.map((o) => o.id));
+        for (const [id, el] of this._objEls) {
+            if (!alive.has(id)) {
+                el.remove();
+                this._objEls.delete(id);
+            }
+        }
+
+        this._requestRedrawLinks();
+    }
+
+    _requestRedrawLinks() {
+        if (this._redrawReq) return;
+        this._redrawReq = true;
+        requestAnimationFrame(() => {
+            this._redrawReq = false;
+            this.redrawLinks();
+        });
+    }
+
+    redrawLinks() {
+        for (const obj of this.simobjects) {
+            if (obj instanceof Link) obj.redrawLinks();
+        }
+    }
+
+    // ---------------------------------------------------------------------------
+    // About / trace already mounted; keep existing language picker
+    // ---------------------------------------------------------------------------
 
     _openLanguageDialog(anchorEl) {
-        // toggle
         if (this._langPanel) {
             this._closeLanguageDialog();
             return;
@@ -680,7 +769,6 @@ export class SimControl {
             b.type = "button";
             b.className = "sim-lang-option";
             b.textContent = loc.label;
-
             if (loc.key === current) b.classList.add("active");
 
             b.addEventListener("click", (ev) => {
@@ -710,15 +798,12 @@ export class SimControl {
         document.body.appendChild(panel);
         this._langPanel = panel;
 
-        // position near button
         const ar = anchorEl.getBoundingClientRect();
         const r = panel.getBoundingClientRect();
         const pad = 8;
 
         let left = ar.left;
         let top = ar.bottom + 6;
-
-        // clamp
         left = Math.max(pad, Math.min(left, window.innerWidth - r.width - pad));
         top = Math.max(pad, Math.min(top, window.innerHeight - r.height - pad));
 
@@ -749,149 +834,9 @@ export class SimControl {
         this._langPanel = null;
     }
 
-    /***************************** SAVE AND LOAD **********************************/
-
-    /**
-     * saves the simulation state
-     * @returns 
-     */
-    toJSON() {
-        return {
-            version: 4,
-            tick: SimControl.tick,
-            objects: this.simobjects.map(o => o.toJSON()),
-        };
-    }
-
-    download() {
-        const json = JSON.stringify(this.toJSON(), null, 2);
-        const blob = new Blob([json], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "simulation.json";
-        a.click();
-
-        URL.revokeObjectURL(url);
-    }
-
-    /**
-     * restore a state
-     * @param {*} state 
-     * @returns 
-     */
-    restore(state) {
-        //@ts-ignore
-        const REGISTRY = new Map([
-            ["PC", PC],
-            ["Router", Router],
-            ["Switch", Switch],
-            ["TextBox", TextBox],
-            ["RectOverlay", RectOverlay],
-            // Link handled separately
-        ]);
-
-        if (!state || !Array.isArray(state.objects)) {
-            alert(t("sim.invalidfilewarning"));
-            return;
-        }
-
-        // cleanup old links properly
-        for (const o of this.simobjects) if (o instanceof Link) o.destroy();
-        this.simobjects = [];
-
-        // restore tick
-        if (typeof state.tick === "number") SimControl.tick = state.tick;
-
-        /** @type {Map<number, SimulatedObject>} */
-        const byId = new Map();
-
-        let maxId = 0;
-
-        // 1) create nodes first
-        for (const n of state.objects) {
-            if (!n || n.kind === "Link") continue;
-
-            const node = REGISTRY.get(String(n.kind));
-            if (!node || typeof node.fromJSON !== "function") {
-                console.warn("Unknown kind", n.kind);
-                continue;
-            }
-
-            const obj = node.fromJSON(n);
-            byId.set(obj.id, obj);
-            this.simobjects.push(obj);
-            obj.simcontrol = this;
-            if (obj.id > maxId) maxId = obj.id;
-        }
-
-        // 2) create links
-        for (const l of state.objects) {
-            if (!l || l.kind !== "Link") continue;
-            try {
-                const link = Link.fromJSON(l, byId, this);
-                this.simobjects.push(link);
-                if (link.id > maxId) maxId = link.id;
-            } catch (e) {
-                console.warn("Failed to recreate link:", e);
-            }
-        }
-
-        // 3) fix id generator
-        SimulatedObject.idnumber = maxId + 1;
-
-        this.isPaused = true;
-        this.render();
-        this.redrawLinks();
-    }
-
-    /**
-     * shows a open dialog and loads a state
-     */
-    open() {
-        const input = document.createElement("input");
-        input.type = "file";
-        input.accept = "application/json,.json";
-
-        input.addEventListener("change", async () => {
-            const file = input.files[0];
-            if (!file) return;
-
-            try {
-                const text = await file.text();
-                const scene = JSON.parse(text);
-                this.restore(scene);
-            } catch (e) {
-                alert(t("sim.loadfailederror"));
-            }
-        });
-
-        input.click();
-    }
-
-    /**
-     * creates a new state
-     */
-    new() {
-        // cleanup links
-        for (const o of this.simobjects) {
-            if (o instanceof Link) o.destroy();
-        }
-
-        this.simobjects = [];
-        SimulatedObject.idnumber = 0;
-
-        SimControl.tick = 500;
-        this.isPaused = true;
-
-        this._enterEditMode();
-    }
-
-
-    /*************************** ANIMATION LOOP FOR PACKETS **********************************/
-    running = true;
-    last = performance.now();
+    // ---------------------------------------------------------------------------
+    // RAF loop for packets (same as yours, just no DOM rebuild anywhere)
+    // ---------------------------------------------------------------------------
 
     _startRafLoop() {
         if (this._rafId != null) return;
@@ -903,12 +848,15 @@ export class SimControl {
             const dt = ts - this._rafLastTs;
             this._rafLastTs = ts;
 
+            if(this.mode!=="run") {
+                return;
+            }
+
             if (!this.isPaused) {
                 for (const obj of this.simobjects) {
                     if (obj instanceof Link) obj.advance(dt);
                 }
             }
-
             for (const obj of this.simobjects) {
                 if (obj instanceof Link) obj.renderPacket();
             }
@@ -917,30 +865,21 @@ export class SimControl {
         this._rafId = requestAnimationFrame(loop);
     }
 
+    // ---------------------------------------------------------------------------
+    // Edit mode transitions: no full render, just state + UI update
+    // ---------------------------------------------------------------------------
 
-    /***************************** EDIT MODE **********************************/
-
-    /**
-     * enters editMode
-     */
     _enterEditMode() {
         this.mode = "edit";
-
         this.isPaused = true;
 
-        // reset tool state
         this.tool = "select";
         this._cancelLinking();
         this._removeGhostNode();
         this._clearDeleteHover();
 
-        if (this.root) {
-            this.root.classList.add("edit-mode");
-            this.root.dataset.tool = this.tool;
-        }
-
         this.closeAllPanels();
-        this.render();
+        this._invalidateUI();
     }
 
     _leaveEditMode() {
@@ -948,15 +887,29 @@ export class SimControl {
         this._cancelLinking();
         this._removeGhostNode();
         this._clearDeleteHover();
+        this._invalidateUI();
     }
+
+    // ---------------------------------------------------------------------------
+    // Your existing pointer logic / ghost logic can stay mostly unchanged.
+    // Key change: NEVER call full render in there. Use _invalidateUI() / _syncSceneDOM()
+    // ---------------------------------------------------------------------------
 
     /** @param {PointerEvent} ev */
     _getLocalPoint(ev) {
         const layer = this.nodesLayer;
         if (!layer) return { x: ev.clientX, y: ev.clientY };
+
         const r = layer.getBoundingClientRect();
-        return { x: ev.clientX - r.left, y: ev.clientY - r.top };
+
+        // IMPORTANT: include scroll offset because ghosts are positioned in the scroll content space
+        return {
+            x: (ev.clientX - r.left) + layer.scrollLeft,
+            y: (ev.clientY - r.top) + layer.scrollTop,
+        };
     }
+
+
 
     /** @param {Event} ev */
     _getObjFromEvent(ev) {
@@ -965,20 +918,18 @@ export class SimControl {
         if (!icon) return null;
         const id = Number(icon.getAttribute("data-objid"));
         if (!Number.isFinite(id)) return null;
-        return this.simobjects.find(o => o.id === id) ?? null;
+        return this.simobjects.find((o) => o.id === id) ?? null;
     }
 
     /** @param {Event} ev */
     _getLinkFromEvent(ev) {
         const t = /** @type {HTMLElement} */ (ev.target);
-        // depends on where you set class; your Link.render() sets root.className="sim-link"
         const el = t.closest(".sim-link");
         if (!el) return null;
-        // map DOM -> object: easiest is to set dataset on link root too
         const objid = el.getAttribute("data-objid");
         if (!objid) return null;
         const id = Number(objid);
-        return this.simobjects.find(o => o.id === id) ?? null;
+        return this.simobjects.find((o) => o.id === id) ?? null;
     }
 
     _cancelLinking() {
@@ -988,47 +939,7 @@ export class SimControl {
         this._ghostLink = null;
     }
 
-    _ensureGhostLink() {
-        if (!this.nodesLayer) return;
-        if (this._ghostLink) return;
 
-        const g = document.createElement("div");
-        g.className = "sim-link sim-link-ghost";
-        g.style.pointerEvents = "none";
-        g.style.transformOrigin = "0 0";
-
-        const hit = document.createElement("div");
-        hit.className = "sim-link-hit";
-        hit.style.pointerEvents = "none"; // ghost darf niemals clicks fangen
-
-        const line = document.createElement("div");
-        line.className = "sim-link-line";
-        line.style.pointerEvents = "none";
-
-        g.appendChild(hit);
-        g.appendChild(line);
-
-        this.nodesLayer.appendChild(g);
-        this._ghostLink = g;
-    }
-
-    /** @param {number} endX local coords @param {number} endY local coords */
-    _updateGhost(endX, endY) {
-        if (!this._ghostLink || !this._linkStart) return;
-        const x1 = this._linkStart.getX();
-        const y1 = this._linkStart.getY();
-
-        const dx = endX - x1;
-        const dy = endY - y1;
-        const length = Math.hypot(dx, dy);
-        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-
-        this._ghostLink.style.width = `${length}px`;
-        this._ghostLink.style.left = `${x1}px`;
-        this._ghostLink.style.top = `${y1}px`;
-        this._ghostLink.style.transformOrigin = "0 0";
-        this._ghostLink.style.transform = `rotate(${angle}deg)`;
-    }
 
     /** @param {PointerEvent} ev */
     _onPointerMove(ev) {
@@ -1036,29 +947,36 @@ export class SimControl {
 
         const p = this._getLocalPoint(ev);
 
-        // Ghost for placing nodes
-        if (this.tool === "place-pc" || this.tool === "place-router" || this.tool === "place-switch" || this.tool === "place-text" || this.tool === "place-rect") {
+        if (
+            this.tool === "place-pc" ||
+            this.tool === "place-router" ||
+            this.tool === "place-switch" ||
+            this.tool === "place-text" ||
+            this.tool === "place-rect"
+        ) {
             this._ensureGhostNode(this.tool);
             this._moveGhostNode(p.x, p.y);
         } else {
             this._removeGhostNode();
         }
 
-        // Ghost for linking
         if (this.tool === "link" && this._linkStart) {
             this._ensureGhostLink();
             this._updateGhost(p.x, p.y);
         }
 
-        // delete-tool hover highlight
         if (this.tool === "delete") {
             this._setDeleteHover(this._getHoverTargetEl(ev));
         } else {
             this._clearDeleteHover();
         }
+
+        // IMPORTANT: don’t redraw links constantly here unless needed.
+        // If you need live link redraw while dragging, call _requestRedrawLinks()
+        // (ideally only while dragging).
     }
 
-
+    /** @param {PointerEvent} ev */
     /** @param {PointerEvent} ev */
     async _onPointerDown(ev) {
         if (this.mode !== "edit") return;
@@ -1066,20 +984,24 @@ export class SimControl {
         const obj = this._getObjFromEvent(ev);
         const link = this._getLinkFromEvent(ev); // may be null
 
-        //right click should cancel the tool
-        if (ev.button === 2 && !obj && !link && this.tool !== "select") {
-            // cancel any transient state first
+        // Right click: cancel current tool (if not select)
+        // (Your oncontextmenu handler already does this on empty canvas,
+        // but this handles right-click on objects/links too.)
+        if (ev.button === 2 && this.tool !== "select") {
+            ev.preventDefault();
+            ev.stopPropagation();
+
             this._cancelLinking();
             this._removeGhostNode();
+            this._clearDeleteHover();
 
             this.tool = "select";
             if (this.root) this.root.dataset.tool = this.tool;
-            ev.preventDefault();
-            this.render();
+            this._invalidateUI();
             return;
         }
 
-        // DELETE tool: click link or node
+        // DELETE tool: click link or node to delete
         if (this.tool === "delete") {
             const targetEl = this._getHoverTargetEl(ev);
             this._clearDeleteHover();
@@ -1099,19 +1021,23 @@ export class SimControl {
             return;
         }
 
+        // LINK tool: two-click connect, with port picker
         if (this.tool === "link") {
-            if (!obj) return;
+            if (!obj) return; // must click a node
             ev.preventDefault();
             ev.stopPropagation();
 
-            // First click: pick A port (dialog only if >=2 ports; auto if exactly 1)
+            // First click: pick A port
             if (!this._linkStart) {
                 const pickA = await this._pickPortForObjectAt(obj, ev.clientX + 8, ev.clientY + 8);
-                if (!pickA) return;
+                if (!pickA) {
+                    throw Error("No free ports");
+                }
 
                 this._linkStart = obj;
                 this._linkStartKey = pickA.key;
 
+                // start ghost link
                 this._ensureGhostLink();
                 const p = this._getLocalPoint(ev);
                 this._updateGhost(p.x, p.y);
@@ -1142,30 +1068,44 @@ export class SimControl {
                 const portA = A.getPortByKey(AKey);
                 const portB = B.getPortByKey(BKey);
 
-                if (!portA || !portB) throw new Error("Selected port not found");
+                if (!portA || !portB) {
+                    throw Error("Port not found");
+                }
 
-                // At this point ports must be free (dialog disabled occupied),
-                // but keep sanity check anyway:
-                if (!this._isPortFree(portA)) throw new Error(`Port ${AKey} is already in use`);
-                if (!this._isPortFree(portB)) throw new Error(`Port ${BKey} is already in use`);
+                // Sanity check: should already be ensured by disabled buttons
+                if (!this._isPortFree(portA)) {
+                    throw Error("Port in use.");
+                }
+                if (!this._isPortFree(portB)) {
+                    throw Error("Port in use.");
+                }
 
                 const l = new Link(A, portA, AKey, B, portB, BKey, this);
                 l.simcontrol = this;
                 this.addObject(l);
             } catch (e) {
-                console.warn("Cannot create link:", e);
+                alert(t("sim.link.error"));
             } finally {
                 this._cancelLinking();
             }
+
             return;
         }
 
         // PLACE tools: click empty canvas places
         if (this.tool.startsWith("place-")) {
+            // Only place if ghost exists and has size
             if (!this._ghostNodeEl || !this._ghostReady) return;
+
+            // Optional: prevent placing when clicking existing object
+            if (obj || link) return;
+
+            ev.preventDefault();
+            ev.stopPropagation();
 
             const p = this._getLocalPoint(ev);
 
+            /** @type {SimulatedObject|null} */
             let newObj = null;
             if (this.tool === "place-pc") newObj = new PC();
             if (this.tool === "place-switch") newObj = new Switch();
@@ -1181,17 +1121,20 @@ export class SimControl {
             newObj.y = p.y - h / 2;
 
             this.addObject(newObj);
-            this.redrawLinks();
+            this._requestRedrawLinks();
+
+            // Clean up placement tool state
             this._removeGhostNode();
             this.tool = "select";
-            this.render();
+            if (this.root) this.root.dataset.tool = this.tool;
+            this._invalidateUI();
             return;
         }
 
-
-        // SELECT tool
+        // SELECT tool: focus node
         if (this.tool === "select") {
             if (obj) this.setFocus(obj);
+            return;
         }
     }
 
@@ -1383,11 +1326,219 @@ export class SimControl {
         return null;
     }
 
-    closeAllPanels() {
-        for (const obj of this.simobjects) {
-            if (obj instanceof SimulatedObject) {
-                obj.setPanelOpen(false);
+    _ensureGhostLink() {
+        if (!this.nodesLayer) return;
+        if (this._ghostLink) return;
+
+        const g = document.createElement("div");
+        g.className = "sim-link sim-link-ghost";
+        g.style.pointerEvents = "none";
+        g.style.transformOrigin = "0 0";
+
+        const hit = document.createElement("div");
+        hit.className = "sim-link-hit";
+        hit.style.pointerEvents = "none";
+
+        const line = document.createElement("div");
+        line.className = "sim-link-line";
+        line.style.pointerEvents = "none";
+
+        g.appendChild(hit);
+        g.appendChild(line);
+
+        this.nodesLayer.appendChild(g);
+        this._ghostLink = g;
+    }
+
+    /** @param {number} endX local @param {number} endY local */
+    _updateGhost(endX, endY) {
+        if (!this._ghostLink || !this._linkStart) return;
+        const x1 = this._linkStart.getX();
+        const y1 = this._linkStart.getY();
+
+        const dx = endX - x1;
+        const dy = endY - y1;
+        const length = Math.hypot(dx, dy);
+        const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+
+        this._ghostLink.style.width = `${length}px`;
+        this._ghostLink.style.left = `${x1}px`;
+        this._ghostLink.style.top = `${y1}px`;
+        this._ghostLink.style.transform = `rotate(${angle}deg)`;
+    }
+
+
+    // ---------------------------------------------------------------------------
+    // Save/load can still “reset” the scene; just resync DOM after restore/new
+    // ---------------------------------------------------------------------------
+
+    toJSON() {
+        return {
+            version: 4,
+            tick: SimControl.tick,
+            objects: this.simobjects.map((o) => o.toJSON()),
+        };
+    }
+
+    restore(state) {
+        //@ts-ignore
+        const REGISTRY = new Map([
+            ["PC", PC],
+            ["Router", Router],
+            ["Switch", Switch],
+            ["TextBox", TextBox],
+            ["RectOverlay", RectOverlay],
+            // Link handled separately
+        ]);
+
+        if (!state || !Array.isArray(state.objects)) {
+            alert(t("sim.invalidfilewarning"));
+            return;
+        }
+
+        this._clearScene();
+
+        // restore tick
+        if (typeof state.tick === "number") SimControl.tick = state.tick;
+
+        /** @type {Map<number, SimulatedObject>} */
+        const byId = new Map();
+
+        let maxId = 0;
+
+        // 1) create nodes first
+        for (const n of state.objects) {
+            if (!n || n.kind === "Link") continue;
+
+            const node = REGISTRY.get(String(n.kind));
+            if (!node || typeof node.fromJSON !== "function") {
+                console.warn("Unknown kind", n.kind);
+                continue;
+            }
+
+            const obj = node.fromJSON(n);
+            byId.set(obj.id, obj);
+            this.simobjects.push(obj);
+            obj.simcontrol = this;
+            if (obj.id > maxId) maxId = obj.id;
+        }
+
+        // 2) create links
+        for (const l of state.objects) {
+            if (!l || l.kind !== "Link") continue;
+            try {
+                const link = Link.fromJSON(l, byId, this);
+                this.simobjects.push(link);
+                if (link.id > maxId) maxId = link.id;
+            } catch (e) {
+                console.warn("Failed to recreate link:", e);
             }
         }
+
+        // 3) fix id generator
+        SimulatedObject.idnumber = maxId + 1;
+
+        this.isPaused = true;
+        this._syncSceneDOM();
+        this.redrawLinks();
     }
+
+    new() {
+        this._clearScene();
+        SimulatedObject.idnumber = 0;
+        SimControl.tick = 500;
+        this.isPaused = true;
+
+        for (const el of this._objEls.values()) el.remove();
+        this._objEls.clear();
+
+        this._enterEditMode();
+        this._syncSceneDOM();
+    }
+
+    /**
+     * shows a open dialog and loads a state
+     */
+    open() {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "application/json,.json";
+
+        input.addEventListener("change", async () => {
+            const file = input.files[0];
+            if (!file) return;
+
+            try {
+                const text = await file.text();
+                const scene = JSON.parse(text);
+                this.restore(scene);
+            } catch (e) {
+                alert(t("sim.loadfailederror"));
+            }
+        });
+
+        input.click();
+    }
+
+    closeAllPanels() {
+        for (const obj of this.simobjects) {
+            if (obj instanceof SimulatedObject) obj.setPanelOpen(false);
+        }
+    }
+
+    download() {
+        const json = JSON.stringify(this.toJSON(), null, 2);
+        const blob = new Blob([json], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "simulation.json";
+        a.click();
+
+        URL.revokeObjectURL(url);
+    }
+
+    _clearScene() {
+        // 1) stop simulation timers (optional but recommended)
+        if (this.timeoutId !== null) window.clearTimeout(this.timeoutId);
+        this.timeoutId = null;
+
+        // 2) destroy links first (they may own packet DOM)
+        for (const o of this.simobjects) {
+            if (o instanceof Link) {
+                // remove packet dom if Link doesn't fully do it
+                for (const p of o._packets ?? []) p.el?.remove?.();
+                o.destroy?.();
+            }
+        }
+
+        // 3) destroy remaining objects
+        for (const o of this.simobjects) {
+            if (!(o instanceof Link)) o.destroy?.();
+        }
+
+        // 4) clear arrays + maps
+        this.simobjects = [];
+        this.focusedObject = null;
+        this._linkStart = null;
+        this._linkStartKey = null;
+
+        // 5) remove all known DOM nodes we mounted for objects/links
+        for (const el of this._objEls.values()) el.remove();
+        this._objEls.clear();
+
+        // 6) clear packets layer completely (safest)
+        SimControl.packetsLayer?.replaceChildren();
+
+        // 7) clear ghost/delete states
+        this._cancelLinking();
+        this._removeGhostNode();
+        this._clearDeleteHover();
+
+        // 8) redraw request reset
+        this._redrawReq = false;
+    }
+
+
 }

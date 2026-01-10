@@ -323,22 +323,6 @@ export class Router extends SimulatedObject {
 
         DOMBuilder.clear(actionsHost);
 
-        // PCAP button
-        const pcapBtn = DOMBuilder.button(t("router.showpacketlog"), { className: "router-if-pcap" });
-        pcapBtn.addEventListener("click", () => {
-            const iface = this._getSelectedIface();
-            if (!iface || !iface.port) return;
-
-            const frames = iface.port.loggedFrames || [];
-            if (!frames.length) {
-                alert(t("router.nopacketlog"));
-                return;
-            }
-
-            this.simcontrol.tabControler.gotoTab("tracer");
-        });
-        actionsHost.appendChild(pcapBtn);
-
         // Delete button
         const delBtn = DOMBuilder.button(t("router.deleteinterface"), { className: "router-if-del" });
         this._delIfBtn = delBtn;
