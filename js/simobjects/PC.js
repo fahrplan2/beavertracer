@@ -1,5 +1,6 @@
 //@ts-check
 
+import { DNSResolver } from "../apps/lib/DNSResolver.js";
 import { VirtualFileSystem } from "../apps/lib/VirtualFileSystem.js";
 import { OS } from "../apps/OS.js";
 import { IPStack } from "../devices/IPStack.js";
@@ -30,6 +31,10 @@ export class PC extends SimulatedObject {
         return this.os.fs;
     }
 
+    get dns() {
+        return this.os.dns;
+    }
+
     /** @type {OS} */
     os;
 
@@ -56,6 +61,7 @@ export class PC extends SimulatedObject {
             kind: "PC",
             net: this.net.toJSON(),
             fs: this.fs.toJSON(),
+            dns: this.dns.serverIp,
         };
     }
 
@@ -66,6 +72,7 @@ export class PC extends SimulatedObject {
 
         if (n.net) obj.os.net = IPStack.fromJSON(n.net);
         if (n.fs) obj.os.fs = VirtualFileSystem.fromJSON(n.fs);
+        if (n.dns) { obj.os.dns.setServer(n.dns); };
 
         return obj;
     }

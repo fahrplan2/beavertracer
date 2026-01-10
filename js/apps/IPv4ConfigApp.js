@@ -6,16 +6,17 @@ import { Disposer } from "./lib/Disposer.js";
 import { UILib } from "./lib/UILib.js";
 
 export class IPv4ConfigApp extends GenericProcess {
-
   get title() {
     return t("app.ipv4config.title");
   }
-
 
   /** @type {HTMLSelectElement|null} */ ifSel = null;
   /** @type {HTMLInputElement|null} */ ipEl = null;
   /** @type {HTMLInputElement|null} */ maskEl = null;
   /** @type {HTMLInputElement|null} */ gwEl = null;
+
+  /** @type {HTMLInputElement|null} */ dnsEl = null;
+
   /** @type {HTMLElement|null} */ msgEl = null;
 
   /** @type {Disposer} */
@@ -43,15 +44,17 @@ export class IPv4ConfigApp extends GenericProcess {
       {}
     );
 
-    // No placeholder/hint text
     const ipEl = UILib.input({ placeholder: "" });
     const maskEl = UILib.input({ placeholder: "" });
     const gwEl = UILib.input({ placeholder: "" });
+
+    const dnsEl = UILib.input({ placeholder: "" });
 
     this.ifSel = ifSel;
     this.ipEl = ipEl;
     this.maskEl = maskEl;
     this.gwEl = gwEl;
+    this.dnsEl = dnsEl;
 
     const applyBtn = UILib.button(t("app.ipv4config.button.apply"), () => this._apply(), { primary: true });
 
@@ -60,6 +63,10 @@ export class IPv4ConfigApp extends GenericProcess {
       UILib.row(t("app.ipv4config.label.ip"), ipEl),
       UILib.row(t("app.ipv4config.label.netmask"), maskEl),
       UILib.row(t("app.ipv4config.label.gateway"), gwEl),
+
+      // NEW: DNS server (system-wide)
+      UILib.row(t("app.ipv4config.label.dnsServer"), dnsEl),
+
       UILib.buttonRow([applyBtn]),
       msg,
     ]);
@@ -80,7 +87,7 @@ export class IPv4ConfigApp extends GenericProcess {
 
   onUnmount() {
     this.disposer.dispose();
-    this.ifSel = this.ipEl = this.maskEl = this.gwEl = null;
+    this.ifSel = this.ipEl = this.maskEl = this.gwEl = this.dnsEl = null;
     this.msgEl = null;
     super.onUnmount();
   }
@@ -110,9 +117,16 @@ export class IPv4ConfigApp extends GenericProcess {
     if (this.ipEl) this.ipEl.value = (typeof ipN === "number") ? numberToIpv4(ipN) : "";
     if (this.maskEl) this.maskEl.value = (typeof maskN === "number") ? numberToIpv4(maskN) : "";
 
-    // Load per-interface default gateway from net.routes
     const gw = getDefaultGatewayForIface(net, i);
     if (this.gwEl) this.gwEl.value = (gw != null) ? numberToIpv4(gw) : "";
+
+    // NEW: load DNS server from os.dns.server (number) or os.dns.serverIp
+    const dns = this.os.dns;
+    let dnsN = null;
+    if (dns) {
+      if (typeof dns.serverIp === "number") dnsN = dns.serverIp >>> 0;
+    }
+    if (this.dnsEl) this.dnsEl.value = (dnsN != null) ? numberToIpv4(dnsN) : "";
 
     this._setMsg(t("app.ipv4config.msg.loadedInterface", { i }));
   }
@@ -126,6 +140,7 @@ export class IPv4ConfigApp extends GenericProcess {
     const ipStr = (this.ipEl?.value ?? "").trim();
     const maskStr = (this.maskEl?.value ?? "").trim();
     const gwStr = (this.gwEl?.value ?? "").trim();
+    const dnsStr = (this.dnsEl?.value ?? "").trim();
 
     const ip = ipv4ToNumber(ipStr);
     if (ip === null) return this._setMsg(t("app.ipv4config.err.invalidIp"));
@@ -146,22 +161,48 @@ export class IPv4ConfigApp extends GenericProcess {
       gw = gwN >>> 0;
     }
 
+    // NEW: DNS optional; empty => do not change; 0.0.0.0 allowed to disable resolver
+    let dnsN = undefined;
+    if (dnsStr !== "") {
+      const d = ipv4ToNumber(dnsStr);
+      if (d === null) return this._setMsg(t("app.ipv4config.err.invalidDnsServer"));
+      dnsN = d >>> 0; // may be 0
+    }
+
     try {
       net.configureInterface(i, { ip: (ip >>> 0), netmask: (netmask >>> 0) });
 
-      // Delete existing default route(s) for THIS interface, then add new one (if any)
       clearDefaultGatewayForIface(net, i);
-
       if (gw != null) {
-        // addRoute(dst=0, netmask=0, interf=i, nexthop=gw)
         net.addRoute(0, 0, i, gw);
       }
 
-      this._setMsg(
-        gw != null
-          ? t("app.ipv4config.msg.appliedWithGw", { i, ip: ipStr, netmask: maskStr, gw: gwStr })
-          : t("app.ipv4config.msg.appliedGwCleared", { i, ip: ipStr, netmask: maskStr })
-      );
+      // NEW: apply DNS server (system-wide)
+      if (dnsN !== undefined) {
+        const dns = this.os?.dns;
+        if (dns?.setServer) {
+          dns.setServer(dnsN, 53);
+        } else {
+          // best-effort fallback if resolver isn't installed
+          // (no UX, just ignore if missing)
+        }
+      }
+
+      // message (keep existing semantics, extend if DNS was set)
+      if (dnsN !== undefined) {
+        const dnsTxt = numberToIpv4(dnsN);
+        this._setMsg(
+          gw != null
+            ? t("app.ipv4config.msg.appliedWithGwDns", { i, ip: ipStr, netmask: maskStr, gw: gwStr, dns: dnsTxt })
+            : t("app.ipv4config.msg.appliedGwClearedDns", { i, ip: ipStr, netmask: maskStr, dns: dnsTxt })
+        );
+      } else {
+        this._setMsg(
+          gw != null
+            ? t("app.ipv4config.msg.appliedWithGw", { i, ip: ipStr, netmask: maskStr, gw: gwStr })
+            : t("app.ipv4config.msg.appliedGwCleared", { i, ip: ipStr, netmask: maskStr })
+        );
+      }
     } catch (e) {
       const reason = (e instanceof Error ? e.message : String(e));
       this._setMsg(t("app.ipv4config.err.applyFailed", { reason }));
@@ -210,7 +251,6 @@ function getRoutes(net) {
 
 /**
  * Default route for iface = dst=0, netmask=0, interf=<iface>.
- * Optionally prefer user-set routes (auto=false) if duplicates exist.
  * @param {any} net
  * @param {number} ifaceIdx
  * @returns {number|null}
@@ -232,8 +272,6 @@ function getDefaultGatewayForIface(net, ifaceIdx) {
 
 /**
  * Delete existing default route(s) for THIS interface.
- * Requirement: call delRoute() before setting a new default gw.
- * We don't know delRoute signature; we attempt common patterns.
  * @param {any} net
  * @param {number} ifaceIdx
  */
@@ -246,7 +284,6 @@ function clearDefaultGatewayForIface(net, ifaceIdx) {
   );
 
   if (routes.length === 0) {
-    // still "call delRoute before setting" (best-effort)
     try { net.delRoute(0, 0, ifaceIdx); return; } catch { }
     try { net.delRoute(0, 0); } catch { }
     return;
@@ -255,7 +292,6 @@ function clearDefaultGatewayForIface(net, ifaceIdx) {
   for (const r of routes) {
     const nh = (typeof r.nexthop === "number") ? (r.nexthop >>> 0) : undefined;
 
-    // try most specific first
     try { net.delRoute(0, 0, ifaceIdx, nh); continue; } catch { }
     try { net.delRoute(0, 0, ifaceIdx); continue; } catch { }
     try { net.delRoute(0, 0); } catch { }

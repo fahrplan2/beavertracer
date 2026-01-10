@@ -84,7 +84,8 @@ export const defaultSimulation = {
             ]
           }
         ]
-      }
+      },
+      "dns": 3232235788
     },
     {
       "kind": "PC",
@@ -166,7 +167,8 @@ export const defaultSimulation = {
             ]
           }
         ]
-      }
+      },
+      "dns": 0
     },
     {
       "kind": "Switch",
@@ -176,7 +178,123 @@ export const defaultSimulation = {
       "y": 235,
       "px": 220,
       "py": 120,
-      "panelOpen": false
+      "panelOpen": false,
+      "vlanEnabled": false,
+      "stpEnabled": false,
+      "vlanPorts": [
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        }
+      ]
     },
     {
       "kind": "Router",
@@ -285,7 +403,8 @@ export const defaultSimulation = {
             ]
           }
         ]
-      }
+      },
+      "dns": 0
     },
     {
       "kind": "PC",
@@ -340,8 +459,16 @@ export const defaultSimulation = {
             "type": "dir",
             "name": "etc",
             "ctime": 1767704012478,
-            "mtime": 1767704012478,
-            "children": []
+            "mtime": 1768001147971,
+            "children": [
+              {
+                "type": "file",
+                "name": "dnsd.conf",
+                "data": "{\n  \"a\": [\n    {\n      \"name\": \"test.de\",\n      \"ip\": \"192.168.0.12\",\n      \"ttl\": 60\n    }\n  ],\n  \"mx\": [],\n  \"ns\": []\n}",
+                "ctime": 1768001137369,
+                "mtime": 1768001147971
+              }
+            ]
           },
           {
             "type": "dir",
@@ -367,7 +494,8 @@ export const defaultSimulation = {
             ]
           }
         ]
-      }
+      },
+      "dns": 0
     },
     {
       "kind": "Switch",
@@ -377,7 +505,123 @@ export const defaultSimulation = {
       "y": 237,
       "px": 220,
       "py": 120,
-      "panelOpen": false
+      "panelOpen": false,
+      "vlanEnabled": false,
+      "stpEnabled": false,
+      "vlanPorts": [
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        }
+      ]
     },
     {
       "kind": "RectOverlay",
@@ -432,6 +676,18 @@ export const defaultSimulation = {
       "showTitle": false
     },
     {
+      "kind": "TextBox",
+      "id": 34,
+      "name": "Text",
+      "x": 415.5,
+      "y": 12.5,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "text": "# Beispielnetzwerk",
+      "showTitle": false
+    },
+    {
       "kind": "Link",
       "id": 6,
       "a": 0,
@@ -478,18 +734,6 @@ export const defaultSimulation = {
       "b": 18,
       "portA": "eth0",
       "portB": "sw2"
-    },
-    {
-      "kind": "TextBox",
-      "id": 34,
-      "name": "Text",
-      "x": 415.5,
-      "y": 12.5,
-      "px": 220,
-      "py": 120,
-      "panelOpen": false,
-      "text": "# Beispielnetzwerk",
-      "showTitle": false
     }
   ]
 }

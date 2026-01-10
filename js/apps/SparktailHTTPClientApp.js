@@ -784,16 +784,12 @@ export class SparktailHTTPClientApp extends GenericProcess {
 
     /** @type {(name:string)=>Promise<number>} */
     const dnsResolve = async (name) => {
-      const anyThis = /** @type {any} */ (this);
-      if (anyThis.dns && typeof anyThis.dns.resolve === "function") {
-        return await anyThis.dns.resolve(name);
-      }
-      throw new Error(t("app.sparktail.err.dnsNotAvailable", { name }));
+      return await this.os.dns.resolve(name);
     };
 
     let dstIP = 0;
     try {
-      dstIP = await withTimeout(resolveHostToIP(host, dnsResolve), timeout, t("app.sparktail.label.dns"));
+      dstIP = await withTimeout(resolveHostToIP(host, dnsResolve), timeout*SimControl.tick, t("app.sparktail.label.dns"));
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       this._append(t("app.sparktail.log.dnsError", { time: nowStamp(), host, msg }));
