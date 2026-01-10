@@ -104,7 +104,7 @@ export class TextBox extends SimulatedObject {
     if (!this.iconEl) return;
 
     this.iconEl.addEventListener(
-      "click",
+      "pointerDown",
       (ev) => {
         if (this.simcontrol.mode!=="edit") return;
 

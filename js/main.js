@@ -13,5 +13,5 @@ initLocale();
 const simRoot = /** @type {HTMLElement} */ (document.getElementById("simcontrol"));
 const sim = new SimControl(simRoot);
 sim.restore(defaultSimulation);
-sim.tabControler.gotoTab("sim");
+
 

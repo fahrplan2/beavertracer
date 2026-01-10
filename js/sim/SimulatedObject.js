@@ -32,8 +32,8 @@ import { SimControl } from '../SimControl.js';
 export class SimulatedObject {
 
     name;
-    kind="SimulatedObject"; //needed for generating save id
-    icon="fa-heart";
+    kind = "SimulatedObject"; //needed for generating save id
+    icon = "fa-heart";
     id;
     static idnumber = 0;
 
@@ -179,6 +179,14 @@ export class SimulatedObject {
                 this.setPanelOpen(!this.panelOpen);
             },
             boundary: () => this.simcontrol.movementBoundary,
+            onMove: ({ dragging, x, y }) => {
+                this.x = x;
+                this.y = y;
+
+                if (dragging) {
+                    this.simcontrol?._requestRedrawLinks?.();
+                }
+            },
             onDragEnd: ({ x, y }) => {
                 this.x = x;
                 this.y = y;
@@ -202,7 +210,15 @@ export class SimulatedObject {
                 }
             });
         }
-        makeWindow(this.panelEl);
+        makeWindow(this.panelEl, {
+            resizable: true,
+            minWidth: 220,
+            minHeight: 140,
+            onResize: (w, h) => {
+                this.pw = w;
+                this.ph = h;
+            }
+        });
     }
 
     /**
@@ -211,7 +227,7 @@ export class SimulatedObject {
      */
     setPanelOpen(open) {
         //do not open when allready open or in Edit Mode
-        if (open && this.simcontrol.mode==="edit") return;
+        if (open && this.simcontrol.mode === "edit") return;
 
         this.panelOpen = open;
         this._applyPositions();
@@ -233,6 +249,8 @@ export class SimulatedObject {
         }
         if (this.panelEl) {
             this.panelEl.style.transform = `translate(${this.px}px, ${this.py}px)`;
+            if (this.pw) this.panelEl.style.width = `${this.pw}px`;
+            if (this.ph) this.panelEl.style.height = `${this.ph}px`;
         }
     }
 

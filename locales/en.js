@@ -165,10 +165,8 @@ export default {
   "app.simpletcpclient.label.chat": "Chat:",
   "app.simpletcpclient.label.message": "Message",
 
-  "app.simpletcpclient.status.pid": "PID: {pid}",
   "app.simpletcpclient.status.connected": "Connected: {connected}",
   "app.simpletcpclient.status.peer": "Peer: {peer}",
-  "app.simpletcpclient.status.chatEntries": "Chat entries: {n}",
 
   "app.simpletcpclient.log.hostEmpty": "[{time}] ERROR host is empty",
   "app.simpletcpclient.log.invalidPort": "[{time}] ERROR invalid port: \"{portStr}\"",
@@ -183,7 +181,6 @@ export default {
   "app.simpletcpclient.log.remoteClosed": "[{time}] REMOTE CLOSED {who}",
   "app.simpletcpclient.log.received": "[{time}] {who} -> ME: \"{text}\" (len={len} hex={hex})",
   "app.simpletcpclient.log.disconnected": "[{time}] DISCONNECTED",
-  "app.simpletcpclient.err.dnsNotAvailable": "DNS not available (cannot resolve \"{name}\")",
   "app.simpletcpclient.err.noConnKey": "connectTCPConn did not return a connection key",
 
 
@@ -195,11 +192,9 @@ export default {
   "app.simpletcpserver.label.listenPort": "Listen Port",
   "app.simpletcpserver.label.log": "Log:",
 
-  "app.simpletcpserver.status.pid": "PID: {pid}",
   "app.simpletcpserver.status.running": "Running: {running}",
   "app.simpletcpserver.status.port": "Port: {port}",
   "app.simpletcpserver.status.connections": "Connections: {n}",
-  "app.simpletcpserver.status.logEntries": "Log entries: {n}",
 
   "app.simpletcpserver.log.invalidPort": "[{time}] ERROR invalid port: \"{portStr}\"",
   "app.simpletcpserver.log.listening": "[{time}] Listening (TCP) on 0.0.0.0:{port}",
@@ -258,7 +253,6 @@ export default {
   "app.sparktail.err.eof": "EOF",
   "app.sparktail.err.readUntilExceeded": "readUntil exceeded maxBytes ({maxBytes})",
   "app.sparktail.err.bodyTooLarge": "Body too large",
-  "app.sparktail.err.dnsNotAvailable": "DNS not available (cannot resolve \"{name}\")",
   "app.sparktail.err.noConnKey": "connectTCPConn did not return a connection key",
   "app.sparktail.err.chunkedInvalidChunkSize": "Chunked parse: invalid chunk-size \"{line}\"",
   "app.sparktail.err.chunkedInvalidSize": "Chunked parse: invalid size \"{hex}\"",
@@ -462,11 +456,6 @@ export default {
   "app.udpechoserver.label.listenPort": "Listen Port",
   "app.udpechoserver.label.log": "Log:",
 
-  "app.udpechoserver.status.pid": "PID: {pid}",
-  "app.udpechoserver.status.running": "Running: {running}",
-  "app.udpechoserver.status.port": "Port: {port}",
-  "app.udpechoserver.status.logEntries": "Log entries: {n}",
-
   "app.udpechoserver.log.invalidPort": "[{time}] ERROR invalid port: \"{portStr}\"",
   "app.udpechoserver.log.listening": "[{time}] Listening on 0.0.0.0:{port}",
   "app.udpechoserver.log.startFailed": "[{time}] ERROR start failed: {reason}",
@@ -553,6 +542,11 @@ export default {
   "sim.tool.switch": "Switch",
   "sim.tool.textbox": "TextBox",
   "sim.tool.delete": "Delete",
+
+  "sim.link.error": "Error creating link.",
+  "sim.link.nofreeports": "No free ports available.",
+  "sim.link.portisinuse": "This port is in use.",
+  "sim.link.selectedportnotfound": "The selected port can not be found.",
 
   "switch.title": "Switch",
   "switch.genericsettings": "Common settings",
