@@ -1,10 +1,10 @@
 //@ts-check
 
-import { isEqualUint8, MACToNumber } from "../helpers.js";
+import { isEqualUint8, MACToNumber } from "../lib/helpers.js";
 import { EthernetPort } from "./EthernetPort.js";
-import { Observable } from "../common/Observeable.js";
-import { EthernetFrame } from "../pdu/EthernetFrame.js";
-import { STPBPDU } from "../pdu/STPBPDU.js";
+import { Observable } from "../lib/Observeable.js";
+import { EthernetFrame } from "../net/pdu/EthernetFrame.js";
+import { STPBPDU } from "../net/pdu/STPBPDU.js";
 
 /**
  * STP (classic-ish) in this simulator is encoded as IEEE 802.3 + LLC (not EtherType).

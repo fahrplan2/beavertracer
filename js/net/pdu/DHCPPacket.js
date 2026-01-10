@@ -1,6 +1,6 @@
 //@ts-check
 
-import { assertLenU8 } from "../helpers.js";
+import { assertLenU8 } from "../../lib/helpers.js";
 
 /**
  * @typedef {Object} DHCPOption

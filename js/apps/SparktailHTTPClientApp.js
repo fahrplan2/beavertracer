@@ -2,7 +2,7 @@
 
 import { GenericProcess } from "./GenericProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
-import { Disposer } from "./lib/Disposer.js";
+import { Disposer } from "../lib/Disposer.js";
 import { SimControl } from "../SimControl.js";
 
 //@ts-ignore Import ist raw für vite

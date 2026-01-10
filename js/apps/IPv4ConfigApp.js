@@ -2,7 +2,7 @@
 
 import { t } from "../i18n/index.js";
 import { GenericProcess } from "./GenericProcess.js";
-import { Disposer } from "./lib/Disposer.js";
+import { Disposer } from "../lib/Disposer.js";
 import { UILib } from "./lib/UILib.js";
 
 import {
@@ -11,9 +11,9 @@ import {
   IPNumberToUint8,
   IPUInt8ToNumber,
   assertLenU8,
-} from "../helpers.js";
+} from "../lib/helpers.js";
 
-import { DHCPPacket } from "../pdu/DHCPPacket.js"; // <-- adjust path if needed
+import { DHCPPacket } from "../net/pdu/DHCPPacket.js"; // <-- adjust path if needed
 
 export class IPv4ConfigApp extends GenericProcess {
   get title() {

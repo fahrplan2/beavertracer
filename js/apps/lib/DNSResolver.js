@@ -1,6 +1,6 @@
 //@ts-check
 
-import { DNSPacket } from "../../pdu/DNSPacket.js";
+import { DNSPacket } from "../../net/pdu/DNSPacket.js";
 import { SimControl } from "../../SimControl.js";
 
 /**

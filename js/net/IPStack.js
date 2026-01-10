@@ -1,10 +1,10 @@
 //@ts-check
 
-import { IPNumberToUint8, IPOctetsToNumber, IPUInt8ToNumber, prefixToNetmask } from "../helpers.js";
-import { IPv4Packet } from "../pdu/IPv4Packet.js";
+import { IPNumberToUint8, IPOctetsToNumber, IPUInt8ToNumber, prefixToNetmask } from "../lib/helpers.js";
+import { IPv4Packet } from "../net/pdu/IPv4Packet.js";
 import { NetworkInterface } from "./NetworkInterface.js";
-import { Observable } from "../common/Observeable.js";
-import { ICMPPacket } from "../pdu/ICMPPacket.js";
+import { Observable } from "../lib/Observeable.js";
+import { ICMPPacket } from "../net/pdu/ICMPPacket.js";
 import { EthernetPort } from "./EthernetPort.js";
 import { SimControl } from "../SimControl.js";
 

@@ -2,9 +2,9 @@
 
 import { GenericProcess } from "./GenericProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
-import { Disposer } from "./lib/Disposer.js";
+import { Disposer } from "../lib/Disposer.js";
 import { t } from "../i18n/index.js";
-import { hexPreview, ipToString, nowStamp, encodeUTF8, decodeUTF8 } from "../helpers.js";
+import { hexPreview, ipToString, nowStamp, encodeUTF8, decodeUTF8 } from "../lib/helpers.js";
 
 /**
  * Parses your conn key format: `${localIP}:${localPort}>${remoteIP}:${remotePort}`

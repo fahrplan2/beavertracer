@@ -2,10 +2,10 @@
 
 import { GenericProcess } from "./GenericProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
-import { Disposer } from "./lib/Disposer.js";
+import { Disposer } from "../lib/Disposer.js";
 import { t } from "../i18n/index.js";
 
-import { nowStamp, ipToString, hexPreview } from "../helpers.js";
+import { nowStamp, ipToString, hexPreview } from "../lib/helpers.js";
 
 export class UDPEchoServerApp extends GenericProcess {
 

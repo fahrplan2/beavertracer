@@ -2,7 +2,7 @@
 
 import { GenericProcess } from "./GenericProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
-import { Disposer } from "./lib/Disposer.js";
+import { Disposer } from "../lib/Disposer.js";
 import { t } from "../i18n/index.js";
 
 import {
@@ -14,9 +14,9 @@ import {
   IPUInt8ToNumber,
   MACToNumber,
   assertLenU8,
-} from "../helpers.js";
+} from "../lib/helpers.js";
 
-import { DHCPPacket } from "../pdu/DHCPPacket.js"; // <-- adjust if needed
+import { DHCPPacket } from "../net/pdu/DHCPPacket.js"; // <-- adjust if needed
 
 /**
  * /etc/dhcpd.conf JSON format (string):

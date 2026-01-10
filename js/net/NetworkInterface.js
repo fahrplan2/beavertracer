@@ -1,12 +1,12 @@
 //@ts-check
 
 import { EthernetPort } from "./EthernetPort.js";
-import { EthernetFrame } from "../pdu/EthernetFrame.js"
-import { IPOctetsToNumber, IPNumberToOctets, sleep, IPNumberToUint8, IPUInt8ToNumber, isEqualUint8 } from "../helpers.js";
-import { ArpPacket } from "../pdu/ArpPacket.js";
-import { Observable } from "../common/Observeable.js";
+import { EthernetFrame } from "../net/pdu/EthernetFrame.js"
+import { IPOctetsToNumber, IPNumberToOctets, sleep, IPNumberToUint8, IPUInt8ToNumber, isEqualUint8 } from "../lib/helpers.js";
+import { ArpPacket } from "../net/pdu/ArpPacket.js";
+import { Observable } from "../lib/Observeable.js";
 import { SimControl } from "../SimControl.js";
-import { IPv4Packet } from "../pdu/IPv4Packet.js";
+import { IPv4Packet } from "../net/pdu/IPv4Packet.js";
 
 /**
  * This class simulates an "IP endpoint".

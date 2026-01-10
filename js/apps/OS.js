@@ -1,7 +1,7 @@
 //@ts-check
 
 import { GenericProcess } from "./GenericProcess.js";
-import { IPStack } from "../devices/IPStack.js";
+import { IPStack } from "../net/IPStack.js";
 import { AboutApp } from "./AboutApp.js";
 import { IPv4ConfigApp } from "./IPv4ConfigApp.js";
 import { UDPEchoServerApp } from "./UDPEchoServerApp.js";

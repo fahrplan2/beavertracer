@@ -2,7 +2,7 @@
 
 import { GenericProcess } from "./GenericProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
-import { Disposer } from "./lib/Disposer.js";
+import { Disposer } from "../lib/Disposer.js";
 import { t } from "../i18n/index.js";
 
 export class TextEditorApp extends GenericProcess {

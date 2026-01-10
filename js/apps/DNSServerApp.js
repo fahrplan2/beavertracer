@@ -2,9 +2,9 @@
 
 import { GenericProcess } from "./GenericProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
-import { Disposer } from "./lib/Disposer.js";
+import { Disposer } from "../lib/Disposer.js";
 import { t } from "../i18n/index.js";
-import { DNSPacket } from "./../pdu/DNSPacket.js";
+import { DNSPacket } from "./../net/pdu/DNSPacket.js";
 
 // helpers
 function nowStamp(n = Date.now()) {
@@ -580,7 +580,7 @@ export class DNSServerApp extends GenericProcess {
   /**
    * @param {string} qname normalized
    * @param {number} qtype
-   * @returns {import("../pdu/DNSPacket.js").DNSResourceRecord[]}
+   * @returns {import("../net/pdu/DNSPacket.js").DNSResourceRecord[]}
    */
   _lookup(qname, qtype) {
     /** @type {any[]} */
