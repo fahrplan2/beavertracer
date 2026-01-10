@@ -1,6 +1,6 @@
 //@ts-check
-import { UDPPacket } from "../pdu/UDPPacket.js";
-import { IPUInt8ToNumber } from "../helpers.js";
+import { UDPPacket } from "../net/pdu/UDPPacket.js";
+import { IPUInt8ToNumber } from "../lib/helpers.js";
 
 /**
  * @typedef {{

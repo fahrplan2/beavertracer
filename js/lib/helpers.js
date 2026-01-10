@@ -152,3 +152,59 @@ export function prefixToNetmask(bits) {
 
     return (0xFFFFFFFF << (32 - bits)) >>> 0;
 }
+
+
+/**
+ * @param {number} n
+ */
+export function nowStamp(n = Date.now()) {
+  const d = new Date(n);
+  return d.toLocaleTimeString();
+}
+
+/**
+ * @param {number} ip
+ */
+export function ipToString(ip) {
+  return `${(ip >>> 24) & 255}.${(ip >>> 16) & 255}.${(ip >>> 8) & 255}.${ip & 255}`;
+}
+
+/**
+ * @param {Uint8Array} data
+ */
+export function hexPreview(data) {
+  const max = 24;
+  const slice = data.slice(0, max);
+  let s = "";
+  for (let i = 0; i < slice.length; i++) {
+    s += slice[i].toString(16).padStart(2, "0");
+    if (i < slice.length - 1) s += " ";
+  }
+  if (data.length > max) s += " …";
+  return s;
+}
+
+
+/**
+ * Encode as UTF-8 bytes (with fallback).
+ * @param {string} s
+ */
+export function encodeUTF8(s) {
+  if (typeof TextEncoder !== "undefined") return new TextEncoder().encode(s);
+  // very small fallback (ASCII only)
+  const out = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i) & 0xff;
+  return out;
+}
+
+/**
+ * Decode UTF-8 bytes (with fallback).
+ * @param {Uint8Array} b
+ */
+export function decodeUTF8(b) {
+  if (typeof TextDecoder !== "undefined") return new TextDecoder().decode(b);
+  // small fallback (ASCII only)
+  let s = "";
+  for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
+  return s;
+}

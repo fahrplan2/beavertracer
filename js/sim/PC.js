@@ -3,7 +3,7 @@
 import { DNSResolver } from "../apps/lib/DNSResolver.js";
 import { VirtualFileSystem } from "../apps/lib/VirtualFileSystem.js";
 import { OS } from "../apps/OS.js";
-import { IPStack } from "../devices/IPStack.js";
+import { IPStack } from "../net/IPStack.js";
 import { t } from "../i18n/index.js";
 import { SimControl } from "../SimControl.js";
 import { SimulatedObject } from "./SimulatedObject.js";
@@ -13,7 +13,7 @@ import { SimulatedObject } from "./SimulatedObject.js";
  * @typedef {Object} PortDescriptor
  * @property {string} key
  * @property {string} label
- * @property {import("../devices/EthernetPort.js").EthernetPort} port
+ * @property {import("../net/EthernetPort.js").EthernetPort} port
  */
 
 

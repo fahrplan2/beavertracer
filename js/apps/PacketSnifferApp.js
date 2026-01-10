@@ -2,8 +2,8 @@
 
 import { GenericProcess } from "./GenericProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
-import { Disposer } from "./lib/Disposer.js";
-import { Pcap } from "../pcap/Pcap.js";
+import { Disposer } from "../lib/Disposer.js";
+import { Pcap } from "../tracer/Pcap.js";
 import { SimControl } from "../SimControl.js";
 import { t } from "../i18n/index.js";
 

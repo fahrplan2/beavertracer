@@ -1,8 +1,8 @@
 //@ts-check
 
-import { EthernetFrame } from "../pdu/EthernetFrame.js";
-import { Observable } from "../common/Observeable.js";
-import { LoggedFrame } from "../pcap/loggedFrame.js";
+import { EthernetFrame } from "../net/pdu/EthernetFrame.js";
+import { Observable } from "../lib/Observeable.js";
+import { LoggedFrame } from "../tracer/loggedFrame.js";
 import { EthernetLink } from "./EthernetLink.js";
 
 

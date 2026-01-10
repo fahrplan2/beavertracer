@@ -1,11 +1,11 @@
 // Link.js
 //@ts-check
-import { EthernetLink } from "../devices/EthernetLink.js";
+import { EthernetLink } from "../net/EthernetLink.js";
 import { SimControl } from "../SimControl.js";
 import { SimulatedObject } from "./SimulatedObject.js";
 
 
-/** @typedef {import("../devices/EthernetPort.js").EthernetPort} EthernetPort */
+/** @typedef {import("../net/EthernetPort.js").EthernetPort} EthernetPort */
 
 /**
  * @typedef {Object} PortProvider

@@ -6,7 +6,7 @@ import { nowMs } from "../lib/time.js";
 import { sleepAbortable } from "../lib/abort.js";
 import { SimControl } from "../../../../SimControl.js";
 
-import { DNSPacket } from "../../../../pdu/DNSPacket.js";
+import { DNSPacket } from "../../../../net/pdu/DNSPacket.js";
 
 /** @type {import("../types.js").Command} */
 export const dig = {

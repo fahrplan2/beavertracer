@@ -1,5 +1,7 @@
 // @ts-check
 
+import { SimControl } from "../../SimControl.js";
+
 export class TabPicker {
   /** @type {HTMLElement|null} */ #el = null;
   /** @type {AbortController|null} */ #abort = null;
@@ -18,6 +20,7 @@ export class TabPicker {
    *   activeName: string|null;
    *   pickerDevice: string|null;
    *   setPickerDevice: (dev:string|null)=>void;
+   *   simControl: SimControl;
    *   onPick: (name:string)=>void;
    *   onClose: ()=>void;
    * }} ctx
@@ -96,7 +99,7 @@ export class TabPicker {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "pcapviewer-tabpicker-item";
-      btn.textContent = dev;
+      btn.textContent = ctx.simControl.simobjects.filter(elem => elem.id == parseInt(dev))[0].name;
       if (dev === pickerDevice) btn.classList.add("pcapviewer-tabpicker-item--active");
       btn.addEventListener("click", () => {
         ctx.setPickerDevice(dev);

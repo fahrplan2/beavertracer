@@ -1,6 +1,6 @@
 //@ts-check
 
-import { assertU8, assertLenU8 } from "../helpers.js";
+import { assertU8, assertLenU8 } from "../../lib/helpers.js";
 
 export class ArpPacket {
   

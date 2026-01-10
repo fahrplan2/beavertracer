@@ -1,16 +1,16 @@
 //@ts-check
-import { SimulatedObject } from "./simobjects/SimulatedObject.js";
-import { Link } from "./simobjects/Link.js";
-import { PCapViewer } from "./pcap/PCapViewer.js";
+import { SimulatedObject } from "./sim/SimulatedObject.js";
+import { Link } from "./sim/Link.js";
+import { PCapViewer } from "./tracer/PCapViewer.js";
 import { TabController } from "./TabController.js";
-import { PC } from "./simobjects/PC.js";
-import { Switch } from "./simobjects/Switch.js";
-import { Router } from "./simobjects/Router.js";
-import { TextBox } from "./simobjects/TextBox.js";
-import { RectOverlay } from "./simobjects/RectOverlay.js";
+import { PC } from "./sim/PC.js";
+import { Switch } from "./sim/Switch.js";
+import { Router } from "./sim/Router.js";
+import { TextBox } from "./sim/TextBox.js";
+import { RectOverlay } from "./sim/RectOverlay.js";
 import { t, getLocale, setLocale, getLocales, onLocaleChange } from "./i18n/index.js";
 import { StaticPageLoader } from "./StaticPageLoader.js";
-import { PCapController } from "./pcap/PCapControler.js";
+import { PCapController } from "./tracer/PCapControler.js";
 import { DOMBuilder } from "./lib/DomBuilder.js";
 
 

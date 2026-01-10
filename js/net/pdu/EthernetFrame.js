@@ -1,6 +1,6 @@
 //@ts-check
 
-import { assertU8, assertMac } from "../helpers.js";
+import { assertU8, assertMac } from "../../lib/helpers.js";
 
 export class EthernetFrame {
   dstMac;
