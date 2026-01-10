@@ -1,6 +1,6 @@
 //@ts-check
 
-import { SwitchBackplane } from "../devices/SwitchBackplane.js";
+import { SwitchBackplane } from "../net/SwitchBackplane.js";
 import { SimulatedObject } from "./SimulatedObject.js";
 import { DOMBuilder } from "../lib/DomBuilder.js";
 import { t } from "../i18n/index.js";

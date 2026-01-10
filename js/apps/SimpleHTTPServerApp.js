@@ -1,7 +1,7 @@
 //@ts-check
 
 import { GenericProcess } from "./GenericProcess.js";
-import { Disposer } from "./lib/Disposer.js";
+import { Disposer } from "../lib/Disposer.js";
 import { UILib as UI } from "./lib/UILib.js";
 import { SimControl } from "../SimControl.js"; // ggf. Pfad anpassen
 import { t } from "../i18n/index.js";

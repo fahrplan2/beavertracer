@@ -13,6 +13,37 @@ export default {
   "app.about.heading.systemInfo": "System info",
   "app.about.body.systemInfo": "OS: {os}\nPID: {pid}\nRunning apps: {runningApps}\nFocusID: {focusID}\nTime: {time}",
 
+  "app.dhcpserver.title": "DHCP Server",
+
+  "app.dhcpserver.label.config": "Configuration",
+  "app.dhcpserver.label.rangeStart": "Range start",
+  "app.dhcpserver.label.rangeEnd": "Range end",
+  "app.dhcpserver.label.dns": "DNS servers",
+  "app.dhcpserver.label.gateway": "Gateway",
+  "app.dhcpserver.label.leaseTime": "Lease time (seconds)",
+
+  "app.dhcpserver.button.load": "Load",
+  "app.dhcpserver.button.save": "Save",
+  "app.dhcpserver.button.start": "Start",
+  "app.dhcpserver.button.stop": "Stop",
+  "app.dhcpserver.button.clearLog": "Clear log",
+
+  "app.dhcpserver.label.server": "Server",
+  "app.dhcpserver.label.log": "Log",
+
+  "app.dhcpserver.log.createdDefaultConfig": "Config file missing/empty; wrote default config to",
+  "app.dhcpserver.log.configLoaded": "Loaded config from",
+  "app.dhcpserver.log.configLoadFailed": "Failed to load config:",
+  "app.dhcpserver.log.configSaved": "Saved config to",
+  "app.dhcpserver.log.configSaveFailed": "Failed to save config:",
+  "app.dhcpserver.log.invalidConfig": "Invalid configuration:",
+  "app.dhcpserver.log.listening": "Listening on",
+  "app.dhcpserver.log.startFailed": "Failed to start DHCP server:",
+  "app.dhcpserver.log.stopped": "Stopped",
+  "app.dhcpserver.log.stopError": "Error while stopping:",
+  "app.dhcpserver.log.recvError": "UDP receive error:",
+  "app.dhcpserver.log.parseError": "DHCP parse error:",
+
   "app.dnsd.button.save": "save",
   "app.dnsd.button.start": "start",
   "app.dnsd.button.stop": "stop",
@@ -43,6 +74,29 @@ export default {
     "Applied interface {i}: IP {ip}, netmask {netmask}, gateway {gw}, DNS {dns}",
   "app.ipv4config.msg.appliedGwClearedDns":
     "Applied interface {i}: IP {ip}, netmask {netmask}, gateway cleared, DNS {dns}",
+
+  "app.ipv4config.label.mode": "Mode",
+  "app.ipv4config.mode.static": "Static",
+  "app.ipv4config.mode.dhcp": "DHCP",
+
+  "app.ipv4config.msg.dhcpModeHint": "DHCP mode: click Apply to obtain an address automatically.",
+  "app.ipv4config.msg.dhcpStarting": "Starting DHCP on interface {i}…",
+  "app.ipv4config.msg.dhcpAttempt": "DHCP attempt {attempt}…",
+  "app.ipv4config.msg.dhcpSuccess": "DHCP success on {i}: IP {ip}, Netmask {netmask}, Gateway {gw}, DNS {dns}",
+
+  "app.ipv4config.msg.dhcpLeaseApplied": "DHCP lease applied on interface {i}.",
+  "app.ipv4config.msg.dhcpFailedApipa": "DHCP failed on {i}. Falling back to APIPA…",
+  "app.ipv4config.msg.apipaApplied": "APIPA applied on {i}: IP {ip}, Netmask {netmask}",
+
+  "app.ipv4config.err.persistLoadFailed": "Failed to load /etc/ip.config: {reason}",
+  "app.ipv4config.err.persistSaveFailed": "Failed to save /etc/ip.config: {reason}",
+
+
+  "app.ipv4config.button.release": "Release",
+  "app.ipv4config.msg.released": "DHCP release sent on {i} (IP {ip}, server {server}).",
+  "app.ipv4config.msg.releaseNothingToDo": "No address to release on interface {i}.",
+  "app.ipv4config.err.releaseSocketFailed": "Failed to open UDP socket for release: {reason}",
+  "app.ipv4config.err.releaseFailed": "DHCP release failed: {reason}",
 
   "app.packetsniffer.nointerface": "No interface",
   "app.packetsniffer.title": "Packet Sniffer",
@@ -477,9 +531,9 @@ export default {
   "sim.project": "Project",
   "sim.speed": "Speed",
   "sim.pause": "Pause",
-  "sim.about" : "About",
-  "sim.trace" : "Trace",
-  "sim.reset" : "Reset",
+  "sim.about": "About",
+  "sim.trace": "Trace",
+  "sim.reset": "Reset",
 
   "sim.invalidfilewarning": "Invalid file format or unsupported save file format.",
   "sim.loadfailederror": "Load operation failed.",

@@ -1,6 +1,6 @@
 //@ts-check
-import { TCPPacket } from "../pdu/TCPPacket.js";
-import { IPUInt8ToNumber } from "../helpers.js";
+import { TCPPacket } from "../net/pdu/TCPPacket.js";
+import { IPUInt8ToNumber } from "../lib/helpers.js";
 
 /**
  * TCP connection states (simplified).
@@ -435,7 +435,7 @@ export class TcpEngine {
 
   /**
    * Called by IPStack when an IPv4 packet with protocol=6 is accepted.
-   * @param {import("../pdu/IPv4Packet.js").IPv4Packet} packet
+   * @param {import("../net/pdu/IPv4Packet.js").IPv4Packet} packet
    */
   handle(packet) {
     const tcp = TCPPacket.fromBytes(packet.payload);

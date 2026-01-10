@@ -2,38 +2,10 @@
 
 import { GenericProcess } from "./GenericProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
-import { Disposer } from "./lib/Disposer.js";
+import { Disposer } from "../lib/Disposer.js";
 import { t } from "../i18n/index.js";
+import { hexPreview, ipToString, nowStamp } from "../lib/helpers.js";
 
-/**
- * @param {number} n
- */
-function nowStamp(n = Date.now()) {
-  const d = new Date(n);
-  return d.toLocaleTimeString();
-}
-
-/**
- * @param {number} ip
- */
-function ipToString(ip) {
-  return `${(ip >>> 24) & 255}.${(ip >>> 16) & 255}.${(ip >>> 8) & 255}.${ip & 255}`;
-}
-
-/**
- * @param {Uint8Array} data
- */
-function hexPreview(data) {
-  const max = 24;
-  const slice = data.slice(0, max);
-  let s = "";
-  for (let i = 0; i < slice.length; i++) {
-    s += slice[i].toString(16).padStart(2, "0");
-    if (i < slice.length - 1) s += " ";
-  }
-  if (data.length > max) s += " …";
-  return s;
-}
 
 /**
  * Parses your conn key format: `${localIP}:${localPort}>${remoteIP}:${remotePort}`
@@ -79,7 +51,7 @@ export class SimpleTCPServerApp extends GenericProcess {
   /** @type {Array<string>} */
   log = [];
 
-  /** @type {HTMLElement|null} */
+  /** @type {HTMLTextAreaElement|null} */
   logEl = null;
 
   /** @type {HTMLInputElement|null} */
@@ -119,7 +91,11 @@ export class SimpleTCPServerApp extends GenericProcess {
     this.startBtn = start;
     this.stopBtn = stop;
 
-    const logBox = UI.el("div", { className: "msg" });
+    const logBox = UI.textarea({ 
+        className: "log" ,
+        spellcheck: "false",
+        readonly: "true",
+      });
     this.logEl = logBox;
 
     const status = UI.el("div", { className: "msg" });
@@ -139,11 +115,9 @@ export class SimpleTCPServerApp extends GenericProcess {
 
     this.disposer.interval(() => {
       status.textContent =
-        t("app.simpletcpserver.status.pid", { pid: this.pid }) + "\n" +
         t("app.simpletcpserver.status.running", { running: this.running }) + "\n" +
         t("app.simpletcpserver.status.port", { port: (this.listenPort ?? "-") }) + "\n" +
-        t("app.simpletcpserver.status.connections", { n: this.conns.size }) + "\n" +
-        t("app.simpletcpserver.status.logEntries", { n: this.log.length });
+        t("app.simpletcpserver.status.connections", { n: this.conns.size }) + "\n"
     }, 300);
   }
 
@@ -171,7 +145,8 @@ export class SimpleTCPServerApp extends GenericProcess {
     if (!this.logEl) return;
     const maxLines = 200;
     const lines = this.log.length > maxLines ? this.log.slice(-maxLines) : this.log;
-    this.logEl.textContent = lines.join("\n");
+    this.logEl.value = lines.join("\n");
+    this.logEl.scrollTop = this.logEl.scrollHeight;
   }
 
   /**

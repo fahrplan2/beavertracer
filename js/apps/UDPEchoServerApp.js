@@ -2,39 +2,10 @@
 
 import { GenericProcess } from "./GenericProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
-import { Disposer } from "./lib/Disposer.js";
+import { Disposer } from "../lib/Disposer.js";
 import { t } from "../i18n/index.js";
 
-/**
- * @param {number} n
- */
-function nowStamp(n = Date.now()) {
-  const d = new Date(n);
-  return d.toLocaleTimeString();
-}
-
-/**
- * @param {number} ip
- */
-function ipToString(ip) {
-  // ip is unsigned 32-bit number
-  return `${(ip >>> 24) & 255}.${(ip >>> 16) & 255}.${(ip >>> 8) & 255}.${ip & 255}`;
-}
-
-/**
- * @param {Uint8Array} data
- */
-function hexPreview(data) {
-  const max = 24;
-  const slice = data.slice(0, max);
-  let s = "";
-  for (let i = 0; i < slice.length; i++) {
-    s += slice[i].toString(16).padStart(2, "0");
-    if (i < slice.length - 1) s += " ";
-  }
-  if (data.length > max) s += " …";
-  return s;
-}
+import { nowStamp, ipToString, hexPreview } from "../lib/helpers.js";
 
 export class UDPEchoServerApp extends GenericProcess {
 
@@ -57,7 +28,7 @@ export class UDPEchoServerApp extends GenericProcess {
   /** @type {Array<string>} */
   log = [];
 
-  /** @type {HTMLElement|null} */
+  /** @type {HTMLTextAreaElement|null} */
   logEl = null;
 
   /** @type {HTMLInputElement|null} */
@@ -94,15 +65,16 @@ export class UDPEchoServerApp extends GenericProcess {
     this.startBtn = start;
     this.stopBtn = stop;
 
-    const logBox = UI.el("div", { className: "msg" });
+    const logBox = UI.textarea({ 
+      className: "log",
+      readonly: "true",
+      spellcheck: "false",
+     });
     this.logEl = logBox;
-
-    const status = UI.el("div", { className: "msg" });
 
     const panel = UI.panel([
       UI.row(t("app.udpechoserver.label.listenPort"), portInput),
       UI.buttonRow([start, stop, clear]),
-      status,
       UI.el("div", { text: t("app.udpechoserver.label.log") }),
       logBox,
     ]);
@@ -112,15 +84,6 @@ export class UDPEchoServerApp extends GenericProcess {
     // UI-Status initial
     this._syncButtons();
     this._renderLog();
-
-    // Update status line while mounted (small heartbeat)
-    this.disposer.interval(() => {
-      status.textContent =
-        t("app.udpechoserver.status.pid", { pid: this.pid }) + "\n" +
-        t("app.udpechoserver.status.running", { running: this.running }) + "\n" +
-        t("app.udpechoserver.status.port", { port: (this.socketPort ?? "-") }) + "\n" +
-        t("app.udpechoserver.status.logEntries", { n: this.log.length });
-    }, 300);
   }
 
   onUnmount() {
@@ -150,7 +113,8 @@ export class UDPEchoServerApp extends GenericProcess {
     // show last N lines
     const maxLines = 200;
     const lines = this.log.length > maxLines ? this.log.slice(-maxLines) : this.log;
-    this.logEl.textContent = lines.join("\n");
+    this.logEl.value = lines.join("\n");
+    this.logEl.scrollTop = this.logEl.scrollHeight;
   }
 
   /**

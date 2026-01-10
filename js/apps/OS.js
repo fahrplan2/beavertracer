@@ -1,7 +1,7 @@
 //@ts-check
 
 import { GenericProcess } from "./GenericProcess.js";
-import { IPStack } from "../devices/IPStack.js";
+import { IPStack } from "../net/IPStack.js";
 import { AboutApp } from "./AboutApp.js";
 import { IPv4ConfigApp } from "./IPv4ConfigApp.js";
 import { UDPEchoServerApp } from "./UDPEchoServerApp.js";
@@ -15,6 +15,7 @@ import { SparktailHTTPClientApp } from "./SparktailHTTPClientApp.js";
 import { SimpleHTTPServerApp } from "./SimpleHTTPServerApp.js";
 import { DNSServerApp } from "./DNSServerApp.js";
 import { DNSResolver } from "./lib/DNSResolver.js";
+import { DHCPServerApp } from "./DHCPServerApp.js";
 
 export class OS {
 
@@ -84,7 +85,7 @@ export class OS {
     _registerApps() {
         const launchlist = 
             [IPv4ConfigApp, TerminalApp, TextEditorApp, SimpleTCPClientApp, SimpleTCPServerApp, 
-            SimpleHTTPServerApp, SparktailHTTPClientApp, UDPEchoServerApp, DNSServerApp, AboutApp];
+            SimpleHTTPServerApp, SparktailHTTPClientApp, UDPEchoServerApp, DNSServerApp, DHCPServerApp, AboutApp];
 
         launchlist.forEach((e) => this.exec(e));
     }

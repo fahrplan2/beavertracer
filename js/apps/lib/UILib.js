@@ -134,6 +134,8 @@ export class UILib {
    * @param {string|string[]} [opts.className]
    * @param {string} [opts.rows]
    * @param {string} [opts.cols]
+   * @param {string} [opts.spellcheck]
+   * @param {string} [opts.readonly]
    * @param {string} [opts.placeholder]
    * @returns {HTMLTextAreaElement}
    */
@@ -145,6 +147,8 @@ export class UILib {
         rows: (opts.rows ?? "5"),
         cols: (opts.cols ?? "20"),
         placeholder: (opts.placeholder ?? ""),
+        spellcheck: (opts.spellcheck),
+        readonly: opts.readonly,
       },
       init: (el) => {
         if (opts.value != null) el.value = opts.value;
