@@ -20,16 +20,79 @@ export function bringToFront(el, options = {}) {
 }
 
 /**
- * Make an element "focusable" as a window.
- * Clicking or pointer-down brings it to front.
- *
  * @param {HTMLElement} el
- * @param {{ baseZ?: number }=} options
+ * @param {{
+ *   baseZ?: number,
+ *   resizable?: boolean,
+ *   minWidth?: number,
+ *   minHeight?: number,
+ *   onResize?: (w: number, h: number) => void
+ * }=} options
  * @returns {() => void} cleanup
  */
-
 export function makeWindow(el, options = {}) {
   const handler = () => bringToFront(el, options);
   el.addEventListener("pointerdown", handler, { capture: true });
-  return () => el.removeEventListener("pointerdown", handler, { capture: true });
+
+  let cleanupResize = null;
+
+  if (options.resizable) {
+    cleanupResize = makeResizable(el, options);
+  }
+
+  return () => {
+    el.removeEventListener("pointerdown", handler, { capture: true });
+    cleanupResize?.();
+  };
+}
+
+
+function makeResizable(el, options) {
+  const handle = document.createElement("div");
+  handle.className = "window-resize-handle";
+  el.appendChild(handle);
+
+  let startX = 0, startY = 0;
+  let startW = 0, startH = 0;
+
+  const minW = options.minWidth ?? 200;
+  const minH = options.minHeight ?? 120;
+
+  function onPointerDown(ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
+
+    bringToFront(el, options);
+
+    const r = el.getBoundingClientRect();
+    startX = ev.clientX;
+    startY = ev.clientY;
+    startW = r.width;
+    startH = r.height;
+
+    document.addEventListener("pointermove", onPointerMove);
+    document.addEventListener("pointerup", onPointerUp);
+  }
+
+  function onPointerMove(ev) {
+    const w = Math.max(minW, startW + (ev.clientX - startX));
+    const h = Math.max(minH, startH + (ev.clientY - startY));
+
+    el.style.width = `${w}px`;
+    el.style.height = `${h}px`;
+
+    options.onResize?.(Math.round(w), Math.round(h));
+  }
+
+  function onPointerUp() {
+    document.removeEventListener("pointermove", onPointerMove);
+    document.removeEventListener("pointerup", onPointerUp);
+  }
+
+  handle.addEventListener("pointerdown", onPointerDown);
+
+  return () => {
+    handle.removeEventListener("pointerdown", onPointerDown);
+    handle.remove();
+  };
 }

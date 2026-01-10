@@ -629,3 +629,16 @@ sim-toolbar-langbtn {
   height: 24px;
   background-size: 24px 24px;
 }
+
+.window-resize-handle {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 14px;
+  height: 14px;
+  cursor: se-resize;
+  background:
+    linear-gradient(135deg, transparent 50%, rgba(255,255,255,0.6) 50%);
+}
+
+

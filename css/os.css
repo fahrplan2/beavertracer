@@ -104,7 +104,8 @@
 
 /* ------- Window frame (matches menu) ------- */
 .os-frame {
-    overflow: hidden;
+    overflow: auto;
+    height: 100%;
     background: var(--primary-soft);
     box-shadow: var(--shadow);
     backdrop-filter: blur(10px);
