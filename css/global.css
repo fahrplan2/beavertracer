@@ -149,4 +149,5 @@ textarea:focus {
 
 .about {
   overflow: auto;
+  user-select: auto;
 }

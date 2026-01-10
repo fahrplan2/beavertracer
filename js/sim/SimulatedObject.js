@@ -179,6 +179,14 @@ export class SimulatedObject {
                 this.setPanelOpen(!this.panelOpen);
             },
             boundary: () => this.simcontrol.movementBoundary,
+            onMove: ({ dragging, x, y }) => {
+                this.x = x;
+                this.y = y;
+
+                if (dragging) {
+                    this.simcontrol?._requestRedrawLinks?.();
+                }
+            },
             onDragEnd: ({ x, y }) => {
                 this.x = x;
                 this.y = y;

@@ -215,6 +215,25 @@
   z-index: 0;
 }
 
+/* ALPHA unter dem Element */
+.sim-toolbar-branding::before {
+  content: "pre-alpha";
+  position: absolute;
+  top: 85%;              /* direkt unter dem Element */
+  left: 50%;
+  transform: translateX(-50%);
+
+  margin-top: 2px;
+
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  color: rgba(200, 0, 0, 0.8);
+
+  pointer-events: none;
+  white-space: nowrap;
+}
+
 .sim-toolbar-branding::after {
   content: "";
   position: absolute;
@@ -630,15 +649,46 @@ sim-toolbar-langbtn {
   background-size: 24px 24px;
 }
 
+/* Basis */
 .window-resize-handle {
+  position: absolute;
+  z-index: 10;
+  pointer-events: auto;
+  background: transparent;
+}
+
+/* Corner handle (bottom-right) */
+.window-resize-handle.br {
   position: absolute;
   right: 2px;
   bottom: 2px;
   width: 14px;
   height: 14px;
-  cursor: se-resize;
-  background:
-    linear-gradient(135deg, transparent 50%, rgba(255,255,255,0.6) 50%);
+  cursor: nwse-resize;
+  z-index: 10;
+  background: transparent;
 }
 
+/* Bottom edge handle */
+.window-resize-handle.b {
+  position: absolute;
+  left: 0;
+  right: 14px;   /* Platz für BR handle */
+  bottom: 0;
+  height: 8px;
+  cursor: ns-resize;
+  z-index: 9;
+  background: transparent;
+}
 
+/* Right edge handle */
+.window-resize-handle.r {
+  position: absolute;
+  top: 0;
+  bottom: 14px;  /* Platz für BR handle */
+  right: 0;
+  width: 8px;
+  cursor: ew-resize;
+  z-index: 9;
+  background: transparent;
+}

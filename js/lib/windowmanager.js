@@ -48,51 +48,87 @@ export function makeWindow(el, options = {}) {
 
 
 function makeResizable(el, options) {
-  const handle = document.createElement("div");
-  handle.className = "window-resize-handle";
-  el.appendChild(handle);
-
-  let startX = 0, startY = 0;
-  let startW = 0, startH = 0;
+  // only allow: right, bottom, bottom-right
+  const handles = [
+    { dir: "r", cursor: "ew-resize" },
+    { dir: "b", cursor: "ns-resize" },
+    { dir: "br", cursor: "nwse-resize" },
+  ];
 
   const minW = options.minWidth ?? 200;
   const minH = options.minHeight ?? 120;
 
-  function onPointerDown(ev) {
-    ev.preventDefault();
-    ev.stopPropagation();
+  /** @type {Array<HTMLElement>} */
+  const handleEls = [];
 
-    bringToFront(el, options);
+  for (const h of handles) {
+    const handle = document.createElement("div");
+    handle.className = `window-resize-handle ${h.dir}`;
+    handle.style.cursor = h.cursor;
+    el.appendChild(handle);
+    handleEls.push(handle);
 
-    const r = el.getBoundingClientRect();
-    startX = ev.clientX;
-    startY = ev.clientY;
-    startW = r.width;
-    startH = r.height;
+    let startX = 0, startY = 0;
+    let startW = 0, startH = 0;
+    let active = false;
 
-    document.addEventListener("pointermove", onPointerMove);
-    document.addEventListener("pointerup", onPointerUp);
+    function onPointerDown(ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+
+      bringToFront(el, options);
+
+      const r = el.getBoundingClientRect();
+      startX = ev.clientX;
+      startY = ev.clientY;
+      startW = r.width;
+      startH = r.height;
+      active = true;
+
+      // capture so we still resize even if pointer leaves handle
+      handle.setPointerCapture(ev.pointerId);
+
+      document.addEventListener("pointermove", onPointerMove, { passive: false });
+      document.addEventListener("pointerup", onPointerUp, { passive: false });
+      document.addEventListener("pointercancel", onPointerUp, { passive: false });
+    }
+
+    function onPointerMove(ev) {
+      if (!active) return;
+
+      let w = startW;
+      let hgt = startH;
+
+      const dx = ev.clientX - startX;
+      const dy = ev.clientY - startY;
+
+      if (h.dir === "r" || h.dir === "br") w = startW + dx;
+      if (h.dir === "b" || h.dir === "br") hgt = startH + dy;
+
+      w = Math.max(minW, w);
+      hgt = Math.max(minH, hgt);
+
+      el.style.width = `${Math.round(w)}px`;
+      el.style.height = `${Math.round(hgt)}px`;
+
+      options.onResize?.(Math.round(w), Math.round(hgt));
+    }
+
+    function onPointerUp(ev) {
+      if (!active) return;
+      active = false;
+
+      try { handle.releasePointerCapture(ev.pointerId); } catch {}
+
+      document.removeEventListener("pointermove", onPointerMove);
+      document.removeEventListener("pointerup", onPointerUp);
+      document.removeEventListener("pointercancel", onPointerUp);
+    }
+
+    handle.addEventListener("pointerdown", onPointerDown, { passive: false });
   }
-
-  function onPointerMove(ev) {
-    const w = Math.max(minW, startW + (ev.clientX - startX));
-    const h = Math.max(minH, startH + (ev.clientY - startY));
-
-    el.style.width = `${w}px`;
-    el.style.height = `${h}px`;
-
-    options.onResize?.(Math.round(w), Math.round(h));
-  }
-
-  function onPointerUp() {
-    document.removeEventListener("pointermove", onPointerMove);
-    document.removeEventListener("pointerup", onPointerUp);
-  }
-
-  handle.addEventListener("pointerdown", onPointerDown);
 
   return () => {
-    handle.removeEventListener("pointerdown", onPointerDown);
-    handle.remove();
+    for (const h of handleEls) h.remove();
   };
 }

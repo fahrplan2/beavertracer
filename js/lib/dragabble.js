@@ -102,6 +102,8 @@ function applyTranslate(el, x, y) {
  * Compute clamped translate (x,y) so the element stays within boundary/viewport.
  * Coordinates are in viewport space using getBoundingClientRect.
  *
+ * IMPORTANT: clamps only TOP/LEFT (west/north) like you wanted.
+ *
  * @param {HTMLElement} el
  * @param {{x:number, y:number}} proposed
  * @param {{x:number, y:number}} current
@@ -117,8 +119,6 @@ function clampTranslate(el, proposed, current, boundaryLike, clampToViewport) {
 
   const nextLeft = elRectNow.left + dx;
   const nextTop = elRectNow.top + dy;
-  const nextRight = elRectNow.right + dx;
-  const nextBottom = elRectNow.bottom + dy;
 
   /** @type {{left:number, top:number, right:number, bottom:number} | null} */
   let box = null;
@@ -128,16 +128,16 @@ function clampTranslate(el, proposed, current, boundaryLike, clampToViewport) {
   if (boundary instanceof HTMLElement) {
     const b = boundary.getBoundingClientRect();
 
-    // If boundary has no size yet (e.g. freshly re-rendered), do NOT clamp.
+    // If boundary has no size yet (e.g. freshly mounted), do NOT clamp.
     if (b.width < 2 || b.height < 2) return proposed;
 
-    const cs = getComputedStyle(boundary);
-    const bl = parseFloat(cs.borderLeftWidth) || 0;
-    const bt = parseFloat(cs.borderTopWidth) || 0;
-    const br = parseFloat(cs.borderRightWidth) || 0;
-    const bb = parseFloat(cs.borderBottomWidth) || 0;
-
-    box = { left: b.left + bl, top: b.top + bt, right: b.right - br, bottom: b.bottom - bb };
+    // clientLeft/Top include border; clientWidth/Height exclude scrollbars.
+    box = {
+      left: b.left + boundary.clientLeft,
+      top: b.top + boundary.clientTop,
+      right: b.left + boundary.clientLeft + boundary.clientWidth,
+      bottom: b.top + boundary.clientTop + boundary.clientHeight,
+    };
   } else if (clampToViewport) {
     box = { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight };
   } else {
@@ -147,13 +147,13 @@ function clampTranslate(el, proposed, current, boundaryLike, clampToViewport) {
   let clampedX = proposed.x;
   let clampedY = proposed.y;
 
-  // only prevent leaving west/north
+  // only prevent leaving west/north (left/top)
   if (nextLeft < box.left) clampedX += (box.left - nextLeft);
   if (nextTop < box.top) clampedY += (box.top - nextTop);
 
   return { x: clampedX, y: clampedY };
-
 }
+
 
 /**
  * @param {HTMLElement} targetEl

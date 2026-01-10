@@ -257,6 +257,7 @@ export class SimControl {
     // ---------------------------------------------------------------------------
 
     _mount() {
+        console.trace("_mount() called");
         if (this._mounted) return;
         this._mounted = true;
 
@@ -359,7 +360,7 @@ export class SimControl {
 
         const branding = document.createElement("div");
         branding.className = "sim-toolbar-branding";
-        branding.textContent = t("name");
+        branding.innerHTML = t("name");
         brandingGroup.appendChild(branding);
 
         const addSeparator = (role) => {
@@ -847,6 +848,10 @@ export class SimControl {
             const dt = ts - this._rafLastTs;
             this._rafLastTs = ts;
 
+            if(this.mode!=="run") {
+                return;
+            }
+
             if (!this.isPaused) {
                 for (const obj of this.simobjects) {
                     if (obj instanceof Link) obj.advance(dt);
@@ -894,9 +899,17 @@ export class SimControl {
     _getLocalPoint(ev) {
         const layer = this.nodesLayer;
         if (!layer) return { x: ev.clientX, y: ev.clientY };
+
         const r = layer.getBoundingClientRect();
-        return { x: ev.clientX - r.left, y: ev.clientY - r.top };
+
+        // IMPORTANT: include scroll offset because ghosts are positioned in the scroll content space
+        return {
+            x: (ev.clientX - r.left) + layer.scrollLeft,
+            y: (ev.clientY - r.top) + layer.scrollTop,
+        };
     }
+
+
 
     /** @param {Event} ev */
     _getObjFromEvent(ev) {
@@ -1383,9 +1396,7 @@ export class SimControl {
             return;
         }
 
-        // cleanup old links properly
-        for (const o of this.simobjects) if (o instanceof Link) o.destroy();
-        this.simobjects = [];
+        this._clearScene();
 
         // restore tick
         if (typeof state.tick === "number") SimControl.tick = state.tick;
@@ -1433,8 +1444,7 @@ export class SimControl {
     }
 
     new() {
-        for (const o of this.simobjects) if (o instanceof Link) o.destroy();
-        this.simobjects = [];
+        this._clearScene();
         SimulatedObject.idnumber = 0;
         SimControl.tick = 500;
         this.isPaused = true;
@@ -1488,5 +1498,47 @@ export class SimControl {
 
         URL.revokeObjectURL(url);
     }
+
+    _clearScene() {
+        // 1) stop simulation timers (optional but recommended)
+        if (this.timeoutId !== null) window.clearTimeout(this.timeoutId);
+        this.timeoutId = null;
+
+        // 2) destroy links first (they may own packet DOM)
+        for (const o of this.simobjects) {
+            if (o instanceof Link) {
+                // remove packet dom if Link doesn't fully do it
+                for (const p of o._packets ?? []) p.el?.remove?.();
+                o.destroy?.();
+            }
+        }
+
+        // 3) destroy remaining objects
+        for (const o of this.simobjects) {
+            if (!(o instanceof Link)) o.destroy?.();
+        }
+
+        // 4) clear arrays + maps
+        this.simobjects = [];
+        this.focusedObject = null;
+        this._linkStart = null;
+        this._linkStartKey = null;
+
+        // 5) remove all known DOM nodes we mounted for objects/links
+        for (const el of this._objEls.values()) el.remove();
+        this._objEls.clear();
+
+        // 6) clear packets layer completely (safest)
+        SimControl.packetsLayer?.replaceChildren();
+
+        // 7) clear ghost/delete states
+        this._cancelLinking();
+        this._removeGhostNode();
+        this._clearDeleteHover();
+
+        // 8) redraw request reset
+        this._redrawReq = false;
+    }
+
 
 }
