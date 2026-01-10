@@ -462,10 +462,10 @@ export class PCapViewer {
         btn.title = s.hasCapture ? name : `${name} (no capture loaded)`;
 
         const label = document.createElement("span");
-        if(this.#opt.simControl) {
+        if (this.#opt.simControl) {
           //Getting the real name
-          const realname = this.#opt.simControl.simobjects.filter(e => e.id==parseInt(name))[0].name;
-          label.textContent = realname+":"+name.split(":")[1] + (s.hasCapture ? "" : " •");
+          const realname = this.#opt.simControl.simobjects.filter(e => e.id == parseInt(name))[0].name;
+          label.textContent = realname + ":" + name.split(":")[1] + (s.hasCapture ? "" : " •");
         } else {
           label.textContent = name + (s.hasCapture ? "" : " •");
         }
@@ -540,6 +540,7 @@ export class PCapViewer {
       setPickerDevice: (d) => { this.#pickerDevice = d; },
       onPick: (name) => this.switchTab(name),
       onClose: () => this.#closeTabPicker(),
+      simControl: this.#opt.simControl,
     });
   }
 

@@ -338,14 +338,17 @@ export class IPStack extends Observable {
                 for (let i = 0; i < this.interfaces.length; i++) {
                     const itf = this.interfaces[i];
                     const ifIp = (itf.ip >>> 0);
-                    if (ifIp === 0) continue; // unconfigured
 
-                    const srcIp = (IPUInt8ToNumber(packet.src) >>> 0) !== 0
-                        ? (IPUInt8ToNumber(packet.src) >>> 0)
-                        : ifIp;
+                    // DHCP uses src 0.0.0.0 and limited broadcast 255.255.255.255.
+                    // so we want them to go out.
+                    const pktSrc = (IPUInt8ToNumber(packet.src) >>> 0);
+
+                    const srcIp =
+                        pktSrc !== 0 ? pktSrc :
+                            (ifIp !== 0 ? ifIp : 0);
 
                     const p2 = new IPv4Packet({
-                        dst: packet.dst,              
+                        dst: packet.dst,
                         src: IPNumberToUint8(srcIp),
                         protocol: packet.protocol,
                         payload: packet.payload,

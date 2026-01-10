@@ -4,36 +4,7 @@ import { GenericProcess } from "./GenericProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
 import { Disposer } from "./lib/Disposer.js";
 import { t } from "../i18n/index.js";
-
-/**
- * @param {number} n
- */
-function nowStamp(n = Date.now()) {
-  const d = new Date(n);
-  return d.toLocaleTimeString();
-}
-
-/**
- * @param {number} ip
- */
-function ipToString(ip) {
-  return `${(ip >>> 24) & 255}.${(ip >>> 16) & 255}.${(ip >>> 8) & 255}.${ip & 255}`;
-}
-
-/**
- * @param {Uint8Array} data
- */
-function hexPreview(data) {
-  const max = 24;
-  const slice = data.slice(0, max);
-  let s = "";
-  for (let i = 0; i < slice.length; i++) {
-    s += slice[i].toString(16).padStart(2, "0");
-    if (i < slice.length - 1) s += " ";
-  }
-  if (data.length > max) s += " …";
-  return s;
-}
+import { hexPreview, ipToString, nowStamp, encodeUTF8, decodeUTF8 } from "../helpers.js";
 
 /**
  * Parses your conn key format: `${localIP}:${localPort}>${remoteIP}:${remotePort}`
@@ -84,29 +55,7 @@ async function resolveHostToIP(host, dnsResolve) {
   return await dnsResolve(s);
 }
 
-/**
- * Encode as UTF-8 bytes (with fallback).
- * @param {string} s
- */
-function encodeUTF8(s) {
-  if (typeof TextEncoder !== "undefined") return new TextEncoder().encode(s);
-  // very small fallback (ASCII only)
-  const out = new Uint8Array(s.length);
-  for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i) & 0xff;
-  return out;
-}
 
-/**
- * Decode UTF-8 bytes (with fallback).
- * @param {Uint8Array} b
- */
-function decodeUTF8(b) {
-  if (typeof TextDecoder !== "undefined") return new TextDecoder().decode(b);
-  // small fallback (ASCII only)
-  let s = "";
-  for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
-  return s;
-}
 
 export class SimpleTCPClientApp extends GenericProcess {
 
@@ -224,10 +173,8 @@ export class SimpleTCPClientApp extends GenericProcess {
         })() : "-";
 
       status.textContent =
-        t("app.simpletcpclient.status.pid", { pid: this.pid }) + "\n" +
         t("app.simpletcpclient.status.connected", { connected: this.connected }) + "\n" +
-        t("app.simpletcpclient.status.peer", { peer }) + "\n" +
-        t("app.simpletcpclient.status.chatEntries", { n: this.log.length });
+        t("app.simpletcpclient.status.peer", { peer }) + "\n" 
     }, 300);
   }
 
@@ -300,15 +247,9 @@ export class SimpleTCPClientApp extends GenericProcess {
   async _connect() {
     if (this.connected) return;
 
-    // dns.resolve stub: will use this.dns.resolve when available
     /** @type {(name:string)=>Promise<number>} */
     const dnsResolve = async (name) => {
-      // If you later add this.dns.resolve, this will automatically use it.
-      const anyThis = /** @type {any} */ (this);
-      if (anyThis.dns && typeof anyThis.dns.resolve === "function") {
-        return await anyThis.dns.resolve(name);
-      }
-      throw new Error(t("app.simpletcpclient.err.dnsNotAvailable", { name }));
+      return await this.os.dns.resolve(name);
     };
 
     let dstIP = 0;
