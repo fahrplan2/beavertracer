@@ -10,20 +10,45 @@ const __dirname = path.dirname(__filename);
 // package.json robust lesen (statt import)
 const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, "package.json"), "utf8"));
 
-function sh(cmd) {
-  return execSync(cmd, { stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
-}
-
 function computeVersion() {
   try {
-    return execSync("git describe --tags --always --dirty", { encoding: "utf8" })
-      .trim()
-      .replace(/^v/, "");
+    const raw = execSync(
+      "git describe --tags --long --dirty",
+      { encoding: "utf8" }
+    ).trim();
+
+    //We are replacing the version string so that it gets SemVer-compatible
+    // git will deliver:
+    
+    // v1.4.1-0-gab12cd
+    // v1.4.1-7-gab12cd-dirty
+    const m = raw.match(
+      /^v?(\d+\.\d+\.\d+)(?:-(\d+)-g([0-9a-f]+))?(?:-dirty)?$/
+    );
+
+    if (!m) {
+      return raw.replace(/^v/, "");
+    }
+
+    const [, base, commits, hash] = m;
+
+    // exakt auf Tag → Release
+    if (!commits || commits === "0") {
+      return base;
+    }
+
+    let v = `${base}+dev.${commits}.${hash}`;
+
+    if (raw.endsWith("-dirty")) {
+      v += ".dirty";
+    }
+
+    return v;
   } catch {
-    // Fallback, falls ohne .git gebaut wird
     return "0.0.0";
   }
 }
+
 
 
 function wiregasmAssets() {
