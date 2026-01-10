@@ -2,31 +2,44 @@
 
 /**
  * Simple tab controller with optional activation hook.
+ * - Always queries contents fresh (supports dynamically mounted tabs)
+ * - Scopes operations to a given root container (won't touch other page tabs)
  */
 export class TabController {
-  /** @type {NodeListOf<HTMLElement>} */
-  #contents;
+  /** @type {HTMLElement} */
+  #root;
+
+  /** @type {string} */
+  #contentSelector;
 
   /** @type {(id: string) => void | Promise<void>} */
   #onTabActivated;
 
   /**
+   * @param {HTMLElement} root Container that holds all .tab-content nodes
    * @param {{
    *   contentSelector?: string,
    *   onTabActivated?: (id: string) => void | Promise<void>
    * }} [opts]
    */
-  constructor(opts = {}) {
+  constructor(root, opts = {}) {
+    if (!root) throw new Error("TabController: root is required");
+
     const {
       contentSelector = ".tab-content",
       onTabActivated = () => {},
     } = opts;
 
-    this.#contents = document.querySelectorAll(contentSelector);
+    this.#root = root;
+    this.#contentSelector = contentSelector;
     this.#onTabActivated = onTabActivated;
   }
 
-  
+  /** @returns {NodeListOf<HTMLElement>} */
+  #getContents() {
+    return this.#root.querySelectorAll(this.#contentSelector);
+  }
+
   /**
    * Switches to a tab if it exists.
    * Safe for async onTabActivated logic.
@@ -37,12 +50,12 @@ export class TabController {
   async gotoTab(targetId) {
     if (!targetId) return false;
 
-    const content = document.getElementById(targetId);
-
+    // IMPORTANT: scope lookup to the same root too
+    const content = /** @type {HTMLElement|null} */ (this.#root.querySelector(`#${CSS.escape(targetId)}`));
     if (!content) return false;
 
-    // deactivate all
-    this.#contents.forEach(c => c.classList.remove("active"));
+    // deactivate all (fresh list each call)
+    this.#getContents().forEach(c => c.classList.remove("active"));
 
     // activate target
     content.classList.add("active");
@@ -52,5 +65,4 @@ export class TabController {
 
     return true;
   }
-
 }

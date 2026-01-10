@@ -135,6 +135,18 @@ textarea:focus {
     padding: 2px;
 }
 
+.hidden {
+  display: none !important;
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: flex;
+}
+
 .about {
   overflow: auto;
 }
