@@ -1,6 +1,8 @@
 import { defineConfig } from "vite";
 import fs from "node:fs";
 import path from "node:path";
+import { execSync } from "node:child_process";
+import pkg from "./package.json";
 
 function wiregasmAssets() {
   const files = ["wiregasm.wasm", "wiregasm.data"];
@@ -28,7 +30,6 @@ function wiregasmAssets() {
       fs.copyFileSync(src, dst);
     }
   }
-
   return {
     name: "wiregasm-assets",
     apply: "serve", // dev
@@ -49,6 +50,52 @@ function wiregasmAssets() {
   };
 }
 
+function sh(cmd) {
+  return execSync(cmd, { stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
+}
+
+function computeVersion() {
+  const base = (pkg.version ?? "0.0.0").replace(/^v/, "");
+
+  // Falls Git nicht verfügbar ist oder .git fehlt: fallback auf package.json
+  try {
+    // Exakt auf Tag?
+    try {
+      const exactTag = sh("git describe --tags --exact-match");
+      return exactTag.replace(/^v/, "");
+    } catch {
+      /* not on tag */
+    }
+
+    // Letzter Tag (oder 0.0.0 wenn keiner existiert)
+    let tag = "0.0.0";
+    try {
+      tag = sh("git describe --tags --abbrev=0").replace(/^v/, "");
+    } catch {
+      /* no tags */
+    }
+
+    const commits = sh(`git rev-list ${tag}..HEAD --count`);
+    const hash = sh("git rev-parse --short HEAD");
+    let v = `${tag}+dev.${commits}.${hash}`;
+
+    // dirty?
+    try {
+      sh("git diff --quiet"); // exits non-zero if dirty
+    } catch {
+      v += ".dirty";
+    }
+
+    return v;
+  } catch {
+    return base;
+  }
+
+}
+
+  
+
+
 export default defineConfig({
   base: "./",
 
@@ -68,5 +115,8 @@ export default defineConfig({
     exclude: ["ws"],
     // Wenn das Paket ESM ist, kann include helfen. Wenn es Probleme macht: rausnehmen.
     include: ["@goodtools/wiregasm"],
+  },
+  define: {
+    __APP_VERSION__: JSON.stringify(computeVersion()),
   },
 });
