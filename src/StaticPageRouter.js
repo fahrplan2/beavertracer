@@ -1,6 +1,6 @@
 //@ts-check
 import { getLocale } from "./i18n/index.js";
-import { version } from "./version.js";
+import { version } from "./lib/version.js";
 
 /**
  * Static page router for Vite-bundled HTML fragments.
