@@ -397,8 +397,8 @@
   top: 0;
   left: 0;
 
-  width: 84px;
-  height: 84px;
+  width: 54px;
+  height: 54px;
 
   transform: translate(-50%, -50%);
   pointer-events: auto; /* clickable */
@@ -407,13 +407,8 @@
   color: var(--danger);
 }
 
-.sim-packet::before {
-  content: "✉";
-  display: inline-block;
-  font-size: 80px;
-  line-height: 1;
-  color: currentColor;
-  text-align: center;
+.sim-packet .fa-envelope {
+  font-size: 54px;
 }
 
 /* =========================================================

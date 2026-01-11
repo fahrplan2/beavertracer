@@ -153,6 +153,7 @@ export class Link extends SimulatedObject {
     const el = document.createElement("div");
     el.className = "sim-packet";
     el.style.display = "";
+    el.innerHTML = `<i class="fas fa-envelope"></i>`;
     el.title = "Click to log frame bytes";
     el.addEventListener("click", (ev) => {
       ev.stopPropagation();
