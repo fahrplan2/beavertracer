@@ -159,10 +159,6 @@ export class SimControl {
         this._startRafLoop();
     }
 
-    // ---------------------------------------------------------------------------
-    // Simulation loop (unchanged semantics, keep step2 then step1!)
-    // ---------------------------------------------------------------------------
-
     scheduleNextStep() {
         if (this.timeoutId !== null) window.clearTimeout(this.timeoutId);
         if (this.isPaused) return;
@@ -173,11 +169,18 @@ export class SimControl {
         for (let i = 0; i < this.simobjects.length; i++) {
             const x = this.simobjects[i];
             if (x instanceof Link) {
-                x.step1();
                 x.step2();
-                this.tickId++;
             }
         }
+        for (let i = 0; i < this.simobjects.length; i++) {
+            const x = this.simobjects[i];
+            if (x instanceof Link) {
+                x.step1();
+            }
+        }
+        this.tickId++;
+
+        
 
         this._requestRedrawLinks();
         this.endStep = !this.endStep;
@@ -465,12 +468,10 @@ export class SimControl {
         gSpeeds.appendChild(pauseBtn);
 
         const speeds = [
-            { label: "0.25×", ms: 1000, icon: "fa-1" },
-            { label: "0.5×", ms: 500, icon: "fa-2" },
-            { label: "1×", ms: 250, icon: "fa-3" },
-            { label: "2×", ms: 125, icon: "fa-4" },
-            { label: "4×", ms: 62, icon: "fa-5" },
-            { label: "8×", ms: 32, icon: "fa-6" },
+            { label: "1×", ms: 1000, icon: "fa-1" },
+            { label: "4×", ms: 250, icon: "fa-2" },
+            { label: "8×", ms: 125, icon: "fa-3" },
+            { label: "16×", ms: 32, icon: "fa-4" },
         ];
 
         for (const s of speeds) {
