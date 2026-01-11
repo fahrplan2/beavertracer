@@ -1,6 +1,5 @@
 export default {
   "lang.name": "🇵🇱 Polski (translated by AI)",
-  "name": "Beaver Tracer",
   "app.generic.title": "Gernic App",
   "app.about.title": "O programie",
   "app.about.heading.systemInfo": "Informacje o systemie",

@@ -1,6 +1,5 @@
 export default {
   "lang.name": "🇵🇹 Português (translated by AI)",
-  "name": "Rastreador Beaver",
   "app.generic.title": "Aplicativo Genérico",
   "app.about.title": "Sobre",
   "app.about.heading.systemInfo": "Informações do sistema",

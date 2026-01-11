@@ -4,9 +4,6 @@ export default {
   //Meta Data; Here the Name of the language should be inserted in
   "lang.name": "🇬🇧 English",
 
-  //App Name
-  "name": "Beaver Tracer",
-
   "app.generic.title": "Gernic App",
 
   "app.about.title": "About",

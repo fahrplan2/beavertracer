@@ -382,7 +382,7 @@ export class SimControl {
 
         const branding = document.createElement("div");
         branding.className = "sim-toolbar-branding";
-        branding.innerHTML = t("name");
+        branding.innerHTML = "Beaver Tracer"
         brandingGroup.appendChild(branding);
 
         const addSeparator = (role) => {
