@@ -485,8 +485,6 @@ export default {
   "router.unknown": "unknown",
   "router.addinterface": "Add interface",
 
-  "router.showpacketlog": "Show Packet Log",
-  "router.nopacketlog": "No packet log to show",
   "router.deleteinterface": "Delete interface",
   "router.confirminterfacedelete": "Are you sure to delete interface ${name}",
   "router.nointerfaceselected": "no interface selected",
@@ -541,10 +539,7 @@ export default {
   "sim.tool.delete": "Delete",
 
   "sim.link.error": "Error creating link.",
-  "sim.link.nofreeports": "No free ports available.",
-  "sim.link.portisinuse": "This port is in use.",
-  "sim.link.selectedportnotfound": "The selected port can not be found.",
-
+  
   "switch.title": "Switch",
   "switch.genericsettings": "Common settings",
   "switch.name": "Name",
