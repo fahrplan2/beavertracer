@@ -30,7 +30,7 @@ const TARGETS = [
   { lang: "lv", name: "Latvian" },
   { lang: "mt", name: "Maltese" },
   { lang: "nl", name: "Dutch" },*/
-  { lang: "pl", name: "Polish" },
+  /*{ lang: "pl", name: "Polish" },*/
   { lang: "pt", name: "Portuguese" },
   /*{ lang: "ro", name: "Romanian" },
   { lang: "sk", name: "Slovak" },
