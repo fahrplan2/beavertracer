@@ -191,18 +191,19 @@
 }
 
 .sim-toolbar-branding-group {
+  position: relative;     
   display: flex;
-  flex-direction: row;      /* überschreibt column */
-  align-items: center;      /* vertikal */
-  justify-content: center;  /* horizontal */
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
   max-width: 90px;
   border: none;
   flex-wrap: wrap;
 }
 
+
 .sim-toolbar-branding {
-  position: relative;
-  height: 90%;
+  height: 80%;
   font-size: 25px;
   font-weight: 700;
   letter-spacing: 0.2px;
@@ -213,32 +214,37 @@
   display: flex;
   align-items: center;      /* vertical center */
   justify-content: center;  /* horizontal center */
-  z-index: 0;
+  line-height: 1.1; 
+}
+
+.sim-toolbar-branding,
+.sim-toolbar-branding-version {
+  position: relative;
+  z-index: 1;
 }
 
 .sim-toolbar-branding-version {
+  height: 20%;
   font-size:12px;
+  font-weight: bold;
+  font-style: italic;
   align-items: center;      /* vertical center */
   justify-content: center;  /* horizontal center */
 }
 
-.sim-toolbar-branding::after {
+.sim-toolbar-branding-group::after {
   content: "";
   position: absolute;
   inset: 0;
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
   background-image: url("/beaver.svg");
   background-repeat: no-repeat;
   background-position: center;
-  background-size: 70px 70px;
+  background-size: 100% 100%;
 
   opacity: 0.40;
   pointer-events: none;
-  z-index: -1;
+  z-index: 0;
 }
 
 /* =========================================================
