@@ -197,11 +197,12 @@
   justify-content: center;  /* horizontal */
   max-width: 90px;
   border: none;
+  flex-wrap: wrap;
 }
 
 .sim-toolbar-branding {
   position: relative;
-  height: 100%;
+  height: 90%;
   font-size: 25px;
   font-weight: 700;
   letter-spacing: 0.2px;
@@ -215,23 +216,10 @@
   z-index: 0;
 }
 
-/* ALPHA unter dem Element */
-.sim-toolbar-branding::before {
-  content: "pre-alpha";
-  position: absolute;
-  top: 85%;              /* direkt unter dem Element */
-  left: 50%;
-  transform: translateX(-50%);
-
-  margin-top: 2px;
-
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.25em;
-  color: rgba(200, 0, 0, 0.8);
-
-  pointer-events: none;
-  white-space: nowrap;
+.sim-toolbar-branding-version {
+  font-size:12px;
+  align-items: center;      /* vertical center */
+  justify-content: center;  /* horizontal center */
 }
 
 .sim-toolbar-branding::after {
