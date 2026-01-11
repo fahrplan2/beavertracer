@@ -8,7 +8,7 @@ import { Router } from "./sim/Router.js";
 import { TextBox } from "./sim/TextBox.js";
 import { RectOverlay } from "./sim/RectOverlay.js";
 import { t, getLocale, setLocale, getLocales } from "./i18n/index.js";
-import { StaticPageLoader } from "./StaticPageLoader.js";
+import { StaticPageRouter } from "./StaticPageRouter.js";
 import { PCapController } from "./tracer/PCapControler.js";
 import { DOMBuilder } from "./lib/DomBuilder.js";
 
@@ -131,6 +131,12 @@ export class SimControl {
 
     /** @type {number} */
     _rafLastTs = performance.now();
+
+    /** @type {StaticPageRouter|null} */
+    _staticRouter = null;
+
+    /** @type {HTMLDivElement|null} */
+    _aboutContent = null;
 
     /**
      * @param {HTMLElement|null} root
@@ -257,7 +263,6 @@ export class SimControl {
     // ---------------------------------------------------------------------------
 
     _mount() {
-        console.trace("_mount() called");
         if (this._mounted) return;
         this._mounted = true;
 
@@ -340,8 +345,25 @@ export class SimControl {
         root.appendChild(aboutbody);
         this._aboutBody = aboutbody;
 
-        // load about once
-        new StaticPageLoader().load(aboutbody, "/pages/about/index.html");
+        // create inner container for static pages
+        const aboutContent = document.createElement("div");
+        aboutContent.className = "about-content";
+        aboutbody.appendChild(aboutContent);
+        this._aboutContent = aboutContent;
+
+        // mount router once; we keep it mounted even when tab hidden
+        this._staticRouter = new StaticPageRouter({
+            fallbackLocale: "en",
+            onRoute: ({ route }) => {
+                // whenever we are on a static page route, switch UI to about tab
+                if (this.mode !== "about") {
+                    this.mode = "about";
+                    this.isPaused = true;
+                    this._invalidateUI();
+                }
+            },
+        });
+        this._staticRouter.mount(aboutContent, { initial: window.location.pathname });
 
         // Build toolbar + sidebar buttons once
         this._buildToolbarOnce();
@@ -360,7 +382,7 @@ export class SimControl {
 
         const branding = document.createElement("div");
         branding.className = "sim-toolbar-branding";
-        branding.innerHTML = t("name");
+        branding.innerHTML = "Beaver Tracer"
         brandingGroup.appendChild(branding);
 
         const addSeparator = (role) => {
@@ -532,6 +554,7 @@ export class SimControl {
                 this.pause();
                 this.mode = "about";
                 this._invalidateUI();
+                this._staticRouter.navigate("/about", { replace: true });
             },
         });
         aboutBtn.dataset.role = "mode-about";
@@ -596,6 +619,7 @@ export class SimControl {
             this._uiDirty = false;
             this._uiRaf = null;
             this._updateUI();
+            this._requestRedrawLinks();
         });
     }
 
@@ -848,7 +872,7 @@ export class SimControl {
             const dt = ts - this._rafLastTs;
             this._rafLastTs = ts;
 
-            if(this.mode!=="run") {
+            if (this.mode !== "run") {
                 return;
             }
 
@@ -1539,6 +1563,22 @@ export class SimControl {
         // 8) redraw request reset
         this._redrawReq = false;
     }
+    _syncInitialModeFromUrl() {
+        const router = this._staticRouter;
+        if (!router) return;
 
+        // normalize path: strip ? # and trailing slash
+        let p = window.location.pathname || "/";
+        if (p.length > 1) p = p.replace(/\/+$/g, "");
+        // (pathname already excludes ?/#, but keep it defensive)
+        p = p.split("?")[0].split("#")[0];
+
+        const routes = router.getRoutes();
+        if (routes.includes(p)) {
+            this.mode = "about";
+            this.isPaused = true;
+            router.navigate(p, { replace: true });
+        }
+    }
 
 }
