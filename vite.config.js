@@ -3,9 +3,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { staticSitemap } from "./vite-plugin-static-sitemap.js";
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+//const __dirname = path.dirname(__filename);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // package.json robust lesen (statt import)
 const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, "package.json"), "utf8"));
@@ -19,7 +21,7 @@ function computeVersion() {
 
     //We are replacing the version string so that it gets SemVer-compatible
     // git will deliver:
-    
+
     // v1.4.1-0-gab12cd
     // v1.4.1-7-gab12cd-dirty
     const m = raw.match(
@@ -91,9 +93,47 @@ function wiregasmAssets() {
   };
 }
 
+function walk(dir) {
+  /** @type {string[]} */
+  const out = [];
+  for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, ent.name);
+    if (ent.isDirectory()) out.push(...walk(p));
+    else out.push(p);
+  }
+  return out;
+}
+
+function buildInputs() {
+  const pagesDir = path.resolve(__dirname, "src/pages");
+  const files = fs.existsSync(pagesDir)
+    ? walk(pagesDir).filter((p) => p.endsWith(`${path.sep}index.html`))
+    : [];
+
+  const input = {
+    main: path.resolve(__dirname, "index.html"),
+  };
+
+  for (const abs of files) {
+    const relFromSrc = path.relative(path.resolve(__dirname, "src"), abs).replaceAll(path.sep, "/");
+    const key = relFromSrc.replace(/\//g, "_").replace(/\.html$/, "");
+    input[key] = abs;
+  }
+  return input;
+}
+
 export default defineConfig({
   base: "./",
-  plugins: [wiregasmAssets()],
+  plugins: [
+    wiregasmAssets(),
+    staticSitemap({siteUrl: "https://www.beavertracer.eu"}),
+  ],
+  build: {
+    rollupOptions: {
+      input: buildInputs(),
+    },
+  },
+
 
   resolve: {
     alias: {
@@ -109,5 +149,4 @@ export default defineConfig({
   define: {
     "import.meta.env.VITE_APP_VERSION": JSON.stringify(computeVersion()),
   },
-
 });

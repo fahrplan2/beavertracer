@@ -139,15 +139,43 @@ textarea:focus {
   display: none !important;
 }
 
+
+
 .tab-content {
+  display: none;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Flex for simbody */
+.sim-body.tab-content {
   display: none;
 }
 
-.tab-content.active {
+.sim-body.tab-content.active {
   display: flex;
 }
 
+/* ABOUT + TRACER: normal document flow */
+.about.tab-content.active,
+.analyzer.tab-content.active {
+  display: block;
+}
+
+
 .about {
-  overflow: auto;
-  user-select: auto;
+  overflow-y: auto;
+  width: 100%;
+}
+
+.about .about-content {
+  display: flex;
+  justify-content: center;   
+  padding: 24px 16px;        
+  box-sizing: border-box;
+  width: 100%;
+}
+.about .about-container {
+  width: 100%;
+  max-width: 700px;          
 }

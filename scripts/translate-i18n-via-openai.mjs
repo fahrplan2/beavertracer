@@ -158,7 +158,9 @@ async function translateBatch({ apiKey, model, sourceLang, targetLang, pairs }) 
         role: "system",
         content:
           "You are a professional software localization translator. " +
-          "Translate UI strings naturally and consistently. " +
+          "Translate UI strings naturally and consistently " +
+          "You are translating a simulation software for networks." +
+          "Keep TCP/IP-terms consistent." +
           "KEEP placeholders unchanged exactly (e.g. {name}, {{name}}, %s, %d, :id). " +
           "Keep intentional spaces in the strings original. " +
           "Do not translate keys. " +

@@ -2,10 +2,7 @@
 
 export default {
   //Meta Data; Here the Name of the language should be inserted in
-  "lang.name": "English (English)",
-
-  //App Name
-  "name": "Beaver Tracer",
+  "lang.name": "🇬🇧 English",
 
   "app.generic.title": "Gernic App",
 
@@ -189,7 +186,7 @@ export default {
   "app.simpletcpserver.button.stop": "Stop",
   "app.simpletcpserver.button.clearLog": "Clear Log",
 
-  "app.simpletcpserver.label.listenPort": "Listen Port",
+  "app.simpletcpserver.label.listenPort": "Server-Port",
   "app.simpletcpserver.label.log": "Log:",
 
   "app.simpletcpserver.status.running": "Running: {running}",
