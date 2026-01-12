@@ -413,6 +413,9 @@ export class SimControl {
             label: t("sim.edit"),
             icon: "fa-pencil",
             onClick: () => {
+                if (window.location.pathname !== "/") {
+                     history.pushState({}, "", "/");
+                }
                 this._enterEditMode();
             },
         });
@@ -423,6 +426,9 @@ export class SimControl {
             label: t("sim.run"),
             icon: "fa-play",
             onClick: () => {
+                if (window.location.pathname !== "/") {
+                     history.pushState({}, "", "/");
+                }
                 if (this.mode === "edit") this._leaveEditMode();
                 else this.pause();
 
@@ -445,6 +451,9 @@ export class SimControl {
             label: t("sim.trace"),
             icon: "fa-magnifying-glass",
             onClick: () => {
+                if (window.location.pathname !== "/") {
+                     history.pushState({}, "", "/");
+                }
                 if (this.mode === "edit") this._leaveEditMode();
                 this.mode = "trace";
                 this._invalidateUI();
