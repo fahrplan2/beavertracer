@@ -180,7 +180,7 @@ export class SimControl {
         }
         this.tickId++;
 
-        
+
 
         this._requestRedrawLinks();
         this.endStep = !this.endStep;
@@ -391,7 +391,7 @@ export class SimControl {
 
         const ver = document.createElement("div");
         ver.className = "sim-toolbar-branding-version";
-        ver.textContent = "v"+version(true);
+        ver.textContent = "v" + version(true);
         brandingGroup.appendChild(ver);
 
         const addSeparator = (role) => {
@@ -414,7 +414,7 @@ export class SimControl {
             icon: "fa-pencil",
             onClick: () => {
                 if (window.location.pathname !== "/") {
-                     history.pushState({}, "", "/");
+                    history.pushState({}, "", "/");
                 }
                 this._enterEditMode();
             },
@@ -427,7 +427,7 @@ export class SimControl {
             icon: "fa-play",
             onClick: () => {
                 if (window.location.pathname !== "/") {
-                     history.pushState({}, "", "/");
+                    history.pushState({}, "", "/");
                 }
                 if (this.mode === "edit") this._leaveEditMode();
                 else this.pause();
@@ -452,7 +452,7 @@ export class SimControl {
             icon: "fa-magnifying-glass",
             onClick: () => {
                 if (window.location.pathname !== "/") {
-                     history.pushState({}, "", "/");
+                    history.pushState({}, "", "/");
                 }
                 if (this.mode === "edit") this._leaveEditMode();
                 this.mode = "trace";
@@ -475,6 +475,17 @@ export class SimControl {
         });
         pauseBtn.dataset.role = "pause";
         gSpeeds.appendChild(pauseBtn);
+
+        const stepBtn = DOMBuilder.iconbutton({
+            label: t("sim.step"),
+            icon: "fa-forward-step",
+            onClick: () => {
+                this.pause();
+                this.step();
+            }
+        });
+        //stepBtn.dataset.role = "step";
+        gSpeeds.appendChild(stepBtn);
 
         const speeds = [
             { label: "1×", ms: 1000, icon: "fa-1" },
