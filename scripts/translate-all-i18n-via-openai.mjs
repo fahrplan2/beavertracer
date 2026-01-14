@@ -12,30 +12,30 @@ const INPUT = "locales/en.js";
  * target locales to generate
  */
 const TARGETS = [
-  { lang: "bg", name: "Bulgarian" },
+  /*{ lang: "bg", name: "Bulgarian" },
   { lang: "cs", name: "Czech" },
-  { lang: "da", name: "Danish" },
+  { lang: "da", name: "Danish" },*/
   { lang: "de", name: "German" },
-  { lang: "el", name: "Greek" },
-  { lang: "en", name: "English" },
+  /*{ lang: "el", name: "Greek" },
+  { lang: "en", name: "English" },*/
   { lang: "es", name: "Spanish" },
-  { lang: "et", name: "Estonian" },
-  { lang: "fi", name: "Finnish" },
+  /*{ lang: "et", name: "Estonian" },
+  { lang: "fi", name: "Finnish" },*/
   { lang: "fr", name: "French" },
-  { lang: "ga", name: "Irish" },
+  /*{ lang: "ga", name: "Irish" },
   { lang: "hr", name: "Croatian" },
-  { lang: "hu", name: "Hungarian" },
+  { lang: "hu", name: "Hungarian" },*/
   { lang: "it", name: "Italian" },
-  { lang: "lt", name: "Lithuanian" },
+  /*{ lang: "lt", name: "Lithuanian" },
   { lang: "lv", name: "Latvian" },
   { lang: "mt", name: "Maltese" },
-  { lang: "nl", name: "Dutch" },
-  { lang: "pl", name: "Polish" },
+  { lang: "nl", name: "Dutch" },*/
+  /*{ lang: "pl", name: "Polish" },*/
   { lang: "pt", name: "Portuguese" },
-  { lang: "ro", name: "Romanian" },
+  /*{ lang: "ro", name: "Romanian" },
   { lang: "sk", name: "Slovak" },
   { lang: "sl", name: "Slovene" },
-  { lang: "sv", name: "Swedish" },
+  { lang: "sv", name: "Swedish" },*/
 ];
 
 /**

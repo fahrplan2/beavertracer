@@ -1,0 +1,61 @@
+.about-container {
+    max-width: 700px;
+    margin: 0 auto;
+    line-height: 1.65;
+    display: block;
+}
+
+.about .subtitle {
+    color: #666;
+    margin-top: -0.5rem;
+}
+
+.about .version {
+    margin-top: 1rem;
+    font-size: 0.95rem;
+    color: #444;
+}
+
+.about h3 {
+    margin-top: 2rem;
+}
+
+.about hr {
+    margin: 2rem 0;
+    border: none;
+    border-top: 1px solid #ddd;
+}
+
+.about ul {
+    padding-left: 1.2rem;
+}
+
+.about li {
+    margin: 0.35rem 0;
+}
+
+.about.license-text {
+    font-size: 0.9rem;
+    color: #444;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.about .thanks {
+    margin-top: 1.5rem;
+    font-style: italic;
+}
+
+.about .footer {
+    text-align: center;
+    font-size: 0.85rem;
+    color: #777;
+}
+
+.about a {
+    color: #2c6ed5;
+    text-decoration: none;
+}
+
+.about a:hover {
+    text-decoration: underline;
+}

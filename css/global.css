@@ -30,6 +30,10 @@
   --warning: oklch(78% 0.17 85);
   --danger: oklch(62% 0.20 25);
 
+  --green: var(--ok);
+  --blue:  oklch(34.125% 0.19032 270.352);
+  --white: #FFFFFF;
+  
   --ok-strong: color-mix(in oklch, var(--ok), black 18%);
   --ok-soft: color-mix(in oklch, var(--ok), white 78%);
   --ok-tint: color-mix(in oklch, var(--ok), white 88%);
@@ -52,6 +56,9 @@
   --ui-active-border: white;
   --ui-line: color-mix(in oklch, var(--text), transparent 55%);
 }
+
+html, body { height: 100%; margin: 0; }
+*, *::before, *::after { box-sizing: border-box; }
 
 body {
     margin: 0;
@@ -126,4 +133,49 @@ textarea:focus {
 
 .sim-panel-body {
     padding: 2px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+
+
+.tab-content {
+  display: none;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Flex for simbody */
+.sim-body.tab-content {
+  display: none;
+}
+
+.sim-body.tab-content.active {
+  display: flex;
+}
+
+/* ABOUT + TRACER: normal document flow */
+.about.tab-content.active,
+.analyzer.tab-content.active {
+  display: block;
+}
+
+
+.about {
+  overflow-y: auto;
+  width: 100%;
+}
+
+.about .about-content {
+  display: flex;
+  justify-content: center;   
+  padding: 24px 16px;        
+  box-sizing: border-box;
+  width: 100%;
+}
+.about .about-container {
+  width: 100%;
+  max-width: 700px;          
 }

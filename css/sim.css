@@ -28,8 +28,15 @@
   min-width: 0;
   min-height: 0;
   position: relative;
-  overflow: hidden;
+  overflow: auto;
+  width: 100%;
+  height: 100%;
   z-index: 10;
+}
+
+
+#tracer {
+  height: 100%;
 }
 
 
@@ -184,43 +191,61 @@
 }
 
 .sim-toolbar-branding-group {
+  position: relative;     
   display: flex;
-  flex-direction: row;      /* überschreibt column */
-  align-items: center;      /* vertikal */
-  justify-content: center;  /* horizontal */
-  max-width: 72px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  max-width: 90px;
+  border: none;
+  flex-wrap: wrap;
 }
 
+
 .sim-toolbar-branding {
-  position: relative;
-  font-size: 18px;
+  height: 80%;
+  font-size: 25px;
   font-weight: 700;
   letter-spacing: 0.2px;
   padding: 0 12px;
   color: var(--text);
   user-select: none;
   text-align: center;
-  z-index: 0;
+  display: flex;
+  align-items: center;      /* vertical center */
+  justify-content: center;  /* horizontal center */
+  line-height: 1.1; 
 }
 
-.sim-toolbar-branding::after {
-  content: "🦫";
+.sim-toolbar-branding,
+.sim-toolbar-branding-version {
+  position: relative;
+  z-index: 1;
+}
 
+.sim-toolbar-branding-version {
+  height: 20%;
+  font-size:12px;
+  font-weight: bold;
+  font-style: italic;
+  align-items: center;      /* vertical center */
+  justify-content: center;  /* horizontal center */
+}
+
+.sim-toolbar-branding-group::after {
+  content: "";
   position: absolute;
-  inset: 0;                       
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  inset: 0;
 
-  font-size: 60px;                
-  opacity: 0.30;                  
+  background-image: url("/beaver.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
 
-  pointer-events: none;           
-  z-index: -1;                     
- }
-
-
-
+  opacity: 0.40;
+  pointer-events: none;
+  z-index: 0;
+}
 
 /* =========================================================
    EDIT SIDEBAR
@@ -259,7 +284,7 @@
   gap: 4px;
 
   height: 56px;
-  min-width: 56px;
+  min-width: 70px;
   padding: 8px 12px;
 
   border-radius: 10px;
@@ -275,25 +300,14 @@
   transition: transform 80ms ease, background 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
 }
 
-.sim-toolbar button::before,
-.sim-sidebar-btn::before {
-  content: "";
-  width: 18px;
-  height: 18px;
-  display: block;
 
-  background-color: currentColor;
+/**** Font Awesome Stuff ****/
 
-  mask-repeat: no-repeat;
-  mask-position: center;
-  mask-size: contain;
-
-  -webkit-mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  -webkit-mask-size: contain;
-
-  opacity: 0.9;
+.sim-toolbar-buttons .fas,
+.sim-sidebar-btn .fas {
+    font-size: 25px;
 }
+
 
 /* Active */
 .sim-toolbar button.active,
@@ -383,8 +397,8 @@
   top: 0;
   left: 0;
 
-  width: 84px;
-  height: 84px;
+  width: 54px;
+  height: 54px;
 
   transform: translate(-50%, -50%);
   pointer-events: auto; /* clickable */
@@ -393,13 +407,8 @@
   color: var(--danger);
 }
 
-.sim-packet::before {
-  content: "✉";
-  display: inline-block;
-  font-size: 80px;
-  line-height: 1;
-  color: currentColor;
-  text-align: center;
+.sim-packet .fa-envelope {
+  font-size: 54px;
 }
 
 /* =========================================================
@@ -483,32 +492,32 @@
 }
 
 .sim-root.edit-mode[data-tool="link"] .sim-node.no-free-port {
-  cursor: not-allowed;
+  cursor: not-allowed !important;;
   opacity: 0.4;
 }
 
-/* delete tool */
+.sim-root.edit-mode[data-tool="delete"] .sim-nodes {
+  cursor: default;
+}
+
 .sim-root.edit-mode[data-tool="delete"] .sim-node,
-.sim-root.edit-mode[data-tool="delete"] .sim-node * {
+.sim-root.edit-mode[data-tool="delete"] .sim-link-hit {
   cursor: not-allowed !important;
 }
 
-.sim-root.edit-mode[data-tool="delete"] .sim-link-hit {
-  cursor: not-allowed;
+.sim-delete-hover {
+  outline: 2px solid rgba(255, 60, 60, 0.95);
+  box-shadow: 0 0 0 3px rgba(255, 60, 60, 0.25), 0 0 16px rgba(255, 60, 60, 0.55);
 }
 
-/* =========================================================
-   HOWTO: Include Icon in Buttons
-   =========================================================
-   .sim-ico-run::before {
-     mask-image: url("icons/play.svg");
-     -webkit-mask-image: url("icons/play.svg");
-   }
-*/
+/* Optional: make link line glow too (depends on your DOM structure) */
+.sim-link.sim-delete-hover .sim-link-line {
+  box-shadow: 0 0 10px rgba(255, 60, 60, 0.9);
+}
 
-
-
-
+.sim-delete-hover {
+  cursor: not-allowed !important;
+}
 
 /* --- Rect overlay --- */
 .sim-rect {
@@ -576,4 +585,99 @@ sim-toolbar-langbtn {
 
 .sim-lang-option.active {
   outline: 2px solid rgba(255,255,255,0.25);
+}
+
+
+.sim-node .fas {
+  font-size: 32px;
+}
+
+/* Colors for icons */
+.fa-ban {
+  color: var(--danger);
+}
+
+.fa-square {
+  color: var(--warning-soft);
+}
+
+.fa-desktop {
+  color: var(--blue);
+}
+
+.fa-play {
+  color: var(--green);
+}
+
+
+
+
+
+.my-icon-router {
+  width: 40px;
+  height: 40px;
+  background-image: url('/router.svg');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 40px 40px;
+}
+
+.my-icon-switch {
+  width: 40px;
+  height: 40px;
+  background-image: url('/switch.svg');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 40px 40px;
+}
+
+.sim-sidebar-btn .my-icon-router,
+.sim-sidebar-btn .my-icon-switch {
+  width: 24px;
+  height: 24px;
+  background-size: 24px 24px;
+}
+
+/* Basis */
+.window-resize-handle {
+  position: absolute;
+  z-index: 10;
+  pointer-events: auto;
+  background: transparent;
+}
+
+/* Corner handle (bottom-right) */
+.window-resize-handle.br {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 14px;
+  height: 14px;
+  cursor: nwse-resize;
+  z-index: 10;
+  background: transparent;
+}
+
+/* Bottom edge handle */
+.window-resize-handle.b {
+  position: absolute;
+  left: 0;
+  right: 14px;   /* Platz für BR handle */
+  bottom: 0;
+  height: 8px;
+  cursor: ns-resize;
+  z-index: 9;
+  background: transparent;
+}
+
+/* Right edge handle */
+.window-resize-handle.r {
+  position: absolute;
+  top: 0;
+  bottom: 14px;  /* Platz für BR handle */
+  right: 0;
+  width: 8px;
+  cursor: ew-resize;
+  z-index: 9;
+  background: transparent;
 }

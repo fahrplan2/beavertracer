@@ -2,16 +2,50 @@
 
 export default {
   //Meta Data; Here the Name of the language should be inserted in
-  "lang.name": "English (English)",
-
-  //App Name
-  "name": "Beaver Tracer",
+  "lang.name": "🇬🇧 English",
 
   "app.generic.title": "Gernic App",
 
   "app.about.title": "About",
   "app.about.heading.systemInfo": "System info",
   "app.about.body.systemInfo": "OS: {os}\nPID: {pid}\nRunning apps: {runningApps}\nFocusID: {focusID}\nTime: {time}",
+
+  "app.dhcpserver.title": "DHCP Server",
+
+  "app.dhcpserver.label.config": "Configuration",
+  "app.dhcpserver.label.rangeStart": "Range start",
+  "app.dhcpserver.label.rangeEnd": "Range end",
+  "app.dhcpserver.label.dns": "DNS servers",
+  "app.dhcpserver.label.gateway": "Gateway",
+  "app.dhcpserver.label.leaseTime": "Lease time (seconds)",
+
+  "app.dhcpserver.button.load": "Load",
+  "app.dhcpserver.button.save": "Save",
+  "app.dhcpserver.button.start": "Start",
+  "app.dhcpserver.button.stop": "Stop",
+  "app.dhcpserver.button.clearLog": "Clear log",
+
+  "app.dhcpserver.label.server": "Server",
+  "app.dhcpserver.label.log": "Log",
+
+  "app.dhcpserver.log.createdDefaultConfig": "Config file missing/empty; wrote default config to",
+  "app.dhcpserver.log.configLoaded": "Loaded config from",
+  "app.dhcpserver.log.configLoadFailed": "Failed to load config:",
+  "app.dhcpserver.log.configSaved": "Saved config to",
+  "app.dhcpserver.log.configSaveFailed": "Failed to save config:",
+  "app.dhcpserver.log.invalidConfig": "Invalid configuration:",
+  "app.dhcpserver.log.listening": "Listening on",
+  "app.dhcpserver.log.startFailed": "Failed to start DHCP server:",
+  "app.dhcpserver.log.stopped": "Stopped",
+  "app.dhcpserver.log.stopError": "Error while stopping:",
+  "app.dhcpserver.log.recvError": "UDP receive error:",
+  "app.dhcpserver.log.parseError": "DHCP parse error:",
+
+  "app.dnsd.button.save": "save",
+  "app.dnsd.button.start": "start",
+  "app.dnsd.button.stop": "stop",
+  "app.dnsd.label.log": "Log",
+  "app.dnsd.title": "DNS-Server",
 
   "app.ipv4config.title": "IP Settings",
   "app.ipv4config.button.apply": "Apply",
@@ -31,6 +65,35 @@ export default {
   "app.ipv4config.err.invalidGateway": "Invalid gateway address.",
   "app.ipv4config.err.gatewayZero": "Gateway must not be 0.0.0.0.",
   "app.ipv4config.err.applyFailed": "Apply failed: {reason}",
+  "app.ipv4config.label.dnsServer": "DNS server",
+  "app.ipv4config.err.invalidDnsServer": "Invalid DNS server address",
+  "app.ipv4config.msg.appliedWithGwDns":
+    "Applied interface {i}: IP {ip}, netmask {netmask}, gateway {gw}, DNS {dns}",
+  "app.ipv4config.msg.appliedGwClearedDns":
+    "Applied interface {i}: IP {ip}, netmask {netmask}, gateway cleared, DNS {dns}",
+
+  "app.ipv4config.label.mode": "Mode",
+  "app.ipv4config.mode.static": "Static",
+  "app.ipv4config.mode.dhcp": "DHCP",
+
+  "app.ipv4config.msg.dhcpModeHint": "DHCP mode: click Apply to obtain an address automatically.",
+  "app.ipv4config.msg.dhcpStarting": "Starting DHCP on interface {i}…",
+  "app.ipv4config.msg.dhcpAttempt": "DHCP attempt {attempt}…",
+  "app.ipv4config.msg.dhcpSuccess": "DHCP success on {i}: IP {ip}, Netmask {netmask}, Gateway {gw}, DNS {dns}",
+
+  "app.ipv4config.msg.dhcpLeaseApplied": "DHCP lease applied on interface {i}.",
+  "app.ipv4config.msg.dhcpFailedApipa": "DHCP failed on {i}. Falling back to APIPA…",
+  "app.ipv4config.msg.apipaApplied": "APIPA applied on {i}: IP {ip}, Netmask {netmask}",
+
+  "app.ipv4config.err.persistLoadFailed": "Failed to load /etc/ip.config: {reason}",
+  "app.ipv4config.err.persistSaveFailed": "Failed to save /etc/ip.config: {reason}",
+
+
+  "app.ipv4config.button.release": "Release",
+  "app.ipv4config.msg.released": "DHCP release sent on {i} (IP {ip}, server {server}).",
+  "app.ipv4config.msg.releaseNothingToDo": "No address to release on interface {i}.",
+  "app.ipv4config.err.releaseSocketFailed": "Failed to open UDP socket for release: {reason}",
+  "app.ipv4config.err.releaseFailed": "DHCP release failed: {reason}",
 
   "app.packetsniffer.nointerface": "No interface",
   "app.packetsniffer.title": "Packet Sniffer",
@@ -43,7 +106,6 @@ export default {
   "app.simpletcpserver.title": "TCP Echo-Server",
 
 
-  "app.simplehttpserver.appTitle": "Simple HTTP Server",
   "app.simplehttpserver.placeholder.port": "Port (1..65535)",
   "app.simplehttpserver.placeholder.docRoot": "Document Root",
 
@@ -100,10 +162,8 @@ export default {
   "app.simpletcpclient.label.chat": "Chat:",
   "app.simpletcpclient.label.message": "Message",
 
-  "app.simpletcpclient.status.pid": "PID: {pid}",
   "app.simpletcpclient.status.connected": "Connected: {connected}",
   "app.simpletcpclient.status.peer": "Peer: {peer}",
-  "app.simpletcpclient.status.chatEntries": "Chat entries: {n}",
 
   "app.simpletcpclient.log.hostEmpty": "[{time}] ERROR host is empty",
   "app.simpletcpclient.log.invalidPort": "[{time}] ERROR invalid port: \"{portStr}\"",
@@ -118,7 +178,6 @@ export default {
   "app.simpletcpclient.log.remoteClosed": "[{time}] REMOTE CLOSED {who}",
   "app.simpletcpclient.log.received": "[{time}] {who} -> ME: \"{text}\" (len={len} hex={hex})",
   "app.simpletcpclient.log.disconnected": "[{time}] DISCONNECTED",
-  "app.simpletcpclient.err.dnsNotAvailable": "DNS not available (cannot resolve \"{name}\")",
   "app.simpletcpclient.err.noConnKey": "connectTCPConn did not return a connection key",
 
 
@@ -127,14 +186,12 @@ export default {
   "app.simpletcpserver.button.stop": "Stop",
   "app.simpletcpserver.button.clearLog": "Clear Log",
 
-  "app.simpletcpserver.label.listenPort": "Listen Port",
+  "app.simpletcpserver.label.listenPort": "Server-Port",
   "app.simpletcpserver.label.log": "Log:",
 
-  "app.simpletcpserver.status.pid": "PID: {pid}",
   "app.simpletcpserver.status.running": "Running: {running}",
   "app.simpletcpserver.status.port": "Port: {port}",
   "app.simpletcpserver.status.connections": "Connections: {n}",
-  "app.simpletcpserver.status.logEntries": "Log entries: {n}",
 
   "app.simpletcpserver.log.invalidPort": "[{time}] ERROR invalid port: \"{portStr}\"",
   "app.simpletcpserver.log.listening": "[{time}] Listening (TCP) on 0.0.0.0:{port}",
@@ -193,7 +250,6 @@ export default {
   "app.sparktail.err.eof": "EOF",
   "app.sparktail.err.readUntilExceeded": "readUntil exceeded maxBytes ({maxBytes})",
   "app.sparktail.err.bodyTooLarge": "Body too large",
-  "app.sparktail.err.dnsNotAvailable": "DNS not available (cannot resolve \"{name}\")",
   "app.sparktail.err.noConnKey": "connectTCPConn did not return a connection key",
   "app.sparktail.err.chunkedInvalidChunkSize": "Chunked parse: invalid chunk-size \"{line}\"",
   "app.sparktail.err.chunkedInvalidSize": "Chunked parse: invalid size \"{hex}\"",
@@ -285,6 +341,16 @@ export default {
   "app.terminal.commands.arp.msg.noArpTable": "{iface}: (no arp table)",
   "app.terminal.commands.arp.msg.header": "{iface}:",
   "app.terminal.commands.arp.msg.empty": "  (empty)",
+
+
+  "app.terminal.commands.dig.usage": "usage: dig [@server] name [type] [+short] [-t TYPE] [+time=N] [+tries=N] [-p PORT]",
+
+  "app.terminal.commands.dig.err.noUdp": "UDP networking not available",
+  "app.terminal.commands.dig.err.invalidPort": "Invalid port number",
+  "app.terminal.commands.dig.err.invalidTime": "Invalid timeout value",
+  "app.terminal.commands.dig.err.invalidTries": "Invalid number of tries",
+  "app.terminal.commands.dig.err.cannotResolveServer": "Cannot resolve DNS server {host}",
+  "app.terminal.commands.dig.out.timeout": ";; connection timed out; no servers could be reached (server {server}#{port})",
 
   "app.terminal.commands.ip.err.noNetDriver": "ip: no net driver",
   "app.terminal.commands.ip.err.noInterfaces": "ip: no interfaces",
@@ -387,11 +453,6 @@ export default {
   "app.udpechoserver.label.listenPort": "Listen Port",
   "app.udpechoserver.label.log": "Log:",
 
-  "app.udpechoserver.status.pid": "PID: {pid}",
-  "app.udpechoserver.status.running": "Running: {running}",
-  "app.udpechoserver.status.port": "Port: {port}",
-  "app.udpechoserver.status.logEntries": "Log entries: {n}",
-
   "app.udpechoserver.log.invalidPort": "[{time}] ERROR invalid port: \"{portStr}\"",
   "app.udpechoserver.log.listening": "[{time}] Listening on 0.0.0.0:{port}",
   "app.udpechoserver.log.startFailed": "[{time}] ERROR start failed: {reason}",
@@ -424,8 +485,6 @@ export default {
   "router.unknown": "unknown",
   "router.addinterface": "Add interface",
 
-  "router.showpacketlog": "Show Packet Log",
-  "router.nopacketlog": "No packet log to show",
   "router.deleteinterface": "Delete interface",
   "router.confirminterfacedelete": "Are you sure to delete interface ${name}",
   "router.nointerfaceselected": "no interface selected",
@@ -446,6 +505,7 @@ export default {
   "router.routingtable.yes": "yes",
   "router.routingtable.missing": "missing",
 
+  "sim.common": "Common",
   "sim.new": "New",
   "sim.load": "Load",
   "sim.save": "Save",
@@ -455,7 +515,9 @@ export default {
   "sim.project": "Project",
   "sim.speed": "Speed",
   "sim.pause": "Pause",
-  "sim.edittools": "Edit tools",
+  "sim.about": "About",
+  "sim.trace": "Trace",
+  "sim.reset": "Reset",
 
   "sim.invalidfilewarning": "Invalid file format or unsupported save file format.",
   "sim.loadfailederror": "Load operation failed.",
@@ -476,6 +538,8 @@ export default {
   "sim.tool.textbox": "TextBox",
   "sim.tool.delete": "Delete",
 
+  "sim.link.error": "Error creating link.",
+  
   "switch.title": "Switch",
   "switch.genericsettings": "Common settings",
   "switch.name": "Name",
@@ -484,13 +548,15 @@ export default {
   "switch.sat.mac": "MAC",
   "switch.sat.port": "Port",
 
+
+  "switch.features": "Features",
+  "switch.stp.disabled": "STP is disabled",
+  "switch.stp.enable": "enable Spanning Tree Protocol (STP)",
+  "switch.stp.status": "STP status",
+  "switch.vlan.config": "VLAN configuration",
+  "switch.vlan.enable": "enable VLAN",
+
   "switch.sat.empty": "The SAT is still empty.",
-
-
-  "tabs.buildRun": "Build and Run",
-  "tabs.analyze": "Analyze",
-  "tabs.learn": "Learn",
-  "tabs.about": "About",
 
   "textbox.text": "Text",
   "textbox.title": "Textbox",

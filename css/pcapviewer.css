@@ -1,106 +1,137 @@
 /* Root layout */
-.pcapviewer-root{
+.pcapviewer-root {
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto auto 1fr;
   font-family: system-ui, sans-serif;
+  box-sizing: border-box;
 
   width: 100%;
-  height: 100vh;
-  border-left: 1px solid #333;
-  border-right: 1px solid #333;
-  border-bottom: 1px solid #333;
+  height: 100%;
   overflow: hidden;
   user-select: none;
 }
 
-.pcapviewer-toolbar{
-  display:flex;
-  gap:8px;
-  padding:8px;
-  border-bottom:1px solid #ddd;
-  align-items:center;
+.pcapviewer-toolbar {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  align-items: center;
   background-color: var(--surface);
 }
 
-.pcapviewer-filter{
-  flex:1;
-  padding:6px 8px;
+.pcapviewer-filter {
+  flex: 1;
+  padding: 6px 8px;
 }
 
-.pcapviewer-status{
+.pcapviewer-status {
   opacity: 0.8;
   font-size: 12px;
 }
 
 /* Main layout */
-.pcapviewer-layout{
-  display:grid;
-  grid-template-rows: 1fr 1fr;
+.pcapviewer-layout {
+  display: grid;
+  grid-template-rows: minmax(80px, 1fr) 5px minmax(120px, 1fr);
   min-height: 0;
 }
 
-.pcapviewer-bottom{
-  display:grid;
-  grid-template-columns: 1fr 1fr;
-  gap:8px;
-  padding:8px;
-  min-height:0;
+/* Splitter */
+.pcapviewer-splitter {
+  cursor: row-resize;
+  background: transparent;
+  position: relative;
 }
 
-.pcapviewer-pane{
-  border:1px solid #ddd;
-  overflow:auto;
-  min-height:0;
+.pcapviewer-splitter::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 2px;
+  height: 1px;
+  background: var(--border, #ccc);
+}
+
+/* Hover feedback like Wireshark */
+.pcapviewer-splitter:hover::before {
+  background: #888;
+}
+
+
+.pcapviewer-bottom {
+  display: grid;
+  grid-template-columns: 1.5fr 0.5fr;
+}
+
+.pcapviewer-pane {
+  border: 1px solid #ddd;
+  overflow: auto;
+  min-height: 0;
 }
 
 /* Table */
-.pcapviewer-table{
-  width:100%;
+.pcapviewer-table {
+  width: 100%;
   border-collapse: collapse;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 12px;
 }
 
 .pcapviewer-table th,
-.pcapviewer-table td{
-  border-bottom:1px solid #eee;
-  padding:6px 8px;
+.pcapviewer-table td {
+  border-bottom: 1px solid #eee;
+  padding: 6px 8px;
   white-space: nowrap;
 }
 
-.pcapviewer-row{ cursor:pointer; }
-.pcapviewer-row--ignored{ opacity: 0.55; }
-.pcapviewer-row--marked{ font-weight: 600; }
+.pcapviewer-row {
+  cursor: pointer;
+}
+
+.pcapviewer-row--ignored {
+  opacity: 0.55;
+}
+
+.pcapviewer-row--marked {
+  font-weight: 600;
+}
 
 /* Don’t override Wiregasm bg colors; use outline for selection */
-.pcapviewer-row--selected{
-  outline: 2px solid rgba(0,0,0,0.25);
+.pcapviewer-row--selected {
+  outline: 2px solid rgba(0, 0, 0, 0.25);
   outline-offset: -2px;
 }
 
 /* Tree + raw share monospace like table */
 .pcapviewer-pane--tree,
-.pcapviewer-pane--raw{
+.pcapviewer-pane--raw {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 12px;
 }
 
-.pcapviewer-treepane{ padding: 8px; }
-.pcapviewer-rawpane{ margin:0; padding:8px; }
+.pcapviewer-treepane {
+  padding: 8px;
+}
+
+.pcapviewer-rawpane {
+  margin: 0;
+  padding: 8px;
+}
 
 /* Tree */
-.pcapviewer-tree-title{
+.pcapviewer-tree-title {
   font-weight: 600;
   margin-bottom: 6px;
 }
 
-.pcapviewer-tree ul{
+.pcapviewer-tree ul {
   list-style: none;
   margin: 0;
   padding-left: 14px;
 }
 
-.pcapviewer-tree-node{
+.pcapviewer-tree-node {
   display: grid;
   grid-template-columns: 16px 1fr;
   gap: 6px;
@@ -110,40 +141,243 @@
   user-select: none;
 }
 
-.pcapviewer-tree-node:hover{
-  background: rgba(0,0,0,0.06);
+.pcapviewer-tree-node:hover {
+  background: rgba(0, 0, 0, 0.06);
 }
 
-.pcapviewer-tree-twisty{
+.pcapviewer-tree-twisty {
   width: 16px;
   text-align: center;
   opacity: 0.85;
   cursor: pointer;
 }
 
-.pcapviewer-tree-label{
+.pcapviewer-tree-label {
   white-space: pre-wrap;
   word-break: break-word;
   cursor: pointer;
 }
 
-.pcapviewer-tree-children{
+.pcapviewer-tree-children {
   margin-left: 10px;
-  border-left: 1px solid rgba(0,0,0,0.12);
+  border-left: 1px solid rgba(0, 0, 0, 0.12);
   padding-left: 10px;
 }
 
-.pcapviewer-tree-leaf .pcapviewer-tree-twisty{
+.pcapviewer-tree-leaf .pcapviewer-tree-twisty {
   opacity: 0.25;
   cursor: default;
 }
 
-.pcapviewer-selected{
-  background: rgba(0,0,0,0.10);
-  outline: 1px solid rgba(0,0,0,0.12);
+.pcapviewer-selected {
+  background: rgba(0, 0, 0, 0.10);
+  outline: 1px solid rgba(0, 0, 0, 0.12);
 }
 
 /* Collapse rule: class sits on LI */
-.pcapviewer-tree li.pcapviewer-collapsed > .pcapviewer-tree-children{
+.pcapviewer-tree li.pcapviewer-collapsed>.pcapviewer-tree-children {
   display: none;
+}
+
+/* Tab bar */
+.pcapviewer-tabs {
+  display: flex;
+  flex-wrap: nowrap;
+  /* prevent wrapping into multiple rows */
+  align-items: flex-end;
+  gap: 0.25em;
+  height: 30px;
+  overflow-x: auto;
+  /* enable horizontal scrolling */
+  overflow-y: hidden;
+  white-space: nowrap;
+  /* keep content on one line */
+  -webkit-overflow-scrolling: touch;
+  /* smooth on iOS */
+
+  background-color: var(--surface-strong);
+
+}
+
+/* Single tab */
+.pcapviewer-tab {
+  appearance: none;
+  border: 1px solid var(--border);
+  border-bottom: none;
+  background: #e5e5e5;
+  border-radius: 10px 10px 0 0;
+
+  padding: 0.4em 1em;
+  cursor: pointer;
+  font-size: 0.95em;
+  display: inline-flex;
+
+
+  /* keep close button aligned */
+  align-items: center;
+  max-width: 220px;
+
+  /* pick a sensible cap; adjust as desired */
+  flex: 0 0 auto;
+  
+  /* don’t shrink weirdly */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+
+/* Hover */
+.pcapviewer-tab:hover {
+  background: #ddd;
+}
+
+/* Active tab */
+.pcapviewer-tab--active {
+  background-color: var(--surface);
+  font-weight: bold;
+  position: relative;
+  top: 1px;
+}
+
+.pcapviewer-tab--active:hover {
+  background-color: var(--surface);
+}
+
+.pcapviewer-tab-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 16px;          /* hit target */
+  height: 24px;         /* hit target */
+  margin-left: 6px;
+
+  font-size: 16px;      /* glyph size */
+  line-height: 1;
+
+  border-radius: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.pcapviewer-tab-close:hover {
+  opacity: 1;
+}
+
+
+.pcapviewer-vsplitter {
+  cursor: col-resize;
+  background: transparent;
+  position: relative;
+  touch-action: none;
+}
+
+.pcapviewer-vsplitter::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 3px;
+  width: 1px;
+  background: var(--border, #ccc);
+}
+
+.pcapviewer-vsplitter:hover::before {
+  background: #888;
+}
+
+
+/* allow grid children to shrink instead of forcing grid/container to grow */
+.pcapviewer-layout,
+.pcapviewer-bottom,
+.pcapviewer-pane {
+  min-width: 0;
+}
+
+/* specifically for the bottom grid children */
+.pcapviewer-bottom > * {
+  min-width: 0;
+}
+
+/* optional but recommended: prevent long content from expanding layout */
+.pcapviewer-pane--raw,
+.pcapviewer-pane--tree {
+  overflow: auto;
+}
+
+.pcapviewer-hexbyte--hl {
+  background: rgba(129, 137, 13, 0.45);
+  border-radius: 3px;
+}
+
+
+.pcapviewer-tabplus { position: relative; display: inline-block; }
+
+.pcapviewer-tabpicker2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background-color: var(--white);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+.pcapviewer-picker-left,
+.pcapviewer-picker-right {
+  padding: 6px;
+  max-height: 360px;
+  overflow: auto;
+}
+
+.pcapviewer-picker-left {
+  border-right: 1px solid rgba(255,255,255,0.12);
+}
+
+.pcapviewer-tabpicker-item {
+  display: block;
+  width: 100%;
+  padding: 6px 8px;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.pcapviewer-tabpicker-item:hover {
+  background: var(--surface);
+}
+
+.pcapviewer-tabpicker-item--active {
+  background: var(--surface);
+}
+
+.pcapviewer-tabpicker-item--disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.pcapviewer-tabs-title {
+  background-color: var(--surface);
+  height: 100%;
+  padding: 5px;
+}
+
+
+.pcapviewer-picker-header {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-bottom: var(--border) 1px solid;
+
+  padding: 6px 8px;
+  margin-bottom: 4px;
+
+  color: var(--text);
+  background: transparent;
 }

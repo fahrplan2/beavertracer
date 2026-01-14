@@ -1,28 +1,27 @@
 {
   "scripts": {
     "dev": "vite",
-    "prebuild": "mkdir -p public/wiregasm && find node_modules/@goodtools/wiregasm -maxdepth 10 \\( -name '*.wasm' -o -name '*.data' \\) -type f -exec cp -f {} public/wiregasm/ \\;", 
+    "prebuild": "mkdir -p public/wiregasm && find node_modules/@goodtools/wiregasm -maxdepth 10 \\( -name '*.wasm' -o -name '*.data' \\) -type f -exec cp -f {} public/wiregasm/ \\;",
     "build": "vite build",
     "preview": "vite preview"
   },
-
-  "name": "networksim",
+  "name": "beavertracer",
   "description": "",
-  "version": "0.0.1",
+  "version": "0.0.4",
   "main": "electron/main.cjs",
   "repository": {
     "type": "git",
     "url": "https://gitlab.lgsit.de/klec/networksim.git"
   },
   "author": "Christian Klein",
-  "license": "GPL",
+  "license": "GPLv2",
   "devDependencies": {
     "@babel/parser": "^7.28.5",
     "typescript": "^5.9.3",
     "vite": "^4.5.14"
   },
   "build": {
-    "appId": "de.chklein.networksim",
+    "appId": "eu.chklein.networksim",
     "productName": "Netzwerksimulator",
     "files": [
       "dist/**",
@@ -30,6 +29,7 @@
     ]
   },
   "dependencies": {
+    "@fortawesome/fontawesome-free": "^7.1.0",
     "@goodtools/wiregasm": "^1.9.0",
     "recast": "^0.23.11"
   }

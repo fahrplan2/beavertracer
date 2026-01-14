@@ -343,14 +343,102 @@
   white-space: nowrap;
 }
 
+/* ===== DNS Table Editor / Tabs (scoped to .app-dnsd) ===== */
+
+.app-dnsd .tblwrap {
+  margin: 8px 0 12px 0;
+}
+
+.app-dnsd .tbl {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.app-dnsd .tbl th,
+.app-dnsd .tbl td {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  padding: 6px;
+  vertical-align: middle;
+}
+
+.app-dnsd .tbl th {
+  text-align: left;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0.95;
+}
+
+.app-dnsd .tbl td .input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 8px;
+}
+
+.app-dnsd .tbl th:last-child,
+.app-dnsd .tbl td:last-child {
+  width: 42px;
+  text-align: center;
+}
+
+.app-dnsd .tbl td:last-child .btn {
+  padding: 4px 8px;
+  min-width: 0;
+}
+
+/* tabs */
+.app-dnsd .tabbar {
+  display: flex;
+  gap: 6px;
+  margin: 6px 0 10px 0;
+  flex-wrap: wrap;
+}
+
+.app-dnsd .tabbar .btn {
+  padding: 6px 10px;
+}
+
+.app-dnsd .tabbar .btn.active {
+  font-weight: 700;
+  outline: 2px solid rgba(255, 255, 255, 0.22);
+}
+
+.app-dnsd .tabcontent {
+  margin-bottom: 10px;
+}
+
+/* header text spacing */
+.app-dnsd .panel > div:first-child {
+  margin-bottom: 6px;
+  opacity: 0.9;
+}
+
+/* log box */
+.app-dnsd .msg {
+  white-space: pre;
+  overflow: auto;
+}
 
 
 
+textarea.log {
+  font-family: "Courier New", monospace;
+  font-size: 12.5px;
+  line-height: 1.4;
 
+  border: 1px solid #2a2f3a;
+  border-radius: 6px;
 
+  padding: 8px 10px;
+  margin: 4px 0;
 
+  white-space: pre;
+  overflow-y: auto;
+  overflow-x: auto;
 
-
+  min-width: 600px;
+  min-height: 200px;
+}
 
 .msg {
   font-family: "Courier New", monospace;
@@ -365,7 +453,8 @@
 
   white-space: pre;
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: auto;
 
   max-height: 240px;
 }
+

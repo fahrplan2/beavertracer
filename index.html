@@ -1,39 +1,39 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en" translate="no">
+<!--!
+  🦫  Beaver Tracer
 
+  Copyright (C) 2026 Christian Klein
+
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; version 2 of the License.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+-->
 <head>
     <meta charset="utf-8" />
-    <link rel="icon" href="data:," />
-    <title>Netzwerksimulator</title>
+    <link rel="icon" href="/beaver.svg" type="image/svg+xml">
+    <title>Beaver Tracer</title>
+
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="google" content="notranslate">
+
+
     <link rel="stylesheet" href="css/index.css" />
+    <link rel="stylesheet" href="node_modules/@fortawesome/fontawesome-free/css/all.min.css">
 </head>
 
 <body>
-    <div class="tabs">
-        <button class="tab active" data-target="simcontrol" data-i18n="tabs.buildRun">
-            Build and Run
-        </button>
-        <button class="tab" data-target="pcapviewer" data-i18n="tabs.analyze">
-            Analyze
-        </button>
-        <button class="tab" data-target="learn" data-i18n="tabs.learn">
-            Learn
-        </button>
-        <button class="tab" data-target="about" data-i18n="tabs.about">
-            About
-        </button>
+    <div id="simcontrol" class="sim-root">
+      Page is loading... Please wait...
     </div>
-    </div>
-
-    <main class="tab-container">
-        <div id="simcontrol" class="tab-content active sim-root" role="tabpanel"></div>
-        <div id="pcapviewer" class="tab-content" role="tabpanel"></div>
-        <div id="learn" class="tab-content" role="tabpanel" aria-busy="false"></div>
-        <div id="about" class="tab-content" role="tabpanel" aria-busy="false"></div>
-    </main>
-
-    <script type="module" src="js/main.js"></script>
+    <noscript>
+      <h1>This app requires JavaScript!</h1>
+    </noscript>
+    <script type="module" src="src/main.js"></script>
 </body>
-
 </html>
