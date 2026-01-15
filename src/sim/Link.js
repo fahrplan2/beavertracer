@@ -108,8 +108,13 @@ export class Link extends SimulatedObject {
     this.simcontrol.pcapController.removeIf(this.B.id + ": "+this.link.portB.name);
   }
 
-  setPaused(paused) { this._paused = paused; }
-  setStepMs(stepMs) { this._stepMs = stepMs; }
+  setPaused(paused) { 
+    this._paused = paused; 
+  }
+
+  setStepMs(stepMs) { 
+    this._stepMs = stepMs; 
+  }
 
   step1() {
     this.link.step1();
