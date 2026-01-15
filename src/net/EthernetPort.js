@@ -66,6 +66,10 @@ export class EthernetPort extends Observable {
         if (!(frame instanceof EthernetFrame)) {
             throw new Error("Can only send EthernetFrame");
         }
+        if(this.outBuffer.length > 100) {
+            //Skip packet if queue is too big
+            return;
+        }
         this.outBuffer.push(frame);
         this.loggedFrames.push(new LoggedFrame(frame.pack()));
     }
@@ -75,6 +79,11 @@ export class EthernetPort extends Observable {
      * @param {Uint8Array} bytes 
      */
     recieve(bytes) {
+        if(this.inBuffer.length > 100) {
+            //Skip packet if queue is too big
+            return;
+        }
+
         let frame = EthernetFrame.fromBytes(bytes);
         this.inBuffer.push(frame);
         this.loggedFrames.push(new LoggedFrame(bytes));

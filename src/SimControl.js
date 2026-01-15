@@ -190,7 +190,14 @@ export class SimControl {
     setTick(ms) {
         if (this.mode !== "run") return;
 
+        //Upper bound: 5000, lower bound: 16
         SimControl.tick = Math.max(16, Math.min(5000, Math.round(ms)));
+
+        for(const o of this.simobjects) {
+            if(o instanceof Link) {
+                o.setStepMs(SimControl.tick);
+            }
+        }
         this.isPaused = false;
         this._invalidateUI();
         this.scheduleNextStep();
@@ -476,20 +483,9 @@ export class SimControl {
         pauseBtn.dataset.role = "pause";
         gSpeeds.appendChild(pauseBtn);
 
-        const stepBtn = DOMBuilder.iconbutton({
-            label: t("sim.step"),
-            icon: "fa-forward-step",
-            onClick: () => {
-                this.pause();
-                this.step();
-            }
-        });
-        //stepBtn.dataset.role = "step";
-        gSpeeds.appendChild(stepBtn);
-
         const speeds = [
-            { label: "1×", ms: 1000, icon: "fa-1" },
-            { label: "4×", ms: 250, icon: "fa-2" },
+            { label: "1×", ms: 2000, icon: "fa-1" },
+            { label: "4×", ms: 1000, icon: "fa-2" },
             { label: "8×", ms: 125, icon: "fa-3" },
             { label: "16×", ms: 32, icon: "fa-4" },
         ];
@@ -498,7 +494,9 @@ export class SimControl {
             const b = DOMBuilder.iconbutton({
                 label: s.label,
                 icon: s.icon,
-                onClick: () => this.setTick(s.ms),
+                onClick: () => {
+                    this.setTick(s.ms);
+                }
             });
             b.dataset.role = `speed-${s.ms}`;
             gSpeeds.appendChild(b);
@@ -686,7 +684,7 @@ export class SimControl {
             setActive("pause", this.mode === "run" && this.isPaused);
 
             // --- active state for speed buttons
-            const speedRoles = [1000, 500, 250, 125, 62, 32];
+            const speedRoles = [2000, 1000, 500, 250, 125, 62, 32];
             for (const ms of speedRoles) {
                 setActive(`speed-${ms}`, this.mode === "run" && !this.isPaused && SimControl.tick === ms);
             }
