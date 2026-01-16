@@ -9,7 +9,6 @@ UI/UX:
 - UX: Routerdialog: sieht nicht gut aus. Neue Zeile erst einblenden wenn man auf + drückt.
 - BUG: Switch: Spannig Tree schient sich nicht zu aktualisieren
 - UX: PC lässt sich aktuell nicht umbenennen
-- UX: Beim Einzelschritt "wandern" die Pakete nicht....
 - UX: Link-Tool: Melden, wenn Fehler passieren
 - UX: Link-Tool: Zwei Leitungen liegen übereinander; sieht nicht gut aus.
 - UX: Wenn ein Panel geöffnet wird, spwant es teileise außerhalb des Sichtfensters
@@ -29,6 +28,7 @@ Roadmap to v0.2:
 IPv6-"ready" (Stack soweit angepasst, dass man ihn auf IPv6 umstellen könnte)
 Hilfefunktion mit den wichtigsten Informationen
 Wireshalk-UI übersetzen (nur UI, Inhalte werden nicht übersetzt)
+Überarbeiten der Animationen, dass Single Step geht
 
 Roadmap to v0.3:
 IPv6 (IPv6 Basis, ND, DAD, ICMPv6, RA, DNS AAAA, ...)
