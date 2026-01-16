@@ -1146,9 +1146,6 @@ export class SimControl {
             // Only place if ghost exists and has size
             if (!this._ghostNodeEl || !this._ghostReady) return;
 
-            // Optional: prevent placing when clicking existing object
-            if (obj || link) return;
-
             ev.preventDefault();
             ev.stopPropagation();
 

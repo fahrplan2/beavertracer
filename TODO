@@ -6,7 +6,6 @@ Aktuelle Baustellen / TODO / KNOWN BUGS
 
 UI/UX:
 - UX: Anylseiren öffnet nicht neuen Tab zum Mitschneiden
-- BUG: UI: Items lassen sich nicht auf Flächen setzen
 - UX: Routerdialog: sieht nicht gut aus. Neue Zeile erst einblenden wenn man auf + drückt.
 - BUG: Switch: Spannig Tree schient sich nicht zu aktualisieren
 - UX: PC lässt sich aktuell nicht umbenennen
