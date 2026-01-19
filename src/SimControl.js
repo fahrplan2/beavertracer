@@ -107,7 +107,7 @@ export class SimControl {
     _tracerBody = null;
 
     /** @type {HTMLDivElement|null} */
-    _aboutBody = null;
+    _pageBody = null;
 
     /** @type {Map<number, HTMLElement>} */
     _objEls = new Map();
@@ -134,7 +134,7 @@ export class SimControl {
     _staticRouter = null;
 
     /** @type {HTMLDivElement|null} */
-    _aboutContent = null;
+    _pageContent = null;
 
     /**
      * @param {HTMLElement|null} root
@@ -317,7 +317,7 @@ export class SimControl {
         nodes.appendChild(packetsLayer);
         SimControl.packetsLayer = packetsLayer;
 
-        // Bind once (no rebind per “render”)
+        // Bind once
         nodes.onpointerdown = (ev) => this._onPointerDown(ev);
         nodes.onpointermove = (ev) => this._onPointerMove(ev);
 
@@ -337,7 +337,7 @@ export class SimControl {
             if (ev.key === "Escape") this._cancelLinking();
         });
 
-        // Trace tab (mounted once)
+        // Trace tab
         const tracerbody = document.createElement("div");
         tracerbody.className = "analyzer tab-content";
         tracerbody.id = "tracer";
@@ -346,18 +346,18 @@ export class SimControl {
 
         this.pcapViewer.setMount(tracerbody);
 
-        // About tab (mounted once)
-        const aboutbody = document.createElement("div");
-        aboutbody.className = "about tab-content";
-        aboutbody.id = "about";
-        root.appendChild(aboutbody);
-        this._aboutBody = aboutbody;
+        // Page tab 
+        const pagebody = document.createElement("div");
+        pagebody.className = "page tab-content";
+        pagebody.id = "page";
+        root.appendChild(pagebody);
+        this._pageBody = pagebody;
 
         // create inner container for static pages
-        const aboutContent = document.createElement("div");
-        aboutContent.className = "about-content";
-        aboutbody.appendChild(aboutContent);
-        this._aboutContent = aboutContent;
+        const pageContent = document.createElement("div");
+        pageContent.className = "page-content";
+        pagebody.appendChild(pageContent);
+        this._pageContent = pageContent;
 
         // mount router once; we keep it mounted even when tab hidden
         this._staticRouter = new StaticPageRouter({
@@ -371,7 +371,7 @@ export class SimControl {
                 }
             },
         });
-        this._staticRouter.mount(aboutContent, { initial: window.location.pathname });
+        this._staticRouter.mount(pageContent, { initial: window.location.pathname });
 
         // Build toolbar + sidebar buttons once
         this._buildToolbar();
@@ -658,7 +658,7 @@ export class SimControl {
         const isSim = (this.mode === "edit" || this.mode === "run");
         this._simBody.classList.toggle("active", isSim);
         this._tracerBody.classList.toggle("active", this.mode === "trace");
-        this._aboutBody.classList.toggle("active", this.mode === "page");
+        this._pageBody.classList.toggle("active", this.mode === "page");
 
         // sidebar only in edit
         this._sidebar.classList.toggle("hidden", this.mode !== "edit");
@@ -792,10 +792,6 @@ export class SimControl {
             if (obj instanceof Link) obj.redrawLinks();
         }
     }
-
-    // ---------------------------------------------------------------------------
-    // About / trace already mounted; keep existing language picker
-    // ---------------------------------------------------------------------------
 
     _openLanguageDialog(anchorEl) {
         if (this._langPanel) {
