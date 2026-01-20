@@ -793,7 +793,7 @@ export class SimControl {
         }
     }
 
-    _openLanguageDialog(anchorEl) {
+    async _openLanguageDialog(anchorEl) {
         if (this._langPanel) {
             this._closeLanguageDialog();
             return;
@@ -803,7 +803,7 @@ export class SimControl {
         panel.className = "sim-lang-picker";
         panel.style.position = "fixed";
 
-        const locales = getLocales();
+        const locales = await getLocales();
         const current = getLocale();
 
         for (const loc of locales) {
@@ -813,7 +813,7 @@ export class SimControl {
             b.textContent = loc.label;
             if (loc.key === current) b.classList.add("active");
 
-            b.addEventListener("click", (ev) => {
+            b.addEventListener("click", async (ev) => {
                 ev.preventDefault();
                 ev.stopPropagation();
 
@@ -823,7 +823,7 @@ export class SimControl {
                 }
 
                 const oldLoc = getLocale();
-                setLocale(loc.key);
+                await setLocale(loc.key);
                 const ok = confirm(t("sim.langswitch.confirmdiscard"));
                 if (!ok) {
                     setLocale(oldLoc);

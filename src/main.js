@@ -8,10 +8,9 @@ import { defaultSimulation } from "./defaultsim.js";
 
 //******************* MAIN ENTRY POINT ************************/
 
-initLocale();
-
-const simRoot = /** @type {HTMLElement} */ (document.getElementById("simcontrol"));
-const sim = new SimControl(simRoot);
-sim.restore(defaultSimulation);
-
+initLocale().then(() => {
+    const simRoot = /** @type {HTMLElement} */ (document.getElementById("simcontrol"));
+    const sim = new SimControl(simRoot);
+    sim.restore(defaultSimulation);  
+});
 

@@ -1,3 +1,5 @@
+export const meta = { name: "🇮🇹 Italiano (translated by AI)", order: 5 };
+
 export default {
   "lang.name": "🇮🇹 Italiano (translated by AI)",
   "app.generic.title": "Gernic App",
