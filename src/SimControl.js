@@ -21,16 +21,16 @@ import { version } from "./lib/version.js";
  */
 
 export class SimControl {
-    /** @type {Array<SimulatedObject>} */
+    /** @type {Array<SimulatedObject>} array of all simulation objects */
     simobjects = [];
 
-    /** @type {PCapController} */
+    /** @type {PCapController} linked pcapController */
     pcapController;
 
     /** @type {PCapViewer} */
     pcapViewer;
 
-    /** @type {number} simulation speed */
+    /** @type {number} simulation speed (time it takes to do one tick in ms) */
     static tick = 500;
 
     /** @type {number} ID of the simulation step */
@@ -39,11 +39,8 @@ export class SimControl {
     /** @type {boolean} is the simulation paused? */
     isPaused = true;
 
-    /** @type {boolean} are we in a endstep? (false=step1, true=step2) */
-    endStep = false;
-
-    /** @type {HTMLElement|null} */
-    root;
+    /** @type {HTMLElement|null} HTML-Element to render everything in*/
+    root; 
 
     /** @type {HTMLDivElement|null} */
     nodesLayer = null;
@@ -57,7 +54,7 @@ export class SimControl {
     /** @type {HTMLElement|null} */
     movementBoundary = null;
 
-    /** @type {"edit"|"run"|"trace"|"about"} */
+    /** @type {"edit"|"run"|"trace"|"page"} */
     mode = "edit";
 
     /** @type {"select"|"place-pc"|"place-switch"|"place-router"|"place-text"|"place-rect"|"link"|"delete"} */
@@ -110,7 +107,7 @@ export class SimControl {
     _tracerBody = null;
 
     /** @type {HTMLDivElement|null} */
-    _aboutBody = null;
+    _pageBody = null;
 
     /** @type {Map<number, HTMLElement>} */
     _objEls = new Map();
@@ -137,7 +134,7 @@ export class SimControl {
     _staticRouter = null;
 
     /** @type {HTMLDivElement|null} */
-    _aboutContent = null;
+    _pageContent = null;
 
     /**
      * @param {HTMLElement|null} root
@@ -320,7 +317,7 @@ export class SimControl {
         nodes.appendChild(packetsLayer);
         SimControl.packetsLayer = packetsLayer;
 
-        // Bind once (no rebind per “render”)
+        // Bind once
         nodes.onpointerdown = (ev) => this._onPointerDown(ev);
         nodes.onpointermove = (ev) => this._onPointerMove(ev);
 
@@ -340,7 +337,7 @@ export class SimControl {
             if (ev.key === "Escape") this._cancelLinking();
         });
 
-        // Trace tab (mounted once)
+        // Trace tab
         const tracerbody = document.createElement("div");
         tracerbody.className = "analyzer tab-content";
         tracerbody.id = "tracer";
@@ -349,39 +346,39 @@ export class SimControl {
 
         this.pcapViewer.setMount(tracerbody);
 
-        // About tab (mounted once)
-        const aboutbody = document.createElement("div");
-        aboutbody.className = "about tab-content";
-        aboutbody.id = "about";
-        root.appendChild(aboutbody);
-        this._aboutBody = aboutbody;
+        // Page tab 
+        const pagebody = document.createElement("div");
+        pagebody.className = "page tab-content";
+        pagebody.id = "page";
+        root.appendChild(pagebody);
+        this._pageBody = pagebody;
 
         // create inner container for static pages
-        const aboutContent = document.createElement("div");
-        aboutContent.className = "about-content";
-        aboutbody.appendChild(aboutContent);
-        this._aboutContent = aboutContent;
+        const pageContent = document.createElement("div");
+        pageContent.className = "page-content";
+        pagebody.appendChild(pageContent);
+        this._pageContent = pageContent;
 
         // mount router once; we keep it mounted even when tab hidden
         this._staticRouter = new StaticPageRouter({
             fallbackLocale: "en",
             onRoute: ({ route }) => {
                 // whenever we are on a static page route, switch UI to about tab
-                if (this.mode !== "about") {
-                    this.mode = "about";
+                if (this.mode !== "page") {
+                    this.mode = "page";
                     this.isPaused = true;
                     this._invalidateUI();
                 }
             },
         });
-        this._staticRouter.mount(aboutContent, { initial: window.location.pathname });
+        this._staticRouter.mount(pageContent, { initial: window.location.pathname });
 
         // Build toolbar + sidebar buttons once
-        this._buildToolbarOnce();
-        this._buildSidebarToolsOnce();
+        this._buildToolbar();
+        this._buildSidebar();
     }
 
-    _buildToolbarOnce() {
+    _buildToolbar() {
         const toolbar = this._toolbar;
         if (!toolbar) return;
         toolbar.replaceChildren();
@@ -577,17 +574,17 @@ export class SimControl {
             icon: "fa-circle-question",
             onClick: () => {
                 this.pause();
-                this.mode = "about";
+                this.mode = "page";
                 this._invalidateUI();
                 this._staticRouter.navigate("/about", { replace: true });
             },
         });
-        aboutBtn.dataset.role = "mode-about";
+        aboutBtn.dataset.role = "mode-page";
         gCommon.appendChild(aboutBtn);
 
     }
 
-    _buildSidebarToolsOnce() {
+    _buildSidebar() {
         const toolsWrap = this._toolsWrap;
         if (!toolsWrap) return;
         toolsWrap.replaceChildren();
@@ -659,12 +656,12 @@ export class SimControl {
 
         // tab visibility (mounted once; just toggle active)
         const isSim = (this.mode === "edit" || this.mode === "run");
-        this._simBody?.classList.toggle("active", isSim);
-        this._tracerBody?.classList.toggle("active", this.mode === "trace");
-        this._aboutBody?.classList.toggle("active", this.mode === "about");
+        this._simBody.classList.toggle("active", isSim);
+        this._tracerBody.classList.toggle("active", this.mode === "trace");
+        this._pageBody.classList.toggle("active", this.mode === "page");
 
         // sidebar only in edit
-        this._sidebar?.classList.toggle("hidden", this.mode !== "edit");
+        this._sidebar.classList.toggle("hidden", this.mode !== "edit");
 
         // toolbar updates
         const toolbar = this._toolbar;
@@ -678,7 +675,7 @@ export class SimControl {
             setActive("mode-edit", this.mode === "edit");
             setActive("mode-run", this.mode === "run");
             setActive("mode-trace", this.mode === "trace");
-            setActive("mode-about", this.mode === "about");
+            setActive("mode-page", this.mode === "page");
 
             // --- active state for pause
             setActive("pause", this.mode === "run" && this.isPaused);
@@ -796,11 +793,7 @@ export class SimControl {
         }
     }
 
-    // ---------------------------------------------------------------------------
-    // About / trace already mounted; keep existing language picker
-    // ---------------------------------------------------------------------------
-
-    _openLanguageDialog(anchorEl) {
+    async _openLanguageDialog(anchorEl) {
         if (this._langPanel) {
             this._closeLanguageDialog();
             return;
@@ -810,7 +803,7 @@ export class SimControl {
         panel.className = "sim-lang-picker";
         panel.style.position = "fixed";
 
-        const locales = getLocales();
+        const locales = await getLocales();
         const current = getLocale();
 
         for (const loc of locales) {
@@ -820,7 +813,7 @@ export class SimControl {
             b.textContent = loc.label;
             if (loc.key === current) b.classList.add("active");
 
-            b.addEventListener("click", (ev) => {
+            b.addEventListener("click", async (ev) => {
                 ev.preventDefault();
                 ev.stopPropagation();
 
@@ -830,7 +823,7 @@ export class SimControl {
                 }
 
                 const oldLoc = getLocale();
-                setLocale(loc.key);
+                await setLocale(loc.key);
                 const ok = confirm(t("sim.langswitch.confirmdiscard"));
                 if (!ok) {
                     setLocale(oldLoc);
@@ -883,9 +876,9 @@ export class SimControl {
         this._langPanel = null;
     }
 
-    // ---------------------------------------------------------------------------
-    // RAF loop for packets (same as yours, just no DOM rebuild anywhere)
-    // ---------------------------------------------------------------------------
+    // --------------------
+    // RAF loop for packets
+    // --------------------
 
     _startRafLoop() {
         if (this._rafId != null) return;
@@ -914,21 +907,17 @@ export class SimControl {
         this._rafId = requestAnimationFrame(loop);
     }
 
-    // ---------------------------------------------------------------------------
-    // Edit mode transitions: no full render, just state + UI update
-    // ---------------------------------------------------------------------------
+    // ---------------------
+    // Edit mode transitions 
+    // ---------------------
 
     _enterEditMode() {
         this.mode = "edit";
         this.isPaused = true;
-
-        this.tool = "select";
-        this._cancelLinking();
-        this._removeGhostNode();
-        this._clearDeleteHover();
-
         this.closeAllPanels();
-        this._invalidateUI();
+
+        this._leaveEditMode(); //does the same thing; selects default tool and 
+                               //redraws UI
     }
 
     _leaveEditMode() {
@@ -939,10 +928,9 @@ export class SimControl {
         this._invalidateUI();
     }
 
-    // ---------------------------------------------------------------------------
-    // Your existing pointer logic / ghost logic can stay mostly unchanged.
-    // Key change: NEVER call full render in there. Use _invalidateUI() / _syncSceneDOM()
-    // ---------------------------------------------------------------------------
+    // -------------
+    // Pointer Logic
+    // -------------
 
     /** @param {PointerEvent} ev */
     _getLocalPoint(ev) {
@@ -957,8 +945,6 @@ export class SimControl {
             y: (ev.clientY - r.top) + layer.scrollTop,
         };
     }
-
-
 
     /** @param {Event} ev */
     _getObjFromEvent(ev) {
@@ -987,8 +973,6 @@ export class SimControl {
         if (this._ghostLink) this._ghostLink.remove();
         this._ghostLink = null;
     }
-
-
 
     /** @param {PointerEvent} ev */
     _onPointerMove(ev) {
@@ -1019,13 +1003,8 @@ export class SimControl {
         } else {
             this._clearDeleteHover();
         }
-
-        // IMPORTANT: don’t redraw links constantly here unless needed.
-        // If you need live link redraw while dragging, call _requestRedrawLinks()
-        // (ideally only while dragging).
     }
 
-    /** @param {PointerEvent} ev */
     /** @param {PointerEvent} ev */
     async _onPointerDown(ev) {
         if (this.mode !== "edit") return;
@@ -1145,9 +1124,6 @@ export class SimControl {
         if (this.tool.startsWith("place-")) {
             // Only place if ghost exists and has size
             if (!this._ghostNodeEl || !this._ghostReady) return;
-
-            // Optional: prevent placing when clicking existing object
-            if (obj || link) return;
 
             ev.preventDefault();
             ev.stopPropagation();
@@ -1416,10 +1392,9 @@ export class SimControl {
         this._ghostLink.style.transform = `rotate(${angle}deg)`;
     }
 
-
-    // ---------------------------------------------------------------------------
-    // Save/load can still “reset” the scene; just resync DOM after restore/new
-    // ---------------------------------------------------------------------------
+    // -----------
+    // Save / Load
+    // -----------
 
     toJSON() {
         return {
@@ -1588,6 +1563,7 @@ export class SimControl {
         // 8) redraw request reset
         this._redrawReq = false;
     }
+
     _syncInitialModeFromUrl() {
         const router = this._staticRouter;
         if (!router) return;
@@ -1600,10 +1576,9 @@ export class SimControl {
 
         const routes = router.getRoutes();
         if (routes.includes(p)) {
-            this.mode = "about";
+            this.mode = "page";
             this.isPaused = true;
             router.navigate(p, { replace: true });
         }
     }
-
 }

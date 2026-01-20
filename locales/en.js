@@ -1,7 +1,7 @@
 //@ts-check
+export const meta = { name: "🇬🇧 English", order: 1 };
 
 export default {
-  //Meta Data; Here the Name of the language should be inserted in
   "lang.name": "🇬🇧 English",
 
   "app.generic.title": "Gernic App",

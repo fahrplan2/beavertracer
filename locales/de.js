@@ -1,3 +1,6 @@
+/** @type {{ name: string }} */
+export const meta = { name: "🇩🇪 Deutsch", order: 2 };
+
 export default {
   "lang.name": "🇩🇪 Deutsch",
   "app.generic.title": "Generische App",

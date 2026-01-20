@@ -1,82 +1,178 @@
 //@ts-check
 
 /**
- * All available translations (auto-loaded)
+ * @typedef {Record<string, string>} TranslationDict
+ * @typedef {{ key: string, label: string }} LocaleDescriptor
+ * @typedef {{ name: string, order?: number }} LocaleMeta
+ */
+
+/**
+ * Runtime cache for already loaded translation dictionaries.
  * @type {Record<string, TranslationDict>}
  */
 const dicts = {};
 
-// @ts-ignore
-const modules = import.meta.glob("../../locales/*.js", { eager: true });
+/**
+ * Lazy dictionary modules: each locale will become its own chunk.
+ * @type {Record<string, () => Promise<{ default: TranslationDict }>>}
+ */
 
-for (const path in modules) {
-  const m = modules[path];
-  const code = path.match(/\/([a-z]{2})\.js$/)?.[1];
-  if (!code) continue;
-  dicts[code] = m.default;
-}
-
-export { dicts };
-
+//@ts-ignore
+const dictModules = import.meta.glob("../../locales/*.js");
 
 /**
- * @typedef {Record<string, string>} TranslationDict
- * @typedef {{ key: string, label: string }} LocaleDescriptor
+ * Lazy meta-only modules: imports ONLY the named export `meta`
+ * so the big dictionary is tree-shaken out of the meta chunks.
+ * @type {Record<string, () => Promise<LocaleMeta>>}
  */
+
+//@ts-ignore
+const metaModules = import.meta.glob("../../locales/*.js", { import: "meta" });
+
+/** @type {string} */
 let fallback = "en";
 
 /** @type {string} */
 let locale = "de";
 
-/** @type {Set<(loc:string)=>void>} */
+/** @type {Set<(loc: string) => void>} */
 const listeners = new Set();
 
+
 /**
- * Returns all locales that exist in dicts, with label coming from each locale's own dict ("lang.name")
- * @returns {{key:string, label:string}[]}
+ * Finds the module path for a given locale code.
+ * @param {string} loc
+ * @returns {string | null}
  */
-export function getLocales() {
-  const keys = Object.keys(dicts);
+function pathForLocale(loc) {
+  const suffix = `/${loc}.js`;
+  for (const p of Object.keys(dictModules)) {
+    if (p.endsWith(suffix)) return p;
+  }
+  return null;
+}
 
-  /** @param {string} loc @param {string} key */
-  const lookupInLocale = (loc, key) => {
-    const primary = dicts[loc];
-    const fb = dicts[fallback];
-    return primary?.[key] ?? fb?.[key] ?? `[[${key}]]`;
-  };
+/**
+ * Loads and caches the dictionary for `loc` if available.
+ * Returns null if the locale does not exist.
+ * @param {string} loc
+ * @returns {Promise<TranslationDict | null>}
+ */
+async function loadLocaleDict(loc) {
+  if (dicts[loc]) return dicts[loc];
 
-  return keys.map((k) => ({
-    key: k,
-    label: lookupInLocale(k, "lang.name"),
-  }));
+  const path = pathForLocale(loc);
+  if (!path) return null;
+
+  const mod = await dictModules[path]();
+  dicts[loc] = mod.default ?? {};
+  return dicts[loc];
+}
+
+/**
+ * Returns all available locales with their labels from `meta.name`,
+ * sorted by `meta.order` (ascending), then by label.
+ * @returns {Promise<LocaleDescriptor[]>}
+ */
+export async function getLocales() {
+  const paths = Object.keys(metaModules);
+
+  /** @type {{ key: string; label: string; order: number }[]} */
+  const out = [];
+
+  await Promise.all(
+    paths.map(async (p) => {
+      const m = p.match(/\/([^/]+)\.js$/);
+      if (!m) return;
+
+      const code = m[1];
+
+      try {
+        const meta = await metaModules[p]();
+
+        const label =
+          meta && typeof meta.name === "string" ? meta.name : code;
+
+        const order =
+          meta && typeof meta.order === "number" ? meta.order : 9999;
+
+        out.push({ key: code, label, order });
+      } catch {
+        out.push({ key: code, label: code, order: 9999 });
+      }
+    })
+  );
+
+  // First by order, then alphabetically by label
+  out.sort((a, b) => {
+    if (a.order !== b.order) return a.order - b.order;
+    return a.label.localeCompare(b.label);
+  });
+
+  // Strip `order` before returning
+  return out.map(({ key, label }) => ({ key, label }));
 }
 
 
-export function setLocale(next) {
-  const available = dicts[next] ? next : fallback;
+
+
+/**
+ * Sets the active locale and lazily loads its dictionary.
+ * Falls back to the fallback locale if not available.
+ * @param {string} next
+ * @returns {Promise<void>}
+ */
+export async function setLocale(next) {
+  // Always ensure fallback is loaded
+  await loadLocaleDict(fallback);
+
+  const ok = await loadLocaleDict(next);
+  const available = ok ? next : fallback;
+
   locale = available;
 
-  // persist
+  // Persist selection
   try {
     localStorage.setItem("sim_locale", locale);
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore persistence errors */
+  }
 
-  // notify
+  // Notify listeners
   for (const fn of listeners) {
-    try { fn(locale); } catch { /* ignore */ }
+    try {
+      fn(locale);
+    } catch {
+      /* ignore listener errors */
+    }
   }
 }
 
+/**
+ * Returns the currently active locale code.
+ * @returns {string}
+ */
 export function getLocale() {
   return locale;
 }
 
-/** subscribe to changes (returns unsubscribe) */
+/**
+ * Subscribes to locale changes.
+ * Returns an unsubscribe function.
+ * @param {(loc: string) => void} fn
+ * @returns {() => void}
+ */
 export function onLocaleChange(fn) {
   listeners.add(fn);
   return () => listeners.delete(fn);
 }
 
+/**
+ * Replaces {placeholders} in a template string.
+ * @param {string} template
+ * @param {Record<string, unknown> | undefined} params
+ * @returns {string}
+ */
 function format(template, params) {
   if (!params) return template;
   return template.replace(/\{(\w+)\}/g, (_, key) =>
@@ -84,63 +180,83 @@ function format(template, params) {
   );
 }
 
+/**
+ * Translates a key using the active locale with fallback support.
+ * If the locale has not been loaded yet, fallback is used.
+ * @param {string} key
+ * @param {Record<string, unknown>=} params
+ * @returns {string}
+ */
 export function t(key, params) {
-  const primaryDict = dicts[locale] ?? dicts[fallback];
-  const fallbackDict = dicts[fallback];
-  const template = primaryDict[key] ?? fallbackDict?.[key] ?? "[[" + key + "]]";
+  const primaryDict = dicts[locale] ?? dicts[fallback] ?? {};
+  const fallbackDict = dicts[fallback] ?? {};
+  const template = primaryDict[key] ?? fallbackDict[key] ?? `[[${key}]]`;
   return format(template, params);
 }
 
-export function initLocale() {
-  // 1) saved
+/**
+ * Initializes the locale selection:
+ * 1) saved locale from localStorage
+ * 2) browser language
+ * 3) default "de"
+ * Lazily loads the required dictionaries.
+ * @returns {Promise<void>}
+ */
+export async function initLocale() {
+  // Always load fallback first
+  await loadLocaleDict(fallback);
+
+  // 1) Saved locale
   try {
     const saved = localStorage.getItem("sim_locale");
-    if (saved && dicts[saved]) {
-      locale = saved;
-      return;
+    if (saved) {
+      const ok = await loadLocaleDict(saved);
+      if (ok) {
+        locale = saved;
+        return;
+      }
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 
-  // 2) browser
+  // 2) Browser locale
   const browser = navigator.language?.split("-")[0];
-  if (browser && dicts[browser]) locale = browser;
+  if (browser && (await loadLocaleDict(browser))) locale = browser;
   else locale = "de";
+
+  // Ensure the chosen locale is loaded
+  await loadLocaleDict(locale);
 }
 
 /**
- * formats a date
- * @param {Date} d 
- * @returns 
+ * Formats a date using European format (DD.MM.YYYY).
+ * @param {Date} d
+ * @returns {string}
  */
-
 export function formatDate(d) {
-    //Date is in the European Format
-    const dd = String(d.getDate()).padStart(2, "0");
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const yyyy = d.getFullYear();
-    return `${dd}.${mm}.${yyyy}`;
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  return `${dd}.${mm}.${yyyy}`;
 }
 
 /**
- * formats a Time
- * @param {Date} d 
- * @returns 
+ * Formats a time using 24h format (HH:MM).
+ * @param {Date} d
+ * @returns {string}
  */
-
 export function formatTime(d) {
-    //24h-clocks only
-    const hh = String(d.getHours()).padStart(2, "0");
-    const min = String(d.getMinutes()).padStart(2, "0");
-    return `${hh}:${min}`;
+  const hh = String(d.getHours()).padStart(2, "0");
+  const min = String(d.getMinutes()).padStart(2, "0");
+  return `${hh}:${min}`;
 }
 
 /**
- * formats a decimal Number
- * @param {number} n 
- * @returns 
+ * Formats a decimal number using "." notation.
+ * @param {number} n
+ * @returns {string}
  */
-
 export function formatNumber(n) {
-    //defaults to "."-Notation
-    return String(n);
+  return String(n);
 }

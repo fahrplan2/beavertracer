@@ -126,11 +126,16 @@ export default defineConfig({
   base: "./",
   plugins: [
     wiregasmAssets(),
-    staticSitemap({siteUrl: "https://www.beavertracer.eu"}),
+    staticSitemap({ siteUrl: "https://www.beavertracer.eu" }),
   ],
   build: {
     rollupOptions: {
       input: buildInputs(),
+      output: {
+        manualChunks(id) {
+          if (id.includes("node_modules")) return "vendor";
+        },
+      },
     },
   },
 
