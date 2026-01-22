@@ -4,6 +4,7 @@
     "prebuild": "mkdir -p public/wiregasm && find node_modules/@goodtools/wiregasm -maxdepth 10 \\( -name '*.wasm' -o -name '*.data' \\) -type f -exec cp -f {} public/wiregasm/ \\;",
     "build": "vite build",
     "preview": "vite preview",
+    "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build"
   },
