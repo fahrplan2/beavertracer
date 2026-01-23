@@ -1,6 +1,4 @@
-//@ts-check
-
-export const defaultSimulation = {
+{
   "version": 4,
   "tick": 250,
   "objects": [
@@ -734,6 +732,18 @@ export const defaultSimulation = {
       "b": 18,
       "portA": "eth0",
       "portB": "sw2"
+    },
+    {
+      "kind": "TextBox",
+      "id": 36,
+      "name": "Textfeld",
+      "x": 150.43299865722656,
+      "y": 410.5,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "text": "Achtung! Diese Software ist noch in einem frühen Entwicklungsstadium. Erwarten Sie Programmfehler.\n\n\n\nAttention! This software is in an early development state. Expect bugs.\n",
+      "showTitle": false
     }
   ]
 }
