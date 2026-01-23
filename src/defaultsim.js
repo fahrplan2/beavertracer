@@ -1,4 +1,6 @@
-{
+//@ts-check
+
+export const defaultSimulation = {
   "version": 4,
   "tick": 250,
   "objects": [
