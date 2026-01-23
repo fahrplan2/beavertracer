@@ -2,7 +2,7 @@
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "beavertracer",
   "version": "0.1.0",
-  "identifier": "eu.beavertracer",
+  "identifier": "eu.beavertracer.beavertracer",
   "build": {
     "frontendDist": "../dist",
     "beforeDevCommand": "npm run dev",
@@ -12,10 +12,11 @@
     "windows": [
       {
         "title": "Beaver Tracer",
-        "width": 1024,
-        "height": 768,
+        "width": 1600,
+        "height": 1200,
         "resizable": true,
-        "fullscreen": false
+        "fullscreen": false,
+        "maximized": true
       }
     ],
     "security": {
