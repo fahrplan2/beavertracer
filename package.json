@@ -3,7 +3,10 @@
     "dev": "vite",
     "prebuild": "mkdir -p public/wiregasm && find node_modules/@goodtools/wiregasm -maxdepth 10 \\( -name '*.wasm' -o -name '*.data' \\) -type f -exec cp -f {} public/wiregasm/ \\;",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
   },
   "name": "beavertracer",
   "description": "",
@@ -17,6 +20,7 @@
   "license": "GPLv2",
   "devDependencies": {
     "@babel/parser": "^7.28.5",
+    "@tauri-apps/cli": "^2.9.6",
     "typescript": "^5.9.3",
     "vite": "^4.5.14"
   },
