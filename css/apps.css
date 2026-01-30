@@ -1,6 +1,6 @@
 /************************************ TERMINAL ***********************/
 .app-terminal .term {
-  font-family: "Courier New", monospace;
+  font-family: "Hack", monospace;
   font-size: 18px;
   line-height: 18px;
   white-space: pre;
@@ -222,7 +222,7 @@
   min-height: 30rem;   
   width: 100%;
   resize: none;          /* not resizable */
-  font-family: "Monospace regular","Courier New", monospace;
+  font-family: "Hack", monospace;
   box-sizing: border-box;
   background-color: white;
 }
@@ -332,7 +332,7 @@
 .fp-file::before { content: "📄"; }
 
 .fp-path{
-  font-family: "Courier New", monospace;
+  font-family: "Hack", monospace;
   opacity: .8;
   margin: 6px 0 10px;
   padding: 6px 8px;
@@ -422,7 +422,7 @@
 
 
 textarea.log {
-  font-family: "Courier New", monospace;
+  font-family: "Hack", monospace;
   font-size: 12.5px;
   line-height: 1.4;
 
@@ -441,7 +441,7 @@ textarea.log {
 }
 
 .msg {
-  font-family: "Courier New", monospace;
+  font-family: "Hack", monospace;
   font-size: 12.5px;
   line-height: 1.4;
 

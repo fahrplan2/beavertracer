@@ -74,7 +74,7 @@
 .pcapviewer-table {
   width: 100%;
   border-collapse: collapse;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: "Hack", monospace;
   font-size: 12px;
 }
 
@@ -106,7 +106,7 @@
 /* Tree + raw share monospace like table */
 .pcapviewer-pane--tree,
 .pcapviewer-pane--raw {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: "Hack", monospace;
   font-size: 12px;
 }
 

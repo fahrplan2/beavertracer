@@ -109,7 +109,7 @@ textarea {
   padding: 6px;
   background: var(--bg-strong);
   color: var(--text);
-  font-family: 'Courier New', Courier, monospace;
+  font-family: "Hack", monospace;
 
   /* feste Größe */
   width: 100%;
