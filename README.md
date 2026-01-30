@@ -9,6 +9,9 @@ The simulator runs entirely on web technologies (including WebAssembly) and is i
 
 The project was inspired by "Lernsoftware FILIUS", while following a completely new internal technical approach.
 
+
+You can see a demo of this project at https://beavertracer.eu
+
 ---
 
 ## Requirements
@@ -33,14 +36,18 @@ For local development, **use the Vite dev server**:
 npm run dev
 ```
 
----
-
 ## Build
 
 Creates a production-ready bundle in the `dist/` directory:
 
 ```bash
 npm run build
+```
+
+Creates a production-ready bundle with tauri: (Read tauri docs for requirements and specifics; this pipeline is not yet automated yet).
+
+```bash
+npm run tauri:build
 ```
 
 ---
