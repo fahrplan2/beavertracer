@@ -157,6 +157,8 @@ export class SimpleTCPClientApp extends GenericProcess {
     return t("app.simpletcpclient.title");
   }
 
+  icon="fa-message";
+
   /** @type {Disposer} */
   disposer = new Disposer();
 

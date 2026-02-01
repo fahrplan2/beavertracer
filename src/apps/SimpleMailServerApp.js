@@ -281,6 +281,8 @@ export class SimpleMailServerApp extends GenericProcess {
     return t("app.simplemailserver.title") || "Simple Mail Server";
   }
 
+  icon="fa-envelope";
+
   /** @type {Disposer} */
   disposer = new Disposer();
 

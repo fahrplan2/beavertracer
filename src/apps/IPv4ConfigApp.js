@@ -20,6 +20,8 @@ export class IPv4ConfigApp extends GenericProcess {
     return t("app.ipv4config.title");
   }
 
+  icon="fa-gears";
+
   /** @type {string} */
   configPath = "/etc/ip.config";
 

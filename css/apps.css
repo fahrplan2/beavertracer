@@ -1,12 +1,12 @@
 /************************************ TERMINAL ***********************/
 .app-terminal .term {
   font-family: "Hack", monospace;
-  font-size: 18px;
-  line-height: 18px;
+  font-size: 16px;
+  line-height: 21px;
   white-space: pre;
   overflow: hidden;
   background-color: #202020;
-  color: #00FF00;
+  color: #00FF20;
   padding: 7px;
 }
 

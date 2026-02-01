@@ -18,6 +18,7 @@ export class TerminalApp extends GenericProcess {
     get title() {
         return t("app.terminal.title");
     }
+    icon="fa-terminal";
 
     /** @type {Disposer} */
     disposer = new Disposer();
@@ -37,7 +38,7 @@ export class TerminalApp extends GenericProcess {
     /** @type {Record<string, string>} */
     env = {
         USER: "user",
-        HOST: this.os.name,
+        HOST: this.os.name.replace(" ",""),
         TERM: "xterm-ish",
     };
 

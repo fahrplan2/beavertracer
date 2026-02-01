@@ -376,6 +376,8 @@ export class SparktailHTTPClientApp extends GenericProcess {
     return t("app.sparktail.title");
   }
 
+  icon="fa-globe";
+
   /** @type {Disposer} */
   disposer = new Disposer();
 

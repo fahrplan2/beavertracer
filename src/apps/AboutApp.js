@@ -16,6 +16,8 @@ export class AboutApp extends GenericProcess {
     return t("app.about.title");
   }
 
+  icon="fa-circle-question";
+
   run() {
     this.root.classList.add("app-about");
   }

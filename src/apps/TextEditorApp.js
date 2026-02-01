@@ -11,6 +11,8 @@ export class TextEditorApp extends GenericProcess {
     return t("app.texteditor.title");
   }
 
+  icon = "fa-file-pen";
+
   /** @type {Disposer} */
   disposer = new Disposer();
 
