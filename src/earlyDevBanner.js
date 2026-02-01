@@ -4,7 +4,7 @@
 
   const banner = document.createElement("div");
   banner.id = "early-dev-banner";
-  banner.textContent = "Development Version — for testing only";
+  banner.textContent = "Alpha Version — for testing only";
 
   Object.assign(banner.style, {
     position: "fixed",
