@@ -1,11 +1,11 @@
 //@ts-check
 import { UDPPacket } from "../net/pdu/UDPPacket.js";
-import { IPUInt8ToNumber } from "../lib/helpers.js";
+import { IPAddress } from "./models/IPAddress.js";
 
 /**
  * @typedef {{
- *   src: number,
- *   dst: number,
+ *   src: IPAddress,
+ *   dst: IPAddress,
  *   srcPort: number,
  *   dstPort: number,
  *   payload: Uint8Array
@@ -15,7 +15,7 @@ import { IPUInt8ToNumber } from "../lib/helpers.js";
 export class UdpEngine {
     /**
      * @param {{
-     *   ipSend: (opts: {dst:number, src:number, protocol:number, payload:Uint8Array}) => (void|Promise<void>),
+     *   ipSend: (opts: {dst:IPAddress, src:IPAddress, protocol:number, payload:Uint8Array}) => (void|Promise<void>),
      *   sendIcmpError?: (original: any, type:number, code:number) => void
      * }} deps
      */
@@ -27,10 +27,16 @@ export class UdpEngine {
         this.sockets = new Map();
     }
 
+    /**
+     * Open a UDP socket.
+     * @param {IPAddress} bindaddr currently must be 0.0.0.0
+     * @param {number} port
+     * @returns {number}
+     */
     open(bindaddr, port) {
         if (this.sockets.get(port) != null) throw new Error("Port is in use");
         if (port <= 0 || port > 65535) throw new Error("Portnumber is not valid");
-        if (bindaddr !== 0) throw new Error("Currently only bindings to 0.0.0.0 are supported");
+        if (bindaddr.toString() !== "0.0.0.0") throw new Error("Currently only bindings to 0.0.0.0 are supported");
 
         const socket = new UDPSocket();
         socket.port = port;
@@ -40,6 +46,10 @@ export class UdpEngine {
         return port;
     }
 
+    /**
+     * Close a UDP socket.
+     * @param {number} port
+     */
     close(port) {
         const socket = this.sockets.get(port);
         if (!socket) return;
@@ -57,13 +67,20 @@ export class UdpEngine {
         for (const p of ports) this.close(p);
     }
 
+    /**
+     * Send UDP datagram.
+     * @param {number} port local UDP socket port (source port)
+     * @param {IPAddress} dstip destination IP
+     * @param {number} dstport destination UDP port
+     * @param {Uint8Array} data payload
+     */
     async send(port, dstip, dstport, data) {
         const socket = this.sockets.get(port);
         if (!socket) throw new Error("Port not in use!");
 
         await this._ipSend({
-            dst: dstip >>> 0,
-            src: socket.bindaddr >>> 0,
+            dst: dstip,
+            src: socket.bindaddr,
             protocol: 17,
             payload: new UDPPacket({
                 srcPort: socket.port,
@@ -73,6 +90,11 @@ export class UdpEngine {
         });
     }
 
+    /**
+     * Receive UDP message.
+     * @param {number} port
+     * @returns {Promise<UdpMessage|null>}
+     */
     recv(port) {
         const socket = this.sockets.get(port);
         if (!socket) throw new Error("Port not in use!");
@@ -96,8 +118,8 @@ export class UdpEngine {
 
         /** @type {UdpMessage} */
         const msg = {
-            src: IPUInt8ToNumber(packet.src),
-            dst: IPUInt8ToNumber(packet.dst),
+            src: IPAddress.fromUInt8(packet.src),
+            dst: IPAddress.fromUInt8(packet.dst),
             srcPort: datagram.srcPort,
             dstPort: datagram.dstPort,
             payload: datagram.payload,
@@ -111,7 +133,9 @@ export class UdpEngine {
 
 export class UDPSocket {
     port = 0;
-    bindaddr = 0;
+
+    /** @type {IPAddress} */
+    bindaddr = IPAddress.fromString("0.0.0.0");
 
     /** @type {UdpMessage[]} */
     in = [];

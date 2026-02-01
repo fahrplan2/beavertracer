@@ -6,6 +6,7 @@ import { SimulatedObject } from "./SimulatedObject.js";
 
 import { DOMBuilder } from "../lib/DomBuilder.js";
 import { t } from "../i18n/index.js";
+import { IPAddress } from "../net/models/IPAddress.js"; // <- ggf. Pfad anpassen
 
 /**
  * @typedef {Object} PortDescriptor
@@ -16,31 +17,31 @@ import { t } from "../i18n/index.js";
 
 /* ----------------------------- helpers ----------------------------- */
 
-function ipNumToStr(n) {
-    n = (n >>> 0);
-    return [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255].join(".");
+/** @param {IPAddress} ip */
+function ipToStr(ip) {
+    return ip?.toString?.() ?? "";
 }
 
-function ipStrToNum(s) {
-    const parts = String(s).trim().split(".");
-    if (parts.length !== 4) throw new Error("IP muss 4 Oktette haben (a.b.c.d)");
-    const nums = parts.map((p) => {
-        const v = Number(p);
-        if (!Number.isInteger(v) || v < 0 || v > 255) throw new Error("Ungültiges Oktett: " + p);
-        return v;
-    });
-    return (((nums[0] << 24) | (nums[1] << 16) | (nums[2] << 8) | nums[3]) >>> 0);
+/** @param {string} s */
+function ipFromStr(s) {
+    return IPAddress.fromString(String(s).trim());
 }
 
-function cidrToNetmask(cidr) {
-    const c = Number(cidr);
-    if (!Number.isInteger(c) || c < 0 || c > 32) throw new Error("CIDR muss 0..32 sein");
-    if (c === 0) return 0 >>> 0;
-    return (0xffffffff << (32 - c)) >>> 0;
+/** @param {number} p */
+function assertPrefix(p) {
+    const x = Number(p);
+    if (!Number.isInteger(x) || x < 0 || x > 32) throw new Error("Prefix muss 0..32 sein");
+    return x | 0;
 }
 
-function netmaskToCidr(maskNum) {
-    let m = (maskNum >>> 0);
+/** @param {string} s like "255.255.255.0" -> prefix length (0..32) or null */
+function netmaskStrToPrefix(s) {
+    const ip = IPAddress.fromString(String(s).trim());
+    if (!ip.isV4()) return null;
+
+    // contiguous ones then zeros
+    const m = /** @type {number} */ (ip.getNumber()) >>> 0;
+
     let seenZero = false;
     let c = 0;
     for (let i = 31; i >= 0; i--) {
@@ -55,8 +56,13 @@ function netmaskToCidr(maskNum) {
     return c;
 }
 
-function isValidNetmask(maskNum) {
-    return netmaskToCidr(maskNum >>> 0) !== null;
+/** @param {number} prefix -> "255.255.255.0" */
+function prefixToNetmaskStr(prefix) {
+    const p = assertPrefix(prefix);
+    let m = 0 >>> 0;
+    if (p === 0) m = 0 >>> 0;
+    else m = (0xffffffff << (32 - p)) >>> 0;
+    return new IPAddress(4, m >>> 0).toString();
 }
 
 function markInvalid(el, isInvalid) {
@@ -75,7 +81,7 @@ function getInterfaceLinkStatus(iface) {
 
 export class Router extends SimulatedObject {
     icon = "my-icon-router";
-    kind = 'Router';
+    kind = "Router";
 
     /** @type {IPStack} */
     net;
@@ -89,43 +95,29 @@ export class Router extends SimulatedObject {
     /** @type {string|null} */
     _selectedIfaceName = null;
 
-    // UI refs
-    /** @type {HTMLInputElement|null} */
-    _nameInput = null;
-
-    /** @type {HTMLDivElement|null} */
-    _tabsBar = null;
+  // UI refs
+  /** @type {HTMLInputElement|null} */ _nameInput = null;
+  /** @type {HTMLDivElement|null} */ _tabsBar = null;
 
     /** @type {Map<string, {btn: HTMLButtonElement, badge: HTMLSpanElement}>} */
     _tabRefs = new Map();
 
-    /** @type {HTMLDivElement|null} */
-    _selectedIfaceLabel = null;
+  /** @type {HTMLDivElement|null} */ _selectedIfaceLabel = null;
+  /** @type {HTMLDivElement|null} */ _ifacePanel = null;
+  /** @type {HTMLDivElement|null} */ _ifaceActionsHost = null;
 
-    /** @type {HTMLDivElement|null} */
-    _ifacePanel = null;
+  /** @type {HTMLInputElement|null} */ _ipInput = null;
+  /** @type {HTMLInputElement|null} */ _maskInput = null;
+  /** @type {HTMLInputElement|null} */ _cidrInput = null;
+  /** @type {HTMLButtonElement|null} */ _saveIfBtn = null;
+  /** @type {HTMLButtonElement|null} */ _delIfBtn = null;
 
-    /** @type {HTMLDivElement|null} */
-    _ifaceActionsHost = null;
-
-    /** @type {HTMLInputElement|null} */
-    _ipInput = null;
-    /** @type {HTMLInputElement|null} */
-    _maskInput = null;
-    /** @type {HTMLInputElement|null} */
-    _cidrInput = null;
-    /** @type {HTMLButtonElement|null} */
-    _saveIfBtn = null;
-    /** @type {HTMLButtonElement|null} */
-    _delIfBtn = null;
-
-    /** @type {HTMLDivElement|null} */
-    _routesHost = null;
+  /** @type {HTMLDivElement|null} */ _routesHost = null;
 
     constructor(name = t("router.title")) {
-        super(name = t("router.title"));
+        super((name = t("router.title")));
         this.net = new IPStack(2, name);
-        this.net.forwarding = true; // we are a router after all
+        this.net.forwarding = true;
         this.fs = new VirtualFileSystem();
 
         /** @param {HTMLElement} body */
@@ -173,10 +165,7 @@ export class Router extends SimulatedObject {
     /* ------------------------------ UI ------------------------------ */
 
     mount(panelBody) {
-        // Stop previous polling (avoid multiple timers after remount)
         this._stopLinkPolling();
-
-        // Build static shell directly here (Option B)
         panelBody.innerHTML = "";
 
         const host = DOMBuilder.div("router-ui");
@@ -185,24 +174,20 @@ export class Router extends SimulatedObject {
         host.style.gap = "12px";
         panelBody.appendChild(host);
 
-        /* ===================== Allgemeine Einstellungen ===================== */
         host.appendChild(DOMBuilder.h4(t("router.genericsettingstitle")));
 
         const nameRow = DOMBuilder.div("router-name-row");
-
         const nameLabel = DOMBuilder.label(t("router.name"));
         const nameInput = DOMBuilder.input({ value: this.name });
         this._nameInput = nameInput;
 
         const nameBtn = DOMBuilder.button(t("router.apply"));
-
         nameBtn.addEventListener("click", () => {
             const newName = nameInput.value.trim();
             if (!newName || newName === this.name) return;
             this.setName(newName);
             this.net.name = newName;
         });
-
         nameInput.addEventListener("keydown", (e) => {
             if (e.key === "Enter") nameBtn.click();
         });
@@ -214,7 +199,6 @@ export class Router extends SimulatedObject {
         host.appendChild(DOMBuilder.h4(t("router.interfaces")));
 
         const ifCard = DOMBuilder.div("router-card");
-
         const tabsBar = DOMBuilder.div("router-tabs");
         this._tabsBar = tabsBar;
 
@@ -227,7 +211,7 @@ export class Router extends SimulatedObject {
         const grid = DOMBuilder.div("router-if-grid");
 
         const ipIn = DOMBuilder.input({ className: "router-if-ip", placeholder: "IP" });
-        const maskIn = DOMBuilder.input({ className: "router-if-mask", placeholder: "Netmask" });
+        const maskIn = DOMBuilder.input({ className: "router-if-mask", placeholder: "Netmask (optional)" });
         const cidrIn = DOMBuilder.input({ className: "router-if-cidr", placeholder: "/CIDR" });
         const saveBtn = DOMBuilder.button(t("router.save"), { className: "router-if-save" });
 
@@ -253,27 +237,19 @@ export class Router extends SimulatedObject {
         this._routesHost = routesHost;
         host.appendChild(routesHost);
 
-        // (Re-)build tabs and interface panel actions
         this._renderInterfaceTabs();
         this._renderInterfaceActions();
-
-        // Form wiring (input listeners + save handler)
         this._wireInterfaceForm();
 
-        // pick/keep selection
         if (!this._selectedIfaceName || !this.net.interfaces.some((i) => i.name === this._selectedIfaceName)) {
             this._selectedIfaceName = this.net.interfaces[0]?.name ?? null;
         }
 
-        // Apply selection + initial load
         this._applyTabSelection();
         this._loadSelectedInterfaceIntoForm();
         this._updateInterfaceFormState();
 
-        // Render routes
         this._renderRoutes();
-
-        // Start polling link status
         this._startLinkPolling();
     }
 
@@ -284,7 +260,6 @@ export class Router extends SimulatedObject {
         DOMBuilder.clear(tabsBar);
         this._tabRefs.clear();
 
-        // build tabs
         for (const iface of this.net.interfaces) {
             const btn = DOMBuilder.button("", { className: "router-tab" });
             btn.dataset.name = iface.name;
@@ -306,8 +281,7 @@ export class Router extends SimulatedObject {
             this._tabRefs.set(iface.name, { btn, badge });
         }
 
-        // plus tab
-        const plusBtn = DOMBuilder.button("+", { className: "router-tab router-tab-plus", title: t("router.addinterface")});
+        const plusBtn = DOMBuilder.button("+", { className: "router-tab router-tab-plus", title: t("router.addinterface") });
         plusBtn.addEventListener("click", () => {
             this.net.addNewInterface();
             this._selectedIfaceName = this.net.interfaces[this.net.interfaces.length - 1]?.name ?? this._selectedIfaceName;
@@ -323,7 +297,6 @@ export class Router extends SimulatedObject {
 
         DOMBuilder.clear(actionsHost);
 
-        // Delete button
         const delBtn = DOMBuilder.button(t("router.deleteinterface"), { className: "router-if-del" });
         this._delIfBtn = delBtn;
 
@@ -331,12 +304,11 @@ export class Router extends SimulatedObject {
             const name = this._selectedIfaceName;
             if (!name) return;
 
-            const ok = confirm(t("router.confirminterfacedelete", { name: name}));
+            const ok = confirm(t("router.confirminterfacedelete", { name }));
             if (!ok) return;
 
             this.net.deleteInterface(name);
 
-            // move selection
             this._selectedIfaceName = this.net.interfaces[0]?.name ?? null;
             if (this._panelBody) this.mount(this._panelBody);
         });
@@ -353,15 +325,13 @@ export class Router extends SimulatedObject {
         if (!ipIn || !maskIn || !cidrIn || !saveBtn) return;
 
         const onInput = () => this._updateInterfaceFormState();
-
         ipIn.addEventListener("input", onInput);
 
         maskIn.addEventListener("input", () => {
             // update CIDR display when netmask parses
             try {
-                const m = ipStrToNum(maskIn.value);
-                const c = netmaskToCidr(m);
-                cidrIn.value = (c == null) ? "" : String(c);
+                const p = netmaskStrToPrefix(maskIn.value);
+                cidrIn.value = (p == null) ? "" : String(p);
             } catch {
                 // ignore
             }
@@ -375,8 +345,8 @@ export class Router extends SimulatedObject {
                 return;
             }
             try {
-                const nm = cidrToNetmask(v);
-                maskIn.value = ipNumToStr(nm);
+                const p = assertPrefix(Number(v));
+                maskIn.value = prefixToNetmaskStr(p);
             } catch {
                 // ignore
             }
@@ -393,7 +363,6 @@ export class Router extends SimulatedObject {
             ref.btn.classList.toggle("is-active", name === this._selectedIfaceName);
         }
 
-        // disable interface panel when no interfaces exist
         const has = this.net.interfaces.length > 0;
         if (this._ifacePanel) this._ifacePanel.classList.toggle("is-disabled", !has);
 
@@ -412,10 +381,7 @@ export class Router extends SimulatedObject {
 
     _startLinkPolling() {
         this._updateAllTabStatuses();
-
-        this._linkPollTimer = window.setInterval(() => {
-            this._updateAllTabStatuses();
-        }, 1000);
+        this._linkPollTimer = window.setInterval(() => this._updateAllTabStatuses(), 1000);
     }
 
     _stopLinkPolling() {
@@ -464,11 +430,12 @@ export class Router extends SimulatedObject {
             return;
         }
 
-        if (this._ipInput) this._ipInput.value = ipNumToStr(iface.ip);
-        if (this._maskInput) this._maskInput.value = ipNumToStr(iface.netmask);
+        if (this._ipInput) this._ipInput.value = ipToStr(iface.ip);
 
-        const c = netmaskToCidr(iface.netmask);
-        if (this._cidrInput) this._cidrInput.value = (c == null) ? "" : String(c);
+        // show both netmask and cidr for convenience
+        const p = Number(iface.prefixLength ?? 0) | 0;
+        if (this._cidrInput) this._cidrInput.value = String(p);
+        if (this._maskInput) this._maskInput.value = prefixToNetmaskStr(p);
 
         markInvalid(this._ipInput, false);
         markInvalid(this._maskInput, false);
@@ -479,45 +446,58 @@ export class Router extends SimulatedObject {
         const save = this._saveIfBtn;
         const ipIn = this._ipInput;
         const maskIn = this._maskInput;
-        if (!save || !ipIn || !maskIn) return;
+        const cidrIn = this._cidrInput;
+        if (!save || !ipIn || !maskIn || !cidrIn) return;
 
         if (!iface) {
             save.disabled = true;
             return;
         }
 
-        let okIp = false;
-        let okMaskParse = false;
-        let okMask = false;
-        let ip = 0, mask = 0;
+        let ipOk = false;
+        let ip = null;
 
         try {
-            ip = ipStrToNum(ipIn.value);
-            okIp = true;
+            ip = ipFromStr(ipIn.value);
+            // UI ist IPv4Config → wir bleiben hier IPv4-only
+            ipOk = ip.isV4();
         } catch {
-            okIp = false;
+            ipOk = false;
         }
 
-        try {
-            mask = ipStrToNum(maskIn.value);
-            okMaskParse = true;
-            okMask = isValidNetmask(mask);
-        } catch {
-            okMaskParse = false;
-            okMask = false;
+        // prefix: prefer CIDR if present, else parse netmask
+        let pOk = false;
+        let prefix = 0;
+
+        const cidrTxt = cidrIn.value.trim();
+        if (cidrTxt) {
+            try {
+                prefix = assertPrefix(Number(cidrTxt));
+                pOk = true;
+            } catch {
+                pOk = false;
+            }
+        } else {
+            const p = netmaskStrToPrefix(maskIn.value);
+            if (p == null) pOk = false;
+            else {
+                prefix = p;
+                pOk = true;
+            }
         }
 
-        markInvalid(ipIn, !okIp);
-        markInvalid(maskIn, !(okMaskParse && okMask));
+        markInvalid(ipIn, !ipOk);
+        markInvalid(maskIn, !pOk);
+        // cidrIn: optional; wir markieren nicht aggressiv, weil maskIn fallback ist
 
-        if (!okIp || !okMask) {
+        if (!ipOk || !pOk || !ip) {
             save.disabled = true;
             return;
         }
 
         const dirty =
-            (iface.ip >>> 0) !== (ip >>> 0) ||
-            (iface.netmask >>> 0) !== (mask >>> 0);
+            ip.toString() !== iface.ip.toString() ||
+            (Number(prefix) | 0) !== (Number(iface.prefixLength ?? 0) | 0);
 
         save.disabled = !dirty;
     }
@@ -527,27 +507,47 @@ export class Router extends SimulatedObject {
         if (!iface) return;
 
         try {
-            const ip = ipStrToNum(this._ipInput.value);
-            const mask = ipStrToNum(this._maskInput.value);
+            const ip = ipFromStr(this._ipInput.value);
+            if (!ip.isV4()) throw new Error("Nur IPv4 unterstützt (vorerst).");
 
-            if (!isValidNetmask(mask)) {
-                markInvalid(this._maskInput, true);
-                return;
+            // prefix: prefer CIDR if present, else parse netmask
+            let prefix = 0;
+            const cidrTxt = this._cidrInput.value.trim();
+            if (cidrTxt) {
+                prefix = assertPrefix(Number(cidrTxt));
+            } else {
+                const p = netmaskStrToPrefix(this._maskInput.value);
+                if (p == null) throw new Error("Ungültige Netmask (nicht zusammenhängend?)");
+                prefix = p;
             }
 
             const idx = this._ifaceNameToIndex(iface.name);
-            this.net.configureInterface(idx, { ip, netmask: mask, name: iface.name });
 
-            // remount so that auto routes get recomputed & UI refreshed
+            // neue API: prefixLength statt netmask
+            this.net.configureInterface(idx, { ip, prefixLength: prefix, name: iface.name });
+
             if (this._panelBody) this.mount(this._panelBody);
             else this._renderRoutes();
         } catch (e) {
-            // mark invalid fields best-effort
-            try { ipStrToNum(this._ipInput.value); markInvalid(this._ipInput, false); } catch { markInvalid(this._ipInput, true); }
+            // mark invalid best-effort
             try {
-                const m = ipStrToNum(this._maskInput.value);
-                markInvalid(this._maskInput, !isValidNetmask(m));
-            } catch { markInvalid(this._maskInput, true); }
+                const ip = ipFromStr(this._ipInput.value);
+                markInvalid(this._ipInput, !ip.isV4());
+            } catch {
+                markInvalid(this._ipInput, true);
+            }
+
+            try {
+                const cidrTxt = this._cidrInput.value.trim();
+                if (cidrTxt) assertPrefix(Number(cidrTxt));
+                else {
+                    const p = netmaskStrToPrefix(this._maskInput.value);
+                    if (p == null) throw new Error("bad");
+                }
+                markInvalid(this._maskInput, false);
+            } catch {
+                markInvalid(this._maskInput, true);
+            }
 
             alert(String(e?.message ?? e));
         }
@@ -563,14 +563,15 @@ export class Router extends SimulatedObject {
         table.className = "router-routes-table";
 
         const thead = document.createElement("thead");
-        thead.innerHTML = "<tr>"+
-        "<th>"+t("router.routingtable.dst")+"</th>"+
-        "<th>"+t("router.routingtable.netmask")+"</th>"+
-        "<th>"+t("router.routingtable.nexthop")+"</th>"+
-        "<th>"+t("router.routingtable.interface")+"</th>"+
-        "<th>"+t("router.routingtable.auto")+"</th>"+
-        "<th>"+t("router.routingtable.actions")+"</th>"+
-        "</tr>";
+        thead.innerHTML =
+            "<tr>" +
+            "<th>" + t("router.routingtable.dst") + "</th>" +
+            "<th>" + t("router.routingtable.netmask") + "</th>" + // UI label bleibt
+            "<th>" + t("router.routingtable.nexthop") + "</th>" +
+            "<th>" + t("router.routingtable.interface") + "</th>" +
+            "<th>" + t("router.routingtable.auto") + "</th>" +
+            "<th>" + t("router.routingtable.actions") + "</th>" +
+            "</tr>";
         table.appendChild(thead);
 
         const tbody = document.createElement("tbody");
@@ -585,15 +586,15 @@ export class Router extends SimulatedObject {
             const auto = !!r.auto;
 
             const dst = document.createElement("input");
-            dst.value = ipNumToStr(r.dst >>> 0);
+            dst.value = ipToStr(r.dst);
             dst.disabled = auto;
 
             const mask = document.createElement("input");
-            mask.value = ipNumToStr(r.netmask >>> 0);
+            mask.value = prefixToNetmaskStr(Number(r.prefixLength ?? 0));
             mask.disabled = auto;
 
             const nh = document.createElement("input");
-            nh.value = ipNumToStr(r.nexthop >>> 0);
+            nh.value = ipToStr(r.nexthop);
             nh.disabled = auto;
 
             const autoTd = document.createElement("td");
@@ -633,7 +634,7 @@ export class Router extends SimulatedObject {
                 } else {
                     const bad = document.createElement("option");
                     bad.value = "";
-                    bad.textContent = "("+t("router.routingtable.missing")+")";
+                    bad.textContent = "(" + t("router.routingtable.missing") + ")";
                     ifSel.insertBefore(bad, ifSel.firstChild);
                     ifSel.value = "";
                 }
@@ -641,40 +642,62 @@ export class Router extends SimulatedObject {
                 ifCellEl = ifSel;
             }
 
-            const setDirty = (on) => {
-                tr.classList.toggle("router-route-dirty", !!on);
-            };
+            const setDirty = (on) => tr.classList.toggle("router-route-dirty", !!on);
 
             const computeCanSave = () => {
                 if (auto) return false;
                 if (r.interf !== -1 && ifSel && !ifSel.value) return false;
 
                 let okDst = false, okMask = false, okNh = false;
-                let dstN = 0, maskN = 0, nhN = 0;
+        /** @type {IPAddress|null} */ let dstIp = null;
+        /** @type {IPAddress|null} */ let nhIp = null;
+                let pref = 0;
 
-                try { dstN = ipStrToNum(dst.value); okDst = true; } catch { okDst = false; }
-                try { maskN = ipStrToNum(mask.value); okMask = isValidNetmask(maskN); } catch { okMask = false; }
-                try { nhN = ipStrToNum(nh.value); okNh = true; } catch { okNh = false; }
+                try {
+                    dstIp = ipFromStr(dst.value);
+                    okDst = dstIp.isV4();
+                } catch {
+                    okDst = false;
+                }
+
+                try {
+                    const p = netmaskStrToPrefix(mask.value);
+                    if (p == null) okMask = false;
+                    else {
+                        pref = p;
+                        okMask = true;
+                    }
+                } catch {
+                    okMask = false;
+                }
+
+                try {
+                    nhIp = ipFromStr(nh.value);
+                    okNh = nhIp.isV4();
+                } catch {
+                    okNh = false;
+                }
 
                 markInvalid(dst, !okDst);
                 markInvalid(mask, !okMask);
                 markInvalid(nh, !okNh);
 
-                if (!okDst || !okMask || !okNh) {
+                if (!okDst || !okMask || !okNh || !dstIp || !nhIp) {
                     setDirty(true);
                     return false;
                 }
 
                 let interfDirty = false;
+                let newInterf = r.interf;
                 if (r.interf !== -1 && ifSel) {
-                    const newInterf = this._ifaceNameToIndex(ifSel.value);
+                    newInterf = this._ifaceNameToIndex(ifSel.value);
                     interfDirty = (newInterf !== r.interf);
                 }
 
                 const dirty =
-                    (dstN >>> 0) !== (r.dst >>> 0) ||
-                    (maskN >>> 0) !== (r.netmask >>> 0) ||
-                    (nhN >>> 0) !== (r.nexthop >>> 0) ||
+                    dstIp.toString() !== r.dst.toString() ||
+                    (Number(pref) | 0) !== (Number(r.prefixLength ?? 0) | 0) ||
+                    nhIp.toString() !== r.nexthop.toString() ||
                     interfDirty;
 
                 setDirty(dirty);
@@ -697,14 +720,14 @@ export class Router extends SimulatedObject {
                 if (old.auto) return;
 
                 try {
-                    const newDst = ipStrToNum(dst.value);
-                    const newMask = ipStrToNum(mask.value);
-                    const newNh = ipStrToNum(nh.value);
+                    const newDst = ipFromStr(dst.value);
+                    if (!newDst.isV4()) throw new Error("Nur IPv4 (vorerst).");
 
-                    if (!isValidNetmask(newMask)) {
-                        markInvalid(mask, true);
-                        return;
-                    }
+                    const p = netmaskStrToPrefix(mask.value);
+                    if (p == null) throw new Error("Ungültige Netmask");
+
+                    const newNh = ipFromStr(nh.value);
+                    if (!newNh.isV4()) throw new Error("Nur IPv4 (vorerst).");
 
                     let newInterf = old.interf;
                     if (old.interf !== -1 && ifSel) {
@@ -712,8 +735,8 @@ export class Router extends SimulatedObject {
                         newInterf = this._ifaceNameToIndex(ifSel.value);
                     }
 
-                    this.net.delRoute(old.dst, old.netmask, old.interf, old.nexthop);
-                    this.net.addRoute(newDst, newMask, newInterf, newNh);
+                    this.net.delRoute(old.dst, old.prefixLength, old.interf, old.nexthop);
+                    this.net.addRoute(newDst, p, newInterf, newNh);
 
                     this._renderRoutes();
                 } catch (e) {
@@ -725,14 +748,14 @@ export class Router extends SimulatedObject {
                 const old = this.net.routingTable[idx];
                 if (old.auto) return;
 
-                this.net.delRoute(old.dst, old.netmask, old.interf, old.nexthop);
+                this.net.delRoute(old.dst, old.prefixLength, old.interf, old.nexthop);
                 this._renderRoutes();
             });
 
             const td = (el) => {
-                const t = document.createElement("td");
-                t.appendChild(el);
-                return t;
+                const tdd = document.createElement("td");
+                tdd.appendChild(el);
+                return tdd;
             };
 
             tr.appendChild(td(dst));
@@ -759,7 +782,7 @@ export class Router extends SimulatedObject {
         addDst.placeholder = "0.0.0.0";
 
         const addMask = document.createElement("input");
-        addMask.placeholder = "0.0.0.0";
+        addMask.placeholder = "255.255.255.0";
 
         const addNh = document.createElement("input");
         addNh.placeholder = "0.0.0.0";
@@ -781,11 +804,6 @@ export class Router extends SimulatedObject {
         const addBtn = document.createElement("button");
         addBtn.textContent = t("router.routingtable.add");
 
-        const parseMaybe = (v, fallbackStr) => {
-            const t = v.trim();
-            return t ? ipStrToNum(t) : ipStrToNum(fallbackStr);
-        };
-
         const markAddDirty = () => {
             const any = addDst.value.trim() !== "" || addMask.value.trim() !== "" || addNh.value.trim() !== "";
             addTr.classList.toggle("router-route-add-dirty", any);
@@ -801,9 +819,9 @@ export class Router extends SimulatedObject {
 
             let okDst = false, okMask = false, okNh = false;
 
-            try { parseMaybe(addDst.value, "0.0.0.0"); okDst = true; } catch { okDst = false; }
-            try { const m = parseMaybe(addMask.value, "0.0.0.0"); okMask = isValidNetmask(m); } catch { okMask = false; }
-            try { parseMaybe(addNh.value, "0.0.0.0"); okNh = true; } catch { okNh = false; }
+            try { const ip = ipFromStr(addDst.value || "0.0.0.0"); okDst = ip.isV4(); } catch { okDst = false; }
+            try { const p = netmaskStrToPrefix(addMask.value || "0.0.0.0"); okMask = (p != null); } catch { okMask = false; }
+            try { const ip = ipFromStr(addNh.value || "0.0.0.0"); okNh = ip.isV4(); } catch { okNh = false; }
 
             markInvalid(addDst, !okDst);
             markInvalid(addMask, !okMask);
@@ -821,17 +839,18 @@ export class Router extends SimulatedObject {
             if (addBtn.disabled) return;
 
             try {
-                const dstN = parseMaybe(addDst.value, "0.0.0.0");
-                const maskN = parseMaybe(addMask.value, "0.0.0.0");
-                const nhN = parseMaybe(addNh.value, "0.0.0.0");
+                const dstIp = ipFromStr(addDst.value || "0.0.0.0");
+                if (!dstIp.isV4()) throw new Error("Nur IPv4 (vorerst).");
 
-                if (!isValidNetmask(maskN)) {
-                    markInvalid(addMask, true);
-                    return;
-                }
+                const p = netmaskStrToPrefix(addMask.value || "0.0.0.0");
+                if (p == null) throw new Error("Ungültige Netmask");
+
+                const nhIp = ipFromStr(addNh.value || "0.0.0.0");
+                if (!nhIp.isV4()) throw new Error("Nur IPv4 (vorerst).");
 
                 const interfN = this._ifaceNameToIndex(addIf.value);
-                this.net.addRoute(dstN, maskN, interfN, nhN);
+                this.net.addRoute(dstIp, p, interfN, nhIp);
+
                 this._renderRoutes();
             } catch (e) {
                 alert(String(e?.message ?? e));
@@ -839,9 +858,9 @@ export class Router extends SimulatedObject {
         });
 
         const td2 = (el) => {
-            const t = document.createElement("td");
-            t.appendChild(el);
-            return t;
+            const tdd = document.createElement("td");
+            tdd.appendChild(el);
+            return tdd;
         };
 
         addTr.appendChild(td2(addDst));

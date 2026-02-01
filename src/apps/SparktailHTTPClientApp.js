@@ -8,6 +8,7 @@ import { SimControl } from "../SimControl.js";
 //@ts-ignore Import ist raw für vite
 import startPage from "./assets/about-start.html?raw";
 import { t } from "../i18n/index.js";
+import { IPAddress } from "../net/models/IPAddress.js";
 
 /**
  * @param {number} n
@@ -15,13 +16,6 @@ import { t } from "../i18n/index.js";
 function nowStamp(n = Date.now()) {
   const d = new Date(n);
   return d.toLocaleTimeString();
-}
-
-/**
- * @param {number} ip
- */
-function ipToString(ip) {
-  return `${(ip >>> 24) & 255}.${(ip >>> 16) & 255}.${(ip >>> 8) & 255}.${ip & 255}`;
 }
 
 /**
@@ -40,35 +34,46 @@ function hexPreview(data) {
 }
 
 /**
- * Accepts:
- *  - dotted IPv4 "1.2.3.4"
- *  - raw uint32 in decimal "3232235521"
- *  - anything else -> DNS resolve
  * @param {string} host
- * @param {(name:string)=>Promise<number>} dnsResolve
+ * @param {(name:string)=>Promise<any>} dnsResolve
+ * @returns {Promise<IPAddress>}
  */
 async function resolveHostToIP(host, dnsResolve) {
   const s = host.trim();
 
-  // raw uint32
+  // raw uint32 (3232235521)
   if (/^\d+$/.test(s)) {
     const n = Number(s);
-    if (Number.isFinite(n) && n >= 0 && n <= 0xffffffff) return n >>> 0;
+    if (Number.isFinite(n) && n >= 0 && n <= 0xffffffff) return new IPAddress(4, n >>> 0);
   }
 
-  // dotted IPv4
+  // dotted IPv4 (1.2.3.4)
   const m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(s);
   if (m) {
-    const a = Number(m[1]),
-      b = Number(m[2]),
-      c = Number(m[3]),
-      d = Number(m[4]);
+    const a = Number(m[1]), b = Number(m[2]), c = Number(m[3]), d = Number(m[4]);
     if ([a, b, c, d].every((x) => Number.isInteger(x) && x >= 0 && x <= 255)) {
-      return ((a << 24) >>> 0) + (b << 16) + (c << 8) + d;
+      const n = (((a << 24) >>> 0) + (b << 16) + (c << 8) + d) >>> 0;
+      return new IPAddress(4, n);
     }
   }
 
-  return await dnsResolve(s);
+  // hostname -> dns
+  const r = await dnsResolve(s);
+
+  // DNS kann schon IPAddress liefern
+  if (r instanceof IPAddress) return r;
+
+  // fallback, falls dns noch number liefert
+  if (typeof r === "number") return new IPAddress(4, r >>> 0);
+
+  // optional: falls dns string liefert
+  if (typeof r === "string") {
+    // wenn ihr einen Parser habt: IPAddress.parse(r)
+    // sonst erstmal ablehnen:
+    throw new Error(t("app.sparktail.err.cannotResolveHost", { host: s }));
+  }
+
+  throw new Error(t("app.sparktail.err.cannotResolveHost", { host: s }));
 }
 
 /**
@@ -787,9 +792,15 @@ export class SparktailHTTPClientApp extends GenericProcess {
       return await this.os.dns.resolve(name);
     };
 
-    let dstIP = 0;
+    /** @type {IPAddress|null} */
+    let dstIP = null;
+
     try {
-      dstIP = await withTimeout(resolveHostToIP(host, dnsResolve), timeout*SimControl.tick, t("app.sparktail.label.dns"));
+      dstIP = await withTimeout(
+        resolveHostToIP(host, dnsResolve),
+        timeout * SimControl.tick,
+        t("app.sparktail.label.dns")
+      );
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       this._append(t("app.sparktail.log.dnsError", { time: nowStamp(), host, msg }));
@@ -803,6 +814,20 @@ export class SparktailHTTPClientApp extends GenericProcess {
       return;
     }
 
+    if (!dstIP) {
+      const msg = t("app.sparktail.err.cannotResolveHost", { host });
+      this._append(t("app.sparktail.log.dnsError", { time: nowStamp(), host, msg }));
+      this._showInternalPage(
+        t("app.sparktail.page.dnsError.title"),
+        t("app.sparktail.page.dnsError.body", { host, msg })
+      );
+      this.loading = false;
+      this._syncUI();
+      this._setStatus(t("app.sparktail.status.dnsError", { host }));
+      return;
+    }
+
+
     /** @type {string|null} */
     let key = null;
 
@@ -813,7 +838,7 @@ export class SparktailHTTPClientApp extends GenericProcess {
       this.connKey = key;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      this._append(t("app.sparktail.log.connectError", { time: nowStamp(), ip: ipToString(dstIP), port, msg }));
+      this._append(t("app.sparktail.log.connectError", { time: nowStamp(), ip: dstIP.toString(), port, msg }));
       this._showInternalPage(
         t("app.sparktail.page.socketError.title"),
         t("app.sparktail.page.socketError.body", { host, port, msg })

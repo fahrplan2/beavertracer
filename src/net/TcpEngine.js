@@ -1,6 +1,6 @@
 //@ts-check
 import { TCPPacket } from "../net/pdu/TCPPacket.js";
-import { IPUInt8ToNumber } from "../lib/helpers.js";
+import { IPAddress } from "./models/IPAddress.js";
 
 /**
  * TCP connection states (simplified).
@@ -12,9 +12,7 @@ import { IPUInt8ToNumber } from "../lib/helpers.js";
 // -----------------------------------------------------------------------------
 
 /** @param {number} x @returns {number} */
-function u32(x) {
-  return x >>> 0;
-}
+function u32(x) { return x >>> 0; }
 
 /**
  * Signed 32-bit difference (a-b) in [-2^31, 2^31-1].
@@ -48,34 +46,19 @@ function seqDist(base, x) {
 }
 
 /**
- * TCP engine implementing a minimal TCP stack:
- * - connection management
- * - segmentation (pseudo-MSS)
- * - basic handshake and close FSM
- * - in-order data delivery
- * - basic reliability: send-buffer + retransmission (RTO)
- * - RST for closed ports / unknown conns
- * - TIME-WAIT
- * - improved out-of-order reassembly (merge/trim intervals)
- * - receiver flow control (rwnd): advertise window + enforce accept window (trim/drop)
- * - EOF / half-close semantics: FIN => recv() returns null once buffers empty
- * - sender flow control: respect peer-advertised window (sndWnd) via send queue + flushSend()
- * - (NEW) wrap-safe sequence comparisons + ACK-range validation
- *
- * Timing model:
- * - Call tcp.step() once per master tick.
- * - We treat 1 tick as 1 simulated millisecond.
+ * TCP engine implementing a minimal TCP stack.
+ * (IPv4-only as long as the rest of the simulator is IPv4-only.)
  */
 export class TcpEngine {
   /**
    * @param {{
    *   ipSend: (opts: {
-   *     dst:number,
-   *     src:number,
+   *     dst:IPAddress,
+   *     src:IPAddress,
    *     protocol:number,
    *     payload:Uint8Array
    *   }) => (void|Promise<void>),
-   *   resolveSrcIp: (dstIp:number) => number
+   *   resolveSrcIp: (dstIp:IPAddress) => IPAddress
    * }} deps
    */
   constructor(deps) {
@@ -133,14 +116,14 @@ export class TcpEngine {
 
   /**
    * Build a unique connection key.
-   * @param {number} localIP
+   * @param {IPAddress} localIP
    * @param {number} localPort
-   * @param {number} remoteIP
+   * @param {IPAddress} remoteIP
    * @param {number} remotePort
    * @returns {string}
    */
   _tcpKey(localIP, localPort, remoteIP, remotePort) {
-    return `${localIP}:${localPort}>${remoteIP}:${remotePort}`;
+    return `${localIP.toString()}:${localPort}>${remoteIP.toString()}:${remotePort}`;
   }
 
   /**
@@ -157,14 +140,14 @@ export class TcpEngine {
 
   /**
    * Open a TCP server socket (LISTEN).
-   * @param {number} bindaddr Must be 0 (0.0.0.0)
+   * @param {IPAddress} bindaddr Must be 0.0.0.0
    * @param {number} port TCP port to listen on
    * @returns {number}
    */
   openServer(bindaddr, port) {
     if (this.sockets.get(port)) throw new Error("Port is in use");
     if (port <= 0 || port > 65535) throw new Error("Port invalid");
-    if (bindaddr !== 0) throw new Error("Only 0.0.0.0 supported");
+    if (bindaddr.toString() !== "0.0.0.0") throw new Error("Only 0.0.0.0 supported");
 
     const s = new TCPSocket();
     s.port = port;
@@ -210,17 +193,17 @@ export class TcpEngine {
 
   /**
    * Actively establish a TCP connection (client side).
-   * @param {number} dstIP
+   * @param {IPAddress} dstIP
    * @param {number} dstPort
    * @returns {Promise<TCPSocket>}
    */
   async connect(dstIP, dstPort) {
     const srcPort = this._allocEphemeralPort();
-    const localIP = this._resolveSrcIp(dstIP) >>> 0;
+    const localIP = this._resolveSrcIp(dstIP);
 
     const conn = new TCPSocket();
     conn.localIP = localIP;
-    conn.peerIP = dstIP >>> 0;
+    conn.peerIP = dstIP;
     conn.peerPort = dstPort | 0;
     conn.port = srcPort;
     conn.state = "SYN-SENT";
@@ -256,9 +239,6 @@ export class TcpEngine {
 
   /**
    * Receive data from a TCP connection.
-   * - resolves with payload chunks in order
-   * - resolves with null on EOF (FIN received & buffers empty) or if destroyed
-   *
    * @param {string} key
    * @returns {Promise<Uint8Array|null>}
    */
@@ -274,7 +254,6 @@ export class TcpEngine {
 
   /**
    * Enqueue app data into send queue, then flush.
-   * (Sender respects peer-advertised window.)
    * @param {string} key
    * @param {Uint8Array} data
    */
@@ -293,26 +272,19 @@ export class TcpEngine {
   }
 
   /**
-   * Flush queued app data subject to:
-   * - MSS
-   * - peer advertised window (conn.sndWnd)
-   * - bytes currently in-flight (derived from outQ / myacc)
-   *
+   * Flush queued app data subject to peer window, MSS, and in-flight bytes.
    * @param {TCPSocket} conn
    */
   _flushSend(conn) {
     if (conn.state !== "ESTABLISHED" && conn.state !== "CLOSE-WAIT") return;
     if (!conn.sendQ || conn.sendQ.length === 0) return;
 
-    // Compute SND.UNA from earliest outstanding segment (simplified).
-    // If nothing outstanding: UNA == NXT (myacc).
     const sndUna = (conn.outQ.length > 0) ? (conn.outQ[0].seq >>> 0) : (conn.myacc >>> 0);
     const sndNxt = conn.myacc >>> 0;
 
-    // bytes in flight (wrap-safe as long as spans are < 2^31, which they are in this sim)
     const inFlight = seqDist(sndUna, sndNxt);
 
-    const wnd = (conn.sndWnd >>> 0); // 0..65535
+    const wnd = (conn.sndWnd >>> 0);
     let canSend = 0;
     if (wnd > inFlight) canSend = (wnd - inFlight) >>> 0;
 
@@ -330,7 +302,6 @@ export class TcpEngine {
 
       const chunk = head.subarray(0, n);
 
-      // shrink head
       if (n === head.length) conn.sendQ.shift();
       else conn.sendQ[0] = head.subarray(n);
 
@@ -389,9 +360,11 @@ export class TcpEngine {
 
   /**
    * Send a RST in response to an incoming segment for which no connection exists.
-   * Simplified RFC 793 behavior:
-   * - If incoming has ACK: send RST with seq = incoming.ack
-   * - Else: send RST+ACK with ack = incoming.seq + segLen
+   * @param {IPAddress} localIP
+   * @param {number} localPort
+   * @param {IPAddress} remoteIP
+   * @param {number} remotePort
+   * @param {TCPPacket} tcp
    */
   _sendRstForSegment(localIP, localPort, remoteIP, remotePort, tcp) {
     const syn = tcp.hasFlag(TCPPacket.FLAG_SYN);
@@ -426,8 +399,8 @@ export class TcpEngine {
     }).pack();
 
     this._ipSend({
-      dst: remoteIP >>> 0,
-      src: localIP >>> 0,
+      dst: remoteIP,
+      src: localIP,
       protocol: 6,
       payload: rstBytes,
     });
@@ -445,17 +418,17 @@ export class TcpEngine {
     const fin = tcp.hasFlag(TCPPacket.FLAG_FIN);
     const rst = tcp.hasFlag(TCPPacket.FLAG_RST);
 
-    const remoteIP = IPUInt8ToNumber(packet.src) >>> 0;
-    const localIP = IPUInt8ToNumber(packet.dst) >>> 0;
+    // Requires: IPAddress.fromUInt8(Uint8Array(4))
+    const remoteIP = IPAddress.fromUInt8(packet.src);
+    const localIP = IPAddress.fromUInt8(packet.dst);
+
     const remotePort = tcp.srcPort | 0;
     const localPort = tcp.dstPort | 0;
 
     const key = this._tcpKey(localIP, localPort, remoteIP, remotePort);
     let conn = this.conns.get(key);
 
-    // -------------------------------------------------------------------------
     // 0) No existing connection -> possibly a new inbound connection to LISTEN
-    // -------------------------------------------------------------------------
     if (!conn) {
       const listen = this.sockets.get(localPort);
       const isListening = !!listen && listen.state === "LISTEN";
@@ -488,8 +461,7 @@ export class TcpEngine {
         return;
       }
 
-      // Otherwise: no connection exists for this segment.
-      // If port is closed (not LISTEN), send RST for SYN or segments carrying ACK.
+      // Port closed => RST for SYN or segments carrying ACK
       if (!isListening) {
         if (syn || ack) {
           this._sendRstForSegment(localIP, localPort, remoteIP, remotePort, tcp);
@@ -498,55 +470,39 @@ export class TcpEngine {
       return;
     }
 
-    // -------------------------------------------------------------------------
     // 1) RST: immediate teardown
-    // -------------------------------------------------------------------------
     if (rst) {
       this._destroy(conn, "RST");
       return;
     }
 
-    // -------------------------------------------------------------------------
-    // Update peer advertised window (flow control for sender)
-    // -------------------------------------------------------------------------
+    // Update peer advertised window
     const prevSndWnd = conn.sndWnd >>> 0;
     conn.sndWnd = (tcp.window >>> 0);
 
-    // -------------------------------------------------------------------------
-    // ACK validation + ACK processing (removes retransmission queue entries)
-    // -------------------------------------------------------------------------
+    // ACK processing
     if (ack) {
       const ackNo = tcp.ack >>> 0;
 
-      // SND.UNA (oldest unacked) and SND.NXT (next seq to send)
       const sndUna = (conn.outQ.length > 0) ? (conn.outQ[0].seq >>> 0) : (conn.myacc >>> 0);
       const sndNxt = (conn.myacc >>> 0);
 
-      // Accept ACK only if SND.UNA <= ACK <= SND.NXT (mod 2^32)
       const okAck = seqGE(ackNo, sndUna) && seqLE(ackNo, sndNxt);
 
-      if (okAck) {
-        this._onAck(conn, ackNo);
-      }
-      // else: ignore weird ACK (would be "acknowledging unsent data")
+      if (okAck) this._onAck(conn, ackNo);
     }
 
-    // If window opened/changed, try to flush queued data
     if (conn.sendQBytes > 0 && ((conn.sndWnd >>> 0) !== prevSndWnd || ack)) {
       this._flushSend(conn);
     }
 
-    // -------------------------------------------------------------------------
-    // TIME-WAIT: ignore payload/state changes, but do re-ACK (e.g. retransmitted FIN)
-    // -------------------------------------------------------------------------
+    // TIME-WAIT: ignore payload/state changes, but re-ACK
     if (conn.state === "TIME-WAIT") {
       this._sendAckOnly(conn, true);
       return;
     }
 
-    // -------------------------------------------------------------------------
     // LAST-ACK: waiting for ACK of our FIN
-    // -------------------------------------------------------------------------
     if (conn.state === "LAST-ACK") {
       if (ack && (tcp.ack >>> 0) === (conn.myacc >>> 0)) {
         this._destroy(conn, "closed (LAST-ACK complete)");
@@ -554,9 +510,7 @@ export class TcpEngine {
       return;
     }
 
-    // -------------------------------------------------------------------------
-    // 2) Client handshake: SYN-SENT -> ESTABLISHED on SYN+ACK
-    // -------------------------------------------------------------------------
+    // Client handshake: SYN-SENT -> ESTABLISHED on SYN+ACK
     if (conn.state === "SYN-SENT") {
       if (syn && ack && (tcp.ack >>> 0) === (conn.myacc >>> 0)) {
         conn.theiracc = u32((tcp.seq >>> 0) + 1);
@@ -570,9 +524,7 @@ export class TcpEngine {
       return;
     }
 
-    // -------------------------------------------------------------------------
-    // 3) Server handshake: SYN-RECEIVED -> ESTABLISHED on final ACK
-    // -------------------------------------------------------------------------
+    // Server handshake: SYN-RECEIVED -> ESTABLISHED on final ACK
     if (conn.state === "SYN-RECEIVED") {
       if (ack && (tcp.ack >>> 0) === (conn.myacc >>> 0)) {
         conn.state = "ESTABLISHED";
@@ -587,19 +539,14 @@ export class TcpEngine {
       return;
     }
 
-    // -------------------------------------------------------------------------
-    // 4) Closing state: FIN-WAIT-1 -> FIN-WAIT-2 when our FIN is ACKed
-    // -------------------------------------------------------------------------
+    // FIN-WAIT-1 -> FIN-WAIT-2 when our FIN is ACKed
     if (conn.state === "FIN-WAIT-1") {
       if (ack && (tcp.ack >>> 0) === (conn.myacc >>> 0)) {
         conn.state = "FIN-WAIT-2";
       }
-      // Continue processing FIN/data below if present.
     }
 
-    // -------------------------------------------------------------------------
-    // 5) Data + FIN handling with out-of-order reassembly
-    // -------------------------------------------------------------------------
+    // Accept data/FIN only in these states
     if (
       conn.state !== "ESTABLISHED" &&
       conn.state !== "CLOSE-WAIT" &&
@@ -615,10 +562,7 @@ export class TcpEngine {
     if (fin) {
       const finAt = u32((tcp.seq >>> 0) + (payload.length >>> 0));
       if (conn.finSeq == null) conn.finSeq = finAt;
-      else {
-        // choose "earlier" FIN sequence (wrap-safe)
-        conn.finSeq = seqLT(finAt, conn.finSeq >>> 0) ? finAt : (conn.finSeq >>> 0);
-      }
+      else conn.finSeq = seqLT(finAt, conn.finSeq >>> 0) ? finAt : (conn.finSeq >>> 0);
     }
 
     // Ingest payload respecting receive window
@@ -641,7 +585,6 @@ export class TcpEngine {
 
   /**
    * Send a pure ACK segment with current advertised receive window.
-   * Important: if ackNo stays constant but window changes, we should send an update.
    * @param {TCPSocket} conn
    * @param {boolean} [force=false]
    */
@@ -650,9 +593,7 @@ export class TcpEngine {
     const wnd = this._calcRcvWnd(conn);
     conn.rcvWnd = wnd;
 
-    if (!force && conn.lastAckSent === ackNo && conn.lastWndSent === wnd) {
-      return; // suppress duplicate ACK+WND
-    }
+    if (!force && conn.lastAckSent === ackNo && conn.lastWndSent === wnd) return;
 
     conn.lastAckSent = ackNo;
     conn.lastWndSent = wnd;
@@ -668,8 +609,6 @@ export class TcpEngine {
 
   /**
    * Send a TCP segment via IP.
-   * Also queues rexmittable segments (SYN/FIN/data) for RTO retransmission.
-   *
    * @param {TCPSocket} conn
    * @param {{
    *   seq:number,
@@ -683,7 +622,6 @@ export class TcpEngine {
     const syn = (flags & TCPPacket.FLAG_SYN) !== 0;
     const fin = (flags & TCPPacket.FLAG_FIN) !== 0;
 
-    // SYN/FIN consume 1 sequence number each
     const len = (payload?.length ?? 0) + (syn ? 1 : 0) + (fin ? 1 : 0);
     const end = u32((seq >>> 0) + (len >>> 0));
 
@@ -699,9 +637,7 @@ export class TcpEngine {
         rexmit: 0,
       });
 
-      if (!conn.rtoDeadline) {
-        conn.rtoDeadline = (this.nowMs + conn.rtoMs) | 0;
-      }
+      if (!conn.rtoDeadline) conn.rtoDeadline = (this.nowMs + conn.rtoMs) | 0;
     }
 
     const tcpBytes = new TCPPacket({
@@ -724,7 +660,6 @@ export class TcpEngine {
 
   /**
    * Process an incoming ACK number: remove fully-acked segments from outQ.
-   * (Assumes ACK validity already checked.)
    * @param {TCPSocket} conn
    * @param {number} ackNo
    */
@@ -733,25 +668,21 @@ export class TcpEngine {
 
     while (conn.outQ.length > 0) {
       const seg = conn.outQ[0];
-      // seg.end <= ackNo (wrap-safe)
       if (seqLE(seg.end >>> 0, ackNo >>> 0)) {
         conn.outQ.shift();
         removedAny = true;
-      } else {
-        break;
-      }
+      } else break;
     }
 
     if (!removedAny) return;
 
     if (conn.outQ.length === 0) {
       conn.rtoDeadline = 0;
-      conn.rtoMs = 600; // reset to initial
+      conn.rtoMs = 600;
     } else {
       conn.rtoDeadline = (this.nowMs + conn.rtoMs) | 0;
     }
 
-    // New space likely opened up -> flush send queue
     this._flushSend(conn);
   }
 
@@ -767,11 +698,9 @@ export class TcpEngine {
     const seg = conn.outQ[0];
     seg.rexmit++;
 
-    // Exponential backoff capped
     conn.rtoMs = Math.min(conn.rtoMs * 2, 60_000);
     conn.rtoDeadline = (this.nowMs + conn.rtoMs) | 0;
 
-    // Retransmit with current ACK number; be careful with SYN before handshake.
     const isBareSyn =
       (seg.flags & TCPPacket.FLAG_SYN) !== 0 &&
       (seg.flags & TCPPacket.FLAG_ACK) === 0 &&
@@ -813,15 +742,11 @@ export class TcpEngine {
     conn.state = "CLOSED";
   }
 
+  // ---------------------------------------------------------------------------
+  // Out-of-order ingest/drain logic below is unchanged (pure sequence logic)
+  // ---------------------------------------------------------------------------
+
   /**
-   * Improved OOO ingest:
-   * - trims already-consumed prefix
-   * - trims to receive window [RCV.NXT, RCV.NXT + RCV.WND)
-   * - stores as interval blocks
-   * - merges overlaps and adjacent blocks
-   *
-   * Wrap-safe sequence comparisons are used throughout.
-   *
    * @param {TCPSocket} conn
    * @param {number} seq
    * @param {Uint8Array} payload
@@ -831,24 +756,20 @@ export class TcpEngine {
     const segSeq = seq >>> 0;
     if (payload.length === 0) return;
 
-    // Compute window BEFORE adding new data.
     const wnd = this._calcRcvWnd(conn);
     conn.rcvWnd = wnd;
 
     const winStart = expected >>> 0;
     const winEnd = u32((winStart + (wnd >>> 0)) >>> 0);
 
-    // Segment interval [segStart, segEnd)
     let s = segSeq >>> 0;
     let p = payload;
     let segEnd = u32(s + (p.length >>> 0));
 
-    // Entirely before expected: segEnd <= expected
     if (seqLE(segEnd, expected)) return;
 
-    // Trim prefix already consumed if segStart < expected
     if (seqLT(s, expected)) {
-      const cut = seqDist(s, expected); // expected - s (forward distance)
+      const cut = seqDist(s, expected);
       if (cut >= p.length) return;
       p = p.subarray(cut);
       s = expected;
@@ -856,10 +777,8 @@ export class TcpEngine {
       if (p.length === 0) return;
     }
 
-    // Overlap test with window: segEnd > winStart && segStart < winEnd
     if (!(seqGT(segEnd, winStart) && seqLT(s, winEnd))) return;
 
-    // Left trim to winStart if segStart < winStart
     if (seqLT(s, winStart)) {
       const cut = seqDist(s, winStart);
       if (cut >= p.length) return;
@@ -868,9 +787,8 @@ export class TcpEngine {
       segEnd = u32(s + (p.length >>> 0));
     }
 
-    // Right trim to winEnd if segEnd > winEnd
     if (seqGT(segEnd, winEnd)) {
-      const keep = seqDist(s, winEnd); // winEnd - s
+      const keep = seqDist(s, winEnd);
       if (keep === 0) return;
       p = p.subarray(0, keep);
       segEnd = u32(s + (p.length >>> 0));
@@ -880,29 +798,24 @@ export class TcpEngine {
 
     let nb = { start: s >>> 0, end: segEnd >>> 0, data: p };
 
-    // Merge into existing blocks (overlap or adjacent), using wrap-safe comparisons.
     for (let i = 0; i < conn.ooo.length; ) {
       const b = conn.ooo[i];
 
-      // if b ends before nb starts and not adjacent: b.end < nb.start
       if (seqLT(b.end >>> 0, nb.start >>> 0) && (b.end >>> 0) !== (nb.start >>> 0)) {
         i++;
         continue;
       }
 
-      // if nb ends before b starts and not adjacent: nb.end < b.start => insert point
       if (seqLT(nb.end >>> 0, b.start >>> 0) && (nb.end >>> 0) !== (b.start >>> 0)) {
         break;
       }
 
-      // overlap/adjacent => merge and remove b
       nb = this._mergeBlocks(nb, b);
       conn.ooo.splice(i, 1);
       conn.oooBytes = Math.max(0, (conn.oooBytes ?? 0) - (b.data?.length ?? 0));
       continue;
     }
 
-    // Insert nb sorted by distance from current expected (wrap-safe ordering near wrap)
     const base = conn.theiracc >>> 0;
     let ins = 0;
     const nbD = seqDist(base, nb.start >>> 0);
@@ -917,10 +830,6 @@ export class TcpEngine {
   }
 
   /**
-   * Merge two interval blocks (overlap/adjacent allowed).
-   * Later data overwrites earlier data on overlap (they should be identical anyway).
-   * Wrap-safe: choose min(start) and max(end) using seq comparisons.
-   *
    * @param {{start:number,end:number,data:Uint8Array}} a
    * @param {{start:number,end:number,data:Uint8Array}} b
    */
@@ -932,7 +841,6 @@ export class TcpEngine {
     const end = seqGT(aE, bE) ? aE : bE;
 
     const out = new Uint8Array(seqDist(start, end));
-
     out.set(a.data, seqDist(start, aS));
     out.set(b.data, seqDist(start, bS));
 
@@ -940,12 +848,6 @@ export class TcpEngine {
   }
 
   /**
-   * Drain buffered in-order payload starting at conn.theiracc,
-   * delivering sequential chunks to application waiters / queue.
-   *
-   * Also consumes FIN at the boundary and applies TIME-WAIT for active close.
-   * Wrap-safe: uses seq comparisons for boundary checks.
-   *
    * @param {TCPSocket} conn
    */
   _oooDrain(conn) {
@@ -953,12 +855,10 @@ export class TcpEngine {
       const expected = conn.theiracc >>> 0;
       const b = conn.ooo[0];
 
-      // If the first block starts after expected, we are missing bytes
       if (seqGT(b.start >>> 0, expected)) break;
 
-      // If block starts before expected, trim it
       if (seqLT(b.start >>> 0, expected)) {
-        const cut = seqDist(b.start >>> 0, expected); // expected - b.start
+        const cut = seqDist(b.start >>> 0, expected);
         if (cut >= b.data.length) {
           conn.ooo.shift();
           conn.oooBytes = Math.max(0, (conn.oooBytes ?? 0) - b.data.length);
@@ -976,7 +876,6 @@ export class TcpEngine {
         continue;
       }
 
-      // b.start === expected => deliver
       conn.ooo.shift();
       conn.oooBytes = Math.max(0, (conn.oooBytes ?? 0) - b.data.length);
 
@@ -987,7 +886,6 @@ export class TcpEngine {
       else conn.in.push(b.data);
     }
 
-    // Consume FIN at boundary
     if (conn.finSeq != null && (conn.finSeq >>> 0) === (conn.theiracc >>> 0)) {
       conn.theiracc = u32((conn.theiracc >>> 0) + 1);
       conn.finSeq = null;
@@ -1010,11 +908,17 @@ export class TcpEngine {
  */
 export class TCPSocket {
   port = 0;
-  bindaddr = 0;
+
+  /** @type {IPAddress} */
+  bindaddr = IPAddress.fromString("0.0.0.0");
+
   key = "";
 
-  localIP = 0;
-  peerIP = 0;
+  /** @type {IPAddress} */
+  localIP = IPAddress.fromString("0.0.0.0");
+  /** @type {IPAddress} */
+  peerIP = IPAddress.fromString("0.0.0.0");
+
   peerPort = 0;
 
   /** @type {TcpState} */
@@ -1079,7 +983,7 @@ export class TCPSocket {
   oooBytes = 0;
 
   /** @type {number|null} */
-  finSeq = null; // sequence number AFTER last byte (seq + payloadLen)
+  finSeq = null;
 
   /** @type {number} */
   lastAckSent = -1;

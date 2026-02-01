@@ -5,15 +5,14 @@ import { UILib as UI } from "./lib/UILib.js";
 import { Disposer } from "../lib/Disposer.js";
 import { t } from "../i18n/index.js";
 import { DNSPacket } from "./../net/pdu/DNSPacket.js";
+import { IPAddress } from "../net/models/IPAddress.js";
 
 // helpers
 function nowStamp(n = Date.now()) {
   const d = new Date(n);
   return d.toLocaleTimeString();
 }
-function ipToString(ip) {
-  return `${(ip >>> 24) & 255}.${(ip >>> 16) & 255}.${(ip >>> 8) & 255}.${ip & 255}`;
-}
+
 function normalizeName(name) {
   name = String(name ?? "").trim().toLowerCase();
   if (name.endsWith(".")) name = name.slice(0, -1);
@@ -423,7 +422,6 @@ export class DNSServerApp extends GenericProcess {
       this._rebuildConfigFromUI();
       const json = JSON.stringify(this.cfg, null, 2);
       this.os.fs.writeFile(this.configPath, json);
-      this._appendLog(`[${nowStamp()}] saved config (${this.cfg.a.length}/${this.cfg.mx.length}/${this.cfg.ns.length})`);
     } catch (e) {
       const reason = (e instanceof Error ? e.message : String(e));
       this._appendLog(`[${nowStamp()}] save failed: ${reason}`);
@@ -435,7 +433,7 @@ export class DNSServerApp extends GenericProcess {
 
     try {
       this._rebuildConfigFromUI();
-      const port = this.os.net.openUDPSocket(0, this.port);
+      const port = this.os.net.openUDPSocket(new IPAddress(4, 0), this.port);
       this.socketPort = port;
       this.running = true;
       this._appendLog(`[${nowStamp()}] DNS listening on UDP/${this.port}`);
@@ -487,7 +485,11 @@ export class DNSServerApp extends GenericProcess {
       if (!this.running || this.socketPort == null) break;
       if (pkt == null) break;
 
-      const srcIp = typeof pkt.src === "number" ? pkt.src : 0;
+      const srcIp =
+        (pkt.src instanceof IPAddress)
+          ? pkt.src
+          : new IPAddress(4, pkt.src);
+
       const srcPort = typeof pkt.srcPort === "number" ? pkt.srcPort : 0;
 
       /** @type {Uint8Array} */
@@ -518,7 +520,7 @@ export class DNSServerApp extends GenericProcess {
       q = DNSPacket.fromBytes(payload);
     } catch (e) {
       const reason = (e instanceof Error ? e.message : String(e));
-      this._appendLog(`[${nowStamp()}] bad dns from ${ipToString(srcIp)}:${srcPort} (${reason})`);
+      this._appendLog(`[${nowStamp()}] bad dns from ${srcIp.toString()}:${srcPort} (${reason})`);
       return;
     }
 
@@ -570,7 +572,7 @@ export class DNSServerApp extends GenericProcess {
 
     try {
       this.os.net.sendUDPSocket(sockPort, srcIp, srcPort, out);
-      this._appendLog(`[${nowStamp()}] dns ${ipToString(srcIp)}:${srcPort} q=${questions[0].name} -> rcode=${resp.rcode} an=${resp.answers.length}`);
+      this._appendLog(`[${nowStamp()}] dns ${srcIp.toString()}:${srcPort} q=${questions[0].name} -> rcode=${resp.rcode} an=${resp.answers.length}`);
     } catch (e) {
       const reason = (e instanceof Error ? e.message : String(e));
       this._appendLog(`[${nowStamp()}] send error: ${reason}`);

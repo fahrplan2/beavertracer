@@ -1,29 +1,32 @@
 //@ts-check
 
 import { t } from "../../../../i18n/index.js";
-import { ipNumberToString, ipStringToNumber } from "../lib/ip.js";
-
-/** @param {number} n */
-function u32(n) { return (n >>> 0); }
-
-/** @param {number} prefix */
-function prefixToNetmask32(prefix) {
-  const p = Math.max(0, Math.min(32, prefix | 0));
-  if (p === 0) return 0 >>> 0;
-  return u32((0xffffffff << (32 - p)));
-}
+import { IPAddress } from "../../../../net/models/IPAddress.js";
 
 /**
- * Parse "A.B.C.D/len"
+ * Parse "A.B.C.D/len" (IPv4 only for now)
  * @param {string} s
+ * @returns {{ ip: IPAddress, prefix: number } | null}
  */
 function parseCidr(s) {
-  const m = /^(.+?)\/(\d+)$/.exec(s);
+  const m = /^(.+?)\/(\d+)$/.exec(String(s).trim());
   if (!m) return null;
-  const ip = ipStringToNumber(m[1]);
+
+  let ip;
+  try {
+    ip = IPAddress.fromString(m[1].trim());
+  } catch {
+    return null;
+  }
+
   const prefix = Number(m[2]);
-  if (ip == null || !Number.isFinite(prefix)) return null;
-  return { ip: u32(ip), prefix: Math.max(0, Math.min(32, prefix | 0)) };
+  if (!Number.isFinite(prefix)) return null;
+
+  // For now: IPv4 only
+  if (!ip.isV4()) return null;
+
+  const p = Math.max(0, Math.min(32, prefix | 0));
+  return { ip, prefix: p };
 }
 
 /**
@@ -31,13 +34,15 @@ function parseCidr(s) {
  * @param {number} idx
  */
 function ifaceLabel(itf, idx) {
-  return itf?.name ?? itf?.ifname ?? itf?.label ?? `eth${idx}`;
+  const n = itf?.name ?? itf?.ifname ?? itf?.label;
+  return (typeof n === "string" && n) ? n : `eth${idx}`;
 }
 
 /**
  * Find interface by index or name.
  * @param {any[]} ifaces
  * @param {string} sel
+ * @returns {{ idx:number, itf:any } | null}
  */
 function findIface(ifaces, sel) {
   if (/^\d+$/.test(sel)) {
@@ -49,6 +54,36 @@ function findIface(ifaces, sel) {
     if (ifaceLabel(itf, i) === sel) return { idx: i, itf };
   }
   return null;
+}
+
+/**
+ * Read ip/prefix from interface in a tolerant way.
+ * @param {any} itf
+ * @returns {{ ip: IPAddress, prefix: number }}
+ */
+function readIfaceAddr(itf) {
+  const ip = (itf?.ip instanceof IPAddress) ? itf.ip : IPAddress.fromString("0.0.0.0");
+
+  let prefix = 0;
+  if (typeof itf?.prefixLength === "number" && Number.isFinite(itf.prefixLength)) {
+    prefix = itf.prefixLength | 0;
+  } else if (itf?.netmask instanceof IPAddress && itf.netmask.isV4()) {
+    // legacy fallback: derive prefix from v4 netmask if still present
+    // Count leading 1 bits
+    let m = (/** @type {number} */ (itf.netmask.getNumber()) >>> 0);
+    let bits = 0;
+    while (bits < 32 && (m & 0x80000000) !== 0) {
+      bits++;
+      m = (m << 1) >>> 0;
+    }
+    prefix = bits;
+  }
+
+  // clamp for v4/v6
+  if (ip.isV4()) prefix = Math.max(0, Math.min(32, prefix | 0));
+  else prefix = Math.max(0, Math.min(128, prefix | 0));
+
+  return { ip, prefix };
 }
 
 /** @type {import("../types.js").Command} */
@@ -69,26 +104,28 @@ export const ip = {
         const itf = ifaces[i];
         const name = ifaceLabel(itf, i);
 
-        const ipNum = (typeof itf?.ip === "number") ? u32(itf.ip) : 0;
-        const maskNum = (typeof itf?.netmask === "number") ? u32(itf.netmask) : 0;
+        const { ip: addr, prefix } = readIfaceAddr(itf);
 
         const up = (typeof itf?.up === "boolean")
           ? (itf.up ? t("app.terminal.commands.ip.state.up") : t("app.terminal.commands.ip.state.down"))
           : t("app.terminal.commands.ip.state.unknown");
 
         ctx.println(t("app.terminal.commands.ip.out.ifaceLine", { idx: i, name, state: up }));
+
+        // Prefer a simple "inet X/Y" output.
         ctx.println(t("app.terminal.commands.ip.out.inetLine", {
-          ip: ipNumberToString(ipNum),
-          netmask: ipNumberToString(maskNum),
+          ip: `${addr.toString()}/${prefix}`,
           inetLabel: t("app.terminal.commands.ip.out.inetLabel"),
           netmaskLabel: t("app.terminal.commands.ip.out.netmaskLabel"),
+          // If your translation expects netmask too, keep something printable:
+          netmask: addr.isV4() ? `/${prefix}` : `/${prefix}`,
         }));
       }
       return;
     }
 
     // Set: ip set <iface> <ip>/<prefix>
-    // IMPORTANT: go through ipforwarder.configureInterface() to update auto routes
+    // IMPORTANT: go through ipf.configureInterface() to update auto routes
     if (sub === "set") {
       const sel = args[1];
       const cidr = args[2];
@@ -100,25 +137,24 @@ export const ip = {
       const parsed = parseCidr(cidr);
       if (!parsed) return t("app.terminal.commands.ip.err.invalidCidr");
 
-      const netmask = prefixToNetmask32(parsed.prefix);
-
-      // 🔥 This is the important part: call the kernel API, not direct mutation
+      // New API: ip + prefixLength
       ipf.configureInterface(hit.idx, {
         ip: parsed.ip,
-        netmask,
+        prefixLength: parsed.prefix,
         name: ifaceLabel(hit.itf, hit.idx),
       });
 
       const itf = ipf.interfaces[hit.idx];
+      const { ip: addr, prefix } = readIfaceAddr(itf);
+
       ctx.println(t("app.terminal.commands.ip.out.okSet", {
         iface: ifaceLabel(itf, hit.idx),
-        ip: ipNumberToString(u32(itf.ip)),
-        prefix: parsed.prefix,
+        ip: addr.toString(),
+        prefix,
       }));
       return;
     }
 
-    // Optional: ip route show (delegates to route command later)
     return t("app.terminal.commands.ip.usage.main");
   },
 };

@@ -2,8 +2,53 @@
 
 import { t } from "../../../../i18n/index.js";
 import { ipNumberToString, ipStringToNumber } from "../lib/ip.js";
-import { sleep, nowMs } from "../lib/time.js";
+import { nowMs } from "../lib/time.js";
 import { sleepAbortable } from "../lib/abort.js";
+import { IPAddress } from "../../../../net/models/IPAddress.js";
+
+/**
+ * Format an IP that may be:
+ * - IPAddress
+ * - number (legacy v4 uint32)
+ * - string
+ * - null/undefined
+ * @param {any} ip
+ */
+function fmtIP(ip) {
+  if (!ip) return "*";
+  if (ip instanceof IPAddress) return ip.toString();
+  if (typeof ip === "string") return ip;
+  if (typeof ip === "number" && Number.isFinite(ip)) return ipNumberToString((ip >>> 0));
+  return "*";
+}
+
+/**
+ * Resolve host -> IPAddress (IPv4 for now)
+ * @param {any} ctx
+ * @param {string} host
+ * @returns {Promise<IPAddress|null>}
+ */
+async function resolveHostToIp(ctx, host) {
+  // direct v4 literal?
+  const n = ipStringToNumber(host);
+  if (n != null) return IPAddress.fromString(ipNumberToString(n >>> 0));
+
+  // DNS
+  const dns = ctx.os?.dns;
+  if (dns?.resolve) {
+    const resolved = await dns.resolve(host);
+    if (resolved instanceof IPAddress) return resolved;
+    if (typeof resolved === "number") return IPAddress.fromString(ipNumberToString(resolved >>> 0));
+    if (typeof resolved === "string") {
+      const n2 = ipStringToNumber(resolved);
+      if (n2 != null) return IPAddress.fromString(ipNumberToString(n2 >>> 0));
+      // if it's already an ip-like string, just try:
+      try { return IPAddress.fromString(resolved); } catch { /* ignore */ }
+    }
+  }
+
+  return null;
+}
 
 /** @type {import("../types.js").Command} */
 export const traceroute = {
@@ -55,19 +100,11 @@ export const traceroute = {
     const ipf = ctx.os.net;
     if (!ipf?.icmpEcho) return t("app.terminal.commands.traceroute.err.noNetworkDriver");
 
-    // resolve
-    let dstNum = ipStringToNumber(host);
-    if (dstNum == null) {
-      const dns = ctx.os?.dns;
-      if (dns?.resolve) {
-        const resolved = await dns.resolve(host);
-        if (typeof resolved === "number") dstNum = resolved >>> 0;
-        else if (typeof resolved === "string") dstNum = ipStringToNumber(resolved);
-      }
-    }
-    if (dstNum == null) return t("app.terminal.commands.traceroute.err.cannotResolve", { host });
+    const dstIp = await resolveHostToIp(ctx, host);
+    if (!dstIp) return t("app.terminal.commands.traceroute.err.cannotResolve", { host });
 
-    const dstStr = ipNumberToString(dstNum);
+    const dstStr = dstIp.toString();
+
     ctx.println(
       t("app.terminal.commands.traceroute.out.banner", {
         host,
@@ -81,48 +118,60 @@ export const traceroute = {
 
     for (let ttl = 1; ttl <= maxTtl; ttl++) {
       if (ctx.signal.aborted) throw new DOMException("Aborted", "AbortError");
+
       /** @type {(number|null)[]} */
       const times = [];
-      /** @type {number|null} */
-      let hopIpNum = null;
+
+      /** @type {any} */
+      let hop = null;
+
       let reached = false;
 
       for (let p = 1; p <= probes; p++) {
         if (ctx.signal.aborted) throw new DOMException("Aborted", "AbortError");
+
         const t0 = nowMs();
         try {
           const payload = new Uint8Array(56);
 
-          // NOTE: this requires your ipforwarder.icmpEcho to accept `ttl`
-          // and ideally return `from` (router ip) and/or `reached`.
-          const res = await ipf.icmpEcho(dstNum, {
+          // Works now; later your stack may additionally return {from, reached}
+          const res = await ipf.icmpEcho(dstIp, {
             timeoutMs,
             identifier,
             sequence: ((ttl << 8) | p) & 0xffff,
             payload,
-            ttl,
+            ttl, // may be ignored until you implement it in IPStack.send/route
           });
 
           const dt = Math.max(0, Math.round(res.timeMs ?? (nowMs() - t0)));
-          if (typeof res.from === "number") hopIpNum = res.from >>> 0;
           times.push(dt);
 
-          if (res.reached === true) reached = true;
-          if (hopIpNum != null && hopIpNum === dstNum) reached = true;
+          // Optional future fields:
+          if (res && typeof res === "object") {
+            if ("from" in res) hop = /** @type {any} */(res).from;
+            if (/** @type {any} */(res).reached === true) reached = true;
+          }
+
+          // Fallback: if hop equals destination (various representations)
+          const hopStr = fmtIP(hop);
+          if (hopStr !== "*" && hopStr === dstStr) reached = true;
+
         } catch (e) {
           if (ctx.signal.aborted) throw e;
 
+          // Optional: errors might carry {from}
           const any = /** @type {any} */ (e);
-          if (any && typeof any.from === "number") hopIpNum = any.from >>> 0;
+          if (any && typeof any === "object" && "from" in any) hop = any.from;
+
           times.push(null);
         }
 
         await sleepAbortable(10, ctx.signal);
       }
 
-      const hopIpStr = hopIpNum != null ? ipNumberToString(hopIpNum) : "*";
+      const hopStr = hop ? fmtIP(hop) : "*";
       const parts = times.map((v) => (v == null ? "*" : `${v} ms`));
-      ctx.println(`${ttl.toString().padStart(2, " ")}  ${hopIpStr}  ${parts.join("  ")}`);
+      ctx.println(`${ttl.toString().padStart(2, " ")}  ${hopStr}  ${parts.join("  ")}`);
 
       if (reached) break;
     }

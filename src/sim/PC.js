@@ -48,7 +48,7 @@ export class PC extends SimulatedObject {
 
         const fs = new VirtualFileSystem();
         const net = new IPStack(1, name);
-        this.os = new OS(name, fs, net);
+        this.os = new OS(this, fs, net);
 
         this.onPanelCreated = (body) => {
             this.os.mount(body);

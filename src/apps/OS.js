@@ -16,8 +16,14 @@ import { SimpleHTTPServerApp } from "./SimpleHTTPServerApp.js";
 import { DNSServerApp } from "./DNSServerApp.js";
 import { DNSResolver } from "./lib/DNSResolver.js";
 import { DHCPServerApp } from "./DHCPServerApp.js";
+import { SimulatedObject } from "../sim/SimulatedObject.js";
 
 export class OS {
+
+    /**
+     * @type {SimulatedObject} Reference to the simulated object
+     */
+    obj;
 
     /**
      * @type {string} name for the OS. Will act as hostname if dns is not present
@@ -65,12 +71,13 @@ export class OS {
     title;
 
     /**
-     * @param {string} name name of the os to use, acts as hostname until DNS is loaded.
+     * @param {SimulatedObject} obj
      * @param {VirtualFileSystem} fs
      * @param {IPStack} net
      */
-    constructor(name = "OS", fs, net) {
-        this.name = name;
+    constructor(obj, fs, net) {
+        this.obj = obj;
+        this.name = obj.name;
         this.net = net;
         this.fs = fs;
         this.root.classList.add("os-root");
@@ -277,6 +284,11 @@ export class OS {
 
     _getFocusedApp() {
         return this.runningApps.find(a => a.pid === this.focusID) ?? null;
+    }
+
+    setName(name) {
+        this.obj.setName(name);
+        this.name=name;
     }
 }
 
