@@ -14,7 +14,6 @@ function computeVersion() {
     if (!commits || commits === "0") return base;
 
     let v = `${base}+dev.${commits}.${hash}`;
-    if (raw.endsWith("-dirty")) v += ".dirty";
     return v;
   } catch {
     return "0.0.0";
