@@ -458,3 +458,63 @@ textarea.log {
   max-height: 240px;
 }
 
+/**************** MAIL *******************************/
+/* Minimal styling for the mailbox list */
+.app-simple-mail-server .user-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.app-simple-mail-server .user-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.app-simple-mail-server .user-row-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0; /* allows ellipsis */
+}
+
+.app-simple-mail-server .user-row-title {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-simple-mail-server .user-row-sub {
+  font-size: 12px;
+  opacity: 0.75;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-simple-mail-server .user-row-right {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* Make the list look decent even if the parent is narrow */
+.app-simple-mail-server .user-row-right button {
+  white-space: nowrap;
+}
+
+/* Optional: when empty, keep spacing consistent */
+.app-simple-mail-server .user-list .msg {
+  padding: 8px 10px;
+  opacity: 0.8;
+}

@@ -402,9 +402,10 @@ export class SimpleTCPClientApp extends GenericProcess {
   _sendFromUI() {
     if (!this.connected || !this.connKey) return;
 
-    const msg = (this.msgEl?.value ?? "");
+    let msg = (this.msgEl?.value ?? "");
     if (!msg.trim()) return;
 
+    if (!msg.endsWith("\r\n")) msg += "\r\n";
     const data = encodeUTF8(msg);
 
     const info = parseTCPKey(this.connKey);
@@ -419,7 +420,6 @@ export class SimpleTCPClientApp extends GenericProcess {
         who,
         msg,
         len: data.length,
-        hex: hexPreview(data),
       }));
       if (this.msgEl) this.msgEl.value = "";
     } catch (e) {

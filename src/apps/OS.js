@@ -17,6 +17,7 @@ import { DNSServerApp } from "./DNSServerApp.js";
 import { DNSResolver } from "./lib/DNSResolver.js";
 import { DHCPServerApp } from "./DHCPServerApp.js";
 import { SimulatedObject } from "../sim/SimulatedObject.js";
+import { SimpleMailServerApp } from "./SimpleMailServerApp.js";
 
 export class OS {
 
@@ -92,7 +93,7 @@ export class OS {
     _registerApps() {
         const launchlist = 
             [IPv4ConfigApp, TerminalApp, TextEditorApp, SimpleTCPClientApp, SimpleTCPServerApp, 
-            SimpleHTTPServerApp, SparktailHTTPClientApp, UDPEchoServerApp, DNSServerApp, DHCPServerApp, AboutApp];
+            SimpleHTTPServerApp, SparktailHTTPClientApp, UDPEchoServerApp, DNSServerApp, DHCPServerApp, SimpleMailServerApp, AboutApp];
 
         launchlist.forEach((e) => this.exec(e));
     }
