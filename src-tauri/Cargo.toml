@@ -1,6 +1,6 @@
 [package]
 name = "beavertracer"
-version = "0.1.0"
+version = "0.0.7+dev.4.0cd6d9a"
 description = "Beavertracer"
 authors = ["you"]
 license = ""
