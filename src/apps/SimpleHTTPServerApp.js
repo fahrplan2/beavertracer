@@ -5,6 +5,8 @@ import { Disposer } from "../lib/Disposer.js";
 import { UILib as UI } from "./lib/UILib.js";
 import { SimControl } from "../SimControl.js"; // ggf. Pfad anpassen
 import { t } from "../i18n/index.js";
+import { IPAddress } from "../net/models/IPAddress.js";
+
 
 /**
  * @param {number} n
@@ -374,7 +376,7 @@ export class SimpleHTTPServerApp extends GenericProcess {
 
     let ref = null;
     try {
-      ref = this.os.net.openTCPServerSocket(0, this.port); // bind 0.0.0.0
+      ref = this.os.net.openTCPServerSocket(new IPAddress(4,0), this.port); // bind 0.0.0.0
     } catch (e) {
       const reason = (e instanceof Error ? e.message : String(e));
       this._append(t("app.simplehttpserver.log.openSocketError", { time: nowStamp(), reason }));

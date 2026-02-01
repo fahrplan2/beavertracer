@@ -1,12 +1,12 @@
 //@ts-check
 
 import { t } from "../../../../i18n/index.js";
-import { ipNumberToString, ipStringToNumber } from "../lib/ip.js";
 import { nowMs } from "../lib/time.js";
 import { sleepAbortable } from "../lib/abort.js";
 import { SimControl } from "../../../../SimControl.js";
 
 import { DNSPacket } from "../../../../net/pdu/DNSPacket.js";
+import { IPAddress } from "../../../../net/models/IPAddress.js";
 
 /** @type {import("../types.js").Command} */
 export const dig = {
@@ -47,7 +47,6 @@ export const dig = {
 
     /** @param {any} rr */
     const formatRData = (rr) => {
-      // rr.data comes from DNSPacket decoding
       if (rr.type === DNSPacket.TYPE_A && rr.data instanceof Uint8Array) {
         const ip = ipv4U8ToString(rr.data);
         return ip || "<bad A>";
@@ -56,13 +55,11 @@ export const dig = {
         return rr.data;
       }
       if (rr.type === DNSPacket.TYPE_MX) {
-        // if you implemented MX decode as {preference, exchange}
         if (rr.data && typeof rr.data === "object") {
           const pref = rr.data.preference ?? rr.data.pref ?? 0;
           const ex = rr.data.exchange ?? rr.data.host ?? "";
           return `${pref} ${ex}`;
         }
-        // fallback: raw
         return String(rr.data);
       }
       if (rr.type === DNSPacket.TYPE_CNAME && typeof rr.data === "string") return rr.data;
@@ -83,6 +80,40 @@ export const dig = {
       s = String(s ?? "").trim();
       if (s.endsWith(".")) s = s.slice(0, -1);
       return s;
+    };
+
+    /**
+     * @param {number} n
+     */
+    const v4NumToStr = (n) => {
+      const x = (n >>> 0);
+      return `${(x >>> 24) & 255}.${(x >>> 16) & 255}.${(x >>> 8) & 255}.${x & 255}`;
+    };
+
+    /**
+     * Try parse host as IPAddress (IPv4/IPv6). Returns null if invalid.
+     * @param {string} host
+     * @returns {IPAddress|null}
+     */
+    const parseIp = (host) => {
+      try {
+        const ip = IPAddress.fromString(String(host).trim());
+        return ip;
+      } catch {
+        return null;
+      }
+    };
+
+    /**
+     * We only support sending UDP via the IPv4 stack for now.
+     * @param {IPAddress} ip
+     * @returns {number|null} v4 u32
+     */
+    const toV4NumOrNull = (ip) => {
+      try {
+        if (ip && ip.isV4()) return (/** @type {number} */(ip.getNumber()) >>> 0);
+      } catch {}
+      return null;
     };
 
     // parse args:
@@ -115,21 +146,18 @@ export const dig = {
           short = true;
           continue;
         }
-        // +time=2 (seconds)
         if (a.startsWith("+time=")) {
           const v = Number(a.slice("+time=".length));
           if (!Number.isFinite(v) || v <= 0) return t("app.terminal.commands.dig.err.invalidTime");
           timeoutMs = Math.max(1, Math.floor(v * 1000));
           continue;
         }
-        // +tries=2
         if (a.startsWith("+tries=")) {
           const v = Number(a.slice("+tries=".length));
           if (!Number.isFinite(v) || v <= 0) return t("app.terminal.commands.dig.err.invalidTries");
           tries = Math.max(1, Math.min(10, Math.floor(v)));
           continue;
         }
-        // unknown +option -> ignore
         continue;
       }
 
@@ -139,19 +167,16 @@ export const dig = {
         continue;
       }
 
-      // first non-option: name
       if (!qname) {
         qname = String(take() ?? "").trim();
         continue;
       }
 
-      // second non-option: type
       if (!qtypeStr) {
         qtypeStr = String(take() ?? "").trim();
         continue;
       }
 
-      // rest ignored
       argv.shift();
     }
 
@@ -161,37 +186,6 @@ export const dig = {
     const qtype = typeMap.get(qtypeStr.toUpperCase()) ?? (qtypeStr ? Number(qtypeStr) : DNSPacket.TYPE_A);
     const finalType = Number.isInteger(qtype) ? (qtype & 0xffff) : DNSPacket.TYPE_A;
 
-    // Determine server IP
-    // If no @server given: try ctx.os.dns?.server or fallback 127.0.0.1
-    let serverNum = null;
-
-    const resolveHostToIpNum = async (host) => {
-      const direct = ipStringToNumber(host);
-      if (direct != null) return direct >>> 0;
-
-      // optional: use OS resolver if present (but note: may call your dnsd!)
-      const dns = ctx.os?.dns;
-      if (dns?.resolve) {
-        const r = await dns.resolve(host);
-        if (typeof r === "number") return r >>> 0;
-        if (typeof r === "string") {
-          const n = ipStringToNumber(r);
-          if (n != null) return n >>> 0;
-        }
-      }
-      return null;
-    };
-
-    if (serverStr) {
-      serverNum = await resolveHostToIpNum(serverStr);
-      if (serverNum == null) return t("app.terminal.commands.dig.err.cannotResolveServer", { host: serverStr });
-    } else {
-      // default: localhost
-      serverNum = ipStringToNumber("127.0.0.1");
-      if (serverNum == null) serverNum = 0x7f000001;
-    }
-
-    const serverIp = ipNumberToString(serverNum >>> 0);
     const name = normalizeName(qname);
 
     const net = ctx.os?.net;
@@ -199,18 +193,71 @@ export const dig = {
       return t("app.terminal.commands.dig.err.noUdp");
     }
 
-    // Open an ephemeral UDP socket (try port 0, else try a range)
+    /**
+     * Resolve host to server IPAddress. We accept:
+     * - direct IP literal
+     * - ctx.os.dns.resolve(host) -> string or number (legacy)
+     *
+     * Returns an IPAddress (may be v4/v6), BUT we require v4 for sending.
+     * @param {string} host
+     * @returns {Promise<IPAddress|null>}
+     */
+    const resolveHostToIp = async (host) => {
+      const direct = parseIp(host);
+      if (direct) return direct;
+
+      const dns = ctx.os?.dns;
+      if (dns?.resolve) {
+        const r = await dns.resolve(host);
+
+        if (r instanceof IPAddress) return r;
+
+        if (typeof r === "string") {
+          const ip = parseIp(r);
+          if (ip) return ip;
+        }
+
+        if (typeof r === "number") {
+          // legacy: v4 number
+          const s = v4NumToStr(r >>> 0);
+          const ip = parseIp(s);
+          if (ip) return ip;
+        }
+      }
+
+      return null;
+    };
+
+    // Determine server IP
+    /** @type {IPAddress|null} */
+    let serverIpObj = null;
+
+    if (serverStr) {
+      serverIpObj = await resolveHostToIp(serverStr);
+      if (serverIpObj == null) {
+        return t("app.terminal.commands.dig.err.cannotResolveServer", { host: serverStr });
+      }
+    } else {
+      serverIpObj = IPAddress.fromString("127.0.0.1");
+    }
+
+    // For now the UDP/IP stack is IPv4-only
+    const serverV4Num = toV4NumOrNull(serverIpObj);
+    if (serverV4Num == null) {
+      return t("app.terminal.commands.dig.err.cannotResolveServer", { host: serverStr || "127.0.0.1" });
+    }
+
+    const serverIpText = serverIpObj.toString();
+
+    // Open an ephemeral UDP socket
     const openEphemeral = () => {
       try {
         return net.openUDPSocket(0, 0);
       } catch {
-        // fallback: try random high ports
         for (let p = 49152; p <= 65535; p++) {
           try {
             return net.openUDPSocket(0, p);
-          } catch {
-            // keep trying
-          }
+          } catch { /* keep trying */ }
         }
         throw new Error("cannot open udp socket");
       }
@@ -237,19 +284,49 @@ export const dig = {
     });
 
     const payload = query.pack();
-
     const started = nowMs();
+
+    /**
+     * Send UDP either with IPAddress (new API) or number (legacy API).
+     * @param {any} dstIpObj
+     * @param {number} dstIpNum
+     * @param {number} dstPort
+     * @param {Uint8Array} data
+     */
+    const sendUdpCompat = (dstIpObj, dstIpNum, dstPort, data) => {
+      try {
+        // new style (IPAddress)
+        net.sendUDPSocket(sock, dstIpObj, dstPort, data);
+      } catch {
+        // old style (number)
+        net.sendUDPSocket(sock, dstIpNum >>> 0, dstPort, data);
+      }
+    };
+
+    /**
+     * Normalize res.src to v4 u32 if possible, else null.
+     * @param {any} src
+     * @returns {number|null}
+     */
+    const srcToV4NumOrNull = (src) => {
+      if (typeof src === "number") return (src >>> 0);
+      if (src instanceof IPAddress) {
+        const n = toV4NumOrNull(src);
+        return n == null ? null : n;
+      }
+      return null;
+    };
 
     /** @param {number} ms */
     const recvWithTimeout = async (ms) => {
       const t0 = nowMs();
+
       while (true) {
         if (ctx.signal.aborted) throw new DOMException("Aborted", "AbortError");
 
         const elapsed = nowMs() - t0;
         if (elapsed >= ms) return null;
 
-        // race recv vs timeout slice (so we can remain abortable)
         const slice = Math.max(1, Math.min(25 * SimControl.tick, ms - elapsed));
         const res = await Promise.race([
           net.recvUDPSocket(sock),
@@ -259,20 +336,25 @@ export const dig = {
         if (res === "__timeout__") continue;
         if (res == null) return null;
 
-        const src = typeof res.src === "number" ? res.src >>> 0 : null;
-        const srcPort = typeof res.srcPort === "number" ? res.srcPort | 0 : null;
-        const data = (res.payload instanceof Uint8Array) ? res.payload : (res.data instanceof Uint8Array ? res.data : null);
+        const srcV4 = srcToV4NumOrNull(res.src);
+        const srcPort = typeof res.srcPort === "number" ? (res.srcPort | 0) : null;
+
+        const data =
+          (res.payload instanceof Uint8Array) ? res.payload :
+          (res.data instanceof Uint8Array) ? res.data :
+          null;
+
         if (!data) continue;
 
-        // Only accept from our chosen server:port (if info exists)
-        if (src != null && src !== (serverNum >>> 0)) continue;
+        // accept only from chosen server if src info exists
+        if (srcV4 != null && srcV4 !== (serverV4Num >>> 0)) continue;
+
+        // Port check: keep it permissive (some stacks may not report exact port)
         if (srcPort != null && srcPort !== port) {
-          // some stacks may show server ephemeral; so don't be too strict
-          // comment the next line if it causes drops
+          // if this causes issues, comment out:
           // continue;
         }
 
-        // Parse and match ID
         try {
           const pkt = DNSPacket.fromBytes(data);
           if ((pkt.id & 0xffff) !== (id & 0xffff)) continue;
@@ -289,30 +371,26 @@ export const dig = {
       for (let attempt = 1; attempt <= tries; attempt++) {
         if (ctx.signal.aborted) throw new DOMException("Aborted", "AbortError");
 
-        net.sendUDPSocket(sock, serverNum >>> 0, port, payload);
+        sendUdpCompat(serverIpObj, serverV4Num, port, payload);
 
         resp = await recvWithTimeout(timeoutMs);
         if (resp) break;
       }
 
       if (!resp) {
-        ctx.println(t("app.terminal.commands.dig.out.timeout", { server: serverIp, port }));
+        ctx.println(t("app.terminal.commands.dig.out.timeout", { server: serverIpText, port }));
         return;
       }
 
       const elapsedMs = Math.max(0, Math.round(nowMs() - started));
 
       if (short) {
-        // print only answer RDATA lines (like dig +short)
-        for (const rr of resp.answers ?? []) {
-          ctx.println(formatRData(rr));
-        }
+        for (const rr of resp.answers ?? []) ctx.println(formatRData(rr));
         return;
       }
 
-      // dig-like verbose output (simplified)
       ctx.println(`; <<>> dig (sim) <<>> ${name} ${typeToString(finalType)}`);
-      ctx.println(`;; SERVER: ${serverIp}#${port}`);
+      ctx.println(`;; SERVER: ${serverIpText}#${port}`);
       ctx.println(`;; QUERY ID: ${resp.id}  ;; rcode: ${resp.rcode}  ;; time: ${elapsedMs} ms`);
       ctx.println("");
 
@@ -326,9 +404,7 @@ export const dig = {
         if (!arr || arr.length === 0) return;
         ctx.println(title);
         for (const rr of arr) {
-          ctx.println(
-            `${rr.name}\t${rr.ttl}\tIN\t${typeToString(rr.type)}\t${formatRData(rr)}`
-          );
+          ctx.println(`${rr.name}\t${rr.ttl}\tIN\t${typeToString(rr.type)}\t${formatRData(rr)}`);
         }
         ctx.println("");
       };

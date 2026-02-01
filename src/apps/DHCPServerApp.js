@@ -5,18 +5,85 @@ import { UILib as UI } from "./lib/UILib.js";
 import { Disposer } from "../lib/Disposer.js";
 import { t } from "../i18n/index.js";
 
-import {
-  nowStamp,
-  ipToString,
-  hexPreview,
-  IPOctetsToNumber,
-  IPNumberToUint8,
-  IPUInt8ToNumber,
-  MACToNumber,
-  assertLenU8,
-} from "../lib/helpers.js";
+import { nowStamp, hexPreview, MACToNumber, assertLenU8 } from "../lib/helpers.js";
+import { IPAddress } from "../net/models/IPAddress.js"; // ggf. Pfad anpassen
+import { DHCPPacket } from "../net/pdu/DHCPPacket.js";   // ggf. Pfad anpassen
 
-import { DHCPPacket } from "../net/pdu/DHCPPacket.js"; // <-- adjust if needed
+/**
+ * DHCP ist hier IPv4 (DHCPv4). Wir machen den Code aber "IPv6-ready",
+ * indem wir überall IPAddress verwenden (API), und nur beim DHCP-PDU
+ * konsequent IPv4-bytes/u32 benutzen.
+ */
+
+// ------------------------- IPv4 helpers (for DHCP wire format) -------------------------
+
+/** @param {number} n */
+function u32(n) { return (n >>> 0); }
+
+/** @param {number} ipU32 */
+function v4u32ToU8(ipU32) {
+  const x = u32(ipU32);
+  return new Uint8Array([(x >>> 24) & 255, (x >>> 16) & 255, (x >>> 8) & 255, x & 255]);
+}
+
+/** @param {Uint8Array} u8 */
+function u8ToV4u32(u8) {
+  if (!(u8 instanceof Uint8Array) || u8.length !== 4) return 0;
+  return u32(((u8[0] << 24) >>> 0) + (u8[1] << 16) + (u8[2] << 8) + u8[3]);
+}
+
+/** @param {IPAddress} ip */
+function v4NumberOrThrow(ip) {
+  if (!(ip instanceof IPAddress) || !ip.isV4()) throw new Error("expected IPv4 IPAddress");
+  const n = ip.getNumber();
+  if (typeof n !== "number") throw new Error("expected IPv4 number");
+  return u32(n);
+}
+
+/** @param {number} ipU32 */
+function v4u32ToString(ipU32) {
+  const x = u32(ipU32);
+  return `${(x >>> 24) & 255}.${(x >>> 16) & 255}.${(x >>> 8) & 255}.${x & 255}`;
+}
+
+/** @param {number} ipU32 */
+function v4u32ToIPAddress(ipU32) {
+  // safest: parse dotted (works even if internal representation changes)
+  return IPAddress.fromString(v4u32ToString(ipU32));
+}
+
+/**
+ * Parse IPv4 dotted string into IPAddress.
+ * (DHCPv4 config only; if you ever add DHCPv6, you’ll add a separate parser)
+ * @param {string} s
+ */
+function parseIPv4Address(s) {
+  const ip = IPAddress.fromString(String(s ?? "").trim());
+  if (!ip || !(ip instanceof IPAddress) || !ip.isV4()) throw new Error(`invalid IPv4: ${s}`);
+  return ip;
+}
+
+/**
+ * Parse comma-separated DNS list into IPAddress[]
+ * @param {string} s
+ */
+function parseIPv4List(s) {
+  const parts = String(s ?? "")
+    .split(",")
+    .map(x => x.trim())
+    .filter(Boolean);
+
+  if (!parts.length) throw new Error("dns must not be empty");
+
+  return parts.map(parseIPv4Address);
+}
+
+/** @param {IPAddress} ip */
+function ipToText(ip) {
+  return (ip instanceof IPAddress) ? ip.toString() : String(ip ?? "");
+}
+
+// ------------------------- App -------------------------
 
 /**
  * /etc/dhcpd.conf JSON format (string):
@@ -85,6 +152,7 @@ export class DHCPServerApp extends GenericProcess {
 
   /**
    * Lease table: key is MACToNumber(mac) as string (BigInt -> string).
+   * Intern speichern wir u32 + Bytes (weil DHCP-PDU IPv4 ist).
    * @type {Map<string, { ipNum:number, ipBytes:Uint8Array, expiresAt:number }>}
    */
   leases = new Map();
@@ -92,7 +160,18 @@ export class DHCPServerApp extends GenericProcess {
   /** @type {Set<number>} */
   allocated = new Set();
 
-  /** @type {{rangeStart:number, rangeEnd:number, dns:number[], gateway:number, leaseTime:number, subnetMask:number, serverId:number}} */
+  /**
+   * DHCP config as IPAddress (IPv4-only values), but API-friendly.
+   * @type {{
+   *  rangeStart: IPAddress,
+   *  rangeEnd: IPAddress,
+   *  dns: IPAddress[],
+   *  gateway: IPAddress,
+   *  leaseTime: number,
+   *  subnetMask: IPAddress,
+   *  serverId: IPAddress
+   * }}
+   */
   cfg = DHCPServerApp.defaultCfg();
 
   run() {
@@ -195,7 +274,7 @@ export class DHCPServerApp extends GenericProcess {
     if (this.dnsEl) this.dnsEl.disabled = dis;
     if (this.gatewayEl) this.gatewayEl.disabled = dis;
     if (this.leaseTimeEl) this.leaseTimeEl.disabled = dis;
-    if (this.saveBtn) this.saveBtn.disabled = dis; // config changes only when stopped
+    if (this.saveBtn) this.saveBtn.disabled = dis;
     if (this.loadBtn) this.loadBtn.disabled = dis;
   }
 
@@ -217,14 +296,14 @@ export class DHCPServerApp extends GenericProcess {
   // ------------------ config (JSON) ------------------
 
   static defaultCfg() {
-    const gw = DHCPServerApp.parseIP("192.168.1.1");
+    const gw = parseIPv4Address("192.168.1.1");
     return {
-      rangeStart: DHCPServerApp.parseIP("192.168.1.100"),
-      rangeEnd: DHCPServerApp.parseIP("192.168.1.200"),
-      dns: [DHCPServerApp.parseIP("1.1.1.1"), DHCPServerApp.parseIP("8.8.8.8")],
+      rangeStart: parseIPv4Address("192.168.1.100"),
+      rangeEnd: parseIPv4Address("192.168.1.200"),
+      dns: [parseIPv4Address("1.1.1.1"), parseIPv4Address("8.8.8.8")],
       gateway: gw,
       leaseTime: 3600,
-      subnetMask: DHCPServerApp.parseIP("255.255.255.0"),
+      subnetMask: parseIPv4Address("255.255.255.0"),
       serverId: gw,
     };
   }
@@ -233,7 +312,6 @@ export class DHCPServerApp extends GenericProcess {
     try {
       const txt = await this.os.fs.readFile(this.confPath); // string
       if (!txt.trim()) {
-        // create default file
         const def = DHCPServerApp.cfgToJSON(DHCPServerApp.defaultCfg());
         await this.os.fs.writeFile(this.confPath, def);
         this.cfg = DHCPServerApp.defaultCfg();
@@ -245,7 +323,6 @@ export class DHCPServerApp extends GenericProcess {
     } catch (e) {
       const reason = (e instanceof Error ? e.message : String(e));
       this._appendLog(`[${nowStamp()}] ${t("app.dhcpserver.log.configLoadFailed")} ${reason}`);
-      // keep current cfg
     }
 
     this._writeStateToUI();
@@ -267,14 +344,24 @@ export class DHCPServerApp extends GenericProcess {
   }
 
   _writeStateToUI() {
-    if (this.rangeStartEl) this.rangeStartEl.value = ipToString(this.cfg.rangeStart);
-    if (this.rangeEndEl) this.rangeEndEl.value = ipToString(this.cfg.rangeEnd);
-    if (this.gatewayEl) this.gatewayEl.value = ipToString(this.cfg.gateway);
-    if (this.dnsEl) this.dnsEl.value = this.cfg.dns.map(ipToString).join(",");
+    if (this.rangeStartEl) this.rangeStartEl.value = ipToText(this.cfg.rangeStart);
+    if (this.rangeEndEl) this.rangeEndEl.value = ipToText(this.cfg.rangeEnd);
+    if (this.gatewayEl) this.gatewayEl.value = ipToText(this.cfg.gateway);
+    if (this.dnsEl) this.dnsEl.value = this.cfg.dns.map(ipToText).join(",");
     if (this.leaseTimeEl) this.leaseTimeEl.value = String(this.cfg.leaseTime);
   }
 
-  /** @returns {{rangeStart:number, rangeEnd:number, dns:number[], gateway:number, leaseTime:number, subnetMask:number, serverId:number}} */
+  /**
+   * @returns {{
+   *  rangeStart: IPAddress,
+   *  rangeEnd: IPAddress,
+   *  dns: IPAddress[],
+   *  gateway: IPAddress,
+   *  leaseTime: number,
+   *  subnetMask: IPAddress,
+   *  serverId: IPAddress
+   * }}
+   */
   _readUIConfigOrThrow() {
     const rsS = (this.rangeStartEl?.value ?? "").trim();
     const reS = (this.rangeEndEl?.value ?? "").trim();
@@ -282,57 +369,52 @@ export class DHCPServerApp extends GenericProcess {
     const gwS = (this.gatewayEl?.value ?? "").trim();
     const ltS = (this.leaseTimeEl?.value ?? "").trim();
 
-    const rs = DHCPServerApp.parseIP(rsS);
-    const re = DHCPServerApp.parseIP(reS);
-    const gw = DHCPServerApp.parseIP(gwS);
+    const rs = parseIPv4Address(rsS);
+    const re = parseIPv4Address(reS);
+    const gw = parseIPv4Address(gwS);
 
-    const dnsParts = dnsS.split(",").map(s => s.trim()).filter(Boolean);
-    if (!dnsParts.length) throw new Error("dns must not be empty");
-    const dns = dnsParts.map(DHCPServerApp.parseIP);
+    const dns = parseIPv4List(dnsS);
 
     const lt = Number(ltS || "3600");
     if (!Number.isFinite(lt) || lt <= 0) throw new Error("leaseTime must be > 0");
 
-    const rangeStart = Math.min(rs, re) >>> 0;
-    const rangeEnd = Math.max(rs, re) >>> 0;
+    // normalize ranges numerically (IPv4 only)
+    const rsN = v4NumberOrThrow(rs);
+    const reN = v4NumberOrThrow(re);
+    const rangeStartN = Math.min(rsN, reN) >>> 0;
+    const rangeEndN = Math.max(rsN, reN) >>> 0;
 
     return {
-      rangeStart,
-      rangeEnd,
+      rangeStart: v4u32ToIPAddress(rangeStartN),
+      rangeEnd: v4u32ToIPAddress(rangeEndN),
       dns,
       gateway: gw,
       leaseTime: Math.floor(lt),
-      subnetMask: DHCPServerApp.parseIP("255.255.255.0"),
+      subnetMask: parseIPv4Address("255.255.255.0"),
       serverId: gw,
     };
   }
 
   /**
-   * Parse dotted IP string using existing helper IPOctetsToNumber.
-   * @param {string} s
-   */
-  static parseIP(s) {
-    const parts = s.trim().split(".");
-    if (parts.length !== 4) throw new Error(`invalid IPv4: ${s}`);
-    const oct = parts.map(p => Number(p));
-    for (const n of oct) {
-      if (!Number.isInteger(n) || n < 0 || n > 255) throw new Error(`invalid IPv4: ${s}`);
-    }
-    return IPOctetsToNumber(oct[0], oct[1], oct[2], oct[3]) >>> 0;
-  }
-
-  /**
-   * @param {{rangeStart:number, rangeEnd:number, dns:number[], gateway:number, leaseTime:number, subnetMask:number, serverId:number}} cfg
+   * @param {{
+   *  rangeStart: IPAddress,
+   *  rangeEnd: IPAddress,
+   *  dns: IPAddress[],
+   *  gateway: IPAddress,
+   *  leaseTime: number,
+   *  subnetMask: IPAddress,
+   *  serverId: IPAddress
+   * }} cfg
    */
   static cfgToJSON(cfg) {
     const o = {
-      rangeStart: ipToString(cfg.rangeStart),
-      rangeEnd: ipToString(cfg.rangeEnd),
-      dns: cfg.dns.map(ipToString),
-      gateway: ipToString(cfg.gateway),
+      rangeStart: cfg.rangeStart.toString(),
+      rangeEnd: cfg.rangeEnd.toString(),
+      dns: cfg.dns.map(d => d.toString()),
+      gateway: cfg.gateway.toString(),
       leaseTime: cfg.leaseTime,
-      subnetMask: ipToString(cfg.subnetMask),
-      serverId: ipToString(cfg.serverId),
+      subnetMask: cfg.subnetMask.toString(),
+      serverId: cfg.serverId.toString(),
     };
     return JSON.stringify(o, null, 2) + "\n";
   }
@@ -340,53 +422,65 @@ export class DHCPServerApp extends GenericProcess {
   /**
    * Parse JSON and merge into defaults.
    * @param {string} txt
-   * @param {{rangeStart:number, rangeEnd:number, dns:number[], gateway:number, leaseTime:number, subnetMask:number, serverId:number}} fallback
+   * @param {{
+   *  rangeStart: IPAddress,
+   *  rangeEnd: IPAddress,
+   *  dns: IPAddress[],
+   *  gateway: IPAddress,
+   *  leaseTime: number,
+   *  subnetMask: IPAddress,
+   *  serverId: IPAddress
+   * }} fallback
    */
   static cfgFromJSON(txt, fallback) {
     /** @type {any} */
     let o = null;
     try {
       o = JSON.parse(txt);
-    } catch (e) {
+    } catch {
       throw new Error("Config JSON parse failed");
     }
 
     const out = { ...fallback };
 
-    if (typeof o?.rangeStart === "string") out.rangeStart = DHCPServerApp.parseIP(o.rangeStart);
-    if (typeof o?.rangeEnd === "string") out.rangeEnd = DHCPServerApp.parseIP(o.rangeEnd);
-    if (typeof o?.gateway === "string") out.gateway = DHCPServerApp.parseIP(o.gateway);
+    if (typeof o?.rangeStart === "string") out.rangeStart = parseIPv4Address(o.rangeStart);
+    if (typeof o?.rangeEnd === "string") out.rangeEnd = parseIPv4Address(o.rangeEnd);
+    if (typeof o?.gateway === "string") out.gateway = parseIPv4Address(o.gateway);
 
     if (Array.isArray(o?.dns)) {
-      const nums = o.dns.filter(x => typeof x === "string").map(DHCPServerApp.parseIP);
-      if (nums.length) out.dns = nums;
+      const arr = o.dns.filter(x => typeof x === "string").map(parseIPv4Address);
+      if (arr.length) out.dns = arr;
     } else if (typeof o?.dns === "string") {
-      // allow dns as comma-separated string too
-      const parts = o.dns.split(",").map(s => s.trim()).filter(Boolean);
-      const nums = parts.map(DHCPServerApp.parseIP);
-      if (nums.length) out.dns = nums;
+      const arr = parseIPv4List(o.dns);
+      if (arr.length) out.dns = arr;
     }
 
     if (Number.isFinite(o?.leaseTime) && o.leaseTime > 0) out.leaseTime = Math.floor(o.leaseTime);
 
     if (typeof o?.subnetMask === "string") {
-      try { out.subnetMask = DHCPServerApp.parseIP(o.subnetMask); } catch {}
+      try { out.subnetMask = parseIPv4Address(o.subnetMask); } catch {}
     }
+
     if (typeof o?.serverId === "string") {
-      try { out.serverId = DHCPServerApp.parseIP(o.serverId); } catch { out.serverId = out.gateway; }
+      try { out.serverId = parseIPv4Address(o.serverId); } catch { out.serverId = out.gateway; }
     } else {
       out.serverId = out.gateway;
     }
 
-    // normalize range
-    if (out.rangeEnd < out.rangeStart) {
-      const tmp = out.rangeStart;
-      out.rangeStart = out.rangeEnd;
-      out.rangeEnd = tmp;
+    // normalize range order (IPv4)
+    try {
+      const a = v4NumberOrThrow(out.rangeStart);
+      const b = v4NumberOrThrow(out.rangeEnd);
+      if (b < a) {
+        out.rangeStart = v4u32ToIPAddress(b);
+        out.rangeEnd = v4u32ToIPAddress(a);
+      }
+    } catch {
+      // ignore; but DHCPv4 needs v4 anyway
     }
 
-    // if subnetMask missing/zero, default /24
-    if (!out.subnetMask) out.subnetMask = DHCPServerApp.parseIP("255.255.255.0");
+    // default /24 if missing
+    if (!out.subnetMask) out.subnetMask = parseIPv4Address("255.255.255.0");
 
     return out;
   }
@@ -408,14 +502,18 @@ export class DHCPServerApp extends GenericProcess {
     if (this.running) return;
 
     try {
-      const port = this.os.net.openUDPSocket(0, this.listenPort);
+      // IPv6-ready API: bind address is IPAddress.
+      // For DHCPv4 we bind 0.0.0.0
+      const anyV4 = new IPAddress(4, 0); // wie du es bereits gemacht hast
+      const port = this.os.net.openUDPSocket(anyV4, this.listenPort);
+
       this.socketPort = port;
       this.running = true;
 
       this._appendLog(`[${nowStamp()}] ${t("app.dhcpserver.log.listening")} udp/${this.listenPort} sock=${port}`);
       this._syncButtons();
 
-      this._recvLoop();
+      void this._recvLoop();
     } catch (e) {
       this.socketPort = null;
       this.running = false;
@@ -462,7 +560,8 @@ export class DHCPServerApp extends GenericProcess {
       if (!this.running || this.socketPort == null) break;
       if (pkt == null) break;
 
-      const srcIpNum = typeof pkt.src === "number" ? pkt.src : 0;
+      // IPv6-ready: src is expected to be IPAddress
+      const srcIP = (pkt.src instanceof IPAddress) ? pkt.src : null;
       const srcPort = typeof pkt.srcPort === "number" ? pkt.srcPort : 0;
 
       /** @type {Uint8Array} */
@@ -471,7 +570,9 @@ export class DHCPServerApp extends GenericProcess {
           ? pkt.payload
           : (pkt.data instanceof Uint8Array ? pkt.data : new Uint8Array());
 
-      this._appendLog(`[${nowStamp()}] RX ${ipToString(srcIpNum)}:${srcPort} len=${data.length} ${hexPreview(data)}`);
+      this._appendLog(
+        `[${nowStamp()}] RX ${(srcIP ? srcIP.toString() : "?")}:${srcPort} len=${data.length} ${hexPreview(data)}`
+      );
 
       let dh = null;
       try {
@@ -501,27 +602,36 @@ export class DHCPServerApp extends GenericProcess {
 
     // MAC key
     const mac = req.getClientMAC();
-    // ensure 6 bytes (DHCPPacket.getClientMAC returns chaddr[0..hlen], but we want 6)
     const mac6 = assertLenU8(mac, 6, "client mac");
-    const macKey = String(MACToNumber(mac6)); // BigInt -> string key
+    const macKey = String(MACToNumber(mac6));
 
     this._cleanupExpiredLeases();
 
+    // cached numeric config for range comparisons (IPv4)
+    const rangeStartN = v4NumberOrThrow(this.cfg.rangeStart);
+    const rangeEndN = v4NumberOrThrow(this.cfg.rangeEnd);
+    const serverIdN = v4NumberOrThrow(this.cfg.serverId);
+    const subnetMaskN = v4NumberOrThrow(this.cfg.subnetMask);
+    const gatewayN = v4NumberOrThrow(this.cfg.gateway);
+    const dnsNums = this.cfg.dns.map(v4NumberOrThrow);
+
+    // broadcast addr (IPv4)
+    const bcastIP = IPAddress.fromString("255.255.255.255");
+
     if (mt === DHCPPacket.MT_DISCOVER) {
-      const offerLease = this._allocateOrReuse(macKey);
+      const offerLease = this._allocateOrReuse(macKey, rangeStartN, rangeEndN);
       if (!offerLease) {
         this._appendLog(`[${nowStamp()}] DHCP: DISCOVER mac=${macKey} -> no free ip`);
         return;
       }
 
-      const offer = this._makeReplyBase(req, offerLease.ipBytes);
+      const offer = this._makeReplyBase(req, offerLease.ipBytes, serverIdN);
       offer.setMessageType(DHCPPacket.MT_OFFER);
-      this._fillStandardOptions(offer);
+      this._fillStandardOptions(offer, subnetMaskN, gatewayN, dnsNums);
 
       try {
-        // Broadcast is safest in sim
-        this.os.net.sendUDPSocket(sockPort, 0xffffffff >>> 0, 68, offer.pack());
-        this._appendLog(`[${nowStamp()}] DHCP: OFFER mac=${macKey} yiaddr=${ipToString(offerLease.ipNum)}`);
+        this.os.net.sendUDPSocket(sockPort, bcastIP, 68, offer.pack());
+        this._appendLog(`[${nowStamp()}] DHCP: OFFER mac=${macKey} yiaddr=${v4u32ToString(offerLease.ipNum)}`);
       } catch (e) {
         const reason = (e instanceof Error ? e.message : String(e));
         this._appendLog(`[${nowStamp()}] DHCP: OFFER send failed: ${reason}`);
@@ -530,30 +640,31 @@ export class DHCPServerApp extends GenericProcess {
     }
 
     if (mt === DHCPPacket.MT_REQUEST) {
-      // requested ip option(50) or ciaddr
       const opt50 = req.getOption(DHCPPacket.OPT_REQUESTED_IP);
       let requestedNum = 0;
 
       if (opt50 && opt50.length === 4) {
-        requestedNum = IPUInt8ToNumber(opt50) >>> 0;
+        requestedNum = u8ToV4u32(opt50);
       } else {
-        requestedNum = IPUInt8ToNumber(req.ciaddr) >>> 0;
+        requestedNum = u8ToV4u32(req.ciaddr);
       }
 
       const existing = this.leases.get(macKey);
-      const chosen = (existing ? existing.ipNum : requestedNum) >>> 0;
+      const chosen = u32(existing ? existing.ipNum : requestedNum);
 
-      const inRange = chosen >= this.cfg.rangeStart && chosen <= this.cfg.rangeEnd;
+      const inRange = chosen >= rangeStartN && chosen <= rangeEndN;
       const freeOrMine = this._isIpFreeOrOwnedByMac(chosen, macKey);
 
       if (!inRange || !freeOrMine) {
-        const nak = this._makeReplyBase(req, IPNumberToUint8(0));
+        const nak = this._makeReplyBase(req, v4u32ToU8(0), serverIdN);
         nak.setMessageType(DHCPPacket.MT_NAK);
-        nak.setOption(DHCPPacket.OPT_SERVER_ID, IPNumberToUint8(this.cfg.serverId));
+        nak.setOption(DHCPPacket.OPT_SERVER_ID, v4u32ToU8(serverIdN));
 
         try {
-          this.os.net.sendUDPSocket(sockPort, 0xffffffff >>> 0, 68, nak.pack());
-          this._appendLog(`[${nowStamp()}] DHCP: NAK mac=${macKey} requested=${ipToString(chosen)} (inRange=${inRange}, freeOrMine=${freeOrMine})`);
+          this.os.net.sendUDPSocket(sockPort, bcastIP, 68, nak.pack());
+          this._appendLog(
+            `[${nowStamp()}] DHCP: NAK mac=${macKey} requested=${v4u32ToString(chosen)} (inRange=${inRange}, freeOrMine=${freeOrMine})`
+          );
         } catch (e) {
           const reason = (e instanceof Error ? e.message : String(e));
           this._appendLog(`[${nowStamp()}] DHCP: NAK send failed: ${reason}`);
@@ -563,13 +674,13 @@ export class DHCPServerApp extends GenericProcess {
 
       const lease = this._commitLease(macKey, chosen);
 
-      const ack = this._makeReplyBase(req, lease.ipBytes);
+      const ack = this._makeReplyBase(req, lease.ipBytes, serverIdN);
       ack.setMessageType(DHCPPacket.MT_ACK);
-      this._fillStandardOptions(ack);
+      this._fillStandardOptions(ack, subnetMaskN, gatewayN, dnsNums);
 
       try {
-        this.os.net.sendUDPSocket(sockPort, 0xffffffff >>> 0, 68, ack.pack());
-        this._appendLog(`[${nowStamp()}] DHCP: ACK mac=${macKey} yiaddr=${ipToString(lease.ipNum)} lease=${this.cfg.leaseTime}s`);
+        this.os.net.sendUDPSocket(sockPort, bcastIP, 68, ack.pack());
+        this._appendLog(`[${nowStamp()}] DHCP: ACK mac=${macKey} yiaddr=${v4u32ToString(lease.ipNum)} lease=${this.cfg.leaseTime}s`);
       } catch (e) {
         const reason = (e instanceof Error ? e.message : String(e));
         this._appendLog(`[${nowStamp()}] DHCP: ACK send failed: ${reason}`);
@@ -582,7 +693,7 @@ export class DHCPServerApp extends GenericProcess {
       if (l) {
         this.leases.delete(macKey);
         this.allocated.delete(l.ipNum);
-        this._appendLog(`[${nowStamp()}] DHCP: RELEASE mac=${macKey} ip=${ipToString(l.ipNum)}`);
+        this._appendLog(`[${nowStamp()}] DHCP: RELEASE mac=${macKey} ip=${v4u32ToString(l.ipNum)}`);
       } else {
         this._appendLog(`[${nowStamp()}] DHCP: RELEASE mac=${macKey} (no lease)`);
       }
@@ -592,8 +703,8 @@ export class DHCPServerApp extends GenericProcess {
     this._appendLog(`[${nowStamp()}] DHCP: ignore mt=${mt} mac=${macKey}`);
   }
 
-  /** @param {DHCPPacket} req @param {Uint8Array} yiaddr */
-  _makeReplyBase(req, yiaddr) {
+  /** @param {DHCPPacket} req @param {Uint8Array} yiaddr @param {number} serverIdU32 */
+  _makeReplyBase(req, yiaddr, serverIdU32) {
     const rep = new DHCPPacket({
       op: 2,
       htype: req.htype,
@@ -602,28 +713,28 @@ export class DHCPServerApp extends GenericProcess {
       xid: req.xid,
       secs: 0,
       flags: req.flags,
-      ciaddr: IPNumberToUint8(0),
+      ciaddr: v4u32ToU8(0),
       yiaddr: yiaddr,
-      siaddr: IPNumberToUint8(this.cfg.serverId),
-      giaddr: IPNumberToUint8(0),
+      siaddr: v4u32ToU8(serverIdU32),
+      giaddr: v4u32ToU8(0),
       chaddr: req.chaddr.slice(0, 16),
       sname: new Uint8Array(64),
       file: new Uint8Array(128),
       options: [],
     });
 
-    rep.setOption(DHCPPacket.OPT_SERVER_ID, IPNumberToUint8(this.cfg.serverId));
+    rep.setOption(DHCPPacket.OPT_SERVER_ID, v4u32ToU8(serverIdU32));
     return rep;
   }
 
-  /** @param {DHCPPacket} p */
-  _fillStandardOptions(p) {
-    p.setOption(DHCPPacket.OPT_SUBNET_MASK, IPNumberToUint8(this.cfg.subnetMask));
-    p.setOption(DHCPPacket.OPT_ROUTER, IPNumberToUint8(this.cfg.gateway));
+  /** @param {DHCPPacket} p @param {number} subnetMaskU32 @param {number} gatewayU32 @param {number[]} dnsU32 */
+  _fillStandardOptions(p, subnetMaskU32, gatewayU32, dnsU32) {
+    p.setOption(DHCPPacket.OPT_SUBNET_MASK, v4u32ToU8(subnetMaskU32));
+    p.setOption(DHCPPacket.OPT_ROUTER, v4u32ToU8(gatewayU32));
 
     // DNS list
-    const dnsBytes = new Uint8Array(this.cfg.dns.length * 4);
-    this.cfg.dns.forEach((n, i) => dnsBytes.set(IPNumberToUint8(n), i * 4));
+    const dnsBytes = new Uint8Array(dnsU32.length * 4);
+    dnsU32.forEach((n, i) => dnsBytes.set(v4u32ToU8(n), i * 4));
     p.setOption(DHCPPacket.OPT_DNS, dnsBytes);
 
     // lease time + T1/T2
@@ -634,14 +745,14 @@ export class DHCPServerApp extends GenericProcess {
     p.setOption(DHCPPacket.OPT_REBINDING_T2, DHCPServerApp.u32be(t2));
   }
 
-  /** @param {string} macKey */
-  _allocateOrReuse(macKey) {
+  /** @param {string} macKey @param {number} rangeStartN @param {number} rangeEndN */
+  _allocateOrReuse(macKey, rangeStartN, rangeEndN) {
     const existing = this.leases.get(macKey);
     if (existing && existing.expiresAt > Date.now()) return existing;
 
-    for (let ip = this.cfg.rangeStart; ip <= this.cfg.rangeEnd; ip = (ip + 1) >>> 0) {
+    for (let ip = rangeStartN; ip <= rangeEndN; ip = (ip + 1) >>> 0) {
       if (!this.allocated.has(ip)) {
-        const tmp = { ipNum: ip >>> 0, ipBytes: IPNumberToUint8(ip), expiresAt: Date.now() + 60_000 };
+        const tmp = { ipNum: ip >>> 0, ipBytes: v4u32ToU8(ip), expiresAt: Date.now() + 60_000 };
         this.leases.set(macKey, tmp);
         this.allocated.add(ip);
         return tmp;
@@ -656,7 +767,7 @@ export class DHCPServerApp extends GenericProcess {
     if (prev && prev.ipNum !== ipNum) this.allocated.delete(prev.ipNum);
 
     this.allocated.add(ipNum);
-    const lease = { ipNum: ipNum >>> 0, ipBytes: IPNumberToUint8(ipNum), expiresAt: Date.now() + this.cfg.leaseTime * 1000 };
+    const lease = { ipNum: ipNum >>> 0, ipBytes: v4u32ToU8(ipNum), expiresAt: Date.now() + this.cfg.leaseTime * 1000 };
     this.leases.set(macKey, lease);
     return lease;
   }
@@ -681,11 +792,6 @@ export class DHCPServerApp extends GenericProcess {
   /** @param {number} n */
   static u32be(n) {
     const v = (n >>> 0);
-    return new Uint8Array([
-      (v >>> 24) & 0xff,
-      (v >>> 16) & 0xff,
-      (v >>> 8) & 0xff,
-      v & 0xff,
-    ]);
+    return new Uint8Array([(v >>> 24) & 0xff, (v >>> 16) & 0xff, (v >>> 8) & 0xff, v & 0xff]);
   }
 }

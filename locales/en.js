@@ -8,7 +8,9 @@ export default {
 
   "app.about.title": "About",
   "app.about.heading.systemInfo": "System info",
-  "app.about.body.systemInfo": "OS: {os}\nPID: {pid}\nRunning apps: {runningApps}\nFocusID: {focusID}\nTime: {time}",
+  "app.about.body.systemInfo": "OS: {os}\nRunning apps: {runningApps}\nTime: {time}",
+  "app.about.button.rename": "rename",
+  "app.about.placeholder.pcName": "PC",
 
   "app.dhcpserver.title": "DHCP Server",
 
@@ -51,7 +53,6 @@ export default {
   "app.ipv4config.button.apply": "Apply",
   "app.ipv4config.label.interface": "Interface",
   "app.ipv4config.label.ip": "IP",
-  "app.ipv4config.label.netmask": "Netmask",
   "app.ipv4config.label.gateway": "Gateway",
   "app.ipv4config.msg.noInterfaces": "No interfaces available.",
   "app.ipv4config.msg.interfaceNotFound": "Interface {i} not found.",
@@ -60,11 +61,11 @@ export default {
   "app.ipv4config.msg.appliedGwCleared": "Applied: if{i} = {ip} / {netmask}, gw (cleared)",
   "app.ipv4config.err.noNetDriver": "No net driver on OS.",
   "app.ipv4config.err.invalidIp": "Invalid IP address.",
-  "app.ipv4config.err.invalidNetmask": "Invalid netmask.",
-  "app.ipv4config.err.invalidNetmaskContiguous": "Invalid netmask (must be contiguous bits, e.g. 255.255.255.0).",
   "app.ipv4config.err.invalidGateway": "Invalid gateway address.",
   "app.ipv4config.err.gatewayZero": "Gateway must not be 0.0.0.0.",
   "app.ipv4config.err.applyFailed": "Apply failed: {reason}",
+  "app.ipv4config.err.invalidPrefixLength":"invalid prefix length",
+  "app.ipv4config.label.prefixLength":"Prefix Length",
   "app.ipv4config.label.dnsServer": "DNS server",
   "app.ipv4config.err.invalidDnsServer": "Invalid DNS server address",
   "app.ipv4config.msg.appliedWithGwDns":
@@ -148,6 +149,71 @@ export default {
   "app.simplehttpserver.http.404.details": "File not found:\n{norm}\n\nFS path:\n{fsPath}",
 
 
+  "app.simplemailserver.title": "Simple Mail Server",
+
+  "app.simplemailserver.placeholder.domain": "maildomain (e.g. example.local)",
+  "app.simplemailserver.placeholder.user": "user",
+  "app.simplemailserver.placeholder.password": "password",
+
+  "app.simplemailserver.label.domain": "Maildomain",
+  "app.simplemailserver.label.smtpPort": "SMTP port",
+  "app.simplemailserver.label.pop3Port": "POP3 port",
+  "app.simplemailserver.label.imapPort": "IMAP port",
+  "app.simplemailserver.label.users": "Mailboxes",
+  "app.simplemailserver.label.user": "User",
+  "app.simplemailserver.label.password": "Password",
+  "app.simplemailserver.label.status": "Status",
+  "app.simplemailserver.label.log": "Log",
+
+  "app.simplemailserver.button.start": "Start",
+  "app.simplemailserver.button.stop": "Stop",
+  "app.simplemailserver.button.saveConfig": "Save config",
+  "app.simplemailserver.button.addOrUpdate": "Add/Update",
+  "app.simplemailserver.button.delete": "Delete",
+  "app.simplemailserver.button.clearQueue": "Clear queue",
+  "app.simplemailserver.button.seedDefault": "Seed test mail",
+
+  "app.simplemailserver.users.none": "(none)",
+  "app.simplemailserver.users.passwordHint": "password set",
+  "app.simplemailserver.users.seed": "Seed test mail",
+  "app.simplemailserver.users.delete": "Delete",
+
+  "app.simplemailserver.status.pid": "pid",
+  "app.simplemailserver.status.running": "running",
+  "app.simplemailserver.status.domain": "maildomain",
+  "app.simplemailserver.status.ports": "ports",
+  "app.simplemailserver.status.refs": "serverRef",
+  "app.simplemailserver.status.users": "users",
+  "app.simplemailserver.status.logEntries": "log entries",
+
+  "app.simplemailserver.log.wroteDefaultConfig": "wrote default config",
+  "app.simplemailserver.log.cannotWriteConfig": "cannot write config",
+  "app.simplemailserver.log.loadedConfig": "loaded config",
+  "app.simplemailserver.log.invalidConfig": "invalid config",
+  "app.simplemailserver.log.savedConfig": "saved config",
+  "app.simplemailserver.log.saveFailed": "save config failed",
+
+  "app.simplemailserver.log.userMissing": "user missing",
+  "app.simplemailserver.log.passwordMissing": "password missing",
+  "app.simplemailserver.log.userUpdated": "updated user",
+  "app.simplemailserver.log.userAdded": "added user",
+  "app.simplemailserver.log.userDeleted": "deleted user",
+  "app.simplemailserver.log.userNotFound": "user not found",
+
+  "app.simplemailserver.log.queueCleared": "cleared queue",
+  "app.simplemailserver.log.clearQueueFailed": "clear queue failed",
+
+  "app.simplemailserver.log.seedNeedUser": "seed: enter a user or use the per-user Seed button",
+  "app.simplemailserver.log.seedNoSuchUser": "seed: no such user",
+  "app.simplemailserver.log.seeded": "seeded test mail",
+
+  "app.simplemailserver.log.invalidDomain": "invalid maildomain",
+  "app.simplemailserver.log.invalidPorts": "invalid ports",
+
+  "app.simplemailserver.log.stopped": "stopped",
+  "app.simplemailserver.log.listening": "listening",
+
+
   "app.simpletcpclient.placeholder.host": "Host / Address",
   "app.simpletcpclient.placeholder.port": "Port (1..65535)",
   "app.simpletcpclient.placeholder.message": "Type a message…",
@@ -172,11 +238,11 @@ export default {
   "app.simpletcpclient.log.connectFailed": "[{time}] ERROR connect failed: {reason}",
   "app.simpletcpclient.log.disconnectRequested": "[{time}] DISCONNECT requested",
   "app.simpletcpclient.log.disconnectError": "[{time}] ERROR disconnect: {reason}",
-  "app.simpletcpclient.log.sent": "[{time}] ME -> {who}: \"{msg}\" (len={len} hex={hex})",
+  "app.simpletcpclient.log.sent": "[{time}] ME -> {who}: \"{msg}\"",
   "app.simpletcpclient.log.sendError": "[{time}] ERROR send: {reason}",
   "app.simpletcpclient.log.recvError": "[{time}] ERROR recv: {reason}",
   "app.simpletcpclient.log.remoteClosed": "[{time}] REMOTE CLOSED {who}",
-  "app.simpletcpclient.log.received": "[{time}] {who} -> ME: \"{text}\" (len={len} hex={hex})",
+  "app.simpletcpclient.log.received": "[{time}] {who} -> ME: \"{text}\"",
   "app.simpletcpclient.log.disconnected": "[{time}] DISCONNECTED",
   "app.simpletcpclient.err.noConnKey": "connectTCPConn did not return a connection key",
 
@@ -256,6 +322,7 @@ export default {
   "app.sparktail.err.bodyLimitExceeded": "Body limit exceeded (> {bodyLimit} bytes).",
   "app.sparktail.err.chunkedMissingCrlf": "Chunked parse: missing CRLF after chunk",
   "app.sparktail.err.invalidContentLength": "Invalid Content-Length",
+  "app.sparktail.err.cannotResolveHost": "Cannot resolve host",
 
   "app.sparktail.page.invalidUrl.title": "Invalid URL",
 

@@ -1,10 +1,47 @@
 //@ts-check
 
 import { t } from "../../../../i18n/index.js";
-import { ipNumberToString, ipStringToNumber } from "../lib/ip.js";
-import { sleep, nowMs } from "../lib/time.js";
+import { nowMs } from "../lib/time.js";
 import { sleepAbortable } from "../lib/abort.js";
 import { SimControl } from "../../../../SimControl.js";
+import { IPAddress } from "../../../../net/models/IPAddress.js";
+
+/**
+ * Try to parse host as IPAddress.
+ * For now: accept IPv4/IPv6 literals via IPAddress.fromString().
+ * @param {string} host
+ * @returns {IPAddress|null}
+ */
+function parseHostAsIp(host) {
+  try {
+    const ip = IPAddress.fromString(String(host).trim());
+    return ip;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Normalize resolver results into IPAddress (best effort, IPv4 only if number).
+ * @param {any} resolved
+ * @returns {IPAddress|null}
+ */
+function resolvedToIp(resolved) {
+  if (resolved instanceof IPAddress) return resolved;
+
+  if (typeof resolved === "string") {
+    return parseHostAsIp(resolved);
+  }
+
+  // Legacy: some resolvers return uint32 for IPv4
+  if (typeof resolved === "number" && Number.isFinite(resolved)) {
+    const n = (resolved >>> 0);
+    // IPAddress(4, number) is how you used it in IPStack already
+    return new IPAddress(4, n);
+  }
+
+  return null;
+}
 
 /** @type {import("../types.js").Command} */
 export const ping = {
@@ -47,7 +84,7 @@ export const ping = {
         continue;
       }
 
-      host = take() ?? "";
+      host = String(take() ?? "");
       break;
     }
 
@@ -56,19 +93,31 @@ export const ping = {
     const ipf = ctx.os.net;
     if (!ipf?.icmpEcho) return t("app.terminal.commands.ping.err.noNetworkDriver");
 
-    // resolve
-    let dstNum = ipStringToNumber(host);
-    if (dstNum == null) {
+    // resolve host -> IPAddress
+    let dstIp = parseHostAsIp(host);
+
+    if (!dstIp) {
       const dns = ctx.os?.dns;
       if (dns?.resolve) {
-        const resolved = await dns.resolve(host);
-        if (typeof resolved === "number") dstNum = resolved >>> 0;
-        else if (typeof resolved === "string") dstNum = ipStringToNumber(resolved);
+        try {
+          const resolved = await dns.resolve(host);
+          dstIp = resolvedToIp(resolved);
+        } catch {
+          // ignore, fall through to error
+        }
       }
     }
-    if (dstNum == null) return t("app.terminal.commands.ping.err.cannotResolve", { host });
 
-    const dstStr = ipNumberToString(dstNum);
+    if (!dstIp) return t("app.terminal.commands.ping.err.cannotResolve", { host });
+
+    // For now your stack is IPv4-only; keep a clear error
+    if (!dstIp.isV4()) {
+      return t("app.terminal.commands.ping.err.ipv6NotSupportedYet", { host });
+      // If you don't have this i18n key yet, replace with a simple string:
+      // return "IPv6 is not supported yet.";
+    }
+
+    const dstStr = dstIp.toString();
     const identifier = (Math.random() * 0xffff) | 0;
 
     ctx.println(t("app.terminal.commands.ping.out.banner", { host, dst: dstStr }));
@@ -89,13 +138,11 @@ export const ping = {
       try {
         const payload = new Uint8Array(56);
 
-        const res = await ipf.icmpEcho(dstNum, {
+        const res = await ipf.icmpEcho(dstIp, {
           timeoutMs,
           identifier,
           sequence: seq & 0xffff,
           payload,
-          // optional: if your stack supports it
-          // signal: ctx.signal,
         });
 
         if (ctx.signal.aborted) throw new DOMException("Aborted", "AbortError");

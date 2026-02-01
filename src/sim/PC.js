@@ -1,11 +1,9 @@
 //@ts-check
 
-import { DNSResolver } from "../apps/lib/DNSResolver.js";
 import { VirtualFileSystem } from "../apps/lib/VirtualFileSystem.js";
 import { OS } from "../apps/OS.js";
 import { IPStack } from "../net/IPStack.js";
 import { t } from "../i18n/index.js";
-import { SimControl } from "../SimControl.js";
 import { SimulatedObject } from "./SimulatedObject.js";
 
 
@@ -48,7 +46,7 @@ export class PC extends SimulatedObject {
 
         const fs = new VirtualFileSystem();
         const net = new IPStack(1, name);
-        this.os = new OS(name, fs, net);
+        this.os = new OS(this, fs, net);
 
         this.onPanelCreated = (body) => {
             this.os.mount(body);
