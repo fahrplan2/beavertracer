@@ -280,11 +280,12 @@ export class DNSServerApp extends GenericProcess {
     this.logEl = logBox;
 
     const panel = UI.panel([
-      UI.el("div", { text: "DNS Config (saved to " + this.configPath + ")" }),
-      tabs.root,
+      UI.el("h4",{ text: t("app.dnsd.label.server")}),
       UI.buttonRow([start, stop, save]),
+      UI.el("h4",{ text: t("app.dnsd.label.config")}),
+      tabs.root,
+      UI.el("h4",{ text: t("app.dnsd.label.log")}),
       status,
-      UI.el("div", { text: t("app.dnsd.label.log") }),
       logBox,
     ]);
 

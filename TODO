@@ -19,25 +19,18 @@ Netzwerkstack:
 - DHCP startet nicht nach dem Laden der Simulation automatisch
 
 Missing Features:
-- E-Mail-Server
 - E-Mail-Client
-- UX: App-Icons
 
 
-Roadmap to v0.2:
+Roadmap to v0.1:
 IPv6-"ready" (Stack soweit angepasst, dass man ihn auf IPv6 umstellen könnte)
 Hilfefunktion mit den wichtigsten Informationen
 Wireshalk-UI übersetzen (nur UI, Inhalte werden nicht übersetzt)
 Überarbeiten der Animationen, dass Single Step geht
 
-Roadmap to v0.3:
+Roadmap to v0.2:
 IPv6 (IPv6 Basis, ND, DAD, ICMPv6, RA, DNS AAAA, ...)
 Hilfe und einfaches Tutorial
-
-Roadmap to v0.4:
-
-
-
 
 Roadmap to v1.0:
 ... to be done ...

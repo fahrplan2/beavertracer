@@ -223,17 +223,16 @@ export class DHCPServerApp extends GenericProcess {
     this.logEl = logBox;
 
     const panel = UI.panel([
-      UI.el("div", { text: t("app.dhcpserver.label.config") }),
+      UI.el("h4", { text: t("app.dhcpserver.label.server") }),
+      UI.buttonRow([start, stop, clear]),
+      UI.el("h4", { text: t("app.dhcpserver.label.config") }),
       UI.row(t("app.dhcpserver.label.rangeStart"), rangeStart),
       UI.row(t("app.dhcpserver.label.rangeEnd"), rangeEnd),
       UI.row(t("app.dhcpserver.label.dns"), dns),
       UI.row(t("app.dhcpserver.label.gateway"), gateway),
       UI.row(t("app.dhcpserver.label.leaseTime"), leaseTime),
       UI.buttonRow([loadBtn, saveBtn]),
-      UI.el("hr", {}),
-      UI.el("div", { text: t("app.dhcpserver.label.server") }),
-      UI.buttonRow([start, stop, clear]),
-      UI.el("div", { text: t("app.dhcpserver.label.log") }),
+      UI.el("h4", { text: t("app.dhcpserver.label.log") }),
       logBox,
     ]);
 
