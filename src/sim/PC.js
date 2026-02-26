@@ -104,9 +104,5 @@ export class PC extends SimulatedObject {
     setPanelOpen(open) {
         super.setPanelOpen(open);
 
-        //Focus menu, when the panel was opend
-        if(open==true) {
-            this.os.unfocus();
-        }
     }
 }
