@@ -43,11 +43,14 @@ export default {
   "app.dhcpserver.log.recvError": "UDP receive error:",
   "app.dhcpserver.log.parseError": "DHCP parse error:",
 
-  "app.dnsd.button.save": "save",
-  "app.dnsd.button.start": "start",
-  "app.dnsd.button.stop": "stop",
+  "app.dnsd.button.save": "Save",
+  "app.dnsd.button.start": "Start",
+  "app.dnsd.button.stop": "Stop",
   "app.dnsd.label.log": "Log",
   "app.dnsd.title": "DNS-Server",
+  "app.dnsd.label.server": "Server",
+  "app.dnsd.label.config": "Configuration",
+
 
   "app.ipv4config.title": "IP Settings",
   "app.ipv4config.button.apply": "Apply",
