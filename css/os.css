@@ -59,27 +59,23 @@
     box-shadow: var(--shadow-soft);
 }
 
-/* Icon auf der Kachel */
-.menu button::after {
-    content: "";
+.menu button i {
     position: absolute;
 
     width: 40px;
     height: 40px;
 
-    /* exakt mittig auf der 62px-Kachel */
-    top: 21px;            /* 10px (Tile margin-top) + (62-40)/2 */
+    top: 21px;            /* same centering as before */
     left: 50%;
     transform: translateX(-50%);
 
-    background: currentColor;
+    font-size: 40px;
+    line-height: 40px;
+
+    color: currentColor;
     opacity: 0.95;
 
-    -webkit-mask: var(--icon) center / contain no-repeat;
-    mask: var(--icon) center / contain no-repeat;
-
     filter: drop-shadow(0 1px 0 rgba(255,255,255,0.35));
-
     pointer-events: none;
 }
 

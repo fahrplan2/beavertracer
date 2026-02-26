@@ -5,6 +5,7 @@ import { UILib as UI } from "./lib/UILib.js";
 import { Disposer } from "../lib/Disposer.js";
 import { t } from "../i18n/index.js";
 import { hexPreview, ipToString, nowStamp } from "../lib/helpers.js";
+import { IPAddress } from "../net/models/IPAddress.js";
 
 
 /**
@@ -173,7 +174,7 @@ export class SimpleTCPServerApp extends GenericProcess {
     if (this.running) return;
 
     try {
-      const port = this.os.net.openTCPServerSocket(0, this.port);
+      const port = this.os.net.openTCPServerSocket(new IPAddress(4,0), this.port);
       this.listenPort = port;
       this.running = true;
 

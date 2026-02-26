@@ -7,7 +7,7 @@ export class GenericProcess {
   }
 
   /** @type {string} icon of the app */
-  icon = "settings"; //Generic Icon
+  icon = "fa-gear";
   
   /** @type {number} */
   pid;

@@ -6,7 +6,8 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "tauri:build": "tauri build",
+    "tauri:win": "tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc"
   },
   "name": "beavertracer",
   "description": "",

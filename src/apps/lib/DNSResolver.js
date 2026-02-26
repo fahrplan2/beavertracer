@@ -2,32 +2,45 @@
 
 import { DNSPacket } from "../../net/pdu/DNSPacket.js";
 import { SimControl } from "../../SimControl.js";
+import { IPAddress } from "../../net/models/IPAddress.js";
 
 /**
  * System DNS resolver (UDP) with NS-fallback recursion.
- * Timing is REAL-TIME, but scaled by SimControl.tick (like your ping command).
+ * Timing is REAL-TIME, but scaled by SimControl.tick.
  *
- * Special: serverIp == 0 (0.0.0.0) => disabled resolver => resolve returns null/[] immediately.
+ * Special:
+ *   serverIp == null or 0.0.0.0 => disabled resolver => resolve returns null/[] immediately.
+ *
+ * IPStack-ready:
+ *   - stores server as IPAddress
+ *   - uses openUDPSocket(IPAddress, port)
+ *   - uses sendUDPSocket(sock, IPAddress, port, payload)
  */
 export class DNSResolver {
   /**
    * @param {any} os
-   * @param {number} serverIpNum IPv4 as unsigned 32-bit number
+   * @param {IPAddress|number|string|null} serverIp IPv4/IPv6 server address (legacy number allowed)
    * @param {object} [opts]
-   * @param {number} [opts.port] DNS port (default 53)
-   * @param {number} [opts.timeoutMs] per try in REAL ms (default 50 * SimControl.tick)
-   * @param {number} [opts.tries] number of tries (default 2)
-   * @param {boolean} [opts.cache] enable TTL cache (default true)
-   * @param {number} [opts.maxDepth] recursion depth (default 7)
-   * @param {number} [opts.negativeCacheSec] fallback TTL for empty/NX answers (default 5)
-   * @param {number} [opts.maxCacheSec] clamp TTL to avoid "forever" (default 3600)
+   * @param {number} [opts.port]
+   * @param {number} [opts.timeoutMs]
+   * @param {number} [opts.tries]
+   * @param {boolean} [opts.cache]
+   * @param {number} [opts.maxDepth]
+   * @param {number} [opts.negativeCacheSec]
+   * @param {number} [opts.maxCacheSec]
    */
-  constructor(os, serverIpNum, opts = {}) {
+  constructor(os, serverIp, opts = {}) {
     this.os = os;
-    this.serverIp = (serverIpNum >>> 0); // may be 0 => disabled
+
+    this.serverIp = this._toIPAddressOrNull(serverIp);
+    // treat 0.0.0.0 as disabled
+    if (this.serverIp && this.serverIp.isV4()) {
+      const n = this.serverIp.getNumber();
+      if (typeof n === "number" && (n >>> 0) === 0) this.serverIp = null;
+    }
+
     this.port = Number.isFinite(opts.port) ? (opts.port | 0) : 53;
 
-    // Defaults scaled by sim speed (real-time ms)
     const tick = this._tick();
     this.timeoutMs = Number.isFinite(opts.timeoutMs)
       ? (opts.timeoutMs | 0)
@@ -49,11 +62,10 @@ export class DNSResolver {
 
   /** @type {any} */ os;
 
-  /** @type {number} */ serverIp;
+  /** @type {IPAddress|null} */ serverIp;
   /** @type {number} */ port;
 
-  /** @type {number} */ timeoutMs; // REAL ms (already scaled by default)
-
+  /** @type {number} */ timeoutMs;
   /** @type {number} */ tries;
   /** @type {boolean} */ cacheEnabled;
   /** @type {number} */ maxDepth;
@@ -65,12 +77,21 @@ export class DNSResolver {
   _cache;
 
   /**
-   * Change DNS server and flush cache. serverIpNum == 0 disables resolver.
-   * @param {number} serverIpNum
+   * Backward-compatible: accept number/string/IPAddress.
+   * Passing 0 / "0.0.0.0" / null disables resolver.
+   * @param {IPAddress|number|string|null} server
    * @param {number} [port]
    */
-  setServer(serverIpNum, port) {
-    this.serverIp = (serverIpNum >>> 0); // 0 allowed => disabled
+  setServer(server, port) {
+    const ip = this._toIPAddressOrNull(server);
+    if (ip && ip.isV4()) {
+      const n = ip.getNumber();
+      if (typeof n === "number" && (n >>> 0) === 0) this.serverIp = null;
+      else this.serverIp = ip;
+    } else {
+      this.serverIp = ip; // could be v6
+    }
+
     if (port != null) this.port = port | 0;
     this._cache.clear();
   }
@@ -78,7 +99,8 @@ export class DNSResolver {
   // ---------------- public API ----------------
 
   /**
-   * Convenience: resolve host to ONE IPv4 (number). Returns null if not resolvable.
+   * Convenience: resolve host to ONE IPv4 (legacy number). Returns null if not resolvable.
+   * (Keeps your old API stable.)
    * @param {string} name
    * @returns {Promise<number|null>}
    */
@@ -89,7 +111,7 @@ export class DNSResolver {
   }
 
   /**
-   * Resolve A records as IPv4 numbers.
+   * Resolve A records as IPv4 numbers (legacy).
    * @param {string} name
    * @returns {Promise<number[]>}
    */
@@ -100,8 +122,18 @@ export class DNSResolver {
   }
 
   /**
+   * NEW: resolve A records as IPAddress objects.
+   * Useful once you migrate callers.
+   * @param {string} name
+   * @returns {Promise<IPAddress[]>}
+   */
+  async resolveA_IP(name) {
+    const nums = await this.resolveA(name);
+    return nums.map((n) => new IPAddress(4, n >>> 0));
+  }
+
+  /**
    * Resolve MX records.
-   * Expects rr.data as { preference, exchange } (your server uses that).
    * @param {string} name
    * @returns {Promise<Array<{preference:number, exchange:string, ttl:number}>>}
    */
@@ -132,7 +164,6 @@ export class DNSResolver {
 
   /**
    * Resolve NS records.
-   * rr.data expected to be hostname string.
    * @param {string} name
    * @returns {Promise<Array<{host:string, ttl:number}>>}
    */
@@ -155,7 +186,7 @@ export class DNSResolver {
   // ---------------- internal ----------------
 
   _isConfigured() {
-    return (this.serverIp >>> 0) !== 0;
+    return this.serverIp instanceof IPAddress;
   }
 
   _tick() {
@@ -183,14 +214,42 @@ export class DNSResolver {
   }
 
   /**
+   * Convert legacy inputs into IPAddress (IPv4 only for numbers).
+   * @param {any} v
+   * @returns {IPAddress|null}
+   */
+  _toIPAddressOrNull(v) {
+    try {
+      if (v == null) return null;
+      if (v instanceof IPAddress) return v;
+
+      if (typeof v === "number" && Number.isFinite(v)) {
+        return new IPAddress(4, (v >>> 0));
+      }
+
+      const s = String(v).trim();
+      if (!s) return null;
+
+      // allow "0" as disabled
+      if (s === "0") return new IPAddress(4, 0);
+
+      // IPAddress.fromString should accept v4/v6
+      return IPAddress.fromString(s);
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * Cache key includes target server+port.
    * @param {string} nameNorm
    * @param {number} qtype
-   * @param {number} serverIp
+   * @param {IPAddress} serverIp
    * @param {number} port
    */
   _cacheKey(nameNorm, qtype, serverIp, port) {
-    return `${nameNorm}|${qtype & 0xffff}|${serverIp >>> 0}|${port | 0}`;
+    // IMPORTANT: do NOT depend on legacy numbers anymore
+    return `${nameNorm}|${qtype & 0xffff}|${serverIp.toString()}|${port | 0}`;
   }
 
   /**
@@ -207,14 +266,16 @@ export class DNSResolver {
 
     /** @type {Set<string>} */
     const visited = new Set();
-    return this._queryRecursive(n, qtype & 0xffff, this.serverIp >>> 0, this.port | 0, this.maxDepth, visited);
+
+    // serverIp is guaranteed non-null here
+    return this._queryRecursive(n, qtype & 0xffff, /** @type {IPAddress} */ (this.serverIp), this.port | 0, this.maxDepth, visited);
   }
 
   /**
    * NS-fallback recursion.
    * @param {string} nameNorm
    * @param {number} qtype
-   * @param {number} serverIp
+   * @param {IPAddress} serverIp
    * @param {number} port
    * @param {number} depth
    * @param {Set<string>} visited
@@ -222,9 +283,8 @@ export class DNSResolver {
    */
   async _queryRecursive(nameNorm, qtype, serverIp, port, depth, visited) {
     if (depth <= 0) return null;
-    if ((serverIp >>> 0) === 0) return null;
 
-    const visitKey = `${nameNorm}|${qtype}|${serverIp}|${port}`;
+    const visitKey = `${nameNorm}|${qtype}|${serverIp.toString()}|${port}`;
     if (visited.has(visitKey)) return null;
     visited.add(visitKey);
 
@@ -249,7 +309,7 @@ export class DNSResolver {
 
       const nsIps = this._extractAasNumbers(nsAResp);
       for (const nsIp of nsIps) {
-        const sub = await this._queryRecursive(nameNorm, qtype, nsIp >>> 0, port, depth - 1, visited);
+        const sub = await this._queryRecursive(nameNorm, qtype, new IPAddress(4, nsIp >>> 0), port, depth - 1, visited);
         if (sub && ((sub.answers?.length ?? 0) > 0)) return sub;
       }
     }
@@ -259,17 +319,13 @@ export class DNSResolver {
 
   /**
    * One UDP DNS request to specific server.
-   * Uses safe receive logic: never more than ONE pending recvUDPSocket() at a time.
-   *
    * @param {string} nameNorm
    * @param {number} qtype
-   * @param {number} serverIp
+   * @param {IPAddress} serverIp
    * @param {number} port
    * @returns {Promise<DNSPacket|null>}
    */
   async _queryOnce(nameNorm, qtype, serverIp, port) {
-    if ((serverIp >>> 0) === 0) return null;
-
     const cacheKey = this._cacheKey(nameNorm, qtype, serverIp, port);
     if (this.cacheEnabled) {
       const hit = this._cache.get(cacheKey);
@@ -282,20 +338,22 @@ export class DNSResolver {
       return null;
     }
 
-    // Open an ephemeral UDP socket (same approach as your dig)
+    // bind 0.0.0.0 (v4) on ephemeral port
+    const bindAny = IPAddress.fromString("0.0.0.0");
+
     const openEphemeral = () => {
       try {
-        return net.openUDPSocket(0, 0);
+        // let port 0 mean ephemeral if supported
+        return net.openUDPSocket(bindAny, 0);
       } catch {
         for (let p = 49152; p <= 65535; p++) {
-          try { return net.openUDPSocket(0, p); } catch {}
+          try { return net.openUDPSocket(bindAny, p); } catch {}
         }
         throw new Error("cannot open udp socket");
       }
     };
 
     const sock = openEphemeral();
-
     const id = (Math.random() * 0xffff) | 0;
 
     const req = new DNSPacket({
@@ -317,12 +375,12 @@ export class DNSResolver {
     const payload = req.pack();
 
     try {
-      // IMPORTANT: keep exactly one pending recv promise per socket.
       /** @type {{p: Promise<any>}} */
       const st = { p: net.recvUDPSocket(sock) };
 
       for (let attempt = 1; attempt <= this.tries; attempt++) {
-        net.sendUDPSocket(sock, serverIp >>> 0, port | 0, payload);
+        // IMPORTANT: sendUDPSocket expects IPAddress now
+        net.sendUDPSocket(sock, serverIp, port | 0, payload);
 
         const deadline = this._nowRealMs() + Math.max(1, this.timeoutMs | 0);
         const resp = await this._waitForId(sock, id, deadline, st);
@@ -346,11 +404,9 @@ export class DNSResolver {
 
   /**
    * Wait for a DNS response with matching ID until deadline.
-   * IMPORTANT: uses a shared recv state so only ONE recvUDPSocket() is pending.
-   *
    * @param {number} sock
    * @param {number} id
-   * @param {number} deadlineMsReal absolute Date.now() deadline
+   * @param {number} deadlineMsReal
    * @param {{p: Promise<any>}} st
    * @returns {Promise<DNSPacket|null>}
    */
@@ -369,7 +425,6 @@ export class DNSResolver {
       if (res === "__timeout__") continue;
       if (res == null) return null;
 
-      // recv resolved -> arm next recv immediately
       st.p = net.recvUDPSocket(sock);
 
       const raw = res.payload ?? res.data ?? res.bytes ?? res.buf ?? null;
@@ -394,11 +449,6 @@ export class DNSResolver {
     return null;
   }
 
-  /**
-   * TTL selection for caching (seconds).
-   * @param {DNSPacket} resp
-   * @returns {number}
-   */
   _pickCacheTTLSeconds(resp) {
     const all = []
       .concat(resp.answers ?? [])
@@ -415,11 +465,6 @@ export class DNSResolver {
     return Math.max(1, Math.min(this.maxCacheSec, min | 0));
   }
 
-  /**
-   * Extract NS hostnames from authorities section.
-   * @param {DNSPacket} resp
-   * @returns {string[]}
-   */
   _extractNSHosts(resp) {
     /** @type {string[]} */
     const out = [];
@@ -430,11 +475,6 @@ export class DNSResolver {
     return Array.from(new Set(out));
   }
 
-  /**
-   * Extract A answers as IPv4 numbers from a response packet.
-   * @param {DNSPacket|null} resp
-   * @returns {number[]}
-   */
   _extractAasNumbers(resp) {
     if (!resp) return [];
     /** @type {number[]} */

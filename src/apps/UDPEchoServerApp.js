@@ -5,10 +5,10 @@ import { UILib as UI } from "./lib/UILib.js";
 import { Disposer } from "../lib/Disposer.js";
 import { t } from "../i18n/index.js";
 
-import { nowStamp, ipToString, hexPreview } from "../lib/helpers.js";
+import { nowStamp, hexPreview } from "../lib/helpers.js";
+import { IPAddress } from "../net/models/IPAddress.js"; // ggf. Pfad anpassen
 
 export class UDPEchoServerApp extends GenericProcess {
-
   get title() {
     return t("app.udpechoserver.title");
   }
@@ -42,7 +42,6 @@ export class UDPEchoServerApp extends GenericProcess {
 
   run() {
     this.root.classList.add("app", "app-udp-echo");
-    // NICHT automatisch starten – User entscheidet (kannst du ändern)
   }
 
   /**
@@ -52,7 +51,10 @@ export class UDPEchoServerApp extends GenericProcess {
     super.onMount(root);
     this.disposer.dispose();
 
-    const portInput = UI.input({ placeholder: t("app.udpechoserver.placeholder.port"), value: String(this.port) });
+    const portInput = UI.input({
+      placeholder: t("app.udpechoserver.placeholder.port"),
+      value: String(this.port),
+    });
     this.portEl = portInput;
 
     /** @type {HTMLButtonElement} */
@@ -65,11 +67,11 @@ export class UDPEchoServerApp extends GenericProcess {
     this.startBtn = start;
     this.stopBtn = stop;
 
-    const logBox = UI.textarea({ 
+    const logBox = UI.textarea({
       className: "log",
       readonly: "true",
       spellcheck: "false",
-     });
+    });
     this.logEl = logBox;
 
     const panel = UI.panel([
@@ -81,7 +83,6 @@ export class UDPEchoServerApp extends GenericProcess {
 
     this.root.replaceChildren(panel);
 
-    // UI-Status initial
     this._syncButtons();
     this._renderLog();
   }
@@ -96,7 +97,6 @@ export class UDPEchoServerApp extends GenericProcess {
   }
 
   destroy() {
-    // ensure background loop is stopped + socket closed
     this._stop();
     super.destroy();
   }
@@ -109,23 +109,16 @@ export class UDPEchoServerApp extends GenericProcess {
 
   _renderLog() {
     if (!this.logEl) return;
-
-    // show last N lines
     const maxLines = 200;
     const lines = this.log.length > maxLines ? this.log.slice(-maxLines) : this.log;
     this.logEl.value = lines.join("\n");
     this.logEl.scrollTop = this.logEl.scrollHeight;
   }
 
-  /**
-   * @param {string} line
-   */
+  /** @param {string} line */
   _appendLog(line) {
     this.log.push(line);
-    // keep memory bounded
     if (this.log.length > 2000) this.log.splice(0, this.log.length - 2000);
-
-    // Only repaint UI when visible (but keep log always)
     if (this.mounted) this._renderLog();
   }
 
@@ -144,15 +137,14 @@ export class UDPEchoServerApp extends GenericProcess {
     if (this.running) return;
 
     try {
-      // bindaddr must be 0 (0.0.0.0)
-      const port = this.os.net.openUDPSocket(0, this.port);
+      const port = this.os.net.openUDPSocket(new IPAddress(4,0), this.port);
       this.socketPort = port;
       this.running = true;
+
       this._appendLog(t("app.udpechoserver.log.listening", { time: nowStamp(), port }));
       this._syncButtons();
 
-      // background receive loop
-      this._recvLoop();
+      void this._recvLoop();
     } catch (e) {
       this.socketPort = null;
       this.running = false;
@@ -182,39 +174,103 @@ export class UDPEchoServerApp extends GenericProcess {
     this._syncButtons();
   }
 
+  // ---------------- IPv6-ready helpers ----------------
+
+  /**
+   * Normalize incoming "src/dst" into an IPAddress if possible.
+   * Accepts: IPAddress | number(v4) | string | Uint8Array(4/16)
+   *
+   * @param {any} v
+   * @returns {IPAddress|null}
+   */
+  _asIPAddress(v) {
+    try {
+      if (v instanceof IPAddress) return v;
+
+      if (typeof v === "number" && Number.isFinite(v)) {
+        // legacy v4 uint32 -> string -> IPAddress
+        const x = (v >>> 0);
+        const s = `${(x >>> 24) & 255}.${(x >>> 16) & 255}.${(x >>> 8) & 255}.${x & 255}`;
+        return IPAddress.fromString(s);
+      }
+
+      if (typeof v === "string" && v.trim()) {
+        return IPAddress.fromString(v.trim());
+      }
+
+      if (v instanceof Uint8Array) {
+        // you should have IPAddress.fromUInt8(bytes) – if not, add it.
+        if (typeof IPAddress.fromUInt8 === "function") {
+          return IPAddress.fromUInt8(v);
+        }
+        // fallback: handle v4 only
+        if (v.length === 4) {
+          const s = `${v[0]}.${v[1]}.${v[2]}.${v[3]}`;
+          return IPAddress.fromString(s);
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  }
+
+  /**
+   * Convert an IPAddress to whatever your current IPStack UDP API needs.
+   * Today: number (IPv4 only) for dstip/srcip.
+   * Later: you can change this to pass IPAddress through directly.
+   *
+   * @param {IPAddress|null} ip
+   * @returns {number|null} v4 uint32 or null if not representable (e.g., IPv6)
+   */
+  _ipToLegacyV4Number(ip) {
+    if (!ip) return null;
+    if (!ip.isV4()) return null;
+    const n = ip.getNumber();
+    // ensure number
+    return (typeof n === "number" && Number.isFinite(n)) ? (n >>> 0) : null;
+  }
+
+  /** @param {IPAddress|null} ip */
+  _ipToString(ip) {
+    return ip ? ip.toString() : "*";
+  }
+
+  // ---------------- main loop ----------------
+
   async _recvLoop() {
-    // note: closeUDPSocket resolves waiters with null -> we exit gracefully
     while (this.running && this.socketPort != null) {
-      const port = this.socketPort;
+      const sock = this.socketPort;
 
       /** @type {any} */
       let pkt = null;
+
       try {
-        pkt = await this.os.net.recvUDPSocket(port);
+        pkt = await this.os.net.recvUDPSocket(sock);
       } catch (e) {
         const reason = (e instanceof Error ? e.message : String(e));
         this._appendLog(t("app.udpechoserver.log.recvError", { time: nowStamp(), reason }));
         continue;
       }
 
-      // socket closed / stop signaled
       if (!this.running || this.socketPort == null) break;
       if (pkt == null) break;
 
-      // We assume pkt has: src, srcPort, payload (Uint8Array)
-      // If your structure differs, tell me the exact shape and I adapt.
-      const srcIp = typeof pkt.src === "number" ? pkt.src : 0;
-      const srcPort = typeof pkt.srcPort === "number" ? pkt.srcPort : 0;
+      // expected shape today: {src:number, srcPort:number, payload:Uint8Array}
+      // but accept future shapes.
+      const srcIp = this._asIPAddress(pkt.src ?? pkt.srcIp ?? pkt.remote ?? null);
+      const srcPort = typeof pkt.srcPort === "number"
+        ? (pkt.srcPort | 0)
+        : (typeof pkt.remotePort === "number" ? (pkt.remotePort | 0) : 0);
 
       /** @type {Uint8Array} */
       const data =
-        pkt.payload instanceof Uint8Array
-          ? pkt.payload
-          : (pkt.data instanceof Uint8Array ? pkt.data : new Uint8Array());
+        pkt.payload instanceof Uint8Array ? pkt.payload :
+        (pkt.data instanceof Uint8Array ? pkt.data : new Uint8Array());
 
       this._appendLog(t("app.udpechoserver.log.rx", {
         time: nowStamp(),
-        ip: ipToString(srcIp),
+        ip: this._ipToString(srcIp),
         srcPort,
         len: data.length,
         hex: hexPreview(data),
@@ -222,10 +278,24 @@ export class UDPEchoServerApp extends GenericProcess {
 
       // echo back
       try {
-        this.os.net.sendUDPSocket(port, srcIp, srcPort, data);
+        // TODAY: your IPStack expects dstip as IPv4 number.
+        // If src is IPv6, we cannot answer yet -> log a nice "not supported yet".
+        const dstV4 = this._ipToLegacyV4Number(srcIp);
+        if (dstV4 == null) {
+          this._appendLog(
+            t("app.udpechoserver.log.sendError", {
+              time: nowStamp(),
+              reason: "IPv6 peer address not supported by current stack yet",
+            })
+          );
+          continue;
+        }
+
+        this.os.net.sendUDPSocket(sock, dstV4, srcPort, data);
+
         this._appendLog(t("app.udpechoserver.log.txEcho", {
           time: nowStamp(),
-          ip: ipToString(srcIp),
+          ip: this._ipToString(srcIp),
           srcPort,
           len: data.length,
         }));
@@ -235,7 +305,6 @@ export class UDPEchoServerApp extends GenericProcess {
       }
     }
 
-    // loop ends: ensure buttons reflect state
     this._syncButtons();
   }
 }

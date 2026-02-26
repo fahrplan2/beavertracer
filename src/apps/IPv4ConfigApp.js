@@ -5,20 +5,22 @@ import { GenericProcess } from "./GenericProcess.js";
 import { Disposer } from "../lib/Disposer.js";
 import { UILib } from "./lib/UILib.js";
 
-import {
-  sleep,
-  prefixToNetmask,
-  IPNumberToUint8,
-  IPUInt8ToNumber,
-  assertLenU8,
-} from "../lib/helpers.js";
+import { sleep, assertLenU8 } from "../lib/helpers.js";
+import { DHCPPacket } from "../net/pdu/DHCPPacket.js";
+import { IPAddress } from "../net/models/IPAddress.js"; // <- ggf. Pfad bei dir: "./models/IPAddress.js" o.ä.
 
-import { DHCPPacket } from "../net/pdu/DHCPPacket.js"; // <-- adjust path if needed
-
+/**
+ * IPv4 Config App (static / DHCP) adapted to:
+ * - NetworkInterface.ip: IPAddress
+ * - NetworkInterface.prefixLength: number
+ * - IPStack routes: {dst: IPAddress, prefixLength: number, interf: number, nexthop: IPAddress}
+ */
 export class IPv4ConfigApp extends GenericProcess {
   get title() {
     return t("app.ipv4config.title");
   }
+
+  icon="fa-gears";
 
   /** @type {string} */
   configPath = "/etc/ip.config";
@@ -30,7 +32,7 @@ export class IPv4ConfigApp extends GenericProcess {
   /** @type {HTMLSelectElement|null} */ modeSel = null;
 
   /** @type {HTMLInputElement|null} */ ipEl = null;
-  /** @type {HTMLInputElement|null} */ maskEl = null;
+  /** @type {HTMLInputElement|null} */ prefixEl = null;
   /** @type {HTMLInputElement|null} */ gwEl = null;
   /** @type {HTMLInputElement|null} */ dnsEl = null;
 
@@ -53,12 +55,10 @@ export class IPv4ConfigApp extends GenericProcess {
     void this._autoDhcpStart();
   }
 
-
   async _autoDhcpStart() {
     try {
       await this._loadPersistedConfig();
     } catch {
-      // if config can't be loaded, just don't autostart
       return;
     }
 
@@ -68,18 +68,12 @@ export class IPv4ConfigApp extends GenericProcess {
       const mode = this.persisted.modeByIface[String(i)] ?? "static";
       if (mode !== "dhcp") continue;
 
-      // Fire-and-forget per interface (parallel)
       void (async () => {
         const ok = await this._dhcpAcquireAndConfigure(i);
         if (!ok) this._applyApipa(i);
 
-        // If the app is currently showing this interface, refresh fields
         if (this.mounted && this.ifSel && Number(this.ifSel.value) === i) {
           this._load();
-        }
-
-        // Optional message (only if visible + current iface)
-        if (this.mounted && this.ifSel && Number(this.ifSel.value) === i) {
           this._setMsg(ok
             ? t("app.ipv4config.msg.dhcpLeaseApplied", { i })
             : t("app.ipv4config.msg.dhcpFailedApipa", { i })
@@ -88,7 +82,6 @@ export class IPv4ConfigApp extends GenericProcess {
       })();
     }
   }
-
 
   /**
    * @param {HTMLElement} root
@@ -116,21 +109,20 @@ export class IPv4ConfigApp extends GenericProcess {
       {}
     );
 
-    const ipEl = UILib.input({ placeholder: "" });
-    const maskEl = UILib.input({ placeholder: "" });
-    const gwEl = UILib.input({ placeholder: "" });
-    const dnsEl = UILib.input({ placeholder: "" });
+    const ipEl = UILib.input({ placeholder: "192.168.0.10" });
+    const prefixEl = UILib.input({ placeholder: "24" });
+    const gwEl = UILib.input({ placeholder: "192.168.0.1" });
+    const dnsEl = UILib.input({ placeholder: "8.8.8.8" });
 
     this.ifSel = ifSel;
     this.modeSel = modeSel;
     this.ipEl = ipEl;
-    this.maskEl = maskEl;
+    this.prefixEl = prefixEl;
     this.gwEl = gwEl;
     this.dnsEl = dnsEl;
 
     const applyBtn = UILib.button(t("app.ipv4config.button.apply"), () => this._apply(), { primary: true });
     const releaseBtn = UILib.button(t("app.ipv4config.button.release"), () => this._releaseDhcp(), {});
-
     this.releaseBtn = releaseBtn;
 
     const panel = UILib.panel([
@@ -138,7 +130,8 @@ export class IPv4ConfigApp extends GenericProcess {
       UILib.row(t("app.ipv4config.label.mode"), modeSel),
 
       UILib.row(t("app.ipv4config.label.ip"), ipEl),
-      UILib.row(t("app.ipv4config.label.netmask"), maskEl),
+      UILib.row(t("app.ipv4config.label.prefixLength"), prefixEl),
+
       UILib.row(t("app.ipv4config.label.gateway"), gwEl),
       UILib.row(t("app.ipv4config.label.dnsServer"), dnsEl),
 
@@ -158,12 +151,10 @@ export class IPv4ConfigApp extends GenericProcess {
       const prev = (this.persisted.modeByIface[String(this._idx())] ?? "static");
       await this._persistModeForCurrentIface();
 
-
       const now = this._mode();
       if (prev === "static" && now === "dhcp") {
         this._dropInterfaceForDhcp(this._idx());
       }
-
 
       this._syncModeUI();
     });
@@ -176,17 +167,16 @@ export class IPv4ConfigApp extends GenericProcess {
 
     ifSel.value = "0";
 
-    // NEW: load persisted mode config
     await this._loadPersistedConfig();
 
-    this._load();                       // load current interface values
-    await this._loadModeForIfaceAndShow(); // load mode per iface from disk and set select
+    this._load();
+    await this._loadModeForIfaceAndShow();
     this._syncModeUI();
   }
 
   onUnmount() {
     this.disposer.dispose();
-    this.ifSel = this.modeSel = this.ipEl = this.maskEl = this.gwEl = this.dnsEl = null;
+    this.ifSel = this.modeSel = this.ipEl = this.prefixEl = this.gwEl = this.dnsEl = null;
     this.msgEl = null;
     super.onUnmount();
   }
@@ -212,7 +202,7 @@ export class IPv4ConfigApp extends GenericProcess {
     const dis = dhcp || this.applying;
 
     if (this.ipEl) this.ipEl.disabled = dis;
-    if (this.maskEl) this.maskEl.disabled = dis;
+    if (this.prefixEl) this.prefixEl.disabled = dis;
     if (this.gwEl) this.gwEl.disabled = dis;
     if (this.dnsEl) this.dnsEl.disabled = dis;
 
@@ -231,19 +221,19 @@ export class IPv4ConfigApp extends GenericProcess {
     const itf = net.interfaces[i];
     if (!itf) return this._setMsg(t("app.ipv4config.msg.interfaceNotFound", { i }));
 
-    const ipN = itf.ip ?? null;
-    const maskN = itf.netmask ?? null;
+    const ip = (itf.ip instanceof IPAddress) ? itf.ip : null;
+    const prefix = (typeof itf.prefixLength === "number") ? itf.prefixLength : null;
 
-    if (this.ipEl) this.ipEl.value = (typeof ipN === "number") ? numberToIpv4(ipN) : "";
-    if (this.maskEl) this.maskEl.value = (typeof maskN === "number") ? numberToIpv4(maskN) : "";
+    if (this.ipEl) this.ipEl.value = (ip && ip.isV4()) ? ip.toString() : "";
+    if (this.prefixEl) this.prefixEl.value = (prefix != null) ? String(prefix) : "";
 
     const gw = getDefaultGatewayForIface(net, i);
-    if (this.gwEl) this.gwEl.value = (gw != null) ? numberToIpv4(gw) : "";
+    if (this.gwEl) this.gwEl.value = (gw != null) ? gw.toString() : "";
 
     const dns = this.os.dns;
-    let dnsN = null;
-    if (dns && typeof dns.serverIp === "number") dnsN = dns.serverIp >>> 0;
-    if (this.dnsEl) this.dnsEl.value = (dnsN != null) ? numberToIpv4(dnsN) : "";
+    let dnsIp = null;
+    if (dns && typeof dns.serverIp === "number") dnsIp = (dns.serverIp >>> 0);
+    if (this.dnsEl) this.dnsEl.value = (dnsIp != null) ? numberToIpv4(dnsIp) : "";
 
     this._setMsg(t("app.ipv4config.msg.loadedInterface", { i }));
   }
@@ -266,47 +256,45 @@ export class IPv4ConfigApp extends GenericProcess {
         const ok = await this._dhcpAcquireAndConfigure(i);
 
         if (ok) {
-          // NEW: reload UI fields so user sees applied settings
           this._load();
-          // NEW: explicit "lease applied" message (in addition to the success text inside DHCP)
           this._setMsg(t("app.ipv4config.msg.dhcpLeaseApplied", { i }));
           return;
         }
 
-        // fallback APIPA
         this._setMsg(t("app.ipv4config.msg.dhcpFailedApipa", { i }));
         this._applyApipa(i);
 
-        // refresh fields
         this._load();
-        this._setMsg(t("app.ipv4config.msg.apipaApplied", { i, ip: this.ipEl?.value ?? "", netmask: this.maskEl?.value ?? "" }));
+        this._setMsg(t("app.ipv4config.msg.apipaApplied", {
+          i,
+          ip: this.ipEl?.value ?? "",
+          prefix: this.prefixEl?.value ?? "",
+        }));
         return;
       }
 
-      // STATIC mode (unchanged behavior)
+      // STATIC mode
       const ipStr = (this.ipEl?.value ?? "").trim();
-      const maskStr = (this.maskEl?.value ?? "").trim();
+      const prefixStr = (this.prefixEl?.value ?? "").trim();
       const gwStr = (this.gwEl?.value ?? "").trim();
       const dnsStr = (this.dnsEl?.value ?? "").trim();
 
-      const ip = ipv4ToNumber(ipStr);
-      if (ip === null) return this._setMsg(t("app.ipv4config.err.invalidIp"));
+      const ip = parseIPv4(ipStr);
+      if (!ip) return this._setMsg(t("app.ipv4config.err.invalidIp"));
 
-      const netmask = ipv4ToNumber(maskStr);
-      if (netmask === null) return this._setMsg(t("app.ipv4config.err.invalidNetmask"));
+      const prefixLength = parsePrefixLength(prefixStr);
+      if (prefixLength == null) return this._setMsg(t("app.ipv4config.err.invalidPrefixLength"));
 
-      if (!isValidNetmask32(netmask)) {
-        return this._setMsg(t("app.ipv4config.err.invalidNetmaskContiguous"));
-      }
-
+      /** @type {IPAddress|null} */
       let gw = null;
       if (gwStr !== "") {
-        const gwN = ipv4ToNumber(gwStr);
-        if (gwN === null) return this._setMsg(t("app.ipv4config.err.invalidGateway"));
-        if ((gwN >>> 0) === 0) return this._setMsg(t("app.ipv4config.err.gatewayZero"));
-        gw = gwN >>> 0;
+        const gwIp = parseIPv4(gwStr);
+        if (!gwIp) return this._setMsg(t("app.ipv4config.err.invalidGateway"));
+        if (gwIp.getNumber() === 0) return this._setMsg(t("app.ipv4config.err.gatewayZero"));
+        gw = gwIp;
       }
 
+      /** @type {number|undefined} */
       let dnsN = undefined;
       if (dnsStr !== "") {
         const d = ipv4ToNumber(dnsStr);
@@ -314,10 +302,10 @@ export class IPv4ConfigApp extends GenericProcess {
         dnsN = d >>> 0;
       }
 
-      net.configureInterface(i, { ip: (ip >>> 0), netmask: (netmask >>> 0) });
+      net.configureInterface(i, { ip, prefixLength });
 
       clearDefaultGatewayForIface(net, i);
-      if (gw != null) net.addRoute(0, 0, i, gw);
+      if (gw != null) net.addRoute(IPAddress.fromString("0.0.0.0"), 0, i, gw);
 
       if (dnsN !== undefined) {
         const dns = this.os?.dns;
@@ -328,14 +316,14 @@ export class IPv4ConfigApp extends GenericProcess {
         const dnsTxt = numberToIpv4(dnsN);
         this._setMsg(
           gw != null
-            ? t("app.ipv4config.msg.appliedWithGwDns", { i, ip: ipStr, netmask: maskStr, gw: gwStr, dns: dnsTxt })
-            : t("app.ipv4config.msg.appliedGwClearedDns", { i, ip: ipStr, netmask: maskStr, dns: dnsTxt })
+            ? t("app.ipv4config.msg.appliedWithGwDns", { i, ip: ip.toString(), netmask: `/${prefixLength}`, gw: gw.toString(), dns: dnsTxt })
+            : t("app.ipv4config.msg.appliedGwClearedDns", { i, ip: ip.toString(), netmask: `/${prefixLength}`, dns: dnsTxt })
         );
       } else {
         this._setMsg(
           gw != null
-            ? t("app.ipv4config.msg.appliedWithGw", { i, ip: ipStr, netmask: maskStr, gw: gwStr })
-            : t("app.ipv4config.msg.appliedGwCleared", { i, ip: ipStr, netmask: maskStr })
+            ? t("app.ipv4config.msg.appliedWithGw", { i, ip: ip.toString(), netmask: `/${prefixLength}`, gw: gw.toString() })
+            : t("app.ipv4config.msg.appliedGwCleared", { i, ip: ip.toString(), netmask: `/${prefixLength}` })
         );
       }
     } catch (e) {
@@ -347,13 +335,12 @@ export class IPv4ConfigApp extends GenericProcess {
     }
   }
 
-  // ------------------ NEW: persistence (/etc/ip.config) ------------------
+  // ------------------ persistence (/etc/ip.config) ------------------
 
   async _loadPersistedConfig() {
     try {
       const txt = await this.os.fs.readFile(this.configPath);
       if (!txt.trim()) {
-        // create default
         await this.os.fs.writeFile(this.configPath, JSON.stringify(this.persisted, null, 2) + "\n");
         return;
       }
@@ -362,7 +349,6 @@ export class IPv4ConfigApp extends GenericProcess {
       const o = JSON.parse(txt);
       const m = o?.modeByIface;
       if (m && typeof m === "object") {
-        // accept only "static"/"dhcp"
         /** @type {Record<string, "static"|"dhcp">} */
         const cleaned = {};
         for (const k of Object.keys(m)) {
@@ -403,24 +389,18 @@ export class IPv4ConfigApp extends GenericProcess {
 
   // ------------------ DHCP (tick-scaled time) ------------------
 
-  /**
-   * Real time per simulated millisecond.
-   * If missing, fall back to 1.
-   */
   _tick() {
     const s = /** @type {any} */ (this.os)?.simulation;
     const tick = s && typeof s.tick === "number" && s.tick > 0 ? s.tick : 1;
     return tick;
   }
 
-  /** sleep in *simulated ms* */
   async _simSleep(msSim) {
     await sleep(Math.max(0, Math.floor(msSim * this._tick())));
   }
 
   /**
-   * DHCP acquire sequence.
-   * Returns true on success.
+   * DHCP acquire sequence. Returns true on success.
    * @param {number} ifaceIdx
    * @returns {Promise<boolean>}
    */
@@ -432,7 +412,6 @@ export class IPv4ConfigApp extends GenericProcess {
     const mac = this._getIfaceMac(itf, ifaceIdx);
     const xid = (Math.random() * 0xffffffff) >>> 0;
 
-    // Timeouts in simulated ms (scaled via tick)
     const OFFER_WAIT_SIM = 15000;
     const ACK_WAIT_SIM = 15000;
     const BETWEEN_TRIES_SIM = 1500;
@@ -442,7 +421,7 @@ export class IPv4ConfigApp extends GenericProcess {
 
       let sock = null;
       try {
-        sock = this.os.net.openUDPSocket(0, 68);
+        sock = this.os.net.openUDPSocket(new IPAddress(4,0), 68);
       } catch {
         return false;
       }
@@ -460,7 +439,7 @@ export class IPv4ConfigApp extends GenericProcess {
           DHCPPacket.OPT_LEASE_TIME,
         ]));
 
-        this.os.net.sendUDPSocket(sock, 0xffffffff >>> 0, 67, discover.pack());
+        this.os.net.sendUDPSocket(sock,IPAddress.fromString("255.255.255.255"), 67, discover.pack());
 
         const offerPkt = await this._waitDhcp(sock, xid, DHCPPacket.MT_OFFER, OFFER_WAIT_SIM);
         if (!offerPkt) {
@@ -469,10 +448,10 @@ export class IPv4ConfigApp extends GenericProcess {
           continue;
         }
 
-        const offeredIp = IPUInt8ToNumber(offerPkt.yiaddr) >>> 0;
+        const offeredIpNum = ipv4BytesToNumber(offerPkt.yiaddr);
 
         const sidOpt = offerPkt.getOption(DHCPPacket.OPT_SERVER_ID);
-        const serverId = (sidOpt && sidOpt.length === 4) ? IPUInt8ToNumber(sidOpt) >>> 0 : 0;
+        const serverId = (sidOpt && sidOpt.length === 4) ? ipv4BytesToNumber(sidOpt) : 0;
 
         if (serverId !== 0) this.lastDhcpServerByIface.set(ifaceIdx, serverId);
 
@@ -480,10 +459,10 @@ export class IPv4ConfigApp extends GenericProcess {
         const req = new DHCPPacket({ op: 1, xid, flags: 0x8000 });
         req.setClientMAC(mac);
         req.setMessageType(DHCPPacket.MT_REQUEST);
-        req.setOption(DHCPPacket.OPT_REQUESTED_IP, IPNumberToUint8(offeredIp));
-        if (serverId !== 0) req.setOption(DHCPPacket.OPT_SERVER_ID, IPNumberToUint8(serverId));
+        req.setOption(DHCPPacket.OPT_REQUESTED_IP, numberToIPv4Bytes(offeredIpNum));
+        if (serverId !== 0) req.setOption(DHCPPacket.OPT_SERVER_ID, numberToIPv4Bytes(serverId));
 
-        this.os.net.sendUDPSocket(sock, 0xffffffff >>> 0, 67, req.pack());
+        this.os.net.sendUDPSocket(sock, IPAddress.fromString("255.255.255.255"), 67, req.pack());
 
         const ackPkt = await this._waitDhcp(sock, xid, DHCPPacket.MT_ACK, ACK_WAIT_SIM);
         try { this.os.net.closeUDPSocket(sock); } catch { }
@@ -494,41 +473,42 @@ export class IPv4ConfigApp extends GenericProcess {
         }
 
         // apply config
-        const ipNum = IPUInt8ToNumber(ackPkt.yiaddr) >>> 0;
+        const ipNum = ipv4BytesToNumber(ackPkt.yiaddr);
 
+        // subnet mask -> prefixLength
         const maskOpt = ackPkt.getOption(DHCPPacket.OPT_SUBNET_MASK);
-        const maskNum = (maskOpt && maskOpt.length === 4) ? IPUInt8ToNumber(maskOpt) >>> 0 : prefixToNetmask(24);
+        const maskNum = (maskOpt && maskOpt.length === 4) ? ipv4BytesToNumber(maskOpt) : (0xffffff00 >>> 0);
+        const prefixLength = netmask32ToPrefix(maskNum);
 
         let gwNum = null;
         const gwOpt = ackPkt.getOption(DHCPPacket.OPT_ROUTER);
-        if (gwOpt && gwOpt.length >= 4) {
-          gwNum = IPUInt8ToNumber(gwOpt.slice(0, 4)) >>> 0;
-        }
+        if (gwOpt && gwOpt.length >= 4) gwNum = ipv4BytesToNumber(gwOpt.slice(0, 4));
 
         let dnsNum = null;
         const dnsOpt = ackPkt.getOption(DHCPPacket.OPT_DNS);
-        if (dnsOpt && dnsOpt.length >= 4) {
-          dnsNum = IPUInt8ToNumber(dnsOpt.slice(0, 4)) >>> 0;
-        }
+        if (dnsOpt && dnsOpt.length >= 4) dnsNum = ipv4BytesToNumber(dnsOpt.slice(0, 4));
 
-        net.configureInterface(ifaceIdx, { ip: ipNum, netmask: maskNum });
+        net.configureInterface(ifaceIdx, {
+          ip: new IPAddress(4, ipNum),
+          prefixLength
+        });
 
         clearDefaultGatewayForIface(net, ifaceIdx);
-        if (gwNum != null && gwNum !== 0) net.addRoute(0, 0, ifaceIdx, gwNum);
+        if (gwNum != null && gwNum !== 0) {
+          net.addRoute(IPAddress.fromString("0.0.0.0"), 0, ifaceIdx, new IPAddress(4, gwNum));
+        }
 
         if (dnsNum != null) {
           const dns = this.os?.dns;
           if (dns?.setServer) dns.setServer(dnsNum, 53);
         }
 
-        const sid = ackPkt.getOption(DHCPPacket.OPT_SERVER_ID);
         this.dhcpStateByIface.set(ifaceIdx, { serverId, ip: ipNum });
 
-        // keep the detailed success text (optional), but we now also show dhcpLeaseApplied afterwards in _apply()
         this._setMsg(t("app.ipv4config.msg.dhcpSuccess", {
           i: ifaceIdx,
           ip: numberToIpv4(ipNum),
-          netmask: numberToIpv4(maskNum),
+          netmask: `/${prefixLength}`,
           gw: gwNum != null ? numberToIpv4(gwNum) : "",
           dns: dnsNum != null ? numberToIpv4(dnsNum) : "",
         }));
@@ -545,9 +525,6 @@ export class IPv4ConfigApp extends GenericProcess {
   }
 
   /**
-   * Wait for DHCP packet with matching xid and message type.
-   * Timeout is in simulated ms (scaled via tick).
-   *
    * @param {number} sock
    * @param {number} xid
    * @param {number} wantType
@@ -597,11 +574,13 @@ export class IPv4ConfigApp extends GenericProcess {
 
     const x = 1 + (Math.random() * 254) | 0;
     const y = 1 + (Math.random() * 254) | 0;
-    const ip = (((169 << 24) >>> 0) + (254 << 16) + (x << 8) + y) >>> 0;
+    const ipNum = (((169 << 24) >>> 0) + (254 << 16) + (x << 8) + y) >>> 0;
 
-    const mask = prefixToNetmask(16) >>> 0;
+    net.configureInterface(ifaceIdx, {
+      ip: new IPAddress(4, ipNum),
+      prefixLength: 16
+    });
 
-    net.configureInterface(ifaceIdx, { ip, netmask: mask });
     clearDefaultGatewayForIface(net, ifaceIdx);
 
     const dns = this.os?.dns;
@@ -623,20 +602,16 @@ export class IPv4ConfigApp extends GenericProcess {
     if (!net) return;
 
     try {
-      net.configureInterface(ifaceIdx, { ip: 0 >>> 0, netmask: 0 >>> 0 });
+      net.configureInterface(ifaceIdx, { ip: IPAddress.fromString("0.0.0.0"), prefixLength: 0 });
     } catch { /* ignore */ }
 
-    try {
-      clearDefaultGatewayForIface(net, ifaceIdx);
-    } catch { /* ignore */ }
+    try { clearDefaultGatewayForIface(net, ifaceIdx); } catch { /* ignore */ }
 
-    // optional: disable DNS while “no config”
     const dns = this.os?.dns;
     if (dns?.setServer) {
-      try { dns.setServer(0, 53); } catch { /* ignore */ }
+      try { dns.setServer(0, 53); } catch { }
     }
 
-    // update visible fields if currently selected
     if (this.mounted && this.ifSel && Number(this.ifSel.value) === ifaceIdx) {
       this._load();
     }
@@ -650,18 +625,15 @@ export class IPv4ConfigApp extends GenericProcess {
     const itf = net.interfaces?.[ifaceIdx];
     if (!itf) return;
 
-    // Determine current IP (must be non-zero for RELEASE)
-    const curIp = (typeof itf.ip === "number") ? (itf.ip >>> 0) : 0;
+    const curIp = (itf.ip instanceof IPAddress && itf.ip.isV4()) ? (/** @type {number} */ (itf.ip.getNumber()) >>> 0) : 0;
     if (curIp === 0) {
       this._setMsg(t("app.ipv4config.msg.releaseNothingToDo", { i: ifaceIdx }));
       return;
     }
 
-    // Determine server id (per iface)
     const st = this.dhcpStateByIface.get(ifaceIdx);
     const serverId = st?.serverId ?? 0;
 
-    // Open fresh UDP socket
     /** @type {number|null} */
     let sock = null;
 
@@ -681,16 +653,13 @@ export class IPv4ConfigApp extends GenericProcess {
       rel.setClientMAC(mac);
       rel.setMessageType(DHCPPacket.MT_RELEASE);
 
-      // RFC-style: ciaddr = client address being released
-      rel.ciaddr = IPNumberToUint8(curIp);
+      // ciaddr = current client address
+      rel.ciaddr = numberToIPv4Bytes(curIp);
 
-      // server identifier option 54 if known
-      if (serverId !== 0) rel.setOption(DHCPPacket.OPT_SERVER_ID, IPNumberToUint8(serverId));
+      if (serverId !== 0) rel.setOption(DHCPPacket.OPT_SERVER_ID, numberToIPv4Bytes(serverId));
 
-      // Send to server if known; else broadcast
       const dstIp = (serverId !== 0) ? serverId : (0xffffffff >>> 0);
 
-      // IMPORTANT: send BEFORE touching interface config
       this.os.net.sendUDPSocket(sock, dstIp, 67, rel.pack());
 
       this._setMsg(t("app.ipv4config.msg.released", {
@@ -702,39 +671,72 @@ export class IPv4ConfigApp extends GenericProcess {
       const reason = (e instanceof Error ? e.message : String(e));
       this._setMsg(t("app.ipv4config.err.releaseFailed", { reason }));
     } finally {
-      // Close socket first (configureInterface might close sockets globally anyway)
       try { if (sock != null) this.os.net.closeUDPSocket(sock); } catch { }
     }
 
-    // Now forget local DHCP state (optional)
     this.dhcpStateByIface.delete(ifaceIdx);
-
-    // After release: drop address (0.0.0.0) and clear routes
     this._dropInterfaceForDhcp(ifaceIdx);
   }
 
-    /**
-   * DHCP client should use UDP src port 68 if possible.
-   * Fallback to an ephemeral high port if 68 is busy.
+  /**
    * @returns {number}
    */
   _openDhcpClientSocket() {
-    // Try the standard DHCP client port first
     try {
-      return this.os.net.openUDPSocket(0, 68);
+      return this.os.net.openUDPSocket(new IPAddress(4,0), 68);
     } catch {
-      // Fallback: pick a high ephemeral port
       for (let k = 0; k < 20; k++) {
         const p = (49152 + ((Math.random() * (65535 - 49152)) | 0)) >>> 0;
         try {
-          return this.os.net.openUDPSocket(0, p);
-        } catch { /* try next */ }
+          return this.os.net.openUDPSocket(new IPAddress(4,0), p);
+        } catch { }
       }
       throw new Error("No free UDP port for DHCP client");
     }
   }
-
 }
+
+// -------------------- helpers --------------------
+
+/**
+ * Parse IPv4 string to IPAddress(v4).
+ * @param {string} s
+ * @returns {IPAddress|null}
+ */
+function parseIPv4(s) {
+  const n = ipv4ToNumber(s);
+  if (n == null) return null;
+  return new IPAddress(4, n >>> 0);
+}
+
+/**
+ * @param {string} s
+ * @returns {number|null}
+ */
+function parsePrefixLength(s) {
+  const n = Number(s);
+  if (!Number.isInteger(n) || n < 0 || n > 32) return null;
+  return n | 0;
+}
+
+/**
+ * @param {Uint8Array} b
+ * @returns {number}
+ */
+function ipv4BytesToNumber(b) {
+  if (!(b instanceof Uint8Array) || b.length < 4) return 0;
+  return (((b[0] << 24) >>> 0) + (b[1] << 16) + (b[2] << 8) + b[3]) >>> 0;
+}
+
+/**
+ * @param {number} n
+ * @returns {Uint8Array}
+ */
+function numberToIPv4Bytes(n) {
+  const x = n >>> 0;
+  return new Uint8Array([(x >>> 24) & 255, (x >>> 16) & 255, (x >>> 8) & 255, x & 255]);
+}
+
 /**
  * @param {string} s
  * @returns {number|null}
@@ -757,12 +759,20 @@ function numberToIpv4(n) {
 }
 
 /**
- * @param {number} mask
+ * Convert a *contiguous* netmask (uint32) to prefix length.
+ * @param {number} mask32
+ * @returns {number}
  */
-function isValidNetmask32(mask) {
-  const m = mask >>> 0;
-  const inv = (~m) >>> 0;
-  return ((inv & ((inv + 1) >>> 0)) >>> 0) === 0;
+function netmask32ToPrefix(mask32) {
+  const m = mask32 >>> 0;
+  // count leading 1s
+  let bits = 0;
+  let x = m;
+  while (bits < 32 && (x & 0x80000000) !== 0) {
+    bits++;
+    x = (x << 1) >>> 0;
+  }
+  return bits;
 }
 
 /**
@@ -774,43 +784,60 @@ function getRoutes(net) {
 }
 
 /**
+ * Default gateway route is 0.0.0.0/0 on ifaceIdx.
  * @param {any} net
  * @param {number} ifaceIdx
- * @returns {number|null}
+ * @returns {IPAddress|null}
  */
 function getDefaultGatewayForIface(net, ifaceIdx) {
   const routes = getRoutes(net);
   for (const r of routes) {
-    if (r && (r.dst === 0) && (r.netmask === 0) && (r.interf === ifaceIdx)) {
-      return r.nexthop >>> 0;
-    }
+    const dst = r?.dst;
+    const pref = r?.prefixLength;
+    const interf = r?.interf;
+    if (interf !== ifaceIdx) continue;
+    if (!(dst instanceof IPAddress) || !dst.isV4()) continue;
+    if ((/** @type {number} */ (dst.getNumber()) >>> 0) !== 0) continue;
+    if ((pref | 0) !== 0) continue;
+
+    const nh = r?.nexthop;
+    if (nh instanceof IPAddress) return nh;
+    return null;
   }
   return null;
 }
 
 /**
+ * Clear all default routes 0.0.0.0/0 for ifaceIdx.
  * @param {any} net
  * @param {number} ifaceIdx
  */
 function clearDefaultGatewayForIface(net, ifaceIdx) {
-  const routes = getRoutes(net).filter(r =>
-    r &&
-    ((r.dst >>> 0) === 0) &&
-    ((r.netmask >>> 0) === 0) &&
-    (r.interf === ifaceIdx)
-  );
+  const routes = getRoutes(net).filter(r => {
+    const dst = r?.dst;
+    const pref = r?.prefixLength;
+    const interf = r?.interf;
+    if (interf !== ifaceIdx) return false;
+    if (!(dst instanceof IPAddress) || !dst.isV4()) return false;
+    if ((/** @type {number} */ (dst.getNumber()) >>> 0) !== 0) return false;
+    if ((pref | 0) !== 0) return false;
+    return true;
+  });
+
+  const zero = IPAddress.fromString("0.0.0.0");
 
   if (routes.length === 0) {
-    try { net.delRoute(0, 0, ifaceIdx); return; } catch { }
-    try { net.delRoute(0, 0); } catch { }
+    // nothing to clear
     return;
   }
 
   for (const r of routes) {
-    const nh = (typeof r.nexthop === "number") ? (r.nexthop >>> 0) : undefined;
-
-    try { net.delRoute(0, 0, ifaceIdx, nh); continue; } catch { }
-    try { net.delRoute(0, 0, ifaceIdx); continue; } catch { }
-    try { net.delRoute(0, 0); } catch { }
+    const nh = (r?.nexthop instanceof IPAddress) ? r.nexthop : IPAddress.fromString("0.0.0.0");
+    try {
+      net.delRoute(zero, 0, ifaceIdx, nh);
+    } catch {
+      // If your delRoute signature differs, adjust here.
+      try { net.delRoute(zero, 0, ifaceIdx); } catch { }
+    }
   }
 }

@@ -16,8 +16,16 @@ import { SimpleHTTPServerApp } from "./SimpleHTTPServerApp.js";
 import { DNSServerApp } from "./DNSServerApp.js";
 import { DNSResolver } from "./lib/DNSResolver.js";
 import { DHCPServerApp } from "./DHCPServerApp.js";
+import { SimulatedObject } from "../sim/SimulatedObject.js";
+import { SimpleMailServerApp } from "./SimpleMailServerApp.js";
+import { DOMBuilder } from "../lib/DomBuilder.js";
 
 export class OS {
+
+    /**
+     * @type {SimulatedObject} Reference to the simulated object
+     */
+    obj;
 
     /**
      * @type {string} name for the OS. Will act as hostname if dns is not present
@@ -65,12 +73,13 @@ export class OS {
     title;
 
     /**
-     * @param {string} name name of the os to use, acts as hostname until DNS is loaded.
+     * @param {SimulatedObject} obj
      * @param {VirtualFileSystem} fs
      * @param {IPStack} net
      */
-    constructor(name = "OS", fs, net) {
-        this.name = name;
+    constructor(obj, fs, net) {
+        this.obj = obj;
+        this.name = obj.name;
         this.net = net;
         this.fs = fs;
         this.root.classList.add("os-root");
@@ -85,7 +94,7 @@ export class OS {
     _registerApps() {
         const launchlist = 
             [IPv4ConfigApp, TerminalApp, TextEditorApp, SimpleTCPClientApp, SimpleTCPServerApp, 
-            SimpleHTTPServerApp, SparktailHTTPClientApp, UDPEchoServerApp, DNSServerApp, DHCPServerApp, AboutApp];
+            SimpleHTTPServerApp, SparktailHTTPClientApp, UDPEchoServerApp, DNSServerApp, DHCPServerApp, SimpleMailServerApp, AboutApp];
 
         launchlist.forEach((e) => this.exec(e));
     }
@@ -215,10 +224,13 @@ export class OS {
         el.classList.add("menu");
 
         for (const item of this._menuItems) {
-            const btn = document.createElement("button");
-            btn.textContent = item.title;
-            btn.setAttribute("data-icon", item.dataIcon);
-            btn.onclick = () => this.focus(item.pid);
+            const btn = DOMBuilder.iconbutton({
+                label: item.title,
+                icon: item.icon,
+                onClick: () => {
+                    this.focus(item.pid);
+                },
+            });
             el.appendChild(btn);
         }
 
@@ -260,11 +272,11 @@ export class OS {
      * adds an application to the main menu
      * @param {string} title Title to show in the Menu
      * @param {number} pid PID of the process 
-     * @param {string} icon which icon to usw
+     * @param {string} icon which icon to use
      */
 
     _registerMenuItem(title, pid, icon) {
-        this._menuItems.push(new MenuItem({ title, pid, dataIcon: icon }));
+        this._menuItems.push(new MenuItem({ title, pid, icon: icon }));
         if (this.focusID === 0) this.render();
     }
 
@@ -277,6 +289,11 @@ export class OS {
 
     _getFocusedApp() {
         return this.runningApps.find(a => a.pid === this.focusID) ?? null;
+    }
+
+    setName(name) {
+        this.obj.setName(name);
+        this.name=name;
     }
 }
 
@@ -291,7 +308,7 @@ class MenuItem {
     pid = 0;
 
     /**@type {string} icon of the menu item*/
-    dataIcon;
+    icon;
 
     /**
      * 
@@ -299,12 +316,12 @@ class MenuItem {
      * @param {string} [opts.title] title of the entry
      * @param {new (...args: any[]) => any} [opts.ClassName]
      * @param {number} [opts.pid] pid
-     * @param {string} [opts.dataIcon] icon
+     * @param {string} [opts.icon] icon
      */
 
     constructor(opts = {}) {
         this.title = (opts.title ?? t("os.notitle"));
         this.pid = (opts.pid ?? 0);
-        this.dataIcon = (opts.dataIcon ?? 'default')
+        this.icon = (opts.icon ?? 'fa-gear')
     }
 }
