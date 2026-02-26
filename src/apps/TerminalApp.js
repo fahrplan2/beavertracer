@@ -290,6 +290,12 @@ export class TerminalApp extends GenericProcess {
                 this._backspace();
                 break;
 
+            case "Delete":
+                ev.preventDefault();
+                this._moveCursor(1);
+                this._backspace();
+                break;
+
             case "Enter":
                 ev.preventDefault();
                 this._commitLine();
