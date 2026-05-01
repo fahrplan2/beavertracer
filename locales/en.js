@@ -656,4 +656,11 @@ export default {
   "textbox.text": "Text",
   "textbox.title": "Textbox",
   "textbox.hint": "supports Mini-Markdown like **bold**, *italic* etc.",
+  "ap.title": "Access Point",
+  "laptop.title": "Laptop",
+  "wifi.ssid": "SSID",
+  "wifi.apply": "Apply",
+  "wifi.ssid.applied": "SSID saved.",
+  "sim.tool.ap": "Access Point",
+  "sim.tool.laptop": "Laptop"
 }

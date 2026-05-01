@@ -7,6 +7,9 @@ import { Switch } from "./sim/Switch.js";
 import { Router } from "./sim/Router.js";
 import { TextBox } from "./sim/TextBox.js";
 import { RectOverlay } from "./sim/RectOverlay.js";
+import { AccessPoint } from "./sim/AccessPoint.js";
+import { Laptop } from "./sim/Laptop.js";
+import { WifiMedium } from "./net/WifiMedium.js";
 import { t, getLocale, setLocale, getLocales } from "./i18n/index.js";
 import { StaticPageRouter } from "./StaticPageRouter.js";
 import { PCapController } from "./tracer/PCapControler.js";
@@ -47,6 +50,8 @@ export class SimControl {
 
     /** @type {HTMLDivElement|null} */
     static packetsLayer = null;
+
+    wifiMedium = new WifiMedium();
 
     /** @type {number|null} */
     timeoutId = null;
@@ -124,6 +129,9 @@ export class SimControl {
     /** @type {boolean} */
     _redrawReq = false;
 
+    /** @type {boolean} */
+    _justPlaced = false;
+
     /** @type {number|null} */
     _rafId = null;
 
@@ -173,12 +181,14 @@ export class SimControl {
     }
 
     step() {
+        this.wifiMedium.step2(this.simobjects);
         for (let i = 0; i < this.simobjects.length; i++) {
             const x = this.simobjects[i];
             if (x instanceof Link) {
                 x.step2();
             }
         }
+        this.wifiMedium.step1(this.simobjects);
         for (let i = 0; i < this.simobjects.length; i++) {
             const x = this.simobjects[i];
             if (x instanceof Link) {
@@ -603,8 +613,10 @@ export class SimControl {
             ["select", t("sim.tool.select"), "fa-arrow-pointer"],
             ["link", t("sim.tool.link"), "fa-link"],
             ["place-pc", t("sim.tool.pc"), "fa-desktop"],
+            ["place-laptop", t("sim.tool.laptop"), "fa-laptop"],
             ["place-switch", t("sim.tool.switch"), "my-icon-switch"],
             ["place-router", t("sim.tool.router"), "my-icon-router"],
+            ["place-ap", t("sim.tool.ap"), "fa-wifi"],
             ["place-text", t("sim.tool.textbox"), "fa-t"],
             ["place-rect", t("sim.tool.rectangle"), "fa-square"],
             ["delete", t("sim.tool.delete"), "fa-ban"],
@@ -623,8 +635,10 @@ export class SimControl {
                     if (
                         !(
                             this.tool === "place-pc" ||
+                            this.tool === "place-laptop" ||
                             this.tool === "place-switch" ||
                             this.tool === "place-router" ||
+                            this.tool === "place-ap" ||
                             this.tool === "place-text" ||
                             this.tool === "place-rect"
                         )
@@ -992,8 +1006,10 @@ export class SimControl {
 
         if (
             this.tool === "place-pc" ||
+            this.tool === "place-laptop" ||
             this.tool === "place-router" ||
             this.tool === "place-switch" ||
+            this.tool === "place-ap" ||
             this.tool === "place-text" ||
             this.tool === "place-rect"
         ) {
@@ -1148,11 +1164,13 @@ export class SimControl {
 
             /** @type {SimulatedObject|null} */
             let newObj = null;
-            if (this.tool === "place-pc") newObj = new PC(this._nextName(t("pc.title")));
-            if (this.tool === "place-switch") newObj = new Switch(this._nextName(t("switch.title")));
-            if (this.tool === "place-router") newObj = new Router(this._nextName(t("router.title")));
-            if (this.tool === "place-text") newObj = new TextBox();
-            if (this.tool === "place-rect") newObj = new RectOverlay();
+            if (this.tool === "place-pc")     newObj = new PC(this._nextName(t("pc.title")));
+            if (this.tool === "place-laptop")  newObj = new Laptop(this._nextName(t("laptop.title")));
+            if (this.tool === "place-switch")  newObj = new Switch(this._nextName(t("switch.title")));
+            if (this.tool === "place-router")  newObj = new Router(this._nextName(t("router.title")));
+            if (this.tool === "place-ap")      newObj = new AccessPoint(this._nextName(t("ap.title")));
+            if (this.tool === "place-text")    newObj = new TextBox();
+            if (this.tool === "place-rect")    newObj = new RectOverlay();
             if (!newObj) return;
 
             const w = this._ghostNodeEl.offsetWidth || 0;
@@ -1166,6 +1184,8 @@ export class SimControl {
 
             // Clean up placement tool state
             this._removeGhostNode();
+            this._justPlaced = true;
+            setTimeout(() => { this._justPlaced = false; }, 0);
             this.tool = "select";
             if (this.root) this.root.dataset.tool = this.tool;
             this._invalidateUI();
@@ -1180,7 +1200,7 @@ export class SimControl {
     }
 
 
-    /** @param {"place-pc"|"place-switch"|"place-router"|"place-text"|"place-rect"} type */
+    /** @param {"place-pc"|"place-laptop"|"place-switch"|"place-router"|"place-ap"|"place-text"|"place-rect"} type */
     _ensureGhostNode(type) {
         if (!this.nodesLayer) return;
 
@@ -1189,11 +1209,13 @@ export class SimControl {
 
             /** @type {SimulatedObject|null} */
             let tmp = null;
-            if (type === "place-pc") tmp = new PC();
+            if (type === "place-pc")     tmp = new PC();
+            if (type === "place-laptop") tmp = new Laptop();
             if (type === "place-switch") tmp = new Switch();
             if (type === "place-router") tmp = new Router();
-            if (type === "place-text") tmp = new TextBox();
-            if (type === "place-rect") tmp = new RectOverlay();
+            if (type === "place-ap")     tmp = new AccessPoint();
+            if (type === "place-text")   tmp = new TextBox();
+            if (type === "place-rect")   tmp = new RectOverlay();
             if (!tmp) return;
 
             const el = tmp.buildIcon();
@@ -1428,6 +1450,8 @@ export class SimControl {
             ["Switch", Switch],
             ["TextBox", TextBox],
             ["RectOverlay", RectOverlay],
+            ["AccessPoint", AccessPoint],
+            ["Laptop", Laptop],
             // Link handled separately
         ]);
 

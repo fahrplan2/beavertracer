@@ -529,5 +529,12 @@ export default {
   "panel.rename": "Renomear",
   "panel.rename.prompt": "Novo nome:",
   "sim.link.error.noFreePort": "Nenhuma porta livre disponível.",
-  "sim.link.error.portInUse": "A porta já está em uso."
+  "sim.link.error.portInUse": "A porta já está em uso.",
+  "ap.title": "Ponto de Acesso",
+  "laptop.title": "Laptop",
+  "wifi.ssid": "SSID",
+  "wifi.apply": "Aplicar",
+  "wifi.ssid.applied": "SSID guardado.",
+  "sim.tool.ap": "Ponto de Acesso",
+  "sim.tool.laptop": "Laptop"
 };

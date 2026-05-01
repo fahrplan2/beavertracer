@@ -486,7 +486,7 @@ export default {
   "sim.load": "Laden",
   "sim.save": "Speichern",
   "sim.edit": "Bearbeiten",
-  "sim.run": "Starten",
+  "sim.run": "Ausführen",
   "sim.mode": "Modus",
   "sim.project": "Projekt",
   "sim.speed": "Geschwindigkeit",
@@ -530,5 +530,12 @@ export default {
   "textbox.hint": "unterstützt Mini-Markdown wie **fett**, *kursiv* usw.",
   "app.dnsd.label.server": "Server",
   "app.dnsd.label.config": "Konfiguration",
-  "app.sparktail.err.invalidIpv6Bracket": "Ungültige IPv6-Klammer"
+  "app.sparktail.err.invalidIpv6Bracket": "Ungültige IPv6-Klammer",
+  "ap.title": "Access Point",
+  "laptop.title": "Laptop",
+  "wifi.ssid": "SSID",
+  "wifi.apply": "Übernehmen",
+  "wifi.ssid.applied": "SSID gespeichert.",
+  "sim.tool.ap": "Access Point",
+  "sim.tool.laptop": "Laptop"
 };

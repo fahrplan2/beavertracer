@@ -529,5 +529,12 @@ export default {
   "panel.rename.prompt": "Nouveau nom :",
   "router.routingtable.prefix": "Préfixe",
   "sim.link.error.noFreePort": "Aucun port libre disponible.",
-  "sim.link.error.portInUse": "Le port est déjà utilisé."
+  "sim.link.error.portInUse": "Le port est déjà utilisé.",
+  "ap.title": "Point d'accès",
+  "laptop.title": "Portable",
+  "wifi.ssid": "SSID",
+  "wifi.apply": "Appliquer",
+  "wifi.ssid.applied": "SSID enregistré.",
+  "sim.tool.ap": "Point d'accès",
+  "sim.tool.laptop": "Portable"
 };

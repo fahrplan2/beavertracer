@@ -245,6 +245,7 @@ export class SimulatedObject {
      */
     setPanelOpen(open) {
         if (open && this.simcontrol?.tool === "link") return;
+        if (open && this.simcontrol?.mode === "edit") return;
 
         this.panelOpen = open;
         this._applyPositions();
