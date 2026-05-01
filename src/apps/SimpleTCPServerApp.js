@@ -52,7 +52,7 @@ export class SimpleTCPServerApp extends GenericProcess {
   /** @type {Array<string>} */
   log = [];
 
-  /** @type {HTMLTextAreaElement|null} */
+  /** @type {HTMLElement|null} */
   logEl = null;
 
   /** @type {HTMLInputElement|null} */
@@ -92,20 +92,17 @@ export class SimpleTCPServerApp extends GenericProcess {
     this.startBtn = start;
     this.stopBtn = stop;
 
-    const logBox = UI.textarea({ 
-        className: "log" ,
-        spellcheck: "false",
-        readonly: "true",
-      });
+    const logBox = UI.el("div", { className: "msg" });
     this.logEl = logBox;
 
     const status = UI.el("div", { className: "msg" });
 
     const panel = UI.panel([
+      UI.el("h4", { text: t("app.simpletcpserver.label.server") }),
       UI.row(t("app.simpletcpserver.label.listenPort"), portInput),
       UI.buttonRow([start, stop, clear]),
       status,
-      UI.el("div", { text: t("app.simpletcpserver.label.log") }),
+      UI.el("h4", { text: t("app.simpletcpserver.label.log") }),
       logBox,
     ]);
 
@@ -146,7 +143,7 @@ export class SimpleTCPServerApp extends GenericProcess {
     if (!this.logEl) return;
     const maxLines = 200;
     const lines = this.log.length > maxLines ? this.log.slice(-maxLines) : this.log;
-    this.logEl.value = lines.join("\n");
+    this.logEl.textContent = lines.join("\n");
     this.logEl.scrollTop = this.logEl.scrollHeight;
   }
 

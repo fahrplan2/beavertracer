@@ -234,6 +234,7 @@ export class SimpleHTTPServerApp extends GenericProcess {
     this.logEl = logBox;
 
     const panel = UI.panel([
+      UI.el("h4", { text: t("app.simplehttpserver.label.server") }),
       UI.row(t("app.simplehttpserver.label.port"), portInput),
       UI.row(t("app.simplehttpserver.label.docRoot"), rootInput),
       UI.buttonRow([
@@ -242,7 +243,7 @@ export class SimpleHTTPServerApp extends GenericProcess {
         UI.button(t("app.simplehttpserver.button.clearLog"), () => { this.log = []; this._renderLog(); }, {})
       ]),
       status,
-      UI.el("div", { text: t("app.simplehttpserver.label.log") }),
+      UI.el("h4", { text: t("app.simplehttpserver.label.log") }),
       logBox,
     ]);
 

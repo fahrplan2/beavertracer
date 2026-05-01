@@ -53,6 +53,7 @@ export class PacketSnifferApp extends GenericProcess {
     this.listEl = UI.el("div");
 
     const panel = UI.panel([
+      UI.el("h4", { text: t("app.packetsniffer.title") }),
       this.listEl,
     ]);
 

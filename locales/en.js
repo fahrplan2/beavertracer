@@ -120,6 +120,7 @@ export default {
   "app.simplehttpserver.label.port": "Port",
   "app.simplehttpserver.label.docRoot": "Document Root",
   "app.simplehttpserver.label.log": "Log:",
+  "app.simplehttpserver.label.server": "Server",
 
   "app.simplehttpserver.status.pid": "PID: {pid}",
   "app.simplehttpserver.status.running": "Running: {running}",
@@ -158,6 +159,7 @@ export default {
   "app.simplemailserver.placeholder.user": "user",
   "app.simplemailserver.placeholder.password": "password",
 
+  "app.simplemailserver.label.server": "Server",
   "app.simplemailserver.label.domain": "Maildomain",
   "app.simplemailserver.label.smtpPort": "SMTP port",
   "app.simplemailserver.label.pop3Port": "POP3 port",
@@ -230,6 +232,7 @@ export default {
   "app.simpletcpclient.label.port": "Port",
   "app.simpletcpclient.label.chat": "Chat:",
   "app.simpletcpclient.label.message": "Message",
+  "app.simpletcpclient.label.connection": "Connection",
 
   "app.simpletcpclient.status.connected": "Connected: {connected}",
   "app.simpletcpclient.status.peer": "Peer: {peer}",
@@ -257,6 +260,7 @@ export default {
 
   "app.simpletcpserver.label.listenPort": "Server-Port",
   "app.simpletcpserver.label.log": "Log:",
+  "app.simpletcpserver.label.server": "Server",
 
   "app.simpletcpserver.status.running": "Running: {running}",
   "app.simpletcpserver.status.port": "Port: {port}",
@@ -522,6 +526,7 @@ export default {
 
   "app.udpechoserver.label.listenPort": "Listen Port",
   "app.udpechoserver.label.log": "Log:",
+  "app.udpechoserver.label.server": "Server",
 
   "app.udpechoserver.log.invalidPort": "[{time}] ERROR invalid port: \"{portStr}\"",
   "app.udpechoserver.log.listening": "[{time}] Listening on 0.0.0.0:{port}",

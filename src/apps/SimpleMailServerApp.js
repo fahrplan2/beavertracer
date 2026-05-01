@@ -804,6 +804,7 @@ export class SimpleMailServerApp extends GenericProcess {
     this.logEl = logBox;
 
     const panel = UI.panel([
+      UI.el("h4", { text: t("app.simplemailserver.label.server") || "Server" }),
       UI.row(t("app.simplemailserver.label.domain") || "Maildomain", domainInput),
       UI.row(t("app.simplemailserver.label.smtpPort") || "SMTP port", smtpInput),
       UI.row(t("app.simplemailserver.label.pop3Port") || "POP3 port", pop3Input),
@@ -815,16 +816,16 @@ export class SimpleMailServerApp extends GenericProcess {
         UI.button(t("app.simplemailserver.button.saveConfig") || "Save config", () => this._saveConfig(), {}),
       ]),
 
-      UI.el("div", { text: t("app.simplemailserver.label.users") || "Mailboxes" }),
+      UI.el("h4", { text: t("app.simplemailserver.label.users") || "Mailboxes" }),
       UI.row(t("app.simplemailserver.label.user") || "User", userInput),
       UI.row(t("app.simplemailserver.label.password") || "Password", passInput),
       UI.buttonRow([addBtn, delBtn, seedBtn, clearQueueBtn]),
       usersBox,
 
-      UI.el("div", { text: t("app.simplemailserver.label.status") || "Status" }),
+      UI.el("h4", { text: t("app.simplemailserver.label.status") || "Status" }),
       status,
 
-      UI.el("div", { text: t("app.simplemailserver.label.log") || "Log" }),
+      UI.el("h4", { text: t("app.simplemailserver.label.log") || "Log" }),
       logBox,
     ]);
 

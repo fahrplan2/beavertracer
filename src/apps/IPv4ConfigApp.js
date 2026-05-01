@@ -126,15 +126,15 @@ export class IPv4ConfigApp extends GenericProcess {
     this.releaseBtn = releaseBtn;
 
     const panel = UILib.panel([
+      UILib.el("h4", { text: t("app.ipv4config.label.interface") }),
       UILib.row(t("app.ipv4config.label.interface"), ifSel),
       UILib.row(t("app.ipv4config.label.mode"), modeSel),
 
+      UILib.el("h4", { text: t("app.ipv4config.title") }),
       UILib.row(t("app.ipv4config.label.ip"), ipEl),
       UILib.row(t("app.ipv4config.label.prefixLength"), prefixEl),
-
       UILib.row(t("app.ipv4config.label.gateway"), gwEl),
       UILib.row(t("app.ipv4config.label.dnsServer"), dnsEl),
-
       UILib.buttonRow([applyBtn, releaseBtn]),
       msg,
     ]);
