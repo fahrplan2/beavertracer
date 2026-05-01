@@ -198,13 +198,10 @@ export default {
   "app.simplemailserver.users.seed": "Seed test mail",
   "app.simplemailserver.users.delete": "Delete",
 
-  "app.simplemailserver.status.pid": "pid",
   "app.simplemailserver.status.running": "running",
   "app.simplemailserver.status.domain": "maildomain",
   "app.simplemailserver.status.ports": "ports",
-  "app.simplemailserver.status.refs": "serverRef",
   "app.simplemailserver.status.users": "users",
-  "app.simplemailserver.status.logEntries": "log entries",
 
   "app.simplemailserver.log.wroteDefaultConfig": "wrote default config",
   "app.simplemailserver.log.cannotWriteConfig": "cannot write config",
@@ -345,6 +342,8 @@ export default {
   "app.sparktail.err.chunkedMissingCrlf": "Chunked parse: missing CRLF after chunk",
   "app.sparktail.err.invalidContentLength": "Invalid Content-Length",
   "app.sparktail.err.cannotResolveHost": "Cannot resolve host",
+  "app.sparktail.err.invalidIpv6Bracket": "Invalid IPv6 bracket",
+
 
   "app.sparktail.page.invalidUrl.title": "Invalid URL",
 

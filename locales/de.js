@@ -78,7 +78,6 @@ export default {
   "app.ipv4config.msg.releaseNothingToDo": "Keine Adresse zum Freigeben auf Schnittstelle {i}.",
   "app.ipv4config.err.releaseSocketFailed": "Öffnen des UDP-Sockets für Freigabe fehlgeschlagen: {reason}",
   "app.ipv4config.err.releaseFailed": "DHCP-Freigabe fehlgeschlagen: {reason}",
-
   "app.ipv4config.tab.ipv4": "IPv4",
   "app.ipv4config.tab.ipv6": "IPv6",
   "app.ipv4config.ipv6.sectionTitle": "IPv6-Konfiguration",
@@ -93,7 +92,6 @@ export default {
   "app.ipv4config.ipv6.err.invalidAddress": "Ungültige IPv6-Adresse.",
   "app.ipv4config.ipv6.err.invalidPrefix": "Ungültige IPv6-Präfixlänge (0–128).",
   "app.ipv4config.ipv6.err.invalidGateway": "Ungültiges IPv6-Gateway.",
-
   "app.packetsniffer.nointerface": "Keine Schnittstelle",
   "app.packetsniffer.title": "Paket-Sniffer",
   "app.packetsniffer.unnamed": "Unbenannt",
@@ -529,5 +527,8 @@ export default {
   "switch.sat.empty": "Die SAT ist noch leer.",
   "textbox.text": "Text",
   "textbox.title": "Textfeld",
-  "textbox.hint": "unterstützt Mini-Markdown wie **fett**, *kursiv* usw."
+  "textbox.hint": "unterstützt Mini-Markdown wie **fett**, *kursiv* usw.",
+  "app.dnsd.label.server": "Server",
+  "app.dnsd.label.config": "Konfiguration",
+  "app.sparktail.err.invalidIpv6Bracket": "Ungültige IPv6-Klammer"
 };

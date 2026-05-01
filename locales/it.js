@@ -77,7 +77,6 @@ export default {
   "app.ipv4config.msg.releaseNothingToDo": "Nessun indirizzo da rilasciare sull'interfaccia {i}.",
   "app.ipv4config.err.releaseSocketFailed": "Impossibile aprire il socket UDP per il rilascio: {reason}",
   "app.ipv4config.err.releaseFailed": "Rilascio DHCP fallito: {reason}",
-
   "app.ipv4config.tab.ipv4": "IPv4",
   "app.ipv4config.tab.ipv6": "IPv6",
   "app.ipv4config.ipv6.sectionTitle": "Configurazione IPv6",
@@ -92,7 +91,6 @@ export default {
   "app.ipv4config.ipv6.err.invalidAddress": "Indirizzo IPv6 non valido.",
   "app.ipv4config.ipv6.err.invalidPrefix": "Lunghezza prefisso IPv6 non valida (0–128).",
   "app.ipv4config.ipv6.err.invalidGateway": "Gateway IPv6 non valido.",
-
   "app.packetsniffer.nointerface": "Nessuna interfaccia",
   "app.packetsniffer.title": "Sniffer di pacchetti",
   "app.packetsniffer.unnamed": "Senza nome",
@@ -519,5 +517,17 @@ export default {
   "switch.sat.empty": "La SAT è ancora vuota.",
   "textbox.text": "Testo",
   "textbox.title": "Casella di testo",
-  "textbox.hint": "supporta Mini-Markdown come **grassetto**, *corsivo* ecc."
+  "textbox.hint": "supporta Mini-Markdown come **grassetto**, *corsivo* ecc.",
+  "app.dnsd.label.server": "Server",
+  "app.dnsd.label.config": "Configurazione",
+  "app.simplehttpserver.label.server": "Server",
+  "app.simplemailserver.label.server": "Server",
+  "app.simpletcpclient.label.connection": "Connessione",
+  "app.simpletcpserver.label.server": "Server",
+  "app.sparktail.err.invalidIpv6Bracket": "Parentesi IPv6 non valida",
+  "app.udpechoserver.label.server": "Server",
+  "panel.rename": "Rinomina",
+  "panel.rename.prompt": "Nuovo nome:",
+  "sim.link.error.noFreePort": "Nessuna porta libera disponibile.",
+  "sim.link.error.portInUse": "La porta è già in uso."
 };
