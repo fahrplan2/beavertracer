@@ -46,7 +46,9 @@ export class TabPicker {
       devMap.get(dev).push({ port, name: s.name, hidden: !!s.hidden });
     }
 
-    const devices = Array.from(devMap.keys()).sort((a,b)=>a.localeCompare(b));
+    const getDevName = (dev) =>
+      ctx.simControl.simobjects.find(elem => elem.id == parseInt(dev))?.name ?? dev;
+    const devices = Array.from(devMap.keys()).sort((a, b) => getDevName(a).localeCompare(getDevName(b)));
 
     // default device
     let pickerDevice = ctx.pickerDevice;
@@ -99,7 +101,7 @@ export class TabPicker {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "pcapviewer-tabpicker-item";
-      btn.textContent = ctx.simControl.simobjects.filter(elem => elem.id == parseInt(dev))[0].name;
+      btn.textContent = getDevName(dev);
       if (dev === pickerDevice) btn.classList.add("pcapviewer-tabpicker-item--active");
       btn.addEventListener("click", () => {
         ctx.setPickerDevice(dev);
