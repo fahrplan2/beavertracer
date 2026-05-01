@@ -1,0 +1,293 @@
+<h2>Ajuda</h2>
+<p class="subtitle">Como usar o Beaver Tracer</p>
+
+<hr>
+
+<nav class="help-toc">
+  <strong>Conteúdo</strong>
+  <ol>
+    <li><a href="#modes">Os três modos</a></li>
+    <li><a href="#edit">Modo Edição — Construir uma rede</a></li>
+    <li><a href="#devices">Dispositivos</a></li>
+    <li><a href="#panels">Painéis de dispositivo</a></li>
+    <li><a href="#run">Modo Execução — Executar a simulação</a></li>
+    <li><a href="#trace">Modo Rastreamento — Analisar pacotes</a></li>
+    <li><a href="#project">Salvar e carregar</a></li>
+  </ol>
+</nav>
+
+<hr>
+
+<h3 id="modes">Os três modos</h3>
+<p>
+  O Beaver Tracer tem três modos. Você alterna entre eles usando os botões na barra de ferramentas superior.
+</p>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-pencil"></i></td>
+    <td><strong>Edição</strong></td>
+    <td>Projete sua rede — coloque dispositivos, conecte-os, configure-os.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-play"></i></td>
+    <td><strong>Execução</strong></td>
+    <td>Inicie a simulação e observe o tráfego fluindo pela sua rede.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-magnifying-glass"></i></td>
+    <td><strong>Rastreamento</strong></td>
+    <td>Capture e inspecione os pacotes que trafegam pela sua rede.</td>
+  </tr>
+</table>
+
+<hr>
+
+<h3 id="edit">Modo Edição — Construir uma rede</h3>
+<p>
+  No modo Edição, uma barra de ferramentas aparece no lado esquerdo da tela.
+  Selecione uma ferramenta clicando nela e use-a na área de trabalho.
+</p>
+
+<h4>Ferramentas</h4>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-arrow-pointer"></i></td>
+    <td><strong>Selecionar</strong></td>
+    <td>Clique em um dispositivo para abrir seu painel. Arraste um dispositivo para movê-lo.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-link"></i></td>
+    <td><strong>Conectar</strong></td>
+    <td>Conecte dois dispositivos com um cabo (veja abaixo).</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-ban"></i></td>
+    <td><strong>Excluir</strong></td>
+    <td>Clique em um dispositivo ou cabo para removê-lo.</td>
+  </tr>
+</table>
+
+<p>
+  <strong>Dica:</strong> Clique com o botão direito em qualquer lugar da área de trabalho para cancelar a ferramenta atual
+  e voltar para <i class="fas fa-arrow-pointer"></i> Selecionar.
+</p>
+
+<h4>Colocar um dispositivo</h4>
+<ol>
+  <li>Clique em um botão de dispositivo na barra de ferramentas esquerda (ex.: <i class="fas fa-desktop"></i> PC).</li>
+  <li>Uma prévia segue o cursor do mouse.</li>
+  <li>Clique na área de trabalho para posicionar o dispositivo.</li>
+</ol>
+
+<h4>Conectar dois dispositivos</h4>
+<ol>
+  <li>Clique na ferramenta <i class="fas fa-link"></i> <strong>Conectar</strong>.</li>
+  <li>Clique no primeiro dispositivo — um seletor de porta aparece. Selecione uma porta.</li>
+  <li>Mova o mouse para o segundo dispositivo e clique nele — selecione também uma porta.</li>
+  <li>O cabo é criado automaticamente.</li>
+</ol>
+<p>
+  Portas já em uso aparecem desativadas e não podem ser selecionadas.
+</p>
+
+<h4>Mover um dispositivo</h4>
+<p>
+  No modo <i class="fas fa-arrow-pointer"></i> Selecionar, clique e arraste qualquer dispositivo para reposicioná-lo na área de trabalho.
+</p>
+
+<h4>Excluir um dispositivo ou cabo</h4>
+<ol>
+  <li>Clique na ferramenta <i class="fas fa-ban"></i> <strong>Excluir</strong>.</li>
+  <li>Clique no dispositivo ou cabo que deseja remover.</li>
+</ol>
+<p>
+  Ao excluir um dispositivo, todos os cabos conectados a ele são removidos automaticamente.
+</p>
+
+<hr>
+
+<h3 id="devices">Dispositivos</h3>
+<p>
+  Estes dispositivos estão disponíveis na barra de ferramentas esquerda no modo Edição:
+</p>
+
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-desktop"></i></td>
+    <td><strong>PC</strong></td>
+    <td>
+      Um computador com interface de rede com fio. Você pode executar aplicativos nele
+      (ex.: um navegador web ou uma ferramenta ping) e configurar seu endereço IP.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-laptop"></i></td>
+    <td><strong>Laptop</strong></td>
+    <td>
+      Como um PC, mas conecta-se via Wi-Fi em vez de cabo.
+      Use-o junto com um ponto de acesso ou roteador doméstico.
+    </td>
+  </tr>
+  <tr>
+    <td>SW</td>
+    <td><strong>Switch</strong></td>
+    <td>
+      Conecta vários dispositivos no mesmo segmento de rede.
+      Encaminha quadros com base em endereços MAC.
+      Suporta VLANs e o Spanning Tree Protocol (STP).
+    </td>
+  </tr>
+  <tr>
+    <td>RT</td>
+    <td><strong>Roteador</strong></td>
+    <td>
+      Conecta diferentes redes e encaminha pacotes entre elas.
+      Você pode configurar rotas estáticas e endereços IP em cada interface.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-house-signal"></i></td>
+    <td><strong>Roteador doméstico</strong></td>
+    <td>
+      Um roteador, servidor DHCP, gateway NAT e ponto de acesso Wi-Fi combinados —
+      semelhante a um roteador de internet doméstico típico.
+      Conecte-o a um roteador (como WAN) e a PCs ou laptops (como LAN/Wi-Fi).
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-wifi"></i></td>
+    <td><strong>Ponto de acesso</strong></td>
+    <td>
+      Estende uma rede com fio com uma conexão Wi-Fi.
+      Conecte sua porta com fio a um switch ou roteador e depois laptops sem fio.
+    </td>
+  </tr>
+</table>
+
+<hr>
+
+<h3 id="panels">Painéis de dispositivo</h3>
+<p>
+  Clique em qualquer dispositivo na área de trabalho para abrir seu <strong>painel</strong> — uma janela de configuração
+  que aparece no lado direito da tela.
+  Clique no dispositivo novamente (ou no botão <strong>×</strong> no cabeçalho do painel) para fechá-lo.
+</p>
+
+<h4>Renomear um dispositivo</h4>
+<p>
+  Clique no botão <i class="fas fa-pen"></i> ao lado do nome do dispositivo no cabeçalho do painel
+  para dar um nome personalizado (ex.: "PC-Escritório" ou "Roteador-Principal").
+</p>
+
+<h4>Abas</h4>
+<p>
+  A maioria dos dispositivos tem várias abas no painel.
+  Por exemplo, um roteador tem:
+</p>
+<ul>
+  <li><strong>Interfaces</strong> — configurar endereços IP em cada porta</li>
+  <li><strong>Tabela de roteamento IPv4</strong> — visualizar e editar rotas estáticas IPv4</li>
+  <li><strong>Tabela de roteamento IPv6</strong> — visualizar e editar rotas estáticas IPv6</li>
+</ul>
+<p>
+  Um switch tem abas para a <strong>Switch Address Table (SAT)</strong>, configuração de <strong>VLAN</strong>
+  e configurações do <strong>Spanning Tree Protocol (STP)</strong>.
+</p>
+<p>
+  Um roteador doméstico tem abas para <strong>Status</strong>, configurações <strong>WAN</strong> e concessões <strong>DHCP</strong>.
+</p>
+
+<h4>PC e Laptop</h4>
+<p>
+  PCs e laptops têm um sistema operacional totalmente simulado em seu painel.
+  Você pode abrir aplicativos, configurar as definições de rede e executar comandos.
+</p>
+
+<hr>
+
+<h3 id="run">Modo Execução — Executar a simulação</h3>
+<p>
+  Mude para o modo <i class="fas fa-play"></i> <strong>Execução</strong> para iniciar a simulação.
+  A rede fica ativa: dispositivos trocam pacotes, concessões DHCP são atribuídas,
+  tabelas de roteamento são atualizadas, e assim por diante.
+</p>
+
+<h4>Controle de velocidade</h4>
+<p>
+  Use os botões de velocidade na barra de ferramentas para controlar a rapidez da simulação:
+</p>
+<table class="help-table">
+  <tr><td><strong>0,5×</strong></td><td>Lento — bom para observar etapas individuais</td></tr>
+  <tr><td><strong>1×</strong></td><td>Velocidade normal</td></tr>
+  <tr><td><strong>4×</strong></td><td>Rápido</td></tr>
+  <tr><td><strong>8×</strong></td><td>Muito rápido</td></tr>
+</table>
+
+<h4>Pausar e redefinir</h4>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-pause"></i></td>
+    <td><strong>Pausar</strong></td>
+    <td>Congelar a simulação no estado atual.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-arrow-rotate-left"></i></td>
+    <td><strong>Redefinir</strong></td>
+    <td>Reiniciar a simulação do início (todos os estados dinâmicos são apagados).</td>
+  </tr>
+</table>
+
+<p>
+  <strong>Nota:</strong> Não é possível editar a topologia da rede no modo Execução.
+  Volte primeiro para o modo <i class="fas fa-pencil"></i> Edição.
+</p>
+
+<hr>
+
+<h3 id="trace">Modo Rastreamento — Analisar pacotes</h3>
+<p>
+  Mude para o modo <i class="fas fa-magnifying-glass"></i> <strong>Rastreamento</strong> para abrir o
+  analisador de pacotes integrado — semelhante ao Wireshark.
+</p>
+<p>
+  No topo, selecione o <strong>dispositivo</strong> e a <strong>porta</strong> que deseja capturar.
+  Todos os pacotes que passam por essa porta são registrados e exibidos em uma lista.
+</p>
+<p>
+  Clique em qualquer pacote da lista para ver todos os seus detalhes:
+  as camadas de protocolo, campos de cabeçalho e payload — exatamente como uma ferramenta de rede profissional.
+</p>
+<p>
+  A captura é executada automaticamente enquanto a simulação está em execução.
+  Você pode alternar entre os modos Rastreamento e Execução a qualquer momento sem perder os dados capturados.
+</p>
+
+<hr>
+
+<h3 id="project">Salvar e carregar</h3>
+<p>
+  Seu projeto de rede pode ser salvo como arquivo e carregado posteriormente.
+  Use os botões na barra de ferramentas (visíveis no modo Edição):
+</p>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-file"></i></td>
+    <td><strong>Novo</strong></td>
+    <td>Começar com uma área de trabalho em branco. As alterações não salvas serão perdidas.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-file-arrow-up"></i></td>
+    <td><strong>Carregar</strong></td>
+    <td>Abrir um arquivo de simulação salvo anteriormente.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-file-arrow-down"></i></td>
+    <td><strong>Salvar</strong></td>
+    <td>Baixar a simulação atual como arquivo para o seu computador.</td>
+  </tr>
+</table>
+
+<hr>
+<p class="footer">
+  Com problemas? Verifique se sua rede está corretamente conectada e se todos os dispositivos têm endereços IP válidos.
+</p>

@@ -383,15 +383,17 @@ export class SimControl {
         this._pageContent = pageContent;
 
         // mount router once; we keep it mounted even when tab hidden
+        this._currentRoute = "";
         this._staticRouter = new StaticPageRouter({
             fallbackLocale: "en",
             onRoute: ({ route }) => {
+                this._currentRoute = route;
                 // whenever we are on a static page route, switch UI to about tab
                 if (this.mode !== "page") {
                     this.mode = "page";
                     this.isPaused = true;
-                    this._invalidateUI();
                 }
+                this._invalidateUI();
             },
         });
         this._staticRouter.mount(pageContent, { initial: window.location.pathname });
@@ -592,6 +594,19 @@ export class SimControl {
         langBtn.dataset.role = "lang";
         gCommon.appendChild(langBtn);
 
+        const helpBtn = DOMBuilder.iconbutton({
+            label: t("sim.help"),
+            icon: "fa-question",
+            onClick: () => {
+                this.pause();
+                this.mode = "page";
+                this._invalidateUI();
+                this._staticRouter.navigate("/help", { replace: true });
+            },
+        });
+        helpBtn.dataset.role = "mode-help";
+        gCommon.appendChild(helpBtn);
+
         const aboutBtn = DOMBuilder.iconbutton({
             label: t("sim.about"),
             icon: "fa-circle-question",
@@ -602,7 +617,7 @@ export class SimControl {
                 this._staticRouter.navigate("/about", { replace: true });
             },
         });
-        aboutBtn.dataset.role = "mode-page";
+        aboutBtn.dataset.role = "mode-about";
         gCommon.appendChild(aboutBtn);
 
     }
@@ -704,7 +719,8 @@ export class SimControl {
             setActive("mode-edit", this.mode === "edit");
             setActive("mode-run", this.mode === "run");
             setActive("mode-trace", this.mode === "trace");
-            setActive("mode-page", this.mode === "page");
+            setActive("mode-help",  this.mode === "page" && this._currentRoute === "/help");
+            setActive("mode-about", this.mode === "page" && this._currentRoute === "/about");
 
             // --- active state for pause
             setActive("pause", this.mode === "run" && this.isPaused);

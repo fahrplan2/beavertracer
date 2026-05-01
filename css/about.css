@@ -3,59 +3,101 @@
     margin: 0 auto;
     line-height: 1.65;
     display: block;
+    user-select: text;
 }
 
-.about .subtitle {
-    color: #666;
-    margin-top: -0.5rem;
-}
-
-.about .version {
-    margin-top: 1rem;
-    font-size: 0.95rem;
-    color: #444;
-}
-
-.about h3 {
+.about-container h3 {
     margin-top: 2rem;
 }
 
-.about hr {
+.about-container h4 {
+    background-color: transparent;
+    font-size: 1rem;
+    padding: 0;
+    margin: 1.2rem 0 0.4rem;
+}
+
+.about-container hr {
     margin: 2rem 0;
     border: none;
     border-top: 1px solid #ddd;
 }
 
-.about ul {
+.about-container ul {
     padding-left: 1.2rem;
 }
 
-.about li {
+.about-container li {
     margin: 0.35rem 0;
 }
 
-.about.license-text {
+.about-container .subtitle {
+    color: #666;
+    margin-top: -0.5rem;
+}
+
+.about-container .version {
+    margin-top: 1rem;
+    font-size: 0.95rem;
+    color: #444;
+}
+
+.about-container .license-text {
     font-size: 0.9rem;
     color: #444;
     font-family: 'Courier New', Courier, monospace;
 }
 
-.about .thanks {
+.about-container .thanks {
     margin-top: 1.5rem;
     font-style: italic;
 }
 
-.about .footer {
+.about-container .footer {
     text-align: center;
     font-size: 0.85rem;
     color: #777;
 }
 
-.about a {
+.about-container a {
     color: #2c6ed5;
     text-decoration: none;
 }
 
-.about a:hover {
+.about-container a:hover {
     text-decoration: underline;
+}
+
+.about-container .help-toc {
+    background: #f7f7f7;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 1rem 1.4rem;
+    display: inline-block;
+    min-width: 280px;
+}
+
+.about-container .help-toc ol {
+    margin: 0.5rem 0 0;
+    padding-left: 1.3rem;
+}
+
+.about-container .help-toc li {
+    margin: 0.2rem 0;
+}
+
+.about-container .help-table {
+    border-collapse: collapse;
+    margin: 0.6rem 0 0.8rem;
+}
+
+.about-container .help-table td {
+    padding: 0.3rem 0.7rem 0.3rem 0;
+    vertical-align: top;
+}
+
+.about-container .help-table td:first-child {
+    width: 2rem;
+    text-align: center;
+    color: #555;
 }

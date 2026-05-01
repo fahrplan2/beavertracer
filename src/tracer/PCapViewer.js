@@ -3,6 +3,7 @@ import loadWiregasm from "@goodtools/wiregasm/dist/wiregasm";
 import { TabPicker } from "./lib/TabPicker.js";
 import { SplitGrid } from "./lib/SplitGrid.js";
 import { SimControl } from "../SimControl.js";
+import { t } from "../i18n/index.js";
 
 /** @typedef {any} WiregasmModule */
 /** @typedef {any} DissectSession */
@@ -278,11 +279,11 @@ export class PCapViewer {
 
     if (this.#activeName === name && this.#filterEl) this.#filterEl.value = s.filter;
 
-    this.#setStatus("Loading Wiregasm…");
+    this.#setStatus(t("pcap.status.loading.wiregasm"));
     await this.#initWiregasm();
     if (!stillLatest()) return;         // ✅ stale completion -> ignore
 
-    this.#setStatus("Loading PCAP…");
+    this.#setStatus(t("pcap.status.loading.pcap"));
     this.#loadPcapBytesIntoSession(s, pcapBytes);
     if (!stillLatest()) return;
 
@@ -295,12 +296,12 @@ export class PCapViewer {
     if (this.#activeName !== name) {
       s.needsRender = true;
       this.#renderTabs();
-      this.#setStatus("Ready");
+      this.#setStatus(t("pcap.status.ready"));
       return;
     }
 
     s.needsRender = false;
-    this.#setStatus("Rendering…");
+    this.#setStatus(t("pcap.status.rendering"));
     this.#loadAndRenderFramesForActive();
     if (!stillLatest()) return;
 
@@ -314,7 +315,7 @@ export class PCapViewer {
     }
 
     this.#renderTabs();
-    this.#setStatus("Ready");
+    this.#setStatus(t("pcap.status.ready"));
   }
 
 
@@ -351,9 +352,9 @@ export class PCapViewer {
       <div class="pcapviewer-tabs"></div>
 
       <div class="pcapviewer-toolbar">
-        <input class="pcapviewer-filter" placeholder="Display filter (z.B. ip.addr==1.2.3.4)" />
-        <button class="pcapviewer-prev" type="button" title="Previous page">◀</button>
-        <button class="pcapviewer-next" type="button" title="Next page">▶</button>
+        <input class="pcapviewer-filter" placeholder="${t("pcap.filter.placeholder")}" />
+        <button class="pcapviewer-prev" type="button" title="${t("pcap.btn.prev")}">◀</button>
+        <button class="pcapviewer-next" type="button" title="${t("pcap.btn.next")}">▶</button>
         <span class="pcapviewer-status"></span>
       </div>
 
@@ -362,7 +363,7 @@ export class PCapViewer {
           <table class="pcapviewer-table">
             <thead>
               <tr>
-                <th>No.</th><th>Time</th><th>Source</th><th>Destination</th><th>Protocol</th><th>Info</th>
+                <th>${t("pcap.col.no")}</th><th>${t("pcap.col.time")}</th><th>${t("pcap.col.source")}</th><th>${t("pcap.col.destination")}</th><th>${t("pcap.col.protocol")}</th><th>${t("pcap.col.info")}</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -377,7 +378,7 @@ export class PCapViewer {
           </div>
 
           <div class="pcapviewer-pane pcapviewer-pane--raw">
-            <pre class="pcapviewer-rawpane">Select a packet…</pre>
+            <pre class="pcapviewer-rawpane">${t("pcap.packet.select")}</pre>
           </div>
         </div>
       </div>
@@ -446,7 +447,7 @@ export class PCapViewer {
     this.#tabsEl.innerHTML = "";
     const empty = document.createElement("div");
     empty.className = "pcapviewer-tabs-title";
-    empty.textContent = "Traces:";
+    empty.textContent = t("pcap.tabs.title");
     this.#tabsEl.appendChild(empty);
 
     // If no visible tabs, show a small hint (but still show +)
@@ -459,7 +460,7 @@ export class PCapViewer {
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "pcapviewer-tab" + (name === this.#activeName ? " pcapviewer-tab--active" : "");
-        btn.title = s.hasCapture ? name : `${name} (no capture loaded)`;
+        btn.title = s.hasCapture ? name : t("pcap.tab.nocapture", { name });
 
         const label = document.createElement("span");
         if (this.#opt.simControl) {
@@ -475,8 +476,8 @@ export class PCapViewer {
 
         const x = document.createElement("span");
         x.className = "pcapviewer-tab-close";
-        x.textContent = "X";
-        x.title = "Hide tab";
+        x.textContent = "×";
+        x.title = t("pcap.btn.hidetab");
         x.addEventListener("click", (ev) => {
           ev.stopPropagation();
           this.hideTab(name);
@@ -495,7 +496,7 @@ export class PCapViewer {
     plusBtn.type = "button";
     plusBtn.className = "pcapviewer-tab pcapviewer-tab--plus";
     plusBtn.textContent = "+";
-    plusBtn.title = "Show a tab…";
+    plusBtn.title = t("pcap.btn.showtab");
     plusBtn.addEventListener("click", (ev) => {
       ev.stopPropagation();
       this.#tabPickerOpen = !this.#tabPickerOpen;
@@ -513,9 +514,9 @@ export class PCapViewer {
 
     if (!s || !s.sess) {
       this.#renderTable([], 0);
-      if (this.#treePane) this.#treePane.textContent = s ? "No capture loaded in this session." : "No active session.";
-      if (this.#rawPane) this.#rawPane.textContent = "Select a packet…";
-      this.#setStatus(s ? `Active: ${s.name} (no capture loaded)` : "No active session");
+      if (this.#treePane) this.#treePane.textContent = s ? t("pcap.packet.nocapture") : t("pcap.packet.nosession");
+      if (this.#rawPane) this.#rawPane.textContent = t("pcap.packet.select");
+      this.#setStatus(s ? t("pcap.status.active.nocapture", { name: s.name }) : t("pcap.status.nosession"));
       return;
     }
 
@@ -525,8 +526,8 @@ export class PCapViewer {
       this.#loadAndRenderFrameDetailsForActive(s.selectedNo);
       this.#highlightSelectedRow(s.selectedNo);
     } else {
-      if (this.#treePane) this.#treePane.textContent = "Select a packet…";
-      if (this.#rawPane) this.#rawPane.textContent = "Select a packet…";
+      if (this.#treePane) this.#treePane.textContent = t("pcap.packet.select");
+      if (this.#rawPane) this.#rawPane.textContent = t("pcap.packet.select");
     }
   }
 
@@ -613,7 +614,7 @@ export class PCapViewer {
     this.#renderTable(frames, matched);
 
     if (!s) return;
-    this.#setStatus(`Active: ${s.name} • shown: ${frames.length} (skip ${s.skip}) / matched ${matched}`);
+    this.#setStatus(t("pcap.status.active", { name: s.name, shown: frames.length, skip: s.skip, matched }));
   }
 
   /** @param {any} rawRow */
@@ -731,13 +732,13 @@ export class PCapViewer {
 
     const s = this.#active();
     if (!details) {
-      this.#treePane.textContent = "Select a packet…";
+      this.#treePane.textContent = t("pcap.packet.select");
       return;
     }
 
     const title = document.createElement("div");
     title.className = "pcapviewer-tree-title";
-    title.textContent = `Packet Details (Frame ${details.number ?? "?"})`;
+    title.textContent = t("pcap.tree.title", { no: details.number ?? "?" });
     this.#treePane.appendChild(title);
 
     const treeRoot = details.tree ?? details.protocol_tree ?? details?.frame?.tree ?? null;
@@ -800,7 +801,7 @@ export class PCapViewer {
       label.className = "pcapviewer-tree-label";
 
       // No more [] here (since we hide those nodes anyway)
-      label.textContent = String(n.label ?? n.text ?? n.name ?? "(node)");
+      label.textContent = String(n.label ?? n.text ?? n.name ?? t("pcap.tree.node"));
 
       row.appendChild(twisty);
       row.appendChild(label);
@@ -850,7 +851,7 @@ export class PCapViewer {
     if (!this.#rawPane) return;
 
     if (!details) {
-      this.#rawPane.textContent = "Select a packet…";
+      this.#rawPane.textContent = t("pcap.packet.select");
       return;
     }
 

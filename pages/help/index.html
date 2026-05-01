@@ -1,0 +1,293 @@
+<h2>Help</h2>
+<p class="subtitle">How to use Beaver Tracer</p>
+
+<hr>
+
+<nav class="help-toc">
+  <strong>Contents</strong>
+  <ol>
+    <li><a href="#modes">The Three Modes</a></li>
+    <li><a href="#edit">Edit Mode — Building a Network</a></li>
+    <li><a href="#devices">Devices</a></li>
+    <li><a href="#panels">Device Panels</a></li>
+    <li><a href="#run">Run Mode — Running the Simulation</a></li>
+    <li><a href="#trace">Trace Mode — Analysing Packets</a></li>
+    <li><a href="#project">Saving and Loading</a></li>
+  </ol>
+</nav>
+
+<hr>
+
+<h3 id="modes">The Three Modes</h3>
+<p>
+  Beaver Tracer has three modes. You switch between them using the buttons in the top toolbar.
+</p>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-pencil"></i></td>
+    <td><strong>Edit</strong></td>
+    <td>Design your network — place devices, connect them, configure them.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-play"></i></td>
+    <td><strong>Run</strong></td>
+    <td>Start the simulation and watch traffic flow through your network.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-magnifying-glass"></i></td>
+    <td><strong>Trace</strong></td>
+    <td>Capture and inspect the packets travelling across your network.</td>
+  </tr>
+</table>
+
+<hr>
+
+<h3 id="edit">Edit Mode — Building a Network</h3>
+<p>
+  In Edit mode, a toolbar appears on the left side of the screen.
+  Select a tool by clicking it, then use it on the canvas.
+</p>
+
+<h4>Tools</h4>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-arrow-pointer"></i></td>
+    <td><strong>Select</strong></td>
+    <td>Click a device to open its panel. Drag a device to move it.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-link"></i></td>
+    <td><strong>Link</strong></td>
+    <td>Connect two devices with a cable (see below).</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-ban"></i></td>
+    <td><strong>Delete</strong></td>
+    <td>Click a device or cable to remove it.</td>
+  </tr>
+</table>
+
+<p>
+  <strong>Tip:</strong> Right-click anywhere on the canvas to cancel the current tool
+  and return to <i class="fas fa-arrow-pointer"></i> Select.
+</p>
+
+<h4>Placing a Device</h4>
+<ol>
+  <li>Click a device button in the left toolbar (e.g. <i class="fas fa-desktop"></i> PC).</li>
+  <li>A preview follows your mouse cursor.</li>
+  <li>Click on the canvas to place the device.</li>
+</ol>
+
+<h4>Connecting Two Devices</h4>
+<ol>
+  <li>Click the <i class="fas fa-link"></i> <strong>Link</strong> tool.</li>
+  <li>Click the first device — a port picker appears. Select a port.</li>
+  <li>Move your mouse to the second device and click it — select a port there too.</li>
+  <li>The cable is created automatically.</li>
+</ol>
+<p>
+  Ports that are already in use are shown as disabled and cannot be selected.
+</p>
+
+<h4>Moving a Device</h4>
+<p>
+  In <i class="fas fa-arrow-pointer"></i> Select mode, click and drag any device to reposition it on the canvas.
+</p>
+
+<h4>Deleting a Device or Cable</h4>
+<ol>
+  <li>Click the <i class="fas fa-ban"></i> <strong>Delete</strong> tool.</li>
+  <li>Click the device or cable you want to remove.</li>
+</ol>
+<p>
+  When you delete a device, all cables connected to it are removed automatically.
+</p>
+
+<hr>
+
+<h3 id="devices">Devices</h3>
+<p>
+  These devices are available in the left toolbar during Edit mode:
+</p>
+
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-desktop"></i></td>
+    <td><strong>PC</strong></td>
+    <td>
+      A personal computer with a wired network interface. You can run apps on it
+      (e.g. a web browser or a ping tool) and configure its IP address.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-laptop"></i></td>
+    <td><strong>Laptop</strong></td>
+    <td>
+      Like a PC, but connects via Wi-Fi instead of a cable.
+      Use it together with an Access Point or Home Router.
+    </td>
+  </tr>
+  <tr>
+    <td>SW</td>
+    <td><strong>Switch</strong></td>
+    <td>
+      Connects multiple devices in the same network segment.
+      Forwards frames based on MAC addresses.
+      Supports VLANs and Spanning Tree Protocol (STP).
+    </td>
+  </tr>
+  <tr>
+    <td>RT</td>
+    <td><strong>Router</strong></td>
+    <td>
+      Connects different networks and forwards packets between them.
+      You can configure static routes and IP addresses on each interface.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-house-signal"></i></td>
+    <td><strong>Home Router</strong></td>
+    <td>
+      A combined router, DHCP server, NAT gateway and Wi-Fi access point —
+      similar to a typical home internet router.
+      Connect it to a Router (as WAN) and to PCs or Laptops (as LAN/Wi-Fi).
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-wifi"></i></td>
+    <td><strong>Access Point</strong></td>
+    <td>
+      Extends a wired network with a Wi-Fi connection.
+      Connect its wired port to a Switch or Router, then connect Laptops to it wirelessly.
+    </td>
+  </tr>
+</table>
+
+<hr>
+
+<h3 id="panels">Device Panels</h3>
+<p>
+  Click any device on the canvas to open its <strong>panel</strong> — a configuration window
+  that appears on the right side of the screen.
+  Click the device again (or the <strong>×</strong> button in the panel header) to close it.
+</p>
+
+<h4>Renaming a Device</h4>
+<p>
+  Click the <i class="fas fa-pen"></i> button next to the device name in the panel header
+  to give it a custom name (e.g. "Office-PC" or "Core-Router").
+</p>
+
+<h4>Tabs</h4>
+<p>
+  Most devices have multiple tabs inside the panel.
+  For example, a Router has:
+</p>
+<ul>
+  <li><strong>Interfaces</strong> — configure IP addresses on each port</li>
+  <li><strong>Routing table IPv4</strong> — view and edit IPv4 static routes</li>
+  <li><strong>Routing table IPv6</strong> — view and edit IPv6 static routes</li>
+</ul>
+<p>
+  A Switch has tabs for its <strong>Switch Address Table (SAT)</strong>, <strong>VLAN</strong>
+  configuration, and <strong>Spanning Tree Protocol (STP)</strong> settings.
+</p>
+<p>
+  A Home Router has tabs for <strong>Status</strong>, <strong>WAN</strong> settings, and <strong>DHCP</strong> leases.
+</p>
+
+<h4>PC and Laptop</h4>
+<p>
+  PCs and Laptops have a full simulated operating system inside their panel.
+  You can open apps from the desktop, configure network settings, and run commands.
+</p>
+
+<hr>
+
+<h3 id="run">Run Mode — Running the Simulation</h3>
+<p>
+  Switch to <i class="fas fa-play"></i> <strong>Run</strong> mode to start the simulation.
+  The network becomes live: devices exchange packets, DHCP leases are assigned,
+  routing tables update, and so on.
+</p>
+
+<h4>Speed Controls</h4>
+<p>
+  Use the speed buttons in the top toolbar to control how fast the simulation runs:
+</p>
+<table class="help-table">
+  <tr><td><strong>0.5×</strong></td><td>Slow — good for observing individual steps</td></tr>
+  <tr><td><strong>1×</strong></td><td>Normal speed</td></tr>
+  <tr><td><strong>4×</strong></td><td>Fast</td></tr>
+  <tr><td><strong>8×</strong></td><td>Very fast</td></tr>
+</table>
+
+<h4>Pause and Reset</h4>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-pause"></i></td>
+    <td><strong>Pause</strong></td>
+    <td>Freeze the simulation at its current state.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-arrow-rotate-left"></i></td>
+    <td><strong>Reset</strong></td>
+    <td>Restart the simulation from the beginning (all dynamic state is cleared).</td>
+  </tr>
+</table>
+
+<p>
+  <strong>Note:</strong> You cannot edit the network topology while in Run mode.
+  Switch back to <i class="fas fa-pencil"></i> Edit mode first.
+</p>
+
+<hr>
+
+<h3 id="trace">Trace Mode — Analysing Packets</h3>
+<p>
+  Switch to <i class="fas fa-magnifying-glass"></i> <strong>Trace</strong> mode to open the
+  built-in packet analyser — similar to Wireshark.
+</p>
+<p>
+  At the top, select the <strong>device</strong> and <strong>port</strong> you want to capture from.
+  All packets passing through that port are recorded and shown in a list.
+</p>
+<p>
+  Click on any packet in the list to see its full details:
+  the protocol layers, header fields, and payload — exactly as a professional network tool would show them.
+</p>
+<p>
+  The capture runs automatically while the simulation is running.
+  You can switch between Trace mode and Run mode at any time without losing the captured data.
+</p>
+
+<hr>
+
+<h3 id="project">Saving and Loading</h3>
+<p>
+  Your network design can be saved as a file and loaded again later.
+  Use the buttons in the top toolbar (visible in Edit mode):
+</p>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-file"></i></td>
+    <td><strong>New</strong></td>
+    <td>Start with a blank canvas. Any unsaved changes will be lost.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-file-arrow-up"></i></td>
+    <td><strong>Load</strong></td>
+    <td>Open a previously saved simulation file.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-file-arrow-down"></i></td>
+    <td><strong>Save</strong></td>
+    <td>Download the current simulation as a file to your computer.</td>
+  </tr>
+</table>
+
+<hr>
+<p class="footer">
+  Having trouble? Check that your network is correctly connected and that all devices have valid IP addresses configured.
+</p>
