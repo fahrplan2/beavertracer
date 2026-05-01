@@ -10,6 +10,7 @@ import { RectOverlay } from "./sim/RectOverlay.js";
 import { AccessPoint } from "./sim/AccessPoint.js";
 import { Laptop } from "./sim/Laptop.js";
 import { WifiMedium } from "./net/WifiMedium.js";
+import { simTimer } from "./sim/SimTimer.js";
 import { t, getLocale, setLocale, getLocales } from "./i18n/index.js";
 import { StaticPageRouter } from "./StaticPageRouter.js";
 import { PCapController } from "./tracer/PCapControler.js";
@@ -34,7 +35,7 @@ export class SimControl {
     pcapViewer;
 
     /** @type {number} simulation speed (time it takes to do one tick in ms) */
-    static tick = 500;
+    static tick = 100;
 
     /** @type {number} ID of the simulation step */
     tickId = 0;
@@ -181,6 +182,7 @@ export class SimControl {
     }
 
     step() {
+        simTimer.tick();
         this.wifiMedium.step2(this.simobjects);
         for (let i = 0; i < this.simobjects.length; i++) {
             const x = this.simobjects[i];
@@ -501,10 +503,10 @@ export class SimControl {
         gSpeeds.appendChild(pauseBtn);
 
         const speeds = [
-            { label: "1×", ms: 2000, icon: "fa-1" },
-            { label: "4×", ms: 1000, icon: "fa-2" },
-            { label: "8×", ms: 125, icon: "fa-3" },
-            { label: "16×", ms: 32, icon: "fa-4" },
+            { label: "0.5×", ms: 1000, icon: "fa-1" },
+            { label: "1×",   ms: 500,  icon: "fa-2" },
+            { label: "4×",   ms: 100,  icon: "fa-3" },
+            { label: "8×",   ms: 40,   icon: "fa-4" },
         ];
 
         for (const s of speeds) {
@@ -705,7 +707,7 @@ export class SimControl {
             setActive("pause", this.mode === "run" && this.isPaused);
 
             // --- active state for speed buttons
-            const speedRoles = [2000, 1000, 500, 250, 125, 62, 32];
+            const speedRoles = [1000, 500, 100, 40];
             for (const ms of speedRoles) {
                 setActive(`speed-${ms}`, this.mode === "run" && !this.isPaused && SimControl.tick === ms);
             }

@@ -2,8 +2,7 @@
 
 import { t } from "../../../../i18n/index.js";
 import { nowMs } from "../lib/time.js";
-import { sleepAbortable } from "../lib/abort.js";
-import { SimControl } from "../../../../SimControl.js";
+import { simTimer, SimTimer } from "../../../../sim/SimTimer.js";
 
 import { DNSPacket } from "../../../../net/pdu/DNSPacket.js";
 import { IPAddress } from "../../../../net/models/IPAddress.js";
@@ -22,7 +21,7 @@ export const dig = {
     let qtypeStr = "";        // A, MX, NS...
     let short = false;
 
-    let timeoutMs = 50 * SimControl.tick; // default like your ping-ish scale
+    let timeoutMs = SimTimer.DNS_TIMEOUT_MS;
     let tries = 1;
     let port = 53;
 
@@ -317,23 +316,19 @@ export const dig = {
       return null;
     };
 
-    /** @param {number} ms */
-    const recvWithTimeout = async (ms) => {
-      const t0 = nowMs();
+    /** @param {number} simMs */
+    const recvWithTimeout = async (simMs) => {
+      let ticksLeft = simTimer.toTicks(simMs);
 
-      while (true) {
+      while (ticksLeft > 0) {
         if (ctx.signal.aborted) throw new DOMException("Aborted", "AbortError");
 
-        const elapsed = nowMs() - t0;
-        if (elapsed >= ms) return null;
-
-        const slice = Math.max(1, Math.min(25 * SimControl.tick, ms - elapsed));
         const res = await Promise.race([
           net.recvUDPSocket(sock),
-          (async () => { await sleepAbortable(slice, ctx.signal); return "__timeout__"; })(),
+          simTimer.sleep(SimTimer.SIM_MS_PER_TICK).then(() => "__timeout__"),
         ]);
 
-        if (res === "__timeout__") continue;
+        if (res === "__timeout__") { ticksLeft--; continue; }
         if (res == null) return null;
 
         const srcV4 = srcToV4NumOrNull(res.src);

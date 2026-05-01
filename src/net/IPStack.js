@@ -7,7 +7,7 @@ import { NetworkInterface } from "./NetworkInterface.js";
 import { Observable } from "../lib/Observeable.js";
 import { ICMPPacket } from "../net/pdu/ICMPPacket.js";
 import { EthernetPort } from "./EthernetPort.js";
-import { SimControl } from "../SimControl.js";
+import { simTimer, SimTimer } from "../sim/SimTimer.js";
 import { TcpEngine } from "./TcpEngine.js";
 import { UdpEngine } from "./UdpEngine.js";
 import { IPAddress } from "./models/IPAddress.js";
@@ -498,7 +498,7 @@ export class IPStack extends Observable {
      * @returns {Promise<{bytes:number, ttl:number, timeMs:number, identifier:number, sequence:number}>}
      */
     async icmpEcho(dstIp, opt = {}) {
-        const timeoutMs = opt.timeoutMs ?? 20 * SimControl.tick;
+        const timeoutSimMs = opt.timeoutMs ?? SimTimer.PING_TIMEOUT_MS;
         const identifier = opt.identifier ?? (this._nextIcmpId = (this._nextIcmpId + 1) & 0xffff);
         const sequence = opt.sequence ?? (Math.random() * 0xffff) | 0;
         const payload = opt.payload ?? new Uint8Array(32);
@@ -507,12 +507,12 @@ export class IPStack extends Observable {
         const t0 = (typeof performance !== "undefined" ? performance.now() : Date.now());
 
         return new Promise((resolve, reject) => {
-            const timer = setTimeout(() => {
+            const timerId = simTimer.schedule(() => {
                 this._pendingEcho.delete(key);
                 reject(new Error("timeout"));
-            }, timeoutMs);
+            }, timeoutSimMs);
 
-            this._pendingEcho.set(key, { resolve, reject, timer, t0 });
+            this._pendingEcho.set(key, { resolve, reject, timerId, t0 });
 
             const icmp = new ICMPPacket({
                 type: 8,
@@ -608,7 +608,7 @@ export class IPStack extends Observable {
                     break;
                 }
 
-                clearTimeout(pending.timer);
+                simTimer.cancel(pending.timerId);
                 this._pendingEcho.delete(key);
 
                 pending.resolve({
@@ -840,7 +840,7 @@ export class IPStack extends Observable {
                 const key = this._icmpv6EchoKey(srcIp, icmp6.identifier, icmp6.sequence);
                 const pending = this._pendingEcho6.get(key);
                 if (!pending) break;
-                clearTimeout(pending.timer);
+                simTimer.cancel(pending.timerId);
                 this._pendingEcho6.delete(key);
                 pending.resolve({
                     bytes:      packet.payload?.length ?? 0,
@@ -915,7 +915,7 @@ export class IPStack extends Observable {
      * @returns {Promise<{bytes:number, ttl:number, timeMs:number, identifier:number, sequence:number}>}
      */
     async icmpv6Echo(dstIp, opt = {}) {
-        const timeoutMs  = opt.timeoutMs ?? 20 * SimControl.tick;
+        const timeoutSimMs = opt.timeoutMs ?? SimTimer.PING_TIMEOUT_MS;
         const identifier = opt.identifier ?? (this._nextIcmpId = (this._nextIcmpId + 1) & 0xffff);
         const sequence   = opt.sequence   ?? (Math.random() * 0xffff) | 0;
         const payload    = opt.payload    ?? new Uint8Array(32);
@@ -925,12 +925,12 @@ export class IPStack extends Observable {
         const t0    = (typeof performance !== "undefined" ? performance.now() : Date.now());
 
         return new Promise((resolve, reject) => {
-            const timer = setTimeout(() => {
+            const timerId = simTimer.schedule(() => {
                 this._pendingEcho6.delete(key);
                 reject(new Error("timeout"));
-            }, timeoutMs);
+            }, timeoutSimMs);
 
-            this._pendingEcho6.set(key, { resolve, reject, timer, t0 });
+            this._pendingEcho6.set(key, { resolve, reject, timerId, t0 });
 
             const icmpBytes = ICMPv6Packet.buildEchoRequest(identifier, sequence, payload)
                 .pack(srcIp, dstIp);

@@ -5,7 +5,8 @@ import { GenericProcess } from "./GenericProcess.js";
 import { Disposer } from "../lib/Disposer.js";
 import { UILib } from "./lib/UILib.js";
 
-import { sleep, assertLenU8 } from "../lib/helpers.js";
+import { assertLenU8 } from "../lib/helpers.js";
+import { simTimer, SimTimer } from "../sim/SimTimer.js";
 import { DHCPPacket } from "../net/pdu/DHCPPacket.js";
 import { IPAddress } from "../net/models/IPAddress.js"; // <- ggf. Pfad bei dir: "./models/IPAddress.js" o.ä.
 
@@ -569,16 +570,10 @@ export class IPv4ConfigApp extends GenericProcess {
     await this._savePersistedConfig();
   }
 
-  // ------------------ DHCP (tick-scaled time) ------------------
-
-  _tick() {
-    const s = /** @type {any} */ (this.os)?.simulation;
-    const tick = s && typeof s.tick === "number" && s.tick > 0 ? s.tick : 1;
-    return tick;
-  }
+  // ------------------ DHCP ------------------
 
   async _simSleep(msSim) {
-    await sleep(Math.max(0, Math.floor(msSim * this._tick())));
+    await simTimer.sleep(msSim);
   }
 
   /**
@@ -594,9 +589,9 @@ export class IPv4ConfigApp extends GenericProcess {
     const mac = this._getIfaceMac(itf, ifaceIdx);
     const xid = (Math.random() * 0xffffffff) >>> 0;
 
-    const OFFER_WAIT_SIM = 15000;
-    const ACK_WAIT_SIM = 15000;
-    const BETWEEN_TRIES_SIM = 1500;
+    const OFFER_WAIT_SIM = SimTimer.DHCP_OFFER_WAIT_MS;
+    const ACK_WAIT_SIM = SimTimer.DHCP_ACK_WAIT_MS;
+    const BETWEEN_TRIES_SIM = SimTimer.DHCP_BETWEEN_TRIES_MS;
 
     for (let attempt = 1; attempt <= 3; attempt++) {
       this._setMsg(t("app.ipv4config.msg.dhcpAttempt", { attempt }));

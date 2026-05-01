@@ -2,10 +2,10 @@
 
 import { EthernetPort } from "./EthernetPort.js";
 import { EthernetFrame } from "../net/pdu/EthernetFrame.js";
-import { sleep, isEqualUint8, prefixToNetmask } from "../lib/helpers.js";
+import { isEqualUint8, prefixToNetmask } from "../lib/helpers.js";
 import { ArpPacket } from "../net/pdu/ArpPacket.js";
 import { Observable } from "../lib/Observeable.js";
-import { SimControl } from "../SimControl.js";
+import { simTimer, SimTimer } from "../sim/SimTimer.js";
 import { IPv4Packet } from "../net/pdu/IPv4Packet.js";
 import { IPv6Packet } from "../net/pdu/IPv6Packet.js";
 import { ICMPv6Packet } from "../net/pdu/ICMPv6Packet.js";
@@ -362,8 +362,8 @@ export class NetworkInterface extends Observable {
         // Another resolver running?
         if (mac == null && this._activeNeighborResolvers.includes(key)) {
             let retries = 0;
-            while (mac == null && retries < 30) {
-                await sleep(SimControl.tick);
+            while (mac == null && retries < SimTimer.ARP_WAIT_RETRIES) {
+                await simTimer.sleep(SimTimer.ARP_RETRY_DELAY_MS);
                 mac = this.neighborCache.get(key) ?? null;
                 retries++;
             }
@@ -374,12 +374,12 @@ export class NetworkInterface extends Observable {
         this._activeNeighborResolvers.push(key);
 
         let tries = 0;
-        while (mac == null && tries < 3) {
+        while (mac == null && tries < SimTimer.ARP_ATTEMPTS) {
             let retries = 0;
             this._doArpRequest(ip);
 
-            while (mac == null && retries < 10) {
-                await sleep(SimControl.tick);
+            while (mac == null && retries < SimTimer.ARP_RETRIES) {
+                await simTimer.sleep(SimTimer.ARP_RETRY_DELAY_MS);
                 mac = this.neighborCache.get(key) ?? null;
                 retries++;
             }
@@ -406,8 +406,8 @@ export class NetworkInterface extends Observable {
 
         if (this._activeNeighborResolvers.includes(key)) {
             let retries = 0;
-            while (mac == null && retries < 30) {
-                await sleep(SimControl.tick);
+            while (mac == null && retries < SimTimer.NDP_WAIT_RETRIES) {
+                await simTimer.sleep(SimTimer.NDP_RETRY_DELAY_MS);
                 mac = this.neighborCache.get(key) ?? null;
                 retries++;
             }
@@ -417,11 +417,11 @@ export class NetworkInterface extends Observable {
         this._activeNeighborResolvers.push(key);
 
         let tries = 0;
-        while (mac == null && tries < 3) {
+        while (mac == null && tries < SimTimer.NDP_ATTEMPTS) {
             let retries = 0;
             this._doNDPNeighborSolicitation(ip);
-            while (mac == null && retries < 10) {
-                await sleep(SimControl.tick);
+            while (mac == null && retries < SimTimer.NDP_RETRIES) {
+                await simTimer.sleep(SimTimer.NDP_RETRY_DELAY_MS);
                 mac = this.neighborCache.get(key) ?? null;
                 retries++;
             }

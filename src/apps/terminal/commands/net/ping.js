@@ -3,7 +3,7 @@
 import { t } from "../../../../i18n/index.js";
 import { nowMs } from "../lib/time.js";
 import { sleepAbortable } from "../lib/abort.js";
-import { SimControl } from "../../../../SimControl.js";
+import { simTimer, SimTimer } from "../../../../sim/SimTimer.js";
 import { IPAddress } from "../../../../net/models/IPAddress.js";
 
 /**
@@ -50,8 +50,8 @@ export const ping = {
     // parse args (same semantics you had)
     const argv = [...args];
     let count = 4;
-    let intervalMs = 5 * SimControl.tick;
-    let timeoutMs = 50 * SimControl.tick;
+    let intervalMs = 1000; // real ms between packets (independent of sim speed)
+    let timeoutMs = SimTimer.PING_TIMEOUT_MS;
     let host = "";
 
     const usage = () => t("app.terminal.commands.ping.usage");
