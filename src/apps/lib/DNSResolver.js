@@ -395,7 +395,7 @@ export class DNSResolver {
    * Wait for a DNS response with matching ID until deadline.
    * @param {number} sock
    * @param {number} id
-   * @param {number} deadlineMsReal
+   * @param {number} ticksLeft
    * @param {{p: Promise<any>}} st
    * @returns {Promise<DNSPacket|null>}
    */

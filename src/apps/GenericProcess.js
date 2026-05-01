@@ -21,6 +21,9 @@ export class GenericProcess {
   /** @type {boolean} */
   mounted = false;
 
+  /** @type {HTMLElement|null} element to focus when app is brought to foreground */
+  focusTarget = null;
+
   static pidCounter = 1;
 
   /**

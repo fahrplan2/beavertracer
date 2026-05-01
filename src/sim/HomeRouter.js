@@ -132,7 +132,7 @@ export class HomeRouter extends SimulatedObject {
         this.eth4 = new EthernetPort("eth4");
         this._wPort = new WirelessPort("wlan0");
 
-        for (const p of this._allPorts()) p.subscribe(this);
+        for (const p of this._allPorts()) p.subscribe(/** @type {any} */ (this));
 
         this.onPanelCreated = (body) => {
             this._panelBody = body;

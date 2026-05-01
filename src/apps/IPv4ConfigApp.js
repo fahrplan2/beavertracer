@@ -176,7 +176,7 @@ export class IPv4ConfigApp extends GenericProcess {
     this._ipv6Section = ipv6Section;
 
     // --- WiFi section (only for devices with a wireless port) ---
-    const device = this.os.obj;
+    const device = /** @type {any} */ (this.os.obj);
     let wifiSection = null;
     if (device?._wPort) {
       const ssidInput = UILib.input({ placeholder: "SSID", value: device._ssid ?? "" });
@@ -303,7 +303,7 @@ export class IPv4ConfigApp extends GenericProcess {
     }
   }
 
-  /** @param {4|6} f */
+  /** @param {0|4|6} f */
   _selectFamily(f) {
     this._selectedFamily = f;
     if (this._ipv4Section) this._ipv4Section.style.display = (f === 4) ? "" : "none";

@@ -64,7 +64,7 @@ export class SimControl {
     /** @type {"edit"|"run"|"trace"|"page"} */
     mode = "edit";
 
-    /** @type {"select"|"place-pc"|"place-switch"|"place-router"|"place-text"|"place-rect"|"link"|"delete"} */
+    /** @type {"select"|"place-pc"|"place-laptop"|"place-switch"|"place-router"|"place-homerouter"|"place-ap"|"place-text"|"place-rect"|"link"|"delete"} */
     tool = "select";
 
     /** @type {SimulatedObject|null} */
@@ -79,7 +79,7 @@ export class SimControl {
     /** @type {HTMLDivElement|null} */
     _ghostNodeEl = null;
 
-    /** @type {"place-pc"|"place-switch"|"place-router"|"place-text"|"place-rect"|null} */
+    /** @type {"place-pc"|"place-laptop"|"place-switch"|"place-router"|"place-homerouter"|"place-ap"|"place-text"|"place-rect"|null} */
     _ghostNodeType = null;
 
     /** @type {boolean} */
@@ -1249,7 +1249,7 @@ export class SimControl {
     }
 
 
-    /** @param {"place-pc"|"place-laptop"|"place-switch"|"place-router"|"place-ap"|"place-text"|"place-rect"} type */
+    /** @param {"place-pc"|"place-laptop"|"place-switch"|"place-router"|"place-homerouter"|"place-ap"|"place-text"|"place-rect"} type */
     _ensureGhostNode(type) {
         if (!this.nodesLayer) return;
 
