@@ -118,8 +118,8 @@ export class UdpEngine {
 
         /** @type {UdpMessage} */
         const msg = {
-            src: IPAddress.fromUInt8(packet.src),
-            dst: IPAddress.fromUInt8(packet.dst),
+            src: packet.src,
+            dst: packet.dst,
             srcPort: datagram.srcPort,
             dstPort: datagram.dstPort,
             payload: datagram.payload,

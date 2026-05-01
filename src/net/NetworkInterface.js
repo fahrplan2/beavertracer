@@ -387,8 +387,8 @@ export class NetworkInterface extends Observable {
         if (!this.ip.isV4()) throw new Error("Interface has no IPv4 address configured");
 
         const packet = new IPv4Packet({
-            dst: dstIP.toUInt8(),
-            src: this.ip.toUInt8(),
+            dst: dstIP,
+            src: this.ip,
             protocol: protocol,
             payload: payload
         });

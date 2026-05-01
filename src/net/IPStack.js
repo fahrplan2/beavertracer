@@ -322,8 +322,8 @@ export class IPStack extends Observable {
      * @param {Boolean} internal
      */
     async route(packet, internal = false) {
-        const dst = IPAddress.fromUInt8(packet.dst);
-        const src = IPAddress.fromUInt8(packet.src);
+        const dst = packet.dst;
+        const src = packet.src;
 
         // loopback
         if (this._isLoopback(dst)) {
@@ -362,7 +362,7 @@ export class IPStack extends Observable {
 
                     const p2 = new IPv4Packet({
                         dst: packet.dst,
-                        src: srcIp.toUInt8(),
+                        src: srcIp,
                         protocol: packet.protocol,
                         payload: packet.payload,
                         ttl: packet.ttl,
@@ -375,7 +375,7 @@ export class IPStack extends Observable {
 
             if (bIf !== -1) {
                 if (this._v4n(src) === 0) {
-                    packet.src = this.interfaces[bIf].ip.toUInt8();
+                    packet.src = this.interfaces[bIf].ip;
                 }
                 const bmac = new Uint8Array([255, 255, 255, 255, 255, 255]);
                 this.interfaces[bIf].sendFrame(bmac, 0x0800, packet.pack());
@@ -507,8 +507,8 @@ export class IPStack extends Observable {
      * @param {number} code
      */
     _sendICMPError(original, type, code) {
-        const src = IPAddress.fromUInt8(original.src);
-        const dst = IPAddress.fromUInt8(original.dst);
+        const src = original.src;
+        const dst = original.dst;
 
         if (this._isZero(src)) return;
         if (original.protocol == 1) return;
@@ -533,8 +533,8 @@ export class IPStack extends Observable {
      */
     _handleICMP(packet) {
         const icmp = ICMPPacket.fromBytes(packet.payload);
-        const ip_src = IPAddress.fromUInt8(packet.src);
-        const ip_dst = IPAddress.fromUInt8(packet.dst);
+        const ip_src = packet.src;
+        const ip_dst = packet.dst;
 
         console.debug("ICMP IN", {
             ip_src: ip_src.toString(),
@@ -644,8 +644,8 @@ export class IPStack extends Observable {
         const payload = (opts.payload ?? new Uint8Array());
 
         const packet = new IPv4Packet({
-            dst: dst.toUInt8(),
-            src: src.toUInt8(),
+            dst,
+            src,
             protocol,
             payload,
             ttl

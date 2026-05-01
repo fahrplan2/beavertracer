@@ -418,9 +418,8 @@ export class TcpEngine {
     const fin = tcp.hasFlag(TCPPacket.FLAG_FIN);
     const rst = tcp.hasFlag(TCPPacket.FLAG_RST);
 
-    // Requires: IPAddress.fromUInt8(Uint8Array(4))
-    const remoteIP = IPAddress.fromUInt8(packet.src);
-    const localIP = IPAddress.fromUInt8(packet.dst);
+    const remoteIP = packet.src;
+    const localIP = packet.dst;
 
     const remotePort = tcp.srcPort | 0;
     const localPort = tcp.dstPort | 0;
