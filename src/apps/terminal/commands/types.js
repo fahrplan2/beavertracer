@@ -23,6 +23,7 @@
 /**
  * @typedef {{
  *   name: string,
+ *   hidden?: boolean,
  *   run: (ctx: ShellContext, args: string[]) => (string|void|Promise<string|void>)
  * }} Command
  */

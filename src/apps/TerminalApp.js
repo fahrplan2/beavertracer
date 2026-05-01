@@ -137,19 +137,23 @@ export class TerminalApp extends GenericProcess {
         );
 
         this.outEl = term;
+        this.focusTarget = term;
         this.root.replaceChildren(term);
 
         this.disposer.on(term, "keydown", (ev) => this._onKeyDown(/** @type {KeyboardEvent} */(ev)));
+        this.disposer.on(term, "pointerdown", () => term.focus());
+        this.disposer.on(this.root, "pointerdown", () => term.focus());
         this._startCursorBlink();
 
         this._renderScreen();
-        queueMicrotask(() => term.focus());
+        setTimeout(() => term.focus(), 0);
     }
 
     onUnmount() {
         this._stopCursorBlink();
         this.disposer.dispose();
         this.outEl = null;
+        this.focusTarget = null;
         super.onUnmount();
     }
 

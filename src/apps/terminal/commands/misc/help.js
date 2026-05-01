@@ -6,7 +6,10 @@ import { t } from "../../../../i18n/index.js";
 export const help = {
   name: "help",
   run: (ctx) => {
-    const names = [...ctx.app.commands.keys()].sort();
+    const names = [...ctx.app.commands.entries()]
+      .filter(([, c]) => !c.hidden)
+      .map(([n]) => n)
+      .sort();
 
     return [
       t("app.terminal.commands.help.header"),

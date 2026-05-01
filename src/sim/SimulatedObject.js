@@ -72,6 +72,12 @@ export class SimulatedObject {
     onPanelCreated;
 
     /**
+     * callback fired each time the panel becomes visible
+     * @type {(() => void) | undefined}
+     */
+    onPanelOpen;
+
+    /**
      * @param {String} name
      */
     constructor(name) {
@@ -258,6 +264,7 @@ export class SimulatedObject {
         if (this.panelOpen) {
             this._clampPanelToViewport();
             bringToFront(this.panelEl);
+            this.onPanelOpen?.();
         }
     }
 

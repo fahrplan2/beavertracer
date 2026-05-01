@@ -29,6 +29,7 @@ import { ping } from "./net/ping.js";
 import { traceroute } from "./net/traceroute.js";
 import { arp } from "./net/arp.js";
 import { dig } from "./net/dig.js";
+import { beaver } from "./misc/beaver.js";
 
 /**
  * @param {import("../../TerminalApp.js").TerminalApp} app
@@ -62,6 +63,7 @@ export function registerBuiltins(app) {
         netstat,
         ping,
         traceroute,
+        beaver,
     ];
 
     for (const c of list) app.commands.set(c.name, c);

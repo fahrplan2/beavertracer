@@ -40,6 +40,9 @@ export class Laptop extends SimulatedObject {
         this.onPanelCreated = (body) => {
             this.os.mount(body);
         };
+        this.onPanelOpen = () => {
+            this.os.refocus();
+        };
     }
 
     /**

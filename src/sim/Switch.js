@@ -39,7 +39,7 @@ export class Switch extends SimulatedObject {
     _host = null;
 
     /** @type {string} */
-    _activeTab = "mac";
+    _activeTab = "sat";
 
     /** @type {HTMLDivElement|null} */
     _satHost = null;
@@ -171,7 +171,7 @@ export class Switch extends SimulatedObject {
         const card = DOMBuilder.div("router-card");
         host.appendChild(card);
 
-        const tabIds = ["mac", "vlan", "stp"];
+        const tabIds = ["sat", "vlan", "stp"];
         const tabBtns = tabIds.map(id => DOMBuilder.button(t(`switch.tab.${id}`), { className: "router-tab" }));
         card.appendChild(DOMBuilder.div("router-tabs", tabBtns));
 
@@ -188,7 +188,7 @@ export class Switch extends SimulatedObject {
             this._stpSection = null;
             tabBtns.forEach((btn, i) => btn.classList.toggle("is-active", tabIds[i] === id));
             DOMBuilder.clear(content);
-            if (id === "mac")  this._buildMacTab(content);
+            if (id === "sat")  this._buildMacTab(content);
             else if (id === "vlan") this._buildVlanTab(content);
             else if (id === "stp")  this._buildStpTab(content);
         };
@@ -251,7 +251,7 @@ export class Switch extends SimulatedObject {
 
     _startSatPolling() {
         this._satPollTimer = window.setInterval(() => {
-            if (this._activeTab === "mac") this._renderSAT();
+            if (this._activeTab === "sat") this._renderSAT();
         }, 500);
     }
 

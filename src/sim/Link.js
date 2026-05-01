@@ -40,6 +40,9 @@ export class Link extends SimulatedObject {
   /** @type {boolean} */
   _paused = false;
 
+  /** @type {number} perpendicular offset in px for parallel links */
+  _parallelOffset = 0;
+
   /**
    * @type {Array<{
    *   el: HTMLDivElement,
@@ -183,11 +186,16 @@ export class Link extends SimulatedObject {
     const x2 = this.B.getX();
     const y2 = this.B.getY();
 
+    const length = Math.hypot(dx, dy);
+    const normX = length > 0 ? -dy / length : 0;
+    const normY = length > 0 ?  dx / length : 0;
+    const off = this._parallelOffset;
+
     for (const p of this._packets) {
       const t = p.dir === "AtoB" ? p.progress : 1 - p.progress;
 
-      const x = x1 + (x2 - x1) * t;
-      const y = y1 + (y2 - y1) * t;
+      const x = x1 + dx * t + normX * off;
+      const y = y1 + dy * t + normY * off;
 
       p.el.style.left = `${x}px`;
       p.el.style.top = `${y}px`;
@@ -213,7 +221,7 @@ export class Link extends SimulatedObject {
     this.root.style.width = `${length}px`;
     this.root.style.left = `${x1}px`;
     this.root.style.top = `${y1}px`;
-    this.root.style.transform = `rotate(${angle}deg)`;
+    this.root.style.transform = `rotate(${angle}deg) translateY(${this._parallelOffset}px)`;
   }
 
   toJSON() {

@@ -833,6 +833,28 @@ export class SimControl {
     }
 
     redrawLinks() {
+        const GAP = 8;
+
+        // Group parallel links by unordered endpoint pair
+        /** @type {Map<string, Link[]>} */
+        const groups = new Map();
+        for (const obj of this.simobjects) {
+            if (!(obj instanceof Link)) continue;
+            const key = obj.A.id < obj.B.id
+                ? `${obj.A.id}-${obj.B.id}`
+                : `${obj.B.id}-${obj.A.id}`;
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key).push(obj);
+        }
+
+        // Assign perpendicular offsets, centred around 0
+        for (const links of groups.values()) {
+            const n = links.length;
+            for (let i = 0; i < n; i++) {
+                links[i]._parallelOffset = (i - (n - 1) / 2) * GAP;
+            }
+        }
+
         for (const obj of this.simobjects) {
             if (obj instanceof Link) obj.redrawLinks();
         }
