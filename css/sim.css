@@ -227,7 +227,6 @@
 
 
 .sim-toolbar-branding {
-  height: 80%;
   font-size: 25px;
   font-weight: 700;
   letter-spacing: 0.2px;
@@ -252,8 +251,16 @@
   font-size:12px;
   font-weight: bold;
   font-style: italic;
-  align-items: center;      /* vertical center */
-  justify-content: center;  /* horizontal center */
+  text-align: center;
+  width: 100%;
+}
+
+.sim-toolbar-branding-alpha {
+  font-size: 10px;
+  font-weight: 700;
+  color: #cc2200;
+  letter-spacing: 0.5px;
+  user-select: none;
 }
 
 .sim-toolbar-branding-group::after {

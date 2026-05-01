@@ -420,7 +420,11 @@ export class SimControl {
 
         const ver = document.createElement("div");
         ver.className = "sim-toolbar-branding-version";
-        ver.textContent = "v" + version(true);
+        ver.textContent = "v" + version(true) + " ";
+        const alpha = document.createElement("span");
+        alpha.className = "sim-toolbar-branding-alpha";
+        alpha.textContent = "Alpha Version";
+        ver.appendChild(alpha);
         brandingGroup.appendChild(ver);
 
         const addSeparator = (role) => {
