@@ -566,6 +566,11 @@
   cursor: default;
 }
 
+.sim-root.edit-mode .sim-nodes {
+  background-image: radial-gradient(circle, #b0b8c4 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
 .sim-root.edit-mode * {
   user-select: none;
 }
@@ -722,6 +727,9 @@ sim-toolbar-langbtn {
   color: var(--blue);
 }
 
+.fa-house-signal {
+  color: var(--blue);
+}
 
 
 .my-icon-router {

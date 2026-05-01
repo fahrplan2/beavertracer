@@ -9,6 +9,7 @@ import { TextBox } from "./sim/TextBox.js";
 import { RectOverlay } from "./sim/RectOverlay.js";
 import { AccessPoint } from "./sim/AccessPoint.js";
 import { Laptop } from "./sim/Laptop.js";
+import { HomeRouter } from "./sim/HomeRouter.js";
 import { WifiMedium } from "./net/WifiMedium.js";
 import { simTimer } from "./sim/SimTimer.js";
 import { t, getLocale, setLocale, getLocales } from "./i18n/index.js";
@@ -618,6 +619,7 @@ export class SimControl {
             ["place-laptop", t("sim.tool.laptop"), "fa-laptop"],
             ["place-switch", t("sim.tool.switch"), "my-icon-switch"],
             ["place-router", t("sim.tool.router"), "my-icon-router"],
+            ["place-homerouter", t("sim.tool.homerouter"), "fa-house-signal"],
             ["place-ap", t("sim.tool.ap"), "fa-wifi"],
             ["place-text", t("sim.tool.textbox"), "fa-t"],
             ["place-rect", t("sim.tool.rectangle"), "fa-square"],
@@ -640,6 +642,7 @@ export class SimControl {
                             this.tool === "place-laptop" ||
                             this.tool === "place-switch" ||
                             this.tool === "place-router" ||
+                            this.tool === "place-homerouter" ||
                             this.tool === "place-ap" ||
                             this.tool === "place-text" ||
                             this.tool === "place-rect"
@@ -1010,6 +1013,7 @@ export class SimControl {
             this.tool === "place-pc" ||
             this.tool === "place-laptop" ||
             this.tool === "place-router" ||
+            this.tool === "place-homerouter" ||
             this.tool === "place-switch" ||
             this.tool === "place-ap" ||
             this.tool === "place-text" ||
@@ -1166,13 +1170,14 @@ export class SimControl {
 
             /** @type {SimulatedObject|null} */
             let newObj = null;
-            if (this.tool === "place-pc")     newObj = new PC(this._nextName(t("pc.title")));
-            if (this.tool === "place-laptop")  newObj = new Laptop(this._nextName(t("laptop.title")));
-            if (this.tool === "place-switch")  newObj = new Switch(this._nextName(t("switch.title")));
-            if (this.tool === "place-router")  newObj = new Router(this._nextName(t("router.title")));
-            if (this.tool === "place-ap")      newObj = new AccessPoint(this._nextName(t("ap.title")));
-            if (this.tool === "place-text")    newObj = new TextBox();
-            if (this.tool === "place-rect")    newObj = new RectOverlay();
+            if (this.tool === "place-pc")          newObj = new PC(this._nextName(t("pc.title")));
+            if (this.tool === "place-laptop")       newObj = new Laptop(this._nextName(t("laptop.title")));
+            if (this.tool === "place-switch")       newObj = new Switch(this._nextName(t("switch.title")));
+            if (this.tool === "place-router")       newObj = new Router(this._nextName(t("router.title")));
+            if (this.tool === "place-homerouter")   newObj = new HomeRouter(this._nextName(t("homerouter.title")));
+            if (this.tool === "place-ap")           newObj = new AccessPoint(this._nextName(t("ap.title")));
+            if (this.tool === "place-text")         newObj = new TextBox();
+            if (this.tool === "place-rect")         newObj = new RectOverlay();
             if (!newObj) return;
 
             const w = this._ghostNodeEl.offsetWidth || 0;
@@ -1211,13 +1216,14 @@ export class SimControl {
 
             /** @type {SimulatedObject|null} */
             let tmp = null;
-            if (type === "place-pc")     tmp = new PC();
-            if (type === "place-laptop") tmp = new Laptop();
-            if (type === "place-switch") tmp = new Switch();
-            if (type === "place-router") tmp = new Router();
-            if (type === "place-ap")     tmp = new AccessPoint();
-            if (type === "place-text")   tmp = new TextBox();
-            if (type === "place-rect")   tmp = new RectOverlay();
+            if (type === "place-pc")         tmp = new PC();
+            if (type === "place-laptop")     tmp = new Laptop();
+            if (type === "place-switch")     tmp = new Switch();
+            if (type === "place-router")     tmp = new Router();
+            if (type === "place-homerouter") tmp = new HomeRouter();
+            if (type === "place-ap")         tmp = new AccessPoint();
+            if (type === "place-text")       tmp = new TextBox();
+            if (type === "place-rect")       tmp = new RectOverlay();
             if (!tmp) return;
 
             const el = tmp.buildIcon();
@@ -1454,6 +1460,7 @@ export class SimControl {
             ["RectOverlay", RectOverlay],
             ["AccessPoint", AccessPoint],
             ["Laptop", Laptop],
+            ["HomeRouter", HomeRouter],
             // Link handled separately
         ]);
 
