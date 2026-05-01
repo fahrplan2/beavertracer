@@ -99,6 +99,21 @@ export default {
   "app.ipv4config.err.releaseSocketFailed": "Failed to open UDP socket for release: {reason}",
   "app.ipv4config.err.releaseFailed": "DHCP release failed: {reason}",
 
+  "app.ipv4config.tab.ipv4": "IPv4",
+  "app.ipv4config.tab.ipv6": "IPv6",
+  "app.ipv4config.ipv6.sectionTitle": "IPv6 Configuration",
+  "app.ipv4config.ipv6.linklocal": "Link-local",
+  "app.ipv4config.ipv6.enable": "Enable IPv6",
+  "app.ipv4config.ipv6.address": "IPv6 Address",
+  "app.ipv4config.ipv6.prefix": "Prefix Length",
+  "app.ipv4config.ipv6.gateway": "IPv6 Gateway",
+  "app.ipv4config.ipv6.apply": "Apply IPv6",
+  "app.ipv4config.ipv6.msg.applied": "Applied IPv6 on if{i}: {ip}/{prefix}",
+  "app.ipv4config.ipv6.msg.disabled": "IPv6 disabled on if{i}.",
+  "app.ipv4config.ipv6.err.invalidAddress": "Invalid IPv6 address.",
+  "app.ipv4config.ipv6.err.invalidPrefix": "Invalid IPv6 prefix length (0–128).",
+  "app.ipv4config.ipv6.err.invalidGateway": "Invalid IPv6 gateway.",
+
   "app.packetsniffer.nointerface": "No interface",
   "app.packetsniffer.title": "Packet Sniffer",
   "app.packetsniffer.unnamed": "Unnamed",
@@ -442,6 +457,7 @@ export default {
   "app.terminal.commands.ip.out.netmaskLabel": "netmask",
   "app.terminal.commands.ip.out.ifaceLine": "{idx}: {name}  {state}",
   "app.terminal.commands.ip.out.inetLine": "    {inetLabel} {ip}  {netmaskLabel} {netmask}",
+  "app.terminal.commands.ip.out.inet6Line": "    inet6 {ip}  scope {scope}",
   "app.terminal.commands.ip.out.okSet": "ok: {iface} = {ip}/{prefix}",
 
   "app.terminal.commands.ping.usage": "usage: ping [-c count] [-i interval] [-W timeout] <host>",
@@ -581,6 +597,7 @@ export default {
   "router.routingtable.no": "no",
   "router.routingtable.yes": "yes",
   "router.routingtable.missing": "missing",
+  "router.routingtable.prefix": "Prefix",
 
   "sim.common": "Common",
   "sim.new": "New",

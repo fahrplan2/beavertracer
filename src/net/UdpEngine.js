@@ -16,12 +16,14 @@ export class UdpEngine {
     /**
      * @param {{
      *   ipSend: (opts: {dst:IPAddress, src:IPAddress, protocol:number, payload:Uint8Array}) => (void|Promise<void>),
-     *   sendIcmpError?: (original: any, type:number, code:number) => void
+     *   sendIcmpError?: (original: any, type:number, code:number) => void,
+     *   resolveSrcIp?: (dstIp: IPAddress) => IPAddress,
      * }} deps
      */
     constructor(deps) {
         this._ipSend = deps.ipSend;
         this._sendIcmpError = deps.sendIcmpError ?? null;
+        this._resolveSrcIp = deps.resolveSrcIp ?? null;
 
         /** @type {Map<number, UDPSocket>} */
         this.sockets = new Map();
@@ -36,7 +38,8 @@ export class UdpEngine {
     open(bindaddr, port) {
         if (this.sockets.get(port) != null) throw new Error("Port is in use");
         if (port <= 0 || port > 65535) throw new Error("Portnumber is not valid");
-        if (bindaddr.toString() !== "0.0.0.0") throw new Error("Currently only bindings to 0.0.0.0 are supported");
+        const bindStr = bindaddr.toString();
+        if (bindStr !== "0.0.0.0" && bindStr !== "::") throw new Error("Currently only bindings to 0.0.0.0 or :: are supported");
 
         const socket = new UDPSocket();
         socket.port = port;
@@ -78,16 +81,26 @@ export class UdpEngine {
         const socket = this.sockets.get(port);
         if (!socket) throw new Error("Port not in use!");
 
+        const srcIp = (this._resolveSrcIp && this._isWildcard(socket.bindaddr))
+            ? this._resolveSrcIp(dstip)
+            : socket.bindaddr;
+
         await this._ipSend({
             dst: dstip,
-            src: socket.bindaddr,
+            src: srcIp,
             protocol: 17,
             payload: new UDPPacket({
                 srcPort: socket.port,
                 dstPort: dstport,
                 payload: data,
-            }).pack(),
+            }).pack({ srcIp, dstIp: dstip }),
         });
+    }
+
+    /** @param {IPAddress} addr @returns {boolean} */
+    _isWildcard(addr) {
+        const s = addr.toString();
+        return s === "0.0.0.0" || s === "::";
     }
 
     /**

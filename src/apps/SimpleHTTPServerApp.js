@@ -377,7 +377,7 @@ export class SimpleHTTPServerApp extends GenericProcess {
 
     let ref = null;
     try {
-      ref = this.os.net.openTCPServerSocket(new IPAddress(4,0), this.port); // bind 0.0.0.0
+      ref = this.os.net.openTCPServerSocket(IPAddress.fromString("::"), this.port); // dual-stack
     } catch (e) {
       const reason = (e instanceof Error ? e.message : String(e));
       this._append(t("app.simplehttpserver.log.openSocketError", { time: nowStamp(), reason }));

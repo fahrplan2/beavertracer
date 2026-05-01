@@ -79,12 +79,12 @@ export class UDPPacket {
   /**
    * Pack UDP datagram into bytes.
    *
-   * If checksum == 0 and srcIp/dstIp are provided, checksum will be computed.
+   * If checksum == 0 and srcIp/dstIp are provided, checksum will be computed (IPv4 only for now).
    * If checksum == 0 and srcIp/dstIp are NOT provided, checksum remains 0 (IPv4: allowed).
    *
    * @param {object} [opts]
-   * @param {Uint8Array} [opts.srcIp] source IPv4 (length 4) for pseudo-header
-   * @param {Uint8Array} [opts.dstIp] destination IPv4 (length 4) for pseudo-header
+   * @param {import("../models/IPAddress.js").IPAddress | Uint8Array} [opts.srcIp] for pseudo-header
+   * @param {import("../models/IPAddress.js").IPAddress | Uint8Array} [opts.dstIp] for pseudo-header
    * @returns {Uint8Array}
    */
   pack(opts = {}) {
@@ -111,13 +111,20 @@ export class UDPPacket {
 
     let cs = this.checksum & 0xffff;
     if (cs === 0) {
-      const srcIp = opts.srcIp;
-      const dstIp = opts.dstIp;
-      if (srcIp && dstIp) {
-        cs = UDPPacket.computeChecksumIPv4Pseudo(out, srcIp, dstIp);
-        // RFC: In IPv4, checksum 0 means "not used".
-        // If the computed checksum happens to be 0x0000, it's typically sent as 0xFFFF.
-        if (cs === 0) cs = 0xffff;
+      const rawSrc = opts.srcIp;
+      const rawDst = opts.dstIp;
+      if (rawSrc && rawDst) {
+        const srcBytes = (rawSrc instanceof Uint8Array) ? rawSrc : rawSrc.toUInt8();
+        const dstBytes = (rawDst instanceof Uint8Array) ? rawDst : rawDst.toUInt8();
+        if (srcBytes.length === 4 && dstBytes.length === 4) {
+          cs = UDPPacket.computeChecksumIPv4Pseudo(out, srcBytes, dstBytes);
+          // RFC: In IPv4, checksum 0 means "not used" — send as 0xFFFF instead.
+          if (cs === 0) cs = 0xffff;
+        } else if (srcBytes.length === 16 && dstBytes.length === 16) {
+          cs = UDPPacket.computeChecksumIPv6Pseudo(out, srcBytes, dstBytes);
+          // RFC 2460: UDP checksum is mandatory in IPv6 — never send 0.
+          if (cs === 0) cs = 0xffff;
+        }
       }
     }
 
@@ -153,6 +160,29 @@ export class UDPPacket {
     pseudo[10] = (udpLen >> 8) & 0xff;
     pseudo[11] = udpLen & 0xff;
 
+    return UDPPacket._onesComplementChecksum([pseudo, udpDatagram]);
+  }
+
+  /**
+   * Compute UDP checksum using IPv6 pseudo-header.
+   * Pseudo-header: src(16) + dst(16) + udpLength(4) + zeros(3) + next-header=17(1)
+   *
+   * @param {Uint8Array} udpDatagram (with checksum bytes set to 0)
+   * @param {Uint8Array} srcIp length 16
+   * @param {Uint8Array} dstIp length 16
+   * @returns {number}
+   */
+  static computeChecksumIPv6Pseudo(udpDatagram, srcIp, dstIp) {
+    const len = udpDatagram.length;
+    const pseudo = new Uint8Array(40);
+    pseudo.set(srcIp, 0);
+    pseudo.set(dstIp, 16);
+    pseudo[32] = (len >>> 24) & 0xff;
+    pseudo[33] = (len >>> 16) & 0xff;
+    pseudo[34] = (len >>> 8)  & 0xff;
+    pseudo[35] =  len         & 0xff;
+    // pseudo[36..38] = 0
+    pseudo[39] = 17; // UDP
     return UDPPacket._onesComplementChecksum([pseudo, udpDatagram]);
   }
 

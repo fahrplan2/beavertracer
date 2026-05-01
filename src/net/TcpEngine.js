@@ -140,14 +140,15 @@ export class TcpEngine {
 
   /**
    * Open a TCP server socket (LISTEN).
-   * @param {IPAddress} bindaddr Must be 0.0.0.0
+   * @param {IPAddress} bindaddr 0.0.0.0 or ::
    * @param {number} port TCP port to listen on
    * @returns {number}
    */
   openServer(bindaddr, port) {
     if (this.sockets.get(port)) throw new Error("Port is in use");
     if (port <= 0 || port > 65535) throw new Error("Port invalid");
-    if (bindaddr.toString() !== "0.0.0.0") throw new Error("Only 0.0.0.0 supported");
+    const bindStr = bindaddr.toString();
+    if (bindStr !== "0.0.0.0" && bindStr !== "::") throw new Error("Only 0.0.0.0 or :: supported");
 
     const s = new TCPSocket();
     s.port = port;
