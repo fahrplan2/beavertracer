@@ -38,8 +38,8 @@ export class Switch extends SimulatedObject {
     /** @type {HTMLDivElement|null} */
     _host = null;
 
-    /** @type {HTMLInputElement|null} */
-    _nameInput = null;
+    /** @type {string} */
+    _activeTab = "sat";
 
     /** @type {HTMLDivElement|null} */
     _satHost = null;
@@ -159,7 +159,6 @@ export class Switch extends SimulatedObject {
 
     mount(panelBody) {
         this._stopSatPolling();
-
         panelBody.innerHTML = "";
 
         const host = DOMBuilder.div("switch-ui");
@@ -169,117 +168,90 @@ export class Switch extends SimulatedObject {
         panelBody.appendChild(host);
         this._host = host;
 
-        // ---- Allgemein ----
-        host.appendChild(DOMBuilder.h4(t("switch.genericsettings")));
+        const card = DOMBuilder.div("router-card");
+        host.appendChild(card);
 
-        const nameRow = DOMBuilder.div("switch-name-row");
+        const tabIds = ["sat", "vlan", "stp"];
+        const tabBtns = tabIds.map(id => DOMBuilder.button(t(`switch.tab.${id}`), { className: "router-tab" }));
+        card.appendChild(DOMBuilder.div("router-tabs", tabBtns));
 
-        const nameLabel = DOMBuilder.label(t("switch.name") + ": ");
-        const nameInput = DOMBuilder.input({ value: this.name });
-        this._nameInput = nameInput;
+        const content = DOMBuilder.div("");
+        content.style.padding = "8px";
+        card.appendChild(content);
 
-        const nameBtn = DOMBuilder.button(t("switch.apply"));
-        nameBtn.addEventListener("click", () => {
-            const newName = nameInput.value.trim();
-            if (!newName || newName === this.name) return;
-            this.setName(newName);
-        });
+        const selectTab = (id) => {
+            this._activeTab = id;
+            this._satHost = null;
+            this._vlanEnabledCheckbox = null;
+            this._vlanSection = null;
+            this._stpEnabledCheckbox = null;
+            this._stpSection = null;
+            tabBtns.forEach((btn, i) => btn.classList.toggle("is-active", tabIds[i] === id));
+            DOMBuilder.clear(content);
+            if (id === "sat")  this._buildMacTab(content);
+            else if (id === "vlan") this._buildVlanTab(content);
+            else if (id === "stp")  this._buildStpTab(content);
+        };
 
-        nameInput.addEventListener("keydown", (e) => {
-            if (e.key === "Enter") nameBtn.click();
-        });
-
-        nameRow.append(nameLabel, nameInput, nameBtn);
-        host.appendChild(nameRow);
-
-        // ---- Features ----
-        host.appendChild(DOMBuilder.h4(t("switch.features") ?? "Features"));
-
-        const featureCard = DOMBuilder.div("switch-card");
-        featureCard.style.display = "flex";
-        featureCard.style.flexDirection = "column";
-        featureCard.style.gap = "10px";
-        host.appendChild(featureCard);
-
-        // VLAN checkbox
-        const vlanRow = DOMBuilder.div("switch-row");
-        vlanRow.style.display = "flex";
-        vlanRow.style.alignItems = "center";
-        vlanRow.style.gap = "8px";
-
-
-        const vlanCb = /** @type {HTMLInputElement} */ (DOMBuilder.input({ type: "checkbox" }));
-        this._vlanEnabledCheckbox = vlanCb;
-        vlanCb.checked = !!this.backplane.vlanEnabled;
-
-        const vlanLbl = DOMBuilder.label(t("switch.vlan.enable") ?? "VLANs aktivieren");
-        vlanRow.append(vlanCb, vlanLbl);
-        featureCard.appendChild(vlanRow);
-
-        // STP checkbox
-        const stpRow = DOMBuilder.div("switch-row");
-        stpRow.style.display = "flex";
-        stpRow.style.alignItems = "center";
-        stpRow.style.gap = "8px";
-
-        const stpCb = /** @type {HTMLInputElement} */ (DOMBuilder.input({ type: "checkbox" }));
-        this._stpEnabledCheckbox = stpCb;
-        stpCb.checked = !!this.backplane.stpEnabled;
-
-        const stpLbl = DOMBuilder.label(t("switch.stp.enable") ?? "STP aktivieren");
-        stpRow.append(stpCb, stpLbl);
-        featureCard.appendChild(stpRow);
-
-        // VLAN section (hidden when disabled)
-        const vlanSection = DOMBuilder.div("switch-vlan-section");
-        this._vlanSection = vlanSection;
-        featureCard.appendChild(vlanSection);
-
-        // STP section
-        const stpSection = DOMBuilder.div("switch-stp-section");
-        this._stpSection = stpSection;
-        featureCard.appendChild(stpSection);
-
-        // Wire events
-        vlanCb.addEventListener("change", () => {
-            if (vlanCb.checked) this.backplane.enableVLANFeature();
-            else this.backplane.disableVLANFeature();
-
-            this._renderVLANSection();
-            this._renderSAT(); // SAT changes format when VLAN enabled
-        });
-
-        stpCb.addEventListener("change", () => {
-            if (stpCb.checked) this.backplane.enableSTPFeature();
-            else this.backplane.disableSTPFeature();
-
-            this._renderSTPSection();
-        });
-
-        // initial render
-        this._renderVLANSection();
-        this._renderSTPSection();
-
-        // ---- SAT / "ARP"-Tabelle ----
-        host.appendChild(DOMBuilder.h4(t("switch.sat")));
-
-        const satCard = DOMBuilder.div("switch-card");
-        const satHost = DOMBuilder.div("switch-sat");
-        this._satHost = satHost;
-
-        satCard.appendChild(satHost);
-        host.appendChild(satCard);
-
-        this._renderSAT();
+        tabBtns.forEach((btn, i) => btn.addEventListener("click", () => selectTab(tabIds[i])));
+        selectTab(this._activeTab);
         this._startSatPolling();
     }
 
-    _startSatPolling() {
-        // initial
+    /** @param {HTMLElement} host */
+    _buildMacTab(host) {
+        host.appendChild(DOMBuilder.h4(t("switch.sat")));
+        const satHost = DOMBuilder.div("switch-sat");
+        this._satHost = satHost;
+        host.appendChild(satHost);
         this._renderSAT();
+    }
 
+    /** @param {HTMLElement} host */
+    _buildVlanTab(host) {
+        host.appendChild(DOMBuilder.h4(t("switch.vlan.config")));
+        const cb = /** @type {HTMLInputElement} */ (DOMBuilder.input({ type: "checkbox" }));
+        cb.checked = !!this.backplane.vlanEnabled;
+        this._vlanEnabledCheckbox = cb;
+        host.appendChild(DOMBuilder.div("router-name-row", [cb, DOMBuilder.label(t("switch.vlan.enable"))]));
+
+        const section = DOMBuilder.div("switch-vlan-section");
+        this._vlanSection = section;
+        host.appendChild(section);
+
+        cb.addEventListener("change", () => {
+            if (cb.checked) this.backplane.enableVLANFeature();
+            else this.backplane.disableVLANFeature();
+            this._renderVLANSection();
+        });
+
+        this._renderVLANSection();
+    }
+
+    /** @param {HTMLElement} host */
+    _buildStpTab(host) {
+        host.appendChild(DOMBuilder.h4(t("switch.stp.settings")));
+        const cb = /** @type {HTMLInputElement} */ (DOMBuilder.input({ type: "checkbox" }));
+        cb.checked = !!this.backplane.stpEnabled;
+        this._stpEnabledCheckbox = cb;
+        host.appendChild(DOMBuilder.div("router-name-row", [cb, DOMBuilder.label(t("switch.stp.enable"))]));
+
+        const section = DOMBuilder.div("switch-stp-section");
+        this._stpSection = section;
+        host.appendChild(section);
+
+        cb.addEventListener("change", () => {
+            if (cb.checked) this.backplane.enableSTPFeature();
+            else this.backplane.disableSTPFeature();
+            this._renderSTPSection();
+        });
+
+        this._renderSTPSection();
+    }
+
+    _startSatPolling() {
         this._satPollTimer = window.setInterval(() => {
-            this._renderSAT();
+            if (this._activeTab === "sat") this._renderSAT();
         }, 500);
     }
 
@@ -386,8 +358,6 @@ export class Switch extends SimulatedObject {
         card.style.display = "flex";
         card.style.flexDirection = "column";
         card.style.gap = "8px";
-
-        card.appendChild(DOMBuilder.h4(t("switch.vlan.config") ?? "VLAN Konfiguration"));
 
         for (let i = 0; i < ports.length; i++) {
             const p = ports[i];

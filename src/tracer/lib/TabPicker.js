@@ -1,6 +1,7 @@
 // @ts-check
 
 import { SimControl } from "../../SimControl.js";
+import { t } from "../../i18n/index.js";
 
 export class TabPicker {
   /** @type {HTMLElement|null} */ #el = null;
@@ -41,12 +42,14 @@ export class TabPicker {
 
     for (const s of ctx.sessions) {
       const { device, port } = split(s.name);
-      const dev = device || "(unknown)";
+      const dev = device || t("pcap.picker.unknown");
       if (!devMap.has(dev)) devMap.set(dev, []);
       devMap.get(dev).push({ port, name: s.name, hidden: !!s.hidden });
     }
 
-    const devices = Array.from(devMap.keys()).sort((a,b)=>a.localeCompare(b));
+    const getDevName = (dev) =>
+      ctx.simControl.simobjects.find(elem => elem.id == parseInt(dev))?.name ?? dev;
+    const devices = Array.from(devMap.keys()).sort((a, b) => getDevName(a).localeCompare(getDevName(b)));
 
     // default device
     let pickerDevice = ctx.pickerDevice;
@@ -91,15 +94,15 @@ export class TabPicker {
       h.textContent = txt;
       return h;
     };
-    leftPane.appendChild(mkHeader("Device"));
-    rightPane.appendChild(mkHeader("Port"));
+    leftPane.appendChild(mkHeader(t("pcap.picker.device")));
+    rightPane.appendChild(mkHeader(t("pcap.picker.port")));
 
     // devices
     for (const dev of devices) {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "pcapviewer-tabpicker-item";
-      btn.textContent = ctx.simControl.simobjects.filter(elem => elem.id == parseInt(dev))[0].name;
+      btn.textContent = getDevName(dev);
       if (dev === pickerDevice) btn.classList.add("pcapviewer-tabpicker-item--active");
       btn.addEventListener("click", () => {
         ctx.setPickerDevice(dev);
@@ -117,7 +120,7 @@ export class TabPicker {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "pcapviewer-tabpicker-item";
-      const label = p.port ? p.port : "(no port)";
+      const label = p.port ? p.port : t("pcap.picker.noport");
       btn.textContent = label + (p.hidden ? "" : " ✓");
       if (p.name === ctx.activeName) btn.classList.add("pcapviewer-tabpicker-item--active");
       btn.addEventListener("click", () => {

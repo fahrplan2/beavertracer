@@ -5,7 +5,8 @@ import { GenericProcess } from "./GenericProcess.js";
 import { Disposer } from "../lib/Disposer.js";
 import { UILib } from "./lib/UILib.js";
 
-import { sleep, assertLenU8 } from "../lib/helpers.js";
+import { assertLenU8 } from "../lib/helpers.js";
+import { simTimer, SimTimer } from "../sim/SimTimer.js";
 import { DHCPPacket } from "../net/pdu/DHCPPacket.js";
 import { IPAddress } from "../net/models/IPAddress.js"; // <- ggf. Pfad bei dir: "./models/IPAddress.js" o.ä.
 
@@ -44,9 +45,12 @@ export class IPv4ConfigApp extends GenericProcess {
   // IPv6 tab fields
   /** @type {HTMLElement|null} */ _ipv4Section = null;
   /** @type {HTMLElement|null} */ _ipv6Section = null;
+  /** @type {HTMLElement|null} */ _wifiSection = null;
   /** @type {HTMLButtonElement|null} */ _tab4 = null;
   /** @type {HTMLButtonElement|null} */ _tab6 = null;
+  /** @type {HTMLButtonElement|null} */ _tabWifi = null;
   /** @type {number} */ _selectedFamily = 4;
+  /** @type {HTMLInputElement|null} */ _ssidInput = null;
   /** @type {HTMLElement|null} */ _ip6LLEl = null;
   /** @type {HTMLInputElement|null} */ _ip6EnableCb = null;
   /** @type {HTMLInputElement|null} */ _ip6El = null;
@@ -171,22 +175,50 @@ export class IPv4ConfigApp extends GenericProcess {
     ]});
     this._ipv6Section = ipv6Section;
 
+    // --- WiFi section (only for devices with a wireless port) ---
+    const device = /** @type {any} */ (this.os.obj);
+    let wifiSection = null;
+    if (device?._wPort) {
+      const ssidInput = UILib.input({ placeholder: "SSID", value: device._ssid ?? "" });
+      this._ssidInput = ssidInput;
+      const applyWifiBtn = UILib.button(t("wifi.apply"), () => {
+        if (device._ssid !== undefined) {
+          device._ssid = ssidInput.value.trim();
+          this._setMsg(t("wifi.ssid.applied"));
+        }
+      }, { primary: true });
+      wifiSection = UILib.el("div", { children: [
+        UILib.el("h4", { text: "WiFi" }),
+        UILib.row(t("wifi.ssid"), ssidInput),
+        UILib.buttonRow([applyWifiBtn]),
+      ]});
+      this._wifiSection = wifiSection;
+    }
+
     // --- Family tab bar ---
     const tab4 = UILib.button(t("app.ipv4config.tab.ipv4"), () => this._selectFamily(4), {});
     const tab6 = UILib.button(t("app.ipv4config.tab.ipv6"), () => this._selectFamily(6), {});
     this._tab4 = tab4;
     this._tab6 = tab6;
-    const tabBar = UILib.el("div", { className: "ipconf-family-tabs", children: [tab4, tab6] });
+    const tabChildren = [tab4, tab6];
+    if (wifiSection) {
+      const tabWifi = UILib.button("WiFi", () => this._selectFamily(0), {});
+      this._tabWifi = tabWifi;
+      tabChildren.push(tabWifi);
+    }
+    const tabBar = UILib.el("div", { className: "ipconf-family-tabs", children: tabChildren });
 
     // --- Build panel ---
-    const panel = UILib.panel([
+    const panelChildren = [
       UILib.el("h4", { text: t("app.ipv4config.label.interface") }),
       UILib.row(t("app.ipv4config.label.interface"), ifSel),
       tabBar,
       ipv4Section,
       ipv6Section,
-      msg,
-    ]);
+    ];
+    if (wifiSection) panelChildren.push(wifiSection);
+    panelChildren.push(msg);
+    const panel = UILib.panel(panelChildren);
 
     this.root.replaceChildren(panel);
 
@@ -232,7 +264,9 @@ export class IPv4ConfigApp extends GenericProcess {
     this.disposer.dispose();
     this.ifSel = this.modeSel = this.ipEl = this.prefixEl = this.gwEl = this.dnsEl = null;
     this.msgEl = null;
-    this._ipv4Section = this._ipv6Section = this._tab4 = this._tab6 = null;
+    this._ipv4Section = this._ipv6Section = this._wifiSection = null;
+    this._tab4 = this._tab6 = this._tabWifi = null;
+    this._ssidInput = null;
     this._ip6LLEl = this._ip6EnableCb = this._ip6El = this._prefix6El = this._gw6El = null;
     super.onUnmount();
   }
@@ -269,13 +303,15 @@ export class IPv4ConfigApp extends GenericProcess {
     }
   }
 
-  /** @param {4|6} f */
+  /** @param {0|4|6} f */
   _selectFamily(f) {
     this._selectedFamily = f;
     if (this._ipv4Section) this._ipv4Section.style.display = (f === 4) ? "" : "none";
     if (this._ipv6Section) this._ipv6Section.style.display = (f === 6) ? "" : "none";
+    if (this._wifiSection) this._wifiSection.style.display = (f === 0) ? "" : "none";
     if (this._tab4) this._tab4.classList.toggle("is-active", f === 4);
     if (this._tab6) this._tab6.classList.toggle("is-active", f === 6);
+    if (this._tabWifi) this._tabWifi.classList.toggle("is-active", f === 0);
   }
 
   _loadIPv6() {
@@ -534,16 +570,10 @@ export class IPv4ConfigApp extends GenericProcess {
     await this._savePersistedConfig();
   }
 
-  // ------------------ DHCP (tick-scaled time) ------------------
-
-  _tick() {
-    const s = /** @type {any} */ (this.os)?.simulation;
-    const tick = s && typeof s.tick === "number" && s.tick > 0 ? s.tick : 1;
-    return tick;
-  }
+  // ------------------ DHCP ------------------
 
   async _simSleep(msSim) {
-    await sleep(Math.max(0, Math.floor(msSim * this._tick())));
+    await simTimer.sleep(msSim);
   }
 
   /**
@@ -559,9 +589,9 @@ export class IPv4ConfigApp extends GenericProcess {
     const mac = this._getIfaceMac(itf, ifaceIdx);
     const xid = (Math.random() * 0xffffffff) >>> 0;
 
-    const OFFER_WAIT_SIM = 15000;
-    const ACK_WAIT_SIM = 15000;
-    const BETWEEN_TRIES_SIM = 1500;
+    const OFFER_WAIT_SIM = SimTimer.DHCP_OFFER_WAIT_MS;
+    const ACK_WAIT_SIM = SimTimer.DHCP_ACK_WAIT_MS;
+    const BETWEEN_TRIES_SIM = SimTimer.DHCP_BETWEEN_TRIES_MS;
 
     for (let attempt = 1; attempt <= 3; attempt++) {
       this._setMsg(t("app.ipv4config.msg.dhcpAttempt", { attempt }));

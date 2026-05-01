@@ -3,7 +3,7 @@
 import { GenericProcess } from "./GenericProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
 import { Disposer } from "../lib/Disposer.js";
-import { SimControl } from "../SimControl.js";
+import { SimTimer } from "../sim/SimTimer.js";
 
 //@ts-ignore Import ist raw für vite
 import startPage from "./assets/about-start.html?raw";
@@ -738,8 +738,7 @@ export class SparktailHTTPClientApp extends GenericProcess {
    * @returns {number} timeout in ms
    */
   _timeoutMs() {
-    const tick = SimControl?.tick ?? 10;
-    return Math.max(1, 60 * (tick | 0));
+    return SimTimer.HTTP_CLIENT_TIMEOUT_MS;
   }
 
   /**
@@ -816,7 +815,7 @@ export class SparktailHTTPClientApp extends GenericProcess {
     try {
       dstIP = await withTimeout(
         resolveHostToIP(host, dnsResolve),
-        timeout * SimControl.tick,
+        timeout,
         t("app.sparktail.label.dns")
       );
     } catch (e) {

@@ -1,12 +1,12 @@
 //@ts-check
 
 import { DNSPacket } from "../../net/pdu/DNSPacket.js";
-import { SimControl } from "../../SimControl.js";
+import { simTimer, SimTimer } from "../../sim/SimTimer.js";
 import { IPAddress } from "../../net/models/IPAddress.js";
 
 /**
  * System DNS resolver (UDP) with NS-fallback recursion.
- * Timing is REAL-TIME, but scaled by SimControl.tick.
+ * Timing is tick-based via SimTimer.
  *
  * Special:
  *   serverIp == null or 0.0.0.0 => disabled resolver => resolve returns null/[] immediately.
@@ -41,10 +41,9 @@ export class DNSResolver {
 
     this.port = Number.isFinite(opts.port) ? (opts.port | 0) : 53;
 
-    const tick = this._tick();
     this.timeoutMs = Number.isFinite(opts.timeoutMs)
       ? (opts.timeoutMs | 0)
-      : Math.max(1, Math.floor(50 * tick));
+      : SimTimer.DNS_TIMEOUT_MS;
 
     this.tries = Number.isFinite(opts.tries)
       ? Math.max(1, Math.min(10, opts.tries | 0))
@@ -189,18 +188,8 @@ export class DNSResolver {
     return this.serverIp instanceof IPAddress;
   }
 
-  _tick() {
-    const t = Number(SimControl?.tick ?? 1);
-    return Number.isFinite(t) && t > 0 ? t : 1;
-  }
-
   _nowRealMs() {
     return Date.now();
-  }
-
-  _sleepRealMs(ms) {
-    const d = Math.max(0, ms | 0);
-    return new Promise((resolve) => setTimeout(resolve, d));
   }
 
   /**
@@ -382,14 +371,14 @@ export class DNSResolver {
         // IMPORTANT: sendUDPSocket expects IPAddress now
         net.sendUDPSocket(sock, serverIp, port | 0, payload);
 
-        const deadline = this._nowRealMs() + Math.max(1, this.timeoutMs | 0);
-        const resp = await this._waitForId(sock, id, deadline, st);
+        const timeoutTicks = simTimer.toTicks(this.timeoutMs);
+        const resp = await this._waitForId(sock, id, timeoutTicks, st);
 
         if (!resp) continue;
 
         if (this.cacheEnabled) {
           const ttlSec = this._pickCacheTTLSeconds(resp);
-          const expiresAt = this._nowRealMs() + Math.floor(ttlSec * 1000 * this._tick());
+          const expiresAt = this._nowRealMs() + ttlSec * 1000;
           this._cache.set(cacheKey, { expiresAt, value: resp });
         }
 
@@ -406,23 +395,20 @@ export class DNSResolver {
    * Wait for a DNS response with matching ID until deadline.
    * @param {number} sock
    * @param {number} id
-   * @param {number} deadlineMsReal
+   * @param {number} ticksLeft
    * @param {{p: Promise<any>}} st
    * @returns {Promise<DNSPacket|null>}
    */
-  async _waitForId(sock, id, deadlineMsReal, st) {
+  async _waitForId(sock, id, ticksLeft, st) {
     const net = this.os.net;
 
-    while (this._nowRealMs() < deadlineMsReal) {
-      const remaining = deadlineMsReal - this._nowRealMs();
-      const slice = Math.max(1, Math.min(Math.floor(25 * this._tick()), remaining));
-
+    while (ticksLeft > 0) {
       const res = await Promise.race([
         st.p,
-        this._sleepRealMs(slice).then(() => "__timeout__"),
+        simTimer.sleep(SimTimer.SIM_MS_PER_TICK).then(() => "__timeout__"),
       ]);
 
-      if (res === "__timeout__") continue;
+      if (res === "__timeout__") { ticksLeft--; continue; }
       if (res == null) return null;
 
       st.p = net.recvUDPSocket(sock);

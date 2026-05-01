@@ -1,0 +1,293 @@
+<h2>Aide</h2>
+<p class="subtitle">Comment utiliser Beaver Tracer</p>
+
+<hr>
+
+<nav class="help-toc">
+  <strong>Sommaire</strong>
+  <ol>
+    <li><a href="#modes">Les trois modes</a></li>
+    <li><a href="#edit">Mode Édition — Construire un réseau</a></li>
+    <li><a href="#devices">Appareils</a></li>
+    <li><a href="#panels">Panneaux de configuration</a></li>
+    <li><a href="#run">Mode Exécution — Lancer la simulation</a></li>
+    <li><a href="#trace">Mode Trace — Analyser les paquets</a></li>
+    <li><a href="#project">Enregistrer et charger</a></li>
+  </ol>
+</nav>
+
+<hr>
+
+<h3 id="modes">Les trois modes</h3>
+<p>
+  Beaver Tracer dispose de trois modes. Tu passes de l'un à l'autre grâce aux boutons de la barre d'outils en haut.
+</p>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-pencil"></i></td>
+    <td><strong>Édition</strong></td>
+    <td>Conçois ton réseau — place des appareils, connecte-les, configure-les.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-play"></i></td>
+    <td><strong>Exécution</strong></td>
+    <td>Lance la simulation et observe le trafic circuler dans ton réseau.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-magnifying-glass"></i></td>
+    <td><strong>Trace</strong></td>
+    <td>Capture et inspecte les paquets qui transitent dans ton réseau.</td>
+  </tr>
+</table>
+
+<hr>
+
+<h3 id="edit">Mode Édition — Construire un réseau</h3>
+<p>
+  En mode Édition, une barre d'outils apparaît sur le côté gauche de l'écran.
+  Sélectionne un outil en cliquant dessus, puis utilise-le sur le canevas.
+</p>
+
+<h4>Outils</h4>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-arrow-pointer"></i></td>
+    <td><strong>Sélectionner</strong></td>
+    <td>Clique sur un appareil pour ouvrir son panneau. Fais-le glisser pour le déplacer.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-link"></i></td>
+    <td><strong>Relier</strong></td>
+    <td>Connecte deux appareils avec un câble (voir ci-dessous).</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-ban"></i></td>
+    <td><strong>Supprimer</strong></td>
+    <td>Clique sur un appareil ou un câble pour le supprimer.</td>
+  </tr>
+</table>
+
+<p>
+  <strong>Astuce :</strong> Fais un clic droit n'importe où sur le canevas pour annuler l'outil actuel
+  et revenir à <i class="fas fa-arrow-pointer"></i> Sélectionner.
+</p>
+
+<h4>Placer un appareil</h4>
+<ol>
+  <li>Clique sur un bouton d'appareil dans la barre d'outils gauche (ex. <i class="fas fa-desktop"></i> PC).</li>
+  <li>Un aperçu suit ton curseur.</li>
+  <li>Clique sur le canevas pour placer l'appareil.</li>
+</ol>
+
+<h4>Connecter deux appareils</h4>
+<ol>
+  <li>Clique sur l'outil <i class="fas fa-link"></i> <strong>Relier</strong>.</li>
+  <li>Clique sur le premier appareil — un sélecteur de port apparaît. Choisis un port.</li>
+  <li>Déplace la souris vers le second appareil et clique dessus — choisis également un port.</li>
+  <li>Le câble est créé automatiquement.</li>
+</ol>
+<p>
+  Les ports déjà utilisés apparaissent comme désactivés et ne peuvent pas être sélectionnés.
+</p>
+
+<h4>Déplacer un appareil</h4>
+<p>
+  En mode <i class="fas fa-arrow-pointer"></i> Sélectionner, clique et fais glisser un appareil pour le repositionner sur le canevas.
+</p>
+
+<h4>Supprimer un appareil ou un câble</h4>
+<ol>
+  <li>Clique sur l'outil <i class="fas fa-ban"></i> <strong>Supprimer</strong>.</li>
+  <li>Clique sur l'appareil ou le câble à supprimer.</li>
+</ol>
+<p>
+  Quand tu supprimes un appareil, tous les câbles qui y sont connectés sont retirés automatiquement.
+</p>
+
+<hr>
+
+<h3 id="devices">Appareils</h3>
+<p>
+  Ces appareils sont disponibles dans la barre d'outils gauche en mode Édition :
+</p>
+
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-desktop"></i></td>
+    <td><strong>PC</strong></td>
+    <td>
+      Un ordinateur avec une interface réseau filaire. Tu peux y lancer des applications
+      (ex. un navigateur web ou un outil ping) et configurer son adresse IP.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-laptop"></i></td>
+    <td><strong>Laptop</strong></td>
+    <td>
+      Comme un PC, mais se connecte en Wi-Fi plutôt que par câble.
+      Utilise-le avec un point d'accès ou un routeur domestique.
+    </td>
+  </tr>
+  <tr>
+    <td>SW</td>
+    <td><strong>Switch</strong></td>
+    <td>
+      Connecte plusieurs appareils dans le même segment réseau.
+      Transmet les trames en fonction des adresses MAC.
+      Supporte les VLANs et le Spanning Tree Protocol (STP).
+    </td>
+  </tr>
+  <tr>
+    <td>RT</td>
+    <td><strong>Routeur</strong></td>
+    <td>
+      Connecte différents réseaux et transmet les paquets entre eux.
+      Tu peux configurer des routes statiques et des adresses IP sur chaque interface.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-house-signal"></i></td>
+    <td><strong>Routeur domestique</strong></td>
+    <td>
+      Un routeur, serveur DHCP, passerelle NAT et point d'accès Wi-Fi combinés —
+      similaire à un routeur internet domestique classique.
+      Connecte-le à un routeur (en WAN) et à des PC ou laptops (en LAN/Wi-Fi).
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-wifi"></i></td>
+    <td><strong>Point d'accès</strong></td>
+    <td>
+      Étend un réseau filaire avec une connexion Wi-Fi.
+      Connecte son port filaire à un switch ou routeur, puis connecte des laptops sans fil.
+    </td>
+  </tr>
+</table>
+
+<hr>
+
+<h3 id="panels">Panneaux de configuration</h3>
+<p>
+  Clique sur un appareil du canevas pour ouvrir son <strong>panneau</strong> — une fenêtre de configuration
+  qui apparaît sur le côté droit de l'écran.
+  Clique à nouveau sur l'appareil (ou sur le bouton <strong>×</strong> dans l'en-tête du panneau) pour le fermer.
+</p>
+
+<h4>Renommer un appareil</h4>
+<p>
+  Clique sur le bouton <i class="fas fa-pen"></i> à côté du nom de l'appareil dans l'en-tête du panneau
+  pour lui donner un nom personnalisé (ex. « PC-Bureau » ou « Routeur-Principal »).
+</p>
+
+<h4>Onglets</h4>
+<p>
+  La plupart des appareils ont plusieurs onglets dans leur panneau.
+  Par exemple, un routeur dispose de :
+</p>
+<ul>
+  <li><strong>Interfaces</strong> — configurer les adresses IP sur chaque port</li>
+  <li><strong>Table de routage IPv4</strong> — afficher et modifier les routes statiques IPv4</li>
+  <li><strong>Table de routage IPv6</strong> — afficher et modifier les routes statiques IPv6</li>
+</ul>
+<p>
+  Un switch a des onglets pour la <strong>Switch Address Table (SAT)</strong>, la configuration <strong>VLAN</strong>
+  et les paramètres du <strong>Spanning Tree Protocol (STP)</strong>.
+</p>
+<p>
+  Un routeur domestique a des onglets pour le <strong>Statut</strong>, les paramètres <strong>WAN</strong> et les baux <strong>DHCP</strong>.
+</p>
+
+<h4>PC et Laptop</h4>
+<p>
+  Les PC et les laptops disposent d'un système d'exploitation simulé complet dans leur panneau.
+  Tu peux ouvrir des applications, configurer les paramètres réseau et exécuter des commandes.
+</p>
+
+<hr>
+
+<h3 id="run">Mode Exécution — Lancer la simulation</h3>
+<p>
+  Passe en mode <i class="fas fa-play"></i> <strong>Exécution</strong> pour démarrer la simulation.
+  Le réseau devient actif : les appareils échangent des paquets, les baux DHCP sont attribués,
+  les tables de routage se mettent à jour, etc.
+</p>
+
+<h4>Contrôle de la vitesse</h4>
+<p>
+  Utilise les boutons de vitesse dans la barre d'outils pour contrôler la rapidité de la simulation :
+</p>
+<table class="help-table">
+  <tr><td><strong>0,5×</strong></td><td>Lent — idéal pour observer les étapes individuelles</td></tr>
+  <tr><td><strong>1×</strong></td><td>Vitesse normale</td></tr>
+  <tr><td><strong>4×</strong></td><td>Rapide</td></tr>
+  <tr><td><strong>8×</strong></td><td>Très rapide</td></tr>
+</table>
+
+<h4>Pause et réinitialisation</h4>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-pause"></i></td>
+    <td><strong>Pause</strong></td>
+    <td>Figer la simulation dans son état actuel.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-arrow-rotate-left"></i></td>
+    <td><strong>Réinitialiser</strong></td>
+    <td>Redémarrer la simulation depuis le début (tous les états dynamiques sont effacés).</td>
+  </tr>
+</table>
+
+<p>
+  <strong>Remarque :</strong> Tu ne peux pas modifier la topologie réseau en mode Exécution.
+  Repasse d'abord en mode <i class="fas fa-pencil"></i> Édition.
+</p>
+
+<hr>
+
+<h3 id="trace">Mode Trace — Analyser les paquets</h3>
+<p>
+  Passe en mode <i class="fas fa-magnifying-glass"></i> <strong>Trace</strong> pour ouvrir
+  l'analyseur de paquets intégré — similaire à Wireshark.
+</p>
+<p>
+  En haut, sélectionne l'<strong>appareil</strong> et le <strong>port</strong> à capturer.
+  Tous les paquets passant par ce port sont enregistrés et affichés dans une liste.
+</p>
+<p>
+  Clique sur un paquet pour voir tous ses détails :
+  les couches de protocoles, les champs d'en-tête et la charge utile — exactement comme un outil réseau professionnel.
+</p>
+<p>
+  La capture s'exécute automatiquement pendant la simulation.
+  Tu peux basculer entre le mode Trace et le mode Exécution à tout moment sans perdre les données capturées.
+</p>
+
+<hr>
+
+<h3 id="project">Enregistrer et charger</h3>
+<p>
+  Ton réseau peut être enregistré dans un fichier et rechargé plus tard.
+  Utilise les boutons de la barre d'outils (visibles en mode Édition) :
+</p>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-file"></i></td>
+    <td><strong>Nouveau</strong></td>
+    <td>Commencer avec un canevas vide. Les modifications non enregistrées seront perdues.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-file-arrow-up"></i></td>
+    <td><strong>Charger</strong></td>
+    <td>Ouvrir un fichier de simulation précédemment enregistré.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-file-arrow-down"></i></td>
+    <td><strong>Enregistrer</strong></td>
+    <td>Télécharger la simulation actuelle sous forme de fichier sur ton ordinateur.</td>
+  </tr>
+</table>
+
+<hr>
+<p class="footer">
+  Un problème ? Vérifie que ton réseau est correctement connecté et que tous les appareils ont des adresses IP valides.
+</p>

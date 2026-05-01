@@ -72,6 +72,12 @@ export class SimulatedObject {
     onPanelCreated;
 
     /**
+     * callback fired each time the panel becomes visible
+     * @type {(() => void) | undefined}
+     */
+    onPanelOpen;
+
+    /**
      * @param {String} name
      */
     constructor(name) {
@@ -245,6 +251,7 @@ export class SimulatedObject {
      */
     setPanelOpen(open) {
         if (open && this.simcontrol?.tool === "link") return;
+        if (open && this.simcontrol?.mode === "edit") return;
 
         this.panelOpen = open;
         this._applyPositions();
@@ -257,6 +264,7 @@ export class SimulatedObject {
         if (this.panelOpen) {
             this._clampPanelToViewport();
             bringToFront(this.panelEl);
+            this.onPanelOpen?.();
         }
     }
 

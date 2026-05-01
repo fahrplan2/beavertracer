@@ -189,6 +189,7 @@ export class RectOverlay extends SimulatedObject {
   setPanelOpen(open) {
     if (this.simcontrol.mode !== "edit") return;
     if (this.simcontrol.tool !== "select") return;
+    if (open && this.simcontrol._justPlaced) return;
     this.panelOpen = open;
     this._applyPositions();
     this._applyPanelVisibility();

@@ -3,7 +3,7 @@
 import { GenericProcess } from "./GenericProcess.js";
 import { Disposer } from "../lib/Disposer.js";
 import { UILib as UI } from "./lib/UILib.js";
-import { SimControl } from "../SimControl.js"; // ggf. Pfad anpassen
+import { SimTimer } from "../sim/SimTimer.js";
 import { t } from "../i18n/index.js";
 import { IPAddress } from "../net/models/IPAddress.js";
 
@@ -302,8 +302,7 @@ export class SimpleHTTPServerApp extends GenericProcess {
   }
 
   _timeoutMs() {
-    const tick = (SimControl?.tick ?? 10);
-    return Math.max(1, 20 * (tick | 0));
+    return SimTimer.HTTP_SERVER_TIMEOUT_MS;
   }
 
   _startFromUI() {

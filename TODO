@@ -3,21 +3,10 @@ Sorry, this file is mostly in German, as this is the native tounge of the main d
 
 Aktuelle Baustellen / TODO / KNOWN BUGS
 =======================================
-
 UI/UX:
 - UX: Routerdialog: sieht nicht gut aus. Neue Zeile erst einblenden wenn man auf + drückt.
 - BUG: Switch: Spannig Tree schient sich nicht zu aktualisieren
 - UX: Link-Tool: Zwei Leitungen liegen übereinander; sieht nicht gut aus.
-- UX: Switch: VLAN-Interface ist sehr schlimm aufgebaut und auch noch nicht wirklich getestet.
-
-Erledigt (seit letztem Commit):
-- ✓ UX: Anaylsieren öffnet PacketSniffer-Tab (CustomEvent show-pcap → SimControl)
-- ✓ UX: PC/Router/Switch lassen sich über Stift-Icon im Panel-Header umbenennen
-- ✓ UX: Link-Tool: Toast-Meldung bei Fehler (kein freier Port / Port belegt)
-- ✓ UX: DHCP-Server startet nach dem Laden der Simulation automatisch (autostart-Flag in Config)
-- ✓ UX: Panels öffnen sich jetzt auch im Edit-Mode bei Klick; Cursor zeigt grab im Edit-Mode
-- ✓ UX: Rename-Button sitzt direkt hinter dem Titel (flex titleGroup)
-- ✓ UX: Panel wird beim Öffnen in den Viewport geclampt (Position, nicht Größe)
 
 Netzwerkstack:
 - DNS löst nach 0.0.0.0 auf und Pakete werden dann mit diesem Ziel gesendet
@@ -25,15 +14,8 @@ Netzwerkstack:
 Missing Features:
 - E-Mail-Client
 
-
-Roadmap to v0.1:
-IPv6-"ready" (Stack soweit angepasst, dass man ihn auf IPv6 umstellen könnte)
-Hilfefunktion mit den wichtigsten Informationen
-Wireshalk-UI übersetzen (nur UI, Inhalte werden nicht übersetzt)
-Überarbeiten der Animationen, dass Single Step geht
-
 Roadmap to v0.2:
-IPv6 (IPv6 Basis, ND, DAD, ICMPv6, RA, DNS AAAA, ...)
+Überarbeiten der Animationen, dass Single Step geht
 Hilfe und einfaches Tutorial
 
 Roadmap to v1.0:

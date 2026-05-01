@@ -7,6 +7,11 @@ import { Switch } from "./sim/Switch.js";
 import { Router } from "./sim/Router.js";
 import { TextBox } from "./sim/TextBox.js";
 import { RectOverlay } from "./sim/RectOverlay.js";
+import { AccessPoint } from "./sim/AccessPoint.js";
+import { Laptop } from "./sim/Laptop.js";
+import { HomeRouter } from "./sim/HomeRouter.js";
+import { WifiMedium } from "./net/WifiMedium.js";
+import { simTimer } from "./sim/SimTimer.js";
 import { t, getLocale, setLocale, getLocales } from "./i18n/index.js";
 import { StaticPageRouter } from "./StaticPageRouter.js";
 import { PCapController } from "./tracer/PCapControler.js";
@@ -31,7 +36,7 @@ export class SimControl {
     pcapViewer;
 
     /** @type {number} simulation speed (time it takes to do one tick in ms) */
-    static tick = 500;
+    static tick = 100;
 
     /** @type {number} ID of the simulation step */
     tickId = 0;
@@ -48,6 +53,8 @@ export class SimControl {
     /** @type {HTMLDivElement|null} */
     static packetsLayer = null;
 
+    wifiMedium = new WifiMedium();
+
     /** @type {number|null} */
     timeoutId = null;
 
@@ -57,7 +64,7 @@ export class SimControl {
     /** @type {"edit"|"run"|"trace"|"page"} */
     mode = "edit";
 
-    /** @type {"select"|"place-pc"|"place-switch"|"place-router"|"place-text"|"place-rect"|"link"|"delete"} */
+    /** @type {"select"|"place-pc"|"place-laptop"|"place-switch"|"place-router"|"place-homerouter"|"place-ap"|"place-text"|"place-rect"|"link"|"delete"} */
     tool = "select";
 
     /** @type {SimulatedObject|null} */
@@ -72,7 +79,7 @@ export class SimControl {
     /** @type {HTMLDivElement|null} */
     _ghostNodeEl = null;
 
-    /** @type {"place-pc"|"place-switch"|"place-router"|"place-text"|"place-rect"|null} */
+    /** @type {"place-pc"|"place-laptop"|"place-switch"|"place-router"|"place-homerouter"|"place-ap"|"place-text"|"place-rect"|null} */
     _ghostNodeType = null;
 
     /** @type {boolean} */
@@ -124,6 +131,9 @@ export class SimControl {
     /** @type {boolean} */
     _redrawReq = false;
 
+    /** @type {boolean} */
+    _justPlaced = false;
+
     /** @type {number|null} */
     _rafId = null;
 
@@ -173,12 +183,15 @@ export class SimControl {
     }
 
     step() {
+        simTimer.tick();
+        this.wifiMedium.step2(this.simobjects);
         for (let i = 0; i < this.simobjects.length; i++) {
             const x = this.simobjects[i];
             if (x instanceof Link) {
                 x.step2();
             }
         }
+        this.wifiMedium.step1(this.simobjects);
         for (let i = 0; i < this.simobjects.length; i++) {
             const x = this.simobjects[i];
             if (x instanceof Link) {
@@ -370,15 +383,17 @@ export class SimControl {
         this._pageContent = pageContent;
 
         // mount router once; we keep it mounted even when tab hidden
+        this._currentRoute = "";
         this._staticRouter = new StaticPageRouter({
             fallbackLocale: "en",
             onRoute: ({ route }) => {
+                this._currentRoute = route;
                 // whenever we are on a static page route, switch UI to about tab
                 if (this.mode !== "page") {
                     this.mode = "page";
                     this.isPaused = true;
-                    this._invalidateUI();
                 }
+                this._invalidateUI();
             },
         });
         this._staticRouter.mount(pageContent, { initial: window.location.pathname });
@@ -405,7 +420,11 @@ export class SimControl {
 
         const ver = document.createElement("div");
         ver.className = "sim-toolbar-branding-version";
-        ver.textContent = "v" + version(true);
+        ver.textContent = "v" + version(true) + " ";
+        const alpha = document.createElement("span");
+        alpha.className = "sim-toolbar-branding-alpha";
+        alpha.textContent = "Alpha Version";
+        ver.appendChild(alpha);
         brandingGroup.appendChild(ver);
 
         const addSeparator = (role) => {
@@ -491,10 +510,10 @@ export class SimControl {
         gSpeeds.appendChild(pauseBtn);
 
         const speeds = [
-            { label: "1×", ms: 2000, icon: "fa-1" },
-            { label: "4×", ms: 1000, icon: "fa-2" },
-            { label: "8×", ms: 125, icon: "fa-3" },
-            { label: "16×", ms: 32, icon: "fa-4" },
+            { label: "0.5×", ms: 1000, icon: "fa-1" },
+            { label: "1×",   ms: 500,  icon: "fa-2" },
+            { label: "4×",   ms: 100,  icon: "fa-3" },
+            { label: "8×",   ms: 40,   icon: "fa-4" },
         ];
 
         for (const s of speeds) {
@@ -579,6 +598,19 @@ export class SimControl {
         langBtn.dataset.role = "lang";
         gCommon.appendChild(langBtn);
 
+        const helpBtn = DOMBuilder.iconbutton({
+            label: t("sim.help"),
+            icon: "fa-question",
+            onClick: () => {
+                this.pause();
+                this.mode = "page";
+                this._invalidateUI();
+                this._staticRouter.navigate("/help", { replace: true });
+            },
+        });
+        helpBtn.dataset.role = "mode-help";
+        gCommon.appendChild(helpBtn);
+
         const aboutBtn = DOMBuilder.iconbutton({
             label: t("sim.about"),
             icon: "fa-circle-question",
@@ -589,7 +621,7 @@ export class SimControl {
                 this._staticRouter.navigate("/about", { replace: true });
             },
         });
-        aboutBtn.dataset.role = "mode-page";
+        aboutBtn.dataset.role = "mode-about";
         gCommon.appendChild(aboutBtn);
 
     }
@@ -603,8 +635,11 @@ export class SimControl {
             ["select", t("sim.tool.select"), "fa-arrow-pointer"],
             ["link", t("sim.tool.link"), "fa-link"],
             ["place-pc", t("sim.tool.pc"), "fa-desktop"],
+            ["place-laptop", t("sim.tool.laptop"), "fa-laptop"],
             ["place-switch", t("sim.tool.switch"), "my-icon-switch"],
             ["place-router", t("sim.tool.router"), "my-icon-router"],
+            ["place-homerouter", t("sim.tool.homerouter"), "fa-house-signal"],
+            ["place-ap", t("sim.tool.ap"), "fa-wifi"],
             ["place-text", t("sim.tool.textbox"), "fa-t"],
             ["place-rect", t("sim.tool.rectangle"), "fa-square"],
             ["delete", t("sim.tool.delete"), "fa-ban"],
@@ -623,8 +658,11 @@ export class SimControl {
                     if (
                         !(
                             this.tool === "place-pc" ||
+                            this.tool === "place-laptop" ||
                             this.tool === "place-switch" ||
                             this.tool === "place-router" ||
+                            this.tool === "place-homerouter" ||
+                            this.tool === "place-ap" ||
                             this.tool === "place-text" ||
                             this.tool === "place-rect"
                         )
@@ -685,13 +723,14 @@ export class SimControl {
             setActive("mode-edit", this.mode === "edit");
             setActive("mode-run", this.mode === "run");
             setActive("mode-trace", this.mode === "trace");
-            setActive("mode-page", this.mode === "page");
+            setActive("mode-help",  this.mode === "page" && this._currentRoute === "/help");
+            setActive("mode-about", this.mode === "page" && this._currentRoute === "/about");
 
             // --- active state for pause
             setActive("pause", this.mode === "run" && this.isPaused);
 
             // --- active state for speed buttons
-            const speedRoles = [2000, 1000, 500, 250, 125, 62, 32];
+            const speedRoles = [1000, 500, 100, 40];
             for (const ms of speedRoles) {
                 setActive(`speed-${ms}`, this.mode === "run" && !this.isPaused && SimControl.tick === ms);
             }
@@ -798,6 +837,28 @@ export class SimControl {
     }
 
     redrawLinks() {
+        const GAP = 8;
+
+        // Group parallel links by unordered endpoint pair
+        /** @type {Map<string, Link[]>} */
+        const groups = new Map();
+        for (const obj of this.simobjects) {
+            if (!(obj instanceof Link)) continue;
+            const key = obj.A.id < obj.B.id
+                ? `${obj.A.id}-${obj.B.id}`
+                : `${obj.B.id}-${obj.A.id}`;
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key).push(obj);
+        }
+
+        // Assign perpendicular offsets, centred around 0
+        for (const links of groups.values()) {
+            const n = links.length;
+            for (let i = 0; i < n; i++) {
+                links[i]._parallelOffset = (i - (n - 1) / 2) * GAP;
+            }
+        }
+
         for (const obj of this.simobjects) {
             if (obj instanceof Link) obj.redrawLinks();
         }
@@ -992,8 +1053,11 @@ export class SimControl {
 
         if (
             this.tool === "place-pc" ||
+            this.tool === "place-laptop" ||
             this.tool === "place-router" ||
+            this.tool === "place-homerouter" ||
             this.tool === "place-switch" ||
+            this.tool === "place-ap" ||
             this.tool === "place-text" ||
             this.tool === "place-rect"
         ) {
@@ -1148,11 +1212,14 @@ export class SimControl {
 
             /** @type {SimulatedObject|null} */
             let newObj = null;
-            if (this.tool === "place-pc") newObj = new PC(this._nextName(t("pc.title")));
-            if (this.tool === "place-switch") newObj = new Switch(this._nextName(t("switch.title")));
-            if (this.tool === "place-router") newObj = new Router(this._nextName(t("router.title")));
-            if (this.tool === "place-text") newObj = new TextBox();
-            if (this.tool === "place-rect") newObj = new RectOverlay();
+            if (this.tool === "place-pc")          newObj = new PC(this._nextName(t("pc.title")));
+            if (this.tool === "place-laptop")       newObj = new Laptop(this._nextName(t("laptop.title")));
+            if (this.tool === "place-switch")       newObj = new Switch(this._nextName(t("switch.title")));
+            if (this.tool === "place-router")       newObj = new Router(this._nextName(t("router.title")));
+            if (this.tool === "place-homerouter")   newObj = new HomeRouter(this._nextName(t("homerouter.title")));
+            if (this.tool === "place-ap")           newObj = new AccessPoint(this._nextName(t("ap.title")));
+            if (this.tool === "place-text")         newObj = new TextBox();
+            if (this.tool === "place-rect")         newObj = new RectOverlay();
             if (!newObj) return;
 
             const w = this._ghostNodeEl.offsetWidth || 0;
@@ -1166,6 +1233,8 @@ export class SimControl {
 
             // Clean up placement tool state
             this._removeGhostNode();
+            this._justPlaced = true;
+            setTimeout(() => { this._justPlaced = false; }, 0);
             this.tool = "select";
             if (this.root) this.root.dataset.tool = this.tool;
             this._invalidateUI();
@@ -1180,7 +1249,7 @@ export class SimControl {
     }
 
 
-    /** @param {"place-pc"|"place-switch"|"place-router"|"place-text"|"place-rect"} type */
+    /** @param {"place-pc"|"place-laptop"|"place-switch"|"place-router"|"place-homerouter"|"place-ap"|"place-text"|"place-rect"} type */
     _ensureGhostNode(type) {
         if (!this.nodesLayer) return;
 
@@ -1189,11 +1258,14 @@ export class SimControl {
 
             /** @type {SimulatedObject|null} */
             let tmp = null;
-            if (type === "place-pc") tmp = new PC();
-            if (type === "place-switch") tmp = new Switch();
-            if (type === "place-router") tmp = new Router();
-            if (type === "place-text") tmp = new TextBox();
-            if (type === "place-rect") tmp = new RectOverlay();
+            if (type === "place-pc")         tmp = new PC();
+            if (type === "place-laptop")     tmp = new Laptop();
+            if (type === "place-switch")     tmp = new Switch();
+            if (type === "place-router")     tmp = new Router();
+            if (type === "place-homerouter") tmp = new HomeRouter();
+            if (type === "place-ap")         tmp = new AccessPoint();
+            if (type === "place-text")       tmp = new TextBox();
+            if (type === "place-rect")       tmp = new RectOverlay();
             if (!tmp) return;
 
             const el = tmp.buildIcon();
@@ -1428,6 +1500,9 @@ export class SimControl {
             ["Switch", Switch],
             ["TextBox", TextBox],
             ["RectOverlay", RectOverlay],
+            ["AccessPoint", AccessPoint],
+            ["Laptop", Laptop],
+            ["HomeRouter", HomeRouter],
             // Link handled separately
         ]);
 

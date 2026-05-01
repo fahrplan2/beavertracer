@@ -183,6 +183,7 @@ export class OS {
     mount(host) {
         this.host = host;
         if (host) {
+            this.render();
             host.replaceChildren(this.root);
         }
     }
@@ -278,6 +279,13 @@ export class OS {
     _registerMenuItem(title, pid, icon) {
         this._menuItems.push(new MenuItem({ title, pid, icon: icon }));
         if (this.focusID === 0) this.render();
+    }
+
+    refocus() {
+        const app = this._getFocusedApp();
+        if (app?.focusTarget) {
+            setTimeout(() => app.focusTarget?.focus(), 0);
+        }
     }
 
     updateMenu() {

@@ -96,7 +96,6 @@ export class Router extends SimulatedObject {
     _selectedIfaceName = null;
 
   // UI refs
-  /** @type {HTMLInputElement|null} */ _nameInput = null;
   /** @type {HTMLDivElement|null} */ _tabsBar = null;
 
     /** @type {Map<string, {btn: HTMLButtonElement, badge: HTMLSpanElement}>} */
@@ -117,8 +116,6 @@ export class Router extends SimulatedObject {
   /** @type {HTMLButtonElement|null} */ _delIfBtn = null;
 
   /** @type {HTMLDivElement|null} */ _routesHost = null;
-  /** @type {HTMLButtonElement|null} */ _routeFamilyV4Tab = null;
-  /** @type {HTMLButtonElement|null} */ _routeFamilyV6Tab = null;
   /** @type {number} */ _selectedRouteFamily = 4;
 
     constructor(name = t("router.title")) {
@@ -181,31 +178,26 @@ export class Router extends SimulatedObject {
         host.style.gap = "12px";
         panelBody.appendChild(host);
 
-        host.appendChild(DOMBuilder.h4(t("router.genericsettingstitle")));
+        /* ============================ Outer tabs ============================ */
+        const card = DOMBuilder.div("router-card");
+        host.appendChild(card);
 
-        const nameRow = DOMBuilder.div("router-name-row");
-        const nameLabel = DOMBuilder.label(t("router.name"));
-        const nameInput = DOMBuilder.input({ value: this.name });
-        this._nameInput = nameInput;
+        const outerTabIds = ["interfaces", "routes-v4", "routes-v6"];
+        const outerTabBtns = [
+            DOMBuilder.button(t("router.interfaces"),        { className: "router-tab" }),
+            DOMBuilder.button(t("router.routingtable.ipv4"), { className: "router-tab" }),
+            DOMBuilder.button(t("router.routingtable.ipv6"), { className: "router-tab" }),
+        ];
+        card.appendChild(DOMBuilder.div("router-tabs", outerTabBtns));
 
-        const nameBtn = DOMBuilder.button(t("router.apply"));
-        nameBtn.addEventListener("click", () => {
-            const newName = nameInput.value.trim();
-            if (!newName || newName === this.name) return;
-            this.setName(newName);
-            this.net.name = newName;
-        });
-        nameInput.addEventListener("keydown", (e) => {
-            if (e.key === "Enter") nameBtn.click();
-        });
-
-        nameRow.append(nameLabel, nameInput, nameBtn);
-        host.appendChild(nameRow);
+        const outerContent = DOMBuilder.div("");
+        outerContent.style.padding = "8px";
+        card.appendChild(outerContent);
 
         /* ============================ Interfaces ============================ */
-        host.appendChild(DOMBuilder.h4(t("router.interfaces")));
+        const ifSection = DOMBuilder.div("");
+        ifSection.appendChild(DOMBuilder.h4(t("router.interfaces")));
 
-        const ifCard = DOMBuilder.div("router-card");
         const tabsBar = DOMBuilder.div("router-tabs");
         this._tabsBar = tabsBar;
 
@@ -255,33 +247,32 @@ export class Router extends SimulatedObject {
         this._ifaceActionsHost = actionsHost;
         ifacePanel.appendChild(actionsHost);
 
-        ifCard.append(tabsBar, selLabel, ifacePanel);
-        host.appendChild(ifCard);
+        ifSection.append(tabsBar, selLabel, ifacePanel);
 
         /* =========================== Routingtabelle ========================== */
-        host.appendChild(DOMBuilder.h4(t("router.routingtable")));
+        const routeSection = DOMBuilder.div("");
 
-        const rfV4Tab = DOMBuilder.button("IPv4", { className: "router-routes-tab" });
-        const rfV6Tab = DOMBuilder.button("IPv6", { className: "router-routes-tab" });
-        this._routeFamilyV4Tab = rfV4Tab;
-        this._routeFamilyV6Tab = rfV6Tab;
-        rfV4Tab.addEventListener("click", () => {
-            this._selectedRouteFamily = 4;
-            this._updateRouteFamilyTabs();
-            this._renderRoutes();
-        });
-        rfV6Tab.addEventListener("click", () => {
-            this._selectedRouteFamily = 6;
-            this._updateRouteFamilyTabs();
-            this._renderRoutes();
-        });
-        const routeFamilyTabs = DOMBuilder.div("router-routes-family-tabs", [rfV4Tab, rfV6Tab]);
-        host.appendChild(routeFamilyTabs);
+        const routeTitle = DOMBuilder.h4("");
+        routeSection.appendChild(routeTitle);
 
         const routesHost = DOMBuilder.div("router-routes");
         this._routesHost = routesHost;
-        host.appendChild(routesHost);
+        routeSection.appendChild(routesHost);
 
+        outerContent.append(ifSection, routeSection);
+
+        /* ============================ Tab switching ============================ */
+        const selectOuterTab = (id) => {
+            outerTabBtns.forEach((btn, i) => btn.classList.toggle("is-active", outerTabIds[i] === id));
+            ifSection.style.display    = id === "interfaces" ? "" : "none";
+            routeSection.style.display = id === "interfaces" ? "none" : "";
+            if (id === "routes-v4") { routeTitle.textContent = t("router.routingtable.ipv4"); this._selectedRouteFamily = 4; this._renderRoutes(); }
+            if (id === "routes-v6") { routeTitle.textContent = t("router.routingtable.ipv6"); this._selectedRouteFamily = 6; this._renderRoutes(); }
+        };
+        outerTabBtns.forEach((btn, i) => btn.addEventListener("click", () => selectOuterTab(outerTabIds[i])));
+        selectOuterTab("interfaces");
+
+        /* ============================ Init ============================ */
         this._renderInterfaceTabs();
         this._renderInterfaceActions();
         this._wireInterfaceForm();
@@ -294,7 +285,6 @@ export class Router extends SimulatedObject {
         this._loadSelectedInterfaceIntoForm();
         this._updateInterfaceFormState();
 
-        this._updateRouteFamilyTabs();
         this._renderRoutes();
         this._startLinkPolling();
     }
@@ -643,11 +633,6 @@ export class Router extends SimulatedObject {
     }
 
     /* ----------------------------- routes UI ---------------------------- */
-
-    _updateRouteFamilyTabs() {
-        if (this._routeFamilyV4Tab) this._routeFamilyV4Tab.classList.toggle("router-routes-tab-active", this._selectedRouteFamily === 4);
-        if (this._routeFamilyV6Tab) this._routeFamilyV6Tab.classList.toggle("router-routes-tab-active", this._selectedRouteFamily === 6);
-    }
 
     _renderRoutes() {
         if (this._selectedRouteFamily === 6) {

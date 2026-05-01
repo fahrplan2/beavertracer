@@ -227,7 +227,6 @@
 
 
 .sim-toolbar-branding {
-  height: 80%;
   font-size: 25px;
   font-weight: 700;
   letter-spacing: 0.2px;
@@ -252,8 +251,16 @@
   font-size:12px;
   font-weight: bold;
   font-style: italic;
-  align-items: center;      /* vertical center */
-  justify-content: center;  /* horizontal center */
+  text-align: center;
+  width: 100%;
+}
+
+.sim-toolbar-branding-alpha {
+  font-size: 10px;
+  font-weight: 700;
+  color: #cc2200;
+  letter-spacing: 0.5px;
+  user-select: none;
 }
 
 .sim-toolbar-branding-group::after {
@@ -436,6 +443,79 @@
 }
 
 /* =========================================================
+   WIFI RIPPLE ANIMATION
+   ========================================================= */
+
+@keyframes wifi-ripple {
+  from {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0.85;
+  }
+  to {
+    transform: translate(-50%, -50%) scale(4);
+    opacity: 0;
+  }
+}
+
+.sim-wifi-ripple-container {
+  position: absolute;
+  pointer-events: none;
+}
+
+.sim-wifi-ripple {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  border: 2.5px solid #e03030;
+  border-radius: 50%;
+  animation: wifi-ripple 0.75s ease-out forwards;
+}
+
+/* =========================================================
+   WIFI CONFIG SECTION (panel)
+   ========================================================= */
+.sim-wifi-config {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--ui-border);
+  margin-bottom: 4px;
+}
+
+.sim-wifi-config label {
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sim-wifi-config input {
+  flex: 1;
+  min-width: 0;
+  padding: 3px 6px;
+  border: 1px solid var(--ui-border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.sim-wifi-config button {
+  padding: 3px 10px;
+  border: 1px solid var(--ui-border);
+  border-radius: 4px;
+  background: var(--surface-strong);
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sim-wifi-config button:hover {
+  background: var(--ui-card-hover);
+}
+
+/* =========================================================
    PORT PICKER (POPUP)
    ========================================================= */
 .sim-port-picker {
@@ -491,6 +571,11 @@
    ========================================================= */
 .sim-root.edit-mode {
   cursor: default;
+}
+
+.sim-root.edit-mode .sim-nodes {
+  background-image: radial-gradient(circle, #b0b8c4 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
 .sim-root.edit-mode * {
@@ -641,8 +726,17 @@ sim-toolbar-langbtn {
   color: var(--green);
 }
 
+.fa-laptop {
+  color: var(--blue);
+}
 
+.fa-wifi {
+  color: var(--blue);
+}
 
+.fa-house-signal {
+  color: var(--blue);
+}
 
 
 .my-icon-router {
