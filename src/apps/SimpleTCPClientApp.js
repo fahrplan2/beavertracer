@@ -241,11 +241,12 @@ export class SimpleTCPClientApp extends GenericProcess {
     const status = UI.el("div", { className: "msg" });
 
     const panel = UI.panel([
+      UI.el("h4", { text: t("app.simpletcpclient.label.connection") }),
       UI.row(t("app.simpletcpclient.label.host"), hostInput),
       UI.row(t("app.simpletcpclient.label.port"), portInput),
       UI.buttonRow([connect, disconnect]),
       status,
-      UI.el("div", { text: t("app.simpletcpclient.label.chat") }),
+      UI.el("h4", { text: t("app.simpletcpclient.label.chat") }),
       chatLog,
       UI.row(t("app.simpletcpclient.label.message"), msgInput),
       UI.buttonRow([

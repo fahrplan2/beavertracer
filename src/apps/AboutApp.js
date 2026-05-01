@@ -1,5 +1,6 @@
 //@ts-check
 import { t } from "../i18n/index.js";
+import { UILib as UI } from "./lib/UILib.js";
 import { GenericProcess } from "./GenericProcess.js";
 
 export class AboutApp extends GenericProcess {
@@ -28,42 +29,31 @@ export class AboutApp extends GenericProcess {
   onMount(root) {
     super.onMount(root);
 
-    this.root.replaceChildren();
-
-    // Heading
-    const h = document.createElement("h3");
-    h.textContent = t("app.about.heading.systemInfo");
-
-    // --- PC Name Editor ---
-    const nameRow = document.createElement("div");
-    nameRow.style.display = "flex";
-    nameRow.style.gap = "6px";
-    nameRow.style.alignItems = "center";
-
-    const nameInput = document.createElement("input");
-    nameInput.type = "text";
-    nameInput.value = this.os.name;
-    nameInput.placeholder = t("app.about.placeholder.pcName");
+    const nameInput = UI.input({
+      value: this.os.name,
+      placeholder: t("app.about.placeholder.pcName"),
+    });
     this.nameInput = nameInput;
 
-    const renameBtn = document.createElement("button");
-    renameBtn.textContent = t("app.about.button.rename");
-    renameBtn.onclick = () => {
+    const renameBtn = UI.button(t("app.about.button.rename"), () => {
       const v = nameInput.value.trim();
       if (v) {
         this.os.setName(v);
-        nameInput.value = this.os.name; // falls setName normalisiert
+        nameInput.value = this.os.name;
       }
-    };
+    }, { primary: true });
 
-    nameRow.append(nameInput, renameBtn);
+    const infoEl = UI.el("pre", {});
+    this.infoEl = infoEl;
 
-    // --- System Info ---
-    const pre = document.createElement("pre");
-    this.infoEl = pre;
+    const panel = UI.panel([
+      UI.el("h4", { text: t("app.about.heading.systemInfo") }),
+      UI.row(t("app.about.placeholder.pcName"), nameInput),
+      UI.buttonRow([renameBtn]),
+      infoEl,
+    ]);
 
-    this.root.append(h, nameRow, pre);
-
+    this.root.replaceChildren(panel);
     this._tick();
   }
 

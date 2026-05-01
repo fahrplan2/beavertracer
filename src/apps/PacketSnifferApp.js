@@ -53,6 +53,7 @@ export class PacketSnifferApp extends GenericProcess {
     this.listEl = UI.el("div");
 
     const panel = UI.panel([
+      UI.el("h4", { text: t("app.packetsniffer.title") }),
       this.listEl,
     ]);
 
@@ -95,11 +96,9 @@ export class PacketSnifferApp extends GenericProcess {
       const btnShow = UI.button(
         t("app.packetsniffer.button.show", { name, port: portSuffix }),
         () => {
-          const pcap = new Pcap(frames, filename);
-
-          //SimControl.pcapViewer.loadBytes(pcap.generateBytes());
-          //SimControl.tabControler.gotoTab("pcapviewer");
-          
+          document.dispatchEvent(new CustomEvent("show-pcap", {
+            detail: { sessionName: filename, frames },
+          }));
         },
         { primary: true }
       );

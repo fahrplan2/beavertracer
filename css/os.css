@@ -139,7 +139,7 @@
 
 .process-root {
     /* spacing + typography baseline */
-    padding: 14px;
+    padding: 2px;
     color: var(--text);
     font-size: 14px;
     line-height: 1.4;

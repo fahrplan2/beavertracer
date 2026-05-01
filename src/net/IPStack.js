@@ -2,6 +2,7 @@
 
 import { prefixToNetmask } from "../lib/helpers.js";
 import { IPv4Packet } from "../net/pdu/IPv4Packet.js";
+import { IPv6Packet } from "../net/pdu/IPv6Packet.js";
 import { NetworkInterface } from "./NetworkInterface.js";
 import { Observable } from "../lib/Observeable.js";
 import { ICMPPacket } from "../net/pdu/ICMPPacket.js";
@@ -10,6 +11,33 @@ import { SimControl } from "../SimControl.js";
 import { TcpEngine } from "./TcpEngine.js";
 import { UdpEngine } from "./UdpEngine.js";
 import { IPAddress } from "./models/IPAddress.js";
+import { ICMPv6Packet } from "../net/pdu/ICMPv6Packet.js";
+
+/**
+ * Returns true if addr matches network/prefixLength.
+ * Works for both IPv4 (4 bytes) and IPv6 (16 bytes).
+ * @param {IPAddress} addr
+ * @param {IPAddress} network
+ * @param {number} prefixLength
+ * @returns {boolean}
+ */
+function _matchesPrefix(addr, network, prefixLength) {
+    const a = addr.toUInt8();
+    const n = network.toUInt8();
+    if (a.length !== n.length) return false;
+    let rem = prefixLength | 0;
+    for (let i = 0; i < a.length && rem > 0; i++) {
+        if (rem >= 8) {
+            if (a[i] !== n[i]) return false;
+            rem -= 8;
+        } else {
+            const mask = (0xff << (8 - rem)) & 0xff;
+            if ((a[i] & mask) !== (n[i] & mask)) return false;
+            rem = 0;
+        }
+    }
+    return true;
+}
 
 /**
  * IPv4-only IP stack (IPv6-ready data model via IPAddress + prefixLength).
@@ -26,6 +54,8 @@ export class IPStack extends Observable {
 
     /** @type {Map<string,any>} */
     _pendingEcho = new Map();
+    /** @type {Map<string,any>} */
+    _pendingEcho6 = new Map();
     /** @type {number} */
     _nextIcmpId = (Math.random() * 0xffff) | 0;
 
@@ -48,16 +78,32 @@ export class IPStack extends Observable {
         this._updateAutoRoutes();
 
         this.tcp = new TcpEngine({
-            ipSend: (opts) => { this.send(opts); },
+            ipSend: (opts) => {
+                if (opts.dst?.isV4?.()) {
+                    this.send(opts);
+                } else {
+                    this.send6({ dst: opts.dst, src: opts.src, nextHeader: opts.protocol, payload: opts.payload });
+                }
+            },
             resolveSrcIp: (dstIp) => {
-                const out = this._resolveOutgoing(dstIp);
-                return out?.srcIp ?? IPAddress.fromString("0.0.0.0");
+                if (dstIp.isV4()) {
+                    const out = this._resolveOutgoing(dstIp);
+                    return out?.srcIp ?? IPAddress.fromString("0.0.0.0");
+                }
+                return this._pickSrcIpV6(dstIp);
             },
         });
 
         this.udp = new UdpEngine({
             ipSend: (opts) => { this.send(opts); },
             sendIcmpError: (original, type, code) => { this._sendICMPError(original, type, code); },
+            resolveSrcIp: (dstIp) => {
+                if (dstIp.isV4()) {
+                    const out = this._resolveOutgoing(dstIp);
+                    return out?.srcIp ?? IPAddress.fromString("0.0.0.0");
+                }
+                return this._pickSrcIpV6(dstIp);
+            },
         });
     }
 
@@ -78,7 +124,8 @@ export class IPStack extends Observable {
      * @returns {boolean}
      */
     _isZero(ip) {
-        return this._v4n(ip) === 0;
+        if (ip.isV4()) return this._v4n(ip) === 0;
+        return ip.toUInt8().every(b => b === 0);
     }
 
     /**
@@ -118,7 +165,10 @@ export class IPStack extends Observable {
      * @returns {boolean}
      */
     _isLoopback(ip) {
-        return (this._v4n(ip) & 0xff000000) === 0x7f000000;
+        if (ip.isV4()) return (this._v4n(ip) & 0xff000000) === 0x7f000000;
+        // IPv6 loopback = ::1
+        const b = ip.toUInt8();
+        return b.slice(0, 15).every(x => x === 0) && b[15] === 1;
     }
 
     /**
@@ -190,20 +240,15 @@ export class IPStack extends Observable {
      * @returns {{interfIndex:number, route:Route, nextHopIp:IPAddress, srcIp:IPAddress, prefixBits:number} | null}
      */
     _resolveOutgoing(dstIp, opt = {}) {
-        const dst = this._v4n(dstIp);
-
         /** @type {Route|null} */
         let best = null;
         let bestBits = -1;
 
         for (const r of this.routingTable) {
             if (!r) continue;
-            if (!r.dst.isV4()) continue; // v6 routes later
+            if (r.dst.isV4() !== dstIp.isV4()) continue; // family filter
 
-            const rdst = this._v4n(r.dst);
-            const mask = this._prefixToNetmask32(r.prefixLength);
-
-            if (((dst & mask) >>> 0) !== ((rdst & mask) >>> 0)) continue;
+            if (!_matchesPrefix(dstIp, r.dst, r.prefixLength)) continue;
 
             const bits = r.prefixLength | 0;
             if (bits > bestBits) {
@@ -322,8 +367,8 @@ export class IPStack extends Observable {
      * @param {Boolean} internal
      */
     async route(packet, internal = false) {
-        const dst = IPAddress.fromUInt8(packet.dst);
-        const src = IPAddress.fromUInt8(packet.src);
+        const dst = packet.dst;
+        const src = packet.src;
 
         // loopback
         if (this._isLoopback(dst)) {
@@ -362,7 +407,7 @@ export class IPStack extends Observable {
 
                     const p2 = new IPv4Packet({
                         dst: packet.dst,
-                        src: srcIp.toUInt8(),
+                        src: srcIp,
                         protocol: packet.protocol,
                         payload: packet.payload,
                         ttl: packet.ttl,
@@ -375,7 +420,7 @@ export class IPStack extends Observable {
 
             if (bIf !== -1) {
                 if (this._v4n(src) === 0) {
-                    packet.src = this.interfaces[bIf].ip.toUInt8();
+                    packet.src = this.interfaces[bIf].ip;
                 }
                 const bmac = new Uint8Array([255, 255, 255, 255, 255, 255]);
                 this.interfaces[bIf].sendFrame(bmac, 0x0800, packet.pack());
@@ -507,8 +552,10 @@ export class IPStack extends Observable {
      * @param {number} code
      */
     _sendICMPError(original, type, code) {
-        const src = IPAddress.fromUInt8(original.src);
-        const dst = IPAddress.fromUInt8(original.dst);
+        if (!(original instanceof IPv4Packet)) return; // ICMPv6 errors: Phase 3+
+
+        const src = original.src;
+        const dst = original.dst;
 
         if (this._isZero(src)) return;
         if (original.protocol == 1) return;
@@ -533,8 +580,8 @@ export class IPStack extends Observable {
      */
     _handleICMP(packet) {
         const icmp = ICMPPacket.fromBytes(packet.payload);
-        const ip_src = IPAddress.fromUInt8(packet.src);
-        const ip_dst = IPAddress.fromUInt8(packet.dst);
+        const ip_src = packet.src;
+        const ip_dst = packet.dst;
 
         console.debug("ICMP IN", {
             ip_src: ip_src.toString(),
@@ -644,8 +691,8 @@ export class IPStack extends Observable {
         const payload = (opts.payload ?? new Uint8Array());
 
         const packet = new IPv4Packet({
-            dst: dst.toUInt8(),
-            src: src.toUInt8(),
+            dst,
+            src,
             protocol,
             payload,
             ttl
@@ -658,26 +705,36 @@ export class IPStack extends Observable {
 
     /**
      * Configure an interface.
+     * Pass opts.ip to set the IPv4 address (or 0.0.0.0 to disable).
+     * Pass opts.ip6 to set the IPv6 address (or null to disable).
      * @param {Number} [i]
      * @param {Object} [opts]
      * @param {IPAddress|string} [opts.ip]
      * @param {number} [opts.prefixLength]
      * @param {String} [opts.name]
+     * @param {IPAddress|string|null} [opts.ip6]
+     * @param {number} [opts.prefixLength6]
      */
     configureInterface(i = 0, opts = {}) {
         if (this.interfaces[i] == null) return;
 
-        const ip = (opts.ip instanceof IPAddress)
-            ? opts.ip
-            : IPAddress.fromString(String(opts.ip ?? "192.168.0.10"));
+        if (opts.ip !== undefined) {
+            const ip = (opts.ip instanceof IPAddress)
+                ? opts.ip
+                : IPAddress.fromString(String(opts.ip ?? "0.0.0.0"));
+            const prefixLength = (opts.prefixLength ?? (ip.isV4() ? 24 : 64)) | 0;
+            this.interfaces[i].configure({
+                name: opts.name ?? this.interfaces[i].name,
+                ip,
+                prefixLength,
+            });
+        } else if (opts.name !== undefined) {
+            this.interfaces[i].name = String(opts.name);
+        }
 
-        const prefixLength = (opts.prefixLength ?? (ip.isV4() ? 24 : 64)) | 0;
-
-        this.interfaces[i].configure({
-            name: opts.name ?? this.interfaces[i].name,
-            ip,
-            prefixLength,
-        });
+        if ('ip6' in opts) {
+            this.interfaces[i].configure6({ ip6: opts.ip6, prefixLength6: opts.prefixLength6 });
+        }
 
         this._updateAutoRoutes();
     }
@@ -686,8 +743,213 @@ export class IPStack extends Observable {
         for (let i = 0; i < this.interfaces.length; i++) {
             const packet = this.interfaces[i].getNextPacket();
             if (packet == null) continue;
-            this.route(packet, false);
+            if (packet instanceof IPv6Packet) {
+                this.routeV6(packet, false);
+            } else {
+                this.route(packet, false);
+            }
         }
+    }
+
+    /**
+     * Route an incoming or locally generated IPv6 packet.
+     * Phase 2: accept packets destined to us; forwarding requires NDP (Phase 3).
+     * @param {IPv6Packet} packet
+     * @param {boolean} internal
+     */
+    async routeV6(packet, internal = false) {
+        const dst = packet.dst;
+
+        // Is it for one of our IPv6 interfaces (global or link-local)?
+        for (const itf of this.interfaces) {
+            if ((itf.ip6   && itf.ip6.toString()   === dst.toString()) ||
+                (itf.ip6LL && itf.ip6LL.toString() === dst.toString())) {
+                this.acceptV6(packet);
+                return;
+            }
+        }
+
+        // IPv6 multicast (ff00::/8) — accept
+        if (dst.toUInt8()[0] === 0xff) {
+            this.acceptV6(packet);
+            return;
+        }
+
+        const out = this._resolveOutgoing(dst);
+        if (!out) return; // no route, drop silently
+
+        if (out.interfIndex === -1) {
+            this.acceptV6(packet);
+            return;
+        }
+
+        if (!internal && !this.forwarding) return;
+
+        if (!internal) {
+            packet.hopLimit = (packet.hopLimit - 1) & 0xff;
+            if (packet.hopLimit === 0) return; // no ICMPv6 time-exceeded yet
+        }
+
+        const interf = this.interfaces[out.interfIndex];
+        const nh = this._isZero(out.route.nexthop) ? dst : out.route.nexthop;
+
+        const mac = await interf.resolveNeighbor(nh); // throws if NDP not yet implemented
+        if (mac == null) return;
+        interf.sendFrame(mac, 0x86DD, packet.pack());
+    }
+
+    /**
+     * Accept and dispatch a locally destined IPv6 packet.
+     * @param {IPv6Packet} packet
+     */
+    acceptV6(packet) {
+        switch (packet.nextHeader) {
+            case 58:  this._handleICMPv6(packet); break;
+            case 17:  this._handleUDP(packet);    break;
+            case 6:   this.tcp.handle(packet);    break;
+            default:
+                console.debug(this.name + ": IPv6 unknown nextHeader=" + packet.nextHeader);
+        }
+    }
+
+    /**
+     * @param {IPv6Packet} packet
+     */
+    _handleICMPv6(packet) {
+        /** @type {ICMPv6Packet} */
+        let icmp6;
+        try {
+            icmp6 = ICMPv6Packet.fromBytes(packet.payload);
+        } catch (e) {
+            console.warn(this.name + ": ICMPv6 parse error", e);
+            return;
+        }
+
+        const srcIp = packet.src;
+        const dstIp = packet.dst;
+
+        switch (icmp6.type) {
+            case 128: { // Echo Request → send Reply
+                const replyBytes = ICMPv6Packet.buildEchoReply(
+                    icmp6.identifier, icmp6.sequence, icmp6.echoPayload
+                ).pack(dstIp, srcIp);
+                this.send6({ dst: srcIp, src: dstIp, nextHeader: 58, payload: replyBytes });
+                break;
+            }
+            case 129: { // Echo Reply → resolve pending ping6
+                const key = this._icmpv6EchoKey(srcIp, icmp6.identifier, icmp6.sequence);
+                const pending = this._pendingEcho6.get(key);
+                if (!pending) break;
+                clearTimeout(pending.timer);
+                this._pendingEcho6.delete(key);
+                pending.resolve({
+                    bytes:      packet.payload?.length ?? 0,
+                    ttl:        packet.hopLimit ?? 64,
+                    identifier: icmp6.identifier,
+                    sequence:   icmp6.sequence,
+                    timeMs:     0,
+                });
+                break;
+            }
+            default:
+                console.debug(this.name + ": ICMPv6 unhandled type=" + icmp6.type);
+        }
+    }
+
+    /**
+     * Create and send a locally generated IPv6 packet.
+     * @param {Object} [opts]
+     * @param {IPAddress} [opts.dst]
+     * @param {IPAddress} [opts.src]
+     * @param {number}    [opts.nextHeader]
+     * @param {number}    [opts.hopLimit]
+     * @param {Uint8Array}[opts.payload]
+     */
+    send6(opts = {}) {
+        const dst = opts.dst ?? IPAddress.fromString("::");
+        let   src = opts.src ?? IPAddress.fromString("::");
+
+        if (this._isZero(src)) src = this._pickSrcIpV6(dst);
+
+        const nextHeader = opts.nextHeader ?? 59;
+        const hopLimit   = opts.hopLimit   ?? 64;
+        const payload    = opts.payload    ?? new Uint8Array();
+
+        const packet = new IPv6Packet({ dst, src, nextHeader, hopLimit, payload });
+
+        console.debug("IPv6 OUT", { dst: dst.toString(), src: src.toString(), nextHeader });
+
+        this.routeV6(packet, true).catch(console.error);
+    }
+
+    /**
+     * Pick a source IPv6 address for locally generated traffic.
+     * @param {IPAddress} dstIp
+     * @returns {IPAddress}
+     */
+    _pickSrcIpV6(dstIp) {
+        const dstBytes = dstIp.toUInt8();
+        const isLL = (dstBytes[0] === 0xfe && (dstBytes[1] & 0xc0) === 0x80);
+
+        const out = this._resolveOutgoing(dstIp);
+        if (out && out.interfIndex !== -1) {
+            const itf = this.interfaces[out.interfIndex];
+            if (itf) {
+                if (isLL && itf.ip6LL && !this._isZero(itf.ip6LL)) return itf.ip6LL;
+                if (itf.ip6 && !this._isZero(itf.ip6)) return itf.ip6;
+                if (itf.ip6LL && !this._isZero(itf.ip6LL)) return itf.ip6LL;
+            }
+        }
+        for (const itf of this.interfaces) {
+            if (isLL && itf.ip6LL && !this._isZero(itf.ip6LL)) return itf.ip6LL;
+            if (!isLL && itf.ip6 && !this._isZero(itf.ip6)) return itf.ip6;
+            if (itf.ip6LL && !this._isZero(itf.ip6LL)) return itf.ip6LL;
+        }
+        return IPAddress.fromString("::");
+    }
+
+    /**
+     * Send an ICMPv6 Echo Request and wait for the reply (ping6).
+     * @param {IPAddress} dstIp
+     * @param {{timeoutMs?:number, payload?:Uint8Array, identifier?:number, sequence?:number}} [opt]
+     * @returns {Promise<{bytes:number, ttl:number, timeMs:number, identifier:number, sequence:number}>}
+     */
+    async icmpv6Echo(dstIp, opt = {}) {
+        const timeoutMs  = opt.timeoutMs ?? 20 * SimControl.tick;
+        const identifier = opt.identifier ?? (this._nextIcmpId = (this._nextIcmpId + 1) & 0xffff);
+        const sequence   = opt.sequence   ?? (Math.random() * 0xffff) | 0;
+        const payload    = opt.payload    ?? new Uint8Array(32);
+
+        const srcIp = this._pickSrcIpV6(dstIp);
+        const key   = this._icmpv6EchoKey(dstIp, identifier, sequence);
+        const t0    = (typeof performance !== "undefined" ? performance.now() : Date.now());
+
+        return new Promise((resolve, reject) => {
+            const timer = setTimeout(() => {
+                this._pendingEcho6.delete(key);
+                reject(new Error("timeout"));
+            }, timeoutMs);
+
+            this._pendingEcho6.set(key, { resolve, reject, timer, t0 });
+
+            const icmpBytes = ICMPv6Packet.buildEchoRequest(identifier, sequence, payload)
+                .pack(srcIp, dstIp);
+
+            this.send6({ dst: dstIp, src: srcIp, nextHeader: 58, payload: icmpBytes });
+        }).then((r) => {
+            const t1 = (typeof performance !== "undefined" ? performance.now() : Date.now());
+            return { .../** @type {any} */ (r), timeMs: Math.max(0, Math.round(t1 - t0)) };
+        });
+    }
+
+    /**
+     * @param {IPAddress} dst
+     * @param {number} id
+     * @param {number} seq
+     * @returns {string}
+     */
+    _icmpv6EchoKey(dst, id, seq) {
+        return `v6|${dst.toString()}|${id}|${seq}`;
     }
 
     /**
@@ -729,32 +991,70 @@ export class IPStack extends Observable {
     _updateAutoRoutes() {
         this.routingTable = this.routingTable.filter(r => !r.auto);
 
-        // Add connected routes for each interface (IPv4 only for now)
         for (let i = 0; i < this.interfaces.length; i++) {
             const itf = this.interfaces[i];
-            if (!itf.ip.isV4()) continue;
 
-            const ip32 = this._v4n(itf.ip);
-            const mask32 = this._prefixToNetmask32(itf.prefixLength);
-            const net32 = (ip32 & mask32) >>> 0;
+            if (itf.ip.isV4()) {
+                const ip32  = this._v4n(itf.ip);
+                const mask32 = this._prefixToNetmask32(itf.prefixLength);
+                const net32 = (ip32 & mask32) >>> 0;
 
-            const r = new Route();
-            r.dst = new IPAddress(4, net32);
-            r.prefixLength = itf.prefixLength | 0;
-            r.interf = i;
-            r.nexthop = IPAddress.fromString("0.0.0.0");
-            r.auto = true;
-            this.routingTable.push(r);
+                const r = new Route();
+                r.dst = new IPAddress(4, net32);
+                r.prefixLength = itf.prefixLength | 0;
+                r.interf = i;
+                r.nexthop = IPAddress.fromString("0.0.0.0");
+                r.auto = true;
+                this.routingTable.push(r);
+            }
+
+            if (itf.ip6 != null && !this._isZero(itf.ip6)) {
+                // Zero out host bits to get network address
+                const bytes = itf.ip6.toUInt8();
+                const netBytes = new Uint8Array(16);
+                let rem = itf.prefixLength6 | 0;
+                for (let b = 0; b < 16 && rem > 0; b++) {
+                    if (rem >= 8) { netBytes[b] = bytes[b]; rem -= 8; }
+                    else          { netBytes[b] = bytes[b] & (0xff << (8 - rem)) & 0xff; rem = 0; }
+                }
+
+                const r6c = new Route();
+                r6c.dst = new IPAddress(6, netBytes);
+                r6c.prefixLength = itf.prefixLength6 | 0;
+                r6c.interf = i;
+                r6c.nexthop = IPAddress.fromString("::");
+                r6c.auto = true;
+                this.routingTable.push(r6c);
+            }
+
+            if (itf.ip6LL) {
+                const rLL = new Route();
+                rLL.dst = IPAddress.fromString("fe80::");
+                rLL.prefixLength = 64;
+                rLL.interf = i;
+                rLL.nexthop = IPAddress.fromString("::");
+                rLL.auto = true;
+                this.routingTable.push(rLL);
+            }
         }
 
-        // Loopback route
-        const r = new Route();
-        r.dst = IPAddress.fromString("127.0.0.0");
-        r.prefixLength = 8;
-        r.interf = -1;
-        r.nexthop = IPAddress.fromString("0.0.0.0");
-        r.auto = true;
-        this.routingTable.push(r);
+        // IPv4 loopback
+        const r4 = new Route();
+        r4.dst = IPAddress.fromString("127.0.0.0");
+        r4.prefixLength = 8;
+        r4.interf = -1;
+        r4.nexthop = IPAddress.fromString("0.0.0.0");
+        r4.auto = true;
+        this.routingTable.push(r4);
+
+        // IPv6 loopback (::1/128)
+        const r6 = new Route();
+        r6.dst = IPAddress.fromString("::1");
+        r6.prefixLength = 128;
+        r6.interf = -1;
+        r6.nexthop = IPAddress.fromString("::");
+        r6.auto = true;
+        this.routingTable.push(r6);
     }
 
     getInterface(i) {
@@ -781,6 +1081,9 @@ export class IPStack extends Observable {
                 name: itf.name,
                 ip: itf.ip?.toString?.() ?? "0.0.0.0",
                 prefixLength: itf.prefixLength ?? 0,
+                ip6: itf.ip6?.toString?.() ?? null,
+                prefixLength6: itf.prefixLength6 ?? 0,
+                ip6LL: itf.ip6LL?.toString?.() ?? null,
             })),
 
             routes: this.routingTable
@@ -824,6 +1127,16 @@ export class IPStack extends Observable {
             const ip = IPAddress.fromString(String(row.ip ?? "0.0.0.0"));
             const prefixLength = Number(row.prefixLength ?? (ip.isV4() ? 24 : 64));
             stack.configureInterface(i, { name: stack.interfaces[i].name, ip, prefixLength });
+
+            if (row.ip6) {
+                try {
+                    const ip6 = IPAddress.fromString(String(row.ip6));
+                    const prefixLength6 = Number(row.prefixLength6 ?? 64);
+                    stack.configureInterface(i, { ip6, prefixLength6 });
+                } catch (e) {
+                    console.warn("IPStack.fromJSON: invalid ip6 for interface", i, e);
+                }
+            }
         }
 
         // rebuild auto routes

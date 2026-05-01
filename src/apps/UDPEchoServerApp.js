@@ -28,7 +28,7 @@ export class UDPEchoServerApp extends GenericProcess {
   /** @type {Array<string>} */
   log = [];
 
-  /** @type {HTMLTextAreaElement|null} */
+  /** @type {HTMLElement|null} */
   logEl = null;
 
   /** @type {HTMLInputElement|null} */
@@ -67,17 +67,14 @@ export class UDPEchoServerApp extends GenericProcess {
     this.startBtn = start;
     this.stopBtn = stop;
 
-    const logBox = UI.textarea({
-      className: "log",
-      readonly: "true",
-      spellcheck: "false",
-    });
+    const logBox = UI.el("div", { className: "msg" });
     this.logEl = logBox;
 
     const panel = UI.panel([
+      UI.el("h4", { text: t("app.udpechoserver.label.server") }),
       UI.row(t("app.udpechoserver.label.listenPort"), portInput),
       UI.buttonRow([start, stop, clear]),
-      UI.el("div", { text: t("app.udpechoserver.label.log") }),
+      UI.el("h4", { text: t("app.udpechoserver.label.log") }),
       logBox,
     ]);
 
@@ -111,7 +108,7 @@ export class UDPEchoServerApp extends GenericProcess {
     if (!this.logEl) return;
     const maxLines = 200;
     const lines = this.log.length > maxLines ? this.log.slice(-maxLines) : this.log;
-    this.logEl.value = lines.join("\n");
+    this.logEl.textContent = lines.join("\n");
     this.logEl.scrollTop = this.logEl.scrollHeight;
   }
 

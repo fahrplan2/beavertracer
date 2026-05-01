@@ -1,6 +1,7 @@
 //@ts-check
 
 import { assertLenU8 } from "../../lib/helpers.js";
+import { IPAddress } from "../models/IPAddress.js";
 
 export class IPv4Packet {
 
@@ -37,8 +38,8 @@ export class IPv4Packet {
    * @param {number} [opts.ttl] default 64
    * @param {number} [opts.protocol] 8-bit protocol number (default 0)
    * @param {number} [opts.headerChecksum] 16-bit checksum (default 0 => auto on pack)
-   * @param {Uint8Array} [opts.src] source IPv4 (length 4)
-   * @param {Uint8Array} [opts.dst] destination IPv4 (length 4)
+   * @param {IPAddress} [opts.src] source IPv4
+   * @param {IPAddress} [opts.dst] destination IPv4
    * @param {Uint8Array} [opts.options] raw options bytes (0..40). Padding is added in pack()
    * @param {Uint8Array} [opts.payload] payload bytes (default empty)
    */
@@ -62,8 +63,8 @@ export class IPv4Packet {
 
     this.headerChecksum = (opts.headerChecksum ?? 0) & 0xffff;
 
-    this.src = opts.src ? assertLenU8(opts.src, 4, "src") : new Uint8Array(4);
-    this.dst = opts.dst ? assertLenU8(opts.dst, 4, "dst") : new Uint8Array(4);
+    this.src = (opts.src instanceof IPAddress) ? opts.src : new IPAddress(4, 0);
+    this.dst = (opts.dst instanceof IPAddress) ? opts.dst : new IPAddress(4, 0);
 
     this.options = opts.options ? assertLenU8(opts.options, opts.options.length, "options") : new Uint8Array(0);
 
@@ -117,8 +118,8 @@ export class IPv4Packet {
     const protocol = bytes[9];
     const headerChecksum = (bytes[10] << 8) | bytes[11];
 
-    const src = bytes.slice(12, 16);
-    const dst = bytes.slice(16, 20);
+    const src = IPAddress.fromUInt8(bytes.slice(12, 16));
+    const dst = IPAddress.fromUInt8(bytes.slice(16, 20));
 
     const options = headerLen > 20 ? bytes.slice(20, headerLen) : new Uint8Array(0);
 
@@ -189,8 +190,8 @@ export class IPv4Packet {
     header[10] = 0;
     header[11] = 0;
 
-    header.set(this.src, 12);
-    header.set(this.dst, 16);
+    header.set(this.src.toUInt8(), 12);
+    header.set(this.dst.toUInt8(), 16);
 
     if (opts.length > 0) header.set(opts, 20);
     // padding bytes remain 0
@@ -262,8 +263,8 @@ export class IPv4Packet {
       throw new Error("headerChecksum must be 0..65535");
     }
 
-    assertLenU8(this.src, 4, "src");
-    assertLenU8(this.dst, 4, "dst");
+    if (!(this.src instanceof IPAddress)) throw new Error("src must be an IPAddress");
+    if (!(this.dst instanceof IPAddress)) throw new Error("dst must be an IPAddress");
 
     if (!(this.options instanceof Uint8Array)) throw new Error("options must be Uint8Array");
     if (this.options.length > 40) throw new Error("options too long (max 40 bytes)");

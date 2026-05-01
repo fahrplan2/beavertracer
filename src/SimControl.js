@@ -154,6 +154,16 @@ export class SimControl {
 
         this.scheduleNextStep();
         this._startRafLoop();
+
+        document.addEventListener("show-pcap", (ev) => {
+            const { sessionName, frames } = /** @type {any} */ (ev).detail;
+            this.pcapController.updateIf(sessionName, frames);
+            this.pcapViewer.switchTab(sessionName);
+            if (this.mode === "edit") this._leaveEditMode();
+            this.mode = "trace";
+            this._invalidateUI();
+            this.pcapViewer.render();
+        });
     }
 
     scheduleNextStep() {
@@ -1059,7 +1069,8 @@ export class SimControl {
             if (!this._linkStart) {
                 const pickA = await this._pickPortForObjectAt(obj, ev.clientX + 8, ev.clientY + 8);
                 if (!pickA) {
-                    throw Error("No free ports");
+                    this._showToast(t("sim.link.error.noFreePort"));
+                    return;
                 }
 
                 this._linkStart = obj;
@@ -1112,7 +1123,12 @@ export class SimControl {
                 l.simcontrol = this;
                 this.addObject(l);
             } catch (e) {
-                alert(t("sim.link.error"));
+                const msg = e instanceof Error ? e.message : "";
+                if (msg.includes("Port in use") || msg.includes("Port not found")) {
+                    this._showToast(t("sim.link.error.portInUse"));
+                } else {
+                    this._showToast(t("sim.link.error"));
+                }
             } finally {
                 this._cancelLinking();
             }
@@ -1132,9 +1148,9 @@ export class SimControl {
 
             /** @type {SimulatedObject|null} */
             let newObj = null;
-            if (this.tool === "place-pc") newObj = new PC();
-            if (this.tool === "place-switch") newObj = new Switch();
-            if (this.tool === "place-router") newObj = new Router();
+            if (this.tool === "place-pc") newObj = new PC(this._nextName(t("pc.title")));
+            if (this.tool === "place-switch") newObj = new Switch(this._nextName(t("switch.title")));
+            if (this.tool === "place-router") newObj = new Router(this._nextName(t("router.title")));
             if (this.tool === "place-text") newObj = new TextBox();
             if (this.tool === "place-rect") newObj = new RectOverlay();
             if (!newObj) return;
@@ -1562,6 +1578,27 @@ export class SimControl {
 
         // 8) redraw request reset
         this._redrawReq = false;
+    }
+
+    _nextName(prefix) {
+        const used = new Set(
+            this.simobjects
+                .map(o => o.name)
+                .filter(n => n.startsWith(prefix + " "))
+                .map(n => parseInt(n.slice(prefix.length + 1)))
+                .filter(n => Number.isFinite(n) && n > 0)
+        );
+        let i = 1;
+        while (used.has(i)) i++;
+        return `${prefix} ${i}`;
+    }
+
+    _showToast(msg) {
+        const toast = document.createElement("div");
+        toast.className = "sim-toast";
+        toast.textContent = msg;
+        this.nodesLayer?.appendChild(toast);
+        setTimeout(() => toast.remove(), 3500);
     }
 
     _syncInitialModeFromUrl() {

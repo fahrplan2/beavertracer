@@ -57,20 +57,19 @@ async function resolveHostToIP(host, dnsResolve) {
     }
   }
 
+  // IPv6 literal (contains colons)
+  if (s.includes(":")) {
+    try { return IPAddress.fromString(s); } catch { /* fall through to error */ }
+    throw new Error(t("app.sparktail.err.cannotResolveHost", { host: s }));
+  }
+
   // hostname -> dns
   const r = await dnsResolve(s);
 
-  // DNS kann schon IPAddress liefern
   if (r instanceof IPAddress) return r;
-
-  // fallback, falls dns noch number liefert
   if (typeof r === "number") return new IPAddress(4, r >>> 0);
-
-  // optional: falls dns string liefert
   if (typeof r === "string") {
-    // wenn ihr einen Parser habt: IPAddress.parse(r)
-    // sonst erstmal ablehnen:
-    throw new Error(t("app.sparktail.err.cannotResolveHost", { host: s }));
+    try { return IPAddress.fromString(r); } catch { /* fall through */ }
   }
 
   throw new Error(t("app.sparktail.err.cannotResolveHost", { host: s }));
@@ -98,10 +97,7 @@ function decodeUTF8(b) {
 
 /**
  * Minimal URL parser for http:// only.
- * Supports:
- *  - http://host
- *  - http://host/
- *  - http://host:port/path?query
+ * Supports IPv4, hostname, and IPv6 bracket notation: http://[2001:db8::1]:8080/path
  * @param {string} url
  */
 function parseHttpUrl(url) {
@@ -117,18 +113,30 @@ function parseHttpUrl(url) {
 
   if (!authority) return { ok: false, error: t("app.sparktail.err.missingHostInUrl") };
 
-  // host:port?
   let host = authority;
   let port = 80;
 
-  const colon = authority.lastIndexOf(":");
-  if (colon > 0 && colon < authority.length - 1) {
-    const maybePort = authority.slice(colon + 1);
-    if (/^\d+$/.test(maybePort)) {
-      const p = Number(maybePort);
-      if (Number.isInteger(p) && p >= 1 && p <= 65535) {
-        host = authority.slice(0, colon);
-        port = p;
+  if (authority.startsWith("[")) {
+    // IPv6 bracketed: [2001:db8::1] or [2001:db8::1]:port
+    const close = authority.indexOf("]");
+    if (close < 0) return { ok: false, error: t("app.sparktail.err.invalidIpv6Bracket") };
+    host = authority.slice(1, close);
+    const after = authority.slice(close + 1);
+    if (after.startsWith(":")) {
+      const p = Number(after.slice(1));
+      if (Number.isInteger(p) && p >= 1 && p <= 65535) port = p;
+    }
+  } else {
+    // IPv4 or hostname: split on last colon for optional port
+    const colon = authority.lastIndexOf(":");
+    if (colon > 0 && colon < authority.length - 1) {
+      const maybePort = authority.slice(colon + 1);
+      if (/^\d+$/.test(maybePort)) {
+        const p = Number(maybePort);
+        if (Number.isInteger(p) && p >= 1 && p <= 65535) {
+          host = authority.slice(0, colon);
+          port = p;
+        }
       }
     }
   }
@@ -253,6 +261,7 @@ function internalErrorPage(title, bodyText) {
  * Normalize user input:
  * - allow about:* untouched
  * - allow http:// untouched
+ * - bare IPv6 (2+ colons, no brackets): wrap in brackets then prefix http://
  * - otherwise prefix http://
  * @param {string} input
  */
@@ -262,6 +271,13 @@ function normalizeUrlInput(input) {
   const low = s.toLowerCase();
   if (low.startsWith("about:")) return s;
   if (low.startsWith("http://")) return s;
+  // Bare IPv6 literal (at least two colons, not already bracketed)
+  if (!s.startsWith("[") && (s.match(/:/g)?.length ?? 0) >= 2) {
+    const slash = s.indexOf("/");
+    return slash < 0
+      ? `http://[${s}]`
+      : `http://[${s.slice(0, slash)}]${s.slice(slash)}`;
+  }
   return "http://" + s;
 }
 
@@ -852,9 +868,12 @@ export class SparktailHTTPClientApp extends GenericProcess {
       return;
     }
 
+    const hostHeader = host.includes(":")
+      ? `[${host}]${port !== 80 ? `:${port}` : ""}`
+      : `${host}${port !== 80 ? `:${port}` : ""}`;
     const request =
       `GET ${path} HTTP/1.1\r\n` +
-      `Host: ${host}${port !== 80 ? `:${port}` : ""}\r\n` +
+      `Host: ${hostHeader}\r\n` +
       `User-Agent: Sparktail/1.0\r\n` +
       `Accept: text/html, text/plain, */*\r\n` +
       `Connection: close\r\n` +

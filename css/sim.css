@@ -123,8 +123,18 @@
   cursor: grabbing;
 }
 
+.sim-panel-title-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
 .sim-panel-title {
   font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sim-panel-close {
@@ -135,6 +145,20 @@
   background: transparent;
   cursor: pointer;
   color: var(--text);
+}
+
+.sim-panel-rename {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text);
+  opacity: 0.5;
+  font-size: 13px;
+  padding: 2px 4px;
+}
+
+.sim-panel-rename:hover {
+  opacity: 1;
 }
 
 .sim-panel-body {
@@ -487,6 +511,14 @@
 }
 
 /* link tool hover */
+.sim-root.edit-mode .sim-node {
+  cursor: grab;
+}
+
+.sim-root.edit-mode .sim-node:active {
+  cursor: grabbing;
+}
+
 .sim-root.edit-mode[data-tool="link"] .sim-node {
   cursor: pointer;
 }
@@ -680,4 +712,28 @@ sim-toolbar-langbtn {
   cursor: ew-resize;
   z-index: 9;
   background: transparent;
+}
+
+/* =========================================================
+   TOAST NOTIFICATION
+   ========================================================= */
+.sim-toast {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--danger);
+  color: #fff;
+  border: 1px solid var(--danger-strong);
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 0.9rem;
+  pointer-events: none;
+  z-index: 9999;
+  animation: sim-toast-in 0.15s ease;
+}
+
+@keyframes sim-toast-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(-6px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }

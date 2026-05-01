@@ -4,7 +4,7 @@ import { t } from "../../../../i18n/index.js";
 import { IPAddress } from "../../../../net/models/IPAddress.js";
 
 /**
- * Parse "A.B.C.D/len" (IPv4 only for now)
+ * Parse "address/len" — supports both IPv4 and IPv6.
  * @param {string} s
  * @returns {{ ip: IPAddress, prefix: number } | null}
  */
@@ -22,10 +22,8 @@ function parseCidr(s) {
   const prefix = Number(m[2]);
   if (!Number.isFinite(prefix)) return null;
 
-  // For now: IPv4 only
-  if (!ip.isV4()) return null;
-
-  const p = Math.max(0, Math.min(32, prefix | 0));
+  const maxPfx = ip.isV4() ? 32 : 128;
+  const p = Math.max(0, Math.min(maxPfx, prefix | 0));
   return { ip, prefix: p };
 }
 
@@ -112,14 +110,30 @@ export const ip = {
 
         ctx.println(t("app.terminal.commands.ip.out.ifaceLine", { idx: i, name, state: up }));
 
-        // Prefer a simple "inet X/Y" output.
+        // inet (IPv4)
         ctx.println(t("app.terminal.commands.ip.out.inetLine", {
           ip: `${addr.toString()}/${prefix}`,
           inetLabel: t("app.terminal.commands.ip.out.inetLabel"),
           netmaskLabel: t("app.terminal.commands.ip.out.netmaskLabel"),
-          // If your translation expects netmask too, keep something printable:
-          netmask: addr.isV4() ? `/${prefix}` : `/${prefix}`,
+          netmask: `/${prefix}`,
         }));
+
+        // inet6 link-local (always shown when available)
+        if (itf?.ip6LL instanceof IPAddress) {
+          ctx.println(t("app.terminal.commands.ip.out.inet6Line", {
+            ip: `${itf.ip6LL.toString()}/64`,
+            scope: "link",
+          }));
+        }
+
+        // inet6 global (when configured)
+        if (itf?.ip6 instanceof IPAddress && !itf.ip6.toUInt8().every(b => b === 0)) {
+          const pfx6 = (typeof itf.prefixLength6 === "number") ? itf.prefixLength6 : 64;
+          ctx.println(t("app.terminal.commands.ip.out.inet6Line", {
+            ip: `${itf.ip6.toString()}/${pfx6}`,
+            scope: "global",
+          }));
+        }
       }
       return;
     }
@@ -137,21 +151,30 @@ export const ip = {
       const parsed = parseCidr(cidr);
       if (!parsed) return t("app.terminal.commands.ip.err.invalidCidr");
 
-      // New API: ip + prefixLength
-      ipf.configureInterface(hit.idx, {
-        ip: parsed.ip,
-        prefixLength: parsed.prefix,
-        name: ifaceLabel(hit.itf, hit.idx),
-      });
-
-      const itf = ipf.interfaces[hit.idx];
-      const { ip: addr, prefix } = readIfaceAddr(itf);
-
-      ctx.println(t("app.terminal.commands.ip.out.okSet", {
-        iface: ifaceLabel(itf, hit.idx),
-        ip: addr.toString(),
-        prefix,
-      }));
+      if (parsed.ip.isV4()) {
+        ipf.configureInterface(hit.idx, {
+          ip: parsed.ip,
+          prefixLength: parsed.prefix,
+          name: ifaceLabel(hit.itf, hit.idx),
+        });
+        const itf = ipf.interfaces[hit.idx];
+        const { ip: addr, prefix } = readIfaceAddr(itf);
+        ctx.println(t("app.terminal.commands.ip.out.okSet", {
+          iface: ifaceLabel(itf, hit.idx),
+          ip: addr.toString(),
+          prefix,
+        }));
+      } else {
+        ipf.configureInterface(hit.idx, {
+          ip6: parsed.ip,
+          prefixLength6: parsed.prefix,
+        });
+        ctx.println(t("app.terminal.commands.ip.out.okSet", {
+          iface: ifaceLabel(hit.itf, hit.idx),
+          ip: parsed.ip.toString(),
+          prefix: parsed.prefix,
+        }));
+      }
       return;
     }
 

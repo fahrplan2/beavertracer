@@ -107,6 +107,74 @@
   gap: 8px;
 }
 
+/* Dual-stack interface form sections */
+.router-if-section {
+  margin-bottom: 8px;
+}
+
+.router-if-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.router-if-section-label {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.router-if-fields {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-left: 22px;
+}
+
+.router-if-fields input {
+  min-width: 0;
+}
+
+.router-if-ip,
+.router-if-ip6 {
+  flex: 2 1 120px;
+}
+
+.router-if-mask {
+  flex: 1 1 110px;
+}
+
+.router-if-cidr,
+.router-if-prefix6 {
+  flex: 0 0 52px;
+}
+
+.router-if-save {
+  margin-top: 4px;
+}
+
+/* Route family tabs (IPv4 / IPv6) */
+.router-routes-family-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.router-routes-tab {
+  padding: 3px 14px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-strong);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.router-routes-tab-active {
+  background: var(--primary-tint, color-mix(in oklch, var(--bg), var(--primary) 15%));
+  border-color: var(--primary, #3b82f6);
+  font-weight: 600;
+}
+
 /* Routing table */
 .router-routes-table {
   width: 100%;

@@ -1,3 +1,23 @@
+/****************** IP CONFIG (PC Network Settings) ******************/
+
+.app-ipv4 .ipconf-family-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 6px 0;
+}
+
+.app-ipv4 .ipconf-family-tabs .btn {
+  flex: 1;
+  border-radius: 4px;
+  background: var(--bg-strong, #f0f0f0);
+}
+
+.app-ipv4 .ipconf-family-tabs .btn.is-active {
+  background: var(--primary-tint, color-mix(in oklch, var(--bg), var(--primary) 15%));
+  border-color: var(--primary, #3b82f6);
+  font-weight: 600;
+}
+
 /************************************ TERMINAL ***********************/
 .app-terminal .term {
   font-family: "Hack", monospace;

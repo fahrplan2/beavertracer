@@ -7,6 +7,8 @@ import { ArpPacket } from "../net/pdu/ArpPacket.js";
 import { Observable } from "../lib/Observeable.js";
 import { SimControl } from "../SimControl.js";
 import { IPv4Packet } from "../net/pdu/IPv4Packet.js";
+import { IPv6Packet } from "../net/pdu/IPv6Packet.js";
+import { ICMPv6Packet } from "../net/pdu/ICMPv6Packet.js";
 import { IPAddress } from "./models/IPAddress.js";
 
 /**
@@ -29,6 +31,15 @@ export class NetworkInterface extends Observable {
 
     /** @type {number} */
     prefixLength = 0;
+
+    /** @type {IPAddress|null} */
+    ip6 = null;
+
+    /** @type {number} */
+    prefixLength6 = 0;
+
+    /** @type {IPAddress|null} Link-local address derived from MAC (EUI-64), always set */
+    ip6LL = null;
 
     /**
      * Neighbor cache: ipKey -> mac
@@ -74,6 +85,7 @@ export class NetworkInterface extends Observable {
         this.port = new EthernetPort(this.name);
         this.port.subscribe(this);
 
+        this._assignLinkLocal();
         this.configure(opts);
     }
 
@@ -104,12 +116,61 @@ export class NetworkInterface extends Observable {
             throw new Error("Unknown IP version");
         }
 
-        // Clear neighbor cache and add our own entry
+        // Clear neighbor cache and add our own entries
         this.neighborCache = new Map();
         this.neighborCache.set(this._ipKey(this.ip), this.mac);
+        if (this.ip6) this.neighborCache.set(this._ipKey(this.ip6), this.mac);
+        if (this.ip6LL) this.neighborCache.set(this._ipKey(this.ip6LL), this.mac);
 
         // Clear queues
         this.inQueue = [];
+    }
+
+    /**
+     * Configure the IPv6 address on this interface. Pass ip6=null to disable IPv6.
+     * @param {Object} [opts]
+     * @param {IPAddress|string|null} [opts.ip6]
+     * @param {number} [opts.prefixLength6]
+     */
+    configure6(opts = {}) {
+        if (this.ip6) this.neighborCache.delete(this._ipKey(this.ip6));
+
+        if (opts.ip6 == null) {
+            this.ip6 = null;
+            this.prefixLength6 = 0;
+            return;
+        }
+
+        const ip6 = (opts.ip6 instanceof IPAddress)
+            ? opts.ip6
+            : IPAddress.fromString(String(opts.ip6));
+        if (!ip6.isV6()) throw new Error("configure6: expected IPv6 address");
+        const pl = (opts.prefixLength6 ?? 64) | 0;
+        if (pl < 0 || pl > 128) throw new Error(`Invalid IPv6 prefixLength ${pl}`);
+        this.ip6 = ip6;
+        this.prefixLength6 = pl;
+        this.neighborCache.set(this._ipKey(ip6), this.mac);
+    }
+
+    /**
+     * Derive the link-local IPv6 address from this interface's MAC (EUI-64).
+     * Result: fe80::/64 prefix + modified EUI-64 interface ID.
+     * Called once in constructor; result never changes.
+     */
+    _assignLinkLocal() {
+        const m = this.mac;
+        const b = new Uint8Array(16);
+        b[0] = 0xfe; b[1] = 0x80;
+        // b[2..7] stay 0x00
+        b[8]  = m[0] ^ 0x02;
+        b[9]  = m[1];
+        b[10] = m[2];
+        b[11] = 0xff;
+        b[12] = 0xfe;
+        b[13] = m[3];
+        b[14] = m[4];
+        b[15] = m[5];
+        this.ip6LL = new IPAddress(6, b);
     }
 
     /**
@@ -149,8 +210,11 @@ export class NetworkInterface extends Observable {
                 break;
 
             case 0x86DD:   // IPv6
-                // TODO: implement IPv6Packet.fromBytes(...) and _handleIPv6(...)
-                console.log("IPv6 received (not implemented yet)");
+                try {
+                    this._handleIPv6(IPv6Packet.fromBytes(frame.payload));
+                } catch (e) {
+                    console.warn("IPv6 parse error:", e);
+                }
                 break;
 
             default:
@@ -197,6 +261,51 @@ export class NetworkInterface extends Observable {
     _handleIPv4(packet) {
         this.inQueue.push(packet);
         this.doUpdate();
+    }
+
+    /**
+     * @param {IPv6Packet} packet
+     */
+    _handleIPv6(packet) {
+        // Intercept NDP (NS/NA) — handle like ARP, don't pass to IP stack
+        if (packet.nextHeader === 58) {
+            try {
+                const icmp6 = ICMPv6Packet.fromBytes(packet.payload);
+                if (icmp6.type === 135 || icmp6.type === 136) {
+                    this._handleNDP(packet, icmp6);
+                    return;
+                }
+            } catch { /* ignore parse errors */ }
+        }
+        this.inQueue.push(packet);
+        this.doUpdate();
+    }
+
+    /**
+     * Handle NDP Neighbor Solicitation (135) and Advertisement (136).
+     * @param {IPv6Packet} ipv6
+     * @param {ICMPv6Packet} icmp6
+     */
+    _handleNDP(ipv6, icmp6) {
+        if (icmp6.type === 135) { // Neighbor Solicitation
+            const target = icmp6.ndpTarget;
+            if (!target) return;
+            const targetStr = target.toString();
+            const shouldRespond =
+                (this.ip6LL && targetStr === this.ip6LL.toString()) ||
+                (this.ip6   && targetStr === this.ip6.toString());
+            if (shouldRespond) {
+                const srcMac = icmp6.getLinkLayerAddress();
+                if (srcMac) this.neighborCache.set(this._ipKey(ipv6.src), srcMac);
+                this._doNDPNeighborAdvertisement(ipv6.src, srcMac, target);
+            }
+        } else if (icmp6.type === 136) { // Neighbor Advertisement
+            const target = icmp6.ndpTarget;
+            const mac    = icmp6.getLinkLayerAddress();
+            if (target && mac) {
+                this.neighborCache.set(this._ipKey(target), mac);
+            }
+        }
     }
 
     /**
@@ -283,16 +392,126 @@ export class NetworkInterface extends Observable {
     }
 
     /**
-     * IPv6 neighbor resolution via NDP (not implemented yet).
+     * IPv6 neighbor resolution via NDP (Neighbor Solicitation / Advertisement).
      * @param {IPAddress} ip
      * @returns {Promise<Uint8Array|null>}
      */
     async _resolveNdp(ip) {
-        // Hook for later:
-        // - build Neighbor Solicitation (ICMPv6 type 135)
-        // - send to solicited-node multicast
-        // - wait for Neighbor Advertisement (type 136)
-        throw new Error("IPv6 neighbor discovery (NDP) not implemented yet");
+        if (!ip.isV6()) throw new Error("NDP is IPv6-only");
+        if (!this.ip6LL && !this.ip6) throw new Error("Interface has no IPv6 address configured");
+
+        const key = this._ipKey(ip);
+        let mac = this.neighborCache.get(key) ?? null;
+        if (mac != null) return mac;
+
+        if (this._activeNeighborResolvers.includes(key)) {
+            let retries = 0;
+            while (mac == null && retries < 30) {
+                await sleep(SimControl.tick);
+                mac = this.neighborCache.get(key) ?? null;
+                retries++;
+            }
+            return mac;
+        }
+
+        this._activeNeighborResolvers.push(key);
+
+        let tries = 0;
+        while (mac == null && tries < 3) {
+            let retries = 0;
+            this._doNDPNeighborSolicitation(ip);
+            while (mac == null && retries < 10) {
+                await sleep(SimControl.tick);
+                mac = this.neighborCache.get(key) ?? null;
+                retries++;
+            }
+            tries++;
+        }
+
+        this._activeNeighborResolvers = this._activeNeighborResolvers.filter(e => e !== key);
+        return mac;
+    }
+
+    /**
+     * Compute IPv6 solicited-node multicast address: ff02::1:ffXX:XXXX (last 24 bits of target).
+     * @param {IPAddress} target
+     * @returns {IPAddress}
+     */
+    _solicitedNodeMulticast(target) {
+        const t = target.toUInt8();
+        const b = new Uint8Array(16);
+        b[0] = 0xff; b[1] = 0x02;
+        b[11] = 0x01; b[12] = 0xff;
+        b[13] = t[13]; b[14] = t[14]; b[15] = t[15];
+        return new IPAddress(6, b);
+    }
+
+    /**
+     * Multicast MAC for solicited-node address: 33:33:ff:XX:XX:XX.
+     * @param {IPAddress} target
+     * @returns {Uint8Array}
+     */
+    _solicitedNodeMulticastMac(target) {
+        const t = target.toUInt8();
+        return new Uint8Array([0x33, 0x33, 0xff, t[13], t[14], t[15]]);
+    }
+
+    /**
+     * Send Neighbor Solicitation for target.
+     * @param {IPAddress} target
+     */
+    _doNDPNeighborSolicitation(target) {
+        const snMcast    = this._solicitedNodeMulticast(target);
+        const snMcastMac = this._solicitedNodeMulticastMac(target);
+        const srcIp = this.ip6LL ?? this.ip6;
+        if (!srcIp) throw new Error("NDP requires an IPv6 address on the interface");
+
+        const ns = ICMPv6Packet.buildNS(target, this.mac);
+        const ipv6 = new IPv6Packet({
+            src: srcIp,
+            dst: snMcast,
+            nextHeader: 58,
+            hopLimit: 255,
+            payload: ns.pack(srcIp, snMcast),
+        });
+
+        const frame = new EthernetFrame({
+            dstMac: snMcastMac,
+            srcMac: this.mac,
+            etherType: 0x86DD,
+            payload: ipv6.pack(),
+        });
+
+        this.port.send(frame);
+    }
+
+    /**
+     * Send Neighbor Advertisement back to requester.
+     * @param {IPAddress} dstIp
+     * @param {Uint8Array|null} dstMac
+     */
+    _doNDPNeighborAdvertisement(dstIp, dstMac, solicitedTarget = null) {
+        const srcIp = this.ip6LL ?? this.ip6;
+        if (!srcIp) return;
+        const naTarget = solicitedTarget ?? srcIp;
+        const na = ICMPv6Packet.buildNA(naTarget, this.mac, true);
+        const ipv6 = new IPv6Packet({
+            src: srcIp,
+            dst: dstIp,
+            nextHeader: 58,
+            hopLimit: 255,
+            payload: na.pack(srcIp, dstIp),
+        });
+
+        const dstMacBytes = dstMac ?? new Uint8Array([0x33, 0x33, 0, 0, 0, 1]);
+        const frame = new EthernetFrame({
+            dstMac: dstMacBytes,
+            srcMac: this.mac,
+            etherType: 0x86DD,
+            payload: ipv6.pack(),
+        });
+
+        this.port.send(frame);
     }
 
     /**
@@ -387,8 +606,8 @@ export class NetworkInterface extends Observable {
         if (!this.ip.isV4()) throw new Error("Interface has no IPv4 address configured");
 
         const packet = new IPv4Packet({
-            dst: dstIP.toUInt8(),
-            src: this.ip.toUInt8(),
+            dst: dstIP,
+            src: this.ip,
             protocol: protocol,
             payload: payload
         });
@@ -397,20 +616,26 @@ export class NetworkInterface extends Observable {
     }
 
     /**
-     * IPv6 sender stub (not implemented yet).
      * @param {Uint8Array} dstMac
      * @param {IPAddress} dstIP
      * @param {Number} nextHeader
      * @param {Uint8Array} payload
      */
-    async _sendIPv6(dstMac, dstIP, nextHeader, payload) {
-        // TODO:
-        // - create IPv6Packet(...)
-        // - dst: dstIP.toUInt8() (16 bytes)
-        // - src: this.ip.toUInt8() (16 bytes)
-        // - nextHeader = nextHeader
-        // - sendFrame(dstMac, 0x86DD, ipv6.pack())
-        throw new Error("IPv6 send not implemented yet");
+    _sendIPv6(dstMac, dstIP, nextHeader, payload) {
+        if (!dstIP.isV6()) throw new Error("_sendIPv6 requires IPv6 dst");
+        const dstBytes = dstIP.toUInt8();
+        const isLLDst = (dstBytes[0] === 0xfe && (dstBytes[1] & 0xc0) === 0x80);
+        const srcIp = (isLLDst ? (this.ip6LL ?? this.ip6) : this.ip6) ?? this.ip6LL;
+        if (!srcIp) throw new Error("Interface has no IPv6 address configured");
+
+        const packet = new IPv6Packet({
+            dst: dstIP,
+            src: srcIp,
+            nextHeader,
+            payload,
+        });
+
+        this.sendFrame(dstMac, 0x86DD, packet.pack());
     }
 
     /**

@@ -99,6 +99,21 @@ export default {
   "app.ipv4config.err.releaseSocketFailed": "Failed to open UDP socket for release: {reason}",
   "app.ipv4config.err.releaseFailed": "DHCP release failed: {reason}",
 
+  "app.ipv4config.tab.ipv4": "IPv4",
+  "app.ipv4config.tab.ipv6": "IPv6",
+  "app.ipv4config.ipv6.sectionTitle": "IPv6 Configuration",
+  "app.ipv4config.ipv6.linklocal": "Link-local",
+  "app.ipv4config.ipv6.enable": "Enable IPv6",
+  "app.ipv4config.ipv6.address": "IPv6 Address",
+  "app.ipv4config.ipv6.prefix": "Prefix Length",
+  "app.ipv4config.ipv6.gateway": "IPv6 Gateway",
+  "app.ipv4config.ipv6.apply": "Apply IPv6",
+  "app.ipv4config.ipv6.msg.applied": "Applied IPv6 on if{i}: {ip}/{prefix}",
+  "app.ipv4config.ipv6.msg.disabled": "IPv6 disabled on if{i}.",
+  "app.ipv4config.ipv6.err.invalidAddress": "Invalid IPv6 address.",
+  "app.ipv4config.ipv6.err.invalidPrefix": "Invalid IPv6 prefix length (0–128).",
+  "app.ipv4config.ipv6.err.invalidGateway": "Invalid IPv6 gateway.",
+
   "app.packetsniffer.nointerface": "No interface",
   "app.packetsniffer.title": "Packet Sniffer",
   "app.packetsniffer.unnamed": "Unnamed",
@@ -120,6 +135,7 @@ export default {
   "app.simplehttpserver.label.port": "Port",
   "app.simplehttpserver.label.docRoot": "Document Root",
   "app.simplehttpserver.label.log": "Log:",
+  "app.simplehttpserver.label.server": "Server",
 
   "app.simplehttpserver.status.pid": "PID: {pid}",
   "app.simplehttpserver.status.running": "Running: {running}",
@@ -158,6 +174,7 @@ export default {
   "app.simplemailserver.placeholder.user": "user",
   "app.simplemailserver.placeholder.password": "password",
 
+  "app.simplemailserver.label.server": "Server",
   "app.simplemailserver.label.domain": "Maildomain",
   "app.simplemailserver.label.smtpPort": "SMTP port",
   "app.simplemailserver.label.pop3Port": "POP3 port",
@@ -230,6 +247,7 @@ export default {
   "app.simpletcpclient.label.port": "Port",
   "app.simpletcpclient.label.chat": "Chat:",
   "app.simpletcpclient.label.message": "Message",
+  "app.simpletcpclient.label.connection": "Connection",
 
   "app.simpletcpclient.status.connected": "Connected: {connected}",
   "app.simpletcpclient.status.peer": "Peer: {peer}",
@@ -257,6 +275,7 @@ export default {
 
   "app.simpletcpserver.label.listenPort": "Server-Port",
   "app.simpletcpserver.label.log": "Log:",
+  "app.simpletcpserver.label.server": "Server",
 
   "app.simpletcpserver.status.running": "Running: {running}",
   "app.simpletcpserver.status.port": "Port: {port}",
@@ -363,7 +382,7 @@ export default {
   "app.sparktail.log.httpOk": "[{time}] HTTP {statusCode} {reason} (body={bytes} bytes)",
 
   "app.terminal.title": "Terminal",
-  "app.terminal.welcome": "Welcome to {host}",
+  "app.terminal.welcome": "🦫 - BeaverOS - Welcome to {host}",
   "app.terminal.hintHelp": "Use the command \"{cmd}\" to get a list of known commands.",
   "app.terminal.err.commandNotFound": "command not found: {cmd}",
   "app.terminal.err.errorPrefix": "error: {msg}",
@@ -438,6 +457,7 @@ export default {
   "app.terminal.commands.ip.out.netmaskLabel": "netmask",
   "app.terminal.commands.ip.out.ifaceLine": "{idx}: {name}  {state}",
   "app.terminal.commands.ip.out.inetLine": "    {inetLabel} {ip}  {netmaskLabel} {netmask}",
+  "app.terminal.commands.ip.out.inet6Line": "    inet6 {ip}  scope {scope}",
   "app.terminal.commands.ip.out.okSet": "ok: {iface} = {ip}/{prefix}",
 
   "app.terminal.commands.ping.usage": "usage: ping [-c count] [-i interval] [-W timeout] <host>",
@@ -522,6 +542,7 @@ export default {
 
   "app.udpechoserver.label.listenPort": "Listen Port",
   "app.udpechoserver.label.log": "Log:",
+  "app.udpechoserver.label.server": "Server",
 
   "app.udpechoserver.log.invalidPort": "[{time}] ERROR invalid port: \"{portStr}\"",
   "app.udpechoserver.log.listening": "[{time}] Listening on 0.0.0.0:{port}",
@@ -538,6 +559,8 @@ export default {
   "os.untitled": "Untitled",
 
   "panel.close": "Close",
+  "panel.rename": "Rename",
+  "panel.rename.prompt": "New name:",
 
   "pc.title": "PC",
 
@@ -574,6 +597,7 @@ export default {
   "router.routingtable.no": "no",
   "router.routingtable.yes": "yes",
   "router.routingtable.missing": "missing",
+  "router.routingtable.prefix": "Prefix",
 
   "sim.common": "Common",
   "sim.new": "New",
@@ -609,6 +633,8 @@ export default {
   "sim.tool.delete": "Delete",
 
   "sim.link.error": "Error creating link.",
+  "sim.link.error.noFreePort": "No free port available.",
+  "sim.link.error.portInUse": "Port is already in use.",
   
   "switch.title": "Switch",
   "switch.genericsettings": "Common settings",

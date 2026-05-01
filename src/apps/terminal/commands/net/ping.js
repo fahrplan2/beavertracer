@@ -110,13 +110,6 @@ export const ping = {
 
     if (!dstIp) return t("app.terminal.commands.ping.err.cannotResolve", { host });
 
-    // For now your stack is IPv4-only; keep a clear error
-    if (!dstIp.isV4()) {
-      return t("app.terminal.commands.ping.err.ipv6NotSupportedYet", { host });
-      // If you don't have this i18n key yet, replace with a simple string:
-      // return "IPv6 is not supported yet.";
-    }
-
     const dstStr = dstIp.toString();
     const identifier = (Math.random() * 0xffff) | 0;
 
@@ -138,7 +131,10 @@ export const ping = {
       try {
         const payload = new Uint8Array(56);
 
-        const res = await ipf.icmpEcho(dstIp, {
+        const echoFn = dstIp.isV4() ? ipf.icmpEcho.bind(ipf) : ipf.icmpv6Echo?.bind(ipf);
+        if (!echoFn) throw new Error("IPv6 not supported");
+
+        const res = await echoFn(dstIp, {
           timeoutMs,
           identifier,
           sequence: seq & 0xffff,

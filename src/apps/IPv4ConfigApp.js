@@ -41,6 +41,18 @@ export class IPv4ConfigApp extends GenericProcess {
   /** @type {HTMLButtonElement|null} */ releaseBtn = null;
   lastDhcpServerByIface = new Map();
 
+  // IPv6 tab fields
+  /** @type {HTMLElement|null} */ _ipv4Section = null;
+  /** @type {HTMLElement|null} */ _ipv6Section = null;
+  /** @type {HTMLButtonElement|null} */ _tab4 = null;
+  /** @type {HTMLButtonElement|null} */ _tab6 = null;
+  /** @type {number} */ _selectedFamily = 4;
+  /** @type {HTMLElement|null} */ _ip6LLEl = null;
+  /** @type {HTMLInputElement|null} */ _ip6EnableCb = null;
+  /** @type {HTMLInputElement|null} */ _ip6El = null;
+  /** @type {HTMLInputElement|null} */ _prefix6El = null;
+  /** @type {HTMLInputElement|null} */ _gw6El = null;
+
   /** @type {Disposer} */
   disposer = new Disposer();
 
@@ -96,11 +108,14 @@ export class IPv4ConfigApp extends GenericProcess {
     const msg = UILib.el("div", { className: "msg" });
     this.msgEl = msg;
 
+    // --- Shared: interface selector ---
     const ifSel = UILib.select(
       ifs.map((itf, i) => ({ value: String(i), label: `${i} – ${itf?.name ?? `if${i}`}` })),
       {}
     );
+    this.ifSel = ifSel;
 
+    // --- IPv4 content ---
     const modeSel = UILib.select(
       [
         { value: "static", label: t("app.ipv4config.mode.static") },
@@ -108,76 +123,117 @@ export class IPv4ConfigApp extends GenericProcess {
       ],
       {}
     );
-
     const ipEl = UILib.input({ placeholder: "192.168.0.10" });
     const prefixEl = UILib.input({ placeholder: "24" });
     const gwEl = UILib.input({ placeholder: "192.168.0.1" });
     const dnsEl = UILib.input({ placeholder: "8.8.8.8" });
-
-    this.ifSel = ifSel;
+    const applyBtn = UILib.button(t("app.ipv4config.button.apply"), () => this._apply(), { primary: true });
+    const releaseBtn = UILib.button(t("app.ipv4config.button.release"), () => this._releaseDhcp(), {});
     this.modeSel = modeSel;
     this.ipEl = ipEl;
     this.prefixEl = prefixEl;
     this.gwEl = gwEl;
     this.dnsEl = dnsEl;
-
-    const applyBtn = UILib.button(t("app.ipv4config.button.apply"), () => this._apply(), { primary: true });
-    const releaseBtn = UILib.button(t("app.ipv4config.button.release"), () => this._releaseDhcp(), {});
     this.releaseBtn = releaseBtn;
 
-    const panel = UILib.panel([
-      UILib.row(t("app.ipv4config.label.interface"), ifSel),
+    const ipv4Section = UILib.el("div", { children: [
+      UILib.el("h4", { text: t("app.ipv4config.title") }),
       UILib.row(t("app.ipv4config.label.mode"), modeSel),
-
       UILib.row(t("app.ipv4config.label.ip"), ipEl),
       UILib.row(t("app.ipv4config.label.prefixLength"), prefixEl),
-
       UILib.row(t("app.ipv4config.label.gateway"), gwEl),
       UILib.row(t("app.ipv4config.label.dnsServer"), dnsEl),
-
       UILib.buttonRow([applyBtn, releaseBtn]),
+    ]});
+    this._ipv4Section = ipv4Section;
+
+    // --- IPv6 content ---
+    const ip6LLEl = UILib.el("span", {});
+    const ip6EnableCb = /** @type {HTMLInputElement} */ (UILib.el("input", { attrs: { type: "checkbox" } }));
+    const ip6El = UILib.input({ placeholder: "2001:db8::1" });
+    const prefix6El = UILib.input({ placeholder: "64" });
+    const gw6El = UILib.input({ placeholder: "fe80::1" });
+    const applyBtn6 = UILib.button(t("app.ipv4config.ipv6.apply"), () => this._applyIPv6(), { primary: true });
+    this._ip6LLEl = ip6LLEl;
+    this._ip6EnableCb = ip6EnableCb;
+    this._ip6El = ip6El;
+    this._prefix6El = prefix6El;
+    this._gw6El = gw6El;
+
+    const ipv6Section = UILib.el("div", { children: [
+      UILib.el("h4", { text: t("app.ipv4config.ipv6.sectionTitle") }),
+      UILib.row(t("app.ipv4config.ipv6.linklocal"), ip6LLEl),
+      UILib.row(t("app.ipv4config.ipv6.enable"), ip6EnableCb),
+      UILib.row(t("app.ipv4config.ipv6.address"), ip6El),
+      UILib.row(t("app.ipv4config.ipv6.prefix"), prefix6El),
+      UILib.row(t("app.ipv4config.ipv6.gateway"), gw6El),
+      UILib.buttonRow([applyBtn6]),
+    ]});
+    this._ipv6Section = ipv6Section;
+
+    // --- Family tab bar ---
+    const tab4 = UILib.button(t("app.ipv4config.tab.ipv4"), () => this._selectFamily(4), {});
+    const tab6 = UILib.button(t("app.ipv4config.tab.ipv6"), () => this._selectFamily(6), {});
+    this._tab4 = tab4;
+    this._tab6 = tab6;
+    const tabBar = UILib.el("div", { className: "ipconf-family-tabs", children: [tab4, tab6] });
+
+    // --- Build panel ---
+    const panel = UILib.panel([
+      UILib.el("h4", { text: t("app.ipv4config.label.interface") }),
+      UILib.row(t("app.ipv4config.label.interface"), ifSel),
+      tabBar,
+      ipv4Section,
+      ipv6Section,
       msg,
     ]);
 
     this.root.replaceChildren(panel);
 
+    // Wire events
     this.disposer.on(ifSel, "change", async () => {
       this._load();
       await this._loadModeForIfaceAndShow();
       this._syncModeUI();
+      this._loadIPv6();
+      this._syncIPv6UI();
     });
 
     this.disposer.on(modeSel, "change", async () => {
       const prev = (this.persisted.modeByIface[String(this._idx())] ?? "static");
       await this._persistModeForCurrentIface();
-
       const now = this._mode();
       if (prev === "static" && now === "dhcp") {
         this._dropInterfaceForDhcp(this._idx());
       }
-
       this._syncModeUI();
     });
+
+    this.disposer.on(ip6EnableCb, "change", () => this._syncIPv6UI());
 
     if (ifs.length === 0) {
       this._setMsg(t("app.ipv4config.msg.noInterfaces"));
       applyBtn.disabled = true;
+      this._selectFamily(4);
       return;
     }
 
     ifSel.value = "0";
-
     await this._loadPersistedConfig();
-
     this._load();
     await this._loadModeForIfaceAndShow();
     this._syncModeUI();
+    this._loadIPv6();
+    this._syncIPv6UI();
+    this._selectFamily(4);
   }
 
   onUnmount() {
     this.disposer.dispose();
     this.ifSel = this.modeSel = this.ipEl = this.prefixEl = this.gwEl = this.dnsEl = null;
     this.msgEl = null;
+    this._ipv4Section = this._ipv6Section = this._tab4 = this._tab6 = null;
+    this._ip6LLEl = this._ip6EnableCb = this._ip6El = this._prefix6El = this._gw6El = null;
     super.onUnmount();
   }
 
@@ -210,6 +266,97 @@ export class IPv4ConfigApp extends GenericProcess {
 
     if (dhcp && !this.applying) {
       this._setMsg(t("app.ipv4config.msg.dhcpModeHint"));
+    }
+  }
+
+  /** @param {4|6} f */
+  _selectFamily(f) {
+    this._selectedFamily = f;
+    if (this._ipv4Section) this._ipv4Section.style.display = (f === 4) ? "" : "none";
+    if (this._ipv6Section) this._ipv6Section.style.display = (f === 6) ? "" : "none";
+    if (this._tab4) this._tab4.classList.toggle("is-active", f === 4);
+    if (this._tab6) this._tab6.classList.toggle("is-active", f === 6);
+  }
+
+  _loadIPv6() {
+    const net = this.os.net;
+    if (!net?.interfaces) return;
+    const i = this._idx();
+    const itf = net.interfaces[i];
+    if (!itf) return;
+
+    if (this._ip6LLEl) {
+      this._ip6LLEl.textContent = (itf.ip6LL instanceof IPAddress) ? itf.ip6LL.toString() : "–";
+    }
+
+    const hasGlobal = (itf.ip6 instanceof IPAddress && !itf.ip6.toUInt8().every(b => b === 0));
+    if (this._ip6EnableCb) this._ip6EnableCb.checked = hasGlobal;
+    if (this._ip6El) this._ip6El.value = hasGlobal ? itf.ip6.toString() : "";
+    if (this._prefix6El) this._prefix6El.value = hasGlobal ? String(itf.prefixLength6 ?? 64) : "";
+
+    const gw6 = getDefaultGatewayIPv6ForIface(net, i);
+    if (this._gw6El) this._gw6El.value = gw6 ? gw6.toString() : "";
+  }
+
+  _syncIPv6UI() {
+    const enabled = this._ip6EnableCb?.checked ?? false;
+    if (this._ip6El)      this._ip6El.disabled      = !enabled;
+    if (this._prefix6El)  this._prefix6El.disabled  = !enabled;
+    if (this._gw6El)      this._gw6El.disabled       = !enabled;
+  }
+
+  async _applyIPv6() {
+    const net = this.os.net;
+    if (!net) return this._setMsg(t("app.ipv4config.err.noNetDriver"));
+    const i = this._idx();
+
+    try {
+      const enabled = this._ip6EnableCb?.checked ?? false;
+
+      if (!enabled) {
+        net.configureInterface(i, { ip6: null, prefixLength6: 0 });
+        clearDefaultGatewayIPv6ForIface(net, i);
+        this._setMsg(t("app.ipv4config.ipv6.msg.disabled", { i }));
+        return;
+      }
+
+      const ipStr    = (this._ip6El?.value      ?? "").trim();
+      const prefixStr = (this._prefix6El?.value ?? "").trim();
+      const gwStr    = (this._gw6El?.value       ?? "").trim();
+
+      /** @type {IPAddress} */
+      let ip6;
+      try {
+        ip6 = IPAddress.fromString(ipStr);
+        if (!ip6.isV6()) throw new Error("not IPv6");
+      } catch {
+        return this._setMsg(t("app.ipv4config.ipv6.err.invalidAddress"));
+      }
+
+      const prefix6 = Number(prefixStr);
+      if (!Number.isInteger(prefix6) || prefix6 < 0 || prefix6 > 128) {
+        return this._setMsg(t("app.ipv4config.ipv6.err.invalidPrefix"));
+      }
+
+      /** @type {IPAddress|null} */
+      let gw6 = null;
+      if (gwStr !== "") {
+        try {
+          gw6 = IPAddress.fromString(gwStr);
+          if (!gw6.isV6()) throw new Error("not IPv6");
+        } catch {
+          return this._setMsg(t("app.ipv4config.ipv6.err.invalidGateway"));
+        }
+      }
+
+      net.configureInterface(i, { ip6, prefixLength6: prefix6 });
+      clearDefaultGatewayIPv6ForIface(net, i);
+      if (gw6 != null) net.addRoute(IPAddress.fromString("::"), 0, i, gw6);
+
+      this._setMsg(t("app.ipv4config.ipv6.msg.applied", { i, ip: ip6.toString(), prefix: prefix6 }));
+    } catch (e) {
+      const reason = (e instanceof Error ? e.message : String(e));
+      this._setMsg(t("app.ipv4config.err.applyFailed", { reason }));
     }
   }
 
@@ -781,6 +928,52 @@ function netmask32ToPrefix(mask32) {
  */
 function getRoutes(net) {
   return Array.isArray(net?.routingTable) ? net.routingTable : [];
+}
+
+/**
+ * Default IPv6 gateway route is ::/0 on ifaceIdx.
+ * @param {any} net
+ * @param {number} ifaceIdx
+ * @returns {IPAddress|null}
+ */
+function getDefaultGatewayIPv6ForIface(net, ifaceIdx) {
+  const routes = getRoutes(net);
+  for (const r of routes) {
+    const dst = r?.dst;
+    if (!(dst instanceof IPAddress) || !dst.isV6()) continue;
+    if (dst.toUInt8().some(b => b !== 0)) continue;
+    if ((r?.prefixLength | 0) !== 0) continue;
+    if (r?.interf !== ifaceIdx) continue;
+    const nh = r?.nexthop;
+    if (nh instanceof IPAddress) return nh;
+    return null;
+  }
+  return null;
+}
+
+/**
+ * Clear all default IPv6 routes ::/0 for ifaceIdx.
+ * @param {any} net
+ * @param {number} ifaceIdx
+ */
+function clearDefaultGatewayIPv6ForIface(net, ifaceIdx) {
+  const matching = getRoutes(net).filter(r => {
+    const dst = r?.dst;
+    if (!(dst instanceof IPAddress) || !dst.isV6()) return false;
+    if (dst.toUInt8().some(b => b !== 0)) return false;
+    if ((r?.prefixLength | 0) !== 0) return false;
+    return r?.interf === ifaceIdx;
+  });
+
+  const zero6 = IPAddress.fromString("::");
+  for (const r of matching) {
+    const nh = (r?.nexthop instanceof IPAddress) ? r.nexthop : IPAddress.fromString("::");
+    try {
+      net.delRoute(zero6, 0, ifaceIdx, nh);
+    } catch {
+      try { net.delRoute(zero6, 0, ifaceIdx); } catch { }
+    }
+  }
 }
 
 /**

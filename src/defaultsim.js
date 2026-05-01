@@ -367,7 +367,7 @@ export const defaultSimulation = {
     {
       "kind": "Switch",
       "id": 17,
-      "name": "Switch",
+      "name": "Switch 1",
       "x": 190.93333435058594,
       "y": 215,
       "px": 220,
@@ -493,7 +493,7 @@ export const defaultSimulation = {
     {
       "kind": "Switch",
       "id": 19,
-      "name": "Switch",
+      "name": "Switch 2",
       "x": 605.9329833984375,
       "y": 217,
       "px": 220,
@@ -619,7 +619,7 @@ export const defaultSimulation = {
     {
       "kind": "Router",
       "id": 25,
-      "name": "Router",
+      "name": "Router 1",
       "x": 405.9330139160156,
       "y": 216,
       "px": 220,

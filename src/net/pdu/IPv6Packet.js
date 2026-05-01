@@ -1,6 +1,7 @@
 //@ts-check
 
 import { assertLenU8 } from "../../lib/helpers.js";
+import { IPAddress } from "../models/IPAddress.js";
 
 export class IPv6Packet {
 
@@ -39,8 +40,8 @@ export class IPv6Packet {
    * @param {number} [opts.payloadLength] 16-bit payload length (default auto from payload)
    * @param {number} [opts.nextHeader] 8-bit next header (default 59 = No Next Header)
    * @param {number} [opts.hopLimit] 8-bit hop limit (default 64)
-   * @param {Uint8Array} [opts.src] source IPv6 (length 16)
-   * @param {Uint8Array} [opts.dst] destination IPv6 (length 16)
+   * @param {IPAddress} [opts.src] source IPv6
+   * @param {IPAddress} [opts.dst] destination IPv6
    * @param {Uint8Array} [opts.payload] payload bytes (default empty)
    */
   constructor(opts = {}) {
@@ -55,8 +56,8 @@ export class IPv6Packet {
     this.nextHeader = (opts.nextHeader ?? 59) & 0xff; // 59 = No Next Header
     this.hopLimit = (opts.hopLimit ?? 64) & 0xff;
 
-    this.src = opts.src ? assertLenU8(opts.src, 16, "src") : new Uint8Array(16);
-    this.dst = opts.dst ? assertLenU8(opts.dst, 16, "dst") : new Uint8Array(16);
+    this.src = (opts.src instanceof IPAddress) ? opts.src : IPAddress.fromString("::");
+    this.dst = (opts.dst instanceof IPAddress) ? opts.dst : IPAddress.fromString("::");
 
     this.payload = opts.payload ? opts.payload : new Uint8Array(0);
 
@@ -90,8 +91,8 @@ export class IPv6Packet {
     const nextHeader = bytes[6];
     const hopLimit = bytes[7];
 
-    const src = bytes.slice(8, 24);
-    const dst = bytes.slice(24, 40);
+    const src = IPAddress.fromUInt8(bytes.slice(8, 24));
+    const dst = IPAddress.fromUInt8(bytes.slice(24, 40));
 
     const totalLen = 40 + payloadLength;
     if (bytes.length < totalLen) {
@@ -147,8 +148,8 @@ export class IPv6Packet {
     out[7] = this.hopLimit & 0xff;
 
     // src/dst
-    out.set(this.src, 8);
-    out.set(this.dst, 24);
+    out.set(this.src.toUInt8(), 8);
+    out.set(this.dst.toUInt8(), 24);
 
     // payload
     if (this.payload.length > 0) out.set(this.payload, 40);
@@ -174,8 +175,8 @@ export class IPv6Packet {
       throw new Error("hopLimit must be 0..255");
     }
 
-    assertLenU8(this.src, 16, "src");
-    assertLenU8(this.dst, 16, "dst");
+    if (!(this.src instanceof IPAddress)) throw new Error("src must be an IPAddress");
+    if (!(this.dst instanceof IPAddress)) throw new Error("dst must be an IPAddress");
 
     if (!(this.payload instanceof Uint8Array)) {
       throw new Error("payload must be Uint8Array");

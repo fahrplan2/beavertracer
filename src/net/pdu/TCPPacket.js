@@ -149,12 +149,12 @@ export class TCPPacket {
   /**
    * Pack TCP segment into bytes.
    *
-   * If checksum == 0 and srcIp/dstIp are provided, checksum will be computed.
+   * If checksum == 0 and srcIp/dstIp are provided, checksum will be computed (IPv4 only for now).
    * If checksum == 0 and srcIp/dstIp are NOT provided, checksum remains 0.
    *
    * @param {object} [opts]
-   * @param {Uint8Array} [opts.srcIp] source IPv4 (length 4) for pseudo-header
-   * @param {Uint8Array} [opts.dstIp] destination IPv4 (length 4) for pseudo-header
+   * @param {import("../models/IPAddress.js").IPAddress | Uint8Array} [opts.srcIp] for pseudo-header
+   * @param {import("../models/IPAddress.js").IPAddress | Uint8Array} [opts.dstIp] for pseudo-header
    * @returns {Uint8Array}
    */
   pack(opts = {}) {
@@ -217,11 +217,16 @@ export class TCPPacket {
     // checksum
     let cs = this.checksum & 0xffff;
     if (cs === 0) {
-      const srcIp = opts.srcIp;
-      const dstIp = opts.dstIp;
-      if (srcIp && dstIp) {
-        cs = TCPPacket.computeChecksumIPv4Pseudo(seg, srcIp, dstIp);
-      } // else keep 0
+      const rawSrc = opts.srcIp;
+      const rawDst = opts.dstIp;
+      if (rawSrc && rawDst) {
+        const srcBytes = (rawSrc instanceof Uint8Array) ? rawSrc : rawSrc.toUInt8();
+        const dstBytes = (rawDst instanceof Uint8Array) ? rawDst : rawDst.toUInt8();
+        if (srcBytes.length === 4 && dstBytes.length === 4) {
+          cs = TCPPacket.computeChecksumIPv4Pseudo(seg, srcBytes, dstBytes);
+        }
+        // IPv6 pseudo-header: TODO Phase 3
+      }
     }
 
     seg[16] = (cs >> 8) & 0xff;

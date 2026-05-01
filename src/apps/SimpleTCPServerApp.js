@@ -4,31 +4,52 @@ import { GenericProcess } from "./GenericProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
 import { Disposer } from "../lib/Disposer.js";
 import { t } from "../i18n/index.js";
-import { hexPreview, ipToString, nowStamp } from "../lib/helpers.js";
+import { hexPreview, nowStamp } from "../lib/helpers.js";
 import { IPAddress } from "../net/models/IPAddress.js";
 
+/**
+ * Split "host:port" where host may be an IPv6 address (no brackets needed).
+ * Uses last-colon heuristic: last colon separates port from the rest.
+ * @param {string} s
+ * @returns {{ host: string, port: number, ok: boolean }}
+ */
+function splitHostPort(s) {
+  const str = String(s ?? "").trim();
+  // bracketed IPv6: [..]:port
+  const bm = /^\[([^\]]+)\]:(\d+)$/.exec(str);
+  if (bm) return { host: bm[1], port: Number(bm[2]) | 0, ok: true };
+
+  const lastColon = str.lastIndexOf(":");
+  if (lastColon > 0 && lastColon < str.length - 1) {
+    const port = Number(str.slice(lastColon + 1));
+    if (Number.isInteger(port) && port >= 0 && port <= 65535) {
+      return { host: str.slice(0, lastColon), port: port | 0, ok: true };
+    }
+  }
+  return { host: str, port: 0, ok: false };
+}
 
 /**
- * Parses your conn key format: `${localIP}:${localPort}>${remoteIP}:${remotePort}`
+ * Parse a TCP connection key produced by TcpEngine._tcpKey().
+ * Supports both legacy uint32 format and current IP-string format.
  * @param {string} key
+ * @returns {{ remoteIP: string, remotePort: number, ok: boolean }}
  */
 function parseTCPKey(key) {
-  // example: "3232235530:12345>3232235521:54321"
-  const m = /^(\d+):(\d+)>(\d+):(\d+)$/.exec(key);
-  if (!m) {
-    return {
-      localIP: 0, localPort: 0,
-      remoteIP: 0, remotePort: 0,
-      ok: false
-    };
+  const parts = String(key ?? "").split(">");
+  if (parts.length !== 2) return { remoteIP: "", remotePort: 0, ok: false };
+
+  const remote = splitHostPort(parts[1]);
+  if (!remote.ok) return { remoteIP: "", remotePort: 0, ok: false };
+
+  // Legacy uint32 fallback
+  let remoteIP = remote.host;
+  if (/^\d+$/.test(remoteIP)) {
+    const n = Number(remoteIP) >>> 0;
+    remoteIP = `${(n >>> 24) & 255}.${(n >>> 16) & 255}.${(n >>> 8) & 255}.${n & 255}`;
   }
-  return {
-    localIP: Number(m[1]) >>> 0,
-    localPort: Number(m[2]) | 0,
-    remoteIP: Number(m[3]) >>> 0,
-    remotePort: Number(m[4]) | 0,
-    ok: true
-  };
+
+  return { remoteIP, remotePort: remote.port, ok: true };
 }
 
 export class SimpleTCPServerApp extends GenericProcess {
@@ -52,7 +73,7 @@ export class SimpleTCPServerApp extends GenericProcess {
   /** @type {Array<string>} */
   log = [];
 
-  /** @type {HTMLTextAreaElement|null} */
+  /** @type {HTMLElement|null} */
   logEl = null;
 
   /** @type {HTMLInputElement|null} */
@@ -92,20 +113,17 @@ export class SimpleTCPServerApp extends GenericProcess {
     this.startBtn = start;
     this.stopBtn = stop;
 
-    const logBox = UI.textarea({ 
-        className: "log" ,
-        spellcheck: "false",
-        readonly: "true",
-      });
+    const logBox = UI.el("div", { className: "msg" });
     this.logEl = logBox;
 
     const status = UI.el("div", { className: "msg" });
 
     const panel = UI.panel([
+      UI.el("h4", { text: t("app.simpletcpserver.label.server") }),
       UI.row(t("app.simpletcpserver.label.listenPort"), portInput),
       UI.buttonRow([start, stop, clear]),
       status,
-      UI.el("div", { text: t("app.simpletcpserver.label.log") }),
+      UI.el("h4", { text: t("app.simpletcpserver.label.log") }),
       logBox,
     ]);
 
@@ -146,7 +164,7 @@ export class SimpleTCPServerApp extends GenericProcess {
     if (!this.logEl) return;
     const maxLines = 200;
     const lines = this.log.length > maxLines ? this.log.slice(-maxLines) : this.log;
-    this.logEl.value = lines.join("\n");
+    this.logEl.textContent = lines.join("\n");
     this.logEl.scrollTop = this.logEl.scrollHeight;
   }
 
@@ -174,7 +192,7 @@ export class SimpleTCPServerApp extends GenericProcess {
     if (this.running) return;
 
     try {
-      const port = this.os.net.openTCPServerSocket(new IPAddress(4,0), this.port);
+      const port = this.os.net.openTCPServerSocket(IPAddress.fromString("::"), this.port);
       this.listenPort = port;
       this.running = true;
 
@@ -238,9 +256,7 @@ export class SimpleTCPServerApp extends GenericProcess {
       this.conns.add(key);
 
       const info = parseTCPKey(key);
-      const who = info.ok
-        ? `${ipToString(info.remoteIP)}:${info.remotePort}`
-        : key;
+      const who = info.ok ? `${info.remoteIP}:${info.remotePort}` : key;
 
       this._appendLog(t("app.simpletcpserver.log.connect", { time: nowStamp(), who }));
 
@@ -259,7 +275,7 @@ export class SimpleTCPServerApp extends GenericProcess {
    */
   async _connEchoLoop(key) {
     const info = parseTCPKey(key);
-    const who = info.ok ? `${ipToString(info.remoteIP)}:${info.remotePort}` : key;
+    const who = info.ok ? `${info.remoteIP}:${info.remotePort}` : key;
 
     try {
       while (this.running) {

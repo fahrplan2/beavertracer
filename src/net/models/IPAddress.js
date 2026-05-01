@@ -87,15 +87,21 @@ export class IPAddress {
   }
 
   /**
-   * @param {Uint8Array} bytes
+   * @param {Uint8Array} bytes — 4 bytes for IPv4, 16 bytes for IPv6
    * @returns {IPAddress}
    */
   static fromUInt8(bytes) {
-    if (!(bytes instanceof Uint8Array) || bytes.length !== 4) {
-      throw new TypeError("fromUInt8 expects Uint8Array(4) for IPv4");
+    if (!(bytes instanceof Uint8Array)) {
+      throw new TypeError("fromUInt8 expects Uint8Array(4) or Uint8Array(16)");
     }
-    const n = (((bytes[0] << 24) | (bytes[1] << 16) | (bytes[2] << 8) | bytes[3]) >>> 0);
-    return new IPAddress(4, n);
+    if (bytes.length === 4) {
+      const n = (((bytes[0] << 24) | (bytes[1] << 16) | (bytes[2] << 8) | bytes[3]) >>> 0);
+      return new IPAddress(4, n);
+    }
+    if (bytes.length === 16) {
+      return new IPAddress(6, bytes);
+    }
+    throw new TypeError("fromUInt8 expects Uint8Array(4) for IPv4 or Uint8Array(16) for IPv6");
   }
 
   // ---------- helpers ----------

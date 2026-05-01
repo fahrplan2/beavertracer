@@ -36,7 +36,7 @@ function netmaskToPrefix32(maskNum) {
 }
 
 /**
- * Parse "A.B.C.D/len" -> { dstIp: IPAddress(v4), prefix }
+ * Parse "address/len" — supports both IPv4 and IPv6.
  * @param {string} s
  * @returns {{ dstIp: IPAddress, prefix: number } | null}
  */
@@ -44,13 +44,21 @@ function parseCidr(s) {
   const m = /^(.+?)\/(\d+)$/.exec(String(s ?? "").trim());
   if (!m) return null;
 
-  const ipNum = ipStringToNumber(m[1]);
-  const prefix = Number(m[2]);
-  if (ipNum == null || !Number.isFinite(prefix)) return null;
+  let dstIp;
+  try {
+    dstIp = IPAddress.fromString(m[1].trim());
+  } catch {
+    // fallback: try legacy ipStringToNumber for plain dotted-quad without constructor
+    const ipNum = ipStringToNumber(m[1]);
+    if (ipNum == null) return null;
+    dstIp = new IPAddress(4, u32(ipNum));
+  }
 
-  const p = Math.max(0, Math.min(32, prefix | 0));
-  // Create v4 IPAddress
-  const dstIp = new IPAddress(4, u32(ipNum));
+  const prefix = Number(m[2]);
+  if (!Number.isFinite(prefix)) return null;
+
+  const maxPfx = dstIp.isV4() ? 32 : 128;
+  const p = Math.max(0, Math.min(maxPfx, prefix | 0));
   return { dstIp, prefix: p };
 }
 
@@ -93,23 +101,30 @@ function parseIfSel(ipf, ifSel) {
 }
 
 /**
- * Make a v4 IPAddress from "a.b.c.d" or from numeric string fallback.
+ * Parse an IP address string (IPv4 or IPv6).
+ * @param {string} s
+ * @returns {IPAddress|null}
+ */
+function parseIpAddress(s) {
+  const txt = String(s ?? "").trim();
+  // try dotted-quad fast path first
+  const n = ipStringToNumber(txt);
+  if (n != null) return new IPAddress(4, u32(n));
+  try {
+    return IPAddress.fromString(txt);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Make a v4 IPAddress from "a.b.c.d" (kept for legacy callers).
  * @param {string} s
  * @returns {IPAddress|null}
  */
 function parseV4IpAddress(s) {
-  const txt = String(s ?? "").trim();
-  // prefer dotted
-  const n = ipStringToNumber(txt);
-  if (n != null) return new IPAddress(4, u32(n));
-  // allow already "IPAddress string" (in case you later accept IPv6)
-  try {
-    const ip = IPAddress.fromString(txt);
-    if (!ip.isV4()) return null;
-    return ip;
-  } catch {
-    return null;
-  }
+  const ip = parseIpAddress(s);
+  return (ip && ip.isV4()) ? ip : null;
 }
 
 /** @type {import("../types.js").Command} */
@@ -129,22 +144,28 @@ export const route = {
       ctx.println(t("app.terminal.commands.route.out.tableHeader"));
 
       for (const r of rt) {
-        const dst = (r?.dst instanceof IPAddress) ? r.dst : parseV4IpAddress(String(r?.dst ?? "0.0.0.0"));
-        const nm  = (r?.netmask instanceof IPAddress) ? r.netmask : parseV4IpAddress(String(r?.netmask ?? "0.0.0.0"));
-        const nh  = (r?.nexthop instanceof IPAddress) ? r.nexthop : parseV4IpAddress(String(r?.nexthop ?? "0.0.0.0"));
+        const dst = (r?.dst instanceof IPAddress) ? r.dst : parseIpAddress(String(r?.dst ?? "0.0.0.0"));
+        const nh  = (r?.nexthop instanceof IPAddress) ? r.nexthop : parseIpAddress(String(r?.nexthop ?? "0.0.0.0"));
 
-        const dstStr = dst ? dst.toString() : "0.0.0.0";
-        const maskNum = nm && nm.isV4() ? (nm.getNumber() >>> 0) : 0;
-        const pfx = netmaskToPrefix32(maskNum);
+        const dstStr = dst ? dst.toString() : "?";
+        // Use prefixLength directly (new model) — fall back to netmask for legacy data
+        let pfx;
+        if (typeof r?.prefixLength === "number") {
+          pfx = r.prefixLength;
+        } else if (r?.netmask instanceof IPAddress && r.netmask.isV4()) {
+          pfx = netmaskToPrefix32(/** @type {number} */ (r.netmask.getNumber()) >>> 0);
+        } else {
+          pfx = null;
+        }
         const dstCidr = `${dstStr}/${pfx == null ? "?" : String(pfx)}`;
 
-        const gwStr = nh ? nh.toString() : "0.0.0.0";
+        const nhDefault = dst?.isV6?.() ? "::" : "0.0.0.0";
+        const gwStr = nh ? nh.toString() : nhDefault;
         const ifn = ifaceName(ipf, Number(r?.interf ?? 0));
         const auto = (r?.auto ? t("app.terminal.commands.route.out.autoYes") : t("app.terminal.commands.route.out.autoNo"));
 
-        // padEnd: keep it simple even if strings longer
         ctx.println(
-          `${dstCidr.padEnd(22)} ${gwStr.padEnd(18)} ${ifn.padEnd(6)} ${auto}`
+          `${dstCidr.padEnd(26)} ${gwStr.padEnd(22)} ${ifn.padEnd(6)} ${auto}`
         );
       }
       return;
@@ -166,17 +187,14 @@ export const route = {
       const parsed = parseCidr(cidr);
       if (!parsed) return t("app.terminal.commands.route.err.invalidDestinationCidr");
 
-      const gwIp = parseV4IpAddress(gwStr);
+      const gwIp = parseIpAddress(gwStr);
       if (!gwIp) return t("app.terminal.commands.route.err.invalidGatewayIp");
 
       const ifIndex = parseIfSel(ipf, ifSel);
       if (ifIndex == null) return t("app.terminal.commands.route.err.invalidInterface", { iface: ifSel });
 
-      const netmaskNum = prefixToNetmask32(parsed.prefix);
-      const netmaskIp = new IPAddress(4, netmaskNum);
-
-      // use the kernel API (your IPStack.addRoute expects IPAddress)
-      ipf.addRoute(parsed.dstIp, netmaskIp, ifIndex, gwIp);
+      // IPStack.addRoute(dst, prefixLength, interf, nexthop)
+      ipf.addRoute(parsed.dstIp, parsed.prefix, ifIndex, gwIp);
 
       ctx.println(t("app.terminal.commands.route.out.okAdded"));
       return;
@@ -191,18 +209,14 @@ export const route = {
       const parsed = parseCidr(cidr);
       if (!parsed) return t("app.terminal.commands.route.err.invalidDestinationCidr");
 
-      const netmaskNum = prefixToNetmask32(parsed.prefix);
-      const netmaskIp = new IPAddress(4, netmaskNum);
-
       // optional qualifiers
       let gwIp = null;
       let ifIndex = null;
 
-      // crude option parsing: scan remaining args for "via X" and "dev Y"
       for (let i = 2; i < args.length; i++) {
         const a = args[i];
         if (a === "via" && args[i + 1]) {
-          gwIp = parseV4IpAddress(args[i + 1]);
+          gwIp = parseIpAddress(args[i + 1]);
           i++;
           continue;
         }
@@ -213,7 +227,6 @@ export const route = {
         }
       }
 
-      // if user gave invalid via/dev values -> error
       if (gwIp === null && args.includes("via")) {
         return t("app.terminal.commands.route.err.invalidGatewayIp");
       }
@@ -225,23 +238,19 @@ export const route = {
       let removed = 0;
 
       if (gwIp != null && ifIndex != null) {
-        // exact removal
-        ipf.delRoute(parsed.dstIp, netmaskIp, ifIndex, gwIp);
-        removed = 1; // best effort (delRoute doesn't return count)
+        // exact removal: IPStack.delRoute(dst, prefixLength, interf, nexthop)
+        ipf.delRoute(parsed.dstIp, parsed.prefix, ifIndex, gwIp);
+        removed = 1;
       } else {
-        // remove all matching manual routes for that dst/prefix
         const routes = ipf.routingTable ?? [];
         for (const r of routes) {
           if (r?.auto) continue;
-          if (!(r?.dst instanceof IPAddress) || !(r?.netmask instanceof IPAddress) || !(r?.nexthop instanceof IPAddress)) continue;
-
+          if (!(r?.dst instanceof IPAddress) || !(r?.nexthop instanceof IPAddress)) continue;
           if (r.dst.toString() !== parsed.dstIp.toString()) continue;
-          if (r.netmask.toString() !== netmaskIp.toString()) continue;
-
+          if ((r.prefixLength | 0) !== parsed.prefix) continue;
           if (gwIp != null && r.nexthop.toString() !== gwIp.toString()) continue;
           if (ifIndex != null && (r.interf | 0) !== (ifIndex | 0)) continue;
-
-          ipf.delRoute(r.dst, r.netmask, r.interf, r.nexthop);
+          ipf.delRoute(r.dst, r.prefixLength, r.interf, r.nexthop);
           removed++;
         }
       }
