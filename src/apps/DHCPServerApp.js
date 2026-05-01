@@ -176,6 +176,18 @@ export class DHCPServerApp extends GenericProcess {
 
   run() {
     this.root.classList.add("app", "app-dhcp-server");
+    setTimeout(() => this._tryAutostart(), 0);
+  }
+
+  _tryAutostart() {
+    try {
+      const txt = this.os.fs.readFile(this.confPath);
+      if (!txt?.trim()) return;
+      const json = JSON.parse(txt);
+      if (json.autostart !== true) return;
+      this.cfg = DHCPServerApp.cfgFromJSON(txt, this.cfg);
+      this._start();
+    } catch { }
   }
 
   /**
@@ -405,7 +417,7 @@ export class DHCPServerApp extends GenericProcess {
    *  serverId: IPAddress
    * }} cfg
    */
-  static cfgToJSON(cfg) {
+  static cfgToJSON(cfg, autostart = false) {
     const o = {
       rangeStart: cfg.rangeStart.toString(),
       rangeEnd: cfg.rangeEnd.toString(),
@@ -414,6 +426,7 @@ export class DHCPServerApp extends GenericProcess {
       leaseTime: cfg.leaseTime,
       subnetMask: cfg.subnetMask.toString(),
       serverId: cfg.serverId.toString(),
+      autostart,
     };
     return JSON.stringify(o, null, 2) + "\n";
   }
@@ -508,6 +521,7 @@ export class DHCPServerApp extends GenericProcess {
 
       this.socketPort = port;
       this.running = true;
+      this._writeAutostart(true);
 
       this._appendLog(`[${nowStamp()}] ${t("app.dhcpserver.log.listening")} udp/${this.listenPort} sock=${port}`);
       this._syncButtons();
@@ -522,9 +536,20 @@ export class DHCPServerApp extends GenericProcess {
     }
   }
 
+  _writeAutostart(val) {
+    try {
+      const txt = this.os.fs.readFile(this.confPath);
+      if (!txt?.trim()) return;
+      const o = JSON.parse(txt);
+      o.autostart = val;
+      this.os.fs.writeFile(this.confPath, JSON.stringify(o, null, 2) + "\n");
+    } catch { }
+  }
+
   _stop() {
     if (!this.running && this.socketPort == null) return;
 
+    this._writeAutostart(false);
     const port = this.socketPort;
     this.running = false;
     this.socketPort = null;

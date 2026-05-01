@@ -139,13 +139,31 @@ export class SimulatedObject {
         title.className = "sim-panel-title";
         title.textContent = this.name;
 
+        const rename = document.createElement("button");
+        rename.className = "sim-panel-rename";
+        rename.type = "button";
+        rename.title = t("panel.rename");
+        rename.innerHTML = '<i class="fas fa-pen"></i>';
+        rename.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const next = window.prompt(t("panel.rename.prompt"), this.name);
+            if (next !== null && next.trim() && next.trim() !== this.name) {
+                this.setName(next.trim());
+            }
+        });
+
         const close = document.createElement("button");
         close.className = "sim-panel-close";
         close.type = "button";
         close.textContent = "×";
         close.title = t("panel.close");
 
-        header.appendChild(title);
+        const titleGroup = document.createElement("div");
+        titleGroup.className = "sim-panel-title-group";
+        titleGroup.appendChild(title);
+        titleGroup.appendChild(rename);
+
+        header.appendChild(titleGroup);
         header.appendChild(close);
 
         const body = document.createElement("div");
@@ -226,8 +244,6 @@ export class SimulatedObject {
      * @param {boolean} open 
      */
     setPanelOpen(open) {
-        //do not open when allready open or in Edit Mode
-        if (open && this.simcontrol.mode === "edit") return;
 
         this.panelOpen = open;
         this._applyPositions();
@@ -238,7 +254,30 @@ export class SimulatedObject {
         if (!this.panelEl) return;
         this.panelEl.style.display = this.panelOpen ? "block" : "none";
         if (this.panelOpen) {
+            this._clampPanelToViewport();
             bringToFront(this.panelEl);
+        }
+    }
+
+    _clampPanelToViewport() {
+        if (!this.panelEl) return;
+        const boundary = this.simcontrol?.movementBoundary;
+        if (!(boundary instanceof HTMLElement)) return;
+
+        const b = boundary.getBoundingClientRect();
+        const p = this.panelEl.getBoundingClientRect();
+
+        let dx = 0, dy = 0;
+
+        if (p.right  > b.right)  dx = b.right  - p.right;
+        if (p.bottom > b.bottom) dy = b.bottom - p.bottom;
+        if (p.left + dx < b.left) dx = b.left - p.left;
+        if (p.top  + dy < b.top)  dy = b.top  - p.top;
+
+        if (dx !== 0 || dy !== 0) {
+            this.px += dx;
+            this.py += dy;
+            this.panelEl.style.transform = `translate(${this.px}px, ${this.py}px)`;
         }
     }
 

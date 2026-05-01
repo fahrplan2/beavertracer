@@ -154,6 +154,16 @@ export class SimControl {
 
         this.scheduleNextStep();
         this._startRafLoop();
+
+        document.addEventListener("show-pcap", (ev) => {
+            const { sessionName, frames } = /** @type {any} */ (ev).detail;
+            this.pcapController.updateIf(sessionName, frames);
+            this.pcapViewer.switchTab(sessionName);
+            if (this.mode === "edit") this._leaveEditMode();
+            this.mode = "trace";
+            this._invalidateUI();
+            this.pcapViewer.render();
+        });
     }
 
     scheduleNextStep() {
@@ -1059,7 +1069,8 @@ export class SimControl {
             if (!this._linkStart) {
                 const pickA = await this._pickPortForObjectAt(obj, ev.clientX + 8, ev.clientY + 8);
                 if (!pickA) {
-                    throw Error("No free ports");
+                    this._showToast(t("sim.link.error.noFreePort"));
+                    return;
                 }
 
                 this._linkStart = obj;
@@ -1112,7 +1123,12 @@ export class SimControl {
                 l.simcontrol = this;
                 this.addObject(l);
             } catch (e) {
-                alert(t("sim.link.error"));
+                const msg = e instanceof Error ? e.message : "";
+                if (msg.includes("Port in use") || msg.includes("Port not found")) {
+                    this._showToast(t("sim.link.error.portInUse"));
+                } else {
+                    this._showToast(t("sim.link.error"));
+                }
             } finally {
                 this._cancelLinking();
             }
@@ -1562,6 +1578,14 @@ export class SimControl {
 
         // 8) redraw request reset
         this._redrawReq = false;
+    }
+
+    _showToast(msg) {
+        const toast = document.createElement("div");
+        toast.className = "sim-toast";
+        toast.textContent = msg;
+        this.root?.appendChild(toast);
+        setTimeout(() => toast.remove(), 3500);
     }
 
     _syncInitialModeFromUrl() {

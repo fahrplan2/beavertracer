@@ -5,18 +5,22 @@ Aktuelle Baustellen / TODO / KNOWN BUGS
 =======================================
 
 UI/UX:
-- UX: Anylseiren öffnet nicht neuen Tab zum Mitschneiden
 - UX: Routerdialog: sieht nicht gut aus. Neue Zeile erst einblenden wenn man auf + drückt.
 - BUG: Switch: Spannig Tree schient sich nicht zu aktualisieren
-- UX: PC lässt sich aktuell nicht umbenennen
-- UX: Link-Tool: Melden, wenn Fehler passieren
 - UX: Link-Tool: Zwei Leitungen liegen übereinander; sieht nicht gut aus.
-- UX: Wenn ein Panel geöffnet wird, spwant es teileise außerhalb des Sichtfensters
 - UX: Switch: VLAN-Interface ist sehr schlimm aufgebaut und auch noch nicht wirklich getestet.
+
+Erledigt (seit letztem Commit):
+- ✓ UX: Anaylsieren öffnet PacketSniffer-Tab (CustomEvent show-pcap → SimControl)
+- ✓ UX: PC/Router/Switch lassen sich über Stift-Icon im Panel-Header umbenennen
+- ✓ UX: Link-Tool: Toast-Meldung bei Fehler (kein freier Port / Port belegt)
+- ✓ UX: DHCP-Server startet nach dem Laden der Simulation automatisch (autostart-Flag in Config)
+- ✓ UX: Panels öffnen sich jetzt auch im Edit-Mode bei Klick; Cursor zeigt grab im Edit-Mode
+- ✓ UX: Rename-Button sitzt direkt hinter dem Titel (flex titleGroup)
+- ✓ UX: Panel wird beim Öffnen in den Viewport geclampt (Position, nicht Größe)
 
 Netzwerkstack:
 - DNS löst nach 0.0.0.0 auf und Pakete werden dann mit diesem Ziel gesendet
-- DHCP startet nicht nach dem Laden der Simulation automatisch
 
 Missing Features:
 - E-Mail-Client

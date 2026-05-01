@@ -538,6 +538,8 @@ export default {
   "os.untitled": "Untitled",
 
   "panel.close": "Close",
+  "panel.rename": "Rename",
+  "panel.rename.prompt": "New name:",
 
   "pc.title": "PC",
 
@@ -609,6 +611,8 @@ export default {
   "sim.tool.delete": "Delete",
 
   "sim.link.error": "Error creating link.",
+  "sim.link.error.noFreePort": "No free port available.",
+  "sim.link.error.portInUse": "Port is already in use.",
   
   "switch.title": "Switch",
   "switch.genericsettings": "Common settings",
