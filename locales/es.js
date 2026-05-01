@@ -563,5 +563,11 @@ export default {
   "homerouter.dhcp.range.end": "Fin del grupo",
   "homerouter.dhcp.lease": "Tiempo de concesión (s)",
   "homerouter.dhcp.leases": "Concesiones activas",
-  "homerouter.dhcp.invalid": "Configuración DHCP no válida"
+  "homerouter.dhcp.invalid": "Configuración DHCP no válida",
+  "router.routingtable.ipv4": "Tabla de enrutamiento IPv4",
+  "router.routingtable.ipv6": "Tabla de enrutamiento IPv6",
+  "switch.tab.sat": "SAT",
+  "switch.tab.vlan": "VLAN",
+  "switch.tab.stp": "STP",
+  "switch.stp.settings": "Configuración del Protocolo Spanning Tree"
 };
