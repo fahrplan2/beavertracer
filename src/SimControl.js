@@ -1148,9 +1148,9 @@ export class SimControl {
 
             /** @type {SimulatedObject|null} */
             let newObj = null;
-            if (this.tool === "place-pc") newObj = new PC();
-            if (this.tool === "place-switch") newObj = new Switch();
-            if (this.tool === "place-router") newObj = new Router();
+            if (this.tool === "place-pc") newObj = new PC(this._nextName(t("pc.title")));
+            if (this.tool === "place-switch") newObj = new Switch(this._nextName(t("switch.title")));
+            if (this.tool === "place-router") newObj = new Router(this._nextName(t("router.title")));
             if (this.tool === "place-text") newObj = new TextBox();
             if (this.tool === "place-rect") newObj = new RectOverlay();
             if (!newObj) return;
@@ -1580,11 +1580,24 @@ export class SimControl {
         this._redrawReq = false;
     }
 
+    _nextName(prefix) {
+        const used = new Set(
+            this.simobjects
+                .map(o => o.name)
+                .filter(n => n.startsWith(prefix + " "))
+                .map(n => parseInt(n.slice(prefix.length + 1)))
+                .filter(n => Number.isFinite(n) && n > 0)
+        );
+        let i = 1;
+        while (used.has(i)) i++;
+        return `${prefix} ${i}`;
+    }
+
     _showToast(msg) {
         const toast = document.createElement("div");
         toast.className = "sim-toast";
         toast.textContent = msg;
-        this.root?.appendChild(toast);
+        this.nodesLayer?.appendChild(toast);
         setTimeout(() => toast.remove(), 3500);
     }
 
