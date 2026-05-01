@@ -408,8 +408,8 @@ export class TcpEngine {
   }
 
   /**
-   * Called by IPStack when an IPv4 packet with protocol=6 is accepted.
-   * @param {import("../net/pdu/IPv4Packet.js").IPv4Packet} packet
+   * Called by IPStack when a TCP packet (IPv4 or IPv6) is accepted.
+   * @param {import("../net/pdu/IPv4Packet.js").IPv4Packet | import("../net/pdu/IPv6Packet.js").IPv6Packet} packet
    */
   handle(packet) {
     const tcp = TCPPacket.fromBytes(packet.payload);
