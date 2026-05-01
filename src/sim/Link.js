@@ -186,6 +186,8 @@ export class Link extends SimulatedObject {
     const x2 = this.B.getX();
     const y2 = this.B.getY();
 
+    const dx = x2 - x1;
+    const dy = y2 - y1;
     const length = Math.hypot(dx, dy);
     const normX = length > 0 ? -dy / length : 0;
     const normY = length > 0 ?  dx / length : 0;
