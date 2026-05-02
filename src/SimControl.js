@@ -16,6 +16,7 @@ import { t, getLocale, setLocale, getLocales } from "./i18n/index.js";
 import { StaticPageRouter } from "./StaticPageRouter.js";
 import { PCapController } from "./tracer/PCapControler.js";
 import { DOMBuilder } from "./lib/DomBuilder.js";
+import { SimDialog } from "./lib/SimDialog.js";
 import { version } from "./lib/version.js";
 
 /**
@@ -146,11 +147,20 @@ export class SimControl {
     /** @type {HTMLDivElement|null} */
     _pageContent = null;
 
+    /** @type {boolean} */
+    embedded = false;
+
     /**
      * @param {HTMLElement|null} root
+     * @param {{ embedded?: boolean }} [opts]
      */
-    constructor(root) {
+    constructor(root, opts = {}) {
         this.root = root;
+        this.embedded = opts.embedded ?? false;
+
+        if (this.embedded) {
+            this.mode = "run";
+        }
 
         this.pcapViewer = new PCapViewer(null, {
             hideComputedTreeNodes: true,
@@ -207,6 +217,7 @@ export class SimControl {
         this.scheduleNextStep();
     }
 
+    /** @param {number} ms */
     setTick(ms) {
         if (this.mode !== "run") return;
 
@@ -234,6 +245,7 @@ export class SimControl {
     // Public scene operations: do NOT full-render; update incrementally
     // ---------------------------------------------------------------------------
 
+    /** @param {SimulatedObject} obj */
     addObject(obj) {
         if (this.simobjects.includes(obj)) return;
         this.simobjects.push(obj);
@@ -243,6 +255,7 @@ export class SimControl {
         this._requestRedrawLinks();
     }
 
+    /** @param {SimulatedObject} obj */
     deleteObject(obj) {
         if (this._linkStart === obj) this._cancelLinking();
 
@@ -272,6 +285,7 @@ export class SimControl {
         this._invalidateUI();
     }
 
+    /** @param {SimulatedObject|null} obj */
     setFocus(obj) {
         if (this.focusedObject === obj) return;
 
@@ -302,6 +316,7 @@ export class SimControl {
 
         root.replaceChildren();
         root.classList.add("sim-root");
+        if (this.embedded) root.classList.add("is-embedded");
 
         // Toolbar
         const toolbar = document.createElement("div");
@@ -404,6 +419,8 @@ export class SimControl {
     }
 
     _buildToolbar() {
+        if (this.embedded) return this._buildEmbeddedToolbar();
+
         const toolbar = this._toolbar;
         if (!toolbar) return;
         toolbar.replaceChildren();
@@ -420,13 +437,14 @@ export class SimControl {
 
         const ver = document.createElement("div");
         ver.className = "sim-toolbar-branding-version";
-        ver.textContent = "v" + version(true) + " ";
+        ver.textContent = "v" + version(true);
         const alpha = document.createElement("span");
         alpha.className = "sim-toolbar-branding-alpha";
         alpha.textContent = "Alpha Version";
         ver.appendChild(alpha);
         brandingGroup.appendChild(ver);
 
+        /** @param {string} [role] */
         const addSeparator = (role) => {
             const sep = document.createElement("div");
             sep.className = "sim-toolbar-sep";
@@ -549,8 +567,8 @@ export class SimControl {
         const btnNew = DOMBuilder.iconbutton({
             label: t("sim.new"),
             icon: "fa-file",
-            onClick: () => {
-                if (!confirm(t("sim.discardandnewwarning"))) return;
+            onClick: async () => {
+                if (!await SimDialog.confirm(t("sim.discardandnewwarning"))) return;
                 this.new();
             },
         });
@@ -561,8 +579,8 @@ export class SimControl {
         const btnLoad = DOMBuilder.iconbutton({
             label: t("sim.load"),
             icon: "fa-file-arrow-up",
-            onClick: () => {
-                if (!confirm(t("sim.discardandloadwarning"))) return;
+            onClick: async () => {
+                if (!await SimDialog.confirm(t("sim.discardandloadwarning"))) return;
                 this.open();
             },
         });
@@ -589,7 +607,7 @@ export class SimControl {
         const langBtn = DOMBuilder.iconbutton({
             label: t("sim.language"),
             icon: "fa-language",
-            onClick: (ev) => {
+            onClick: (/** @type {MouseEvent} */ ev) => {
                 ev.preventDefault();
                 ev.stopPropagation();
                 this._openLanguageDialog(gCommon);
@@ -624,6 +642,113 @@ export class SimControl {
         aboutBtn.dataset.role = "mode-about";
         gCommon.appendChild(aboutBtn);
 
+    }
+
+    _buildEmbeddedToolbar() {
+        const toolbar = this._toolbar;
+        if (!toolbar) return;
+        toolbar.replaceChildren();
+
+        /** @param {string} [role] */
+        const addSeparator = (role) => {
+            const sep = document.createElement("div");
+            sep.className = "sim-toolbar-sep";
+            if (role) sep.dataset.role = role;
+            toolbar.appendChild(sep);
+            return sep;
+        };
+
+        // Mode: Run + Trace (no Edit)
+        addSeparator("sep-mode");
+        const gMode = DOMBuilder.buttongroup(t("sim.mode"), toolbar);
+        gMode.dataset.group = "mode";
+
+        const btnRun = DOMBuilder.iconbutton({
+            label: t("sim.run"),
+            icon: "fa-play",
+            iconOnly: true,
+            onClick: () => {
+                this.mode = "run";
+                this.isPaused = false;
+                this._invalidateUI();
+                this.scheduleNextStep();
+            },
+        });
+        btnRun.dataset.role = "mode-run";
+        gMode.appendChild(btnRun);
+
+        const btnTrace = DOMBuilder.iconbutton({
+            label: t("sim.trace"),
+            icon: "fa-magnifying-glass",
+            iconOnly: true,
+            onClick: () => {
+                this.mode = "trace";
+                this._invalidateUI();
+                this.pcapViewer.render();
+            },
+        });
+        btnTrace.dataset.role = "mode-trace";
+        gMode.appendChild(btnTrace);
+
+        // Speed controls (icon-only)
+        addSeparator("sep-speeds");
+        const gSpeeds = DOMBuilder.buttongroup(t("sim.speed"), toolbar);
+        gSpeeds.dataset.group = "speeds";
+
+        const pauseBtn = DOMBuilder.iconbutton({
+            label: t("sim.pause"),
+            icon: "fa-pause",
+            iconOnly: true,
+            onClick: () => this.pause(),
+        });
+        pauseBtn.dataset.role = "pause";
+        gSpeeds.appendChild(pauseBtn);
+
+        const speeds = [
+            { label: "0.5×", ms: 1000, icon: "fa-1" },
+            { label: "1×",   ms: 500,  icon: "fa-2" },
+            { label: "4×",   ms: 100,  icon: "fa-3" },
+            { label: "8×",   ms: 40,   icon: "fa-4" },
+        ];
+
+        for (const s of speeds) {
+            const b = DOMBuilder.iconbutton({
+                label: s.label,
+                icon: s.icon,
+                iconOnly: true,
+                onClick: () => this.setTick(s.ms),
+            });
+            b.dataset.role = `speed-${s.ms}`;
+            gSpeeds.appendChild(b);
+        }
+
+        const resetBtn = DOMBuilder.iconbutton({
+            label: t("sim.reset"),
+            icon: "fa-arrow-rotate-left",
+            iconOnly: true,
+            onClick: () => {
+                this.restore(this.toJSON());
+                this.mode = "run";
+                this.pause();
+            },
+        });
+        resetBtn.dataset.role = "reset";
+        gSpeeds.appendChild(resetBtn);
+
+        // Open full app
+        addSeparator("sep-open");
+        const gOpen = DOMBuilder.buttongroup("", toolbar);
+        const btnOpen = DOMBuilder.iconbutton({
+            label: t("sim.embed.open"),
+            icon: "fa-up-right-from-square",
+            onClick: () => {
+                const url = new URL(window.location.href);
+                url.searchParams.delete("embed");
+                window.open(url.toString(), "_blank");
+            },
+        });
+        btnOpen.dataset.role = "embed-open";
+        gOpen.appendChild(btnOpen);
     }
 
     _buildSidebar() {
@@ -714,6 +839,7 @@ export class SimControl {
         // toolbar updates
         const toolbar = this._toolbar;
         if (toolbar) {
+            /** @param {string} role @param {boolean} active */
             const setActive = (role, active) => {
                 const el = toolbar.querySelector(`[data-role="${role}"]`);
                 el?.classList?.toggle("active", !!active);
@@ -745,6 +871,7 @@ export class SimControl {
             const sepSpeeds = toolbar.querySelector(`[data-role="sep-speeds"]`);
             const sepProject = toolbar.querySelector(`[data-role="sep-project"]`);
 
+            /** @param {Element|null|undefined} el @param {boolean} hidden */
             const setHidden = (el, hidden) => el?.classList?.toggle("hidden", !!hidden);
 
             const showSpeeds = (this.mode === "run");
@@ -864,6 +991,7 @@ export class SimControl {
         }
     }
 
+    /** @param {HTMLElement} anchorEl */
     async _openLanguageDialog(anchorEl) {
         if (this._langPanel) {
             this._closeLanguageDialog();
@@ -895,7 +1023,7 @@ export class SimControl {
 
                 const oldLoc = getLocale();
                 await setLocale(loc.key);
-                const ok = confirm(t("sim.langswitch.confirmdiscard"));
+                const ok = await SimDialog.confirm(t("sim.langswitch.confirmdiscard"));
                 if (!ok) {
                     setLocale(oldLoc);
                     return;
@@ -923,9 +1051,11 @@ export class SimControl {
         panel.style.left = `${left}px`;
         panel.style.top = `${top}px`;
 
+        /** @param {PointerEvent} ev */
         const onOutside = (ev) => {
             if (!panel.contains(/** @type {Node} */(ev.target))) this._closeLanguageDialog();
         };
+        /** @param {KeyboardEvent} ev */
         const onKey = (ev) => {
             if (ev.key === "Escape") this._closeLanguageDialog();
         };
@@ -956,6 +1086,7 @@ export class SimControl {
 
         this._rafLastTs = performance.now();
 
+        /** @param {number} ts */
         const loop = (ts) => {
             this._rafId = requestAnimationFrame(loop);
             const dt = ts - this._rafLastTs;
@@ -1359,6 +1490,7 @@ export class SimControl {
             panel.style.left = `${x}px`;
             panel.style.top = `${y}px`;
 
+            /** @param {*} [result] */
             const cleanup = (result) => {
                 if (done) return;
                 done = true;
@@ -1368,11 +1500,13 @@ export class SimControl {
                 resolve(result ?? null);
             };
 
+            /** @param {PointerEvent} ev */
             const onOutside = (ev) => {
                 // click outside closes
                 if (!panel.contains(/** @type {Node} */(ev.target))) cleanup(null);
             };
 
+            /** @param {KeyboardEvent} ev */
             const onKeyDown = (ev) => {
                 if (ev.key === "Escape") cleanup(null);
             };
@@ -1425,7 +1559,7 @@ export class SimControl {
         this._setDeleteHover(null);
     }
 
-    /** find the clickable root element for node/link under cursor */
+    /** find the clickable root element for node/link under cursor @param {PointerEvent} ev */
     _getHoverTargetEl(ev) {
         const t = /** @type {HTMLElement} */ (ev.target);
         // nodes: anything with data-objid (your icons already have this)
@@ -1492,6 +1626,7 @@ export class SimControl {
         };
     }
 
+    /** @param {*} state */
     restore(state) {
         //@ts-ignore
         const REGISTRY = new Map([
@@ -1507,7 +1642,7 @@ export class SimControl {
         ]);
 
         if (!state || !Array.isArray(state.objects)) {
-            alert(t("sim.invalidfilewarning"));
+            SimDialog.alert(t("sim.invalidfilewarning"));
             return;
         }
 
@@ -1577,7 +1712,7 @@ export class SimControl {
     open() {
         const input = document.createElement("input");
         input.type = "file";
-        input.accept = "application/json,.json";
+        input.accept = ".btsim,.json";
 
         input.addEventListener("change", async () => {
             const file = input.files[0];
@@ -1588,7 +1723,7 @@ export class SimControl {
                 const scene = JSON.parse(text);
                 this.restore(scene);
             } catch (e) {
-                alert(t("sim.loadfailederror"));
+                SimDialog.alert(t("sim.loadfailederror"));
             }
         });
 
@@ -1601,14 +1736,22 @@ export class SimControl {
         }
     }
 
-    download() {
-        const json = JSON.stringify(this.toJSON(), null, 2);
+    async download() {
+        const name = await SimDialog.prompt(t("sim.save.filename"), "simulation");
+        if (name === null) return;
+
+        const filename = name.trim() || "simulation";
+        const data = {
+            _info: "This file was created by BeaverTracer, a network simulation tool. Open it with the BeaverTracer app or at https://beavertracer.eu/",
+            ...this.toJSON(),
+        };
+        const json = JSON.stringify(data, null, 2);
         const blob = new Blob([json], { type: "application/json" });
         const url = URL.createObjectURL(blob);
 
         const a = document.createElement("a");
         a.href = url;
-        a.download = "simulation.json";
+        a.download = filename.endsWith(".btsim") ? filename : filename + ".btsim";
         a.click();
 
         URL.revokeObjectURL(url);
@@ -1655,6 +1798,7 @@ export class SimControl {
         this._redrawReq = false;
     }
 
+    /** @param {string} prefix */
     _nextName(prefix) {
         const used = new Set(
             this.simobjects
@@ -1668,6 +1812,7 @@ export class SimControl {
         return `${prefix} ${i}`;
     }
 
+    /** @param {string} msg */
     _showToast(msg) {
         const toast = document.createElement("div");
         toast.className = "sim-toast";

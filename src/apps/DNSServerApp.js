@@ -13,11 +13,13 @@ function nowStamp(n = Date.now()) {
   return d.toLocaleTimeString();
 }
 
+/** @param {*} name */
 function normalizeName(name) {
   name = String(name ?? "").trim().toLowerCase();
   if (name.endsWith(".")) name = name.slice(0, -1);
   return name;
 }
+/** @param {string} s */
 function parseIPv4(s) {
   const parts = String(s).trim().split(".");
   if (parts.length !== 4) return null;
@@ -150,6 +152,7 @@ function createTabs(tabs) {
   const buttons = {};
   let active = tabs[0]?.id ?? "";
 
+  /** @param {string} id */
   function setActive(id) {
     active = id;
     for (const t of tabs) {
@@ -183,6 +186,7 @@ export class DNSServerApp extends GenericProcess {
   disposer = new Disposer();
 
   port = 53;
+  /** @type {number|null} */
   socketPort = null;
   running = false;
 
@@ -218,6 +222,7 @@ export class DNSServerApp extends GenericProcess {
     this.root.classList.add("app", "app-dnsd");
   }
 
+  /** @param {HTMLElement} root */
   onMount(root) {
     super.onMount(root);
     this.disposer.dispose();
@@ -324,6 +329,7 @@ export class DNSServerApp extends GenericProcess {
     super.destroy();
   }
 
+  /** @param {string} line */
   _appendLog(line) {
     this.log.push(line);
     if (this.log.length > 2000) this.log.splice(0, this.log.length - 2000);
@@ -505,6 +511,7 @@ export class DNSServerApp extends GenericProcess {
     this._syncButtons();
   }
 
+  /** @param {string} qname */
   _nameExists(qname) {
     const n = normalizeName(qname);
     for (const r of this.cfg.a) if (normalizeName(r.name) === n) return true;
@@ -513,6 +520,7 @@ export class DNSServerApp extends GenericProcess {
     return false;
   }
 
+  /** @param {number} sockPort @param {IPAddress} srcIp @param {number} srcPort @param {Uint8Array} payload */
   _handleDNSQuery(sockPort, srcIp, srcPort, payload) {
     /** @type {DNSPacket|null} */
     let q = null;
@@ -589,6 +597,7 @@ export class DNSServerApp extends GenericProcess {
     /** @type {any[]} */
     const out = [];
 
+    /** @param {*} rr */
     const mkRR = (rr) => ({
       name: rr.name,
       type: rr.type,

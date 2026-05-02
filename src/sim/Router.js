@@ -7,6 +7,7 @@ import { SimulatedObject } from "./SimulatedObject.js";
 import { DOMBuilder } from "../lib/DomBuilder.js";
 import { t } from "../i18n/index.js";
 import { IPAddress } from "../net/models/IPAddress.js"; // <- ggf. Pfad anpassen
+import { SimDialog } from "../lib/SimDialog.js";
 
 /**
  * @typedef {Object} PortDescriptor
@@ -65,12 +66,13 @@ function prefixToNetmaskStr(prefix) {
     return new IPAddress(4, m >>> 0).toString();
 }
 
+/** @param {HTMLElement} el @param {boolean} isInvalid */
 function markInvalid(el, isInvalid) {
     if (!el) return;
     el.classList.toggle("is-invalid", !!isInvalid);
 }
 
-/** deterministic via EthernetPort.linkref */
+/** deterministic via EthernetPort.linkref @param {*} iface */
 function getInterfaceLinkStatus(iface) {
     const port = iface?.port;
     if (!port) return { text: t("router.unknown"), state: "unknown" };
@@ -168,6 +170,7 @@ export class Router extends SimulatedObject {
 
     /* ------------------------------ UI ------------------------------ */
 
+    /** @param {HTMLElement} panelBody */
     mount(panelBody) {
         this._stopLinkPolling();
         panelBody.innerHTML = "";
@@ -262,6 +265,7 @@ export class Router extends SimulatedObject {
         outerContent.append(ifSection, routeSection);
 
         /* ============================ Tab switching ============================ */
+        /** @param {string} id */
         const selectOuterTab = (id) => {
             outerTabBtns.forEach((btn, i) => btn.classList.toggle("is-active", outerTabIds[i] === id));
             ifSection.style.display    = id === "interfaces" ? "" : "none";
@@ -336,11 +340,11 @@ export class Router extends SimulatedObject {
         const delBtn = DOMBuilder.button(t("router.deleteinterface"), { className: "router-if-del" });
         this._delIfBtn = delBtn;
 
-        delBtn.addEventListener("click", () => {
+        delBtn.addEventListener("click", async () => {
             const name = this._selectedIfaceName;
             if (!name) return;
 
-            const ok = confirm(t("router.confirminterfacedelete", { name }));
+            const ok = await SimDialog.confirm(t("router.confirminterfacedelete", { name }));
             if (!ok) return;
 
             this.net.deleteInterface(name);
@@ -451,6 +455,7 @@ export class Router extends SimulatedObject {
 
     /* ------------------------ Interfaces ------------------------ */
 
+    /** @param {string} name */
     _ifaceNameToIndex(name) {
         const idx = this.net.interfaces.findIndex((i) => i.name === name);
         if (idx < 0) throw new Error("Unknown interface " + name);
@@ -628,7 +633,7 @@ export class Router extends SimulatedObject {
             if (this._panelBody) this.mount(this._panelBody);
             else this._renderRoutes();
         } catch (e) {
-            alert(String(e?.message ?? e));
+            SimDialog.alert(String(e?.message ?? e));
         }
     }
 
@@ -731,6 +736,7 @@ export class Router extends SimulatedObject {
                 ifCellEl = ifSel;
             }
 
+            /** @param {boolean} on */
             const setDirty = (on) => tr.classList.toggle("router-route-dirty", !!on);
 
             const computeCanSave = () => {
@@ -829,7 +835,7 @@ export class Router extends SimulatedObject {
 
                     this._renderRoutes();
                 } catch (e) {
-                    alert(String(e?.message ?? e));
+                    SimDialog.alert(String(e?.message ?? e));
                 }
             });
 
@@ -841,6 +847,7 @@ export class Router extends SimulatedObject {
                 this._renderRoutes();
             });
 
+            /** @param {HTMLElement} el */
             const td = (el) => {
                 const tdd = document.createElement("td");
                 tdd.appendChild(el);
@@ -942,10 +949,11 @@ export class Router extends SimulatedObject {
 
                 this._renderRoutes();
             } catch (e) {
-                alert(String(e?.message ?? e));
+                SimDialog.alert(String(e?.message ?? e));
             }
         });
 
+        /** @param {HTMLElement} el */
         const td2 = (el) => {
             const tdd = document.createElement("td");
             tdd.appendChild(el);
@@ -1092,7 +1100,7 @@ export class Router extends SimulatedObject {
                     this.net.addRoute(newDst, p, newInterf, newNh);
                     this._renderRoutes();
                 } catch (e) {
-                    alert(String(e?.message ?? e));
+                    SimDialog.alert(String(e?.message ?? e));
                 }
             });
 
@@ -1103,6 +1111,7 @@ export class Router extends SimulatedObject {
                 this._renderRoutes();
             });
 
+            /** @param {HTMLElement} el */
             const td = (el) => { const tdd = document.createElement("td"); tdd.appendChild(el); return tdd; };
             const tr = document.createElement("tr");
             tr.className = "router-route-row " + (auto ? "router-route-auto" : "router-route-manual");
@@ -1180,10 +1189,11 @@ export class Router extends SimulatedObject {
                 this.net.addRoute(dstIp, p, interfN, nhIp);
                 this._renderRoutes();
             } catch (e) {
-                alert(String(e?.message ?? e));
+                SimDialog.alert(String(e?.message ?? e));
             }
         });
 
+        /** @param {HTMLElement} el */
         const td2 = (el) => { const tdd = document.createElement("td"); tdd.appendChild(el); return tdd; };
         addTr.appendChild(td2(addDst));
         addTr.appendChild(td2(addPrefix));

@@ -474,20 +474,32 @@ export class IPStack extends Observable {
     }
 
     /****************************************************** TCP **********************************/
+    /** @param {IPAddress} bindaddr @param {number} port */
     openTCPServerSocket(bindaddr, port) { return this.tcp.openServer(bindaddr, port); }
+    /** @param {*} ref */
     acceptTCPConn(ref) { return this.tcp.accept(ref); }
+    /** @param {*} ref */
     closeTCPServerSocket(ref) { return this.tcp.closeServer(ref); }
 
+    /** @param {IPAddress} dstIP @param {number} dstPort */
     connectTCPConn(dstIP, dstPort) { return this.tcp.connect(dstIP, dstPort); }
+    /** @param {*} key */
     recvTCPConn(key) { return this.tcp.recv(key); }
+    /** @param {*} key @param {*} data */
     sendTCPConn(key, data) { return this.tcp.send(key, data); }
+    /** @param {*} key */
     closeTCPConn(key) { return this.tcp.close(key); }
 
     /****************************************************** UDP **********************************/
+    /** @param {IPAddress} bindaddr @param {number} port */
     openUDPSocket(bindaddr, port) { return this.udp.open(bindaddr, port); }
+    /** @param {number} port @param {IPAddress} dstip @param {number} dstport @param {*} data */
     sendUDPSocket(port, dstip, dstport, data) { return this.udp.send(port, dstip, dstport, data); }
+    /** @param {number} port */
     recvUDPSocket(port) { return this.udp.recv(port); }
+    /** @param {number} port */
     closeUDPSocket(port) { return this.udp.close(port); }
+    /** @param {*} packet */
     _handleUDP(packet) { return this.udp.handle(packet); }
 
     /****************************************************** ICMP ************************************/
@@ -1057,6 +1069,7 @@ export class IPStack extends Observable {
         this.routingTable.push(r6);
     }
 
+    /** @param {number} i */
     getInterface(i) {
         return this.interfaces[i];
     }

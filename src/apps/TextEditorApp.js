@@ -4,6 +4,7 @@ import { GenericProcess } from "./GenericProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
 import { Disposer } from "../lib/Disposer.js";
 import { t } from "../i18n/index.js";
+import { SimDialog } from "../lib/SimDialog.js";
 
 export class TextEditorApp extends GenericProcess {
 
@@ -239,11 +240,11 @@ export class TextEditorApp extends GenericProcess {
     return dir.replace(/\/+$/, "") + "/" + name;
   }
 
-  _newFile() {
+  async _newFile() {
     if (!this.ta) return;
 
     if (this.modified) {
-      const ok = window.confirm(t("app.texteditor.confirm.discardNew"));
+      const ok = await SimDialog.confirm(t("app.texteditor.confirm.discardNew"));
       if (!ok) return;
     }
 
@@ -314,7 +315,7 @@ export class TextEditorApp extends GenericProcess {
     /** @type {string|null} */
     let selectedFile = null;
 
-    const doConfirm = () => {
+    const doConfirm = async () => {
       let filename = selectedFile;
 
       if (mode === "save" && nameInput) {
@@ -326,7 +327,7 @@ export class TextEditorApp extends GenericProcess {
       const abs = fs.resolve(this.pickerCwd, filename);
 
       if (mode === "save" && fs.exists(abs)) {
-        const ok = window.confirm(t("app.texteditor.confirm.overwrite"));
+        const ok = await SimDialog.confirm(t("app.texteditor.confirm.overwrite"));
         if (!ok) return;
       }
 
@@ -441,12 +442,12 @@ export class TextEditorApp extends GenericProcess {
   /**
    * @param {string} absPath
    */
-  _loadFile(absPath) {
+  async _loadFile(absPath) {
     const fs = this.os.fs;
     if (!fs || !this.ta) return;
 
     if (this.modified) {
-      const ok = window.confirm(t("app.texteditor.confirm.discardOpen"));
+      const ok = await SimDialog.confirm(t("app.texteditor.confirm.discardOpen"));
       if (!ok) return;
     }
 

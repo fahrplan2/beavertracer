@@ -75,6 +75,7 @@ export class SimTimer {
     // -------------------------------------------------------------------------
 
     /** Convert simulated milliseconds to ticks (minimum 1). */
+    /** @param {number} simMs */
     toTicks(simMs) {
         return Math.max(1, Math.round(simMs / SimTimer.SIM_MS_PER_TICK));
     }

@@ -395,6 +395,7 @@ export const dig = {
       }
       ctx.println("");
 
+      /** @param {string} title @param {*[]} arr */
       const printRRSection = (title, arr) => {
         if (!arr || arr.length === 0) return;
         ctx.println(title);

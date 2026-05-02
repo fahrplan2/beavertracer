@@ -300,6 +300,7 @@ export class OS {
         return this.runningApps.find(a => a.pid === this.focusID) ?? null;
     }
 
+    /** @param {string} name */
     setName(name) {
         this.obj.setName(name);
         this.name=name;

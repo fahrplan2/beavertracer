@@ -5,10 +5,10 @@
     "moduleResolution": "Bundler",
     "allowJs": true,
     "checkJs": true,
+    "noImplicitAny": true,
     //"noEmit": true,
     "declaration": true,
-    "emitDeclarationOnly": true,
-    "outDir": "headers"
+    "emitDeclarationOnly": true
   },
   "include": ["src/**/*.js"]
 }

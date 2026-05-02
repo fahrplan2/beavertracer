@@ -33,6 +33,7 @@ function decodeUTF8(b) {
   return s;
 }
 
+/** @param {string} s */
 function normalizeCRLF(s) {
   return String(s).replace(/\r\n/g, "\n").replace(/\r/g, "\n").replace(/\n/g, "\r\n");
 }
@@ -332,6 +333,7 @@ export class SimpleMailServerApp extends GenericProcess {
     return 999999999;
   }
 
+  /** @param {string} line */
   _append(line) {
     this.log.push(line);
     if (this.log.length > 4000) this.log.splice(0, this.log.length - 4000);
@@ -399,6 +401,7 @@ export class SimpleMailServerApp extends GenericProcess {
 
   _syncUI() {
     const r = this.running;
+    /** @param {HTMLInputElement|null} el */
     const dis = (el) => { if (el) el.disabled = r; };
     dis(this.domainEl);
     dis(this.smtpEl);
@@ -687,6 +690,7 @@ export class SimpleMailServerApp extends GenericProcess {
     const timeout = this._timeoutMs();
     const st = { buf: new Uint8Array(0) };
 
+    /** @param {number[]} okCodes */
     const expect = async (okCodes) => {
       const r = await readSmtpResponse(net, connKey, timeout, st);
       if (!okCodes.includes(r.code)) {
@@ -930,7 +934,7 @@ export class SimpleMailServerApp extends GenericProcess {
     this._append(`[${nowStamp()}] ${t("app.simplemailserver.log.seedNeedUser") || "seed: enter a user or use the per-user Seed button"}`);
   }
 
-  /** Seed a test mail for a specific user */
+  /** Seed a test mail for a specific user @param {string} user */
   _seedUser(user) {
     const u = this._findUser(user);
     if (!u) { this._append(`[${nowStamp()}] ${t("app.simplemailserver.log.seedNoSuchUser") || "seed: no such user"} ${user}`); return; }
@@ -956,6 +960,7 @@ export class SimpleMailServerApp extends GenericProcess {
     const pop3 = Number((this.pop3El?.value ?? "").trim());
     const imap = Number((this.imapEl?.value ?? "").trim());
 
+    /** @param {number} p */
     const okPort = (p) => Number.isInteger(p) && p >= 1 && p <= 65535;
 
     if (!domain) { this._append(`[${nowStamp()}] ${t("app.simplemailserver.log.invalidDomain") || "invalid maildomain"}`); return; }
@@ -981,6 +986,7 @@ export class SimpleMailServerApp extends GenericProcess {
     const { smtp, pop3, imap } = this.serverRef;
     this.serverRef = { smtp: null, pop3: null, imap: null };
 
+    /** @param {*} ref @param {string} name */
     const close = (ref, name) => {
       if (ref == null) return;
       try { this.os.net.closeTCPServerSocket(ref); }
@@ -1058,7 +1064,7 @@ export class SimpleMailServerApp extends GenericProcess {
         proto === "pop3" ? this._handlePOP3.bind(this) :
         this._handleIMAP.bind(this);
 
-      h(seq, connKey).catch((e) => {
+      h(seq, connKey).catch((/** @type {unknown} */ e) => {
         const reason = (e instanceof Error ? e.message : String(e));
         this._append(`[${nowStamp()}] conn ${proto} error: ${reason}`);
         try { this.os.net.closeTCPConn(connKey); } catch { /* ignore */ }
@@ -1082,6 +1088,7 @@ export class SimpleMailServerApp extends GenericProcess {
     const timeout = this._timeoutMs();
     const st = { buf: new Uint8Array(0) };
 
+    /** @param {string} line */
     const send = (line) => writeLine(net, connKey, line);
 
     send(`220 ${this.mailDomain} SimpleMailServer ready`);
@@ -1234,6 +1241,7 @@ export class SimpleMailServerApp extends GenericProcess {
     const timeout = this._timeoutMs();
     const st = { buf: new Uint8Array(0) };
 
+    /** @param {string} line */
     const send = (line) => writeLine(net, connKey, line);
 
     // More verbose greeting
@@ -1370,6 +1378,7 @@ export class SimpleMailServerApp extends GenericProcess {
     const net = this.os.net;
     const timeout = this._timeoutMs();
     const st = { buf: new Uint8Array(0) };
+    /** @param {string} line */
     const send = (line) => writeLine(net, connKey, line);
 
     send(`* OK ${this.mailDomain} IMAP ready`);

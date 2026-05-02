@@ -137,7 +137,7 @@ function buildResponse(status, reason, headers, body) {
  * @param {string} details
  */
 function internalHtml(title, details) {
-  const esc = (s) => String(s)
+  const esc = (/** @type {*} */ s) => String(s)
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   const html = `<!doctype html>
@@ -350,6 +350,7 @@ export class SimpleHTTPServerApp extends GenericProcess {
     } catch { /* ignore */ }
   }
 
+  /** @param {string} path */
   _readFileText(path) {
     const fs = /** @type {any} */ (this.os.fs);
     if (!fs) return null;

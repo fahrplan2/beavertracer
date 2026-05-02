@@ -127,7 +127,7 @@ export const ip = {
         }
 
         // inet6 global (when configured)
-        if (itf?.ip6 instanceof IPAddress && !itf.ip6.toUInt8().every(b => b === 0)) {
+        if (itf?.ip6 instanceof IPAddress && !itf.ip6.toUInt8().every((/** @type {number} */ b) => b === 0)) {
           const pfx6 = (typeof itf.prefixLength6 === "number") ? itf.prefixLength6 : 64;
           ctx.println(t("app.terminal.commands.ip.out.inet6Line", {
             ip: `${itf.ip6.toString()}/${pfx6}`,

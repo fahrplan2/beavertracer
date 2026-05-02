@@ -111,11 +111,13 @@ export class Link extends SimulatedObject {
     this.simcontrol.pcapController.removeIf(this.B.id + ": "+this.link.portB.name);
   }
 
-  setPaused(paused) { 
+  /** @param {boolean} paused */
+  setPaused(paused) {
     this._paused = paused; 
   }
 
-  setStepMs(stepMs) { 
+  /** @param {number} stepMs */
+  setStepMs(stepMs) {
     this._stepMs = stepMs; 
   }
 
@@ -150,6 +152,7 @@ export class Link extends SimulatedObject {
     this._packets = [];
   }
 
+  /** @param {"AtoB"|"BtoA"} dir @param {*} data */
   _startInFlight(dir, data) {
     for (const p of this._packets) {
       if (p.dir === dir) p.el.remove();
@@ -172,6 +175,7 @@ export class Link extends SimulatedObject {
     this._packets.push({ el, dir, data, progress: 0 });
   }
 
+  /** @param {number} dtMs */
   advance(dtMs) {
     if (this._paused) return;
     const dp = dtMs / this._stepMs;

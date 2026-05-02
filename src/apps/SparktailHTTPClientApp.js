@@ -564,6 +564,7 @@ export class SparktailHTTPClientApp extends GenericProcess {
     this.root.replaceChildren(panel);
 
     // Listen for internal page navigation (about:start links)
+    /** @param {MessageEvent} ev */
     const onMsg = (ev) => {
       const d = ev?.data;
       if (!d || d.__sparktail !== true) return;
@@ -617,6 +618,7 @@ export class SparktailHTTPClientApp extends GenericProcess {
     super.destroy();
   }
 
+  /** @param {string} text */
   _setStatus(text) {
     if (this.statusEl) this.statusEl.textContent = String(text ?? "");
   }
@@ -658,6 +660,7 @@ export class SparktailHTTPClientApp extends GenericProcess {
     if (this.logEl) this.logEl.style.display = this.tab === "log" ? "" : "none";
   }
 
+  /** @param {string} url */
   _pushHistory(url) {
     // If we are mid-history, truncate forward entries
     if (this.historyIndex < this.history.length - 1) {
@@ -668,6 +671,7 @@ export class SparktailHTTPClientApp extends GenericProcess {
     this._syncNavButtons();
   }
 
+  /** @param {number} index */
   _navTo(index) {
     if (index < 0 || index >= this.history.length) return;
     const url = this.history[index];

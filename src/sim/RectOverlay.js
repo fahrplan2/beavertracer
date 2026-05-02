@@ -3,12 +3,14 @@ import { SimulatedObject } from "./SimulatedObject.js";
 import { SimControl } from "../SimControl.js";
 import { t } from "../i18n/index.js";
 
+/** @param {number} x */
 function clamp01(x) {
   x = Number(x);
   if (!Number.isFinite(x)) return 1;
   return Math.max(0, Math.min(1, x));
 }
 
+/** @param {string} hex */
 function hexToRgb(hex) {
   let h = String(hex || "").trim();
   if (!h.startsWith("#")) h = "#" + h;
@@ -156,7 +158,7 @@ export class RectOverlay extends SimulatedObject {
     op.value = String(this.opacity);
     op.className = "sim-rect-opacity";
     op.addEventListener("input", () => {
-      this.opacity = clamp01(op.value);
+      this.opacity = clamp01(parseFloat(op.value));
       this._applyFill();
     });
     body.appendChild(op);

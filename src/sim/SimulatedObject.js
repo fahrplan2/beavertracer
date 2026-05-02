@@ -3,6 +3,7 @@
 import { VirtualFileSystem } from '../apps/lib/VirtualFileSystem.js';
 import { t } from '../i18n/index.js';
 import { makeDraggable } from '../lib/dragabble.js';
+import { SimDialog } from '../lib/SimDialog.js';
 import { makeWindow, bringToFront } from '../lib/windowmanager.js';
 import { SimControl } from '../SimControl.js';
 
@@ -150,9 +151,9 @@ export class SimulatedObject {
         rename.type = "button";
         rename.title = t("panel.rename");
         rename.innerHTML = '<i class="fas fa-pen"></i>';
-        rename.addEventListener("click", (e) => {
+        rename.addEventListener("click", async (e) => {
             e.stopPropagation();
-            const next = window.prompt(t("panel.rename.prompt"), this.name);
+            const next = await SimDialog.prompt(t("panel.rename.prompt"), this.name);
             if (next !== null && next.trim() && next.trim() !== this.name) {
                 this.setName(next.trim());
             }
