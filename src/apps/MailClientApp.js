@@ -247,7 +247,7 @@ export class MailClientApp extends GenericProcess {
   /** @type {MailEntry[]} */ sent = [];
   inboxSel = -1;
   sentSel  = -1;
-  /** @type {"inbox"|"sent"|"compose"|"log"} */ tab = "inbox";
+  /** @type {"inbox"|"sent"|"compose"|"config"|"log"} */ tab = "inbox";
   /** @type {string[]} */ log = [];
 
   // ── UI refs ───────────────────────────────────────────────────
