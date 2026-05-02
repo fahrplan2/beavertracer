@@ -16,6 +16,7 @@ import { t, getLocale, setLocale, getLocales } from "./i18n/index.js";
 import { StaticPageRouter } from "./StaticPageRouter.js";
 import { PCapController } from "./tracer/PCapControler.js";
 import { DOMBuilder } from "./lib/DomBuilder.js";
+import { SimDialog } from "./lib/SimDialog.js";
 import { version } from "./lib/version.js";
 
 /**
@@ -424,7 +425,7 @@ export class SimControl {
 
         const ver = document.createElement("div");
         ver.className = "sim-toolbar-branding-version";
-        ver.textContent = "v" + version(true) + " ";
+        ver.textContent = "v" + version(true);
         const alpha = document.createElement("span");
         alpha.className = "sim-toolbar-branding-alpha";
         alpha.textContent = "Alpha Version";
@@ -554,8 +555,8 @@ export class SimControl {
         const btnNew = DOMBuilder.iconbutton({
             label: t("sim.new"),
             icon: "fa-file",
-            onClick: () => {
-                if (!confirm(t("sim.discardandnewwarning"))) return;
+            onClick: async () => {
+                if (!await SimDialog.confirm(t("sim.discardandnewwarning"))) return;
                 this.new();
             },
         });
@@ -566,8 +567,8 @@ export class SimControl {
         const btnLoad = DOMBuilder.iconbutton({
             label: t("sim.load"),
             icon: "fa-file-arrow-up",
-            onClick: () => {
-                if (!confirm(t("sim.discardandloadwarning"))) return;
+            onClick: async () => {
+                if (!await SimDialog.confirm(t("sim.discardandloadwarning"))) return;
                 this.open();
             },
         });
@@ -903,7 +904,7 @@ export class SimControl {
 
                 const oldLoc = getLocale();
                 await setLocale(loc.key);
-                const ok = confirm(t("sim.langswitch.confirmdiscard"));
+                const ok = await SimDialog.confirm(t("sim.langswitch.confirmdiscard"));
                 if (!ok) {
                     setLocale(oldLoc);
                     return;
@@ -1522,7 +1523,7 @@ export class SimControl {
         ]);
 
         if (!state || !Array.isArray(state.objects)) {
-            alert(t("sim.invalidfilewarning"));
+            SimDialog.alert(t("sim.invalidfilewarning"));
             return;
         }
 
@@ -1603,7 +1604,7 @@ export class SimControl {
                 const scene = JSON.parse(text);
                 this.restore(scene);
             } catch (e) {
-                alert(t("sim.loadfailederror"));
+                SimDialog.alert(t("sim.loadfailederror"));
             }
         });
 

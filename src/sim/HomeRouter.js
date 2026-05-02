@@ -15,6 +15,7 @@ import { NatEngine } from "../net/NatEngine.js";
 import { simTimer, SimTimer } from "./SimTimer.js";
 import { DOMBuilder } from "../lib/DomBuilder.js";
 import { t } from "../i18n/index.js";
+import { SimDialog } from "../lib/SimDialog.js";
 import { isEqualUint8, IPNumberToUint8, IPUInt8ToNumber, ipToString, MACToNumber, prefixToNetmask } from "../lib/helpers.js";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -947,7 +948,7 @@ export class HomeRouter extends SimulatedObject {
                 const pf = parseInt(maskIn.value) | 0;
                 const gw = strToNum(gwIn.value);
                 const dns = strToNum(dnsIn.value);
-                if (!ip || pf < 1 || pf > 32) { alert(t("homerouter.wan.invalid")); return; }
+                if (!ip || pf < 1 || pf > 32) { SimDialog.alert(t("homerouter.wan.invalid")); return; }
                 this._wanMode = "static";
                 this._wanIp = ip; this._wanPrefix = pf; this._wanGw = gw; this._upstreamDns = dns;
                 this._wanArpCache.clear(); this._nat.clear();
@@ -972,7 +973,7 @@ export class HomeRouter extends SimulatedObject {
         applyBtn.addEventListener("click", () => {
             const ip = strToNum(ipIn.value);
             const pf = parseInt(maskIn.value) | 0;
-            if (!ip || pf < 1 || pf > 32) { alert(t("homerouter.lan.invalid")); return; }
+            if (!ip || pf < 1 || pf > 32) { SimDialog.alert(t("homerouter.lan.invalid")); return; }
             this._lanIp = ip; this._lanPrefix = pf;
             this._lanArpCache.clear(); this._lanMacTable.clear();
             this._mount(/** @type {HTMLElement} */ (this._panelBody));
@@ -1002,7 +1003,7 @@ export class HomeRouter extends SimulatedObject {
             const rs = strToNum(rsIn.value);
             const re = strToNum(reIn.value);
             const lt = parseInt(leaseIn.value) || 3600;
-            if (!rs || !re || rs > re) { alert(t("homerouter.dhcp.invalid")); return; }
+            if (!rs || !re || rs > re) { SimDialog.alert(t("homerouter.dhcp.invalid")); return; }
             this._dhcpEnabled = enableCb.checked;
             this._dhcpRangeStart = rs; this._dhcpRangeEnd = re;
             this._dhcpLeaseTime = Math.max(60, Math.min(86400, lt));

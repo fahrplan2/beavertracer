@@ -780,5 +780,7 @@ export default {
   "pcap.picker.device": "Device",
   "pcap.picker.port": "Port",
   "pcap.picker.noport": "(no port)",
-  "pcap.picker.unknown": "(unknown)"
+  "pcap.picker.unknown": "(unknown)",
+  "ui.ok": "OK",
+  "ui.cancel": "Cancel"
 }

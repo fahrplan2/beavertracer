@@ -7,6 +7,7 @@ import { SimulatedObject } from "./SimulatedObject.js";
 import { DOMBuilder } from "../lib/DomBuilder.js";
 import { t } from "../i18n/index.js";
 import { IPAddress } from "../net/models/IPAddress.js"; // <- ggf. Pfad anpassen
+import { SimDialog } from "../lib/SimDialog.js";
 
 /**
  * @typedef {Object} PortDescriptor
@@ -339,11 +340,11 @@ export class Router extends SimulatedObject {
         const delBtn = DOMBuilder.button(t("router.deleteinterface"), { className: "router-if-del" });
         this._delIfBtn = delBtn;
 
-        delBtn.addEventListener("click", () => {
+        delBtn.addEventListener("click", async () => {
             const name = this._selectedIfaceName;
             if (!name) return;
 
-            const ok = confirm(t("router.confirminterfacedelete", { name }));
+            const ok = await SimDialog.confirm(t("router.confirminterfacedelete", { name }));
             if (!ok) return;
 
             this.net.deleteInterface(name);
@@ -632,7 +633,7 @@ export class Router extends SimulatedObject {
             if (this._panelBody) this.mount(this._panelBody);
             else this._renderRoutes();
         } catch (e) {
-            alert(String(e?.message ?? e));
+            SimDialog.alert(String(e?.message ?? e));
         }
     }
 
@@ -834,7 +835,7 @@ export class Router extends SimulatedObject {
 
                     this._renderRoutes();
                 } catch (e) {
-                    alert(String(e?.message ?? e));
+                    SimDialog.alert(String(e?.message ?? e));
                 }
             });
 
@@ -948,7 +949,7 @@ export class Router extends SimulatedObject {
 
                 this._renderRoutes();
             } catch (e) {
-                alert(String(e?.message ?? e));
+                SimDialog.alert(String(e?.message ?? e));
             }
         });
 
@@ -1099,7 +1100,7 @@ export class Router extends SimulatedObject {
                     this.net.addRoute(newDst, p, newInterf, newNh);
                     this._renderRoutes();
                 } catch (e) {
-                    alert(String(e?.message ?? e));
+                    SimDialog.alert(String(e?.message ?? e));
                 }
             });
 
@@ -1188,7 +1189,7 @@ export class Router extends SimulatedObject {
                 this.net.addRoute(dstIp, p, interfN, nhIp);
                 this._renderRoutes();
             } catch (e) {
-                alert(String(e?.message ?? e));
+                SimDialog.alert(String(e?.message ?? e));
             }
         });
 

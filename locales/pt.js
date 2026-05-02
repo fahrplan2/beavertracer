@@ -652,5 +652,7 @@ export default {
   "app.mailclient.err.noSmtpHost": "Nenhum servidor SMTP especificado",
   "app.mailclient.err.invalidPort": "Porta inválida",
   "app.mailclient.err.noUser": "Nenhum nome de usuário",
-  "app.mailclient.err.noRecipient": "Nenhum destinatário especificado"
+  "app.mailclient.err.noRecipient": "Nenhum destinatário especificado",
+  "ui.ok": "OK",
+  "ui.cancel": "Cancelar"
 };
