@@ -1593,7 +1593,7 @@ export class SimControl {
     open() {
         const input = document.createElement("input");
         input.type = "file";
-        input.accept = "application/json,.json";
+        input.accept = ".btsim,.json";
 
         input.addEventListener("change", async () => {
             const file = input.files[0];
@@ -1617,14 +1617,22 @@ export class SimControl {
         }
     }
 
-    download() {
-        const json = JSON.stringify(this.toJSON(), null, 2);
+    async download() {
+        const name = await SimDialog.prompt(t("sim.save.filename"), "simulation");
+        if (name === null) return;
+
+        const filename = name.trim() || "simulation";
+        const data = {
+            _info: "This file was created by BeaverTracer, a network simulation tool. Open it with the BeaverTracer app or at https://beavertracer.eu/",
+            ...this.toJSON(),
+        };
+        const json = JSON.stringify(data, null, 2);
         const blob = new Blob([json], { type: "application/json" });
         const url = URL.createObjectURL(blob);
 
         const a = document.createElement("a");
         a.href = url;
-        a.download = "simulation.json";
+        a.download = filename.endsWith(".btsim") ? filename : filename + ".btsim";
         a.click();
 
         URL.revokeObjectURL(url);

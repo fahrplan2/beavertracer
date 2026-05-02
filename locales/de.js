@@ -656,5 +656,6 @@ export default {
   "pcap.picker.noport": "(kein Port)",
   "pcap.picker.unknown": "(unbekannt)",
   "ui.ok": "OK",
-  "ui.cancel": "Abbrechen"
+  "ui.cancel": "Abbrechen",
+  "sim.save.filename": "Dateiname"
 };

@@ -654,5 +654,6 @@ export default {
   "app.mailclient.err.noUser": "Nessun nome utente",
   "app.mailclient.err.noRecipient": "Nessun destinatario specificato",
   "ui.ok": "OK",
-  "ui.cancel": "Annulla"
+  "ui.cancel": "Annulla",
+  "sim.save.filename": "Nome file"
 };
