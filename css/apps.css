@@ -538,3 +538,196 @@ textarea.log {
   padding: 8px 10px;
   opacity: 0.8;
 }
+
+/* =========================================================
+   Mail Client App  — classic two-pane layout
+   ========================================================= */
+
+.app-mail-client {
+  padding: 6px;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── Toolbar ───────────────────────────────────────────── */
+.app-mail-client .mailclient-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: linear-gradient(180deg, var(--bg1, #1a1a1a), var(--bg2, #222));
+  border-radius: 10px;
+  margin-bottom: 4px;
+  box-shadow: var(--shadow, 0 1px 4px rgba(0,0,0,.4));
+}
+
+/* Push Konfiguration button to the right */
+.app-mail-client .mailclient-toolbar .btn:last-child {
+  margin-left: auto;
+}
+
+/* ── Tab bar ───────────────────────────────────────────── */
+.app-mail-client .mailclient-tabbar {
+  display: flex;
+  gap: 2px;
+  border-bottom: 2px solid var(--border, #444);
+  margin-bottom: 0;
+  padding: 0 4px;
+}
+
+.app-mail-client .mailclient-tabbar .btn {
+  border-radius: 8px 8px 0 0;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  padding: 6px 12px;
+  font-size: 0.85em;
+  background: transparent;
+  color: var(--text-dim, #aaa);
+  transition: background 0.1s, color 0.1s;
+}
+
+.app-mail-client .mailclient-tabbar .btn:hover {
+  background: var(--bg2, #222);
+  color: var(--text, #eee);
+}
+
+.app-mail-client .mailclient-tabbar .btn.active {
+  border-bottom-color: var(--accent, #4a9eff);
+  background: var(--bg2, #222);
+  color: var(--text, #eee);
+}
+
+/* ── Folder panels (inbox / sent) ──────────────────────── */
+.app-mail-client .mailclient-folder-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+/* Message list — table-like with 3 columns */
+.app-mail-client .mailclient-list {
+  border: 1px solid var(--border, #444);
+  border-radius: 8px;
+  background: var(--bg1, #1a1a1a);
+  overflow: hidden;
+}
+
+.app-mail-client .mailclient-list-header,
+.app-mail-client .mailclient-list-row {
+  display: grid;
+  grid-template-columns: 28% 1fr 20%;
+  gap: 0;
+  padding: 5px 8px;
+  font-size: 0.82em;
+}
+
+.app-mail-client .mailclient-list-header {
+  background: var(--bg2, #2a2a2a);
+  font-weight: 600;
+  color: var(--text-dim, #aaa);
+  font-size: 0.78em;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  border-bottom: 1px solid var(--border, #444);
+}
+
+.app-mail-client .mailclient-list-row {
+  border-bottom: 1px solid var(--border, #333);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.app-mail-client .mailclient-list-row:last-child {
+  border-bottom: none;
+}
+
+.app-mail-client .mailclient-list-row:hover { background: var(--bg2, #222); }
+.app-mail-client .mailclient-list-row.selected { background: var(--accent-dim, #1e3a5f); }
+
+.app-mail-client .ml-col-from,
+.app-mail-client .ml-col-subject,
+.app-mail-client .ml-col-date {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-mail-client .ml-col-from    { font-weight: 600; }
+.app-mail-client .ml-col-date    { opacity: 0.55; font-size: 0.9em; text-align: right; }
+
+.app-mail-client .mailclient-list-empty {
+  padding: 12px;
+  opacity: 0.55;
+  font-size: 0.85em;
+}
+
+/* Message preview textarea */
+.app-mail-client .mailclient-preview {
+  width: 100%;
+  min-height: 180px;
+  max-height: 300px;
+  resize: vertical;
+  font-family: monospace;
+  font-size: 0.82em;
+  box-sizing: border-box;
+}
+
+/* ── Compose panel ─────────────────────────────────────── */
+.app-mail-client .mailclient-compose-panel {
+  margin-top: 6px;
+}
+
+.app-mail-client .mailclient-compose-body {
+  width: 100%;
+  min-height: 180px;
+  resize: vertical;
+  box-sizing: border-box;
+  margin-top: 6px;
+  font-family: monospace;
+  font-size: 0.85em;
+}
+
+/* ── Log panel ─────────────────────────────────────────── */
+.app-mail-client .mailclient-log-panel {
+  margin-top: 6px;
+}
+
+.app-mail-client .mailclient-log {
+  min-height: 200px;
+  max-height: 360px;
+  overflow-y: auto;
+  font-size: 0.78em;
+  font-family: monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* ── Status bar ────────────────────────────────────────── */
+.app-mail-client .mailclient-status {
+  font-size: 0.80em;
+  margin-top: 5px;
+  padding: 3px 6px;
+  opacity: 0.75;
+}
+
+/* ── Config panel (inline tab) ─────────────────────────── */
+.app-mail-client .mailclient-config-panel {
+  margin-top: 6px;
+}
+
+.app-mail-client .mailclient-config-panel h5 {
+  margin: 12px 0 4px;
+  font-size: 0.80em;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  opacity: 0.55;
+  border-bottom: 1px solid var(--border, #444);
+  padding-bottom: 3px;
+}
+
+.app-mail-client .mailclient-config-panel h5:first-of-type {
+  margin-top: 4px;
+}
