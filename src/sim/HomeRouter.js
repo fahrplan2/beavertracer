@@ -134,7 +134,7 @@ export class HomeRouter extends SimulatedObject {
 
         for (const p of this._allPorts()) p.subscribe(/** @type {any} */ (this));
 
-        this.onPanelCreated = (body) => {
+        this.onPanelCreated = (/** @type {HTMLElement} */ body) => {
             this._panelBody = body;
             this._mount(body);
         };
@@ -829,6 +829,7 @@ export class HomeRouter extends SimulatedObject {
 
     // ── Panel UI ──────────────────────────────────────────────────────────
 
+    /** @param {HTMLElement} body */
     _mount(body) {
         this._stopPoll();
         body.innerHTML = "";
@@ -851,6 +852,7 @@ export class HomeRouter extends SimulatedObject {
         content.style.padding = "8px";
         card.appendChild(content);
 
+        /** @param {string} id */
         const selectTab = (id) => {
             this._activeTab = id;
             tabBtns.forEach((btn, i) => btn.classList.toggle("is-active", tabIds[i] === id));
@@ -928,6 +930,7 @@ export class HomeRouter extends SimulatedObject {
         ]);
         host.appendChild(staticSection);
 
+        /** @param {boolean} show */
         const showStatic = (show) => { staticSection.style.display = show ? "" : "none"; };
         showStatic(this._wanMode === "static");
         modeSel.addEventListener("change", () => showStatic(modeSel.value === "static"));

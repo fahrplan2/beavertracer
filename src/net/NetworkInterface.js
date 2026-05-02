@@ -490,7 +490,7 @@ export class NetworkInterface extends Observable {
      * @param {IPAddress} dstIp
      * @param {Uint8Array|null} dstMac
      */
-    _doNDPNeighborAdvertisement(dstIp, dstMac, solicitedTarget = null) {
+    _doNDPNeighborAdvertisement(dstIp, dstMac, /** @type {*} */ solicitedTarget = null) {
         const srcIp = this.ip6LL ?? this.ip6;
         if (!srcIp) return;
         const naTarget = solicitedTarget ?? srcIp;

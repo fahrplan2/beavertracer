@@ -28,6 +28,7 @@ export const cp = {
     const dstExists = fs.exists(dstAbs);
     const dstIsDir = dstExists && fs.stat(dstAbs).type === "dir";
 
+    /** @param {string} srcAbs @param {string} dstAbsLocal */
     const copyOne = (srcAbs, dstAbsLocal) => {
       if (!fs.exists(srcAbs)) {
         throw new Error(

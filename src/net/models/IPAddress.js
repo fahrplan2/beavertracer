@@ -161,6 +161,7 @@ export class IPAddress {
     const rightParts = right ? right.split(":").filter(Boolean) : [];
 
     // replace marker
+    /** @param {string[]} arr */
     const fixParts = (arr) =>
       arr.map((p) => (p === "ipv4tail" ? "ipv4tail" : p));
 
@@ -168,6 +169,7 @@ export class IPAddress {
     const R = fixParts(rightParts);
 
     // Count hextets; ipv4tail counts as 2 hextets (4 bytes)
+    /** @param {string[]} arr */
     const countHextets = (arr) =>
       arr.reduce((acc, p) => acc + (p === "ipv4tail" ? 2 : 1), 0);
 
@@ -186,6 +188,7 @@ export class IPAddress {
     /** @type {number[]} */
     const words = [];
 
+    /** @param {string} p */
     const pushPart = (p) => {
       if (p === "ipv4tail") {
         if (!ipv4TailBytes) throw new Error("Invalid IPv6 address.");

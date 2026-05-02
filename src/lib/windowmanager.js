@@ -47,6 +47,7 @@ export function makeWindow(el, options = {}) {
 }
 
 
+/** @param {HTMLElement} el @param {*} options */
 function makeResizable(el, options) {
   // only allow: right, bottom, bottom-right
   const handles = [
@@ -72,6 +73,7 @@ function makeResizable(el, options) {
     let startW = 0, startH = 0;
     let active = false;
 
+    /** @param {PointerEvent} ev */
     function onPointerDown(ev) {
       ev.preventDefault();
       ev.stopPropagation();
@@ -93,6 +95,7 @@ function makeResizable(el, options) {
       document.addEventListener("pointercancel", onPointerUp, { passive: false });
     }
 
+    /** @param {PointerEvent} ev */
     function onPointerMove(ev) {
       if (!active) return;
 
@@ -114,6 +117,7 @@ function makeResizable(el, options) {
       options.onResize?.(Math.round(w), Math.round(hgt));
     }
 
+    /** @param {PointerEvent} ev */
     function onPointerUp(ev) {
       if (!active) return;
       active = false;

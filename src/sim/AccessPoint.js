@@ -52,7 +52,7 @@ export class AccessPoint extends SimulatedObject {
         // eslint-disable-next-line no-new
         new APBridge(this._eth0, this._wPort);
 
-        this.onPanelCreated = (body) => this._buildPanel(body);
+        this.onPanelCreated = (/** @type {HTMLElement} */ body) => this._buildPanel(body);
     }
 
     /** @param {HTMLElement} body */

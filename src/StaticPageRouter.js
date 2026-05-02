@@ -161,6 +161,7 @@ export class StaticPageRouter {
    * "/pages/about/index.html" -> "/about"
    * "/pages/index.html" -> "/"
    */
+  /** @param {string} baseUrl */
   #routeFromBaseUrl(baseUrl) {
     const m = baseUrl.match(/^\/pages(?:\/(.*?))?\/index\.html$/i);
     if (!m) return null;
@@ -175,6 +176,7 @@ export class StaticPageRouter {
    * - strips trailing slash (except root)
    * - maps "/pages/.../index.html" to route if known
    */
+  /** @param {string} to */
   #normalizeRouteOrUrl(to) {
     // If user passed a direct base url like "/pages/about/index.html", map to route
     if (to.startsWith("/pages/") && to.endsWith(".html")) {
@@ -192,6 +194,7 @@ export class StaticPageRouter {
     return route;
   }
 
+  /** @param {string} route */
   #resolveRouteToBaseUrl(route) {
     if (this.#routeToBaseUrls.has(route)) {
       return (this.#routeToBaseUrls.get(route) ?? [])[0] ?? null;
@@ -201,10 +204,12 @@ export class StaticPageRouter {
 
   // -------------------- Loading --------------------
 
+  /** @param {string} html */
   #replaceTags(html) {
     return String(html).replace(/\{VERSION\}/g, String(version()));
   }
 
+  /** @param {string} baseUrl */
   async #loadLocalized(baseUrl) {
     const locale = getLocale();
     const candidates = this.#buildCandidates(baseUrl, locale);
@@ -227,6 +232,7 @@ export class StaticPageRouter {
     return "";
   }
 
+  /** @param {string} baseUrl @param {string} locale */
   #buildCandidates(baseUrl, locale) {
     const m = baseUrl.match(/^(?:(.*\/))?([^\/]+)\.([a-z0-9]+)$/i);
     if (!m) return [baseUrl];

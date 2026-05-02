@@ -17,6 +17,7 @@ export const mv = {
     const dstExists = fs.exists(dstAbs);
     const dstIsDir = dstExists && fs.stat(dstAbs).type === "dir";
 
+    /** @param {string} abs */
     const removePath = (abs) => {
       if (!fs.exists(abs)) return;
       const st = fs.stat(abs);
@@ -28,6 +29,7 @@ export const mv = {
       }
     };
 
+    /** @param {string} srcAbs @param {string} dstAbsLocal */
     const copyOne = (srcAbs, dstAbsLocal) => {
       if (!fs.exists(srcAbs)) {
         throw new Error(

@@ -33,6 +33,7 @@ export class TabPicker {
     /** @type {Map<string, {port:string, name:string, hidden:boolean}[]>} */
     const devMap = new Map();
 
+    /** @param {string} name */
     const split = (name) => {
       const s = String(name ?? "");
       const i = s.indexOf(":");
@@ -47,6 +48,7 @@ export class TabPicker {
       devMap.get(dev).push({ port, name: s.name, hidden: !!s.hidden });
     }
 
+    /** @param {string} dev */
     const getDevName = (dev) =>
       ctx.simControl.simobjects.find(elem => elem.id == parseInt(dev))?.name ?? dev;
     const devices = Array.from(devMap.keys()).sort((a, b) => getDevName(a).localeCompare(getDevName(b)));
@@ -88,6 +90,7 @@ export class TabPicker {
     const rightPane = document.createElement("div");
     rightPane.className = "pcapviewer-picker-right";
 
+    /** @param {string} txt */
     const mkHeader = (txt) => {
       const h = document.createElement("div");
       h.className = "pcapviewer-picker-header";

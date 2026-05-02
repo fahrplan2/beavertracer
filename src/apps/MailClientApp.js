@@ -329,6 +329,7 @@ export class MailClientApp extends GenericProcess {
     try {
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed === "object") {
+        /** @param {string} key @param {*} fallback */
         const str = (key, fallback) => typeof parsed[key] === "string" ? parsed[key] : fallback;
         this.cfg = {
           protocol: ["pop3", "imap"].includes(parsed.protocol) ? parsed.protocol : this.cfg.protocol,
@@ -371,6 +372,7 @@ export class MailClientApp extends GenericProcess {
     const toolbar = UI.el("div", { className: "mailclient-toolbar", children: [composeBtn, fetchBtn, configBtn] });
 
     // ── Tabs ─────────────────────────────────────────────────
+    /** @param {string} id @param {string} icon @param {string} label */
     const mkTab = (id, icon, label) => {
       const b = iconBtn(icon, label, () => this._switchTab(id), {});
       this.tabBtns[id] = b;
@@ -611,6 +613,7 @@ export class MailClientApp extends GenericProcess {
   /** @param {string} text */
   _setStatus(text) { if (this.statusEl) this.statusEl.textContent = String(text ?? ""); }
 
+  /** @param {boolean} busy */
   _setBusy(busy) {
     this.busy = busy;
     if (this.fetchBtn) this.fetchBtn.disabled = busy;
@@ -693,12 +696,14 @@ export class MailClientApp extends GenericProcess {
     const net = this.os.net, TO = 15000;
     const st  = { buf: new Uint8Array(0) };
 
+    /** @param {string} l */
     const send = (l) => { this._log(`> ${l}`); sendLine(net, connKey, l); };
     const recv = async () => {
       const l = await recvLine(net, connKey, TO, st);
       if (l !== null) this._log(`< ${l}`);
       return l;
     };
+    /** @param {string} cmd */
     const ok = async (cmd) => {
       const l = await recv();
       if (l == null) throw new Error("POP3: Verbindung getrennt");
@@ -759,9 +764,11 @@ export class MailClientApp extends GenericProcess {
 
     let seq = 1;
     const tag  = () => `A${String(seq++).padStart(3, "0")}`;
+    /** @param {string} l */
     const send = (l) => { this._log(`> ${l}`); sendLine(net, connKey, l); };
 
     // Read lines until we see our tag response
+    /** @param {string} expectedTag */
     const readTagged = async (expectedTag) => {
       while (true) {
         const l = await recvLine(net, connKey, TO, st);
@@ -935,7 +942,9 @@ export class MailClientApp extends GenericProcess {
     const net = this.os.net, TO = 15000;
     const st  = { buf: new Uint8Array(0) };
 
+    /** @param {string} l */
     const send = (l) => { this._log(`> ${l}`); sendLine(net, connKey, l); };
+    /** @param {number[]} codes @param {string} label */
     const expect = async (codes, label) => {
       const r = await recvSmtp(net, connKey, TO, st);
       for (const l of r.lines) this._log(`< ${l}`);

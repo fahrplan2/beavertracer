@@ -177,7 +177,7 @@ export class PCapViewer {
     this.#renderActiveSession();
   }
 
-  /** Hide a tab (session remains alive). */
+  /** Hide a tab (session remains alive). @param {string} name */
   hideTab(name) {
     const s = this.#sessions.get(name);
     if (!s) return;
@@ -531,6 +531,7 @@ export class PCapViewer {
     }
   }
 
+  /** @param {HTMLElement} anchorEl */
   #renderTabPicker(anchorEl) {
     if (!this.#tabPickerOpen) return;
 
@@ -563,7 +564,7 @@ export class PCapViewer {
       const locateData = this.#opt.locateData ?? "/wiregasm/wiregasm.data";
 
       this.#wgPromise = loadWiregasm({
-        locateFile: (path, prefix) => {
+        locateFile: (/** @type {string} */ path, /** @type {string} */ prefix) => {
           if (path.endsWith(".wasm")) return locateWasm;
           if (path.endsWith(".data")) return locateData;
           return prefix + path;
@@ -886,9 +887,9 @@ export class PCapViewer {
       cursor: "row-resize",
       storageKey: "pcapviewer.splitRatio.v1",
       getRatio: () => this.#hSplitRatio,
-      setRatio: (v) => { this.#hSplitRatio = v; },
+      setRatio: (/** @type {number} */ v) => { this.#hSplitRatio = v; },
       getAbort: () => this.#hSplitAbort,
-      setAbort: (ac) => { this.#hSplitAbort = ac; },
+      setAbort: (/** @type {*} */ ac) => { this.#hSplitAbort = ac; },
     };
   }
 
@@ -905,15 +906,20 @@ export class PCapViewer {
     /** @type {WeakMap<object, any>} */
     const seen = new WeakMap();
 
+    /** @param {*} x */
     const isPrimitive = (x) => x == null || (typeof x !== "object" && typeof x !== "function");
+    /** @param {*} x */
     const isVector = (x) => x && typeof x === "object" && typeof x.size === "function" && typeof x.get === "function";
+    /** @param {*} x */
     const isIterable = (x) => x && typeof x[Symbol.iterator] === "function";
 
+    /** @param {*} x */
     const tryRelease = (x) => {
       if (!release) return;
       try { if (x && typeof x.delete === "function") x.delete(); } catch { }
     };
 
+    /** @param {*} x @param {number} depth */
     const unwrap = (x, depth) => {
       if (isPrimitive(x)) return x;
       if (depth > maxDepth) return "[[maxDepth]]";
@@ -1071,6 +1077,7 @@ export class PCapViewer {
     this.#rawPane.innerHTML = html;
   }
 
+  /** @param {number} start @param {number} length @param {number} ds */
   #highlightHexRange(start, length, ds) {
     if (!this.#rawPane) return;
     if (!this.#activeFrameBytes) return;       // only ds0 supported in this minimal version

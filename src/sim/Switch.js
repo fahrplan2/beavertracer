@@ -118,8 +118,8 @@ export class Switch extends SimulatedObject {
                 } else {
                     const allowed = Array.isArray(cfg.allowedVlans)
                         ? cfg.allowedVlans
-                            .map(x => Number(x))
-                            .filter(v => Number.isInteger(v) && v >= 1 && v <= 4094)
+                            .map((/** @type {*} */ x) => Number(x))
+                            .filter((/** @type {number} */ v) => Number.isInteger(v) && v >= 1 && v <= 4094)
                         : [...(p.allowedVlans ?? new Set([pvid]))];
 
                     // ensure pvid included (good UX + consistent behavior)
@@ -157,6 +157,7 @@ export class Switch extends SimulatedObject {
 
     /* ------------------------------ UI ------------------------------ */
 
+    /** @param {HTMLElement} panelBody */
     mount(panelBody) {
         this._stopSatPolling();
         panelBody.innerHTML = "";
@@ -179,6 +180,7 @@ export class Switch extends SimulatedObject {
         content.style.padding = "8px";
         card.appendChild(content);
 
+        /** @param {string} id */
         const selectTab = (id) => {
             this._activeTab = id;
             this._satHost = null;

@@ -572,6 +572,7 @@ export class IPv4ConfigApp extends GenericProcess {
 
   // ------------------ DHCP ------------------
 
+  /** @param {number} msSim */
   async _simSleep(msSim) {
     await simTimer.sleep(msSim);
   }
@@ -745,6 +746,7 @@ export class IPv4ConfigApp extends GenericProcess {
     }
   }
 
+  /** @param {number} ifaceIdx */
   _applyApipa(ifaceIdx) {
     const net = this.os.net;
     if (!net) return;
@@ -774,6 +776,7 @@ export class IPv4ConfigApp extends GenericProcess {
     return new Uint8Array([0x02, 0x00, 0x00, 0x00, 0x00, (ifaceIdx & 0xff)]);
   }
 
+  /** @param {number} ifaceIdx */
   _dropInterfaceForDhcp(ifaceIdx) {
     const net = this.os.net;
     if (!net) return;

@@ -120,6 +120,7 @@ export class TextBox extends SimulatedObject {
    * Override panel-open guard from SimulatedObject:
    * TextBox panels may open in EditMode.
    */
+  /** @param {boolean} open */
   setPanelOpen(open) {
 
     if(this.simcontrol.mode!=="edit") return;
@@ -134,6 +135,7 @@ export class TextBox extends SimulatedObject {
   // ---------------------------------------------------------------------------
 
   listPorts() { return []; }
+  /** @param {*} _ */
   getPortByKey(_) { return null; }
 
   // ---------------------------------------------------------------------------

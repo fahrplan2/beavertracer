@@ -74,6 +74,7 @@ export class Pcap {
         return new Uint8Array(buffer);
     }
 
+    /** @param {number} n */
     _writeU32LE(n) {
         const b = new ArrayBuffer(4);
         new DataView(b).setUint32(0, n >>> 0, true);

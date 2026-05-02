@@ -25,13 +25,13 @@ function s32diff(a, b) {
   return ((u32(a) - u32(b)) | 0);
 }
 
-/** a < b (mod 2^32) */
+/** a < b (mod 2^32) @param {number} a @param {number} b */
 function seqLT(a, b) { return s32diff(a, b) < 0; }
-/** a <= b (mod 2^32) */
+/** a <= b (mod 2^32) @param {number} a @param {number} b */
 function seqLE(a, b) { return s32diff(a, b) <= 0; }
-/** a > b (mod 2^32) */
+/** a > b (mod 2^32) @param {number} a @param {number} b */
 function seqGT(a, b) { return s32diff(a, b) > 0; }
-/** a >= b (mod 2^32) */
+/** a >= b (mod 2^32) @param {number} a @param {number} b */
 function seqGE(a, b) { return s32diff(a, b) >= 0; }
 
 /**

@@ -36,6 +36,7 @@ export class SplitGrid {
     this.#abort = new AbortController();
     const { signal } = this.#abort;
 
+    /** @param {number} aPx */
     const applyPx = (aPx) => {
       const SPLIT = cfg.splitSizePx;
       const rect = container.getBoundingClientRect();
@@ -64,6 +65,7 @@ export class SplitGrid {
     let startPos = 0;
     let startAPx = 0;
 
+    /** @param {PointerEvent} e */
     const onMove = (e) => {
       const delta = (cfg.axis === "y" ? e.clientY : e.clientX) - startPos;
       applyPx(startAPx + delta);

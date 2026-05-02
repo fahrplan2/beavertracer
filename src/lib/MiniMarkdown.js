@@ -1,7 +1,7 @@
 //@ts-check
 
 export class MiniMarkdown {
-  /** Escape HTML so users cannot inject tags/scripts. */
+  /** Escape HTML so users cannot inject tags/scripts. @param {unknown} s */
   static escapeHtml(s) {
     return String(s)
       .replaceAll("&", "&amp;")
@@ -18,6 +18,7 @@ export class MiniMarkdown {
    * - *italic* / _italic_
    *
    * NOTE: Does NOT convert newlines; caller decides.
+   * @param {string} md
    */
   static renderInline(md) {
     let s = MiniMarkdown.escapeHtml(md);
@@ -39,6 +40,7 @@ export class MiniMarkdown {
 
   /* -------------------- Headings -------------------- */
 
+  /** @param {string} line @returns {number} */
   static _headingLevel(line) {
     // Allow up to 3 leading spaces; support #, ##, ### only
     const m = /^\s{0,3}(#{1,3})\s+\S/.exec(String(line));
@@ -46,6 +48,7 @@ export class MiniMarkdown {
     return m[1].length;
   }
 
+  /** @param {string} block */
   static _parseHeading(block) {
     const lines = String(block).split(/\r?\n/);
     const first = lines[0] ?? "";
@@ -57,11 +60,13 @@ export class MiniMarkdown {
 
   /* -------------------- Lists -------------------- */
 
+  /** @param {string} line */
   static _isUlItemLine(line) {
     // "- item" or "* item" (CommonMark-ish, no nesting)
     return /^\s{0,3}[-*]\s+\S/.test(String(line));
   }
 
+  /** @param {string} block */
   static _looksLikeUl(block) {
     const lines = String(block)
       .split(/\r?\n/)
@@ -74,6 +79,7 @@ export class MiniMarkdown {
     return lines.every(l => MiniMarkdown._isUlItemLine(l));
   }
 
+  /** @param {string} block */
   static _parseUl(block) {
     const lines = String(block)
       .split(/\r?\n/)
@@ -83,6 +89,7 @@ export class MiniMarkdown {
     return lines.map(l => l.replace(/^\s{0,3}[-*]\s+/, ""));
   }
 
+  /** @param {string} block */
   static renderUl(block) {
     const items = MiniMarkdown._parseUl(block);
     const lis = items
@@ -93,6 +100,7 @@ export class MiniMarkdown {
 
   /* -------------------- Tables -------------------- */
 
+  /** @param {string} line */
   static _normalizeTableLine(line) {
     let s = String(line).trim();
     if (s.startsWith("|")) s = s.slice(1);
@@ -100,11 +108,13 @@ export class MiniMarkdown {
     return s.trim();
   }
 
+  /** @param {string} line */
   static _splitRow(line) {
     const s = MiniMarkdown._normalizeTableLine(line);
     return s.split("|").map(c => c.trim());
   }
 
+  /** @param {string} line */
   static _isSepLine(line) {
     // ignore separator lines like ---|---|--- or :---|---:
     return /^[\-\s\|:]+$/.test(line) && line.includes("|");
@@ -116,6 +126,7 @@ export class MiniMarkdown {
    * - ignore separator lines (---|---)
    * - remaining lines: all contain '|'
    * - first 2 content lines have >=2 columns
+   * @param {string} block
    */
   static looksLikePipeTable(block) {
     const lines = String(block)
@@ -135,6 +146,7 @@ export class MiniMarkdown {
     return a.length >= 2 && b.length >= 2;
   }
 
+  /** @param {string} block */
   static parsePipeTable(block) {
     const lines = String(block)
       .split(/\r?\n/)
@@ -162,6 +174,7 @@ export class MiniMarkdown {
     const bodyRows = rows.slice(1);
 
     const maxCols = Math.max(0, ...rows.map(r => r.length));
+    /** @param {string[]} r @returns {string[]} */
     const pad = (r) => {
       const out = r.slice();
       while (out.length < maxCols) out.push("");
@@ -185,18 +198,21 @@ export class MiniMarkdown {
 
   /* -------------------- Full Render -------------------- */
 
+  /** @param {string} block */
   static _renderParagraph(block) {
     return `<div class="minimarkdown-paragraph">${
       MiniMarkdown.renderInline(block).replace(/\r?\n/g, "<br>")
     }</div>`;
   }
 
+  /** @param {number} level @param {string} title */
   static _renderHeading(level, title) {
     const cls = level === 1 ? "minimarkdown-h1" : level === 2 ? "minimarkdown-h2" : "minimarkdown-h3";
     const tag = level === 1 ? "h1" : level === 2 ? "h2" : "h3";
     return `<${tag} class="${cls}">${MiniMarkdown.renderInline(title)}</${tag}>`;
   }
 
+  /** @param {string} block */
   static _renderBlock(block) {
     const firstLine = String(block).split(/\r?\n/, 1)[0] ?? "";
 

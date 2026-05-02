@@ -460,7 +460,7 @@ export class DHCPServerApp extends GenericProcess {
     if (typeof o?.gateway === "string") out.gateway = parseIPv4Address(o.gateway);
 
     if (Array.isArray(o?.dns)) {
-      const arr = o.dns.filter(x => typeof x === "string").map(parseIPv4Address);
+      const arr = o.dns.filter((/** @type {*} */ x) => typeof x === "string").map(parseIPv4Address);
       if (arr.length) out.dns = arr;
     } else if (typeof o?.dns === "string") {
       const arr = parseIPv4List(o.dns);
@@ -536,6 +536,7 @@ export class DHCPServerApp extends GenericProcess {
     }
   }
 
+  /** @param {*} val */
   _writeAutostart(val) {
     try {
       const txt = this.os.fs.readFile(this.confPath);

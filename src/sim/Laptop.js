@@ -37,7 +37,7 @@ export class Laptop extends SimulatedObject {
 
         this.os = new OS(this, fs, net);
 
-        this.onPanelCreated = (body) => {
+        this.onPanelCreated = (/** @type {HTMLElement} */ body) => {
             this.os.mount(body);
         };
         this.onPanelOpen = () => {
@@ -67,6 +67,7 @@ export class Laptop extends SimulatedObject {
     // --- Port API (no wired ports — Laptop cannot be cabled) ---
 
     listPorts()      { return []; }
+    /** @param {*} _k */
     getPortByKey(_k) { return null; }
 
     // --- Persistence ---

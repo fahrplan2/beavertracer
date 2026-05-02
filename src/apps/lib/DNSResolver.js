@@ -435,6 +435,7 @@ export class DNSResolver {
     return null;
   }
 
+  /** @param {*} resp */
   _pickCacheTTLSeconds(resp) {
     const all = []
       .concat(resp.answers ?? [])
@@ -451,6 +452,7 @@ export class DNSResolver {
     return Math.max(1, Math.min(this.maxCacheSec, min | 0));
   }
 
+  /** @param {*} resp */
   _extractNSHosts(resp) {
     /** @type {string[]} */
     const out = [];
@@ -461,6 +463,7 @@ export class DNSResolver {
     return Array.from(new Set(out));
   }
 
+  /** @param {*} resp */
   _extractAasNumbers(resp) {
     if (!resp) return [];
     /** @type {number[]} */

@@ -23,6 +23,7 @@ export const rm = {
 
     if (paths.length === 0) return t("app.terminal.commands.rm.err.missingOperand");
 
+    /** @param {string} abs */
     const removePath = (abs) => {
       if (!fs.exists(abs)) {
         if (!force) {

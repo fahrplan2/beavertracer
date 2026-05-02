@@ -48,7 +48,7 @@ export class PC extends SimulatedObject {
         const net = new IPStack(1, name);
         this.os = new OS(this, fs, net);
 
-        this.onPanelCreated = (body) => {
+        this.onPanelCreated = (/** @type {HTMLElement} */ body) => {
             this.os.mount(body);
         };
         this.onPanelOpen = () => {
