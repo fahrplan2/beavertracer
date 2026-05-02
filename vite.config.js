@@ -4,6 +4,7 @@ import path from "node:path";
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { staticSitemap } from "./vite-plugin-static-sitemap.js";
+import { lessonsPlugin } from "./vite-plugin-lessons.js";
 
 const __filename = fileURLToPath(import.meta.url);
 //const __dirname = path.dirname(__filename);
@@ -126,6 +127,7 @@ export default defineConfig({
   base: "./",
   plugins: [
     wiregasmAssets(),
+    lessonsPlugin(),
     staticSitemap({ siteUrl: "https://www.beavertracer.eu" }),
   ],
   build: {
