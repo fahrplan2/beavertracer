@@ -134,7 +134,7 @@ export class SwitchBackplane extends Observable {
 
         // Default: STP disabled => all forwarding
         this.stpForwarding = this.ports.map(() => true);
-        this.stpRxBest = this.ports.map(() => null);
+        this.stpRxBest = this.ports.map(/** @returns {null} */ () => null);
         this.stpPortLinkedLast = this.ports.map(p => p.isLinked());
 
         // If you want STP on by default:
@@ -171,7 +171,7 @@ export class SwitchBackplane extends Observable {
 
     disableSTPFeature() {
         this.stpEnabled = false;
-        this.stpRxBest = this.ports.map(() => null);
+        this.stpRxBest = this.ports.map(/** @returns {null} */ () => null);
         this.stpForwarding = this.ports.map(() => true);
 
         // root resets to self
@@ -340,7 +340,7 @@ export class SwitchBackplane extends Observable {
     }
 
     _initStpArrays() {
-        this.stpRxBest = this.ports.map(() => null);
+        this.stpRxBest = this.ports.map(/** @returns {null} */ () => null);
         this.stpForwarding = this.ports.map(() => true);
     }
 
@@ -348,7 +348,7 @@ export class SwitchBackplane extends Observable {
         this.stpRootId = this.stpBridgeIdVal;
         this.stpRootCost = 0;
         this.stpRootPort = null;
-        this.stpRxBest = this.ports.map(() => null);
+        this.stpRxBest = this.ports.map(/** @returns {null} */ () => null);
         this.stpForwarding = this.ports.map(() => true);
     }
 

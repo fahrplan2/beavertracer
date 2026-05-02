@@ -152,7 +152,7 @@ export class Link extends SimulatedObject {
     this._packets = [];
   }
 
-  /** @param {string} dir @param {*} data */
+  /** @param {"AtoB"|"BtoA"} dir @param {*} data */
   _startInFlight(dir, data) {
     for (const p of this._packets) {
       if (p.dir === dir) p.el.remove();

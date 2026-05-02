@@ -158,7 +158,7 @@ export class RectOverlay extends SimulatedObject {
     op.value = String(this.opacity);
     op.className = "sim-rect-opacity";
     op.addEventListener("input", () => {
-      this.opacity = clamp01(op.value);
+      this.opacity = clamp01(parseFloat(op.value));
       this._applyFill();
     });
     body.appendChild(op);

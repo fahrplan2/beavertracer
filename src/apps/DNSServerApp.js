@@ -186,6 +186,7 @@ export class DNSServerApp extends GenericProcess {
   disposer = new Disposer();
 
   port = 53;
+  /** @type {number|null} */
   socketPort = null;
   running = false;
 
@@ -519,7 +520,7 @@ export class DNSServerApp extends GenericProcess {
     return false;
   }
 
-  /** @param {number} sockPort @param {string} srcIp @param {number} srcPort @param {Uint8Array} payload */
+  /** @param {number} sockPort @param {IPAddress} srcIp @param {number} srcPort @param {Uint8Array} payload */
   _handleDNSQuery(sockPort, srcIp, srcPort, payload) {
     /** @type {DNSPacket|null} */
     let q = null;

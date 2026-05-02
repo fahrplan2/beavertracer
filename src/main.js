@@ -27,7 +27,8 @@ async function resolveStartupSim() {
 
 initLocale().then(async () => {
     const simRoot = /** @type {HTMLElement} */ (document.getElementById("simcontrol"));
-    const sim = new SimControl(simRoot);
+    const params = new URLSearchParams(window.location.search);
+    const sim = new SimControl(simRoot, { embedded: params.get("embed") === "1" });
     sim.restore(await resolveStartupSim());
 });
 

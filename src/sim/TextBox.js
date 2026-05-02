@@ -134,8 +134,9 @@ export class TextBox extends SimulatedObject {
   // PORT API (TextBoxes have no ports)
   // ---------------------------------------------------------------------------
 
+  /** @returns {never[]} */
   listPorts() { return []; }
-  /** @param {*} _ */
+  /** @param {*} _ @returns {null} */
   getPortByKey(_) { return null; }
 
   // ---------------------------------------------------------------------------

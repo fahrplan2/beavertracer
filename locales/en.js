@@ -783,5 +783,6 @@ export default {
   "pcap.picker.unknown": "(unknown)",
   "ui.ok": "OK",
   "ui.cancel": "Cancel",
-  "sim.save.filename": "Filename"
+  "sim.save.filename": "Filename",
+  "sim.embed.open": "Open in BeaverTracer"
 };

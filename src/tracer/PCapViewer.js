@@ -1,4 +1,5 @@
 // @ts-check
+// @ts-ignore
 import loadWiregasm from "@goodtools/wiregasm/dist/wiregasm";
 import { TabPicker } from "./lib/TabPicker.js";
 import { SplitGrid } from "./lib/SplitGrid.js";
@@ -939,7 +940,7 @@ export class PCapViewer {
         try {
           const ent = x.entries();
           if (isIterable(ent)) {
-            const out = {};
+            const out = /** @type {Record<string, any>} */ ({});
             seen.set(x, out);
             for (const [k, v] of ent) out[String(unwrap(k, depth + 1))] = unwrap(v, depth + 1);
             tryRelease(ent);
@@ -954,7 +955,7 @@ export class PCapViewer {
           const ks = x.keys();
           const keysArr = unwrap(ks, depth + 1);
           if (Array.isArray(keysArr)) {
-            const out = {};
+            const out = /** @type {Record<string, any>} */ ({});
             seen.set(x, out);
             for (const k of keysArr) {
               let v;
@@ -979,7 +980,7 @@ export class PCapViewer {
 
       if (typeof x === "function") return undefined;
 
-      const out = {};
+      const out = /** @type {Record<string, any>} */ ({});
       seen.set(x, out);
 
       for (const k of Object.keys(x)) {

@@ -372,7 +372,7 @@ export class MailClientApp extends GenericProcess {
     const toolbar = UI.el("div", { className: "mailclient-toolbar", children: [composeBtn, fetchBtn, configBtn] });
 
     // ── Tabs ─────────────────────────────────────────────────
-    /** @param {string} id @param {string} icon @param {string} label */
+    /** @param {"inbox"|"sent"|"compose"|"config"|"log"} id @param {string} icon @param {string} label */
     const mkTab = (id, icon, label) => {
       const b = iconBtn(icon, label, () => this._switchTab(id), {});
       this.tabBtns[id] = b;

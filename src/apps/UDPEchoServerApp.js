@@ -288,7 +288,7 @@ export class UDPEchoServerApp extends GenericProcess {
           continue;
         }
 
-        this.os.net.sendUDPSocket(sock, dstV4, srcPort, data);
+        this.os.net.sendUDPSocket(sock, new IPAddress(4, dstV4), srcPort, data);
 
         this._appendLog(t("app.udpechoserver.log.txEcho", {
           time: nowStamp(),

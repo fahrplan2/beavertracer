@@ -169,11 +169,12 @@ export class DOMBuilder {
      * Creates a toolbar button with optional icon and active state.
      *
      * @param {Object} opts
-     * @param {string} opts.label - Button text
-     * @param {() => void} opts.onClick - Click handler
+     * @param {string} opts.label - Button text (shown as tooltip when iconOnly)
+     * @param {(ev: MouseEvent) => void} opts.onClick - Click handler
      * @param {string} [opts.icon] - Optional icon classes
      * @param {boolean} [opts.active=false] - Whether button starts active
      * @param {string} [opts.className] - Additional CSS classes
+     * @param {boolean} [opts.iconOnly=false] - Show icon only, label becomes title tooltip
      * @returns {HTMLButtonElement}
      */
 
@@ -182,25 +183,31 @@ export class DOMBuilder {
         onClick,
         icon,
         active = false,
-        className = ""
+        className = "",
+        iconOnly = false,
     }) {
         const btn = document.createElement("button");
         btn.type = "button";
 
         if (className) btn.classList.add(...className.split(" ").filter(Boolean));
         if (active) btn.classList.add("active");
+        if (iconOnly) {
+            btn.classList.add("icon-only");
+            btn.title = label;
+        }
 
         // 1) icon
         const iconEl = document.createElement("i");
         iconEl.classList.add("fas");
         if (icon) iconEl.classList.add(icon);
-
-        // 2) text
-        const textEl = document.createElement("span");
-        textEl.textContent = label;
-
         btn.appendChild(iconEl);
-        btn.appendChild(textEl);
+
+        // 2) text (omitted when iconOnly)
+        if (!iconOnly) {
+            const textEl = document.createElement("span");
+            textEl.textContent = label;
+            btn.appendChild(textEl);
+        }
 
         btn.addEventListener("click", onClick);
 

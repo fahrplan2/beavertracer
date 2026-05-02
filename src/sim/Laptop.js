@@ -66,8 +66,9 @@ export class Laptop extends SimulatedObject {
 
     // --- Port API (no wired ports — Laptop cannot be cabled) ---
 
+    /** @returns {never[]} */
     listPorts()      { return []; }
-    /** @param {*} _k */
+    /** @param {*} _k @returns {null} */
     getPortByKey(_k) { return null; }
 
     // --- Persistence ---

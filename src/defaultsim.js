@@ -92,6 +92,7 @@ export const defaultSimulation = {
           }
         ]
       },
+      // @ts-ignore
       "dns": null
     },
     {

@@ -920,3 +920,16 @@ sim-toolbar-langbtn {
 .sim-dialog-ok:hover {
   filter: brightness(1.1);
 }
+
+/* ── Embedded mode ─────────────────────────────────────────── */
+
+/* "Open in BeaverTracer" button stands out as primary CTA */
+.is-embedded .sim-toolbar [data-role="embed-open"] {
+  background: var(--primary, #5b9bd5);
+  color: #000;
+  border-color: var(--primary, #5b9bd5);
+}
+
+.is-embedded .sim-toolbar [data-role="embed-open"]:hover {
+  filter: brightness(1.1);
+}

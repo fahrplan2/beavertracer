@@ -655,5 +655,6 @@ export default {
   "app.mailclient.err.noRecipient": "Nenhum destinatário especificado",
   "ui.ok": "OK",
   "ui.cancel": "Cancelar",
-  "sim.save.filename": "Nome do arquivo"
+  "sim.save.filename": "Nome do arquivo",
+  "sim.embed.open": "Abrir no BeaverTracer"
 };

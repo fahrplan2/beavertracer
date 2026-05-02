@@ -147,11 +147,20 @@ export class SimControl {
     /** @type {HTMLDivElement|null} */
     _pageContent = null;
 
+    /** @type {boolean} */
+    embedded = false;
+
     /**
      * @param {HTMLElement|null} root
+     * @param {{ embedded?: boolean }} [opts]
      */
-    constructor(root) {
+    constructor(root, opts = {}) {
         this.root = root;
+        this.embedded = opts.embedded ?? false;
+
+        if (this.embedded) {
+            this.mode = "run";
+        }
 
         this.pcapViewer = new PCapViewer(null, {
             hideComputedTreeNodes: true,
@@ -307,6 +316,7 @@ export class SimControl {
 
         root.replaceChildren();
         root.classList.add("sim-root");
+        if (this.embedded) root.classList.add("is-embedded");
 
         // Toolbar
         const toolbar = document.createElement("div");
@@ -409,6 +419,8 @@ export class SimControl {
     }
 
     _buildToolbar() {
+        if (this.embedded) return this._buildEmbeddedToolbar();
+
         const toolbar = this._toolbar;
         if (!toolbar) return;
         toolbar.replaceChildren();
@@ -630,6 +642,113 @@ export class SimControl {
         aboutBtn.dataset.role = "mode-about";
         gCommon.appendChild(aboutBtn);
 
+    }
+
+    _buildEmbeddedToolbar() {
+        const toolbar = this._toolbar;
+        if (!toolbar) return;
+        toolbar.replaceChildren();
+
+        /** @param {string} [role] */
+        const addSeparator = (role) => {
+            const sep = document.createElement("div");
+            sep.className = "sim-toolbar-sep";
+            if (role) sep.dataset.role = role;
+            toolbar.appendChild(sep);
+            return sep;
+        };
+
+        // Mode: Run + Trace (no Edit)
+        addSeparator("sep-mode");
+        const gMode = DOMBuilder.buttongroup(t("sim.mode"), toolbar);
+        gMode.dataset.group = "mode";
+
+        const btnRun = DOMBuilder.iconbutton({
+            label: t("sim.run"),
+            icon: "fa-play",
+            iconOnly: true,
+            onClick: () => {
+                this.mode = "run";
+                this.isPaused = false;
+                this._invalidateUI();
+                this.scheduleNextStep();
+            },
+        });
+        btnRun.dataset.role = "mode-run";
+        gMode.appendChild(btnRun);
+
+        const btnTrace = DOMBuilder.iconbutton({
+            label: t("sim.trace"),
+            icon: "fa-magnifying-glass",
+            iconOnly: true,
+            onClick: () => {
+                this.mode = "trace";
+                this._invalidateUI();
+                this.pcapViewer.render();
+            },
+        });
+        btnTrace.dataset.role = "mode-trace";
+        gMode.appendChild(btnTrace);
+
+        // Speed controls (icon-only)
+        addSeparator("sep-speeds");
+        const gSpeeds = DOMBuilder.buttongroup(t("sim.speed"), toolbar);
+        gSpeeds.dataset.group = "speeds";
+
+        const pauseBtn = DOMBuilder.iconbutton({
+            label: t("sim.pause"),
+            icon: "fa-pause",
+            iconOnly: true,
+            onClick: () => this.pause(),
+        });
+        pauseBtn.dataset.role = "pause";
+        gSpeeds.appendChild(pauseBtn);
+
+        const speeds = [
+            { label: "0.5×", ms: 1000, icon: "fa-1" },
+            { label: "1×",   ms: 500,  icon: "fa-2" },
+            { label: "4×",   ms: 100,  icon: "fa-3" },
+            { label: "8×",   ms: 40,   icon: "fa-4" },
+        ];
+
+        for (const s of speeds) {
+            const b = DOMBuilder.iconbutton({
+                label: s.label,
+                icon: s.icon,
+                iconOnly: true,
+                onClick: () => this.setTick(s.ms),
+            });
+            b.dataset.role = `speed-${s.ms}`;
+            gSpeeds.appendChild(b);
+        }
+
+        const resetBtn = DOMBuilder.iconbutton({
+            label: t("sim.reset"),
+            icon: "fa-arrow-rotate-left",
+            iconOnly: true,
+            onClick: () => {
+                this.restore(this.toJSON());
+                this.mode = "run";
+                this.pause();
+            },
+        });
+        resetBtn.dataset.role = "reset";
+        gSpeeds.appendChild(resetBtn);
+
+        // Open full app
+        addSeparator("sep-open");
+        const gOpen = DOMBuilder.buttongroup("", toolbar);
+        const btnOpen = DOMBuilder.iconbutton({
+            label: t("sim.embed.open"),
+            icon: "fa-up-right-from-square",
+            onClick: () => {
+                const url = new URL(window.location.href);
+                url.searchParams.delete("embed");
+                window.open(url.toString(), "_blank");
+            },
+        });
+        btnOpen.dataset.role = "embed-open";
+        gOpen.appendChild(btnOpen);
     }
 
     _buildSidebar() {
@@ -1507,7 +1626,7 @@ export class SimControl {
         };
     }
 
-    /** @param {object} state */
+    /** @param {*} state */
     restore(state) {
         //@ts-ignore
         const REGISTRY = new Map([
