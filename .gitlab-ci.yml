@@ -176,6 +176,7 @@ upload:
 release:
   stage: release
   image: registry.gitlab.com/gitlab-org/release-cli:latest
+  before_script: []
   needs:
     - job: upload
       artifacts: true
