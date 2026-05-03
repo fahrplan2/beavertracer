@@ -45,8 +45,11 @@ default:
         curl file libssl-dev pkg-config
         libwebkit2gtk-4.1-dev libgtk-3-dev
         libayatana-appindicator3-dev librsvg2-dev patchelf
-    - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
-    - source "$HOME/.cargo/env"
+    - |
+      if ! command -v rustup &>/dev/null; then
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+      fi
+    - source "$CARGO_HOME/env"
     - npm ci --cache .npm --prefer-offline
   cache:
     - key:
