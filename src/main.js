@@ -5,14 +5,18 @@ import { SimControl } from "./SimControl.js";
 import { defaultSimulation } from "./defaultsim.js";
 
 /**
- * If ?sim=https://... is present, fetch that JSON.
+ * If ?sim=<url> is present, fetch that JSON.
+ * Accepts https:// (external) and /-paths (same-origin, e.g. /sims/foo.btsim).
  * Falls back to defaultSimulation on any error or missing param.
- * Only https:// URLs are accepted to prevent abuse.
  * @returns {Promise<object>}
  */
 async function resolveStartupSim() {
     const simUrl = new URLSearchParams(window.location.search).get("sim");
-    if (!simUrl || !simUrl.startsWith("https://")) return defaultSimulation;
+    if (!simUrl) return defaultSimulation;
+
+    const isSameOrigin = simUrl.startsWith("/");
+    const isExternal   = simUrl.startsWith("https://");
+    if (!isSameOrigin && !isExternal) return defaultSimulation;
 
     try {
         const res = await fetch(simUrl);

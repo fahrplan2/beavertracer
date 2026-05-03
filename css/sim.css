@@ -921,6 +921,109 @@ sim-toolbar-langbtn {
   filter: brightness(1.1);
 }
 
+/* ── Responsive toolbar (low horizontal resolution) ─────────── */
+
+@media (max-width: 1300px) {
+  .sim-toolbar button {
+    height: 46px;
+    min-width: 62px;
+    padding: 5px 9px;
+    font-size: 11px;
+    gap: 3px;
+  }
+  .sim-toolbar-buttons .fas {
+    font-size: 21px;
+  }
+  .sim-toolbar-buttons {
+    gap: 5px;
+  }
+  .sim-toolbar-group {
+    padding: 4px 6px 6px;
+  }
+  .sim-toolbar-group-label {
+    font-size: 10px;
+    margin-bottom: 4px;
+  }
+}
+
+@media (max-width: 1050px) {
+  .sim-toolbar button {
+    height: 38px;
+    min-width: 55px;
+    padding: 3px 7px;
+    font-size: 10px;
+    gap: 2px;
+  }
+  .sim-toolbar-buttons .fas {
+    font-size: 17px;
+  }
+  .sim-toolbar-buttons {
+    gap: 4px;
+  }
+  .sim-toolbar-group {
+    padding: 3px 5px 5px;
+  }
+  .sim-toolbar-group-label {
+    font-size: 9px;
+    margin-bottom: 2px;
+    min-height: 10px;
+  }
+  .sim-toolbar {
+    gap: 4px;
+    padding: 5px;
+  }
+  .sim-toolbar-branding {
+    font-size: 20px;
+  }
+}
+
+/* ── Responsive sidebar (low vertical resolution) ─────────── */
+
+@media (max-height: 850px) {
+  .sim-sidebar-btn {
+    height: 42px;
+    padding: 4px 8px;
+    font-size: 11px;
+    gap: 3px;
+  }
+  .sim-sidebar-btn .fas {
+    font-size: 19px;
+  }
+  .sim-sidebar-btn .my-icon-router,
+  .sim-sidebar-btn .my-icon-switch {
+    width: 20px;
+    height: 20px;
+    background-size: 20px 20px;
+  }
+  .sim-sidebar-tools {
+    gap: 4px;
+  }
+}
+
+@media (max-height: 650px) {
+  .sim-sidebar-btn {
+    height: 32px;
+    padding: 2px 6px;
+    font-size: 10px;
+    gap: 2px;
+  }
+  .sim-sidebar-btn .fas {
+    font-size: 13px;
+  }
+  .sim-sidebar-btn .my-icon-router,
+  .sim-sidebar-btn .my-icon-switch {
+    width: 14px;
+    height: 14px;
+    background-size: 14px 14px;
+  }
+  .sim-sidebar-tools {
+    gap: 2px;
+  }
+  .sim-sidebar-title {
+    display: none;
+  }
+}
+
 /* ── Embedded mode ─────────────────────────────────────────── */
 
 .is-embedded .sim-toolbar {
