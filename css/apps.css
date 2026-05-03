@@ -1,23 +1,5 @@
 /****************** IP CONFIG (PC Network Settings) ******************/
 
-.app-ipv4 .ipconf-family-tabs {
-  display: flex;
-  gap: 4px;
-  margin: 6px 0;
-}
-
-.app-ipv4 .ipconf-family-tabs .btn {
-  flex: 1;
-  border-radius: 4px;
-  background: var(--bg-strong, #f0f0f0);
-}
-
-.app-ipv4 .ipconf-family-tabs .btn.is-active {
-  background: var(--primary-tint, color-mix(in oklch, var(--bg), var(--primary) 15%));
-  border-color: var(--primary, #3b82f6);
-  font-weight: 600;
-}
-
 /************************************ TERMINAL ***********************/
 .app-terminal .term {
   font-family: "Hack", monospace;
@@ -406,22 +388,6 @@
   min-width: 0;
 }
 
-/* tabs */
-.app-dnsd .tabbar {
-  display: flex;
-  gap: 6px;
-  margin: 6px 0 10px 0;
-  flex-wrap: wrap;
-}
-
-.app-dnsd .tabbar .btn {
-  padding: 6px 10px;
-}
-
-.app-dnsd .tabbar .btn.active {
-  font-weight: 700;
-  outline: 2px solid rgba(255, 255, 255, 0.22);
-}
 
 .app-dnsd .tabcontent {
   margin-bottom: 10px;
@@ -568,36 +534,6 @@ textarea.log {
   margin-left: auto;
 }
 
-/* ── Tab bar ───────────────────────────────────────────── */
-.app-mail-client .mailclient-tabbar {
-  display: flex;
-  gap: 2px;
-  border-bottom: 2px solid var(--border, #444);
-  margin-bottom: 0;
-  padding: 0 4px;
-}
-
-.app-mail-client .mailclient-tabbar .btn {
-  border-radius: 8px 8px 0 0;
-  border-bottom: 3px solid transparent;
-  margin-bottom: -2px;
-  padding: 6px 12px;
-  font-size: 0.85em;
-  background: transparent;
-  color: var(--text-dim, #aaa);
-  transition: background 0.1s, color 0.1s;
-}
-
-.app-mail-client .mailclient-tabbar .btn:hover {
-  background: var(--bg2, #222);
-  color: var(--text, #eee);
-}
-
-.app-mail-client .mailclient-tabbar .btn.active {
-  border-bottom-color: var(--accent, #4a9eff);
-  background: var(--bg2, #222);
-  color: var(--text, #eee);
-}
 
 /* ── Folder panels (inbox / sent) ──────────────────────── */
 .app-mail-client .mailclient-folder-panel {
