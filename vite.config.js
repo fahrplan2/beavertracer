@@ -14,6 +14,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, "package.json"), "utf8"));
 
 function computeVersion() {
+  const ciTag = process.env.CI_COMMIT_TAG;
+  if (ciTag) return ciTag.replace(/^v/, "");
+
   try {
     const raw = execSync(
       "git describe --tags --long --dirty",

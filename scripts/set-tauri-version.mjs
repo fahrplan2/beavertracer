@@ -3,6 +3,10 @@ import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 function computeVersion() {
+  // In GitLab CI tag pipelines CI_COMMIT_TAG is set reliably
+  const ciTag = process.env.CI_COMMIT_TAG;
+  if (ciTag) return ciTag.replace(/^v/, "");
+
   try {
     const raw = execSync("git describe --tags --long --dirty", { encoding: "utf8" }).trim();
 
