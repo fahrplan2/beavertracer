@@ -34,3 +34,10 @@ cargoToml = cargoToml.replace(
 
 writeFileSync(cargoTomlPath, cargoToml);
 console.log(`[tauri] set Cargo.toml version -> ${version}`);
+
+// Also keep package.json in sync
+const pkgPath = path.resolve("package.json");
+const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
+pkg.version = version;
+writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n");
+console.log(`[tauri] set package.json version -> ${version}`);

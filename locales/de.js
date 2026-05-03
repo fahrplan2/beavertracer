@@ -550,6 +550,7 @@ export default {
   "sim.speed": "Geschwindigkeit",
   "sim.pause": "Pause",
   "sim.about": "Über",
+  "sim.downloads": "Downloads",
   "sim.help": "Hilfe",
   "sim.trace": "Verfolgen",
   "sim.reset": "Zurücksetzen",

@@ -667,6 +667,7 @@ export default {
   "sim.speed": "Speed",
   "sim.pause": "Pause",
   "sim.about": "About",
+  "sim.downloads": "Downloads",
   "sim.help": "Help",
   "sim.trace": "Trace",
   "sim.reset": "Reset",

@@ -1148,3 +1148,79 @@ sim-toolbar-langbtn {
 .is-embedded .sim-toolbar [data-role="embed-open"]:hover {
   filter: brightness(1.1);
 }
+
+/* =========================================================
+   Downloads page
+   ========================================================= */
+
+.download-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 20px 0;
+}
+
+.download-card {
+  flex: 1 1 200px;
+  border: 1px solid var(--ui-border);
+  border-radius: 10px;
+  padding: 16px;
+  background: var(--ui-card);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.download-card-icon {
+  font-size: 36px;
+  color: var(--primary-strong);
+  line-height: 1;
+}
+
+.download-card-body h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+
+.download-card-body p {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  background: var(--primary);
+  color: var(--text);
+  border: 1px solid var(--primary-strong);
+  cursor: pointer;
+  margin-right: 6px;
+  margin-bottom: 6px;
+  transition: filter 0.1s;
+}
+
+.download-btn:hover {
+  filter: brightness(0.92);
+}
+
+.download-btn-secondary {
+  background: var(--bg-strong);
+  border-color: var(--ui-border);
+}
+
+.download-note {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 8px 0;
+}
+
+.download-note i {
+  margin-right: 4px;
+}

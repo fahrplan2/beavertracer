@@ -206,7 +206,14 @@ export class StaticPageRouter {
 
   /** @param {string} html */
   #replaceTags(html) {
-    return String(html).replace(/\{VERSION\}/g, String(version()));
+    // @ts-ignore
+    const downloadBase = import.meta.env.VITE_DOWNLOAD_BASE ?? "https://www.beavertracer.eu/releases";
+    const v = String(version());
+    const vBase = v.split("+")[0]; // "0.1.4+dev.3.abc" → "0.1.4"
+    return String(html)
+      .replace(/\{VERSION\}/g, v)
+      .replace(/\{VERSION_BASE\}/g, vBase)
+      .replace(/\{DOWNLOAD_BASE\}/g, downloadBase);
   }
 
   /** @param {string} baseUrl */

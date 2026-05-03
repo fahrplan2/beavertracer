@@ -1,16 +1,30 @@
 # .gitlab-ci.yml
 #
 # Builds:
-#  - on branch "development" (build artifacts only)
-#  - on tags (release build with version taken from tag)
+#  - on branch "development": typecheck + web build (dist/)
+#  - on tags v*.*.* : web build + Tauri (Linux/Windows) + GitLab Release
 #
+# Einmalige Einrichtung:
+#  - Project Access Token mit Scope "api" als CI-Variable RELEASE_TOKEN hinterlegen
+#    (Settings → CI/CD → Variables)
+#  - Linux-Runner mit Docker-Executor nötig (für alle Jobs)
+#  - macOS-Runner mit Tag "macos" optional (für tauri:macos)
 
 stages:
   - check
   - build
+  - release
+
+variables:
+  # Vollständiger Clone damit git describe funktioniert
+  GIT_DEPTH: 0
+  # Cargo-Cache ins Projektverzeichnis (Runner-Cache greift dann)
+  CARGO_HOME: "$CI_PROJECT_DIR/.cargo"
+
+# ── Shared defaults (Web-Jobs) ────────────────────────────────────────────────
 
 default:
-  image: node:20
+  image: node:22
   cache:
     key:
       files:
@@ -18,9 +32,34 @@ default:
     paths:
       - .npm/
   before_script:
-    - node -v
-    - npm -v
+    - node -v && npm -v
     - npm ci --cache .npm --prefer-offline
+
+# ── Shared setup für Tauri-Jobs (Linux/Windows) ───────────────────────────────
+
+.tauri-setup:
+  image: node:22-bookworm
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y -qq
+        curl file libssl-dev pkg-config
+        libwebkit2gtk-4.1-dev libgtk-3-dev
+        libayatana-appindicator3-dev librsvg2-dev patchelf
+    - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+    - source "$HOME/.cargo/env"
+    - npm ci --cache .npm --prefer-offline
+  cache:
+    - key:
+        files:
+          - package-lock.json
+      paths:
+        - .npm/
+    - key: "cargo-$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
+      paths:
+        - .cargo/registry/
+        - .cargo/git/
+
+# ── check ─────────────────────────────────────────────────────────────────────
 
 typecheck:
   stage: check
@@ -28,15 +67,16 @@ typecheck:
     - npx tsc --noEmit
   rules:
     - if: '$CI_COMMIT_BRANCH == "development"'
-    - if: '$CI_COMMIT_TAG'
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
     - when: never
 
+# ── build ─────────────────────────────────────────────────────────────────────
+
+# Web-Build für Deployment auf beavertracer.eu
 build_dev:
   stage: build
   script:
-    - |
-      export VITE_APP_VERSION="$CI_COMMIT_SHORT_SHA"
-      npm run build
+    - npm run build
   artifacts:
     expire_in: 1 day
     paths:
@@ -45,17 +85,132 @@ build_dev:
     - if: '$CI_COMMIT_BRANCH == "development"'
     - when: never
 
+# Web-Build für Release (sync-version läuft automatisch in prebuild)
+# VITE_DOWNLOAD_BASE ist per Default https://www.beavertracer.eu/releases — passt so
 build_release:
   stage: build
-  image: node:20
   script:
-    - VERSION="${CI_COMMIT_TAG#v}"
-    - npm version "$VERSION" --no-git-tag-version
-    - export VITE_APP_VERSION="$VERSION"
     - npm run build
   artifacts:
     paths:
       - dist/
     expire_in: 7 days
   rules:
-    - if: '$CI_COMMIT_TAG'
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+
+# Tauri – Linux (AppImage + .deb)
+tauri:linux:
+  stage: build
+  extends: .tauri-setup
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+  script:
+    - npm run tauri:build
+  artifacts:
+    name: tauri-linux
+    paths:
+      - src-tauri/target/release/bundle/appimage/*.AppImage
+      - src-tauri/target/release/bundle/deb/*.deb
+    expire_in: 1 day
+
+# Tauri – Windows via cargo-xwin (Cross-Compilation von Linux aus)
+tauri:windows:
+  stage: build
+  extends: .tauri-setup
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+  script:
+    - rustup target add x86_64-pc-windows-msvc
+    - cargo install cargo-xwin
+    - npm run tauri:win
+  artifacts:
+    name: tauri-windows
+    paths:
+      - src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+      - src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
+    expire_in: 1 day
+
+# Tauri – macOS (benötigt Runner mit Tag "macos", optional/manuell)
+tauri:macos:
+  stage: build
+  tags:
+    - macos
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+      when: manual
+      allow_failure: true
+  before_script:
+    - npm ci
+  script:
+    - npm run tauri:build
+  artifacts:
+    name: tauri-macos
+    paths:
+      - src-tauri/target/release/bundle/macos/*.dmg
+    expire_in: 1 day
+
+# ── release ───────────────────────────────────────────────────────────────────
+
+release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  needs:
+    - job: tauri:linux
+      artifacts: true
+    - job: tauri:windows
+      artifacts: true
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+  before_script:
+    - apk add --no-cache curl
+  script:
+    - VERSION="${CI_COMMIT_TAG#v}"
+    - PKG="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/beavertracer/${VERSION}"
+    - DL="https://www.beavertracer.eu/releases"
+
+    # VERSION für den release:-Block exportieren (dotenv)
+    - echo "VERSION=$VERSION" > release.env
+    - echo "DL_BASE=$DL" >> release.env
+
+    # Artifacts in GitLab Package Registry hochladen (CI_JOB_TOKEN reicht)
+    - |
+      for f in \
+        src-tauri/target/release/bundle/appimage/*.AppImage \
+        src-tauri/target/release/bundle/deb/*.deb \
+        src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe \
+        src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi \
+        src-tauri/target/release/bundle/macos/*.dmg; do
+        [ -f "$f" ] || continue
+        echo "Uploading $(basename "$f") ..."
+        curl --fail --silent \
+             --header "JOB-TOKEN: $CI_JOB_TOKEN" \
+             --upload-file "$f" \
+             "${PKG}/$(basename "$f")"
+      done
+
+  artifacts:
+    reports:
+      dotenv: release.env
+
+  # release-cli erstellt den GitLab Release – $VERSION kommt aus dem dotenv oben
+  release:
+    name: "Beaver Tracer $CI_COMMIT_TAG"
+    tag_name: "$CI_COMMIT_TAG"
+    description: |
+      ## Beaver Tracer $CI_COMMIT_TAG
+
+      Desktop-Downloads: https://www.beavertracer.eu
+    assets:
+      links:
+        - name: "Linux AppImage"
+          url: "$DL_BASE/beavertracer_${VERSION}_amd64.AppImage"
+          link_type: package
+        - name: "Linux .deb"
+          url: "$DL_BASE/beavertracer_${VERSION}_amd64.deb"
+          link_type: package
+        - name: "Windows Installer (.exe)"
+          url: "$DL_BASE/beavertracer_${VERSION}_x64-setup.exe"
+          link_type: package
+        - name: "Windows MSI"
+          url: "$DL_BASE/beavertracer_${VERSION}_x64_en-US.msi"
+          link_type: package
