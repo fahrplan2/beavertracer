@@ -185,13 +185,17 @@ export class Router extends SimulatedObject {
         const card = DOMBuilder.div("router-card");
         host.appendChild(card);
 
-        const outerTabIds = ["interfaces", "routes-v4", "routes-v6"];
-        const outerTabBtns = [
-            DOMBuilder.button(t("router.interfaces"),        { className: "router-tab" }),
-            DOMBuilder.button(t("router.routingtable.ipv4"), { className: "router-tab" }),
-            DOMBuilder.button(t("router.routingtable.ipv6"), { className: "router-tab" }),
-        ];
-        card.appendChild(DOMBuilder.div("router-tabs", outerTabBtns));
+        const { bar: outerTabBar, setActive: setOuterActive } = DOMBuilder.tabGroup([
+            { id: "interfaces", label: t("router.interfaces")        },
+            { id: "routes-v4",  label: t("router.routingtable.ipv4") },
+            { id: "routes-v6",  label: t("router.routingtable.ipv6") },
+        ], (id) => {
+            ifSection.style.display    = id === "interfaces" ? "" : "none";
+            routeSection.style.display = id === "interfaces" ? "none" : "";
+            if (id === "routes-v4") { routeTitle.textContent = t("router.routingtable.ipv4"); this._selectedRouteFamily = 4; this._renderRoutes(); }
+            if (id === "routes-v6") { routeTitle.textContent = t("router.routingtable.ipv6"); this._selectedRouteFamily = 6; this._renderRoutes(); }
+        });
+        card.appendChild(outerTabBar);
 
         const outerContent = DOMBuilder.div("");
         outerContent.style.padding = "8px";
@@ -201,7 +205,7 @@ export class Router extends SimulatedObject {
         const ifSection = DOMBuilder.div("");
         ifSection.appendChild(DOMBuilder.h4(t("router.interfaces")));
 
-        const tabsBar = DOMBuilder.div("router-tabs");
+        const tabsBar = DOMBuilder.div("ui-tabbar");
         this._tabsBar = tabsBar;
 
         const selLabel = DOMBuilder.div("router-selected-iface");
@@ -265,16 +269,9 @@ export class Router extends SimulatedObject {
         outerContent.append(ifSection, routeSection);
 
         /* ============================ Tab switching ============================ */
-        /** @param {string} id */
-        const selectOuterTab = (id) => {
-            outerTabBtns.forEach((btn, i) => btn.classList.toggle("is-active", outerTabIds[i] === id));
-            ifSection.style.display    = id === "interfaces" ? "" : "none";
-            routeSection.style.display = id === "interfaces" ? "none" : "";
-            if (id === "routes-v4") { routeTitle.textContent = t("router.routingtable.ipv4"); this._selectedRouteFamily = 4; this._renderRoutes(); }
-            if (id === "routes-v6") { routeTitle.textContent = t("router.routingtable.ipv6"); this._selectedRouteFamily = 6; this._renderRoutes(); }
-        };
-        outerTabBtns.forEach((btn, i) => btn.addEventListener("click", () => selectOuterTab(outerTabIds[i])));
-        selectOuterTab("interfaces");
+        ifSection.style.display = "";
+        routeSection.style.display = "none";
+        setOuterActive("interfaces");
 
         /* ============================ Init ============================ */
         this._renderInterfaceTabs();
@@ -301,11 +298,11 @@ export class Router extends SimulatedObject {
         this._tabRefs.clear();
 
         for (const iface of this.net.interfaces) {
-            const btn = DOMBuilder.button("", { className: "router-tab" });
+            const btn = DOMBuilder.button("", { className: "ui-tab" });
             btn.dataset.name = iface.name;
 
             const label = DOMBuilder.el("span", { className: "router-tab-label", text: iface.name });
-            const badge = DOMBuilder.el("span", { className: "router-tab-badge status-unknown", text: t("router.unknown") });
+            const badge = DOMBuilder.el("span", { className: "ui-tab-badge status-unknown", text: t("router.unknown") });
 
             btn.appendChild(label);
             btn.appendChild(badge);
@@ -321,7 +318,7 @@ export class Router extends SimulatedObject {
             this._tabRefs.set(iface.name, { btn, badge });
         }
 
-        const plusBtn = DOMBuilder.button("+", { className: "router-tab router-tab-plus", title: t("router.addinterface") });
+        const plusBtn = DOMBuilder.button("+", { className: "ui-tab router-tab-plus", title: t("router.addinterface") });
         plusBtn.addEventListener("click", () => {
             this.net.addNewInterface();
             this._selectedIfaceName = this.net.interfaces[this.net.interfaces.length - 1]?.name ?? this._selectedIfaceName;

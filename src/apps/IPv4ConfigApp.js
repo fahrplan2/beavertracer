@@ -46,9 +46,7 @@ export class IPv4ConfigApp extends GenericProcess {
   /** @type {HTMLElement|null} */ _ipv4Section = null;
   /** @type {HTMLElement|null} */ _ipv6Section = null;
   /** @type {HTMLElement|null} */ _wifiSection = null;
-  /** @type {HTMLButtonElement|null} */ _tab4 = null;
-  /** @type {HTMLButtonElement|null} */ _tab6 = null;
-  /** @type {HTMLButtonElement|null} */ _tabWifi = null;
+  /** @type {((id: string) => void)|null} */ _setFamilyActive = null;
   /** @type {number} */ _selectedFamily = 4;
   /** @type {HTMLInputElement|null} */ _ssidInput = null;
   /** @type {HTMLElement|null} */ _ip6LLEl = null;
@@ -88,7 +86,7 @@ export class IPv4ConfigApp extends GenericProcess {
         const ok = await this._dhcpAcquireAndConfigure(i);
         if (!ok) this._applyApipa(i);
 
-        if (this.mounted && this.ifSel && Number(this.ifSel.value) === i) {
+        if (this.mounted) {
           this._load();
           this._setMsg(ok
             ? t("app.ipv4config.msg.dhcpLeaseApplied", { i })
@@ -111,13 +109,6 @@ export class IPv4ConfigApp extends GenericProcess {
 
     const msg = UILib.el("div", { className: "msg" });
     this.msgEl = msg;
-
-    // --- Shared: interface selector ---
-    const ifSel = UILib.select(
-      ifs.map((itf, i) => ({ value: String(i), label: `${i} – ${itf?.name ?? `if${i}`}` })),
-      {}
-    );
-    this.ifSel = ifSel;
 
     // --- IPv4 content ---
     const modeSel = UILib.select(
@@ -196,22 +187,18 @@ export class IPv4ConfigApp extends GenericProcess {
     }
 
     // --- Family tab bar ---
-    const tab4 = UILib.button(t("app.ipv4config.tab.ipv4"), () => this._selectFamily(4), {});
-    const tab6 = UILib.button(t("app.ipv4config.tab.ipv6"), () => this._selectFamily(6), {});
-    this._tab4 = tab4;
-    this._tab6 = tab6;
-    const tabChildren = [tab4, tab6];
-    if (wifiSection) {
-      const tabWifi = UILib.button("WiFi", () => this._selectFamily(0), {});
-      this._tabWifi = tabWifi;
-      tabChildren.push(tabWifi);
-    }
-    const tabBar = UILib.el("div", { className: "ipconf-family-tabs", children: tabChildren });
+    const familyTabs = [
+      { id: "ipv4", label: t("app.ipv4config.tab.ipv4") },
+      { id: "ipv6", label: t("app.ipv4config.tab.ipv6") },
+    ];
+    if (wifiSection) familyTabs.push({ id: "wifi", label: "WiFi" });
+    const { bar: tabBar, setActive: setFamilyActive } = UILib.tabGroup(familyTabs,
+      (id) => this._selectFamily(id === "ipv4" ? 4 : id === "ipv6" ? 6 : 0)
+    );
+    this._setFamilyActive = setFamilyActive;
 
     // --- Build panel ---
     const panelChildren = [
-      UILib.el("h4", { text: t("app.ipv4config.label.interface") }),
-      UILib.row(t("app.ipv4config.label.interface"), ifSel),
       tabBar,
       ipv4Section,
       ipv6Section,
@@ -223,14 +210,6 @@ export class IPv4ConfigApp extends GenericProcess {
     this.root.replaceChildren(panel);
 
     // Wire events
-    this.disposer.on(ifSel, "change", async () => {
-      this._load();
-      await this._loadModeForIfaceAndShow();
-      this._syncModeUI();
-      this._loadIPv6();
-      this._syncIPv6UI();
-    });
-
     this.disposer.on(modeSel, "change", async () => {
       const prev = (this.persisted.modeByIface[String(this._idx())] ?? "static");
       await this._persistModeForCurrentIface();
@@ -250,7 +229,6 @@ export class IPv4ConfigApp extends GenericProcess {
       return;
     }
 
-    ifSel.value = "0";
     await this._loadPersistedConfig();
     this._load();
     await this._loadModeForIfaceAndShow();
@@ -262,10 +240,10 @@ export class IPv4ConfigApp extends GenericProcess {
 
   onUnmount() {
     this.disposer.dispose();
-    this.ifSel = this.modeSel = this.ipEl = this.prefixEl = this.gwEl = this.dnsEl = null;
+    this.modeSel = this.ipEl = this.prefixEl = this.gwEl = this.dnsEl = null;
     this.msgEl = null;
     this._ipv4Section = this._ipv6Section = this._wifiSection = null;
-    this._tab4 = this._tab6 = this._tabWifi = null;
+    this._setFamilyActive = null;
     this._ssidInput = null;
     this._ip6LLEl = this._ip6EnableCb = this._ip6El = this._prefix6El = this._gw6El = null;
     super.onUnmount();
@@ -309,9 +287,7 @@ export class IPv4ConfigApp extends GenericProcess {
     if (this._ipv4Section) this._ipv4Section.style.display = (f === 4) ? "" : "none";
     if (this._ipv6Section) this._ipv6Section.style.display = (f === 6) ? "" : "none";
     if (this._wifiSection) this._wifiSection.style.display = (f === 0) ? "" : "none";
-    if (this._tab4) this._tab4.classList.toggle("is-active", f === 4);
-    if (this._tab6) this._tab6.classList.toggle("is-active", f === 6);
-    if (this._tabWifi) this._tabWifi.classList.toggle("is-active", f === 0);
+    this._setFamilyActive?.(f === 4 ? "ipv4" : f === 6 ? "ipv6" : "wifi");
   }
 
   _loadIPv6() {

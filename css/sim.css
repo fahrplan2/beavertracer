@@ -921,13 +921,224 @@ sim-toolbar-langbtn {
   filter: brightness(1.1);
 }
 
+/* ── Shared tab bar ───────────────────────────────────────────── */
+
+.ui-tabbar {
+  display: flex;
+  gap: 2px;
+  padding: 0 4px;
+  border-bottom: 2px solid var(--ui-border-strong);
+  flex-shrink: 0;
+}
+
+.ui-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--ui-border);
+  border-bottom: 3px solid transparent;
+  border-radius: 6px 6px 0 0;
+  margin-bottom: -2px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.85em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+}
+
+.ui-tab:hover {
+  background: var(--ui-card-hover);
+  color: var(--text);
+  border-color: var(--ui-border-strong);
+  border-bottom-color: transparent;
+}
+
+.ui-tab.is-active {
+  border-color: var(--ui-border-strong);
+  border-bottom-color: var(--primary);
+  background: color-mix(in oklch, var(--primary), transparent 90%);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.ui-tab .fas {
+  font-size: 0.9em;
+}
+
+.ui-tab-badge {
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 11px;
+  line-height: 1.2;
+  border: 1px solid var(--ui-border);
+  color: var(--text);
+}
+
+.ui-tab-badge.status-up      { background: var(--ok-tint);     border-color: var(--ok-strong); }
+.ui-tab-badge.status-down    { background: var(--danger-tint);  border-color: var(--danger-strong); }
+.ui-tab-badge.status-unknown { background: color-mix(in oklch, var(--bg), var(--text) 5%); border-color: color-mix(in oklch, var(--border), var(--text) 10%); }
+
+/* ── Node tooltip (run mode) ──────────────────────────────────── */
+
+.sim-node-tooltip {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+
+  background: var(--surface-strong, #2a2a2a);
+  color: var(--text);
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  padding: 7px 11px;
+  box-shadow: var(--shadow, 0 4px 16px rgba(0,0,0,.25));
+
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.sim-node-tooltip-name {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.sim-node-tooltip-row {
+  font-family: monospace;
+  font-size: 11px;
+  opacity: 0.9;
+}
+
+/* ── Responsive toolbar (low horizontal resolution) ─────────── */
+
+@media (max-width: 1300px) {
+  .sim-toolbar button {
+    height: 46px;
+    min-width: 62px;
+    padding: 5px 9px;
+    font-size: 11px;
+    gap: 3px;
+  }
+  .sim-toolbar-buttons .fas {
+    font-size: 21px;
+  }
+  .sim-toolbar-buttons {
+    gap: 5px;
+  }
+  .sim-toolbar-group {
+    padding: 4px 6px 6px;
+  }
+  .sim-toolbar-group-label {
+    font-size: 10px;
+    margin-bottom: 4px;
+  }
+}
+
+@media (max-width: 1050px) {
+  .sim-toolbar button {
+    height: 38px;
+    min-width: 55px;
+    padding: 3px 7px;
+    font-size: 10px;
+    gap: 2px;
+  }
+  .sim-toolbar-buttons .fas {
+    font-size: 17px;
+  }
+  .sim-toolbar-buttons {
+    gap: 4px;
+  }
+  .sim-toolbar-group {
+    padding: 3px 5px 5px;
+  }
+  .sim-toolbar-group-label {
+    font-size: 9px;
+    margin-bottom: 2px;
+    min-height: 10px;
+  }
+  .sim-toolbar {
+    gap: 4px;
+    padding: 5px;
+  }
+  .sim-toolbar-branding {
+    font-size: 20px;
+  }
+}
+
+/* ── Responsive sidebar (low vertical resolution) ─────────── */
+
+@media (max-height: 850px) {
+  .sim-sidebar-btn {
+    height: 42px;
+    padding: 4px 8px;
+    font-size: 11px;
+    gap: 3px;
+  }
+  .sim-sidebar-btn .fas {
+    font-size: 19px;
+  }
+  .sim-sidebar-btn .my-icon-router,
+  .sim-sidebar-btn .my-icon-switch {
+    width: 20px;
+    height: 20px;
+    background-size: 20px 20px;
+  }
+  .sim-sidebar-tools {
+    gap: 4px;
+  }
+}
+
+@media (max-height: 650px) {
+  .sim-sidebar-btn {
+    height: 32px;
+    padding: 2px 6px;
+    font-size: 10px;
+    gap: 2px;
+  }
+  .sim-sidebar-btn .fas {
+    font-size: 13px;
+  }
+  .sim-sidebar-btn .my-icon-router,
+  .sim-sidebar-btn .my-icon-switch {
+    width: 14px;
+    height: 14px;
+    background-size: 14px 14px;
+  }
+  .sim-sidebar-tools {
+    gap: 2px;
+  }
+  .sim-sidebar-title {
+    display: none;
+  }
+}
+
 /* ── Embedded mode ─────────────────────────────────────────── */
+
+.is-embedded .sim-toolbar {
+  gap: 2px;
+  padding: 3px 6px;
+  min-height: unset;
+}
+
+.is-embedded .sim-toolbar button {
+  padding: 3px 7px;
+  font-size: 0.75rem;
+  min-width: unset;
+  height: unset;
+  line-height: 1.4;
+}
+
+.is-embedded .sim-toolbar button .fas {
+  font-size: 0.75rem;
+}
 
 /* "Open in BeaverTracer" button stands out as primary CTA */
 .is-embedded .sim-toolbar [data-role="embed-open"] {
   background: var(--primary, #5b9bd5);
   color: #000;
   border-color: var(--primary, #5b9bd5);
+  margin-left: auto;
 }
 
 .is-embedded .sim-toolbar [data-role="embed-open"]:hover {

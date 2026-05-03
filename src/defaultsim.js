@@ -1,6 +1,7 @@
-//@ts-check
+//@ts-nocheck
 
 export const defaultSimulation = {
+  "_info": "This file was created by BeaverTracer, a network simulation tool. Open it with the BeaverTracer app or at https://beavertracer.eu/",
   "version": 4,
   "tick": 500,
   "objects": [
@@ -8,10 +9,10 @@ export const defaultSimulation = {
       "kind": "PC",
       "id": 9,
       "name": "PC 1",
-      "x": 95.93333435058594,
-      "y": 96,
-      "px": 732,
-      "py": 232,
+      "x": 27.433300018310547,
+      "y": 48,
+      "px": 569.5,
+      "py": 69.5,
       "panelOpen": false,
       "net": {
         "name": "PC",
@@ -20,7 +21,10 @@ export const defaultSimulation = {
           {
             "name": "eth0",
             "ip": "192.168.0.11",
-            "prefixLength": 24
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a807:64ff:fea6:23e5"
           }
         ],
         "routes": [
@@ -92,15 +96,14 @@ export const defaultSimulation = {
           }
         ]
       },
-      // @ts-ignore
       "dns": null
     },
     {
       "kind": "PC",
       "id": 11,
       "name": "PC 2",
-      "x": 282.93333435058594,
-      "y": 98,
+      "x": 270.43299865722656,
+      "y": 47.5,
       "px": 220,
       "py": 120,
       "panelOpen": false,
@@ -111,7 +114,10 @@ export const defaultSimulation = {
           {
             "name": "eth0",
             "ip": "192.168.0.12",
-            "prefixLength": 24
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a8e0:91ff:fea0:9c"
           }
         ],
         "routes": [
@@ -189,8 +195,8 @@ export const defaultSimulation = {
       "kind": "PC",
       "id": 13,
       "name": "PC 3",
-      "x": 501.93333435058594,
-      "y": 97,
+      "x": 490.4329833984375,
+      "y": 47.5,
       "px": 220,
       "py": 120,
       "panelOpen": false,
@@ -201,7 +207,10 @@ export const defaultSimulation = {
           {
             "name": "eth0",
             "ip": "192.168.1.11",
-            "prefixLength": 24
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a8af:72ff:fedc:f4c8"
           }
         ],
         "routes": [
@@ -279,8 +288,8 @@ export const defaultSimulation = {
       "kind": "PC",
       "id": 15,
       "name": "PC 4",
-      "x": 679.9333343505859,
-      "y": 99,
+      "x": 711.4329833984375,
+      "y": 47.5,
       "px": 220,
       "py": 120,
       "panelOpen": false,
@@ -291,7 +300,10 @@ export const defaultSimulation = {
           {
             "name": "eth0",
             "ip": "192.168.1.12",
-            "prefixLength": 24
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a849:31ff:fee5:2d68"
           }
         ],
         "routes": [
@@ -369,8 +381,8 @@ export const defaultSimulation = {
       "kind": "Switch",
       "id": 17,
       "name": "Switch 1",
-      "x": 190.93333435058594,
-      "y": 215,
+      "x": 125.43299865722656,
+      "y": 192.5,
       "px": 220,
       "py": 120,
       "panelOpen": false,
@@ -495,8 +507,8 @@ export const defaultSimulation = {
       "kind": "Switch",
       "id": 19,
       "name": "Switch 2",
-      "x": 605.9329833984375,
-      "y": 217,
+      "x": 589.9329833984375,
+      "y": 190.5,
       "px": 220,
       "py": 120,
       "panelOpen": false,
@@ -621,8 +633,8 @@ export const defaultSimulation = {
       "kind": "Router",
       "id": 25,
       "name": "Router 1",
-      "x": 405.9330139160156,
-      "y": 216,
+      "x": 370.9330139160156,
+      "y": 191,
       "px": 220,
       "py": 120,
       "panelOpen": false,
@@ -633,12 +645,18 @@ export const defaultSimulation = {
           {
             "name": "eth0",
             "ip": "192.168.0.1",
-            "prefixLength": 24
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a81f:42ff:fe6e:8a63"
           },
           {
             "name": "eth1",
             "ip": "192.168.1.1",
-            "prefixLength": 24
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a857:5ff:fe1c:2347"
           }
         ],
         "routes": []
@@ -648,8 +666,8 @@ export const defaultSimulation = {
       "kind": "RectOverlay",
       "id": 29,
       "name": "Rechteck",
-      "x": 57.41669845581055,
-      "y": 58,
+      "x": 8.916698455810547,
+      "y": 26,
       "px": 220,
       "py": 120,
       "panelOpen": false,
@@ -662,12 +680,12 @@ export const defaultSimulation = {
       "kind": "RectOverlay",
       "id": 31,
       "name": "Rechteck",
-      "x": 474.41699981689453,
-      "y": 59,
+      "x": 424.91699028015137,
+      "y": 26,
       "px": 220,
       "py": 120,
       "panelOpen": false,
-      "w": 432,
+      "w": 414,
       "h": 309,
       "color": "#26a269",
       "opacity": 0.25
@@ -676,8 +694,8 @@ export const defaultSimulation = {
       "kind": "TextBox",
       "id": 33,
       "name": "Textfeld",
-      "x": 69.91700744628906,
-      "y": 333.5,
+      "x": 17.91699981689453,
+      "y": 303,
       "px": 220,
       "py": 120,
       "panelOpen": false,
@@ -688,8 +706,8 @@ export const defaultSimulation = {
       "kind": "TextBox",
       "id": 35,
       "name": "Textfeld",
-      "x": 788.9169921875,
-      "y": 333.5,
+      "x": 727.9169921875,
+      "y": 304.5,
       "px": 220,
       "py": 120,
       "panelOpen": false,
