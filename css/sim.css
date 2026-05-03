@@ -921,6 +921,65 @@ sim-toolbar-langbtn {
   filter: brightness(1.1);
 }
 
+/* ── Shared tab bar ───────────────────────────────────────────── */
+
+.ui-tabbar {
+  display: flex;
+  gap: 2px;
+  padding: 0 4px;
+  border-bottom: 2px solid var(--ui-border-strong);
+  flex-shrink: 0;
+}
+
+.ui-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--ui-border);
+  border-bottom: 3px solid transparent;
+  border-radius: 6px 6px 0 0;
+  margin-bottom: -2px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.85em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+}
+
+.ui-tab:hover {
+  background: var(--ui-card-hover);
+  color: var(--text);
+  border-color: var(--ui-border-strong);
+  border-bottom-color: transparent;
+}
+
+.ui-tab.is-active {
+  border-color: var(--ui-border-strong);
+  border-bottom-color: var(--primary);
+  background: color-mix(in oklch, var(--primary), transparent 90%);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.ui-tab .fas {
+  font-size: 0.9em;
+}
+
+.ui-tab-badge {
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 11px;
+  line-height: 1.2;
+  border: 1px solid var(--ui-border);
+  color: var(--text);
+}
+
+.ui-tab-badge.status-up      { background: var(--ok-tint);     border-color: var(--ok-strong); }
+.ui-tab-badge.status-down    { background: var(--danger-tint);  border-color: var(--danger-strong); }
+.ui-tab-badge.status-unknown { background: color-mix(in oklch, var(--bg), var(--text) 5%); border-color: color-mix(in oklch, var(--border), var(--text) 10%); }
+
 /* ── Node tooltip (run mode) ──────────────────────────────────── */
 
 .sim-node-tooltip {

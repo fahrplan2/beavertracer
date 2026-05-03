@@ -281,7 +281,7 @@ export class MailClientApp extends GenericProcess {
   /** @type {HTMLInputElement|null} */ cfgSmtpHostIn = null;
   /** @type {HTMLInputElement|null} */ cfgSmtpPortIn = null;
 
-  /** @type {Record<string,HTMLButtonElement>} */ tabBtns = {};
+  /** @type {((id: string) => void)|null} */ _setTabActive = null;
 
   // ── Lifecycle ─────────────────────────────────────────────────
 
@@ -314,7 +314,7 @@ export class MailClientApp extends GenericProcess {
     this.cfgProtoSel = null; this.cfgHostIn = null; this.cfgPortIn = null;
     this.cfgUserIn = null; this.cfgPassIn = null;
     this.cfgSmtpHostIn = null; this.cfgSmtpPortIn = null;
-    this.tabBtns = {};
+    this._setTabActive = null;
     super.onUnmount();
   }
 
@@ -372,20 +372,14 @@ export class MailClientApp extends GenericProcess {
     const toolbar = UI.el("div", { className: "mailclient-toolbar", children: [composeBtn, fetchBtn, configBtn] });
 
     // ── Tabs ─────────────────────────────────────────────────
-    /** @param {"inbox"|"sent"|"compose"|"config"|"log"} id @param {string} icon @param {string} label */
-    const mkTab = (id, icon, label) => {
-      const b = iconBtn(icon, label, () => this._switchTab(id), {});
-      this.tabBtns[id] = b;
-      return b;
-    };
-
-    const tabBar = UI.el("div", { className: "mailclient-tabbar", children: [
-      mkTab("inbox",   "fa-inbox",          t("app.mailclient.tab.inbox")   || "Posteingang"),
-      mkTab("sent",    "fa-paper-plane",    t("app.mailclient.tab.sent")    || "Gesendet"),
-      mkTab("compose", "fa-pen-to-square",  t("app.mailclient.tab.compose") || "Verfassen"),
-      mkTab("config",  "fa-gear",           t("app.mailclient.tab.config")  || "Konfiguration"),
-      mkTab("log",     "fa-list",           t("app.mailclient.tab.log")     || "Protokoll"),
-    ] });
+    const { bar: tabBar, setActive: setTabActive } = UI.tabGroup([
+      { id: "inbox",   icon: "fa-inbox",         label: t("app.mailclient.tab.inbox")   || "Posteingang" },
+      { id: "sent",    icon: "fa-paper-plane",   label: t("app.mailclient.tab.sent")    || "Gesendet" },
+      { id: "compose", icon: "fa-pen-to-square", label: t("app.mailclient.tab.compose") || "Verfassen" },
+      { id: "config",  icon: "fa-gear",          label: t("app.mailclient.tab.config")  || "Konfiguration" },
+      { id: "log",     icon: "fa-list",          label: t("app.mailclient.tab.log")     || "Protokoll" },
+    ], (id) => this._switchTab(/** @type {"inbox"|"sent"|"compose"|"config"|"log"} */ (id)));
+    this._setTabActive = setTabActive;
 
     // ── Inbox panel ──────────────────────────────────────────
     const inboxListEl = UI.el("div", { className: "mailclient-list" });
@@ -522,10 +516,7 @@ export class MailClientApp extends GenericProcess {
     if (this.composePanel) this.composePanel.style.display = tab === "compose" ? "" : "none";
     if (this.configPanel)  this.configPanel.style.display  = tab === "config"  ? "" : "none";
     if (this.logPanel)     this.logPanel.style.display     = tab === "log"     ? "" : "none";
-
-    for (const [id, btn] of Object.entries(this.tabBtns)) {
-      btn.classList.toggle("active", id === tab);
-    }
+    this._setTabActive?.(tab);
   }
 
   // ── Mail list rendering ───────────────────────────────────────

@@ -845,27 +845,32 @@ export class HomeRouter extends SimulatedObject {
         const card = DOMBuilder.div("router-card");
         host.appendChild(card);
 
-        const tabIds = ["status", "wan", "lan", "dhcp", "wifi"];
-        const tabBtns = tabIds.map(id => DOMBuilder.button(t(`homerouter.tab.${id}`), { className: "router-tab" }));
-        card.appendChild(DOMBuilder.div("router-tabs", tabBtns));
-
         const content = DOMBuilder.div("");
         content.style.padding = "8px";
-        card.appendChild(content);
 
-        /** @param {string} id */
-        const selectTab = (id) => {
+        const { bar: tabBar, setActive: selectTab } = DOMBuilder.tabGroup([
+            { id: "status", label: t("homerouter.tab.status") },
+            { id: "wan",    label: t("homerouter.tab.wan")    },
+            { id: "lan",    label: t("homerouter.tab.lan")    },
+            { id: "dhcp",   label: t("homerouter.tab.dhcp")   },
+            { id: "wifi",   label: t("homerouter.tab.wifi")   },
+        ], (id) => {
             this._activeTab = id;
-            tabBtns.forEach((btn, i) => btn.classList.toggle("is-active", tabIds[i] === id));
             DOMBuilder.clear(content);
             if (id === "status") this._buildStatusTab(content);
             else if (id === "wan")  this._buildWanTab(content);
             else if (id === "lan")  this._buildLanTab(content);
             else if (id === "dhcp") this._buildDhcpTab(content);
             else if (id === "wifi") this._buildWifiTab(content);
-        };
+        });
+        card.appendChild(tabBar);
+        card.appendChild(content);
 
-        tabBtns.forEach((btn, i) => btn.addEventListener("click", () => selectTab(tabIds[i])));
+        if (this._activeTab === "status") this._buildStatusTab(content);
+        else if (this._activeTab === "wan")  this._buildWanTab(content);
+        else if (this._activeTab === "lan")  this._buildLanTab(content);
+        else if (this._activeTab === "dhcp") this._buildDhcpTab(content);
+        else if (this._activeTab === "wifi") this._buildWifiTab(content);
         selectTab(this._activeTab);
         this._startPoll();
     }
@@ -885,7 +890,7 @@ export class HomeRouter extends SimulatedObject {
             DOMBuilder.label(t("homerouter.wan.status")),
             DOMBuilder.el("span", {
                 text: wanLinked ? t("homerouter.wan.status.up") : t("homerouter.wan.status.down"),
-                className: `router-tab-badge ${wanLinked ? "status-up" : "status-down"}`,
+                className: `ui-tab-badge ${wanLinked ? "status-up" : "status-down"}`,
             }),
         ]));
         mkRow("IP", this._wanIp ? `${ipToString(this._wanIp)}/${this._wanPrefix}` : "–");

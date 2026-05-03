@@ -213,4 +213,62 @@ export class DOMBuilder {
 
         return btn;
     }
+
+    /**
+     * Creates a shared tab bar with underline-style active indicator.
+     *
+     * @typedef {{ id: string, label: string, icon?: string }} TabDef
+     * @param {TabDef[]} tabs
+     * @param {(id: string) => void} onChange  called when the user clicks a tab
+     * @returns {{ bar: HTMLElement, setActive: (id: string) => void, setBadge: (id: string, text: string, status?: string) => void }}
+     */
+    static tabGroup(tabs, onChange) {
+        const bar = document.createElement("div");
+        bar.className = "ui-tabbar";
+
+        /** @type {Map<string, HTMLButtonElement>} */
+        const btns = new Map();
+
+        for (const tab of tabs) {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "ui-tab";
+            btn.dataset.tabId = tab.id;
+
+            if (tab.icon) {
+                const i = document.createElement("i");
+                i.className = `fas ${tab.icon}`;
+                btn.appendChild(i);
+            }
+
+            const lbl = document.createElement("span");
+            lbl.textContent = tab.label;
+            btn.appendChild(lbl);
+
+            btn.addEventListener("click", () => { setActive(tab.id); onChange(tab.id); });
+            btns.set(tab.id, btn);
+            bar.appendChild(btn);
+        }
+
+        /** @param {string} id */
+        function setActive(id) {
+            for (const [btnId, btn] of btns) btn.classList.toggle("is-active", btnId === id);
+        }
+
+        /**
+         * @param {string} id
+         * @param {string} text
+         * @param {string} [status]
+         */
+        function setBadge(id, text, status = "") {
+            const btn = btns.get(id);
+            if (!btn) return;
+            let badge = /** @type {HTMLElement|null} */ (btn.querySelector(".ui-tab-badge"));
+            if (!badge) { badge = document.createElement("span"); btn.appendChild(badge); }
+            badge.className = `ui-tab-badge${status ? ` status-${status}` : ""}`;
+            badge.textContent = text;
+        }
+
+        return { bar, setActive, setBadge };
+    }
 }

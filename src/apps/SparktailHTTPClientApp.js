@@ -448,6 +448,9 @@ export class SparktailHTTPClientApp extends GenericProcess {
   /** @type {"preview"|"source"|"headers"|"log"} */
   tab = "preview";
 
+  /** @type {((id: string) => void)|null} */
+  _setTabActive = null;
+
   /** @type {number} */
   requestSeq = 0;
 
@@ -509,13 +512,15 @@ export class SparktailHTTPClientApp extends GenericProcess {
     this.statusEl = status;
 
     // Tabs (devtools-ish)
-    const tabRow = UI.buttonRow([
-      UI.button(t("app.sparktail.tab.preview"), () => { this.tab = "preview"; this._renderTab(); }, {}),
-      UI.button(t("app.sparktail.tab.source"), () => { this.tab = "source"; this._renderTab(); }, {}),
-      UI.button(t("app.sparktail.tab.headers"), () => { this.tab = "headers"; this._renderTab(); }, {}),
-      UI.button(t("app.sparktail.tab.log"), () => { this.tab = "log"; this._renderTab(); }, {}),
-      UI.button(t("app.sparktail.button.clearLog"), () => { this.log = []; this._renderLog(); }, {}),
-    ]);
+    const { bar: tabBar, setActive: setTabActive } = UI.tabGroup([
+      { id: "preview", label: t("app.sparktail.tab.preview") },
+      { id: "source",  label: t("app.sparktail.tab.source")  },
+      { id: "headers", label: t("app.sparktail.tab.headers") },
+      { id: "log",     label: t("app.sparktail.tab.log")     },
+    ], (id) => { this.tab = /** @type {any} */ (id); this._renderTab(); });
+    this._setTabActive = setTabActive;
+    const clearLogBtn = UI.button(t("app.sparktail.button.clearLog"), () => { this.log = []; this._renderLog(); });
+    const tabRow = UI.el("div", { className: "sparktail-tab-row", children: [tabBar, clearLogBtn] });
 
     // Content areas
     const iframe = /** @type {HTMLIFrameElement} */ (UI.el("iframe", {
@@ -658,6 +663,7 @@ export class SparktailHTTPClientApp extends GenericProcess {
     if (this.sourceEl) this.sourceEl.style.display = this.tab === "source" ? "" : "none";
     if (this.headersEl) this.headersEl.style.display = this.tab === "headers" ? "" : "none";
     if (this.logEl) this.logEl.style.display = this.tab === "log" ? "" : "none";
+    this._setTabActive?.(this.tab);
   }
 
   /** @param {string} url */

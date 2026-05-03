@@ -172,30 +172,31 @@ export class Switch extends SimulatedObject {
         const card = DOMBuilder.div("router-card");
         host.appendChild(card);
 
-        const tabIds = ["sat", "vlan", "stp"];
-        const tabBtns = tabIds.map(id => DOMBuilder.button(t(`switch.tab.${id}`), { className: "router-tab" }));
-        card.appendChild(DOMBuilder.div("router-tabs", tabBtns));
-
         const content = DOMBuilder.div("");
         content.style.padding = "8px";
-        card.appendChild(content);
 
-        /** @param {string} id */
-        const selectTab = (id) => {
+        const { bar: tabBar, setActive: selectTab } = DOMBuilder.tabGroup([
+            { id: "sat",  label: t("switch.tab.sat")  },
+            { id: "vlan", label: t("switch.tab.vlan") },
+            { id: "stp",  label: t("switch.tab.stp")  },
+        ], (id) => {
             this._activeTab = id;
             this._satHost = null;
             this._vlanEnabledCheckbox = null;
             this._vlanSection = null;
             this._stpEnabledCheckbox = null;
             this._stpSection = null;
-            tabBtns.forEach((btn, i) => btn.classList.toggle("is-active", tabIds[i] === id));
             DOMBuilder.clear(content);
             if (id === "sat")  this._buildMacTab(content);
             else if (id === "vlan") this._buildVlanTab(content);
             else if (id === "stp")  this._buildStpTab(content);
-        };
+        });
+        card.appendChild(tabBar);
+        card.appendChild(content);
 
-        tabBtns.forEach((btn, i) => btn.addEventListener("click", () => selectTab(tabIds[i])));
+        if (this._activeTab === "sat")  this._buildMacTab(content);
+        else if (this._activeTab === "vlan") this._buildVlanTab(content);
+        else if (this._activeTab === "stp")  this._buildStpTab(content);
         selectTab(this._activeTab);
         this._startSatPolling();
     }

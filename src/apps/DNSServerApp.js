@@ -144,39 +144,6 @@ function createTableEditor(cols, onChange, makeDefaultRow) {
  * Simple tabs (A/MX/NS).
  * @param {{id:string, title:string, contentEl:HTMLElement}[]} tabs
  */
-function createTabs(tabs) {
-  const bar = UI.el("div", { className: "tabbar" });
-  const content = UI.el("div", { className: "tabcontent" });
-
-  /** @type {Record<string, HTMLButtonElement>} */
-  const buttons = {};
-  let active = tabs[0]?.id ?? "";
-
-  /** @param {string} id */
-  function setActive(id) {
-    active = id;
-    for (const t of tabs) {
-      t.contentEl.style.display = (t.id === active) ? "" : "none";
-      const b = buttons[t.id];
-      if (b) {
-        if (t.id === active) b.classList.add("active");
-        else b.classList.remove("active");
-      }
-    }
-  }
-
-  for (const t of tabs) {
-    const b = UI.button(t.title, () => setActive(t.id));
-    buttons[t.id] = b;
-    bar.appendChild(b);
-    content.appendChild(t.contentEl);
-  }
-
-  setActive(active);
-
-  const root = UI.el("div", { children: [bar, content] });
-  return { root, setActive };
-}
 
 export class DNSServerApp extends GenericProcess {
   get title() {
@@ -268,11 +235,20 @@ export class DNSServerApp extends GenericProcess {
       () => ({ name: "", host: "", ttl: 300 })
     );
 
-    const tabs = createTabs([
-      { id: "a", title: "A", contentEl: this.aEditor.root },
-      { id: "mx", title: "MX", contentEl: this.mxEditor.root },
-      { id: "ns", title: "NS", contentEl: this.nsEditor.root },
-    ]);
+    const dnsContent = UI.el("div", { className: "tabcontent" });
+    [this.aEditor.root, this.mxEditor.root, this.nsEditor.root].forEach(el => dnsContent.appendChild(el));
+
+    const { bar: dnsTabBar, setActive: setDnsTab } = UI.tabGroup([
+      { id: "a",  label: "A"  },
+      { id: "mx", label: "MX" },
+      { id: "ns", label: "NS" },
+    ], (id) => {
+      this.aEditor.root.style.display  = id === "a"  ? "" : "none";
+      this.mxEditor.root.style.display = id === "mx" ? "" : "none";
+      this.nsEditor.root.style.display = id === "ns" ? "" : "none";
+    });
+    setDnsTab("a");
+    const tabs = { root: UI.el("div", { children: [dnsTabBar, dnsContent] }) };
 
     const start = UI.button(t("app.dnsd.button.start"), () => this._start(), { primary: true });
     const stop = UI.button(t("app.dnsd.button.stop"), () => this._stop());
