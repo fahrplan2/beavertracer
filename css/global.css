@@ -81,7 +81,8 @@ select {
 }
 
 input::placeholder {
-  color: var(--muted);
+  color: color-mix(in oklch, var(--muted), transparent 50%);
+  font-style: italic;
 }
 
 button {
@@ -123,7 +124,8 @@ textarea {
 }
 
 textarea::placeholder {
-  color: var(--muted);
+  color: color-mix(in oklch, var(--muted), transparent 50%);
+  font-style: italic;
 }
 
 textarea:focus {

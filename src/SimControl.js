@@ -623,6 +623,16 @@ export class SimControl {
         langBtn.dataset.role = "lang";
         gCommon.appendChild(langBtn);
 
+        const lessonsBtn = DOMBuilder.iconbutton({
+            label: t("sim.lessons"),
+            icon: "fa-book-open",
+            onClick: () => {
+                window.open("/lessons/", "_blank");
+            },
+        });
+        lessonsBtn.dataset.role = "lessons-open";
+        gCommon.appendChild(lessonsBtn);
+
         const helpBtn = DOMBuilder.iconbutton({
             label: t("sim.help"),
             icon: "fa-circle-question",

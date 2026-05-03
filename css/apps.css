@@ -61,7 +61,8 @@
 }
 
 .app-sparktail-http .sparktail-chrome input::placeholder {
-  color: var(--muted);
+  color: color-mix(in oklch, var(--muted), transparent 50%);
+  font-style: italic;
 }
 
 .app-sparktail-http .sparktail-chrome input:focus {
@@ -124,7 +125,8 @@
 }
 
 .app-sparktail-http .sparktail-chrome input::placeholder {
-  color: var(--muted);
+  color: color-mix(in oklch, var(--muted), transparent 50%);
+  font-style: italic;
 }
 
 .app-sparktail-http .sparktail-chrome input:focus {
