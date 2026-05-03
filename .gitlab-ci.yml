@@ -173,11 +173,10 @@ release:
   script:
     - VERSION="${CI_COMMIT_TAG#v}"
     - PKG="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/beavertracer/${VERSION}"
-    - DL="https://www.beavertracer.eu/releases"
 
     # VERSION für den release:-Block exportieren (dotenv)
     - echo "VERSION=$VERSION" > release.env
-    - echo "DL_BASE=$DL" >> release.env
+    - echo "DL_BASE=https://www.beavertracer.eu/releases" >> release.env
 
     # Artifacts in GitLab Package Registry hochladen (CI_JOB_TOKEN reicht)
     - |
