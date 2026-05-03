@@ -649,60 +649,18 @@ export class SimControl {
         if (!toolbar) return;
         toolbar.replaceChildren();
 
-        /** @param {string} [role] */
-        const addSeparator = (role) => {
-            const sep = document.createElement("div");
-            sep.className = "sim-toolbar-sep";
-            if (role) sep.dataset.role = role;
-            toolbar.appendChild(sep);
-            return sep;
+        /** @param {string} role @param {string} icon @param {string} label @param {() => void} onClick */
+        const btn = (role, icon, label, onClick) => {
+            const b = DOMBuilder.iconbutton({ label, icon, iconOnly: true, onClick });
+            b.dataset.role = role;
+            toolbar.appendChild(b);
+            return b;
         };
 
-        // Mode: Run + Trace (no Edit)
-        addSeparator("sep-mode");
-        const gMode = DOMBuilder.buttongroup(t("sim.mode"), toolbar);
-        gMode.dataset.group = "mode";
+        btn("mode-run",   "fa-play",             t("sim.run"),   () => { this.mode = "run"; this.isPaused = false; this._invalidateUI(); this.scheduleNextStep(); });
+        btn("mode-trace", "fa-magnifying-glass",  t("sim.trace"), () => { this.mode = "trace"; this._invalidateUI(); this.pcapViewer.render(); });
 
-        const btnRun = DOMBuilder.iconbutton({
-            label: t("sim.run"),
-            icon: "fa-play",
-            iconOnly: true,
-            onClick: () => {
-                this.mode = "run";
-                this.isPaused = false;
-                this._invalidateUI();
-                this.scheduleNextStep();
-            },
-        });
-        btnRun.dataset.role = "mode-run";
-        gMode.appendChild(btnRun);
-
-        const btnTrace = DOMBuilder.iconbutton({
-            label: t("sim.trace"),
-            icon: "fa-magnifying-glass",
-            iconOnly: true,
-            onClick: () => {
-                this.mode = "trace";
-                this._invalidateUI();
-                this.pcapViewer.render();
-            },
-        });
-        btnTrace.dataset.role = "mode-trace";
-        gMode.appendChild(btnTrace);
-
-        // Speed controls (icon-only)
-        addSeparator("sep-speeds");
-        const gSpeeds = DOMBuilder.buttongroup(t("sim.speed"), toolbar);
-        gSpeeds.dataset.group = "speeds";
-
-        const pauseBtn = DOMBuilder.iconbutton({
-            label: t("sim.pause"),
-            icon: "fa-pause",
-            iconOnly: true,
-            onClick: () => this.pause(),
-        });
-        pauseBtn.dataset.role = "pause";
-        gSpeeds.appendChild(pauseBtn);
+        btn("pause",      "fa-pause",             t("sim.pause"), () => this.pause());
 
         const speeds = [
             { label: "0.5×", ms: 1000, icon: "fa-1" },
@@ -710,34 +668,11 @@ export class SimControl {
             { label: "4×",   ms: 100,  icon: "fa-3" },
             { label: "8×",   ms: 40,   icon: "fa-4" },
         ];
+        for (const s of speeds) btn(`speed-${s.ms}`, s.icon, s.label, () => this.setTick(s.ms));
 
-        for (const s of speeds) {
-            const b = DOMBuilder.iconbutton({
-                label: s.label,
-                icon: s.icon,
-                iconOnly: true,
-                onClick: () => this.setTick(s.ms),
-            });
-            b.dataset.role = `speed-${s.ms}`;
-            gSpeeds.appendChild(b);
-        }
+        btn("reset", "fa-arrow-rotate-left", t("sim.reset"), () => { this.restore(this.toJSON()); this.mode = "run"; this.pause(); });
 
-        const resetBtn = DOMBuilder.iconbutton({
-            label: t("sim.reset"),
-            icon: "fa-arrow-rotate-left",
-            iconOnly: true,
-            onClick: () => {
-                this.restore(this.toJSON());
-                this.mode = "run";
-                this.pause();
-            },
-        });
-        resetBtn.dataset.role = "reset";
-        gSpeeds.appendChild(resetBtn);
-
-        // Open full app
-        addSeparator("sep-open");
-        const gOpen = DOMBuilder.buttongroup("", toolbar);
+        // Open full app (with label, not icon-only)
         const btnOpen = DOMBuilder.iconbutton({
             label: t("sim.embed.open"),
             icon: "fa-up-right-from-square",
@@ -748,7 +683,7 @@ export class SimControl {
             },
         });
         btnOpen.dataset.role = "embed-open";
-        gOpen.appendChild(btnOpen);
+        toolbar.appendChild(btnOpen);
     }
 
     _buildSidebar() {
