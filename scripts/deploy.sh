@@ -123,41 +123,7 @@ mkdir -p "$WEBROOT"
 find "$WEBROOT" -mindepth 1 -maxdepth 1 ! -name 'releases' -exec rm -rf {} +
 cp -r dist/* "$WEBROOT/"
 
-# 7. Tauri-Releases herunterladen wenn ein Release-Tag auf dem aktuellen HEAD liegt
-DEPLOYED_HEAD="$(git rev-parse HEAD)"
-DEPLOYED_TAGS="$(git tag --points-at "${DEPLOYED_HEAD}" | LC_ALL=C sort | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
-
-if [[ -n "$DEPLOYED_TAGS" ]]; then
-  LATEST_TAG=$(echo "$DEPLOYED_TAGS" | tr ' ' '\n' | grep -E '^v[0-9]' | LC_ALL=C sort -V | tail -n1)
-  VERSION="${LATEST_TAG#v}"
-
-  if [[ -n "$VERSION" ]]; then
-    RELEASES_DIR="${WEBROOT}/releases"
-    mkdir -p "$RELEASES_DIR"
-    echo "Checking Tauri releases for v${VERSION}..."
-
-    for filename in \
-      "beavertracer_${VERSION}_amd64.AppImage" \
-      "beavertracer_${VERSION}_amd64.deb" \
-      "beavertracer_${VERSION}_x64-setup.exe" \
-      "beavertracer_${VERSION}_x64_en-US.msi"; do
-
-      dest="${RELEASES_DIR}/${filename}"
-      if [[ ! -f "$dest" ]]; then
-        url="${PKG_BASE}/${VERSION}/${filename}"
-        echo "  Downloading ${filename} ..."
-        curl --silent --fail \
-             --header "DEPLOY-TOKEN: ${GITLAB_DEPLOY_TOKEN}" \
-             --output "$dest" \
-             "$url" || echo "  (not available: ${filename})"
-      else
-        echo "  Already present: ${filename}"
-      fi
-    done
-  fi
-fi
-
-# 8. Fix permissions
+# 7. Fix permissions
 chown -R www-data:www-data "$WEBROOT"
 find "$WEBROOT" -type d -exec chmod 755 {} \;
 find "$WEBROOT" -type f -exec chmod 644 {} \;
@@ -173,3 +139,34 @@ TAGS=${DEPLOYED_TAGS}
 EOF
 
 echo "Deployment complete."
+
+# 11. Tauri-Releases herunterladen (läuft bei jedem Cron-Lauf, damit nachgeladene
+#     CI-Artifacts auch ankommen wenn der Build beim ersten Versuch noch nicht fertig war)
+ALL_TAGS="$(git tag | grep -E '^v[0-9]' | LC_ALL=C sort -V)"
+LATEST_TAG="$(echo "$ALL_TAGS" | tail -n1)"
+VERSION="${LATEST_TAG#v}"
+
+if [[ -n "$VERSION" ]]; then
+  RELEASES_DIR="${WEBROOT}/releases"
+  mkdir -p "$RELEASES_DIR"
+
+  for filename in \
+    "beavertracer_${VERSION}_amd64.AppImage" \
+    "beavertracer_${VERSION}_amd64.deb" \
+    "beavertracer_${VERSION}_x64-setup.exe" \
+    "beavertracer_${VERSION}_x64_en-US.msi"; do
+
+    dest="${RELEASES_DIR}/${filename}"
+    if [[ ! -f "$dest" ]]; then
+      url="${PKG_BASE}/${VERSION}/${filename}"
+      echo "Downloading ${filename} ..."
+      curl --silent --fail \
+           --header "DEPLOY-TOKEN: ${GITLAB_DEPLOY_TOKEN}" \
+           --output "$dest" \
+           "$url" || echo "  (not available yet: ${filename})"
+    fi
+  done
+
+  chown -R www-data:www-data "$RELEASES_DIR"
+  find "$RELEASES_DIR" -type f -exec chmod 644 {} +
+fi
