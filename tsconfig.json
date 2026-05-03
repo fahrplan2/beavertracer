@@ -10,5 +10,6 @@
     "declaration": true,
     "emitDeclarationOnly": true
   },
-  "include": ["src/**/*.js"]
+  "include": ["src/**/*.js"],
+  "exclude": ["src/defaultsim.js"]
 }

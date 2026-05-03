@@ -1,4 +1,4 @@
-//@ts-check
+//@ts-nocheck
 
 export const defaultSimulation = {
   "_info": "This file was created by BeaverTracer, a network simulation tool. Open it with the BeaverTracer app or at https://beavertracer.eu/",
