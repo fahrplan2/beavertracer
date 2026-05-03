@@ -99,50 +99,52 @@ else
       echo "  remote tags: ${REMOTE_HEAD_TAGS}"
       DEPLOY=true
     else
-      echo "No new version and no tag change on current HEAD. Skipping deployment."
-      exit 0
+      echo "No new version and no tag change on current HEAD. Skipping web deployment."
+      DEPLOY=false
     fi
   fi
 fi
 
-# 4. Update repository
-echo "Updating repository..."
-git pull --ff-only origin "${DEFAULT_BRANCH}"
+if $DEPLOY; then
+  # 4. Update repository
+  echo "Updating repository..."
+  git pull --ff-only origin "${DEFAULT_BRANCH}"
 
-# 5. Install deps & build
-echo "Installing dependencies..."
-npm ci
+  # 5. Install deps & build
+  echo "Installing dependencies..."
+  npm ci
 
-echo "Building..."
-npm run build
+  echo "Building..."
+  npm run build
 
-# 6. Deploy dist to nginx root
-# releases/ wird ausgespart — dort liegen die Tauri-Downloads dauerhaft
-echo "Deploying to $WEBROOT..."
-mkdir -p "$WEBROOT"
-find "$WEBROOT" -mindepth 1 -maxdepth 1 ! -name 'releases' -exec rm -rf {} +
-cp -r dist/* "$WEBROOT/"
+  # 6. Deploy dist to nginx root
+  # releases/ wird ausgespart — dort liegen die Tauri-Downloads dauerhaft
+  echo "Deploying to $WEBROOT..."
+  mkdir -p "$WEBROOT"
+  find "$WEBROOT" -mindepth 1 -maxdepth 1 ! -name 'releases' -exec rm -rf {} +
+  cp -r dist/* "$WEBROOT/"
 
-# 7. Aktuellen Stand für Deploy-State und Artifact-Download merken
-DEPLOYED_HEAD="$(git rev-parse HEAD)"
-DEPLOYED_TAGS="$(git tag --points-at "${DEPLOYED_HEAD}" | LC_ALL=C sort | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
+  # 7. Aktuellen Stand für Deploy-State merken
+  DEPLOYED_HEAD="$(git rev-parse HEAD)"
+  DEPLOYED_TAGS="$(git tag --points-at "${DEPLOYED_HEAD}" | LC_ALL=C sort | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
 
-# 8. Fix permissions
-chown -R www-data:www-data "$WEBROOT"
-find "$WEBROOT" -type d -exec chmod 755 {} \;
-find "$WEBROOT" -type f -exec chmod 644 {} \;
+  # 8. Fix permissions
+  chown -R www-data:www-data "$WEBROOT"
+  find "$WEBROOT" -type d -exec chmod 755 {} \;
+  find "$WEBROOT" -type f -exec chmod 644 {} \;
 
-# 9. Reload nginx
-nginx -t
-systemctl reload nginx
+  # 9. Reload nginx
+  nginx -t
+  systemctl reload nginx
 
-# 10. Deploy-State speichern
-cat > "$DEPLOY_STATE_FILE" <<EOF
+  # 10. Deploy-State speichern
+  cat > "$DEPLOY_STATE_FILE" <<EOF
 HEAD=${DEPLOYED_HEAD}
 TAGS=${DEPLOYED_TAGS}
 EOF
 
-echo "Deployment complete."
+  echo "Deployment complete."
+fi
 
 # 11. Tauri-Releases herunterladen (läuft bei jedem Cron-Lauf, damit nachgeladene
 #     CI-Artifacts auch ankommen wenn der Build beim ersten Versuch noch nicht fertig war)
