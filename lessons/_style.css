@@ -17,6 +17,17 @@
 
 /* Dark – only when explicitly set via data-theme or system (if no manual override) */
 @media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .lesson-header {
+    background: oklch(30% 0.025 210);
+    border-bottom-color: oklch(38% 0.025 210);
+  }
+}
+[data-theme="dark"] .lesson-header {
+  background: oklch(30% 0.025 210);
+  border-bottom-color: oklch(38% 0.025 210);
+}
+
+@media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg:        #111827;
     --text:      #f3f4f6;
@@ -59,15 +70,25 @@ body {
 
 /* ── Header ───────────────────────────────────────────────────── */
 .lesson-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 20px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
+  border-bottom: 1px solid oklch(74% 0.018 210);
+  background: oklch(81% 0.018 210);
   position: sticky;
   top: 0;
   z-index: 10;
+  padding: 0 20px;
+}
+
+.lesson-header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+}
+
+.lesson-header-logo img {
+  transform: scaleX(-1);
 }
 
 .lesson-header-logo {
@@ -82,12 +103,6 @@ body {
 }
 .lesson-header-logo:hover { color: var(--primary); }
 
-.lesson-header-back {
-  font-size: 0.85rem;
-  color: var(--muted);
-  text-decoration: none;
-}
-.lesson-header-back:hover { color: var(--primary); }
 
 /* push toggle to right */
 .lesson-header .theme-toggle { margin-left: auto; }
@@ -109,9 +124,88 @@ body {
 
 /* ── Main layout ──────────────────────────────────────────────── */
 .lesson-main {
+  flex: 1;
+  min-width: 0;
+  padding: 40px 32px 80px;
+}
+
+.lesson-main--centered {
   max-width: var(--max-width);
   margin: 0 auto;
   padding: 40px 24px 80px;
+}
+
+.lesson-layout {
+  display: flex;
+  align-items: flex-start;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.lesson-sidebar-details {
+  width: 240px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  position: sticky;
+  top: 53px;
+  max-height: calc(100vh - 53px);
+  overflow-y: auto;
+}
+
+.lesson-sidebar-details > summary {
+  display: none;
+}
+
+.lesson-sidebar {
+  padding: 20px 12px;
+  font-size: 0.875rem;
+}
+
+.lesson-sidebar-tree {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.lesson-sidebar-tree ul {
+  list-style: none;
+  padding: 0 0 0 12px;
+  margin: 2px 0 0;
+  border-left: 1px solid var(--border);
+}
+
+.lesson-sidebar-tree li {
+  margin: 0;
+}
+
+.lesson-sidebar-tree a {
+  display: block;
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  color: var(--text);
+  text-decoration: none;
+  line-height: 1.35;
+}
+
+.lesson-sidebar-tree a:hover {
+  background: var(--surface);
+  color: var(--primary);
+}
+
+.lesson-sidebar-tree a.active {
+  background: var(--surface);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* ── Children section ─────────────────────────────────────────── */
+.lesson-children {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.lesson-children h2 {
+  margin-bottom: 12px;
 }
 
 /* ── Article typography ───────────────────────────────────────── */
@@ -294,4 +388,46 @@ body {
   color: var(--muted);
   font-size: 0.8rem;
   border-top: 1px solid var(--border);
+}
+
+/* ── Mobile ───────────────────────────────────────────────────── */
+@media (max-width: 720px) {
+  .lesson-layout {
+    flex-direction: column;
+  }
+
+  .lesson-sidebar-details {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    position: static;
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  .lesson-sidebar-details > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--muted);
+    user-select: none;
+  }
+
+  .lesson-sidebar-details > summary::marker,
+  .lesson-sidebar-details > summary::-webkit-details-marker { display: none; }
+
+  .lesson-sidebar-details > summary::after { content: "▾"; }
+  .lesson-sidebar-details[open] > summary::after { content: "▴"; }
+
+  .lesson-sidebar {
+    padding: 4px 16px 12px;
+  }
+
+  .lesson-main {
+    padding: 24px 16px 60px;
+  }
 }

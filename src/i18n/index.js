@@ -206,6 +206,13 @@ export async function initLocale() {
   // Always load fallback first
   await loadLocaleDict(fallback);
 
+  // 0) URL parameter ?lang= — applied but not persisted
+  const urlLang = new URLSearchParams(location.search).get("lang");
+  if (urlLang) {
+    const ok = await loadLocaleDict(urlLang);
+    if (ok) { locale = urlLang; return; }
+  }
+
   // 1) Saved locale
   try {
     const saved = localStorage.getItem("sim_locale");

@@ -627,7 +627,7 @@ export class SimControl {
             label: t("sim.lessons"),
             icon: "fa-book-open",
             onClick: () => {
-                window.open("/lessons/", "_blank");
+                window.open(`/lessons/${getLocale()}/`, "_blank");
             },
         });
         lessonsBtn.dataset.role = "lessons-open";
