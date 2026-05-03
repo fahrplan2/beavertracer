@@ -86,27 +86,6 @@
   margin-top: 4px;
 }
 
-/* Route family tabs (IPv4 / IPv6) */
-.router-routes-family-tabs {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 8px;
-}
-
-.router-routes-tab {
-  padding: 3px 14px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--bg-strong);
-  cursor: pointer;
-  font-size: 13px;
-}
-
-.router-routes-tab-active {
-  background: var(--primary-tint, color-mix(in oklch, var(--bg), var(--primary) 15%));
-  border-color: var(--primary, #3b82f6);
-  font-weight: 600;
-}
 
 /* Routing table */
 .router-routes-table {
