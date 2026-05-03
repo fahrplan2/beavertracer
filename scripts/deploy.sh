@@ -123,7 +123,11 @@ mkdir -p "$WEBROOT"
 find "$WEBROOT" -mindepth 1 -maxdepth 1 ! -name 'releases' -exec rm -rf {} +
 cp -r dist/* "$WEBROOT/"
 
-# 7. Fix permissions
+# 7. Aktuellen Stand für Deploy-State und Artifact-Download merken
+DEPLOYED_HEAD="$(git rev-parse HEAD)"
+DEPLOYED_TAGS="$(git tag --points-at "${DEPLOYED_HEAD}" | LC_ALL=C sort | tr '\n' ' ' | sed 's/[[:space:]]*$//')"
+
+# 8. Fix permissions
 chown -R www-data:www-data "$WEBROOT"
 find "$WEBROOT" -type d -exec chmod 755 {} \;
 find "$WEBROOT" -type f -exec chmod 644 {} \;
