@@ -3,6 +3,9 @@ import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 function computeVersion() {
+  const ciTag = process.env.CI_COMMIT_TAG;
+  if (ciTag) return ciTag.replace(/^v/, "");
+
   try {
     const raw = execSync("git describe --tags --long", { encoding: "utf8" }).trim();
     const m = raw.match(/^v?(\d+\.\d+\.\d+)(?:-(\d+)-g([0-9a-f]+))?$/);
