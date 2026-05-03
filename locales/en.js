@@ -655,6 +655,7 @@ export default {
   "router.routingtable.missing": "missing",
   "router.routingtable.prefix": "Prefix",
 
+  "sim.lessons": "Lessons",
   "sim.common": "Common",
   "sim.new": "New",
   "sim.load": "Load",
@@ -666,6 +667,7 @@ export default {
   "sim.speed": "Speed",
   "sim.pause": "Pause",
   "sim.about": "About",
+  "sim.downloads": "Downloads",
   "sim.help": "Help",
   "sim.trace": "Trace",
   "sim.reset": "Reset",

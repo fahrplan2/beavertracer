@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{title}} – BeaverTracer</title>
+  <title>BeaverTracer – Lektionen</title>
   <link rel="icon" href="/beaver-icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="../_style.css">
+  <link rel="stylesheet" href="./_style.css">
   <script>
   (function(){
     var s = localStorage.getItem('bt-lesson-theme');
@@ -17,26 +17,18 @@
 <body>
   <header class="lesson-header">
     <div class="lesson-header-inner">
-      <a href="../../" class="lesson-header-logo" target="_blank">
-        <img src="../../beaver.svg" alt="BeaverTracer" width="28" height="28">
+      <a href="../" class="lesson-header-logo" target="_blank">
+        <img src="../beaver.svg" alt="BeaverTracer" width="28" height="28">
         BeaverTracer
       </a>
-<button class="theme-toggle" id="themeToggle" aria-label="Hell/Dunkel" title="Hell/Dunkel wechseln"><span class="theme-icon"></span></button>
+      <button class="theme-toggle" id="themeToggle" aria-label="Hell/Dunkel" title="Hell/Dunkel wechseln"><span class="theme-icon"></span></button>
     </div>
   </header>
-  <div class="lesson-layout">
-    <details class="lesson-sidebar-details" open>
-      <summary>Inhaltsverzeichnis</summary>
-      <nav class="lesson-sidebar" aria-label="Lektionen">
-        {{sidebar}}
-      </nav>
-    </details>
-    <main class="lesson-main">
-      <article class="lesson-article">
-        {{body}}
-      </article>
-    </main>
-  </div>
+  <main class="lesson-main lesson-main--centered">
+    <article class="lesson-article">
+      {{body}}
+    </article>
+  </main>
   <footer class="lesson-footer">
     BeaverTracer – Netzwerksimulation für den Unterricht
   </footer>

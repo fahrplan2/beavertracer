@@ -55,6 +55,39 @@
   --ui-active: white;
   --ui-active-border: white;
   --ui-line: color-mix(in oklch, var(--text), transparent 55%);
+
+  --bg-strong: #ffffff;
+}
+
+[data-theme="dark"] {
+  --bg:             oklch(14% 0.012 210);
+  --bg1:            oklch(18% 0.015 210);
+  --bg2:            oklch(23% 0.017 210);
+  --bg-strong:      oklch(20% 0.014 210);
+
+  --surface:        oklch(30% 0.025 210);
+  --surface-strong: oklch(28% 0.018 210);
+
+  --text:   oklch(88% 0.010 210);
+  --border: oklch(32% 0.015 210);
+  --grey:   oklch(28% 0.005 210);
+
+  --shadow:      0 10px 24px rgba(0, 0, 0, 0.55);
+  --shadow-soft: 0 6px 14px rgba(0, 0, 0, 0.40);
+
+  /* soft/tint variants mix with dark base instead of white */
+  --primary-soft:  color-mix(in oklch, var(--primary), oklch(16% 0.014 210) 78%);
+  --primary-tint:  color-mix(in oklch, var(--primary), oklch(16% 0.014 210) 88%);
+  --ok-tint:       color-mix(in oklch, var(--ok),      oklch(16% 0.014 210) 88%);
+  --warning-soft:  color-mix(in oklch, var(--warning),  oklch(16% 0.014 210) 78%);
+  --danger-tint:   color-mix(in oklch, var(--danger),   oklch(16% 0.014 210) 88%);
+
+  --ui-active:        oklch(24% 0.016 210);
+  --ui-active-border: var(--primary);
+  --ui-card:          oklch(22% 0.016 210);
+  --ui-card-hover:    oklch(27% 0.018 210);
+
+  --blue: oklch(68% 0.18 250);
 }
 
 html, body { height: 100%; margin: 0; }
@@ -67,7 +100,7 @@ body {
 }
 
 h4 {
-  background-color: var(--primary);
+  background-color: var(--surface);
   font-size: 16px;
   padding: 7px;
 }
@@ -77,11 +110,13 @@ select {
   border: 1px solid color-mix(in oklch, var(--border), var(--text) 8%);
   border-radius: 4px;
   padding: 6px 8px;
+  background: var(--bg-strong);
   color: var(--text);
 }
 
 input::placeholder {
-  color: var(--muted);
+  color: color-mix(in oklch, var(--muted), transparent 50%);
+  font-style: italic;
 }
 
 button {
@@ -123,7 +158,8 @@ textarea {
 }
 
 textarea::placeholder {
-  color: var(--muted);
+  color: color-mix(in oklch, var(--muted), transparent 50%);
+  font-style: italic;
 }
 
 textarea:focus {

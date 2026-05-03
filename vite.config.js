@@ -155,5 +155,8 @@ export default defineConfig({
 
   define: {
     "import.meta.env.VITE_APP_VERSION": JSON.stringify(computeVersion()),
+    "import.meta.env.VITE_DOWNLOAD_BASE": JSON.stringify(
+      process.env.VITE_DOWNLOAD_BASE ?? "https://www.beavertracer.eu/releases"
+    ),
   },
 });

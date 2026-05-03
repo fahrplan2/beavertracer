@@ -457,6 +457,7 @@ export default {
   "router.routingtable.no": "non",
   "router.routingtable.yes": "oui",
   "router.routingtable.missing": "manquant",
+  "sim.lessons": "Leçons",
   "sim.common": "Commun",
   "sim.new": "Nouveau",
   "sim.load": "Charger",

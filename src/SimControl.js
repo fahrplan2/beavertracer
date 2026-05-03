@@ -18,6 +18,7 @@ import { PCapController } from "./tracer/PCapControler.js";
 import { DOMBuilder } from "./lib/DomBuilder.js";
 import { SimDialog } from "./lib/SimDialog.js";
 import { version } from "./lib/version.js";
+import { isTauri } from "./tauri.js";
 
 /**
  * @typedef {Object} PortDescriptor
@@ -623,6 +624,16 @@ export class SimControl {
         langBtn.dataset.role = "lang";
         gCommon.appendChild(langBtn);
 
+        const lessonsBtn = DOMBuilder.iconbutton({
+            label: t("sim.lessons"),
+            icon: "fa-book-open",
+            onClick: () => {
+                window.open(`/lessons/${getLocale()}/`, "_blank");
+            },
+        });
+        lessonsBtn.dataset.role = "lessons-open";
+        gCommon.appendChild(lessonsBtn);
+
         const helpBtn = DOMBuilder.iconbutton({
             label: t("sim.help"),
             icon: "fa-circle-question",
@@ -648,6 +659,21 @@ export class SimControl {
         });
         aboutBtn.dataset.role = "mode-about";
         gCommon.appendChild(aboutBtn);
+
+        if (!isTauri()) {
+            const downloadsBtn = DOMBuilder.iconbutton({
+                label: t("sim.downloads"),
+                icon: "fa-download",
+                onClick: () => {
+                    this.pause();
+                    this.mode = "page";
+                    this._invalidateUI();
+                    this._staticRouter.navigate("/downloads", { replace: true });
+                },
+            });
+            downloadsBtn.dataset.role = "mode-downloads";
+            gCommon.appendChild(downloadsBtn);
+        }
 
     }
 
@@ -894,8 +920,9 @@ export class SimControl {
             setActive("mode-edit", this.mode === "edit");
             setActive("mode-run", this.mode === "run");
             setActive("mode-trace", this.mode === "trace");
-            setActive("mode-help",  this.mode === "page" && this._currentRoute === "/help");
-            setActive("mode-about", this.mode === "page" && this._currentRoute === "/about");
+            setActive("mode-help",      this.mode === "page" && this._currentRoute === "/help");
+            setActive("mode-about",     this.mode === "page" && this._currentRoute === "/about");
+            setActive("mode-downloads", this.mode === "page" && this._currentRoute === "/downloads");
 
             // --- active state for pause
             setActive("pause", this.mode === "run" && this.isPaused);

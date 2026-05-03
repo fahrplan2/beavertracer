@@ -165,23 +165,8 @@ export class RectOverlay extends SimulatedObject {
     return panel;
   }
 
-  /**
-   * Open the color panel only when SELECT tool is active.
-   * Also allow in EditMode.
-   */
   wireIconInteractions() {
     super.wireIconInteractions();
-    if (!this.iconEl) return;
-
-    this.iconEl.addEventListener(
-      "click",
-      (ev) => {
-        ev.preventDefault();
-        ev.stopPropagation();
-        this.setPanelOpen(true);
-      },
-      { capture: true }
-    );
   }
 
   /**

@@ -473,6 +473,7 @@ export default {
   "router.routingtable.yes": "sí",
   "router.routingtable.missing": "faltante",
   "router.routingtable.prefix": "Prefijo",
+  "sim.lessons": "Lecciones",
   "sim.common": "Común",
   "sim.new": "Nuevo",
   "sim.load": "Cargar",
