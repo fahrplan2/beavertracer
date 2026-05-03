@@ -1,6 +1,10 @@
-# Einführung in BeaverTracer
+# 0. Einführung in den BeaverTracer
 
 [[toc]]
+
+## Wichtiger Hinweis
+
+> Dies ist aktuell ein Platzhalter. Das "echte" Begleitmaterial befindet sich zur Zeit noch in Entwicklung und wird demnächst diesen Platzhalter hier ersetzen.
 
 ## Was ist BeaverTracer?
 
@@ -42,7 +46,7 @@ Eine IPv4-Adresse hat vier Oktette, getrennt durch Punkte:
 192.168.1.1
 ^   ^   ^ ^
 |   |   | └── Hostanteil
-|   |   └──── Subnetz
+|   |   └──── Subnetz (das ist übrigens falsch)
 └───┴──────── Netzanteil
 ```
 
