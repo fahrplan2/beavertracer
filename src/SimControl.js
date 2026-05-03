@@ -612,6 +612,31 @@ export class SimControl {
         const gCommon = DOMBuilder.buttongroup(t("sim.common"), toolbar);
         gCommon.dataset.group = "common";
 
+        const lessonsBtn = DOMBuilder.iconbutton({
+            label: t("sim.lessons"),
+            icon: "fa-book-open",
+            onClick: () => {
+                window.open(`/lessons/${getLocale()}/`, "_blank");
+            },
+        });
+        lessonsBtn.dataset.role = "lessons-open";
+        gCommon.appendChild(lessonsBtn);
+
+        if (!isTauri()) {
+            const downloadsBtn = DOMBuilder.iconbutton({
+                label: t("sim.downloads"),
+                icon: "fa-download",
+                onClick: () => {
+                    this.pause();
+                    this.mode = "page";
+                    this._invalidateUI();
+                    this._staticRouter.navigate("/downloads", { replace: true });
+                },
+            });
+            downloadsBtn.dataset.role = "mode-downloads";
+            gCommon.appendChild(downloadsBtn);
+        }
+
         const langBtn = DOMBuilder.iconbutton({
             label: t("sim.language"),
             icon: "fa-language",
@@ -623,16 +648,6 @@ export class SimControl {
         });
         langBtn.dataset.role = "lang";
         gCommon.appendChild(langBtn);
-
-        const lessonsBtn = DOMBuilder.iconbutton({
-            label: t("sim.lessons"),
-            icon: "fa-book-open",
-            onClick: () => {
-                window.open(`/lessons/${getLocale()}/`, "_blank");
-            },
-        });
-        lessonsBtn.dataset.role = "lessons-open";
-        gCommon.appendChild(lessonsBtn);
 
         const helpBtn = DOMBuilder.iconbutton({
             label: t("sim.help"),
@@ -659,21 +674,6 @@ export class SimControl {
         });
         aboutBtn.dataset.role = "mode-about";
         gCommon.appendChild(aboutBtn);
-
-        if (!isTauri()) {
-            const downloadsBtn = DOMBuilder.iconbutton({
-                label: t("sim.downloads"),
-                icon: "fa-download",
-                onClick: () => {
-                    this.pause();
-                    this.mode = "page";
-                    this._invalidateUI();
-                    this._staticRouter.navigate("/downloads", { replace: true });
-                },
-            });
-            downloadsBtn.dataset.role = "mode-downloads";
-            gCommon.appendChild(downloadsBtn);
-        }
 
     }
 

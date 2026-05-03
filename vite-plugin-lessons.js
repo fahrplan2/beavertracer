@@ -15,12 +15,12 @@ const LANG_NAMES = {
 };
 
 const LANG_NO_LESSONS = {
-  de: "Für diese Sprache sind noch keine Lektionen verfügbar.",
-  en: "No lessons are available in this language yet.",
-  fr: "Aucune leçon n'est disponible dans cette langue pour le moment.",
-  es: "Todavía no hay lecciones disponibles en este idioma.",
-  it: "Non ci sono ancora lezioni disponibili in questa lingua.",
-  pt: "Ainda não há lições disponíveis neste idioma.",
+  de: "Für diese Sprache sind leider noch keine Lektionen verfügbar. 😔",
+  en: "No lessons are available in this language yet. 😔",
+  fr: "Aucune leçon n'est disponible dans cette langue pour le moment. 😔",
+  es: "Todavía no hay lecciones disponibles en este idioma. 😔",
+  it: "Non ci sono ancora lezioni disponibili in questa lingua. 😔",
+  pt: "Ainda não há lições disponíveis neste idioma. 😔",
 };
 
 /**
