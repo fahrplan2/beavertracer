@@ -57,10 +57,11 @@ default:
           - package-lock.json
       paths:
         - .npm/
-    - key: "cargo-$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
+    - key: "cargo-$CI_JOB_NAME"
       paths:
         - .cargo/registry/
         - .cargo/git/
+        - src-tauri/target/
 
 # ── check ─────────────────────────────────────────────────────────────────────
 
