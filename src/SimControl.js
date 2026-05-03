@@ -612,15 +612,17 @@ export class SimControl {
         const gCommon = DOMBuilder.buttongroup(t("sim.common"), toolbar);
         gCommon.dataset.group = "common";
 
-        const lessonsBtn = DOMBuilder.iconbutton({
-            label: t("sim.lessons"),
-            icon: "fa-book-open",
-            onClick: () => {
-                window.open(`/lessons/${getLocale()}/`, "_blank");
-            },
-        });
-        lessonsBtn.dataset.role = "lessons-open";
-        gCommon.appendChild(lessonsBtn);
+        if (!isTauri()) {
+            const lessonsBtn = DOMBuilder.iconbutton({
+                label: t("sim.lessons"),
+                icon: "fa-book-open",
+                onClick: () => {
+                    window.open(`/lessons/${getLocale()}/`, "_blank");
+                },
+            });
+            lessonsBtn.dataset.role = "lessons-open";
+            gCommon.appendChild(lessonsBtn);
+        }
 
         if (!isTauri()) {
             const downloadsBtn = DOMBuilder.iconbutton({
