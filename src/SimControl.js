@@ -120,6 +120,12 @@ export class SimControl {
     /** @type {Map<number, HTMLElement>} */
     _objEls = new Map();
 
+    /** @type {HTMLDivElement|null} */
+    _tooltipEl = null;
+
+    /** @type {number|null} */
+    _tooltipTimer = null;
+
     /** @type {boolean} */
     _mounted = false;
 
@@ -416,6 +422,7 @@ export class SimControl {
         // Build toolbar + sidebar buttons once
         this._buildToolbar();
         this._buildSidebar();
+        this._setupTooltip();
     }
 
     _buildToolbar() {
@@ -618,7 +625,7 @@ export class SimControl {
 
         const helpBtn = DOMBuilder.iconbutton({
             label: t("sim.help"),
-            icon: "fa-question",
+            icon: "fa-circle-question",
             onClick: () => {
                 this.pause();
                 this.mode = "page";
@@ -631,7 +638,7 @@ export class SimControl {
 
         const aboutBtn = DOMBuilder.iconbutton({
             label: t("sim.about"),
-            icon: "fa-circle-question",
+            icon: "fa-circle-info",
             onClick: () => {
                 this.pause();
                 this.mode = "page";
@@ -739,6 +746,107 @@ export class SimControl {
     }
 
     // ---------------------------------------------------------------------------
+    // Node tooltip (run mode)
+    // ---------------------------------------------------------------------------
+
+    _setupTooltip() {
+        const el = /** @type {HTMLDivElement} */ (document.createElement("div"));
+        el.className = "sim-node-tooltip";
+        el.style.display = "none";
+        document.body.appendChild(el);
+        this._tooltipEl = el;
+
+        const nodes = this.nodesLayer;
+        if (!nodes) return;
+
+        nodes.addEventListener("mousemove", (ev) => {
+            if (this._tooltipTimer !== null) { clearTimeout(this._tooltipTimer); this._tooltipTimer = null; }
+            this._hideTooltip();
+
+            if (this.mode !== "run") return;
+            const nodeEl = /** @type {HTMLElement|null} */ (
+                (ev.target instanceof Element) ? ev.target.closest(".sim-node") : null
+            );
+            if (!nodeEl) return;
+            const id = Number(nodeEl.dataset.objid);
+            const obj = this.simobjects.find(o => o.id === id);
+            if (!obj) return;
+
+            const cx = ev.clientX, cy = ev.clientY;
+            this._tooltipTimer = window.setTimeout(() => {
+                this._tooltipTimer = null;
+                this._showTooltip(obj, cx, cy);
+            }, 600);
+        });
+
+        nodes.addEventListener("mouseleave", () => {
+            if (this._tooltipTimer !== null) { clearTimeout(this._tooltipTimer); this._tooltipTimer = null; }
+            this._hideTooltip();
+        });
+    }
+
+    /**
+     * @param {import("./sim/SimulatedObject.js").SimulatedObject} obj
+     * @param {number} cx  clientX
+     * @param {number} cy  clientY
+     */
+    _showTooltip(obj, cx, cy) {
+        const el = this._tooltipEl;
+        if (!el) return;
+
+        el.replaceChildren();
+
+        const nameEl = document.createElement("div");
+        nameEl.className = "sim-node-tooltip-name";
+        nameEl.textContent = obj.name;
+        el.appendChild(nameEl);
+
+        const o = /** @type {any} */ (obj);
+
+        // SSID for access points
+        if (typeof o._ssid === "string") {
+            const row = document.createElement("div");
+            row.className = "sim-node-tooltip-row";
+            row.textContent = `SSID: ${o._ssid || "-"}`;
+            el.appendChild(row);
+        }
+
+        // IP interfaces
+        const ifaces = /** @type {any[]|undefined} */ (o.net?.interfaces);
+        if (Array.isArray(ifaces) && ifaces.length > 0) {
+            for (const iface of ifaces) {
+                const v4 = (iface.ip?.toString() !== "0.0.0.0")
+                    ? `${iface.ip.toString()}/${iface.prefixLength}`
+                    : "-";
+                const v6 = iface.ip6
+                    ? `${iface.ip6.toString()}/${iface.prefixLength6}`
+                    : "-";
+                const row = document.createElement("div");
+                row.className = "sim-node-tooltip-row";
+                row.textContent = `${iface.name}:  IPv4: ${v4}  IPv6: ${v6}`;
+                el.appendChild(row);
+            }
+        }
+
+        el.style.display = "block";
+        const GAP = 14;
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        el.style.left = "0";
+        el.style.top = "0";
+        const { width: tw, height: th } = el.getBoundingClientRect();
+        const left = (cx + GAP + tw > vw) ? cx - GAP - tw : cx + GAP;
+        const top  = (cy + GAP + th > vh) ? cy - GAP - th : cy + GAP;
+        el.style.left = `${left}px`;
+        el.style.top  = `${top}px`;
+    }
+
+    _hideTooltip() {
+        if (this._tooltipTimer !== null) { clearTimeout(this._tooltipTimer); this._tooltipTimer = null; }
+        if (this._tooltipEl) this._tooltipEl.style.display = "none";
+    }
+
+    // ---------------------------------------------------------------------------
     // UI updates: cheap class toggles + active buttons
     // ---------------------------------------------------------------------------
 
@@ -761,6 +869,8 @@ export class SimControl {
         root.classList.toggle("edit-mode", this.mode === "edit");
         if (this.mode === "edit") root.dataset.tool = this.tool;
         else delete root.dataset.tool;
+
+        if (this.mode !== "run") this._hideTooltip();
 
         // tab visibility (mounted once; just toggle active)
         const isSim = (this.mode === "edit" || this.mode === "run");
