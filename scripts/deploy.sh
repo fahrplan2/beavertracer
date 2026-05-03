@@ -106,9 +106,9 @@ else
 fi
 
 if $DEPLOY; then
-  # 4. Update repository
+  # 4. Update repository (hard reset — server always mirrors remote)
   echo "Updating repository..."
-  git pull --ff-only origin "${DEFAULT_BRANCH}"
+  git reset --hard "${REMOTE_REF}"
 
   # 5. Install deps & build
   echo "Installing dependencies..."
