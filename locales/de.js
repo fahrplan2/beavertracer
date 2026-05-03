@@ -1,5 +1,5 @@
 /** @type {{ name: string }} */
-export const meta = { name: "🇩🇪 Deutsch", order: 2 };
+export const meta = { name: "🇩🇪 Deutsch", order: 1 };
 
 export default {
   "lang.name": "🇩🇪 Deutsch",

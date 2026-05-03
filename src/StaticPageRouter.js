@@ -107,7 +107,7 @@ export class StaticPageRouter {
 
     const html = await this.#loadLocalized(baseUrl);
 
-    const finalHtml = '<div class="about-container">' + this.#replaceTags(html) + '</div>';
+    const finalHtml = '<div class="about-container">' + this.#replaceTags(html, route) + '</div>';
 
     // Rebase relative URLs so fragment behaves as if it lived at baseUrl
     const rebased = this.#rebaseFragment(finalHtml, baseUrl);
@@ -204,14 +204,18 @@ export class StaticPageRouter {
 
   // -------------------- Loading --------------------
 
-  /** @param {string} html */
-  #replaceTags(html) {
+  /**
+   * @param {string} html
+   * @param {string} [route]
+   */
+  #replaceTags(html, route) {
     // @ts-ignore
     const downloadBase = import.meta.env.VITE_DOWNLOAD_BASE ?? "https://www.beavertracer.eu/releases";
     const v = String(version());
     const vBase = v.split("+")[0]; // "0.1.4+dev.3.abc" → "0.1.4"
+    const vDisplay = route === "/downloads" ? vBase : v;
     return String(html)
-      .replace(/\{VERSION\}/g, v)
+      .replace(/\{VERSION\}/g, vDisplay)
       .replace(/\{VERSION_BASE\}/g, vBase)
       .replace(/\{DOWNLOAD_BASE\}/g, downloadBase);
   }

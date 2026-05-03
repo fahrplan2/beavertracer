@@ -1173,7 +1173,7 @@ sim-toolbar-langbtn {
 
 .download-card-icon {
   font-size: 36px;
-  color: var(--primary-strong);
+  color: color-mix(in oklch, var(--primary), black 55%);
   line-height: 1;
 }
 
