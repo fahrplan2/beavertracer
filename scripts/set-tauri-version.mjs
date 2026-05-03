@@ -1,6 +1,10 @@
 import { execSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.resolve(__dirname, "..");
 
 function computeVersion() {
   // In GitLab CI tag pipelines CI_COMMIT_TAG is set reliably
@@ -27,7 +31,7 @@ function computeVersion() {
 const version = computeVersion();
 
 // Pfade anpassen, falls dein Script woanders liegt
-const cargoTomlPath = path.resolve("src-tauri", "Cargo.toml");
+const cargoTomlPath = path.resolve(ROOT, "src-tauri", "Cargo.toml");
 let cargoToml = readFileSync(cargoTomlPath, "utf8");
 
 // Ersetzt version = "..." nur im [package]-Abschnitt
@@ -40,7 +44,7 @@ writeFileSync(cargoTomlPath, cargoToml);
 console.log(`[tauri] set Cargo.toml version -> ${version}`);
 
 // Also keep package.json in sync
-const pkgPath = path.resolve("package.json");
+const pkgPath = path.resolve(ROOT, "package.json");
 const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
 pkg.version = version;
 writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n");
