@@ -516,11 +516,9 @@ export class SparktailHTTPClientApp extends GenericProcess {
       { id: "preview", label: t("app.sparktail.tab.preview") },
       { id: "source",  label: t("app.sparktail.tab.source")  },
       { id: "headers", label: t("app.sparktail.tab.headers") },
-      { id: "log",     label: t("app.sparktail.tab.log")     },
     ], (id) => { this.tab = /** @type {any} */ (id); this._renderTab(); });
     this._setTabActive = setTabActive;
-    const clearLogBtn = UI.button(t("app.sparktail.button.clearLog"), () => { this.log = []; this._renderLog(); });
-    const tabRow = UI.el("div", { className: "sparktail-tab-row", children: [tabBar, clearLogBtn] });
+    const tabRow = UI.el("div", { className: "sparktail-tab-row", children: [tabBar] });
 
     // Content areas
     const iframe = /** @type {HTMLIFrameElement} */ (UI.el("iframe", {
@@ -546,14 +544,10 @@ export class SparktailHTTPClientApp extends GenericProcess {
     headersTA.style.height = "420px";
     this.headersEl = headersTA;
 
-    const logBox = UI.el("div", { className: "msg sparktail-log" });
-    this.logEl = logBox;
-
     const content = UI.el("div", {});
     content.appendChild(iframe);
     content.appendChild(source);
     content.appendChild(headersTA);
-    content.appendChild(logBox);
 
     // Browser-ish chrome bar
     const chromeBar = UI.el("div", { className: "sparktail-chrome" });
@@ -565,7 +559,7 @@ export class SparktailHTTPClientApp extends GenericProcess {
     chromeBar.appendChild(stop);
     chromeBar.appendChild(throbber);
 
-    const panel = UI.panel([chromeBar, content, tabRow, status]);
+    const panel = UI.panel([chromeBar, tabRow, content, status]);
     this.root.replaceChildren(panel);
 
     // Listen for internal page navigation (about:start links)
@@ -588,7 +582,6 @@ export class SparktailHTTPClientApp extends GenericProcess {
 
     this._syncUI();
     this._renderTab();
-    this._renderLog();
     this._setStatus(t("app.sparktail.status.ready"));
 
     // show start page immediately
@@ -662,7 +655,6 @@ export class SparktailHTTPClientApp extends GenericProcess {
     if (this.previewFrame) this.previewFrame.style.display = this.tab === "preview" ? "" : "none";
     if (this.sourceEl) this.sourceEl.style.display = this.tab === "source" ? "" : "none";
     if (this.headersEl) this.headersEl.style.display = this.tab === "headers" ? "" : "none";
-    if (this.logEl) this.logEl.style.display = this.tab === "log" ? "" : "none";
     this._setTabActive?.(this.tab);
   }
 
