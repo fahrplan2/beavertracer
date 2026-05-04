@@ -657,5 +657,6 @@ export default {
   "ui.ok": "OK",
   "ui.cancel": "Annulla",
   "sim.save.filename": "Nome file",
-  "sim.embed.open": "Apri in BeaverTracer"
+  "sim.embed.open": "Apri in BeaverTracer",
+  "sim.downloads": "Download"
 };
