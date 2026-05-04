@@ -70,6 +70,13 @@
 .sim-node .title {
   font-weight: 600;
   font-size: 14px;
+  width: 100%;
+  text-align: center;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  padding: 0 4px;
+  box-sizing: border-box;
 }
 
 /* Ghost node overlay */

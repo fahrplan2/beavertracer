@@ -5,6 +5,7 @@ import { ipNumberToString, ipStringToNumber } from "../lib/ip.js";
 import { nowMs } from "../lib/time.js";
 import { sleepAbortable } from "../lib/abort.js";
 import { IPAddress } from "../../../../net/models/IPAddress.js";
+import { SimTimer } from "../../../../sim/SimTimer.js";
 
 /**
  * Format an IP that may be:
@@ -57,8 +58,8 @@ export const traceroute = {
     const argv = [...args];
 
     let maxTtl = 30;
-    let probes = 3;
-    let timeoutMs = 1000;
+    let probes = 1;
+    let timeoutMs = SimTimer.TRACEROUTE_TIMEOUT_MS;
     let host = "";
 
     const usage = () => t("app.terminal.commands.traceroute.usage");
@@ -146,24 +147,28 @@ export const traceroute = {
           const dt = Math.max(0, Math.round(res.timeMs ?? (nowMs() - t0)));
           times.push(dt);
 
-          // Optional future fields:
           if (res && typeof res === "object") {
             if ("from" in res) hop = /** @type {any} */(res).from;
             if (/** @type {any} */(res).reached === true) reached = true;
           }
 
-          // Fallback: if hop equals destination (various representations)
-          const hopStr = fmtIP(hop);
-          if (hopStr !== "*" && hopStr === dstStr) reached = true;
+          // Echo reply without exception means destination responded
+          if (!reached) {
+            const hopStr = fmtIP(hop);
+            if (hopStr !== "*" && hopStr === dstStr) reached = true;
+            else if (!hop) reached = true;
+          }
 
         } catch (e) {
           if (ctx.signal.aborted) throw e;
 
-          // Optional: errors might carry {from}
           const any = /** @type {any} */ (e);
-          if (any && typeof any === "object" && "from" in any) hop = any.from;
-
-          times.push(null);
+          if (any && typeof any === "object" && "from" in any) {
+            hop = any.from;
+            times.push(Math.max(0, Math.round(nowMs() - t0)));
+          } else {
+            times.push(null);
+          }
         }
 
         await sleepAbortable(10, ctx.signal);

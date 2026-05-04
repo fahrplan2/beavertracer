@@ -542,6 +542,7 @@ export class IPStack extends Observable {
                 src: srcIp,
                 protocol: 1,
                 payload: icmp,
+                ttl: opt.ttl,
             });
         }).then((r) => {
             const t1 = (typeof performance !== "undefined" ? performance.now() : Date.now());
@@ -570,7 +571,11 @@ export class IPStack extends Observable {
         const dst = original.dst;
 
         if (this._isZero(src)) return;
-        if (original.protocol == 1) return;
+        // Don't reply to ICMP error messages (RFC 792), but DO reply to echo requests (type 8)
+        if (original.protocol == 1) {
+            const icmpType = original.payload?.[0];
+            if (icmpType !== 8) return;
+        }
 
         if (this._isLimitedBroadcast(dst)) return;
         if (this._findDirectedBroadcastInterface(dst) !== -1) return;
@@ -581,7 +586,7 @@ export class IPStack extends Observable {
 
         this.send({
             dst: src,
-            src: dst,
+            // src omitted: send() picks the router's own outgoing interface IP via _pickSrcIp
             protocol: 1,
             payload: icmp
         });
@@ -629,6 +634,7 @@ export class IPStack extends Observable {
                     identifier: id,
                     sequence: seq,
                     timeMs: 0,
+                    from: remote,
                 });
                 break;
             }
@@ -650,6 +656,34 @@ export class IPStack extends Observable {
                         sequence: icmp.sequence
                     }).pack()
                 });
+                break;
+            }
+
+            case 11: { // Time Exceeded — used by traceroute
+                // Payload = quoted original IP header + first 8 bytes of original datagram
+                const q = icmp.payload;
+                if (!q || q.length < 8) break;
+
+                const origIhl = (q[0] & 0x0f) * 4;
+                if (q.length < origIhl + 8) break;
+
+                // Original destination from quoted IP header (bytes 16-19)
+                const origDst = IPAddress.fromUInt8(q.slice(16, 20));
+
+                // Original ICMP identifier and sequence (bytes ihl+4..ihl+7)
+                const origId  = (q[origIhl + 4] << 8) | q[origIhl + 5];
+                const origSeq = (q[origIhl + 6] << 8) | q[origIhl + 7];
+
+                const key = this._icmpEchoKey(origDst, origId, origSeq);
+                const pending = this._pendingEcho.get(key);
+                if (!pending) break;
+
+                simTimer.cancel(pending.timerId);
+                this._pendingEcho.delete(key);
+
+                const err = new Error("ttl-exceeded");
+                /** @type {any} */ (err).from = ip_src;
+                pending.reject(err);
                 break;
             }
 

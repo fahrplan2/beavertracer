@@ -28,6 +28,8 @@ export class SimTimer {
     static PING_TIMEOUT_MS          = 2000;  // 400 ticks
     /** Delay between successive ping packets. */
     static PING_INTERVAL_MS         = 1000;  // 200 ticks
+    /** Traceroute hop timeout (shorter than ping for snappier output). */
+    static TRACEROUTE_TIMEOUT_MS    =  250;  //  50 ticks
 
     /** Delay between ARP retry polls. */
     static ARP_RETRY_DELAY_MS       = 50;    // 10 ticks
