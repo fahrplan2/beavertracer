@@ -174,6 +174,8 @@ export class DHCPServerApp extends GenericProcess {
    */
   cfg = DHCPServerApp.defaultCfg();
 
+  badge = "DHCP";
+
   run() {
     this.root.classList.add("app", "app-dhcp-server");
     setTimeout(() => this._tryAutostart(), 0);
@@ -234,18 +236,35 @@ export class DHCPServerApp extends GenericProcess {
     });
     this.logEl = logBox;
 
-    const panel = UI.panel([
-      UI.el("h4", { text: t("app.dhcpserver.label.server") }),
-      UI.buttonRow([start, stop, clear]),
-      UI.el("h4", { text: t("app.dhcpserver.label.config") }),
+    const configPane = UI.el("div", { children: [
       UI.row(t("app.dhcpserver.label.rangeStart"), rangeStart),
       UI.row(t("app.dhcpserver.label.rangeEnd"), rangeEnd),
       UI.row(t("app.dhcpserver.label.dns"), dns),
       UI.row(t("app.dhcpserver.label.gateway"), gateway),
       UI.row(t("app.dhcpserver.label.leaseTime"), leaseTime),
       UI.buttonRow([loadBtn, saveBtn]),
-      UI.el("h4", { text: t("app.dhcpserver.label.log") }),
+    ]});
+    const logPane = UI.el("div", { children: [
+      UI.buttonRow([clear]),
       logBox,
+    ]});
+
+    const { bar: tabBar, setActive: setTab } = UI.tabGroup([
+      { id: "config", label: t("app.dhcpserver.label.config") },
+      { id: "log",    label: t("app.dhcpserver.label.log") },
+    ], (id) => {
+      configPane.style.display = id === "config" ? "" : "none";
+      logPane.style.display    = id === "log"    ? "" : "none";
+    });
+    setTab("config");
+    configPane.style.display = "";
+    logPane.style.display    = "none";
+
+    const panel = UI.panel([
+      UI.buttonRow([start, stop]),
+      tabBar,
+      configPane,
+      logPane,
     ]);
 
     this.root.replaceChildren(panel);

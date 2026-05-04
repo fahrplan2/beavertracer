@@ -172,6 +172,7 @@ export class DOMBuilder {
      * @param {string} opts.label - Button text (shown as tooltip when iconOnly)
      * @param {(ev: MouseEvent) => void} opts.onClick - Click handler
      * @param {string} [opts.icon] - Optional icon classes
+     * @param {string} [opts.badge] - Short protocol badge label shown over the icon
      * @param {boolean} [opts.active=false] - Whether button starts active
      * @param {string} [opts.className] - Additional CSS classes
      * @param {boolean} [opts.iconOnly=false] - Show icon only, label becomes title tooltip
@@ -182,6 +183,7 @@ export class DOMBuilder {
         label,
         onClick,
         icon,
+        badge = "",
         active = false,
         className = "",
         iconOnly = false,
@@ -202,7 +204,15 @@ export class DOMBuilder {
         if (icon) iconEl.classList.add(icon);
         btn.appendChild(iconEl);
 
-        // 2) text (omitted when iconOnly)
+        // 2) optional badge overlay on the icon tile
+        if (badge) {
+            const badgeEl = document.createElement("span");
+            badgeEl.className = "icon-badge";
+            badgeEl.textContent = badge;
+            btn.appendChild(badgeEl);
+        }
+
+        // 3) text (omitted when iconOnly)
         if (!iconOnly) {
             const textEl = document.createElement("span");
             textEl.textContent = label;

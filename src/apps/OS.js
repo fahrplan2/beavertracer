@@ -2,7 +2,6 @@
 
 import { GenericProcess } from "./GenericProcess.js";
 import { IPStack } from "../net/IPStack.js";
-import { AboutApp } from "./AboutApp.js";
 import { IPv4ConfigApp } from "./IPv4ConfigApp.js";
 import { UDPEchoServerApp } from "./UDPEchoServerApp.js";
 import { TerminalApp } from "./TerminalApp.js";
@@ -19,6 +18,8 @@ import { DHCPServerApp } from "./DHCPServerApp.js";
 import { SimulatedObject } from "../sim/SimulatedObject.js";
 import { SimpleMailServerApp } from "./SimpleMailServerApp.js";
 import { MailClientApp } from "./MailClientApp.js";
+import { SimpleIRCServerApp } from "./SimpleIRCServerApp.js";
+import { SimpleIRCClientApp } from "./SimpleIRCClientApp.js";
 import { DOMBuilder } from "../lib/DomBuilder.js";
 
 export class OS {
@@ -94,8 +95,9 @@ export class OS {
      */
     _registerApps() {
         const launchlist = 
-            [IPv4ConfigApp, TerminalApp, TextEditorApp, SparktailHTTPClientApp,  MailClientApp, SimpleTCPClientApp, SimpleTCPServerApp,
-            SimpleHTTPServerApp, UDPEchoServerApp, DNSServerApp, DHCPServerApp, SimpleMailServerApp, AboutApp];
+            [IPv4ConfigApp, TerminalApp, TextEditorApp, SparktailHTTPClientApp,  MailClientApp,  SimpleIRCClientApp, SimpleTCPClientApp, SimpleTCPServerApp,
+            SimpleHTTPServerApp, UDPEchoServerApp, DNSServerApp, DHCPServerApp, SimpleMailServerApp,
+            SimpleIRCServerApp];
 
         launchlist.forEach((e) => this.exec(e));
     }
@@ -229,6 +231,7 @@ export class OS {
             const btn = DOMBuilder.iconbutton({
                 label: item.title,
                 icon: item.icon,
+                badge: item.badge,
                 onClick: () => {
                     this.focus(item.pid);
                 },
@@ -273,12 +276,13 @@ export class OS {
     /**
      * adds an application to the main menu
      * @param {string} title Title to show in the Menu
-     * @param {number} pid PID of the process 
+     * @param {number} pid PID of the process
      * @param {string} icon which icon to use
+     * @param {string} [badge] short badge label over the icon
      */
 
-    _registerMenuItem(title, pid, icon) {
-        this._menuItems.push(new MenuItem({ title, pid, icon: icon }));
+    _registerMenuItem(title, pid, icon, badge = "") {
+        this._menuItems.push(new MenuItem({ title, pid, icon, badge }));
         if (this.focusID === 0) this.render();
     }
 
@@ -291,9 +295,9 @@ export class OS {
 
     updateMenu() {
         this._menuItems = [];
-        this.runningApps.forEach( (app) => {
-            this._registerMenuItem(app.title, app.pid, app.icon);
-        })
+        this.runningApps.forEach((app) => {
+            this._registerMenuItem(app.title, app.pid, app.icon, app.badge ?? "");
+        });
     }
 
     _getFocusedApp() {
@@ -320,18 +324,23 @@ class MenuItem {
     /**@type {string} icon of the menu item*/
     icon;
 
+    /**@type {string} short badge label shown over the icon */
+    badge;
+
     /**
-     * 
-     * @param {Object} [opts] 
+     *
+     * @param {Object} [opts]
      * @param {string} [opts.title] title of the entry
      * @param {new (...args: any[]) => any} [opts.ClassName]
      * @param {number} [opts.pid] pid
      * @param {string} [opts.icon] icon
+     * @param {string} [opts.badge] badge
      */
 
     constructor(opts = {}) {
         this.title = (opts.title ?? t("os.notitle"));
         this.pid = (opts.pid ?? 0);
-        this.icon = (opts.icon ?? 'fa-gear')
+        this.icon = (opts.icon ?? 'fa-gear');
+        this.badge = (opts.badge ?? '');
     }
 }

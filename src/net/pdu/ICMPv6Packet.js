@@ -182,18 +182,117 @@ export class ICMPv6Packet {
 
   /**
    * Build Neighbor Solicitation (type 135).
-   * body: reserved(4) + target(16) + SLLA option(8)
+   * body: reserved(4) + target(16) [+ SLLA option(8) if srcMac given]
+   * Pass srcMac=null for DAD probes (RFC 4861 §4.3: no SLLA when src is ::).
    * @param {IPAddress} target
-   * @param {Uint8Array} srcMac
+   * @param {Uint8Array|null} [srcMac]
    * @returns {ICMPv6Packet}
    */
-  static buildNS(target, srcMac) {
-    const body = new Uint8Array(28);
+  static buildNS(target, srcMac = null) {
+    const body = new Uint8Array(srcMac ? 28 : 20);
     // bytes 0-3: reserved (0)
     body.set(target.toUInt8(), 4);  // bytes 4-19: target
-    body[20] = 1; body[21] = 1;     // SLLA option: type=1, length=1
-    body.set(srcMac.subarray(0, 6), 22);
+    if (srcMac) {
+      body[20] = 1; body[21] = 1;   // SLLA option: type=1, length=1
+      body.set(srcMac.subarray(0, 6), 22);
+    }
     return new ICMPv6Packet({ type: 135, code: 0, body });
+  }
+
+  // ── Router Solicitation / Advertisement (types 133 / 134) ────────────────────
+
+  /**
+   * Build Router Solicitation (type 133).
+   * Pass srcMac=null when sending from :: (before link-local is ready).
+   * body: reserved(4) [+ SLLA option(8) if srcMac given]
+   * @param {Uint8Array|null} [srcMac]
+   * @returns {ICMPv6Packet}
+   */
+  static buildRS(srcMac = null) {
+    const body = new Uint8Array(srcMac ? 12 : 4);
+    if (srcMac) {
+      body[4] = 1; body[5] = 1; // SLLA option: type=1, length=1
+      body.set(srcMac.subarray(0, 6), 6);
+    }
+    return new ICMPv6Packet({ type: 133, code: 0, body });
+  }
+
+  /**
+   * Build Router Advertisement (type 134) with optional Prefix Information Option.
+   * @param {Object} [opts]
+   * @param {number}    [opts.hopLimit=64]
+   * @param {boolean}   [opts.managedFlag=false]      M-flag (stateful DHCPv6)
+   * @param {boolean}   [opts.otherFlag=false]         O-flag (stateless DHCPv6)
+   * @param {number}    [opts.routerLifetime=1800]     seconds; 0 = not a default router
+   * @param {IPAddress} [opts.prefix]                  network prefix to advertise
+   * @param {number}    [opts.prefixLength=64]
+   * @param {number}    [opts.validLifetime=2592000]   seconds (30 days)
+   * @param {number}    [opts.preferredLifetime=604800] seconds (7 days)
+   * @returns {ICMPv6Packet}
+   */
+  static buildRA(opts = {}) {
+    const hopLimit       = (opts.hopLimit      ?? 64)    & 0xff;
+    const moFlags        = (opts.managedFlag ? 0x80 : 0) | (opts.otherFlag ? 0x40 : 0);
+    const routerLifetime = (opts.routerLifetime ?? 1800) & 0xffff;
+    const hasPrefix      = opts.prefix != null;
+    const body = new Uint8Array(12 + (hasPrefix ? 32 : 0));
+
+    body[0] = hopLimit;
+    body[1] = moFlags;
+    body[2] = (routerLifetime >> 8) & 0xff;
+    body[3] =  routerLifetime       & 0xff;
+    // bytes 4-11: Reachable Time + Retrans Timer (0 = unspecified)
+
+    if (hasPrefix) {
+      const prefixLength      = (opts.prefixLength      ?? 64)      & 0xff;
+      const validLifetime     = (opts.validLifetime     ?? 2592000) >>> 0;
+      const preferredLifetime = (opts.preferredLifetime ?? 604800)  >>> 0;
+      const prefixBytes       = /** @type {IPAddress} */ (opts.prefix).toUInt8();
+      body[12] = 3;    // Prefix Information Option type
+      body[13] = 4;    // length in units of 8 bytes = 32 bytes total
+      body[14] = prefixLength;
+      body[15] = 0xc0; // L=1, A=1: on-link + autonomous address configuration
+      body[16] = (validLifetime     >>> 24) & 0xff;
+      body[17] = (validLifetime     >>> 16) & 0xff;
+      body[18] = (validLifetime     >>>  8) & 0xff;
+      body[19] =  validLifetime             & 0xff;
+      body[20] = (preferredLifetime >>> 24) & 0xff;
+      body[21] = (preferredLifetime >>> 16) & 0xff;
+      body[22] = (preferredLifetime >>>  8) & 0xff;
+      body[23] =  preferredLifetime         & 0xff;
+      // bytes 24-27: Reserved2 (0)
+      body.set(prefixBytes, 28); // prefix (16 bytes, host bits are ignored by receiver)
+    }
+
+    return new ICMPv6Packet({ type: 134, code: 0, body });
+  }
+
+  /**
+   * Parse all Prefix Information Options (type 3) from an RA body (RFC 4861 §4.6.2).
+   * @returns {Array<{prefixLength:number, onLink:boolean, autonomous:boolean, validLifetime:number, preferredLifetime:number, prefix:IPAddress}>}
+   */
+  getPrefixInfoOptions() {
+    const result = [];
+    let i = 12; // skip 12-byte RA header (hopLimit, flags, lifetime, reachTime, retransTimer)
+    while (i + 2 <= this.body.length) {
+      const optType = this.body[i];
+      const optLen  = this.body[i + 1] * 8;
+      if (optLen === 0) break;
+      if (optType === 3 && optLen === 32 && i + 32 <= this.body.length) {
+        result.push({
+          prefixLength:      this.body[i + 2],
+          onLink:            (this.body[i + 3] & 0x80) !== 0,
+          autonomous:        (this.body[i + 3] & 0x40) !== 0,
+          validLifetime:     ((this.body[i+4]  << 24) | (this.body[i+5]  << 16) |
+                              (this.body[i+6]  <<  8) |  this.body[i+7] ) >>> 0,
+          preferredLifetime: ((this.body[i+8]  << 24) | (this.body[i+9]  << 16) |
+                              (this.body[i+10] <<  8) |  this.body[i+11]) >>> 0,
+          prefix: IPAddress.fromUInt8(this.body.slice(i + 16, i + 32)),
+        });
+      }
+      i += optLen;
+    }
+    return result;
   }
 
   /**

@@ -28,6 +28,8 @@ export class SimTimer {
     static PING_TIMEOUT_MS          = 2000;  // 400 ticks
     /** Delay between successive ping packets. */
     static PING_INTERVAL_MS         = 1000;  // 200 ticks
+    /** Traceroute hop timeout (shorter than ping for snappier output). */
+    static TRACEROUTE_TIMEOUT_MS    =  250;  //  50 ticks
 
     /** Delay between ARP retry polls. */
     static ARP_RETRY_DELAY_MS       = 50;    // 10 ticks
@@ -46,6 +48,14 @@ export class SimTimer {
     static NDP_RETRIES              = 10;
     /** Total NDP send attempts before giving up. */
     static NDP_ATTEMPTS             = 3;
+
+    /** DAD probe wait time: how long to listen for NA/NS conflict responses. */
+    static DAD_PROBE_WAIT_MS        =   10;  //   2 ticks
+
+    /** Initial delay before first unsolicited RA (after ip6 is activated). */
+    static RA_INITIAL_DELAY_MS      =  100;  //  20 ticks
+    /** Interval between periodic unsolicited Router Advertisements. */
+    static RA_INTERVAL_MS           = 2000;  // 400 ticks
 
     /** DNS query timeout. */
     static DNS_TIMEOUT_MS           = 2000;  // 400 ticks

@@ -200,7 +200,7 @@ export class SimControl {
     }
 
     step() {
-        simTimer.tick();
+        // deliver in-flight packets first so simTimer.tick() sees them immediately
         this.wifiMedium.step2(this.simobjects);
         for (let i = 0; i < this.simobjects.length; i++) {
             const x = this.simobjects[i];
@@ -208,6 +208,7 @@ export class SimControl {
                 x.step2();
             }
         }
+        simTimer.tick();
         this.wifiMedium.step1(this.simobjects);
         for (let i = 0; i < this.simobjects.length; i++) {
             const x = this.simobjects[i];
@@ -846,9 +847,14 @@ export class SimControl {
                 const v4 = (iface.ip?.toString() !== "0.0.0.0")
                     ? `${iface.ip.toString()}/${iface.prefixLength}`
                     : "-";
-                const v6 = iface.ip6
-                    ? `${iface.ip6.toString()}/${iface.prefixLength6}`
-                    : "-";
+                let v6;
+                if (iface.ip6) {
+                    v6 = `${iface.ip6.toString()}/${iface.prefixLength6}`;
+                } else if (iface._tentativeIp6) {
+                    v6 = `(${iface._tentativeIp6.toString()}/${iface.prefixLength6})`;
+                } else {
+                    v6 = "-";
+                }
                 const row = document.createElement("div");
                 row.className = "sim-node-tooltip-row";
                 row.textContent = `${iface.name}:  IPv4: ${v4}  IPv6: ${v6}`;

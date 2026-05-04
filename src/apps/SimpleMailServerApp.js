@@ -282,7 +282,7 @@ export class SimpleMailServerApp extends GenericProcess {
     return t("app.simplemailserver.title") || "Simple Mail Server";
   }
 
-  icon="fa-envelope";
+  badge = "MAIL";
 
   /** @type {Disposer} */
   disposer = new Disposer();
@@ -807,30 +807,40 @@ export class SimpleMailServerApp extends GenericProcess {
     const logBox = UI.el("div", { className: "msg" });
     this.logEl = logBox;
 
-    const panel = UI.panel([
-      UI.el("h4", { text: t("app.simplemailserver.label.server") || "Server" }),
+    const configPane = UI.el("div", { children: [
       UI.row(t("app.simplemailserver.label.domain") || "Maildomain", domainInput),
       UI.row(t("app.simplemailserver.label.smtpPort") || "SMTP port", smtpInput),
       UI.row(t("app.simplemailserver.label.pop3Port") || "POP3 port", pop3Input),
       UI.row(t("app.simplemailserver.label.imapPort") || "IMAP port", imapInput),
-
-      UI.buttonRow([
-        start,
-        stop,
-        UI.button(t("app.simplemailserver.button.saveConfig") || "Save config", () => this._saveConfig(), {}),
-      ]),
-
+      UI.buttonRow([UI.button(t("app.simplemailserver.button.saveConfig") || "Save config", () => this._saveConfig(), {})]),
       UI.el("h4", { text: t("app.simplemailserver.label.users") || "Mailboxes" }),
       UI.row(t("app.simplemailserver.label.user") || "User", userInput),
       UI.row(t("app.simplemailserver.label.password") || "Password", passInput),
       UI.buttonRow([addBtn, delBtn, seedBtn, clearQueueBtn]),
       usersBox,
+    ]});
 
-      UI.el("h4", { text: t("app.simplemailserver.label.status") || "Status" }),
+    const logPane = UI.el("div", { children: [
       status,
-
-      UI.el("h4", { text: t("app.simplemailserver.label.log") || "Log" }),
       logBox,
+    ]});
+
+    const { bar: tabBar, setActive: setTab } = UI.tabGroup([
+      { id: "config", label: t("app.simplemailserver.label.server") || "Konfiguration" },
+      { id: "log",    label: t("app.simplemailserver.label.log") || "Protokoll" },
+    ], (id) => {
+      configPane.style.display = id === "config" ? "" : "none";
+      logPane.style.display    = id === "log"    ? "" : "none";
+    });
+    setTab("config");
+    configPane.style.display = "";
+    logPane.style.display    = "none";
+
+    const panel = UI.panel([
+      UI.buttonRow([start, stop]),
+      tabBar,
+      configPane,
+      logPane,
     ]);
 
     this.root.replaceChildren(panel);

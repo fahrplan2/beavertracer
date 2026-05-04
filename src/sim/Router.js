@@ -114,6 +114,7 @@ export class Router extends SimulatedObject {
   /** @type {HTMLInputElement|null} */ _prefix6Input = null;
   /** @type {HTMLInputElement|null} */ _ipv4EnableCb = null;
   /** @type {HTMLInputElement|null} */ _ipv6EnableCb = null;
+  /** @type {HTMLInputElement|null} */ _raEnabledCb = null;
   /** @type {HTMLButtonElement|null} */ _saveIfBtn = null;
   /** @type {HTMLButtonElement|null} */ _delIfBtn = null;
 
@@ -234,7 +235,10 @@ export class Router extends SimulatedObject {
         ]);
         const ip6In     = DOMBuilder.input({ className: "router-if-ip6",     placeholder: "2001:db8::1" });
         const prefix6In = DOMBuilder.input({ className: "router-if-prefix6", placeholder: "64" });
-        const v6Fields = DOMBuilder.div("router-if-fields", [ip6In, prefix6In]);
+        const raCb      = DOMBuilder.input({ type: "checkbox" });
+        const raLabel   = DOMBuilder.el("label", { className: "router-if-ra-label", text: t("router.ra.enabled") });
+        raLabel.prepend(raCb);
+        const v6Fields = DOMBuilder.div("router-if-fields", [ip6In, prefix6In, raLabel]);
         const v6Section = DOMBuilder.div("router-if-section", [v6Header, v6Fields]);
 
         const saveBtn = DOMBuilder.button(t("router.save"), { className: "router-if-save" });
@@ -244,6 +248,7 @@ export class Router extends SimulatedObject {
         this._cidrInput    = cidrIn;
         this._ip6Input     = ip6In;
         this._prefix6Input = prefix6In;
+        this._raEnabledCb  = raCb;
         this._ipv4EnableCb = v4Cb;
         this._ipv6EnableCb = v6Cb;
         this._saveIfBtn    = saveBtn;
@@ -369,6 +374,7 @@ export class Router extends SimulatedObject {
 
         if (v4Cb) v4Cb.addEventListener("change", onInput);
         if (v6Cb) v6Cb.addEventListener("change", onInput);
+        if (this._raEnabledCb) this._raEnabledCb.addEventListener("change", onInput);
 
         ipIn.addEventListener("input", onInput);
 
@@ -412,6 +418,7 @@ export class Router extends SimulatedObject {
         if (this._cidrInput) this._cidrInput.disabled = !has;
         if (this._ip6Input) this._ip6Input.disabled = !has;
         if (this._prefix6Input) this._prefix6Input.disabled = !has;
+        if (this._raEnabledCb) this._raEnabledCb.disabled = !has;
         if (this._ipv4EnableCb) this._ipv4EnableCb.disabled = !has;
         if (this._ipv6EnableCb) this._ipv6EnableCb.disabled = !has;
         if (this._saveIfBtn) this._saveIfBtn.disabled = !has;
@@ -490,12 +497,14 @@ export class Router extends SimulatedObject {
         if (this._cidrInput) this._cidrInput.value = v4Active ? String(p) : "";
         if (this._maskInput) this._maskInput.value = v4Active ? prefixToNetmaskStr(p) : "";
 
-        // IPv6
-        const v6Active = iface.ip6 != null;
+        // IPv6 — use tentativeIp6 while DAD is still running so the form doesn't flicker
+        const effectiveIp6 = iface.ip6 ?? iface._tentativeIp6;
+        const v6Active = effectiveIp6 != null;
         if (this._ipv6EnableCb)  this._ipv6EnableCb.checked  = v6Active;
-        if (this._ip6Input)     this._ip6Input.value     = v6Active ? ipToStr(iface.ip6) : "";
+        if (this._ip6Input)      this._ip6Input.value         = v6Active ? ipToStr(effectiveIp6) : "";
         const p6 = Number(iface.prefixLength6 ?? 64) | 0;
-        if (this._prefix6Input) this._prefix6Input.value = v6Active ? String(p6) : "";
+        if (this._prefix6Input)  this._prefix6Input.value     = v6Active ? String(p6) : "";
+        if (this._raEnabledCb)   this._raEnabledCb.checked    = !!iface.raEnabled;
 
         markInvalid(this._ipInput, false);
         markInvalid(this._maskInput, false);
@@ -522,7 +531,7 @@ export class Router extends SimulatedObject {
         const v4Fields = /** @type {HTMLElement|null} */ (ipIn.closest('.router-if-fields'));
         if (v4Fields) v4Fields.style.display = v4Active ? '' : 'none';
 
-        // Show/hide IPv6 fields
+        // Show/hide IPv6 fields (including RA checkbox)
         const v6Fields = ip6In ? /** @type {HTMLElement|null} */ (ip6In.closest('.router-if-fields')) : null;
         if (v6Fields) v6Fields.style.display = v6Active ? '' : 'none';
 
@@ -577,12 +586,15 @@ export class Router extends SimulatedObject {
 
         // Dirty check
         const wasV4Active = iface.ip.isV4() && iface.ip.toString() !== "0.0.0.0";
-        const wasV6Active = iface.ip6 != null;
+        const wasV6Active = (iface.ip6 ?? iface._tentativeIp6) != null;
         const v4Changed = v4Active !== wasV4Active
             || (v4Active && v4Ip && (v4Ip.toString() !== iface.ip.toString() || v4Prefix !== (iface.prefixLength | 0)));
+        const raChanged = (this._raEnabledCb?.checked ?? false) !== !!iface.raEnabled;
+        const currentIp6 = iface.ip6 ?? iface._tentativeIp6;
         const v6Changed = v6Active !== wasV6Active
-            || (v6Active && v6Ip && wasV6Active && iface.ip6 && (v6Ip.toString() !== iface.ip6.toString() || v6Prefix !== (iface.prefixLength6 | 0)))
-            || (v6Active && v6Ip && !wasV6Active);
+            || (v6Active && v6Ip && wasV6Active && currentIp6 && (v6Ip.toString() !== currentIp6.toString() || v6Prefix !== (iface.prefixLength6 | 0)))
+            || (v6Active && v6Ip && !wasV6Active)
+            || raChanged;
 
         save.disabled = !(v4Changed || v6Changed);
     }
@@ -626,6 +638,8 @@ export class Router extends SimulatedObject {
             } else {
                 this.net.configureInterface(idx, { ip6: null });
             }
+
+            this.net.configureInterface(idx, { raEnabled: this._raEnabledCb?.checked ?? false });
 
             if (this._panelBody) this.mount(this._panelBody);
             else this._renderRoutes();

@@ -218,15 +218,19 @@ export class TcpEngine {
     this.conns.set(key, conn);
     this.sockets.set(srcPort, conn);
 
-    // send SYN (queued for retransmission)
+    // SYN consumes one sequence number — increment before sending so that
+    // synchronous loopback delivery sees the correct conn.myacc when the
+    // SYN-ACK arrives back within the same call stack.
+    const synSeq = conn.myacc;
+    conn.myacc = u32(conn.myacc + 1);
+
     this._sendSegment(conn, {
-      seq: conn.myacc,
+      seq: synSeq,
       ack: 0,
       flags: TCPPacket.FLAG_SYN,
       window: this._calcRcvWnd(conn),
       payload: new Uint8Array(),
     });
-    conn.myacc = u32(conn.myacc + 1);
 
     // wait until handshake completes
     await new Promise((resolve, reject) => {
@@ -450,14 +454,16 @@ export class TcpEngine {
 
         this.conns.set(key, conn);
 
+        const synAckSeq = conn.myacc;
+        conn.myacc = u32(conn.myacc + 1);
+
         this._sendSegment(conn, {
-          seq: conn.myacc,
+          seq: synAckSeq,
           ack: conn.theiracc,
           flags: TCPPacket.FLAG_SYN | TCPPacket.FLAG_ACK,
           window: this._calcRcvWnd(conn),
           payload: new Uint8Array(),
         });
-        conn.myacc = u32(conn.myacc + 1);
         return;
       }
 

@@ -88,9 +88,10 @@ export class SimpleTCPServerApp extends GenericProcess {
   /** @type {Set<string>} */
   conns = new Set();
 
+  badge = "TCP";
+
   run() {
     this.root.classList.add("app", "app-simple-tcp-server");
-    // not auto-starting
   }
 
   /**
@@ -118,13 +119,32 @@ export class SimpleTCPServerApp extends GenericProcess {
 
     const status = UI.el("div", { className: "msg" });
 
-    const panel = UI.panel([
-      UI.el("h4", { text: t("app.simpletcpserver.label.server") }),
+    const serverPane = UI.el("div", { children: [
       UI.row(t("app.simpletcpserver.label.listenPort"), portInput),
-      UI.buttonRow([start, stop, clear]),
       status,
-      UI.el("h4", { text: t("app.simpletcpserver.label.log") }),
+    ]});
+
+    const logPane = UI.el("div", { children: [
+      UI.buttonRow([clear]),
       logBox,
+    ]});
+
+    const { bar: tabBar, setActive: setTab } = UI.tabGroup([
+      { id: "server", label: t("app.simpletcpserver.label.server") },
+      { id: "log",    label: t("app.simpletcpserver.label.log") },
+    ], (id) => {
+      serverPane.style.display = id === "server" ? "" : "none";
+      logPane.style.display    = id === "log"    ? "" : "none";
+    });
+    setTab("server");
+    serverPane.style.display = "";
+    logPane.style.display    = "none";
+
+    const panel = UI.panel([
+      UI.buttonRow([start, stop]),
+      tabBar,
+      serverPane,
+      logPane,
     ]);
 
     this.root.replaceChildren(panel);

@@ -29,6 +29,7 @@ import { ping } from "./net/ping.js";
 import { traceroute } from "./net/traceroute.js";
 import { arp } from "./net/arp.js";
 import { dig } from "./net/dig.js";
+import { telnet } from "./net/telnet.js";
 import { beaver } from "./misc/beaver.js";
 
 /**
@@ -63,6 +64,7 @@ export function registerBuiltins(app) {
         netstat,
         ping,
         traceroute,
+        telnet,
         beaver,
     ];
 

@@ -132,6 +132,30 @@ export class DNSResolver {
   }
 
   /**
+   * Resolve AAAA records as IPAddress objects (IPv6).
+   * @param {string} name
+   * @returns {Promise<IPAddress[]>}
+   */
+  async resolveAAAA(name) {
+    if (!this._isConfigured()) return [];
+    const resp = await this._query(name, DNSPacket.TYPE_AAAA);
+    return this._extractAAAA(resp);
+  }
+
+  /**
+   * Resolve hostname to one IPAddress, preferring AAAA over A.
+   * @param {string} name
+   * @returns {Promise<IPAddress|null>}
+   */
+  async resolveIP(name) {
+    if (!this._isConfigured()) return null;
+    const aaaa = await this.resolveAAAA(name);
+    if (aaaa.length) return aaaa[0];
+    const a = await this.resolveA_IP(name);
+    return a.length ? a[0] : null;
+  }
+
+  /**
    * Resolve MX records.
    * @param {string} name
    * @returns {Promise<Array<{preference:number, exchange:string, ttl:number}>>}
@@ -286,19 +310,17 @@ export class DNSResolver {
     if (nsHosts.length === 0) return resp;
 
     for (const nsHost of nsHosts) {
-      // resolve NS hostname to A using same server chain
-      const nsAResp = await this._queryRecursive(
-        this._normalizeName(nsHost),
-        DNSPacket.TYPE_A,
-        serverIp,
-        port,
-        depth - 1,
-        visited
-      );
+      const nsNorm = this._normalizeName(nsHost);
 
-      const nsIps = this._extractAasNumbers(nsAResp);
-      for (const nsIp of nsIps) {
+      const nsAResp = await this._queryRecursive(nsNorm, DNSPacket.TYPE_A, serverIp, port, depth - 1, visited);
+      for (const nsIp of this._extractAasNumbers(nsAResp)) {
         const sub = await this._queryRecursive(nameNorm, qtype, new IPAddress(4, nsIp >>> 0), port, depth - 1, visited);
+        if (sub && ((sub.answers?.length ?? 0) > 0)) return sub;
+      }
+
+      const nsAAAAResp = await this._queryRecursive(nsNorm, DNSPacket.TYPE_AAAA, serverIp, port, depth - 1, visited);
+      for (const nsIp6 of this._extractAAAA(nsAAAAResp)) {
+        const sub = await this._queryRecursive(nameNorm, qtype, nsIp6, port, depth - 1, visited);
         if (sub && ((sub.answers?.length ?? 0) > 0)) return sub;
       }
     }
@@ -475,6 +497,19 @@ export class DNSResolver {
       const ipNum =
         ((rr.data[0] << 24) | (rr.data[1] << 16) | (rr.data[2] << 8) | rr.data[3]) >>> 0;
       out.push(ipNum);
+    }
+    return out;
+  }
+
+  /** @param {*} resp */
+  _extractAAAA(resp) {
+    if (!resp) return [];
+    /** @type {IPAddress[]} */
+    const out = [];
+    for (const rr of (resp.answers ?? [])) {
+      if ((rr.type & 0xffff) !== DNSPacket.TYPE_AAAA) continue;
+      if (!(rr.data instanceof Uint8Array) || rr.data.length !== 16) continue;
+      out.push(new IPAddress(6, new Uint8Array(rr.data)));
     }
     return out;
   }

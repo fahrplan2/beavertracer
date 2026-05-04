@@ -85,6 +85,9 @@ export class TerminalApp extends GenericProcess {
     /** @type {boolean} if a command is running (like ping) */
     busy = false;
 
+    /** @type {((line: string) => void) | null} raw input mode: Enter sends line here instead of shell */
+    rawInputHandler = null;
+
     // ---------------------------
     // Abort controll managment (CTRL+C)
     // ---------------------------
@@ -271,7 +274,29 @@ export class TerminalApp extends GenericProcess {
             return;
         }
 
-        // On interaction, show cursor immediatel
+        // Raw input mode (e.g. telnet): route keys to handler before busy check
+        if (this.rawInputHandler) {
+            if (ev.key.length === 1 && !ev.ctrlKey && !ev.metaKey) {
+                ev.preventDefault(); this._insert(ev.key);
+            } else if (ev.key === "Backspace") {
+                ev.preventDefault(); this._backspace();
+            } else if (ev.key === "Delete") {
+                ev.preventDefault(); this._moveCursor(1); this._backspace();
+            } else if (ev.key === "Enter") {
+                ev.preventDefault();
+                const line = this.lineBuffer;
+                this.println(line);
+                this.lineBuffer = ""; this.cursor = 0;
+                this._renderScreen();
+                this.rawInputHandler(line);
+            } else if (ev.key === "ArrowLeft")  { ev.preventDefault(); this._moveCursor(-1); }
+              else if (ev.key === "ArrowRight") { ev.preventDefault(); this._moveCursor(1); }
+              else if (ev.key === "Home") { ev.preventDefault(); this.cursor = 0; this._renderScreen(); }
+              else if (ev.key === "End")  { ev.preventDefault(); this.cursor = this.lineBuffer.length; this._renderScreen(); }
+            return;
+        }
+
+        // On interaction, show cursor immediately
         if (!this.busy) {
             this.cursorVisible = true;
         }
@@ -313,6 +338,18 @@ export class TerminalApp extends GenericProcess {
             case "ArrowRight":
                 ev.preventDefault();
                 this._moveCursor(1);
+                break;
+
+            case "Home":
+                ev.preventDefault();
+                this.cursor = 0;
+                this._renderScreen();
+                break;
+
+            case "End":
+                ev.preventDefault();
+                this.cursor = this.lineBuffer.length;
+                this._renderScreen();
                 break;
 
             case "ArrowUp":
@@ -419,13 +456,13 @@ export class TerminalApp extends GenericProcess {
         /** @type {string[]} */
         const tmp = this.screen.slice();
 
-        // If busy: just show output buffer (no overlay cursor)
-        if (this.busy) {
+        // If busy and not in raw mode: just show output buffer (no overlay cursor)
+        if (this.busy && !this.rawInputHandler) {
             this.outEl.textContent = tmp.join("\n");
             return;
         }
 
-        const prompt = this._promptString();
+        const prompt = this.rawInputHandler ? "" : this._promptString();
         const full = prompt + this.lineBuffer;
 
         const cursorPos = prompt.length + this.cursor; // index in `full`

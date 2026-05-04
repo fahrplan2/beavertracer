@@ -31,6 +31,14 @@ function parseIPv4(s) {
   }
   return b;
 }
+/** @param {string} s */
+function parseIPv6(s) {
+  try {
+    const addr = IPAddress.fromString(String(s).trim());
+    if (!addr.isV6()) return null;
+    return addr.toUInt8();
+  } catch { return null; }
+}
 
 /**
  * @typedef {{ key: string, label: string, type?: "text"|"number", placeholder?: string, widthPx?: number }} ColDef
@@ -159,8 +167,8 @@ export class DNSServerApp extends GenericProcess {
 
   configPath = "/etc/dnsd.conf";
 
-  /** @type {{a:any[], mx:any[], ns:any[]}} */
-  cfg = { a: [], mx: [], ns: [] };
+  /** @type {{a:any[], aaaa:any[], mx:any[], ns:any[]}} */
+  cfg = { a: [], aaaa: [], mx: [], ns: [] };
 
   /** @type {Array<string>} */
   log = [];
@@ -178,12 +186,16 @@ export class DNSServerApp extends GenericProcess {
   /** @type {{root:HTMLElement,getRows:()=>any[],setRows:(rows:any[])=>void}|null} */
   aEditor = null;
   /** @type {{root:HTMLElement,getRows:()=>any[],setRows:(rows:any[])=>void}|null} */
+  aaaaEditor = null;
+  /** @type {{root:HTMLElement,getRows:()=>any[],setRows:(rows:any[])=>void}|null} */
   mxEditor = null;
   /** @type {{root:HTMLElement,getRows:()=>any[],setRows:(rows:any[])=>void}|null} */
   nsEditor = null;
 
   /** @type {any} */
   saveTimer = null;
+
+  badge = "DNS";
 
   run() {
     this.root.classList.add("app", "app-dnsd");
@@ -214,6 +226,16 @@ export class DNSServerApp extends GenericProcess {
       () => ({ name: "", ip: "", ttl: 60 })
     );
 
+    this.aaaaEditor = createTableEditor(
+      [
+        { key: "name", label: "Name", type: "text", placeholder: "example.com" },
+        { key: "ip", label: "IPv6", type: "text", placeholder: "2001:db8::1" },
+        { key: "ttl", label: "TTL", type: "number", placeholder: "60", widthPx: 90 },
+      ],
+      onEdit,
+      () => ({ name: "", ip: "", ttl: 60 })
+    );
+
     this.mxEditor = createTableEditor(
       [
         { key: "name", label: "Name", type: "text", placeholder: "example.com" },
@@ -235,21 +257,6 @@ export class DNSServerApp extends GenericProcess {
       () => ({ name: "", host: "", ttl: 300 })
     );
 
-    const dnsContent = UI.el("div", { className: "tabcontent" });
-    [this.aEditor.root, this.mxEditor.root, this.nsEditor.root].forEach(el => dnsContent.appendChild(el));
-
-    const { bar: dnsTabBar, setActive: setDnsTab } = UI.tabGroup([
-      { id: "a",  label: "A"  },
-      { id: "mx", label: "MX" },
-      { id: "ns", label: "NS" },
-    ], (id) => {
-      this.aEditor.root.style.display  = id === "a"  ? "" : "none";
-      this.mxEditor.root.style.display = id === "mx" ? "" : "none";
-      this.nsEditor.root.style.display = id === "ns" ? "" : "none";
-    });
-    setDnsTab("a");
-    const tabs = { root: UI.el("div", { children: [dnsTabBar, dnsContent] }) };
-
     const start = UI.button(t("app.dnsd.button.start"), () => this._start(), { primary: true });
     const stop = UI.button(t("app.dnsd.button.stop"), () => this._stop());
     const save = UI.button(t("app.dnsd.button.save"), () => this._saveConfigNow());
@@ -260,14 +267,35 @@ export class DNSServerApp extends GenericProcess {
     const logBox = UI.el("div", { className: "msg" });
     this.logEl = logBox;
 
+    const logPane = UI.el("div", { children: [status, logBox] });
+
+    /** @param {string} id */
+    const showTab = (id) => {
+      this.aEditor.root.style.display    = id === "a"    ? "" : "none";
+      this.aaaaEditor.root.style.display = id === "aaaa" ? "" : "none";
+      this.mxEditor.root.style.display   = id === "mx"   ? "" : "none";
+      this.nsEditor.root.style.display   = id === "ns"   ? "" : "none";
+      logPane.style.display              = id === "log"  ? "" : "none";
+    };
+
+    const { bar: tabBar, setActive: setTab } = UI.tabGroup([
+      { id: "a",    label: "A"    },
+      { id: "aaaa", label: "AAAA" },
+      { id: "mx",   label: "MX"   },
+      { id: "ns",   label: "NS"   },
+      { id: "log",  label: t("app.dnsd.label.log") },
+    ], showTab);
+    setTab("a");
+    showTab("a");
+
     const panel = UI.panel([
-      UI.el("h4",{ text: t("app.dnsd.label.server")}),
       UI.buttonRow([start, stop, save]),
-      UI.el("h4",{ text: t("app.dnsd.label.config")}),
-      tabs.root,
-      UI.el("h4",{ text: t("app.dnsd.label.log")}),
-      status,
-      logBox,
+      tabBar,
+      this.aEditor.root,
+      this.aaaaEditor.root,
+      this.mxEditor.root,
+      this.nsEditor.root,
+      logPane,
     ]);
 
     this.root.replaceChildren(panel);
@@ -281,7 +309,7 @@ export class DNSServerApp extends GenericProcess {
         `pid: ${this.pid}\n` +
         `running: ${this.running}\n` +
         `port: ${(this.socketPort ?? "-")}\n` +
-        `A/MX/NS: ${this.cfg.a.length}/${this.cfg.mx.length}/${this.cfg.ns.length}\n` +
+        `A/AAAA/MX/NS: ${this.cfg.a.length}/${this.cfg.aaaa.length}/${this.cfg.mx.length}/${this.cfg.ns.length}\n` +
         `log: ${this.log.length}`;
     }, 300);
   }
@@ -293,6 +321,7 @@ export class DNSServerApp extends GenericProcess {
     this.stopBtn = null;
     this.saveBtn = null;
     this.aEditor = null;
+    this.aaaaEditor = null;
     this.mxEditor = null;
     this.nsEditor = null;
     if (this.saveTimer) clearTimeout(this.saveTimer);
@@ -332,12 +361,14 @@ export class DNSServerApp extends GenericProcess {
 
       const obj = JSON.parse(s);
       this.cfg = {
-        a: Array.isArray(obj.a) ? obj.a : [],
-        mx: Array.isArray(obj.mx) ? obj.mx : [],
-        ns: Array.isArray(obj.ns) ? obj.ns : [],
+        a:    Array.isArray(obj.a)    ? obj.a    : [],
+        aaaa: Array.isArray(obj.aaaa) ? obj.aaaa : [],
+        mx:   Array.isArray(obj.mx)   ? obj.mx   : [],
+        ns:   Array.isArray(obj.ns)   ? obj.ns   : [],
       };
 
       this.aEditor?.setRows(this.cfg.a);
+      this.aaaaEditor?.setRows(this.cfg.aaaa);
       this.mxEditor?.setRows(this.cfg.mx);
       this.nsEditor?.setRows(this.cfg.ns);
 
@@ -349,9 +380,10 @@ export class DNSServerApp extends GenericProcess {
   }
 
   _rebuildConfigFromUI() {
-    const aRows = this.aEditor?.getRows() ?? [];
-    const mxRows = this.mxEditor?.getRows() ?? [];
-    const nsRows = this.nsEditor?.getRows() ?? [];
+    const aRows    = this.aEditor?.getRows()    ?? [];
+    const aaaaRows = this.aaaaEditor?.getRows() ?? [];
+    const mxRows   = this.mxEditor?.getRows()   ?? [];
+    const nsRows   = this.nsEditor?.getRows()   ?? [];
 
     /** @type {{name:string, ip:string, ttl:number}[]} */
     const a = [];
@@ -361,6 +393,16 @@ export class DNSServerApp extends GenericProcess {
       const ttl = Number(r.ttl ?? 60);
       if (!name || !ip) continue;
       a.push({ name, ip, ttl: Number.isFinite(ttl) ? Math.max(0, ttl | 0) : 60 });
+    }
+
+    /** @type {{name:string, ip:string, ttl:number}[]} */
+    const aaaa = [];
+    for (const r of aaaaRows) {
+      const name = normalizeName(r.name);
+      const ip = String(r.ip ?? "").trim();
+      const ttl = Number(r.ttl ?? 60);
+      if (!name || !ip || !parseIPv6(ip)) continue;
+      aaaa.push({ name, ip, ttl: Number.isFinite(ttl) ? Math.max(0, ttl | 0) : 60 });
     }
 
     /** @type {{name:string, preference:number, exchange:string, ttl:number}[]} */
@@ -389,7 +431,7 @@ export class DNSServerApp extends GenericProcess {
       ns.push({ name, host, ttl: Number.isFinite(ttl) ? Math.max(0, ttl | 0) : 300 });
     }
 
-    this.cfg = { a, mx, ns };
+    this.cfg = { a, aaaa, mx, ns };
   }
 
   _scheduleSave() {
@@ -490,9 +532,10 @@ export class DNSServerApp extends GenericProcess {
   /** @param {string} qname */
   _nameExists(qname) {
     const n = normalizeName(qname);
-    for (const r of this.cfg.a) if (normalizeName(r.name) === n) return true;
-    for (const r of this.cfg.mx) if (normalizeName(r.name) === n) return true;
-    for (const r of this.cfg.ns) if (normalizeName(r.name) === n) return true;
+    for (const r of this.cfg.a)    if (normalizeName(r.name) === n) return true;
+    for (const r of this.cfg.aaaa) if (normalizeName(r.name) === n) return true;
+    for (const r of this.cfg.mx)   if (normalizeName(r.name) === n) return true;
+    for (const r of this.cfg.ns)   if (normalizeName(r.name) === n) return true;
     return false;
   }
 
@@ -589,6 +632,16 @@ export class DNSServerApp extends GenericProcess {
         const ip = parseIPv4(r.ip);
         if (!ip) continue;
         out.push(mkRR({ name: r.name, type: DNSPacket.TYPE_A, ttl: r.ttl ?? 60, data: ip }));
+      }
+    }
+
+    // AAAA
+    if (qtype === DNSPacket.TYPE_AAAA || qtype === 255) {
+      for (const r of this.cfg.aaaa) {
+        if (normalizeName(r.name) !== qname) continue;
+        const ip = parseIPv6(r.ip);
+        if (!ip) continue;
+        out.push(mkRR({ name: r.name, type: DNSPacket.TYPE_AAAA, ttl: r.ttl ?? 60, data: ip }));
       }
     }
 
