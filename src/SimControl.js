@@ -200,7 +200,7 @@ export class SimControl {
     }
 
     step() {
-        simTimer.tick();
+        // deliver in-flight packets first so simTimer.tick() sees them immediately
         this.wifiMedium.step2(this.simobjects);
         for (let i = 0; i < this.simobjects.length; i++) {
             const x = this.simobjects[i];
@@ -208,6 +208,7 @@ export class SimControl {
                 x.step2();
             }
         }
+        simTimer.tick();
         this.wifiMedium.step1(this.simobjects);
         for (let i = 0; i < this.simobjects.length; i++) {
             const x = this.simobjects[i];
