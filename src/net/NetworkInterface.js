@@ -64,6 +64,12 @@ export class NetworkInterface extends Observable {
      */
     _activeNeighborResolvers = [];
 
+    /** @type {Set<string>} ip keys of addresses currently undergoing DAD */
+    _dadPending = new Set();
+
+    /** @type {Set<string>} ip keys where a DAD conflict was detected */
+    _dadConflicts = new Set();
+
     /**
      * @param {Object} [opts]
      * @param {IPAddress} [opts.ip]
@@ -128,15 +134,18 @@ export class NetworkInterface extends Observable {
 
     /**
      * Configure the IPv6 address on this interface. Pass ip6=null to disable IPv6.
+     * Runs DAD (RFC 4862 §5.4) asynchronously; ip6 is activated only if no conflict.
      * @param {Object} [opts]
      * @param {IPAddress|string|null} [opts.ip6]
      * @param {number} [opts.prefixLength6]
      */
     configure6(opts = {}) {
         if (this.ip6) this.neighborCache.delete(this._ipKey(this.ip6));
+        this.ip6 = null;
+        this._dadPending.clear();
+        this._dadConflicts.clear();
 
         if (opts.ip6 == null) {
-            this.ip6 = null;
             this.prefixLength6 = 0;
             return;
         }
@@ -147,9 +156,53 @@ export class NetworkInterface extends Observable {
         if (!ip6.isV6()) throw new Error("configure6: expected IPv6 address");
         const pl = (opts.prefixLength6 ?? 64) | 0;
         if (pl < 0 || pl > 128) throw new Error(`Invalid IPv6 prefixLength ${pl}`);
-        this.ip6 = ip6;
         this.prefixLength6 = pl;
-        this.neighborCache.set(this._ipKey(ip6), this.mac);
+
+        this._runDAD(ip6).catch(e => console.warn(`${this.name}: DAD error`, e));
+    }
+
+    /**
+     * Duplicate Address Detection (RFC 4862 §5.4).
+     * Sends one NS from :: to the solicited-node multicast and waits DAD_PROBE_WAIT_MS.
+     * Activates ip6 only if no NA/NS conflict is received within that window.
+     * @param {IPAddress} ip6
+     */
+    async _runDAD(ip6) {
+        const key = this._ipKey(ip6);
+        this._dadPending.add(key);
+
+        // RFC 4861 §4.3: src=::, no SLLA option when source address is unspecified
+        const unspec     = IPAddress.fromString("::");
+        const snMcast    = this._solicitedNodeMulticast(ip6);
+        const snMcastMac = this._solicitedNodeMulticastMac(ip6);
+
+        const ns = ICMPv6Packet.buildNS(ip6); // no srcMac → no SLLA
+        const ipv6pkt = new IPv6Packet({
+            src: unspec,
+            dst: snMcast,
+            nextHeader: 58,
+            hopLimit: 255,
+            payload: ns.pack(unspec, snMcast),
+        });
+        this.port.send(new EthernetFrame({
+            dstMac: snMcastMac,
+            srcMac: this.mac,
+            etherType: 0x86DD,
+            payload: ipv6pkt.pack(),
+        }));
+
+        await simTimer.sleep(SimTimer.DAD_PROBE_WAIT_MS);
+
+        this._dadPending.delete(key);
+        if (this._dadConflicts.has(key)) {
+            this._dadConflicts.delete(key);
+            console.warn(`${this.name}: DAD conflict for ${ip6} — address not assigned`);
+            return;
+        }
+
+        this.ip6 = ip6;
+        this.neighborCache.set(key, this.mac);
+        this.doUpdate();
     }
 
     /**
@@ -290,10 +343,17 @@ export class NetworkInterface extends Observable {
         if (icmp6.type === 135) { // Neighbor Solicitation
             const target = icmp6.ndpTarget;
             if (!target) return;
-            const targetStr = target.toString();
+            const key = this._ipKey(target);
+
+            // Another node probing our tentative address → DAD conflict
+            if (this._dadPending.has(key)) {
+                this._dadConflicts.add(key);
+                return;
+            }
+
             const shouldRespond =
-                (this.ip6LL && targetStr === this.ip6LL.toString()) ||
-                (this.ip6   && targetStr === this.ip6.toString());
+                (this.ip6LL && key === this._ipKey(this.ip6LL)) ||
+                (this.ip6   && key === this._ipKey(this.ip6));
             if (shouldRespond) {
                 const srcMac = icmp6.getLinkLayerAddress();
                 if (srcMac) this.neighborCache.set(this._ipKey(ipv6.src), srcMac);
@@ -302,8 +362,14 @@ export class NetworkInterface extends Observable {
         } else if (icmp6.type === 136) { // Neighbor Advertisement
             const target = icmp6.ndpTarget;
             const mac    = icmp6.getLinkLayerAddress();
-            if (target && mac) {
-                this.neighborCache.set(this._ipKey(target), mac);
+            if (target) {
+                const key = this._ipKey(target);
+                // Someone else owns our tentative address → DAD conflict
+                if (this._dadPending.has(key)) {
+                    this._dadConflicts.add(key);
+                    return;
+                }
+                if (mac) this.neighborCache.set(key, mac);
             }
         }
     }

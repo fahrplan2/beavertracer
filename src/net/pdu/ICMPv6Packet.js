@@ -182,17 +182,20 @@ export class ICMPv6Packet {
 
   /**
    * Build Neighbor Solicitation (type 135).
-   * body: reserved(4) + target(16) + SLLA option(8)
+   * body: reserved(4) + target(16) [+ SLLA option(8) if srcMac given]
+   * Pass srcMac=null for DAD probes (RFC 4861 §4.3: no SLLA when src is ::).
    * @param {IPAddress} target
-   * @param {Uint8Array} srcMac
+   * @param {Uint8Array|null} [srcMac]
    * @returns {ICMPv6Packet}
    */
-  static buildNS(target, srcMac) {
-    const body = new Uint8Array(28);
+  static buildNS(target, srcMac = null) {
+    const body = new Uint8Array(srcMac ? 28 : 20);
     // bytes 0-3: reserved (0)
     body.set(target.toUInt8(), 4);  // bytes 4-19: target
-    body[20] = 1; body[21] = 1;     // SLLA option: type=1, length=1
-    body.set(srcMac.subarray(0, 6), 22);
+    if (srcMac) {
+      body[20] = 1; body[21] = 1;   // SLLA option: type=1, length=1
+      body.set(srcMac.subarray(0, 6), 22);
+    }
     return new ICMPv6Packet({ type: 135, code: 0, body });
   }
 

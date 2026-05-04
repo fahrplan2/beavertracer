@@ -49,6 +49,9 @@ export class SimTimer {
     /** Total NDP send attempts before giving up. */
     static NDP_ATTEMPTS             = 3;
 
+    /** DAD probe wait time: how long to listen for NA/NS conflict responses. */
+    static DAD_PROBE_WAIT_MS        =  200;  //  40 ticks
+
     /** DNS query timeout. */
     static DNS_TIMEOUT_MS           = 2000;  // 400 ticks
 
