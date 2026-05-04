@@ -3,14 +3,7 @@ export const meta = { name: "🇬🇧 English", order: 2 };
 
 export default {
   "lang.name": "🇬🇧 English",
-
   "app.generic.title": "Gernic App",
-
-  "app.about.title": "About",
-  "app.about.heading.systemInfo": "System info",
-  "app.about.body.systemInfo": "OS: {os}\nRunning apps: {runningApps}\nTime: {time}",
-  "app.about.button.rename": "rename",
-  "app.about.placeholder.pcName": "PC",
 
   "app.dhcpserver.title": "DHCP Server",
 
@@ -27,7 +20,6 @@ export default {
   "app.dhcpserver.button.stop": "Stop",
   "app.dhcpserver.button.clearLog": "Clear log",
 
-  "app.dhcpserver.label.server": "Server",
   "app.dhcpserver.label.log": "Log",
 
   "app.dhcpserver.log.createdDefaultConfig": "Config file missing/empty; wrote default config to",
@@ -48,13 +40,10 @@ export default {
   "app.dnsd.button.stop": "Stop",
   "app.dnsd.label.log": "Log",
   "app.dnsd.title": "DNS-Server",
-  "app.dnsd.label.server": "Server",
-  "app.dnsd.label.config": "Configuration",
 
 
   "app.ipv4config.title": "IP Settings",
   "app.ipv4config.button.apply": "Apply",
-  "app.ipv4config.label.interface": "Interface",
   "app.ipv4config.label.ip": "IP",
   "app.ipv4config.label.gateway": "Gateway",
   "app.ipv4config.msg.noInterfaces": "No interfaces available.",
@@ -173,7 +162,6 @@ export default {
   "app.mailclient.button.config": "Settings",
   "app.mailclient.button.discard": "Discard",
   "app.mailclient.button.save": "Save",
-  "app.mailclient.button.cancel": "Cancel",
   "app.mailclient.tab.sent": "Sent",
   "app.mailclient.tab.config": "Settings",
   "app.mailclient.sent.empty": "(no sent messages)",
@@ -189,19 +177,8 @@ export default {
   "app.mailclient.config.smtpHost": "Server (address)",
   "app.mailclient.config.smtpPort": "Port",
   "app.mailclient.status.configSaved": "Settings saved",
-  "app.mailclient.placeholder.host": "Mail server (host or IP)",
-  "app.mailclient.placeholder.port": "110",
-  "app.mailclient.placeholder.user": "Username",
-  "app.mailclient.placeholder.pass": "Password",
-  "app.mailclient.placeholder.smtpHost": "SMTP server",
-  "app.mailclient.placeholder.to": "To: alice@example.local",
   "app.mailclient.placeholder.subject": "Subject",
   "app.mailclient.placeholder.body": "Message body…",
-  "app.mailclient.label.incoming": "Incoming (POP3 / IMAP)",
-  "app.mailclient.label.outgoing": "Outgoing (SMTP)",
-  "app.mailclient.label.server": "Server",
-  "app.mailclient.label.credentials": "Credentials",
-  "app.mailclient.label.smtpServer": "SMTP server",
   "app.mailclient.label.to": "To",
   "app.mailclient.label.subject": "Subject",
   "app.mailclient.tab.inbox": "Inbox",
@@ -210,13 +187,8 @@ export default {
   "app.mailclient.button.fetch": "Fetch",
   "app.mailclient.button.send": "Send",
   "app.mailclient.inbox.empty": "(inbox empty — press Fetch)",
-  "app.mailclient.inbox.unknownSender": "(unknown)",
-  "app.mailclient.inbox.noSubject": "(no subject)",
   "app.mailclient.status.ready": "Ready",
-  "app.mailclient.status.connecting": "Connecting…",
-  "app.mailclient.status.sending": "Sending",
   "app.mailclient.status.sent": "Message sent",
-  "app.mailclient.status.fetchDone": "{count} message(s) fetched",
   "app.mailclient.err.noHost": "No server specified",
   "app.mailclient.err.noSmtpHost": "No SMTP server specified",
   "app.mailclient.err.invalidPort": "Invalid port",
@@ -237,7 +209,6 @@ export default {
   "app.simplemailserver.label.users": "Mailboxes",
   "app.simplemailserver.label.user": "User",
   "app.simplemailserver.label.password": "Password",
-  "app.simplemailserver.label.status": "Status",
   "app.simplemailserver.label.log": "Log",
 
   "app.simplemailserver.button.start": "Start",
@@ -356,12 +327,10 @@ export default {
   "app.sparktail.button.reload": "⟳",
   "app.sparktail.button.go": "Go",
   "app.sparktail.button.stop": "Stop",
-  "app.sparktail.button.clearLog": "Clear Log",
 
   "app.sparktail.tab.preview": "Preview",
   "app.sparktail.tab.source": "Source",
   "app.sparktail.tab.headers": "Headers",
-  "app.sparktail.tab.log": "Log",
 
   "app.sparktail.status.ready": "Ready.",
   "app.sparktail.status.loading": "Loading: {url}",
@@ -623,12 +592,9 @@ export default {
   "rect.opacity": "Opacity",
 
   "router.title": "Router",
-  "router.genericsettingstitle": "Common Settings",
-  "router.name": "Name",
   "router.apply": "Apply",
   "router.interfaces": "Interfaces",
   "router.save": "Save",
-  "router.routingtable": "Routing table",
   "router.routingtable.ipv4": "Routing table IPv4",
   "router.routingtable.ipv6": "Routing table IPv6",
   "router.unknown": "unknown",
@@ -696,15 +662,12 @@ export default {
   "sim.link.error.portInUse": "Port is already in use.",
   
   "switch.title": "Switch",
-  "switch.genericsettings": "Common settings",
-  "switch.name": "Name",
   "switch.apply": "Apply",
   "switch.sat": "Switch Adress Table (SAT)",
   "switch.sat.mac": "MAC",
   "switch.sat.port": "Port",
 
 
-  "switch.features": "Features",
   "switch.stp.disabled": "STP is disabled",
   "switch.stp.enable": "enable Spanning Tree Protocol (STP)",
   "switch.stp.status": "STP status",
@@ -847,5 +810,12 @@ export default {
   "app.ircclient.event.kick": "✕ {kicked} was kicked by {by} ({reason})",
   "app.ircclient.cmd.join.usage": "Usage: /join #channel",
   "app.ircclient.cmd.msg.usage": "Usage: /msg nick message",
-  "app.ircclient.cmd.unknown": "Unknown command: /{cmd}"
+  "app.ircclient.cmd.unknown": "Unknown command: /{cmd}",
+
+  "app.terminal.commands.telnet.usage": "Usage: telnet <host> <port>",
+  "app.terminal.commands.telnet.err.invalidPort": "telnet: invalid port",
+  "app.terminal.commands.telnet.err.resolve": "telnet: cannot resolve '{host}'",
+  "app.terminal.commands.telnet.err.connect": "telnet: connect: {reason}",
+  "app.terminal.commands.telnet.connected": "Connected to {host}:{port}. Press Ctrl+C to close.",
+  "app.terminal.commands.telnet.closed": "Connection closed."
 };
