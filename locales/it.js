@@ -724,5 +724,13 @@ export default {
   "app.terminal.commands.telnet.err.connect": "telnet: connetti: {reason}",
   "app.terminal.commands.telnet.connected": "Connesso a {host}:{port}. Premi Ctrl+C per chiudere.",
   "app.terminal.commands.telnet.closed": "Connessione chiusa.",
-  "router.ra.enabled": "Invia annunci router (SLAAC)"
+  "router.ra.enabled": "Invia annunci router (SLAAC)",
+  "app.ipv4config.ipv6.mode": "Modalità",
+  "app.ipv4config.ipv6.mode.disabled": "Disabilitato",
+  "app.ipv4config.ipv6.mode.static": "Statico",
+  "app.ipv4config.ipv6.mode.slaac": "SLAAC (auto)",
+  "app.ipv4config.ipv6.status": "Stato",
+  "app.ipv4config.ipv6.msg.slaacStarted": "SLAAC avviato — in attesa di Router Advertisement…",
+  "app.ipv4config.ipv6.msg.slaacAddress": "Indirizzo: {ip}/{prefix}",
+  "app.ipv4config.ipv6.msg.slaacPending": "In attesa di Router Advertisement…"
 };

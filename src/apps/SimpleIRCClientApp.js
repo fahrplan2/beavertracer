@@ -67,7 +67,6 @@ export class SimpleIRCClientApp extends GenericProcess {
   get title() { return t("app.ircclient.title"); }
 
   icon = "fa-comments";
-  badge = "IRC";
 
   disposer = new Disposer();
 

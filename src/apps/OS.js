@@ -95,9 +95,9 @@ export class OS {
      */
     _registerApps() {
         const launchlist = 
-            [IPv4ConfigApp, TerminalApp, TextEditorApp, SparktailHTTPClientApp,  MailClientApp, SimpleTCPClientApp, SimpleTCPServerApp,
+            [IPv4ConfigApp, TerminalApp, TextEditorApp, SparktailHTTPClientApp,  MailClientApp,  SimpleIRCClientApp, SimpleTCPClientApp, SimpleTCPServerApp,
             SimpleHTTPServerApp, UDPEchoServerApp, DNSServerApp, DHCPServerApp, SimpleMailServerApp,
-            SimpleIRCServerApp, SimpleIRCClientApp];
+            SimpleIRCServerApp];
 
         launchlist.forEach((e) => this.exec(e));
     }

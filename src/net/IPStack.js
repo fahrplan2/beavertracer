@@ -817,8 +817,8 @@ export class IPStack extends Observable {
             this.interfaces[i].name = String(opts.name);
         }
 
-        if ('ip6' in opts) {
-            this.interfaces[i].configure6({ ip6: opts.ip6, prefixLength6: opts.prefixLength6 });
+        if ('ip6' in opts || 'slaac' in opts) {
+            this.interfaces[i].configure6({ ip6: opts.ip6, prefixLength6: opts.prefixLength6, slaac: opts.slaac });
         }
 
         if ('raEnabled' in opts) {
@@ -854,6 +854,8 @@ export class IPStack extends Observable {
                 this.route(packet, false);
             }
         }
+
+        this.doUpdate();
     }
 
     /**

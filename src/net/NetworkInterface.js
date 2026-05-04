@@ -70,6 +70,11 @@ export class NetworkInterface extends Observable {
     /** @type {Set<string>} ip keys where a DAD conflict was detected */
     _dadConflicts = new Set();
 
+    /** Address currently being validated by DAD; null once confirmed or failed.
+     *  Lets the UI show the intended address before DAD completes. */
+    /** @type {IPAddress|null} */
+    _tentativeIp6 = null;
+
     /** Whether SLAAC auto-configuration is active on this interface */
     slaac = false;
 
@@ -151,6 +156,7 @@ export class NetworkInterface extends Observable {
     configure6(opts = {}) {
         if (this.ip6) this.neighborCache.delete(this._ipKey(this.ip6));
         this.ip6 = null;
+        this._tentativeIp6 = null;
         this.slaac = false;
         this._dadPending.clear();
         this._dadConflicts.clear();
@@ -208,6 +214,7 @@ export class NetworkInterface extends Observable {
      */
     async _runDAD(ip6) {
         const key = this._ipKey(ip6);
+        this._tentativeIp6 = ip6;
         this._dadPending.add(key);
 
         // RFC 4861 §4.3: src=::, no SLLA option when source address is unspecified
@@ -233,6 +240,7 @@ export class NetworkInterface extends Observable {
         await simTimer.sleep(SimTimer.DAD_PROBE_WAIT_MS);
 
         this._dadPending.delete(key);
+        this._tentativeIp6 = null;
         if (this._dadConflicts.has(key)) {
             this._dadConflicts.delete(key);
             console.warn(`${this.name}: DAD conflict for ${ip6} — address not assigned`);

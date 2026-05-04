@@ -846,9 +846,14 @@ export class SimControl {
                 const v4 = (iface.ip?.toString() !== "0.0.0.0")
                     ? `${iface.ip.toString()}/${iface.prefixLength}`
                     : "-";
-                const v6 = iface.ip6
-                    ? `${iface.ip6.toString()}/${iface.prefixLength6}`
-                    : "-";
+                let v6;
+                if (iface.ip6) {
+                    v6 = `${iface.ip6.toString()}/${iface.prefixLength6}`;
+                } else if (iface._tentativeIp6) {
+                    v6 = `(${iface._tentativeIp6.toString()}/${iface.prefixLength6})`;
+                } else {
+                    v6 = "-";
+                }
                 const row = document.createElement("div");
                 row.className = "sim-node-tooltip-row";
                 row.textContent = `${iface.name}:  IPv4: ${v4}  IPv6: ${v6}`;
