@@ -799,6 +799,7 @@ export class IPStack extends Observable {
      * @param {IPAddress|string|null} [opts.ip6]
      * @param {number} [opts.prefixLength6]
      * @param {boolean} [opts.raEnabled]
+     * @param {boolean} [opts.slaac]
      */
     configureInterface(i = 0, opts = {}) {
         if (this.interfaces[i] == null) return;
