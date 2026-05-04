@@ -593,6 +593,39 @@ export class IPStack extends Observable {
     }
 
     /**
+     * Send an ICMPv6 error message in response to an incoming IPv6 packet.
+     * @param {IPv6Packet} original
+     * @param {number} type
+     * @param {number} code
+     */
+    _sendICMPv6Error(original, type, code) {
+        if (!(original instanceof IPv6Packet)) return;
+
+        const src = original.src;
+        if (this._isZero(src)) return;
+
+        // Don't reply to ICMPv6 error messages, only to echo requests (type 128)
+        if (original.nextHeader === 58) {
+            const icmpType = original.payload?.[0];
+            if (icmpType !== 128) return;
+        }
+
+        // Don't reply to multicast destinations
+        if (src.toUInt8()[0] === 0xff) return;
+
+        // Body: 4 unused bytes + original packet (capped at 1232 bytes per RFC 4443)
+        const origBytes = original.pack();
+        const quotedLen = Math.min(origBytes.length, 1232);
+        const body = new Uint8Array(4 + quotedLen);
+        body.set(origBytes.slice(0, quotedLen), 4);
+
+        const mySrc = this._pickSrcIpV6(src);
+        const icmpBytes = new ICMPv6Packet({ type, code, body }).pack(mySrc, src);
+
+        this.send6({ dst: src, src: mySrc, nextHeader: 58, payload: icmpBytes });
+    }
+
+    /**
      * @param {IPv4Packet} packet
      */
     _handleICMP(packet) {
@@ -713,7 +746,7 @@ export class IPStack extends Observable {
                 this._handleUDP(packet);
                 break;
             default:
-                console.warn(this.name + ": Unknown protocoll number " + packet.protocol);
+                this._sendICMPError(packet, 3, 2); // Protocol Unreachable
         }
     }
 
@@ -833,7 +866,10 @@ export class IPStack extends Observable {
 
         if (!internal) {
             packet.hopLimit = (packet.hopLimit - 1) & 0xff;
-            if (packet.hopLimit === 0) return; // no ICMPv6 time-exceeded yet
+            if (packet.hopLimit === 0) {
+                this._sendICMPv6Error(packet, 3, 0);
+                return;
+            }
         }
 
         const interf = this.interfaces[out.interfIndex];
@@ -894,7 +930,32 @@ export class IPStack extends Observable {
                     identifier: icmp6.identifier,
                     sequence:   icmp6.sequence,
                     timeMs:     0,
+                    from:       srcIp,
                 });
+                break;
+            }
+            case 3: { // Time Exceeded — used by traceroute
+                // body: 4 unused bytes + quoted original IPv6 packet
+                const q = icmp6.body;
+                if (!q || q.length < 4 + 48) break; // need IPv6 hdr (40) + ICMPv6 hdr (8)
+
+                // Original destination: bytes 4+24 .. 4+39 of body
+                const origDst = IPAddress.fromUInt8(q.slice(28, 44));
+
+                // Original ICMPv6: starts at body[4+40] = body[44]
+                const origId  = (q[48] << 8) | q[49];
+                const origSeq = (q[50] << 8) | q[51];
+
+                const key = this._icmpv6EchoKey(origDst, origId, origSeq);
+                const pending = this._pendingEcho6.get(key);
+                if (!pending) break;
+
+                simTimer.cancel(pending.timerId);
+                this._pendingEcho6.delete(key);
+
+                const err = new Error("ttl-exceeded");
+                /** @type {any} */ (err).from = srcIp;
+                pending.reject(err);
                 break;
             }
             default:
@@ -981,7 +1042,7 @@ export class IPStack extends Observable {
             const icmpBytes = ICMPv6Packet.buildEchoRequest(identifier, sequence, payload)
                 .pack(srcIp, dstIp);
 
-            this.send6({ dst: dstIp, src: srcIp, nextHeader: 58, payload: icmpBytes });
+            this.send6({ dst: dstIp, src: srcIp, nextHeader: 58, payload: icmpBytes, hopLimit: opt.ttl });
         }).then((r) => {
             const t1 = (typeof performance !== "undefined" ? performance.now() : Date.now());
             return { .../** @type {any} */ (r), timeMs: Math.max(0, Math.round(t1 - t0)) };

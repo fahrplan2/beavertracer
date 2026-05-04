@@ -24,26 +24,26 @@ function fmtIP(ip) {
 }
 
 /**
- * Resolve host -> IPAddress (IPv4 for now)
+ * Resolve host -> IPAddress (IPv4 or IPv6)
  * @param {any} ctx
  * @param {string} host
  * @returns {Promise<IPAddress|null>}
  */
 async function resolveHostToIp(ctx, host) {
-  // direct v4 literal?
-  const n = ipStringToNumber(host);
-  if (n != null) return IPAddress.fromString(ipNumberToString(n >>> 0));
+  // direct IP literal (v4 or v6)?
+  try { return IPAddress.fromString(host); } catch { /* not a literal */ }
 
-  // DNS
+  // DNS — prefer AAAA over A
   const dns = ctx.os?.dns;
-  if (dns?.resolve) {
+  if (dns?.resolveIP) {
+    try { return await dns.resolveIP(host); } catch { /* ignore */ }
+  } else if (dns?.resolve) {
     const resolved = await dns.resolve(host);
     if (resolved instanceof IPAddress) return resolved;
     if (typeof resolved === "number") return IPAddress.fromString(ipNumberToString(resolved >>> 0));
     if (typeof resolved === "string") {
       const n2 = ipStringToNumber(resolved);
       if (n2 != null) return IPAddress.fromString(ipNumberToString(n2 >>> 0));
-      // if it's already an ip-like string, just try:
       try { return IPAddress.fromString(resolved); } catch { /* ignore */ }
     }
   }
@@ -104,6 +104,11 @@ export const traceroute = {
     const dstIp = await resolveHostToIp(ctx, host);
     if (!dstIp) return t("app.terminal.commands.traceroute.err.cannotResolve", { host });
 
+    const echoFn = dstIp.isV4()
+      ? ipf.icmpEcho.bind(ipf)
+      : ipf.icmpv6Echo?.bind(ipf);
+    if (!echoFn) return t("app.terminal.commands.traceroute.err.noNetworkDriver");
+
     const dstStr = dstIp.toString();
 
     ctx.println(
@@ -135,13 +140,12 @@ export const traceroute = {
         try {
           const payload = new Uint8Array(56);
 
-          // Works now; later your stack may additionally return {from, reached}
-          const res = await ipf.icmpEcho(dstIp, {
+          const res = await echoFn(dstIp, {
             timeoutMs,
             identifier,
             sequence: ((ttl << 8) | p) & 0xffff,
             payload,
-            ttl, // may be ignored until you implement it in IPStack.send/route
+            ttl,
           });
 
           const dt = Math.max(0, Math.round(res.timeMs ?? (nowMs() - t0)));

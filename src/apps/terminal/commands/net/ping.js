@@ -98,13 +98,10 @@ export const ping = {
 
     if (!dstIp) {
       const dns = ctx.os?.dns;
-      if (dns?.resolve) {
-        try {
-          const resolved = await dns.resolve(host);
-          dstIp = resolvedToIp(resolved);
-        } catch {
-          // ignore, fall through to error
-        }
+      if (dns?.resolveIP) {
+        try { dstIp = await dns.resolveIP(host); } catch { /* ignore */ }
+      } else if (dns?.resolve) {
+        try { dstIp = resolvedToIp(await dns.resolve(host)); } catch { /* ignore */ }
       }
     }
 

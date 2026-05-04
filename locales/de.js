@@ -359,7 +359,7 @@ export default {
   "app.sparktail.log.httpNotRendered": "[{time}] HTTP {statusCode} {reason} (nicht gerendert)",
   "app.sparktail.log.httpOk": "[{time}] HTTP {statusCode} {reason} (Body={bytes} Bytes)",
   "app.terminal.title": "Terminal",
-  "app.terminal.welcome": "🦫 - BeaverOS - Willkommen bei {host}",
+  "app.terminal.welcome": "BeaverOS - Willkommen bei {host}",
   "app.terminal.hintHelp": "Benutzen Sie den Befehl \"{cmd}\", um eine Liste der bekannten Befehle zu erhalten.",
   "app.terminal.err.commandNotFound": "Befehl nicht gefunden: {cmd}",
   "app.terminal.err.errorPrefix": "Fehler: {msg}",

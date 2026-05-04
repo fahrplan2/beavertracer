@@ -436,7 +436,7 @@ export default {
   "app.sparktail.log.httpOk": "[{time}] HTTP {statusCode} {reason} (body={bytes} bytes)",
 
   "app.terminal.title": "Terminal",
-  "app.terminal.welcome": "🦫 - BeaverOS - Welcome to {host}",
+  "app.terminal.welcome": "BeaverOS - Welcome to {host}",
   "app.terminal.hintHelp": "Use the command \"{cmd}\" to get a list of known commands.",
   "app.terminal.err.commandNotFound": "command not found: {cmd}",
   "app.terminal.err.errorPrefix": "error: {msg}",

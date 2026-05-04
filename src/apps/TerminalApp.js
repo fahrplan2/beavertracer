@@ -315,6 +315,18 @@ export class TerminalApp extends GenericProcess {
                 this._moveCursor(1);
                 break;
 
+            case "Home":
+                ev.preventDefault();
+                this.cursor = 0;
+                this._render();
+                break;
+
+            case "End":
+                ev.preventDefault();
+                this.cursor = this.lineBuffer.length;
+                this._render();
+                break;
+
             case "ArrowUp":
                 ev.preventDefault();
                 this._historyUp();
