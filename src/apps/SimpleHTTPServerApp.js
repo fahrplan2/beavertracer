@@ -208,6 +208,8 @@ export class SimpleHTTPServerApp extends GenericProcess {
   /** @type {HTMLButtonElement|null} */
   stopBtn = null;
 
+  badge = "HTTP";
+
   run() {
     this.root.classList.add("app", "app-simple-http-server");
   }

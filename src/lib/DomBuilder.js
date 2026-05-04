@@ -182,6 +182,7 @@ export class DOMBuilder {
         label,
         onClick,
         icon,
+        badge = "",
         active = false,
         className = "",
         iconOnly = false,
@@ -202,7 +203,15 @@ export class DOMBuilder {
         if (icon) iconEl.classList.add(icon);
         btn.appendChild(iconEl);
 
-        // 2) text (omitted when iconOnly)
+        // 2) optional badge overlay on the icon tile
+        if (badge) {
+            const badgeEl = document.createElement("span");
+            badgeEl.className = "icon-badge";
+            badgeEl.textContent = badge;
+            btn.appendChild(badgeEl);
+        }
+
+        // 3) text (omitted when iconOnly)
         if (!iconOnly) {
             const textEl = document.createElement("span");
             textEl.textContent = label;

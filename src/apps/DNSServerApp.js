@@ -195,6 +195,8 @@ export class DNSServerApp extends GenericProcess {
   /** @type {any} */
   saveTimer = null;
 
+  badge = "DNS";
+
   run() {
     this.root.classList.add("app", "app-dnsd");
   }

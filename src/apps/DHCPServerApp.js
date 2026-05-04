@@ -174,6 +174,8 @@ export class DHCPServerApp extends GenericProcess {
    */
   cfg = DHCPServerApp.defaultCfg();
 
+  badge = "DHCP";
+
   run() {
     this.root.classList.add("app", "app-dhcp-server");
     setTimeout(() => this._tryAutostart(), 0);

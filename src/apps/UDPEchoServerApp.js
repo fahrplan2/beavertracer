@@ -40,6 +40,8 @@ export class UDPEchoServerApp extends GenericProcess {
   /** @type {HTMLButtonElement|null} */
   stopBtn = null;
 
+  badge = "UDP";
+
   run() {
     this.root.classList.add("app", "app-udp-echo");
   }

@@ -8,6 +8,9 @@ export class GenericProcess {
 
   /** @type {string} icon of the app */
   icon = "fa-gear";
+
+  /** @type {string} short badge label shown over the icon (e.g. "HTTP", "DNS") */
+  badge = "";
   
   /** @type {number} */
   pid;

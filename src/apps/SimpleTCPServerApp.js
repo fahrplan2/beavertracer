@@ -88,9 +88,10 @@ export class SimpleTCPServerApp extends GenericProcess {
   /** @type {Set<string>} */
   conns = new Set();
 
+  badge = "TCP";
+
   run() {
     this.root.classList.add("app", "app-simple-tcp-server");
-    // not auto-starting
   }
 
   /**
