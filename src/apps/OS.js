@@ -18,6 +18,8 @@ import { DHCPServerApp } from "./DHCPServerApp.js";
 import { SimulatedObject } from "../sim/SimulatedObject.js";
 import { SimpleMailServerApp } from "./SimpleMailServerApp.js";
 import { MailClientApp } from "./MailClientApp.js";
+import { SimpleIRCServerApp } from "./SimpleIRCServerApp.js";
+import { SimpleIRCClientApp } from "./SimpleIRCClientApp.js";
 import { DOMBuilder } from "../lib/DomBuilder.js";
 
 export class OS {
@@ -94,7 +96,8 @@ export class OS {
     _registerApps() {
         const launchlist = 
             [IPv4ConfigApp, TerminalApp, TextEditorApp, SparktailHTTPClientApp,  MailClientApp, SimpleTCPClientApp, SimpleTCPServerApp,
-            SimpleHTTPServerApp, UDPEchoServerApp, DNSServerApp, DHCPServerApp, SimpleMailServerApp];
+            SimpleHTTPServerApp, UDPEchoServerApp, DNSServerApp, DHCPServerApp, SimpleMailServerApp,
+            SimpleIRCServerApp, SimpleIRCClientApp];
 
         launchlist.forEach((e) => this.exec(e));
     }
