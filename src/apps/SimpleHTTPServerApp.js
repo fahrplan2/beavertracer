@@ -233,18 +233,33 @@ export class SimpleHTTPServerApp extends GenericProcess {
     const logBox = UI.el("div", { className: "msg" });
     this.logEl = logBox;
 
-    const panel = UI.panel([
-      UI.el("h4", { text: t("app.simplehttpserver.label.server") }),
+    const configPane = UI.el("div", { children: [
       UI.row(t("app.simplehttpserver.label.port"), portInput),
       UI.row(t("app.simplehttpserver.label.docRoot"), rootInput),
-      UI.buttonRow([
-        start,
-        stop,
-        UI.button(t("app.simplehttpserver.button.clearLog"), () => { this.log = []; this._renderLog(); }, {})
-      ]),
       status,
-      UI.el("h4", { text: t("app.simplehttpserver.label.log") }),
+    ]});
+
+    const logPane = UI.el("div", { children: [
+      UI.buttonRow([UI.button(t("app.simplehttpserver.button.clearLog"), () => { this.log = []; this._renderLog(); }, {})]),
       logBox,
+    ]});
+
+    const { bar: tabBar, setActive: setTab } = UI.tabGroup([
+      { id: "config", label: t("app.simplehttpserver.label.server") },
+      { id: "log",    label: t("app.simplehttpserver.label.log") },
+    ], (id) => {
+      configPane.style.display = id === "config" ? "" : "none";
+      logPane.style.display    = id === "log"    ? "" : "none";
+    });
+    setTab("config");
+    configPane.style.display = "";
+    logPane.style.display    = "none";
+
+    const panel = UI.panel([
+      UI.buttonRow([start, stop]),
+      tabBar,
+      configPane,
+      logPane,
     ]);
 
     this.root.replaceChildren(panel);

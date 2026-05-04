@@ -255,23 +255,6 @@ export class DNSServerApp extends GenericProcess {
       () => ({ name: "", host: "", ttl: 300 })
     );
 
-    const dnsContent = UI.el("div", { className: "tabcontent" });
-    [this.aEditor.root, this.aaaaEditor.root, this.mxEditor.root, this.nsEditor.root].forEach(el => dnsContent.appendChild(el));
-
-    const { bar: dnsTabBar, setActive: setDnsTab } = UI.tabGroup([
-      { id: "a",    label: "A"    },
-      { id: "aaaa", label: "AAAA" },
-      { id: "mx",   label: "MX"   },
-      { id: "ns",   label: "NS"   },
-    ], (id) => {
-      this.aEditor.root.style.display    = id === "a"    ? "" : "none";
-      this.aaaaEditor.root.style.display = id === "aaaa" ? "" : "none";
-      this.mxEditor.root.style.display   = id === "mx"   ? "" : "none";
-      this.nsEditor.root.style.display   = id === "ns"   ? "" : "none";
-    });
-    setDnsTab("a");
-    const tabs = { root: UI.el("div", { children: [dnsTabBar, dnsContent] }) };
-
     const start = UI.button(t("app.dnsd.button.start"), () => this._start(), { primary: true });
     const stop = UI.button(t("app.dnsd.button.stop"), () => this._stop());
     const save = UI.button(t("app.dnsd.button.save"), () => this._saveConfigNow());
@@ -282,14 +265,35 @@ export class DNSServerApp extends GenericProcess {
     const logBox = UI.el("div", { className: "msg" });
     this.logEl = logBox;
 
+    const logPane = UI.el("div", { children: [status, logBox] });
+
+    /** @param {string} id */
+    const showTab = (id) => {
+      this.aEditor.root.style.display    = id === "a"    ? "" : "none";
+      this.aaaaEditor.root.style.display = id === "aaaa" ? "" : "none";
+      this.mxEditor.root.style.display   = id === "mx"   ? "" : "none";
+      this.nsEditor.root.style.display   = id === "ns"   ? "" : "none";
+      logPane.style.display              = id === "log"  ? "" : "none";
+    };
+
+    const { bar: tabBar, setActive: setTab } = UI.tabGroup([
+      { id: "a",    label: "A"    },
+      { id: "aaaa", label: "AAAA" },
+      { id: "mx",   label: "MX"   },
+      { id: "ns",   label: "NS"   },
+      { id: "log",  label: t("app.dnsd.label.log") },
+    ], showTab);
+    setTab("a");
+    showTab("a");
+
     const panel = UI.panel([
-      UI.el("h4",{ text: t("app.dnsd.label.server")}),
       UI.buttonRow([start, stop, save]),
-      UI.el("h4",{ text: t("app.dnsd.label.config")}),
-      tabs.root,
-      UI.el("h4",{ text: t("app.dnsd.label.log")}),
-      status,
-      logBox,
+      tabBar,
+      this.aEditor.root,
+      this.aaaaEditor.root,
+      this.mxEditor.root,
+      this.nsEditor.root,
+      logPane,
     ]);
 
     this.root.replaceChildren(panel);

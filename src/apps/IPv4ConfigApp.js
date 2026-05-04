@@ -390,9 +390,10 @@ export class IPv4ConfigApp extends GenericProcess {
     if (this.gwEl) this.gwEl.value = (gw != null) ? gw.toString() : "";
 
     const dns = this.os.dns;
-    let dnsIp = null;
-    if (dns && typeof dns.serverIp === "number") dnsIp = (dns.serverIp >>> 0);
-    if (this.dnsEl) this.dnsEl.value = (dnsIp != null) ? numberToIpv4(dnsIp) : "";
+    let dnsStr = "";
+    if (dns?.serverIp instanceof IPAddress) dnsStr = dns.serverIp.toString();
+    else if (dns && typeof dns.serverIp === "number") dnsStr = numberToIpv4(dns.serverIp >>> 0);
+    if (this.dnsEl) this.dnsEl.value = dnsStr;
 
     this._setMsg(t("app.ipv4config.msg.loadedInterface", { i }));
   }
@@ -453,12 +454,12 @@ export class IPv4ConfigApp extends GenericProcess {
         gw = gwIp;
       }
 
-      /** @type {number|undefined} */
-      let dnsN = undefined;
+      /** @type {IPAddress|undefined} */
+      let dnsIpAddr = undefined;
       if (dnsStr !== "") {
-        const d = ipv4ToNumber(dnsStr);
-        if (d === null) return this._setMsg(t("app.ipv4config.err.invalidDnsServer"));
-        dnsN = d >>> 0;
+        try { dnsIpAddr = IPAddress.fromString(dnsStr); } catch {
+          return this._setMsg(t("app.ipv4config.err.invalidDnsServer"));
+        }
       }
 
       net.configureInterface(i, { ip, prefixLength });
@@ -466,13 +467,13 @@ export class IPv4ConfigApp extends GenericProcess {
       clearDefaultGatewayForIface(net, i);
       if (gw != null) net.addRoute(IPAddress.fromString("0.0.0.0"), 0, i, gw);
 
-      if (dnsN !== undefined) {
+      if (dnsIpAddr !== undefined) {
         const dns = this.os?.dns;
-        if (dns?.setServer) dns.setServer(dnsN, 53);
+        if (dns?.setServer) dns.setServer(dnsIpAddr, 53);
       }
 
-      if (dnsN !== undefined) {
-        const dnsTxt = numberToIpv4(dnsN);
+      if (dnsIpAddr !== undefined) {
+        const dnsTxt = dnsIpAddr.toString();
         this._setMsg(
           gw != null
             ? t("app.ipv4config.msg.appliedWithGwDns", { i, ip: ip.toString(), netmask: `/${prefixLength}`, gw: gw.toString(), dns: dnsTxt })

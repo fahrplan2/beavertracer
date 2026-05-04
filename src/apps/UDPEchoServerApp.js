@@ -70,13 +70,26 @@ export class UDPEchoServerApp extends GenericProcess {
     const logBox = UI.el("div", { className: "msg" });
     this.logEl = logBox;
 
-    const panel = UI.panel([
-      UI.el("h4", { text: t("app.udpechoserver.label.server") }),
+    const serverPane = UI.el("div", { children: [
       UI.row(t("app.udpechoserver.label.listenPort"), portInput),
-      UI.buttonRow([start, stop, clear]),
-      UI.el("h4", { text: t("app.udpechoserver.label.log") }),
+    ]});
+    const logPane = UI.el("div", { children: [
+      UI.buttonRow([clear]),
       logBox,
-    ]);
+    ]});
+
+    const { bar: tabBar, setActive: setTab } = UI.tabGroup([
+      { id: "server", label: t("app.udpechoserver.label.server") },
+      { id: "log",    label: t("app.udpechoserver.label.log") },
+    ], (id) => {
+      serverPane.style.display = id === "server" ? "" : "none";
+      logPane.style.display    = id === "log"    ? "" : "none";
+    });
+    setTab("server");
+    serverPane.style.display = "";
+    logPane.style.display    = "none";
+
+    const panel = UI.panel([UI.buttonRow([start, stop]), tabBar, serverPane, logPane]);
 
     this.root.replaceChildren(panel);
 
