@@ -723,5 +723,6 @@ export default {
   "app.terminal.commands.telnet.err.resolve": "telnet: impossibile risolvere '{host}'",
   "app.terminal.commands.telnet.err.connect": "telnet: connetti: {reason}",
   "app.terminal.commands.telnet.connected": "Connesso a {host}:{port}. Premi Ctrl+C per chiudere.",
-  "app.terminal.commands.telnet.closed": "Connessione chiusa."
+  "app.terminal.commands.telnet.closed": "Connessione chiusa.",
+  "router.ra.enabled": "Invia annunci router (SLAAC)"
 };

@@ -59,6 +59,11 @@ export class IPStack extends Observable {
     /** @type {number} */
     _nextIcmpId = (Math.random() * 0xffff) | 0;
 
+    /** @type {Map<number, number|null>} interfaceIndex → active RA timer id */
+    _raTimers = new Map();
+    /** @type {Map<number, string|null>} interfaceIndex → last seen ip6 string */
+    _lastKnownIp6 = new Map();
+
     name = '';
 
     /**
@@ -793,6 +798,7 @@ export class IPStack extends Observable {
      * @param {String} [opts.name]
      * @param {IPAddress|string|null} [opts.ip6]
      * @param {number} [opts.prefixLength6]
+     * @param {boolean} [opts.raEnabled]
      */
     configureInterface(i = 0, opts = {}) {
         if (this.interfaces[i] == null) return;
@@ -815,15 +821,35 @@ export class IPStack extends Observable {
             this.interfaces[i].configure6({ ip6: opts.ip6, prefixLength6: opts.prefixLength6 });
         }
 
+        if ('raEnabled' in opts) {
+            const itf = this.interfaces[i];
+            itf.raEnabled = !!opts.raEnabled;
+            if (itf.raEnabled && itf.ip6) this._startRATimer(i);
+            else                          this._stopRATimer(i);
+        }
+
         this._updateAutoRoutes();
     }
 
     update() {
+        // Detect ip6 changes (SLAAC activation or manual DAD completion) and sync routes/RA timers
+        for (let i = 0; i < this.interfaces.length; i++) {
+            const current = this.interfaces[i].ip6?.toString() ?? null;
+            if (current !== (this._lastKnownIp6.get(i) ?? null)) {
+                this._lastKnownIp6.set(i, current);
+                this._updateAutoRoutes();
+                if (this.interfaces[i].raEnabled) {
+                    if (current !== null) this._startRATimer(i);
+                    else                  this._stopRATimer(i);
+                }
+            }
+        }
+
         for (let i = 0; i < this.interfaces.length; i++) {
             const packet = this.interfaces[i].getNextPacket();
             if (packet == null) continue;
             if (packet instanceof IPv6Packet) {
-                this.routeV6(packet, false);
+                this.routeV6(packet, false, i);
             } else {
                 this.route(packet, false);
             }
@@ -832,25 +858,26 @@ export class IPStack extends Observable {
 
     /**
      * Route an incoming or locally generated IPv6 packet.
-     * Phase 2: accept packets destined to us; forwarding requires NDP (Phase 3).
      * @param {IPv6Packet} packet
      * @param {boolean} internal
+     * @param {number} recvIfIndex  interface the packet arrived on (-1 = locally generated)
      */
-    async routeV6(packet, internal = false) {
+    async routeV6(packet, internal = false, recvIfIndex = -1) {
         const dst = packet.dst;
 
         // Is it for one of our IPv6 interfaces (global or link-local)?
-        for (const itf of this.interfaces) {
+        for (let i = 0; i < this.interfaces.length; i++) {
+            const itf = this.interfaces[i];
             if ((itf.ip6   && itf.ip6.toString()   === dst.toString()) ||
                 (itf.ip6LL && itf.ip6LL.toString() === dst.toString())) {
-                this.acceptV6(packet);
+                this.acceptV6(packet, i);
                 return;
             }
         }
 
-        // IPv6 multicast (ff00::/8) — accept
+        // IPv6 multicast (ff00::/8) — accept (pass recvIfIndex so RS handler knows which interface)
         if (dst.toUInt8()[0] === 0xff) {
-            this.acceptV6(packet);
+            this.acceptV6(packet, recvIfIndex);
             return;
         }
 
@@ -883,10 +910,11 @@ export class IPStack extends Observable {
     /**
      * Accept and dispatch a locally destined IPv6 packet.
      * @param {IPv6Packet} packet
+     * @param {number} recvIfIndex  interface the packet arrived on (-1 = locally generated)
      */
-    acceptV6(packet) {
+    acceptV6(packet, recvIfIndex = -1) {
         switch (packet.nextHeader) {
-            case 58:  this._handleICMPv6(packet); break;
+            case 58:  this._handleICMPv6(packet, recvIfIndex); break;
             case 17:  this._handleUDP(packet);    break;
             case 6:   this.tcp.handle(packet);    break;
             default:
@@ -896,8 +924,9 @@ export class IPStack extends Observable {
 
     /**
      * @param {IPv6Packet} packet
+     * @param {number} recvIfIndex
      */
-    _handleICMPv6(packet) {
+    _handleICMPv6(packet, recvIfIndex = -1) {
         /** @type {ICMPv6Packet} */
         let icmp6;
         try {
@@ -911,6 +940,12 @@ export class IPStack extends Observable {
         const dstIp = packet.dst;
 
         switch (icmp6.type) {
+            case 133: { // Router Solicitation → unicast RA back to soliciting host
+                if (recvIfIndex >= 0 && this.interfaces[recvIfIndex]?.raEnabled) {
+                    this._sendRA(recvIfIndex, this._isZero(srcIp) ? null : srcIp);
+                }
+                break;
+            }
             case 128: { // Echo Request → send Reply
                 const replyBytes = ICMPv6Packet.buildEchoReply(
                     icmp6.identifier, icmp6.sequence, icmp6.echoPayload
@@ -1060,6 +1095,72 @@ export class IPStack extends Observable {
     }
 
     /**
+     * Send a Router Advertisement on the given interface (RFC 4861 §6).
+     * @param {number} interfIndex
+     * @param {IPAddress|null} [unicastDst]  unicast target; null → ff02::1 (all nodes)
+     */
+    _sendRA(interfIndex, unicastDst = null) {
+        const itf = this.interfaces[interfIndex];
+        if (!itf?.ip6 || !itf.ip6LL) return;
+
+        // Compute network prefix by zeroing host bits
+        const ip6bytes = itf.ip6.toUInt8();
+        const netBytes = new Uint8Array(16);
+        let rem = itf.prefixLength6 | 0;
+        for (let b = 0; b < 16; b++) {
+            if      (rem >= 8) { netBytes[b] = ip6bytes[b]; rem -= 8; }
+            else if (rem >  0) { netBytes[b] = ip6bytes[b] & (0xff << (8 - rem)) & 0xff; rem = 0; }
+        }
+        const prefix = new IPAddress(6, netBytes);
+
+        const ra = ICMPv6Packet.buildRA({
+            hopLimit: 64,
+            routerLifetime: 1800,
+            prefix,
+            prefixLength: itf.prefixLength6,
+        });
+
+        const dst    = unicastDst ?? IPAddress.fromString("ff02::1");
+        const dstMac = unicastDst
+            ? (itf.neighborCache.get(itf._ipKey(unicastDst)) ?? new Uint8Array([0x33, 0x33, 0, 0, 0, 1]))
+            : new Uint8Array([0x33, 0x33, 0, 0, 0, 1]); // ff02::1
+
+        const ipv6pkt = new IPv6Packet({
+            src: itf.ip6LL,
+            dst,
+            nextHeader: 58,
+            hopLimit: 255,
+            payload: ra.pack(itf.ip6LL, dst),
+        });
+        itf.sendFrame(dstMac, 0x86DD, ipv6pkt.pack());
+    }
+
+    /**
+     * Start periodic unsolicited RAs on an interface.
+     * @param {number} interfIndex
+     */
+    _startRATimer(interfIndex) {
+        this._stopRATimer(interfIndex);
+        const tick = () => {
+            this._sendRA(interfIndex);
+            this._raTimers.set(interfIndex, simTimer.schedule(tick, SimTimer.RA_INTERVAL_MS));
+        };
+        this._raTimers.set(interfIndex, simTimer.schedule(tick, SimTimer.RA_INITIAL_DELAY_MS));
+    }
+
+    /**
+     * Cancel periodic RAs on an interface.
+     * @param {number} interfIndex
+     */
+    _stopRATimer(interfIndex) {
+        const id = this._raTimers.get(interfIndex);
+        if (id != null) {
+            simTimer.cancel(id);
+            this._raTimers.delete(interfIndex);
+        }
+    }
+
+    /**
      * Add a manual route.
      * @param {IPAddress} dst network address
      * @param {number} prefixLength
@@ -1192,6 +1293,7 @@ export class IPStack extends Observable {
                 ip6: itf.ip6?.toString?.() ?? null,
                 prefixLength6: itf.prefixLength6 ?? 0,
                 ip6LL: itf.ip6LL?.toString?.() ?? null,
+                raEnabled: !!itf.raEnabled,
             })),
 
             routes: this.routingTable
@@ -1244,6 +1346,10 @@ export class IPStack extends Observable {
                 } catch (e) {
                     console.warn("IPStack.fromJSON: invalid ip6 for interface", i, e);
                 }
+            }
+
+            if (row.raEnabled) {
+                stack.configureInterface(i, { raEnabled: true });
             }
         }
 

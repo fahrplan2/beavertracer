@@ -70,6 +70,12 @@ export class NetworkInterface extends Observable {
     /** @type {Set<string>} ip keys where a DAD conflict was detected */
     _dadConflicts = new Set();
 
+    /** Whether SLAAC auto-configuration is active on this interface */
+    slaac = false;
+
+    /** Whether to send periodic Router Advertisements and respond to RS on this interface */
+    raEnabled = false;
+
     /**
      * @param {Object} [opts]
      * @param {IPAddress} [opts.ip]
@@ -133,17 +139,27 @@ export class NetworkInterface extends Observable {
     }
 
     /**
-     * Configure the IPv6 address on this interface. Pass ip6=null to disable IPv6.
-     * Runs DAD (RFC 4862 §5.4) asynchronously; ip6 is activated only if no conflict.
+     * Configure the IPv6 address on this interface.
+     * - Pass ip6 to assign a static address (runs DAD before activating).
+     * - Pass slaac:true to enable SLAAC (sends RS; address assigned when RA arrives).
+     * - Pass ip6:null to disable IPv6.
      * @param {Object} [opts]
      * @param {IPAddress|string|null} [opts.ip6]
      * @param {number} [opts.prefixLength6]
+     * @param {boolean} [opts.slaac]
      */
     configure6(opts = {}) {
         if (this.ip6) this.neighborCache.delete(this._ipKey(this.ip6));
         this.ip6 = null;
+        this.slaac = false;
         this._dadPending.clear();
         this._dadConflicts.clear();
+
+        if (opts.slaac === true) {
+            this.slaac = true;
+            if (this.ip6LL) this._doRouterSolicitation();
+            return;
+        }
 
         if (opts.ip6 == null) {
             this.prefixLength6 = 0;
@@ -159,6 +175,29 @@ export class NetworkInterface extends Observable {
         this.prefixLength6 = pl;
 
         this._runDAD(ip6).catch(e => console.warn(`${this.name}: DAD error`, e));
+    }
+
+    /**
+     * Send Router Solicitation (type 133) to all-routers multicast ff02::2 (RFC 4861 §4.1).
+     */
+    _doRouterSolicitation() {
+        if (!this.ip6LL) return;
+        const allRouters    = IPAddress.fromString("ff02::2");
+        const allRoutersMac = new Uint8Array([0x33, 0x33, 0, 0, 0, 2]);
+        const rs = ICMPv6Packet.buildRS(this.mac);
+        const ipv6pkt = new IPv6Packet({
+            src: this.ip6LL,
+            dst: allRouters,
+            nextHeader: 58,
+            hopLimit: 255,
+            payload: rs.pack(this.ip6LL, allRouters),
+        });
+        this.port.send(new EthernetFrame({
+            dstMac: allRoutersMac,
+            srcMac: this.mac,
+            etherType: 0x86DD,
+            payload: ipv6pkt.pack(),
+        }));
     }
 
     /**
@@ -320,11 +359,12 @@ export class NetworkInterface extends Observable {
      * @param {IPv6Packet} packet
      */
     _handleIPv6(packet) {
-        // Intercept NDP (NS/NA) — handle like ARP, don't pass to IP stack
+        // Intercept NDP (NS/NA/RA) — handle at interface level, don't pass to IP stack.
+        // RS (133) passes through to IPStack so routers can respond.
         if (packet.nextHeader === 58) {
             try {
                 const icmp6 = ICMPv6Packet.fromBytes(packet.payload);
-                if (icmp6.type === 135 || icmp6.type === 136) {
+                if (icmp6.type === 134 || icmp6.type === 135 || icmp6.type === 136) {
                     this._handleNDP(packet, icmp6);
                     return;
                 }
@@ -371,6 +411,33 @@ export class NetworkInterface extends Observable {
                 }
                 if (mac) this.neighborCache.set(key, mac);
             }
+        } else if (icmp6.type === 134) { // Router Advertisement
+            if (this.slaac) this._handleRA(icmp6);
+        }
+    }
+
+    /**
+     * Process a Router Advertisement for SLAAC (RFC 4862 §5.5).
+     * For each Prefix Information Option with A-flag and prefixLength=64,
+     * constructs global address = RA prefix[0..7] + EUI-64 from ip6LL[8..15],
+     * then runs DAD before activating.
+     * @param {ICMPv6Packet} icmp6
+     */
+    _handleRA(icmp6) {
+        if (!this.ip6LL || this.ip6 != null) return;
+        const iid = this.ip6LL.toUInt8().slice(8, 16); // EUI-64 interface ID
+
+        for (const pi of icmp6.getPrefixInfoOptions()) {
+            if (!pi.autonomous || pi.prefixLength !== 64) continue;
+            if (this.ip6 != null) break; // already assigned by earlier option
+
+            const addrBytes = new Uint8Array(16);
+            addrBytes.set(pi.prefix.toUInt8().slice(0, 8), 0); // 64-bit prefix from RA
+            addrBytes.set(iid, 8);                              // 64-bit EUI-64
+            this.prefixLength6 = 64;
+            this._runDAD(new IPAddress(6, addrBytes))
+                .catch(e => console.warn(`${this.name}: SLAAC DAD error`, e));
+            break; // one SLAAC address per interface
         }
     }
 

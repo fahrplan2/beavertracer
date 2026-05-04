@@ -52,6 +52,11 @@ export class SimTimer {
     /** DAD probe wait time: how long to listen for NA/NS conflict responses. */
     static DAD_PROBE_WAIT_MS        =  200;  //  40 ticks
 
+    /** Initial delay before first unsolicited RA (after ip6 is activated). */
+    static RA_INITIAL_DELAY_MS      =  500;  // 100 ticks
+    /** Interval between periodic unsolicited Router Advertisements. */
+    static RA_INTERVAL_MS           = 5000;  // 1000 ticks
+
     /** DNS query timeout. */
     static DNS_TIMEOUT_MS           = 2000;  // 400 ticks
 

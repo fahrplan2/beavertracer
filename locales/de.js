@@ -724,5 +724,6 @@ export default {
   "app.terminal.commands.telnet.err.resolve": "telnet: {host} kann nicht aufgelöst werden",
   "app.terminal.commands.telnet.err.connect": "telnet: verbinden: {reason}",
   "app.terminal.commands.telnet.connected": "Mit {host}:{port} verbunden. Drücken Sie Strg+C zum Schließen.",
-  "app.terminal.commands.telnet.closed": "Verbindung geschlossen."
+  "app.terminal.commands.telnet.closed": "Verbindung geschlossen.",
+  "router.ra.enabled": "Router-Ankündigungen (SLAAC) senden"
 };

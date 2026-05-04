@@ -606,6 +606,7 @@ export default {
 
   "router.stateup": "up",
   "router.statedown": "down",
+  "router.ra.enabled": "Send Router Advertisements (SLAAC)",
   "router.routingtable.actions": "Actions",
   "router.routingtable.auto": "Auto",
   "router.routingtable.dst": "Destination",
