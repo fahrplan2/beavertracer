@@ -308,8 +308,7 @@ export class SimpleIRCClientApp extends GenericProcess {
     } catch {
       try {
         if (typeof this.os.dns?.resolveIP === "function") {
-          const addrs = await this.os.dns.resolveIP(server);
-          ip = addrs?.[0] ?? null;
+          ip = await this.os.dns.resolveIP(server);
         } else {
           const nums = await this.os.dns.resolveA(server);
           ip = nums?.length ? new IPAddress(4, nums[0] >>> 0) : null;

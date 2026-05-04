@@ -172,6 +172,7 @@ export class DOMBuilder {
      * @param {string} opts.label - Button text (shown as tooltip when iconOnly)
      * @param {(ev: MouseEvent) => void} opts.onClick - Click handler
      * @param {string} [opts.icon] - Optional icon classes
+     * @param {string} [opts.badge] - Short protocol badge label shown over the icon
      * @param {boolean} [opts.active=false] - Whether button starts active
      * @param {string} [opts.className] - Additional CSS classes
      * @param {boolean} [opts.iconOnly=false] - Show icon only, label becomes title tooltip

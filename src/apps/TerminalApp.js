@@ -318,13 +318,13 @@ export class TerminalApp extends GenericProcess {
             case "Home":
                 ev.preventDefault();
                 this.cursor = 0;
-                this._render();
+                this._renderScreen();
                 break;
 
             case "End":
                 ev.preventDefault();
                 this.cursor = this.lineBuffer.length;
-                this._render();
+                this._renderScreen();
                 break;
 
             case "ArrowUp":

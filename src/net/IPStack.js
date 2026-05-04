@@ -506,7 +506,7 @@ export class IPStack extends Observable {
 
     /**
      * @param {IPAddress} dstIp
-     * @param {{timeoutMs?: number, payload?: Uint8Array, identifier?: number, sequence?: number}} [opt]
+     * @param {{timeoutMs?: number, payload?: Uint8Array, identifier?: number, sequence?: number, ttl?: number}} [opt]
      * @returns {Promise<{bytes:number, ttl:number, timeMs:number, identifier:number, sequence:number}>}
      */
     async icmpEcho(dstIp, opt = {}) {
@@ -1018,7 +1018,7 @@ export class IPStack extends Observable {
     /**
      * Send an ICMPv6 Echo Request and wait for the reply (ping6).
      * @param {IPAddress} dstIp
-     * @param {{timeoutMs?:number, payload?:Uint8Array, identifier?:number, sequence?:number}} [opt]
+     * @param {{timeoutMs?:number, payload?:Uint8Array, identifier?:number, sequence?:number, ttl?:number}} [opt]
      * @returns {Promise<{bytes:number, ttl:number, timeMs:number, identifier:number, sequence:number}>}
      */
     async icmpv6Echo(dstIp, opt = {}) {
