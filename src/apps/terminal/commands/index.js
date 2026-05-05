@@ -30,6 +30,8 @@ import { traceroute } from "./net/traceroute.js";
 import { arp } from "./net/arp.js";
 import { dig } from "./net/dig.js";
 import { telnet } from "./net/telnet.js";
+import { curl } from "./net/curl.js";
+import { nc } from "./net/nc.js";
 import { beaver } from "./misc/beaver.js";
 
 /**
@@ -65,6 +67,8 @@ export function registerBuiltins(app) {
         ping,
         traceroute,
         telnet,
+        curl,
+        nc,
         beaver,
     ];
 

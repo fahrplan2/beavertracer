@@ -10,6 +10,7 @@ import { RectOverlay } from "./sim/RectOverlay.js";
 import { AccessPoint } from "./sim/AccessPoint.js";
 import { Laptop } from "./sim/Laptop.js";
 import { HomeRouter } from "./sim/HomeRouter.js";
+import { Firewall } from "./sim/Firewall.js";
 import { WifiMedium } from "./net/WifiMedium.js";
 import { simTimer } from "./sim/SimTimer.js";
 import { t, getLocale, setLocale, getLocales } from "./i18n/index.js";
@@ -69,7 +70,7 @@ export class SimControl {
     /** @type {"edit"|"run"|"trace"|"page"} */
     mode = "edit";
 
-    /** @type {"select"|"place-pc"|"place-laptop"|"place-switch"|"place-router"|"place-homerouter"|"place-ap"|"place-text"|"place-rect"|"link"|"delete"} */
+    /** @type {"select"|"place-pc"|"place-laptop"|"place-switch"|"place-router"|"place-homerouter"|"place-ap"|"place-firewall"|"place-text"|"place-rect"|"link"|"delete"} */
     tool = "select";
 
     /** @type {SimulatedObject|null} */
@@ -84,7 +85,7 @@ export class SimControl {
     /** @type {HTMLDivElement|null} */
     _ghostNodeEl = null;
 
-    /** @type {"place-pc"|"place-laptop"|"place-switch"|"place-router"|"place-homerouter"|"place-ap"|"place-text"|"place-rect"|null} */
+    /** @type {"place-pc"|"place-laptop"|"place-switch"|"place-router"|"place-homerouter"|"place-ap"|"place-firewall"|"place-text"|"place-rect"|null} */
     _ghostNodeType = null;
 
     /** @type {boolean} */
@@ -744,6 +745,7 @@ export class SimControl {
             ["place-router", t("sim.tool.router"), "my-icon-router"],
             ["place-homerouter", t("sim.tool.homerouter"), "fa-house-signal"],
             ["place-ap", t("sim.tool.ap"), "fa-wifi"],
+            ["place-firewall", t("sim.tool.firewall"), "fa-shield-halved"],
             ["place-text", t("sim.tool.textbox"), "fa-t"],
             ["place-rect", t("sim.tool.rectangle"), "fa-square"],
             ["delete", t("sim.tool.delete"), "fa-ban"],
@@ -767,6 +769,7 @@ export class SimControl {
                             this.tool === "place-router" ||
                             this.tool === "place-homerouter" ||
                             this.tool === "place-ap" ||
+                            this.tool === "place-firewall" ||
                             this.tool === "place-text" ||
                             this.tool === "place-rect"
                         )
@@ -1288,6 +1291,7 @@ export class SimControl {
             this.tool === "place-homerouter" ||
             this.tool === "place-switch" ||
             this.tool === "place-ap" ||
+            this.tool === "place-firewall" ||
             this.tool === "place-text" ||
             this.tool === "place-rect"
         ) {
@@ -1448,6 +1452,7 @@ export class SimControl {
             if (this.tool === "place-router")       newObj = new Router(this._nextName(t("router.title")));
             if (this.tool === "place-homerouter")   newObj = new HomeRouter(this._nextName(t("homerouter.title")));
             if (this.tool === "place-ap")           newObj = new AccessPoint(this._nextName(t("ap.title")));
+            if (this.tool === "place-firewall")     newObj = new Firewall(this._nextName(t("firewall.title")));
             if (this.tool === "place-text")         newObj = new TextBox();
             if (this.tool === "place-rect")         newObj = new RectOverlay();
             if (!newObj) return;
@@ -1479,7 +1484,7 @@ export class SimControl {
     }
 
 
-    /** @param {"place-pc"|"place-laptop"|"place-switch"|"place-router"|"place-homerouter"|"place-ap"|"place-text"|"place-rect"} type */
+    /** @param {"place-pc"|"place-laptop"|"place-switch"|"place-router"|"place-homerouter"|"place-ap"|"place-firewall"|"place-text"|"place-rect"} type */
     _ensureGhostNode(type) {
         if (!this.nodesLayer) return;
 
@@ -1494,6 +1499,7 @@ export class SimControl {
             if (type === "place-router")     tmp = new Router();
             if (type === "place-homerouter") tmp = new HomeRouter();
             if (type === "place-ap")         tmp = new AccessPoint();
+            if (type === "place-firewall")   tmp = new Firewall();
             if (type === "place-text")       tmp = new TextBox();
             if (type === "place-rect")       tmp = new RectOverlay();
             if (!tmp) return;
@@ -1737,6 +1743,7 @@ export class SimControl {
             ["AccessPoint", AccessPoint],
             ["Laptop", Laptop],
             ["HomeRouter", HomeRouter],
+            ["Firewall", Firewall],
             // Link handled separately
         ]);
 
