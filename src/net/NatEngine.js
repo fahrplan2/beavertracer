@@ -161,6 +161,23 @@ export class NatEngine {
         return this._nextPort++;
     }
 
+    /**
+     * Returns all active NAT mappings as a flat list for display.
+     * @returns {Array<{proto: string, lanIpNum: number, lanPort: number, natPort: number}>}
+     */
+    getEntries() {
+        const entries = [];
+        for (const [key, natPort] of this._out) {
+            const [a, b, c] = key.split(":");
+            entries.push({ proto: Number(c) === 6 ? "TCP" : "UDP", lanIpNum: Number(a), lanPort: Number(b), natPort });
+        }
+        for (const [key, natId] of this._icmpOut) {
+            const [a, b] = key.split(":");
+            entries.push({ proto: "ICMP", lanIpNum: Number(a), lanPort: Number(b), natPort: natId });
+        }
+        return entries;
+    }
+
     /** @param {IPAddress} ip @returns {number} */
     _ipNum(ip) { return ip.isV4() ? /** @type {number} */ (ip.getNumber()) >>> 0 : 0; }
 

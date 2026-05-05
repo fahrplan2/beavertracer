@@ -194,6 +194,9 @@ export class SimulatedObject {
     wireIconInteractions() {
         if (!this.iconEl) return;
 
+        this.iconEl.addEventListener("mouseenter", () => this.simcontrol?._onNodeHover(this, true));
+        this.iconEl.addEventListener("mouseleave", () => this.simcontrol?._onNodeHover(this, false));
+
         //make icon traggable and toggle the panel
         makeDraggable(this.iconEl, {
             handle: this.iconEl,

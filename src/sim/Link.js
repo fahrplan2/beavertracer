@@ -43,6 +43,12 @@ export class Link extends SimulatedObject {
   /** @type {number} perpendicular offset in px for parallel links */
   _parallelOffset = 0;
 
+  /** @type {HTMLDivElement|null} */
+  _labelA = null;
+  /** @type {HTMLDivElement|null} */
+  _labelB = null;
+
+
   /**
    * @type {Array<{
    *   el: HTMLDivElement,
@@ -100,12 +106,49 @@ export class Link extends SimulatedObject {
     this.root.appendChild(hit);
     this.root.appendChild(line);
 
+    if (SimControl.portLabelsLayer) {
+      this._labelA = document.createElement("div");
+      this._labelA.className = "sim-link-port-label";
+      this._labelA.textContent = this._portLabel(this.A, this.portAKey);
+      SimControl.portLabelsLayer.appendChild(this._labelA);
+
+      this._labelB = document.createElement("div");
+      this._labelB.className = "sim-link-port-label";
+      this._labelB.textContent = this._portLabel(this.B, this.portBKey);
+      SimControl.portLabelsLayer.appendChild(this._labelB);
+    }
+
     return this.root;
+  }
+
+  /**
+   * Resolve the human-readable port label via listPorts(), falling back to the key.
+   * @param {any} node @param {string} key @returns {string}
+   */
+  _portLabel(node, key) {
+    if (typeof node.listPorts === "function") {
+      const entry = node.listPorts().find(/** @param {{key:string}} p */ p => p.key === key);
+      if (entry) return entry.label;
+    }
+    return key;
+  }
+
+  /**
+   * @param {SimulatedObject} node
+   * @param {boolean} hovered
+   */
+  setNodeHovered(node, hovered) {
+    if (node === this.A) this._labelA?.classList.toggle("is-visible", hovered);
+    else if (node === this.B) this._labelB?.classList.toggle("is-visible", hovered);
   }
 
   destroy() {
     for (const p of this._packets) p.el.remove();
     this._packets = [];
+    this._labelA?.remove();
+    this._labelA = null;
+    this._labelB?.remove();
+    this._labelB = null;
     this.link.destroy();
     this.simcontrol.pcapController.removeIf(this.A.id + ": "+this.link.portA.name);
     this.simcontrol.pcapController.removeIf(this.B.id + ": "+this.link.portB.name);
@@ -228,6 +271,44 @@ export class Link extends SimulatedObject {
     this.root.style.left = `${x1}px`;
     this.root.style.top = `${y1}px`;
     this.root.style.transform = `rotate(${angle}deg) translateY(${this._parallelOffset}px)`;
+
+    if (this._labelA && this._labelB) {
+      const ux = length > 0 ? dx / length : 1;
+      const uy = length > 0 ? dy / length : 0;
+      // perpendicular unit vector (for parallel-link offset)
+      const perpX = -uy;
+      const perpY =  ux;
+      const off = this._parallelOffset;
+
+      // distance from node center to its bounding-box edge along link direction
+      // node icons are 110×70 px → half-dims 55×35
+      const NODE_W = 55;
+      const NODE_H = 35;
+      const tEdge = Math.min(
+        Math.abs(ux) > 0.001 ? NODE_W / Math.abs(ux) : Infinity,
+        Math.abs(uy) > 0.001 ? NODE_H / Math.abs(uy) : Infinity
+      );
+      // Label is centered on `dist`; its inner half-extent in link direction
+      // must not reach back into the node.  ~30 px wide, ~16 px tall (with border/padding).
+      const LABEL_HW = 15; // half label width estimate
+      const LABEL_HH = 8;  // half label height estimate
+      const MARGIN   = 4;  // extra gap beyond label edge
+      const dist = tEdge
+        + LABEL_HW * Math.abs(ux)
+        + LABEL_HH * Math.abs(uy)
+        + MARGIN;
+
+      const show = dist * 2 < length;
+      this._labelA.style.display = show ? "" : "none";
+      this._labelB.style.display = show ? "" : "none";
+
+      if (show) {
+        this._labelA.style.left = `${x1 + ux * dist + perpX * off}px`;
+        this._labelA.style.top  = `${y1 + uy * dist + perpY * off}px`;
+        this._labelB.style.left = `${x2 - ux * dist + perpX * off}px`;
+        this._labelB.style.top  = `${y2 - uy * dist + perpY * off}px`;
+      }
+    }
   }
 
   toJSON() {

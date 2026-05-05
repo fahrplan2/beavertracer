@@ -116,6 +116,7 @@ export class HomeRouter extends SimulatedObject {
     /** @type {HTMLElement|null} */ _panelBody = null;
     /** @type {number|null} */ _pollTimer = null;
     /** @type {HTMLElement|null} */ _statusEl = null;
+    /** @type {HTMLElement|null} */ _natEl = null;
     /** @type {string} */ _activeTab = "status";
 
     // ── Constructor ───────────────────────────────────────────────────────
@@ -854,6 +855,7 @@ export class HomeRouter extends SimulatedObject {
             { id: "lan",    label: t("homerouter.tab.lan")    },
             { id: "dhcp",   label: t("homerouter.tab.dhcp")   },
             { id: "wifi",   label: t("homerouter.tab.wifi")   },
+            { id: "nat",    label: t("homerouter.tab.nat")    },
         ], (id) => {
             this._activeTab = id;
             DOMBuilder.clear(content);
@@ -862,6 +864,7 @@ export class HomeRouter extends SimulatedObject {
             else if (id === "lan")  this._buildLanTab(content);
             else if (id === "dhcp") this._buildDhcpTab(content);
             else if (id === "wifi") this._buildWifiTab(content);
+            else if (id === "nat")  this._buildNatTab(content);
         });
         card.appendChild(tabBar);
         card.appendChild(content);
@@ -871,6 +874,7 @@ export class HomeRouter extends SimulatedObject {
         else if (this._activeTab === "lan")  this._buildLanTab(content);
         else if (this._activeTab === "dhcp") this._buildDhcpTab(content);
         else if (this._activeTab === "wifi") this._buildWifiTab(content);
+        else if (this._activeTab === "nat")  this._buildNatTab(content);
         selectTab(this._activeTab);
         this._startPoll();
     }
@@ -1050,6 +1054,53 @@ export class HomeRouter extends SimulatedObject {
         host.appendChild(applyBtn);
     }
 
+    /** @param {HTMLElement} host */
+    _buildNatTab(host) {
+        host.appendChild(DOMBuilder.h4(t("homerouter.tab.nat")));
+
+        const wanStr = this._wanIp ? ipToString(this._wanIp) : "–";
+        host.appendChild(DOMBuilder.div("router-name-row", [
+            DOMBuilder.label(t("homerouter.nat.wanip")),
+            DOMBuilder.el("span", { text: wanStr, style: { fontFamily: "monospace", fontSize: "0.9em" } }),
+        ]));
+
+        const entries = this._nat.getEntries();
+        if (entries.length === 0) {
+            const empty = DOMBuilder.el("p", { text: t("homerouter.nat.empty") });
+            empty.style.color = "var(--muted)";
+            empty.style.fontSize = "12px";
+            empty.style.marginTop = "8px";
+            host.appendChild(empty);
+        } else {
+            const table = DOMBuilder.el("table", { className: "router-routes-table" });
+            const thead = DOMBuilder.el("thead");
+            thead.innerHTML = `<tr>
+                <th>${t("homerouter.nat.col.proto")}</th>
+                <th>${t("homerouter.nat.col.lanip")}</th>
+                <th>${t("homerouter.nat.col.lanport")}</th>
+                <th>${t("homerouter.nat.col.natport")}</th>
+            </tr>`;
+            table.appendChild(thead);
+
+            const tbody = DOMBuilder.el("tbody");
+            for (const e of entries) {
+                const lanIpStr = ipToString(e.lanIpNum);
+                const portLabel = e.proto === "ICMP" ? t("homerouter.nat.icmpid") : "";
+                const tr = DOMBuilder.el("tr", { children: [
+                    DOMBuilder.el("td", { text: e.proto, style: { fontFamily: "monospace" } }),
+                    DOMBuilder.el("td", { text: lanIpStr, style: { fontFamily: "monospace" } }),
+                    DOMBuilder.el("td", { text: String(e.lanPort) + (portLabel ? ` (${portLabel})` : ""), style: { fontFamily: "monospace" } }),
+                    DOMBuilder.el("td", { text: String(e.natPort), style: { fontFamily: "monospace" } }),
+                ]});
+                tbody.appendChild(tr);
+            }
+            table.appendChild(tbody);
+            host.appendChild(table);
+        }
+
+        this._natEl = host;
+    }
+
     /** @param {string} key BigInt string from MACToNumber @returns {string} xx:xx:xx:xx:xx:xx */
     _macKeyToStr(key) {
         try {
@@ -1070,6 +1121,10 @@ export class HomeRouter extends SimulatedObject {
         if (this._activeTab === "status" && this._statusEl && this._panelBody?.contains(this._statusEl)) {
             this._statusEl.innerHTML = "";
             this._buildStatusTab(this._statusEl);
+        }
+        if (this._activeTab === "nat" && this._natEl && this._panelBody?.contains(this._natEl)) {
+            this._natEl.innerHTML = "";
+            this._buildNatTab(this._natEl);
         }
     }
 

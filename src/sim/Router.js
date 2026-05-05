@@ -2,6 +2,7 @@
 
 import { VirtualFileSystem } from "../apps/lib/VirtualFileSystem.js";
 import { IPStack } from "../net/IPStack.js";
+import { RIPDaemon } from "../net/RIPDaemon.js";
 import { SimulatedObject } from "./SimulatedObject.js";
 
 import { DOMBuilder } from "../lib/DomBuilder.js";
@@ -121,11 +122,16 @@ export class Router extends SimulatedObject {
   /** @type {HTMLDivElement|null} */ _routesHost = null;
   /** @type {number} */ _selectedRouteFamily = 4;
 
+  /** @type {RIPDaemon} */
+  rip;
+  /** @type {HTMLTextAreaElement|null} */ _ripLogEl = null;
+
     constructor(name = t("router.title")) {
         super((name = t("router.title")));
         this.net = new IPStack(2, name);
         this.net.forwarding = true;
         this.fs = new VirtualFileSystem();
+        this.rip = new RIPDaemon(this.net);
 
         /** @param {HTMLElement} body */
         this.onPanelCreated = (body) => {
@@ -139,6 +145,7 @@ export class Router extends SimulatedObject {
             ...super.toJSON(),
             kind: "Router",
             net: this.net.toJSON(),
+            rip: this.rip.toJSON(),
         };
     }
 
@@ -147,6 +154,8 @@ export class Router extends SimulatedObject {
         const obj = new Router(n.name ?? "Router");
         obj._applyBaseJSON(n);
         if (n.net) obj.net = IPStack.fromJSON(n.net);
+        obj.rip = new RIPDaemon(obj.net);
+        if (n.rip) obj.rip.applyJSON(n.rip);
         return obj;
     }
 
@@ -190,9 +199,11 @@ export class Router extends SimulatedObject {
             { id: "interfaces", label: t("router.interfaces")        },
             { id: "routes-v4",  label: t("router.routingtable.ipv4") },
             { id: "routes-v6",  label: t("router.routingtable.ipv6") },
+            { id: "rip",        label: t("router.rip.tab")            },
         ], (id) => {
             ifSection.style.display    = id === "interfaces" ? "" : "none";
-            routeSection.style.display = id === "interfaces" ? "none" : "";
+            routeSection.style.display = (id === "routes-v4" || id === "routes-v6") ? "" : "none";
+            ripSection.style.display   = id === "rip" ? "" : "none";
             if (id === "routes-v4") { routeTitle.textContent = t("router.routingtable.ipv4"); this._selectedRouteFamily = 4; this._renderRoutes(); }
             if (id === "routes-v6") { routeTitle.textContent = t("router.routingtable.ipv6"); this._selectedRouteFamily = 6; this._renderRoutes(); }
         });
@@ -271,11 +282,16 @@ export class Router extends SimulatedObject {
         this._routesHost = routesHost;
         routeSection.appendChild(routesHost);
 
-        outerContent.append(ifSection, routeSection);
+        /* ================================ RIP ================================= */
+        const ripSection = DOMBuilder.div("");
+        this._buildRIPSection(ripSection);
+
+        outerContent.append(ifSection, routeSection, ripSection);
 
         /* ============================ Tab switching ============================ */
         ifSection.style.display = "";
         routeSection.style.display = "none";
+        ripSection.style.display = "none";
         setOuterActive("interfaces");
 
         /* ============================ Init ============================ */
@@ -1222,5 +1238,72 @@ export class Router extends SimulatedObject {
 
         addBtn.disabled = !hasIfaces;
         updateAddState();
+    }
+
+    /** @param {HTMLElement} host */
+    _buildRIPSection(host) {
+        host.appendChild(DOMBuilder.h4(t("router.rip.tab")));
+
+        // ── global enable ──────────────────────────────────────────────────
+        const enableCb = DOMBuilder.input({ type: "checkbox" });
+        enableCb.checked = this.rip.enabled;
+        enableCb.addEventListener("change", () => {
+            this.rip.setEnabled(enableCb.checked);
+            this._renderRIPLog();
+        });
+        const enableRow = DOMBuilder.div("router-name-row");
+        enableRow.style.gap = "6px";
+        enableRow.appendChild(enableCb);
+        enableRow.appendChild(DOMBuilder.label(t("router.rip.enabled")));
+        host.appendChild(enableRow);
+
+        // ── per-interface passive toggles ──────────────────────────────────
+        const ifTable = document.createElement("table");
+        ifTable.className = "router-routes";
+        ifTable.style.marginTop = "8px";
+        const thead = document.createElement("thead");
+        const htr   = document.createElement("tr");
+        const thIf  = document.createElement("th"); thIf.textContent  = t("router.rip.col.interface");
+        const thPas = document.createElement("th"); thPas.textContent = t("router.rip.col.passive");
+        htr.append(thIf, thPas);
+        thead.appendChild(htr);
+        const tbody = document.createElement("tbody");
+
+        for (let i = 0; i < this.net.interfaces.length; i++) {
+            const ifName = `eth${i}`;
+            const tr  = document.createElement("tr");
+            const tdN = document.createElement("td"); tdN.textContent = ifName;
+            const tdP = document.createElement("td");
+            const cb  = DOMBuilder.input({ type: "checkbox" });
+            cb.checked = this.rip.passiveInterfaces.has(ifName);
+            cb.addEventListener("change", () => this.rip.setPassive(ifName, cb.checked));
+            tdP.appendChild(cb);
+            tr.append(tdN, tdP);
+            tbody.appendChild(tr);
+        }
+        ifTable.append(thead, tbody);
+        host.appendChild(ifTable);
+
+        // ── log ───────────────────────────────────────────────────────────
+        host.appendChild(DOMBuilder.h4(t("router.rip.log")));
+        const logEl = /** @type {HTMLTextAreaElement} */ (DOMBuilder.el("textarea", {
+            className: "log",
+            attrs: { readonly: "true", spellcheck: "false" },
+        }));
+        logEl.style.width  = "100%";
+        logEl.style.height = "140px";
+        host.appendChild(logEl);
+        this._ripLogEl = logEl;
+        this._renderRIPLog();
+
+        this.rip.onLogUpdate = () => this._renderRIPLog();
+    }
+
+    _renderRIPLog() {
+        if (!this._ripLogEl) return;
+        const lines = this.rip.log;
+        const max   = 200;
+        this._ripLogEl.value = (lines.length > max ? lines.slice(-max) : lines).join("\n");
+        this._ripLogEl.scrollTop = this._ripLogEl.scrollHeight;
     }
 }
