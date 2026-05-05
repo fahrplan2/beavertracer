@@ -630,6 +630,12 @@ export default {
   "router.routingtable.missing": "missing",
   "router.routingtable.prefix": "Prefix",
 
+  "router.rip.tab": "RIP",
+  "router.rip.enabled": "RIP enabled",
+  "router.rip.col.interface": "Interface",
+  "router.rip.col.passive": "Passive",
+  "router.rip.log": "Log",
+
   "sim.lessons": "Lessons",
   "sim.common": "Common",
   "sim.new": "New",
