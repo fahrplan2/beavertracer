@@ -55,6 +55,9 @@ export class SimControl {
     /** @type {HTMLDivElement|null} */
     static packetsLayer = null;
 
+    /** @type {HTMLDivElement|null} */
+    static portLabelsLayer = null;
+
     wifiMedium = new WifiMedium();
 
     /** @type {number|null} */
@@ -362,6 +365,11 @@ export class SimControl {
         packetsLayer.className = "sim-packets-layer";
         nodes.appendChild(packetsLayer);
         SimControl.packetsLayer = packetsLayer;
+
+        const portLabelsLayer = document.createElement("div");
+        portLabelsLayer.className = "sim-port-labels-layer";
+        nodes.appendChild(portLabelsLayer);
+        SimControl.portLabelsLayer = portLabelsLayer;
 
         // Bind once
         nodes.onpointerdown = (ev) => this._onPointerDown(ev);
@@ -1068,6 +1076,17 @@ export class SimControl {
 
         for (const obj of this.simobjects) {
             if (obj instanceof Link) obj.redrawLinks();
+        }
+    }
+
+    /**
+     * @param {import("./sim/SimulatedObject.js").SimulatedObject} node
+     * @param {boolean} entering
+     */
+    _onNodeHover(node, entering) {
+        for (const obj of this.simobjects) {
+            if (!(obj instanceof Link)) continue;
+            if (obj.A === node || obj.B === node) obj.setNodeHovered(node, entering);
         }
     }
 
