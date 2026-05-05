@@ -360,7 +360,16 @@ export class Switch extends SimulatedObject {
         const card = DOMBuilder.div("switch-card");
         card.style.display = "flex";
         card.style.flexDirection = "column";
-        card.style.gap = "8px";
+
+        const header = DOMBuilder.div("switch-vlan-port-row switch-vlan-header");
+        header.style.display = "grid";
+        header.style.gridTemplateColumns = "120px 140px 120px 1fr auto";
+        header.style.gap = "8px";
+        for (const key of ["switch.vlan.col.port", "switch.vlan.col.mode", "switch.vlan.col.pvid", "switch.vlan.col.allowed", ""]) {
+            const th = DOMBuilder.el("span", { text: key ? t(key) : "", className: "switch-vlan-col-label" });
+            header.appendChild(th);
+        }
+        card.appendChild(header);
 
         for (let i = 0; i < ports.length; i++) {
             const p = ports[i];

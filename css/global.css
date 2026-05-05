@@ -1,5 +1,16 @@
 /* This file provides global styles */
 :root {
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  --pad-xs: 4px;
+  --pad-sm: 6px;
+  --pad-md: 8px;
+  --pad-lg: 12px;
+  --pad-xl: 16px;
+  --pad-2xl: 24px;
+
   --primary: oklch(81.211% 0.01809 210.448);
 
   --primary-strong: color-mix(in oklch, var(--primary), black 18%);
@@ -108,8 +119,8 @@ h4 {
 input,
 select {
   border: 1px solid color-mix(in oklch, var(--border), var(--text) 8%);
-  border-radius: 4px;
-  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  padding: var(--pad-sm) var(--pad-md);
   background: var(--bg-strong);
   color: var(--text);
 }
@@ -121,8 +132,8 @@ input::placeholder {
 
 button {
   border: 1px solid color-mix(in oklch, var(--border), var(--text) 10%);
-  border-radius: 4px;
-  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  padding: var(--pad-md) var(--pad-lg);
   background: var(--bg-strong);
   color: var(--text);
   cursor: pointer;
@@ -140,8 +151,8 @@ button:disabled {
 
 textarea {
   border: 1px solid color-mix(in oklch, var(--border), var(--text) 8%);
-  border-radius: 4px;
-  padding: 6px;
+  border-radius: var(--radius-sm);
+  padding: var(--pad-sm);
   background: var(--bg-strong);
   color: var(--text);
   font-family: "Hack", monospace;

@@ -469,13 +469,13 @@ export class Firewall extends SimulatedObject {
         tr.appendChild(this._td(protoSel));
 
         // src ip / port / dst ip / port
-        for (const [field, placeholder, validator] of /** @type {[keyof FWRule, string, (s:string)=>boolean][]} */ ([
-            ["srcIp",   "0.0.0.0/0",       isValidCidr],
-            ["srcPort", t("firewall.any"), isValidPort],
-            ["dstIp",   "0.0.0.0/0",       isValidCidr],
-            ["dstPort", t("firewall.any"), isValidPort],
+        for (const [field, placeholder, validator, cls] of /** @type {[keyof FWRule, string, (s:string)=>boolean, string][]} */ ([
+            ["srcIp",   "0.0.0.0/0",       isValidCidr, "fw-input"],
+            ["srcPort", t("firewall.any"), isValidPort, "fw-input fw-port-input"],
+            ["dstIp",   "0.0.0.0/0",       isValidCidr, "fw-input"],
+            ["dstPort", t("firewall.any"), isValidPort, "fw-input fw-port-input"],
         ])) {
-            const inp = DOMBuilder.input({ placeholder, className: "fw-input" });
+            const inp = DOMBuilder.input({ placeholder, className: cls });
             inp.value = /** @type {string} */ (rule[field]);
             const validate = () => inp.classList.toggle("is-invalid", !validator(inp.value));
             inp.addEventListener("input", () => { /** @type {any} */ (rule)[field] = inp.value; validate(); });
