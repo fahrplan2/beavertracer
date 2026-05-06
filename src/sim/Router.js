@@ -231,7 +231,7 @@ export class Router extends SimulatedObject {
         const ipIn   = DOMBuilder.input({ placeholder: "192.168.1.1" });
         const maskIn = DOMBuilder.input({ placeholder: "255.255.255.0" });
         const cidrIn = DOMBuilder.input({ placeholder: "24" });
-        const ifField = (cls, label, inp) => DOMBuilder.div("router-if-field " + cls, [
+        const ifField = (/** @type {string} */ cls, /** @type {string} */ label, /** @type {HTMLElement} */ inp) => DOMBuilder.div("router-if-field " + cls, [
             DOMBuilder.el("span", { text: label, className: "router-if-field-label" }),
             inp,
         ]);
