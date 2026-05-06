@@ -104,7 +104,6 @@ export class Router extends SimulatedObject {
     /** @type {Map<string, {btn: HTMLButtonElement, badge: HTMLSpanElement}>} */
     _tabRefs = new Map();
 
-  /** @type {HTMLDivElement|null} */ _selectedIfaceLabel = null;
   /** @type {HTMLDivElement|null} */ _ifacePanel = null;
   /** @type {HTMLDivElement|null} */ _ifaceActionsHost = null;
 
@@ -220,9 +219,6 @@ export class Router extends SimulatedObject {
         const tabsBar = DOMBuilder.div("ui-tabbar");
         this._tabsBar = tabsBar;
 
-        const selLabel = DOMBuilder.div("router-selected-iface");
-        this._selectedIfaceLabel = selLabel;
-
         const ifacePanel = DOMBuilder.div("router-if-panel");
         this._ifacePanel = ifacePanel;
 
@@ -232,10 +228,18 @@ export class Router extends SimulatedObject {
             v4Cb,
             DOMBuilder.el("span", { text: "IPv4", className: "router-if-section-label" }),
         ]);
-        const ipIn   = DOMBuilder.input({ className: "router-if-ip",   placeholder: "192.168.1.1" });
-        const maskIn = DOMBuilder.input({ className: "router-if-mask", placeholder: "255.255.255.0" });
-        const cidrIn = DOMBuilder.input({ className: "router-if-cidr", placeholder: "24" });
-        const v4Fields = DOMBuilder.div("router-if-fields", [ipIn, maskIn, cidrIn]);
+        const ipIn   = DOMBuilder.input({ placeholder: "192.168.1.1" });
+        const maskIn = DOMBuilder.input({ placeholder: "255.255.255.0" });
+        const cidrIn = DOMBuilder.input({ placeholder: "24" });
+        const ifField = (/** @type {string} */ cls, /** @type {string} */ label, /** @type {HTMLElement} */ inp) => DOMBuilder.div("router-if-field " + cls, [
+            DOMBuilder.el("span", { text: label, className: "router-if-field-label" }),
+            inp,
+        ]);
+        const v4Fields = DOMBuilder.div("router-if-fields", [
+            ifField("router-if-ip",   t("router.if.address"), ipIn),
+            ifField("router-if-mask", t("router.if.netmask"), maskIn),
+            ifField("router-if-cidr", t("router.if.prefix"),  cidrIn),
+        ]);
         const v4Section = DOMBuilder.div("router-if-section", [v4Header, v4Fields]);
 
         // --- IPv6 Section ---
@@ -244,13 +248,20 @@ export class Router extends SimulatedObject {
             v6Cb,
             DOMBuilder.el("span", { text: "IPv6", className: "router-if-section-label" }),
         ]);
-        const ip6In     = DOMBuilder.input({ className: "router-if-ip6",     placeholder: "2001:db8::1" });
-        const prefix6In = DOMBuilder.input({ className: "router-if-prefix6", placeholder: "64" });
-        const raCb      = DOMBuilder.input({ type: "checkbox" });
-        const raLabel   = DOMBuilder.el("label", { className: "router-if-ra-label", text: t("router.ra.enabled") });
-        raLabel.prepend(raCb);
-        const v6Fields = DOMBuilder.div("router-if-fields", [ip6In, prefix6In, raLabel]);
-        const v6Section = DOMBuilder.div("router-if-section", [v6Header, v6Fields]);
+        const ip6In     = DOMBuilder.input({ placeholder: "2001:db8::1" });
+        const prefix6In = DOMBuilder.input({ placeholder: "64" });
+        const raCb    = DOMBuilder.input({ type: "checkbox" });
+        const raLabel = DOMBuilder.el("label", { className: "router-if-ra-label" });
+        raLabel.append(raCb, " " + t("router.ra.enabled"));
+        const v6Fields = DOMBuilder.div("router-if-fields", [
+            ifField("router-if-ip6",     t("router.if.address"), ip6In),
+            ifField("router-if-prefix6", t("router.if.prefix"),  prefix6In),
+        ]);
+        const v6Body = DOMBuilder.div("router-if-v6-body", [
+            v6Fields,
+            DOMBuilder.div("router-if-fields", [raLabel]),
+        ]);
+        const v6Section = DOMBuilder.div("router-if-section", [v6Header, v6Body]);
 
         const saveBtn = DOMBuilder.button(t("router.save"), { className: "router-if-save" });
 
@@ -270,7 +281,7 @@ export class Router extends SimulatedObject {
         this._ifaceActionsHost = actionsHost;
         ifacePanel.appendChild(actionsHost);
 
-        ifSection.append(tabsBar, selLabel, ifacePanel);
+        ifSection.append(tabsBar, ifacePanel);
 
         /* =========================== Routingtabelle ========================== */
         const routeSection = DOMBuilder.div("");
@@ -440,11 +451,6 @@ export class Router extends SimulatedObject {
         if (this._saveIfBtn) this._saveIfBtn.disabled = !has;
         if (this._delIfBtn) this._delIfBtn.disabled = !has;
 
-        if (this._selectedIfaceLabel) {
-            this._selectedIfaceLabel.textContent = this._selectedIfaceName
-                ? this._selectedIfaceName
-                : t("router.nointerfaceselected");
-        }
     }
 
     _startLinkPolling() {
@@ -548,8 +554,8 @@ export class Router extends SimulatedObject {
         if (v4Fields) v4Fields.style.display = v4Active ? '' : 'none';
 
         // Show/hide IPv6 fields (including RA checkbox)
-        const v6Fields = ip6In ? /** @type {HTMLElement|null} */ (ip6In.closest('.router-if-fields')) : null;
-        if (v6Fields) v6Fields.style.display = v6Active ? '' : 'none';
+        const v6Body = ip6In ? /** @type {HTMLElement|null} */ (ip6In.closest('.router-if-v6-body')) : null;
+        if (v6Body) v6Body.style.display = v6Active ? '' : 'none';
 
         // --- Validate IPv4 ---
         let v4Ok = true;
