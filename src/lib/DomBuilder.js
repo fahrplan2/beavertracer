@@ -193,10 +193,8 @@ export class DOMBuilder {
 
         if (className) btn.classList.add(...className.split(" ").filter(Boolean));
         if (active) btn.classList.add("active");
-        if (iconOnly) {
-            btn.classList.add("icon-only");
-            btn.title = label;
-        }
+        if (iconOnly) btn.classList.add("icon-only");
+        btn.title = label;
 
         // 1) icon
         const iconEl = document.createElement("i");

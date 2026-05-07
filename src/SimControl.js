@@ -448,19 +448,22 @@ export class SimControl {
         brandingGroup.className = "sim-toolbar-group sim-toolbar-branding-group";
         toolbar.appendChild(brandingGroup);
 
+        const brandingText = document.createElement("div");
+        brandingText.className = "sim-toolbar-branding-text";
+        brandingGroup.appendChild(brandingText);
+
         const branding = document.createElement("div");
         branding.className = "sim-toolbar-branding";
-        branding.textContent = "Beaver Tracer"
-        brandingGroup.appendChild(branding);
+        branding.textContent = "Beaver Tracer";
+        brandingText.appendChild(branding);
 
         const ver = document.createElement("div");
         ver.className = "sim-toolbar-branding-version";
-        ver.textContent = "v" + version(true);
         const alpha = document.createElement("span");
         alpha.className = "sim-toolbar-branding-alpha";
-        alpha.textContent = "Alpha Version";
+        alpha.textContent = "ALPHA";
         ver.appendChild(alpha);
-        brandingGroup.appendChild(ver);
+        brandingText.appendChild(ver);
 
         /** @param {string} [role] */
         const addSeparator = (role) => {
