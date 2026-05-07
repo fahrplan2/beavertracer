@@ -870,6 +870,7 @@ export class HomeRouter extends SimulatedObject {
     }
 
     /** Send a DHCPv6 packet from WAN link-local to ff02::1:2 (all DHCP agents/servers). */
+    /** @param {DHCPv6Packet} pkt */
     _dhcpv6PdSendWan(pkt) {
         const wanLl   = IPAddress.fromUInt8(this._wanLinkLocalBytes());
         const allDhcp = IPAddress.fromString("ff02::1:2");

@@ -518,6 +518,7 @@ export class DHCPv6ServerApp extends GenericProcess {
   }
 
   /** Read PD config from parsed JSON object into instance fields. */
+  /** @param {any} o */
   _applyPdFromJSON(o) {
     this._pdEnabled = o?.pdEnabled === true;
     if (typeof o?.pdPool === "string") {
