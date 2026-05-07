@@ -5,7 +5,7 @@ import { GenericProcess } from "./GenericProcess.js";
 import { Disposer } from "../lib/Disposer.js";
 import { UILib } from "./lib/UILib.js";
 
-import { assertLenU8 } from "../lib/helpers.js";
+import { assertLenU8, netmaskStrToPrefix, prefixToNetmaskStr } from "../lib/helpers.js";
 import { simTimer, SimTimer } from "../lib/SimTimer.js";
 import { DHCPPacket } from "../net/pdu/DHCPPacket.js";
 import { DHCPv6Packet } from "../net/pdu/DHCPv6Packet.js";
@@ -35,6 +35,7 @@ export class IPv4ConfigApp extends GenericProcess {
 
   /** @type {HTMLInputElement|null} */ ipEl = null;
   /** @type {HTMLInputElement|null} */ prefixEl = null;
+  /** @type {HTMLInputElement|null} */ maskEl = null;
   /** @type {HTMLInputElement|null} */ gwEl = null;
   /** @type {HTMLInputElement|null} */ dnsEl = null;
 
@@ -131,6 +132,7 @@ export class IPv4ConfigApp extends GenericProcess {
     );
     const ipEl = UILib.input({ placeholder: "192.168.0.10" });
     const prefixEl = UILib.input({ placeholder: "24" });
+    const maskEl = UILib.input({ placeholder: "255.255.255.0" });
     const gwEl = UILib.input({ placeholder: "192.168.0.1" });
     const dnsEl = UILib.input({ placeholder: "8.8.8.8" });
     const applyBtn = UILib.button(t("app.ipv4config.button.apply"), () => this._apply(), { primary: true });
@@ -138,6 +140,7 @@ export class IPv4ConfigApp extends GenericProcess {
     this.modeSel = modeSel;
     this.ipEl = ipEl;
     this.prefixEl = prefixEl;
+    this.maskEl = maskEl;
     this.gwEl = gwEl;
     this.dnsEl = dnsEl;
     this.releaseBtn = releaseBtn;
@@ -147,6 +150,7 @@ export class IPv4ConfigApp extends GenericProcess {
       UILib.row(t("app.ipv4config.label.mode"), modeSel),
       UILib.row(t("app.ipv4config.label.ip"), ipEl),
       UILib.row(t("app.ipv4config.label.prefixLength"), prefixEl),
+      UILib.row(t("app.ipv4config.label.subnetMask"), maskEl),
       UILib.row(t("app.ipv4config.label.gateway"), gwEl),
       UILib.row(t("app.ipv4config.label.dnsServer"), dnsEl),
       UILib.buttonRow([applyBtn, releaseBtn]),
@@ -242,6 +246,39 @@ export class IPv4ConfigApp extends GenericProcess {
     this.root.replaceChildren(panel);
 
     // Wire events
+    this.disposer.on(ipEl, "input", () => {
+      const v = ipEl.value.trim();
+      UILib.markInvalid(ipEl, v !== "" && !parseIPv4(v));
+    });
+    this.disposer.on(prefixEl, "input", () => {
+      const v = prefixEl.value.trim();
+      const n = Number(v);
+      if (Number.isInteger(n) && n >= 0 && n <= 32) {
+        maskEl.value = prefixToNetmaskStr(n);
+        UILib.markInvalid(prefixEl, false);
+        UILib.markInvalid(maskEl, false);
+      } else {
+        maskEl.value = "";
+        UILib.markInvalid(prefixEl, v !== "");
+        UILib.markInvalid(maskEl, false);
+      }
+    });
+    this.disposer.on(maskEl, "input", () => {
+      const p = netmaskStrToPrefix(maskEl.value);
+      prefixEl.value = (p == null) ? "" : String(p);
+      UILib.markInvalid(maskEl, maskEl.value.trim() !== "" && p == null);
+      UILib.markInvalid(prefixEl, false);
+    });
+    this.disposer.on(gwEl, "input", () => {
+      const v = gwEl.value.trim();
+      UILib.markInvalid(gwEl, v !== "" && !parseIPv4(v));
+    });
+    this.disposer.on(dnsEl, "input", () => {
+      const v = dnsEl.value.trim();
+      if (v === "") { UILib.markInvalid(dnsEl, false); return; }
+      try { IPAddress.fromString(v); UILib.markInvalid(dnsEl, false); } catch { UILib.markInvalid(dnsEl, true); }
+    });
+
     this.disposer.on(modeSel, "change", async () => {
       const prev = (this.persisted.modeByIface[String(this._idx())] ?? "static");
       await this._persistModeForCurrentIface();
@@ -283,7 +320,7 @@ export class IPv4ConfigApp extends GenericProcess {
     }
     this._netObserver = null;
     this.disposer.dispose();
-    this.modeSel = this.ipEl = this.prefixEl = this.gwEl = this.dnsEl = null;
+    this.modeSel = this.ipEl = this.prefixEl = this.maskEl = this.gwEl = this.dnsEl = null;
     this.msgEl = null;
     this._ipv4Section = this._ipv6Section = this._wifiSection = null;
     this._setFamilyActive = null;
@@ -317,6 +354,7 @@ export class IPv4ConfigApp extends GenericProcess {
 
     if (this.ipEl) this.ipEl.disabled = dis;
     if (this.prefixEl) this.prefixEl.disabled = dis;
+    if (this.maskEl) this.maskEl.disabled = dis;
     if (this.gwEl) this.gwEl.disabled = dis;
     if (this.dnsEl) this.dnsEl.disabled = dis;
 
@@ -515,6 +553,7 @@ export class IPv4ConfigApp extends GenericProcess {
 
     if (this.ipEl) this.ipEl.value = (ip && ip.isV4()) ? ip.toString() : "";
     if (this.prefixEl) this.prefixEl.value = (prefix != null) ? String(prefix) : "";
+    if (this.maskEl) this.maskEl.value = (prefix != null) ? prefixToNetmaskStr(prefix) : "";
 
     const gw = getDefaultGatewayForIface(net, i);
     if (this.gwEl) this.gwEl.value = (gw != null) ? gw.toString() : "";
@@ -524,6 +563,12 @@ export class IPv4ConfigApp extends GenericProcess {
     if (dns?.serverIp instanceof IPAddress) dnsStr = dns.serverIp.toString();
     else if (dns && typeof dns.serverIp === "number") dnsStr = numberToIpv4(dns.serverIp >>> 0);
     if (this.dnsEl) this.dnsEl.value = dnsStr;
+
+    UILib.markInvalid(this.ipEl, false);
+    UILib.markInvalid(this.prefixEl, false);
+    UILib.markInvalid(this.maskEl, false);
+    UILib.markInvalid(this.gwEl, false);
+    UILib.markInvalid(this.dnsEl, false);
 
     this._setMsg(t("app.ipv4config.msg.loadedInterface", { i }));
   }
@@ -570,26 +615,39 @@ export class IPv4ConfigApp extends GenericProcess {
       const dnsStr = (this.dnsEl?.value ?? "").trim();
 
       const ip = parseIPv4(ipStr);
+      UILib.markInvalid(this.ipEl, !ip);
       if (!ip) return this._setMsg(t("app.ipv4config.err.invalidIp"));
 
       const prefixLength = parsePrefixLength(prefixStr);
+      UILib.markInvalid(this.prefixEl, prefixLength == null);
+      UILib.markInvalid(this.maskEl, prefixLength == null);
       if (prefixLength == null) return this._setMsg(t("app.ipv4config.err.invalidPrefixLength"));
 
       /** @type {IPAddress|null} */
       let gw = null;
       if (gwStr !== "") {
         const gwIp = parseIPv4(gwStr);
+        const gwZero = gwIp?.getNumber() === 0;
+        UILib.markInvalid(this.gwEl, !gwIp || gwZero);
         if (!gwIp) return this._setMsg(t("app.ipv4config.err.invalidGateway"));
-        if (gwIp.getNumber() === 0) return this._setMsg(t("app.ipv4config.err.gatewayZero"));
+        if (gwZero) return this._setMsg(t("app.ipv4config.err.gatewayZero"));
         gw = gwIp;
+      } else {
+        UILib.markInvalid(this.gwEl, false);
       }
 
       /** @type {IPAddress|undefined} */
       let dnsIpAddr = undefined;
       if (dnsStr !== "") {
-        try { dnsIpAddr = IPAddress.fromString(dnsStr); } catch {
+        try {
+          dnsIpAddr = IPAddress.fromString(dnsStr);
+          UILib.markInvalid(this.dnsEl, false);
+        } catch {
+          UILib.markInvalid(this.dnsEl, true);
           return this._setMsg(t("app.ipv4config.err.invalidDnsServer"));
         }
+      } else {
+        UILib.markInvalid(this.dnsEl, false);
       }
 
       net.configureInterface(i, { ip, prefixLength });

@@ -546,10 +546,10 @@ export class SimControl {
         gSpeeds.appendChild(pauseBtn);
 
         const speeds = [
-            { label: "0.5×", ms: 1000, icon: "fa-1" },
-            { label: "1×",   ms: 500,  icon: "fa-2" },
-            { label: "4×",   ms: 100,  icon: "fa-3" },
-            { label: "8×",   ms: 40,   icon: "fa-4" },
+            { label: "1×",   ms: 500,  icon: "fa-1" },
+            { label: "4×",   ms: 100,  icon: "fa-2" },
+            { label: "8×",   ms: 40,   icon: "fa-3" },
+            { label: "16×",  ms: 20,   icon: "fa-4" },
         ];
 
         for (const s of speeds) {
@@ -570,7 +570,7 @@ export class SimControl {
             onClick: () => {
                 this.restore(this.toJSON());
                 this.mode = "run";
-                this.pause();
+                this._invalidateUI();
             },
         });
         resetBtn.dataset.role = "reset";
@@ -708,14 +708,14 @@ export class SimControl {
         btn("pause",      "fa-pause",             t("sim.pause"), () => this.pause());
 
         const speeds = [
-            { label: "0.5×", ms: 1000, icon: "fa-1" },
-            { label: "1×",   ms: 500,  icon: "fa-2" },
-            { label: "4×",   ms: 100,  icon: "fa-3" },
-            { label: "8×",   ms: 40,   icon: "fa-4" },
+            { label: "1×",   ms: 500,  icon: "fa-1" },
+            { label: "4×",   ms: 100,  icon: "fa-2" },
+            { label: "8×",   ms: 40,   icon: "fa-3" },
+            { label: "16×",  ms: 20,   icon: "fa-4" },
         ];
         for (const s of speeds) btn(`speed-${s.ms}`, s.icon, s.label, () => this.setTick(s.ms));
 
-        btn("reset", "fa-arrow-rotate-left", t("sim.reset"), () => { this.restore(this.toJSON()); this.mode = "run"; this.pause(); });
+        btn("reset", "fa-arrow-rotate-left", t("sim.reset"), () => { this.restore(this.toJSON()); this.mode = "run"; this._invalidateUI(); });
 
         // Open full app (with label, not icon-only)
         const btnOpen = DOMBuilder.iconbutton({

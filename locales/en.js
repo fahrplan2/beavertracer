@@ -110,6 +110,7 @@ export default {
   "app.ipv4config.err.applyFailed": "Apply failed: {reason}",
   "app.ipv4config.err.invalidPrefixLength":"invalid prefix length",
   "app.ipv4config.label.prefixLength":"Prefix Length",
+  "app.ipv4config.label.subnetMask": "Subnet Mask",
   "app.ipv4config.label.dnsServer": "DNS server",
   "app.ipv4config.err.invalidDnsServer": "Invalid DNS server address",
   "app.ipv4config.msg.appliedWithGwDns":

@@ -174,6 +174,9 @@ export class SimpleTCPClientApp extends LoggedProcess {
   /** @type {boolean} */
   connected = false;
 
+  /** @type {boolean} */
+  connecting = false;
+
   /** @type {HTMLInputElement|null} */
   hostEl = null;
 
@@ -288,12 +291,13 @@ export class SimpleTCPClientApp extends LoggedProcess {
 
   _syncUI() {
     const isConn = this.connected;
+    const busy = isConn || this.connecting;
 
-    if (this.connectBtn) this.connectBtn.disabled = isConn;
+    if (this.connectBtn) this.connectBtn.disabled = busy;
     if (this.disconnectBtn) this.disconnectBtn.disabled = !isConn;
 
-    if (this.hostEl) this.hostEl.disabled = isConn;
-    if (this.portEl) this.portEl.disabled = isConn;
+    if (this.hostEl) this.hostEl.disabled = busy;
+    if (this.portEl) this.portEl.disabled = busy;
 
     if (this.msgEl) this.msgEl.disabled = !isConn;
     if (this.sendBtn) this.sendBtn.disabled = !isConn;
@@ -320,7 +324,10 @@ export class SimpleTCPClientApp extends LoggedProcess {
   }
 
   async _connect() {
-    if (this.connected) return;
+    if (this.connected || this.connecting) return;
+
+    this.connecting = true;
+    this._syncUI();
 
     /** @type {(name:string)=>Promise<any>} */
     const dnsResolve = async (name) => {
@@ -335,6 +342,8 @@ export class SimpleTCPClientApp extends LoggedProcess {
     } catch (e) {
       const reason = (e instanceof Error ? e.message : String(e));
       this._appendLog(t("app.simpletcpclient.log.resolveError", { time: nowStamp(), host: this.host, reason }));
+      this.connecting = false;
+      this._syncUI();
       return;
     }
 
@@ -346,6 +355,7 @@ export class SimpleTCPClientApp extends LoggedProcess {
 
       this.connKey = key;
       this.connected = true;
+      this.connecting = false;
       this._syncUI();
 
       const info = parseTCPKey(key);
@@ -356,11 +366,11 @@ export class SimpleTCPClientApp extends LoggedProcess {
     } catch (e) {
       this.connKey = null;
       this.connected = false;
+      this.connecting = false;
       this._syncUI();
       const reason = (e instanceof Error ? e.message : String(e));
       this._appendLog(t("app.simpletcpclient.log.connectFailed", { time: nowStamp(), reason }));
     }
-
   }
 
   _disconnect() {

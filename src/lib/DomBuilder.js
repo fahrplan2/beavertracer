@@ -281,4 +281,13 @@ export class DOMBuilder {
 
         return { bar, setActive, setBadge };
     }
+
+    /**
+     * @param {HTMLElement|null|undefined} el
+     * @param {boolean} isInvalid
+     */
+    static markInvalid(el, isInvalid) {
+        if (!el) return;
+        el.classList.toggle("is-invalid", !!isInvalid);
+    }
 }
