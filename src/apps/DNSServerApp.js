@@ -258,24 +258,13 @@ export class DNSServerApp extends LoggedProcess {
 
     const logPane = UI.el("div", { children: [status, logBox] });
 
-    /** @param {string} id */
-    const showTab = (id) => {
-      this.aEditor.root.style.display    = id === "a"    ? "" : "none";
-      this.aaaaEditor.root.style.display = id === "aaaa" ? "" : "none";
-      this.mxEditor.root.style.display   = id === "mx"   ? "" : "none";
-      this.nsEditor.root.style.display   = id === "ns"   ? "" : "none";
-      logPane.style.display              = id === "log"  ? "" : "none";
-    };
-
-    const { bar: tabBar, setActive: setTab } = UI.tabGroup([
-      { id: "a",    label: "A"    },
-      { id: "aaaa", label: "AAAA" },
-      { id: "mx",   label: "MX"   },
-      { id: "ns",   label: "NS"   },
-      { id: "log",  label: t("app.dnsd.label.log") },
-    ], showTab);
-    setTab("a");
-    showTab("a");
+    const { bar: tabBar } = UI.tabbedPane([
+      { id: "a",    label: "A",                    pane: this.aEditor.root    },
+      { id: "aaaa", label: "AAAA",                 pane: this.aaaaEditor.root },
+      { id: "mx",   label: "MX",                   pane: this.mxEditor.root   },
+      { id: "ns",   label: "NS",                   pane: this.nsEditor.root   },
+      { id: "log",  label: t("app.dnsd.label.log"), pane: logPane             },
+    ]);
 
     const panel = UI.panel([
       UI.buttonRow([start, stop, save]),

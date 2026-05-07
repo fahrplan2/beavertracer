@@ -121,14 +121,10 @@ export class SimpleIRCServerApp extends LoggedProcess {
       logBox,
     ]});
 
-    const { bar: tabBar, setActive: setTab } = UI.tabGroup([
-      { id: "config", label: t("app.ircserver.tab.config") },
-      { id: "log",    label: t("app.ircserver.tab.log") },
-    ], (id) => {
-      configPane.style.display = id === "config" ? "" : "none";
-      logPane.style.display    = id === "log"    ? "" : "none";
-    });
-    setTab("config"); configPane.style.display = ""; logPane.style.display = "none";
+    const { bar: tabBar } = UI.tabbedPane([
+      { id: "config", label: t("app.ircserver.tab.config"), pane: configPane },
+      { id: "log",    label: t("app.ircserver.tab.log"),    pane: logPane },
+    ]);
 
     const panel = UI.panel([UI.buttonRow([start, stop]), tabBar, configPane, logPane]);
     this.root.replaceChildren(panel);

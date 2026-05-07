@@ -781,16 +781,10 @@ export class SimpleMailServerApp extends LoggedProcess {
       logBox,
     ]});
 
-    const { bar: tabBar, setActive: setTab } = UI.tabGroup([
-      { id: "config", label: t("app.simplemailserver.label.server") || "Konfiguration" },
-      { id: "log",    label: t("app.simplemailserver.label.log") || "Protokoll" },
-    ], (id) => {
-      configPane.style.display = id === "config" ? "" : "none";
-      logPane.style.display    = id === "log"    ? "" : "none";
-    });
-    setTab("config");
-    configPane.style.display = "";
-    logPane.style.display    = "none";
+    const { bar: tabBar } = UI.tabbedPane([
+      { id: "config", label: t("app.simplemailserver.label.server") || "Konfiguration", pane: configPane },
+      { id: "log",    label: t("app.simplemailserver.label.log") || "Protokoll",        pane: logPane },
+    ]);
 
     const panel = UI.panel([
       UI.buttonRow([start, stop]),

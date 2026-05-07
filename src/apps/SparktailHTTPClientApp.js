@@ -9,7 +9,7 @@ import { SimTimer } from "../sim/SimTimer.js";
 import startPage from "./assets/about-start.html?raw";
 import { t } from "../i18n/index.js";
 import { IPAddress } from "../net/models/IPAddress.js";
-import { nowStamp } from "../lib/helpers.js";
+import { nowStamp, encodeUTF8, decodeUTF8 } from "../lib/helpers.js";
 
 /**
  * @param {Uint8Array} data
@@ -66,26 +66,6 @@ async function resolveHostToIP(host, dnsResolve) {
   }
 
   throw new Error(t("app.sparktail.err.cannotResolveHost", { host: s }));
-}
-
-/**
- * @param {string} s
- */
-function encodeUTF8(s) {
-  if (typeof TextEncoder !== "undefined") return new TextEncoder().encode(s);
-  const out = new Uint8Array(s.length);
-  for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i) & 0xff;
-  return out;
-}
-
-/**
- * @param {Uint8Array} b
- */
-function decodeUTF8(b) {
-  if (typeof TextDecoder !== "undefined") return new TextDecoder().decode(b);
-  let s = "";
-  for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
-  return s;
 }
 
 /**

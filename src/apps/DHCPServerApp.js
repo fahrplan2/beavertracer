@@ -247,41 +247,21 @@ export class DHCPServerApp extends LoggedProcess {
       logBox,
     ]});
 
-    const leasesTable = /** @type {HTMLTableElement} */ (UI.el("table", { className: "dhcp-leases-table" }));
-    const thead = document.createElement("thead");
-    const headerRow = document.createElement("tr");
-    [
+    const { table: leasesTable, tbody } = UI.tableWithBody([
       t("app.dhcpserver.leases.col.mac"),
       t("app.dhcpserver.leases.col.address"),
       t("app.dhcpserver.leases.col.expires"),
-    ].forEach(label => {
-      const th = document.createElement("th");
-      th.textContent = label;
-      headerRow.appendChild(th);
-    });
-    thead.appendChild(headerRow);
-    leasesTable.appendChild(thead);
-    const tbody = document.createElement("tbody");
-    leasesTable.appendChild(tbody);
+    ], "dhcp-leases-table");
     this.leasesBody = tbody;
 
     const leasesPane = UI.el("div", { children: [leasesTable] });
     this.leasesPane = leasesPane;
 
-    const { bar: tabBar, setActive: setTab } = UI.tabGroup([
-      { id: "config", label: t("app.dhcpserver.label.config") },
-      { id: "log",    label: t("app.dhcpserver.label.log") },
-      { id: "leases", label: t("app.dhcpserver.label.leases") },
-    ], (id) => {
-      configPane.style.display = id === "config" ? "" : "none";
-      logPane.style.display    = id === "log"    ? "" : "none";
-      leasesPane.style.display = id === "leases" ? "" : "none";
-      if (id === "leases") this._renderLeases();
-    });
-    setTab("config");
-    configPane.style.display = "";
-    logPane.style.display    = "none";
-    leasesPane.style.display = "none";
+    const { bar: tabBar } = UI.tabbedPane([
+      { id: "config", label: t("app.dhcpserver.label.config"),  pane: configPane },
+      { id: "log",    label: t("app.dhcpserver.label.log"),     pane: logPane },
+      { id: "leases", label: t("app.dhcpserver.label.leases"),  pane: leasesPane, onShow: () => this._renderLeases() },
+    ]);
 
     this.disposer.interval(() => {
       if (this.leasesPane && this.leasesPane.style.display !== "none") this._renderLeases();

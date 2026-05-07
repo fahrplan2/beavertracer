@@ -6,27 +6,7 @@ import { UILib as UI } from "./lib/UILib.js";
 import { SimTimer } from "../sim/SimTimer.js";
 import { t } from "../i18n/index.js";
 import { IPAddress } from "../net/models/IPAddress.js";
-import { nowStamp } from "../lib/helpers.js";
-
-/**
- * @param {string} s
- */
-function encodeUTF8(s) {
-  if (typeof TextEncoder !== "undefined") return new TextEncoder().encode(s);
-  const out = new Uint8Array(s.length);
-  for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i) & 0xff;
-  return out;
-}
-
-/**
- * @param {Uint8Array} b
- */
-function decodeUTF8(b) {
-  if (typeof TextDecoder !== "undefined") return new TextDecoder().decode(b);
-  let s = "";
-  for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
-  return s;
-}
+import { nowStamp, encodeUTF8, decodeUTF8 } from "../lib/helpers.js";
 
 /**
  * @param {Uint8Array[]} chunks
@@ -233,16 +213,10 @@ export class SimpleHTTPServerApp extends LoggedProcess {
       logBox,
     ]});
 
-    const { bar: tabBar, setActive: setTab } = UI.tabGroup([
-      { id: "config", label: t("app.simplehttpserver.label.server") },
-      { id: "log",    label: t("app.simplehttpserver.label.log") },
-    ], (id) => {
-      configPane.style.display = id === "config" ? "" : "none";
-      logPane.style.display    = id === "log"    ? "" : "none";
-    });
-    setTab("config");
-    configPane.style.display = "";
-    logPane.style.display    = "none";
+    const { bar: tabBar } = UI.tabbedPane([
+      { id: "config", label: t("app.simplehttpserver.label.server"), pane: configPane },
+      { id: "log",    label: t("app.simplehttpserver.label.log"),    pane: logPane },
+    ]);
 
     const panel = UI.panel([
       UI.buttonRow([start, stop]),

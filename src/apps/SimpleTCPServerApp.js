@@ -123,16 +123,10 @@ export class SimpleTCPServerApp extends LoggedProcess {
       logBox,
     ]});
 
-    const { bar: tabBar, setActive: setTab } = UI.tabGroup([
-      { id: "server", label: t("app.simpletcpserver.label.server") },
-      { id: "log",    label: t("app.simpletcpserver.label.log") },
-    ], (id) => {
-      serverPane.style.display = id === "server" ? "" : "none";
-      logPane.style.display    = id === "log"    ? "" : "none";
-    });
-    setTab("server");
-    serverPane.style.display = "";
-    logPane.style.display    = "none";
+    const { bar: tabBar } = UI.tabbedPane([
+      { id: "server", label: t("app.simpletcpserver.label.server"), pane: serverPane },
+      { id: "log",    label: t("app.simpletcpserver.label.log"),    pane: logPane },
+    ]);
 
     const panel = UI.panel([
       UI.buttonRow([start, stop]),
