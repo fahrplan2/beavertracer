@@ -43,6 +43,8 @@ export class DHCPv6Packet {
   static OPT_RAPID_COMMIT = 14;
   static OPT_DNS_SERVERS = 23;
   static OPT_DOMAIN_LIST = 24;
+  static OPT_IA_PD       = 25;
+  static OPT_IAPREFIX    = 26;
 
   // Status codes (for OPT_STATUS_CODE)
   static STATUS_SUCCESS      = 0;
@@ -192,6 +194,71 @@ export class DHCPv6Packet {
       t1:        _readU32(data, 4),
       t2:        _readU32(data, 8),
       iaOptions: data.slice(12),
+    };
+  }
+
+  /**
+   * Build IA_PD option payload (RFC 8415 §21.21) — identical structure to IA_NA.
+   * @param {number} iaid  32-bit Identity Association ID
+   * @param {number} t1    seconds until T1
+   * @param {number} t2    seconds until T2
+   * @param {Uint8Array} iaOptions  embedded sub-options (e.g. IAPREFIX)
+   * @returns {Uint8Array}
+   */
+  static buildIA_PD(iaid, t1, t2, iaOptions) {
+    const out = new Uint8Array(12 + iaOptions.length);
+    _writeU32(out, 0, iaid);
+    _writeU32(out, 4, t1);
+    _writeU32(out, 8, t2);
+    out.set(iaOptions, 12);
+    return out;
+  }
+
+  /**
+   * Parse IA_PD option payload.
+   * @param {Uint8Array} data
+   * @returns {{ iaid: number, t1: number, t2: number, iaOptions: Uint8Array }}
+   */
+  static parseIA_PD(data) {
+    if (data.length < 12) throw new Error("IA_PD too short");
+    return {
+      iaid:      _readU32(data, 0),
+      t1:        _readU32(data, 4),
+      t2:        _readU32(data, 8),
+      iaOptions: data.slice(12),
+    };
+  }
+
+  /**
+   * Build IAPREFIX option payload (RFC 8415 §21.22): 25 bytes.
+   * @param {number} preferred  preferred lifetime (seconds)
+   * @param {number} valid      valid lifetime (seconds)
+   * @param {number} prefixLength  prefix length in bits (e.g. 56)
+   * @param {Uint8Array} prefix16bytes  masked 16-byte prefix
+   * @returns {Uint8Array}
+   */
+  static buildIAPrefix(preferred, valid, prefixLength, prefix16bytes) {
+    if (prefix16bytes.length !== 16) throw new Error("prefix16bytes must be 16 bytes");
+    const out = new Uint8Array(25);
+    _writeU32(out, 0, preferred);
+    _writeU32(out, 4, valid);
+    out[8] = prefixLength & 0xff;
+    out.set(prefix16bytes, 9);
+    return out;
+  }
+
+  /**
+   * Parse IAPREFIX option payload.
+   * @param {Uint8Array} data
+   * @returns {{ preferred: number, valid: number, prefixLength: number, prefix16bytes: Uint8Array }}
+   */
+  static parseIAPrefix(data) {
+    if (data.length < 25) throw new Error("IAPREFIX too short");
+    return {
+      preferred:     _readU32(data, 0),
+      valid:         _readU32(data, 4),
+      prefixLength:  data[8],
+      prefix16bytes: data.slice(9, 25),
     };
   }
 

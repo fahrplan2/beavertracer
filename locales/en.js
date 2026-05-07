@@ -20,7 +20,13 @@ export default {
   "app.dhcpserver.button.stop": "Stop",
   "app.dhcpserver.button.clearLog": "Clear log",
 
-  "app.dhcpserver.label.log": "Log",
+  "app.dhcpserver.label.log":    "Log",
+  "app.dhcpserver.label.leases": "Leases",
+
+  "app.dhcpserver.leases.col.mac":     "MAC Address",
+  "app.dhcpserver.leases.col.address": "IP Address",
+  "app.dhcpserver.leases.col.expires": "Expires",
+  "app.dhcpserver.leases.empty":       "No active leases",
 
   "app.dhcpserver.log.createdDefaultConfig": "Config file missing/empty; wrote default config to",
   "app.dhcpserver.log.configLoaded": "Loaded config from",
@@ -39,6 +45,12 @@ export default {
 
   "app.dhcpv6server.label.config":      "Configuration",
   "app.dhcpv6server.label.log":         "Log",
+  "app.dhcpv6server.label.leases":      "Leases",
+
+  "app.dhcpv6server.leases.col.duid":    "DUID",
+  "app.dhcpv6server.leases.col.address": "IPv6 Address",
+  "app.dhcpv6server.leases.col.expires": "Expires",
+  "app.dhcpv6server.leases.empty":       "No active leases",
   "app.dhcpv6server.label.prefix":      "Address prefix",
   "app.dhcpv6server.label.prefixLength": "Prefix length",
   "app.dhcpv6server.label.dns":         "DNS servers",
@@ -62,6 +74,18 @@ export default {
   "app.dhcpv6server.log.stopError":            "Error while stopping:",
   "app.dhcpv6server.log.recvError":            "UDP receive error:",
   "app.dhcpv6server.log.parseError":           "DHCPv6 parse error:",
+
+  "app.dhcpv6server.label.pd":           "PD Server",
+  "app.dhcpv6server.pd.enabled":         "Enable PD server",
+  "app.dhcpv6server.pd.pool":            "Pool prefix",
+  "app.dhcpv6server.pd.poolLength":      "Pool prefix length",
+  "app.dhcpv6server.pd.delegatedLength": "Delegated prefix length",
+  "app.dhcpv6server.pd.leaseTime":       "Lease time (seconds)",
+  "app.dhcpv6server.pd.save":            "Save PD config",
+  "app.dhcpv6server.pd.leases.col.duid":    "DUID",
+  "app.dhcpv6server.pd.leases.col.prefix":  "Delegated Prefix",
+  "app.dhcpv6server.pd.leases.col.expires": "Expires",
+  "app.dhcpv6server.pd.leases.empty":       "No active PD leases",
 
   "app.dnsd.button.save": "Save",
   "app.dnsd.button.start": "Start",
@@ -769,6 +793,8 @@ export default {
   "homerouter.wan.mode": "Mode",
   "homerouter.wan.mode.static": "Static",
   "homerouter.wan.mode.dhcp": "DHCP",
+  "homerouter.wan.mode.dhcpv6pd": "DHCPv6-PD (WAN prefix delegation)",
+  "homerouter.wan.pd.delegated": "Delegated prefix",
   "homerouter.wan.ip": "IP Address",
   "homerouter.wan.mask": "Prefix Length",
   "homerouter.wan.gw": "Gateway",

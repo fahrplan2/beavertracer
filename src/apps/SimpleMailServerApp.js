@@ -281,7 +281,7 @@ export class SimpleMailServerApp extends GenericProcess {
   get title() {
     return t("app.simplemailserver.title") || "Simple Mail Server";
   }
-
+  icon = "fa-server";
   badge = "MAIL";
 
   /** @type {Disposer} */

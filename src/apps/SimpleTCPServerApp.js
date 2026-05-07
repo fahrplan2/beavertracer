@@ -87,7 +87,7 @@ export class SimpleTCPServerApp extends GenericProcess {
 
   /** @type {Set<string>} */
   conns = new Set();
-
+  icon = "fa-server";
   badge = "TCP";
 
   run() {

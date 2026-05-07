@@ -194,7 +194,7 @@ export class DNSServerApp extends GenericProcess {
 
   /** @type {any} */
   saveTimer = null;
-
+  icon = "fa-server";
   badge = "DNS";
 
   run() {

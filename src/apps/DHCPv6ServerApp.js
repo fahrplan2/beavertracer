@@ -138,8 +138,53 @@ export class DHCPv6ServerApp extends GenericProcess {
   /** @type {HTMLButtonElement|null} */
   loadBtn = null;
 
+  /** @type {HTMLElement|null} */
+  leasesPane = null;
+
+  /** @type {HTMLTableSectionElement|null} */
+  leasesBody = null;
+
+  // ---- PD Server UI fields ----
+
+  /** @type {HTMLElement|null} */
+  pdPane = null;
+
+  /** @type {HTMLInputElement|null} */
+  pdEnabledEl = null;
+
+  /** @type {HTMLInputElement|null} */
+  pdPoolEl = null;
+
+  /** @type {HTMLInputElement|null} */
+  pdPoolLenEl = null;
+
+  /** @type {HTMLInputElement|null} */
+  pdDelegLenEl = null;
+
+  /** @type {HTMLInputElement|null} */
+  pdLeaseTimeEl = null;
+
+  /** @type {HTMLTableSectionElement|null} */
+  pdLeasesBody = null;
+
   /** @type {{ prefix: IPAddress, prefixLength: number, dns: IPAddress[], leaseTime: number }} */
   cfg = DHCPv6ServerApp.defaultCfg();
+
+  // ---- PD Server state ----
+
+  _pdEnabled = false;
+  /** @type {IPAddress|null} */ _pdPool = null;
+  _pdPoolLength = 48;
+  _pdDelegatedLength = 56;
+  _pdLeaseTime = 3600;
+
+  /**
+   * PD lease table keyed by DUID hex string.
+   * @type {Map<string, { prefix16bytes: Uint8Array, prefixLen: number, index: number, expiresAt: number }>}
+   */
+  _pdLeases = new Map();
+  /** @type {Set<number>} */ _pdAllocated = new Set();
+  _pdNextIndex = 0;
 
   /**
    * Lease table keyed by DUID hex string.
@@ -167,6 +212,7 @@ export class DHCPv6ServerApp extends GenericProcess {
       const json = JSON.parse(txt);
       if (json.autostart !== true) return;
       this.cfg = DHCPv6ServerApp.cfgFromJSON(txt, this.cfg);
+      this._applyPdFromJSON(json);
       this._start();
     } catch { }
   }
@@ -177,7 +223,7 @@ export class DHCPv6ServerApp extends GenericProcess {
     this.disposer.dispose();
 
     const prefixEl    = UI.input({ placeholder: "2001:db8::" });
-    const prefixLenEl = UI.input({ placeholder: "64" });
+    const prefixLenEl = UI.input({ placeholder: "64 (64–96)" });
     const dnsEl       = UI.input({ placeholder: "2001:4860:4860::8888" });
     const leaseTimeEl = UI.input({ placeholder: "3600" });
 
@@ -218,22 +264,103 @@ export class DHCPv6ServerApp extends GenericProcess {
       logBox,
     ]});
 
+    const leasesTable = /** @type {HTMLTableElement} */ (UI.el("table", { className: "dhcp6-leases-table" }));
+    const thead = document.createElement("thead");
+    const headerRow = document.createElement("tr");
+    [
+      t("app.dhcpv6server.leases.col.duid"),
+      t("app.dhcpv6server.leases.col.address"),
+      t("app.dhcpv6server.leases.col.expires"),
+    ].forEach(label => {
+      const th = document.createElement("th");
+      th.textContent = label;
+      headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    leasesTable.appendChild(thead);
+    const tbody = document.createElement("tbody");
+    leasesTable.appendChild(tbody);
+    this.leasesBody = tbody;
+
+    const leasesPane = UI.el("div", { children: [leasesTable] });
+    this.leasesPane = leasesPane;
+
+    // ---- PD Server tab ----
+    const pdEnabledEl  = /** @type {HTMLInputElement} */ (UI.el("input", { attrs: { type: "checkbox" } }));
+    const pdPoolEl     = UI.input({ placeholder: "2001:db8:100::" });
+    const pdPoolLenEl  = UI.input({ placeholder: "48" });
+    const pdDelegLenEl = UI.input({ placeholder: "56" });
+    const pdLeaseTimeEl = UI.input({ placeholder: "3600" });
+    this.pdEnabledEl  = pdEnabledEl;
+    this.pdPoolEl     = pdPoolEl;
+    this.pdPoolLenEl  = pdPoolLenEl;
+    this.pdDelegLenEl = pdDelegLenEl;
+    this.pdLeaseTimeEl = pdLeaseTimeEl;
+
+    const pdSaveBtn = UI.button(t("app.dhcpv6server.pd.save"), () => this._savePdConfig(), { primary: true });
+
+    const pdLeasesTable = /** @type {HTMLTableElement} */ (UI.el("table", { className: "dhcp6-leases-table" }));
+    const pdThead = document.createElement("thead");
+    const pdHeaderRow = document.createElement("tr");
+    [
+      t("app.dhcpv6server.pd.leases.col.duid"),
+      t("app.dhcpv6server.pd.leases.col.prefix"),
+      t("app.dhcpv6server.pd.leases.col.expires"),
+    ].forEach(label => {
+      const th = document.createElement("th");
+      th.textContent = label;
+      pdHeaderRow.appendChild(th);
+    });
+    pdThead.appendChild(pdHeaderRow);
+    pdLeasesTable.appendChild(pdThead);
+    const pdTbody = document.createElement("tbody");
+    pdLeasesTable.appendChild(pdTbody);
+    this.pdLeasesBody = pdTbody;
+
+    const pdPane = UI.el("div", { children: [
+      UI.row(t("app.dhcpv6server.pd.enabled"),         pdEnabledEl),
+      UI.row(t("app.dhcpv6server.pd.pool"),             pdPoolEl),
+      UI.row(t("app.dhcpv6server.pd.poolLength"),       pdPoolLenEl),
+      UI.row(t("app.dhcpv6server.pd.delegatedLength"),  pdDelegLenEl),
+      UI.row(t("app.dhcpv6server.pd.leaseTime"),        pdLeaseTimeEl),
+      UI.buttonRow([pdSaveBtn]),
+      pdLeasesTable,
+    ]});
+    this.pdPane = pdPane;
+
+    this._writePdStateToUI();
+
     const { bar: tabBar, setActive: setTab } = UI.tabGroup([
       { id: "config", label: t("app.dhcpv6server.label.config") },
       { id: "log",    label: t("app.dhcpv6server.label.log") },
+      { id: "leases", label: t("app.dhcpv6server.label.leases") },
+      { id: "pd",     label: t("app.dhcpv6server.label.pd") },
     ], (id) => {
       configPane.style.display = id === "config" ? "" : "none";
       logPane.style.display    = id === "log"    ? "" : "none";
+      leasesPane.style.display = id === "leases" ? "" : "none";
+      pdPane.style.display     = id === "pd"     ? "" : "none";
+      if (id === "leases") this._renderLeases();
+      if (id === "pd")     this._renderPdLeases();
     });
     setTab("config");
     configPane.style.display = "";
     logPane.style.display    = "none";
+    leasesPane.style.display = "none";
+    pdPane.style.display     = "none";
+
+    this.disposer.interval(() => {
+      if (this.leasesPane && this.leasesPane.style.display !== "none") this._renderLeases();
+      if (this.pdPane     && this.pdPane.style.display     !== "none") this._renderPdLeases();
+    }, 3000);
 
     const panel = UI.panel([
       UI.buttonRow([start, stop]),
       tabBar,
       configPane,
       logPane,
+      leasesPane,
+      pdPane,
     ]);
 
     this.root.replaceChildren(panel);
@@ -254,6 +381,15 @@ export class DHCPv6ServerApp extends GenericProcess {
     this.stopBtn     = null;
     this.saveBtn     = null;
     this.loadBtn     = null;
+    this.leasesPane  = null;
+    this.leasesBody  = null;
+    this.pdPane      = null;
+    this.pdEnabledEl = null;
+    this.pdPoolEl    = null;
+    this.pdPoolLenEl = null;
+    this.pdDelegLenEl = null;
+    this.pdLeaseTimeEl = null;
+    this.pdLeasesBody = null;
     super.onUnmount();
   }
 
@@ -277,12 +413,15 @@ export class DHCPv6ServerApp extends GenericProcess {
     try {
       const txt = await this.os.fs.readFile(this.confPath);
       if (!txt.trim()) {
-        const def = DHCPv6ServerApp.cfgToJSON(DHCPv6ServerApp.defaultCfg());
-        await this.os.fs.writeFile(this.confPath, def);
         this.cfg = DHCPv6ServerApp.defaultCfg();
+        const def = this.cfgToJSON(this.cfg);
+        await this.os.fs.writeFile(this.confPath, def);
         this._appendLog(`[${nowStamp()}] ${t("app.dhcpv6server.log.createdDefaultConfig")} ${this.confPath}`);
       } else {
+        let parsed; try { parsed = JSON.parse(txt); } catch {}
         this.cfg = DHCPv6ServerApp.cfgFromJSON(txt, this.cfg);
+        this._applyPdFromJSON(parsed);
+        this._writePdStateToUI();
         this._appendLog(`[${nowStamp()}] ${t("app.dhcpv6server.log.configLoaded")} ${this.confPath}`);
       }
     } catch (e) {
@@ -295,7 +434,7 @@ export class DHCPv6ServerApp extends GenericProcess {
   async _saveConfigToDiskFromUI() {
     try {
       this.cfg = this._readUIConfigOrThrow();
-      const txt = DHCPv6ServerApp.cfgToJSON(this.cfg);
+      const txt = this.cfgToJSON(this.cfg);
       await this.os.fs.writeFile(this.confPath, txt);
       this._appendLog(`[${nowStamp()}] ${t("app.dhcpv6server.log.configSaved")} ${this.confPath}`);
     } catch (e) {
@@ -319,8 +458,8 @@ export class DHCPv6ServerApp extends GenericProcess {
 
     const prefix       = parseIPv6(prefixS);
     const prefixLength = Number(prefixLenS || "64");
-    if (!Number.isInteger(prefixLength) || prefixLength < 0 || prefixLength > 96) {
-      throw new Error("prefix length must be 0..96");
+    if (!Number.isInteger(prefixLength) || prefixLength < 64 || prefixLength > 96) {
+      throw new Error("prefix length must be 64..96");
     }
     const dns       = parseIPv6List(dnsS);
     const leaseTime = Number(ltS || "3600");
@@ -333,13 +472,18 @@ export class DHCPv6ServerApp extends GenericProcess {
    * @param {{ prefix: IPAddress, prefixLength: number, dns: IPAddress[], leaseTime: number }} cfg
    * @param {boolean} [autostart]
    */
-  static cfgToJSON(cfg, autostart = false) {
+  cfgToJSON(cfg, autostart = false) {
     return JSON.stringify({
-      prefix:       cfg.prefix.toString(),
-      prefixLength: cfg.prefixLength,
-      dns:          cfg.dns.map(d => d.toString()),
-      leaseTime:    cfg.leaseTime,
+      prefix:            cfg.prefix.toString(),
+      prefixLength:      cfg.prefixLength,
+      dns:               cfg.dns.map(d => d.toString()),
+      leaseTime:         cfg.leaseTime,
       autostart,
+      pdEnabled:         this._pdEnabled,
+      pdPool:            this._pdPool?.toString() ?? "2001:db8:100::",
+      pdPoolLength:      this._pdPoolLength,
+      pdDelegatedLength: this._pdDelegatedLength,
+      pdLeaseTime:       this._pdLeaseTime,
     }, null, 2) + "\n";
   }
 
@@ -356,7 +500,7 @@ export class DHCPv6ServerApp extends GenericProcess {
     if (typeof o?.prefix === "string") {
       try { out.prefix = parseIPv6(o.prefix); } catch { }
     }
-    if (Number.isInteger(o?.prefixLength) && o.prefixLength >= 0 && o.prefixLength <= 96) {
+    if (Number.isInteger(o?.prefixLength) && o.prefixLength >= 64 && o.prefixLength <= 96) {
       out.prefixLength = o.prefixLength;
     }
     if (Array.isArray(o?.dns)) {
@@ -371,6 +515,23 @@ export class DHCPv6ServerApp extends GenericProcess {
     if (Number.isFinite(o?.leaseTime) && o.leaseTime > 0) out.leaseTime = Math.floor(o.leaseTime);
 
     return out;
+  }
+
+  /** Read PD config from parsed JSON object into instance fields. */
+  _applyPdFromJSON(o) {
+    this._pdEnabled = o?.pdEnabled === true;
+    if (typeof o?.pdPool === "string") {
+      try { this._pdPool = parseIPv6(o.pdPool); } catch {}
+    }
+    if (!this._pdPool) {
+      try { this._pdPool = parseIPv6("2001:db8:100::"); } catch {}
+    }
+    const pl = Number(o?.pdPoolLength ?? 48);
+    if (Number.isInteger(pl) && pl >= 1 && pl <= 64) this._pdPoolLength = pl;
+    const dl = Number(o?.pdDelegatedLength ?? 56);
+    if (Number.isInteger(dl) && dl > this._pdPoolLength && dl <= 128) this._pdDelegatedLength = dl;
+    const lt = Number(o?.pdLeaseTime ?? 3600);
+    if (Number.isFinite(lt) && lt > 0) this._pdLeaseTime = Math.floor(lt);
   }
 
   // ---- start / stop ----
@@ -537,16 +698,30 @@ export class DHCPv6ServerApp extends GenericProcess {
    * @param {Uint8Array} clientDUID
    */
   async _handleSolicit(sockPort, req, srcIP, srcPort, duidKey, clientDUID) {
-    const lease = this._allocateOrReuse(duidKey);
-    if (!lease) {
-      this._appendLog(`[${nowStamp()}] DHCPv6: SOLICIT duid=…${duidKey.slice(-8)} → no free address`);
-      return;
+    const hasIaNA = !!req.getOption(DHCPv6Packet.OPT_IA_NA);
+    const hasIaPD = !!req.getOption(DHCPv6Packet.OPT_IA_PD);
+
+    let naLease = null;
+    if (hasIaNA) {
+      naLease = this._allocateOrReuse(duidKey);
+      if (!naLease) this._appendLog(`[${nowStamp()}] DHCPv6: SOLICIT duid=…${duidKey.slice(-8)} → no free address`);
     }
 
-    const ip6Str = IPAddress.fromUInt8(lease.ip6bytes)?.toString() ?? "?";
-    this._appendLog(`[${nowStamp()}] DHCPv6: SOLICIT duid=…${duidKey.slice(-8)} → ADVERTISE ${ip6Str}`);
+    let pdLease = null;
+    if (hasIaPD && this._pdEnabled) {
+      pdLease = this._pdAllocOrReuse(duidKey);
+      if (!pdLease) this._appendLog(`[${nowStamp()}] DHCPv6-PD: SOLICIT duid=…${duidKey.slice(-8)} → no free prefix`);
+    }
 
-    const reply = this._buildReply(DHCPv6Packet.MT_ADVERTISE, req, clientDUID, lease.ip6bytes);
+    if (!naLease && !pdLease) return;
+
+    const parts = [`SOLICIT duid=…${duidKey.slice(-8)} →`];
+    if (naLease) parts.push(`ADVERTISE ${IPAddress.fromUInt8(naLease.ip6bytes)?.toString() ?? "?"}`);
+    if (pdLease) parts.push(`PD-ADVERTISE ${IPAddress.fromUInt8(pdLease.prefix16bytes)?.toString() ?? "?"}/${pdLease.prefixLen}`);
+    this._appendLog(`[${nowStamp()}] DHCPv6: ${parts.join(" ")}`);
+
+    const pdInfo = pdLease ? { prefix16bytes: pdLease.prefix16bytes, prefixLen: pdLease.prefixLen } : null;
+    const reply = this._buildReply(DHCPv6Packet.MT_ADVERTISE, req, clientDUID, naLease?.ip6bytes ?? null, pdInfo);
     try {
       this.os.net.sendUDPSocket(sockPort, srcIP, srcPort, reply.pack());
     } catch (e) {
@@ -572,12 +747,30 @@ export class DHCPv6ServerApp extends GenericProcess {
       }
     }
 
-    const lease  = this._commitLease(duidKey);
-    const ip6Str = IPAddress.fromUInt8(lease.ip6bytes)?.toString() ?? "?";
-    const label  = req.msgType === DHCPv6Packet.MT_RENEW ? "RENEW" : "REQUEST";
-    this._appendLog(`[${nowStamp()}] DHCPv6: ${label} duid=…${duidKey.slice(-8)} → REPLY ${ip6Str}`);
+    const hasIaNA = !!req.getOption(DHCPv6Packet.OPT_IA_NA);
+    const hasIaPD = !!req.getOption(DHCPv6Packet.OPT_IA_PD);
 
-    const reply = this._buildReply(DHCPv6Packet.MT_REPLY, req, clientDUID, lease.ip6bytes);
+    let naIp6bytes = null;
+    if (hasIaNA) {
+      const naLease = this._commitLease(duidKey);
+      naIp6bytes = naLease.ip6bytes;
+    }
+
+    let pdLease = null;
+    if (hasIaPD && this._pdEnabled) {
+      pdLease = this._pdCommitLease(duidKey);
+    }
+
+    if (!hasIaNA && !pdLease) return;
+
+    const label = req.msgType === DHCPv6Packet.MT_RENEW ? "RENEW" : "REQUEST";
+    const parts = [`${label} duid=…${duidKey.slice(-8)} →`];
+    if (naIp6bytes) parts.push(`REPLY ${IPAddress.fromUInt8(naIp6bytes)?.toString() ?? "?"}`);
+    if (pdLease) parts.push(`PD-REPLY ${IPAddress.fromUInt8(pdLease.prefix16bytes)?.toString() ?? "?"}/${pdLease.prefixLen}`);
+    this._appendLog(`[${nowStamp()}] DHCPv6: ${parts.join(" ")}`);
+
+    const pdInfo = pdLease ? { prefix16bytes: pdLease.prefix16bytes, prefixLen: pdLease.prefixLen } : null;
+    const reply = this._buildReply(DHCPv6Packet.MT_REPLY, req, clientDUID, naIp6bytes, pdInfo);
     try {
       this.os.net.sendUDPSocket(sockPort, srcIP, srcPort, reply.pack());
     } catch (e) {
@@ -604,6 +797,12 @@ export class DHCPv6ServerApp extends GenericProcess {
     } else {
       this._appendLog(`[${nowStamp()}] DHCPv6: RELEASE duid=…${duidKey.slice(-8)} (no lease)`);
     }
+    const pdLease = this._pdLeases.get(duidKey);
+    if (pdLease) {
+      this._pdAllocated.delete(pdLease.index);
+      this._pdLeases.delete(duidKey);
+      this._appendLog(`[${nowStamp()}] DHCPv6-PD: RELEASE duid=…${duidKey.slice(-8)} prefix=${IPAddress.fromUInt8(pdLease.prefix16bytes)?.toString() ?? "?"}/${pdLease.prefixLen}`);
+    }
 
     const reply = new DHCPv6Packet({ msgType: DHCPv6Packet.MT_REPLY, transactionId: req.transactionId });
     if (this._serverDUID) reply.setOption(DHCPv6Packet.OPT_SERVERID, this._serverDUID);
@@ -619,33 +818,54 @@ export class DHCPv6ServerApp extends GenericProcess {
   }
 
   /**
-   * Build ADVERTISE or REPLY with IA_NA + IAADDR + DNS options.
+   * Build ADVERTISE or REPLY with optional IA_NA + optional IA_PD + DNS options.
    * @param {number} msgType
    * @param {DHCPv6Packet} req
    * @param {Uint8Array} clientDUID
-   * @param {Uint8Array} ip6bytes
+   * @param {Uint8Array|null} ip6bytes  null = skip IA_NA
+   * @param {{prefix16bytes:Uint8Array,prefixLen:number}|null} [pdInfo]  null = skip IA_PD
    * @returns {DHCPv6Packet}
    */
-  _buildReply(msgType, req, clientDUID, ip6bytes) {
+  _buildReply(msgType, req, clientDUID, ip6bytes, pdInfo = null) {
     const reply = new DHCPv6Packet({ msgType, transactionId: req.transactionId });
 
     if (this._serverDUID) reply.setOption(DHCPv6Packet.OPT_SERVERID, this._serverDUID);
     reply.setOption(DHCPv6Packet.OPT_CLIENTID, clientDUID);
 
-    const preferred = (this.cfg.leaseTime * 0.5) >>> 0;
-    const valid     = this.cfg.leaseTime >>> 0;
-    const t1        = preferred;
-    const t2        = (this.cfg.leaseTime * 0.8) >>> 0;
+    if (ip6bytes) {
+      const preferred = (this.cfg.leaseTime * 0.5) >>> 0;
+      const valid     = this.cfg.leaseTime >>> 0;
+      const t1        = preferred;
+      const t2        = (this.cfg.leaseTime * 0.8) >>> 0;
 
-    // IAID: use first 4 bytes of client DUID (or 1 as fallback)
-    const iaid = clientDUID.length >= 4
-      ? (((clientDUID[0] << 24) | (clientDUID[1] << 16) | (clientDUID[2] << 8) | clientDUID[3]) >>> 0)
-      : 1;
+      // IAID: echo the IAID from the client's IA_NA option (RFC 3315 §18.2)
+      const reqIaNABytes = req.getOption(DHCPv6Packet.OPT_IA_NA);
+      const iaid = (reqIaNABytes && reqIaNABytes.length >= 4)
+        ? (((reqIaNABytes[0] << 24) | (reqIaNABytes[1] << 16) | (reqIaNABytes[2] << 8) | reqIaNABytes[3]) >>> 0)
+        : 1;
 
-    const iaAddrData   = DHCPv6Packet.buildIAAddr(ip6bytes, preferred, valid);
-    const iaAddrOption = DHCPv6Packet.encodeOption(DHCPv6Packet.OPT_IAADDR, iaAddrData);
-    const iaNAData     = DHCPv6Packet.buildIA_NA(iaid, t1, t2, iaAddrOption);
-    reply.setOption(DHCPv6Packet.OPT_IA_NA, iaNAData);
+      const iaAddrData   = DHCPv6Packet.buildIAAddr(ip6bytes, preferred, valid);
+      const iaAddrOption = DHCPv6Packet.encodeOption(DHCPv6Packet.OPT_IAADDR, iaAddrData);
+      const iaNAData     = DHCPv6Packet.buildIA_NA(iaid, t1, t2, iaAddrOption);
+      reply.setOption(DHCPv6Packet.OPT_IA_NA, iaNAData);
+    }
+
+    if (pdInfo) {
+      const preferred = (this._pdLeaseTime * 0.5) >>> 0;
+      const valid     = this._pdLeaseTime >>> 0;
+      const t1        = preferred;
+      const t2        = (this._pdLeaseTime * 0.8) >>> 0;
+
+      const reqIaPDBytes = req.getOption(DHCPv6Packet.OPT_IA_PD);
+      const pdIaid = (reqIaPDBytes && reqIaPDBytes.length >= 4)
+        ? (((reqIaPDBytes[0] << 24) | (reqIaPDBytes[1] << 16) | (reqIaPDBytes[2] << 8) | reqIaPDBytes[3]) >>> 0)
+        : 1;
+
+      const iaPrefixData   = DHCPv6Packet.buildIAPrefix(preferred, valid, pdInfo.prefixLen, pdInfo.prefix16bytes);
+      const iaPrefixOption = DHCPv6Packet.encodeOption(DHCPv6Packet.OPT_IAPREFIX, iaPrefixData);
+      const iaPDData       = DHCPv6Packet.buildIA_PD(pdIaid, t1, t2, iaPrefixOption);
+      reply.setOption(DHCPv6Packet.OPT_IA_PD, iaPDData);
+    }
 
     if (this.cfg.dns.length > 0) {
       const dnsBytes = new Uint8Array(this.cfg.dns.length * 16);
@@ -712,6 +932,168 @@ export class DHCPv6ServerApp extends GenericProcess {
     }
   }
 
+  // ---- PD lease management ----
+
+  /**
+   * @param {string} duidKey
+   * @returns {{ prefix16bytes: Uint8Array, prefixLen: number, index: number, expiresAt: number }|null}
+   */
+  _pdAllocOrReuse(duidKey) {
+    const existing = this._pdLeases.get(duidKey);
+    if (existing && existing.expiresAt > Date.now()) return existing;
+
+    if (!this._pdPool) return null;
+    const poolBytes = maskPrefix(this._pdPool.toUInt8(), this._pdPoolLength);
+    const subnetBits = this._pdDelegatedLength - this._pdPoolLength;
+    if (subnetBits <= 0 || subnetBits > 24) return null;
+    const maxSlots = 1 << subnetBits;
+
+    for (let tries = 0; tries < maxSlots; tries++) {
+      const index = this._pdNextIndex % maxSlots;
+      this._pdNextIndex = (this._pdNextIndex + 1) % maxSlots;
+      if (this._pdAllocated.has(index)) continue;
+
+      const prefix16bytes = this._buildDelegatedPrefix(poolBytes, this._pdPoolLength, this._pdDelegatedLength, index);
+      this._pdAllocated.add(index);
+      const lease = { prefix16bytes, prefixLen: this._pdDelegatedLength, index, expiresAt: Date.now() + 60_000 };
+      this._pdLeases.set(duidKey, lease);
+      return lease;
+    }
+    return null;
+  }
+
+  /** @param {string} duidKey */
+  _pdCommitLease(duidKey) {
+    const prev = this._pdLeases.get(duidKey);
+    if (!prev) {
+      const lease = this._pdAllocOrReuse(duidKey);
+      if (lease) { lease.expiresAt = Date.now() + this._pdLeaseTime * 1000; return lease; }
+      return null;
+    }
+    prev.expiresAt = Date.now() + this._pdLeaseTime * 1000;
+    return prev;
+  }
+
+  /**
+   * Build a delegated prefix by writing `index` into bits [poolPrefixLen..delegatedPrefixLen-1]
+   * of the masked pool prefix.
+   * @param {Uint8Array} poolBytes  masked 16-byte pool prefix
+   * @param {number} poolPrefixLen
+   * @param {number} delegatedPrefixLen
+   * @param {number} index
+   * @returns {Uint8Array}
+   */
+  _buildDelegatedPrefix(poolBytes, poolPrefixLen, delegatedPrefixLen, index) {
+    const result = new Uint8Array(poolBytes);
+    const subnetBits = delegatedPrefixLen - poolPrefixLen;
+    for (let i = 0; i < subnetBits; i++) {
+      const bitPos  = poolPrefixLen + i;
+      const byteIdx = bitPos >> 3;
+      const shift   = 7 - (bitPos & 7);
+      const bitVal  = (index >> (subnetBits - 1 - i)) & 1;
+      if (bitVal) { result[byteIdx] |=  (1 << shift); }
+      else        { result[byteIdx] &= ~(1 << shift); }
+    }
+    return result;
+  }
+
+  _pdCleanupExpired() {
+    const now = Date.now();
+    for (const [duid, lease] of this._pdLeases.entries()) {
+      if (lease.expiresAt <= now) {
+        this._pdAllocated.delete(lease.index);
+        this._pdLeases.delete(duid);
+      }
+    }
+  }
+
+  // ---- PD config UI ----
+
+  _writePdStateToUI() {
+    if (this.pdEnabledEl)  this.pdEnabledEl.checked  = this._pdEnabled;
+    if (this.pdPoolEl)     this.pdPoolEl.value        = this._pdPool?.toString() ?? "2001:db8:100::";
+    if (this.pdPoolLenEl)  this.pdPoolLenEl.value     = String(this._pdPoolLength);
+    if (this.pdDelegLenEl) this.pdDelegLenEl.value    = String(this._pdDelegatedLength);
+    if (this.pdLeaseTimeEl) this.pdLeaseTimeEl.value  = String(this._pdLeaseTime);
+  }
+
+  _savePdConfig() {
+    try {
+      const enabled = this.pdEnabledEl?.checked ?? false;
+      const poolStr = (this.pdPoolEl?.value ?? "").trim();
+      const pool = parseIPv6(poolStr);
+      const pl = Number((this.pdPoolLenEl?.value ?? "48").trim());
+      if (!Number.isInteger(pl) || pl < 1 || pl > 64) throw new Error("Pool prefix length must be 1..64");
+      const dl = Number((this.pdDelegLenEl?.value ?? "56").trim());
+      if (!Number.isInteger(dl) || dl <= pl || dl > 128) throw new Error("Delegated length must be > pool length and ≤ 128");
+      const lt = Number((this.pdLeaseTimeEl?.value ?? "3600").trim());
+      if (!Number.isFinite(lt) || lt <= 0) throw new Error("Lease time must be > 0");
+
+      this._pdEnabled         = enabled;
+      this._pdPool            = pool;
+      this._pdPoolLength      = pl;
+      this._pdDelegatedLength = dl;
+      this._pdLeaseTime       = Math.floor(lt);
+
+      // Persist alongside main config
+      try {
+        const txt = this.os.fs.readFile(this.confPath);
+        if (txt?.trim()) {
+          const o = JSON.parse(txt);
+          o.pdEnabled = this._pdEnabled;
+          o.pdPool    = this._pdPool.toString();
+          o.pdPoolLength = this._pdPoolLength;
+          o.pdDelegatedLength = this._pdDelegatedLength;
+          o.pdLeaseTime = this._pdLeaseTime;
+          this.os.fs.writeFile(this.confPath, JSON.stringify(o, null, 2) + "\n");
+        }
+      } catch {}
+
+      this._appendLog(`[${nowStamp()}] DHCPv6-PD: config saved (enabled=${enabled}, pool=${pool}/${pl}, delegated=/${dl})`);
+    } catch (e) {
+      this._appendLog(`[${nowStamp()}] DHCPv6-PD: config error: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
+  _renderPdLeases() {
+    if (!this.pdLeasesBody) return;
+    this._pdCleanupExpired();
+    const now = Date.now();
+
+    /** @type {HTMLElement[]} */
+    const rows = [];
+    for (const [duid, lease] of this._pdLeases.entries()) {
+      const prefix = IPAddress.fromUInt8(lease.prefix16bytes)?.toString() ?? "?";
+      const sec = Math.max(0, Math.round((lease.expiresAt - now) / 1000));
+      const min = Math.floor(sec / 60);
+      const exp = min > 0 ? `${min}m ${sec % 60}s` : `${sec}s`;
+
+      const tr = document.createElement("tr");
+      const tdDuid = document.createElement("td");
+      tdDuid.textContent = "…" + duid.slice(-12);
+      tdDuid.title = duid;
+      const tdPrefix = document.createElement("td");
+      tdPrefix.textContent = `${prefix}/${lease.prefixLen}`;
+      const tdExp = document.createElement("td");
+      tdExp.textContent = exp;
+      tr.append(tdDuid, tdPrefix, tdExp);
+      rows.push(tr);
+    }
+
+    if (rows.length === 0) {
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = 3;
+      td.textContent = t("app.dhcpv6server.pd.leases.empty");
+      td.style.textAlign = "center";
+      td.style.color = "var(--color-text-muted, #888)";
+      tr.appendChild(td);
+      rows.push(tr);
+    }
+
+    this.pdLeasesBody.replaceChildren(...rows);
+  }
+
   // ---- UI helpers ----
 
   _syncButtons() {
@@ -722,8 +1104,12 @@ export class DHCPv6ServerApp extends GenericProcess {
     if (this.prefixLenEl) this.prefixLenEl.disabled = dis;
     if (this.dnsEl)       this.dnsEl.disabled       = dis;
     if (this.leaseTimeEl) this.leaseTimeEl.disabled = dis;
-    if (this.saveBtn)     this.saveBtn.disabled     = dis;
-    if (this.loadBtn)     this.loadBtn.disabled     = dis;
+    if (this.saveBtn)      this.saveBtn.disabled      = dis;
+    if (this.loadBtn)      this.loadBtn.disabled      = dis;
+    if (this.pdPoolEl)     this.pdPoolEl.disabled     = dis;
+    if (this.pdPoolLenEl)  this.pdPoolLenEl.disabled  = dis;
+    if (this.pdDelegLenEl) this.pdDelegLenEl.disabled = dis;
+    if (this.pdLeaseTimeEl) this.pdLeaseTimeEl.disabled = dis;
   }
 
   _renderLog() {
@@ -738,6 +1124,50 @@ export class DHCPv6ServerApp extends GenericProcess {
   _appendLog(line) {
     this.log.push(line);
     if (this.log.length > 4000) this.log.splice(0, this.log.length - 4000);
-    if (this.mounted) this._renderLog();
+    if (this.mounted) {
+      this._renderLog();
+      if (this.leasesPane && this.leasesPane.style.display !== "none") this._renderLeases();
+      if (this.pdPane     && this.pdPane.style.display     !== "none") this._renderPdLeases();
+    }
+  }
+
+  _renderLeases() {
+    if (!this.leasesBody) return;
+    this._cleanupExpiredLeases();
+    const now = Date.now();
+
+    /** @type {HTMLElement[]} */
+    const rows = [];
+    for (const [duid, lease] of this._leases.entries()) {
+      const ip  = IPAddress.fromUInt8(lease.ip6bytes)?.toString() ?? "?";
+      const sec = Math.max(0, Math.round((lease.expiresAt - now) / 1000));
+      const min = Math.floor(sec / 60);
+      const rem = sec % 60;
+      const exp = min > 0 ? `${min}m ${rem}s` : `${sec}s`;
+
+      const tr = document.createElement("tr");
+      const tdDuid = document.createElement("td");
+      tdDuid.textContent = "…" + duid.slice(-12);
+      tdDuid.title = duid;
+      const tdIp  = document.createElement("td");
+      tdIp.textContent  = ip;
+      const tdExp = document.createElement("td");
+      tdExp.textContent = exp;
+      tr.append(tdDuid, tdIp, tdExp);
+      rows.push(tr);
+    }
+
+    if (rows.length === 0) {
+      const tr  = document.createElement("tr");
+      const td  = document.createElement("td");
+      td.colSpan = 3;
+      td.textContent  = t("app.dhcpv6server.leases.empty");
+      td.style.textAlign = "center";
+      td.style.color = "var(--color-text-muted, #888)";
+      tr.appendChild(td);
+      rows.push(tr);
+    }
+
+    this.leasesBody.replaceChildren(...rows);
   }
 }

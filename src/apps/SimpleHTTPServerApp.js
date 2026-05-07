@@ -207,7 +207,7 @@ export class SimpleHTTPServerApp extends GenericProcess {
 
   /** @type {HTMLButtonElement|null} */
   stopBtn = null;
-
+  icon = "fa-server";
   badge = "HTTP";
 
   run() {
