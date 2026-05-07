@@ -1,5 +1,7 @@
 //@ts-check
 
+import { read16BE, read32BE, write16BE, write32BE } from "../util/byteUtils.js";
+
 /**
  * @typedef {{ code: number, data: Uint8Array }} DHCPv6Option
  */
@@ -109,8 +111,8 @@ export class DHCPv6Packet {
     const options = [];
     let off = 4;
     while (off + 4 <= bytes.length) {
-      const code = (bytes[off] << 8) | bytes[off + 1];
-      const len  = (bytes[off + 2] << 8) | bytes[off + 3];
+      const code = read16BE(bytes, off);
+      const len  = read16BE(bytes, off + 2);
       off += 4;
       if (off + len > bytes.length) throw new Error(`DHCPv6 option ${code} truncated`);
       options.push({ code, data: bytes.slice(off, off + len) });
@@ -136,10 +138,8 @@ export class DHCPv6Packet {
     for (const opt of this.options) {
       const data = opt.data;
       const optHdr = new Uint8Array(4);
-      optHdr[0] = (opt.code >>> 8) & 0xff;
-      optHdr[1] = opt.code & 0xff;
-      optHdr[2] = (data.length >>> 8) & 0xff;
-      optHdr[3] = data.length & 0xff;
+      write16BE(optHdr, 0, opt.code);
+      write16BE(optHdr, 2, data.length);
       parts.push(optHdr);
       parts.push(data);
     }
@@ -157,10 +157,8 @@ export class DHCPv6Packet {
    */
   static encodeOption(code, data) {
     const out = new Uint8Array(4 + data.length);
-    out[0] = (code >>> 8) & 0xff;
-    out[1] = code & 0xff;
-    out[2] = (data.length >>> 8) & 0xff;
-    out[3] = data.length & 0xff;
+    write16BE(out, 0, code);
+    write16BE(out, 2, data.length);
     out.set(data, 4);
     return out;
   }
@@ -175,9 +173,9 @@ export class DHCPv6Packet {
    */
   static buildIA_NA(iaid, t1, t2, iaOptions) {
     const out = new Uint8Array(12 + iaOptions.length);
-    _writeU32(out, 0, iaid);
-    _writeU32(out, 4, t1);
-    _writeU32(out, 8, t2);
+    write32BE(out, 0, iaid);
+    write32BE(out, 4, t1);
+    write32BE(out, 8, t2);
     out.set(iaOptions, 12);
     return out;
   }
@@ -190,9 +188,9 @@ export class DHCPv6Packet {
   static parseIA_NA(data) {
     if (data.length < 12) throw new Error("IA_NA too short");
     return {
-      iaid:      _readU32(data, 0),
-      t1:        _readU32(data, 4),
-      t2:        _readU32(data, 8),
+      iaid:      read32BE(data, 0),
+      t1:        read32BE(data, 4),
+      t2:        read32BE(data, 8),
       iaOptions: data.slice(12),
     };
   }
@@ -207,9 +205,9 @@ export class DHCPv6Packet {
    */
   static buildIA_PD(iaid, t1, t2, iaOptions) {
     const out = new Uint8Array(12 + iaOptions.length);
-    _writeU32(out, 0, iaid);
-    _writeU32(out, 4, t1);
-    _writeU32(out, 8, t2);
+    write32BE(out, 0, iaid);
+    write32BE(out, 4, t1);
+    write32BE(out, 8, t2);
     out.set(iaOptions, 12);
     return out;
   }
@@ -222,9 +220,9 @@ export class DHCPv6Packet {
   static parseIA_PD(data) {
     if (data.length < 12) throw new Error("IA_PD too short");
     return {
-      iaid:      _readU32(data, 0),
-      t1:        _readU32(data, 4),
-      t2:        _readU32(data, 8),
+      iaid:      read32BE(data, 0),
+      t1:        read32BE(data, 4),
+      t2:        read32BE(data, 8),
       iaOptions: data.slice(12),
     };
   }
@@ -240,8 +238,8 @@ export class DHCPv6Packet {
   static buildIAPrefix(preferred, valid, prefixLength, prefix16bytes) {
     if (prefix16bytes.length !== 16) throw new Error("prefix16bytes must be 16 bytes");
     const out = new Uint8Array(25);
-    _writeU32(out, 0, preferred);
-    _writeU32(out, 4, valid);
+    write32BE(out, 0, preferred);
+    write32BE(out, 4, valid);
     out[8] = prefixLength & 0xff;
     out.set(prefix16bytes, 9);
     return out;
@@ -255,8 +253,8 @@ export class DHCPv6Packet {
   static parseIAPrefix(data) {
     if (data.length < 25) throw new Error("IAPREFIX too short");
     return {
-      preferred:     _readU32(data, 0),
-      valid:         _readU32(data, 4),
+      preferred:     read32BE(data, 0),
+      valid:         read32BE(data, 4),
       prefixLength:  data[8],
       prefix16bytes: data.slice(9, 25),
     };
@@ -273,8 +271,8 @@ export class DHCPv6Packet {
     if (ip6bytes.length !== 16) throw new Error("ip6bytes must be 16 bytes");
     const out = new Uint8Array(24);
     out.set(ip6bytes, 0);
-    _writeU32(out, 16, preferred);
-    _writeU32(out, 20, valid);
+    write32BE(out, 16, preferred);
+    write32BE(out, 20, valid);
     return out;
   }
 
@@ -314,26 +312,3 @@ function _concat(parts) {
   return out;
 }
 
-/**
- * Write big-endian u32 into buf at offset.
- * @param {Uint8Array} buf
- * @param {number} off
- * @param {number} val
- */
-function _writeU32(buf, off, val) {
-  const v = val >>> 0;
-  buf[off]     = (v >>> 24) & 0xff;
-  buf[off + 1] = (v >>> 16) & 0xff;
-  buf[off + 2] = (v >>> 8) & 0xff;
-  buf[off + 3] = v & 0xff;
-}
-
-/**
- * Read big-endian u32 from buf at offset.
- * @param {Uint8Array} buf
- * @param {number} off
- * @returns {number}
- */
-function _readU32(buf, off) {
-  return ((buf[off] << 24) | (buf[off + 1] << 16) | (buf[off + 2] << 8) | buf[off + 3]) >>> 0;
-}

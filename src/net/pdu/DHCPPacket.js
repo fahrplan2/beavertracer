@@ -1,6 +1,7 @@
 //@ts-check
 
 import { assertLenU8 } from "../../lib/helpers.js";
+import { read16BE, read32BE, write16BE, write32BE } from "../util/byteUtils.js";
 
 /**
  * @typedef {Object} DHCPOption
@@ -192,11 +193,9 @@ export class DHCPPacket {
     const hlen = bytes[2];
     const hops = bytes[3];
 
-    const xid =
-      ((bytes[4] << 24) | (bytes[5] << 16) | (bytes[6] << 8) | bytes[7]) >>> 0;
-
-    const secs = (bytes[8] << 8) | bytes[9];
-    const flags = (bytes[10] << 8) | bytes[11];
+    const xid   = read32BE(bytes, 4);
+    const secs  = read16BE(bytes, 8);
+    const flags = read16BE(bytes, 10);
 
     const ciaddr = bytes.slice(12, 16);
     const yiaddr = bytes.slice(16, 20);
@@ -263,16 +262,9 @@ export class DHCPPacket {
     fixed[2] = this.hlen & 0xff;
     fixed[3] = this.hops & 0xff;
 
-    fixed[4] = (this.xid >>> 24) & 0xff;
-    fixed[5] = (this.xid >>> 16) & 0xff;
-    fixed[6] = (this.xid >>> 8) & 0xff;
-    fixed[7] = this.xid & 0xff;
-
-    fixed[8] = (this.secs >> 8) & 0xff;
-    fixed[9] = this.secs & 0xff;
-
-    fixed[10] = (this.flags >> 8) & 0xff;
-    fixed[11] = this.flags & 0xff;
+    write32BE(fixed, 4, this.xid);
+    write16BE(fixed, 8, this.secs);
+    write16BE(fixed, 10, this.flags);
 
     fixed.set(this.ciaddr, 12);
     fixed.set(this.yiaddr, 16);

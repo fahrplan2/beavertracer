@@ -1,6 +1,8 @@
 //@ts-check
 // RIPv2 PDU — RFC 2453
 
+import { read16BE, read32BE, write16BE, write32BE } from "../util/byteUtils.js";
+
 export const RIP_CMD_REQUEST  = 1;
 export const RIP_CMD_RESPONSE = 2;
 export const RIP_VERSION      = 2;
@@ -45,18 +47,13 @@ export class RIPPacket {
         buf[1] = this.version;
         let off = 4;
         for (const e of this.entries) {
-            buf[off    ] = (e.afi  >> 8) & 0xff;
-            buf[off + 1] =  e.afi        & 0xff;
-            buf[off + 2] = (e.tag  >> 8) & 0xff;
-            buf[off + 3] =  e.tag        & 0xff;
+            write16BE(buf, off,     e.afi);
+            write16BE(buf, off + 2, e.tag);
             buf.set(e.ip,      off +  4);
             buf.set(e.mask,    off +  8);
             buf.set(e.nexthop, off + 12);
             const m = e.metric >>> 0;
-            buf[off + 16] = (m >>> 24) & 0xff;
-            buf[off + 17] = (m >>> 16) & 0xff;
-            buf[off + 18] = (m >>>  8) & 0xff;
-            buf[off + 19] =  m         & 0xff;
+            write32BE(buf, off + 16, m);
             off += 20;
         }
         return buf;
@@ -72,15 +69,12 @@ export class RIPPacket {
         const entries = [];
         let off = 4;
         while (off + 20 <= data.length) {
-            const afi    = (data[off] << 8) | data[off + 1];
-            const tag    = (data[off + 2] << 8) | data[off + 3];
+            const afi    = read16BE(data, off);
+            const tag    = read16BE(data, off + 2);
             const ip      = data.slice(off +  4, off +  8);
             const mask    = data.slice(off +  8, off + 12);
             const nexthop = data.slice(off + 12, off + 16);
-            const metric  = (
-                (data[off + 16] << 24) | (data[off + 17] << 16) |
-                (data[off + 18] <<  8) |  data[off + 19]
-            ) >>> 0;
+            const metric  = read32BE(data, off + 16);
             entries.push(new RIPEntry({ afi, tag, ip, mask, nexthop, metric }));
             off += 20;
         }

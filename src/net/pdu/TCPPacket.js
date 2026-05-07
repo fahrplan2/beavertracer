@@ -1,5 +1,8 @@
 //@ts-check
 
+import { computeIPv4PseudoChecksum } from "../util/checksumUtils.js";
+import { read16BE, read32BE, write16BE, write32BE } from "../util/byteUtils.js";
+
 export class TCPPacket {
 
   srcPort;
@@ -106,16 +109,10 @@ export class TCPPacket {
       throw new Error("TCP header needs at least 20 bytes");
     }
 
-    const srcPort = (bytes[0] << 8) | bytes[1];
-    const dstPort = (bytes[2] << 8) | bytes[3];
-
-    const seq = (
-      (bytes[4] << 24) | (bytes[5] << 16) | (bytes[6] << 8) | bytes[7]
-    ) >>> 0;
-
-    const ack = (
-      (bytes[8] << 24) | (bytes[9] << 16) | (bytes[10] << 8) | bytes[11]
-    ) >>> 0;
+    const srcPort = read16BE(bytes, 0);
+    const dstPort = read16BE(bytes, 2);
+    const seq     = read32BE(bytes, 4);
+    const ack     = read32BE(bytes, 8);
 
     const dataOffset = (bytes[12] >> 4) & 0x0f;
     const headerLen = dataOffset * 4;
@@ -124,9 +121,9 @@ export class TCPPacket {
     if (bytes.length < headerLen) throw new Error("Not enough bytes for full TCP header");
 
     const flags = bytes[13];
-    const window = (bytes[14] << 8) | bytes[15];
-    const checksum = (bytes[16] << 8) | bytes[17];
-    const urgentPointer = (bytes[18] << 8) | bytes[19];
+    const window        = read16BE(bytes, 14);
+    const checksum      = read16BE(bytes, 16);
+    const urgentPointer = read16BE(bytes, 18);
 
     const options = headerLen > 20 ? bytes.slice(20, headerLen) : new Uint8Array(0);
     const payload = bytes.slice(headerLen);
@@ -172,22 +169,12 @@ export class TCPPacket {
     const seg = new Uint8Array(headerLen + this.payload.length);
 
     // ports
-    seg[0] = (this.srcPort >> 8) & 0xff;
-    seg[1] = this.srcPort & 0xff;
-    seg[2] = (this.dstPort >> 8) & 0xff;
-    seg[3] = this.dstPort & 0xff;
+    write16BE(seg, 0, this.srcPort);
+    write16BE(seg, 2, this.dstPort);
 
-    // seq
-    seg[4] = (this.seq >>> 24) & 0xff;
-    seg[5] = (this.seq >>> 16) & 0xff;
-    seg[6] = (this.seq >>> 8) & 0xff;
-    seg[7] = this.seq & 0xff;
-
-    // ack
-    seg[8]  = (this.ack >>> 24) & 0xff;
-    seg[9]  = (this.ack >>> 16) & 0xff;
-    seg[10] = (this.ack >>> 8) & 0xff;
-    seg[11] = this.ack & 0xff;
+    // seq / ack
+    write32BE(seg, 4, this.seq);
+    write32BE(seg, 8, this.ack);
 
     // dataOffset + reserved(0)
     seg[12] = (this.dataOffset & 0x0f) << 4;
@@ -196,16 +183,14 @@ export class TCPPacket {
     seg[13] = this.flags & 0xff;
 
     // window
-    seg[14] = (this.window >> 8) & 0xff;
-    seg[15] = this.window & 0xff;
+    write16BE(seg, 14, this.window);
 
     // checksum placeholder
     seg[16] = 0;
     seg[17] = 0;
 
     // urgent pointer
-    seg[18] = (this.urgentPointer >> 8) & 0xff;
-    seg[19] = this.urgentPointer & 0xff;
+    write16BE(seg, 18, this.urgentPointer);
 
     // options + padding
     if (tcpOpts.length > 0) seg.set(tcpOpts, 20);
@@ -229,67 +214,19 @@ export class TCPPacket {
       }
     }
 
-    seg[16] = (cs >> 8) & 0xff;
-    seg[17] = cs & 0xff;
+    write16BE(seg, 16, cs);
 
     return seg;
   }
 
   /**
-   * Compute TCP checksum using IPv4 pseudo-header.
-   *
-   * Pseudo-header:
-   *  src(4) + dst(4) + zero(1) + protocol(1=6) + tcpLength(2)
-   *
    * @param {Uint8Array} tcpSegment (with checksum bytes set to 0)
    * @param {Uint8Array} srcIp length 4
    * @param {Uint8Array} dstIp length 4
    * @returns {number}
    */
   static computeChecksumIPv4Pseudo(tcpSegment, srcIp, dstIp) {
-    if (!(tcpSegment instanceof Uint8Array)) throw new Error("tcpSegment must be Uint8Array");
-    if (!(srcIp instanceof Uint8Array) || srcIp.length !== 4) throw new Error("srcIp must be Uint8Array(4)");
-    if (!(dstIp instanceof Uint8Array) || dstIp.length !== 4) throw new Error("dstIp must be Uint8Array(4)");
-
-    const tcpLen = tcpSegment.length;
-
-    const pseudo = new Uint8Array(12);
-    pseudo.set(srcIp, 0);
-    pseudo.set(dstIp, 4);
-    pseudo[8] = 0;
-    pseudo[9] = 6; // TCP
-    pseudo[10] = (tcpLen >> 8) & 0xff;
-    pseudo[11] = tcpLen & 0xff;
-
-    return TCPPacket._onesComplementChecksum([pseudo, tcpSegment]);
-  }
-
-  /**
-   * One's complement checksum over multiple buffers (pads to even length).
-   *
-   * @param {Uint8Array[]} bufs
-   * @returns {number}
-   */
-  static _onesComplementChecksum(bufs) {
-    let sum = 0;
-
-    for (const b of bufs) {
-      if (!(b instanceof Uint8Array)) throw new Error("checksum buffers must be Uint8Array");
-
-      let i = 0;
-      for (; i + 1 < b.length; i += 2) {
-        const word = (b[i] << 8) | b[i + 1];
-        sum += word;
-        sum = (sum & 0xffff) + (sum >>> 16);
-      }
-      if (i < b.length) {
-        const word = (b[i] << 8);
-        sum += word;
-        sum = (sum & 0xffff) + (sum >>> 16);
-      }
-    }
-
-    return (~sum) & 0xffff;
+    return computeIPv4PseudoChecksum(tcpSegment, srcIp, dstIp, 6);
   }
 
   _validate() {

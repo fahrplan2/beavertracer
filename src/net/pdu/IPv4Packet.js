@@ -2,6 +2,8 @@
 
 import { assertLenU8 } from "../../lib/helpers.js";
 import { IPAddress } from "../models/IPAddress.js";
+import { onesComplementChecksum } from "../util/checksumUtils.js";
+import { read16BE, write16BE } from "../util/byteUtils.js";
 
 export class IPv4Packet {
 
@@ -100,7 +102,7 @@ export class IPv4Packet {
     const dscp = (tos >> 2) & 0x3f;
     const ecn  = tos & 0x03;
 
-    const totalLength = (bytes[2] << 8) | bytes[3];
+    const totalLength = read16BE(bytes, 2);
     if (totalLength < headerLen) {
       throw new Error("Invalid totalLength (< header length)");
     }
@@ -108,15 +110,14 @@ export class IPv4Packet {
       throw new Error("IPv4 packet truncated (payload incomplete)");
     }
 
-    const identification = (bytes[4] << 8) | bytes[5];
-
-    const flagsFrag = (bytes[6] << 8) | bytes[7];
+    const identification = read16BE(bytes, 4);
+    const flagsFrag      = read16BE(bytes, 6);
     const flags = (flagsFrag >> 13) & 0x07;
     const fragmentOffset = flagsFrag & 0x1fff;
 
     const ttl = bytes[8];
     const protocol = bytes[9];
-    const headerChecksum = (bytes[10] << 8) | bytes[11];
+    const headerChecksum = read16BE(bytes, 10);
 
     const src = IPAddress.fromUInt8(bytes.slice(12, 16));
     const dst = IPAddress.fromUInt8(bytes.slice(16, 20));
@@ -173,15 +174,11 @@ export class IPv4Packet {
     header[0] = ((this.version & 0x0f) << 4) | (this.ihl & 0x0f);
     header[1] = ((this.dscp & 0x3f) << 2) | (this.ecn & 0x03);
 
-    header[2] = (this.totalLength >> 8) & 0xff;
-    header[3] = this.totalLength & 0xff;
-
-    header[4] = (this.identification >> 8) & 0xff;
-    header[5] = this.identification & 0xff;
+    write16BE(header, 2, this.totalLength);
+    write16BE(header, 4, this.identification);
 
     const flagsFrag = ((this.flags & 0x07) << 13) | (this.fragmentOffset & 0x1fff);
-    header[6] = (flagsFrag >> 8) & 0xff;
-    header[7] = flagsFrag & 0xff;
+    write16BE(header, 6, flagsFrag);
 
     header[8] = this.ttl & 0xff;
     header[9] = this.protocol & 0xff;
@@ -200,8 +197,7 @@ export class IPv4Packet {
       ? IPv4Packet.computeHeaderChecksum(header)
       : (this.headerChecksum & 0xffff);
 
-    header[10] = (checksum >> 8) & 0xff;
-    header[11] = checksum & 0xff;
+    write16BE(header, 10, checksum);
 
     const packet = new Uint8Array(header.length + this.payload.length);
     packet.set(header, 0);
@@ -223,14 +219,7 @@ export class IPv4Packet {
     if (headerBytes.length < 20 || (headerBytes.length % 4) !== 0) {
       throw new Error("headerBytes must be >= 20 and multiple of 4");
     }
-
-    let sum = 0;
-    for (let i = 0; i < headerBytes.length; i += 2) {
-      const word = (headerBytes[i] << 8) | headerBytes[i + 1];
-      sum += word;
-      sum = (sum & 0xffff) + (sum >>> 16);
-    }
-    return (~sum) & 0xffff;
+    return onesComplementChecksum([headerBytes]);
   }
 
   _validate() {

@@ -1,6 +1,7 @@
 //@ts-check
 
 import { assertU8, assertLenU8 } from "../../lib/helpers.js";
+import { read16BE, write16BE } from "../util/byteUtils.js";
 
 export class ArpPacket {
   
@@ -46,17 +47,13 @@ export class ArpPacket {
   pack() {
     const out = new Uint8Array(8 + 2 * this.hlen + 2 * this.plen);
 
-    out[0] = (this.htype >> 8) & 0xff;
-    out[1] = this.htype & 0xff;
-
-    out[2] = (this.ptype >> 8) & 0xff;
-    out[3] = this.ptype & 0xff;
+    write16BE(out, 0, this.htype);
+    write16BE(out, 2, this.ptype);
 
     out[4] = this.hlen & 0xff;
     out[5] = this.plen & 0xff;
 
-    out[6] = (this.oper >> 8) & 0xff;
-    out[7] = this.oper & 0xff;
+    write16BE(out, 6, this.oper);
 
     let o = 8;
     out.set(this.sha, o); o += this.hlen;
@@ -77,11 +74,11 @@ export class ArpPacket {
 
     if (b.length < 8) throw new Error("ARP too short (need at least 8 bytes)");
 
-    const htype = (b[0] << 8) | b[1];
-    const ptype = (b[2] << 8) | b[3];
+    const htype = read16BE(b, 0);
+    const ptype = read16BE(b, 2);
     const hlen  = b[4];
     const plen  = b[5];
-    const oper  = (b[6] << 8) | b[7];
+    const oper  = read16BE(b, 6);
 
     const need = 8 + 2 * hlen + 2 * plen;
     if (b.length < need) throw new Error(`ARP too short (need ${need} bytes, got ${b.length})`);

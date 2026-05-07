@@ -1,5 +1,8 @@
 //@ts-check
 
+import { onesComplementChecksum } from "../util/checksumUtils.js";
+import { read16BE, write16BE } from "../util/byteUtils.js";
+
 export class ICMPPacket {
 
   type;
@@ -61,7 +64,7 @@ export class ICMPPacket {
 
     const type = bytes[0];
     const code = bytes[1];
-    const checksum = (bytes[2] << 8) | bytes[3];
+    const checksum = read16BE(bytes, 2);
 
     // "Rest of header" is 4 bytes (bytes[4..7]) for most ICMP messages.
     // For Echo, it's identifier+sequence.
@@ -70,8 +73,8 @@ export class ICMPPacket {
     let payloadStart = 4;
 
     if (bytes.length >= 8) {
-      identifier = (bytes[4] << 8) | bytes[5];
-      sequence = (bytes[6] << 8) | bytes[7];
+      identifier = read16BE(bytes, 4);
+      sequence   = read16BE(bytes, 6);
       payloadStart = 8;
     }
 
@@ -106,11 +109,8 @@ export class ICMPPacket {
     out[2] = 0;
     out[3] = 0;
 
-    out[4] = (this.identifier >> 8) & 0xff;
-    out[5] = this.identifier & 0xff;
-
-    out[6] = (this.sequence >> 8) & 0xff;
-    out[7] = this.sequence & 0xff;
+    write16BE(out, 4, this.identifier);
+    write16BE(out, 6, this.sequence);
 
     out.set(this.payload, headerLen);
 
@@ -118,42 +118,17 @@ export class ICMPPacket {
       ? ICMPPacket.computeChecksum(out)
       : (this.checksum & 0xffff);
 
-    out[2] = (cs >> 8) & 0xff;
-    out[3] = cs & 0xff;
+    write16BE(out, 2, cs);
 
     return out;
   }
 
   /**
-   * ICMP checksum: one's complement of one's complement sum over entire message.
-   * Pads with one zero byte if length is odd.
-   *
    * @param {Uint8Array} bytes
    * @returns {number}
    */
   static computeChecksum(bytes) {
-    if (!(bytes instanceof Uint8Array)) {
-      throw new Error("computeChecksum expects Uint8Array");
-    }
-
-    let sum = 0;
-    let i = 0;
-
-    // sum 16-bit words
-    for (; i + 1 < bytes.length; i += 2) {
-      const word = (bytes[i] << 8) | bytes[i + 1];
-      sum += word;
-      sum = (sum & 0xffff) + (sum >>> 16); // fold carry
-    }
-
-    // odd trailing byte
-    if (i < bytes.length) {
-      const word = (bytes[i] << 8);
-      sum += word;
-      sum = (sum & 0xffff) + (sum >>> 16);
-    }
-
-    return (~sum) & 0xffff;
+    return onesComplementChecksum([bytes]);
   }
 
   _validate() {
