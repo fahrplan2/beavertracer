@@ -100,7 +100,13 @@ export class IPStack extends Observable {
         });
 
         this.udp = new UdpEngine({
-            ipSend: (opts) => { this.send(opts); },
+            ipSend: (opts) => {
+                if (opts.dst?.isV4?.()) {
+                    this.send(opts);
+                } else {
+                    this.send6({ dst: opts.dst, src: opts.src, nextHeader: opts.protocol, payload: opts.payload });
+                }
+            },
             sendIcmpError: (original, type, code) => { this._sendICMPError(original, type, code); },
             resolveSrcIp: (dstIp) => {
                 if (dstIp.isV4()) {
@@ -878,8 +884,17 @@ export class IPStack extends Observable {
             }
         }
 
-        // IPv6 multicast (ff00::/8) — accept (pass recvIfIndex so RS handler knows which interface)
+        // IPv6 multicast (ff00::/8)
         if (dst.toUInt8()[0] === 0xff) {
+            if (internal) {
+                // Locally generated multicast: send on all interfaces using 33:33:xx:xx:xx:xx MAC
+                const dstBytes = dst.toUInt8();
+                const mac = new Uint8Array([0x33, 0x33, dstBytes[12], dstBytes[13], dstBytes[14], dstBytes[15]]);
+                for (const itf of this.interfaces) {
+                    itf.sendFrame(mac, 0x86DD, packet.pack());
+                }
+            }
+            // Also deliver locally (e.g. for RS/RA handling)
             this.acceptV6(packet, recvIfIndex);
             return;
         }

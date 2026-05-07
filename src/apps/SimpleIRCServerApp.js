@@ -79,7 +79,7 @@ function parseIRC(line) {
 
 export class SimpleIRCServerApp extends GenericProcess {
   get title() { return t("app.ircserver.title"); }
-
+  icon = "fa-server";
   badge = "IRC";
 
   disposer = new Disposer();

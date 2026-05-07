@@ -8,6 +8,7 @@ import { UILib } from "./lib/UILib.js";
 import { assertLenU8 } from "../lib/helpers.js";
 import { simTimer, SimTimer } from "../sim/SimTimer.js";
 import { DHCPPacket } from "../net/pdu/DHCPPacket.js";
+import { DHCPv6Packet } from "../net/pdu/DHCPv6Packet.js";
 import { IPAddress } from "../net/models/IPAddress.js"; // <- ggf. Pfad bei dir: "./models/IPAddress.js" o.ä.
 
 /**
@@ -56,6 +57,11 @@ export class IPv4ConfigApp extends GenericProcess {
   /** @type {HTMLElement|null} */ _ip6StaticFields = null;
   /** @type {HTMLElement|null} */ _gw6El = null;
   /** @type {HTMLElement|null} */ _ip6SlaacStatusEl = null;
+  /** @type {HTMLElement|null} */ _dhcp6StatusEl = null;
+  /** @type {HTMLButtonElement|null} */ _dhcp6ReleaseBtn = null;
+
+  /** @type {Map<number, { clientDUID: Uint8Array, serverDUID: Uint8Array, serverIP: IPAddress, ip6bytes: Uint8Array, prefixLength: number }>} */
+  _dhcp6StateByIface = new Map();
 
   /** @type {Disposer} */
   disposer = new Disposer();
@@ -154,6 +160,7 @@ export class IPv4ConfigApp extends GenericProcess {
         { value: "disabled", label: t("app.ipv4config.ipv6.mode.disabled") },
         { value: "static",   label: t("app.ipv4config.ipv6.mode.static")   },
         { value: "slaac",    label: t("app.ipv4config.ipv6.mode.slaac")    },
+        { value: "dhcp6",    label: t("app.ipv4config.ipv6.mode.dhcp6")    },
       ],
       {}
     ));
@@ -161,13 +168,17 @@ export class IPv4ConfigApp extends GenericProcess {
     const prefix6El = UILib.input({ placeholder: "64" });
     const gw6El = UILib.input({ placeholder: "fe80::1" });
     const ip6SlaacStatusEl = UILib.el("span", { className: "ipv6-slaac-status" });
-    const applyBtn6 = UILib.button(t("app.ipv4config.ipv6.apply"), () => this._applyIPv6(), { primary: true });
-    this._ip6LLEl = ip6LLEl;
-    this._ip6ModeSel = ip6ModeSel;
-    this._ip6El = ip6El;
-    this._prefix6El = prefix6El;
-    this._gw6El = /** @type {HTMLInputElement} */ (gw6El);
+    const dhcp6StatusEl   = UILib.el("span", { className: "ipv6-dhcp6-status" });
+    const applyBtn6       = UILib.button(t("app.ipv4config.ipv6.apply"), () => this._applyIPv6(), { primary: true });
+    const dhcp6ReleaseBtn = /** @type {HTMLButtonElement} */ (UILib.button(t("app.ipv4config.ipv6.dhcp6.release"), () => this._releaseDhcpv6(this._idx()), {}));
+    this._ip6LLEl        = ip6LLEl;
+    this._ip6ModeSel     = ip6ModeSel;
+    this._ip6El          = ip6El;
+    this._prefix6El      = prefix6El;
+    this._gw6El          = /** @type {HTMLInputElement} */ (gw6El);
     this._ip6SlaacStatusEl = ip6SlaacStatusEl;
+    this._dhcp6StatusEl  = dhcp6StatusEl;
+    this._dhcp6ReleaseBtn = dhcp6ReleaseBtn;
 
     const staticFields = UILib.el("div", { children: [
       UILib.row(t("app.ipv4config.ipv6.address"), ip6El),
@@ -182,7 +193,8 @@ export class IPv4ConfigApp extends GenericProcess {
       UILib.row(t("app.ipv4config.ipv6.mode"), ip6ModeSel),
       staticFields,
       UILib.row(t("app.ipv4config.ipv6.status"), ip6SlaacStatusEl),
-      UILib.buttonRow([applyBtn6]),
+      UILib.row(t("app.ipv4config.ipv6.dhcp6.status"), dhcp6StatusEl),
+      UILib.buttonRow([applyBtn6, dhcp6ReleaseBtn]),
     ]});
     this._ipv6Section = ipv6Section;
 
@@ -278,6 +290,8 @@ export class IPv4ConfigApp extends GenericProcess {
     this._ssidInput = null;
     this._ip6LLEl = this._ip6ModeSel = this._ip6El = this._prefix6El = this._gw6El = null;
     this._ip6StaticFields = this._ip6SlaacStatusEl = null;
+    this._dhcp6StatusEl = null;
+    this._dhcp6ReleaseBtn = null;
     super.onUnmount();
   }
 
@@ -342,7 +356,12 @@ export class IPv4ConfigApp extends GenericProcess {
     if (itf.slaac) {
       mode = "slaac";
     } else if (effectiveIp6) {
-      mode = "static";
+      const dhcp6St = this._dhcp6StateByIface.get(i);
+      if (dhcp6St && IPAddress.fromUInt8(dhcp6St.ip6bytes)?.toString() === effectiveIp6.toString()) {
+        mode = "dhcp6";
+      } else {
+        mode = "static";
+      }
     }
 
     if (this._ip6ModeSel) this._ip6ModeSel.value = mode;
@@ -375,18 +394,35 @@ export class IPv4ConfigApp extends GenericProcess {
       this._ip6SlaacStatusEl.textContent = "";
     }
 
+    if (mode === "dhcp6" && this._dhcp6StatusEl) {
+      const dhcp6St = this._dhcp6StateByIface.get(i);
+      if (dhcp6St && effectiveIp6) {
+        this._dhcp6StatusEl.textContent = `${effectiveIp6.toString()}/${dhcp6St.prefixLength}`;
+      } else {
+        this._dhcp6StatusEl.textContent = t("app.ipv4config.ipv6.mode.dhcp6");
+      }
+    } else if (this._dhcp6StatusEl) {
+      this._dhcp6StatusEl.textContent = "";
+    }
+
     this._syncIPv6UI();
   }
 
   _syncIPv6UI() {
-    const mode = this._ip6ModeSel?.value ?? "disabled";
+    const mode     = this._ip6ModeSel?.value ?? "disabled";
     const isStatic = mode === "static";
     const isSlaac  = mode === "slaac";
+    const isDhcp6  = mode === "dhcp6";
 
     if (this._ip6StaticFields) this._ip6StaticFields.style.display = isStatic ? "" : "none";
 
-    const statusRow = this._ip6SlaacStatusEl?.parentElement;
-    if (statusRow) statusRow.style.display = isSlaac ? "" : "none";
+    const slaacRow = this._ip6SlaacStatusEl?.parentElement;
+    if (slaacRow) slaacRow.style.display = isSlaac ? "" : "none";
+
+    const dhcp6Row = this._dhcp6StatusEl?.parentElement;
+    if (dhcp6Row) dhcp6Row.style.display = isDhcp6 ? "" : "none";
+
+    if (this._dhcp6ReleaseBtn) this._dhcp6ReleaseBtn.disabled = !isDhcp6;
 
     if (this._ip6El)     this._ip6El.disabled     = !isStatic;
     if (this._prefix6El) this._prefix6El.disabled = !isStatic;
@@ -414,6 +450,14 @@ export class IPv4ConfigApp extends GenericProcess {
           this._ip6SlaacStatusEl.textContent = t("app.ipv4config.ipv6.msg.slaacPending");
         }
         this._setMsg(t("app.ipv4config.ipv6.msg.slaacStarted"));
+        return;
+      }
+
+      if (mode === "dhcp6") {
+        this._setMsg(t("app.ipv4config.ipv6.dhcp6.starting", { i }));
+        const ok = await this._dhcpv6AcquireAndConfigure(i);
+        if (!ok) this._setMsg(t("app.ipv4config.ipv6.dhcp6.failed", { i }));
+        if (this.mounted) { this._loadIPv6(); this._syncIPv6UI(); }
         return;
       }
 
@@ -937,6 +981,243 @@ export class IPv4ConfigApp extends GenericProcess {
       throw new Error("No free UDP port for DHCP client");
     }
   }
+
+  // ------------------ DHCPv6 client ------------------
+
+  /** @returns {number} */
+  _openDhcpv6ClientSocket() {
+    const anyV6 = IPAddress.fromString("::");
+    if (!anyV6) throw new Error("Cannot create :: address");
+    try {
+      return this.os.net.openUDPSocket(anyV6, 546);
+    } catch {
+      for (let k = 0; k < 20; k++) {
+        const p = (49152 + ((Math.random() * (65535 - 49152)) | 0)) >>> 0;
+        try { return this.os.net.openUDPSocket(anyV6, p); } catch { }
+      }
+      throw new Error("No free UDP port for DHCPv6 client");
+    }
+  }
+
+  /**
+   * Wait for a DHCPv6 message matching transactionId and msgType.
+   * @param {number} sock
+   * @param {Uint8Array} txId  3 bytes
+   * @param {number} wantType
+   * @param {number} timeoutMs
+   * @returns {Promise<{ pkt: DHCPv6Packet, srcIP: IPAddress } | null>}
+   */
+  async _waitDhcpv6(sock, txId, wantType, timeoutMs) {
+    let timedOut = false;
+    const killer = (async () => {
+      await this._simSleep(timeoutMs);
+      timedOut = true;
+      try { this.os.net.closeUDPSocket(sock); } catch { }
+    })();
+
+    try {
+      while (true) {
+        /** @type {any} */
+        const msg = await this.os.net.recvUDPSocket(sock);
+        if (msg == null) return null;
+
+        const bytes = msg.payload instanceof Uint8Array ? msg.payload
+          : (msg.data instanceof Uint8Array ? msg.data : null);
+        if (!bytes) continue;
+
+        /** @type {DHCPv6Packet} */
+        let pkt;
+        try { pkt = DHCPv6Packet.fromBytes(bytes); } catch { continue; }
+
+        if (!txIdMatch(pkt.transactionId, txId)) continue;
+        if (pkt.msgType !== wantType) continue;
+
+        const srcIP = (msg.src instanceof IPAddress) ? msg.src : null;
+        if (!srcIP) continue;
+
+        return { pkt, srcIP };
+      }
+    } finally {
+      void killer;
+      void timedOut;
+    }
+  }
+
+  /**
+   * DHCPv6 Solicit → Advertise → Request → Reply sequence.
+   * On success applies address, prefix, DNS and stores state. Returns true on success.
+   * @param {number} ifaceIdx
+   * @returns {Promise<boolean>}
+   */
+  async _dhcpv6AcquireAndConfigure(ifaceIdx) {
+    const net = this.os.net;
+    if (!net?.interfaces?.[ifaceIdx]) return false;
+
+    const itf        = net.interfaces[ifaceIdx];
+    const mac        = this._getIfaceMac(itf, ifaceIdx);
+    const clientDUID = DHCPv6Packet.buildDUID_LL(mac);
+    const iaid       = (ifaceIdx + 1) >>> 0;
+
+    const txId = new Uint8Array([
+      (Math.random() * 256) | 0,
+      (Math.random() * 256) | 0,
+      (Math.random() * 256) | 0,
+    ]);
+
+    const allServers = IPAddress.fromString("ff02::1:2");
+    if (!allServers) return false;
+
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      this._setMsg(t("app.ipv4config.ipv6.dhcp6.attempt", { attempt }));
+
+      /** @type {number|null} */
+      let sock = null;
+      try { sock = this._openDhcpv6ClientSocket(); } catch { return false; }
+
+      try {
+        // SOLICIT
+        const solicit = new DHCPv6Packet({ msgType: DHCPv6Packet.MT_SOLICIT, transactionId: txId });
+        solicit.setOption(DHCPv6Packet.OPT_CLIENTID, clientDUID);
+        solicit.setOption(DHCPv6Packet.OPT_ELAPSED_TIME, new Uint8Array([0, 0]));
+        solicit.setOption(DHCPv6Packet.OPT_IA_NA, DHCPv6Packet.buildIA_NA(iaid, 0, 0, new Uint8Array(0)));
+        this.os.net.sendUDPSocket(sock, allServers, 547, solicit.pack());
+
+        const advRes = await this._waitDhcpv6(sock, txId, DHCPv6Packet.MT_ADVERTISE, SimTimer.DHCP_OFFER_WAIT_MS);
+        if (!advRes) {
+          try { this.os.net.closeUDPSocket(sock); } catch { }
+          await this._simSleep(SimTimer.DHCP_BETWEEN_TRIES_MS);
+          continue;
+        }
+        const { pkt: adv, srcIP: serverIP } = advRes;
+
+        const serverDUID = adv.getOption(DHCPv6Packet.OPT_SERVERID);
+        const advIaNABytes = adv.getOption(DHCPv6Packet.OPT_IA_NA);
+        if (!serverDUID || !advIaNABytes) {
+          try { this.os.net.closeUDPSocket(sock); } catch { }
+          await this._simSleep(SimTimer.DHCP_BETWEEN_TRIES_MS);
+          continue;
+        }
+
+        const advIaNA  = DHCPv6Packet.parseIA_NA(advIaNABytes);
+        const offered  = parseFirstIAAddr(advIaNA.iaOptions);
+        if (!offered) {
+          try { this.os.net.closeUDPSocket(sock); } catch { }
+          await this._simSleep(SimTimer.DHCP_BETWEEN_TRIES_MS);
+          continue;
+        }
+
+        // REQUEST
+        const iaAddrData = DHCPv6Packet.buildIAAddr(offered.ip6bytes, offered.preferred, offered.valid);
+        const iaAddrOpt  = DHCPv6Packet.encodeOption(DHCPv6Packet.OPT_IAADDR, iaAddrData);
+        const request    = new DHCPv6Packet({ msgType: DHCPv6Packet.MT_REQUEST, transactionId: txId });
+        request.setOption(DHCPv6Packet.OPT_CLIENTID, clientDUID);
+        request.setOption(DHCPv6Packet.OPT_SERVERID, serverDUID);
+        request.setOption(DHCPv6Packet.OPT_ELAPSED_TIME, new Uint8Array([0, 0]));
+        request.setOption(DHCPv6Packet.OPT_IA_NA, DHCPv6Packet.buildIA_NA(iaid, 0, 0, iaAddrOpt));
+        this.os.net.sendUDPSocket(sock, allServers, 547, request.pack());
+
+        const replyRes = await this._waitDhcpv6(sock, txId, DHCPv6Packet.MT_REPLY, SimTimer.DHCP_ACK_WAIT_MS);
+        try { this.os.net.closeUDPSocket(sock); } catch { }
+        if (!replyRes) {
+          await this._simSleep(SimTimer.DHCP_BETWEEN_TRIES_MS);
+          continue;
+        }
+        const { pkt: reply } = replyRes;
+
+        const replyIaNABytes = reply.getOption(DHCPv6Packet.OPT_IA_NA);
+        if (!replyIaNABytes) {
+          await this._simSleep(SimTimer.DHCP_BETWEEN_TRIES_MS);
+          continue;
+        }
+
+        const replyIaNA   = DHCPv6Packet.parseIA_NA(replyIaNABytes);
+        const confirmed   = parseFirstIAAddr(replyIaNA.iaOptions);
+        if (!confirmed) {
+          await this._simSleep(SimTimer.DHCP_BETWEEN_TRIES_MS);
+          continue;
+        }
+
+        const ip6 = IPAddress.fromUInt8(confirmed.ip6bytes);
+        if (!ip6) {
+          await this._simSleep(SimTimer.DHCP_BETWEEN_TRIES_MS);
+          continue;
+        }
+
+        const prefixLength = 64;
+        net.configureInterface(ifaceIdx, { ip6, prefixLength6: prefixLength, slaac: false });
+
+        const dnsBytes = reply.getOption(DHCPv6Packet.OPT_DNS_SERVERS);
+        if (dnsBytes && dnsBytes.length >= 16) {
+          const dnsIP = IPAddress.fromUInt8(dnsBytes.slice(0, 16));
+          const dns   = this.os?.dns;
+          if (dnsIP && dns?.setServer) dns.setServer(dnsIP, 53);
+        }
+
+        this._dhcp6StateByIface.set(ifaceIdx, {
+          clientDUID, serverDUID, serverIP, ip6bytes: confirmed.ip6bytes, prefixLength,
+        });
+
+        const dnsStr = (dnsBytes && dnsBytes.length >= 16)
+          ? (IPAddress.fromUInt8(dnsBytes.slice(0, 16))?.toString() ?? "—") : "—";
+        this._setMsg(t("app.ipv4config.ipv6.dhcp6.success", {
+          i: ifaceIdx, ip: ip6.toString(), prefix: String(prefixLength), dns: dnsStr,
+        }));
+
+        return true;
+      } catch {
+        try { if (sock != null) this.os.net.closeUDPSocket(sock); } catch { }
+        await this._simSleep(SimTimer.DHCP_BETWEEN_TRIES_MS);
+      }
+    }
+
+    return false;
+  }
+
+  /** @param {number} ifaceIdx */
+  async _releaseDhcpv6(ifaceIdx) {
+    const st = this._dhcp6StateByIface.get(ifaceIdx);
+    if (!st) {
+      this._setMsg(t("app.ipv4config.ipv6.dhcp6.releaseNone", { i: ifaceIdx }));
+      return;
+    }
+
+    const txId = new Uint8Array([
+      (Math.random() * 256) | 0,
+      (Math.random() * 256) | 0,
+      (Math.random() * 256) | 0,
+    ]);
+
+    const iaid    = (ifaceIdx + 1) >>> 0;
+    const release = new DHCPv6Packet({ msgType: DHCPv6Packet.MT_RELEASE, transactionId: txId });
+    release.setOption(DHCPv6Packet.OPT_CLIENTID, st.clientDUID);
+    release.setOption(DHCPv6Packet.OPT_SERVERID, st.serverDUID);
+    const iaAddrData = DHCPv6Packet.buildIAAddr(st.ip6bytes, 0, 0);
+    const iaAddrOpt  = DHCPv6Packet.encodeOption(DHCPv6Packet.OPT_IAADDR, iaAddrData);
+    release.setOption(DHCPv6Packet.OPT_IA_NA, DHCPv6Packet.buildIA_NA(iaid, 0, 0, iaAddrOpt));
+
+    /** @type {number|null} */
+    let sock = null;
+    try {
+      sock = this._openDhcpv6ClientSocket();
+      this.os.net.sendUDPSocket(sock, st.serverIP, 547, release.pack());
+    } catch { /* best-effort */ } finally {
+      try { if (sock != null) this.os.net.closeUDPSocket(sock); } catch { }
+    }
+
+    this._dhcp6StateByIface.delete(ifaceIdx);
+
+    const net = this.os.net;
+    if (net) {
+      try { net.configureInterface(ifaceIdx, { ip6: null, prefixLength6: 0, slaac: false }); } catch { }
+      clearDefaultGatewayIPv6ForIface(net, ifaceIdx);
+    }
+
+    this._setMsg(t("app.ipv4config.ipv6.dhcp6.released", { i: ifaceIdx }));
+    if (this.mounted && this._selectedFamily === 6) {
+      this._loadIPv6();
+      this._syncIPv6UI();
+    }
+  }
 }
 
 // -------------------- helpers --------------------
@@ -1094,6 +1375,40 @@ function getDefaultGatewayForIface(net, ifaceIdx) {
     return null;
   }
   return null;
+}
+
+/**
+ * Parse the first IAADDR (code 5) sub-option from IA_NA iaOptions bytes.
+ * @param {Uint8Array} iaOptions
+ * @returns {{ ip6bytes: Uint8Array, preferred: number, valid: number } | null}
+ */
+function parseFirstIAAddr(iaOptions) {
+  let off = 0;
+  while (off + 4 <= iaOptions.length) {
+    const code = (iaOptions[off] << 8) | iaOptions[off + 1];
+    const len  = (iaOptions[off + 2] << 8) | iaOptions[off + 3];
+    off += 4;
+    if (off + len > iaOptions.length) break;
+    const data = iaOptions.slice(off, off + len);
+    off += len;
+
+    if (code === 5 && data.length >= 24) {
+      const ip6bytes  = data.slice(0, 16);
+      const preferred = ((data[16] << 24) | (data[17] << 16) | (data[18] << 8) | data[19]) >>> 0;
+      const valid     = ((data[20] << 24) | (data[21] << 16) | (data[22] << 8) | data[23]) >>> 0;
+      return { ip6bytes, preferred, valid };
+    }
+  }
+  return null;
+}
+
+/**
+ * @param {Uint8Array} a
+ * @param {Uint8Array} b
+ * @returns {boolean}
+ */
+function txIdMatch(a, b) {
+  return a.length === 3 && b.length === 3 && a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
 }
 
 /**

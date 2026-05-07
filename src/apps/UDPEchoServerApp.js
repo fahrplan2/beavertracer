@@ -39,7 +39,7 @@ export class UDPEchoServerApp extends GenericProcess {
 
   /** @type {HTMLButtonElement|null} */
   stopBtn = null;
-
+  icon = "fa-server";
   badge = "UDP";
 
   run() {
