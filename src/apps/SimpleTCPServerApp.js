@@ -1,6 +1,6 @@
 //@ts-check
 
-import { GenericProcess } from "./GenericProcess.js";
+import { LoggedProcess } from "./lib/LoggedProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
 import { Disposer } from "../lib/Disposer.js";
 import { t } from "../i18n/index.js";
@@ -52,7 +52,7 @@ function parseTCPKey(key) {
   return { remoteIP, remotePort: remote.port, ok: true };
 }
 
-export class SimpleTCPServerApp extends GenericProcess {
+export class SimpleTCPServerApp extends LoggedProcess {
 
   get title() {
     return t("app.simpletcpserver.title");
@@ -69,12 +69,6 @@ export class SimpleTCPServerApp extends GenericProcess {
 
   /** @type {boolean} */
   running = false;
-
-  /** @type {Array<string>} */
-  log = [];
-
-  /** @type {HTMLElement|null} */
-  logEl = null;
 
   /** @type {HTMLInputElement|null} */
   portEl = null;
@@ -178,23 +172,6 @@ export class SimpleTCPServerApp extends GenericProcess {
     if (this.startBtn) this.startBtn.disabled = this.running;
     if (this.stopBtn) this.stopBtn.disabled = !this.running;
     if (this.portEl) this.portEl.disabled = this.running;
-  }
-
-  _renderLog() {
-    if (!this.logEl) return;
-    const maxLines = 200;
-    const lines = this.log.length > maxLines ? this.log.slice(-maxLines) : this.log;
-    this.logEl.textContent = lines.join("\n");
-    this.logEl.scrollTop = this.logEl.scrollHeight;
-  }
-
-  /**
-   * @param {string} line
-   */
-  _appendLog(line) {
-    this.log.push(line);
-    if (this.log.length > 2000) this.log.splice(0, this.log.length - 2000);
-    if (this.mounted) this._renderLog();
   }
 
   _startFromUI() {

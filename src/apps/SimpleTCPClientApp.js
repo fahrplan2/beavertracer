@@ -1,6 +1,6 @@
 //@ts-check
 
-import { GenericProcess } from "./GenericProcess.js";
+import { LoggedProcess } from "./lib/LoggedProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
 import { Disposer } from "../lib/Disposer.js";
 import { t } from "../i18n/index.js";
@@ -152,7 +152,7 @@ function ipToLegacyV4Number(ip) {
   return (typeof n === "number") ? (n >>> 0) : null;
 }
 
-export class SimpleTCPClientApp extends GenericProcess {
+export class SimpleTCPClientApp extends LoggedProcess {
   get title() {
     return t("app.simpletcpclient.title");
   }
@@ -173,12 +173,6 @@ export class SimpleTCPClientApp extends GenericProcess {
 
   /** @type {boolean} */
   connected = false;
-
-  /** @type {Array<string>} */
-  log = [];
-
-  /** @type {HTMLElement|null} */
-  logEl = null;
 
   /** @type {HTMLInputElement|null} */
   hostEl = null;
@@ -305,31 +299,17 @@ export class SimpleTCPClientApp extends GenericProcess {
     if (this.sendBtn) this.sendBtn.disabled = !isConn;
   }
 
-  _renderLog() {
-    if (!this.logEl) return;
-    const maxLines = 400;
-    const lines = this.log.length > maxLines ? this.log.slice(-maxLines) : this.log;
-    this.logEl.textContent = lines.join("\n");
-  }
-
-  /** @param {string} line */
-  _append(line) {
-    this.log.push(line);
-    if (this.log.length > 4000) this.log.splice(0, this.log.length - 4000);
-    if (this.mounted) this._renderLog();
-  }
-
   async _connectFromUI() {
     const host = (this.hostEl?.value ?? "").trim();
     const portStr = (this.portEl?.value ?? "").trim();
     const port = Number(portStr);
 
     if (!host) {
-      this._append(t("app.simpletcpclient.log.hostEmpty", { time: nowStamp() }));
+      this._appendLog(t("app.simpletcpclient.log.hostEmpty", { time: nowStamp() }));
       return;
     }
     if (!Number.isInteger(port) || port < 1 || port > 65535) {
-      this._append(t("app.simpletcpclient.log.invalidPort", { time: nowStamp(), portStr }));
+      this._appendLog(t("app.simpletcpclient.log.invalidPort", { time: nowStamp(), portStr }));
       return;
     }
 
@@ -354,7 +334,7 @@ export class SimpleTCPClientApp extends GenericProcess {
       dstIP = await resolveHostToIP(this.host, dnsResolve);
     } catch (e) {
       const reason = (e instanceof Error ? e.message : String(e));
-      this._append(t("app.simpletcpclient.log.resolveError", { time: nowStamp(), host: this.host, reason }));
+      this._appendLog(t("app.simpletcpclient.log.resolveError", { time: nowStamp(), host: this.host, reason }));
       return;
     }
 
@@ -371,14 +351,14 @@ export class SimpleTCPClientApp extends GenericProcess {
       const info = parseTCPKey(key);
       const who = info.ok ? `${info.remoteIP.toString()}:${info.remotePort}` : key;
 
-      this._append(t("app.simpletcpclient.log.connected", { time: nowStamp(), who }));
+      this._appendLog(t("app.simpletcpclient.log.connected", { time: nowStamp(), who }));
       void this._recvLoop(key);
     } catch (e) {
       this.connKey = null;
       this.connected = false;
       this._syncUI();
       const reason = (e instanceof Error ? e.message : String(e));
-      this._append(t("app.simpletcpclient.log.connectFailed", { time: nowStamp(), reason }));
+      this._appendLog(t("app.simpletcpclient.log.connectFailed", { time: nowStamp(), reason }));
     }
 
   }
@@ -394,10 +374,10 @@ export class SimpleTCPClientApp extends GenericProcess {
     if (key) {
       try {
         this.os.net.closeTCPConn(key);
-        this._append(t("app.simpletcpclient.log.disconnectRequested", { time: nowStamp() }));
+        this._appendLog(t("app.simpletcpclient.log.disconnectRequested", { time: nowStamp() }));
       } catch (e) {
         const reason = (e instanceof Error ? e.message : String(e));
-        this._append(t("app.simpletcpclient.log.disconnectError", { time: nowStamp(), reason }));
+        this._appendLog(t("app.simpletcpclient.log.disconnectError", { time: nowStamp(), reason }));
       }
     }
   }
@@ -418,7 +398,7 @@ export class SimpleTCPClientApp extends GenericProcess {
 
     try {
       this.os.net.sendTCPConn(this.connKey, data);
-      this._append(t("app.simpletcpclient.log.sent", {
+      this._appendLog(t("app.simpletcpclient.log.sent", {
         time: nowStamp(),
         who,
         msg,
@@ -427,7 +407,7 @@ export class SimpleTCPClientApp extends GenericProcess {
       if (this.msgEl) this.msgEl.value = "";
     } catch (e) {
       const reason = (e instanceof Error ? e.message : String(e));
-      this._append(t("app.simpletcpclient.log.sendError", { time: nowStamp(), reason }));
+      this._appendLog(t("app.simpletcpclient.log.sendError", { time: nowStamp(), reason }));
     }
   }
 
@@ -445,18 +425,18 @@ export class SimpleTCPClientApp extends GenericProcess {
         data = await this.os.net.recvTCPConn(key);
       } catch (e) {
         const reason = (e instanceof Error ? e.message : String(e));
-        this._append(t("app.simpletcpclient.log.recvError", { time: nowStamp(), reason }));
+        this._appendLog(t("app.simpletcpclient.log.recvError", { time: nowStamp(), reason }));
         break;
       }
 
       if (!this.connected || this.connKey !== key) break;
       if (data == null) {
-        this._append(t("app.simpletcpclient.log.remoteClosed", { time: nowStamp(), who }));
+        this._appendLog(t("app.simpletcpclient.log.remoteClosed", { time: nowStamp(), who }));
         break;
       }
 
       const text = decodeUTF8(data);
-      this._append(t("app.simpletcpclient.log.received", {
+      this._appendLog(t("app.simpletcpclient.log.received", {
         time: nowStamp(),
         who,
         text,
@@ -469,7 +449,7 @@ export class SimpleTCPClientApp extends GenericProcess {
       this.connected = false;
       this.connKey = null;
       this._syncUI();
-      this._append(t("app.simpletcpclient.log.disconnected", { time: nowStamp() }));
+      this._appendLog(t("app.simpletcpclient.log.disconnected", { time: nowStamp() }));
     }
   }
 }

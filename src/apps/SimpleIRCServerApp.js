@@ -1,26 +1,11 @@
 //@ts-check
 
-import { GenericProcess } from "./GenericProcess.js";
+import { LoggedProcess } from "./lib/LoggedProcess.js";
 import { Disposer } from "../lib/Disposer.js";
 import { UILib as UI } from "./lib/UILib.js";
 import { IPAddress } from "../net/models/IPAddress.js";
 import { t } from "../i18n/index.js";
-
-function nowStamp() { return new Date().toLocaleTimeString(); }
-
-/** @param {string} s */
-function encodeUTF8(s) {
-  if (typeof TextEncoder !== "undefined") return new TextEncoder().encode(s);
-  const b = new Uint8Array(s.length);
-  for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i) & 0xff;
-  return b;
-}
-
-/** @param {Uint8Array} b */
-function decodeUTF8(b) {
-  if (typeof TextDecoder !== "undefined") return new TextDecoder().decode(b);
-  let s = ""; for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return s;
-}
+import { nowStamp, encodeUTF8, decodeUTF8 } from "../lib/helpers.js";
 
 /**
  * Read one CRLF/LF terminated line from a TCP connection.
@@ -77,7 +62,7 @@ function parseIRC(line) {
  * @typedef {{ name: string, topic: string, members: Set<string> }} IRCChannel
  */
 
-export class SimpleIRCServerApp extends GenericProcess {
+export class SimpleIRCServerApp extends LoggedProcess {
   get title() { return t("app.ircserver.title"); }
   icon = "fa-server";
   badge = "IRC";
@@ -97,8 +82,6 @@ export class SimpleIRCServerApp extends GenericProcess {
   /** @type {Map<string, IRCChannel>} lowercase name → channel */
   channels = new Map();
 
-  /** @type {string[]} */ log = [];
-  /** @type {HTMLElement|null} */ logEl = null;
   /** @type {HTMLElement|null} */ statusEl = null;
   /** @type {HTMLButtonElement|null} */ startBtn = null;
   /** @type {HTMLButtonElement|null} */ stopBtn = null;
@@ -180,20 +163,6 @@ export class SimpleIRCServerApp extends GenericProcess {
     const lines = [`running: ${this.running}`, `port: ${this.port}`, `clients: ${this.clients.size}`];
     for (const ch of this.channels.values()) lines.push(`  ${ch.name} (${ch.members.size} users)`);
     this.statusEl.textContent = lines.join("\n");
-  }
-
-  /** @param {string} line */
-  _appendLog(line) {
-    this.log.push(line);
-    if (this.log.length > 2000) this.log.splice(0, this.log.length - 2000);
-    if (this.mounted) this._renderLog();
-  }
-
-  _renderLog() {
-    if (!this.logEl) return;
-    const lines = this.log.length > 300 ? this.log.slice(-300) : this.log;
-    this.logEl.textContent = lines.join("\n");
-    this.logEl.scrollTop = this.logEl.scrollHeight;
   }
 
   // ───────── lifecycle ─────────

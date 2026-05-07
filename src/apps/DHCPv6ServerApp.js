@@ -1,6 +1,6 @@
 //@ts-check
 
-import { GenericProcess } from "./GenericProcess.js";
+import { LoggedProcess } from "./lib/LoggedProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
 import { Disposer } from "../lib/Disposer.js";
 import { t } from "../i18n/index.js";
@@ -89,7 +89,7 @@ function arrayEquals(a, b) {
  *   "autostart":   false
  * }
  */
-export class DHCPv6ServerApp extends GenericProcess {
+export class DHCPv6ServerApp extends LoggedProcess {
   get title() {
     return t("app.dhcpv6server.title");
   }
@@ -107,9 +107,6 @@ export class DHCPv6ServerApp extends GenericProcess {
   socketPort = null;
 
   running = false;
-
-  /** @type {string[]} */
-  log = [];
 
   /** @type {HTMLTextAreaElement|null} */
   logEl = null;
@@ -1113,20 +1110,10 @@ export class DHCPv6ServerApp extends GenericProcess {
     if (this.pdLeaseTimeEl) this.pdLeaseTimeEl.disabled = dis;
   }
 
-  _renderLog() {
-    if (!this.logEl) return;
-    const maxLines = 250;
-    const lines = this.log.length > maxLines ? this.log.slice(-maxLines) : this.log;
-    this.logEl.value = lines.join("\n");
-    this.logEl.scrollTop = this.logEl.scrollHeight;
-  }
-
   /** @param {string} line */
   _appendLog(line) {
-    this.log.push(line);
-    if (this.log.length > 4000) this.log.splice(0, this.log.length - 4000);
+    super._appendLog(line);
     if (this.mounted) {
-      this._renderLog();
       if (this.leasesPane && this.leasesPane.style.display !== "none") this._renderLeases();
       if (this.pdPane     && this.pdPane.style.display     !== "none") this._renderPdLeases();
     }

@@ -1,17 +1,12 @@
 //@ts-check
 
-import { GenericProcess } from "./GenericProcess.js";
+import { LoggedProcess } from "./lib/LoggedProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
 import { Disposer } from "../lib/Disposer.js";
 import { t } from "../i18n/index.js";
 import { DNSPacket } from "./../net/pdu/DNSPacket.js";
 import { IPAddress } from "../net/models/IPAddress.js";
-
-// helpers
-function nowStamp(n = Date.now()) {
-  const d = new Date(n);
-  return d.toLocaleTimeString();
-}
+import { nowStamp } from "../lib/helpers.js";
 
 /** @param {*} name */
 function normalizeName(name) {
@@ -153,7 +148,7 @@ function createTableEditor(cols, onChange, makeDefaultRow) {
  * @param {{id:string, title:string, contentEl:HTMLElement}[]} tabs
  */
 
-export class DNSServerApp extends GenericProcess {
+export class DNSServerApp extends LoggedProcess {
   get title() {
     return t("app.dnsd.title");
   }
@@ -169,12 +164,6 @@ export class DNSServerApp extends GenericProcess {
 
   /** @type {{a:any[], aaaa:any[], mx:any[], ns:any[]}} */
   cfg = { a: [], aaaa: [], mx: [], ns: [] };
-
-  /** @type {Array<string>} */
-  log = [];
-
-  /** @type {HTMLElement|null} */
-  logEl = null;
 
   /** @type {HTMLButtonElement|null} */
   startBtn = null;
@@ -332,20 +321,6 @@ export class DNSServerApp extends GenericProcess {
   destroy() {
     this._stop();
     super.destroy();
-  }
-
-  /** @param {string} line */
-  _appendLog(line) {
-    this.log.push(line);
-    if (this.log.length > 2000) this.log.splice(0, this.log.length - 2000);
-    if (this.mounted) this._renderLog();
-  }
-
-  _renderLog() {
-    if (!this.logEl) return;
-    const maxLines = 200;
-    const lines = this.log.length > maxLines ? this.log.slice(-maxLines) : this.log;
-    this.logEl.textContent = lines.join("\n");
   }
 
   _syncButtons() {

@@ -1,6 +1,6 @@
 //@ts-check
 
-import { GenericProcess } from "./GenericProcess.js";
+import { LoggedProcess } from "./lib/LoggedProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
 import { Disposer } from "../lib/Disposer.js";
 import { SimTimer } from "../sim/SimTimer.js";
@@ -9,14 +9,7 @@ import { SimTimer } from "../sim/SimTimer.js";
 import startPage from "./assets/about-start.html?raw";
 import { t } from "../i18n/index.js";
 import { IPAddress } from "../net/models/IPAddress.js";
-
-/**
- * @param {number} n
- */
-function nowStamp(n = Date.now()) {
-  const d = new Date(n);
-  return d.toLocaleTimeString();
-}
+import { nowStamp } from "../lib/helpers.js";
 
 /**
  * @param {Uint8Array} data
@@ -387,7 +380,7 @@ class TcpBufferedReader {
   }
 }
 
-export class SparktailHTTPClientApp extends GenericProcess {
+export class SparktailHTTPClientApp extends LoggedProcess {
   get title() {
     return t("app.sparktail.title");
   }
@@ -405,12 +398,6 @@ export class SparktailHTTPClientApp extends GenericProcess {
 
   /** @type {string|null} */
   connKey = null;
-
-  /** @type {Array<string>} */
-  log = [];
-
-  /** @type {HTMLElement|null} */
-  logEl = null;
 
   /** @type {HTMLInputElement|null} */
   urlEl = null;
@@ -635,22 +622,6 @@ export class SparktailHTTPClientApp extends GenericProcess {
     this._syncNavButtons();
   }
 
-  _renderLog() {
-    if (!this.logEl) return;
-    const maxLines = 400;
-    const lines = this.log.length > maxLines ? this.log.slice(-maxLines) : this.log;
-    this.logEl.textContent = lines.join("\n");
-  }
-
-  /**
-   * @param {string} line
-   */
-  _append(line) {
-    this.log.push(line);
-    if (this.log.length > 4000) this.log.splice(0, this.log.length - 4000);
-    if (this.mounted) this._renderLog();
-  }
-
   _renderTab() {
     if (this.previewFrame) this.previewFrame.style.display = this.tab === "preview" ? "" : "none";
     if (this.sourceEl) this.sourceEl.style.display = this.tab === "source" ? "" : "none";
@@ -683,7 +654,7 @@ export class SparktailHTTPClientApp extends GenericProcess {
   _goFromUI() {
     const raw = (this.urlEl?.value ?? "").trim();
     if (!raw) {
-      this._append(t("app.sparktail.log.urlEmpty", { time: nowStamp() }));
+      this._appendLog(t("app.sparktail.log.urlEmpty", { time: nowStamp() }));
       this._setStatus(t("app.sparktail.status.errorUrlEmpty"));
       return;
     }
@@ -732,7 +703,7 @@ export class SparktailHTTPClientApp extends GenericProcess {
         /* ignore */
       }
     }
-    this._append(t("app.sparktail.log.stop", { time: nowStamp() }));
+    this._appendLog(t("app.sparktail.log.stop", { time: nowStamp() }));
     this._setStatus(t("app.sparktail.status.stopped"));
   }
 
@@ -783,7 +754,7 @@ export class SparktailHTTPClientApp extends GenericProcess {
     const utrim = url.trim();
     if (utrim.toLowerCase() === "about:start") {
       this._showStartPage();
-      this._append(t("app.sparktail.log.aboutStart", { time: nowStamp() }));
+      this._appendLog(t("app.sparktail.log.aboutStart", { time: nowStamp() }));
       this._setStatus(t("app.sparktail.status.startPage"));
       this.loading = false;
       this._syncUI();
@@ -822,7 +793,7 @@ export class SparktailHTTPClientApp extends GenericProcess {
       );
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      this._append(t("app.sparktail.log.dnsError", { time: nowStamp(), host, msg }));
+      this._appendLog(t("app.sparktail.log.dnsError", { time: nowStamp(), host, msg }));
       this._showInternalPage(
         t("app.sparktail.page.dnsError.title"),
         t("app.sparktail.page.dnsError.body", { host, msg })
@@ -835,7 +806,7 @@ export class SparktailHTTPClientApp extends GenericProcess {
 
     if (!dstIP) {
       const msg = t("app.sparktail.err.cannotResolveHost", { host });
-      this._append(t("app.sparktail.log.dnsError", { time: nowStamp(), host, msg }));
+      this._appendLog(t("app.sparktail.log.dnsError", { time: nowStamp(), host, msg }));
       this._showInternalPage(
         t("app.sparktail.page.dnsError.title"),
         t("app.sparktail.page.dnsError.body", { host, msg })
@@ -857,7 +828,7 @@ export class SparktailHTTPClientApp extends GenericProcess {
       this.connKey = key;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      this._append(t("app.sparktail.log.connectError", { time: nowStamp(), ip: dstIP.toString(), port, msg }));
+      this._appendLog(t("app.sparktail.log.connectError", { time: nowStamp(), ip: dstIP.toString(), port, msg }));
       this._showInternalPage(
         t("app.sparktail.page.socketError.title"),
         t("app.sparktail.page.socketError.body", { host, port, msg })
@@ -883,7 +854,7 @@ export class SparktailHTTPClientApp extends GenericProcess {
     const reqBytes = encodeUTF8(request);
     try {
       this.os.net.sendTCPConn(key, reqBytes);
-      this._append(t("app.sparktail.log.request", {
+      this._appendLog(t("app.sparktail.log.request", {
         time: nowStamp(),
         host,
         port,
@@ -893,7 +864,7 @@ export class SparktailHTTPClientApp extends GenericProcess {
       }));
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      this._append(t("app.sparktail.log.sendError", { time: nowStamp(), msg }));
+      this._appendLog(t("app.sparktail.log.sendError", { time: nowStamp(), msg }));
       this._showInternalPage(t("app.sparktail.page.sendError.title"), msg);
       this._stop();
       return;
@@ -988,7 +959,7 @@ export class SparktailHTTPClientApp extends GenericProcess {
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      this._append(t("app.sparktail.log.recvError", { time: nowStamp(), msg }));
+      this._appendLog(t("app.sparktail.log.recvError", { time: nowStamp(), msg }));
       this._showInternalPage(t("app.sparktail.page.recvError.title"), msg);
       this._stop();
       return;
@@ -1022,7 +993,7 @@ export class SparktailHTTPClientApp extends GenericProcess {
     const bodyText = decodeUTF8(bodyBytes);
 
     if (statusCode !== 200 && statusCode !== 404) {
-      this._append(t("app.sparktail.log.httpNotRendered", { time: nowStamp(), statusCode, reason }));
+      this._appendLog(t("app.sparktail.log.httpNotRendered", { time: nowStamp(), statusCode, reason }));
       this._showInternalPage(
         t("app.sparktail.page.notSupported.title"),
         t("app.sparktail.page.notSupported.body", { statusCode, reason })
@@ -1053,7 +1024,7 @@ export class SparktailHTTPClientApp extends GenericProcess {
     }
 
     const ct = headers["content-type"] || t("app.sparktail.value.unknown");
-    this._append(t("app.sparktail.log.httpOk", { time: nowStamp(), statusCode, reason, bytes: bodyBytes.length }));
+    this._appendLog(t("app.sparktail.log.httpOk", { time: nowStamp(), statusCode, reason, bytes: bodyBytes.length }));
     this._setStatus(t("app.sparktail.status.httpSummary", { statusCode, reason, bytes: bodyBytes.length, ct }));
 
     this.loading = false;

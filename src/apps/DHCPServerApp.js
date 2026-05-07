@@ -1,6 +1,6 @@
 //@ts-check
 
-import { GenericProcess } from "./GenericProcess.js";
+import { LoggedProcess } from "./lib/LoggedProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
 import { Disposer } from "../lib/Disposer.js";
 import { t } from "../i18n/index.js";
@@ -97,7 +97,7 @@ function ipToText(ip) {
  *   "serverId":   "192.168.1.1"      // optional, default gateway
  * }
  */
-export class DHCPServerApp extends GenericProcess {
+export class DHCPServerApp extends LoggedProcess {
   get title() {
     return t("app.dhcpserver.title");
   }
@@ -116,9 +116,6 @@ export class DHCPServerApp extends GenericProcess {
 
   /** @type {boolean} */
   running = false;
-
-  /** @type {Array<string>} */
-  log = [];
 
   /** @type {HTMLTextAreaElement|null} */
   logEl = null;
@@ -340,22 +337,10 @@ export class DHCPServerApp extends GenericProcess {
     if (this.saveBtn) this.saveBtn.disabled = dis;
   }
 
-  _renderLog() {
-    if (!this.logEl) return;
-    const maxLines = 250;
-    const lines = this.log.length > maxLines ? this.log.slice(-maxLines) : this.log;
-    this.logEl.value = lines.join("\n");
-    this.logEl.scrollTop = this.logEl.scrollHeight;
-  }
-
   /** @param {string} line */
   _appendLog(line) {
-    this.log.push(line);
-    if (this.log.length > 4000) this.log.splice(0, this.log.length - 4000);
-    if (this.mounted) {
-      this._renderLog();
-      if (this.leasesPane && this.leasesPane.style.display !== "none") this._renderLeases();
-    }
+    super._appendLog(line);
+    if (this.mounted && this.leasesPane && this.leasesPane.style.display !== "none") this._renderLeases();
   }
 
   _renderLeases() {
