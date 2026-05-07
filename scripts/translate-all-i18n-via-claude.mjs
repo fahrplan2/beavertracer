@@ -22,6 +22,12 @@ const TARGETS = [
   { lang: "fr", name: "French" },
   { lang: "it", name: "Italian" },
   { lang: "pt", name: "Portuguese" },
+  { lang: "nl", name: "Dutch" },
+  { lang: "pl", name: "Polish" },
+  { lang: "tr", name: "Turkish" },
+  { lang: "ja", name: "Japanese" },
+  { lang: "zh", name: "Simplified Chinese" },
+  { lang: "ua", name: "Ukrainian" },
 ];
 
 const args = process.argv.slice(2);
