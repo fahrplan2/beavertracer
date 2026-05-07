@@ -658,7 +658,7 @@ export class SimControl {
             onClick: (/** @type {MouseEvent} */ ev) => {
                 ev.preventDefault();
                 ev.stopPropagation();
-                this._openLanguageDialog(gCommon);
+                this._openLanguageDialog();
             },
         });
         langBtn.dataset.role = "lang";
@@ -1096,28 +1096,65 @@ export class SimControl {
         }
     }
 
-    /** @param {HTMLElement} anchorEl */
-    async _openLanguageDialog(anchorEl) {
+    async _openLanguageDialog() {
         if (this._langPanel) {
             this._closeLanguageDialog();
             return;
         }
 
-        const panel = document.createElement("div");
-        panel.className = "sim-lang-picker";
-        panel.style.position = "fixed";
+        const backdrop = document.createElement("div");
+        backdrop.className = "sim-dialog-backdrop";
+
+        const dlg = document.createElement("div");
+        dlg.className = "sim-langdialog";
+        dlg.setAttribute("role", "dialog");
+        dlg.setAttribute("aria-modal", "true");
+
+        const header = document.createElement("div");
+        header.className = "sim-langdialog-header";
+        const title = document.createElement("span");
+        title.textContent = t("sim.language");
+        const closeBtn = document.createElement("button");
+        closeBtn.type = "button";
+        closeBtn.className = "sim-langdialog-close";
+        closeBtn.innerHTML = "&times;";
+        closeBtn.addEventListener("click", () => this._closeLanguageDialog());
+        header.appendChild(title);
+        header.appendChild(closeBtn);
+        dlg.appendChild(header);
 
         const locales = await getLocales();
         const current = getLocale();
 
-        for (const loc of locales) {
-            const b = document.createElement("button");
-            b.type = "button";
-            b.className = "sim-lang-option";
-            b.textContent = loc.label;
-            if (loc.key === current) b.classList.add("active");
+        const grid = document.createElement("div");
+        grid.className = "sim-langdialog-grid";
 
-            b.addEventListener("click", async (ev) => {
+        let hasAI = false;
+
+        for (const loc of locales) {
+            const parts = loc.label.split(" ");
+            const flag = parts[0];
+            const isAI = loc.label.includes("(translated by AI)");
+            const name = parts.slice(1).join(" ").replace(/\s*\(translated by AI\)\s*$/g, "").trim();
+            if (isAI) hasAI = true;
+
+            const card = document.createElement("button");
+            card.type = "button";
+            card.className = "sim-lang-card";
+            if (loc.key === current) card.classList.add("active");
+
+            const flagEl = document.createElement("span");
+            flagEl.className = "sim-lang-card-flag";
+            flagEl.textContent = flag;
+
+            const nameEl = document.createElement("span");
+            nameEl.className = "sim-lang-card-name";
+            nameEl.textContent = isAI ? `${name} *` : name;
+
+            card.appendChild(flagEl);
+            card.appendChild(nameEl);
+
+            card.addEventListener("click", async (ev) => {
                 ev.preventDefault();
                 ev.stopPropagation();
 
@@ -1138,39 +1175,34 @@ export class SimControl {
                 window.location.reload();
             });
 
-            panel.appendChild(b);
+            grid.appendChild(card);
         }
 
-        document.body.appendChild(panel);
-        this._langPanel = panel;
+        dlg.appendChild(grid);
 
-        const ar = anchorEl.getBoundingClientRect();
-        const r = panel.getBoundingClientRect();
-        const pad = 8;
+        if (hasAI) {
+            const note = document.createElement("p");
+            note.className = "sim-langdialog-note";
+            note.textContent = "* translated by AI";
+            dlg.appendChild(note);
+        }
 
-        let left = ar.left;
-        let top = ar.bottom + 6;
-        left = Math.max(pad, Math.min(left, window.innerWidth - r.width - pad));
-        top = Math.max(pad, Math.min(top, window.innerHeight - r.height - pad));
+        backdrop.appendChild(dlg);
+        document.body.appendChild(backdrop);
+        this._langPanel = backdrop;
 
-        panel.style.left = `${left}px`;
-        panel.style.top = `${top}px`;
-
-        /** @param {PointerEvent} ev */
-        const onOutside = (ev) => {
-            if (!panel.contains(/** @type {Node} */(ev.target))) this._closeLanguageDialog();
-        };
         /** @param {KeyboardEvent} ev */
         const onKey = (ev) => {
             if (ev.key === "Escape") this._closeLanguageDialog();
         };
 
+        backdrop.addEventListener("click", (ev) => {
+            if (ev.target === backdrop) this._closeLanguageDialog();
+        });
+
         this._langCleanup = () => {
-            document.removeEventListener("pointerdown", onOutside, { capture: true });
             window.removeEventListener("keydown", onKey);
         };
-
-        document.addEventListener("pointerdown", onOutside, { capture: true });
         window.addEventListener("keydown", onKey);
     }
 

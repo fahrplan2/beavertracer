@@ -10,17 +10,24 @@ const SRC_DIR = "lessons";
 const OUT_DIR = "public/lessons";
 
 const LANG_NAMES = {
-  de: "Deutsch", en: "English", fr: "Français",
-  es: "Español", it: "Italiano", pt: "Português",
+  de: "Deutsch", en: "English", es: "Español", fr: "Français",
+  it: "Italiano", nl: "Nederlands", pl: "Polski", pt: "Português",
+  tr: "Türkçe", ja: "日本語", zh: "中文", ua: "Українська",
 };
 
 const LANG_NO_LESSONS = {
   de: "Für diese Sprache sind leider noch keine Lektionen verfügbar. 😔",
   en: "No lessons are available in this language yet. 😔",
-  fr: "Aucune leçon n'est disponible dans cette langue pour le moment. 😔",
   es: "Todavía no hay lecciones disponibles en este idioma. 😔",
+  fr: "Aucune leçon n'est disponible dans cette langue pour le moment. 😔",
   it: "Non ci sono ancora lezioni disponibili in questa lingua. 😔",
+  nl: "Er zijn nog geen lessen beschikbaar in deze taal. 😔",
+  pl: "Brak lekcji dostępnych w tym języku. 😔",
   pt: "Ainda não há lições disponíveis neste idioma. 😔",
+  tr: "Bu dilde henüz ders mevcut değil. 😔",
+  ja: "この言語にはまだレッスンがありません。😔",
+  zh: "此语言暂无课程。😔",
+  ua: "Для цієї мови уроки ще недоступні. 😔",
 };
 
 /**
@@ -457,6 +464,10 @@ export function lessonsPlugin() {
             res.end(fs.readFileSync(candidate));
             return;
           }
+          // No matching file → 404
+          res.writeHead(404, { "Content-Type": "text/html; charset=utf-8" });
+          res.end(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Not Found</title><style>body{font-family:sans-serif;padding:2rem;color:#ccc;background:#1a1a1a}a{color:#5b9bd5}</style></head><body><h1>404 – Not Found</h1><p>No lessons found for this path.</p><p><a href="/lessons/">← Lessons</a></p></body></html>`);
+          return;
         }
 
         next();
