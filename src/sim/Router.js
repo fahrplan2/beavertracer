@@ -4,6 +4,8 @@ import { VirtualFileSystem } from "../apps/lib/VirtualFileSystem.js";
 import { IPStack } from "../net/IPStack.js";
 import { RIPDaemon } from "../net/RIPDaemon.js";
 import { SimulatedObject } from "./SimulatedObject.js";
+import { PollTimer } from "../lib/PollTimer.js";
+import { netmaskStrToPrefix, prefixToNetmaskStr } from "../lib/helpers.js";
 
 import { DOMBuilder } from "../lib/DomBuilder.js";
 import { t } from "../i18n/index.js";
@@ -36,37 +38,6 @@ function assertPrefix(p) {
     return x | 0;
 }
 
-/** @param {string} s like "255.255.255.0" -> prefix length (0..32) or null */
-function netmaskStrToPrefix(s) {
-    const ip = IPAddress.fromString(String(s).trim());
-    if (!ip.isV4()) return null;
-
-    // contiguous ones then zeros
-    const m = /** @type {number} */ (ip.getNumber()) >>> 0;
-
-    let seenZero = false;
-    let c = 0;
-    for (let i = 31; i >= 0; i--) {
-        const bit = (m >>> i) & 1;
-        if (bit === 1) {
-            if (seenZero) return null;
-            c++;
-        } else {
-            seenZero = true;
-        }
-    }
-    return c;
-}
-
-/** @param {number} prefix -> "255.255.255.0" */
-function prefixToNetmaskStr(prefix) {
-    const p = assertPrefix(prefix);
-    let m = 0 >>> 0;
-    if (p === 0) m = 0 >>> 0;
-    else m = (0xffffffff << (32 - p)) >>> 0;
-    return new IPAddress(4, m >>> 0).toString();
-}
-
 /** @param {HTMLElement} el @param {boolean} isInvalid */
 function markInvalid(el, isInvalid) {
     if (!el) return;
@@ -92,8 +63,7 @@ export class Router extends SimulatedObject {
     /** @type {HTMLElement|null} */
     _panelBody = null;
 
-    /** @type {number|null} */
-    _linkPollTimer = null;
+    _pollTimer = new PollTimer();
 
     /** @type {string|null} */
     _selectedIfaceName = null;
@@ -159,23 +129,9 @@ export class Router extends SimulatedObject {
     }
 
     /** @returns {PortDescriptor[]} */
-    listPorts() {
-        const ifs = this.net?.interfaces ?? [];
-        return ifs.map((nic, i) => ({
-            key: `eth${i}`,
-            label: `eth${i}`,
-            port: nic.port,
-        }));
-    }
-
+    listPorts()           { return SimulatedObject.listEthPorts(this.net?.interfaces); }
     /** @param {string} key */
-    getPortByKey(key) {
-        const m = /^eth(\d+)$/.exec(key);
-        if (!m) return null;
-        const i = Number(m[1]);
-        const nic = (this.net?.interfaces ?? [])[i];
-        return nic?.port ?? null;
-    }
+    getPortByKey(key)     { return SimulatedObject.getEthPortByKey(this.net?.interfaces, key); }
 
     /* ------------------------------ UI ------------------------------ */
 
@@ -455,14 +411,11 @@ export class Router extends SimulatedObject {
 
     _startLinkPolling() {
         this._updateAllTabStatuses();
-        this._linkPollTimer = window.setInterval(() => this._updateAllTabStatuses(), 1000);
+        this._pollTimer.start(() => this._updateAllTabStatuses(), 1000);
     }
 
     _stopLinkPolling() {
-        if (this._linkPollTimer != null) {
-            clearInterval(this._linkPollTimer);
-            this._linkPollTimer = null;
-        }
+        this._pollTimer.stop();
     }
 
     _updateAllTabStatuses() {

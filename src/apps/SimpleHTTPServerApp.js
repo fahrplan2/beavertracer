@@ -3,7 +3,7 @@
 import { LoggedProcess } from "./lib/LoggedProcess.js";
 import { Disposer } from "../lib/Disposer.js";
 import { UILib as UI } from "./lib/UILib.js";
-import { SimTimer } from "../sim/SimTimer.js";
+import { SimTimer } from "../lib/SimTimer.js";
 import { t } from "../i18n/index.js";
 import { IPAddress } from "../net/models/IPAddress.js";
 import { nowStamp, encodeUTF8, decodeUTF8 } from "../lib/helpers.js";

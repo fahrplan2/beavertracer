@@ -2,6 +2,7 @@
 
 import { SwitchBackplane } from "../net/SwitchBackplane.js";
 import { SimulatedObject } from "./SimulatedObject.js";
+import { PollTimer } from "../lib/PollTimer.js";
 import { DOMBuilder } from "../lib/DomBuilder.js";
 import { t } from "../i18n/index.js";
 
@@ -44,8 +45,7 @@ export class Switch extends SimulatedObject {
     /** @type {HTMLDivElement|null} */
     _satHost = null;
 
-    /** @type {number|null} */
-    _satPollTimer = null;
+    _pollTimer = new PollTimer();
 
     /** @type {HTMLInputElement|null} */
     _vlanEnabledCheckbox = null;
@@ -253,16 +253,13 @@ export class Switch extends SimulatedObject {
     }
 
     _startSatPolling() {
-        this._satPollTimer = window.setInterval(() => {
+        this._pollTimer.start(() => {
             if (this._activeTab === "sat") this._renderSAT();
         }, 500);
     }
 
     _stopSatPolling() {
-        if (this._satPollTimer != null) {
-            clearInterval(this._satPollTimer);
-            this._satPollTimer = null;
-        }
+        this._pollTimer.stop();
     }
 
     _renderSAT() {

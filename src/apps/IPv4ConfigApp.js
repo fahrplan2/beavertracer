@@ -6,7 +6,7 @@ import { Disposer } from "../lib/Disposer.js";
 import { UILib } from "./lib/UILib.js";
 
 import { assertLenU8 } from "../lib/helpers.js";
-import { simTimer, SimTimer } from "../sim/SimTimer.js";
+import { simTimer, SimTimer } from "../lib/SimTimer.js";
 import { DHCPPacket } from "../net/pdu/DHCPPacket.js";
 import { DHCPv6Packet } from "../net/pdu/DHCPv6Packet.js";
 import { IPAddress } from "../net/models/IPAddress.js"; // <- ggf. Pfad bei dir: "./models/IPAddress.js" o.ä.

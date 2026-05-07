@@ -423,4 +423,29 @@ export class SimulatedObject {
      * @returns {any|null}
      */
     getPortByKey(key) { return null; }
+
+    // ── Static helpers for IPStack-based port lists ──────────────────────
+
+    /**
+     * Standard listPorts() implementation for devices whose ports come from
+     * an IPStack's `interfaces` array (Router, PC, …).
+     * @param {any[]|undefined} interfaces
+     * @returns {Array<{ key: string, label: string, port: any }>}
+     */
+    static listEthPorts(interfaces) {
+        const ifs = interfaces ?? [];
+        return ifs.map((nic, i) => ({ key: `eth${i}`, label: `eth${i}`, port: nic.port }));
+    }
+
+    /**
+     * Standard getPortByKey() implementation for eth-indexed ports.
+     * @param {any[]|undefined} interfaces
+     * @param {string} key
+     * @returns {any|null}
+     */
+    static getEthPortByKey(interfaces, key) {
+        const m = /^eth(\d+)$/.exec(key);
+        if (!m) return null;
+        return (interfaces ?? [])[Number(m[1])]?.port ?? null;
+    }
 }

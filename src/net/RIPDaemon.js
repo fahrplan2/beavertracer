@@ -1,6 +1,6 @@
 //@ts-check
 import { IPAddress } from "./models/IPAddress.js";
-import { simTimer } from "../sim/SimTimer.js";
+import { simTimer } from "../lib/SimTimer.js";
 import {
     RIPPacket, RIPEntry,
     RIP_CMD_RESPONSE, RIP_AFI_IP, RIP_INFINITY, RIP_PORT,

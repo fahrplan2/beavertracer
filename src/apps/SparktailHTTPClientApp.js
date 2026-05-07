@@ -3,7 +3,7 @@
 import { LoggedProcess } from "./lib/LoggedProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
 import { Disposer } from "../lib/Disposer.js";
-import { SimTimer } from "../sim/SimTimer.js";
+import { SimTimer } from "../lib/SimTimer.js";
 
 //@ts-ignore Import ist raw für vite
 import startPage from "./assets/about-start.html?raw";

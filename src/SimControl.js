@@ -12,7 +12,7 @@ import { Laptop } from "./sim/Laptop.js";
 import { HomeRouter } from "./sim/HomeRouter.js";
 import { Firewall } from "./sim/Firewall.js";
 import { WifiMedium } from "./net/WifiMedium.js";
-import { simTimer } from "./sim/SimTimer.js";
+import { simTimer } from "./lib/SimTimer.js";
 import { t, getLocale, setLocale, getLocales } from "./i18n/index.js";
 import { StaticPageRouter } from "./StaticPageRouter.js";
 import { PCapController } from "./tracer/PCapControler.js";

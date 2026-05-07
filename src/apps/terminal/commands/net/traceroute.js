@@ -5,7 +5,7 @@ import { ipNumberToString, ipStringToNumber } from "../lib/ip.js";
 import { nowMs } from "../lib/time.js";
 import { sleepAbortable } from "../lib/abort.js";
 import { IPAddress } from "../../../../net/models/IPAddress.js";
-import { SimTimer } from "../../../../sim/SimTimer.js";
+import { SimTimer } from "../../../../lib/SimTimer.js";
 
 /**
  * Format an IP that may be:
