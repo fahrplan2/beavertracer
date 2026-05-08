@@ -872,10 +872,10 @@ sim-toolbar-langbtn {
   border-radius: var(--radius-lg);
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
   padding: var(--pad-xl);
-  width: min(520px, 90vw);
+  width: min(720px, 94vw);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .sim-langdialog-header {
@@ -904,10 +904,36 @@ sim-toolbar-langbtn {
   opacity: 1;
 }
 
+.sim-langdialog-search {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.875rem;
+}
+
+.sim-langdialog-search:focus {
+  outline: 2px solid var(--primary, #5b9bd5);
+  outline-offset: -1px;
+}
+
+.sim-langdialog-sep {
+  grid-column: 1 / -1;
+  border: none;
+  border-top: 1px solid var(--ui-border);
+  margin: 2px 0;
+}
+
 .sim-langdialog-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
   gap: 8px;
+  max-height: 55vh;
+  overflow-y: auto;
+  padding-right: 2px;
 }
 
 .sim-lang-card {

@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇸🇦 العربية (translated by AI)", order: 15 };
+export const meta = { name: "🇸🇦 العربية (translated by AI)", order: 32 };
 
 export default {
   "lang.name": "🇸🇦 العربية",
@@ -807,5 +807,6 @@ export default {
   "firewall.delrule": "حذف قاعدة",
   "firewall.move.up": "تحريك لأعلى",
   "firewall.move.down": "تحريك لأسفل",
-  "sim.tool.firewall": "جدار الحماية"
+  "sim.tool.firewall": "جدار الحماية",
+  "lessons.noLessons": "نعتذر، لكن لا توجد دروس متاحة في هذه اللغة حتى الآن. 😔"
 };

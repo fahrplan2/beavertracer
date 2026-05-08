@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇰🇷 한국어 (translated by AI)", order: 13 };
+export const meta = { name: "🇰🇷 한국어 (translated by AI)", order: 30 };
 
 export default {
   "lang.name": "🇰🇷 한국어",
@@ -807,5 +807,6 @@ export default {
   "firewall.delrule": "규칙 삭제",
   "firewall.move.up": "위로 이동",
   "firewall.move.down": "아래로 이동",
-  "sim.tool.firewall": "방화벽"
+  "sim.tool.firewall": "방화벽",
+  "lessons.noLessons": "죄송하지만, 현재 이 언어로 제공되는 레슨이 없습니다. 😔"
 };

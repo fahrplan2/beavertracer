@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇷🇺 Русский (translated by AI)", order: 9 };
+export const meta = { name: "🇷🇺 Русский (translated by AI)", order: 20 };
 
 export default {
   "lang.name": "🇷🇺 Русский",
@@ -807,5 +807,6 @@ export default {
   "firewall.delrule": "Удалить правило",
   "firewall.move.up": "Переместить вверх",
   "firewall.move.down": "Переместить вниз",
-  "sim.tool.firewall": "Брандмауэр"
+  "sim.tool.firewall": "Брандмауэр",
+  "lessons.noLessons": "К сожалению, на данный момент уроки на этом языке недоступны. 😔"
 };

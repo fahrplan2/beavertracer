@@ -10,9 +10,29 @@ import path from "node:path";
 
 const ROOT = path.resolve(import.meta.dirname, "..");
 
+const RTL_LOCALES = new Set(["ar", "he", "fa", "ur"]);
+
 const LOCALES = [
+  { code: "id", name: "Indonesian" },
+  { code: "bg", name: "Bulgarian" },
+  { code: "bs", name: "Bosnian" },
+  { code: "cs", name: "Czech" },
+  { code: "da", name: "Danish" },
+  { code: "et", name: "Estonian" },
+  { code: "fi", name: "Finnish" },
+  { code: "lv", name: "Latvian" },
+  { code: "lt", name: "Lithuanian" },
+  { code: "sk", name: "Slovak" },
+  { code: "sl", name: "Slovenian" },
+  { code: "el", name: "Greek" },
+  { code: "hr", name: "Croatian" },
+  { code: "sr", name: "Serbian" },
+  { code: "fa", name: "Persian (Farsi)" },
   { code: "pt-PT", name: "European Portuguese (Portugal)" },
+  { code: "ro", name: "Romanian" },
   { code: "ru", name: "Russian" },
+  { code: "vi", name: "Vietnamese" },
+  { code: "sv", name: "Swedish" },
   { code: "ko", name: "Korean" },
   { code: "nl", name: "Dutch" },
   { code: "pl", name: "Polish" },
@@ -76,7 +96,10 @@ for (const page of ["about", "help"]) {
 
     process.stdout.write(`  …     ${page} → ${locale.name} `);
     try {
-      const translated = await translateHtml(translatePart, locale.name);
+      let translated = await translateHtml(translatePart, locale.name);
+      if (RTL_LOCALES.has(locale.code.split("-")[0])) {
+        translated = `<div dir="rtl">\n${translated}\n</div>`;
+      }
       fs.writeFileSync(outPath, translated + keepPart + "\n", "utf8");
       console.log(`✓`);
     } catch (e) {

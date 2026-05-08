@@ -1123,6 +1123,12 @@ export class SimControl {
         header.appendChild(closeBtn);
         dlg.appendChild(header);
 
+        const search = document.createElement("input");
+        search.type = "search";
+        search.className = "sim-langdialog-search";
+        search.placeholder = "Filter…";
+        dlg.appendChild(search);
+
         const locales = await getLocales();
         const current = getLocale();
 
@@ -1176,9 +1182,23 @@ export class SimControl {
             });
 
             grid.appendChild(card);
+
+            if (loc.key === "en") {
+                const sep = document.createElement("hr");
+                sep.className = "sim-langdialog-sep";
+                grid.appendChild(sep);
+            }
         }
 
         dlg.appendChild(grid);
+
+        search.addEventListener("input", () => {
+            const q = search.value.toLowerCase();
+            for (const card of grid.children) {
+                const nameEl = card.querySelector(".sim-lang-card-name");
+                card.style.display = !q || nameEl.textContent.toLowerCase().includes(q) ? "" : "none";
+            }
+        });
 
         if (hasAI) {
             const note = document.createElement("p");
@@ -1190,6 +1210,7 @@ export class SimControl {
         backdrop.appendChild(dlg);
         document.body.appendChild(backdrop);
         this._langPanel = backdrop;
+        search.focus();
 
         /** @param {KeyboardEvent} ev */
         const onKey = (ev) => {

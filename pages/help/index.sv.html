@@ -1,0 +1,293 @@
+<h2>Hjälp</h2>
+<p class="subtitle">Så här använder du Beaver Tracer</p>
+
+<hr>
+
+<nav class="help-toc">
+  <strong>Innehåll</strong>
+  <ol>
+    <li><a href="#modes">De tre lägena</a></li>
+    <li><a href="#edit">Redigeringslägel — Bygga ett nätverk</a></li>
+    <li><a href="#devices">Enheter</a></li>
+    <li><a href="#panels">Enhetspaneler</a></li>
+    <li><a href="#run">Körläge — Köra simuleringen</a></li>
+    <li><a href="#trace">Spårningsläge — Analysera paket</a></li>
+    <li><a href="#project">Spara och ladda</a></li>
+  </ol>
+</nav>
+
+<hr>
+
+<h3 id="modes">De tre lägena</h3>
+<p>
+  Beaver Tracer har tre lägen. Du växlar mellan dem med hjälp av knapparna i det övre verktygsfältet.
+</p>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-pencil"></i></td>
+    <td><strong>Redigering</strong></td>
+    <td>Designa ditt nätverk — placera enheter, anslut dem, konfigurera dem.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-play"></i></td>
+    <td><strong>Kör</strong></td>
+    <td>Starta simuleringen och se trafiken flöda genom ditt nätverk.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-magnifying-glass"></i></td>
+    <td><strong>Spårning</strong></td>
+    <td>Fånga och inspektera paket som reser över ditt nätverk.</td>
+  </tr>
+</table>
+
+<hr>
+
+<h3 id="edit">Redigeringslägel — Bygga ett nätverk</h3>
+<p>
+  I redigeringsläge visas ett verktygsfält på vänster sida av skärmen.
+  Välj ett verktyg genom att klicka på det och använd det sedan på arbetsytan.
+</p>
+
+<h4>Verktyg</h4>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-arrow-pointer"></i></td>
+    <td><strong>Välj</strong></td>
+    <td>Klicka på en enhet för att öppna dess panel. Dra en enhet för att flytta den.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-link"></i></td>
+    <td><strong>Länk</strong></td>
+    <td>Anslut två enheter med en kabel (se nedan).</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-ban"></i></td>
+    <td><strong>Radera</strong></td>
+    <td>Klicka på en enhet eller kabel för att ta bort den.</td>
+  </tr>
+</table>
+
+<p>
+  <strong>Tips:</strong> Högerklicka någonstans på arbetsytan för att avbryta det aktuella verktyget
+  och återgå till <i class="fas fa-arrow-pointer"></i> Välj.
+</p>
+
+<h4>Placera en enhet</h4>
+<ol>
+  <li>Klicka på en enhetknapp i det vänstra verktygsfältet (t.ex. <i class="fas fa-desktop"></i> PC).</li>
+  <li>En förhandsvisning följer din muspekare.</li>
+  <li>Klicka på arbetsytan för att placera enheten.</li>
+</ol>
+
+<h4>Ansluta två enheter</h4>
+<ol>
+  <li>Klicka på <i class="fas fa-link"></i> <strong>Länk</strong>-verktyget.</li>
+  <li>Klicka på den första enheten — en portväljare visas. Välj en port.</li>
+  <li>Flytta din mus till den andra enheten och klicka på den — välj också en port där.</li>
+  <li>Kabeln skapas automatiskt.</li>
+</ol>
+<p>
+  Portar som redan är i bruk visas som inaktiverade och kan inte väljas.
+</p>
+
+<h4>Flytta en enhet</h4>
+<p>
+  I <i class="fas fa-arrow-pointer"></i> Välj-läge klickar du och drar en enhet för att flytta den på arbetsytan.
+</p>
+
+<h4>Ta bort en enhet eller kabel</h4>
+<ol>
+  <li>Klicka på <i class="fas fa-ban"></i> <strong>Radera</strong>-verktyget.</li>
+  <li>Klicka på den enhet eller kabel du vill ta bort.</li>
+</ol>
+<p>
+  När du tar bort en enhet tas alla kablar som är anslutna till den bort automatiskt.
+</p>
+
+<hr>
+
+<h3 id="devices">Enheter</h3>
+<p>
+  Dessa enheter är tillgängliga i det vänstra verktygsfältet under redigeringsläge:
+</p>
+
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-desktop"></i></td>
+    <td><strong>PC</strong></td>
+    <td>
+      En persondator med ett trådbundet nätverksgränssnitt. Du kan köra appar på den
+      (t.ex. en webbläsare eller ett pingverktyg) och konfigurera dess IP-adress.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-laptop"></i></td>
+    <td><strong>Laptop</strong></td>
+    <td>
+      Liknar en PC, men ansluts via Wi-Fi istället för en kabel.
+      Använd den tillsammans med en åtkomstpunkt eller hemrouter.
+    </td>
+  </tr>
+  <tr>
+    <td>SW</td>
+    <td><strong>Switch</strong></td>
+    <td>
+      Ansluter flera enheter i samma nätverkssegment.
+      Vidarebefordrar ramar baserat på MAC-adresser.
+      Stöder VLAN och Spanning Tree Protocol (STP).
+    </td>
+  </tr>
+  <tr>
+    <td>RT</td>
+    <td><strong>Router</strong></td>
+    <td>
+      Ansluter olika nätverk och vidarebefordrar paket mellan dem.
+      Du kan konfigurera statiska vägar och IP-adresser på varje gränssnitt.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-house-signal"></i></td>
+    <td><strong>Hemrouter</strong></td>
+    <td>
+      En kombinerad router, DHCP-server, NAT-gateway och Wi-Fi-åtkomstpunkt —
+      liknande en typisk hemansluten internetrouter.
+      Anslut den till en router (som WAN) och till PC:ar eller Laptops (som LAN/Wi-Fi).
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-wifi"></i></td>
+    <td><strong>Åtkomstpunkt</strong></td>
+    <td>
+      Utökar ett trådbundet nätverk med en Wi-Fi-anslutning.
+      Anslut dess trådbundna port till en Switch eller Router, anslut sedan Laptops till den trådlöst.
+    </td>
+  </tr>
+</table>
+
+<hr>
+
+<h3 id="panels">Enhetspaneler</h3>
+<p>
+  Klicka på en enhet på arbetsytan för att öppna dess <strong>panel</strong> — ett konfigurationsfönster
+  som visas på höger sida av skärmen.
+  Klicka på enheten igen (eller på <strong>×</strong>-knappen i panelhuvudet) för att stänga den.
+</p>
+
+<h4>Byta namn på en enhet</h4>
+<p>
+  Klicka på <i class="fas fa-pen"></i>-knappen bredvid enhetsnamnet i panelhuvudet
+  för att ge den ett eget namn (t.ex. "Office-PC" eller "Core-Router").
+</p>
+
+<h4>Flikar</h4>
+<p>
+  De flesta enheter har flera flikar inuti panelen.
+  Till exempel har en router:
+</p>
+<ul>
+  <li><strong>Gränssnitt</strong> — konfigurera IP-adresser på varje port</li>
+  <li><strong>Routningstabell IPv4</strong> — visa och redigera statiska IPv4-vägar</li>
+  <li><strong>Routningstabell IPv6</strong> — visa och redigera statiska IPv6-vägar</li>
+</ul>
+<p>
+  En switch har flikar för dess <strong>Switch Address Table (SAT)</strong>, <strong>VLAN</strong>
+  -konfiguration och <strong>Spanning Tree Protocol (STP)</strong>-inställningar.
+</p>
+<p>
+  En hemrouter har flikar för <strong>Status</strong>, <strong>WAN</strong>-inställningar och <strong>DHCP</strong>-leasningar.
+</p>
+
+<h4>PC och Laptop</h4>
+<p>
+  PC:ar och laptops har ett fullständigt simulerat operativsystem inuti sin panel.
+  Du kan öppna appar från skrivbordet, konfigurera nätverksinställningar och köra kommandon.
+</p>
+
+<hr>
+
+<h3 id="run">Körläge — Köra simuleringen</h3>
+<p>
+  Byt till <i class="fas fa-play"></i> <strong>Körläge</strong> för att starta simuleringen.
+  Nätverket blir live: enheter utbyter paket, DHCP-leasningar tilldelas,
+  routningtabeller uppdateras och så vidare.
+</p>
+
+<h4>Hastighetskontroller</h4>
+<p>
+  Använd hastighetsknappar i det övre verktygsfältet för att styra hur snabbt simuleringen körs:
+</p>
+<table class="help-table">
+  <tr><td><strong>0,5×</strong></td><td>Långsamt — bra för att observera enskilda steg</td></tr>
+  <tr><td><strong>1×</strong></td><td>Normal hastighet</td></tr>
+  <tr><td><strong>4×</strong></td><td>Snabbt</td></tr>
+  <tr><td><strong>8×</strong></td><td>Mycket snabbt</td></tr>
+</table>
+
+<h4>Pausa och återställ</h4>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-pause"></i></td>
+    <td><strong>Pausa</strong></td>
+    <td>Frysa simuleringen i sitt aktuella tillstånd.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-arrow-rotate-left"></i></td>
+    <td><strong>Återställ</strong></td>
+    <td>Starta om simuleringen från början (all dynamisk status rensas).</td>
+  </tr>
+</table>
+
+<p>
+  <strong>Obs:</strong> Du kan inte redigera nätverkstopologin medan du är i körläge.
+  Byt tillbaka till <i class="fas fa-pencil"></i> Redigeringslägel först.
+</p>
+
+<hr>
+
+<h3 id="trace">Spårningsläge — Analysera paket</h3>
+<p>
+  Byt till <i class="fas fa-magnifying-glass"></i> <strong>Spårningsläge</strong> för att öppna
+  den inbyggda paketanalysatorn — liknande Wireshark.
+</p>
+<p>
+  Överst väljer du <strong>enhet</strong> och <strong>port</strong> du vill fånga från.
+  Alla paket som passerar genom den porten registreras och visas i en lista.
+</p>
+<p>
+  Klicka på ett paket i listan för att se dess fullständiga detaljer:
+  protokolllagerna, huvudfälten och nyttolasten — exakt som ett professionellt nätverksverktyg skulle visa dem.
+</p>
+<p>
+  Inspelningen körs automatiskt medan simuleringen är igång.
+  Du kan växla mellan spårningsläge och körläge när som helst utan att förlora de fångade data.
+</p>
+
+<hr>
+
+<h3 id="project">Spara och ladda</h3>
+<p>
+  Din nätverksdesign kan sparas som en fil och laddas in senare.
+  Använd knapparna i det övre verktygsfältet (synliga i redigeringsläge):
+</p>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-file"></i></td>
+    <td><strong>Ny</strong></td>
+    <td>Börja med en tom arbetsyta. Alla osparade ändringar går förlorade.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-file-arrow-up"></i></td>
+    <td><strong>Ladda</strong></td>
+    <td>Öppna en tidigare sparad simuleringsfil.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-file-arrow-down"></i></td>
+    <td><strong>Spara</strong></td>
+    <td>Ladda ned den aktuella simuleringen som en fil till din dator.</td>
+  </tr>
+</table>
+
+<hr>
+<p class="footer">
+  Har du problem? Kontrollera att ditt nätverk är korrekt anslutet och att alla enheter har giltiga IP-adresser konfigurerade.
+</p>
