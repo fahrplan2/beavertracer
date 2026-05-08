@@ -1,5 +1,7 @@
 //@ts-check
 
+import { read16BE, read32BE, write16BE, write32BE } from "../util/byteUtils.js";
+
 /**
  * @typedef {Object} DNSQuestion
  * @property {string} name
@@ -120,8 +122,8 @@ export class DNSPacket {
     if (!(bytes instanceof Uint8Array)) throw new Error("fromBytes expects Uint8Array");
     if (bytes.length < 12) throw new Error("DNS message needs at least 12 bytes");
 
-    const id = (bytes[0] << 8) | bytes[1];
-    const flags = (bytes[2] << 8) | bytes[3];
+    const id    = read16BE(bytes, 0);
+    const flags = read16BE(bytes, 2);
 
     const qr = (flags >>> 15) & 0x01;
     const opcode = (flags >>> 11) & 0x0f;
@@ -132,10 +134,10 @@ export class DNSPacket {
     const z = (flags >>> 4) & 0x07;
     const rcode = flags & 0x0f;
 
-    const qdcount = (bytes[4] << 8) | bytes[5];
-    const ancount = (bytes[6] << 8) | bytes[7];
-    const nscount = (bytes[8] << 8) | bytes[9];
-    const arcount = (bytes[10] << 8) | bytes[11];
+    const qdcount = read16BE(bytes, 4);
+    const ancount = read16BE(bytes, 6);
+    const nscount = read16BE(bytes, 8);
+    const arcount = read16BE(bytes, 10);
 
     /** @type {number} */
     let off = 12;
@@ -148,8 +150,8 @@ export class DNSPacket {
       off = nameRes.nextOffset;
 
       if (off + 4 > bytes.length) throw new Error("DNS truncated in question");
-      const type = (bytes[off] << 8) | bytes[off + 1];
-      const cls = (bytes[off + 2] << 8) | bytes[off + 3];
+      const type = read16BE(bytes, off);
+      const cls  = read16BE(bytes, off + 2);
       off += 4;
 
       questions.push({ name, type, cls });
@@ -199,8 +201,7 @@ export class DNSPacket {
 
     // Header
     const header = new Uint8Array(12);
-    header[0] = (this.id >> 8) & 0xff;
-    header[1] = this.id & 0xff;
+    write16BE(header, 0, this.id);
 
     const flags =
       ((this.qr & 0x01) << 15) |
@@ -212,22 +213,17 @@ export class DNSPacket {
       ((this.z & 0x07) << 4) |
       (this.rcode & 0x0f);
 
-    header[2] = (flags >> 8) & 0xff;
-    header[3] = flags & 0xff;
+    write16BE(header, 2, flags);
 
     const qdcount = this.questions.length & 0xffff;
     const ancount = this.answers.length & 0xffff;
     const nscount = this.authorities.length & 0xffff;
     const arcount = this.additionals.length & 0xffff;
 
-    header[4] = (qdcount >> 8) & 0xff;
-    header[5] = qdcount & 0xff;
-    header[6] = (ancount >> 8) & 0xff;
-    header[7] = ancount & 0xff;
-    header[8] = (nscount >> 8) & 0xff;
-    header[9] = nscount & 0xff;
-    header[10] = (arcount >> 8) & 0xff;
-    header[11] = arcount & 0xff;
+    write16BE(header, 4, qdcount);
+    write16BE(header, 6, ancount);
+    write16BE(header, 8, nscount);
+    write16BE(header, 10, arcount);
 
     parts.push(header);
 
@@ -258,15 +254,10 @@ export class DNSPacket {
 
     if (off + 10 > bytes.length) throw new Error("DNS truncated in RR header");
 
-    const type = (bytes[off] << 8) | bytes[off + 1];
-    const cls = (bytes[off + 2] << 8) | bytes[off + 3];
-    const ttl = (
-      (bytes[off + 4] << 24) |
-      (bytes[off + 5] << 16) |
-      (bytes[off + 6] << 8) |
-      bytes[off + 7]
-    ) >>> 0;
-    const rdlength = (bytes[off + 8] << 8) | bytes[off + 9];
+    const type     = read16BE(bytes, off);
+    const cls      = read16BE(bytes, off + 2);
+    const ttl      = read32BE(bytes, off + 4);
+    const rdlength = read16BE(bytes, off + 8);
     off += 10;
 
     if (off + rdlength > bytes.length) throw new Error("DNS truncated in RDATA");
@@ -397,8 +388,7 @@ export class DNSPacket {
 
       const nameBytes = DNSPacket._writeName(exchange);
       const out = new Uint8Array(2 + nameBytes.length);
-      out[0] = (pref >> 8) & 0xff;
-      out[1] = pref & 0xff;
+      write16BE(out, 0, pref);
       out.set(nameBytes, 2);
       return out;
     }
@@ -495,8 +485,7 @@ export class DNSPacket {
    */
   static _u16(v) {
     const out = new Uint8Array(2);
-    out[0] = (v >> 8) & 0xff;
-    out[1] = v & 0xff;
+    write16BE(out, 0, v);
     return out;
   }
 
@@ -506,10 +495,7 @@ export class DNSPacket {
    */
   static _u32(v) {
     const out = new Uint8Array(4);
-    out[0] = (v >>> 24) & 0xff;
-    out[1] = (v >>> 16) & 0xff;
-    out[2] = (v >>> 8) & 0xff;
-    out[3] = v & 0xff;
+    write32BE(out, 0, v);
     return out;
   }
 

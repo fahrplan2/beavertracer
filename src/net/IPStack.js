@@ -7,7 +7,7 @@ import { NetworkInterface } from "./NetworkInterface.js";
 import { Observable } from "../lib/Observeable.js";
 import { ICMPPacket } from "../net/pdu/ICMPPacket.js";
 import { EthernetPort } from "./EthernetPort.js";
-import { simTimer, SimTimer } from "../sim/SimTimer.js";
+import { simTimer, SimTimer } from "../lib/SimTimer.js";
 import { TcpEngine } from "./TcpEngine.js";
 import { UdpEngine } from "./UdpEngine.js";
 import { IPAddress } from "./models/IPAddress.js";

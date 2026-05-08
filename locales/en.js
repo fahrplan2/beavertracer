@@ -14,7 +14,6 @@ export default {
   "app.dhcpserver.label.gateway": "Gateway",
   "app.dhcpserver.label.leaseTime": "Lease time (seconds)",
 
-  "app.dhcpserver.button.load": "Load",
   "app.dhcpserver.button.save": "Save",
   "app.dhcpserver.button.start": "Start",
   "app.dhcpserver.button.stop": "Stop",
@@ -110,6 +109,7 @@ export default {
   "app.ipv4config.err.applyFailed": "Apply failed: {reason}",
   "app.ipv4config.err.invalidPrefixLength":"invalid prefix length",
   "app.ipv4config.label.prefixLength":"Prefix Length",
+  "app.ipv4config.label.subnetMask": "Subnet Mask",
   "app.ipv4config.label.dnsServer": "DNS server",
   "app.ipv4config.err.invalidDnsServer": "Invalid DNS server address",
   "app.ipv4config.msg.appliedWithGwDns":
@@ -144,7 +144,6 @@ export default {
   "app.ipv4config.tab.ipv6": "IPv6",
   "app.ipv4config.ipv6.sectionTitle": "IPv6 Configuration",
   "app.ipv4config.ipv6.linklocal": "Link-local",
-  "app.ipv4config.ipv6.enable": "Enable IPv6",
   "app.ipv4config.ipv6.mode": "Mode",
   "app.ipv4config.ipv6.mode.disabled": "Disabled",
   "app.ipv4config.ipv6.mode.static": "Static",
@@ -153,7 +152,6 @@ export default {
 
   "app.ipv4config.ipv6.dhcp6.status":      "DHCPv6 address",
   "app.ipv4config.ipv6.dhcp6.release":     "Release",
-  "app.ipv4config.ipv6.dhcp6.hint":        "DHCPv6 mode: click Apply to obtain an address automatically.",
   "app.ipv4config.ipv6.dhcp6.starting":    "Starting DHCPv6 on interface {i}…",
   "app.ipv4config.ipv6.dhcp6.attempt":     "DHCPv6 attempt {attempt}…",
   "app.ipv4config.ipv6.dhcp6.success":     "DHCPv6 on if{i}: {ip}/{prefix}, DNS {dns}",
@@ -676,7 +674,6 @@ export default {
 
   "router.deleteinterface": "Delete interface",
   "router.confirminterfacedelete": "Are you sure to delete interface ${name}",
-  "router.nointerfaceselected": "no interface selected",
 
   "router.stateup": "up",
   "router.statedown": "down",
@@ -754,10 +751,6 @@ export default {
   "switch.stp.status": "STP status",
   "switch.vlan.config": "VLAN configuration",
   "switch.vlan.enable": "enable VLAN",
-  "switch.vlan.col.port": "Port",
-  "switch.vlan.col.mode": "Mode",
-  "switch.vlan.col.pvid": "PVID",
-  "switch.vlan.col.allowed": "Allowed VLANs",
 
   "switch.sat.empty": "The SAT is still empty.",
   "switch.tab.sat": "SAT",
@@ -942,15 +935,6 @@ export default {
   "firewall.defaultpolicy": "Default policy",
   "firewall.policy.allow": "Allow all",
   "firewall.policy.deny": "Deny all",
-  "firewall.col.enabled": "On",
-  "firewall.col.direction": "Direction",
-  "firewall.col.ipversion": "IP",
-  "firewall.col.protocol": "Protocol",
-  "firewall.col.srcip": "Src IP/CIDR",
-  "firewall.col.srcport": "Src Port",
-  "firewall.col.dstip": "Dst IP/CIDR",
-  "firewall.col.dstport": "Dst Port",
-  "firewall.col.action": "Action",
   "firewall.dir.both": "Both",
   "firewall.dir.atob": "A → B",
   "firewall.dir.btoa": "B → A",

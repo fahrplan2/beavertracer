@@ -1,0 +1,280 @@
+<h2>ヘルプ</h2>
+<p class="subtitle">Beaver Tracerの使い方</p>
+
+<hr>
+
+<nav class="help-toc">
+  <strong>目次</strong>
+  <ol>
+    <li><a href="#modes">3つのモード</a></li>
+    <li><a href="#edit">編集モード — ネットワークの構築</a></li>
+    <li><a href="#devices">デバイス</a></li>
+    <li><a href="#panels">デバイスパネル</a></li>
+    <li><a href="#run">実行モード — シミュレーションの実行</a></li>
+    <li><a href="#trace">トレースモード — パケット分析</a></li>
+    <li><a href="#project">保存と読み込み</a></li>
+  </ol>
+</nav>
+
+<hr>
+
+<h3 id="modes">3つのモード</h3>
+<p>
+  Beaver Tracerは3つのモードを備えています。上部ツールバーのボタンを使ってモード間を切り替えます。
+</p>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-pencil"></i></td>
+    <td><strong>編集</strong></td>
+    <td>ネットワークを設計します — デバイスを配置し、接続し、設定します。</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-play"></i></td>
+    <td><strong>実行</strong></td>
+    <td>シミュレーションを開始し、ネットワークを通るトラフィックを監視します。</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-magnifying-glass"></i></td>
+    <td><strong>トレース</strong></td>
+    <td>ネットワークを通過するパケットをキャプチャして検査します。</td>
+  </tr>
+</table>
+
+<hr>
+
+<h3 id="edit">編集モード — ネットワークの構築</h3>
+<p>
+  編集モードでは、画面左側にツールバーが表示されます。
+  ツールをクリックして選択し、キャンバス上で使用します。
+</p>
+
+<h4>ツール</h4>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-arrow-pointer"></i></td>
+    <td><strong>選択</strong></td>
+    <td>デバイスをクリックしてパネルを開きます。デバイスをドラッグして移動します。</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-link"></i></td>
+    <td><strong>リンク</strong></td>
+    <td>2つのデバイスをケーブルで接続します（下記参照）。</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-ban"></i></td>
+    <td><strong>削除</strong></td>
+    <td>デバイスまたはケーブルをクリックして削除します。</td>
+  </tr>
+</table>
+
+<p>
+  <strong>ヒント:</strong> キャンバスの任意の場所を右クリックして、現在のツールをキャンセルし、<i class="fas fa-arrow-pointer"></i> 選択に戻ります。
+</p>
+
+<h4>デバイスを配置する</h4>
+<ol>
+  <li>左側ツールバーのデバイスボタンをクリックします（例：<i class="fas fa-desktop"></i> PC）。</li>
+  <li>プレビューがマウスカーソルに従います。</li>
+  <li>キャンバス上をクリックしてデバイスを配置します。</li>
+</ol>
+
+<h4>2つのデバイスを接続する</h4>
+<ol>
+  <li><i class="fas fa-link"></i> <strong>リンク</strong>ツールをクリックします。</li>
+  <li>最初のデバイスをクリックします — ポートピッカーが表示されます。ポートを選択します。</li>
+  <li>マウスを2番目のデバイスに移動してクリックします — そこでもポートを選択します。</li>
+  <li>ケーブルが自動的に作成されます。</li>
+</ol>
+<p>
+  既に使用中のポートは無効として表示され、選択できません。
+</p>
+
+<h4>デバイスを移動する</h4>
+<p>
+  <i class="fas fa-arrow-pointer"></i> 選択モードで、任意のデバイスをクリックしてドラッグし、キャンバス上で再配置します。
+</p>
+
+<h4>デバイスまたはケーブルを削除する</h4>
+<ol>
+  <li><i class="fas fa-ban"></i> <strong>削除</strong>ツールをクリックします。</li>
+  <li>削除するデバイスまたはケーブルをクリックします。</li>
+</ol>
+<p>
+  デバイスを削除すると、それに接続されているすべてのケーブルが自動的に削除されます。
+</p>
+
+<hr>
+
+<h3 id="devices">デバイス</h3>
+<p>
+  編集モード中に左側ツールバーで利用可能なデバイスは以下の通りです：
+</p>
+
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-desktop"></i></td>
+    <td><strong>PC</strong></td>
+    <td>
+      有線ネットワークインターフェイス付きのパーソナルコンピュータです。アプリケーション
+      （例えばWebブラウザやpingツール）を実行でき、IPアドレスを設定できます。
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-laptop"></i></td>
+    <td><strong>ノートパソコン</strong></td>
+    <td>
+      PCと似ていますが、ケーブルではなくWi-Fiで接続します。
+      アクセスポイントまたはホームルータと一緒に使用します。
+    </td>
+  </tr>
+  <tr>
+    <td>SW</td>
+    <td><strong>スイッチ</strong></td>
+    <td>
+      複数のデバイスを同じネットワークセグメントで接続します。
+      MACアドレスに基づいてフレームを転送します。
+      VLANとSpanning Tree Protocol (STP)に対応しています。
+    </td>
+  </tr>
+  <tr>
+    <td>RT</td>
+    <td><strong>ルータ</strong></td>
+    <td>
+      異なるネットワークを接続し、パケットを転送します。
+      各インターフェイスでスタティックルートとIPアドレスを設定できます。
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-house-signal"></i></td>
+    <td><strong>ホームルータ</strong></td>
+    <td>
+      ルータ、DHCPサーバ、NATゲートウェイ、Wi-Fiアクセスポイントが統合されています —
+      典型的なホームインターネットルータと類似しています。
+      ルータに接続し（WAN側）、PCまたはノートパソコンに接続します（LAN/Wi-Fi側）。
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-wifi"></i></td>
+    <td><strong>アクセスポイント</strong></td>
+    <td>
+      有線ネットワークをWi-Fi接続で拡張します。
+      その有線ポートをスイッチまたはルータに接続し、ノートパソコンをワイヤレスで接続します。
+    </td>
+  </tr>
+</table>
+
+<hr>
+
+<h3 id="panels">デバイスパネル</h3>
+<p>
+  キャンバス上の任意のデバイスをクリックして<strong>パネル</strong>を開きます — 設定ウィンドウが
+  画面右側に表示されます。
+  デバイスをもう一度クリック（またはパネルヘッダーの<strong>×</strong>ボタン）して閉じます。
+</p>
+
+<h4>デバイスの名前変更</h4>
+<p>
+  パネルヘッダーのデバイス名の横にある<i class="fas fa-pen"></i>ボタンをクリックして、
+  カスタム名を付けます（例："Office-PC"または"Core-Router"）。
+</p>
+
+<h4>タブ</h4>
+<p>
+  ほとんどのデバイスはパネル内に複数のタブを持ちます。
+  例えば、ルータは以下を持ちます：
+</p>
+<ul>
+  <li><strong>インターフェイス</strong> — 各ポートでIPアドレスを設定</li>
+  <li><strong>ルーティングテーブルIPv4</strong> — IPv4スタティックルートを表示・編集</li>
+  <li><strong>ルーティングテーブルIPv6</strong> — IPv6スタティックルートを表示・編集</li>
+</ul>
+<p>
+  スイッチは<strong>スイッチアドレステーブル (SAT)</strong>、<strong>VLAN</strong>
+  設定、および<strong>Spanning Tree Protocol (STP)</strong>設定のタブを持ちます。
+</p>
+<p>
+  ホームルータは<strong>ステータス</strong>、<strong>WAN</strong>設定、および<strong>DHCP</strong>リースのタブを持ちます。
+</p>
+
+<h4>PCとノートパソコン</h4>
+<p>
+  PCとノートパソコンは、パネル内に完全にシミュレートされたオペレーティングシステムを持ちます。
+  デスクトップからアプリを開き、ネットワーク設定を設定し、コマンドを実行できます。
+</p>
+
+<hr>
+
+<h3 id="run">実行モード — シミュレーションの実行</h3>
+<p>
+  <i class="fas fa-play"></i> <strong>実行</strong>モードに切り替えてシミュレーションを開始します。
+  ネットワークがライブになります：デバイスはパケットを交換し、DHCPリースが割り当てられ、
+  ルーティングテーブルが更新されます。等々。
+</p>
+
+<h4>速度コントロール</h4>
+<p>
+  上部ツールバーの速度ボタンを使ってシミュレーション速度を制御します：
+</p>
+<table class="help-table">
+  <tr><td><strong>0.5×</strong></td><td>遅い — 個々のステップを観察するのに最適</td></tr>
+  <tr><td><strong>1×</strong></td><td>通常速度</td></tr>
+  <tr><td><strong>4×</strong></td><td>速い</td></tr>
+  <tr><td><strong>8×</strong></td><td>非常に速い</td></tr>
+</table>
+
+<h4>一時停止とリセット</h4>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-pause"></i></td>
+    <td><strong>一時停止</strong></td>
+    <td>現在の状態でシミュレーションを凍結します。</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-arrow-rotate-left"></i></td>
+    <td><strong>リセット</strong></td>
+    <td>最初からシミュレーションを再開します（すべての動的状態がクリアされます）。</td>
+  </tr>
+</table>
+
+<p>
+  <strong>注記:</strong> 実行モード中はネットワークトポロジを編集できません。
+  まず<i class="fas fa-pencil"></i> 編集モードに切り替えてください。
+</p>
+
+<hr>
+
+<h3 id="trace">トレースモード — パケット分析</h3>
+<p>
+  <i class="fas fa-magnifying-glass"></i> <strong>トレース</strong>モードに切り替えて、
+  組み込みパケット分析ツール（Wiresharkに類似）を開きます。
+</p>
+<p>
+  上部で、キャプチャするデバイスとポートを選択します。
+  そのポートを通過するすべてのパケットが記録され、リストに表示されます。
+</p>
+<p>
+  リスト内のパケットをクリックして完全な詳細を確認します：
+  プロトコルレイヤ、ヘッダーフィールド、ペイロード — 専門的なネットワークツールが表示するまさにそのままです。
+</p>
+<p>
+  キャプチャはシミュレーションの実行中に自動的に実行されます。
+  キャプチャされたデータを失うことなく、トレースモードと実行モード間を切り替えることができます。
+</p>
+
+<hr>
+
+<h3 id="project">保存と読み込み</h3>
+<p>
+  ネットワーク設計をファイルとして保存し、後で再度読み込むことができます。
+  上部ツールバーのボタンを使用します（編集モードで表示されます）：
+</p>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-file"></i></td>
+    <td><strong>新規</strong></td>
+    <td>白いキャンバスで開始します。保存されていない変更は失われます。</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-file-arrow-up"></i></td>
+    <td><strong>読み込み</strong></td>
+    <td>以前に保存したシミュレーションファイルを開きます。</td>

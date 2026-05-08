@@ -1,6 +1,6 @@
 //@ts-check
 
-import { GenericProcess } from "./GenericProcess.js";
+import { LoggedProcess } from "./lib/LoggedProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
 import { Disposer } from "../lib/Disposer.js";
 import { t } from "../i18n/index.js";
@@ -97,7 +97,7 @@ function ipToText(ip) {
  *   "serverId":   "192.168.1.1"      // optional, default gateway
  * }
  */
-export class DHCPServerApp extends GenericProcess {
+export class DHCPServerApp extends LoggedProcess {
   get title() {
     return t("app.dhcpserver.title");
   }
@@ -116,9 +116,6 @@ export class DHCPServerApp extends GenericProcess {
 
   /** @type {boolean} */
   running = false;
-
-  /** @type {Array<string>} */
-  log = [];
 
   /** @type {HTMLTextAreaElement|null} */
   logEl = null;
@@ -250,41 +247,21 @@ export class DHCPServerApp extends GenericProcess {
       logBox,
     ]});
 
-    const leasesTable = /** @type {HTMLTableElement} */ (UI.el("table", { className: "dhcp-leases-table" }));
-    const thead = document.createElement("thead");
-    const headerRow = document.createElement("tr");
-    [
+    const { table: leasesTable, tbody } = UI.tableWithBody([
       t("app.dhcpserver.leases.col.mac"),
       t("app.dhcpserver.leases.col.address"),
       t("app.dhcpserver.leases.col.expires"),
-    ].forEach(label => {
-      const th = document.createElement("th");
-      th.textContent = label;
-      headerRow.appendChild(th);
-    });
-    thead.appendChild(headerRow);
-    leasesTable.appendChild(thead);
-    const tbody = document.createElement("tbody");
-    leasesTable.appendChild(tbody);
+    ], "dhcp-leases-table");
     this.leasesBody = tbody;
 
     const leasesPane = UI.el("div", { children: [leasesTable] });
     this.leasesPane = leasesPane;
 
-    const { bar: tabBar, setActive: setTab } = UI.tabGroup([
-      { id: "config", label: t("app.dhcpserver.label.config") },
-      { id: "log",    label: t("app.dhcpserver.label.log") },
-      { id: "leases", label: t("app.dhcpserver.label.leases") },
-    ], (id) => {
-      configPane.style.display = id === "config" ? "" : "none";
-      logPane.style.display    = id === "log"    ? "" : "none";
-      leasesPane.style.display = id === "leases" ? "" : "none";
-      if (id === "leases") this._renderLeases();
-    });
-    setTab("config");
-    configPane.style.display = "";
-    logPane.style.display    = "none";
-    leasesPane.style.display = "none";
+    const { bar: tabBar } = UI.tabbedPane([
+      { id: "config", label: t("app.dhcpserver.label.config"),  pane: configPane },
+      { id: "log",    label: t("app.dhcpserver.label.log"),     pane: logPane },
+      { id: "leases", label: t("app.dhcpserver.label.leases"),  pane: leasesPane, onShow: () => this._renderLeases() },
+    ]);
 
     this.disposer.interval(() => {
       if (this.leasesPane && this.leasesPane.style.display !== "none") this._renderLeases();
@@ -340,22 +317,10 @@ export class DHCPServerApp extends GenericProcess {
     if (this.saveBtn) this.saveBtn.disabled = dis;
   }
 
-  _renderLog() {
-    if (!this.logEl) return;
-    const maxLines = 250;
-    const lines = this.log.length > maxLines ? this.log.slice(-maxLines) : this.log;
-    this.logEl.value = lines.join("\n");
-    this.logEl.scrollTop = this.logEl.scrollHeight;
-  }
-
   /** @param {string} line */
   _appendLog(line) {
-    this.log.push(line);
-    if (this.log.length > 4000) this.log.splice(0, this.log.length - 4000);
-    if (this.mounted) {
-      this._renderLog();
-      if (this.leasesPane && this.leasesPane.style.display !== "none") this._renderLeases();
-    }
+    super._appendLog(line);
+    if (this.mounted && this.leasesPane && this.leasesPane.style.display !== "none") this._renderLeases();
   }
 
   _renderLeases() {

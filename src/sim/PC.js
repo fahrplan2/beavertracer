@@ -80,23 +80,9 @@ export class PC extends SimulatedObject {
 
 
     /** @returns {PortDescriptor[]} */
-    listPorts() {
-        const ifs = this.net?.interfaces ?? [];
-        return ifs.map((nic, i) => ({
-            key: `eth${i}`,
-            label: `eth${i}`,
-            port: nic.port,
-        }));
-    }
-
+    listPorts()           { return SimulatedObject.listEthPorts(this.net?.interfaces); }
     /** @param {string} key */
-    getPortByKey(key) {
-        const m = /^eth(\d+)$/.exec(key);
-        if (!m) return null;
-        const i = Number(m[1]);
-        const nic = (this.net?.interfaces ?? [])[i];
-        return nic?.port ?? null;
-    }
+    getPortByKey(key)     { return SimulatedObject.getEthPortByKey(this.net?.interfaces, key); }
 
     /**
      * 

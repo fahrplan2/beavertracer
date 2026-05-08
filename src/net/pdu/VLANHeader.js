@@ -1,5 +1,7 @@
 //@ts-check
 
+import { read16BE, write16BE } from "../util/byteUtils.js";
+
 /**
  * 802.1Q VLAN header AFTER the outer EtherType (TPID=0x8100).
  *
@@ -65,12 +67,12 @@ export class VLANHeader {
       throw new Error("VLANHeader needs at least 4 bytes");
     }
 
-    const tci = (bytes[0] << 8) | bytes[1];
+    const tci = read16BE(bytes, 0);
     const pcp = (tci >> 13) & 0x07;
     const dei = (tci >> 12) & 0x01;
     const vid = tci & 0x0fff;
 
-    const innerEtherType = (bytes[2] << 8) | bytes[3];
+    const innerEtherType = read16BE(bytes, 2);
     const payload = bytes.slice(4);
 
     return new VLANHeader({ pcp, dei, vid, innerEtherType, payload });
@@ -91,11 +93,8 @@ export class VLANHeader {
       ((this.dei & 0x01) << 12) |
       (this.vid & 0x0fff);
 
-    out[0] = (tci >> 8) & 0xff;
-    out[1] = tci & 0xff;
-
-    out[2] = (this.innerEtherType >> 8) & 0xff;
-    out[3] = this.innerEtherType & 0xff;
+    write16BE(out, 0, tci);
+    write16BE(out, 2, this.innerEtherType);
 
     if (this.payload.length > 0) out.set(this.payload, 4);
 

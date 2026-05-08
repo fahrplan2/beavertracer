@@ -153,6 +153,44 @@ export function prefixToNetmask(bits) {
     return (0xFFFFFFFF << (32 - bits)) >>> 0;
 }
 
+/**
+ * "255.255.255.0" → prefix length (0..32), or null if not a valid contiguous mask.
+ * @param {string} s
+ * @returns {number|null}
+ */
+export function netmaskStrToPrefix(s) {
+    const parts = String(s).trim().split(".");
+    if (parts.length !== 4) return null;
+    const octets = parts.map(Number);
+    if (octets.some(o => !Number.isInteger(o) || o < 0 || o > 255)) return null;
+    const m = ((octets[0] << 24) | (octets[1] << 16) | (octets[2] << 8) | octets[3]) >>> 0;
+
+    let seenZero = false;
+    let c = 0;
+    for (let i = 31; i >= 0; i--) {
+        const bit = (m >>> i) & 1;
+        if (bit === 1) {
+            if (seenZero) return null;
+            c++;
+        } else {
+            seenZero = true;
+        }
+    }
+    return c;
+}
+
+/**
+ * Prefix length → "255.255.255.0" dotted-decimal string.
+ * @param {number} prefix
+ * @returns {string}
+ */
+export function prefixToNetmaskStr(prefix) {
+    const p = prefix | 0;
+    if (p < 0 || p > 32) throw new RangeError(`Invalid prefix: ${p}`);
+    const m = p === 0 ? 0 : (0xffffffff << (32 - p)) >>> 0;
+    return `${(m >>> 24) & 255}.${(m >>> 16) & 255}.${(m >>> 8) & 255}.${m & 255}`;
+}
+
 
 /**
  * @param {number} n

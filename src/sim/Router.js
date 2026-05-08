@@ -4,6 +4,8 @@ import { VirtualFileSystem } from "../apps/lib/VirtualFileSystem.js";
 import { IPStack } from "../net/IPStack.js";
 import { RIPDaemon } from "../net/RIPDaemon.js";
 import { SimulatedObject } from "./SimulatedObject.js";
+import { PollTimer } from "../lib/PollTimer.js";
+import { netmaskStrToPrefix, prefixToNetmaskStr } from "../lib/helpers.js";
 
 import { DOMBuilder } from "../lib/DomBuilder.js";
 import { t } from "../i18n/index.js";
@@ -36,42 +38,6 @@ function assertPrefix(p) {
     return x | 0;
 }
 
-/** @param {string} s like "255.255.255.0" -> prefix length (0..32) or null */
-function netmaskStrToPrefix(s) {
-    const ip = IPAddress.fromString(String(s).trim());
-    if (!ip.isV4()) return null;
-
-    // contiguous ones then zeros
-    const m = /** @type {number} */ (ip.getNumber()) >>> 0;
-
-    let seenZero = false;
-    let c = 0;
-    for (let i = 31; i >= 0; i--) {
-        const bit = (m >>> i) & 1;
-        if (bit === 1) {
-            if (seenZero) return null;
-            c++;
-        } else {
-            seenZero = true;
-        }
-    }
-    return c;
-}
-
-/** @param {number} prefix -> "255.255.255.0" */
-function prefixToNetmaskStr(prefix) {
-    const p = assertPrefix(prefix);
-    let m = 0 >>> 0;
-    if (p === 0) m = 0 >>> 0;
-    else m = (0xffffffff << (32 - p)) >>> 0;
-    return new IPAddress(4, m >>> 0).toString();
-}
-
-/** @param {HTMLElement} el @param {boolean} isInvalid */
-function markInvalid(el, isInvalid) {
-    if (!el) return;
-    el.classList.toggle("is-invalid", !!isInvalid);
-}
 
 /** deterministic via EthernetPort.linkref @param {*} iface */
 function getInterfaceLinkStatus(iface) {
@@ -92,8 +58,7 @@ export class Router extends SimulatedObject {
     /** @type {HTMLElement|null} */
     _panelBody = null;
 
-    /** @type {number|null} */
-    _linkPollTimer = null;
+    _pollTimer = new PollTimer();
 
     /** @type {string|null} */
     _selectedIfaceName = null;
@@ -159,23 +124,9 @@ export class Router extends SimulatedObject {
     }
 
     /** @returns {PortDescriptor[]} */
-    listPorts() {
-        const ifs = this.net?.interfaces ?? [];
-        return ifs.map((nic, i) => ({
-            key: `eth${i}`,
-            label: `eth${i}`,
-            port: nic.port,
-        }));
-    }
-
+    listPorts()           { return SimulatedObject.listEthPorts(this.net?.interfaces); }
     /** @param {string} key */
-    getPortByKey(key) {
-        const m = /^eth(\d+)$/.exec(key);
-        if (!m) return null;
-        const i = Number(m[1]);
-        const nic = (this.net?.interfaces ?? [])[i];
-        return nic?.port ?? null;
-    }
+    getPortByKey(key)     { return SimulatedObject.getEthPortByKey(this.net?.interfaces, key); }
 
     /* ------------------------------ UI ------------------------------ */
 
@@ -455,14 +406,11 @@ export class Router extends SimulatedObject {
 
     _startLinkPolling() {
         this._updateAllTabStatuses();
-        this._linkPollTimer = window.setInterval(() => this._updateAllTabStatuses(), 1000);
+        this._pollTimer.start(() => this._updateAllTabStatuses(), 1000);
     }
 
     _stopLinkPolling() {
-        if (this._linkPollTimer != null) {
-            clearInterval(this._linkPollTimer);
-            this._linkPollTimer = null;
-        }
+        this._pollTimer.stop();
     }
 
     _updateAllTabStatuses() {
@@ -504,10 +452,10 @@ export class Router extends SimulatedObject {
             if (this._ipv6EnableCb) this._ipv6EnableCb.checked = false;
             if (this._ip6Input)    this._ip6Input.value = "";
             if (this._prefix6Input) this._prefix6Input.value = "";
-            markInvalid(this._ipInput, false);
-            markInvalid(this._maskInput, false);
-            markInvalid(this._ip6Input, false);
-            markInvalid(this._prefix6Input, false);
+            DOMBuilder.markInvalid(this._ipInput, false);
+            DOMBuilder.markInvalid(this._maskInput, false);
+            DOMBuilder.markInvalid(this._ip6Input, false);
+            DOMBuilder.markInvalid(this._prefix6Input, false);
             return;
         }
 
@@ -528,10 +476,10 @@ export class Router extends SimulatedObject {
         if (this._prefix6Input)  this._prefix6Input.value     = v6Active ? String(p6) : "";
         if (this._raEnabledCb)   this._raEnabledCb.checked    = !!iface.raEnabled;
 
-        markInvalid(this._ipInput, false);
-        markInvalid(this._maskInput, false);
-        markInvalid(this._ip6Input, false);
-        markInvalid(this._prefix6Input, false);
+        DOMBuilder.markInvalid(this._ipInput, false);
+        DOMBuilder.markInvalid(this._maskInput, false);
+        DOMBuilder.markInvalid(this._ip6Input, false);
+        DOMBuilder.markInvalid(this._prefix6Input, false);
     }
 
     _updateInterfaceFormState() {
@@ -573,12 +521,12 @@ export class Router extends SimulatedObject {
                 const p = netmaskStrToPrefix(maskIn.value);
                 if (p != null) { v4Prefix = p; pOk = true; }
             }
-            markInvalid(ipIn, !ipOk);
-            markInvalid(maskIn, !pOk);
+            DOMBuilder.markInvalid(ipIn, !ipOk);
+            DOMBuilder.markInvalid(maskIn, !pOk);
             v4Ok = ipOk && pOk;
         } else {
-            markInvalid(ipIn, false);
-            markInvalid(maskIn, false);
+            DOMBuilder.markInvalid(ipIn, false);
+            DOMBuilder.markInvalid(maskIn, false);
         }
 
         // --- Validate IPv6 ---
@@ -596,12 +544,12 @@ export class Router extends SimulatedObject {
                 pOk = Number.isInteger(n) && n >= 0 && n <= 128;
                 if (pOk) v6Prefix = n;
             }
-            markInvalid(ip6In, !ipOk);
-            markInvalid(prefix6In, !pOk);
+            DOMBuilder.markInvalid(ip6In, !ipOk);
+            DOMBuilder.markInvalid(prefix6In, !pOk);
             v6Ok = ipOk && pOk;
         } else if (ip6In && prefix6In) {
-            markInvalid(ip6In, false);
-            markInvalid(prefix6In, false);
+            DOMBuilder.markInvalid(ip6In, false);
+            DOMBuilder.markInvalid(prefix6In, false);
         }
 
         if (!v4Ok || !v6Ok) { save.disabled = true; return; }
@@ -806,9 +754,9 @@ export class Router extends SimulatedObject {
                     okNh = false;
                 }
 
-                markInvalid(dst, !okDst);
-                markInvalid(mask, !okMask);
-                markInvalid(nh, !okNh);
+                DOMBuilder.markInvalid(dst, !okDst);
+                DOMBuilder.markInvalid(mask, !okMask);
+                DOMBuilder.markInvalid(nh, !okNh);
 
                 if (!okDst || !okMask || !okNh || !dstIp || !nhIp) {
                     setDirty(true);
@@ -952,9 +900,9 @@ export class Router extends SimulatedObject {
             try { const p = netmaskStrToPrefix(addMask.value || "0.0.0.0"); okMask = (p != null); } catch { okMask = false; }
             try { const ip = ipFromStr(addNh.value || "0.0.0.0"); okNh = ip.isV4(); } catch { okNh = false; }
 
-            markInvalid(addDst, !okDst);
-            markInvalid(addMask, !okMask);
-            markInvalid(addNh, !okNh);
+            DOMBuilder.markInvalid(addDst, !okDst);
+            DOMBuilder.markInvalid(addMask, !okMask);
+            DOMBuilder.markInvalid(addNh, !okNh);
 
             addBtn.disabled = !(okDst && okMask && okNh);
         };
@@ -1100,9 +1048,9 @@ export class Router extends SimulatedObject {
                 try { const ip = ipFromStr(dst.value); okDst = ip.isV6(); } catch { okDst = false; }
                 try { const n = Number(prefix.value); okPfx = Number.isInteger(n) && n >= 0 && n <= 128; } catch { okPfx = false; }
                 try { const ip = ipFromStr(nh.value); okNh = ip.isV6(); } catch { okNh = false; }
-                markInvalid(dst, !okDst);
-                markInvalid(prefix, !okPfx);
-                markInvalid(nh, !okNh);
+                DOMBuilder.markInvalid(dst, !okDst);
+                DOMBuilder.markInvalid(prefix, !okPfx);
+                DOMBuilder.markInvalid(nh, !okNh);
                 return okDst && okPfx && okNh;
             };
 
@@ -1198,9 +1146,9 @@ export class Router extends SimulatedObject {
             try { const ip = ipFromStr(addDst.value || "::"); okDst = ip.isV6(); } catch { okDst = false; }
             try { const n = Number(addPrefix.value || "0"); okPfx = Number.isInteger(n) && n >= 0 && n <= 128; } catch { okPfx = false; }
             try { const ip = ipFromStr(addNh.value || "::"); okNh = ip.isV6(); } catch { okNh = false; }
-            markInvalid(addDst, !okDst);
-            markInvalid(addPrefix, !okPfx);
-            markInvalid(addNh, !okNh);
+            DOMBuilder.markInvalid(addDst, !okDst);
+            DOMBuilder.markInvalid(addPrefix, !okPfx);
+            DOMBuilder.markInvalid(addNh, !okNh);
             addBtn.disabled = !(okDst && okPfx && okNh);
         };
 

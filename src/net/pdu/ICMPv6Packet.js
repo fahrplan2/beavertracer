@@ -1,6 +1,8 @@
 //@ts-check
 
 import { IPAddress } from "../models/IPAddress.js";
+import { computeIPv6PseudoChecksum } from "../util/checksumUtils.js";
+import { read16BE, read32BE, write16BE, write32BE } from "../util/byteUtils.js";
 
 export class ICMPv6Packet {
 
@@ -34,7 +36,7 @@ export class ICMPv6Packet {
     return new ICMPv6Packet({
       type:     bytes[0],
       code:     bytes[1],
-      checksum: (bytes[2] << 8) | bytes[3],
+      checksum: read16BE(bytes, 2),
       body:     bytes.slice(4),
     });
   }
@@ -57,14 +59,12 @@ export class ICMPv6Packet {
       ? ICMPv6Packet.computeChecksum(out, srcIp, dstIp)
       : (this.checksum & 0xffff);
 
-    out[2] = (cs >> 8) & 0xff;
-    out[3] = cs & 0xff;
+    write16BE(out, 2, cs);
     return out;
   }
 
   /**
    * ICMPv6 checksum over IPv6 pseudo-header + ICMPv6 message.
-   * Pseudo-header: src(16) + dst(16) + ICMPv6-length(4) + zeros(3) + next-header=58(1)
    *
    * @param {Uint8Array} icmpv6Bytes  (with checksum field = 0)
    * @param {IPAddress} srcIp
@@ -72,41 +72,7 @@ export class ICMPv6Packet {
    * @returns {number}
    */
   static computeChecksum(icmpv6Bytes, srcIp, dstIp) {
-    const src = srcIp.toUInt8();
-    const dst = dstIp.toUInt8();
-    const len = icmpv6Bytes.length;
-
-    const pseudo = new Uint8Array(40);
-    pseudo.set(src, 0);   // 16 bytes src
-    pseudo.set(dst, 16);  // 16 bytes dst
-    pseudo[32] = (len >>> 24) & 0xff;
-    pseudo[33] = (len >>> 16) & 0xff;
-    pseudo[34] = (len >>> 8)  & 0xff;
-    pseudo[35] =  len         & 0xff;
-    // pseudo[36..38] = 0
-    pseudo[39] = 58; // next header = ICMPv6
-
-    return ICMPv6Packet._onesComplement([pseudo, icmpv6Bytes]);
-  }
-
-  /**
-   * @param {Uint8Array[]} bufs
-   * @returns {number}
-   */
-  static _onesComplement(bufs) {
-    let sum = 0;
-    for (const b of bufs) {
-      let i = 0;
-      for (; i + 1 < b.length; i += 2) {
-        sum += (b[i] << 8) | b[i + 1];
-        sum = (sum & 0xffff) + (sum >>> 16);
-      }
-      if (i < b.length) {
-        sum += b[i] << 8;
-        sum = (sum & 0xffff) + (sum >>> 16);
-      }
-    }
-    return (~sum) & 0xffff;
+    return computeIPv6PseudoChecksum(icmpv6Bytes, srcIp.toUInt8(), dstIp.toUInt8(), 58);
   }
 
   // ── Echo (types 128 / 129) ────────────────────────────────────────────────
@@ -123,8 +89,8 @@ export class ICMPv6Packet {
    */
   static buildEchoRequest(id, seq, payload = new Uint8Array(32)) {
     const body = new Uint8Array(4 + payload.length);
-    body[0] = (id  >> 8) & 0xff;  body[1] = id  & 0xff;
-    body[2] = (seq >> 8) & 0xff;  body[3] = seq & 0xff;
+    write16BE(body, 0, id);
+    write16BE(body, 2, seq);
     if (payload.length > 0) body.set(payload, 4);
     return new ICMPv6Packet({ type: 128, code: 0, body });
   }
@@ -137,8 +103,8 @@ export class ICMPv6Packet {
    */
   static buildEchoReply(id, seq, payload = new Uint8Array(0)) {
     const body = new Uint8Array(4 + payload.length);
-    body[0] = (id  >> 8) & 0xff;  body[1] = id  & 0xff;
-    body[2] = (seq >> 8) & 0xff;  body[3] = seq & 0xff;
+    write16BE(body, 0, id);
+    write16BE(body, 2, seq);
     if (payload.length > 0) body.set(payload, 4);
     return new ICMPv6Packet({ type: 129, code: 0, body });
   }
@@ -175,7 +141,7 @@ export class ICMPv6Packet {
 
   /** R/S/O flags word (NA, byte 0-3 of body). S=bit30, O=bit29 */
   get ndpFlags() {
-    return ((this.body[0] << 24) | (this.body[1] << 16) | (this.body[2] << 8) | this.body[3]) >>> 0;
+    return read32BE(this.body, 0);
   }
   /** Solicited flag (NA) */
   get ndpSolicited() { return (this.ndpFlags & 0x40000000) !== 0; }
@@ -239,8 +205,7 @@ export class ICMPv6Packet {
 
     body[0] = hopLimit;
     body[1] = moFlags;
-    body[2] = (routerLifetime >> 8) & 0xff;
-    body[3] =  routerLifetime       & 0xff;
+    write16BE(body, 2, routerLifetime);
     // bytes 4-11: Reachable Time + Retrans Timer (0 = unspecified)
 
     if (hasPrefix) {
@@ -252,14 +217,8 @@ export class ICMPv6Packet {
       body[13] = 4;    // length in units of 8 bytes = 32 bytes total
       body[14] = prefixLength;
       body[15] = 0xc0; // L=1, A=1: on-link + autonomous address configuration
-      body[16] = (validLifetime     >>> 24) & 0xff;
-      body[17] = (validLifetime     >>> 16) & 0xff;
-      body[18] = (validLifetime     >>>  8) & 0xff;
-      body[19] =  validLifetime             & 0xff;
-      body[20] = (preferredLifetime >>> 24) & 0xff;
-      body[21] = (preferredLifetime >>> 16) & 0xff;
-      body[22] = (preferredLifetime >>>  8) & 0xff;
-      body[23] =  preferredLifetime         & 0xff;
+      write32BE(body, 16, validLifetime);
+      write32BE(body, 20, preferredLifetime);
       // bytes 24-27: Reserved2 (0)
       body.set(prefixBytes, 28); // prefix (16 bytes, host bits are ignored by receiver)
     }
@@ -283,10 +242,8 @@ export class ICMPv6Packet {
           prefixLength:      this.body[i + 2],
           onLink:            (this.body[i + 3] & 0x80) !== 0,
           autonomous:        (this.body[i + 3] & 0x40) !== 0,
-          validLifetime:     ((this.body[i+4]  << 24) | (this.body[i+5]  << 16) |
-                              (this.body[i+6]  <<  8) |  this.body[i+7] ) >>> 0,
-          preferredLifetime: ((this.body[i+8]  << 24) | (this.body[i+9]  << 16) |
-                              (this.body[i+10] <<  8) |  this.body[i+11]) >>> 0,
+          validLifetime:     read32BE(this.body, i + 4),
+          preferredLifetime: read32BE(this.body, i + 8),
           prefix: IPAddress.fromUInt8(this.body.slice(i + 16, i + 32)),
         });
       }
@@ -306,10 +263,7 @@ export class ICMPv6Packet {
   static buildNA(target, targetMac, solicited = true) {
     const body = new Uint8Array(28);
     const flags = (solicited ? 0x40000000 : 0) | 0x20000000; // S | O
-    body[0] = (flags >>> 24) & 0xff;
-    body[1] = (flags >>> 16) & 0xff;
-    body[2] = (flags >>> 8)  & 0xff;
-    body[3] =  flags         & 0xff;
+    write32BE(body, 0, flags);
     body.set(target.toUInt8(), 4);  // bytes 4-19: target
     body[20] = 2; body[21] = 1;     // TLLA option: type=2, length=1
     body.set(targetMac.subarray(0, 6), 22);

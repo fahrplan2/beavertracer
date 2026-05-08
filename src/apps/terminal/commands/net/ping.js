@@ -3,7 +3,7 @@
 import { t } from "../../../../i18n/index.js";
 import { nowMs } from "../lib/time.js";
 import { sleepAbortable } from "../lib/abort.js";
-import { simTimer, SimTimer } from "../../../../sim/SimTimer.js";
+import { simTimer, SimTimer } from "../../../../lib/SimTimer.js";
 import { IPAddress } from "../../../../net/models/IPAddress.js";
 
 /**

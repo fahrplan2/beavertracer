@@ -1,6 +1,7 @@
 //@ts-check
 
 import { SimulatedObject } from "./SimulatedObject.js";
+import { PollTimer } from "../lib/PollTimer.js";
 import { EthernetPort } from "../net/EthernetPort.js";
 import { WirelessPort } from "../net/WirelessPort.js";
 import { EthernetFrame } from "../net/pdu/EthernetFrame.js";
@@ -15,7 +16,7 @@ import { ICMPv6Packet } from "../net/pdu/ICMPv6Packet.js";
 import { DNSPacket } from "../net/pdu/DNSPacket.js";
 import { IPAddress } from "../net/models/IPAddress.js";
 import { NatEngine } from "../net/NatEngine.js";
-import { simTimer, SimTimer } from "./SimTimer.js";
+import { simTimer, SimTimer } from "../lib/SimTimer.js";
 import { DOMBuilder } from "../lib/DomBuilder.js";
 import { t } from "../i18n/index.js";
 import { SimDialog } from "../lib/SimDialog.js";
@@ -124,11 +125,11 @@ export class HomeRouter extends SimulatedObject {
     // ── LAN IPv6 (from PD) ────────────────────────────────────────────────
     /** @type {Uint8Array|null} 16-byte router LAN IPv6 (prefix::1) */ _lanIp6 = null;
     /** @type {Uint8Array|null} 16-byte LAN RA prefix (host bits zeroed) */ _lanRaPrefix = null;
-    /** @type {number|null} */ _raTimer = null;
+    _raTimer = new PollTimer();
 
     // ── Panel ─────────────────────────────────────────────────────────────
     /** @type {HTMLElement|null} */ _panelBody = null;
-    /** @type {number|null} */ _pollTimer = null;
+    _pollTimer = new PollTimer();
     /** @type {HTMLElement|null} */ _statusEl = null;
     /** @type {HTMLElement|null} */ _natEl = null;
     /** @type {string} */ _activeTab = "status";
@@ -923,12 +924,11 @@ export class HomeRouter extends SimulatedObject {
     }
 
     _startRaTimer() {
-        this._stopRaTimer();
-        this._raTimer = window.setInterval(() => this._sendRa(), 30_000);
+        this._raTimer.start(() => this._sendRa(), 30_000);
     }
 
     _stopRaTimer() {
-        if (this._raTimer != null) { clearInterval(this._raTimer); this._raTimer = null; }
+        this._raTimer.stop();
     }
 
     // ── DNS relay ─────────────────────────────────────────────────────────
@@ -1367,11 +1367,11 @@ export class HomeRouter extends SimulatedObject {
     }
 
     _startPoll() {
-        this._pollTimer = window.setInterval(() => this._updateStatusPanel(), 2000);
+        this._pollTimer.start(() => this._updateStatusPanel(), 2000);
     }
 
     _stopPoll() {
-        if (this._pollTimer != null) { clearInterval(this._pollTimer); this._pollTimer = null; }
+        this._pollTimer.stop();
     }
 
     _updateStatusPanel() {

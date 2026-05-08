@@ -1,37 +1,11 @@
 //@ts-check
 
-import { GenericProcess } from "./GenericProcess.js";
+import { LoggedProcess } from "./lib/LoggedProcess.js";
 import { Disposer } from "../lib/Disposer.js";
 import { UILib as UI } from "./lib/UILib.js";
 import { IPAddress } from "../net/models/IPAddress.js";
 import { t } from "../i18n/index.js";
-
-/**
- * @param {number} n
- */
-function nowStamp(n = Date.now()) {
-  return new Date(n).toLocaleTimeString();
-}
-
-/**
- * @param {string} s
- */
-function encodeUTF8(s) {
-  if (typeof TextEncoder !== "undefined") return new TextEncoder().encode(s);
-  const out = new Uint8Array(s.length);
-  for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i) & 0xff;
-  return out;
-}
-
-/**
- * @param {Uint8Array} b
- */
-function decodeUTF8(b) {
-  if (typeof TextDecoder !== "undefined") return new TextDecoder().decode(b);
-  let s = "";
-  for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
-  return s;
-}
+import { nowStamp, encodeUTF8, decodeUTF8 } from "../lib/helpers.js";
 
 /** @param {string} s */
 function normalizeCRLF(s) {
@@ -277,7 +251,7 @@ function parseMbox(mbox) {
  * @typedef {{mailDomain:string, ports:{smtp:number,pop3:number,imap:number}, users:UserRow[]}} MailConfig
  */
 
-export class SimpleMailServerApp extends GenericProcess {
+export class SimpleMailServerApp extends LoggedProcess {
   get title() {
     return t("app.simplemailserver.title") || "Simple Mail Server";
   }
@@ -308,7 +282,6 @@ export class SimpleMailServerApp extends GenericProcess {
   runSeq = 0;
 
   // ui
-  /** @type {HTMLElement|null} */ logEl = null;
   /** @type {HTMLElement|null} */ usersEl = null;
 
   /** @type {HTMLInputElement|null} */ domainEl = null;
@@ -322,29 +295,12 @@ export class SimpleMailServerApp extends GenericProcess {
   /** @type {HTMLButtonElement|null} */ startBtn = null;
   /** @type {HTMLButtonElement|null} */ stopBtn = null;
 
-  /** @type {string[]} */
-  log = [];
-
   run() {
     this.root.classList.add("app", "app-simple-mail-server");
   }
 
   _timeoutMs() {
     return 999999999;
-  }
-
-  /** @param {string} line */
-  _append(line) {
-    this.log.push(line);
-    if (this.log.length > 4000) this.log.splice(0, this.log.length - 4000);
-    if (this.mounted) this._renderLog();
-  }
-
-  _renderLog() {
-    if (!this.logEl) return;
-    const maxLines = 400;
-    const lines = this.log.length > maxLines ? this.log.slice(-maxLines) : this.log;
-    this.logEl.textContent = lines.join("\n");
   }
 
   /** Create a nicer per-user UI list with action buttons */
@@ -438,10 +394,10 @@ export class SimpleMailServerApp extends GenericProcess {
       });
       try {
         writeTextFile(fs, this.configPath, JSON.stringify(cfg, null, 2));
-        this._append(`[${nowStamp()}] ${t("app.simplemailserver.log.wroteDefaultConfig") || "wrote default config"}: ${this.configPath}`);
+        this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.wroteDefaultConfig") || "wrote default config"}: ${this.configPath}`);
       } catch (e) {
         const reason = (e instanceof Error ? e.message : String(e));
-        this._append(`[${nowStamp()}] ${t("app.simplemailserver.log.cannotWriteConfig") || "cannot write config"}: ${reason}`);
+        this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.cannotWriteConfig") || "cannot write config"}: ${reason}`);
       }
       return;
     }
@@ -465,10 +421,10 @@ export class SimpleMailServerApp extends GenericProcess {
           this.users = [];
         }
       }
-      this._append(`[${nowStamp()}] ${t("app.simplemailserver.log.loadedConfig") || "loaded config"}: ${this.configPath}`);
+      this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.loadedConfig") || "loaded config"}: ${this.configPath}`);
     } catch (e) {
       const reason = (e instanceof Error ? e.message : String(e));
-      this._append(`[${nowStamp()}] ${t("app.simplemailserver.log.invalidConfig") || "invalid config"}: ${reason}`);
+      this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.invalidConfig") || "invalid config"}: ${reason}`);
     }
   }
 
@@ -485,10 +441,10 @@ export class SimpleMailServerApp extends GenericProcess {
     });
     try {
       writeTextFile(fs, this.configPath, JSON.stringify(cfg, null, 2));
-      this._append(`[${nowStamp()}] ${t("app.simplemailserver.log.savedConfig") || "saved config"}: ${this.configPath}`);
+      this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.savedConfig") || "saved config"}: ${this.configPath}`);
     } catch (e) {
       const reason = (e instanceof Error ? e.message : String(e));
-      this._append(`[${nowStamp()}] ${t("app.simplemailserver.log.saveFailed") || "save config failed"}: ${reason}`);
+      this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.saveFailed") || "save config failed"}: ${reason}`);
     }
   }
 
@@ -532,7 +488,7 @@ export class SimpleMailServerApp extends GenericProcess {
       appendTextFile(fs, path, entry);
     } catch (e) {
       const reason = (e instanceof Error ? e.message : String(e));
-      this._append(`[${nowStamp()}] store mail failed (${path}): ${reason}`);
+      this._appendLog(`[${nowStamp()}] store mail failed (${path}): ${reason}`);
     }
   }
 
@@ -576,7 +532,7 @@ export class SimpleMailServerApp extends GenericProcess {
       fs.writeFile(path, out);
     } catch (e) {
       const reason = (e instanceof Error ? e.message : String(e));
-      this._append(`[${nowStamp()}] write mailbox failed (${path}): ${reason}`);
+      this._appendLog(`[${nowStamp()}] write mailbox failed (${path}): ${reason}`);
     }
   }
 
@@ -603,7 +559,7 @@ export class SimpleMailServerApp extends GenericProcess {
       fs.writeFile(path, blob);
     } catch (e) {
       const r = (e instanceof Error ? e.message : String(e));
-      this._append(`[${nowStamp()}] queue write failed: ${r}`);
+      this._appendLog(`[${nowStamp()}] queue write failed: ${r}`);
     }
   }
 
@@ -743,20 +699,20 @@ export class SimpleMailServerApp extends GenericProcess {
 
     for (const user of locals) {
       if (!this._findUser(user)) {
-        this._append(`[${nowStamp()}] local delivery failed: unknown user ${user}@${localDomain}`);
+        this._appendLog(`[${nowStamp()}] local delivery failed: unknown user ${user}@${localDomain}`);
         continue;
       }
       this._storeLocal(user, rawRfc822);
-      this._append(`[${nowStamp()}] local delivered: ${user}@${localDomain}`);
+      this._appendLog(`[${nowStamp()}] local delivered: ${user}@${localDomain}`);
     }
 
     for (const addr of remotes) {
       try {
         await this._relaySmtp(addr, rawRfc822);
-        this._append(`[${nowStamp()}] relayed: ${addr}`);
+        this._appendLog(`[${nowStamp()}] relayed: ${addr}`);
       } catch (e) {
         const reason = (e instanceof Error ? e.message : String(e));
-        this._append(`[${nowStamp()}] relay failed: ${addr} (${reason})`);
+        this._appendLog(`[${nowStamp()}] relay failed: ${addr} (${reason})`);
         this._queueOutgoing(addr, rawRfc822, reason);
       }
     }
@@ -825,16 +781,10 @@ export class SimpleMailServerApp extends GenericProcess {
       logBox,
     ]});
 
-    const { bar: tabBar, setActive: setTab } = UI.tabGroup([
-      { id: "config", label: t("app.simplemailserver.label.server") || "Konfiguration" },
-      { id: "log",    label: t("app.simplemailserver.label.log") || "Protokoll" },
-    ], (id) => {
-      configPane.style.display = id === "config" ? "" : "none";
-      logPane.style.display    = id === "log"    ? "" : "none";
-    });
-    setTab("config");
-    configPane.style.display = "";
-    logPane.style.display    = "none";
+    const { bar: tabBar } = UI.tabbedPane([
+      { id: "config", label: t("app.simplemailserver.label.server") || "Konfiguration", pane: configPane },
+      { id: "log",    label: t("app.simplemailserver.label.log") || "Protokoll",        pane: logPane },
+    ]);
 
     const panel = UI.panel([
       UI.buttonRow([start, stop]),
@@ -883,16 +833,16 @@ export class SimpleMailServerApp extends GenericProcess {
   _addOrUpdateUser() {
     const user = (this.userEl?.value ?? "").trim();
     const pass = (this.passEl?.value ?? "").trim();
-    if (!user) { this._append(`[${nowStamp()}] ${t("app.simplemailserver.log.userMissing") || "user missing"}`); return; }
-    if (!pass) { this._append(`[${nowStamp()}] ${t("app.simplemailserver.log.passwordMissing") || "password missing"}`); return; }
+    if (!user) { this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.userMissing") || "user missing"}`); return; }
+    if (!pass) { this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.passwordMissing") || "password missing"}`); return; }
 
     const existing = this._findUser(user);
     if (existing) {
       existing.password = pass;
-      this._append(`[${nowStamp()}] ${t("app.simplemailserver.log.userUpdated") || "updated user"} ${user}`);
+      this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.userUpdated") || "updated user"} ${user}`);
     } else {
       this.users.push({ user, password: pass });
-      this._append(`[${nowStamp()}] ${t("app.simplemailserver.log.userAdded") || "added user"} ${user}`);
+      this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.userAdded") || "added user"} ${user}`);
     }
     this._renderUsers();
     this._saveConfig();
@@ -900,7 +850,7 @@ export class SimpleMailServerApp extends GenericProcess {
 
   _deleteUser() {
     const user = (this.userEl?.value ?? "").trim();
-    if (!user) { this._append(`[${nowStamp()}] ${t("app.simplemailserver.log.userMissing") || "user missing"}`); return; }
+    if (!user) { this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.userMissing") || "user missing"}`); return; }
     this._deleteUserByName(user);
   }
 
@@ -909,11 +859,11 @@ export class SimpleMailServerApp extends GenericProcess {
     const before = this.users.length;
     this.users = this.users.filter((u) => u.user.toLowerCase() !== user.toLowerCase());
     if (this.users.length !== before) {
-      this._append(`[${nowStamp()}] ${t("app.simplemailserver.log.userDeleted") || "deleted user"} ${user}`);
+      this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.userDeleted") || "deleted user"} ${user}`);
       this._renderUsers();
       this._saveConfig();
     } else {
-      this._append(`[${nowStamp()}] ${t("app.simplemailserver.log.userNotFound") || "user not found"} ${user}`);
+      this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.userNotFound") || "user not found"} ${user}`);
     }
   }
 
@@ -927,10 +877,10 @@ export class SimpleMailServerApp extends GenericProcess {
         const p = `${this.queueRoot}/${name}`;
         try { fs.unlink(p); } catch { /* ignore */ }
       }
-      this._append(`[${nowStamp()}] ${t("app.simplemailserver.log.queueCleared") || "cleared queue"} (${items.length} files)`);
+      this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.queueCleared") || "cleared queue"} (${items.length} files)`);
     } catch (e) {
       const reason = (e instanceof Error ? e.message : String(e));
-      this._append(`[${nowStamp()}] ${t("app.simplemailserver.log.clearQueueFailed") || "clear queue failed"}: ${reason}`);
+      this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.clearQueueFailed") || "clear queue failed"}: ${reason}`);
     }
   }
 
@@ -941,13 +891,13 @@ export class SimpleMailServerApp extends GenericProcess {
       this._seedUser(user);
       return;
     }
-    this._append(`[${nowStamp()}] ${t("app.simplemailserver.log.seedNeedUser") || "seed: enter a user or use the per-user Seed button"}`);
+    this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.seedNeedUser") || "seed: enter a user or use the per-user Seed button"}`);
   }
 
   /** Seed a test mail for a specific user @param {string} user */
   _seedUser(user) {
     const u = this._findUser(user);
-    if (!u) { this._append(`[${nowStamp()}] ${t("app.simplemailserver.log.seedNoSuchUser") || "seed: no such user"} ${user}`); return; }
+    if (!u) { this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.seedNoSuchUser") || "seed: no such user"} ${user}`); return; }
 
     const msg =
       `From: test@${this.mailDomain}\r\n` +
@@ -960,7 +910,7 @@ export class SimpleMailServerApp extends GenericProcess {
       `this is a seeded test message.\r\n`;
 
     this._storeLocal(u.user, msg);
-    this._append(`[${nowStamp()}] ${t("app.simplemailserver.log.seeded") || "seeded test mail"} -> ${u.user}`);
+    this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.seeded") || "seeded test mail"} -> ${u.user}`);
     this._renderUsers();
   }
 
@@ -973,9 +923,9 @@ export class SimpleMailServerApp extends GenericProcess {
     /** @param {number} p */
     const okPort = (p) => Number.isInteger(p) && p >= 1 && p <= 65535;
 
-    if (!domain) { this._append(`[${nowStamp()}] ${t("app.simplemailserver.log.invalidDomain") || "invalid maildomain"}`); return; }
+    if (!domain) { this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.invalidDomain") || "invalid maildomain"}`); return; }
     if (!okPort(smtp) || !okPort(pop3) || !okPort(imap)) {
-      this._append(`[${nowStamp()}] ${t("app.simplemailserver.log.invalidPorts") || "invalid ports"} (smtp=${smtp} pop3=${pop3} imap=${imap})`);
+      this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.invalidPorts") || "invalid ports"} (smtp=${smtp} pop3=${pop3} imap=${imap})`);
       return;
     }
 
@@ -1002,14 +952,14 @@ export class SimpleMailServerApp extends GenericProcess {
       try { this.os.net.closeTCPServerSocket(ref); }
       catch (e) {
         const reason = (e instanceof Error ? e.message : String(e));
-        this._append(`[${nowStamp()}] stop ${name} error: ${reason}`);
+        this._appendLog(`[${nowStamp()}] stop ${name} error: ${reason}`);
       }
     };
     close(smtp, "smtp");
     close(pop3, "pop3");
     close(imap, "imap");
 
-    this._append(`[${nowStamp()}] ${t("app.simplemailserver.log.stopped") || "stopped"}`);
+    this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.stopped") || "stopped"}`);
     this._syncUI();
   }
 
@@ -1025,7 +975,7 @@ export class SimpleMailServerApp extends GenericProcess {
       imapRef = this.os.net.openTCPServerSocket(new IPAddress(4, 0), this.portIMAP);
     } catch (e) {
       const reason = (e instanceof Error ? e.message : String(e));
-      this._append(`[${nowStamp()}] open socket error: ${reason}`);
+      this._appendLog(`[${nowStamp()}] open socket error: ${reason}`);
       try { if (smtpRef != null) this.os.net.closeTCPServerSocket(smtpRef); } catch {}
       try { if (pop3Ref != null) this.os.net.closeTCPServerSocket(pop3Ref); } catch {}
       try { if (imapRef != null) this.os.net.closeTCPServerSocket(imapRef); } catch {}
@@ -1037,7 +987,7 @@ export class SimpleMailServerApp extends GenericProcess {
     const seq = ++this.runSeq;
     this._syncUI();
 
-    this._append(
+    this._appendLog(
       `[${nowStamp()}] ${t("app.simplemailserver.log.listening") || "listening"}: ` +
       `smtp=${this.portSMTP} pop3=${this.portPOP3} imap=${this.portIMAP} domain=${this.mailDomain}`
     );
@@ -1061,7 +1011,7 @@ export class SimpleMailServerApp extends GenericProcess {
       } catch (e) {
         if (this.running && this.runSeq === seq) {
           const reason = (e instanceof Error ? e.message : String(e));
-          this._append(`[${nowStamp()}] accept ${proto} error: ${reason}`);
+          this._appendLog(`[${nowStamp()}] accept ${proto} error: ${reason}`);
         }
         continue;
       }
@@ -1076,7 +1026,7 @@ export class SimpleMailServerApp extends GenericProcess {
 
       h(seq, connKey).catch((/** @type {unknown} */ e) => {
         const reason = (e instanceof Error ? e.message : String(e));
-        this._append(`[${nowStamp()}] conn ${proto} error: ${reason}`);
+        this._appendLog(`[${nowStamp()}] conn ${proto} error: ${reason}`);
         try { this.os.net.closeTCPConn(connKey); } catch { /* ignore */ }
       });
     }
@@ -1221,11 +1171,11 @@ export class SimpleMailServerApp extends GenericProcess {
         try {
           await this._deliverOrRelay(rcptTo, msg);
           send("250 2.0.0 OK queued");
-          this._append(`[${nowStamp()}] SMTP accepted: from=${mailFrom} rcpt=${rcptTo.length} helo=${heloName ?? "-"} auth=${authedUser ?? "-"}`);
+          this._appendLog(`[${nowStamp()}] SMTP accepted: from=${mailFrom} rcpt=${rcptTo.length} helo=${heloName ?? "-"} auth=${authedUser ?? "-"}`);
         } catch (e) {
           const reason = (e instanceof Error ? e.message : String(e));
           send("451 4.3.0 Local error in processing");
-          this._append(`[${nowStamp()}] SMTP processing error: ${reason}`);
+          this._appendLog(`[${nowStamp()}] SMTP processing error: ${reason}`);
         }
 
         resetTx();

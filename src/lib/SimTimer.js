@@ -25,9 +25,9 @@ export class SimTimer {
     // -------------------------------------------------------------------------
 
     /** ICMP echo (ping) reply timeout. */
-    static PING_TIMEOUT_MS          = 2000;  // 400 ticks
+    static PING_TIMEOUT_MS          =  400;  //  80 ticks
     /** Delay between successive ping packets. */
-    static PING_INTERVAL_MS         = 1000;  // 200 ticks
+    static PING_INTERVAL_MS         =  400;  //  80 ticks
     /** Traceroute hop timeout (shorter than ping for snappier output). */
     static TRACEROUTE_TIMEOUT_MS    =  250;  //  50 ticks
 
@@ -55,22 +55,24 @@ export class SimTimer {
     /** Initial delay before first unsolicited RA (after ip6 is activated). */
     static RA_INITIAL_DELAY_MS      =  100;  //  20 ticks
     /** Interval between periodic unsolicited Router Advertisements. */
-    static RA_INTERVAL_MS           = 2000;  // 400 ticks
+    static RA_INTERVAL_MS           =  400;  //  80 ticks
 
     /** DNS query timeout. */
-    static DNS_TIMEOUT_MS           = 2000;  // 400 ticks
+    static DNS_TIMEOUT_MS           =  400;  //  80 ticks
 
     /** Time to wait for a DHCP OFFER after DISCOVER. */
-    static DHCP_OFFER_WAIT_MS       = 8000;  // 1600 ticks
+    static DHCP_OFFER_WAIT_MS       =  400;  //  80 ticks
     /** Time to wait for a DHCP ACK after REQUEST. */
-    static DHCP_ACK_WAIT_MS         = 8000;  // 1600 ticks
+    static DHCP_ACK_WAIT_MS         =  400;  //  80 ticks
     /** Pause between DHCP attempts. */
-    static DHCP_BETWEEN_TRIES_MS    = 2000;  // 400 ticks
+    static DHCP_BETWEEN_TRIES_MS    =  400;  //  80 ticks
 
+    /** TCP active-open (SYN sent, waiting for SYN-ACK) timeout. */
+    static TCP_CONNECT_TIMEOUT_MS   =  400;  //  80 ticks
     /** TCP connection / request timeout for HTTP server. */
-    static HTTP_SERVER_TIMEOUT_MS   = 4000;  // 800 ticks
+    static HTTP_SERVER_TIMEOUT_MS   =  400;  //  80 ticks
     /** HTTP client request timeout. */
-    static HTTP_CLIENT_TIMEOUT_MS   = 10000; // 2000 ticks
+    static HTTP_CLIENT_TIMEOUT_MS   =  400;  //  80 ticks
 
     // -------------------------------------------------------------------------
     // Internal state

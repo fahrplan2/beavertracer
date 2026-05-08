@@ -1,6 +1,6 @@
 //@ts-check
 
-import { GenericProcess } from "./GenericProcess.js";
+import { LoggedProcess } from "./lib/LoggedProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
 import { Disposer } from "../lib/Disposer.js";
 import { t } from "../i18n/index.js";
@@ -89,7 +89,7 @@ function arrayEquals(a, b) {
  *   "autostart":   false
  * }
  */
-export class DHCPv6ServerApp extends GenericProcess {
+export class DHCPv6ServerApp extends LoggedProcess {
   get title() {
     return t("app.dhcpv6server.title");
   }
@@ -107,9 +107,6 @@ export class DHCPv6ServerApp extends GenericProcess {
   socketPort = null;
 
   running = false;
-
-  /** @type {string[]} */
-  log = [];
 
   /** @type {HTMLTextAreaElement|null} */
   logEl = null;
@@ -264,22 +261,11 @@ export class DHCPv6ServerApp extends GenericProcess {
       logBox,
     ]});
 
-    const leasesTable = /** @type {HTMLTableElement} */ (UI.el("table", { className: "dhcp6-leases-table" }));
-    const thead = document.createElement("thead");
-    const headerRow = document.createElement("tr");
-    [
+    const { table: leasesTable, tbody } = UI.tableWithBody([
       t("app.dhcpv6server.leases.col.duid"),
       t("app.dhcpv6server.leases.col.address"),
       t("app.dhcpv6server.leases.col.expires"),
-    ].forEach(label => {
-      const th = document.createElement("th");
-      th.textContent = label;
-      headerRow.appendChild(th);
-    });
-    thead.appendChild(headerRow);
-    leasesTable.appendChild(thead);
-    const tbody = document.createElement("tbody");
-    leasesTable.appendChild(tbody);
+    ], "dhcp6-leases-table");
     this.leasesBody = tbody;
 
     const leasesPane = UI.el("div", { children: [leasesTable] });
@@ -299,22 +285,11 @@ export class DHCPv6ServerApp extends GenericProcess {
 
     const pdSaveBtn = UI.button(t("app.dhcpv6server.pd.save"), () => this._savePdConfig(), { primary: true });
 
-    const pdLeasesTable = /** @type {HTMLTableElement} */ (UI.el("table", { className: "dhcp6-leases-table" }));
-    const pdThead = document.createElement("thead");
-    const pdHeaderRow = document.createElement("tr");
-    [
+    const { table: pdLeasesTable, tbody: pdTbody } = UI.tableWithBody([
       t("app.dhcpv6server.pd.leases.col.duid"),
       t("app.dhcpv6server.pd.leases.col.prefix"),
       t("app.dhcpv6server.pd.leases.col.expires"),
-    ].forEach(label => {
-      const th = document.createElement("th");
-      th.textContent = label;
-      pdHeaderRow.appendChild(th);
-    });
-    pdThead.appendChild(pdHeaderRow);
-    pdLeasesTable.appendChild(pdThead);
-    const pdTbody = document.createElement("tbody");
-    pdLeasesTable.appendChild(pdTbody);
+    ], "dhcp6-leases-table");
     this.pdLeasesBody = pdTbody;
 
     const pdPane = UI.el("div", { children: [
@@ -330,24 +305,12 @@ export class DHCPv6ServerApp extends GenericProcess {
 
     this._writePdStateToUI();
 
-    const { bar: tabBar, setActive: setTab } = UI.tabGroup([
-      { id: "config", label: t("app.dhcpv6server.label.config") },
-      { id: "log",    label: t("app.dhcpv6server.label.log") },
-      { id: "leases", label: t("app.dhcpv6server.label.leases") },
-      { id: "pd",     label: t("app.dhcpv6server.label.pd") },
-    ], (id) => {
-      configPane.style.display = id === "config" ? "" : "none";
-      logPane.style.display    = id === "log"    ? "" : "none";
-      leasesPane.style.display = id === "leases" ? "" : "none";
-      pdPane.style.display     = id === "pd"     ? "" : "none";
-      if (id === "leases") this._renderLeases();
-      if (id === "pd")     this._renderPdLeases();
-    });
-    setTab("config");
-    configPane.style.display = "";
-    logPane.style.display    = "none";
-    leasesPane.style.display = "none";
-    pdPane.style.display     = "none";
+    const { bar: tabBar } = UI.tabbedPane([
+      { id: "config", label: t("app.dhcpv6server.label.config"),  pane: configPane },
+      { id: "log",    label: t("app.dhcpv6server.label.log"),     pane: logPane },
+      { id: "leases", label: t("app.dhcpv6server.label.leases"),  pane: leasesPane, onShow: () => this._renderLeases() },
+      { id: "pd",     label: t("app.dhcpv6server.label.pd"),      pane: pdPane,     onShow: () => this._renderPdLeases() },
+    ]);
 
     this.disposer.interval(() => {
       if (this.leasesPane && this.leasesPane.style.display !== "none") this._renderLeases();
@@ -1113,20 +1076,10 @@ export class DHCPv6ServerApp extends GenericProcess {
     if (this.pdLeaseTimeEl) this.pdLeaseTimeEl.disabled = dis;
   }
 
-  _renderLog() {
-    if (!this.logEl) return;
-    const maxLines = 250;
-    const lines = this.log.length > maxLines ? this.log.slice(-maxLines) : this.log;
-    this.logEl.value = lines.join("\n");
-    this.logEl.scrollTop = this.logEl.scrollHeight;
-  }
-
   /** @param {string} line */
   _appendLog(line) {
-    this.log.push(line);
-    if (this.log.length > 4000) this.log.splice(0, this.log.length - 4000);
+    super._appendLog(line);
     if (this.mounted) {
-      this._renderLog();
       if (this.leasesPane && this.leasesPane.style.display !== "none") this._renderLeases();
       if (this.pdPane     && this.pdPane.style.display     !== "none") this._renderPdLeases();
     }

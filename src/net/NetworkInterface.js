@@ -5,7 +5,7 @@ import { EthernetFrame } from "../net/pdu/EthernetFrame.js";
 import { isEqualUint8, prefixToNetmask } from "../lib/helpers.js";
 import { ArpPacket } from "../net/pdu/ArpPacket.js";
 import { Observable } from "../lib/Observeable.js";
-import { simTimer, SimTimer } from "../sim/SimTimer.js";
+import { simTimer, SimTimer } from "../lib/SimTimer.js";
 import { IPv4Packet } from "../net/pdu/IPv4Packet.js";
 import { IPv6Packet } from "../net/pdu/IPv6Packet.js";
 import { ICMPv6Packet } from "../net/pdu/ICMPv6Packet.js";
