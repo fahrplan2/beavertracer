@@ -133,12 +133,15 @@ export default defineConfig({
     lessonsPlugin(),
     staticSitemap({
       siteUrl: "https://www.beavertracer.eu",
-      extraUrls: [
-        "/",
-        ...fs.readdirSync(path.join(__dirname, "public/lessons"), { withFileTypes: true })
-          .filter((e) => e.isDirectory())
-          .map((e) => `/lessons/${e.name}/`),
-      ],
+      extraUrls: (() => {
+        const lessonsSrc = path.join(__dirname, "lessons");
+        const langs = fs.existsSync(lessonsSrc)
+          ? fs.readdirSync(lessonsSrc, { withFileTypes: true })
+              .filter((e) => e.isDirectory() && !e.name.startsWith("_"))
+              .map((e) => `/lessons/${e.name}/`)
+          : [];
+        return ["/", ...langs];
+      })(),
     }),
   ],
   build: {
