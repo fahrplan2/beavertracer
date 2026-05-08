@@ -146,8 +146,16 @@ export class TerminalApp extends GenericProcess {
         this.disposer.on(term, "keydown", (ev) => this._onKeyDown(/** @type {KeyboardEvent} */(ev)));
         this.disposer.on(term, "pointerdown", () => term.focus());
         this.disposer.on(this.root, "pointerdown", () => term.focus());
-        this._startCursorBlink();
 
+        const simPanel = this.root.closest(".sim-panel");
+        if (simPanel) {
+            const ro = new ResizeObserver(() => this._resizeToFit(term));
+            ro.observe(simPanel);
+            this.disposer.add(() => ro.disconnect());
+        }
+
+        this._startCursorBlink();
+        this._resizeToFit(term);
         this._renderScreen();
         setTimeout(() => term.focus(), 0);
     }
@@ -657,6 +665,33 @@ export class TerminalApp extends GenericProcess {
 
         // Unbusy immediately so prompt returns
         this.busy = false;
+        this._renderScreen();
+    }
+
+    /** @param {HTMLPreElement} term */
+    _resizeToFit(term) {
+        const simPanel = this.root.closest(".sim-panel");
+        if (!simPanel) return;
+        const header = simPanel.querySelector(".sim-panel-header");
+        const osBar = this.root.parentElement?.querySelector(".os-frame-bar");
+        const headerH = header instanceof HTMLElement ? header.offsetHeight : 38;
+        const osBarH = osBar instanceof HTMLElement ? osBar.offsetHeight : 0;
+        const availH = simPanel.clientHeight - headerH - osBarH;
+        if (availH <= 0) return;
+        term.style.height = availH + "px";
+        const cs = getComputedStyle(term);
+        const lineH = parseFloat(cs.lineHeight) || 21;
+        const padV = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+        const newRows = Math.max(5, Math.floor((availH - padV) / lineH));
+        if (newRows === this.rows) return;
+        if (newRows > this.rows) {
+            while (this.screen.length < newRows) this.screen.push(" ".repeat(this.cols));
+        } else {
+            const removed = this.screen.splice(newRows);
+            for (const row of removed) if (row.trim()) this._pushScrollback(row);
+            this.outY = Math.min(this.outY, newRows - 1);
+        }
+        this.rows = newRows;
         this._renderScreen();
     }
 

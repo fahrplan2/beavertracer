@@ -223,7 +223,7 @@
 
 .app-editor .editor-area {
   flex: 1 1 auto;
-  min-height: 30rem;   
+  min-height: 5rem;
   width: 100%;
   resize: none;          /* not resizable */
   font-family: "Hack", monospace;

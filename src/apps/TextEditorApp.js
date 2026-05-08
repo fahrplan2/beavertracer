@@ -160,6 +160,22 @@ export class TextEditorApp extends GenericProcess {
 
     this._renderStatus();
 
+    const simPanel = this.root.closest(".sim-panel");
+    if (simPanel) {
+        const resizeEditor = () => {
+            const header = simPanel.querySelector(".sim-panel-header");
+            const osBar = this.root.parentElement?.querySelector(".os-frame-bar");
+            const headerH = header instanceof HTMLElement ? header.offsetHeight : 38;
+            const osBarH = osBar instanceof HTMLElement ? osBar.offsetHeight : 0;
+            const availH = simPanel.clientHeight - headerH - osBarH;
+            if (availH > 0) this.root.style.height = availH + "px";
+        };
+        resizeEditor();
+        const ro = new ResizeObserver(resizeEditor);
+        ro.observe(simPanel);
+        this.disposer.add(() => ro.disconnect());
+    }
+
     queueMicrotask(() => ta.focus());
   }
 

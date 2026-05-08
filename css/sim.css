@@ -100,7 +100,7 @@
   min-width: 600px;
   min-height: 200px;
   max-width: 1000px;
-  max-height: 1000px;
+  max-height: min(1000px, var(--sim-area-height, 1000px));
 
   border: 2px solid var(--ui-border-strong);
   border-radius: var(--radius-lg);
@@ -183,7 +183,7 @@
   flex: 0 0 auto;
   flex-wrap: nowrap;
   overflow-x: auto;
-  overflow-y: visible;
+  overflow-y: hidden;
   align-items: stretch;
   gap: 6px;
   padding: var(--pad-md);
@@ -221,7 +221,7 @@
 
 .sim-toolbar-buttons {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px;
 }
 

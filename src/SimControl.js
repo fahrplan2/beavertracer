@@ -362,6 +362,12 @@ export class SimControl {
         this.nodesLayer = nodes;
         this.movementBoundary = nodes;
 
+        const updateSizeVar = () => {
+            nodes.style.setProperty("--sim-area-height", nodes.clientHeight + "px");
+        };
+        updateSizeVar();
+        new ResizeObserver(updateSizeVar).observe(nodes);
+
         const packetsLayer = document.createElement("div");
         packetsLayer.className = "sim-packets-layer";
         nodes.appendChild(packetsLayer);
