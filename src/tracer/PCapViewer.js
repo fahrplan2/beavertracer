@@ -86,6 +86,7 @@ export class PCapViewer {
   /** @type {HTMLTableSectionElement|null} */ #tableBody = null;
   /** @type {HTMLInputElement|null} */ #filterEl = null;
   /** @type {HTMLElement|null} */ #statusEl = null;
+  /** @type {HTMLElement|null} */ #loadingOverlay = null;
   /** @type {HTMLElement|null} */ #treePane = null;
   /** @type {HTMLPreElement|null} */ #rawPane = null;
 
@@ -360,6 +361,10 @@ export class PCapViewer {
       </div>
 
       <div class="pcapviewer-layout">
+        <div class="pcapviewer-wg-overlay" aria-live="polite">
+          <div class="pcapviewer-wg-spinner"></div>
+          <div class="pcapviewer-wg-msg"></div>
+        </div>
         <div class="pcapviewer-pane pcapviewer-pane--table">
           <table class="pcapviewer-table">
             <thead>
@@ -393,6 +398,7 @@ export class PCapViewer {
     this.#tableBody = /** @type {HTMLTableSectionElement} */ (root.querySelector(".pcapviewer-table tbody"));
     this.#filterEl = /** @type {HTMLInputElement} */ (root.querySelector(".pcapviewer-filter"));
     this.#statusEl = /** @type {HTMLElement} */ (root.querySelector(".pcapviewer-status"));
+    this.#loadingOverlay = /** @type {HTMLElement} */ (root.querySelector(".pcapviewer-wg-overlay"));
     this.#treePane = /** @type {HTMLElement} */ (root.querySelector(".pcapviewer-treepane"));
     this.#rawPane = /** @type {HTMLPreElement} */ (root.querySelector(".pcapviewer-rawpane"));
   }
@@ -573,12 +579,28 @@ export class PCapViewer {
       });
     }
 
-    this.#wg = await this.#wgPromise;
-
-    if (!this.#wgInited) {
-      this.#wg.init();
-      this.#wgInited = true;
+    this.#showWgOverlay(t("pcap.status.loading.wiregasm"));
+    try {
+      this.#wg = await this.#wgPromise;
+      if (!this.#wgInited) {
+        this.#wg.init();
+        this.#wgInited = true;
+      }
+    } finally {
+      this.#hideWgOverlay();
     }
+  }
+
+  /** @param {string} msg */
+  #showWgOverlay(msg) {
+    if (!this.#loadingOverlay) return;
+    const msgEl = this.#loadingOverlay.querySelector(".pcapviewer-wg-msg");
+    if (msgEl) msgEl.textContent = msg;
+    this.#loadingOverlay.classList.add("is-visible");
+  }
+
+  #hideWgOverlay() {
+    this.#loadingOverlay?.classList.remove("is-visible");
   }
 
   /** @param {SessionState} s @param {Uint8Array} pcapBytes */

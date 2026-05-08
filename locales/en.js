@@ -822,7 +822,7 @@ export default {
   "pcap.col.destination": "Destination",
   "pcap.col.protocol": "Protocol",
   "pcap.col.info": "Info",
-  "pcap.status.loading.wiregasm": "Loading Wiregasm…",
+  "pcap.status.loading.wiregasm": "Loading packet dissector…",
   "pcap.status.loading.pcap": "Loading PCAP…",
   "pcap.status.rendering": "Rendering…",
   "pcap.status.ready": "Ready",

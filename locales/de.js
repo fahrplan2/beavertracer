@@ -685,7 +685,7 @@ export default {
   "pcap.col.destination": "Ziel",
   "pcap.col.protocol": "Protokoll",
   "pcap.col.info": "Info",
-  "pcap.status.loading.wiregasm": "Wiregasm wird geladen…",
+  "pcap.status.loading.wiregasm": "Paketanalyse wird geladen…",
   "pcap.status.loading.pcap": "PCAP wird geladen…",
   "pcap.status.rendering": "Wird gerendert…",
   "pcap.status.ready": "Bereit",
