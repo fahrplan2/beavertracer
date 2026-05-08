@@ -93,19 +93,34 @@
 
 .pcapviewer-bottom {
   display: grid;
-  grid-template-columns: 1.5fr 0.5fr;
+  grid-template-columns: 1fr 4px 1fr;
+  min-height: 0;
 }
 
 .pcapviewer-pane {
-  border: 1px solid #ddd;
+  border: 1px solid var(--ui-border, #ddd);
   overflow: auto;
   min-height: 0;
 }
+
+/* no internal double-border between tree and hex */
+.pcapviewer-pane--tree { border-right: none; }
+.pcapviewer-pane--raw  { border-left: none; }
+
+/* vertical splitter */
+.pcapviewer-vsplitter {
+  cursor: col-resize;
+  background: var(--ui-border, #ddd);
+  position: relative;
+  transition: background 120ms;
+}
+.pcapviewer-vsplitter:hover { background: #888; }
 
 /* Table */
 .pcapviewer-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
   font-family: "Hack", monospace;
   font-size: 12px;
 }
@@ -115,6 +130,25 @@
   border-bottom: 1px solid #eee;
   padding: 6px 8px;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pcapviewer-table th {
+  position: relative;
+  text-align: left;
+}
+
+.pcapviewer-col-resize {
+  position: absolute;
+  right: 0;
+  top: 15%;
+  bottom: 15%;
+  width: 5px;
+  cursor: col-resize;
+  user-select: none;
+  z-index: 1;
+  border-right: 2px solid var(--ui-border, #ccc);
 }
 
 .pcapviewer-row {
@@ -149,6 +183,18 @@
 .pcapviewer-rawpane {
   margin: 0;
   padding: 8px;
+  line-height: 1.6;
+}
+
+.hex-offset {
+  color: var(--text-muted, #888);
+  user-select: none;
+}
+
+.hex-ascii {
+  color: var(--text-muted, #777);
+  user-select: none;
+  opacity: 0.75;
 }
 
 /* Tree */
@@ -175,6 +221,16 @@
 
 .pcapviewer-tree-node:hover {
   background: rgba(0, 0, 0, 0.06);
+}
+
+.pcapviewer-tree-proto {
+  font-weight: 600;
+  background: color-mix(in oklch, var(--surface, #fff) 80%, var(--text, #000) 8%);
+  border-radius: 4px;
+  margin-bottom: 1px;
+}
+.pcapviewer-tree-proto:hover {
+  background: color-mix(in oklch, var(--surface, #fff) 70%, var(--text, #000) 12%);
 }
 
 .pcapviewer-tree-twisty {
@@ -340,8 +396,10 @@
 }
 
 .pcapviewer-hexbyte--hl {
-  background: rgba(129, 137, 13, 0.45);
-  border-radius: 3px;
+  background: color-mix(in oklch, var(--accent, #2563eb) 25%, transparent);
+  border-radius: 2px;
+  outline: 1px solid color-mix(in oklch, var(--accent, #2563eb) 60%, transparent);
+  outline-offset: -1px;
 }
 
 

@@ -47,6 +47,9 @@ export class SimControl {
     /** @type {boolean} is the simulation paused? */
     isPaused = true;
 
+    /** @type {{ wasPaused: boolean, tick: number }|null} saved state when entering trace mode */
+    _tracePreState = null;
+
     /** @type {HTMLElement|null} HTML-Element to render everything in*/
     root; 
 
@@ -249,6 +252,29 @@ export class SimControl {
     pause() {
         if (this.isPaused) return;
         this.isPaused = true;
+        this._invalidateUI();
+        this.scheduleNextStep();
+    }
+
+    _enterTraceMode() {
+        this._tracePreState = { wasPaused: this.isPaused, tick: SimControl.tick };
+        this.isPaused = true;
+        this.mode = "trace";
+        this._invalidateUI();
+        this.pcapViewer.render();
+        this.scheduleNextStep();
+    }
+
+    _leaveTraceMode() {
+        const pre = this._tracePreState;
+        this._tracePreState = null;
+        this.mode = "run";
+        if (pre) {
+            SimControl.tick = pre.tick;
+            this.isPaused = pre.wasPaused;
+        } else {
+            this.isPaused = false;
+        }
         this._invalidateUI();
         this.scheduleNextStep();
     }
@@ -508,7 +534,10 @@ export class SimControl {
                     history.pushState({}, "", "/");
                 }
                 if (this.mode === "edit") this._leaveEditMode();
-                else this.pause();
+                if (this.mode === "trace") {
+                    this._leaveTraceMode();
+                    return;
+                }
 
                 this.mode = "run";
                 this.isPaused = false;
@@ -533,9 +562,7 @@ export class SimControl {
                     history.pushState({}, "", "/");
                 }
                 if (this.mode === "edit") this._leaveEditMode();
-                this.mode = "trace";
-                this._invalidateUI();
-                this.pcapViewer.render();
+                this._enterTraceMode();
             },
         });
         btnTrace.dataset.role = "mode-trace";
@@ -711,8 +738,8 @@ export class SimControl {
             return b;
         };
 
-        btn("mode-run",   "fa-play",             t("sim.run"),   () => { this.mode = "run"; this.isPaused = false; this._invalidateUI(); this.scheduleNextStep(); });
-        btn("mode-trace", "fa-magnifying-glass",  t("sim.trace"), () => { this.mode = "trace"; this._invalidateUI(); this.pcapViewer.render(); });
+        btn("mode-run",   "fa-play",             t("sim.run"),   () => { if (this.mode === "trace") { this._leaveTraceMode(); } else { this.mode = "run"; this.isPaused = false; this._invalidateUI(); this.scheduleNextStep(); } });
+        btn("mode-trace", "fa-magnifying-glass",  t("sim.trace"), () => { this._enterTraceMode(); });
 
         btn("pause",      "fa-pause",             t("sim.pause"), () => this.pause());
 

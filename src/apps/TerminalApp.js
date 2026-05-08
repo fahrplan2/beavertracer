@@ -50,10 +50,10 @@ export class TerminalApp extends GenericProcess {
     // ---------------------------
 
     /** @type {number} */
-    cols = 80;
+    cols = 60;
 
     /** @type {number} */
-    rows = 25;
+    rows = 20;
 
     /** @type {number} */
     scrollbackLimit = 2000;
@@ -147,15 +147,7 @@ export class TerminalApp extends GenericProcess {
         this.disposer.on(term, "pointerdown", () => term.focus());
         this.disposer.on(this.root, "pointerdown", () => term.focus());
 
-        const simPanel = this.root.closest(".sim-panel");
-        if (simPanel) {
-            const ro = new ResizeObserver(() => this._resizeToFit(term));
-            ro.observe(simPanel);
-            this.disposer.add(() => ro.disconnect());
-        }
-
         this._startCursorBlink();
-        this._resizeToFit(term);
         this._renderScreen();
         setTimeout(() => term.focus(), 0);
     }
@@ -200,20 +192,27 @@ export class TerminalApp extends GenericProcess {
     // ---------------------------
 
     /**
-     * Write text (no implicit newline). Supports \n and \r. Auto-wraps at cols.
+     * Write text (no implicit newline). Supports \n and \r. Wraps at word boundaries.
      * @param {string} text
      */
     print(text = "") {
-        for (const ch of text) {
-            if (ch === "\n") {
-                this._newline();
-                continue;
-            }
-            if (ch === "\r") {
-                this.outX = 0;
-                continue;
-            }
-            this._putChar(ch);
+        let pos = 0;
+        while (pos < text.length) {
+            const ch = text[pos];
+            if (ch === "\n") { this._newline(); pos++; continue; }
+            if (ch === "\r") { this.outX = 0;   pos++; continue; }
+            if (ch === " ")  { this._putChar(" "); pos++; continue; }
+
+            // find end of word
+            let end = pos;
+            while (end < text.length && text[end] !== " " && text[end] !== "\n" && text[end] !== "\r") end++;
+
+            // wrap before word if it doesn't fit and we're not already at column 0
+            const wordLen = end - pos;
+            if (this.outX > 0 && this.outX + wordLen > this.cols) this._newline();
+
+            for (let i = pos; i < end; i++) this._putChar(text[i]);
+            pos = end;
         }
         this._renderScreen();
     }
@@ -665,33 +664,6 @@ export class TerminalApp extends GenericProcess {
 
         // Unbusy immediately so prompt returns
         this.busy = false;
-        this._renderScreen();
-    }
-
-    /** @param {HTMLPreElement} term */
-    _resizeToFit(term) {
-        const simPanel = this.root.closest(".sim-panel");
-        if (!simPanel) return;
-        const header = simPanel.querySelector(".sim-panel-header");
-        const osBar = this.root.parentElement?.querySelector(".os-frame-bar");
-        const headerH = header instanceof HTMLElement ? header.offsetHeight : 38;
-        const osBarH = osBar instanceof HTMLElement ? osBar.offsetHeight : 0;
-        const availH = simPanel.clientHeight - headerH - osBarH;
-        if (availH <= 0) return;
-        term.style.height = availH + "px";
-        const cs = getComputedStyle(term);
-        const lineH = parseFloat(cs.lineHeight) || 21;
-        const padV = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
-        const newRows = Math.max(5, Math.floor((availH - padV) / lineH));
-        if (newRows === this.rows) return;
-        if (newRows > this.rows) {
-            while (this.screen.length < newRows) this.screen.push(" ".repeat(this.cols));
-        } else {
-            const removed = this.screen.splice(newRows);
-            for (const row of removed) if (row.trim()) this._pushScrollback(row);
-            this.outY = Math.min(this.outY, newRows - 1);
-        }
-        this.rows = newRows;
         this._renderScreen();
     }
 

@@ -239,7 +239,7 @@ export class SimulatedObject {
             });
         }
         makeWindow(this.panelEl, {
-            resizable: true,
+            resizable: false,
             minWidth: 220,
             minHeight: 140,
             onResize: (w, h) => {

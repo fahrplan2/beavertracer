@@ -327,16 +327,16 @@
   justify-content: center;
   gap: 4px;
 
-  height: 56px;
-  min-width: 70px;
-  padding: var(--pad-md) var(--pad-lg);
+  height: 44px;
+  min-width: 58px;
+  padding: 5px 10px;
 
   border-radius: var(--radius-md);
   border: 1px solid var(--ui-border);
   background: var(--ui-card);
   color: var(--text);
 
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.1;
   text-align: center;
   white-space: nowrap;
@@ -349,7 +349,7 @@
 
 .sim-toolbar-buttons .fas,
 .sim-sidebar-btn .fas {
-    font-size: 25px;
+    font-size: 20px;
 }
 
 
@@ -1044,10 +1044,10 @@ sim-toolbar-langbtn {
 
 .sim-sidebar-btn .my-icon-router,
 .sim-sidebar-btn .my-icon-switch {
-  width: 24px;
-  height: 24px;
-  -webkit-mask-size: 24px 24px;
-  mask-size: 24px 24px;
+  width: 20px;
+  height: 20px;
+  -webkit-mask-size: 20px 20px;
+  mask-size: 20px 20px;
 }
 
 /* Basis */

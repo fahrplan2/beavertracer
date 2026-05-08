@@ -22,6 +22,7 @@ export class SplitGrid {
    *  minB: number;
    *  axis: "x"|"y";
    *  cursor: "col-resize"|"row-resize";
+   *  defaultRatio?: number;
    *  getRatio: ()=>number|null;
    *  setRatio: (v:number|null)=>void;
    * }} cfg
@@ -54,9 +55,10 @@ export class SplitGrid {
     };
 
     const restore = () => {
-      const ratio = cfg.getRatio() ?? 0.5;
+      const ratio = cfg.getRatio() ?? cfg.defaultRatio ?? 0.5;
       const rect = container.getBoundingClientRect();
       const total = cfg.axis === "y" ? rect.height : rect.width;
+      if (total === 0) return; // not visible yet — ResizeObserver will apply when it becomes visible
       const usable = Math.max(1, total - cfg.splitSizePx);
       applyPx(ratio * usable);
     };
@@ -93,10 +95,10 @@ export class SplitGrid {
     }, { signal });
 
     this.#ro = new ResizeObserver(() => {
-      const ratio = cfg.getRatio();
-      if (ratio == null) return;
+      const ratio = cfg.getRatio() ?? cfg.defaultRatio ?? 0.5;
       const rect = container.getBoundingClientRect();
       const total = cfg.axis === "y" ? rect.height : rect.width;
+      if (total === 0) return;
       const usable = Math.max(1, total - cfg.splitSizePx);
       applyPx(ratio * usable);
     });
