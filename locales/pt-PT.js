@@ -813,5 +813,9 @@ export default {
   "firewall.move.up": "Mover para cima",
   "firewall.move.down": "Mover para baixo",
   "sim.tool.firewall": "Firewall",
-  "lessons.noLessons": "Desculpe, mas ainda não há lições disponíveis neste idioma. 😔"
+  "lessons.noLessons": "Desculpe, mas ainda não há lições disponíveis neste idioma. 😔",
+  "switch.vlan.col.port": "Porta",
+  "switch.vlan.col.mode": "Modo",
+  "switch.vlan.col.pvid": "PVID",
+  "switch.vlan.col.allowed": "VLANs Permitidas"
 };

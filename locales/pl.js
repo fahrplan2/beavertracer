@@ -808,5 +808,9 @@ export default {
   "firewall.move.up": "Przesuń w górę",
   "firewall.move.down": "Przesuń w dół",
   "sim.tool.firewall": "Zapora sieciowa",
-  "lessons.noLessons": "Przepraszamy, ale w tej chwili nie ma dostępnych lekcji w tym języku. 😔"
+  "lessons.noLessons": "Przepraszamy, ale w tej chwili nie ma dostępnych lekcji w tym języku. 😔",
+  "switch.vlan.col.port": "Port",
+  "switch.vlan.col.mode": "Tryb",
+  "switch.vlan.col.pvid": "PVID",
+  "switch.vlan.col.allowed": "Dozwolone VLAN-y"
 };

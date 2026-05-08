@@ -808,5 +808,9 @@ export default {
   "firewall.delrule": "Xóa quy tắc",
   "firewall.move.up": "Di chuyển lên",
   "firewall.move.down": "Di chuyển xuống",
-  "sim.tool.firewall": "Tường lửa"
+  "sim.tool.firewall": "Tường lửa",
+  "switch.vlan.col.port": "Cổng",
+  "switch.vlan.col.mode": "Chế độ",
+  "switch.vlan.col.pvid": "PVID",
+  "switch.vlan.col.allowed": "VLAN được phép"
 };

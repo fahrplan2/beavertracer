@@ -808,5 +808,9 @@ export default {
   "firewall.delrule": "Ștergere regulă",
   "firewall.move.up": "Mutare în sus",
   "firewall.move.down": "Mutare în jos",
-  "sim.tool.firewall": "Firewall"
+  "sim.tool.firewall": "Firewall",
+  "switch.vlan.col.port": "Port",
+  "switch.vlan.col.mode": "Mod",
+  "switch.vlan.col.pvid": "PVID",
+  "switch.vlan.col.allowed": "VLAN-uri permise"
 };

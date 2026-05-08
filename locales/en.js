@@ -673,7 +673,7 @@ export default {
   "router.addinterface": "Add interface",
 
   "router.deleteinterface": "Delete interface",
-  "router.confirminterfacedelete": "Are you sure to delete interface ${name}",
+  "router.confirminterfacedelete": "Are you sure you want to delete interface ${name}?",
 
   "router.stateup": "up",
   "router.statedown": "down",
@@ -752,6 +752,10 @@ export default {
   "switch.stp.status": "STP status",
   "switch.vlan.config": "VLAN configuration",
   "switch.vlan.enable": "enable VLAN",
+  "switch.vlan.col.port": "Port",
+  "switch.vlan.col.mode": "Mode",
+  "switch.vlan.col.pvid": "PVID",
+  "switch.vlan.col.allowed": "Allowed VLANs",
 
   "switch.sat.empty": "The SAT is still empty.",
   "switch.tab.sat": "SAT",

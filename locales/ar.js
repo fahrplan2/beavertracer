@@ -808,5 +808,9 @@ export default {
   "firewall.move.up": "تحريك لأعلى",
   "firewall.move.down": "تحريك لأسفل",
   "sim.tool.firewall": "جدار الحماية",
-  "lessons.noLessons": "نعتذر، لكن لا توجد دروس متاحة في هذه اللغة حتى الآن. 😔"
+  "lessons.noLessons": "نعتذر، لكن لا توجد دروس متاحة في هذه اللغة حتى الآن. 😔",
+  "switch.vlan.col.port": "المنفذ",
+  "switch.vlan.col.mode": "الوضع",
+  "switch.vlan.col.pvid": "PVID",
+  "switch.vlan.col.allowed": "شبكات VLAN المسموحة"
 };

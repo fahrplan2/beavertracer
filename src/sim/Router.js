@@ -2,6 +2,7 @@
 
 import { VirtualFileSystem } from "../apps/lib/VirtualFileSystem.js";
 import { IPStack } from "../net/IPStack.js";
+import { VLANSubInterface } from "../net/NetworkInterface.js";
 import { RIPDaemon } from "../net/RIPDaemon.js";
 import { SimulatedObject } from "./SimulatedObject.js";
 import { PollTimer } from "../lib/PollTimer.js";
@@ -41,7 +42,8 @@ function assertPrefix(p) {
 
 /** deterministic via EthernetPort.linkref @param {*} iface */
 function getInterfaceLinkStatus(iface) {
-    const port = iface?.port;
+    // Subinterfaces use the parent's physical port for link state
+    const port = (iface instanceof VLANSubInterface ? iface._parentIface?.port : iface?.port);
     if (!port) return { text: t("router.unknown"), state: "unknown" };
     return port.linkref ? { text: t("router.stateup"), state: "up" } : { text: t("router.statedown"), state: "down" };
 }
@@ -293,6 +295,7 @@ export class Router extends SimulatedObject {
             btn.addEventListener("click", () => {
                 this._selectedIfaceName = iface.name;
                 this._applyTabSelection();
+                this._renderInterfaceActions();
                 this._loadSelectedInterfaceIntoForm();
                 this._updateInterfaceFormState();
             });
@@ -316,6 +319,29 @@ export class Router extends SimulatedObject {
         if (!actionsHost) return;
 
         DOMBuilder.clear(actionsHost);
+
+        const iface = this._getSelectedIface();
+        const isSub = iface instanceof VLANSubInterface;
+
+        if (!isSub) {
+            const subBtn = DOMBuilder.button("+ VLAN", { className: "router-if-addsub" });
+            subBtn.title = "Add VLAN subinterface";
+            subBtn.addEventListener("click", async () => {
+                const name = this._selectedIfaceName;
+                if (!name) return;
+                const raw = await SimDialog.prompt("VLAN ID (1–4094):", "10");
+                if (raw == null || raw.trim() === "") return;
+                const vid = Number(raw.trim());
+                try {
+                    this.net.addSubInterface(name, vid);
+                    this._selectedIfaceName = `${name}.${vid}`;
+                    if (this._panelBody) this.mount(this._panelBody);
+                } catch (e) {
+                    SimDialog.alert(String(e?.message ?? e));
+                }
+            });
+            actionsHost.appendChild(subBtn);
+        }
 
         const delBtn = DOMBuilder.button(t("router.deleteinterface"), { className: "router-if-del" });
         this._delIfBtn = delBtn;
@@ -851,114 +877,99 @@ export class Router extends SimulatedObject {
             updateRowState();
         });
 
-        // ---- Add Route row ----
-        const addTr = document.createElement("tr");
-        addTr.className = "router-route-add-row";
-
-        const addDst = document.createElement("input");
-        addDst.placeholder = "0.0.0.0";
-
-        const addMask = document.createElement("input");
-        addMask.placeholder = "255.255.255.0";
-
-        const addNh = document.createElement("input");
-        addNh.placeholder = "0.0.0.0";
-
-        const addIf = document.createElement("select");
-        for (const iface of this.net.interfaces) {
-            const o = document.createElement("option");
-            o.value = iface.name;
-            o.textContent = iface.name;
-            addIf.appendChild(o);
-        }
-
-        const hasIfaces = this.net.interfaces.length > 0;
-        addIf.disabled = !hasIfaces;
-
-        const addAuto = document.createElement("td");
-        addAuto.textContent = t("router.routingtable.no");
-
-        const addBtn = document.createElement("button");
-        addBtn.textContent = t("router.routingtable.add");
-
-        const markAddDirty = () => {
-            const any = addDst.value.trim() !== "" || addMask.value.trim() !== "" || addNh.value.trim() !== "";
-            addTr.classList.toggle("router-route-add-dirty", any);
-        };
-
-        const updateAddState = () => {
-            if (!hasIfaces) {
-                addBtn.disabled = true;
-                return;
-            }
-
-            markAddDirty();
-
-            let okDst = false, okMask = false, okNh = false;
-
-            try { const ip = ipFromStr(addDst.value || "0.0.0.0"); okDst = ip.isV4(); } catch { okDst = false; }
-            try { const p = netmaskStrToPrefix(addMask.value || "0.0.0.0"); okMask = (p != null); } catch { okMask = false; }
-            try { const ip = ipFromStr(addNh.value || "0.0.0.0"); okNh = ip.isV4(); } catch { okNh = false; }
-
-            DOMBuilder.markInvalid(addDst, !okDst);
-            DOMBuilder.markInvalid(addMask, !okMask);
-            DOMBuilder.markInvalid(addNh, !okNh);
-
-            addBtn.disabled = !(okDst && okMask && okNh);
-        };
-
-        addDst.addEventListener("input", updateAddState);
-        addMask.addEventListener("input", updateAddState);
-        addNh.addEventListener("input", updateAddState);
-        addIf.addEventListener("change", updateAddState);
-
-        addBtn.addEventListener("click", () => {
-            if (addBtn.disabled) return;
-
-            try {
-                const dstIp = ipFromStr(addDst.value || "0.0.0.0");
-                if (!dstIp.isV4()) throw new Error("Nur IPv4 (vorerst).");
-
-                const p = netmaskStrToPrefix(addMask.value || "0.0.0.0");
-                if (p == null) throw new Error("Ungültige Netmask");
-
-                const nhIp = ipFromStr(addNh.value || "0.0.0.0");
-                if (!nhIp.isV4()) throw new Error("Nur IPv4 (vorerst).");
-
-                const interfN = this._ifaceNameToIndex(addIf.value);
-                this.net.addRoute(dstIp, p, interfN, nhIp);
-
-                this._renderRoutes();
-            } catch (e) {
-                SimDialog.alert(String(e?.message ?? e));
-            }
-        });
-
-        /** @param {HTMLElement} el */
-        const td2 = (el) => {
-            const tdd = document.createElement("td");
-            tdd.appendChild(el);
-            return tdd;
-        };
-
-        addTr.appendChild(td2(addDst));
-        addTr.appendChild(td2(addMask));
-        addTr.appendChild(td2(addNh));
-        addTr.appendChild(td2(addIf));
-        addTr.appendChild(addAuto);
-
-        const addActions = document.createElement("td");
-        addActions.className = "router-route-actions";
-        addActions.appendChild(addBtn);
-        addTr.appendChild(addActions);
-
-        tbody.appendChild(addTr);
-
         table.appendChild(tbody);
         this._routesHost.appendChild(table);
 
-        addBtn.disabled = !hasIfaces;
-        updateAddState();
+        // ---- Footer: "+ Route hinzufügen" button ----
+        const hasIfaces = this.net.interfaces.length > 0;
+        const footerBtn = DOMBuilder.button("+ " + t("router.routingtable.add"), { className: "router-route-footer-btn" });
+        footerBtn.disabled = !hasIfaces;
+        this._routesHost.appendChild(footerBtn);
+
+        footerBtn.addEventListener("click", () => {
+            footerBtn.style.display = "none";
+
+            const addTr = document.createElement("tr");
+            addTr.className = "router-route-add-row";
+
+            const addDst = document.createElement("input");
+            addDst.placeholder = "0.0.0.0";
+
+            const addMask = document.createElement("input");
+            addMask.placeholder = "255.255.255.0";
+
+            const addNh = document.createElement("input");
+            addNh.placeholder = "0.0.0.0";
+
+            const addIf = document.createElement("select");
+            for (const iface of this.net.interfaces) {
+                const o = document.createElement("option");
+                o.value = iface.name;
+                o.textContent = iface.name;
+                addIf.appendChild(o);
+            }
+            addIf.disabled = !hasIfaces;
+
+            const addAuto = document.createElement("td");
+            addAuto.textContent = t("router.routingtable.no");
+
+            const saveBtn = document.createElement("button");
+            saveBtn.textContent = t("router.routingtable.save");
+            saveBtn.disabled = true;
+
+            const cancelBtn = document.createElement("button");
+            cancelBtn.textContent = t("ui.cancel");
+
+            const updateAddState = () => {
+                let okDst = false, okMask = false, okNh = false;
+                try { const ip = ipFromStr(addDst.value || "0.0.0.0"); okDst = ip.isV4(); } catch { okDst = false; }
+                try { const p = netmaskStrToPrefix(addMask.value || "0.0.0.0"); okMask = (p != null); } catch { okMask = false; }
+                try { const ip = ipFromStr(addNh.value || "0.0.0.0"); okNh = ip.isV4(); } catch { okNh = false; }
+                DOMBuilder.markInvalid(addDst, !okDst);
+                DOMBuilder.markInvalid(addMask, !okMask);
+                DOMBuilder.markInvalid(addNh, !okNh);
+                saveBtn.disabled = !(okDst && okMask && okNh);
+            };
+
+            addDst.addEventListener("input", updateAddState);
+            addMask.addEventListener("input", updateAddState);
+            addNh.addEventListener("input", updateAddState);
+            addIf.addEventListener("change", updateAddState);
+
+            saveBtn.addEventListener("click", () => {
+                if (saveBtn.disabled) return;
+                try {
+                    const dstIp = ipFromStr(addDst.value || "0.0.0.0");
+                    if (!dstIp.isV4()) throw new Error("Nur IPv4 (vorerst).");
+                    const p = netmaskStrToPrefix(addMask.value || "0.0.0.0");
+                    if (p == null) throw new Error("Ungültige Netmask");
+                    const nhIp = ipFromStr(addNh.value || "0.0.0.0");
+                    if (!nhIp.isV4()) throw new Error("Nur IPv4 (vorerst).");
+                    const interfN = this._ifaceNameToIndex(addIf.value);
+                    this.net.addRoute(dstIp, p, interfN, nhIp);
+                    this._renderRoutes();
+                } catch (e) {
+                    SimDialog.alert(String(e?.message ?? e));
+                }
+            });
+
+            cancelBtn.addEventListener("click", () => this._renderRoutes());
+
+            /** @param {HTMLElement} el */
+            const td2 = (el) => { const tdd = document.createElement("td"); tdd.appendChild(el); return tdd; };
+            addTr.appendChild(td2(addDst));
+            addTr.appendChild(td2(addMask));
+            addTr.appendChild(td2(addNh));
+            addTr.appendChild(td2(addIf));
+            addTr.appendChild(addAuto);
+            const addActions = document.createElement("td");
+            addActions.className = "router-route-actions";
+            addActions.appendChild(saveBtn);
+            addActions.appendChild(cancelBtn);
+            addTr.appendChild(addActions);
+            tbody.appendChild(addTr);
+            addDst.focus();
+        });
     }
 
     _renderRoutesV6() {
@@ -1110,88 +1121,100 @@ export class Router extends SimulatedObject {
             updateRowState();
         });
 
-        // ---- Add Route row (IPv6) ----
-        const addTr = document.createElement("tr");
-        addTr.className = "router-route-add-row";
-
-        const addDst = document.createElement("input");
-        addDst.placeholder = "::";
-
-        const addPrefix = document.createElement("input");
-        addPrefix.placeholder = "64";
-        addPrefix.style.width = "4em";
-
-        const addNh = document.createElement("input");
-        addNh.placeholder = "::";
-
-        const addIf = document.createElement("select");
-        for (const iface of this.net.interfaces) {
-            const o = document.createElement("option");
-            o.value = iface.name;
-            o.textContent = iface.name;
-            addIf.appendChild(o);
-        }
-        const hasIfaces = this.net.interfaces.length > 0;
-        addIf.disabled = !hasIfaces;
-
-        const addAuto = document.createElement("td");
-        addAuto.textContent = t("router.routingtable.no");
-
-        const addBtn = document.createElement("button");
-        addBtn.textContent = t("router.routingtable.add");
-
-        const updateAddState = () => {
-            if (!hasIfaces) { addBtn.disabled = true; return; }
-            let okDst = false, okPfx = false, okNh = false;
-            try { const ip = ipFromStr(addDst.value || "::"); okDst = ip.isV6(); } catch { okDst = false; }
-            try { const n = Number(addPrefix.value || "0"); okPfx = Number.isInteger(n) && n >= 0 && n <= 128; } catch { okPfx = false; }
-            try { const ip = ipFromStr(addNh.value || "::"); okNh = ip.isV6(); } catch { okNh = false; }
-            DOMBuilder.markInvalid(addDst, !okDst);
-            DOMBuilder.markInvalid(addPrefix, !okPfx);
-            DOMBuilder.markInvalid(addNh, !okNh);
-            addBtn.disabled = !(okDst && okPfx && okNh);
-        };
-
-        addDst.addEventListener("input", updateAddState);
-        addPrefix.addEventListener("input", updateAddState);
-        addNh.addEventListener("input", updateAddState);
-        addIf.addEventListener("change", updateAddState);
-
-        addBtn.addEventListener("click", () => {
-            if (addBtn.disabled) return;
-            try {
-                const dstIp = ipFromStr(addDst.value || "::");
-                if (!dstIp.isV6()) throw new Error("IPv6-Adresse erwartet.");
-                const p = Number(addPrefix.value || "0");
-                if (!Number.isInteger(p) || p < 0 || p > 128) throw new Error("Ungültige Prefix-Länge.");
-                const nhIp = ipFromStr(addNh.value || "::");
-                if (!nhIp.isV6()) throw new Error("IPv6-Adresse erwartet.");
-                const interfN = this._ifaceNameToIndex(addIf.value);
-                this.net.addRoute(dstIp, p, interfN, nhIp);
-                this._renderRoutes();
-            } catch (e) {
-                SimDialog.alert(String(e?.message ?? e));
-            }
-        });
-
-        /** @param {HTMLElement} el */
-        const td2 = (el) => { const tdd = document.createElement("td"); tdd.appendChild(el); return tdd; };
-        addTr.appendChild(td2(addDst));
-        addTr.appendChild(td2(addPrefix));
-        addTr.appendChild(td2(addNh));
-        addTr.appendChild(td2(addIf));
-        addTr.appendChild(addAuto);
-        const addActions = document.createElement("td");
-        addActions.className = "router-route-actions";
-        addActions.appendChild(addBtn);
-        addTr.appendChild(addActions);
-        tbody.appendChild(addTr);
-
         table.appendChild(tbody);
         this._routesHost.appendChild(table);
 
-        addBtn.disabled = !hasIfaces;
-        updateAddState();
+        // ---- Footer: "+ Route hinzufügen" button (IPv6) ----
+        const hasIfaces = this.net.interfaces.length > 0;
+        const footerBtn = DOMBuilder.button("+ " + t("router.routingtable.add"), { className: "router-route-footer-btn" });
+        footerBtn.disabled = !hasIfaces;
+        this._routesHost.appendChild(footerBtn);
+
+        footerBtn.addEventListener("click", () => {
+            footerBtn.style.display = "none";
+
+            const addTr = document.createElement("tr");
+            addTr.className = "router-route-add-row";
+
+            const addDst = document.createElement("input");
+            addDst.placeholder = "::";
+
+            const addPrefix = document.createElement("input");
+            addPrefix.placeholder = "64";
+            addPrefix.style.width = "4em";
+
+            const addNh = document.createElement("input");
+            addNh.placeholder = "::";
+
+            const addIf = document.createElement("select");
+            for (const iface of this.net.interfaces) {
+                const o = document.createElement("option");
+                o.value = iface.name;
+                o.textContent = iface.name;
+                addIf.appendChild(o);
+            }
+            addIf.disabled = !hasIfaces;
+
+            const addAuto = document.createElement("td");
+            addAuto.textContent = t("router.routingtable.no");
+
+            const saveBtn = document.createElement("button");
+            saveBtn.textContent = t("router.routingtable.save");
+            saveBtn.disabled = true;
+
+            const cancelBtn = document.createElement("button");
+            cancelBtn.textContent = t("ui.cancel");
+
+            const updateAddState = () => {
+                let okDst = false, okPfx = false, okNh = false;
+                try { const ip = ipFromStr(addDst.value || "::"); okDst = ip.isV6(); } catch { okDst = false; }
+                try { const n = Number(addPrefix.value || "0"); okPfx = Number.isInteger(n) && n >= 0 && n <= 128; } catch { okPfx = false; }
+                try { const ip = ipFromStr(addNh.value || "::"); okNh = ip.isV6(); } catch { okNh = false; }
+                DOMBuilder.markInvalid(addDst, !okDst);
+                DOMBuilder.markInvalid(addPrefix, !okPfx);
+                DOMBuilder.markInvalid(addNh, !okNh);
+                saveBtn.disabled = !(okDst && okPfx && okNh);
+            };
+
+            addDst.addEventListener("input", updateAddState);
+            addPrefix.addEventListener("input", updateAddState);
+            addNh.addEventListener("input", updateAddState);
+            addIf.addEventListener("change", updateAddState);
+
+            saveBtn.addEventListener("click", () => {
+                if (saveBtn.disabled) return;
+                try {
+                    const dstIp = ipFromStr(addDst.value || "::");
+                    if (!dstIp.isV6()) throw new Error("IPv6-Adresse erwartet.");
+                    const p = Number(addPrefix.value || "0");
+                    if (!Number.isInteger(p) || p < 0 || p > 128) throw new Error("Ungültige Prefix-Länge.");
+                    const nhIp = ipFromStr(addNh.value || "::");
+                    if (!nhIp.isV6()) throw new Error("IPv6-Adresse erwartet.");
+                    const interfN = this._ifaceNameToIndex(addIf.value);
+                    this.net.addRoute(dstIp, p, interfN, nhIp);
+                    this._renderRoutes();
+                } catch (e) {
+                    SimDialog.alert(String(e?.message ?? e));
+                }
+            });
+
+            cancelBtn.addEventListener("click", () => this._renderRoutes());
+
+            /** @param {HTMLElement} el */
+            const td2 = (el) => { const tdd = document.createElement("td"); tdd.appendChild(el); return tdd; };
+            addTr.appendChild(td2(addDst));
+            addTr.appendChild(td2(addPrefix));
+            addTr.appendChild(td2(addNh));
+            addTr.appendChild(td2(addIf));
+            addTr.appendChild(addAuto);
+            const addActions = document.createElement("td");
+            addActions.className = "router-route-actions";
+            addActions.appendChild(saveBtn);
+            addActions.appendChild(cancelBtn);
+            addTr.appendChild(addActions);
+            tbody.appendChild(addTr);
+            addDst.focus();
+        });
     }
 
     /** @param {HTMLElement} host */
@@ -1223,8 +1246,8 @@ export class Router extends SimulatedObject {
         thead.appendChild(htr);
         const tbody = document.createElement("tbody");
 
-        for (let i = 0; i < this.net.interfaces.length; i++) {
-            const ifName = `eth${i}`;
+        for (const iface of this.net.interfaces) {
+            const ifName = iface.name;
             const tr  = document.createElement("tr");
             const tdN = document.createElement("td"); tdN.textContent = ifName;
             const tdP = document.createElement("td");

@@ -492,6 +492,8 @@
   border-top: 1px solid color-mix(in oklch, var(--border), var(--text) 6%);
 }
 
+.ui-tab-badge.status-warning { background: var(--warning-tint); border-color: var(--warning-strong); }
+
 /* ── Switch VLAN header ─────────────────────────────────────── */
 .switch-card {
   border: 1px solid color-mix(in oklch, var(--border), var(--text) 8%);

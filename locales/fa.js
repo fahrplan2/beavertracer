@@ -808,5 +808,9 @@ export default {
   "firewall.delrule": "حذف قانون",
   "firewall.move.up": "انتقال به بالا",
   "firewall.move.down": "انتقال به پایین",
-  "sim.tool.firewall": "دیوار آتش"
+  "sim.tool.firewall": "دیوار آتش",
+  "switch.vlan.col.port": "پورت",
+  "switch.vlan.col.mode": "حالت",
+  "switch.vlan.col.pvid": "PVID",
+  "switch.vlan.col.allowed": "VLAN های مجاز"
 };

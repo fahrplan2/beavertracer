@@ -808,5 +808,9 @@ export default {
   "firewall.move.up": "위로 이동",
   "firewall.move.down": "아래로 이동",
   "sim.tool.firewall": "방화벽",
-  "lessons.noLessons": "죄송하지만, 현재 이 언어로 제공되는 레슨이 없습니다. 😔"
+  "lessons.noLessons": "죄송하지만, 현재 이 언어로 제공되는 레슨이 없습니다. 😔",
+  "switch.vlan.col.port": "포트",
+  "switch.vlan.col.mode": "모드",
+  "switch.vlan.col.pvid": "PVID",
+  "switch.vlan.col.allowed": "허용된 VLAN"
 };

@@ -808,5 +808,9 @@ export default {
   "firewall.delrule": "Изтриване на правило",
   "firewall.move.up": "Преместване нагоре",
   "firewall.move.down": "Преместване надолу",
-  "sim.tool.firewall": "Firewall"
+  "sim.tool.firewall": "Firewall",
+  "switch.vlan.col.port": "Порт",
+  "switch.vlan.col.mode": "Режим",
+  "switch.vlan.col.pvid": "PVID",
+  "switch.vlan.col.allowed": "Позволени VLAN-и"
 };

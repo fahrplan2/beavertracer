@@ -808,5 +808,9 @@ export default {
   "firewall.move.up": "Omhoog verplaatsen",
   "firewall.move.down": "Omlaag verplaatsen",
   "sim.tool.firewall": "Firewall",
-  "lessons.noLessons": "Het spijt ons, maar er zijn nog geen lessen beschikbaar in deze taal. 😔"
+  "lessons.noLessons": "Het spijt ons, maar er zijn nog geen lessen beschikbaar in deze taal. 😔",
+  "switch.vlan.col.port": "Poort",
+  "switch.vlan.col.mode": "Modus",
+  "switch.vlan.col.pvid": "PVID",
+  "switch.vlan.col.allowed": "Toegestane VLAN's"
 };

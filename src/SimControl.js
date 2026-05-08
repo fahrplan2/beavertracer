@@ -950,7 +950,7 @@ export class SimControl {
             setActive("pause", this.mode === "run" && this.isPaused);
 
             // --- active state for speed buttons
-            const speedRoles = [1000, 500, 100, 40];
+            const speedRoles = [1000, 500, 100, 40, 20];
             for (const ms of speedRoles) {
                 setActive(`speed-${ms}`, this.mode === "run" && !this.isPaused && SimControl.tick === ms);
             }
@@ -1194,9 +1194,9 @@ export class SimControl {
 
         search.addEventListener("input", () => {
             const q = search.value.toLowerCase();
-            for (const card of grid.children) {
+            for (const card of /** @type {HTMLCollectionOf<HTMLElement>} */ (grid.children)) {
                 const nameEl = card.querySelector(".sim-lang-card-name");
-                card.style.display = !q || nameEl.textContent.toLowerCase().includes(q) ? "" : "none";
+                card.style.display = !q || nameEl?.textContent?.toLowerCase().includes(q) ? "" : "none";
             }
         });
 

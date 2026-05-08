@@ -74,6 +74,13 @@ export class SimTimer {
     /** HTTP client request timeout. */
     static HTTP_CLIENT_TIMEOUT_MS   =  400;  //  80 ticks
 
+    /** STP Hello interval (simulation-scaled, ~IEEE 2 s). */
+    static STP_HELLO_MS             =    500;  // 100 ticks  → ~10 s real at 4× speed
+    /** STP Forward Delay per phase — Listening→Learning and Learning→Forwarding (simulation-scaled, ~IEEE 15 s). */
+    static STP_FORWARD_DELAY_MS     =    150;  //  30 ticks  → ~3 s real at 4× speed
+    /** STP Max Age — discard BPDU info not refreshed within this window (simulation-scaled, ~IEEE 20 s). */
+    static STP_MAX_AGE_MS           =  1_500;  // 300 ticks  → ~30 s real at 4× speed
+
     // -------------------------------------------------------------------------
     // Internal state
     // -------------------------------------------------------------------------
@@ -81,14 +88,23 @@ export class SimTimer {
     /** @type {Array<{id:number, ticksRemaining:number, callback:()=>void}>} */
     #pending = [];
     #nextId = 1;
+    #tickCount = 0;
 
     // -------------------------------------------------------------------------
     // Public API
     // -------------------------------------------------------------------------
 
+    /** Current total tick count since simulation start. */
+    get currentTick() { return this.#tickCount; }
+
     /** Convert simulated milliseconds to ticks (minimum 1). */
     /** @param {number} simMs */
     toTicks(simMs) {
+        return Math.max(1, Math.round(simMs / SimTimer.SIM_MS_PER_TICK));
+    }
+
+    /** @param {number} simMs */
+    static toTicks(simMs) {
         return Math.max(1, Math.round(simMs / SimTimer.SIM_MS_PER_TICK));
     }
 
@@ -126,6 +142,7 @@ export class SimTimer {
      * Fires all timers whose remaining tick count reaches zero.
      */
     tick() {
+        this.#tickCount++;
         const toFire = [];
         const remaining = [];
         for (const t of this.#pending) {

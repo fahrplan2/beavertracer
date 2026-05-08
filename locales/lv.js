@@ -808,5 +808,9 @@ export default {
   "firewall.delrule": "Dzēst noteikumu",
   "firewall.move.up": "Pārvietot uz augšu",
   "firewall.move.down": "Pārvietot uz leju",
-  "sim.tool.firewall": "Ugunsmūris"
+  "sim.tool.firewall": "Ugunsmūris",
+  "switch.vlan.col.port": "Ports",
+  "switch.vlan.col.mode": "Režīms",
+  "switch.vlan.col.pvid": "PVID",
+  "switch.vlan.col.allowed": "Atļautie VLAN"
 };

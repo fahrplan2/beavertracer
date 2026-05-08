@@ -808,5 +808,9 @@ export default {
   "firewall.delrule": "Ta bort regel",
   "firewall.move.up": "Flytta upp",
   "firewall.move.down": "Flytta ner",
-  "sim.tool.firewall": "Brandvägg"
+  "sim.tool.firewall": "Brandvägg",
+  "switch.vlan.col.port": "Port",
+  "switch.vlan.col.mode": "Läge",
+  "switch.vlan.col.pvid": "PVID",
+  "switch.vlan.col.allowed": "Tillåtna VLAN:er"
 };

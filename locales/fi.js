@@ -808,5 +808,9 @@ export default {
   "firewall.delrule": "Poista sääntö",
   "firewall.move.up": "Siirrä ylös",
   "firewall.move.down": "Siirrä alas",
-  "sim.tool.firewall": "Palomuuri"
+  "sim.tool.firewall": "Palomuuri",
+  "switch.vlan.col.port": "Portti",
+  "switch.vlan.col.mode": "Tila",
+  "switch.vlan.col.pvid": "PVID",
+  "switch.vlan.col.allowed": "Sallitut VLAN:it"
 };

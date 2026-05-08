@@ -808,5 +808,9 @@ export default {
   "firewall.delrule": "Hapus aturan",
   "firewall.move.up": "Pindahkan ke atas",
   "firewall.move.down": "Pindahkan ke bawah",
-  "sim.tool.firewall": "Firewall"
+  "sim.tool.firewall": "Firewall",
+  "switch.vlan.col.port": "Port",
+  "switch.vlan.col.mode": "Mode",
+  "switch.vlan.col.pvid": "PVID",
+  "switch.vlan.col.allowed": "VLAN yang Diizinkan"
 };

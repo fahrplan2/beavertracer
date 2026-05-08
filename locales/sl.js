@@ -808,5 +808,9 @@ export default {
   "firewall.delrule": "Izbriši pravilo",
   "firewall.move.up": "Premakni gor",
   "firewall.move.down": "Premakni dol",
-  "sim.tool.firewall": "Požarni zid"
+  "sim.tool.firewall": "Požarni zid",
+  "switch.vlan.col.port": "Vrata",
+  "switch.vlan.col.mode": "Način",
+  "switch.vlan.col.pvid": "PVID",
+  "switch.vlan.col.allowed": "Dovoljena VLAN-a"
 };

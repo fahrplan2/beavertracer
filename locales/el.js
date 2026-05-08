@@ -808,5 +808,9 @@ export default {
   "firewall.delrule": "Διαγραφή κανόνα",
   "firewall.move.up": "Μετακίνηση προς τα πάνω",
   "firewall.move.down": "Μετακίνηση προς τα κάτω",
-  "sim.tool.firewall": "Τοίχος προστασίας"
+  "sim.tool.firewall": "Τοίχος προστασίας",
+  "switch.vlan.col.port": "Θύρα",
+  "switch.vlan.col.mode": "Λειτουργία",
+  "switch.vlan.col.pvid": "PVID",
+  "switch.vlan.col.allowed": "Επιτρεπόμενα VLANs"
 };

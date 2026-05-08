@@ -808,5 +808,9 @@ export default {
   "firewall.delrule": "Kustuta reegel",
   "firewall.move.up": "Liiguta üles",
   "firewall.move.down": "Liiguta alla",
-  "sim.tool.firewall": "Tulemüür"
+  "sim.tool.firewall": "Tulemüür",
+  "switch.vlan.col.port": "Port",
+  "switch.vlan.col.mode": "Režiim",
+  "switch.vlan.col.pvid": "PVID",
+  "switch.vlan.col.allowed": "Lubatud VLAN-id"
 };

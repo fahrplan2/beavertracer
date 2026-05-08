@@ -557,7 +557,7 @@ export default {
   "router.unknown": "unbekannt",
   "router.addinterface": "Schnittstelle hinzufügen",
   "router.deleteinterface": "Schnittstelle löschen",
-  "router.confirminterfacedelete": "Sind Sie sicher, dass Sie die Schnittstelle ${name} löschen möchten",
+  "router.confirminterfacedelete": "Sind Sie sicher, dass Sie die Schnittstelle ${name} löschen möchten?",
   "router.stateup": "aktiv",
   "router.statedown": "inaktiv",
   "router.ra.enabled": "Router-Advertisements senden (SLAAC)",
@@ -813,5 +813,9 @@ export default {
   "firewall.move.up": "Nach oben verschieben",
   "firewall.move.down": "Nach unten verschieben",
   "sim.tool.firewall": "Firewall",
-  "lessons.noLessons": "Entschuldigung, aber es sind noch keine Lektionen in dieser Sprache verfügbar. 😔"
+  "lessons.noLessons": "Entschuldigung, aber es sind noch keine Lektionen in dieser Sprache verfügbar. 😔",
+  "switch.vlan.col.port": "Port",
+  "switch.vlan.col.mode": "Modus",
+  "switch.vlan.col.pvid": "PVID",
+  "switch.vlan.col.allowed": "Zulässige VLANs"
 };

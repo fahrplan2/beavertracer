@@ -808,5 +808,9 @@ export default {
   "firewall.delrule": "Ištrinti taisyklę",
   "firewall.move.up": "Perkelti aukštyn",
   "firewall.move.down": "Perkelti žemyn",
-  "sim.tool.firewall": "Žemės siena"
+  "sim.tool.firewall": "Žemės siena",
+  "switch.vlan.col.port": "Prievadas",
+  "switch.vlan.col.mode": "Režimas",
+  "switch.vlan.col.pvid": "PVID",
+  "switch.vlan.col.allowed": "Leistini VLAN"
 };

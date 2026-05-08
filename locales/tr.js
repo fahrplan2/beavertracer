@@ -808,5 +808,9 @@ export default {
   "firewall.move.up": "Yukarı taşı",
   "firewall.move.down": "Aşağı taşı",
   "sim.tool.firewall": "Güvenlik Duvarı",
-  "lessons.noLessons": "Maalesef, bu dilde henüz hiçbir ders bulunmamaktadır. 😔"
+  "lessons.noLessons": "Maalesef, bu dilde henüz hiçbir ders bulunmamaktadır. 😔",
+  "switch.vlan.col.port": "Port",
+  "switch.vlan.col.mode": "Mode",
+  "switch.vlan.col.pvid": "PVID",
+  "switch.vlan.col.allowed": "İzin Verilen VLAN'lar"
 };

@@ -808,5 +808,9 @@ export default {
   "firewall.delrule": "Slet regel",
   "firewall.move.up": "Flyt op",
   "firewall.move.down": "Flyt ned",
-  "sim.tool.firewall": "Firewall"
+  "sim.tool.firewall": "Firewall",
+  "switch.vlan.col.port": "Port",
+  "switch.vlan.col.mode": "Tilstand",
+  "switch.vlan.col.pvid": "PVID",
+  "switch.vlan.col.allowed": "Tilladte VLAN'er"
 };

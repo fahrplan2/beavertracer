@@ -808,5 +808,9 @@ export default {
   "firewall.move.up": "Переместить вверх",
   "firewall.move.down": "Переместить вниз",
   "sim.tool.firewall": "Брандмауэр",
-  "lessons.noLessons": "К сожалению, на данный момент уроки на этом языке недоступны. 😔"
+  "lessons.noLessons": "К сожалению, на данный момент уроки на этом языке недоступны. 😔",
+  "switch.vlan.col.port": "Порт",
+  "switch.vlan.col.mode": "Режим",
+  "switch.vlan.col.pvid": "PVID",
+  "switch.vlan.col.allowed": "Разрешённые VLAN"
 };
