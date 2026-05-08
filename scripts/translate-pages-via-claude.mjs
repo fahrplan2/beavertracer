@@ -12,12 +12,15 @@ const ROOT = path.resolve(import.meta.dirname, "..");
 
 const LOCALES = [
   { code: "pt-PT", name: "European Portuguese (Portugal)" },
+  { code: "ru", name: "Russian" },
+  { code: "ko", name: "Korean" },
   { code: "nl", name: "Dutch" },
   { code: "pl", name: "Polish" },
   { code: "tr", name: "Turkish" },
   { code: "ja", name: "Japanese" },
   { code: "zh", name: "Simplified Chinese" },
   { code: "ua", name: "Ukrainian" },
+  { code: "ar", name: "Arabic" },
 ];
 
 // For "about", only translate the part before this marker — Credits/License stay English.

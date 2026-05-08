@@ -700,6 +700,7 @@ export default {
   "router.rip.log": "Log",
 
   "sim.lessons": "Lessons",
+  "lessons.noLessons": "We are sorry, but no lessons are available in this language yet. 😔",
   "sim.common": "Common",
   "sim.new": "New",
   "sim.load": "Load",

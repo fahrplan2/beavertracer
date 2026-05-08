@@ -22,11 +22,14 @@ const TARGETS = [
   { lang: "fr", name: "French" },
   { lang: "it", name: "Italian" },
   { lang: "pt-PT", name: "European Portuguese (Portugal)" },
+  { lang: "ru", name: "Russian" },
   { lang: "nl", name: "Dutch" },
   { lang: "pl", name: "Polish" },
   { lang: "tr", name: "Turkish" },
   { lang: "ja", name: "Japanese" },
+  { lang: "ko", name: "Korean" },
   { lang: "zh", name: "Simplified Chinese" },
+  { lang: "ar", name: "Arabic" },
   { lang: "ua", name: "Ukrainian" },
 ];
 

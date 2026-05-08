@@ -1,0 +1,255 @@
+<h2>도움말</h2>
+<p class="subtitle">Beaver Tracer 사용 방법</p>
+
+<hr>
+
+<nav class="help-toc">
+  <strong>목차</strong>
+  <ol>
+    <li><a href="#modes">세 가지 모드</a></li>
+    <li><a href="#edit">편집 모드 — 네트워크 구축</a></li>
+    <li><a href="#devices">장치</a></li>
+    <li><a href="#panels">장치 패널</a></li>
+    <li><a href="#run">실행 모드 — 시뮬레이션 실행</a></li>
+    <li><a href="#trace">추적 모드 — 패킷 분석</a></li>
+    <li><a href="#project">저장 및 로드</a></li>
+  </ol>
+</nav>
+
+<hr>
+
+<h3 id="modes">세 가지 모드</h3>
+<p>
+  Beaver Tracer에는 세 가지 모드가 있습니다. 상단 도구 모음의 버튼을 사용하여 모드를 전환합니다.
+</p>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-pencil"></i></td>
+    <td><strong>편집</strong></td>
+    <td>네트워크를 설계합니다 — 장치를 배치하고, 연결하고, 구성합니다.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-play"></i></td>
+    <td><strong>실행</strong></td>
+    <td>시뮬레이션을 시작하고 네트워크를 통한 트래픽 흐름을 관찰합니다.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-magnifying-glass"></i></td>
+    <td><strong>추적</strong></td>
+    <td>네트워크를 통해 이동하는 패킷을 캡처하고 검사합니다.</td>
+  </tr>
+</table>
+
+<hr>
+
+<h3 id="edit">편집 모드 — 네트워크 구축</h3>
+<p>
+  편집 모드에서는 화면 왼쪽에 도구 모음이 나타납니다.
+  도구를 클릭하여 선택한 다음 캔버스에서 사용합니다.
+</p>
+
+<h4>도구</h4>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-arrow-pointer"></i></td>
+    <td><strong>선택</strong></td>
+    <td>장치를 클릭하여 해당 패널을 엽니다. 장치를 드래그하여 이동합니다.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-link"></i></td>
+    <td><strong>연결</strong></td>
+    <td>두 장치를 케이블로 연결합니다 (아래 참조).</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-ban"></i></td>
+    <td><strong>삭제</strong></td>
+    <td>장치 또는 케이블을 클릭하여 제거합니다.</td>
+  </tr>
+</table>
+
+<p>
+  <strong>팁:</strong> 캔버스의 아무 곳이나 마우스 오른쪽 버튼을 클릭하여 현재 도구를 취소하고
+  <i class="fas fa-arrow-pointer"></i> 선택으로 돌아갑니다.
+</p>
+
+<h4>장치 배치</h4>
+<ol>
+  <li>왼쪽 도구 모음에서 장치 버튼을 클릭합니다 (예: <i class="fas fa-desktop"></i> PC).</li>
+  <li>미리보기가 마우스 커서를 따릅니다.</li>
+  <li>캔버스를 클릭하여 장치를 배치합니다.</li>
+</ol>
+
+<h4>두 장치 연결</h4>
+<ol>
+  <li><i class="fas fa-link"></i> <strong>연결</strong> 도구를 클릭합니다.</li>
+  <li>첫 번째 장치를 클릭합니다 — 포트 선택기가 나타납니다. 포트를 선택합니다.</li>
+  <li>마우스를 두 번째 장치로 이동하고 클릭합니다 — 여기서도 포트를 선택합니다.</li>
+  <li>케이블이 자동으로 생성됩니다.</li>
+</ol>
+<p>
+  이미 사용 중인 포트는 비활성화되어 표시되며 선택할 수 없습니다.
+</p>
+
+<h4>장치 이동</h4>
+<p>
+  <i class="fas fa-arrow-pointer"></i> 선택 모드에서 장치를 클릭하고 드래그하여 캔버스에서 위치를 변경합니다.
+</p>
+
+<h4>장치 또는 케이블 삭제</h4>
+<ol>
+  <li><i class="fas fa-ban"></i> <strong>삭제</strong> 도구를 클릭합니다.</li>
+  <li>제거하려는 장치 또는 케이블을 클릭합니다.</li>
+</ol>
+<p>
+  장치를 삭제하면 연결된 모든 케이블도 자동으로 제거됩니다.
+</p>
+
+<hr>
+
+<h3 id="devices">장치</h3>
+<p>
+  편집 모드 중에 왼쪽 도구 모음에서 사용할 수 있는 장치는 다음과 같습니다:
+</p>
+
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-desktop"></i></td>
+    <td><strong>PC</strong></td>
+    <td>
+      유선 네트워크 인터페이스가 있는 개인용 컴퓨터입니다. 앱을 실행하고
+      (예: 웹 브라우저 또는 ping 도구) IP 주소를 구성할 수 있습니다.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-laptop"></i></td>
+    <td><strong>노트북</strong></td>
+    <td>
+      PC와 비슷하지만 케이블 대신 Wi-Fi를 통해 연결합니다.
+      액세스 포인트 또는 홈 라우터와 함께 사용합니다.
+    </td>
+  </tr>
+  <tr>
+    <td>SW</td>
+    <td><strong>스위치</strong></td>
+    <td>
+      동일한 네트워크 세그먼트의 여러 장치를 연결합니다.
+      MAC 주소를 기반으로 프레임을 전달합니다.
+      VLAN 및 스패닝 트리 프로토콜(STP)을 지원합니다.
+    </td>
+  </tr>
+  <tr>
+    <td>RT</td>
+    <td><strong>라우터</strong></td>
+    <td>
+      다양한 네트워크를 연결하고 패킷을 그 사이에서 전달합니다.
+      각 인터페이스에서 정적 경로 및 IP 주소를 구성할 수 있습니다.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-house-signal"></i></td>
+    <td><strong>홈 라우터</strong></td>
+    <td>
+      라우터, DHCP 서버, NAT 게이트웨이 및 Wi-Fi 액세스 포인트를 결합합니다 —
+      일반적인 가정용 인터넷 라우터와 유사합니다.
+      라우터에 연결(WAN)하고 PC 또는 노트북에 연결(LAN/Wi-Fi)합니다.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-wifi"></i></td>
+    <td><strong>액세스 포인트</strong></td>
+    <td>
+      유선 네트워크를 Wi-Fi 연결로 확장합니다.
+      유선 포트를 스위치 또는 라우터에 연결한 다음 노트북을 무선으로 연결합니다.
+    </td>
+  </tr>
+</table>
+
+<hr>
+
+<h3 id="panels">장치 패널</h3>
+<p>
+  캔버스의 장치를 클릭하여 <strong>패널</strong>을 엽니다 — 화면 오른쪽에 나타나는 구성 창입니다.
+  장치를 다시 클릭하거나(또는 패널 헤더의 <strong>×</strong> 버튼) 닫습니다.
+</p>
+
+<h4>장치 이름 바꾸기</h4>
+<p>
+  패널 헤더의 장치 이름 옆에 있는 <i class="fas fa-pen"></i> 버튼을 클릭하여
+  사용자 정의 이름을 지정합니다 (예: "Office-PC" 또는 "Core-Router").
+</p>
+
+<h4>탭</h4>
+<p>
+  대부분의 장치에는 패널 내에 여러 탭이 있습니다.
+  예를 들어 라우터에는 다음이 있습니다:
+</p>
+<ul>
+  <li><strong>인터페이스</strong> — 각 포트에서 IP 주소 구성</li>
+  <li><strong>라우팅 테이블 IPv4</strong> — IPv4 정적 경로 보기 및 편집</li>
+  <li><strong>라우팅 테이블 IPv6</strong> — IPv6 정적 경로 보기 및 편집</li>
+</ul>
+<p>
+  스위치에는 <strong>스위치 주소 테이블(SAT)</strong>, <strong>VLAN</strong>
+  구성 및 <strong>스패닝 트리 프로토콜(STP)</strong> 설정 탭이 있습니다.
+</p>
+<p>
+  홈 라우터에는 <strong>상태</strong>, <strong>WAN</strong> 설정 및 <strong>DHCP</strong> 임대 탭이 있습니다.
+</p>
+
+<h4>PC 및 노트북</h4>
+<p>
+  PC와 노트북에는 패널 내부에 완전히 시뮬레이션된 운영 체제가 있습니다.
+  데스크톱에서 앱을 열고, 네트워크 설정을 구성하고, 명령을 실행할 수 있습니다.
+</p>
+
+<hr>
+
+<h3 id="run">실행 모드 — 시뮬레이션 실행</h3>
+<p>
+  <i class="fas fa-play"></i> <strong>실행</strong> 모드로 전환하여 시뮬레이션을 시작합니다.
+  네트워크가 활성화됩니다: 장치가 패킷을 교환하고, DHCP 임대가 할당되고,
+  라우팅 테이블이 업데이트되는 등의 작업이 진행됩니다.
+</p>
+
+<h4>속도 제어</h4>
+<p>
+  상단 도구 모음의 속도 버튼을 사용하여 시뮬레이션 속도를 제어합니다:
+</p>
+<table class="help-table">
+  <tr><td><strong>0.5×</strong></td><td>느림 — 개별 단계를 관찰하기에 좋음</td></tr>
+  <tr><td><strong>1×</strong></td><td>정상 속도</td></tr>
+  <tr><td><strong>4×</strong></td><td>빠름</td></tr>
+  <tr><td><strong>8×</strong></td><td>매우 빠름</td></tr>
+</table>
+
+<h4>일시 중지 및 재설정</h4>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-pause"></i></td>
+    <td><strong>일시 중지</strong></td>
+    <td>시뮬레이션을 현재 상태에서 멈춥니다.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-arrow-rotate-left"></i></td>
+    <td><strong>재설정</strong></td>
+    <td>시뮬레이션을 처음부터 다시 시작합니다 (모든 동적 상태가 지워집니다).</td>
+  </tr>
+</table>
+
+<p>
+  <strong>참고:</strong> 실행 모드에서는 네트워크 토폴로지를 편집할 수 없습니다.
+  먼저 <i class="fas fa-pencil"></i> 편집 모드로 전환하세요.
+</p>
+
+<hr>
+
+<h3 id="trace">추적 모드 — 패킷 분석</h3>
+<p>
+  <i class="fas fa-magnifying-glass"></i> <strong>추적</strong> 모드로 전환하여 내장된 패킷 분석기를 엽니다 — Wireshark와 유사합니다.
+</p>
+<p>
+  상단에서 캡처할 <strong>장치</strong> 및 <strong>포트</strong>를 선택합니다.
+  해당 포트를 통과하는 모든 패킷이 기록되고 목록에 표시됩니다.
+</p>
+<p>
+  목록의 패킷을 클릭하여 전체 세부 정보
