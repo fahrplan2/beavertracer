@@ -21,7 +21,7 @@ const TARGETS = [
   { lang: "es", name: "Spanish" },
   { lang: "fr", name: "French" },
   { lang: "it", name: "Italian" },
-  { lang: "pt", name: "Portuguese" },
+  { lang: "pt-PT", name: "European Portuguese (Portugal)" },
   { lang: "nl", name: "Dutch" },
   { lang: "pl", name: "Polish" },
   { lang: "tr", name: "Turkish" },

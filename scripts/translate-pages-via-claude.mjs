@@ -11,6 +11,7 @@ import path from "node:path";
 const ROOT = path.resolve(import.meta.dirname, "..");
 
 const LOCALES = [
+  { code: "pt-PT", name: "European Portuguese (Portugal)" },
   { code: "nl", name: "Dutch" },
   { code: "pl", name: "Polish" },
   { code: "tr", name: "Turkish" },
