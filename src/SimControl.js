@@ -47,6 +47,9 @@ export class SimControl {
     /** @type {boolean} is the simulation paused? */
     isPaused = true;
 
+    /** @type {{ wasPaused: boolean, tick: number }|null} saved state when entering trace mode */
+    _tracePreState = null;
+
     /** @type {HTMLElement|null} HTML-Element to render everything in*/
     root; 
 
@@ -253,6 +256,29 @@ export class SimControl {
         this.scheduleNextStep();
     }
 
+    _enterTraceMode() {
+        this._tracePreState = { wasPaused: this.isPaused, tick: SimControl.tick };
+        this.isPaused = true;
+        this.mode = "trace";
+        this._invalidateUI();
+        this.pcapViewer.render();
+        this.scheduleNextStep();
+    }
+
+    _leaveTraceMode() {
+        const pre = this._tracePreState;
+        this._tracePreState = null;
+        this.mode = "run";
+        if (pre) {
+            SimControl.tick = pre.tick;
+            this.isPaused = pre.wasPaused;
+        } else {
+            this.isPaused = false;
+        }
+        this._invalidateUI();
+        this.scheduleNextStep();
+    }
+
     // ---------------------------------------------------------------------------
     // Public scene operations: do NOT full-render; update incrementally
     // ---------------------------------------------------------------------------
@@ -361,6 +387,12 @@ export class SimControl {
 
         this.nodesLayer = nodes;
         this.movementBoundary = nodes;
+
+        const updateSizeVar = () => {
+            nodes.style.setProperty("--sim-area-height", nodes.clientHeight + "px");
+        };
+        updateSizeVar();
+        new ResizeObserver(updateSizeVar).observe(nodes);
 
         const packetsLayer = document.createElement("div");
         packetsLayer.className = "sim-packets-layer";
@@ -502,7 +534,10 @@ export class SimControl {
                     history.pushState({}, "", "/");
                 }
                 if (this.mode === "edit") this._leaveEditMode();
-                else this.pause();
+                if (this.mode === "trace") {
+                    this._leaveTraceMode();
+                    return;
+                }
 
                 this.mode = "run";
                 this.isPaused = false;
@@ -527,9 +562,7 @@ export class SimControl {
                     history.pushState({}, "", "/");
                 }
                 if (this.mode === "edit") this._leaveEditMode();
-                this.mode = "trace";
-                this._invalidateUI();
-                this.pcapViewer.render();
+                this._enterTraceMode();
             },
         });
         btnTrace.dataset.role = "mode-trace";
@@ -705,8 +738,8 @@ export class SimControl {
             return b;
         };
 
-        btn("mode-run",   "fa-play",             t("sim.run"),   () => { this.mode = "run"; this.isPaused = false; this._invalidateUI(); this.scheduleNextStep(); });
-        btn("mode-trace", "fa-magnifying-glass",  t("sim.trace"), () => { this.mode = "trace"; this._invalidateUI(); this.pcapViewer.render(); });
+        btn("mode-run",   "fa-play",             t("sim.run"),   () => { if (this.mode === "trace") { this._leaveTraceMode(); } else { this.mode = "run"; this.isPaused = false; this._invalidateUI(); this.scheduleNextStep(); } });
+        btn("mode-trace", "fa-magnifying-glass",  t("sim.trace"), () => { this._enterTraceMode(); });
 
         btn("pause",      "fa-pause",             t("sim.pause"), () => this.pause());
 
@@ -950,7 +983,7 @@ export class SimControl {
             setActive("pause", this.mode === "run" && this.isPaused);
 
             // --- active state for speed buttons
-            const speedRoles = [1000, 500, 100, 40];
+            const speedRoles = [1000, 500, 100, 40, 20];
             for (const ms of speedRoles) {
                 setActive(`speed-${ms}`, this.mode === "run" && !this.isPaused && SimControl.tick === ms);
             }
@@ -1123,6 +1156,12 @@ export class SimControl {
         header.appendChild(closeBtn);
         dlg.appendChild(header);
 
+        const search = document.createElement("input");
+        search.type = "search";
+        search.className = "sim-langdialog-search";
+        search.placeholder = "Filter…";
+        dlg.appendChild(search);
+
         const locales = await getLocales();
         const current = getLocale();
 
@@ -1176,9 +1215,23 @@ export class SimControl {
             });
 
             grid.appendChild(card);
+
+            if (loc.key === "en") {
+                const sep = document.createElement("hr");
+                sep.className = "sim-langdialog-sep";
+                grid.appendChild(sep);
+            }
         }
 
         dlg.appendChild(grid);
+
+        search.addEventListener("input", () => {
+            const q = search.value.toLowerCase();
+            for (const card of /** @type {HTMLCollectionOf<HTMLElement>} */ (grid.children)) {
+                const nameEl = card.querySelector(".sim-lang-card-name");
+                card.style.display = !q || nameEl?.textContent?.toLowerCase().includes(q) ? "" : "none";
+            }
+        });
 
         if (hasAI) {
             const note = document.createElement("p");
@@ -1190,6 +1243,7 @@ export class SimControl {
         backdrop.appendChild(dlg);
         document.body.appendChild(backdrop);
         this._langPanel = backdrop;
+        search.focus();
 
         /** @param {KeyboardEvent} ev */
         const onKey = (ev) => {

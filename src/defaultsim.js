@@ -444,62 +444,6 @@ export const defaultSimulation = {
           "allowedVlans": [
             1
           ]
-        },
-        {
-          "vlanMode": "untagged",
-          "pvid": 1,
-          "allowedVlans": [
-            1
-          ]
-        },
-        {
-          "vlanMode": "untagged",
-          "pvid": 1,
-          "allowedVlans": [
-            1
-          ]
-        },
-        {
-          "vlanMode": "untagged",
-          "pvid": 1,
-          "allowedVlans": [
-            1
-          ]
-        },
-        {
-          "vlanMode": "untagged",
-          "pvid": 1,
-          "allowedVlans": [
-            1
-          ]
-        },
-        {
-          "vlanMode": "untagged",
-          "pvid": 1,
-          "allowedVlans": [
-            1
-          ]
-        },
-        {
-          "vlanMode": "untagged",
-          "pvid": 1,
-          "allowedVlans": [
-            1
-          ]
-        },
-        {
-          "vlanMode": "untagged",
-          "pvid": 1,
-          "allowedVlans": [
-            1
-          ]
-        },
-        {
-          "vlanMode": "untagged",
-          "pvid": 1,
-          "allowedVlans": [
-            1
-          ]
         }
       ]
     },
@@ -515,62 +459,6 @@ export const defaultSimulation = {
       "vlanEnabled": false,
       "stpEnabled": false,
       "vlanPorts": [
-        {
-          "vlanMode": "untagged",
-          "pvid": 1,
-          "allowedVlans": [
-            1
-          ]
-        },
-        {
-          "vlanMode": "untagged",
-          "pvid": 1,
-          "allowedVlans": [
-            1
-          ]
-        },
-        {
-          "vlanMode": "untagged",
-          "pvid": 1,
-          "allowedVlans": [
-            1
-          ]
-        },
-        {
-          "vlanMode": "untagged",
-          "pvid": 1,
-          "allowedVlans": [
-            1
-          ]
-        },
-        {
-          "vlanMode": "untagged",
-          "pvid": 1,
-          "allowedVlans": [
-            1
-          ]
-        },
-        {
-          "vlanMode": "untagged",
-          "pvid": 1,
-          "allowedVlans": [
-            1
-          ]
-        },
-        {
-          "vlanMode": "untagged",
-          "pvid": 1,
-          "allowedVlans": [
-            1
-          ]
-        },
-        {
-          "vlanMode": "untagged",
-          "pvid": 1,
-          "allowedVlans": [
-            1
-          ]
-        },
         {
           "vlanMode": "untagged",
           "pvid": 1,

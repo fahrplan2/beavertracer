@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇨🇳 中文 (translated by AI)", order: 10 };
+export const meta = { name: "🇨🇳 中文 (translated by AI)", order: 31 };
 
 export default {
   "lang.name": "🇨🇳 中文",
@@ -807,5 +807,10 @@ export default {
   "firewall.delrule": "刪除規則",
   "firewall.move.up": "上移",
   "firewall.move.down": "下移",
-  "sim.tool.firewall": "防火牆"
+  "sim.tool.firewall": "防火牆",
+  "lessons.noLessons": "抱歉，此语言暂无可用课程。😔",
+  "switch.vlan.col.port": "端口",
+  "switch.vlan.col.mode": "模式",
+  "switch.vlan.col.pvid": "PVID",
+  "switch.vlan.col.allowed": "允许的VLAN"
 };

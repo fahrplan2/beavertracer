@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇹🇷 Türkçe (translated by AI)", order: 9 };
+export const meta = { name: "🇹🇷 Türkçe (translated by AI)", order: 27 };
 
 export default {
   "lang.name": "🇹🇷 Türkçe",
@@ -807,5 +807,10 @@ export default {
   "firewall.delrule": "Kuralı sil",
   "firewall.move.up": "Yukarı taşı",
   "firewall.move.down": "Aşağı taşı",
-  "sim.tool.firewall": "Güvenlik Duvarı"
+  "sim.tool.firewall": "Güvenlik Duvarı",
+  "lessons.noLessons": "Maalesef, bu dilde henüz hiçbir ders bulunmamaktadır. 😔",
+  "switch.vlan.col.port": "Port",
+  "switch.vlan.col.mode": "Mode",
+  "switch.vlan.col.pvid": "PVID",
+  "switch.vlan.col.allowed": "İzin Verilen VLAN'lar"
 };

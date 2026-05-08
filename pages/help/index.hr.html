@@ -1,0 +1,293 @@
+<h2>Pomoć</h2>
+<p class="subtitle">Kako koristiti Beaver Tracer</p>
+
+<hr>
+
+<nav class="help-toc">
+  <strong>Sadržaj</strong>
+  <ol>
+    <li><a href="#modes">Tri Režima</a></li>
+    <li><a href="#edit">Režim Uređivanja — Izgradnja Mreže</a></li>
+    <li><a href="#devices">Uređaji</a></li>
+    <li><a href="#panels">Paneli Uređaja</a></li>
+    <li><a href="#run">Režim Pokretanja — Pokretanje Simulacije</a></li>
+    <li><a href="#trace">Režim Praćenja — Analiza Paketa</a></li>
+    <li><a href="#project">Spremanje i Učitavanje</a></li>
+  </ol>
+</nav>
+
+<hr>
+
+<h3 id="modes">Tri Režima</h3>
+<p>
+  Beaver Tracer ima tri režima. Prelazite između njih pomoću gumbova u gornjoj alatnoj traci.
+</p>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-pencil"></i></td>
+    <td><strong>Uređivanje</strong></td>
+    <td>Oblikujte vašu mrežu — postavite uređaje, spojite ih, konfigurirajte ih.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-play"></i></td>
+    <td><strong>Pokretanje</strong></td>
+    <td>Započnite simulaciju i pogledajte kako promet teče kroz vašu mrežu.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-magnifying-glass"></i></td>
+    <td><strong>Praćenje</strong></td>
+    <td>Uhvatite i inspekcirajte pakete koji putuju kroz vašu mrežu.</td>
+  </tr>
+</table>
+
+<hr>
+
+<h3 id="edit">Režim Uređivanja — Izgradnja Mreže</h3>
+<p>
+  U Režimu Uređivanja alatna traka se pojavljuje na lijevoj strani ekrana.
+  Odaberite alat klikom na njega, zatim ga koristite na platnu.
+</p>
+
+<h4>Alati</h4>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-arrow-pointer"></i></td>
+    <td><strong>Odaberi</strong></td>
+    <td>Kliknite na uređaj da otvorite njegov panel. Povucite uređaj da ga premjestite.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-link"></i></td>
+    <td><strong>Povezivanje</strong></td>
+    <td>Spojite dva uređaja kabelom (pogledajte dolje).</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-ban"></i></td>
+    <td><strong>Brisanje</strong></td>
+    <td>Kliknite na uređaj ili kabel da ga uklonite.</td>
+  </tr>
+</table>
+
+<p>
+  <strong>Savjet:</strong> Desnom tipkom miša kliknite bilo gdje na platnu da otkaženete trenutni alat
+  i vratite se na <i class="fas fa-arrow-pointer"></i> Odaberi.
+</p>
+
+<h4>Postavljanje Uređaja</h4>
+<ol>
+  <li>Kliknite na gumb uređaja u lijevoj alatnoj traci (npr. <i class="fas fa-desktop"></i> PC).</li>
+  <li>Pretpregled slijedi vašu miš.</li>
+  <li>Kliknite na platno da postavite uređaj.</li>
+</ol>
+
+<h4>Povezivanje Dva Uređaja</h4>
+<ol>
+  <li>Kliknite na <i class="fas fa-link"></i> <strong>Povezivanje</strong> alat.</li>
+  <li>Kliknite na prvi uređaj — pojavljuje se birač porta. Odaberite port.</li>
+  <li>Premjestite miš na drugi uređaj i kliknite ga — odaberite i ovdje port.</li>
+  <li>Kabel se automatski stvara.</li>
+</ol>
+<p>
+  Portovi koji su već u upotrebi prikazani su kao onemogućeni i ne mogu se odabrati.
+</p>
+
+<h4>Premještanje Uređaja</h4>
+<p>
+  U <i class="fas fa-arrow-pointer"></i> Režimu Odabira kliknite i povucite bilo koji uređaj da ga premjestite na platnu.
+</p>
+
+<h4>Brisanje Uređaja ili Kabela</h4>
+<ol>
+  <li>Kliknite na <i class="fas fa-ban"></i> <strong>Brisanje</strong> alat.</li>
+  <li>Kliknite na uređaj ili kabel koji želite ukloniti.</li>
+</ol>
+<p>
+  Kada obrišete uređaj, svi kabeli povezani na njega automatski se uklanjaju.
+</p>
+
+<hr>
+
+<h3 id="devices">Uređaji</h3>
+<p>
+  Ovi uređaji su dostupni u lijevoj alatnoj traci tijekom Režima Uređivanja:
+</p>
+
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-desktop"></i></td>
+    <td><strong>PC</strong></td>
+    <td>
+      Osobno računalo s žičanim mrežnim sučeljem. Možete pokrenuti aplikacije na njemu
+      (npr. web preglednik ili ping alat) i konfigurirati njegovu IP adresu.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-laptop"></i></td>
+    <td><strong>Laptop</strong></td>
+    <td>
+      Poput PC-a, ali se povezuje preko Wi-Fi umjesto kabela.
+      Koristite ga zajedno s Pristupnom Točkom ili Kućnom Ruteru.
+    </td>
+  </tr>
+  <tr>
+    <td>SW</td>
+    <td><strong>Prekidač</strong></td>
+    <td>
+      Povezuje više uređaja u istu mrežnu sekmentu.
+      Prosljeđuje okvire na temelju MAC adresa.
+      Podržava VLAN-ove i Spanning Tree Protocol (STP).
+    </td>
+  </tr>
+  <tr>
+    <td>RT</td>
+    <td><strong>Ruter</strong></td>
+    <td>
+      Povezuje različite mreže i prosljeđuje pakete između njih.
+      Možete konfigurirati statične rute i IP adrese na svakom sučelju.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-house-signal"></i></td>
+    <td><strong>Kućni Ruter</strong></td>
+    <td>
+      Kombiniran ruter, DHCP poslužitelj, NAT prolaz i Wi-Fi pristupna točka —
+      sličan tipičnom kućnom internetu ruteru.
+      Spojite ga na Ruter (kao WAN) i na PC-e ili Laptope (kao LAN/Wi-Fi).
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-wifi"></i></td>
+    <td><strong>Pristupna Točka</strong></td>
+    <td>
+      Proširuje žičanu mrežu s Wi-Fi vezom.
+      Spojite njegove žičani port na Prekidač ili Ruter, zatim povezujete Laptope na njega bežično.
+    </td>
+  </tr>
+</table>
+
+<hr>
+
+<h3 id="panels">Paneli Uređaja</h3>
+<p>
+  Kliknite na bilo koji uređaj na platnu da otvorite njegov <strong>panel</strong> — konfiguracijsku prozor
+  koji se pojavljuje na desnoj strani ekrana.
+  Kliknite na uređaj ponovno (ili na <strong>×</strong> gumb u zaglavlju panela) da ga zatvorite.
+</p>
+
+<h4>Preimenovanje Uređaja</h4>
+<p>
+  Kliknite na <i class="fas fa-pen"></i> gumb pored imena uređaja u zaglavlju panela
+  da mu date vlastito ime (npr. "Ured-PC" ili "Jezgra-Ruter").
+</p>
+
+<h4>Kartice</h4>
+<p>
+  Većina uređaja ima više kartica unutar panela.
+  Na primjer, Ruter ima:
+</p>
+<ul>
+  <li><strong>Sučelja</strong> — konfigurirajte IP adrese na svakom portu</li>
+  <li><strong>Tablica rutiranja IPv4</strong> — pregledajte i uredite IPv4 statične rute</li>
+  <li><strong>Tablica rutiranja IPv6</strong> — pregledajte i uredite IPv6 statične rute</li>
+</ul>
+<p>
+  Prekidač ima kartice za njegovu <strong>Tablicu Adresa Prekidača (SAT)</strong>, <strong>VLAN</strong>
+  konfiguraciju, i <strong>Spanning Tree Protocol (STP)</strong> postavke.
+</p>
+<p>
+  Kućni Ruter ima kartice za <strong>Stanje</strong>, <strong>WAN</strong> postavke, i <strong>DHCP</strong> iznajmljenja.
+</p>
+
+<h4>PC i Laptop</h4>
+<p>
+  PC-evi i Laptopi imaju u potpunosti simulirani operativni sustav unutar panela.
+  Možete otvarati aplikacije s radne površine, konfigurirati mrežne postavke i pokrenuti naredbe.
+</p>
+
+<hr>
+
+<h3 id="run">Režim Pokretanja — Pokretanje Simulacije</h3>
+<p>
+  Prebacite se u <i class="fas fa-play"></i> <strong>Režim Pokretanja</strong> da započnete simulaciju.
+  Mreža postaje aktivna: uređaji razmjenjuju pakete, DHCP iznajmljenja se dodjeljuju,
+  tablice rutiranja se ažuriraju, i tako dalje.
+</p>
+
+<h4>Kontrole Brzine</h4>
+<p>
+  Koristite gumbe brzine u gornjoj alatnoj traci da kontrolirate kako brzo simulacija teče:
+</p>
+<table class="help-table">
+  <tr><td><strong>0.5×</strong></td><td>Spora — dobra za promatranje pojedinih koraka</td></tr>
+  <tr><td><strong>1×</strong></td><td>Normalna brzina</td></tr>
+  <tr><td><strong>4×</strong></td><td>Brza</td></tr>
+  <tr><td><strong>8×</strong></td><td>Vrlo brza</td></tr>
+</table>
+
+<h4>Pauziranje i Ponovno Postavljanje</h4>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-pause"></i></td>
+    <td><strong>Pauziraj</strong></td>
+    <td>Zamrznite simulaciju u njezinom trenutnom stanju.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-arrow-rotate-left"></i></td>
+    <td><strong>Ponovno Postavi</strong></td>
+    <td>Ponovno pokrenite simulaciju od početka (svo dinamičko stanje se briše).</td>
+  </tr>
+</table>
+
+<p>
+  <strong>Napomena:</strong> Ne možete uređivati mrežnu topologiju tijekom Režima Pokretanja.
+  Prvo se vratite na <i class="fas fa-pencil"></i> Režim Uređivanja.
+</p>
+
+<hr>
+
+<h3 id="trace">Režim Praćenja — Analiza Paketa</h3>
+<p>
+  Prebacite se u <i class="fas fa-magnifying-glass"></i> <strong>Režim Praćenja</strong> da otvorite
+  ugrađeni analizator paketa — sličan Wireshark-u.
+</p>
+<p>
+  Na vrhu odaberite <strong>uređaj</strong> i <strong>port</strong> s kojeg želite hvatati.
+  Svi paketi koji prolaze kroz taj port bilježe se i prikazuju u listi.
+</p>
+<p>
+  Kliknite na bilo koji paket na listi da vidite njegove sve detalje:
+  slojeve protokola, polja zaglavlja i opterećenje — točno kako bi to pokazao profesionalni mrežni alat.
+</p>
+<p>
+  Hvatanje se automatski pokreće tijekom pokretanja simulacije.
+  Možete prelaziti između Režima Praćenja i Režima Pokretanja bilo kada bez gubitka uhvaćenih podataka.
+</p>
+
+<hr>
+
+<h3 id="project">Spremanje i Učitavanje</h3>
+<p>
+  Vaš dizajn mreže može se spremiti kao datoteka i učitati ponovno kasnije.
+  Koristite gumbe u gornjoj alatnoj traci (vidljive u Režimu Uređivanja):
+</p>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-file"></i></td>
+    <td><strong>Novo</strong></td>
+    <td>Započnite s praznim platnom. Sve nespremljene izmjene će se izgubiti.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-file-arrow-up"></i></td>
+    <td><strong>Učitaj</strong></td>
+    <td>Otvorite prethodno spremljenu datoteku simulacije.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-file-arrow-down"></i></td>
+    <td><strong>Spremi</strong></td>
+    <td>Preuzmite trenutnu simulaciju kao datoteku na vaše računalo.</td>
+  </tr>
+</table>
+
+<hr>
+<p class="footer">
+  Imate problema? Provjerite da je vaša mreža pravilno povezana i da svi uređaji imaju ispravno konfiguriranih IP adrese.
+</p>

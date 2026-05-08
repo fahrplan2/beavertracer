@@ -673,7 +673,7 @@ export default {
   "router.addinterface": "Add interface",
 
   "router.deleteinterface": "Delete interface",
-  "router.confirminterfacedelete": "Are you sure to delete interface ${name}",
+  "router.confirminterfacedelete": "Are you sure you want to delete interface ${name}?",
 
   "router.stateup": "up",
   "router.statedown": "down",
@@ -700,6 +700,7 @@ export default {
   "router.rip.log": "Log",
 
   "sim.lessons": "Lessons",
+  "lessons.noLessons": "We are sorry, but no lessons are available in this language yet. 😔",
   "sim.common": "Common",
   "sim.new": "New",
   "sim.load": "Load",
@@ -751,6 +752,10 @@ export default {
   "switch.stp.status": "STP status",
   "switch.vlan.config": "VLAN configuration",
   "switch.vlan.enable": "enable VLAN",
+  "switch.vlan.col.port": "Port",
+  "switch.vlan.col.mode": "Mode",
+  "switch.vlan.col.pvid": "PVID",
+  "switch.vlan.col.allowed": "Allowed VLANs",
 
   "switch.sat.empty": "The SAT is still empty.",
   "switch.tab.sat": "SAT",
@@ -817,7 +822,7 @@ export default {
   "pcap.col.destination": "Destination",
   "pcap.col.protocol": "Protocol",
   "pcap.col.info": "Info",
-  "pcap.status.loading.wiregasm": "Loading Wiregasm…",
+  "pcap.status.loading.wiregasm": "Loading packet dissector…",
   "pcap.status.loading.pcap": "Loading PCAP…",
   "pcap.status.rendering": "Rendering…",
   "pcap.status.ready": "Ready",

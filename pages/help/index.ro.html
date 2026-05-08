@@ -1,0 +1,293 @@
+<h2>Ajutor</h2>
+<p class="subtitle">Cum să folosești Beaver Tracer</p>
+
+<hr>
+
+<nav class="help-toc">
+  <strong>Cuprins</strong>
+  <ol>
+    <li><a href="#modes">Cele trei moduri</a></li>
+    <li><a href="#edit">Modul Editare — Construirea unei rețele</a></li>
+    <li><a href="#devices">Dispozitive</a></li>
+    <li><a href="#panels">Panouri de dispozitiv</a></li>
+    <li><a href="#run">Modul Execuție — Rularea simulării</a></li>
+    <li><a href="#trace">Modul Urmărire — Analiza pachetelor</a></li>
+    <li><a href="#project">Salvare și încărcare</a></li>
+  </ol>
+</nav>
+
+<hr>
+
+<h3 id="modes">Cele trei moduri</h3>
+<p>
+  Beaver Tracer are trei moduri. Comutați între ele folosind butoanele din bara de instrumente din partea de sus.
+</p>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-pencil"></i></td>
+    <td><strong>Editare</strong></td>
+    <td>Proiectează-ți rețeaua — plasează dispozitive, conectează-le, configurează-le.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-play"></i></td>
+    <td><strong>Execuție</strong></td>
+    <td>Pornește simularea și urmărește cum curge traficul prin rețeaua ta.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-magnifying-glass"></i></td>
+    <td><strong>Urmărire</strong></td>
+    <td>Captură și inspectează pachetele care călătoresc prin rețeaua ta.</td>
+  </tr>
+</table>
+
+<hr>
+
+<h3 id="edit">Modul Editare — Construirea unei rețele</h3>
+<p>
+  În modul Editare, o bară de instrumente apare pe partea stângă a ecranului.
+  Selectează un instrument prin clic pe el, apoi folosește-l pe pânză.
+</p>
+
+<h4>Instrumente</h4>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-arrow-pointer"></i></td>
+    <td><strong>Selectare</strong></td>
+    <td>Fă clic pe un dispozitiv pentru a deschide panoul său. Trage un dispozitiv pentru a-l muta.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-link"></i></td>
+    <td><strong>Legătură</strong></td>
+    <td>Conectează două dispozitive cu un cablu (vezi mai jos).</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-ban"></i></td>
+    <td><strong>Ștergere</strong></td>
+    <td>Fă clic pe un dispozitiv sau cablu pentru a-l elimina.</td>
+  </tr>
+</table>
+
+<p>
+  <strong>Sfat:</strong> Fă clic dreapta oriunde pe pânză pentru a anula instrumentul curent
+  și reveni la <i class="fas fa-arrow-pointer"></i> Selectare.
+</p>
+
+<h4>Plasarea unui dispozitiv</h4>
+<ol>
+  <li>Fă clic pe un buton de dispozitiv din bara de instrumente din stânga (de ex. <i class="fas fa-desktop"></i> PC).</li>
+  <li>O previzualizare urmărește cursorul mouse-ului.</li>
+  <li>Fă clic pe pânză pentru a plasa dispozitivul.</li>
+</ol>
+
+<h4>Conectarea a două dispozitive</h4>
+<ol>
+  <li>Fă clic pe instrumentul <i class="fas fa-link"></i> <strong>Legătură</strong>.</li>
+  <li>Fă clic pe primul dispozitiv — apare un selector de port. Selectează un port.</li>
+  <li>Mută mouse-ul la al doilea dispozitiv și fă clic pe el — selectează și acolo un port.</li>
+  <li>Cablul se creează automat.</li>
+</ol>
+<p>
+  Porturile care sunt deja în folosință sunt afișate ca dezactivate și nu pot fi selectate.
+</p>
+
+<h4>Mutarea unui dispozitiv</h4>
+<p>
+  În modul <i class="fas fa-arrow-pointer"></i> Selectare, fă clic și trage orice dispozitiv pentru a-l reposiționa pe pânză.
+</p>
+
+<h4>Ștergerea unui dispozitiv sau cablu</h4>
+<ol>
+  <li>Fă clic pe instrumentul <i class="fas fa-ban"></i> <strong>Ștergere</strong>.</li>
+  <li>Fă clic pe dispozitivul sau cablul pe care vrei să-l elimini.</li>
+</ol>
+<p>
+  Când ștergi un dispozitiv, toate cablurile conectate la el sunt eliminate automat.
+</p>
+
+<hr>
+
+<h3 id="devices">Dispozitive</h3>
+<p>
+  Aceste dispozitive sunt disponibile în bara de instrumente din stânga în timpul modului Editare:
+</p>
+
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-desktop"></i></td>
+    <td><strong>PC</strong></td>
+    <td>
+      Un calculator personal cu o interfață de rețea cu fir. Poți rula aplicații pe el
+      (de ex. un browser web sau un instrument de ping) și configura adresa IP.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-laptop"></i></td>
+    <td><strong>Laptop</strong></td>
+    <td>
+      Ca un PC, dar se conectează prin Wi-Fi în loc de cablu.
+      Folosește-l împreună cu un Punct de acces sau un Router de casă.
+    </td>
+  </tr>
+  <tr>
+    <td>SW</td>
+    <td><strong>Comutator</strong></td>
+    <td>
+      Conectează mai multe dispozitive în același segment de rețea.
+      Redirecționează cadre pe baza adreselor MAC.
+      Suportă VLAN-uri și Spanning Tree Protocol (STP).
+    </td>
+  </tr>
+  <tr>
+    <td>RT</td>
+    <td><strong>Router</strong></td>
+    <td>
+      Conectează rețele diferite și redirecționează pachete între ele.
+      Poți configura rute statice și adrese IP pe fiecare interfață.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-house-signal"></i></td>
+    <td><strong>Router de casă</strong></td>
+    <td>
+      Un router combinat, server DHCP, poartă NAT și punct de acces Wi-Fi —
+      similar cu un router internet tipic de casă.
+      Conectează-l la un Router (ca WAN) și la PC-uri sau Laptop-uri (ca LAN/Wi-Fi).
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-wifi"></i></td>
+    <td><strong>Punct de acces</strong></td>
+    <td>
+      Extinde o rețea cu fir cu o conexiune Wi-Fi.
+      Conectează portul său cu fir la un Comutator sau Router, apoi conectează Laptop-urile la el fără fir.
+    </td>
+  </tr>
+</table>
+
+<hr>
+
+<h3 id="panels">Panouri de dispozitiv</h3>
+<p>
+  Fă clic pe orice dispozitiv pe pânză pentru a deschide <strong>panoul</strong> său — o fereastră de configurare
+  care apare pe partea dreaptă a ecranului.
+  Fă clic pe dispozitiv din nou (sau pe butonul <strong>×</strong> din antetul panoului) pentru a-l închide.
+</p>
+
+<h4>Redenumirea unui dispozitiv</h4>
+<p>
+  Fă clic pe butonul <i class="fas fa-pen"></i> lângă numele dispozitivului din antetul panoului
+  pentru a-i da un nume personalizat (de ex. "Office-PC" sau "Core-Router").
+</p>
+
+<h4>File</h4>
+<p>
+  Majoritatea dispozitivelor au mai multe file în interiorul panoului.
+  De exemplu, un Router are:
+</p>
+<ul>
+  <li><strong>Interfețe</strong> — configurează adrese IP pe fiecare port</li>
+  <li><strong>Tabel de rutare IPv4</strong> — vizualizează și editează rutele statice IPv4</li>
+  <li><strong>Tabel de rutare IPv6</strong> — vizualizează și editează rutele statice IPv6</li>
+</ul>
+<p>
+  Un Comutator are file pentru <strong>Tabelul de adrese al comutatoru (SAT)</strong>, configurația <strong>VLAN</strong>
+  și setările <strong>Spanning Tree Protocol (STP)</strong>.
+</p>
+<p>
+  Un Router de casă are file pentru <strong>Stare</strong>, setări <strong>WAN</strong>, și lizierele <strong>DHCP</strong>.
+</p>
+
+<h4>PC și Laptop</h4>
+<p>
+  PC-urile și Laptop-urile au un sistem de operare complet simulat în interiorul panoului lor.
+  Poți deschide aplicații de pe desktop, configura setări de rețea și rula comenzi.
+</p>
+
+<hr>
+
+<h3 id="run">Modul Execuție — Rularea simulării</h3>
+<p>
+  Comută la modul <i class="fas fa-play"></i> <strong>Execuție</strong> pentru a porni simularea.
+  Rețeaua devine vie: dispozitivele schimbă pachete, atribuirile DHCP sunt acordate,
+  tabelele de rutare se actualizează, și așa mai departe.
+</p>
+
+<h4>Controale de viteză</h4>
+<p>
+  Folosește butoanele de viteză din bara de instrumente din partea de sus pentru a controla cât de repede rulează simularea:
+</p>
+<table class="help-table">
+  <tr><td><strong>0.5×</strong></td><td>Lent — bun pentru observarea pașilor individuali</td></tr>
+  <tr><td><strong>1×</strong></td><td>Viteza normală</td></tr>
+  <tr><td><strong>4×</strong></td><td>Rapid</td></tr>
+  <tr><td><strong>8×</strong></td><td>Foarte rapid</td></tr>
+</table>
+
+<h4>Pauză și resetare</h4>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-pause"></i></td>
+    <td><strong>Pauză</strong></td>
+    <td>Îngheață simularea în starea sa curentă.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-arrow-rotate-left"></i></td>
+    <td><strong>Resetare</strong></td>
+    <td>Repornește simularea de la început (toate stările dinamice sunt șterse).</td>
+  </tr>
+</table>
+
+<p>
+  <strong>Notă:</strong> Nu poți edita topologia rețelei în timp ce ești în modul Execuție.
+  Comută înapoi la modul <i class="fas fa-pencil"></i> Editare mai întâi.
+</p>
+
+<hr>
+
+<h3 id="trace">Modul Urmărire — Analiza pachetelor</h3>
+<p>
+  Comută la modul <i class="fas fa-magnifying-glass"></i> <strong>Urmărire</strong> pentru a deschide
+  analizorul de pachete încorporat — similar cu Wireshark.
+</p>
+<p>
+  La partea de sus, selectează <strong>dispozitivul</strong> și <strong>portul</strong> din care vrei să captezi.
+  Toate pachetele care trec prin acel port sunt înregistrate și afișate într-o listă.
+</p>
+<p>
+  Fă clic pe orice pachet din listă pentru a vedea detaliile sale complete:
+  straturile de protocol, câmpurile antetului și sarcina — exact cum ar arăta un instrument profesional de rețea.
+</p>
+<p>
+  Captura rulează automat în timp ce simularea este în curs de execuție.
+  Poți comuta între modul Urmărire și modul Execuție în orice moment fără a pierde datele capturate.
+</p>
+
+<hr>
+
+<h3 id="project">Salvare și încărcare</h3>
+<p>
+  Designul rețelei tale poate fi salvat ca fișier și încărcat din nou mai târziu.
+  Folosește butoanele din bara de instrumente din partea de sus (vizibile în modul Editare):
+</p>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-file"></i></td>
+    <td><strong>Nou</strong></td>
+    <td>Începe cu o pânză goală. Orice modificări nesalvate vor fi pierdute.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-file-arrow-up"></i></td>
+    <td><strong>Încărcare</strong></td>
+    <td>Deschide un fișier de simulare salvat anterior.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-file-arrow-down"></i></td>
+    <td><strong>Salvare</strong></td>
+    <td>Descarcă simularea curentă ca fișier pe calculatorul tău.</td>
+  </tr>
+</table>
+
+<hr>
+<p class="footer">
+  Ai probleme? Verifică că rețeaua ta este conectată corect și că toate dispozitivele au adrese IP valide configurate.
+</p>

@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇳🇱 Nederlands (translated by AI)", order: 6 };
+export const meta = { name: "🇳🇱 Nederlands (translated by AI)", order: 16 };
 
 export default {
   "lang.name": "🇳🇱 Nederlands",
@@ -807,5 +807,10 @@ export default {
   "firewall.delrule": "Regel verwijderen",
   "firewall.move.up": "Omhoog verplaatsen",
   "firewall.move.down": "Omlaag verplaatsen",
-  "sim.tool.firewall": "Firewall"
+  "sim.tool.firewall": "Firewall",
+  "lessons.noLessons": "Het spijt ons, maar er zijn nog geen lessen beschikbaar in deze taal. 😔",
+  "switch.vlan.col.port": "Poort",
+  "switch.vlan.col.mode": "Modus",
+  "switch.vlan.col.pvid": "PVID",
+  "switch.vlan.col.allowed": "Toegestane VLAN's"
 };

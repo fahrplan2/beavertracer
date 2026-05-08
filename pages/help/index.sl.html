@@ -1,0 +1,293 @@
+<h2>Pomoč</h2>
+<p class="subtitle">Kako uporabljati BeaverTracer</p>
+
+<hr>
+
+<nav class="help-toc">
+  <strong>Vsebina</strong>
+  <ol>
+    <li><a href="#modes">Trije načini</a></li>
+    <li><a href="#edit">Način urejanja — Gradnja omrežja</a></li>
+    <li><a href="#devices">Naprave</a></li>
+    <li><a href="#panels">Plošče naprav</a></li>
+    <li><a href="#run">Način izvajanja — Izvajanje simulacije</a></li>
+    <li><a href="#trace">Način sledenja — Analiza paketov</a></li>
+    <li><a href="#project">Shranjevanje in nalaganje</a></li>
+  </ol>
+</nav>
+
+<hr>
+
+<h3 id="modes">Trije načini</h3>
+<p>
+  BeaverTracer ima tri načine. Med njimi se preklapljate z gumbi v zgornji orodni vrstici.
+</p>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-pencil"></i></td>
+    <td><strong>Urejanje</strong></td>
+    <td>Oblikujte svoje omrežje — postavite naprave, jih povežite in konfigurirajte.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-play"></i></td>
+    <td><strong>Izvajanje</strong></td>
+    <td>Začnite simulacijo in opazujte pretok prometa skozi vaše omrežje.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-magnifying-glass"></i></td>
+    <td><strong>Sledenje</strong></td>
+    <td>Zajemite in pregledajte pakete, ki potujejo po vašem omrežju.</td>
+  </tr>
+</table>
+
+<hr>
+
+<h3 id="edit">Način urejanja — Gradnja omrežja</h3>
+<p>
+  V načinu urejanja se na levi strani zaslona pojavi orodni vrstica.
+  Izberite orodje s klikom nanj, nato ga uporabite na platnu.
+</p>
+
+<h4>Orodja</h4>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-arrow-pointer"></i></td>
+    <td><strong>Izbira</strong></td>
+    <td>Kliknite na napravo, da odprete njeno ploščo. Povlecite napravo, da jo premaknete.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-link"></i></td>
+    <td><strong>Povezava</strong></td>
+    <td>Povežite dve napravi s kablom (glejte spodaj).</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-ban"></i></td>
+    <td><strong>Brisanje</strong></td>
+    <td>Kliknite na napravo ali kabel, da ga odstranite.</td>
+  </tr>
+</table>
+
+<p>
+  <strong>Nasvet:</strong> Z desnim klikom kjerkoli na platnu prekličete trenutno orodje
+  in se vrnete na <i class="fas fa-arrow-pointer"></i> Izbiro.
+</p>
+
+<h4>Postavitev naprave</h4>
+<ol>
+  <li>Kliknite na gumb naprave v levi orodni vrstici (npr. <i class="fas fa-desktop"></i> Računalnik).</li>
+  <li>Predogled sledi vašemu kazalcu miške.</li>
+  <li>Kliknite na platno, da postavite napravo.</li>
+</ol>
+
+<h4>Povezovanje dveh naprav</h4>
+<ol>
+  <li>Kliknite na orodje <i class="fas fa-link"></i> <strong>Povezava</strong>.</li>
+  <li>Kliknite na prvo napravo — pojavi se izbirnik vrat. Izberite vrata.</li>
+  <li>Pomaknite miško na drugo napravo in jo kliknite — tam tudi izberite vrata.</li>
+  <li>Kabel se ustvari samodejno.</li>
+</ol>
+<p>
+  Vrata, ki so že v uporabi, se prikazujejo kot onemogočena in jih ni mogoče izbrati.
+</p>
+
+<h4>Premikanje naprave</h4>
+<p>
+  V načinu <i class="fas fa-arrow-pointer"></i> Izbire kliknite in povlecite katero koli napravo, da jo ponovno postavite na platno.
+</p>
+
+<h4>Brisanje naprave ali kabla</h4>
+<ol>
+  <li>Kliknite na orodje <i class="fas fa-ban"></i> <strong>Brisanje</strong>.</li>
+  <li>Kliknite na napravo ali kabel, ki ga želite odstraniti.</li>
+</ol>
+<p>
+  Ko izbrišete napravo, se vsi kabli, ki so nanjo povezani, samodejno odstranijo.
+</p>
+
+<hr>
+
+<h3 id="devices">Naprave</h3>
+<p>
+  V levi orodni vrstici v načinu urejanja so na voljo te naprave:
+</p>
+
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-desktop"></i></td>
+    <td><strong>Računalnik</strong></td>
+    <td>
+      Osebni računalnik s kabelskim omrežnim vmesnikom. Na njem lahko poganjate aplikacije
+      (npr. spletni brskalnik ali orodje ping) in konfigurirate njegov IP naslov.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-laptop"></i></td>
+    <td><strong>Prenosnik</strong></td>
+    <td>
+      Kot računalnik, vendar se poveže preko Wi-Fi namesto kabla.
+      Uporabite ga skupaj s točko dostopa ali usmerjevalnikom za dom.
+    </td>
+  </tr>
+  <tr>
+    <td>SW</td>
+    <td><strong>Stikalo</strong></td>
+    <td>
+      Poveže več naprav v istem segmentu omrežja.
+      Posreduje okvire na podlagi MAC naslovov.
+      Podpira VLAN in protokol Spanning Tree (STP).
+    </td>
+  </tr>
+  <tr>
+    <td>RT</td>
+    <td><strong>Usmerjevalnik</strong></td>
+    <td>
+      Poveže različna omrežja in posreduje pakete med njimi.
+      Nastavljate lahko statične poti in IP naslove na vsakem vmesniku.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-house-signal"></i></td>
+    <td><strong>Domači usmerjevalnik</strong></td>
+    <td>
+      Kombiniran usmerjevalnik, strežnik DHCP, pristanišče NAT in dostopna točka Wi-Fi —
+      podoben tipičnemu domačemu internetnemu usmerjevalniku.
+      Povežite ga na usmerjevalnik (kot WAN) in na računalnike ali prenosnike (kot LAN/Wi-Fi).
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-wifi"></i></td>
+    <td><strong>Dostopna točka</strong></td>
+    <td>
+      Razširja kabelsko omrežje z brezžično povezavo Wi-Fi.
+      Povežite njen kabelski vrat na stikalo ali usmerjevalnik, nato prenosnike povežite nanjo brezžično.
+    </td>
+  </tr>
+</table>
+
+<hr>
+
+<h3 id="panels">Plošče naprav</h3>
+<p>
+  Kliknite na katero koli napravo na platnu, da odprete njeno <strong>ploščo</strong> — okno za konfiguracijo,
+  ki se pojavi na desni strani zaslona.
+  Kliknite napravo znova (ali gumb <strong>×</strong> v glavi plošče), da jo zaprete.
+</p>
+
+<h4>Preimenovanje naprave</h4>
+<p>
+  Kliknite na gumb <i class="fas fa-pen"></i> poleg imena naprave v glavi plošče,
+  da ji dodelite poljubno ime (npr. "Pisarna-računalnik" ali "Jedro-usmerjevalnik").
+</p>
+
+<h4>Zavihki</h4>
+<p>
+  Večina naprav ima v plošči več zavihkov.
+  Usmerjevalnik ima na primer:
+</p>
+<ul>
+  <li><strong>Vmesniki</strong> — nastavljanje IP naslovov na vsakem vhodu</li>
+  <li><strong>Tabela poti IPv4</strong> — ogled in urejanje statičnih poti IPv4</li>
+  <li><strong>Tabela poti IPv6</strong> — ogled in urejanje statičnih poti IPv6</li>
+</ul>
+<p>
+  Stikalo ima zavihke za <strong>tabelo naslova stikala (SAT)</strong>, nastavitve <strong>VLAN</strong>
+  in nastavitve <strong>Spanning Tree Protocol (STP)</strong>.
+</p>
+<p>
+  Domači usmerjevalnik ima zavihke za <strong>stanje</strong>, nastavitve <strong>WAN</strong> in <strong>DHCP</strong> zakupe.
+</p>
+
+<h4>Računalnik in prenosnik</h4>
+<p>
+  Računalniki in prenosniki imajo v svoji plošči v celoti simulirani operacijski sistem.
+  Aplikacije lahko odprete z namizja, nastavite omrežne nastavitve in zaganjate ukaze.
+</p>
+
+<hr>
+
+<h3 id="run">Način izvajanja — Izvajanje simulacije</h3>
+<p>
+  Preklopite v način <i class="fas fa-play"></i> <strong>Izvajanje</strong>, da začnete simulacijo.
+  Omrežje postane živečno: naprave si izmenjujejo pakete, dodeljujejo se zakupi DHCP,
+  posodobljene so tabele poti idr.
+</p>
+
+<h4>Kontrolniki hitrosti</h4>
+<p>
+  Uporabite gumbe za hitrost v zgornji orodni vrstici, da nadzorujete, kako hitro se simulacija izvaja:
+</p>
+<table class="help-table">
+  <tr><td><strong>0,5×</strong></td><td>Počasi — dobro za opazovanje posameznih korakov</td></tr>
+  <tr><td><strong>1×</strong></td><td>Normalna hitrost</td></tr>
+  <tr><td><strong>4×</strong></td><td>Hitro</td></tr>
+  <tr><td><strong>8×</strong></td><td>Zelo hitro</td></tr>
+</table>
+
+<h4>Pauziranje in ponastavitev</h4>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-pause"></i></td>
+    <td><strong>Pauziranje</strong></td>
+    <td>Zamrznite simulacijo v njenem trenutnem stanju.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-arrow-rotate-left"></i></td>
+    <td><strong>Ponastavitev</strong></td>
+    <td>Ponovno zaženite simulacijo od začetka (vso dinamično stanje se izbriše).</td>
+  </tr>
+</table>
+
+<p>
+  <strong>Opomba:</strong> Omrežne topologije med načinom izvajanja ne morete urejati.
+  Najprej se vrnite na način <i class="fas fa-pencil"></i> urejanja.
+</p>
+
+<hr>
+
+<h3 id="trace">Način sledenja — Analiza paketov</h3>
+<p>
+  Preklopite v način <i class="fas fa-magnifying-glass"></i> <strong>Sledenje</strong>, da odprete
+  vgrajeni analizator paketov — podoben Wireshark.
+</p>
+<p>
+  Zgoraj izberite <strong>napravo</strong> in <strong>vrata</strong>, iz katerih želite zajemati.
+  Vsi paketi, ki potujejo skozi ta vrata, se zabeležijo in prikažejo na seznamu.
+</p>
+<p>
+  Kliknite na kateri koli paket na seznamu, da vidite njegove popolne podrobnosti:
+  sloji protokolov, polja glave in koristno tovarino — točno kot bi to pokazalo profesionalno omrežno orodje.
+</p>
+<p>
+  Zajemanje se izvaja samodejno med izvajanjem simulacije.
+  Med načinom sledenja in načinom izvajanja se lahko preklapljate kadar koli brez izgube zajete podatke.
+</p>
+
+<hr>
+
+<h3 id="project">Shranjevanje in nalaganje</h3>
+<p>
+  Vaš načrt omrežja se lahko shrani kot datoteka in ponovno naloži pozneje.
+  Uporabite gumbe v zgornji orodni vrstici (vidni v načinu urejanja):
+</p>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-file"></i></td>
+    <td><strong>Novo</strong></td>
+    <td>Začnite s praznim platnom. Vse neshranjene spremembe se izgubijo.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-file-arrow-up"></i></td>
+    <td><strong>Nalaganje</strong></td>
+    <td>Odprite predhodno shranjeno datoteko simulacije.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-file-arrow-down"></i></td>
+    <td><strong>Shranjevanje</strong></td>
+    <td>Prenesite trenutno simulacijo kot datoteko na svoj računalnik.</td>
+  </tr>
+</table>
+
+<hr>
+<p class="footer">
+  Imate težave? Preverite, da je vaše omrežje pravilno povezano in da imajo vse naprave konfigurirane veljavne IP naslove.
+</p>

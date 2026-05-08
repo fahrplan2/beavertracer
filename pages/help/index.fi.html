@@ -1,0 +1,280 @@
+<h2>Ohje</h2>
+<p class="subtitle">Kuinka käyttää Beaver Traceria</p>
+
+<hr>
+
+<nav class="help-toc">
+  <strong>Sisällysluettelo</strong>
+  <ol>
+    <li><a href="#modes">Kolme tilaa</a></li>
+    <li><a href="#edit">Muokkaustila — Verkon rakentaminen</a></li>
+    <li><a href="#devices">Laitteet</a></li>
+    <li><a href="#panels">Laitepaneelit</a></li>
+    <li><a href="#run">Suoritustila — Simulaation ajaminen</a></li>
+    <li><a href="#trace">Jäljitystila — Pakettien analysointi</a></li>
+    <li><a href="#project">Tallentaminen ja lataaminen</a></li>
+  </ol>
+</nav>
+
+<hr>
+
+<h3 id="modes">Kolme tilaa</h3>
+<p>
+  Beaver Tracerilla on kolme tilaa. Voit vaihtaa niiden välillä yläreunan työkalupalkin painikkeilla.
+</p>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-pencil"></i></td>
+    <td><strong>Muokkaus</strong></td>
+    <td>Suunnittele verkkoasi — sijoita laitteet, yhdistä ne ja määritä ne.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-play"></i></td>
+    <td><strong>Suoritus</strong></td>
+    <td>Käynnistä simulaatio ja katso liikenteen virtaavan verkkossasi.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-magnifying-glass"></i></td>
+    <td><strong>Jäljitys</strong></td>
+    <td>Tallenna ja tarkastele verkkossasi liikkuvia paketteja.</td>
+  </tr>
+</table>
+
+<hr>
+
+<h3 id="edit">Muokkaustila — Verkon rakentaminen</h3>
+<p>
+  Muokkaustilassa vasemmalla puolella näkyy työkalupalkki.
+  Valitse työkalu napsauttamalla sitä ja käytä sitä pohjalla.
+</p>
+
+<h4>Työkalut</h4>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-arrow-pointer"></i></td>
+    <td><strong>Valinta</strong></td>
+    <td>Napsauta laitetta avamaan sen paneeli. Vedä laitetta siirtääksesi sitä.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-link"></i></td>
+    <td><strong>Linkki</strong></td>
+    <td>Yhdistä kaksi laitetta kaapelilla (katso alla).</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-ban"></i></td>
+    <td><strong>Poista</strong></td>
+    <td>Napsauta laitetta tai kaapelia poistaaksesi sen.</td>
+  </tr>
+</table>
+
+<p>
+  <strong>Vinkki:</strong> Napsauta hiiren kakkospainikkeella missä tahansa pohjalla peruuttaaksesi nykyisen työkalun
+  ja palaa <i class="fas fa-arrow-pointer"></i> Valintaan.
+</p>
+
+<h4>Laitteen sijoittaminen</h4>
+<ol>
+  <li>Napsauta laitepainiketta vasemmalla työkalupalkin (esim. <i class="fas fa-desktop"></i> Tietokone).</li>
+  <li>Esikatselu seuraa hiiren kursoria.</li>
+  <li>Napsauta pohjaa sijoittaaksesi laitteen.</li>
+</ol>
+
+<h4>Kahden laitteen yhdistäminen</h4>
+<ol>
+  <li>Napsauta <i class="fas fa-link"></i> <strong>Linkki</strong> -työkalua.</li>
+  <li>Napsauta ensimmäistä laitetta — portin valitsin tulee näkyviin. Valitse portti.</li>
+  <li>Siirrä hiiren osoitin toiseen laitteeseen ja napsauta sitä — valitse portti siellä myös.</li>
+  <li>Kaapeli luodaan automaattisesti.</li>
+</ol>
+<p>
+  Portit, jotka ovat jo käytössä, näytetään poistettuna eikä niitä voi valita.
+</p>
+
+<h4>Laitteen siirtäminen</h4>
+<p>
+  <i class="fas fa-arrow-pointer"></i> Valinta-tilassa napsauta ja vedä mitä tahansa laitetta siirtääksesi sitä pohjalla.
+</p>
+
+<h4>Laitteen tai kaapelin poistaminen</h4>
+<ol>
+  <li>Napsauta <i class="fas fa-ban"></i> <strong>Poista</strong> -työkalua.</li>
+  <li>Napsauta laitetta tai kaapelia, jonka haluat poistaa.</li>
+</ol>
+<p>
+  Kun poistat laitteen, kaikki siihen liitetyt kaapelit poistetaan automaattisesti.
+</p>
+
+<hr>
+
+<h3 id="devices">Laitteet</h3>
+<p>
+  Nämä laitteet ovat saatavilla vasemmalla työkalupalkin muokkaustilassa:
+</p>
+
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-desktop"></i></td>
+    <td><strong>Tietokone</strong></td>
+    <td>
+      Henkilökohtainen tietokone, jossa on langallinen verkkoliitäntä. Voit käyttää sovelluksia siinä
+      (esim. verkkoselain tai ping-työkalu) ja määrittää sen IP-osoitteen.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-laptop"></i></td>
+    <td><strong>Kannettava tietokone</strong></td>
+    <td>
+      Kuten tietokone, mutta yhdistyy Wi-Fi:n kautta kaapelin sijaan.
+      Käytä sitä Access Pointin tai Home Routerin kanssa.
+    </td>
+  </tr>
+  <tr>
+    <td>SW</td>
+    <td><strong>Kytkin</strong></td>
+    <td>
+      Yhdistää useita laitteita samassa verkkoosassa.
+      Välittää kehyksiä MAC-osoitteisiin perustuen.
+      Tukee VLAN:eja ja Spanning Tree Protocol (STP) -protokollaa.
+    </td>
+  </tr>
+  <tr>
+    <td>RT</td>
+    <td><strong>Reititin</strong></td>
+    <td>
+      Yhdistää eri verkot ja välittää paketteja niiden välillä.
+      Voit määrittää staattisia reittejä ja IP-osoitteita jokaisessa liitännässä.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-house-signal"></i></td>
+    <td><strong>Home Router</strong></td>
+    <td>
+      Yhdistetty reititin, DHCP-palvelin, NAT-yhdyskäytävä ja Wi-Fi-tukiasema —
+      samanlainen kuin tyypillinen kotitekoinen internet-reititin.
+      Yhdistä se Reitittimeen (WAN:ina) ja tietokoneisiin tai kannettaviin (LAN/Wi-Fi).
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-wifi"></i></td>
+    <td><strong>Access Point</strong></td>
+    <td>
+      Laajentaa langallista verkkoa Wi-Fi-yhteydellä.
+      Yhdistä sen langallinen portti Kytkimeen tai Reitittimeen ja yhdistä kannettavat tietokone langattomasti.
+    </td>
+  </tr>
+</table>
+
+<hr>
+
+<h3 id="panels">Laitepaneelit</h3>
+<p>
+  Napsauta mitä tahansa laitetta pohjalla avaamaan sen <strong>paneeli</strong> — asetusikkuna,
+  joka tulee näkyviin näytön oikealle puolelle.
+  Napsauta laitetta uudelleen (tai <strong>×</strong> -painiketta paneelin otsikossa) sulkeaksesi sen.
+</p>
+
+<h4>Laitteen uudelleennimeäminen</h4>
+<p>
+  Napsauta <i class="fas fa-pen"></i> -painiketta laitteen nimen vieressä paneelin otsikossa
+  antaaksesi sille mukautetun nimen (esim. "Office-PC" tai "Core-Router").
+</p>
+
+<h4>Välilehdet</h4>
+<p>
+  Useimmilla laitteilla on useita välilehtiä paneelin sisällä.
+  Esimerkiksi Reitittimellä on:
+</p>
+<ul>
+  <li><strong>Liitännät</strong> — määritä IP-osoitteet jokaisessa portissa</li>
+  <li><strong>Reititystaulu IPv4</strong> — tarkastele ja muokkaa IPv4 staattisia reittejä</li>
+  <li><strong>Reititystaulu IPv6</strong> — tarkastele ja muokkaa IPv6 staattisia reittejä</li>
+</ul>
+<p>
+  Kytkinellä on välilehdet sen <strong>Switch Address Table (SAT)</strong>, <strong>VLAN</strong>
+  -määritykselle ja <strong>Spanning Tree Protocol (STP)</strong> -asetuksille.
+</p>
+<p>
+  Home Routerilla on välilehdet <strong>Tilalle</strong>, <strong>WAN</strong> -asetuksille ja <strong>DHCP</strong> -vuokralle.
+</p>
+
+<h4>Tietokone ja kannettava tietokone</h4>
+<p>
+  Tietokoneissa ja kannettavissa on täysin simuloitu käyttöjärjestelmä niiden paneelin sisällä.
+  Voit avata sovelluksia työpöydästä, määrittää verkkoja asetuksia ja suorittaa komentoja.
+</p>
+
+<hr>
+
+<h3 id="run">Suoritustila — Simulaation ajaminen</h3>
+<p>
+  Vaihda <i class="fas fa-play"></i> <strong>Suoritus</strong>-tilaan käynnistääksesi simulaation.
+  Verkko tulee aktiiviseksi: laitteet vaihtavat paketteja, DHCP-vuokrat määritetään,
+  reitytystaulukot päivittyvät ja niin edelleen.
+</p>
+
+<h4>Nopeuden ohjaukset</h4>
+<p>
+  Käytä nopeuspainikkeita yläreunan työkalupalkin hallitsemaan, kuinka nopeasti simulaatio toimii:
+</p>
+<table class="help-table">
+  <tr><td><strong>0.5×</strong></td><td>Hidas — hyvä yksittäisten vaiheiden tarkkailuun</td></tr>
+  <tr><td><strong>1×</strong></td><td>Normaali nopeus</td></tr>
+  <tr><td><strong>4×</strong></td><td>Nopea</td></tr>
+  <tr><td><strong>8×</strong></td><td>Erittäin nopea</td></tr>
+</table>
+
+<h4>Keskeytys ja nollaus</h4>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-pause"></i></td>
+    <td><strong>Keskeytä</strong></td>
+    <td>Jäädytä simulaatio sen nykyisessä tilassa.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-arrow-rotate-left"></i></td>
+    <td><strong>Nollaa</strong></td>
+    <td>Käynnistä simulaatio alusta (kaikki dynaaminen tila tyhjennetään).</td>
+  </tr>
+</table>
+
+<p>
+  <strong>Huomio:</strong> Et voi muokata verkon topologiaa suoritustilassa.
+  Vaihda ensin takaisin <i class="fas fa-pencil"></i> Muokkaustilaan.
+</p>
+
+<hr>
+
+<h3 id="trace">Jäljitystila — Pakettien analysointi</h3>
+<p>
+  Vaihda <i class="fas fa-magnifying-glass"></i> <strong>Jäljitys</strong>-tilaan avaamaan
+  sisäinen paketti-analysaattori — samanlainen kuin Wireshark.
+</p>
+<p>
+  Valitse ylhäällä <strong>laite</strong> ja <strong>portti</strong>, josta haluat tallentaa.
+  Kaikki sen portin läpi kulkevat paketit tallennetaan ja näytetään luettelossa.
+</p>
+<p>
+  Napsauta mitä tahansa luettelon pakettia nähdäksesi sen kaikki tiedot:
+  protokollakerroksista, otsikkokentistä ja kuormasta — aivan kuten ammattimainen verkkotyökalu näyttäisi.
+</p>
+<p>
+  Tallentaminen toimii automaattisesti simulaation ollessa käynnissä.
+  Voit vaihtaa jäljitystilan ja suoritustilan välillä milloin tahansa menettämättä tallennettujen tietoja.
+</p>
+
+<hr>
+
+<h3 id="project">Tallentaminen ja lataaminen</h3>
+<p>
+  Verkkosi rakenne voidaan tallentaa tiedostona ja ladata uudelleen myöhemmin.
+  Käytä painikkeita yläreunan työkalupalkin (näkyvissä muokkaustilassa):
+</p>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-file"></i></td>
+    <td><strong>Uusi</strong></td>
+    <td>Aloita tyhjällä pohjalla. Kaikki tallentamattomat muutokset menetetään.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-file-arrow-up"></i></td>
+    <td><strong>Lataa

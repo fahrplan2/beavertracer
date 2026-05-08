@@ -4,29 +4,23 @@ export const meta = { name: "🇩🇪 Deutsch", order: 1 };
 export default {
   "lang.name": "🇩🇪 Deutsch",
   "app.generic.title": "Gernic App",
-
   "app.dhcpserver.title": "DHCP-Server",
-
   "app.dhcpserver.label.config": "Konfiguration",
   "app.dhcpserver.label.rangeStart": "Bereichsstart",
   "app.dhcpserver.label.rangeEnd": "Bereichsende",
   "app.dhcpserver.label.dns": "DNS-Server",
   "app.dhcpserver.label.gateway": "Gateway",
   "app.dhcpserver.label.leaseTime": "Lease-Zeit (Sekunden)",
-
   "app.dhcpserver.button.save": "Speichern",
   "app.dhcpserver.button.start": "Starten",
   "app.dhcpserver.button.stop": "Stoppen",
   "app.dhcpserver.button.clearLog": "Protokoll löschen",
-
   "app.dhcpserver.label.log":    "Protokoll",
   "app.dhcpserver.label.leases": "Leases",
-
   "app.dhcpserver.leases.col.mac":     "MAC-Adresse",
   "app.dhcpserver.leases.col.address": "IP-Adresse",
   "app.dhcpserver.leases.col.expires": "Ablauf",
   "app.dhcpserver.leases.empty":       "Keine aktiven Leases",
-
   "app.dhcpserver.log.createdDefaultConfig": "Konfigurationsdatei fehlend/leer; Standard-Konfiguration geschrieben nach",
   "app.dhcpserver.log.configLoaded": "Konfiguration geladen von",
   "app.dhcpserver.log.configLoadFailed": "Konfiguration konnte nicht geladen werden:",
@@ -39,13 +33,10 @@ export default {
   "app.dhcpserver.log.stopError": "Fehler beim Stoppen:",
   "app.dhcpserver.log.recvError": "UDP-Empfangsfehler:",
   "app.dhcpserver.log.parseError": "DHCP-Parsing-Fehler:",
-
   "app.dhcpv6server.title": "DHCPv6-Server",
-
   "app.dhcpv6server.label.config":      "Konfiguration",
   "app.dhcpv6server.label.log":         "Protokoll",
   "app.dhcpv6server.label.leases":      "Leases",
-
   "app.dhcpv6server.leases.col.duid":    "DUID",
   "app.dhcpv6server.leases.col.address": "IPv6-Adresse",
   "app.dhcpv6server.leases.col.expires": "Ablauf",
@@ -54,13 +45,11 @@ export default {
   "app.dhcpv6server.label.prefixLength": "Präfixlänge",
   "app.dhcpv6server.label.dns":         "DNS-Server",
   "app.dhcpv6server.label.leaseTime":   "Lease-Zeit (Sekunden)",
-
   "app.dhcpv6server.button.load":     "Laden",
   "app.dhcpv6server.button.save":     "Speichern",
   "app.dhcpv6server.button.start":    "Starten",
   "app.dhcpv6server.button.stop":     "Stoppen",
   "app.dhcpv6server.button.clearLog": "Protokoll löschen",
-
   "app.dhcpv6server.log.createdDefaultConfig": "Konfigurationsdatei fehlt/leer; Standard-Konfiguration geschrieben nach",
   "app.dhcpv6server.log.configLoaded":         "Konfiguration geladen von",
   "app.dhcpv6server.log.configLoadFailed":     "Fehler beim Laden der Konfiguration:",
@@ -73,7 +62,6 @@ export default {
   "app.dhcpv6server.log.stopError":            "Fehler beim Stoppen:",
   "app.dhcpv6server.log.recvError":            "UDP-Empfangsfehler:",
   "app.dhcpv6server.log.parseError":           "DHCPv6-Parsing-Fehler:",
-
   "app.dhcpv6server.label.pd":           "PD-Server",
   "app.dhcpv6server.pd.enabled":         "PD-Server aktivieren",
   "app.dhcpv6server.pd.pool":            "Pool-Präfix",
@@ -85,14 +73,11 @@ export default {
   "app.dhcpv6server.pd.leases.col.prefix":  "Delegiertes Präfix",
   "app.dhcpv6server.pd.leases.col.expires": "Verfällt",
   "app.dhcpv6server.pd.leases.empty":       "Keine aktiven PD-Leases",
-
   "app.dnsd.button.save": "Speichern",
   "app.dnsd.button.start": "Starten",
   "app.dnsd.button.stop": "Stoppen",
   "app.dnsd.label.log": "Protokoll",
   "app.dnsd.title": "DNS-Server",
-
-
   "app.ipv4config.title": "IP-Einstellungen",
   "app.ipv4config.button.apply": "Anwenden",
   "app.ipv4config.label.ip": "IP",
@@ -112,34 +97,30 @@ export default {
   "app.ipv4config.label.subnetMask": "Subnetzmaske",
   "app.ipv4config.label.dnsServer": "DNS-Server",
   "app.ipv4config.err.invalidDnsServer": "Ungültige DNS-Serveradresse",
+
   "app.ipv4config.msg.appliedWithGwDns":
     "Schnittstelle {i} angewendet: IP {ip}, Subnetzmaske {netmask}, Gateway {gw}, DNS {dns}",
+
   "app.ipv4config.msg.appliedGwClearedDns":
     "Schnittstelle {i} angewendet: IP {ip}, Subnetzmaske {netmask}, Gateway gelöscht, DNS {dns}",
 
   "app.ipv4config.label.mode": "Modus",
   "app.ipv4config.mode.static": "Statisch",
   "app.ipv4config.mode.dhcp": "DHCP",
-
   "app.ipv4config.msg.dhcpModeHint": "DHCP-Modus: Klicken Sie auf Anwenden, um automatisch eine Adresse zu erhalten.",
   "app.ipv4config.msg.dhcpStarting": "Starte DHCP auf Schnittstelle {i}…",
   "app.ipv4config.msg.dhcpAttempt": "DHCP-Versuch {attempt}…",
   "app.ipv4config.msg.dhcpSuccess": "DHCP erfolgreich auf {i}: IP {ip}, Subnetzmaske {netmask}, Gateway {gw}, DNS {dns}",
-
   "app.ipv4config.msg.dhcpLeaseApplied": "DHCP-Lease auf Schnittstelle {i} angewendet.",
   "app.ipv4config.msg.dhcpFailedApipa": "DHCP fehlgeschlagen auf {i}. Fallback zu APIPA…",
   "app.ipv4config.msg.apipaApplied": "APIPA angewendet auf {i}: IP {ip}, Subnetzmaske {netmask}",
-
   "app.ipv4config.err.persistLoadFailed": "Fehler beim Laden von /etc/ip.config: {reason}",
   "app.ipv4config.err.persistSaveFailed": "Fehler beim Speichern von /etc/ip.config: {reason}",
-
-
   "app.ipv4config.button.release": "Freigeben",
   "app.ipv4config.msg.released": "DHCP-Freigabe auf {i} gesendet (IP {ip}, Server {server}).",
   "app.ipv4config.msg.releaseNothingToDo": "Keine Adresse zur Freigabe auf Schnittstelle {i}.",
   "app.ipv4config.err.releaseSocketFailed": "Fehler beim Öffnen des UDP-Sockets für Freigabe: {reason}",
   "app.ipv4config.err.releaseFailed": "DHCP-Freigabe fehlgeschlagen: {reason}",
-
   "app.ipv4config.tab.ipv4": "IPv4",
   "app.ipv4config.tab.ipv6": "IPv6",
   "app.ipv4config.ipv6.sectionTitle": "IPv6-Konfiguration",
@@ -149,7 +130,6 @@ export default {
   "app.ipv4config.ipv6.mode.static": "Statisch",
   "app.ipv4config.ipv6.mode.slaac": "SLAAC (automatisch)",
   "app.ipv4config.ipv6.mode.dhcp6": "DHCPv6",
-
   "app.ipv4config.ipv6.dhcp6.status":      "DHCPv6-Adresse",
   "app.ipv4config.ipv6.dhcp6.release":     "Freigeben",
   "app.ipv4config.ipv6.dhcp6.starting":    "Starte DHCPv6 auf Schnittstelle {i}…",
@@ -171,39 +151,30 @@ export default {
   "app.ipv4config.ipv6.err.invalidAddress": "Ungültige IPv6-Adresse.",
   "app.ipv4config.ipv6.err.invalidPrefix": "Ungültige IPv6-Präfixlänge (0–128).",
   "app.ipv4config.ipv6.err.invalidGateway": "Ungültiges IPv6-Gateway.",
-
   "app.packetsniffer.nointerface": "Keine Schnittstelle",
   "app.packetsniffer.title": "Packet Sniffer",
   "app.packetsniffer.unnamed": "Unbenannt",
   "app.packetsniffer.button.show": "{show} – {name}{port}",
   "app.packetsniffer.button.download": "{download} – {name}{port}",
-
   "app.simplehttpserver.title": "HTTP-Server",
   "app.simpletcpclient.title": "Einfacher TCP-Client",
   "app.simpletcpserver.title": "TCP-Echo-Server",
-
-
   "app.simplehttpserver.placeholder.port": "Port (1..65535)",
   "app.simplehttpserver.placeholder.docRoot": "Dokumentstammverzeichnis",
-
   "app.simplehttpserver.button.start": "Starten",
   "app.simplehttpserver.button.stop": "Stoppen",
   "app.simplehttpserver.button.clearLog": "Protokoll löschen",
-
   "app.simplehttpserver.label.port": "Port",
   "app.simplehttpserver.label.docRoot": "Dokumentstammverzeichnis",
   "app.simplehttpserver.label.log": "Protokoll:",
   "app.simplehttpserver.label.server": "Server",
-
   "app.simplehttpserver.status.pid": "PID: {pid}",
   "app.simplehttpserver.status.running": "Wird ausgeführt: {running}",
   "app.simplehttpserver.status.port": "Port: {port}",
   "app.simplehttpserver.status.docRoot": "DocRoot: {docRoot}",
   "app.simplehttpserver.status.serverRef": "ServerRef: {serverRef}",
   "app.simplehttpserver.status.logEntries": "Protokolleinträge: {n}",
-
   "app.simplehttpserver.err.timeout": "{label} Timeout ({ms}ms)",
-
   "app.simplehttpserver.log.invalidPort": "[{time}] FEHLER ungültiger Port: \"{portStr}\"",
   "app.simplehttpserver.log.stopError": "[{time}] FEHLER Stopp: {reason}",
   "app.simplehttpserver.log.stopped": "[{time}] GESTOPPT",
@@ -214,18 +185,13 @@ export default {
   "app.simplehttpserver.log.methodNotAllowed": "[{time}] 405 {method} {target}",
   "app.simplehttpserver.log.notFound": "[{time}] 404 {method} {norm}",
   "app.simplehttpserver.log.ok": "[{time}] 200 {method} {norm} ({bytes} Bytes)",
-
   "app.simplehttpserver.http.400.title": "400 Ungültige Anfrage",
   "app.simplehttpserver.http.400.details": "Header-Ende nicht gefunden oder Header > 64KiB.",
   "app.simplehttpserver.http.400.invalidRequestLine": "Ungültige Anforderungszeile:\n{reqLine}",
-
   "app.simplehttpserver.http.405.title": "405 Methode nicht zulässig",
   "app.simplehttpserver.http.405.details": "Nur GET/HEAD werden unterstützt.\nSie haben gesendet: {method}",
-
   "app.simplehttpserver.http.404.title": "404 Nicht gefunden",
   "app.simplehttpserver.http.404.details": "Datei nicht gefunden:\n{norm}\n\nDateisystempfad:\n{fsPath}",
-
-
   "app.mailclient.title": "E-Mail",
   "app.mailclient.button.compose": "Verfassen",
   "app.mailclient.button.config": "Einstellungen",
@@ -263,13 +229,10 @@ export default {
   "app.mailclient.err.invalidPort": "Ungültiger Port",
   "app.mailclient.err.noUser": "Kein Benutzername",
   "app.mailclient.err.noRecipient": "Kein Empfänger angegeben",
-
   "app.simplemailserver.title": "Einfacher Mail-Server",
-
   "app.simplemailserver.placeholder.domain": "Maildomäne (z.B. beispiel.lokal)",
   "app.simplemailserver.placeholder.user": "Benutzer",
   "app.simplemailserver.placeholder.password": "Passwort",
-
   "app.simplemailserver.label.server": "Server",
   "app.simplemailserver.label.domain": "Maildomäne",
   "app.simplemailserver.label.smtpPort": "SMTP-Port",
@@ -279,7 +242,6 @@ export default {
   "app.simplemailserver.label.user": "Benutzer",
   "app.simplemailserver.label.password": "Passwort",
   "app.simplemailserver.label.log": "Protokoll",
-
   "app.simplemailserver.button.start": "Starten",
   "app.simplemailserver.button.stop": "Stoppen",
   "app.simplemailserver.button.saveConfig": "Konfiguration speichern",
@@ -287,63 +249,49 @@ export default {
   "app.simplemailserver.button.delete": "Löschen",
   "app.simplemailserver.button.clearQueue": "Warteschlange leeren",
   "app.simplemailserver.button.seedDefault": "Test-E-Mail säen",
-
   "app.simplemailserver.users.none": "(keine)",
   "app.simplemailserver.users.passwordHint": "Passwort gesetzt",
   "app.simplemailserver.users.seed": "Test-E-Mail säen",
   "app.simplemailserver.users.delete": "Löschen",
-
   "app.simplemailserver.status.running": "läuft",
   "app.simplemailserver.status.domain": "E-Mail-Domain",
   "app.simplemailserver.status.ports": "Ports",
   "app.simplemailserver.status.users": "Benutzer",
-
   "app.simplemailserver.log.wroteDefaultConfig": "Standardkonfiguration geschrieben",
   "app.simplemailserver.log.cannotWriteConfig": "Konfiguration kann nicht geschrieben werden",
   "app.simplemailserver.log.loadedConfig": "Konfiguration geladen",
   "app.simplemailserver.log.invalidConfig": "Ungültige Konfiguration",
   "app.simplemailserver.log.savedConfig": "Konfiguration gespeichert",
   "app.simplemailserver.log.saveFailed": "Konfiguration konnte nicht gespeichert werden",
-
   "app.simplemailserver.log.userMissing": "Benutzer fehlt",
   "app.simplemailserver.log.passwordMissing": "Passwort fehlt",
   "app.simplemailserver.log.userUpdated": "Benutzer aktualisiert",
   "app.simplemailserver.log.userAdded": "Benutzer hinzugefügt",
   "app.simplemailserver.log.userDeleted": "Benutzer gelöscht",
   "app.simplemailserver.log.userNotFound": "Benutzer nicht gefunden",
-
   "app.simplemailserver.log.queueCleared": "Warteschlange geleert",
   "app.simplemailserver.log.clearQueueFailed": "Warteschlange konnte nicht geleert werden",
-
   "app.simplemailserver.log.seedNeedUser": "Säen: Geben Sie einen Benutzer ein oder verwenden Sie die Säen-Schaltfläche pro Benutzer",
   "app.simplemailserver.log.seedNoSuchUser": "Säen: Kein solcher Benutzer",
   "app.simplemailserver.log.seeded": "Test-E-Mail gesät",
-
   "app.simplemailserver.log.invalidDomain": "Ungültige E-Mail-Domain",
   "app.simplemailserver.log.invalidPorts": "Ungültige Ports",
-
   "app.simplemailserver.log.stopped": "gestoppt",
   "app.simplemailserver.log.listening": "wartet",
-
-
   "app.simpletcpclient.placeholder.host": "Host / Adresse",
   "app.simpletcpclient.placeholder.port": "Port (1..65535)",
   "app.simpletcpclient.placeholder.message": "Nachricht eingeben…",
-
   "app.simpletcpclient.button.connect": "Verbinden",
   "app.simpletcpclient.button.disconnect": "Trennen",
   "app.simpletcpclient.button.send": "Senden",
   "app.simpletcpclient.button.clearChat": "Chat löschen",
-
   "app.simpletcpclient.label.host": "Host",
   "app.simpletcpclient.label.port": "Port",
   "app.simpletcpclient.label.chat": "Chat:",
   "app.simpletcpclient.label.message": "Nachricht",
   "app.simpletcpclient.label.connection": "Verbindung",
-
   "app.simpletcpclient.status.connected": "Verbunden: {connected}",
   "app.simpletcpclient.status.peer": "Peer: {peer}",
-
   "app.simpletcpclient.log.hostEmpty": "[{time}] FEHLER Host ist leer",
   "app.simpletcpclient.log.invalidPort": "[{time}] FEHLER ungültiger Port: \"{portStr}\"",
   "app.simpletcpclient.log.resolveError": "[{time}] FEHLER Host auflösen \"{host}\": {reason}",
@@ -358,21 +306,16 @@ export default {
   "app.simpletcpclient.log.received": "[{time}] {who} -> ICH: \"{text}\"",
   "app.simpletcpclient.log.disconnected": "[{time}] GETRENNT",
   "app.simpletcpclient.err.noConnKey": "connectTCPConn hat keinen Verbindungsschlüssel zurückgegeben",
-
-
   "app.simpletcpserver.placeholder.port": "Port (1..65535)",
   "app.simpletcpserver.button.start": "Starten",
   "app.simpletcpserver.button.stop": "Stoppen",
   "app.simpletcpserver.button.clearLog": "Log löschen",
-
   "app.simpletcpserver.label.listenPort": "Server-Port",
   "app.simpletcpserver.label.log": "Log:",
   "app.simpletcpserver.label.server": "Server",
-
   "app.simpletcpserver.status.running": "Läuft: {running}",
   "app.simpletcpserver.status.port": "Port: {port}",
   "app.simpletcpserver.status.connections": "Verbindungen: {n}",
-
   "app.simpletcpserver.log.invalidPort": "[{time}] FEHLER ungültiger Port: \"{portStr}\"",
   "app.simpletcpserver.log.listening": "[{time}] Höre (TCP) auf 0.0.0.0:{port}",
   "app.simpletcpserver.log.startFailed": "[{time}] FEHLER Start fehlgeschlagen: {reason}",
@@ -386,21 +329,16 @@ export default {
   "app.simpletcpserver.log.txEcho": "[{time}] TX Echo {who} len={len}",
   "app.simpletcpserver.log.sendError": "[{time}] FEHLER beim Senden an {who}: {reason}",
   "app.simpletcpserver.log.disconnect": "[{time}] VERBINDUNG GETRENNT {who}",
-
-
   "app.sparktail.title": "Browser",
   "app.sparktail.placeholder.url": "about:start oder http://host[:port]/path",
-
   "app.sparktail.button.back": "←",
   "app.sparktail.button.forward": "→",
   "app.sparktail.button.reload": "⟳",
   "app.sparktail.button.go": "Gehen",
   "app.sparktail.button.stop": "Stopp",
-
   "app.sparktail.tab.preview": "Vorschau",
   "app.sparktail.tab.source": "Quelle",
   "app.sparktail.tab.headers": "Header",
-
   "app.sparktail.status.ready": "Bereit.",
   "app.sparktail.status.loading": "Lädt: {url}",
   "app.sparktail.status.startPage": "Startseite.",
@@ -411,15 +349,11 @@ export default {
   "app.sparktail.status.bodyTooLarge": "HTTP {statusCode}: Body zu groß.",
   "app.sparktail.status.httpSummary": "HTTP {statusCode} {reason} • {bytes} Bytes • {ct}",
   "app.sparktail.status.errorUrlEmpty": "Fehler: URL ist leer.",
-
   "app.sparktail.throbber.loading": "⏳",
-
   "app.sparktail.value.unknown": "(unbekannt)",
-
   "app.sparktail.label.recv": "Empfangen",
   "app.sparktail.label.dns": "DNS",
   "app.sparktail.label.connect": "Verbinden",
-
   "app.sparktail.err.onlyHttp": "Nur http:// ist erlaubt (kein https://).",
   "app.sparktail.err.missingHostInUrl": "Host fehlt in der URL.",
   "app.sparktail.err.hostEmpty": "Host ist leer.",
@@ -436,35 +370,23 @@ export default {
   "app.sparktail.err.invalidContentLength": "Ungültige Content-Length",
   "app.sparktail.err.cannotResolveHost": "Host kann nicht aufgelöst werden",
   "app.sparktail.err.invalidIpv6Bracket": "Ungültige IPv6-Klammer",
-
-
   "app.sparktail.page.invalidUrl.title": "Ungültige URL",
-
   "app.sparktail.page.dnsError.title": "DNS-Fehler",
   "app.sparktail.page.dnsError.body": "Host \"{host}\" konnte nicht aufgelöst werden.\n\n{msg}",
-
   "app.sparktail.page.socketError.title": "Socket-Fehler",
   "app.sparktail.page.socketError.body": "Verbindung zu {host}:{port} fehlgeschlagen.\n\n{msg}",
-
   "app.sparktail.page.sendError.title": "Sendelfehler",
-
   "app.sparktail.page.recvError.title": "Timeout/Empfangsfehler",
-
   "app.sparktail.page.bodyTooLarge.title": "Inhalt zu groß",
   "app.sparktail.page.bodyTooLarge.body": "Der Inhalt hat {bytes} Bytes, das Limit beträgt {bodyLimit} Bytes.",
-
   "app.sparktail.page.notSupported.title": "Nicht unterstützt",
   "app.sparktail.page.notSupported.body": "Sparktail rendert derzeit nur 200 und 404.\n\nErhalten: HTTP {statusCode} {reason}\n\nTipp: Überprüfen Sie den Tab Headers/Source.",
-
   "app.sparktail.page.nonHtml.title": "HTTP {statusCode}",
   "app.sparktail.page.nonHtml.body": "Content-Type: {ct}\n\nVorschau ist für Nicht-HTML deaktiviert.\n\nSource enthält die Rohdaten als Text.",
-
   "app.sparktail.headers.aboutStart": "about:start (intern)\r\n",
-
   "app.sparktail.log.urlEmpty": "[{time}] ERROR URL ist leer",
   "app.sparktail.log.aboutStart": "[{time}] about:start",
   "app.sparktail.log.stop": "[{time}] STOP",
-
   "app.sparktail.log.dnsError": "[{time}] ERROR DNS \"{host}\": {msg}",
   "app.sparktail.log.connectError": "[{time}] ERROR Verbindung {ip}:{port}: {msg}",
   "app.sparktail.log.request": "[{time}] -> {host}:{port} GET {path} (len={len} hex={hex})",
@@ -472,14 +394,12 @@ export default {
   "app.sparktail.log.recvError": "[{time}] ERROR Empfangen: {msg}",
   "app.sparktail.log.httpNotRendered": "[{time}] HTTP {statusCode} {reason} (nicht gerendert)",
   "app.sparktail.log.httpOk": "[{time}] HTTP {statusCode} {reason} (body={bytes} Bytes)",
-
   "app.terminal.title": "Terminal",
   "app.terminal.welcome": "BeaverOS - Willkommen bei {host}",
   "app.terminal.hintHelp": "Verwenden Sie den Befehl \"{cmd}\", um eine Liste bekannter Befehle zu erhalten.",
   "app.terminal.err.commandNotFound": "Befehl nicht gefunden: {cmd}",
   "app.terminal.err.errorPrefix": "Fehler: {msg}",
   "app.terminal.interrupt": "^C",
-
   "app.terminal.commands.cat.err.noFilesystem": "cat: kein Dateisystem",
   "app.terminal.commands.cat.usage": "Verwendung: {cmd} <Datei>",
   "app.terminal.commands.cp.usage": "Verwendung: cp [-r] <src>... <dst>",
@@ -514,96 +434,71 @@ export default {
   "app.terminal.commands.cd.err.notDirectory": "cd: kein Verzeichnis: {path}",
   "app.terminal.commands.help.header": "Integrierte Befehle:",
   "app.terminal.commands.help.list": "  {commands}",
-
   "app.terminal.commands.arp.err.noNetDriver": "arp: kein Netzwerktreiber",
   "app.terminal.commands.arp.err.noInterfaces": "arp: keine Schnittstellen",
   "app.terminal.commands.arp.err.unknownInterface": "arp: unbekannte Schnittstelle: {iface}",
-
   "app.terminal.commands.arp.msg.noArpTable": "{iface}: (keine ARP-Tabelle)",
   "app.terminal.commands.arp.msg.header": "{iface}:",
   "app.terminal.commands.arp.msg.empty": "  (leer)",
-
-
   "app.terminal.commands.dig.usage": "Syntax: dig [@Server] Name [Typ] [+short] [-t TYP] [+time=N] [+tries=N] [-p PORT]",
-
   "app.terminal.commands.dig.err.noUdp": "UDP-Netzwerk nicht verfügbar",
   "app.terminal.commands.dig.err.invalidPort": "Ungültige Portnummer",
   "app.terminal.commands.dig.err.invalidTime": "Ungültiger Zeitüberschreitungswert",
   "app.terminal.commands.dig.err.invalidTries": "Ungültige Anzahl von Versuchen",
   "app.terminal.commands.dig.err.cannotResolveServer": "Kann DNS-Server {host} nicht auflösen",
   "app.terminal.commands.dig.out.timeout": ";; Verbindungszeitüberschreitung; keine Server erreichbar (Server {server}#{port})",
-
   "app.terminal.commands.ip.err.noNetDriver": "ip: kein Netzwerkdriver",
   "app.terminal.commands.ip.err.noInterfaces": "ip: keine Schnittstellen",
   "app.terminal.commands.ip.err.unknownInterface": "ip: unbekannte Schnittstelle: {iface}",
   "app.terminal.commands.ip.err.invalidCidr": "ip: ungültiger CIDR (erwartet A.B.C.D/len)",
-
   "app.terminal.commands.ip.usage.set": "Verwendung: ip set <ifaceIndex|ifaceName> <ip>/<prefix>",
   "app.terminal.commands.ip.usage.main": "Verwendung: ip [a|addr|show] | ip set <iface> <ip>/<prefix>",
-
   "app.terminal.commands.ip.state.up": "UP",
   "app.terminal.commands.ip.state.down": "DOWN",
   "app.terminal.commands.ip.state.unknown": "UNKNOWN",
-
   "app.terminal.commands.ip.out.inetLabel": "inet",
   "app.terminal.commands.ip.out.netmaskLabel": "Netzmaske",
   "app.terminal.commands.ip.out.ifaceLine": "{idx}: {name}  {state}",
   "app.terminal.commands.ip.out.inetLine": "    {inetLabel} {ip}  {netmaskLabel} {netmask}",
   "app.terminal.commands.ip.out.inet6Line": "    inet6 {ip}  scope {scope}",
   "app.terminal.commands.ip.out.okSet": "ok: {iface} = {ip}/{prefix}",
-
   "app.terminal.commands.ping.usage": "Verwendung: ping [-c count] [-i interval] [-W timeout] <host>",
-
   "app.terminal.commands.ping.err.invalidCount": "ping: ungültige Anzahl",
   "app.terminal.commands.ping.err.invalidInterval": "ping: ungültiges Intervall",
   "app.terminal.commands.ping.err.invalidTimeout": "ping: ungültiges Timeout",
   "app.terminal.commands.ping.err.noNetworkDriver": "ping: kein Netzwerkdriver",
   "app.terminal.commands.ping.err.cannotResolve": "ping: kann {host} nicht auflösen",
-
   "app.terminal.commands.ping.out.banner": "PING {host} ({dst}) 56(84) bytes Daten.",
   "app.terminal.commands.ping.out.reply": "{bytes} bytes von {dst}: icmp_seq={seq} ttl={ttl} time={timeMs} ms",
   "app.terminal.commands.ping.out.timeout": "Anfrage abgelaufen für icmp_seq {seq}",
-
   "app.terminal.commands.ping.out.statsHeader": "--- {host} ping Statistik ---",
   "app.terminal.commands.ping.out.statsLine": "{transmitted} Pakete übertragen, {received} empfangen, {lossPct}% Paketverlust, Zeit {elapsedMs}ms",
   "app.terminal.commands.ping.out.rttLine": "rtt min/avg/max = {minMs}/{avgMs}/{maxMs} ms",
-
   "app.terminal.commands.route.err.noNetworkDriver": "route: kein Netzwerkdriver",
   "app.terminal.commands.route.err.emptyTable": "route: Routingtabelle ist leer",
   "app.terminal.commands.route.err.invalidDestinationCidr": "route: ungültiger Ziel-CIDR",
   "app.terminal.commands.route.err.invalidGatewayIp": "route: ungültige Gateway-IP",
   "app.terminal.commands.route.err.invalidInterface": "route: ungültige Schnittstelle: {iface}",
-
   "app.terminal.commands.route.usage.add": "Verwendung: route add <dst>/<prefix> via <gateway> dev <ifIndex|ifName|lo>",
   "app.terminal.commands.route.usage.del": "Verwendung: route del <dst>/<prefix>",
   "app.terminal.commands.route.usage.main": "Verwendung: route [show] | route add ... | route del ...",
-
   "app.terminal.commands.route.out.tableHeader": "Ziel              Netzmaske         Gateway           Iface  Auto",
   "app.terminal.commands.route.out.autoYes": "ja",
   "app.terminal.commands.route.out.autoNo": "nein",
   "app.terminal.commands.route.out.okAdded": "ok: Route hinzugefügt",
   "app.terminal.commands.route.out.okRemoved": "ok: {count} entfernt",
   "app.terminal.commands.ss.err.noNetworkDriver": "ss: kein Netzwerktreiber",
-
   "app.terminal.commands.ss.out.header": "Netid  State         Local Address:Port          Peer Address:Port           Info",
-
   "app.terminal.commands.ss.out.udpLine": "udp    UNCONN        {local} {peer} rxq={rxq}",
-
   "app.terminal.commands.ss.out.tcpListenLine": "tcp    {state} {local} {peer} rxq={rxq} aq={aq}",
-
   "app.terminal.commands.ss.out.tcpConnLine": "tcp    {state} {local} {peer} rxq={rxq}",
-
   "app.terminal.commands.traceroute.usage": "Verwendung: traceroute [-m max_ttl] [-q probes] [-w timeout] <host>",
-
   "app.terminal.commands.traceroute.err.invalidMaxTtl": "traceroute: ungültige max_ttl",
   "app.terminal.commands.traceroute.err.invalidProbes": "traceroute: ungültige probes",
   "app.terminal.commands.traceroute.err.invalidTimeout": "traceroute: ungültiges timeout",
   "app.terminal.commands.traceroute.err.noNetworkDriver": "traceroute: kein Netzwerktreiber",
   "app.terminal.commands.traceroute.err.cannotResolve": "traceroute: kann {host} nicht auflösen",
-
   "app.terminal.commands.traceroute.out.banner": "traceroute zu {host} ({dst}), {maxTtl} Hops maximal, {probes} Sonden",
-
-
   "app.texteditor.title": "Editor",
   "app.texteditor.noFilesystem": "Kein Dateisystem verfügbar.",
   "app.texteditor.status.newFile": "(neue Datei)",
@@ -623,19 +518,14 @@ export default {
   "app.texteditor.picker.button.open": "Öffnen",
   "app.texteditor.picker.button.save": "Speichern",
   "app.texteditor.picker.button.cancel": "Abbrechen",
-
-
   "app.udpechoserver.title": "UDP-Echo-Server",
   "app.udpechoserver.placeholder.port": "Port (1..65535)",
-
   "app.udpechoserver.button.start": "Starten",
   "app.udpechoserver.button.stop": "Stoppen",
   "app.udpechoserver.button.clearLog": "Protokoll löschen",
-
   "app.udpechoserver.label.listenPort": "Abhör-Port",
   "app.udpechoserver.label.log": "Protokoll:",
   "app.udpechoserver.label.server": "Server",
-
   "app.udpechoserver.log.invalidPort": "[{time}] FEHLER ungültiger Port: \"{portStr}\"",
   "app.udpechoserver.log.listening": "[{time}] Abhören auf 0.0.0.0:{port}",
   "app.udpechoserver.log.startFailed": "[{time}] FEHLER Start fehlgeschlagen: {reason}",
@@ -645,21 +535,16 @@ export default {
   "app.udpechoserver.log.rx": "[{time}] RX von {ip}:{srcPort} len={len} hex={hex}",
   "app.udpechoserver.log.txEcho": "[{time}] TX Echo an {ip}:{srcPort} len={len}",
   "app.udpechoserver.log.sendError": "[{time}] FEHLER Senden: {reason}",
-
   "os.back": "Zurück",
   "os.notitle": "Kein Titel",
   "os.untitled": "Ohne Titel",
-
   "panel.close": "Schließen",
   "panel.rename": "Umbenennen",
   "panel.rename.prompt": "Neuer Name:",
-
   "pc.title": "PC",
-
   "rect.title": "Rechteck",
   "rect.color": "Farbe",
   "rect.opacity": "Deckkraft",
-
   "router.title": "Router",
   "router.apply": "Anwenden",
   "router.interfaces": "Schnittstellen",
@@ -671,10 +556,8 @@ export default {
   "router.routingtable.ipv6": "Routingtabelle IPv6",
   "router.unknown": "unbekannt",
   "router.addinterface": "Schnittstelle hinzufügen",
-
   "router.deleteinterface": "Schnittstelle löschen",
-  "router.confirminterfacedelete": "Sind Sie sicher, dass Sie die Schnittstelle ${name} löschen möchten",
-
+  "router.confirminterfacedelete": "Sind Sie sicher, dass Sie die Schnittstelle ${name} löschen möchten?",
   "router.stateup": "aktiv",
   "router.statedown": "inaktiv",
   "router.ra.enabled": "Router-Advertisements senden (SLAAC)",
@@ -684,7 +567,6 @@ export default {
   "router.routingtable.interface": "Iface",
   "router.routingtable.netmask": "Netzmaske",
   "router.routingtable.nexthop": "Nächster Hop",
-
   "router.routingtable.add": "hinzufügen",
   "router.routingtable.delete": "löschen",
   "router.routingtable.save": "speichern",
@@ -692,13 +574,11 @@ export default {
   "router.routingtable.yes": "ja",
   "router.routingtable.missing": "fehlend",
   "router.routingtable.prefix": "Präfix",
-
   "router.rip.tab": "RIP",
   "router.rip.enabled": "RIP aktiviert",
   "router.rip.col.interface": "Schnittstelle",
   "router.rip.col.passive": "Passiv",
   "router.rip.log": "Protokoll",
-
   "sim.lessons": "Lektionen",
   "sim.common": "Allgemein",
   "sim.new": "Neu",
@@ -715,17 +595,12 @@ export default {
   "sim.help": "Hilfe",
   "sim.trace": "Verfolgung",
   "sim.reset": "Zurücksetzen",
-
   "sim.invalidfilewarning": "Ungültiges Dateiformat oder nicht unterstütztes Speicherdateiformat.",
   "sim.loadfailederror": "Ladevorgang fehlgeschlagen.",
-
   "sim.discardandnewwarning": "Aktuelle Simulation verwerfen und eine neue starten?",
   "sim.discardandloadwarning": "Aktuelle Simulation verwerfen und eine andere laden?",
-
   "sim.langswitch.confirmdiscard": "Aktuelle Simulation verwerfen und Sprache wechseln?",
-
   "sim.language": "Sprache",
-
   "sim.tool.link": "Verbindung",
   "sim.tool.pc": "PC",
   "sim.tool.rectangle": "Rechteck",
@@ -734,30 +609,24 @@ export default {
   "sim.tool.switch": "Switch",
   "sim.tool.textbox": "Textfeld",
   "sim.tool.delete": "Löschen",
-
   "sim.link.error": "Fehler beim Erstellen der Verbindung.",
   "sim.link.error.noFreePort": "Kein freier Port verfügbar.",
   "sim.link.error.portInUse": "Port wird bereits verwendet.",
-  
   "switch.title": "Switch",
   "switch.apply": "Anwenden",
   "switch.sat": "Switch-Adresstabelle (SAT)",
   "switch.sat.mac": "MAC",
   "switch.sat.port": "Port",
-
-
   "switch.stp.disabled": "STP ist deaktiviert",
   "switch.stp.enable": "Spanning Tree Protocol (STP) aktivieren",
   "switch.stp.status": "STP-Status",
   "switch.vlan.config": "VLAN-Konfiguration",
   "switch.vlan.enable": "VLAN aktivieren",
-
   "switch.sat.empty": "Die SAT ist noch leer.",
   "switch.tab.sat": "SAT",
   "switch.tab.vlan": "VLAN",
   "switch.tab.stp": "STP",
   "switch.stp.settings": "Spanning Tree Protocol-Einstellungen",
-
   "textbox.text": "Text",
   "textbox.title": "Textfeld",
   "textbox.hint": "unterstützt Mini-Markdown wie **fett**, *kursiv*, usw.",
@@ -805,7 +674,6 @@ export default {
   "homerouter.dhcp.lease": "Lease-Zeit (s)",
   "homerouter.dhcp.leases": "Aktive Leases",
   "homerouter.dhcp.invalid": "Ungültige DHCP-Konfiguration",
-
   "pcap.filter.placeholder": "Anzeigefilter (z. B. ip.addr==1.2.3.4)",
   "pcap.btn.prev": "Vorherige Seite",
   "pcap.btn.next": "Nächste Seite",
@@ -817,7 +685,7 @@ export default {
   "pcap.col.destination": "Ziel",
   "pcap.col.protocol": "Protokoll",
   "pcap.col.info": "Info",
-  "pcap.status.loading.wiregasm": "Wiregasm wird geladen…",
+  "pcap.status.loading.wiregasm": "Paketanalyse wird geladen…",
   "pcap.status.loading.pcap": "PCAP wird geladen…",
   "pcap.status.rendering": "Wird gerendert…",
   "pcap.status.ready": "Bereit",
@@ -838,7 +706,6 @@ export default {
   "ui.cancel": "Abbrechen",
   "sim.save.filename": "Dateiname",
   "sim.embed.open": "In BeaverTracer öffnen",
-
   "app.ircserver.title": "IRC-Server",
   "app.ircserver.btn.start": "Starten",
   "app.ircserver.btn.stop": "Stoppen",
@@ -860,7 +727,6 @@ export default {
   "app.ircserver.log.parted": "{nick} ← {channel}",
   "app.ircserver.log.disconnect": "- {nick} ({reason})",
   "app.ircserver.log.privmsg": "<{nick}>{target}: {text}",
-
   "app.ircclient.title": "IRC",
   "app.ircclient.btn.connect": "Verbinden",
   "app.ircclient.btn.disconnect": "Trennen",
@@ -899,14 +765,12 @@ export default {
   "app.ircclient.cmd.join.usage": "Verwendung: /join #channel",
   "app.ircclient.cmd.msg.usage": "Verwendung: /msg nick Nachricht",
   "app.ircclient.cmd.unknown": "Unbekannter Befehl: /{cmd}",
-
   "app.terminal.commands.curl.usage": "Verwendung: curl [-v] [-I] [-X method] [-d data] [-H header] <url>",
   "app.terminal.commands.curl.err.onlyHttp": "curl: nur http:// URLs werden unterstützt",
   "app.terminal.commands.curl.err.noHost": "curl: keine Host in URL",
   "app.terminal.commands.curl.err.resolve": "curl: konnte '{host}' nicht auflösen",
   "app.terminal.commands.curl.err.connect": "curl: Verbindung fehlgeschlagen: {reason}",
   "app.terminal.commands.curl.err.send": "curl: Senden fehlgeschlagen: {reason}",
-
   "app.terminal.commands.nc.usage": "Verwendung: nc [-l] [-u] [host] <port>",
   "app.terminal.commands.nc.err.invalidPort": "nc: ungültiger Port",
   "app.terminal.commands.nc.err.resolve": "nc: konnte '{host}' nicht auflösen",
@@ -921,14 +785,12 @@ export default {
   "app.terminal.commands.nc.udp.ready": "UDP → {host}:{port}  (zum Senden eingeben, Ctrl+C zum Beenden)",
   "app.terminal.commands.nc.udp.listening": "UDP abhören auf *:{port} …",
   "app.terminal.commands.nc.udp.from": "< {ip}:{port}",
-
   "app.terminal.commands.telnet.usage": "Verwendung: telnet <host> <port>",
   "app.terminal.commands.telnet.err.invalidPort": "telnet: ungültiger Port",
   "app.terminal.commands.telnet.err.resolve": "telnet: konnte '{host}' nicht auflösen",
   "app.terminal.commands.telnet.err.connect": "telnet: Verbindung: {reason}",
   "app.terminal.commands.telnet.connected": "Verbunden mit {host}:{port}. Drücke Ctrl+C zum Schließen.",
   "app.terminal.commands.telnet.closed": "Verbindung geschlossen.",
-
   "firewall.title": "Firewall",
   "firewall.tab.rules": "Regeln",
   "firewall.tab.log": "Protokoll",
@@ -950,6 +812,10 @@ export default {
   "firewall.delrule": "Regel löschen",
   "firewall.move.up": "Nach oben verschieben",
   "firewall.move.down": "Nach unten verschieben",
-
-  "sim.tool.firewall": "Firewall"
+  "sim.tool.firewall": "Firewall",
+  "lessons.noLessons": "Entschuldigung, aber es sind noch keine Lektionen in dieser Sprache verfügbar. 😔",
+  "switch.vlan.col.port": "Port",
+  "switch.vlan.col.mode": "Modus",
+  "switch.vlan.col.pvid": "PVID",
+  "switch.vlan.col.allowed": "Zulässige VLANs"
 };

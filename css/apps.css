@@ -221,17 +221,17 @@
   gap: 0.5rem;
 }
 
-.app-editor .editor-area {
-  flex: 1 1 auto;
-  min-height: 30rem;   
-  width: 100%;
-  resize: none;          /* not resizable */
-  font-family: "Hack", monospace;
-  box-sizing: border-box;
-  background-color: white;
+.app-editor .panel > .editor-area {
+  min-height: calc(15 * 1.35 * 12.5px);
 }
 
 .app-editor .editor-area {
+  flex: 1 1 auto;
+  width: 100%;
+  resize: none;
+  font-family: "Hack", monospace;
+  box-sizing: border-box;
+  background-color: white;
   white-space: pre;
   overflow: auto;
 }

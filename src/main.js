@@ -34,5 +34,23 @@ initLocale().then(async () => {
     const params = new URLSearchParams(window.location.search);
     const sim = new SimControl(simRoot, { embedded: params.get("embed") === "1" });
     sim.restore(await resolveStartupSim());
+
+    const splash = document.getElementById("splash");
+    if (splash) {
+        splash.classList.add("is-hiding");
+        splash.addEventListener("transitionend", () => splash.remove(), { once: true });
+    }
+
+    // Prefetch wiregasm assets in idle time so first trace use is faster
+    const prefetch = () => {
+        fetch("/wiregasm/wiregasm.wasm").catch(() => {});
+        fetch("/wiregasm/wiregasm.data").catch(() => {});
+    };
+    if ("requestIdleCallback" in window) {
+        requestIdleCallback(prefetch, { timeout: 10_000 });
+    } else {
+        setTimeout(prefetch, 5_000);
+    }
+
 });
 

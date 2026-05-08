@@ -100,7 +100,7 @@
   min-width: 600px;
   min-height: 200px;
   max-width: 1000px;
-  max-height: 1000px;
+  max-height: min(1000px, var(--sim-area-height, 1000px));
 
   border: 2px solid var(--ui-border-strong);
   border-radius: var(--radius-lg);
@@ -183,7 +183,7 @@
   flex: 0 0 auto;
   flex-wrap: nowrap;
   overflow-x: auto;
-  overflow-y: visible;
+  overflow-y: hidden;
   align-items: stretch;
   gap: 6px;
   padding: var(--pad-md);
@@ -221,7 +221,7 @@
 
 .sim-toolbar-buttons {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px;
 }
 
@@ -327,16 +327,16 @@
   justify-content: center;
   gap: 4px;
 
-  height: 56px;
-  min-width: 70px;
-  padding: var(--pad-md) var(--pad-lg);
+  height: 44px;
+  min-width: 58px;
+  padding: 5px 10px;
 
   border-radius: var(--radius-md);
   border: 1px solid var(--ui-border);
   background: var(--ui-card);
   color: var(--text);
 
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.1;
   text-align: center;
   white-space: nowrap;
@@ -349,7 +349,7 @@
 
 .sim-toolbar-buttons .fas,
 .sim-sidebar-btn .fas {
-    font-size: 25px;
+    font-size: 20px;
 }
 
 
@@ -491,6 +491,8 @@
 .switch-stp-table tbody tr {
   border-top: 1px solid color-mix(in oklch, var(--border), var(--text) 6%);
 }
+
+.ui-tab-badge.status-warning { background: var(--warning-tint); border-color: var(--warning-strong); }
 
 /* ── Switch VLAN header ─────────────────────────────────────── */
 .switch-card {
@@ -872,10 +874,10 @@ sim-toolbar-langbtn {
   border-radius: var(--radius-lg);
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
   padding: var(--pad-xl);
-  width: min(520px, 90vw);
+  width: min(720px, 94vw);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .sim-langdialog-header {
@@ -904,10 +906,36 @@ sim-toolbar-langbtn {
   opacity: 1;
 }
 
+.sim-langdialog-search {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.875rem;
+}
+
+.sim-langdialog-search:focus {
+  outline: 2px solid var(--primary, #5b9bd5);
+  outline-offset: -1px;
+}
+
+.sim-langdialog-sep {
+  grid-column: 1 / -1;
+  border: none;
+  border-top: 1px solid var(--ui-border);
+  margin: 2px 0;
+}
+
 .sim-langdialog-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
   gap: 8px;
+  max-height: 55vh;
+  overflow-y: auto;
+  padding-right: 2px;
 }
 
 .sim-lang-card {
@@ -1016,10 +1044,10 @@ sim-toolbar-langbtn {
 
 .sim-sidebar-btn .my-icon-router,
 .sim-sidebar-btn .my-icon-switch {
-  width: 24px;
-  height: 24px;
-  -webkit-mask-size: 24px 24px;
-  mask-size: 24px 24px;
+  width: 20px;
+  height: 20px;
+  -webkit-mask-size: 20px 20px;
+  mask-size: 20px 20px;
 }
 
 /* Basis */

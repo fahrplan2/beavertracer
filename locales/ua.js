@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇺🇦 Українська (translated by AI)", order: 12 };
+export const meta = { name: "🇺🇦 Українська (translated by AI)", order: 28 };
 
 export default {
   "lang.name": "🇺🇦 Українська",
@@ -807,5 +807,10 @@ export default {
   "firewall.delrule": "Видалити правило",
   "firewall.move.up": "Перемістити вгору",
   "firewall.move.down": "Перемістити вниз",
-  "sim.tool.firewall": "Брандмауер"
+  "sim.tool.firewall": "Брандмауер",
+  "lessons.noLessons": "Вибачте, але поки що немає доступних уроків для цієї мови. 😔",
+  "switch.vlan.col.port": "Порт",
+  "switch.vlan.col.mode": "Режим",
+  "switch.vlan.col.pvid": "PVID",
+  "switch.vlan.col.allowed": "Допустимі VLAN"
 };

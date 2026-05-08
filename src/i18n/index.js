@@ -39,6 +39,7 @@ let locale = "de";
 const listeners = new Set();
 
 
+
 /**
  * Finds the module path for a given locale code.
  * @param {string} loc
@@ -227,8 +228,9 @@ export async function initLocale() {
     /* ignore */
   }
 
-  // 2) Browser locale
-  const browser = navigator.language?.split("-")[0];
+  // 2) Browser locale — map all pt-* variants (pt-BR, pt-PT, pt, …) to pt-PT
+  const short = (navigator.language ?? "").split("-")[0].toLowerCase();
+  const browser = short === "pt" ? "pt-PT" : short;
   if (browser && (await loadLocaleDict(browser))) locale = browser;
   else locale = "de";
 
