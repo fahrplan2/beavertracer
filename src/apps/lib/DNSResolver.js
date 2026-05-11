@@ -10,6 +10,7 @@ import { IPAddress } from "../../net/models/IPAddress.js";
  *
  * Special:
  *   serverIp == null or 0.0.0.0 => disabled resolver => resolve returns null/[] immediately.
+ *   "localhost" always resolves to ::1, regardless of DNS configuration.
  *
  * IPStack-ready:
  *   - stores server as IPAddress
@@ -137,6 +138,7 @@ export class DNSResolver {
    * @returns {Promise<IPAddress[]>}
    */
   async resolveAAAA(name) {
+    if (name === "localhost") return [IPAddress.fromString("::1")];
     if (!this._isConfigured()) return [];
     const resp = await this._query(name, DNSPacket.TYPE_AAAA);
     return this._extractAAAA(resp);
@@ -148,6 +150,7 @@ export class DNSResolver {
    * @returns {Promise<IPAddress|null>}
    */
   async resolveIP(name) {
+    if (name === "localhost") return IPAddress.fromString("::1");
     if (!this._isConfigured()) return null;
     const aaaa = await this.resolveAAAA(name);
     if (aaaa.length) return aaaa[0];
