@@ -260,13 +260,19 @@
 }
 
 .sim-toolbar-branding-alpha {
-  display: block;
+  position: absolute;
+  bottom: 4px;
+  left: 0;
+  right: 0;
   font-size: 8px;
   font-weight: 700;
   color: #cc2200;
   letter-spacing: 0.5px;
   user-select: none;
   text-align: center;
+  z-index: 2;
+  line-height: 1.2;
+  pointer-events: none;
 }
 
 .sim-toolbar-branding-group::after {

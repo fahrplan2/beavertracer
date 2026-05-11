@@ -105,9 +105,9 @@ export class SimpleTCPServerApp extends GenericProcess {
     this.portEl = portInput;
 
     /** @type {HTMLButtonElement} */
-    const start = UI.button(t("app.simpletcpserver.button.start"), () => this._startFromUI(), { primary: true });
+    const start = UI.button(t("app.simpletcpserver.button.start"), () => this._startFromUI(), { primary: true, icon: "fa-play" });
     /** @type {HTMLButtonElement} */
-    const stop = UI.button(t("app.simpletcpserver.button.stop"), () => this._stop(), {});
+    const stop = UI.button(t("app.simpletcpserver.button.stop"), () => this._stop(), { icon: "fa-stop" });
     /** @type {HTMLButtonElement} */
     const clear = UI.button(t("app.simpletcpserver.button.clearLog"), () => { this.log = []; this._renderLog(); }, {});
 

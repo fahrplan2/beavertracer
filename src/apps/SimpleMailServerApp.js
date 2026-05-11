@@ -784,8 +784,8 @@ export class SimpleMailServerApp extends GenericProcess {
     this.pop3El = pop3Input;
     this.imapEl = imapInput;
 
-    const start = UI.button(t("app.simplemailserver.button.start") || "Start", () => this._startFromUI(), { primary: true });
-    const stop = UI.button(t("app.simplemailserver.button.stop") || "Stop", () => this._stop(), {});
+    const start = UI.button(t("app.simplemailserver.button.start") || "Start", () => this._startFromUI(), { primary: true, icon: "fa-play" });
+    const stop = UI.button(t("app.simplemailserver.button.stop") || "Stop", () => this._stop(), { icon: "fa-stop" });
     this.startBtn = start;
     this.stopBtn = stop;
 

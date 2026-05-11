@@ -226,8 +226,8 @@ export class SimpleHTTPServerApp extends GenericProcess {
     this.portEl = portInput;
     this.rootEl = rootInput;
 
-    const start = UI.button(t("app.simplehttpserver.button.start"), () => this._startFromUI(), { primary: true });
-    const stop = UI.button(t("app.simplehttpserver.button.stop"), () => this._stop(), {});
+    const start = UI.button(t("app.simplehttpserver.button.start"), () => this._startFromUI(), { primary: true, icon: "fa-play" });
+    const stop = UI.button(t("app.simplehttpserver.button.stop"), () => this._stop(), { icon: "fa-stop" });
     this.startBtn = start;
     this.stopBtn = stop;
 

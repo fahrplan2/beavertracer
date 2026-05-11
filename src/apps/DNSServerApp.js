@@ -257,8 +257,8 @@ export class DNSServerApp extends GenericProcess {
       () => ({ name: "", host: "", ttl: 300 })
     );
 
-    const start = UI.button(t("app.dnsd.button.start"), () => this._start(), { primary: true });
-    const stop = UI.button(t("app.dnsd.button.stop"), () => this._stop());
+    const start = UI.button(t("app.dnsd.button.start"), () => this._start(), { primary: true, icon: "fa-play" });
+    const stop = UI.button(t("app.dnsd.button.stop"), () => this._stop(), { icon: "fa-stop" });
     const save = UI.button(t("app.dnsd.button.save"), () => this._saveConfigNow());
     this.startBtn = start;
     this.stopBtn = stop;

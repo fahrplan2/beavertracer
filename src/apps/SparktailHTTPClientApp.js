@@ -501,7 +501,7 @@ export class SparktailHTTPClientApp extends GenericProcess {
     /** @type {HTMLButtonElement} */
     const go = UI.button(t("app.sparktail.button.go"), () => this._goFromUI(), { primary: true });
     /** @type {HTMLButtonElement} */
-    const stop = UI.button(t("app.sparktail.button.stop"), () => this._stop(), {});
+    const stop = UI.button(t("app.sparktail.button.stop"), () => this._stop(), { icon: "fa-stop" });
     this.goBtn = go;
     this.stopBtn = stop;
 
