@@ -1344,7 +1344,7 @@ sim-toolbar-langbtn {
   .sim-toolbar-group-label { font-size: 9px; margin-bottom: 2px; min-height: 10px; }
   .sim-toolbar { gap: 4px; padding: 5px; }
   .sim-toolbar-branding { font-size: 17px; }
-  .sim-toolbar-branding-version { display: none; }
+  .sim-toolbar-branding-alpha { font-size: 9px; padding: 1px 4px; }
   .sim-sidebar-tools { gap: 4px; }
 }
 
@@ -1375,7 +1375,7 @@ sim-toolbar-langbtn {
   .sim-toolbar-group { padding: 4px; }
   .sim-toolbar-branding-group { flex-direction: column; padding: 2px 4px; gap: 0; min-width: 36px; }
   .sim-toolbar-branding { font-size: 11px; }
-  .sim-toolbar-branding-version { display: none; }
+  .sim-toolbar-branding-alpha { font-size: 8px; padding: 1px 3px; letter-spacing: 0.4px; }
   .sim-toolbar-buttons { gap: 3px; }
   .sim-toolbar { gap: 3px; padding: 4px; }
   .sim-sidebar-title { display: none; }
