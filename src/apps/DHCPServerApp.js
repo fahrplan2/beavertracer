@@ -218,9 +218,9 @@ export class DHCPServerApp extends LoggedProcess {
     this.saveBtn = saveBtn;
 
     /** @type {HTMLButtonElement} */
-    const start = UI.button(t("app.dhcpserver.button.start"), () => this._startFromUI(), { primary: true });
+    const start = UI.button(t("app.dhcpserver.button.start"), () => this._startFromUI(), { primary: true, icon: "fa-play" });
     /** @type {HTMLButtonElement} */
-    const stop = UI.button(t("app.dhcpserver.button.stop"), () => this._stop(), {});
+    const stop = UI.button(t("app.dhcpserver.button.stop"), () => this._stop(), { icon: "fa-stop" });
     /** @type {HTMLButtonElement} */
     const clear = UI.button(t("app.dhcpserver.button.clearLog"), () => { this.log = []; this._renderLog(); }, {});
 

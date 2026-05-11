@@ -62,13 +62,17 @@ export class UILib {
    * @param {Object} [opts]
    * @param {string|string[]} [opts.className]
    * @param {boolean} [opts.primary]
+   * @param {string} [opts.icon] Font Awesome icon class, e.g. "fa-play"
    * @returns {HTMLButtonElement}
    */
   static button(label, onClick, opts = {}) {
     /** @type {HTMLButtonElement} */
     const b = UILib.el("button", {
       className: opts.className ?? (opts.primary ? ["btn", "btn-primary"] : "btn"),
-      text: label,
+      text: opts.icon ? undefined : label,
+      children: opts.icon
+        ? [UILib.el("i", { className: `fas ${opts.icon}` }), " " + label]
+        : undefined,
       init: (el) => {
         el.type = "button";
         el.addEventListener("click", onClick);

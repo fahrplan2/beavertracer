@@ -101,8 +101,8 @@ export class SimpleIRCServerApp extends LoggedProcess {
     const motdInput = UI.input({ placeholder: "MOTD", value: this.motd });
     this.portEl = portInput; this.nameEl = nameInput; this.motdEl = motdInput;
 
-    const start = UI.button(t("app.ircserver.btn.start"), () => this._startFromUI(), { primary: true });
-    const stop  = UI.button(t("app.ircserver.btn.stop"),  () => this._stop(), {});
+    const start = UI.button(t("app.ircserver.btn.start"), () => this._startFromUI(), { primary: true, icon: "fa-play" });
+    const stop  = UI.button(t("app.ircserver.btn.stop"),  () => this._stop(), { icon: "fa-stop" });
     this.startBtn = start; this.stopBtn = stop;
 
     const statusEl = UI.el("div", { className: "msg" });
