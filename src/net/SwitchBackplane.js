@@ -5,6 +5,16 @@ import { EthernetPort } from "./EthernetPort.js";
 import { Observable } from "../lib/Observeable.js";
 import { EthernetFrame } from "../net/pdu/EthernetFrame.js";
 import { STPBPDU } from "../net/pdu/STPBPDU.js";
+import { simTimer, SimTimer } from "../lib/SimTimer.js";
+
+/** IEEE 802.1D port states. */
+export const STP_STATE = Object.freeze({
+    DISABLED:   "disabled",
+    BLOCKING:   "blocking",
+    LISTENING:  "listening",
+    LEARNING:   "learning",
+    FORWARDING: "forwarding",
+});
 
 /**
  * STP (classic-ish) in this simulator is encoded as IEEE 802.3 + LLC (not EtherType).
@@ -97,11 +107,20 @@ export class SwitchBackplane extends Observable {
     stpRxBest = [];
 
     /**
-     * Whether a port is forwarding data frames (true) or blocking (false).
-     * When STP feature is disabled, all ports are forwarding.
-     * @type {Array<boolean>}
+     * IEEE 802.1D port state per port (STP_STATE values).
+     * When STP feature is disabled, all ports are in FORWARDING.
+     * @type {Array<string>}
      */
-    stpForwarding = [];
+    stpPortState = [];
+
+    /** Pending ForwardDelay timer ID per port (null = no timer). @type {Array<number|null>} */
+    _stpPortTimers = [];
+
+    /** simTimer.currentTick when stpRxBest[i] was last updated. @type {Array<number>} */
+    _stpRxBestTick = [];
+
+    /** Periodic Hello timer ID. @type {number|null} */
+    _stpHelloTimer = null;
 
     /** @type {string} */
     _stpLastSnapshot = "";
@@ -111,6 +130,14 @@ export class SwitchBackplane extends Observable {
 
     /** Force emitting HELLO BPDUs once, even if snapshot did not change */
     _stpForceEmit = false;
+
+    /**
+     * Backward-compat getter: true when port is in FORWARDING state.
+     * @returns {Array<boolean>}
+     */
+    get stpForwarding() {
+        return this.stpPortState.map(s => s === STP_STATE.FORWARDING);
+    }
 
     /**
      * @param {number} numberOfPorts
@@ -133,12 +160,13 @@ export class SwitchBackplane extends Observable {
         }
 
         // Default: STP disabled => all forwarding
-        this.stpForwarding = this.ports.map(() => true);
+        this.stpPortState = this.ports.map(() => STP_STATE.FORWARDING);
+        this._stpPortTimers = this.ports.map(/** @returns {null} */ () => null);
+        this._stpRxBestTick = this.ports.map(() => 0);
         this.stpRxBest = this.ports.map(/** @returns {null} */ () => null);
         this.stpPortLinkedLast = this.ports.map(p => p.isLinked());
 
-        // If you want STP on by default:
-        this.enableSTPFeature();
+        // STP disabled by default — enable explicitly via the switch panel.
     }
 
     // ---------------------------------------------------------------------------
@@ -157,6 +185,7 @@ export class SwitchBackplane extends Observable {
 
     enableSTPFeature() {
         this.stpEnabled = true;
+        this._stpStartHello();
 
         this._initStpArrays();
         this._resetStpToSelfRoot();
@@ -171,8 +200,18 @@ export class SwitchBackplane extends Observable {
 
     disableSTPFeature() {
         this.stpEnabled = false;
+        this._stpStopHello();
+
+        // Cancel all per-port ForwardDelay timers
+        for (let i = 0; i < this._stpPortTimers.length; i++) {
+            if (this._stpPortTimers[i] != null) {
+                simTimer.cancel(this._stpPortTimers[i]);
+                this._stpPortTimers[i] = null;
+            }
+        }
+
         this.stpRxBest = this.ports.map(/** @returns {null} */ () => null);
-        this.stpForwarding = this.ports.map(() => true);
+        this.stpPortState = this.ports.map(() => STP_STATE.FORWARDING);
 
         // root resets to self
         this.stpRootId = this.stpBridgeIdVal;
@@ -219,7 +258,9 @@ export class SwitchBackplane extends Observable {
 
         // keep STP arrays in sync
         this.stpRxBest.push(null);
-        this.stpForwarding.push(true);
+        this.stpPortState.push(this.stpEnabled ? STP_STATE.BLOCKING : STP_STATE.FORWARDING);
+        this._stpPortTimers.push(null);
+        this._stpRxBestTick.push(0);
         this.stpPortLinkedLast.push(port.isLinked());
     }
 
@@ -341,7 +382,9 @@ export class SwitchBackplane extends Observable {
 
     _initStpArrays() {
         this.stpRxBest = this.ports.map(/** @returns {null} */ () => null);
-        this.stpForwarding = this.ports.map(() => true);
+        this.stpPortState = this.ports.map(() => STP_STATE.BLOCKING);
+        this._stpPortTimers = this.ports.map(/** @returns {null} */ () => null);
+        this._stpRxBestTick = this.ports.map(() => 0);
     }
 
     _resetStpToSelfRoot() {
@@ -349,7 +392,14 @@ export class SwitchBackplane extends Observable {
         this.stpRootCost = 0;
         this.stpRootPort = null;
         this.stpRxBest = this.ports.map(/** @returns {null} */ () => null);
-        this.stpForwarding = this.ports.map(() => true);
+        this.stpPortState = this.ports.map(() => STP_STATE.BLOCKING);
+        // Cancel any pending port timers
+        for (let i = 0; i < this._stpPortTimers.length; i++) {
+            if (this._stpPortTimers[i] != null) {
+                simTimer.cancel(this._stpPortTimers[i]);
+                this._stpPortTimers[i] = null;
+            }
+        }
     }
 
     /**
@@ -357,8 +407,8 @@ export class SwitchBackplane extends Observable {
      * @returns {string}
      */
     _stpSnapshot() {
-        const fw = this.stpForwarding.map(v => (v ? "1" : "0")).join("");
-        return `${this.stpRootId.toString(16)}|${this.stpRootCost}|${this.stpRootPort ?? -1}|${fw}`;
+        const states = this.stpPortState.map(s => s[0]).join("");
+        return `${this.stpRootId.toString(16)}|${this.stpRootCost}|${this.stpRootPort ?? -1}|${states}`;
     }
 
     /**
@@ -452,6 +502,89 @@ export class SwitchBackplane extends Observable {
     }
 
     /**
+     * Transition a port toward the desired forwarding target.
+     * Blocking is immediate; Forwarding goes Blocking→Listening→Learning→Forwarding,
+     * with one ForwardDelay timer per phase.
+     * @param {number} portIdx
+     * @param {boolean} shouldForward
+     */
+    _setPortTargetState(portIdx, shouldForward) {
+        const cur = this.stpPortState[portIdx];
+
+        if (!shouldForward) {
+            // Immediately block — cancel any pending transition timer
+            if (this._stpPortTimers[portIdx] != null) {
+                simTimer.cancel(this._stpPortTimers[portIdx]);
+                this._stpPortTimers[portIdx] = null;
+            }
+            if (cur !== STP_STATE.BLOCKING) {
+                this.stpPortState[portIdx] = STP_STATE.BLOCKING;
+            }
+            return;
+        }
+
+        // Already transitioning or forwarding — don't restart the timers
+        if (cur === STP_STATE.FORWARDING ||
+            cur === STP_STATE.LEARNING   ||
+            cur === STP_STATE.LISTENING) return;
+
+        // Start Listening phase
+        this.stpPortState[portIdx] = STP_STATE.LISTENING;
+        this._stpPortTimers[portIdx] = simTimer.schedule(() => {
+            this._stpPortTimers[portIdx] = null;
+            if (this.stpPortState[portIdx] !== STP_STATE.LISTENING) return;
+            this.stpPortState[portIdx] = STP_STATE.LEARNING;
+
+            this._stpPortTimers[portIdx] = simTimer.schedule(() => {
+                this._stpPortTimers[portIdx] = null;
+                if (this.stpPortState[portIdx] !== STP_STATE.LEARNING) return;
+                this.stpPortState[portIdx] = STP_STATE.FORWARDING;
+            }, SimTimer.STP_FORWARD_DELAY_MS);
+        }, SimTimer.STP_FORWARD_DELAY_MS);
+    }
+
+    /**
+     * Start or restart the periodic Hello BPDU timer.
+     */
+    _stpStartHello() {
+        if (this._stpHelloTimer != null) simTimer.cancel(this._stpHelloTimer);
+        this._stpHelloTimer = simTimer.schedule(() => {
+            this._stpHelloTimer = null;
+            if (!this.stpEnabled) return;
+            this._stpCheckAging();
+            this._emitBPDUs();
+            this._stpStartHello();
+        }, SimTimer.STP_HELLO_MS);
+    }
+
+    /**
+     * Stop the periodic Hello BPDU timer.
+     */
+    _stpStopHello() {
+        if (this._stpHelloTimer != null) {
+            simTimer.cancel(this._stpHelloTimer);
+            this._stpHelloTimer = null;
+        }
+    }
+
+    /**
+     * Expire received BPDU info older than Max Age and retrigger computation.
+     */
+    _stpCheckAging() {
+        const now = simTimer.currentTick;
+        const maxAgeTicks = SimTimer.toTicks(SimTimer.STP_MAX_AGE_MS);
+        let changed = false;
+        for (let i = 0; i < this.ports.length; i++) {
+            if (this.stpRxBest[i] == null) continue;
+            if (now - this._stpRxBestTick[i] > maxAgeTicks) {
+                this.stpRxBest[i] = null;
+                changed = true;
+            }
+        }
+        if (changed) this._recomputeStpAndMaybeEmit();
+    }
+
+    /**
      * Recompute root / root port / forwarding ports.
      * Port cost is fixed at 1 in this simplified model.
      * Emits BPDU only if state changed (or forced).
@@ -491,19 +624,19 @@ export class SwitchBackplane extends Observable {
 
         for (let i = 0; i < this.ports.length; i++) {
             if (!this.ports[i].isLinked()) {
-                this.stpForwarding[i] = true;
+                this._setPortTargetState(i, true);
                 continue;
             }
 
             if (this.stpRootPort === i) {
-                this.stpForwarding[i] = true;
+                this._setPortTargetState(i, true);
                 continue;
             }
 
             const rx = this.stpRxBest[i];
             if (!rx) {
                 // no neighbor info => assume designated
-                this.stpForwarding[i] = true;
+                this._setPortTargetState(i, true);
                 continue;
             }
 
@@ -511,7 +644,7 @@ export class SwitchBackplane extends Observable {
             const neighTuple = rx;
 
             // If our tuple is better, we are designated => forward, else block
-            this.stpForwarding[i] = compareTuple(ourTuple, neighTuple) < 0;
+            this._setPortTargetState(i, compareTuple(ourTuple, neighTuple) < 0);
         }
 
         const snap = this._stpSnapshot();
@@ -627,7 +760,11 @@ export class SwitchBackplane extends Observable {
                         const prev = this.stpRxBest[i];
                         if (!prev || compareTuple(rx, prev) < 0) {
                             this.stpRxBest[i] = rx;
+                            this._stpRxBestTick[i] = simTimer.currentTick;
                             this._recomputeStpAndMaybeEmit();
+                        } else if (prev && compareTuple(rx, prev) === 0) {
+                            // Same info refreshed — update timestamp to prevent aging
+                            this._stpRxBestTick[i] = simTimer.currentTick;
                         }
                     }
 
@@ -635,13 +772,17 @@ export class SwitchBackplane extends Observable {
                 }
 
                 // After BPDU handling, enforce STP on ingress for DATA frames.
-                // Blocking ports must not forward user traffic (only BPDUs are processed above).
-                if (this.stpEnabled && !this.stpForwarding[i]) {
-                    continue; // drop data frame arriving on a blocked port
+                // BLOCKING and LISTENING ports drop all data frames.
+                // LEARNING ports participate in MAC learning but do not forward.
+                if (this.stpEnabled) {
+                    const ps = this.stpPortState[i];
+                    if (ps === STP_STATE.BLOCKING || ps === STP_STATE.LISTENING) continue;
                 }
 
                 // ---------------- Data forwarding ----------------
-                // When STP enabled: never forward OUT of blocked ports.
+                // When STP enabled: never forward OUT of non-FORWARDING ports.
+                // LEARNING ports may update the CAM but must not send frames out.
+                const stpLearningOnly = this.stpEnabled && this.stpPortState[i] === STP_STATE.LEARNING;
 
                 // VLAN DISABLED
                 if (!this.vlanEnabled) {
@@ -649,11 +790,13 @@ export class SwitchBackplane extends Observable {
                     const srcKey = MACToNumber(frame.srcMac);
                     this.sat.set(srcKey, i);
 
+                    if (stpLearningOnly) continue;
+
                     const isBroadcast = isEqualUint8(frame.dstMac, new Uint8Array([255, 255, 255, 255, 255, 255]));
                     if (isBroadcast) {
                         for (let j = 0; j < this.ports.length; j++) {
                             if (j === i) continue;
-                            if (this.stpEnabled && !this.stpForwarding[j]) continue;
+                            if (this.stpEnabled && this.stpPortState[j] !== STP_STATE.FORWARDING) continue;
                             this.ports[j].send(frame);
                         }
                         continue;
@@ -666,13 +809,13 @@ export class SwitchBackplane extends Observable {
                         // Unknown unicast -> flood
                         for (let j = 0; j < this.ports.length; j++) {
                             if (j === i) continue;
-                            if (this.stpEnabled && !this.stpForwarding[j]) continue;
+                            if (this.stpEnabled && this.stpPortState[j] !== STP_STATE.FORWARDING) continue;
                             this.ports[j].send(frame);
                         }
                     } else {
                         // Known unicast -> forward (but don't loop back to ingress)
                         if (outIndex === i) continue;
-                        if (this.stpEnabled && !this.stpForwarding[outIndex]) continue;
+                        if (this.stpEnabled && this.stpPortState[outIndex] !== STP_STATE.FORWARDING) continue;
                         this.ports[outIndex].send(frame);
                     }
 
@@ -692,6 +835,8 @@ export class SwitchBackplane extends Observable {
                 }
                 vlanMap.set(srcKey, i);
 
+                if (stpLearningOnly) continue;
+
                 const isBroadcast = isEqualUint8(frame.dstMac, new Uint8Array([255, 255, 255, 255, 255, 255]));
                 const dstKey = MACToNumber(frame.dstMac);
                 const outIndex = isBroadcast ? null : (this.sat.get(vid)?.get(dstKey) ?? null);
@@ -700,7 +845,7 @@ export class SwitchBackplane extends Observable {
                     // Flood within VLAN
                     for (let j = 0; j < this.ports.length; j++) {
                         if (j === i) continue;
-                        if (this.stpEnabled && !this.stpForwarding[j]) continue;
+                        if (this.stpEnabled && this.stpPortState[j] !== STP_STATE.FORWARDING) continue;
 
                         const outPort = this.ports[j];
                         if (!this.portAllowsVid(outPort, vid)) continue;
@@ -709,7 +854,7 @@ export class SwitchBackplane extends Observable {
                 } else {
                     // Known unicast
                     if (outIndex === i) continue;
-                    if (this.stpEnabled && !this.stpForwarding[outIndex]) continue;
+                    if (this.stpEnabled && this.stpPortState[outIndex] !== STP_STATE.FORWARDING) continue;
 
                     const outPort = this.ports[outIndex];
                     if (!this.portAllowsVid(outPort, vid)) continue;

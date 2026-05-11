@@ -1,6 +1,7 @@
 //@ts-check
 import { TCPPacket } from "../net/pdu/TCPPacket.js";
 import { IPAddress } from "./models/IPAddress.js";
+import { simTimer, SimTimer } from "../lib/SimTimer.js";
 
 /**
  * TCP connection states (simplified).
@@ -232,11 +233,21 @@ export class TcpEngine {
       payload: new Uint8Array(),
     });
 
-    // wait until handshake completes
+    // wait until handshake completes (or timeout)
     await new Promise((resolve, reject) => {
-      conn.connectWaiters.push((err) => (err ? reject(err) : resolve()));
-      if (conn.state === "ESTABLISHED") resolve();
-      if (conn.state === "CLOSED") reject(new Error("connect failed"));
+      const timerId = simTimer.schedule(() => {
+        this.conns.delete(key);
+        this.sockets.delete(srcPort);
+        conn.state = "CLOSED";
+        reject(new Error("connection timed out"));
+      }, SimTimer.TCP_CONNECT_TIMEOUT_MS);
+
+      conn.connectWaiters.push((err) => {
+        simTimer.cancel(timerId);
+        err ? reject(err) : resolve();
+      });
+      if (conn.state === "ESTABLISHED") { simTimer.cancel(timerId); resolve(); }
+      if (conn.state === "CLOSED")      { simTimer.cancel(timerId); reject(new Error("connect failed")); }
     });
 
     return conn;

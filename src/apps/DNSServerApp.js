@@ -1,17 +1,12 @@
 //@ts-check
 
-import { GenericProcess } from "./GenericProcess.js";
+import { LoggedProcess } from "./lib/LoggedProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
 import { Disposer } from "../lib/Disposer.js";
 import { t } from "../i18n/index.js";
 import { DNSPacket } from "./../net/pdu/DNSPacket.js";
 import { IPAddress } from "../net/models/IPAddress.js";
-
-// helpers
-function nowStamp(n = Date.now()) {
-  const d = new Date(n);
-  return d.toLocaleTimeString();
-}
+import { nowStamp } from "../lib/helpers.js";
 
 /** @param {*} name */
 function normalizeName(name) {
@@ -153,7 +148,7 @@ function createTableEditor(cols, onChange, makeDefaultRow) {
  * @param {{id:string, title:string, contentEl:HTMLElement}[]} tabs
  */
 
-export class DNSServerApp extends GenericProcess {
+export class DNSServerApp extends LoggedProcess {
   get title() {
     return t("app.dnsd.title");
   }
@@ -169,12 +164,6 @@ export class DNSServerApp extends GenericProcess {
 
   /** @type {{a:any[], aaaa:any[], mx:any[], ns:any[]}} */
   cfg = { a: [], aaaa: [], mx: [], ns: [] };
-
-  /** @type {Array<string>} */
-  log = [];
-
-  /** @type {HTMLElement|null} */
-  logEl = null;
 
   /** @type {HTMLButtonElement|null} */
   startBtn = null;
@@ -194,7 +183,7 @@ export class DNSServerApp extends GenericProcess {
 
   /** @type {any} */
   saveTimer = null;
-
+  icon = "fa-server";
   badge = "DNS";
 
   run() {
@@ -269,24 +258,13 @@ export class DNSServerApp extends GenericProcess {
 
     const logPane = UI.el("div", { children: [status, logBox] });
 
-    /** @param {string} id */
-    const showTab = (id) => {
-      this.aEditor.root.style.display    = id === "a"    ? "" : "none";
-      this.aaaaEditor.root.style.display = id === "aaaa" ? "" : "none";
-      this.mxEditor.root.style.display   = id === "mx"   ? "" : "none";
-      this.nsEditor.root.style.display   = id === "ns"   ? "" : "none";
-      logPane.style.display              = id === "log"  ? "" : "none";
-    };
-
-    const { bar: tabBar, setActive: setTab } = UI.tabGroup([
-      { id: "a",    label: "A"    },
-      { id: "aaaa", label: "AAAA" },
-      { id: "mx",   label: "MX"   },
-      { id: "ns",   label: "NS"   },
-      { id: "log",  label: t("app.dnsd.label.log") },
-    ], showTab);
-    setTab("a");
-    showTab("a");
+    const { bar: tabBar } = UI.tabbedPane([
+      { id: "a",    label: "A",                    pane: this.aEditor.root    },
+      { id: "aaaa", label: "AAAA",                 pane: this.aaaaEditor.root },
+      { id: "mx",   label: "MX",                   pane: this.mxEditor.root   },
+      { id: "ns",   label: "NS",                   pane: this.nsEditor.root   },
+      { id: "log",  label: t("app.dnsd.label.log"), pane: logPane             },
+    ]);
 
     const panel = UI.panel([
       UI.buttonRow([start, stop, save]),
@@ -332,20 +310,6 @@ export class DNSServerApp extends GenericProcess {
   destroy() {
     this._stop();
     super.destroy();
-  }
-
-  /** @param {string} line */
-  _appendLog(line) {
-    this.log.push(line);
-    if (this.log.length > 2000) this.log.splice(0, this.log.length - 2000);
-    if (this.mounted) this._renderLog();
-  }
-
-  _renderLog() {
-    if (!this.logEl) return;
-    const maxLines = 200;
-    const lines = this.log.length > maxLines ? this.log.slice(-maxLines) : this.log;
-    this.logEl.textContent = lines.join("\n");
   }
 
   _syncButtons() {

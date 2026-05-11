@@ -1,0 +1,249 @@
+<h2>Trợ giúp</h2>
+<p class="subtitle">Cách sử dụng BeaverTracer</p>
+
+<hr>
+
+<nav class="help-toc">
+  <strong>Mục lục</strong>
+  <ol>
+    <li><a href="#modes">Ba chế độ</a></li>
+    <li><a href="#edit">Chế độ chỉnh sửa — Xây dựng mạng</a></li>
+    <li><a href="#devices">Thiết bị</a></li>
+    <li><a href="#panels">Bảng điều khiển thiết bị</a></li>
+    <li><a href="#run">Chế độ chạy — Chạy mô phỏng</a></li>
+    <li><a href="#trace">Chế độ theo dõi — Phân tích gói tin</a></li>
+    <li><a href="#project">Lưu và tải</a></li>
+  </ol>
+</nav>
+
+<hr>
+
+<h3 id="modes">Ba chế độ</h3>
+<p>
+  BeaverTracer có ba chế độ. Bạn chuyển đổi giữa chúng bằng các nút trong thanh công cụ trên cùng.
+</p>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-pencil"></i></td>
+    <td><strong>Chỉnh sửa</strong></td>
+    <td>Thiết kế mạng của bạn — đặt các thiết bị, kết nối chúng, cấu hình chúng.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-play"></i></td>
+    <td><strong>Chạy</strong></td>
+    <td>Bắt đầu mô phỏng và xem lưu lượng chảy qua mạng của bạn.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-magnifying-glass"></i></td>
+    <td><strong>Theo dõi</strong></td>
+    <td>Ghi lại và kiểm tra các gói tin di chuyển trên mạng của bạn.</td>
+  </tr>
+</table>
+
+<hr>
+
+<h3 id="edit">Chế độ chỉnh sửa — Xây dựng mạng</h3>
+<p>
+  Trong chế độ chỉnh sửa, một thanh công cụ xuất hiện ở phía bên trái của màn hình.
+  Chọn một công cụ bằng cách nhấp vào nó, sau đó sử dụng nó trên canvas.
+</p>
+
+<h4>Công cụ</h4>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-arrow-pointer"></i></td>
+    <td><strong>Chọn</strong></td>
+    <td>Nhấp vào một thiết bị để mở bảng điều khiển của nó. Kéo một thiết bị để di chuyển nó.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-link"></i></td>
+    <td><strong>Liên kết</strong></td>
+    <td>Kết nối hai thiết bị với một cáp (xem bên dưới).</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-ban"></i></td>
+    <td><strong>Xóa</strong></td>
+    <td>Nhấp vào một thiết bị hoặc cáp để xóa nó.</td>
+  </tr>
+</table>
+
+<p>
+  <strong>Mẹo:</strong> Nhấp chuột phải bất kỳ nơi nào trên canvas để hủy công cụ hiện tại
+  và quay trở lại <i class="fas fa-arrow-pointer"></i> Chọn.
+</p>
+
+<h4>Đặt một thiết bị</h4>
+<ol>
+  <li>Nhấp vào nút thiết bị trong thanh công cụ bên trái (ví dụ: <i class="fas fa-desktop"></i> PC).</li>
+  <li>Một bản xem trước theo dõi con trỏ chuột của bạn.</li>
+  <li>Nhấp vào canvas để đặt thiết bị.</li>
+</ol>
+
+<h4>Kết nối hai thiết bị</h4>
+<ol>
+  <li>Nhấp vào công cụ <i class="fas fa-link"></i> <strong>Liên kết</strong>.</li>
+  <li>Nhấp vào thiết bị đầu tiên — một công cụ chọn cổng sẽ xuất hiện. Chọn một cổng.</li>
+  <li>Di chuyển chuột của bạn đến thiết bị thứ hai và nhấp vào nó — chọn một cổng ở đó.</li>
+  <li>Cáp được tạo tự động.</li>
+</ol>
+<p>
+  Các cổng đã được sử dụng sẽ được hiển thị bị vô hiệu hóa và không thể chọn.
+</p>
+
+<h4>Di chuyển một thiết bị</h4>
+<p>
+  Trong chế độ <i class="fas fa-arrow-pointer"></i> Chọn, nhấp và kéo bất kỳ thiết bị nào để điều chỉnh vị trí của nó trên canvas.
+</p>
+
+<h4>Xóa một thiết bị hoặc cáp</h4>
+<ol>
+  <li>Nhấp vào công cụ <i class="fas fa-ban"></i> <strong>Xóa</strong>.</li>
+  <li>Nhấp vào thiết bị hoặc cáp bạn muốn xóa.</li>
+</ol>
+<p>
+  Khi bạn xóa một thiết bị, tất cả các cáp kết nối với nó sẽ bị xóa tự động.
+</p>
+
+<hr>
+
+<h3 id="devices">Thiết bị</h3>
+<p>
+  Các thiết bị này có sẵn trong thanh công cụ bên trái trong chế độ chỉnh sửa:
+</p>
+
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-desktop"></i></td>
+    <td><strong>PC</strong></td>
+    <td>
+      Một máy tính cá nhân với giao diện mạng có dây. Bạn có thể chạy các ứng dụng trên nó
+      (ví dụ: trình duyệt web hoặc công cụ ping) và cấu hình địa chỉ IP của nó.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-laptop"></i></td>
+    <td><strong>Laptop</strong></td>
+    <td>
+      Giống như PC, nhưng kết nối qua Wi-Fi thay vì cáp.
+      Sử dụng nó cùng với Điểm truy cập hoặc Bộ định tuyến gia đình.
+    </td>
+  </tr>
+  <tr>
+    <td>SW</td>
+    <td><strong>Switch</strong></td>
+    <td>
+      Kết nối nhiều thiết bị trong cùng một phân đoạn mạng.
+      Chuyển tiếp các khung dựa trên địa chỉ MAC.
+      Hỗ trợ VLAN và Giao thức cây bao trùm (STP).
+    </td>
+  </tr>
+  <tr>
+    <td>RT</td>
+    <td><strong>Router</strong></td>
+    <td>
+      Kết nối các mạng khác nhau và chuyển tiếp các gói tin giữa chúng.
+      Bạn có thể cấu hình các tuyến tĩnh và địa chỉ IP trên mỗi giao diện.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-house-signal"></i></td>
+    <td><strong>Bộ định tuyến gia đình</strong></td>
+    <td>
+      Một bộ định tuyến, máy chủ DHCP, cổng NAT và điểm truy cập Wi-Fi kết hợp —
+      tương tự như một bộ định tuyến internet gia đình điển hình.
+      Kết nối nó với một Bộ định tuyến (như WAN) và với PC hoặc Laptop (như LAN/Wi-Fi).
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-wifi"></i></td>
+    <td><strong>Điểm truy cập</strong></td>
+    <td>
+      Mở rộng mạng có dây bằng kết nối Wi-Fi.
+      Kết nối cổng có dây của nó với một Switch hoặc Bộ định tuyến, sau đó kết nối các Laptop với nó không dây.
+    </td>
+  </tr>
+</table>
+
+<hr>
+
+<h3 id="panels">Bảng điều khiển thiết bị</h3>
+<p>
+  Nhấp vào bất kỳ thiết bị nào trên canvas để mở <strong>bảng điều khiển</strong> của nó — một cửa sổ cấu hình
+  xuất hiện ở phía bên phải của màn hình.
+  Nhấp vào thiết bị lần nữa (hoặc nút <strong>×</strong> trong tiêu đề bảng điều khiển) để đóng nó.
+</p>
+
+<h4>Đặt tên lại cho một thiết bị</h4>
+<p>
+  Nhấp vào nút <i class="fas fa-pen"></i> bên cạnh tên thiết bị trong tiêu đề bảng điều khiển
+  để đặt cho nó một tên tùy chỉnh (ví dụ: "Office-PC" hoặc "Core-Router").
+</p>
+
+<h4>Tab</h4>
+<p>
+  Hầu hết các thiết bị có nhiều tab bên trong bảng điều khiển.
+  Ví dụ, một Bộ định tuyến có:
+</p>
+<ul>
+  <li><strong>Giao diện</strong> — cấu hình địa chỉ IP trên mỗi cổng</li>
+  <li><strong>Bảng định tuyến IPv4</strong> — xem và chỉnh sửa các tuyến tĩnh IPv4</li>
+  <li><strong>Bảng định tuyến IPv6</strong> — xem và chỉnh sửa các tuyến tĩnh IPv6</li>
+</ul>
+<p>
+  Một Switch có các tab cho <strong>Bảng địa chỉ Switch (SAT)</strong>, cấu hình <strong>VLAN</strong>,
+  và cài đặt <strong>Giao thức cây bao trùm (STP)</strong>.
+</p>
+<p>
+  Một Bộ định tuyến gia đình có các tab cho <strong>Trạng thái</strong>, cài đặt <strong>WAN</strong>, và <strong>DHCP</strong> leases.
+</p>
+
+<h4>PC và Laptop</h4>
+<p>
+  PC và Laptop có một hệ điều hành được mô phỏng đầy đủ bên trong bảng điều khiển của chúng.
+  Bạn có thể mở các ứng dụng từ máy tính để bàn, cấu hình cài đặt mạng, và chạy các lệnh.
+</p>
+
+<hr>
+
+<h3 id="run">Chế độ chạy — Chạy mô phỏng</h3>
+<p>
+  Chuyển sang chế độ <i class="fas fa-play"></i> <strong>Chạy</strong> để bắt đầu mô phỏng.
+  Mạng trở nên hoạt động: các thiết bị trao đổi gói tin, DHCP leases được gán,
+  các bảng định tuyến cập nhật, và như vậy.
+</p>
+
+<h4>Điều khiển tốc độ</h4>
+<p>
+  Sử dụng các nút tốc độ trong thanh công cụ trên cùng để kiểm soát tốc độ chạy của mô phỏng:
+</p>
+<table class="help-table">
+  <tr><td><strong>0,5×</strong></td><td>Chậm — tốt để quan sát các bước riêng lẻ</td></tr>
+  <tr><td><strong>1×</strong></td><td>Tốc độ bình thường</td></tr>
+  <tr><td><strong>4×</strong></td><td>Nhanh</td></tr>
+  <tr><td><strong>8×</strong></td><td>Rất nhanh</td></tr>
+</table>
+
+<h4>Tạm dừng và Đặt lại</h4>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-pause"></i></td>
+    <td><strong>Tạm dừng</strong></td>
+    <td>Đóng băng mô phỏng ở trạng thái hiện tại của nó.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-arrow-rotate-left"></i></td>
+    <td><strong>Đặt lại</strong></td>
+    <td>Khởi động lại mô phỏng từ đầu (tất cả trạng thái động được xóa).</td>
+  </tr>
+</table>
+
+<p>
+  <strong>Lưu ý:</strong> Bạn không thể chỉnh sửa cấu trúc liên kết mạng khi ở chế độ Chạy.
+  Hãy chuyển trở lại chế độ <i class="fas fa-pencil"></i> Chỉnh sửa trước.
+</p>
+
+<hr>
+
+<h3 id="trace">Chế độ theo dõi — Phân tích gói tin</h3>
+<p>
+  Chuyển sang chế độ <i class="fas fa-magnifying-glass"></i>

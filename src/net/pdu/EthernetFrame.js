@@ -1,6 +1,7 @@
 //@ts-check
 
 import { assertU8, assertMac } from "../../lib/helpers.js";
+import { read16BE, write16BE } from "../util/byteUtils.js";
 
 export class EthernetFrame {
   dstMac;
@@ -77,13 +78,10 @@ export class EthernetFrame {
     if (!hasVlan) {
       if (this.useLengthField) {
         // 802.3 length (<= 1500)
-        const len = realPayloadLen & 0xffff;
-        out[12] = (len >> 8) & 0xff;
-        out[13] = len & 0xff;
+        write16BE(out, 12, realPayloadLen & 0xffff);
       } else {
         // Ethernet II EtherType
-        out[12] = (this.etherType >> 8) & 0xff;
-        out[13] = this.etherType & 0xff;
+        write16BE(out, 12, this.etherType);
       }
 
       out.set(paddedPayload, 14);
@@ -99,18 +97,14 @@ export class EthernetFrame {
     const dei = (this.vlan.dei ?? 0) & 0x01;
     const tci = (pcp << 13) | (dei << 12) | vid;
 
-    out[14] = (tci >> 8) & 0xff;
-    out[15] = tci & 0xff;
+    write16BE(out, 14, tci);
 
     if (this.useLengthField) {
       // Inner field is LENGTH (802.3), not EtherType
-      const len = realPayloadLen & 0xffff;
-      out[16] = (len >> 8) & 0xff;
-      out[17] = len & 0xff;
+      write16BE(out, 16, realPayloadLen & 0xffff);
     } else {
       // Inner field is EtherType
-      out[16] = (this.etherType >> 8) & 0xff;
-      out[17] = this.etherType & 0xff;
+      write16BE(out, 16, this.etherType);
     }
 
     out.set(paddedPayload, 18);
@@ -126,16 +120,16 @@ export class EthernetFrame {
 
     const dstMac = bytes.subarray(0, 6);
     const srcMac = bytes.subarray(6, 12);
-    const typeOrTpid = (bytes[12] << 8) + bytes[13];
+    const typeOrTpid = read16BE(bytes, 12);
 
     // VLAN tagged?
     if (typeOrTpid === 0x8100) {
-      const tci = (bytes[14] << 8) + bytes[15];
+      const tci = read16BE(bytes, 14);
       const pcp = (tci >> 13) & 0x07;
       const dei = (tci >> 12) & 0x01;
       const vid = tci & 0x0fff;
 
-      const innerTypeOrLen = (bytes[16] << 8) + bytes[17];
+      const innerTypeOrLen = read16BE(bytes, 16);
            const payload = bytes.subarray(18);
 
       const f = new EthernetFrame({ dstMac, srcMac, etherType: 0, payload });

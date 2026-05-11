@@ -50,10 +50,10 @@ export class TerminalApp extends GenericProcess {
     // ---------------------------
 
     /** @type {number} */
-    cols = 80;
+    cols = 60;
 
     /** @type {number} */
-    rows = 25;
+    rows = 20;
 
     /** @type {number} */
     scrollbackLimit = 2000;
@@ -146,8 +146,8 @@ export class TerminalApp extends GenericProcess {
         this.disposer.on(term, "keydown", (ev) => this._onKeyDown(/** @type {KeyboardEvent} */(ev)));
         this.disposer.on(term, "pointerdown", () => term.focus());
         this.disposer.on(this.root, "pointerdown", () => term.focus());
-        this._startCursorBlink();
 
+        this._startCursorBlink();
         this._renderScreen();
         setTimeout(() => term.focus(), 0);
     }
@@ -192,20 +192,27 @@ export class TerminalApp extends GenericProcess {
     // ---------------------------
 
     /**
-     * Write text (no implicit newline). Supports \n and \r. Auto-wraps at cols.
+     * Write text (no implicit newline). Supports \n and \r. Wraps at word boundaries.
      * @param {string} text
      */
     print(text = "") {
-        for (const ch of text) {
-            if (ch === "\n") {
-                this._newline();
-                continue;
-            }
-            if (ch === "\r") {
-                this.outX = 0;
-                continue;
-            }
-            this._putChar(ch);
+        let pos = 0;
+        while (pos < text.length) {
+            const ch = text[pos];
+            if (ch === "\n") { this._newline(); pos++; continue; }
+            if (ch === "\r") { this.outX = 0;   pos++; continue; }
+            if (ch === " ")  { this._putChar(" "); pos++; continue; }
+
+            // find end of word
+            let end = pos;
+            while (end < text.length && text[end] !== " " && text[end] !== "\n" && text[end] !== "\r") end++;
+
+            // wrap before word if it doesn't fit and we're not already at column 0
+            const wordLen = end - pos;
+            if (this.outX > 0 && this.outX + wordLen > this.cols) this._newline();
+
+            for (let i = pos; i < end; i++) this._putChar(text[i]);
+            pos = end;
         }
         this._renderScreen();
     }

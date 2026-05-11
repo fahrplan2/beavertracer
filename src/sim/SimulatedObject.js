@@ -239,7 +239,7 @@ export class SimulatedObject {
             });
         }
         makeWindow(this.panelEl, {
-            resizable: true,
+            resizable: false,
             minWidth: 220,
             minHeight: 140,
             onResize: (w, h) => {
@@ -423,4 +423,37 @@ export class SimulatedObject {
      * @returns {any|null}
      */
     getPortByKey(key) { return null; }
+
+    // ── Static helpers for IPStack-based port lists ──────────────────────
+
+    /**
+     * Standard listPorts() implementation for devices whose ports come from
+     * an IPStack's `interfaces` array (Router, PC, …).
+     * @param {any[]|undefined} interfaces
+     * @returns {Array<{ key: string, label: string, port: any }>}
+     */
+    static listEthPorts(interfaces) {
+        const ifs = interfaces ?? [];
+        // exclude VLAN subinterfaces (vid != null) — virtual ports can't be cabled
+        return ifs
+            .filter(nic => nic.vid == null)
+            .map(nic => ({ key: nic.name, label: nic.name, port: nic.port }));
+    }
+
+    /**
+     * Standard getPortByKey() implementation for eth-indexed ports.
+     * @param {any[]|undefined} interfaces
+     * @param {string} key
+     * @returns {any|null}
+     */
+    static getEthPortByKey(interfaces, key) {
+        const ifs = interfaces ?? [];
+        // Primary: look up by interface name (works for eth0, eth1, eth0.10, …)
+        const byName = ifs.find(nic => nic.name === key && nic.vid == null);
+        if (byName) return byName.port;
+        // Fallback: legacy saves store keys as eth${arrayIndex}
+        const m = /^eth(\d+)$/.exec(key);
+        if (!m) return null;
+        return ifs[Number(m[1])]?.port ?? null;
+    }
 }

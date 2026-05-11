@@ -193,10 +193,8 @@ export class DOMBuilder {
 
         if (className) btn.classList.add(...className.split(" ").filter(Boolean));
         if (active) btn.classList.add("active");
-        if (iconOnly) {
-            btn.classList.add("icon-only");
-            btn.title = label;
-        }
+        if (iconOnly) btn.classList.add("icon-only");
+        btn.title = label;
 
         // 1) icon
         const iconEl = document.createElement("i");
@@ -280,5 +278,14 @@ export class DOMBuilder {
         }
 
         return { bar, setActive, setBadge };
+    }
+
+    /**
+     * @param {HTMLElement|null|undefined} el
+     * @param {boolean} isInvalid
+     */
+    static markInvalid(el, isInvalid) {
+        if (!el) return;
+        el.classList.toggle("is-invalid", !!isInvalid);
     }
 }

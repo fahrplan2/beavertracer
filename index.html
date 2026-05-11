@@ -18,10 +18,23 @@
     <meta charset="utf-8" />
     <script>(function(){var t=new URLSearchParams(location.search).get("theme");if(t==="dark"||t==="light")document.documentElement.dataset.theme=t;})()</script>
     <link rel="icon" href="/beaver-icon.svg" type="image/svg+xml">
-    <title>Beaver Tracer</title>
+    <title>Beaver Tracer — Browser-based Network Simulator</title>
 
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="google" content="notranslate">
+
+    <meta name="description" content="Beaver Tracer is a free, browser-based network simulator. Build networks, trace packets, and learn TCP/IP protocols step by step — no installation required.">
+
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.beavertracer.eu/">
+    <meta property="og:title" content="Beaver Tracer — Browser-based Network Simulator">
+    <meta property="og:description" content="Beaver Tracer is a free, browser-based network simulator. Build networks, trace packets, and learn TCP/IP protocols step by step — no installation required.">
+
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Beaver Tracer — Browser-based Network Simulator">
+    <meta name="twitter:description" content="Beaver Tracer is a free, browser-based network simulator. Build networks, trace packets, and learn TCP/IP protocols step by step — no installation required.">
+
+    <link rel="canonical" href="https://www.beavertracer.eu/">
     
     <link rel="stylesheet" href="node_modules/@fortawesome/fontawesome-free/css/all.min.css">
     <link rel="stylesheet" href="node_modules/hack-font/build/web/hack.css">
@@ -30,11 +43,64 @@
   </head>
 
 <body>
-    <div id="simcontrol" class="sim-root">
-      Page is loading... Please wait...
+    <div id="splash" aria-label="Loading" aria-live="polite">
+      <img src="/beaver-icon.svg" width="72" height="72" alt="Beaver Tracer">
+      <span class="splash-label">Loading…</span>
+      <div class="splash-spinner"></div>
     </div>
+    <style>
+      #splash {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1.1rem;
+        background: #f5f5f5;
+        transition: opacity 600ms ease;
+      }
+      [data-theme="dark"] #splash { background: oklch(14% 0.012 210); }
+      #splash.is-hiding { opacity: 0; pointer-events: none; }
+      #splash img {
+        animation: splash-pulse 1.8s ease-in-out infinite;
+      }
+      @keyframes splash-pulse {
+        0%, 100% { opacity: .8; transform: scale(1);    }
+        50%       { opacity: 1;  transform: scale(1.06); }
+      }
+      .splash-label {
+        font-family: system-ui, sans-serif;
+        font-size: .85rem;
+        letter-spacing: .08em;
+        color: #aaa;
+      }
+      .splash-spinner {
+        width: 26px; height: 26px;
+        border: 2.5px solid rgba(0,0,0,.12);
+        border-top-color: rgba(0,0,0,.45);
+        border-radius: 50%;
+        animation: splash-spin .75s linear infinite;
+      }
+      [data-theme="dark"] .splash-spinner {
+        border-color: rgba(255,255,255,.12);
+        border-top-color: rgba(255,255,255,.55);
+      }
+      @keyframes splash-spin { to { transform: rotate(360deg); } }
+    </style>
+
+    <div id="simcontrol" class="sim-root"></div>
     <noscript>
-      <h1>This app requires JavaScript!</h1>
+      <style>
+        .noscript{display:flex;align-items:center;justify-content:center;height:100vh;font-family:system-ui,sans-serif;color:#444;text-align:center}
+      </style>
+      <div class="noscript">
+        <div>
+          <strong style="font-size:1.4rem">Beaver Tracer requires JavaScript.</strong><br>
+          <span style="color:#888;font-size:.95rem">Please enable JavaScript to use this app.</span>
+        </div>
+      </div>
     </noscript>
     <script type="module" src="src/main.js"></script>
 </body>

@@ -131,7 +131,18 @@ export default defineConfig({
   plugins: [
     wiregasmAssets(),
     lessonsPlugin(),
-    staticSitemap({ siteUrl: "https://www.beavertracer.eu" }),
+    staticSitemap({
+      siteUrl: "https://www.beavertracer.eu",
+      extraUrls: (() => {
+        const lessonsSrc = path.join(__dirname, "lessons");
+        const langs = fs.existsSync(lessonsSrc)
+          ? fs.readdirSync(lessonsSrc, { withFileTypes: true })
+              .filter((e) => e.isDirectory() && !e.name.startsWith("_"))
+              .map((e) => `/lessons/${e.name}/`)
+          : [];
+        return ["/", ...langs];
+      })(),
+    }),
   ],
   build: {
     rollupOptions: {

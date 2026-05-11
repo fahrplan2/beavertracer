@@ -1,6 +1,6 @@
 //@ts-check
 
-import { GenericProcess } from "./GenericProcess.js";
+import { LoggedProcess } from "./lib/LoggedProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
 import { Disposer } from "../lib/Disposer.js";
 import { t } from "../i18n/index.js";
@@ -221,7 +221,7 @@ function writeFile(fs, path, content) {
  * @typedef {{raw:string, headers:Record<string,string>}} MailEntry
  */
 
-export class MailClientApp extends GenericProcess {
+export class MailClientApp extends LoggedProcess {
   get title() { return t("app.mailclient.title") || "Mail"; }
   icon = "fa-envelope-open";
 
@@ -248,8 +248,6 @@ export class MailClientApp extends GenericProcess {
   inboxSel = -1;
   sentSel  = -1;
   /** @type {"inbox"|"sent"|"compose"|"config"|"log"} */ tab = "inbox";
-  /** @type {string[]} */ log = [];
-
   // ── UI refs ───────────────────────────────────────────────────
   /** @type {HTMLButtonElement|null} */ fetchBtn = null;
   /** @type {HTMLElement|null} */       statusEl = null;
@@ -270,7 +268,6 @@ export class MailClientApp extends GenericProcess {
   /** @type {HTMLTextAreaElement|null} */ composeBodyEl = null;
 
   /** @type {HTMLElement|null} */ logPanel = null;
-  /** @type {HTMLElement|null} */ logEl = null;
 
   /** @type {HTMLElement|null} */ configPanel = null;
   /** @type {HTMLSelectElement|null} */ cfgProtoSel = null;
@@ -612,13 +609,7 @@ export class MailClientApp extends GenericProcess {
 
   /** @param {string} line */
   _log(line) {
-    this.log.push(`[${nowStamp()}] ${line}`);
-    if (this.log.length > 2000) this.log.splice(0, this.log.length - 2000);
-    if (this.mounted) this._renderLog();
-  }
-
-  _renderLog() {
-    if (this.logEl) this.logEl.textContent = this.log.slice(-400).join("\n");
+    this._appendLog(`[${nowStamp()}] ${line}`);
   }
 
   // ── Fetch mail (POP3 / IMAP) ──────────────────────────────────

@@ -86,6 +86,7 @@ export class PCapViewer {
   /** @type {HTMLTableSectionElement|null} */ #tableBody = null;
   /** @type {HTMLInputElement|null} */ #filterEl = null;
   /** @type {HTMLElement|null} */ #statusEl = null;
+  /** @type {HTMLElement|null} */ #loadingOverlay = null;
   /** @type {HTMLElement|null} */ #treePane = null;
   /** @type {HTMLPreElement|null} */ #rawPane = null;
 
@@ -95,6 +96,8 @@ export class PCapViewer {
   // Splitters (ratios + listener lifetime)
   /** @type {number|null} */ #hSplitRatio = null;
   /** @type {AbortController|null} */ #hSplitAbort = null;
+  /** @type {number|null} */ #vSplitRatio = null;
+  /** @type {AbortController|null} */ #vSplitAbort = null;
 
   /** @type {Uint8Array|null} */ #activeFrameBytes = null;
 
@@ -104,6 +107,7 @@ export class PCapViewer {
   /** @type {string|null} */ #pickerDevice = null;
   /** @type {TabPicker} */ #tabPicker = new TabPicker();
   /** @type {SplitGrid} */ #splitGrid = new SplitGrid();
+  /** @type {SplitGrid} */ #vSplitGrid = new SplitGrid();
 
   /**
    * @param {HTMLElement|null} mountElement
@@ -142,6 +146,8 @@ export class PCapViewer {
       // wire splitters (safe even if missing)
       //@ts-ignore
       this.#splitGrid.wire(this.#root, this.#makeHSplitConfig());
+      //@ts-ignore
+      this.#vSplitGrid.wire(this.#root, this.#makeVSplitConfig());
     }
 
     this.#renderTabs();
@@ -335,6 +341,7 @@ export class PCapViewer {
     this.#activeName = null;
 
     this.#splitGrid.destroy();
+    this.#vSplitGrid.destroy();
 
     if (this.#root?.parentElement) this.#root.parentElement.removeChild(this.#root);
     this.#root = null;
@@ -360,11 +367,28 @@ export class PCapViewer {
       </div>
 
       <div class="pcapviewer-layout">
+        <div class="pcapviewer-wg-overlay" aria-live="polite">
+          <div class="pcapviewer-wg-spinner"></div>
+          <div class="pcapviewer-wg-msg"></div>
+        </div>
         <div class="pcapviewer-pane pcapviewer-pane--table">
           <table class="pcapviewer-table">
+            <colgroup>
+              <col style="width:50px">
+              <col style="width:90px">
+              <col style="width:130px">
+              <col style="width:130px">
+              <col style="width:80px">
+              <col>
+            </colgroup>
             <thead>
               <tr>
-                <th>${t("pcap.col.no")}</th><th>${t("pcap.col.time")}</th><th>${t("pcap.col.source")}</th><th>${t("pcap.col.destination")}</th><th>${t("pcap.col.protocol")}</th><th>${t("pcap.col.info")}</th>
+                <th>${t("pcap.col.no")}<div class="pcapviewer-col-resize"></div></th>
+                <th>${t("pcap.col.time")}<div class="pcapviewer-col-resize"></div></th>
+                <th>${t("pcap.col.source")}<div class="pcapviewer-col-resize"></div></th>
+                <th>${t("pcap.col.destination")}<div class="pcapviewer-col-resize"></div></th>
+                <th>${t("pcap.col.protocol")}<div class="pcapviewer-col-resize"></div></th>
+                <th>${t("pcap.col.info")}</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -377,7 +401,7 @@ export class PCapViewer {
           <div class="pcapviewer-pane pcapviewer-pane--tree">
             <div class="pcapviewer-treepane"></div>
           </div>
-
+          <div class="pcapviewer-vsplitter"></div>
           <div class="pcapviewer-pane pcapviewer-pane--raw">
             <pre class="pcapviewer-rawpane">${t("pcap.packet.select")}</pre>
           </div>
@@ -393,6 +417,7 @@ export class PCapViewer {
     this.#tableBody = /** @type {HTMLTableSectionElement} */ (root.querySelector(".pcapviewer-table tbody"));
     this.#filterEl = /** @type {HTMLInputElement} */ (root.querySelector(".pcapviewer-filter"));
     this.#statusEl = /** @type {HTMLElement} */ (root.querySelector(".pcapviewer-status"));
+    this.#loadingOverlay = /** @type {HTMLElement} */ (root.querySelector(".pcapviewer-wg-overlay"));
     this.#treePane = /** @type {HTMLElement} */ (root.querySelector(".pcapviewer-treepane"));
     this.#rawPane = /** @type {HTMLPreElement} */ (root.querySelector(".pcapviewer-rawpane"));
   }
@@ -426,6 +451,48 @@ export class PCapViewer {
         s.skip = 0;
         this.#loadAndRenderFramesForActive();
       }, 300);
+    });
+
+    this.#wireColumnResize();
+  }
+
+  #wireColumnResize() {
+    const table = this.#root?.querySelector(".pcapviewer-table");
+    if (!table) return;
+
+    const cols = /** @type {NodeListOf<HTMLTableColElement>} */ (table.querySelectorAll("col"));
+    const ths  = /** @type {NodeListOf<HTMLTableCellElement>} */ (table.querySelectorAll("thead th"));
+    const handles = table.querySelectorAll(".pcapviewer-col-resize");
+
+    handles.forEach((handle, i) => {
+      const col = cols[i];
+      const th  = ths[i];
+      if (!col || !th) return;
+
+      handle.addEventListener("pointerdown", (ev) => {
+        const e = /** @type {PointerEvent} */ (ev);
+        e.preventDefault();
+        const startX = e.clientX;
+        const startW = th.getBoundingClientRect().width;
+
+        handle.classList.add("is-resizing");
+        document.body.style.cursor = "col-resize";
+        document.body.style.userSelect = "none";
+
+        const onMove = (/** @type {PointerEvent} */ e) => {
+          col.style.width = Math.max(30, startW + e.clientX - startX) + "px";
+        };
+        const onUp = () => {
+          handle.classList.remove("is-resizing");
+          document.body.style.cursor = "";
+          document.body.style.userSelect = "";
+          window.removeEventListener("pointermove", onMove, true);
+          window.removeEventListener("pointerup", onUp, true);
+        };
+
+        window.addEventListener("pointermove", onMove, true);
+        window.addEventListener("pointerup", onUp, true);
+      });
     });
   }
 
@@ -573,12 +640,28 @@ export class PCapViewer {
       });
     }
 
-    this.#wg = await this.#wgPromise;
-
-    if (!this.#wgInited) {
-      this.#wg.init();
-      this.#wgInited = true;
+    this.#showWgOverlay(t("pcap.status.loading.wiregasm"));
+    try {
+      this.#wg = await this.#wgPromise;
+      if (!this.#wgInited) {
+        this.#wg.init();
+        this.#wgInited = true;
+      }
+    } finally {
+      this.#hideWgOverlay();
     }
+  }
+
+  /** @param {string} msg */
+  #showWgOverlay(msg) {
+    if (!this.#loadingOverlay) return;
+    const msgEl = this.#loadingOverlay.querySelector(".pcapviewer-wg-msg");
+    if (msgEl) msgEl.textContent = msg;
+    this.#loadingOverlay.classList.add("is-visible");
+  }
+
+  #hideWgOverlay() {
+    this.#loadingOverlay?.classList.remove("is-visible");
   }
 
   /** @param {SessionState} s @param {Uint8Array} pcapBytes */
@@ -760,9 +843,8 @@ export class PCapViewer {
     this.#treePane.appendChild(wrapper);
   }
 
-  /** @param {any[]|any} nodeOrArray */
-  /** @param {any[]|any} nodeOrArray */
-  #buildTree(nodeOrArray) {
+  /** @param {any[]|any} nodeOrArray @param {number} [depth] */
+  #buildTree(nodeOrArray, depth = 0) {
     const ul = document.createElement("ul");
     const nodes = Array.isArray(nodeOrArray) ? nodeOrArray : [nodeOrArray];
 
@@ -780,7 +862,7 @@ export class PCapViewer {
       if (hideComputed && isComputed) {
         if (hasKids) {
           // append children directly at this level
-          ul.appendChild(this.#buildTree(kids));
+          ul.appendChild(this.#buildTree(kids, depth));
         }
         // if it has no kids -> just skip it entirely
         continue;
@@ -794,7 +876,9 @@ export class PCapViewer {
       const length = Number(n.length ?? 0);
       const ds = Number(n.data_source_idx ?? 0);
 
-      row.className = "pcapviewer-tree-node" + (hasKids ? "" : " pcapviewer-tree-leaf");
+      row.className = "pcapviewer-tree-node" +
+        (hasKids ? "" : " pcapviewer-tree-leaf") +
+        (depth === 0 ? " pcapviewer-tree-proto" : "");
 
       const twisty = document.createElement("div");
       twisty.className = "pcapviewer-tree-twisty";
@@ -812,7 +896,7 @@ export class PCapViewer {
       if (hasKids) {
         const childWrap = document.createElement("div");
         childWrap.className = "pcapviewer-tree-children";
-        childWrap.appendChild(this.#buildTree(kids));
+        childWrap.appendChild(this.#buildTree(kids, depth + 1));
         li.appendChild(childWrap);
 
         li.classList.add("pcapviewer-collapsed");
@@ -884,6 +968,7 @@ export class PCapViewer {
       splitSizePx: 5,
       minA: 80,
       minB: 120,
+      defaultRatio: 0.4,
       axis: "y",
       cursor: "row-resize",
       storageKey: "pcapviewer.splitRatio.v1",
@@ -891,6 +976,25 @@ export class PCapViewer {
       setRatio: (/** @type {number} */ v) => { this.#hSplitRatio = v; },
       getAbort: () => this.#hSplitAbort,
       setAbort: (/** @type {*} */ ac) => { this.#hSplitAbort = ac; },
+    };
+  }
+
+  #makeVSplitConfig() {
+    return {
+      containerSel: ".pcapviewer-bottom",
+      splitterSel: ".pcapviewer-vsplitter",
+      primaryPaneSel: ".pcapviewer-pane--tree",
+      splitSizePx: 4,
+      minA: 120,
+      minB: 0,
+      defaultRatio: 0.65,
+      axis: "x",
+      cursor: "col-resize",
+      storageKey: "pcapviewer.vSplitRatio.v1",
+      getRatio: () => this.#vSplitRatio,
+      setRatio: (/** @type {number} */ v) => { this.#vSplitRatio = v; },
+      getAbort: () => this.#vSplitAbort,
+      setAbort: (/** @type {*} */ ac) => { this.#vSplitAbort = ac; },
     };
   }
 
@@ -1063,16 +1167,36 @@ export class PCapViewer {
   #renderHexHtml(bytes) {
     if (!this.#rawPane) return;
 
-    // Build once: 16 bytes per line
+    const COLS = 16;
     let html = "";
-    for (let i = 0; i < bytes.length; i++) {
-      if (i % 16 === 0) {
-        if (i !== 0) html += "\n";
-      } else {
-        html += " ";
+
+    for (let row = 0; row * COLS < bytes.length; row++) {
+      const base = row * COLS;
+      const offset = base.toString(16).toUpperCase().padStart(4, "0");
+
+      // offset column
+      html += `<span class="hex-offset">${offset}</span>  `;
+
+      // hex bytes (with mid-gap after byte 8)
+      let hexPart = "";
+      let asciiPart = "";
+      for (let col = 0; col < COLS; col++) {
+        const i = base + col;
+        if (col === 8) hexPart += " ";
+        if (i < bytes.length) {
+          const hex = bytes[i].toString(16).toUpperCase().padStart(2, "0");
+          hexPart += `<span class="pcapviewer-hexbyte" data-i="${i}">${hex}</span> `;
+          const c = bytes[i];
+          asciiPart += (c >= 32 && c < 127) ? String.fromCharCode(c) : "·";
+        } else {
+          hexPart += "   ";
+          asciiPart += " ";
+        }
       }
-      const hex = bytes[i].toString(16).padStart(2, "0").toUpperCase();
-      html += `<span class="pcapviewer-hexbyte" data-i="${i}">${hex}</span>`;
+
+      html += hexPart;
+      html += ` <span class="hex-ascii">${asciiPart}</span>`;
+      if ((row + 1) * COLS < bytes.length + COLS) html += "\n";
     }
 
     this.#rawPane.innerHTML = html;

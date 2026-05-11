@@ -153,6 +153,11 @@
   background: var(--primary);
 }
 
+.router-route-footer-btn {
+  margin-top: 6px;
+  width: 100%;
+}
+
 /* Invalid inputs: danger ring */
 .is-invalid {
   outline: 2px solid var(--danger-strong);

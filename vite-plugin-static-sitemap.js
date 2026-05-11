@@ -29,6 +29,7 @@ function walk(dir) {
  *   basePath?: string,          // optional prefix e.g. "" or "/"
  *   includePagesPrefix?: boolean // if true: "/pages/about/index.html" instead of "/about"
  *   robots?: boolean            // default true
+ *   extraUrls?: string[]        // additional URLs to include verbatim (e.g. "/" or "/lessons/en/")
  * }} opts
  */
 export function staticSitemap(opts) {
@@ -39,6 +40,7 @@ export function staticSitemap(opts) {
     basePath = "",
     includePagesPrefix = false,
     robots = true,
+    extraUrls = [],
   } = opts;
 
   if (!siteUrl) throw new Error("staticSitemap: opts.siteUrl is required");
@@ -90,6 +92,7 @@ export function staticSitemap(opts) {
         const route = routeFromFile(rel);
         if (route) routes.add(route);
       }
+      for (const u of extraUrls) routes.add(u);
 
       const urls = Array.from(routes)
         .map((r) => (base ? base + (r === "/" ? "/" : r) : r))

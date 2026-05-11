@@ -1,0 +1,273 @@
+<h2>Yardım</h2>
+<p class="subtitle">Beaver Tracer Nasıl Kullanılır</p>
+
+<hr>
+
+<nav class="help-toc">
+  <strong>İçindekiler</strong>
+  <ol>
+    <li><a href="#modes">Üç Mod</a></li>
+    <li><a href="#edit">Düzenleme Modu — Ağ Oluşturma</a></li>
+    <li><a href="#devices">Cihazlar</a></li>
+    <li><a href="#panels">Cihaz Panelleri</a></li>
+    <li><a href="#run">Çalıştırma Modu — Simülasyonu Çalıştırma</a></li>
+    <li><a href="#trace">İzleme Modu — Paketleri Analiz Etme</a></li>
+    <li><a href="#project">Kaydetme ve Yükleme</a></li>
+  </ol>
+</nav>
+
+<hr>
+
+<h3 id="modes">Üç Mod</h3>
+<p>
+  Beaver Tracer'ın üç modu vardır. Üst araç çubuğundaki düğmeleri kullanarak aralarında geçiş yaparsınız.
+</p>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-pencil"></i></td>
+    <td><strong>Düzenleme</strong></td>
+    <td>Ağınızı tasarlayın — cihazlar yerleştirin, birbirine bağlayın, yapılandırın.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-play"></i></td>
+    <td><strong>Çalıştırma</strong></td>
+    <td>Simülasyonu başlatın ve ağınız üzerinden trafik akışını izleyin.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-magnifying-glass"></i></td>
+    <td><strong>İzleme</strong></td>
+    <td>Ağınız üzerinde seyahat eden paketleri yakala ve incele.</td>
+  </tr>
+</table>
+
+<hr>
+
+<h3 id="edit">Düzenleme Modu — Ağ Oluşturma</h3>
+<p>
+  Düzenleme modunda, ekranın sol tarafında bir araç çubuğu görünür.
+  Bir araç seçmek için üzerine tıklayın, ardından tuval üzerinde kullanın.
+</p>
+
+<h4>Araçlar</h4>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-arrow-pointer"></i></td>
+    <td><strong>Seç</strong></td>
+    <td>Panelini açmak için bir cihaza tıklayın. Bir cihazı taşımak için sürükleyin.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-link"></i></td>
+    <td><strong>Bağlantı</strong></td>
+    <td>İki cihazı kablolar ile bağlayın (aşağıya bakın).</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-ban"></i></td>
+    <td><strong>Sil</strong></td>
+    <td>Bir cihazı veya kabloyu kaldırmak için tıklayın.</td>
+  </tr>
+</table>
+
+<p>
+  <strong>İpucu:</strong> Geçerli aracı iptal etmek ve <i class="fas fa-arrow-pointer"></i> Seç'e dönmek için tuval üzerinde herhangi bir yere sağ tıklayın.
+</p>
+
+<h4>Cihaz Yerleştirme</h4>
+<ol>
+  <li>Sol araç çubuğunda bir cihaz düğmesine tıklayın (örn. <i class="fas fa-desktop"></i> PC).</li>
+  <li>Bir ön izleme fare imlecini takip eder.</li>
+  <li>Cihazı yerleştirmek için tuval üzerinde tıklayın.</li>
+</ol>
+
+<h4>İki Cihazı Bağlama</h4>
+<ol>
+  <li><i class="fas fa-link"></i> <strong>Bağlantı</strong> aracına tıklayın.</li>
+  <li>İlk cihaza tıklayın — bir port seçici görünür. Bir port seçin.</li>
+  <li>Farenizi ikinci cihaza taşıyın ve tıklayın — orada da bir port seçin.</li>
+  <li>Kablo otomatik olarak oluşturulur.</li>
+</ol>
+<p>
+  Zaten kullanımda olan portlar devre dışı olarak gösterilir ve seçilemez.
+</p>
+
+<h4>Cihazı Taşıma</h4>
+<p>
+  <i class="fas fa-arrow-pointer"></i> Seç modunda, herhangi bir cihazı tıkla ve sürükle olarak tuval üzerinde yeniden konumlandırın.
+</p>
+
+<h4>Cihaz veya Kablo Silme</h4>
+<ol>
+  <li><i class="fas fa-ban"></i> <strong>Sil</strong> aracına tıklayın.</li>
+  <li>Kaldırmak istediğiniz cihazı veya kabloyu tıklayın.</li>
+</ol>
+<p>
+  Bir cihazı sildiğinizde, ona bağlı tüm kablolar otomatik olarak kaldırılır.
+</p>
+
+<hr>
+
+<h3 id="devices">Cihazlar</h3>
+<p>
+  Bu cihazlar Düzenleme modu sırasında sol araç çubuğunda kullanılabilir:
+</p>
+
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-desktop"></i></td>
+    <td><strong>PC</strong></td>
+    <td>
+      Kablolu ağ arayüzü olan kişisel bilgisayar. Üzerinde uygulamalar çalıştırabilir
+      (örn. web tarayıcı veya ping aracı) ve IP adresini yapılandırabilirsiniz.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-laptop"></i></td>
+    <td><strong>Laptop</strong></td>
+    <td>
+      PC gibidir, ancak kablo yerine Wi-Fi üzerinden bağlanır.
+      Erişim Noktası veya Home Router ile birlikte kullanın.
+    </td>
+  </tr>
+  <tr>
+    <td>SW</td>
+    <td><strong>Anahtar</strong></td>
+    <td>
+      Aynı ağ segmentinde birden fazla cihazı bağlar.
+      Çerçeveleri MAC adreslerine göre iletir.
+      VLAN ve Spanning Tree Protocol (STP) destekler.
+    </td>
+  </tr>
+  <tr>
+    <td>RT</td>
+    <td><strong>Router</strong></td>
+    <td>
+      Farklı ağları bağlar ve aralarında paketleri iletir.
+      Her arayüzde statik rotalar ve IP adreslerini yapılandırabilirsiniz.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-house-signal"></i></td>
+    <td><strong>Home Router</strong></td>
+    <td>
+      Birleştirilmiş router, DHCP sunucusu, NAT ağ geçidi ve Wi-Fi erişim noktası —
+      tipik bir ev internet routerı gibi.
+      Bunu bir Router'a (WAN olarak) ve PC'lere veya Laptop'lara (LAN/Wi-Fi olarak) bağlayın.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-wifi"></i></td>
+    <td><strong>Erişim Noktası</strong></td>
+    <td>
+      Kablolu ağı Wi-Fi bağlantısı ile genişletir.
+      Kablolu portunu bir Switch veya Router'a bağlayın, ardından Laptop'ları ona kablosuz olarak bağlayın.
+    </td>
+  </tr>
+</table>
+
+<hr>
+
+<h3 id="panels">Cihaz Panelleri</h3>
+<p>
+  Panelini açmak için tuval üzerinde herhangi bir cihaza tıklayın — ekranın sağ tarafında görünen bir yapılandırma penceresi.
+  Cihaza yeniden tıklayın (veya panel başlığındaki <strong>×</strong> düğmesine tıklayın) kapatmak için.
+</p>
+
+<h4>Cihazı Yeniden Adlandırma</h4>
+<p>
+  Panel başlığında cihaz adının yanındaki <i class="fas fa-pen"></i> düğmesine tıklayın
+  ona özel bir ad vermek için (örn. "Office-PC" veya "Core-Router").
+</p>
+
+<h4>Sekmeler</h4>
+<p>
+  Çoğu cihazın panelin içinde birden fazla sekmesi vardır.
+  Örneğin, bir Router'ın:
+</p>
+<ul>
+  <li><strong>Arayüzler</strong> — her port üzerinde IP adreslerini yapılandırın</li>
+  <li><strong>Yönlendirme tablosu IPv4</strong> — IPv4 statik rotalarını görüntüleyin ve düzenleyin</li>
+  <li><strong>Yönlendirme tablosu IPv6</strong> — IPv6 statik rotalarını görüntüleyin ve düzenleyin</li>
+</ul>
+<p>
+  Bir Switch'in <strong>Anahtar Adres Tablosu (SAT)</strong>, <strong>VLAN</strong>
+  yapılandırması ve <strong>Spanning Tree Protocol (STP)</strong> ayarları için sekmesi vardır.
+</p>
+<p>
+  Home Router'ın <strong>Durum</strong>, <strong>WAN</strong> ayarları ve <strong>DHCP</strong> kiraları için sekmesi vardır.
+</p>
+
+<h4>PC ve Laptop</h4>
+<p>
+  PC'ler ve Laptop'lar panelinin içinde tam simüle edilmiş bir işletim sistemine sahiptir.
+  Masaüstünden uygulamalar açabilir, ağ ayarlarını yapılandırabilir ve komutlar çalıştırabilirsiniz.
+</p>
+
+<hr>
+
+<h3 id="run">Çalıştırma Modu — Simülasyonu Çalıştırma</h3>
+<p>
+  Simülasyonu başlatmak için <i class="fas fa-play"></i> <strong>Çalıştırma</strong> moduna geçin.
+  Ağ canlı hale gelir: cihazlar paketler değiştirir, DHCP kiraları atanır,
+  yönlendirme tabloları güncellenir vb.
+</p>
+
+<h4>Hız Kontrolleri</h4>
+<p>
+  Simülasyonun ne kadar hızlı çalıştığını kontrol etmek için üst araç çubuğundaki hız düğmelerini kullanın:
+</p>
+<table class="help-table">
+  <tr><td><strong>0.5×</strong></td><td>Yavaş — bireysel adımları gözlemlemek için iyi</td></tr>
+  <tr><td><strong>1×</strong></td><td>Normal hız</td></tr>
+  <tr><td><strong>4×</strong></td><td>Hızlı</td></tr>
+  <tr><td><strong>8×</strong></td><td>Çok hızlı</td></tr>
+</table>
+
+<h4>Duraklat ve Sıfırla</h4>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-pause"></i></td>
+    <td><strong>Duraklat</strong></td>
+    <td>Simülasyonu mevcut durumunda dondurun.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-arrow-rotate-left"></i></td>
+    <td><strong>Sıfırla</strong></td>
+    <td>Simülasyonu baştan başlatın (tüm dinamik durum temizlenir).</td>
+  </tr>
+</table>
+
+<p>
+  <strong>Not:</strong> Çalıştırma modundayken ağ topolojisini düzenleyemezsiniz.
+  Önce <i class="fas fa-pencil"></i> Düzenleme moduna geçin.
+</p>
+
+<hr>
+
+<h3 id="trace">İzleme Modu — Paketleri Analiz Etme</h3>
+<p>
+  Yerleşik paket analiz aracını açmak için <i class="fas fa-magnifying-glass"></i> <strong>İzleme</strong> moduna geçin — Wireshark'a benzer.
+</p>
+<p>
+  En üstte, yakala istediğiniz <strong>cihazı</strong> ve <strong>portu</strong> seçin.
+  Bu port üzerinden geçen tüm paketler kaydedilir ve bir listede gösterilir.
+</p>
+<p>
+  Tam ayrıntılarını görmek için listedeki herhangi bir pakete tıklayın:
+  protokol katmanları, başlık alanları ve payload — tam olarak profesyonel bir ağ aracının göstereceği gibi.
+</p>
+<p>
+  Yakala, simülasyon çalışırken otomatik olarak çalışır.
+  Yakalanan verileri kaybetmeden İzleme modu ve Çalıştırma modu arasında geçiş yapabilirsiniz.
+</p>
+
+<hr>
+
+<h3 id="project">Kaydetme ve Yükleme</h3>
+<p>
+  Ağ tasarımınız bir dosya olarak kaydedilebilir ve daha sonra yeniden yüklenebilir.
+  Üst araç çubuğundaki düğmeleri kullanın (Düzenleme modunda görünür):
+</p>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-file"></i></td>
+    <td><strong>Yeni</strong></td>
+    <td>

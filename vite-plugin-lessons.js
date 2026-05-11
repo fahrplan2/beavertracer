@@ -9,19 +9,39 @@ import MarkdownIt from "markdown-it";
 const SRC_DIR = "lessons";
 const OUT_DIR = "public/lessons";
 
-const LANG_NAMES = {
-  de: "Deutsch", en: "English", fr: "Français",
-  es: "Español", it: "Italiano", pt: "Português",
-};
+/**
+ * Read display name and lessons.noLessons message from all locale files.
+ * Returns a map of locale code → { name, noLessons }.
+ * @param {string} localesDir
+ * @returns {Record<string, { name: string, noLessons: string | null }>}
+ */
+function loadLocaleInfo(localesDir) {
+  /** @type {Record<string, { name: string, noLessons: string | null }>} */
+  const info = {};
+  if (!fs.existsSync(localesDir)) return info;
 
-const LANG_NO_LESSONS = {
-  de: "Für diese Sprache sind leider noch keine Lektionen verfügbar. 😔",
-  en: "No lessons are available in this language yet. 😔",
-  fr: "Aucune leçon n'est disponible dans cette langue pour le moment. 😔",
-  es: "Todavía no hay lecciones disponibles en este idioma. 😔",
-  it: "Non ci sono ancora lezioni disponibili in questa lingua. 😔",
-  pt: "Ainda não há lições disponíveis neste idioma. 😔",
-};
+  for (const file of fs.readdirSync(localesDir)) {
+    if (!file.endsWith(".js")) continue;
+    const code = file.slice(0, -3);
+    try {
+      const src = fs.readFileSync(path.join(localesDir, file), "utf8");
+
+      const nameMat = src.match(/meta\s*=\s*\{[^}]*name\s*:\s*"([^"]+)"/);
+      const rawName = nameMat ? nameMat[1] : code;
+      const name = rawName.replace(/\s*\(translated by AI\)\s*/i, "").trim();
+
+      const msgMat = src.match(/"lessons\.noLessons"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+      const noLessons = msgMat
+        ? msgMat[1].replace(/\\n/g, "\n").replace(/\\"/g, '"').replace(/\\\\/g, "\\")
+        : null;
+
+      info[code] = { name, noLessons };
+    } catch {
+      info[code] = { name: code.toUpperCase(), noLessons: null };
+    }
+  }
+  return info;
+}
 
 /**
  * @typedef {{ num: number[]|null, file: string, href: string, title: string, children: LessonNode[] }} LessonNode
@@ -293,10 +313,12 @@ function generateLangRedirect(firstHref) {
  * Reuses rootTemplateHtml but fixes relative paths for the lang/ subdirectory.
  * @param {string} lang
  * @param {string} rootTemplateHtml
+ * @param {{ name: string, noLessons: string | null }} info
+ * @param {string} fallbackMsg
  */
-function generateLangStub(lang, rootTemplateHtml) {
-  const langName = LANG_NAMES[lang] ?? lang.toUpperCase();
-  const msg = LANG_NO_LESSONS[lang] ?? LANG_NO_LESSONS["en"];
+function generateLangStub(lang, rootTemplateHtml, info, fallbackMsg) {
+  const langName = info.name;
+  const msg = info.noLessons ?? fallbackMsg;
   const body = `<h1>${langName} – Lektionen</h1>\n<p>${msg}</p>\n<p><a href="../">← Zurück</a></p>`;
   return rootTemplateHtml
     .replace(/\{\{body\}\}/g, body)
@@ -310,10 +332,15 @@ function generateLangStub(lang, rootTemplateHtml) {
  * @param {string[]} langs
  * @param {string} rootTemplateHtml
  */
-function generateRootIndex(langs, rootTemplateHtml) {
+/**
+ * @param {string[]} langs
+ * @param {string} rootTemplateHtml
+ * @param {Record<string, { name: string, noLessons: string | null }>} localeInfo
+ */
+function generateRootIndex(langs, rootTemplateHtml, localeInfo) {
   const items = langs
     .map((l) => {
-      const name = LANG_NAMES[l] ?? l.toUpperCase();
+      const name = localeInfo[l]?.name ?? l.toUpperCase();
       return `<li><a href="${l}/">${name}</a></li>`;
     })
     .join("\n");
@@ -344,6 +371,8 @@ function buildLessons(root) {
 
   const templateHtml = fs.readFileSync(templatePath, "utf8");
   const rootTemplateHtml = fs.readFileSync(rootTemplatePath, "utf8");
+  const localeInfo = loadLocaleInfo(path.join(root, "locales"));
+  const fallbackMsg = localeInfo["en"]?.noLessons ?? "No lessons available yet. 😔";
   fs.mkdirSync(outDir, { recursive: true });
   if (fs.existsSync(cssPath)) fs.copyFileSync(cssPath, path.join(outDir, "_style.css"));
 
@@ -414,16 +443,16 @@ function buildLessons(root) {
   }
 
   // Stub pages for all known languages without lessons
-  for (const lang of Object.keys(LANG_NAMES)) {
+  for (const [lang, info] of Object.entries(localeInfo)) {
     if (builtLangs.includes(lang)) continue;
     const langOut = path.join(outDir, lang);
     fs.mkdirSync(langOut, { recursive: true });
-    fs.writeFileSync(path.join(langOut, "index.html"), generateLangStub(lang, rootTemplateHtml), "utf8");
+    fs.writeFileSync(path.join(langOut, "index.html"), generateLangStub(lang, rootTemplateHtml, info, fallbackMsg), "utf8");
     console.log(`[lessons] ✓ ${lang}/index.html (stub)`);
   }
 
   // Root index
-  fs.writeFileSync(path.join(outDir, "index.html"), generateRootIndex(builtLangs, rootTemplateHtml), "utf8");
+  fs.writeFileSync(path.join(outDir, "index.html"), generateRootIndex(builtLangs, rootTemplateHtml, localeInfo), "utf8");
   console.log(`[lessons] ✓ index.html`);
 }
 
@@ -457,6 +486,10 @@ export function lessonsPlugin() {
             res.end(fs.readFileSync(candidate));
             return;
           }
+          // No matching file → 404
+          res.writeHead(404, { "Content-Type": "text/html; charset=utf-8" });
+          res.end(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Not Found</title><style>body{font-family:sans-serif;padding:2rem;color:#ccc;background:#1a1a1a}a{color:#5b9bd5}</style></head><body><h1>404 – Not Found</h1><p>No lessons found for this path.</p><p><a href="/lessons/">← Lessons</a></p></body></html>`);
+          return;
         }
 
         next();

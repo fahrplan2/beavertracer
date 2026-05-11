@@ -2,6 +2,7 @@
 
 import { assertLenU8 } from "../../lib/helpers.js";
 import { IPAddress } from "../models/IPAddress.js";
+import { read16BE, write16BE } from "../util/byteUtils.js";
 
 export class IPv6Packet {
 
@@ -87,7 +88,7 @@ export class IPv6Packet {
     const trafficClass = ((bytes[0] & 0x0f) << 4) | ((bytes[1] >> 4) & 0x0f);
     const flowLabel = ((bytes[1] & 0x0f) << 16) | (bytes[2] << 8) | bytes[3];
 
-    const payloadLength = (bytes[4] << 8) | bytes[5];
+    const payloadLength = read16BE(bytes, 4);
     const nextHeader = bytes[6];
     const hopLimit = bytes[7];
 
@@ -140,8 +141,7 @@ export class IPv6Packet {
     out[3] = this.flowLabel & 0xff;
 
     // payload length
-    out[4] = (this.payloadLength >> 8) & 0xff;
-    out[5] = this.payloadLength & 0xff;
+    write16BE(out, 4, this.payloadLength);
 
     // next header + hop limit
     out[6] = this.nextHeader & 0xff;

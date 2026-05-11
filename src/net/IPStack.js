@@ -3,11 +3,11 @@
 import { prefixToNetmask } from "../lib/helpers.js";
 import { IPv4Packet } from "../net/pdu/IPv4Packet.js";
 import { IPv6Packet } from "../net/pdu/IPv6Packet.js";
-import { NetworkInterface } from "./NetworkInterface.js";
+import { NetworkInterface, VLANSubInterface } from "./NetworkInterface.js";
 import { Observable } from "../lib/Observeable.js";
 import { ICMPPacket } from "../net/pdu/ICMPPacket.js";
 import { EthernetPort } from "./EthernetPort.js";
-import { simTimer, SimTimer } from "../sim/SimTimer.js";
+import { simTimer, SimTimer } from "../lib/SimTimer.js";
 import { TcpEngine } from "./TcpEngine.js";
 import { UdpEngine } from "./UdpEngine.js";
 import { IPAddress } from "./models/IPAddress.js";
@@ -100,7 +100,13 @@ export class IPStack extends Observable {
         });
 
         this.udp = new UdpEngine({
-            ipSend: (opts) => { this.send(opts); },
+            ipSend: (opts) => {
+                if (opts.dst?.isV4?.()) {
+                    this.send(opts);
+                } else {
+                    this.send6({ dst: opts.dst, src: opts.src, nextHeader: opts.protocol, payload: opts.payload });
+                }
+            },
             sendIcmpError: (original, type, code) => { this._sendICMPError(original, type, code); },
             resolveSrcIp: (dstIp) => {
                 if (dstIp.isV4()) {
@@ -315,16 +321,46 @@ export class IPStack extends Observable {
     }
 
     /**
+     * Add a VLAN subinterface (e.g. eth0.10) to an existing interface.
+     * @param {string} parentName  e.g. "eth0"
+     * @param {number} vid         VLAN ID 1–4094
+     */
+    addSubInterface(parentName, vid) {
+        vid = vid | 0;
+        if (vid < 1 || vid > 4094) throw new Error(`Invalid VLAN ID ${vid}`);
+        const parent = this.interfaces.find(i => i.name === parentName);
+        if (!parent) throw new Error(`Interface ${parentName} not found`);
+        if (parent instanceof VLANSubInterface) throw new Error("Cannot create subinterface of a subinterface");
+        if (parent._subInterfaces.has(vid)) throw new Error(`Subinterface ${parentName}.${vid} already exists`);
+
+        const sub = new VLANSubInterface(parent, vid);
+        parent._subInterfaces.set(vid, sub);
+        this.interfaces.push(sub);
+        sub.subscribe(this);
+
+        this._updateAutoRoutes();
+    }
+
+    /**
      * @param {string} name
      */
     deleteInterface(name) {
-        const idx = this.interfaces.findIndex(i => i.name === name);
-        if (idx === -1) {
+        const interf = this.interfaces.find(i => i.name === name);
+        if (!interf) {
             console.warn("deleteInterface: interface not found", name);
             return;
         }
 
-        const interf = this.interfaces[idx];
+        // Cascade: remove subinterfaces first (copy to avoid mutation during iteration)
+        if (!(interf instanceof VLANSubInterface)) {
+            for (const sub of [...interf._subInterfaces.values()]) {
+                this.deleteInterface(sub.name);
+            }
+        }
+
+        // Re-find index after potential cascade
+        const idx = this.interfaces.findIndex(i => i.name === name);
+        if (idx === -1) return;
 
         // 1) destroy ethernet link
         if (interf.port.linkref != null) {
@@ -355,7 +391,10 @@ export class IPStack extends Observable {
             return true;
         });
 
-        // 6) delete interface
+        // 6) delete interface (and unregister from parent if it's a subinterface)
+        if (interf instanceof VLANSubInterface) {
+            interf._parentIface._subInterfaces.delete(interf.vid);
+        }
         this.interfaces.splice(idx, 1);
 
         // 7) fix route interface indices
@@ -878,8 +917,17 @@ export class IPStack extends Observable {
             }
         }
 
-        // IPv6 multicast (ff00::/8) — accept (pass recvIfIndex so RS handler knows which interface)
+        // IPv6 multicast (ff00::/8)
         if (dst.toUInt8()[0] === 0xff) {
+            if (internal) {
+                // Locally generated multicast: send on all interfaces using 33:33:xx:xx:xx:xx MAC
+                const dstBytes = dst.toUInt8();
+                const mac = new Uint8Array([0x33, 0x33, dstBytes[12], dstBytes[13], dstBytes[14], dstBytes[15]]);
+                for (const itf of this.interfaces) {
+                    itf.sendFrame(mac, 0x86DD, packet.pack());
+                }
+            }
+            // Also deliver locally (e.g. for RS/RA handling)
             this.acceptV6(packet, recvIfIndex);
             return;
         }
@@ -1297,6 +1345,9 @@ export class IPStack extends Observable {
                 prefixLength6: itf.prefixLength6 ?? 0,
                 ip6LL: itf.ip6LL?.toString?.() ?? null,
                 raEnabled: !!itf.raEnabled,
+                ...(itf instanceof VLANSubInterface
+                    ? { vid: itf.vid, parentName: itf._parentIface.name }
+                    : {}),
             })),
 
             routes: this.routingTable
@@ -1324,22 +1375,35 @@ export class IPStack extends Observable {
 
         stack.forwarding = !!json.forwarding;
 
-        // create interfaces in stored order
+        // Pass 1: create regular interfaces
         stack.interfaces = [];
         for (let i = 0; i < ifs.length; i++) {
             const row = ifs[i] ?? {};
+            if (row.vid != null) continue; // subinterfaces in pass 2
             const name = String(row.name ?? `eth${i}`);
             const interf = new NetworkInterface({ name });
             stack.interfaces.push(interf);
             interf.subscribe(stack);
         }
 
-        // configure ip/prefix
-        for (let i = 0; i < stack.interfaces.length; i++) {
+        // Pass 2: create VLAN subinterfaces (parent must already exist)
+        for (let i = 0; i < ifs.length; i++) {
             const row = ifs[i] ?? {};
+            if (row.vid == null) continue;
+            try {
+                stack.addSubInterface(String(row.parentName), Number(row.vid));
+            } catch (e) {
+                console.warn("IPStack.fromJSON: could not restore subinterface", row, e);
+            }
+        }
+
+        // configure ip/prefix for all interfaces (regular + sub)
+        for (let i = 0; i < stack.interfaces.length; i++) {
+            const itf = stack.interfaces[i];
+            const row = ifs.find((/** @type {any} */ r) => r?.name === itf.name) ?? {};
             const ip = IPAddress.fromString(String(row.ip ?? "0.0.0.0"));
             const prefixLength = Number(row.prefixLength ?? (ip.isV4() ? 24 : 64));
-            stack.configureInterface(i, { name: stack.interfaces[i].name, ip, prefixLength });
+            stack.configureInterface(i, { name: itf.name, ip, prefixLength });
 
             if (row.ip6) {
                 try {

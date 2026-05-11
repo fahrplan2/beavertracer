@@ -272,4 +272,70 @@ export class UILib {
 
     return { bar, setActive, setBadge };
   }
+
+  /**
+   * Tab bar wired to pane visibility. Each entry in `tabs` has an `id`, `label`,
+   * and `pane` (the HTMLElement to show/hide). Returns `{ bar, setActive }`.
+   * The first tab is made active immediately.
+   *
+   * @param {Array<{id: string, label: string, pane: HTMLElement, onShow?: () => void}>} tabs
+   * @returns {{ bar: HTMLElement, setActive: (id: string) => void }}
+   */
+  static tabbedPane(tabs) {
+    /** @param {string} activeId */
+    function show(activeId) {
+      for (const t of tabs) {
+        t.pane.style.display = t.id === activeId ? "" : "none";
+        if (t.id === activeId && t.onShow) t.onShow();
+      }
+    }
+
+    const { bar, setActive: setTab } = UILib.tabGroup(
+      tabs.map(({ id, label }) => ({ id, label })),
+      (id) => { show(id); }
+    );
+
+    /** @param {string} id */
+    function setActive(id) {
+      setTab(id);
+      show(id);
+    }
+
+    if (tabs.length > 0) setActive(tabs[0].id);
+
+    return { bar, setActive };
+  }
+
+  /**
+   * Create a `<table>` with a fixed header row and an empty `<tbody>`.
+   * Returns the table element and the tbody so the caller can populate rows.
+   *
+   * @param {string[]} headers - Column header labels
+   * @param {string} [className] - Optional CSS class for the table element
+   * @returns {{ table: HTMLTableElement, tbody: HTMLTableSectionElement }}
+   */
+  static tableWithBody(headers, className) {
+    const table = /** @type {HTMLTableElement} */ (UILib.el("table", className ? { className } : {}));
+    const thead = document.createElement("thead");
+    const tr = document.createElement("tr");
+    for (const label of headers) {
+      const th = document.createElement("th");
+      th.textContent = label;
+      tr.appendChild(th);
+    }
+    thead.appendChild(tr);
+    table.appendChild(thead);
+    const tbody = document.createElement("tbody");
+    table.appendChild(tbody);
+    return { table, tbody };
+  }
+
+  /**
+   * @param {HTMLElement|null|undefined} el
+   * @param {boolean} isInvalid
+   */
+  static markInvalid(el, isInvalid) {
+    if (!el) return;
+    el.classList.toggle("is-invalid", !!isInvalid);
+  }
 }

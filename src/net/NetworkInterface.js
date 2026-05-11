@@ -5,7 +5,7 @@ import { EthernetFrame } from "../net/pdu/EthernetFrame.js";
 import { isEqualUint8, prefixToNetmask } from "../lib/helpers.js";
 import { ArpPacket } from "../net/pdu/ArpPacket.js";
 import { Observable } from "../lib/Observeable.js";
-import { simTimer, SimTimer } from "../sim/SimTimer.js";
+import { simTimer, SimTimer } from "../lib/SimTimer.js";
 import { IPv4Packet } from "../net/pdu/IPv4Packet.js";
 import { IPv6Packet } from "../net/pdu/IPv6Packet.js";
 import { ICMPv6Packet } from "../net/pdu/ICMPv6Packet.js";
@@ -19,6 +19,9 @@ import { IPAddress } from "./models/IPAddress.js";
  * - address resolution is "neighbor resolution" (ARP for v4, NDP for v6 later)
  */
 export class NetworkInterface extends Observable {
+
+    /** @type {Map<number, VLANSubInterface>} vid → subinterface */
+    _subInterfaces = new Map();
 
     /** @type {Uint8Array} */
     mac;
@@ -296,6 +299,22 @@ export class NetworkInterface extends Observable {
         const frame = this.port.getNextIncomingFrame();
         if (frame == null) return;
 
+        // Dispatch VLAN-tagged frames to subinterfaces
+        if (frame.vlan != null) {
+            const sub = this._subInterfaces.get(frame.vlan.vid);
+            if (sub) {
+                const inner = new EthernetFrame({
+                    dstMac: frame.dstMac,
+                    srcMac: frame.srcMac,
+                    etherType: frame.etherType,
+                    payload: frame.payload,
+                });
+                sub.port.inBuffer.push(inner);
+                sub.port.doUpdate();
+            }
+            return;
+        }
+
         switch (frame.etherType) {
             case 0x0800:  // IPv4
                 this._handleIPv4(IPv4Packet.fromBytes(frame.payload));
@@ -303,10 +322,6 @@ export class NetworkInterface extends Observable {
 
             case 0x0806:  // ARP (IPv4 only)
                 this._handleARP(ArpPacket.fromBytes(frame.payload));
-                break;
-
-            case 0x8100:  // VLAN
-                console.log("Unimplemented yet");
                 break;
 
             case 0x86DD:   // IPv6
@@ -784,5 +799,45 @@ export class NetworkInterface extends Observable {
      */
     getNextPacket() {
         return this.inQueue.shift();
+    }
+}
+
+/**
+ * A VLAN subinterface (e.g. eth0.10).
+ * Shares the parent's physical EthernetPort for egress (adds 802.1Q tag automatically).
+ * Ingress frames are injected by the parent NetworkInterface after stripping the tag.
+ */
+export class VLANSubInterface extends NetworkInterface {
+    /** @type {number} */ vid;
+    /** @type {NetworkInterface} */ _parentIface;
+
+    /**
+     * @param {NetworkInterface} parent
+     * @param {number} vid
+     */
+    constructor(parent, vid) {
+        super({ name: `${parent.name}.${vid}` });
+        this.vid = vid;
+        this._parentIface = parent;
+        this.mac = parent.mac; // share physical MAC
+    }
+
+    /**
+     * Override: add VLAN tag and send via parent's physical port.
+     * @param {Uint8Array} dstMac
+     * @param {number} etherType
+     * @param {Uint8Array} payload
+     */
+    sendFrame(dstMac, etherType, payload) {
+        if (isEqualUint8(dstMac, this.mac)) {
+            // Loopback: inject into own virtual port buffer
+            const inner = new EthernetFrame({ dstMac, srcMac: this.mac, etherType, payload });
+            this.port.recieve(inner.pack());
+            this.port.doUpdate();
+            return;
+        }
+        const frame = new EthernetFrame({ dstMac, srcMac: this.mac, etherType, payload });
+        frame.vlan = { vid: this.vid };
+        this._parentIface.port.send(frame);
     }
 }

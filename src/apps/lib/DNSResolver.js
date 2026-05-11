@@ -1,7 +1,7 @@
 //@ts-check
 
 import { DNSPacket } from "../../net/pdu/DNSPacket.js";
-import { simTimer, SimTimer } from "../../sim/SimTimer.js";
+import { simTimer, SimTimer } from "../../lib/SimTimer.js";
 import { IPAddress } from "../../net/models/IPAddress.js";
 
 /**

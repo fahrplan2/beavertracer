@@ -1,5 +1,8 @@
 //@ts-check
 
+import { computeIPv4PseudoChecksum, computeIPv6PseudoChecksum } from "../util/checksumUtils.js";
+import { read16BE, write16BE } from "../util/byteUtils.js";
+
 export class UDPPacket {
 
   srcPort;
@@ -59,10 +62,10 @@ export class UDPPacket {
       throw new Error("UDP header needs at least 8 bytes");
     }
 
-    const srcPort = (bytes[0] << 8) | bytes[1];
-    const dstPort = (bytes[2] << 8) | bytes[3];
-    const length = (bytes[4] << 8) | bytes[5];
-    const checksum = (bytes[6] << 8) | bytes[7];
+    const srcPort = read16BE(bytes, 0);
+    const dstPort = read16BE(bytes, 2);
+    const length  = read16BE(bytes, 4);
+    const checksum = read16BE(bytes, 6);
 
     if (length < 8) {
       throw new Error("Invalid UDP length (< 8)");
@@ -94,14 +97,9 @@ export class UDPPacket {
 
     const out = new Uint8Array(this.length);
 
-    out[0] = (this.srcPort >> 8) & 0xff;
-    out[1] = this.srcPort & 0xff;
-
-    out[2] = (this.dstPort >> 8) & 0xff;
-    out[3] = this.dstPort & 0xff;
-
-    out[4] = (this.length >> 8) & 0xff;
-    out[5] = this.length & 0xff;
+    write16BE(out, 0, this.srcPort);
+    write16BE(out, 2, this.dstPort);
+    write16BE(out, 4, this.length);
 
     // checksum placeholder
     out[6] = 0;
@@ -128,90 +126,29 @@ export class UDPPacket {
       }
     }
 
-    out[6] = (cs >> 8) & 0xff;
-    out[7] = cs & 0xff;
+    write16BE(out, 6, cs);
 
     return out;
   }
 
   /**
-   * Compute UDP checksum using IPv4 pseudo-header.
-   *
-   * Pseudo-header:
-   *  src(4) + dst(4) + zero(1) + protocol(1=17) + udpLength(2)
-   *
    * @param {Uint8Array} udpDatagram (with checksum bytes set to 0)
    * @param {Uint8Array} srcIp length 4
    * @param {Uint8Array} dstIp length 4
    * @returns {number}
    */
   static computeChecksumIPv4Pseudo(udpDatagram, srcIp, dstIp) {
-    if (!(udpDatagram instanceof Uint8Array)) throw new Error("udpDatagram must be Uint8Array");
-    if (!(srcIp instanceof Uint8Array) || srcIp.length !== 4) throw new Error("srcIp must be Uint8Array(4)");
-    if (!(dstIp instanceof Uint8Array) || dstIp.length !== 4) throw new Error("dstIp must be Uint8Array(4)");
-
-    const udpLen = udpDatagram.length;
-
-    const pseudo = new Uint8Array(12);
-    pseudo.set(srcIp, 0);
-    pseudo.set(dstIp, 4);
-    pseudo[8] = 0;
-    pseudo[9] = 17; // UDP
-    pseudo[10] = (udpLen >> 8) & 0xff;
-    pseudo[11] = udpLen & 0xff;
-
-    return UDPPacket._onesComplementChecksum([pseudo, udpDatagram]);
+    return computeIPv4PseudoChecksum(udpDatagram, srcIp, dstIp, 17);
   }
 
   /**
-   * Compute UDP checksum using IPv6 pseudo-header.
-   * Pseudo-header: src(16) + dst(16) + udpLength(4) + zeros(3) + next-header=17(1)
-   *
    * @param {Uint8Array} udpDatagram (with checksum bytes set to 0)
    * @param {Uint8Array} srcIp length 16
    * @param {Uint8Array} dstIp length 16
    * @returns {number}
    */
   static computeChecksumIPv6Pseudo(udpDatagram, srcIp, dstIp) {
-    const len = udpDatagram.length;
-    const pseudo = new Uint8Array(40);
-    pseudo.set(srcIp, 0);
-    pseudo.set(dstIp, 16);
-    pseudo[32] = (len >>> 24) & 0xff;
-    pseudo[33] = (len >>> 16) & 0xff;
-    pseudo[34] = (len >>> 8)  & 0xff;
-    pseudo[35] =  len         & 0xff;
-    // pseudo[36..38] = 0
-    pseudo[39] = 17; // UDP
-    return UDPPacket._onesComplementChecksum([pseudo, udpDatagram]);
-  }
-
-  /**
-   * One's complement checksum over multiple buffers (pads to even length).
-   *
-   * @param {Uint8Array[]} bufs
-   * @returns {number}
-   */
-  static _onesComplementChecksum(bufs) {
-    let sum = 0;
-
-    for (const b of bufs) {
-      if (!(b instanceof Uint8Array)) throw new Error("checksum buffers must be Uint8Array");
-
-      let i = 0;
-      for (; i + 1 < b.length; i += 2) {
-        const word = (b[i] << 8) | b[i + 1];
-        sum += word;
-        sum = (sum & 0xffff) + (sum >>> 16);
-      }
-      if (i < b.length) {
-        const word = (b[i] << 8);
-        sum += word;
-        sum = (sum & 0xffff) + (sum >>> 16);
-      }
-    }
-
-    return (~sum) & 0xffff;
+    return computeIPv6PseudoChecksum(udpDatagram, srcIp, dstIp, 17);
   }
 
   _validate() {

@@ -2,6 +2,7 @@
 
 import { SwitchBackplane } from "../net/SwitchBackplane.js";
 import { SimulatedObject } from "./SimulatedObject.js";
+import { PollTimer } from "../lib/PollTimer.js";
 import { DOMBuilder } from "../lib/DomBuilder.js";
 import { t } from "../i18n/index.js";
 
@@ -44,8 +45,7 @@ export class Switch extends SimulatedObject {
     /** @type {HTMLDivElement|null} */
     _satHost = null;
 
-    /** @type {number|null} */
-    _satPollTimer = null;
+    _pollTimer = new PollTimer();
 
     /** @type {HTMLInputElement|null} */
     _vlanEnabledCheckbox = null;
@@ -64,7 +64,7 @@ export class Switch extends SimulatedObject {
      */
     constructor(name = t("switch.title")) {
         super(name);
-        this.backplane = new SwitchBackplane(16);
+        this.backplane = new SwitchBackplane(8);
 
         /** @param {HTMLElement} body */
         this.onPanelCreated = (body) => {
@@ -253,16 +253,14 @@ export class Switch extends SimulatedObject {
     }
 
     _startSatPolling() {
-        this._satPollTimer = window.setInterval(() => {
+        this._pollTimer.start(() => {
             if (this._activeTab === "sat") this._renderSAT();
+            else if (this._activeTab === "stp") this._renderSTPSection();
         }, 500);
     }
 
     _stopSatPolling() {
-        if (this._satPollTimer != null) {
-            clearInterval(this._satPollTimer);
-            this._satPollTimer = null;
-        }
+        this._pollTimer.stop();
     }
 
     _renderSAT() {
@@ -471,6 +469,10 @@ export class Switch extends SimulatedObject {
         }
 
         // Minimal status
+        const ownId = DOMBuilder.div("");
+        const isRoot = this.backplane.stpRootId === this.backplane.stpBridgeIdVal;
+        ownId.textContent = `Bridge ID: 0x${this.backplane.stpBridgeIdVal.toString(16)}${isRoot ? " (Root)" : ""}`;
+
         const root = DOMBuilder.div("");
         root.textContent = `Root ID: 0x${this.backplane.stpRootId.toString(16)}`;
 
@@ -480,7 +482,7 @@ export class Switch extends SimulatedObject {
         const rootPort = DOMBuilder.div("");
         rootPort.textContent = `Root Port: ${this.backplane.stpRootPort == null ? "-" : `port ${this.backplane.stpRootPort + 1}`}`;
 
-        card.append(root, rootCost, rootPort);
+        card.append(ownId, root, rootCost, rootPort);
 
         // Port states table
         const table = document.createElement("table");
@@ -490,6 +492,7 @@ export class Switch extends SimulatedObject {
       <tr>
         <th>Port</th>
         <th>Linked</th>
+        <th>Role</th>
         <th>State</th>
       </tr>
     </thead>
@@ -500,13 +503,32 @@ export class Switch extends SimulatedObject {
         for (let i = 0; i < ports.length; i++) {
             const tr = document.createElement("tr");
             const linked = ports[i].isLinked();
-            const fw = !!this.backplane.stpForwarding[i];
+            const state = this.backplane.stpPortState?.[i] ?? (this.backplane.stpForwarding[i] ? "forwarding" : "blocking");
 
-            tr.innerHTML = `
-      <td>port ${i + 1}</td>
-      <td>${linked ? "yes" : "no"}</td>
-      <td>${fw ? "forwarding" : "blocking"}</td>
-    `;
+            const role = !linked ? "—"
+                : this.backplane.stpRootPort === i ? "root"
+                : state === "blocking" ? "blocked"
+                : "designated";
+
+            const statusClass = { forwarding: "status-up", blocking: "status-down",
+                listening: "status-warning", learning: "status-warning" }[state] ?? "status-unknown";
+            const stateTd = document.createElement("td");
+            const badge = document.createElement("span");
+            badge.textContent = state;
+            badge.className = `ui-tab-badge ${statusClass}`;
+            stateTd.appendChild(badge);
+
+            const portTd = document.createElement("td");
+            portTd.textContent = `port ${i + 1}`;
+            const linkedTd = document.createElement("td");
+            linkedTd.textContent = linked ? "yes" : "no";
+            const roleTd = document.createElement("td");
+            roleTd.textContent = role;
+
+            tr.appendChild(portTd);
+            tr.appendChild(linkedTd);
+            tr.appendChild(roleTd);
+            tr.appendChild(stateTd);
             tbody.appendChild(tr);
         }
         table.appendChild(tbody);

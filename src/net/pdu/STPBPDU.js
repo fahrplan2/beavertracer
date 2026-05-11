@@ -1,6 +1,7 @@
 //@ts-check
 
 import { assertLenU8 } from "../../lib/helpers.js";
+import { read16BE, read32BE, write16BE, write32BE } from "../util/byteUtils.js";
 
 /**
  * IEEE 802.1D Spanning Tree Protocol BPDU (Configuration BPDU)
@@ -78,7 +79,7 @@ export class STPBPDU {
     if (!(bytes instanceof Uint8Array)) throw new Error("fromBytes expects Uint8Array");
     if (bytes.length < 4) throw new Error("BPDU needs at least 4 bytes");
 
-    const protocolId = (bytes[0] << 8) | bytes[1];
+    const protocolId = read16BE(bytes, 0);
     const protocolVersion = bytes[2];
     const bpduType = bytes[3];
 
@@ -100,17 +101,15 @@ export class STPBPDU {
 
     const rootId = bytes.slice(5, 13);
 
-    const rootPathCost =
-      ((bytes[13] << 24) | (bytes[14] << 16) | (bytes[15] << 8) | bytes[16]) >>> 0;
+    const rootPathCost = read32BE(bytes, 13);
 
     const bridgeId = bytes.slice(17, 25);
 
-    const portId = (bytes[25] << 8) | bytes[26];
-
-    const messageAge = (bytes[27] << 8) | bytes[28];
-    const maxAge = (bytes[29] << 8) | bytes[30];
-    const helloTime = (bytes[31] << 8) | bytes[32];
-    const forwardDelay = (bytes[33] << 8) | bytes[34];
+    const portId       = read16BE(bytes, 25);
+    const messageAge   = read16BE(bytes, 27);
+    const maxAge       = read16BE(bytes, 29);
+    const helloTime    = read16BE(bytes, 31);
+    const forwardDelay = read16BE(bytes, 33);
 
     return new STPBPDU({
       protocolId,
@@ -141,8 +140,7 @@ export class STPBPDU {
     // TCN BPDU
     if (this.bpduType === 0x80) {
       const out = new Uint8Array(4);
-      out[0] = (this.protocolId >> 8) & 0xff;
-      out[1] = this.protocolId & 0xff;
+      write16BE(out, 0, this.protocolId);
       out[2] = this.protocolVersion & 0xff;
       out[3] = this.bpduType & 0xff;
       return out;
@@ -151,35 +149,22 @@ export class STPBPDU {
     // Configuration BPDU
     const out = new Uint8Array(35);
 
-    out[0] = (this.protocolId >> 8) & 0xff;
-    out[1] = this.protocolId & 0xff;
+    write16BE(out, 0, this.protocolId);
     out[2] = this.protocolVersion & 0xff;
     out[3] = this.bpduType & 0xff;
     out[4] = this.flags & 0xff;
 
     out.set(this.rootId, 5);
 
-    out[13] = (this.rootPathCost >>> 24) & 0xff;
-    out[14] = (this.rootPathCost >>> 16) & 0xff;
-    out[15] = (this.rootPathCost >>> 8) & 0xff;
-    out[16] = this.rootPathCost & 0xff;
+    write32BE(out, 13, this.rootPathCost);
 
     out.set(this.bridgeId, 17);
 
-    out[25] = (this.portId >> 8) & 0xff;
-    out[26] = this.portId & 0xff;
-
-    out[27] = (this.messageAge >> 8) & 0xff;
-    out[28] = this.messageAge & 0xff;
-
-    out[29] = (this.maxAge >> 8) & 0xff;
-    out[30] = this.maxAge & 0xff;
-
-    out[31] = (this.helloTime >> 8) & 0xff;
-    out[32] = this.helloTime & 0xff;
-
-    out[33] = (this.forwardDelay >> 8) & 0xff;
-    out[34] = this.forwardDelay & 0xff;
+    write16BE(out, 25, this.portId);
+    write16BE(out, 27, this.messageAge);
+    write16BE(out, 29, this.maxAge);
+    write16BE(out, 31, this.helloTime);
+    write16BE(out, 33, this.forwardDelay);
 
     return out;
   }

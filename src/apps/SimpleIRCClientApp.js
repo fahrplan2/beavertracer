@@ -5,22 +5,7 @@ import { Disposer } from "../lib/Disposer.js";
 import { UILib as UI } from "./lib/UILib.js";
 import { IPAddress } from "../net/models/IPAddress.js";
 import { t } from "../i18n/index.js";
-
-function nowStamp() { return new Date().toLocaleTimeString(); }
-
-/** @param {string} s */
-function encodeUTF8(s) {
-  if (typeof TextEncoder !== "undefined") return new TextEncoder().encode(s);
-  const b = new Uint8Array(s.length);
-  for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i) & 0xff;
-  return b;
-}
-
-/** @param {Uint8Array} b */
-function decodeUTF8(b) {
-  if (typeof TextDecoder !== "undefined") return new TextDecoder().decode(b);
-  let s = ""; for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return s;
-}
+import { nowStamp, encodeUTF8, decodeUTF8 } from "../lib/helpers.js";
 
 /** @param {any} net @param {string} ck @param {{buf:Uint8Array}} st */
 async function readLine(net, ck, st) {

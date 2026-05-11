@@ -1,6 +1,6 @@
 //@ts-check
 
-import { GenericProcess } from "./GenericProcess.js";
+import { LoggedProcess } from "./lib/LoggedProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
 import { Disposer } from "../lib/Disposer.js";
 import { t } from "../i18n/index.js";
@@ -97,7 +97,7 @@ function ipToText(ip) {
  *   "serverId":   "192.168.1.1"      // optional, default gateway
  * }
  */
-export class DHCPServerApp extends GenericProcess {
+export class DHCPServerApp extends LoggedProcess {
   get title() {
     return t("app.dhcpserver.title");
   }
@@ -116,9 +116,6 @@ export class DHCPServerApp extends GenericProcess {
 
   /** @type {boolean} */
   running = false;
-
-  /** @type {Array<string>} */
-  log = [];
 
   /** @type {HTMLTextAreaElement|null} */
   logEl = null;
@@ -147,8 +144,11 @@ export class DHCPServerApp extends GenericProcess {
   /** @type {HTMLButtonElement|null} */
   saveBtn = null;
 
-  /** @type {HTMLButtonElement|null} */
-  loadBtn = null;
+  /** @type {HTMLElement|null} */
+  leasesPane = null;
+
+  /** @type {HTMLTableSectionElement|null} */
+  leasesBody = null;
 
   /**
    * Lease table: key is MACToNumber(mac) as string (BigInt -> string).
@@ -174,6 +174,7 @@ export class DHCPServerApp extends GenericProcess {
    */
   cfg = DHCPServerApp.defaultCfg();
 
+  icon = "fa-server";
   badge = "DHCP";
 
   run() {
@@ -212,11 +213,8 @@ export class DHCPServerApp extends GenericProcess {
     this.leaseTimeEl = leaseTime;
 
     /** @type {HTMLButtonElement} */
-    const loadBtn = UI.button(t("app.dhcpserver.button.load"), () => this._loadConfigFromDisk(), {});
-    /** @type {HTMLButtonElement} */
     const saveBtn = UI.button(t("app.dhcpserver.button.save"), () => this._saveConfigToDiskFromUI(), { primary: true });
 
-    this.loadBtn = loadBtn;
     this.saveBtn = saveBtn;
 
     /** @type {HTMLButtonElement} */
@@ -242,29 +240,39 @@ export class DHCPServerApp extends GenericProcess {
       UI.row(t("app.dhcpserver.label.dns"), dns),
       UI.row(t("app.dhcpserver.label.gateway"), gateway),
       UI.row(t("app.dhcpserver.label.leaseTime"), leaseTime),
-      UI.buttonRow([loadBtn, saveBtn]),
+      UI.buttonRow([saveBtn]),
     ]});
     const logPane = UI.el("div", { children: [
       UI.buttonRow([clear]),
       logBox,
     ]});
 
-    const { bar: tabBar, setActive: setTab } = UI.tabGroup([
-      { id: "config", label: t("app.dhcpserver.label.config") },
-      { id: "log",    label: t("app.dhcpserver.label.log") },
-    ], (id) => {
-      configPane.style.display = id === "config" ? "" : "none";
-      logPane.style.display    = id === "log"    ? "" : "none";
-    });
-    setTab("config");
-    configPane.style.display = "";
-    logPane.style.display    = "none";
+    const { table: leasesTable, tbody } = UI.tableWithBody([
+      t("app.dhcpserver.leases.col.mac"),
+      t("app.dhcpserver.leases.col.address"),
+      t("app.dhcpserver.leases.col.expires"),
+    ], "dhcp-leases-table");
+    this.leasesBody = tbody;
+
+    const leasesPane = UI.el("div", { children: [leasesTable] });
+    this.leasesPane = leasesPane;
+
+    const { bar: tabBar } = UI.tabbedPane([
+      { id: "config", label: t("app.dhcpserver.label.config"),  pane: configPane },
+      { id: "log",    label: t("app.dhcpserver.label.log"),     pane: logPane },
+      { id: "leases", label: t("app.dhcpserver.label.leases"),  pane: leasesPane, onShow: () => this._renderLeases() },
+    ]);
+
+    this.disposer.interval(() => {
+      if (this.leasesPane && this.leasesPane.style.display !== "none") this._renderLeases();
+    }, 3000);
 
     const panel = UI.panel([
       UI.buttonRow([start, stop]),
       tabBar,
       configPane,
       logPane,
+      leasesPane,
     ]);
 
     this.root.replaceChildren(panel);
@@ -285,7 +293,9 @@ export class DHCPServerApp extends GenericProcess {
     this.startBtn = null;
     this.stopBtn = null;
     this.saveBtn = null;
-    this.loadBtn = null;
+
+    this.leasesPane = null;
+    this.leasesBody = null;
     super.onUnmount();
   }
 
@@ -305,22 +315,52 @@ export class DHCPServerApp extends GenericProcess {
     if (this.gatewayEl) this.gatewayEl.disabled = dis;
     if (this.leaseTimeEl) this.leaseTimeEl.disabled = dis;
     if (this.saveBtn) this.saveBtn.disabled = dis;
-    if (this.loadBtn) this.loadBtn.disabled = dis;
-  }
-
-  _renderLog() {
-    if (!this.logEl) return;
-    const maxLines = 250;
-    const lines = this.log.length > maxLines ? this.log.slice(-maxLines) : this.log;
-    this.logEl.value = lines.join("\n");
-    this.logEl.scrollTop = this.logEl.scrollHeight;
   }
 
   /** @param {string} line */
   _appendLog(line) {
-    this.log.push(line);
-    if (this.log.length > 4000) this.log.splice(0, this.log.length - 4000);
-    if (this.mounted) this._renderLog();
+    super._appendLog(line);
+    if (this.mounted && this.leasesPane && this.leasesPane.style.display !== "none") this._renderLeases();
+  }
+
+  _renderLeases() {
+    if (!this.leasesBody) return;
+    this._cleanupExpiredLeases();
+    const now = Date.now();
+
+    /** @type {HTMLElement[]} */
+    const rows = [];
+    for (const [macKey, lease] of this.leases.entries()) {
+      const mac = BigInt(macKey).toString(16).padStart(12, "0")
+        .match(/.{2}/g)?.join(":") ?? macKey;
+      const ip  = v4u32ToString(lease.ipNum);
+      const sec = Math.max(0, Math.round((lease.expiresAt - now) / 1000));
+      const min = Math.floor(sec / 60);
+      const exp = min > 0 ? `${min}m ${sec % 60}s` : `${sec}s`;
+
+      const tr = document.createElement("tr");
+      const tdMac = document.createElement("td");
+      tdMac.textContent = mac;
+      const tdIp  = document.createElement("td");
+      tdIp.textContent  = ip;
+      const tdExp = document.createElement("td");
+      tdExp.textContent = exp;
+      tr.append(tdMac, tdIp, tdExp);
+      rows.push(tr);
+    }
+
+    if (rows.length === 0) {
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = 3;
+      td.textContent = t("app.dhcpserver.leases.empty");
+      td.style.textAlign = "center";
+      td.style.color = "var(--color-text-muted, #888)";
+      tr.appendChild(td);
+      rows.push(tr);
+    }
+
+    this.leasesBody.replaceChildren(...rows);
   }
 
   // ------------------ config (JSON) ------------------
