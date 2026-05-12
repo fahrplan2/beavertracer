@@ -234,7 +234,7 @@ export class TcpEngine {
     });
 
     // wait until handshake completes (or timeout)
-    await new Promise((resolve, reject) => {
+    await /** @type {Promise<void>} */ (new Promise((resolve, reject) => {
       const timerId = simTimer.schedule(() => {
         this.conns.delete(key);
         this.sockets.delete(srcPort);
@@ -248,7 +248,7 @@ export class TcpEngine {
       });
       if (conn.state === "ESTABLISHED") { simTimer.cancel(timerId); resolve(); }
       if (conn.state === "CLOSED")      { simTimer.cancel(timerId); reject(new Error("connect failed")); }
-    });
+    }));
 
     return conn;
   }

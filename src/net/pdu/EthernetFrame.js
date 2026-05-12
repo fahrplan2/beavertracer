@@ -68,14 +68,14 @@ export class EthernetFrame {
       paddedPayload = tmp;
     }
 
-    const hasVlan = this.vlan != null;
-    const headerLen = hasVlan ? 18 : 14;
+    const vlan = this.vlan;
+    const headerLen = vlan != null ? 18 : 14;
     const out = new Uint8Array(headerLen + paddedPayload.length);
 
     out.set(this.dstMac, 0);
     out.set(this.srcMac, 6);
 
-    if (!hasVlan) {
+    if (vlan == null) {
       if (this.useLengthField) {
         // 802.3 length (<= 1500)
         write16BE(out, 12, realPayloadLen & 0xffff);
@@ -92,9 +92,9 @@ export class EthernetFrame {
     out[12] = 0x81;
     out[13] = 0x00;
 
-    const vid = this.vlan.vid & 0x0fff;
-    const pcp = (this.vlan.pcp ?? 0) & 0x07;
-    const dei = (this.vlan.dei ?? 0) & 0x01;
+    const vid = vlan.vid & 0x0fff;
+    const pcp = (vlan.pcp ?? 0) & 0x07;
+    const dei = (vlan.dei ?? 0) & 0x01;
     const tci = (pcp << 13) | (dei << 12) | vid;
 
     write16BE(out, 14, tci);
