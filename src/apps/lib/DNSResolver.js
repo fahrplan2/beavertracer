@@ -152,8 +152,10 @@ export class DNSResolver {
   async resolveIP(name) {
     if (name === "localhost") return IPAddress.fromString("::1");
     if (!this._isConfigured()) return null;
-    const aaaa = await this.resolveAAAA(name);
-    if (aaaa.length) return aaaa[0];
+    if (this._hasIPv6()) {
+      const aaaa = await this.resolveAAAA(name);
+      if (aaaa.length) return aaaa[0];
+    }
     const a = await this.resolveA_IP(name);
     return a.length ? a[0] : null;
   }
@@ -213,6 +215,12 @@ export class DNSResolver {
 
   _isConfigured() {
     return this.serverIp instanceof IPAddress;
+  }
+
+  _hasIPv6() {
+    const interfaces = this.os?.net?.interfaces;
+    if (!Array.isArray(interfaces)) return false;
+    return interfaces.some(itf => itf.ip6 || itf.ip6LL);
   }
 
   _nowRealMs() {
