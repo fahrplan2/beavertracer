@@ -995,6 +995,8 @@ export default {
   "app.certmanager.tab.trusted":         "Trusted CAs",
   "app.certmanager.tab.sign":            "Sign",
   "app.certmanager.empty":               "No certificates in /etc/certs",
+  "app.certmanager.emptyHint":           "Go to the Generate tab to create your first certificate.",
+  "app.certmanager.emptyAction":         "Generate certificate",
 
   "app.certmanager.item.selfSigned":     "self-signed",
   "app.certmanager.item.issuer":         "Issuer: {issuer}",
@@ -1039,6 +1041,7 @@ export default {
   "app.certmanager.gen.errWrite":        "Failed to write certificate.",
 
   "app.certmanager.trusted.empty":       "No trusted CA certificates",
+  "app.certmanager.trusted.emptyHint":   "Import a CA certificate or add one from My Certs.",
   "app.certmanager.trusted.import":      "Import…",
   "app.certmanager.trusted.importTitle": "Import CA Certificate",
   "app.certmanager.trusted.remove":      "Remove from Trusted",
