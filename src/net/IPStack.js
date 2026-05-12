@@ -533,6 +533,8 @@ export class IPStack extends Observable {
     sendTCPConn(key, data) { return this.tcp.send(key, data); }
     /** @param {*} key */
     closeTCPConn(key) { return this.tcp.close(key); }
+    /** @param {*} key */
+    getTCPConnInfo(key) { return this.tcp.getConnInfo(key); }
 
     /****************************************************** UDP **********************************/
     /** @param {IPAddress} bindaddr @param {number} port */

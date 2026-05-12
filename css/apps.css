@@ -205,6 +205,70 @@
   text-overflow: ellipsis;
 }
 
+/* ---------------------------------------------------------
+   Cert popup (shown on lock-icon click)
+   --------------------------------------------------------- */
+.app-sparktail-http .sparktail-cert-popup {
+  position: absolute;
+  top: 44px;
+  left: 4px;
+  z-index: 200;
+  width: 300px;
+
+  background: var(--surface);
+  border: 1px solid var(--border, #ccc);
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.25);
+  padding: 12px 14px;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.app-sparktail-http .cert-popup-title {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+
+.app-sparktail-http .cert-popup-trust {
+  font-size: 12px;
+  margin-bottom: 10px;
+  padding: 5px 8px;
+  border-radius: 6px;
+}
+
+.app-sparktail-http .cert-trust-ok   { background: #d4edda; color: #155724; }
+.app-sparktail-http .cert-trust-warn { background: #fff3cd; color: #856404; }
+
+.app-sparktail-http .cert-popup-row {
+  display: flex;
+  gap: 6px;
+  padding: 3px 0;
+  border-bottom: 1px solid var(--border-light, rgba(128,128,128,.15));
+}
+.app-sparktail-http .cert-popup-row:last-child { border-bottom: none; }
+
+.app-sparktail-http .cert-popup-label {
+  color: var(--muted);
+  min-width: 78px;
+  flex-shrink: 0;
+  font-size: 11.5px;
+}
+
+.app-sparktail-http .cert-popup-value {
+  color: var(--text);
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  word-break: break-all;
+}
+
+/* Lock icon is clickable when active */
+.app-sparktail-http .sparktail-lock-secure,
+.app-sparktail-http .sparktail-lock-insecure {
+  cursor: pointer;
+}
+
 /************************************ EDITOR ***********************/
 
 
@@ -804,3 +868,83 @@ textarea.log {
   flex: 1;
 }
 
+
+/************************************ CERT MANAGER **********************/
+
+.app-certmanager .panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.app-certmanager .cm-split {
+  display: flex;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.app-certmanager .cm-list,
+.app-certmanager .cm-list-col {
+  display: flex;
+  flex-direction: column;
+  width: 200px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  gap: 3px;
+}
+
+.app-certmanager .cm-detail {
+  flex: 1;
+  overflow-y: auto;
+  min-width: 0;
+}
+
+.app-certmanager .cm-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  background: var(--surface);
+  border: 1px solid transparent;
+  user-select: none;
+}
+.app-certmanager .cm-item:hover        { background: color-mix(in srgb, currentColor 6%, transparent); }
+.app-certmanager .cm-item.is-selected  { border-color: var(--accent, #5a8); background: color-mix(in srgb, var(--accent, #5a8) 15%, transparent); }
+
+.app-certmanager .cm-item-icon { color: var(--muted); font-size: 14px; flex-shrink: 0; }
+.app-certmanager .cm-item-info { flex: 1; min-width: 0; }
+.app-certmanager .cm-item-cn   { font-weight: 600; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app-certmanager .cm-item-meta { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app-certmanager .cm-badge     { font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 4px; background: var(--accent, #5a8); color: #fff; flex-shrink: 0; }
+
+.app-certmanager .cm-empty {
+  color: var(--muted);
+  font-size: 12px;
+  padding: 12px;
+  text-align: center;
+}
+
+.app-certmanager .cm-detail-row {
+  display: flex;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border-light, rgba(128,128,128,.12));
+  font-size: 12.5px;
+}
+.app-certmanager .cm-detail-row:last-child { border-bottom: none; }
+.app-certmanager .cm-detail-label { color: var(--muted); min-width: 90px; flex-shrink: 0; }
+.app-certmanager .cm-detail-value { font-family: ui-monospace, monospace; font-size: 11.5px; word-break: break-all; }
+
+.app-certmanager .cm-preview {
+  margin: 8px 0;
+  padding: 10px 12px;
+  background: var(--surface);
+  border-radius: 8px;
+  font-size: 12.5px;
+}
+
+.app-certmanager .cm-check-label { display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; }

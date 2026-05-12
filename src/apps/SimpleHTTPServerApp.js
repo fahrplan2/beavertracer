@@ -3,7 +3,7 @@
 import { LoggedProcess } from "./lib/LoggedProcess.js";
 import { Disposer } from "../lib/Disposer.js";
 import { UILib as UI } from "./lib/UILib.js";
-import { SimTimer } from "../lib/SimTimer.js";
+import { SimTimer, simTimer } from "../lib/SimTimer.js";
 import { t } from "../i18n/index.js";
 import { IPAddress } from "../net/models/IPAddress.js";
 import { nowStamp, encodeUTF8, decodeUTF8 } from "../lib/helpers.js";
@@ -131,10 +131,13 @@ function internalHtml(title, details) {
  */
 function withTimeout(p, ms, label) {
   return new Promise((resolve, reject) => {
-    const tmr = setTimeout(() => reject(new Error(t("app.simplehttpserver.err.timeout", { label, ms }))), Math.max(1, ms | 0));
+    let done = false;
+    const id = simTimer.schedule(() => {
+      if (!done) { done = true; reject(new Error(t("app.simplehttpserver.err.timeout", { label, ms }))); }
+    }, ms);
     p.then(
-      (v) => { clearTimeout(tmr); resolve(v); },
-      (e) => { clearTimeout(tmr); reject(e); }
+      (v) => { if (!done) { done = true; simTimer.cancel(id); resolve(v); } },
+      (e) => { if (!done) { done = true; simTimer.cancel(id); reject(e); } },
     );
   });
 }
@@ -396,8 +399,30 @@ export class SimpleHTTPServerApp extends LoggedProcess {
    * @param {number} seq
    * @param {string} connKey
    */
+  /**
+   * Returns a send/recv/close interface for a connection.
+   * Subclasses (e.g. HTTPS) override this to inject a TLS layer.
+   * Returns null if the connection setup failed and was already cleaned up.
+   * @param {string} connKey
+   * @returns {Promise<{send:(d:Uint8Array)=>void, recv:()=>Promise<Uint8Array|null>, close:()=>void}|null>}
+   */
+  async _ioForConn(connKey) {
+    const net = this.os.net;
+    return {
+      send:  (data) => net.sendTCPConn(connKey, data),
+      recv:  ()     => net.recvTCPConn(connKey),
+      close: ()     => net.closeTCPConn(connKey),
+    };
+  }
+
+  /**
+   * @param {number} seq
+   * @param {string} connKey
+   */
   async _handleConn(seq, connKey) {
-    const ipf = this.os.net;
+    const io = await this._ioForConn(connKey);
+    if (io === null) return;
+
     const timeout = this._timeoutMs();
 
     // Read until header end
@@ -408,7 +433,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     const limit = 64 * 1024;
 
     while (this.running && this.runSeq === seq) {
-      const part = await withTimeout(ipf.recvTCPConn(connKey), timeout, "recv");
+      const part = await withTimeout(io.recv(), timeout, "recv");
       if (part == null) break;
 
       chunks.push(part);
@@ -436,8 +461,8 @@ export class SimpleHTTPServerApp extends LoggedProcess {
         "Connection": "close",
       }, body);
 
-      ipf.sendTCPConn(connKey, resp);
-      ipf.closeTCPConn(connKey);
+      await io.send(resp);
+      io.close();
       return;
     }
 
@@ -459,8 +484,8 @@ export class SimpleHTTPServerApp extends LoggedProcess {
         "Connection": "close",
       }, body);
 
-      ipf.sendTCPConn(connKey, resp);
-      ipf.closeTCPConn(connKey);
+      await io.send(resp);
+      io.close();
       return;
     }
 
@@ -480,8 +505,8 @@ export class SimpleHTTPServerApp extends LoggedProcess {
         "Connection": "close",
       }, body);
 
-      ipf.sendTCPConn(connKey, resp);
-      ipf.closeTCPConn(connKey);
+      await io.send(resp);
+      io.close();
       this._appendLog(t("app.simplehttpserver.log.methodNotAllowed", { time: nowStamp(), method, target }));
       return;
     }
@@ -506,8 +531,8 @@ export class SimpleHTTPServerApp extends LoggedProcess {
         "Connection": "close",
       }, body);
 
-      ipf.sendTCPConn(connKey, resp);
-      ipf.closeTCPConn(connKey);
+      await io.send(resp);
+      io.close();
       this._appendLog(t("app.simplehttpserver.log.notFound", { time: nowStamp(), method, norm }));
       return;
     }
@@ -524,8 +549,8 @@ export class SimpleHTTPServerApp extends LoggedProcess {
       "Connection": "close",
     }, body);
 
-    ipf.sendTCPConn(connKey, resp);
-    ipf.closeTCPConn(connKey);
+    await io.send(resp);
+    io.close();
     this._appendLog(t("app.simplehttpserver.log.ok", { time: nowStamp(), method, norm, bytes: data.length }));
   }
 }

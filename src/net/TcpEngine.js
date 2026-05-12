@@ -358,6 +358,21 @@ export class TcpEngine {
   }
 
   /**
+   * Return addressing info for an established connection, or null if not found.
+   * @param {string} key
+   */
+  getConnInfo(key) {
+    const conn = this.conns.get(key);
+    if (!conn) return null;
+    return {
+      localIP:   conn.localIP,
+      localPort: conn.port,
+      peerIP:    conn.peerIP,
+      peerPort:  conn.peerPort,
+    };
+  }
+
+  /**
    * Destroy all TCP connections and listening sockets.
    * @param {string} reason
    */

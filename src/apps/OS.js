@@ -12,6 +12,9 @@ import { SimpleTCPServerApp } from "./SimpleTCPServerApp.js";
 import { SimpleTCPClientApp } from "./SimpleTCPClientApp.js";
 import { SparktailHTTPClientApp } from "./SparktailHTTPClientApp.js";
 import { SimpleHTTPServerApp } from "./SimpleHTTPServerApp.js";
+import { SimpleHTTPSServerApp } from "./SimpleHTTPSServerApp.js";
+import { TlsCertificate, TlsTrustStore } from "../net/models/TlsCertificate.js";
+import { CertManagerApp } from "./CertManagerApp.js";
 import { DNSServerApp } from "./DNSServerApp.js";
 import { DNSResolver } from "./lib/DNSResolver.js";
 import { DHCPServerApp } from "./DHCPServerApp.js";
@@ -55,6 +58,9 @@ export class OS {
      */
     dns = new DNSResolver(this,null);
 
+    /** @type {{ certStore: TlsTrustStore }} */
+    tls = { certStore: new TlsTrustStore() };
+
     /** 
      * @type {Array<GenericProcess>} list of all running apps
      */
@@ -87,6 +93,7 @@ export class OS {
         this.fs = fs;
         this.root.classList.add("os-root");
         this._registerApps();
+        this._loadCertStore();
         this.title = "";
         this.render();
     }
@@ -95,12 +102,33 @@ export class OS {
      * helper function to init the OS. Will register and start the apps
      */
     _registerApps() {
-        const launchlist = 
-            [IPv4ConfigApp, TerminalApp, TextEditorApp, SparktailHTTPClientApp,  MailClientApp,  SimpleIRCClientApp, SimpleTCPClientApp, SimpleTCPServerApp,
-            SimpleHTTPServerApp, UDPEchoServerApp, DNSServerApp, DHCPServerApp, DHCPv6ServerApp, SimpleMailServerApp,
-            SimpleIRCServerApp];
+        const launchlist =
+            [IPv4ConfigApp, TerminalApp, TextEditorApp, SparktailHTTPClientApp, MailClientApp, SimpleIRCClientApp, SimpleTCPClientApp, SimpleTCPServerApp,
+            SimpleHTTPServerApp, SimpleHTTPSServerApp, UDPEchoServerApp, DNSServerApp, DHCPServerApp, DHCPv6ServerApp, SimpleMailServerApp,
+            SimpleIRCServerApp, CertManagerApp];
 
         launchlist.forEach((e) => this.exec(e));
+    }
+
+    /** Populate tls.certStore from /etc/certs/trusted/*.json */
+    _loadCertStore() {
+        this.tls.certStore = new TlsTrustStore();
+        try { this.fs.mkdir("/etc/certs",         { recursive: true }); } catch { /* exists */ }
+        try { this.fs.mkdir("/etc/certs/trusted", { recursive: true }); } catch { /* exists */ }
+        let entries = [];
+        try { entries = this.fs.readdir("/etc/certs/trusted"); } catch { return; }
+        for (const name of entries) {
+            if (!name.endsWith(".json")) continue;
+            try {
+                const raw = this.fs.readFile("/etc/certs/trusted/" + name);
+                this.tls.certStore.add(TlsCertificate.fromJSON(JSON.parse(raw)));
+            } catch { /* skip invalid */ }
+        }
+    }
+
+    /** Reload trust store from VFS (call after adding/removing trusted certs). */
+    reloadCertStore() {
+        this._loadCertStore();
     }
 
 

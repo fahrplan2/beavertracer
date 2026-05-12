@@ -3,13 +3,14 @@
 import { LoggedProcess } from "./lib/LoggedProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
 import { Disposer } from "../lib/Disposer.js";
-import { SimTimer } from "../lib/SimTimer.js";
+import { SimTimer, simTimer } from "../lib/SimTimer.js";
 
 //@ts-ignore Import ist raw für vite
 import startPage from "./assets/about-start.html?raw";
 import { t } from "../i18n/index.js";
 import { IPAddress } from "../net/models/IPAddress.js";
 import { nowStamp, encodeUTF8, decodeUTF8 } from "../lib/helpers.js";
+import { TlsSession, TlsCertUntrustedError } from "../net/TlsSession.js";
 
 /**
  * @param {Uint8Array} data
@@ -75,11 +76,15 @@ async function resolveHostToIP(host, dnsResolve) {
  */
 function parseHttpUrl(url) {
   const s = url.trim();
-  if (!s.toLowerCase().startsWith("http://")) {
+  const lower = s.toLowerCase();
+  const isHttps = lower.startsWith("https://");
+  const isHttp  = lower.startsWith("http://");
+  if (!isHttps && !isHttp) {
     return { ok: false, error: t("app.sparktail.err.onlyHttp") };
   }
+  const scheme = isHttps ? "https" : "http";
 
-  const rest = s.slice("http://".length);
+  const rest = s.slice(scheme.length + 3);
   const slash = rest.indexOf("/");
   const authority = slash >= 0 ? rest.slice(0, slash) : rest;
   const path = slash >= 0 ? rest.slice(slash) : "/";
@@ -87,7 +92,7 @@ function parseHttpUrl(url) {
   if (!authority) return { ok: false, error: t("app.sparktail.err.missingHostInUrl") };
 
   let host = authority;
-  let port = 80;
+  let port = isHttps ? 443 : 80;
 
   if (authority.startsWith("[")) {
     // IPv6 bracketed: [2001:db8::1] or [2001:db8::1]:port
@@ -117,7 +122,7 @@ function parseHttpUrl(url) {
   host = host.trim();
   if (!host) return { ok: false, error: t("app.sparktail.err.hostEmpty") };
 
-  return { ok: true, host, port, path };
+  return { ok: true, scheme, host, port, path };
 }
 
 /**
@@ -172,28 +177,23 @@ function parseHeaders(headerText) {
 }
 
 /**
- * Promise wrapper with timeout in ms.
+ * Promise wrapper with simulation-time timeout.
+ * Uses simTimer so the timeout pauses with the simulation.
  * @template T
  * @param {Promise<T>} p
- * @param {number} ms
+ * @param {number} ms  simulated milliseconds
  * @param {string} label
  * @returns {Promise<T>}
  */
 function withTimeout(p, ms, label) {
   return new Promise((resolve, reject) => {
-    const tmr = setTimeout(
-      () => reject(new Error(t("app.sparktail.err.timeout", { label, ms }))),
-      Math.max(0, ms | 0)
-    );
+    let done = false;
+    const id = simTimer.schedule(() => {
+      if (!done) { done = true; reject(new Error(t("app.sparktail.err.timeout", { label, ms }))); }
+    }, ms);
     p.then(
-      (v) => {
-        clearTimeout(tmr);
-        resolve(v);
-      },
-      (e) => {
-        clearTimeout(tmr);
-        reject(e);
-      }
+      (v) => { if (!done) { done = true; simTimer.cancel(id); resolve(v); } },
+      (e) => { if (!done) { done = true; simTimer.cancel(id); reject(e); } },
     );
   });
 }
@@ -207,27 +207,79 @@ function isHtml(headers) {
 }
 
 /**
- * Create a simple internal HTML error page.
+ * Firefox-style browser error page.
  * @param {string} title
- * @param {string} bodyText
+ * @param {string} detail
  */
-function internalErrorPage(title, bodyText) {
+function internalErrorPage(title, detail) {
   /** @param {string} s */
-  const esc = (s) =>
-    String(s)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
+  const esc = (s) => String(s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   return `<!doctype html>
-<html><head><meta charset="utf-8"><title>${esc(title)}</title></head>
-<body style="font-family: system-ui, sans-serif; padding: 16px;">
-  <h1>${esc(title)}</h1>
-  <pre style="white-space: pre-wrap; background: #111; color: #eee; padding: 12px; border-radius: 8px;">${esc(
-    bodyText
-  )}</pre>
-</body></html>`;
+<html><head><meta charset="utf-8"><title>${esc(title)}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#f9f9fa;display:flex;justify-content:center;padding:48px 20px;min-height:100%}
+.c{max-width:460px;width:100%}
+.ico{position:relative;display:inline-block;font-size:2.5rem;margin-bottom:20px;line-height:1}
+.ico-x{position:absolute;bottom:-4px;right:-10px;font-size:1.1rem;line-height:1}
+h1{font-size:1.15rem;font-weight:600;color:#15141a;margin-bottom:12px}
+.d{color:#5b5b66;font-size:.875rem;line-height:1.65;white-space:pre-wrap}
+</style></head>
+<body><div class="c">
+<div class="ico">🦫<span class="ico-x">❌</span></div>
+<h1>${esc(title)}</h1>
+<p class="d">${esc(detail)}</p>
+</div></body></html>`;
+}
+
+/**
+ * Firefox-style "Your connection is not secure" page with a "Proceed anyway" button.
+ * @param {import("../net/models/TlsCertificate.js").TlsCertificate|null} cert
+ * @param {string} url
+ * @param {{ title:string, detail:string, subject:string, issuer:string,
+ *            fingerprint:string, expiry:string, selfSigned:string, proceed:string }} i18n
+ */
+function certErrorPage(cert, url, i18n) {
+  /** @param {string} s */
+  const esc = (s) => String(s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const subject = cert?.subject ?? "?";
+  const issuer  = cert?.issuer  ?? "?";
+  const fp      = cert ? cert.fingerprint() : "?";
+  const expiry  = cert ? new Date(cert.notAfter).toLocaleDateString() : "?";
+  const selfSignedNote = cert?.selfSigned ? ` (${esc(i18n.selfSigned)})` : "";
+  return `<!doctype html>
+<html><head><meta charset="utf-8"><title>${esc(i18n.title)}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#f9f9fa;display:flex;justify-content:center;padding:48px 20px;min-height:100%;color:#15141a}
+.c{max-width:500px;width:100%}
+.ico{position:relative;display:inline-block;font-size:2.5rem;margin-bottom:20px;line-height:1}
+.ico-x{position:absolute;bottom:-4px;right:-10px;font-size:1.1rem;line-height:1}
+h1{font-size:1.15rem;font-weight:600;margin-bottom:12px}
+.d{color:#5b5b66;font-size:.875rem;line-height:1.65;margin-bottom:20px}
+.cert-box{background:#fff;border:1px solid #ddd;border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:.8rem}
+.cert-row{display:flex;gap:8px;padding:5px 0;border-bottom:1px solid #f0f0f0}
+.cert-row:last-child{border-bottom:none}
+.cert-lbl{color:#888;min-width:90px;flex-shrink:0}
+.cert-val{color:#333;font-family:monospace;word-break:break-all}
+.proceed{background:#e9e9eb;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:.875rem;color:#333}
+.proceed:hover{background:#d8d8da}
+</style></head>
+<body><div class="c">
+<div class="ico">🦫<span class="ico-x">❌</span></div>
+<h1>${esc(i18n.title)}</h1>
+<p class="d">${esc(i18n.detail)}</p>
+<div class="cert-box">
+<div class="cert-row"><span class="cert-lbl">${esc(i18n.subject)}</span><span class="cert-val">${esc(subject)}</span></div>
+<div class="cert-row"><span class="cert-lbl">${esc(i18n.issuer)}</span><span class="cert-val">${esc(issuer)}${selfSignedNote}</span></div>
+<div class="cert-row"><span class="cert-lbl">${esc(i18n.fingerprint)}</span><span class="cert-val">${esc(fp)}</span></div>
+<div class="cert-row"><span class="cert-lbl">${esc(i18n.expiry)}</span><span class="cert-val">${esc(expiry)}</span></div>
+</div>
+<script>var _url=${JSON.stringify(url)};</script>
+<button class="proceed" onclick="parent.postMessage({__sparktail:true,type:'certProceed',url:_url},'*')">${esc(i18n.proceed)}</button>
+</div></body></html>`;
 }
 
 /**
@@ -243,7 +295,7 @@ function normalizeUrlInput(input) {
   if (!s) return "";
   const low = s.toLowerCase();
   if (low.startsWith("about:")) return s;
-  if (low.startsWith("http://")) return s;
+  if (low.startsWith("http://") || low.startsWith("https://")) return s;
   // Bare IPv6 literal (at least two colons, not already bracketed)
   if (!s.startsWith("[") && (s.match(/:/g)?.length ?? 0) >= 2) {
     const slash = s.indexOf("/");
@@ -421,6 +473,17 @@ export class SparktailHTTPClientApp extends LoggedProcess {
   /** @type {number} */
   requestSeq = 0;
 
+  /** @type {import("../net/TlsSession.js").TlsSession|null} */
+  _activeTls = null;
+
+  /** Set true after "Proceed anyway"; consumed (reset) at start of next _fetchUrl. */
+  _bypassCertCheck = false;
+
+  /** @type {HTMLElement|null} */ _lockEl = null;
+  /** @type {HTMLElement|null} */ _certPopupEl = null;
+  /** @type {import("../net/models/TlsCertificate.js").TlsCertificate|null} */ _serverCert = null;
+  /** @type {boolean} */ _certTrusted = false;
+
   /** @type {string[]} */
   history = [];
 
@@ -516,17 +579,28 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     content.appendChild(source);
     content.appendChild(headersTA);
 
+    const lockEl = UI.el("span", { className: "sparktail-lock sparktail-lock-none" });
+    this._lockEl = lockEl;
+    this.disposer.on(lockEl, "click", () => this._toggleCertPopup());
+
+    const certPopupEl = UI.el("div", { className: "sparktail-cert-popup" });
+    certPopupEl.hidden = true;
+    this._certPopupEl = certPopupEl;
+
     // Browser-ish chrome bar
     const chromeBar = UI.el("div", { className: "sparktail-chrome" });
     chromeBar.appendChild(back);
     chromeBar.appendChild(fwd);
     chromeBar.appendChild(reload);
+    chromeBar.appendChild(lockEl);
     chromeBar.appendChild(urlInput);
     chromeBar.appendChild(go);
     chromeBar.appendChild(stop);
     chromeBar.appendChild(throbber);
 
     const panel = UI.panel([chromeBar, tabRow, content, status]);
+    panel.style.position = "relative";
+    panel.appendChild(certPopupEl);
     this.root.replaceChildren(panel);
 
     // Listen for internal page navigation (about:start links)
@@ -539,6 +613,12 @@ export class SparktailHTTPClientApp extends LoggedProcess {
         if (!u) return;
         if (this.urlEl) this.urlEl.value = u;
         this._navigate(u, true);
+      }
+      if (d.type === "certProceed" && typeof d.url === "string") {
+        this._bypassCertCheck = true;
+        const u = d.url;
+        if (this.urlEl) this.urlEl.value = u;
+        this._navigate(u, false);
       }
     };
     window.addEventListener("message", onMsg);
@@ -575,6 +655,9 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     this.previewFrame = null;
     this.sourceEl = null;
     this.headersEl = null;
+    this._lockEl = null;
+    this._certPopupEl = null;
+    this._serverCert = null;
     super.onUnmount();
   }
 
@@ -669,6 +752,12 @@ export class SparktailHTTPClientApp extends LoggedProcess {
   }
 
   _stop() {
+    const tls = this._activeTls;
+    this._activeTls = null;
+    if (tls) { try { tls.close(); } catch { /* ignore */ } }
+    this._hideCertPopup();
+    this._setLockState("none");
+
     // cancels current request by bumping seq and closing conn
     this.requestSeq++;
     this.loading = false;
@@ -719,6 +808,13 @@ export class SparktailHTTPClientApp extends LoggedProcess {
   async _fetchUrl(url) {
     if (this.loading) return;
 
+    const bypassCert = this._bypassCertCheck;
+    this._bypassCertCheck = false;
+    this._hideCertPopup();
+    this._serverCert = null;
+    this._certTrusted = false;
+    this._setLockState("none");
+
     const seq = ++this.requestSeq;
     this.loading = true;
     this._syncUI();
@@ -753,7 +849,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
       return;
     }
 
-    const { host, port, path } = parsed;
+    const { scheme, host, port, path } = parsed;
     const timeout = this._timeoutMs();
     const bodyLimit = 1_048_576;
 
@@ -768,7 +864,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     try {
       dstIP = await withTimeout(
         resolveHostToIP(host, dnsResolve),
-        timeout,
+        SimTimer.DNS_TIMEOUT_MS,
         t("app.sparktail.label.dns")
       );
     } catch (e) {
@@ -802,7 +898,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     let key = null;
 
     try {
-      const conn = await withTimeout(this.os.net.connectTCPConn(dstIP, port), timeout, t("app.sparktail.label.connect"));
+      const conn = await withTimeout(this.os.net.connectTCPConn(dstIP, port), SimTimer.TCP_CONNECT_TIMEOUT_MS, t("app.sparktail.label.connect"));
       key = conn?.key;
       if (typeof key !== "string" || !key) throw new Error(t("app.sparktail.err.noConnKey"));
       this.connKey = key;
@@ -820,9 +916,53 @@ export class SparktailHTTPClientApp extends LoggedProcess {
       return;
     }
 
+    // sendFn / recvFn — rebind to TLS for https
+    let sendFn = /** @type {(d:Uint8Array<ArrayBuffer>)=>void|Promise<void>} */
+      (data) => this.os.net.sendTCPConn(key, data);
+    let recvFn = /** @type {()=>Promise<Uint8Array|null>} */
+      () => this.os.net.recvTCPConn(key);
+
+    if (scheme === "https") {
+      this._appendLog(t("app.sparktail.log.tlsHandshaking", { time: nowStamp(), host }));
+      this._setStatus(t("app.sparktail.status.tlsHandshaking"));
+
+      const tls = new TlsSession({
+        send:       sendFn,
+        recv:       recvFn,
+        isServer:   false,
+        trustStore: bypassCert ? null : (this.os.tls?.certStore ?? null),
+        timeoutMs:  timeout,
+        sleepFn:    (ms) => simTimer.sleep(ms),
+      });
+      this._activeTls = tls;
+
+      try {
+        await withTimeout(tls.handshake(), timeout, t("app.sparktail.label.tlsHandshake"));
+        this._serverCert = tls.peerCert;
+        this._certTrusted = !bypassCert;
+        this._setLockState(bypassCert ? "insecure" : "secure");
+        this._appendLog(t("app.sparktail.log.tlsOk", { time: nowStamp(), host }));
+      } catch (e) {
+        if (e instanceof TlsCertUntrustedError) {
+          this._showCertErrorPage(tls.peerCert, url);
+        } else {
+          const reason = e instanceof Error ? e.message : String(e);
+          this._appendLog(t("app.sparktail.log.tlsFailed", { time: nowStamp(), reason }));
+          this._showInternalPage(t("app.sparktail.page.tlsError.title"), reason);
+          this._setStatus(t("app.sparktail.status.tlsFailed"));
+        }
+        this._stop();
+        return;
+      }
+
+      sendFn = (data) => tls.send(data);
+      recvFn = () => tls.recv();
+    }
+
+    const defaultPort = scheme === "https" ? 443 : 80;
     const hostHeader = host.includes(":")
-      ? `[${host}]${port !== 80 ? `:${port}` : ""}`
-      : `${host}${port !== 80 ? `:${port}` : ""}`;
+      ? `[${host}]${port !== defaultPort ? `:${port}` : ""}`
+      : `${host}${port !== defaultPort ? `:${port}` : ""}`;
     const request =
       `GET ${path} HTTP/1.1\r\n` +
       `Host: ${hostHeader}\r\n` +
@@ -833,7 +973,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
 
     const reqBytes = encodeUTF8(request);
     try {
-      this.os.net.sendTCPConn(key, reqBytes);
+      await sendFn(reqBytes);
       this._appendLog(t("app.sparktail.log.request", {
         time: nowStamp(),
         host,
@@ -863,7 +1003,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
 
     try {
       const r = new TcpBufferedReader({
-        recv: () => this.os.net.recvTCPConn(key),
+        recv: recvFn,
         isCancelled: () => !this.loading || this.requestSeq !== seq || this.connKey !== key,
         timeoutMs: timeout,
       });
@@ -944,14 +1084,10 @@ export class SparktailHTTPClientApp extends LoggedProcess {
       this._stop();
       return;
     } finally {
-      // Close conn (best effort)
-      if (key) {
-        try {
-          this.os.net.closeTCPConn(key);
-        } catch {
-          /* ignore */
-        }
-      }
+      const tls = this._activeTls;
+      this._activeTls = null;
+      if (tls) { try { tls.close(); } catch { /* ignore */ } }
+      if (key) { try { this.os.net.closeTCPConn(key); } catch { /* ignore */ } }
       if (this.connKey === key) this.connKey = null;
     }
 
@@ -1009,6 +1145,99 @@ export class SparktailHTTPClientApp extends LoggedProcess {
 
     this.loading = false;
     this._syncUI();
+  }
+
+  /** @param {"none"|"secure"|"insecure"} state */
+  _setLockState(state) {
+    if (!this._lockEl) return;
+    this._lockEl.className = `sparktail-lock sparktail-lock-${state}`;
+    const icon = state === "secure" ? "fa-lock"
+      : state === "insecure" ? "fa-lock-open"
+      : "";
+    this._lockEl.innerHTML = icon ? `<i class="fa-solid ${icon}"></i>` : "";
+  }
+
+  /**
+   * @param {import("../net/models/TlsCertificate.js").TlsCertificate|null} cert
+   * @param {string} url
+   */
+  _showCertErrorPage(cert, url) {
+    this._setIframePolicy(true);
+    if (this.previewFrame) {
+      this.previewFrame.srcdoc = certErrorPage(cert, url, {
+        title:       t("app.sparktail.tls.certError.title"),
+        detail:      t("app.sparktail.tls.certError.detail", { subject: cert?.subject ?? "?" }),
+        subject:     t("app.sparktail.tls.certPopup.subject"),
+        issuer:      t("app.sparktail.tls.certPopup.issuer"),
+        fingerprint: t("app.sparktail.tls.certPopup.fingerprint"),
+        expiry:      t("app.sparktail.tls.certPopup.expiry"),
+        selfSigned:  t("app.sparktail.tls.certPopup.selfSigned"),
+        proceed:     t("app.sparktail.tls.proceedAnyway"),
+      });
+    }
+    if (this.sourceEl)  this.sourceEl.value  = "";
+    if (this.headersEl) this.headersEl.value = "";
+    this.tab = "preview";
+    this._renderTab();
+  }
+
+  _toggleCertPopup() {
+    if (!this._certPopupEl || !this._serverCert) return;
+    if (!this._certPopupEl.hidden) {
+      this._hideCertPopup();
+      return;
+    }
+    this._renderCertPopup();
+    this._certPopupEl.hidden = false;
+
+    const onOutside = (/** @type {MouseEvent} */ e) => {
+      if (!this._certPopupEl?.contains(/** @type {Node} */ (e.target)) &&
+          e.target !== this._lockEl) {
+        this._hideCertPopup();
+        document.removeEventListener("click", onOutside, true);
+      }
+    };
+    // defer so this click event doesn't immediately close it
+    setTimeout(() => document.addEventListener("click", onOutside, true), 0);
+  }
+
+  _hideCertPopup() {
+    if (!this._certPopupEl) return;
+    this._certPopupEl.hidden = true;
+    this._certPopupEl.replaceChildren();
+  }
+
+  _renderCertPopup() {
+    if (!this._certPopupEl || !this._serverCert) return;
+    const cert = this._serverCert;
+    const trusted = this._certTrusted;
+    const expiry = new Date(cert.notAfter).toLocaleDateString();
+
+    const trustEl = UI.el("div", {
+      className: "cert-popup-trust " + (trusted ? "cert-trust-ok" : "cert-trust-warn"),
+      text: trusted
+        ? t("app.sparktail.tls.certPopup.trusted")
+        : t("app.sparktail.tls.certPopup.notVerified"),
+    });
+
+    const row = (/** @type {string} */ label, /** @type {string} */ value) =>
+      UI.el("div", { className: "cert-popup-row", children: [
+        UI.el("span", { className: "cert-popup-label", text: label }),
+        UI.el("span", { className: "cert-popup-value", text: value }),
+      ]});
+
+    const selfSignedSuffix = cert.selfSigned
+      ? ` (${t("app.sparktail.tls.certPopup.selfSigned")})`
+      : "";
+
+    this._certPopupEl.replaceChildren(
+      UI.el("div", { className: "cert-popup-title", text: t("app.sparktail.tls.certPopup.title") }),
+      trustEl,
+      row(t("app.sparktail.tls.certPopup.subject"),     cert.subject),
+      row(t("app.sparktail.tls.certPopup.issuer"),      cert.issuer + selfSignedSuffix),
+      row(t("app.sparktail.tls.certPopup.fingerprint"), cert.fingerprint()),
+      row(t("app.sparktail.tls.certPopup.expiry"),      expiry),
+    );
   }
 
   /**
