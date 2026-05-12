@@ -4,10 +4,11 @@ import { SimpleHTTPServerApp } from "./SimpleHTTPServerApp.js";
 import { TlsSession } from "../net/TlsSession.js";
 import { TlsCertificate } from "../net/models/TlsCertificate.js";
 import { UILib as UI } from "./lib/UILib.js";
-import { OsFilePicker } from "./lib/OsFilePicker.js";
 import { t } from "../i18n/index.js";
 import { nowStamp } from "../lib/helpers.js";
 import { simTimer } from "../lib/SimTimer.js";
+
+const CERT_DIR = "/etc/certs";
 
 export class SimpleHTTPSServerApp extends SimpleHTTPServerApp {
 
@@ -22,8 +23,8 @@ export class SimpleHTTPSServerApp extends SimpleHTTPServerApp {
   /** @type {TlsCertificate|null} */
   _cert = null;
 
-  /** @type {HTMLInputElement|null} */
-  _cnEl = null;
+  /** @type {HTMLSelectElement|null} */
+  _certSelectEl = null;
 
   /** @type {HTMLElement|null} */
   _certInfoEl = null;
@@ -78,113 +79,98 @@ export class SimpleHTTPSServerApp extends SimpleHTTPServerApp {
   onMount(root) {
     super.onMount(root);
 
-    // The parent built the panel with 2 tabs (config + log).
-    // We add a third tab by rebuilding the tabbed section.
-    // Find existing panes — they are already in root as children of the panel.
     const panel = this.root.querySelector(".panel");
     if (!panel) return;
 
-    // Certificate pane
-    const cnInput = UI.input({
-      placeholder: t("app.simplehttpsserver.label.cn"),
-      value: `${this.os?.name ?? "server"}.local`,
-    });
-    this._cnEl = cnInput;
+    const select = UI.select([], {});
+    this._certSelectEl = select;
 
     const certInfo = UI.el("div", { className: "msg" });
     this._certInfoEl = certInfo;
 
     const certPane = UI.el("div", { children: [
-      UI.row(t("app.simplehttpsserver.label.cn"), cnInput),
+      UI.row(t("app.simplehttpsserver.label.cert"), select),
       UI.buttonRow([
-        UI.button(t("app.simplehttpsserver.button.generateCert"), () => this._generateCert(), { primary: true, icon: "fa-certificate" }),
-        UI.button(t("app.simplehttpsserver.button.exportCert"), () => this._exportCert(), { icon: "fa-file-export" }),
-        UI.button(t("app.simplehttpsserver.button.importCert"), () => this._importCert(), { icon: "fa-file-import" }),
+        UI.button(t("app.simplehttpsserver.button.use"), () => this._applyCert(),
+          { primary: true, icon: "fa-check" }),
       ]),
       certInfo,
     ]});
 
-    // Locate the existing tab bar and panes
     const existingTabBar = panel.querySelector(".tab-bar");
     const configPane = panel.querySelector(".panel > div:nth-child(3)");
     const logPane    = panel.querySelector(".panel > div:nth-child(4)");
 
     if (!existingTabBar || !configPane || !logPane) {
-      // Fallback: just append certPane to panel
       panel.appendChild(certPane);
+      this._refreshCertList();
       this._renderCertInfo();
       return;
     }
 
-    // Rebuild tabbedPane with three tabs
     const { bar: newTabBar } = UI.tabbedPane([
       { id: "config", label: t("app.simplehttpserver.label.server"), pane: /** @type {HTMLElement} */ (configPane) },
       { id: "log",    label: t("app.simplehttpserver.label.log"),    pane: /** @type {HTMLElement} */ (logPane) },
-      { id: "cert",   label: t("app.simplehttpsserver.label.cert"),  pane: certPane },
+      { id: "cert",   label: t("app.simplehttpsserver.label.cert"),  pane: certPane,
+        onShow: () => this._refreshCertList() },
     ]);
 
     existingTabBar.replaceWith(newTabBar);
     panel.appendChild(certPane);
+    this._refreshCertList();
     this._renderCertInfo();
   }
 
   onUnmount() {
-    this._cnEl = null;
+    this._certSelectEl = null;
     this._certInfoEl = null;
     super.onUnmount();
   }
 
+  // ── start guard ────────────────────────────────────────────────────────────
+
+  /** @override */
+  _startFromUI() {
+    if (!this._cert) {
+      this._appendLog(t("app.simplehttpsserver.log.noCert", { time: nowStamp() }));
+      return;
+    }
+    super._startFromUI();
+  }
+
   // ── cert helpers ───────────────────────────────────────────────────────────
 
-  _generateCert() {
-    const cn = this._cnEl?.value.trim() || this.os?.name || "server";
-    this._cert = TlsCertificate.generate(cn);
-    this._appendLog(t("app.simplehttpsserver.log.certGenerated",
-      { time: nowStamp(), subject: this._cert.subject }));
-    this._renderCertInfo();
-  }
-
-  async _exportCert() {
-    if (!this._cert) return;
+  _refreshCertList() {
+    const sel = this._certSelectEl;
+    if (!sel) return;
     const fs = this.os.fs;
     if (!fs) return;
-    const cn = this._cert.subject.replace(/^CN=/, "");
-    const abs = await OsFilePicker.open({
-      fs,
-      container: this.root,
-      mode: "save",
-      cwd: "/home",
-      filename: `${cn}.cert.json`,
-      title: t("app.simplehttpsserver.picker.exportTitle"),
-    });
-    if (!abs) return;
-    try {
-      fs.writeFile(abs, JSON.stringify(this._cert.toJSON(), null, 2));
-      this._appendLog(t("app.simplehttpsserver.log.certExported", { time: nowStamp(), path: abs }));
-    } catch (e) {
-      this._appendLog(t("app.simplehttpsserver.log.certExportFailed", { time: nowStamp() }));
-    }
-  }
 
-  async _importCert() {
-    const fs = this.os.fs;
-    if (!fs) return;
-    const abs = await OsFilePicker.open({
-      fs,
-      container: this.root,
-      mode: "open",
-      cwd: "/home",
-      title: t("app.simplehttpsserver.picker.importTitle"),
-    });
-    if (!abs) return;
+    /** @type {Array<{cert: TlsCertificate, path: string, name: string}>} */
+    const entries = [];
     try {
-      const raw = fs.readFile(abs);
-      this._cert = TlsCertificate.fromJSON(JSON.parse(raw));
-      this._appendLog(t("app.simplehttpsserver.log.certImported",
-        { time: nowStamp(), subject: this._cert.subject }));
-      this._renderCertInfo();
-    } catch {
-      this._appendLog(t("app.simplehttpsserver.log.certImportFailed", { time: nowStamp() }));
+      const names = fs.readdir(CERT_DIR);
+      for (const name of names) {
+        if (!name.endsWith(".json")) continue;
+        try {
+          const cert = TlsCertificate.fromJSON(JSON.parse(fs.readFile(`${CERT_DIR}/${name}`)));
+          entries.push({ cert, path: `${CERT_DIR}/${name}`, name });
+        } catch { /* skip invalid */ }
+      }
+    } catch { /* dir missing */ }
+
+    if (entries.length === 0) {
+      sel.replaceChildren(
+        UI.el("option", { attrs: { value: "" }, text: t("app.simplehttpsserver.cert.noEntries") }),
+      );
+    } else {
+      const cn = (/** @type {string} */ s) => s.replace(/^CN=/, "");
+      sel.replaceChildren(
+        ...entries.map(e => UI.el("option", {
+          attrs: { value: e.path },
+          text: cn(e.cert.subject),
+        })),
+      );
     }
   }
 
@@ -200,5 +186,19 @@ export class SimpleHTTPSServerApp extends SimpleHTTPServerApp {
       t("app.simplehttpsserver.cert.fingerprint", { fp: this._cert.fingerprint() }),
       t("app.simplehttpsserver.cert.expiry",      { date: expiry }),
     ].join("\n");
+  }
+
+  _applyCert() {
+    const path = this._certSelectEl?.value;
+    const fs = this.os.fs;
+    if (!path || !fs) return;
+    try {
+      this._cert = TlsCertificate.fromJSON(JSON.parse(fs.readFile(path)));
+      this._appendLog(t("app.simplehttpsserver.log.certApplied",
+        { time: nowStamp(), subject: this._cert.subject }));
+      this._renderCertInfo();
+    } catch {
+      this._appendLog(t("app.simplehttpsserver.log.noCert", { time: nowStamp() }));
+    }
   }
 }

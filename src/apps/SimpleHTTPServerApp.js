@@ -201,14 +201,12 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     this.startBtn = start;
     this.stopBtn = stop;
 
-    const status = UI.el("div", { className: "msg" });
     const logBox = UI.el("div", { className: "msg" });
     this.logEl = logBox;
 
     const configPane = UI.el("div", { children: [
       UI.row(t("app.simplehttpserver.label.port"), portInput),
       UI.row(t("app.simplehttpserver.label.docRoot"), rootInput),
-      status,
     ]});
 
     const logPane = UI.el("div", { children: [
@@ -231,16 +229,6 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     this.root.replaceChildren(panel);
     this._syncUI();
     this._renderLog();
-
-    this.disposer.interval(() => {
-      status.textContent =
-        t("app.simplehttpserver.status.pid", { pid: this.pid }) + "\n" +
-        t("app.simplehttpserver.status.running", { running: this.running }) + "\n" +
-        t("app.simplehttpserver.status.port", { port: this.port }) + "\n" +
-        t("app.simplehttpserver.status.docRoot", { docRoot: this.docRoot }) + "\n" +
-        t("app.simplehttpserver.status.serverRef", { serverRef: (this.serverRef ?? "-") }) + "\n" +
-        t("app.simplehttpserver.status.logEntries", { n: this.log.length });
-    }, 300);
   }
 
   onUnmount() {
