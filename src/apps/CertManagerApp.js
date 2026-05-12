@@ -30,6 +30,7 @@ export class CertManagerApp extends GenericProcess {
   /** @type {string|null} */ _t1SelPath = null;
   /** @type {HTMLElement|null} */ _t1ListEl   = null;
   /** @type {HTMLElement|null} */ _t1DetailEl = null;
+  /** @type {HTMLElement|null} */ _t1SplitEl  = null;
 
   // Tab 2
   /** @type {HTMLInputElement|null}  */ _t2CnEl      = null;
@@ -45,6 +46,7 @@ export class CertManagerApp extends GenericProcess {
   /** @type {string|null} */ _t3SelPath = null;
   /** @type {HTMLElement|null} */ _t3ListEl   = null;
   /** @type {HTMLElement|null} */ _t3DetailEl = null;
+  /** @type {((id: string) => void)|null} */ _setActiveTab = null;
 
   // Tab 4
   /** @type {HTMLSelectElement|null} */ _t4CertEl    = null;
@@ -69,6 +71,7 @@ export class CertManagerApp extends GenericProcess {
       this._t1ListEl,
       this._t1DetailEl,
     ]});
+    this._t1SplitEl = pane1;
 
     // ── Tab 2: Generate ──────────────────────────────────────────────────────
     this._t2CnEl   = UI.input({ placeholder: t("app.certmanager.gen.cnPlaceholder") });
@@ -163,7 +166,7 @@ export class CertManagerApp extends GenericProcess {
     ]});
 
     // ── Tab bar + panel ──────────────────────────────────────────────────────
-    const { bar } = UI.tabbedPane([
+    const { bar, setActive } = UI.tabbedPane([
       { id: "t1", label: t("app.certmanager.tab.certs"),   pane: pane1,
         onShow: () => this._refreshT1() },
       { id: "t2", label: t("app.certmanager.tab.gen"),     pane: pane2,
@@ -174,6 +177,7 @@ export class CertManagerApp extends GenericProcess {
         onShow: () => this._refreshT4() },
     ]);
 
+    this._setActiveTab = setActive;
     this.root.replaceChildren(UI.panel([bar, pane1, pane2, pane3, pane4]));
     this._ensureDirs();
     this._refreshT1();
@@ -181,11 +185,12 @@ export class CertManagerApp extends GenericProcess {
 
   onUnmount() {
     this.disposer.dispose();
-    this._t1ListEl = this._t1DetailEl = null;
+    this._t1ListEl = this._t1DetailEl = this._t1SplitEl = null;
     this._t2CnEl = this._t2TypeEl = this._t2CaEl = this._t2CaRowEl = null;
     this._t2IsCaEl = this._t2ValidEl = this._t2NameEl = this._t2MsgEl = null;
     this._t3ListEl = this._t3DetailEl = null;
     this._t4CertEl = this._t4CaEl = this._t4PreviewEl = this._t4NameEl = this._t4MsgEl = null;
+    this._setActiveTab = null;
     super.onUnmount();
   }
 
@@ -224,14 +229,25 @@ export class CertManagerApp extends GenericProcess {
     const el = this._t1ListEl;
     if (!el) return;
     const entries = this._readEntries(CERT_DIR);
-    const children = entries.length > 0
-      ? entries.map(e => this._certItem(e, this._t1SelPath, () => {
-          this._t1SelPath = e.path;
-          this._renderT1Detail(e);
-          this._refreshT1();
-        }))
-      : [UI.el("div", { className: "cm-empty", text: t("app.certmanager.empty") })];
-    el.replaceChildren(...children);
+    if (entries.length > 0) {
+      if (!entries.find(e => e.path === this._t1SelPath)) {
+        this._t1SelPath = entries[0].path;
+        this._renderT1Detail(entries[0]);
+      }
+      el.replaceChildren(...entries.map(e => this._certItem(e, this._t1SelPath, () => {
+        this._t1SelPath = e.path;
+        this._renderT1Detail(e);
+        this._refreshT1();
+      })));
+    } else {
+      this._t1SelPath = null;
+      el.replaceChildren();
+      const del = UI.button(t("app.certmanager.detail.delete"), () => {}, { icon: "fa-trash" });
+      const exp = UI.button(t("app.certmanager.detail.export"), () => {}, { icon: "fa-file-export" });
+      const tru = UI.button(t("app.certmanager.detail.trust"),  () => {}, { icon: "fa-shield-halved" });
+      del.disabled = exp.disabled = tru.disabled = true;
+      this._t1DetailEl?.replaceChildren(this._buildPlaceholderDetail([del, exp, tru]));
+    }
   }
 
   /** @param {{ cert: TlsCertificate, path: string, name: string }} e */
@@ -307,14 +323,24 @@ export class CertManagerApp extends GenericProcess {
     const el = this._t3ListEl;
     if (!el) return;
     const entries = this._readEntries(TRUSTED_DIR);
-    const children = entries.length > 0
-      ? entries.map(e => this._certItem(e, this._t3SelPath, () => {
-          this._t3SelPath = e.path;
-          this._renderT3Detail(e);
-          this._refreshT3();
-        }))
-      : [UI.el("div", { className: "cm-empty", text: t("app.certmanager.trusted.empty") })];
-    el.replaceChildren(...children);
+    if (entries.length > 0) {
+      if (!entries.find(e => e.path === this._t3SelPath)) {
+        this._t3SelPath = entries[0].path;
+        this._renderT3Detail(entries[0]);
+      }
+      el.replaceChildren(...entries.map(e => this._certItem(e, this._t3SelPath, () => {
+        this._t3SelPath = e.path;
+        this._renderT3Detail(e);
+        this._refreshT3();
+      })));
+    } else {
+      this._t3SelPath = null;
+      el.replaceChildren();
+      const rem = UI.button(t("app.certmanager.trusted.remove"), () => {}, { icon: "fa-trash" });
+      const exp = UI.button(t("app.certmanager.detail.export"),  () => {}, { icon: "fa-file-export" });
+      rem.disabled = exp.disabled = true;
+      this._t3DetailEl?.replaceChildren(this._buildPlaceholderDetail([rem, exp]));
+    }
   }
 
   /** @param {{ cert: TlsCertificate, path: string, name: string }} e */
@@ -423,6 +449,31 @@ export class CertManagerApp extends GenericProcess {
   }
 
   // ── shared UI helpers ─────────────────────────────────────────────────────
+
+  /** @param {HTMLButtonElement[]} buttons */
+  _buildPlaceholderDetail(buttons) {
+    const dash = "—";
+    return UI.el("div", { children: [
+      this._detailRow(t("app.certmanager.detail.subject"),     dash),
+      this._detailRow(t("app.certmanager.detail.issuer"),      dash),
+      this._detailRow(t("app.certmanager.detail.fingerprint"), dash),
+      this._detailRow(t("app.certmanager.detail.expiry"),      dash),
+      this._detailRow(t("app.certmanager.detail.isCA"),        dash),
+      UI.buttonRow(buttons),
+    ]});
+  }
+
+  /**
+   * @param {{ icon: string, title: string, hint?: string, btnLabel?: string, btnFn?: () => void }} opts
+   */
+  _buildEmptyState({ icon, title, hint, btnLabel, btnFn }) {
+    return UI.el("div", { className: "cm-empty-state", children: [
+      UI.el("i", { className: `fas ${icon} cm-empty-state-icon` }),
+      UI.el("div", { className: "cm-empty-state-title", text: title }),
+      hint    ? UI.el("div", { className: "cm-empty-state-hint", text: hint }) : null,
+      btnLabel && btnFn ? UI.button(btnLabel, btnFn, { icon: "fa-arrow-right" }) : null,
+    ].filter(/** @param {any} x */ x => x != null)});
+  }
 
   /**
    * @param {{ cert: TlsCertificate, path: string, name: string }} e

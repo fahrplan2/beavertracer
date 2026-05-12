@@ -170,6 +170,9 @@ export class SimulatedObject {
         titleGroup.appendChild(title);
         titleGroup.appendChild(rename);
 
+        const panelIcon = document.createElement("i");
+        panelIcon.classList.add("fas", this.icon, "sim-panel-icon");
+        header.appendChild(panelIcon);
         header.appendChild(titleGroup);
         header.appendChild(close);
 

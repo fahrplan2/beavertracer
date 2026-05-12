@@ -26,7 +26,6 @@ const LOCALES = [
   { code: "sl", name: "Slovenian" },
   { code: "el", name: "Greek" },
   { code: "hr", name: "Croatian" },
-  { code: "sr", name: "Serbian" },
   { code: "fa", name: "Persian (Farsi)" },
   { code: "pt-PT", name: "European Portuguese (Portugal)" },
   { code: "ro", name: "Romanian" },

@@ -130,10 +130,26 @@
   cursor: grabbing;
 }
 
+.sim-panel-icon {
+  font-size: 15px;
+  color: var(--muted);
+  flex-shrink: 0;
+  margin-right: 6px;
+}
+
+.sim-panel-header .my-icon-router,
+.sim-panel-header .my-icon-switch {
+  width: 15px;
+  height: 15px;
+  -webkit-mask-size: 15px 15px;
+  mask-size: 15px 15px;
+}
+
 .sim-panel-title-group {
   display: flex;
   align-items: center;
   gap: 4px;
+  flex: 1;
   min-width: 0;
 }
 
@@ -987,6 +1003,10 @@ sim-toolbar-langbtn {
 
 /* Colors for icons */
 .fa-ban {
+  color: var(--danger);
+}
+
+.fa-stop {
   color: var(--danger);
 }
 
