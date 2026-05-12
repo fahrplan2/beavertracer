@@ -5,6 +5,7 @@ import { UILib as UI } from "./lib/UILib.js";
 import { Disposer } from "../lib/Disposer.js";
 import { t } from "../i18n/index.js";
 import { SimDialog } from "../lib/SimDialog.js";
+import { OsFilePicker } from "./lib/OsFilePicker.js";
 
 export class TextEditorApp extends GenericProcess {
 
@@ -16,9 +17,6 @@ export class TextEditorApp extends GenericProcess {
 
   /** @type {Disposer} */
   disposer = new Disposer();
-
-  /** @type {Disposer} */
-  pickerBag = new Disposer();
 
   /** @type {HTMLTextAreaElement|null} */
   ta = null;
@@ -38,17 +36,8 @@ export class TextEditorApp extends GenericProcess {
   /** @type {HTMLElement|null} */
   statusEl = null;
 
-  /** @type {HTMLElement|null} */
-  modalEl = null;
-
   /** @type {string} */
   pickerCwd = "/";
-
-  /** @type {"open"|"save"|null} */
-  pickerMode = null;
-
-  /** @type {((absPath: string) => void)|null} */
-  pickerCallback = null;
 
   /** @type {HTMLElement|null} */
   mainView = null;
@@ -165,7 +154,6 @@ export class TextEditorApp extends GenericProcess {
 
   onUnmount() {
     this.disposer.dispose();
-    this.pickerBag.dispose();
     this.ta = null;
     this.statusEl = null;
     super.onUnmount();
@@ -186,13 +174,21 @@ export class TextEditorApp extends GenericProcess {
     return this._saveToPath(this.path);
   }
 
-  /**
-   * Ask for a path and save there.
-   */
-  _saveAs() {
-    this._openFilePicker("save", (abs) => {
-      this._saveToPath(abs);
+  async _saveAs() {
+    const fs = this.os.fs;
+    if (!fs) return;
+    const abs = await OsFilePicker.open({
+      fs,
+      container: this.root,
+      mode: "save",
+      cwd: this.pickerCwd,
+      filename: this.path,
+      title: t("app.texteditor.picker.title.save"),
     });
+    if (abs) {
+      this.pickerCwd = this._dirOf(abs);
+      this._saveToPath(abs);
+    }
   }
 
   /**
@@ -258,184 +254,19 @@ export class TextEditorApp extends GenericProcess {
     this.pickerCwd = this.cwd || "/";
   }
 
-  _openPicker() {
-    this._openFilePicker("open", (abs) => {
-      this._loadFile(abs);
-    });
-  }
-
-  /**
-   * @param {"open"|"save"} mode
-   * @param {(absPath: string) => void} onSelect
-   */
-  _openFilePicker(mode, onSelect) {
+  async _openPicker() {
     const fs = this.os.fs;
     if (!fs) return;
-
-    // If already open, close and restore editor first
-    this._closePicker();
-    this.pickerBag.dispose();
-
-    this.pickerMode = mode;
-    this.pickerCallback = onSelect;
-    this.pickerCwd = this.pickerCwd || this.cwd || "/";
-
-    // Show current path
-    const pathBar = UI.el("div", {
-      className: "fp-path",
-      text: this.pickerCwd,
+    const abs = await OsFilePicker.open({
+      fs,
+      container: this.root,
+      mode: "open",
+      cwd: this.pickerCwd,
+      title: t("app.texteditor.picker.title.open"),
     });
-
-    // ---- Build picker UI ----
-    const dialog = UI.el("div", { className: "fp-dialog" });
-
-    const title = UI.el("div", {
-      className: "fp-title",
-      text: mode === "open"
-        ? t("app.texteditor.picker.title.open")
-        : t("app.texteditor.picker.title.save"),
-    });
-
-    /** @type {HTMLInputElement|null} */
-    let nameInput = null;
-
-    if (mode === "save") {
-      nameInput = /** @type {HTMLInputElement} */ (UI.el("input", {
-        className: "input fp-name",
-        attrs: {
-          type: "text",
-          placeholder: t("app.texteditor.picker.placeholder.filename"),
-          value: this.path ? this._baseName(this.path) : "",
-        },
-      }));
-    }
-
-    const list = UI.el("div", { className: "fp-list" });
-
-    /** @type {string|null} */
-    let selectedFile = null;
-
-    const doConfirm = async () => {
-      let filename = selectedFile;
-
-      if (mode === "save" && nameInput) {
-        filename = nameInput.value.trim();
-      }
-
-      if (!filename) return;
-
-      const abs = fs.resolve(this.pickerCwd, filename);
-
-      if (mode === "save" && fs.exists(abs)) {
-        const ok = await SimDialog.confirm(t("app.texteditor.confirm.overwrite"));
-        if (!ok) return;
-      }
-
-      this._closePicker();
-      onSelect(abs);
-    };
-
-    const buttons = UI.buttonRow([
-      UI.button(
-        mode === "open"
-          ? t("app.texteditor.picker.button.open")
-          : t("app.texteditor.picker.button.save"),
-        () => doConfirm(),
-        { primary: true }
-      ),
-      UI.button(t("app.texteditor.picker.button.cancel"), () => this._closePicker()),
-    ]);
-
-    const renderList = () => {
-      list.replaceChildren();
-
-      pathBar.textContent = this.pickerCwd;
-
-      if (this.pickerCwd !== "/") {
-        const up = UI.el("div", { className: "fp-item fp-dir", text: t("app.texteditor.picker.item.up") });
-        this.pickerBag.on(up, "click", () => {
-          this.pickerCwd = this._dirOf(this.pickerCwd);
-          selectedFile = null;
-          renderList();
-        });
-        list.appendChild(up);
-      }
-
-      /** @type {string[]} */
-      let entries = [];
-      try { entries = fs.readdir(this.pickerCwd); } catch { }
-
-      for (const name of entries.sort()) {
-        const abs = fs.resolve(this.pickerCwd, name);
-
-        let isDir = false;
-        try { isDir = fs.stat(abs).type === "dir"; } catch { }
-
-        const el = UI.el("div", {
-          className:
-            "fp-item " +
-            (isDir ? "fp-dir" : "fp-file") +
-            (!isDir && selectedFile === name ? " is-selected" : ""),
-          text: name,
-        });
-
-        if (isDir) {
-          this.pickerBag.on(el, "click", () => {
-            this.pickerCwd = abs;
-            selectedFile = null;
-            renderList();
-          });
-        } else {
-          this.pickerBag.on(el, "click", () => {
-            selectedFile = name;
-            if (nameInput) nameInput.value = name;
-            renderList();
-          });
-          if (mode === "open") {
-            this.pickerBag.on(el, "dblclick", () => doConfirm());
-          }
-        }
-        list.appendChild(el);
-      }
-    };
-
-    dialog.appendChild(title);
-    if (nameInput) dialog.appendChild(nameInput);
-    dialog.appendChild(pathBar);
-    dialog.appendChild(list);
-    dialog.appendChild(buttons);
-
-    // Full-screen picker container (replaces editor)
-    const pickerView = UI.el("div", { className: "fp-screen", children: [dialog] });
-
-    // Swap UI
-    this.modalEl = pickerView;
-    this.root.replaceChildren(pickerView);
-
-    // Initial render + focus
-    renderList();
-    queueMicrotask(() => (nameInput ?? list).focus());
-  }
-
-  /**
-   * @param {string} p
-   * @returns {string}
-   */
-  _baseName(p) {
-    const i = p.lastIndexOf("/");
-    return i < 0 ? p : p.slice(i + 1);
-  }
-
-  _closePicker() {
-    this.pickerBag.dispose();
-
-    if (this.modalEl) {
-      this.modalEl.remove();
-      this.modalEl = null;
-    }
-    if (this.mainView) {
-      this.root.replaceChildren(this.mainView);
-      queueMicrotask(() => this.ta?.focus());
+    if (abs) {
+      this.pickerCwd = this._dirOf(abs);
+      this._loadFile(abs);
     }
   }
 

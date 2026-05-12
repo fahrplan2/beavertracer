@@ -141,11 +141,13 @@ export class RIPDaemon {
     }
 
     _sendAllUpdates() {
+        if (this._socketPort === null) return;
         const net = this._net;
         for (let i = 0; i < net.interfaces.length; i++) {
             const iface = net.interfaces[i];
             if (this.passiveInterfaces.has(`eth${i}`)) continue;
             if (!iface.ip?.isV4() || ipToU32(iface.ip) === 0) continue;
+            if (iface.prefixLength === null) continue;
             if (!iface.port?.linkref) continue;
 
             const entries = this._buildEntries(i);

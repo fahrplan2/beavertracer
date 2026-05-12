@@ -11,7 +11,7 @@ export class EthernetLink {
     portA;
     portB;
 
-    /** @type { Link } */
+    /** @type {Link | undefined} */
     link;
 
     /** @type {*} */

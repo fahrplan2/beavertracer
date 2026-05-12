@@ -3,7 +3,7 @@
 export const defaultSimulation = {
   "_info": "This file was created by BeaverTracer, a network simulation tool. Open it with the BeaverTracer app or at https://beavertracer.eu/",
   "version": 4,
-  "tick": 500,
+  "tick": 40,
   "objects": [
     {
       "kind": "PC",

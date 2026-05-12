@@ -2,7 +2,6 @@
 export const meta = { name: "🇬🇧 English", order: 2 };
 
 export default {
-  "lang.name": "🇬🇧 English",
   "app.generic.title": "Gernic App",
 
   "app.dhcpserver.title": "DHCP Server",
@@ -225,6 +224,18 @@ export default {
   "app.simplehttpserver.http.404.title": "404 Not Found",
   "app.simplehttpserver.http.404.details": "File not found:\n{norm}\n\nFS path:\n{fsPath}",
 
+  "app.simplehttpsserver.title":               "HTTPS Server",
+  "app.simplehttpsserver.label.cert":          "Certificate",
+  "app.simplehttpsserver.button.use":          "Use",
+  "app.simplehttpsserver.cert.noEntries":      "No certificates found in /etc/certs",
+  "app.simplehttpsserver.cert.none":           "No certificate selected.",
+  "app.simplehttpsserver.cert.subject":        "Subject: {subject}",
+  "app.simplehttpsserver.cert.fingerprint":    "Fingerprint: {fp}",
+  "app.simplehttpsserver.cert.expiry":         "Valid until: {date}",
+  "app.simplehttpsserver.log.certApplied":     "[{time}] Certificate set: {subject}",
+  "app.simplehttpsserver.log.noCert":          "[{time}] ERROR: No certificate selected.",
+  "app.simplehttpsserver.log.tlsOk":           "[{time}] TLS OK from {peer}",
+  "app.simplehttpsserver.log.tlsFailed":       "[{time}] TLS failed: {reason}",
 
   "app.mailclient.title": "Mail",
   "app.mailclient.button.compose": "Compose",
@@ -411,6 +422,8 @@ export default {
   "app.sparktail.status.bodyTooLarge": "HTTP {statusCode}: body too large.",
   "app.sparktail.status.httpSummary": "HTTP {statusCode} {reason} • {bytes} bytes • {ct}",
   "app.sparktail.status.errorUrlEmpty": "Error: URL is empty.",
+  "app.sparktail.status.tlsHandshaking": "TLS handshake…",
+  "app.sparktail.status.tlsFailed": "TLS failed",
 
   "app.sparktail.throbber.loading": "⏳",
 
@@ -419,8 +432,9 @@ export default {
   "app.sparktail.label.recv": "Recv",
   "app.sparktail.label.dns": "DNS",
   "app.sparktail.label.connect": "Connect",
+  "app.sparktail.label.tlsHandshake": "TLS handshake",
 
-  "app.sparktail.err.onlyHttp": "Only http:// is allowed (no https://).",
+  "app.sparktail.err.onlyHttp": "URL must start with http:// or https://",
   "app.sparktail.err.missingHostInUrl": "Host is missing in the URL.",
   "app.sparktail.err.hostEmpty": "Host is empty.",
   "app.sparktail.err.timeout": "{label} timeout ({ms}ms)",
@@ -438,26 +452,27 @@ export default {
   "app.sparktail.err.invalidIpv6Bracket": "Invalid IPv6 bracket",
 
 
-  "app.sparktail.page.invalidUrl.title": "Invalid URL",
+  "app.sparktail.page.invalidUrl.title": "Invalid Address",
+  "app.sparktail.page.tlsError.title": "Secure Connection Failed",
 
-  "app.sparktail.page.dnsError.title": "DNS Error",
-  "app.sparktail.page.dnsError.body": "Host \"{host}\" could not be resolved.\n\n{msg}",
+  "app.sparktail.page.dnsError.title": "Server Not Found",
+  "app.sparktail.page.dnsError.body": "The address \"{host}\" could not be found.\n\n{msg}",
 
-  "app.sparktail.page.socketError.title": "Socket Error",
-  "app.sparktail.page.socketError.body": "Connection to {host}:{port} failed.\n\n{msg}",
+  "app.sparktail.page.socketError.title": "Unable to Connect",
+  "app.sparktail.page.socketError.body": "Could not connect to {host}:{port}.\n\n{msg}",
 
-  "app.sparktail.page.sendError.title": "Send Error",
+  "app.sparktail.page.sendError.title": "Connection Interrupted",
 
-  "app.sparktail.page.recvError.title": "Timeout/Recv Error",
+  "app.sparktail.page.recvError.title": "Connection Interrupted",
 
-  "app.sparktail.page.bodyTooLarge.title": "Body too large",
-  "app.sparktail.page.bodyTooLarge.body": "Body has {bytes} bytes, limit is {bodyLimit} bytes.",
+  "app.sparktail.page.bodyTooLarge.title": "Response Too Large",
+  "app.sparktail.page.bodyTooLarge.body": "The response body ({bytes} bytes) exceeds the limit of {bodyLimit} bytes.",
 
-  "app.sparktail.page.notSupported.title": "Not supported",
-  "app.sparktail.page.notSupported.body": "Sparktail currently only renders 200 and 404.\n\nReceived: HTTP {statusCode} {reason}\n\nTip: Check the Headers/Source tab.",
+  "app.sparktail.page.notSupported.title": "Page Not Available",
+  "app.sparktail.page.notSupported.body": "The server returned HTTP {statusCode} {reason}.\n\nCheck the Source or Headers tab for details.",
 
   "app.sparktail.page.nonHtml.title": "HTTP {statusCode}",
-  "app.sparktail.page.nonHtml.body": "Content-Type: {ct}\n\nPreview is disabled for non-HTML.\n\nSource contains the raw data as text.",
+  "app.sparktail.page.nonHtml.body": "Content-Type: {ct}\n\nThis content type cannot be previewed.\nThe raw response is available in the Source tab.",
 
   "app.sparktail.headers.aboutStart": "about:start (internal)\r\n",
 
@@ -467,11 +482,26 @@ export default {
 
   "app.sparktail.log.dnsError": "[{time}] ERROR DNS \"{host}\": {msg}",
   "app.sparktail.log.connectError": "[{time}] ERROR connect {ip}:{port}: {msg}",
+  "app.sparktail.log.tlsHandshaking": "[{time}] TLS handshake with {host}…",
+  "app.sparktail.log.tlsOk": "[{time}] TLS OK — {host}",
+  "app.sparktail.log.tlsFailed": "[{time}] TLS failed: {reason}",
   "app.sparktail.log.request": "[{time}] -> {host}:{port} GET {path} (len={len} hex={hex})",
   "app.sparktail.log.sendError": "[{time}] ERROR send: {msg}",
   "app.sparktail.log.recvError": "[{time}] ERROR recv: {msg}",
   "app.sparktail.log.httpNotRendered": "[{time}] HTTP {statusCode} {reason} (not rendered)",
   "app.sparktail.log.httpOk": "[{time}] HTTP {statusCode} {reason} (body={bytes} bytes)",
+
+  "app.sparktail.tls.certError.title":      "Your Connection is Not Secure",
+  "app.sparktail.tls.certError.detail":     "The certificate presented by {subject} is not trusted. An attacker may be intercepting your connection.",
+  "app.sparktail.tls.certPopup.title":      "Certificate Information",
+  "app.sparktail.tls.certPopup.subject":    "Subject",
+  "app.sparktail.tls.certPopup.issuer":     "Issuer",
+  "app.sparktail.tls.certPopup.fingerprint":"Fingerprint",
+  "app.sparktail.tls.certPopup.expiry":     "Valid until",
+  "app.sparktail.tls.certPopup.selfSigned": "self-signed",
+  "app.sparktail.tls.certPopup.trusted":    "✓ Verified by trust store",
+  "app.sparktail.tls.certPopup.notVerified":"⚠ Not verified — connection may be intercepted",
+  "app.sparktail.tls.proceedAnyway":        "Proceed anyway (unsafe)",
 
   "app.terminal.title": "Terminal",
   "app.terminal.welcome": "BeaverOS - Welcome to {host}",
@@ -700,7 +730,6 @@ export default {
   "router.rip.log": "Log",
 
   "sim.lessons": "Lessons",
-  "lessons.noLessons": "We are sorry, but no lessons are available in this language yet. 😔",
   "sim.common": "Common",
   "sim.new": "New",
   "sim.load": "Load",
@@ -829,6 +858,7 @@ export default {
   "pcap.status.active": "Active: {name} — {shown} packets (offset {skip}, {matched} matched)",
   "pcap.status.active.nocapture": "Active: {name} (no capture loaded)",
   "pcap.status.nosession": "No active session",
+  "pcap.tab.nocapture": "{name} (no capture)",
   "pcap.tabs.title": "Traces:",
   "pcap.packet.select": "Select a packet…",
   "pcap.packet.nocapture": "No capture loaded in this session.",
@@ -956,5 +986,72 @@ export default {
   "firewall.move.up": "Move up",
   "firewall.move.down": "Move down",
 
-  "sim.tool.firewall": "Firewall"
+  "sim.tool.firewall": "Firewall",
+
+  // ── CertManagerApp ──────────────────────────────────────────────────────────
+  "app.certmanager.title":               "Certificate Manager",
+  "app.certmanager.tab.certs":           "My Certs",
+  "app.certmanager.tab.gen":             "Generate",
+  "app.certmanager.tab.trusted":         "Trusted CAs",
+  "app.certmanager.tab.sign":            "Sign",
+  "app.certmanager.empty":               "No certificates in /etc/certs",
+
+  "app.certmanager.item.selfSigned":     "self-signed",
+  "app.certmanager.item.issuer":         "Issuer: {issuer}",
+
+  "app.certmanager.detail.subject":      "Subject",
+  "app.certmanager.detail.issuer":       "Issuer",
+  "app.certmanager.detail.fingerprint":  "Fingerprint",
+  "app.certmanager.detail.expiry":       "Valid until",
+  "app.certmanager.detail.isCA":         "CA Certificate",
+  "app.certmanager.detail.path":         "File",
+  "app.certmanager.detail.yes":          "Yes",
+  "app.certmanager.detail.no":           "No",
+  "app.certmanager.detail.chain":        "Chain",
+  "app.certmanager.detail.selfSigned":   "self-signed",
+  "app.certmanager.detail.delete":       "Delete",
+  "app.certmanager.detail.confirmDelete":`Delete certificate "{name}"?`,
+  "app.certmanager.detail.export":       "Export…",
+  "app.certmanager.detail.exportTitle":  "Export Certificate",
+  "app.certmanager.detail.trust":        "Add to Trusted CAs",
+
+  "app.certmanager.gen.cn":              "Common Name",
+  "app.certmanager.gen.cnPlaceholder":   "e.g. server.local",
+  "app.certmanager.gen.type":            "Type",
+  "app.certmanager.gen.typeSelf":        "Self-signed",
+  "app.certmanager.gen.typeCa":          "Signed by CA",
+  "app.certmanager.gen.caLabel":         "Signing CA",
+  "app.certmanager.gen.noCA":            "(no CA certificates found)",
+  "app.certmanager.gen.options":         "Options",
+  "app.certmanager.gen.isCa":            "This is a CA certificate (can sign others)",
+  "app.certmanager.gen.validity":        "Validity",
+  "app.certmanager.gen.val90":           "90 days",
+  "app.certmanager.gen.val365":          "1 year",
+  "app.certmanager.gen.val3y":           "3 years",
+  "app.certmanager.gen.val5y":           "5 years",
+  "app.certmanager.gen.filename":        "Save as",
+  "app.certmanager.gen.namePlaceholder": "filename.cert.json",
+  "app.certmanager.gen.btn":             "Generate Certificate",
+  "app.certmanager.gen.ok":              "Saved: {name}",
+  "app.certmanager.gen.errNoCN":         "Please enter a Common Name.",
+  "app.certmanager.gen.errExists":       "File already exists: {name}",
+  "app.certmanager.gen.errLoadCA":       "Failed to load CA certificate.",
+  "app.certmanager.gen.errWrite":        "Failed to write certificate.",
+
+  "app.certmanager.trusted.empty":       "No trusted CA certificates",
+  "app.certmanager.trusted.import":      "Import…",
+  "app.certmanager.trusted.importTitle": "Import CA Certificate",
+  "app.certmanager.trusted.remove":      "Remove from Trusted",
+  "app.certmanager.trusted.confirmRemove":`Remove "{name}" from trusted CAs?`,
+
+  "app.certmanager.sign.cert":           "Certificate to sign",
+  "app.certmanager.sign.ca":             "Signing CA",
+  "app.certmanager.sign.chain":          "Resulting chain",
+  "app.certmanager.sign.filename":       "Save as",
+  "app.certmanager.sign.namePlaceholder":"signed.cert.json",
+  "app.certmanager.sign.btn":            "Sign & Save",
+  "app.certmanager.sign.ok":             "Signed certificate saved: {name}",
+  "app.certmanager.sign.errSelect":      "Please select a certificate and a CA.",
+  "app.certmanager.sign.errExists":      "File already exists: {name}",
+  "app.certmanager.sign.errFailed":      "Signing failed."
 };

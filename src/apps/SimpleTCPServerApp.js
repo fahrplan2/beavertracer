@@ -111,11 +111,8 @@ export class SimpleTCPServerApp extends LoggedProcess {
     const logBox = UI.el("div", { className: "msg" });
     this.logEl = logBox;
 
-    const status = UI.el("div", { className: "msg" });
-
     const serverPane = UI.el("div", { children: [
       UI.row(t("app.simpletcpserver.label.listenPort"), portInput),
-      status,
     ]});
 
     const logPane = UI.el("div", { children: [
@@ -139,13 +136,6 @@ export class SimpleTCPServerApp extends LoggedProcess {
 
     this._syncButtons();
     this._renderLog();
-
-    this.disposer.interval(() => {
-      status.textContent =
-        t("app.simpletcpserver.status.running", { running: this.running }) + "\n" +
-        t("app.simpletcpserver.status.port", { port: (this.listenPort ?? "-") }) + "\n" +
-        t("app.simpletcpserver.status.connections", { n: this.conns.size }) + "\n"
-    }, 300);
   }
 
   onUnmount() {

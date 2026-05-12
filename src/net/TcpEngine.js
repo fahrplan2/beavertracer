@@ -234,7 +234,7 @@ export class TcpEngine {
     });
 
     // wait until handshake completes (or timeout)
-    await new Promise((resolve, reject) => {
+    await /** @type {Promise<void>} */ (new Promise((resolve, reject) => {
       const timerId = simTimer.schedule(() => {
         this.conns.delete(key);
         this.sockets.delete(srcPort);
@@ -248,7 +248,7 @@ export class TcpEngine {
       });
       if (conn.state === "ESTABLISHED") { simTimer.cancel(timerId); resolve(); }
       if (conn.state === "CLOSED")      { simTimer.cancel(timerId); reject(new Error("connect failed")); }
-    });
+    }));
 
     return conn;
   }
@@ -355,6 +355,21 @@ export class TcpEngine {
       conn.myacc = u32(conn.myacc + 1);
       conn.state = conn.state === "ESTABLISHED" ? "FIN-WAIT-1" : "LAST-ACK";
     }
+  }
+
+  /**
+   * Return addressing info for an established connection, or null if not found.
+   * @param {string} key
+   */
+  getConnInfo(key) {
+    const conn = this.conns.get(key);
+    if (!conn) return null;
+    return {
+      localIP:   conn.localIP,
+      localPort: conn.port,
+      peerIP:    conn.peerIP,
+      peerPort:  conn.peerPort,
+    };
   }
 
   /**

@@ -582,10 +582,10 @@ export class SimControl {
         gSpeeds.appendChild(pauseBtn);
 
         const speeds = [
-            { label: "1×",   ms: 500,  icon: "fa-1" },
-            { label: "4×",   ms: 100,  icon: "fa-2" },
-            { label: "8×",   ms: 40,   icon: "fa-3" },
-            { label: "16×",  ms: 20,   icon: "fa-4" },
+            { label: "0.5×", ms: 500, icon: "fa-1" },
+            { label: "1×",   ms: 100, icon: "fa-2" },
+            { label: "4×",   ms: 40,  icon: "fa-3" },
+            { label: "8×",   ms: 20,  icon: "fa-4" },
         ];
 
         for (const s of speeds) {
@@ -744,10 +744,10 @@ export class SimControl {
         btn("pause",      "fa-pause",             t("sim.pause"), () => this.pause());
 
         const speeds = [
-            { label: "1×",   ms: 500,  icon: "fa-1" },
-            { label: "4×",   ms: 100,  icon: "fa-2" },
-            { label: "8×",   ms: 40,   icon: "fa-3" },
-            { label: "16×",  ms: 20,   icon: "fa-4" },
+            { label: "0.5×", ms: 500, icon: "fa-1" },
+            { label: "1×",   ms: 100, icon: "fa-2" },
+            { label: "4×",   ms: 40,  icon: "fa-3" },
+            { label: "8×",   ms: 20,  icon: "fa-4" },
         ];
         for (const s of speeds) btn(`speed-${s.ms}`, s.icon, s.label, () => this.setTick(s.ms));
 
@@ -983,7 +983,7 @@ export class SimControl {
             setActive("pause", this.mode === "run" && this.isPaused);
 
             // --- active state for speed buttons
-            const speedRoles = [1000, 500, 100, 40, 20];
+            const speedRoles = [500, 100, 40, 20];
             for (const ms of speedRoles) {
                 setActive(`speed-${ms}`, this.mode === "run" && !this.isPaused && SimControl.tick === ms);
             }
@@ -1891,7 +1891,7 @@ export class SimControl {
     new() {
         this._clearScene();
         SimulatedObject.idnumber = 0;
-        SimControl.tick = 500;
+        SimControl.tick = 100;
         this.isPaused = true;
 
         for (const el of this._objEls.values()) el.remove();
