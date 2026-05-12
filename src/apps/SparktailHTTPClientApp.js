@@ -757,9 +757,9 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     const timeout = this._timeoutMs();
     const bodyLimit = 1_048_576;
 
-    /** @type {(name:string)=>Promise<number>} */
+    /** @type {(name:string)=>Promise<import("../net/models/IPAddress.js").IPAddress|null>} */
     const dnsResolve = async (name) => {
-      return await this.os.dns.resolve(name);
+      return await this.os.dns.resolveIP(name);
     };
 
     /** @type {IPAddress|null} */
