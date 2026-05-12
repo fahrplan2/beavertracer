@@ -903,7 +903,6 @@ textarea.log {
   flex-direction: column;
 }
 
-.app-certmanager .cm-split.is-empty .cm-list { display: none; }
 
 .app-certmanager .cm-empty-state {
   flex: 1;
@@ -955,7 +954,7 @@ textarea.log {
   font-size: 12.5px;
 }
 .app-certmanager .cm-detail-row:last-child { border-bottom: none; }
-.app-certmanager .cm-detail-label { color: var(--muted); min-width: 90px; flex-shrink: 0; }
+.app-certmanager .cm-detail-label { color: var(--muted); flex: 0 0 112px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .app-certmanager .cm-detail-value { font-family: ui-monospace, monospace; font-size: 11.5px; word-break: break-all; }
 
 .app-certmanager .cm-preview {

@@ -230,25 +230,23 @@ export class CertManagerApp extends GenericProcess {
     if (!el) return;
     const entries = this._readEntries(CERT_DIR);
     if (entries.length > 0) {
-      this._t1SplitEl?.classList.remove("is-empty");
+      if (!entries.find(e => e.path === this._t1SelPath)) {
+        this._t1SelPath = entries[0].path;
+        this._renderT1Detail(entries[0]);
+      }
       el.replaceChildren(...entries.map(e => this._certItem(e, this._t1SelPath, () => {
         this._t1SelPath = e.path;
         this._renderT1Detail(e);
         this._refreshT1();
       })));
-      if (this._t1DetailEl?.querySelector(".cm-empty-state"))
-        this._t1DetailEl.replaceChildren();
     } else {
-      this._t1SplitEl?.classList.add("is-empty");
       this._t1SelPath = null;
       el.replaceChildren();
-      this._t1DetailEl?.replaceChildren(this._buildEmptyState({
-        icon: "fa-certificate",
-        title: t("app.certmanager.empty"),
-        hint: t("app.certmanager.emptyHint"),
-        btnLabel: t("app.certmanager.emptyAction"),
-        btnFn: () => this._setActiveTab?.("t2"),
-      }));
+      const del = UI.button(t("app.certmanager.detail.delete"), () => {}, { icon: "fa-trash" });
+      const exp = UI.button(t("app.certmanager.detail.export"), () => {}, { icon: "fa-file-export" });
+      const tru = UI.button(t("app.certmanager.detail.trust"),  () => {}, { icon: "fa-shield-halved" });
+      del.disabled = exp.disabled = tru.disabled = true;
+      this._t1DetailEl?.replaceChildren(this._buildPlaceholderDetail([del, exp, tru]));
     }
   }
 
@@ -326,21 +324,22 @@ export class CertManagerApp extends GenericProcess {
     if (!el) return;
     const entries = this._readEntries(TRUSTED_DIR);
     if (entries.length > 0) {
+      if (!entries.find(e => e.path === this._t3SelPath)) {
+        this._t3SelPath = entries[0].path;
+        this._renderT3Detail(entries[0]);
+      }
       el.replaceChildren(...entries.map(e => this._certItem(e, this._t3SelPath, () => {
         this._t3SelPath = e.path;
         this._renderT3Detail(e);
         this._refreshT3();
       })));
-      if (this._t3DetailEl?.querySelector(".cm-empty-state"))
-        this._t3DetailEl.replaceChildren();
     } else {
       this._t3SelPath = null;
       el.replaceChildren();
-      this._t3DetailEl?.replaceChildren(this._buildEmptyState({
-        icon: "fa-shield-halved",
-        title: t("app.certmanager.trusted.empty"),
-        hint: t("app.certmanager.trusted.emptyHint"),
-      }));
+      const rem = UI.button(t("app.certmanager.trusted.remove"), () => {}, { icon: "fa-trash" });
+      const exp = UI.button(t("app.certmanager.detail.export"),  () => {}, { icon: "fa-file-export" });
+      rem.disabled = exp.disabled = true;
+      this._t3DetailEl?.replaceChildren(this._buildPlaceholderDetail([rem, exp]));
     }
   }
 
@@ -450,6 +449,19 @@ export class CertManagerApp extends GenericProcess {
   }
 
   // ── shared UI helpers ─────────────────────────────────────────────────────
+
+  /** @param {HTMLButtonElement[]} buttons */
+  _buildPlaceholderDetail(buttons) {
+    const dash = "—";
+    return UI.el("div", { children: [
+      this._detailRow(t("app.certmanager.detail.subject"),     dash),
+      this._detailRow(t("app.certmanager.detail.issuer"),      dash),
+      this._detailRow(t("app.certmanager.detail.fingerprint"), dash),
+      this._detailRow(t("app.certmanager.detail.expiry"),      dash),
+      this._detailRow(t("app.certmanager.detail.isCA"),        dash),
+      UI.buttonRow(buttons),
+    ]});
+  }
 
   /**
    * @param {{ icon: string, title: string, hint?: string, btnLabel?: string, btnFn?: () => void }} opts
