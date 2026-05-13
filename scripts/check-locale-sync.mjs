@@ -23,6 +23,8 @@ function getArg(name, fallback) {
 const LOCALES_DIR = path.resolve(getArg("--locales", "./locales"));
 const SOURCE_LOCALE = getArg("--source", "en.js");
 
+const PROTECTED_KEYS = new Set(["lang.name"]);
+
 const c = {
   reset: "\x1b[0m",
   bold: "\x1b[1m",
@@ -77,6 +79,29 @@ function extractKeys(filePath) {
   return keys;
 }
 
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function removeKeysFromFile(filePath, keysToRemove) {
+  if (keysToRemove.length === 0) return [];
+  let code = fs.readFileSync(filePath, "utf8");
+  const removed = [];
+  for (const key of keysToRemove) {
+    const re = new RegExp(
+      `^[ \\t]*["']${escapeRegex(key)}["'][ \\t]*:.*,?[ \\t]*(\\r?\\n)?`,
+      "m"
+    );
+    const next = code.replace(re, "");
+    if (next !== code) {
+      code = next;
+      removed.push(key);
+    }
+  }
+  if (removed.length > 0) fs.writeFileSync(filePath, code, "utf8");
+  return removed;
+}
+
 function main() {
   const sourceFile = path.join(LOCALES_DIR, SOURCE_LOCALE);
   if (!fs.existsSync(sourceFile)) {
@@ -113,6 +138,10 @@ function main() {
     totalMissing += missing.length;
     totalExtra += extra.length;
 
+    const deletable = extra.filter((k) => !PROTECTED_KEYS.has(k));
+    const protected_ = extra.filter((k) => PROTECTED_KEYS.has(k));
+    const removed = removeKeysFromFile(filePath, deletable);
+
     if (missing.length === 0 && extra.length === 0) {
       console.log(
         `${c.green}✓${c.reset} ${c.bold}${file}${c.reset} — ${localeKeys.size} keys, in sync`
@@ -125,9 +154,13 @@ function main() {
         console.log(`  ${c.red}Missing (${missing.length}):${c.reset}`);
         for (const k of missing) console.log(`    ${c.gray}${k}${c.reset}`);
       }
-      if (extra.length > 0) {
-        console.log(`  ${c.cyan}Extra / obsolete (${extra.length}):${c.reset}`);
-        for (const k of extra) console.log(`    ${c.gray}${k}${c.reset}`);
+      if (removed.length > 0) {
+        console.log(`  ${c.cyan}Deleted obsolete (${removed.length}):${c.reset}`);
+        for (const k of removed) console.log(`    ${c.gray}${k}${c.reset}`);
+      }
+      if (protected_.length > 0) {
+        console.log(`  ${c.cyan}Kept protected (${protected_.length}):${c.reset}`);
+        for (const k of protected_) console.log(`    ${c.gray}${k}${c.reset}`);
       }
     }
     console.log();

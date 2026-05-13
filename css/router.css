@@ -7,7 +7,7 @@
 /* Selected iface label (under tabs) */
 .router-selected-iface {
   margin: 6px 0 10px 0;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--muted);
 }
 
@@ -54,7 +54,7 @@
 
 .router-if-section-label {
   font-weight: 600;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 
 .router-if-fields {
@@ -71,7 +71,7 @@
 }
 
 .router-if-field-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--muted);
 }
 

@@ -200,19 +200,57 @@ export class TlsRecord {
   }
 
   /**
-   * ECDH ServerKeyExchange: curve=secp256r1, public key (65 bytes uncompressed).
+   * ECDH ServerKeyExchange: curve=secp256r1, public key (65 bytes uncompressed),
+   * optionally followed by an ECDSA signature over clientRandom||serverRandom||ecParams||key.
    * @param {Uint8Array} ecdhPubKeyBytes - 65 bytes (0x04 || x || y)
+   * @param {Uint8Array} [signature] - DER-encoded ECDSA signature (variable length)
    * @returns {Uint8Array}
    */
-  static buildServerKeyExchange(ecdhPubKeyBytes) {
-    // ECParameters: named_curve (3), secp256r1 (0x0017)
-    // ECPoint: length-prefixed
-    const body = new Uint8Array(4 + ecdhPubKeyBytes.length);
-    body[0] = 0x03;             // named_curve
-    body[1] = 0x00; body[2] = 0x17; // secp256r1
-    body[3] = ecdhPubKeyBytes.length;
-    body.set(ecdhPubKeyBytes, 4);
+  static buildServerKeyExchange(ecdhPubKeyBytes, signature) {
+    // [named_curve:3][key_len:1][key_bytes:65]
+    const params = new Uint8Array(4 + ecdhPubKeyBytes.length);
+    params[0] = 0x03;              // named_curve
+    params[1] = 0x00; params[2] = 0x17; // secp256r1
+    params[3] = ecdhPubKeyBytes.length;
+    params.set(ecdhPubKeyBytes, 4);
+
+    if (!signature || signature.length === 0) {
+      // No signature: [sig_scheme:2=0x0000][sig_len:2=0x0000]
+      const body = new Uint8Array(params.length + 4);
+      body.set(params, 0);
+      return handshakeRecord(handshakeMsg(TLS_HT.SERVER_KEY_EXCHANGE, body));
+    }
+
+    // [sig_scheme:2=ecdsa_secp256r1_sha256][sig_len:2][sig_bytes]
+    const body = new Uint8Array(params.length + 2 + 2 + signature.length);
+    body.set(params, 0);
+    let off = params.length;
+    body[off++] = 0x04; body[off++] = 0x03; // ecdsa_secp256r1_sha256
+    body[off++] = (signature.length >>> 8) & 0xff;
+    body[off++] = signature.length & 0xff;
+    body.set(signature, off);
     return handshakeRecord(handshakeMsg(TLS_HT.SERVER_KEY_EXCHANGE, body));
+  }
+
+  /**
+   * Parse a ServerKeyExchange body back into its components.
+   * @param {Uint8Array} body
+   * @returns {{ ecdhPubKeyBytes: Uint8Array, ecParams: Uint8Array, signature: Uint8Array|null }}
+   */
+  static parseServerKeyExchange(body) {
+    // [named_curve:3][key_len:1][key_bytes]
+    const keyLen = body[3];
+    const ecdhPubKeyBytes = body.slice(4, 4 + keyLen);
+    const ecParams = body.slice(0, 4 + keyLen); // named_curve + key_len + key_bytes
+    let signature = null;
+    const sigOff = 4 + keyLen;
+    if (sigOff + 4 <= body.length) {
+      const sigLen = (body[sigOff + 2] << 8) | body[sigOff + 3];
+      if (sigLen > 0 && sigOff + 4 + sigLen <= body.length) {
+        signature = body.slice(sigOff + 4, sigOff + 4 + sigLen);
+      }
+    }
+    return { ecdhPubKeyBytes, ecParams, signature };
   }
 
   /** @returns {Uint8Array} */

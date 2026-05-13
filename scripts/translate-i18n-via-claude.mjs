@@ -32,6 +32,7 @@ const SYSTEM_PROMPT =
   "Do not translate keys. " +
   "Return ONLY a valid JSON object mapping keys to translated strings. " +
   "No explanations, no markdown fences, just the raw JSON object. " +
+  "IMPORTANT: If a translated string contains double-quote characters (\"), you MUST escape them as \\\" in the JSON output. " +
   'For the key "lang.name", return the native language name with its flag emoji (e.g. "🇩🇪 Deutsch").';
 
 function parseArgs(argv) {
@@ -139,32 +140,118 @@ function chunk(arr, size) {
   return out;
 }
 
+/**
+ * Fix common model mistakes in JSON:
+ *  - unescaped control characters inside strings
+ *  - unescaped double-quote characters inside string values
+ *    (detected via lookahead: a `"` that is NOT followed by `:`, `,`, `}`, `]`,
+ *     or end-of-input is treated as embedded and escaped)
+ * @param {string} raw
+ */
+function sanitizeJsonText(raw) {
+  let out = "";
+  let inString = false;
+  let escaped = false;
+
+  /** Return the next non-whitespace character after position i, or "". */
+  const peekNext = (i) => {
+    let j = i + 1;
+    while (j < raw.length && (raw[j] === " " || raw[j] === "\t" || raw[j] === "\n" || raw[j] === "\r")) j++;
+    return raw[j] ?? "";
+  };
+
+  for (let i = 0; i < raw.length; i++) {
+    const ch = raw[i];
+
+    if (escaped) { out += ch; escaped = false; continue; }
+    if (ch === "\\" && inString) { out += ch; escaped = true; continue; }
+
+    if (ch === '"') {
+      if (!inString) {
+        inString = true;
+        out += ch;
+        continue;
+      }
+      // Inside a string: decide if this is the closing quote or an embedded one.
+      // A real closing quote is always followed by ':', ',', '}', ']', or end-of-input.
+      const next = peekNext(i);
+      if (next === ":" || next === "," || next === "}" || next === "]" || next === "") {
+        inString = false;
+        out += ch;
+      } else {
+        out += '\\"';
+      }
+      continue;
+    }
+
+    if (inString) {
+      if (ch === "\n") { out += "\\n"; continue; }
+      if (ch === "\r") { out += "\\r"; continue; }
+      if (ch === "\t") { out += "\\t"; continue; }
+      const code = ch.charCodeAt(0);
+      if (code < 0x20) { out += `\\u${code.toString(16).padStart(4, "0")}`; continue; }
+    }
+    out += ch;
+  }
+  return out;
+}
+
 function extractJson(text) {
   const match = text.match(/\{[\s\S]*\}/);
   if (!match) throw new Error("No JSON object found in response");
-  return JSON.parse(match[0]);
+  const raw = match[0];
+  try {
+    return JSON.parse(raw);
+  } catch {
+    try {
+      return JSON.parse(sanitizeJsonText(raw));
+    } catch (e2) {
+      // Surface the raw response so the caller can log it for diagnosis
+      /** @type {any} */
+      const err = e2;
+      err.rawResponse = raw.slice(0, 500);
+      throw err;
+    }
+  }
 }
 
-async function translateBatch({ client, model, sourceLang, targetLang, pairs }) {
-  const msg = await client.messages.create({
-    model,
-    max_tokens: 4096,
-    system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
-    messages: [
-      {
-        role: "user",
-        content: JSON.stringify({
-          sourceLanguage: sourceLang,
-          targetLanguage: targetLang,
-          strings: Object.fromEntries(pairs.map((p) => [p.key, p.value])),
-        }),
-      },
-    ],
-  });
+async function translateBatch({ client, model, maxTokens, sourceLang, targetLang, pairs }, retries = 3) {
+  let lastErr;
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const msg = await client.messages.create({
+        model,
+        max_tokens: maxTokens,
+        system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
+        messages: [
+          {
+            role: "user",
+            content: JSON.stringify({
+              sourceLanguage: sourceLang,
+              targetLanguage: targetLang,
+              strings: Object.fromEntries(pairs.map((p) => [p.key, p.value])),
+            }),
+          },
+        ],
+      });
 
-  const content = msg.content[0]?.text?.trim();
-  if (!content) throw new Error("Empty response from Claude");
-  return extractJson(content);
+      if (msg.stop_reason === "max_tokens") {
+        throw new Error(`Response truncated (max_tokens=${maxTokens} reached). Reduce --batch size.`);
+      }
+
+      const content = msg.content[0]?.text?.trim();
+      if (!content) throw new Error("Empty response from Claude");
+      return extractJson(content);
+    } catch (e) {
+      lastErr = e;
+      if (attempt < retries) {
+        const snippet = e.rawResponse ? `\n  Raw: ${e.rawResponse}` : "";
+        process.stderr.write(`\n  [attempt ${attempt}/${retries} failed: ${e.message}]${snippet}\n  retrying…\n`);
+        await new Promise((r) => setTimeout(r, 1500 * attempt));
+      }
+    }
+  }
+  throw lastErr;
 }
 
 function renderProgress({ doneBatches, totalBatches, doneStrings, totalStrings }) {
@@ -187,7 +274,7 @@ async function fileExists(p) {
   }
 }
 
-async function updateExistingLocale({ client, model, sourceLang, targetLang, inCode, outFile, batchSize }) {
+async function updateExistingLocale({ client, model, maxTokens, sourceLang, targetLang, inCode, outFile, batchSize }) {
   const sourceAst = babelParse(inCode);
   const sourceObj = findExportDefaultObjectExpression(sourceAst);
   if (!sourceObj) throw new Error("Could not find `export default { ... }` in input file.");
@@ -235,7 +322,7 @@ async function updateExistingLocale({ client, model, sourceLang, targetLang, inC
 
   const translations = {};
   for (const c of chunksArr) {
-    const t = await translateBatch({ client, model, sourceLang, targetLang, pairs: c.map(({ key, value }) => ({ key, value })) });
+    const t = await translateBatch({ client, model, maxTokens, sourceLang, targetLang, pairs: c.map(({ key, value }) => ({ key, value })) });
     Object.assign(translations, t);
     doneBatches++;
     doneStrings += c.length;
@@ -270,10 +357,11 @@ async function main() {
         "Usage: ANTHROPIC_API_KEY=... node translate-i18n-via-claude.mjs \\\n" +
         "         --in locales/en.js --out locales/de.js --target German\n" +
         "Options:\n" +
-        "  --source   English\n" +
-        "  --model    claude-haiku-4-5-20251001\n" +
-        "  --batch    40\n" +
-        "  --update   true|false (default: true)"
+        "  --source      English\n" +
+        "  --model       claude-haiku-4-5-20251001\n" +
+        "  --batch       40\n" +
+        "  --max-tokens  8192\n" +
+        "  --update      true|false (default: true)"
     );
     process.exit(1);
   }
@@ -286,12 +374,13 @@ async function main() {
 
   const model = args.model || "claude-haiku-4-5-20251001";
   const batchSize = Number(args.batch || 40);
+  const maxTokens = Number(args["max-tokens"] || 8192);
   const updateMode = asBool(args.update, true);
   const client = new Anthropic({ apiKey });
   const inCode = await fs.readFile(inFile, "utf8");
 
   if (updateMode) {
-    await updateExistingLocale({ client, model, sourceLang, targetLang, inCode, outFile, batchSize });
+    await updateExistingLocale({ client, model, maxTokens, sourceLang, targetLang, inCode, outFile, batchSize });
     return;
   }
 
@@ -320,7 +409,7 @@ async function main() {
 
   const translations = {};
   for (const c of chunksArr) {
-    const t = await translateBatch({ client, model, sourceLang, targetLang, pairs: c.map(({ key, value }) => ({ key, value })) });
+    const t = await translateBatch({ client, model, maxTokens, sourceLang, targetLang, pairs: c.map(({ key, value }) => ({ key, value })) });
     Object.assign(translations, t);
     doneBatches++;
     doneStrings += c.length;

@@ -29,6 +29,22 @@ export class TlsCertExpiredError extends TlsHandshakeError {
   }
 }
 
+export class TlsSignatureError extends TlsHandshakeError {
+  constructor() {
+    super("ServerKeyExchange signature invalid — possible MITM attack");
+    this.name = "TlsSignatureError";
+  }
+}
+
+export class TlsCertSignatureError extends TlsCertUntrustedError {
+  /** @param {string} subject */
+  constructor(subject) {
+    super(subject);
+    this.message = `Certificate signature invalid: ${subject}`;
+    this.name = "TlsCertSignatureError";
+  }
+}
+
 // ── helpers ────────────────────────────────────────────────────────────────
 
 /** @param {Uint8Array[]} parts */
@@ -58,7 +74,6 @@ function xorBytes(a, b) {
  */
 function gcmNonce(baseIV, seq) {
   const seqBytes = new Uint8Array(12);
-  // Write seq as big-endian into last 8 bytes
   let s = seq >>> 0;
   for (let i = 11; i >= 4; i--) { seqBytes[i] = s & 0xff; s = (s / 256) | 0; }
   return xorBytes(baseIV, seqBytes);
@@ -94,6 +109,53 @@ async function deriveIV(hkdfKey, salt, label) {
     96, // 12 bytes
   );
   return new Uint8Array(bits);
+}
+
+// ── DER utilities (for cert parsing) ──────────────────────────────────────
+
+/**
+ * Parse the tag+length of one DER element starting at offset.
+ * @param {Uint8Array} data
+ * @param {number} offset
+ * @returns {{ start: number, contentStart: number, end: number }}
+ */
+function derNextElement(data, offset) {
+  let off = offset + 1; // skip tag byte
+  let len;
+  if (data[off] < 0x80)       { len = data[off];                               off += 1; }
+  else if (data[off] === 0x81) { len = data[off + 1];                           off += 2; }
+  else                         { len = (data[off + 1] << 8) | data[off + 2];   off += 3; }
+  return { start: offset, contentStart: off, end: off + len };
+}
+
+/**
+ * Extract the DER bytes of the TBSCertificate (first SEQUENCE inside Certificate).
+ * @param {Uint8Array} certDer
+ * @returns {Uint8Array}
+ */
+function extractTbsDer(certDer) {
+  const outer = derNextElement(certDer, 0);         // Certificate SEQUENCE
+  const tbs   = derNextElement(certDer, outer.contentStart); // TBSCertificate SEQUENCE
+  return certDer.slice(tbs.start, tbs.end);
+}
+
+/**
+ * Extract the raw signature bytes from the Certificate's signatureValue BIT STRING.
+ * The BIT STRING content is [0x00 (unused bits), sig...]; we return just the sig bytes.
+ * Returns null if not parseable or if the signature is the zero placeholder.
+ * @param {Uint8Array} certDer
+ * @returns {Uint8Array|null}
+ */
+function extractCertSig(certDer) {
+  const outer  = derNextElement(certDer, 0);
+  const tbs    = derNextElement(certDer, outer.contentStart);
+  const sigAlg = derNextElement(certDer, tbs.end);
+  const sigBit = derNextElement(certDer, sigAlg.end);
+  // BIT STRING content: 0x00 (unused bits) + signature bytes
+  const sigBytes = certDer.slice(sigBit.contentStart + 1, sigBit.end);
+  // P1363 P-256 signatures are exactly 64 bytes; zero placeholder is 71 bytes
+  if (sigBytes.length !== 64) return null;
+  return sigBytes;
 }
 
 /**
@@ -182,7 +244,6 @@ export class TlsSession {
       this._state = "ESTABLISHED";
     } catch (e) {
       this._state = "CLOSED";
-      // Send close_notify alert if it's a cert error (best-effort)
       if (e instanceof TlsHandshakeError) {
         try { this._sendRaw(TlsRecord.buildAlert(2, 42)); } catch { /* ignore */ }
       }
@@ -227,11 +288,9 @@ export class TlsSession {
       }
 
       if (record.contentType === TLS_CT.ALERT) {
-        // close_notify (level=1, desc=0) or fatal
         this._state = "CLOSED";
         return null;
       }
-      // Skip unexpected records silently (e.g. renegotiation requests)
     }
   }
 
@@ -255,7 +314,7 @@ export class TlsSession {
     this._sendRaw(TlsRecord.buildClientHello(this._clientRandom));
 
     // 3. Read ServerHello, Certificate, ServerKeyExchange, ServerHelloDone
-    let peerEcdhRaw = null;
+    let skeBody = null;
     let peerCert = null;
 
     while (true) {
@@ -266,7 +325,7 @@ export class TlsSession {
       const msgs = this._parseHandshakeMessages(record.payload);
       for (const msg of msgs) {
         if (msg.type === TLS_HT.SERVER_HELLO) {
-          this._serverRandom = msg.body.slice(2, 34); // skip 2-byte version
+          this._serverRandom = msg.body.slice(2, 34);
         } else if (msg.type === TLS_HT.CERTIFICATE) {
           peerCert = await this._parseCertFromMessage(msg.body);
           this.peerCert = peerCert;
@@ -279,22 +338,38 @@ export class TlsSession {
             }
           }
         } else if (msg.type === TLS_HT.SERVER_KEY_EXCHANGE) {
-          // [named_curve:1][curve_id:2][key_len:1][key_bytes]
-          const keyLen = msg.body[3];
-          peerEcdhRaw = msg.body.slice(4, 4 + keyLen);
+          skeBody = msg.body;
         } else if (msg.type === TLS_HT.SERVER_HELLO_DONE) {
           break;
         }
       }
 
-      // Exit loop once we saw ServerHelloDone
       if (msgs.some(m => m.type === TLS_HT.SERVER_HELLO_DONE)) break;
     }
 
-    if (!peerEcdhRaw) throw new TlsHandshakeError("No ServerKeyExchange received");
+    if (!skeBody) throw new TlsHandshakeError("No ServerKeyExchange received");
 
-    // 4. Send ClientKeyExchange + ChangeCipherSpec + Finished
-    this._peerEcdhPubKey = await importEcdhPubKey(peerEcdhRaw);
+    // 4. Parse ServerKeyExchange and verify signature
+    const { ecdhPubKeyBytes, ecParams, signature } = TlsRecord.parseServerKeyExchange(skeBody);
+
+    if (signature && peerCert?.publicKey) {
+      // toSign = clientRandom || serverRandom || ecParams (curve+keylen+keybytes)
+      const toSign = concat(
+        /** @type {Uint8Array} */ (this._clientRandom),
+        /** @type {Uint8Array} */ (this._serverRandom),
+        ecParams,
+      );
+      const valid = await crypto.subtle.verify(
+        { name: "ECDSA", hash: "SHA-256" },
+        peerCert.publicKey,
+        /** @type {Uint8Array<ArrayBuffer>} */ (signature),
+        toSign,
+      );
+      if (!valid) throw new TlsSignatureError();
+    }
+
+    // 5. Send ClientKeyExchange + ChangeCipherSpec + Finished
+    this._peerEcdhPubKey = await importEcdhPubKey(/** @type {Uint8Array<ArrayBuffer>} */ (ecdhPubKeyBytes));
     const ownPubKeyRaw = new Uint8Array(await crypto.subtle.exportKey(
       "raw", /** @type {CryptoKeyPair} */ (this._ecdhKeyPair).publicKey,
     ));
@@ -304,7 +379,7 @@ export class TlsSession {
     this._sendRaw(TlsRecord.buildChangeCipherSpec());
     this._sendRaw(TlsRecord.buildFinished(await this._makeVerifyData("client")));
 
-    // 5. Read server ChangeCipherSpec + Finished
+    // 6. Read server ChangeCipherSpec + Finished
     await this._readExpectedRecord(TLS_CT.CHANGE_CIPHER_SPEC);
     await this._readExpectedHandshake(TLS_HT.FINISHED);
   }
@@ -313,6 +388,7 @@ export class TlsSession {
 
   async _serverHandshake() {
     if (!this._cert) throw new TlsHandshakeError("Server cert required");
+    if (!this._cert.privateKey) throw new TlsHandshakeError("Server cert has no private key");
 
     // 1. Read ClientHello
     const chRecord = await this._readRecordTimeout();
@@ -322,7 +398,7 @@ export class TlsSession {
     const chMsgs = this._parseHandshakeMessages(chRecord.payload);
     const ch = chMsgs.find(m => m.type === TLS_HT.CLIENT_HELLO);
     if (!ch) throw new TlsHandshakeError("Expected ClientHello");
-    this._clientRandom = ch.body.slice(2, 34); // skip 2-byte version
+    this._clientRandom = ch.body.slice(2, 34);
 
     // 2. Generate server random + ECDH keypair
     this._serverRandom = crypto.getRandomValues(new Uint8Array(32));
@@ -333,15 +409,34 @@ export class TlsSession {
       "raw", /** @type {CryptoKeyPair} */ (this._ecdhKeyPair).publicKey,
     ));
 
-    // 3. Send ServerHello + Certificate + ServerKeyExchange + ServerHelloDone
+    // 3. Sign ServerKeyExchange params with cert private key
+    // ecParams layout matches parseServerKeyExchange: [named_curve:3][key_len:1][key_bytes:65]
+    const ecParams = new Uint8Array(4 + serverPubRaw.length);
+    ecParams[0] = 0x03; ecParams[1] = 0x00; ecParams[2] = 0x17;
+    ecParams[3] = serverPubRaw.length;
+    ecParams.set(serverPubRaw, 4);
+
+    const toSign = concat(
+      /** @type {Uint8Array} */ (this._clientRandom),
+      /** @type {Uint8Array} */ (this._serverRandom),
+      ecParams,
+    );
+    const sigBuf = await crypto.subtle.sign(
+      { name: "ECDSA", hash: "SHA-256" },
+      this._cert.privateKey,
+      toSign,
+    );
+    const signature = new Uint8Array(sigBuf);
+
+    // 4. Send ServerHello + Certificate + ServerKeyExchange + ServerHelloDone
     const sessionId = crypto.getRandomValues(new Uint8Array(4));
     this._sendRaw(TlsRecord.buildServerHello(this._serverRandom, sessionId));
     const chainDers = this._cert.chain.map(c => c.toDer());
     this._sendRaw(TlsRecord.buildCertificate([this._cert.toDer(), ...chainDers]));
-    this._sendRaw(TlsRecord.buildServerKeyExchange(serverPubRaw));
+    this._sendRaw(TlsRecord.buildServerKeyExchange(serverPubRaw, signature));
     this._sendRaw(TlsRecord.buildServerHelloDone());
 
-    // 4. Read ClientKeyExchange
+    // 5. Read ClientKeyExchange
     const ckeRecord = await this._readRecordTimeout();
     if (ckeRecord === null || ckeRecord.contentType !== TLS_CT.HANDSHAKE) {
       throw new TlsHandshakeError("Expected ClientKeyExchange");
@@ -354,14 +449,14 @@ export class TlsSession {
     const peerEcdhRaw = cke.body.slice(1, 1 + peerKeyLen);
     this._peerEcdhPubKey = await importEcdhPubKey(peerEcdhRaw);
 
-    // 5. Derive keys
+    // 6. Derive keys
     await this._deriveKeys();
 
-    // 6. Read client ChangeCipherSpec + Finished
+    // 7. Read client ChangeCipherSpec + Finished
     await this._readExpectedRecord(TLS_CT.CHANGE_CIPHER_SPEC);
     await this._readExpectedHandshake(TLS_HT.FINISHED);
 
-    // 7. Send ChangeCipherSpec + Finished
+    // 8. Send ChangeCipherSpec + Finished
     this._sendRaw(TlsRecord.buildChangeCipherSpec());
     this._sendRaw(TlsRecord.buildFinished(await this._makeVerifyData("server")));
   }
@@ -423,7 +518,6 @@ export class TlsSession {
    * @returns {Promise<TlsRecord|null>}
    */
   async _readRecord() {
-    // Need at least 5 bytes for the record header
     if (!await this._fillBuf(5)) return null;
 
     const contentType = this._recvBuf[0];
@@ -500,30 +594,54 @@ export class TlsSession {
 
   /**
    * Extract a TlsCertificate stub from a raw Certificate handshake body.
-   * Scans the DER for OID 2.5.4.3 (commonName = 55 04 03) followed by a
-   * UTF8String tag (0x0C) to recover subject/issuer CNs — this works because
-   * TlsCertificate.toDer() always encodes them in that exact order
-   * (issuerDn before subjectDn).
+   * Recovers subject/issuer CNs from our known DER structure, imports the real
+   * ECDSA public key, and verifies the certificate signature against the issuer.
    * @param {Uint8Array<ArrayBuffer>} body
    * @returns {Promise<TlsCertificate|null>}
    */
   async _parseCertFromMessage(body) {
-    // body: [list_len:3]([cert_len:3][cert_der])…
     if (body.length < 6) return null;
     const listLen = (body[0] << 16) | (body[1] << 8) | body[2];
-    const certs = [];
+
+    /** @type {{ cert: TlsCertificate, der: Uint8Array }[]} */
+    const entries = [];
     let off = 3;
     while (off + 3 <= 3 + listLen && off + 3 <= body.length) {
       const certLen = (body[off] << 16) | (body[off + 1] << 8) | body[off + 2];
       off += 3;
       if (certLen === 0 || off + certLen > body.length) break;
-      const cert = await this._parseSingleCertDer(body.slice(off, off + certLen));
-      if (cert) certs.push(cert);
+      const der = body.slice(off, off + certLen);
+      const cert = await this._parseSingleCertDer(der);
+      if (cert) entries.push({ cert, der });
       off += certLen;
     }
-    if (certs.length === 0) return null;
-    const leaf = certs[0];
-    leaf.chain = certs.slice(1);
+    if (entries.length === 0) return null;
+
+    const leaf = entries[0].cert;
+    leaf.chain = entries.slice(1).map(e => e.cert);
+
+    // Verify certificate signatures (only for certs with real P1363 signatures)
+    for (let i = 0; i < entries.length; i++) {
+      const { cert, der } = entries[i];
+      const sig = extractCertSig(der);
+      if (!sig) continue; // zero placeholder or unparseable — skip
+
+      const issuerPubKey = cert.selfSigned
+        ? cert.publicKey                        // self-signed: verify with own key
+        : entries[i + 1]?.cert.publicKey ?? null; // CA-signed: verify with next cert in chain
+
+      if (!issuerPubKey) continue; // issuer key not available — skip silently
+
+      const tbs = extractTbsDer(der);
+      const valid = await crypto.subtle.verify(
+        { name: "ECDSA", hash: "SHA-256" },
+        issuerPubKey,
+        /** @type {Uint8Array<ArrayBuffer>} */ (sig),
+        /** @type {Uint8Array<ArrayBuffer>} */ (tbs),
+      );
+      if (!valid) throw new TlsCertSignatureError(cert.subject);
+    }
+
     return leaf;
   }
 
@@ -545,16 +663,42 @@ export class TlsSession {
     // toDer() writes issuerDn first, subjectDn second
     const issuerCN  = cns[0] ?? "";
     const subjectCN = cns[1] ?? cns[0] ?? "";
-    const hashBuf = await crypto.subtle.digest("SHA-256", der);
-    const publicKeyId = Array.from(new Uint8Array(hashBuf))
-      .map(b => b.toString(16).padStart(2, "0")).join("");
+
     const stub = new TlsCertificate();
-    stub.subject     = subjectCN ? `CN=${subjectCN}` : "";
-    stub.issuer      = issuerCN  ? `CN=${issuerCN}`  : stub.subject;
-    stub.selfSigned  = stub.subject === stub.issuer;
-    stub.publicKeyId = publicKeyId;
-    stub.notBefore   = 0;
-    stub.notAfter    = Date.now() + 365 * 24 * 3600 * 1000;
+    stub.subject    = subjectCN ? `CN=${subjectCN}` : "";
+    stub.issuer     = issuerCN  ? `CN=${issuerCN}`  : stub.subject;
+    stub.selfSigned = stub.subject === stub.issuer;
+    stub.notBefore  = 0;
+    stub.notAfter   = Date.now() + 365 * 24 * 3600 * 1000;
+
+    // Extract the real ECDSA-P256 public key from SubjectPublicKeyInfo.
+    // toDer() encodes it as BIT STRING (0x03) with content [0x00, 0x04, ...64 bytes].
+    // A P-256 uncompressed key is always 65 bytes → BIT STRING content = 66 bytes (0x42).
+    for (let i = 0; i + 67 <= der.length; i++) {
+      if (der[i] === 0x03 && der[i + 1] === 0x42 && der[i + 2] === 0x00 && der[i + 3] === 0x04) {
+        const rawPubKey = der.slice(i + 2, i + 2 + 65); // 0x04 || x || y
+        try {
+          stub.publicKey = await crypto.subtle.importKey(
+            "raw", rawPubKey,
+            { name: "ECDSA", namedCurve: "P-256" },
+            true, ["verify"],
+          );
+          stub.publicKeyRaw = rawPubKey;
+          // Derive publicKeyId from first 16 bytes of key material
+          stub.publicKeyId = Array.from(rawPubKey.slice(1, 17))
+            .map(b => b.toString(16).padStart(2, "0")).join("");
+        } catch { /* not a valid key, skip */ }
+        break;
+      }
+    }
+
+    // Fallback publicKeyId from SHA-256 of DER (for certs with placeholder keys)
+    if (!stub.publicKeyId) {
+      const hashBuf = await crypto.subtle.digest("SHA-256", der);
+      stub.publicKeyId = Array.from(new Uint8Array(hashBuf))
+        .map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+
     return stub;
   }
 

@@ -6,6 +6,7 @@ import { Disposer } from "../lib/Disposer.js";
 import { TlsCertificate } from "../net/models/TlsCertificate.js";
 import { OsFilePicker } from "./lib/OsFilePicker.js";
 import { SimDialog } from "../lib/SimDialog.js";
+import { CertClipboard } from "../lib/CertClipboard.js";
 import { t } from "../i18n/index.js";
 
 const CERT_DIR    = "/etc/certs";
@@ -48,6 +49,10 @@ export class CertManagerApp extends GenericProcess {
   /** @type {HTMLElement|null} */ _t3DetailEl = null;
   /** @type {((id: string) => void)|null} */ _setActiveTab = null;
 
+  // Clipboard paste buttons (labels updated reactively)
+  /** @type {HTMLButtonElement|null} */ _t1PasteEl = null;
+  /** @type {HTMLButtonElement|null} */ _t3PasteEl = null;
+
   // Tab 4
   /** @type {HTMLSelectElement|null} */ _t4CertEl    = null;
   /** @type {HTMLSelectElement|null} */ _t4CaEl      = null;
@@ -67,8 +72,13 @@ export class CertManagerApp extends GenericProcess {
     // ── Tab 1: My Certs ──────────────────────────────────────────────────────
     this._t1ListEl   = UI.el("div", { className: "cm-list" });
     this._t1DetailEl = UI.el("div", { className: "cm-detail msg" });
+    this._t1PasteEl  = UI.button(t("app.certmanager.clipboard.pasteEmpty"),
+      () => this._pasteFromClipboard("certs"), { icon: "fa-paste" });
     const pane1 = UI.el("div", { className: "cm-split", children: [
-      this._t1ListEl,
+      UI.el("div", { className: "cm-list-col", children: [
+        this._t1ListEl,
+        UI.buttonRow([this._t1PasteEl]),
+      ]}),
       this._t1DetailEl,
     ]});
     this._t1SplitEl = pane1;
@@ -128,13 +138,16 @@ export class CertManagerApp extends GenericProcess {
     // ── Tab 3: Trusted CAs ───────────────────────────────────────────────────
     this._t3ListEl   = UI.el("div", { className: "cm-list" });
     this._t3DetailEl = UI.el("div", { className: "cm-detail msg" });
+    this._t3PasteEl  = UI.button(t("app.certmanager.clipboard.pasteEmpty"),
+      () => this._pasteFromClipboard("trusted"), { icon: "fa-paste" });
     const pane3 = UI.el("div", { className: "cm-split", children: [
       UI.el("div", { className: "cm-list-col", children: [
+        this._t3ListEl,
         UI.buttonRow([
           UI.button(t("app.certmanager.trusted.import"),
             () => this._importTrusted(), { icon: "fa-file-import" }),
+          this._t3PasteEl,
         ]),
-        this._t3ListEl,
       ]}),
       this._t3DetailEl,
     ]});
@@ -168,11 +181,11 @@ export class CertManagerApp extends GenericProcess {
     // ── Tab bar + panel ──────────────────────────────────────────────────────
     const { bar, setActive } = UI.tabbedPane([
       { id: "t1", label: t("app.certmanager.tab.certs"),   pane: pane1,
-        onShow: () => this._refreshT1() },
+        onShow: () => { this._refreshT1(); this._updatePasteButtons(); } },
       { id: "t2", label: t("app.certmanager.tab.gen"),     pane: pane2,
         onShow: () => this._refreshT2Ca() },
       { id: "t3", label: t("app.certmanager.tab.trusted"), pane: pane3,
-        onShow: () => this._refreshT3() },
+        onShow: () => { this._refreshT3(); this._updatePasteButtons(); } },
       { id: "t4", label: t("app.certmanager.tab.sign"),    pane: pane4,
         onShow: () => this._refreshT4() },
     ]);
@@ -191,6 +204,7 @@ export class CertManagerApp extends GenericProcess {
     this._t3ListEl = this._t3DetailEl = null;
     this._t4CertEl = this._t4CaEl = this._t4PreviewEl = this._t4NameEl = this._t4MsgEl = null;
     this._setActiveTab = null;
+    this._t1PasteEl = this._t3PasteEl = null;
     super.onUnmount();
   }
 
@@ -207,28 +221,32 @@ export class CertManagerApp extends GenericProcess {
 
   /**
    * @param {string} dir
-   * @returns {{ cert: TlsCertificate, path: string, name: string }[]}
+   * @returns {Promise<{ cert: TlsCertificate, path: string, name: string }[]>}
    */
-  _readEntries(dir) {
+  async _readEntries(dir) {
     const fs = this._fs;
     if (!fs) return [];
     /** @type {string[]} */
     let names = [];
     try { names = fs.readdir(dir); } catch { return []; }
-    return names.filter(n => n.endsWith(".json")).flatMap(n => {
+    const jsons = names.filter(n => n.endsWith(".json"));
+    const results = await Promise.all(jsons.map(async n => {
       try {
-        const cert = TlsCertificate.fromJSON(JSON.parse(fs.readFile(`${dir}/${n}`)));
-        return [{ cert, path: `${dir}/${n}`, name: n }];
-      } catch { return []; }
-    });
+        const cert = await TlsCertificate.fromJSON(JSON.parse(fs.readFile(`${dir}/${n}`)));
+        return { cert, path: `${dir}/${n}`, name: n };
+      } catch { return null; }
+    }));
+    return /** @type {{ cert: TlsCertificate, path: string, name: string }[]} */ (
+      results.filter(r => r !== null)
+    );
   }
 
   // ── Tab 1 ─────────────────────────────────────────────────────────────────
 
-  _refreshT1() {
+  async _refreshT1() {
     const el = this._t1ListEl;
     if (!el) return;
-    const entries = this._readEntries(CERT_DIR);
+    const entries = await this._readEntries(CERT_DIR);
     if (entries.length > 0) {
       if (!entries.find(e => e.path === this._t1SelPath)) {
         this._t1SelPath = entries[0].path;
@@ -253,6 +271,9 @@ export class CertManagerApp extends GenericProcess {
   /** @param {{ cert: TlsCertificate, path: string, name: string }} e */
   _renderT1Detail(e) {
     if (!this._t1DetailEl) return;
+    const copyKeyBtn = UI.button(t("app.certmanager.clipboard.copyWithKey"),
+      () => this._copyToClipboard(e.cert, true), { icon: "fa-key" });
+    if (!e.cert.hasPrivateKey) copyKeyBtn.disabled = true;
     this._t1DetailEl.replaceChildren(this._buildDetail(e.cert, [
       UI.button(t("app.certmanager.detail.delete"), async () => {
         const ok = await SimDialog.confirm(
@@ -267,15 +288,19 @@ export class CertManagerApp extends GenericProcess {
         () => this._exportCert(e.cert, e.name), { icon: "fa-file-export" }),
       UI.button(t("app.certmanager.detail.trust"),
         () => { this._addToTrusted(e.cert, e.name); }, { icon: "fa-shield-halved" }),
-    ], e.path));
+    ], e.path, [
+      UI.button(t("app.certmanager.clipboard.copy"),
+        () => this._copyToClipboard(e.cert, false), { icon: "fa-copy" }),
+      copyKeyBtn,
+    ]));
   }
 
   // ── Tab 2 ─────────────────────────────────────────────────────────────────
 
-  _refreshT2Ca() {
+  async _refreshT2Ca() {
     const sel = this._t2CaEl;
     if (!sel) return;
-    const cas = this._readEntries(CERT_DIR).filter(e => e.cert.isCA || e.cert.selfSigned);
+    const cas = (await this._readEntries(CERT_DIR)).filter(e => e.cert.isCA && e.cert.hasPrivateKey);
     sel.replaceChildren(
       ...cas.length > 0
         ? cas.map(e => UI.el("option", { attrs: { value: e.path }, text: cnOf(e.cert.subject) }))
@@ -283,7 +308,7 @@ export class CertManagerApp extends GenericProcess {
     );
   }
 
-  _generateCert() {
+  async _generateCert() {
     const fs = this._fs;
     if (!fs) return;
     const cn = this._t2CnEl?.value.trim() ?? "";
@@ -300,17 +325,17 @@ export class CertManagerApp extends GenericProcess {
     const type = this._t2TypeEl?.value ?? "self";
 
     let cert;
-    if (type === "ca" && this._t2CaEl?.value) {
-      try {
-        const ca = TlsCertificate.fromJSON(JSON.parse(fs.readFile(this._t2CaEl.value)));
-        cert = TlsCertificate.generate(cn, ca, { isCA, validityDays: days });
-      } catch { this._setMsg(this._t2MsgEl, t("app.certmanager.gen.errLoadCA")); return; }
-    } else {
-      cert = TlsCertificate.generate(cn, null, { isCA, validityDays: days });
-    }
+    try {
+      if (type === "ca" && this._t2CaEl?.value) {
+        const ca = await TlsCertificate.fromJSON(JSON.parse(fs.readFile(this._t2CaEl.value)));
+        cert = await TlsCertificate.generate(cn, ca, { isCA, validityDays: days });
+      } else {
+        cert = await TlsCertificate.generate(cn, null, { isCA, validityDays: days });
+      }
+    } catch { this._setMsg(this._t2MsgEl, t("app.certmanager.gen.errLoadCA")); return; }
 
     try {
-      fs.writeFile(outPath, JSON.stringify(cert.toJSON(), null, 2));
+      fs.writeFile(outPath, JSON.stringify(await cert.toSaveData(), null, 2));
       this._setMsg(this._t2MsgEl, t("app.certmanager.gen.ok", { name }));
       if (this._t2NameEl) { delete this._t2NameEl.dataset.manual; this._t2NameEl.value = ""; }
       if (this._t2CnEl)   this._t2CnEl.value = "";
@@ -319,10 +344,10 @@ export class CertManagerApp extends GenericProcess {
 
   // ── Tab 3 ─────────────────────────────────────────────────────────────────
 
-  _refreshT3() {
+  async _refreshT3() {
     const el = this._t3ListEl;
     if (!el) return;
-    const entries = this._readEntries(TRUSTED_DIR);
+    const entries = await this._readEntries(TRUSTED_DIR);
     if (entries.length > 0) {
       if (!entries.find(e => e.path === this._t3SelPath)) {
         this._t3SelPath = entries[0].path;
@@ -371,8 +396,9 @@ export class CertManagerApp extends GenericProcess {
     });
     if (!abs) return;
     try {
-      const cert = TlsCertificate.fromJSON(JSON.parse(fs.readFile(abs)));
+      const cert = await TlsCertificate.fromJSON(JSON.parse(fs.readFile(abs)));
       const name = abs.split("/").pop() ?? "cert.json";
+      // Store only public data in the trust store (no private key)
       fs.writeFile(TRUSTED_DIR + "/" + name, JSON.stringify(cert.toJSON(), null, 2));
       this.os.reloadCertStore();
       this._refreshT3();
@@ -381,12 +407,12 @@ export class CertManagerApp extends GenericProcess {
 
   // ── Tab 4 ─────────────────────────────────────────────────────────────────
 
-  _refreshT4() {
+  async _refreshT4() {
     const fs = this._fs;
     if (!this._t4CertEl || !this._t4CaEl || !fs) return;
 
-    const all = this._readEntries(CERT_DIR);
-    const cas = all.filter(e => e.cert.isCA || e.cert.selfSigned);
+    const all = await this._readEntries(CERT_DIR);
+    const cas = all.filter(e => e.cert.isCA && e.cert.hasPrivateKey);
 
     const fillSel = (/** @type {HTMLSelectElement} */ sel,
                      /** @type {typeof all} */ entries) => {
@@ -401,7 +427,7 @@ export class CertManagerApp extends GenericProcess {
     this._updateSignPreview();
   }
 
-  _updateSignPreview() {
+  async _updateSignPreview() {
     const el = this._t4PreviewEl;
     if (!el) return;
     const fs = this._fs;
@@ -411,8 +437,8 @@ export class CertManagerApp extends GenericProcess {
       el.replaceChildren(); return;
     }
     try {
-      const cert  = TlsCertificate.fromJSON(JSON.parse(fs.readFile(certPath)));
-      const ca    = TlsCertificate.fromJSON(JSON.parse(fs.readFile(caPath)));
+      const cert  = await TlsCertificate.fromJSON(JSON.parse(fs.readFile(certPath)));
+      const ca    = await TlsCertificate.fromJSON(JSON.parse(fs.readFile(caPath)));
       const chain = [cnOf(cert.subject), cnOf(ca.subject), ...ca.chain.map(c => cnOf(c.subject))];
       el.replaceChildren(
         this._detailRow(t("app.certmanager.detail.subject"), cert.subject),
@@ -424,7 +450,7 @@ export class CertManagerApp extends GenericProcess {
     } catch { el.replaceChildren(); }
   }
 
-  _signCert() {
+  async _signCert() {
     const fs = this._fs;
     if (!fs) return;
     const certPath = this._t4CertEl?.value;
@@ -438,10 +464,10 @@ export class CertManagerApp extends GenericProcess {
       this._setMsg(this._t4MsgEl, t("app.certmanager.sign.errExists", { name })); return;
     }
     try {
-      const cert   = TlsCertificate.fromJSON(JSON.parse(fs.readFile(certPath)));
-      const ca     = TlsCertificate.fromJSON(JSON.parse(fs.readFile(caPath)));
-      const signed = TlsCertificate.sign(cert, ca);
-      fs.writeFile(outPath, JSON.stringify(signed.toJSON(), null, 2));
+      const cert   = await TlsCertificate.fromJSON(JSON.parse(fs.readFile(certPath)));
+      const ca     = await TlsCertificate.fromJSON(JSON.parse(fs.readFile(caPath)));
+      const signed = await TlsCertificate.sign(cert, ca);
+      fs.writeFile(outPath, JSON.stringify(await signed.toSaveData(), null, 2));
       this._setMsg(this._t4MsgEl, t("app.certmanager.sign.ok", { name }));
       if (this._t4NameEl) { delete this._t4NameEl.dataset.manual; this._t4NameEl.value = ""; }
       this._refreshT4();
@@ -459,6 +485,7 @@ export class CertManagerApp extends GenericProcess {
       this._detailRow(t("app.certmanager.detail.fingerprint"), dash),
       this._detailRow(t("app.certmanager.detail.expiry"),      dash),
       this._detailRow(t("app.certmanager.detail.isCA"),        dash),
+      this._detailRow(t("app.certmanager.detail.privateKey"),  dash),
       UI.buttonRow(buttons),
     ]});
   }
@@ -505,8 +532,9 @@ export class CertManagerApp extends GenericProcess {
    * @param {TlsCertificate} cert
    * @param {HTMLButtonElement[]} buttons
    * @param {string} [path]
+   * @param {HTMLButtonElement[]} [extraButtons] - rendered as a second button row
    */
-  _buildDetail(cert, buttons, path) {
+  _buildDetail(cert, buttons, path, extraButtons) {
     const chain = cert.chain.length
       ? [cnOf(cert.subject), ...cert.chain.map(c => cnOf(c.subject))].join(" ← ")
       : null;
@@ -518,9 +546,12 @@ export class CertManagerApp extends GenericProcess {
       this._detailRow(t("app.certmanager.detail.expiry"),      expiryStr(cert.notAfter)),
       this._detailRow(t("app.certmanager.detail.isCA"),
         cert.isCA ? t("app.certmanager.detail.yes") : t("app.certmanager.detail.no")),
+      this._detailRow(t("app.certmanager.detail.privateKey"),
+        cert.hasPrivateKey ? t("app.certmanager.detail.yes") : t("app.certmanager.detail.no")),
       chain ? this._detailRow(t("app.certmanager.detail.chain"), chain) : null,
       path  ? this._detailRow(t("app.certmanager.detail.path"),  path)  : null,
       UI.buttonRow(buttons),
+      extraButtons ? UI.buttonRow(extraButtons) : null,
     ].filter(/** @param {any} x */ x => x != null)});
   }
 
@@ -540,7 +571,7 @@ export class CertManagerApp extends GenericProcess {
       fs, container: this.root, mode: "save", cwd: CERT_DIR, filename: name,
       title: t("app.certmanager.detail.exportTitle"),
     });
-    if (abs) { try { fs.writeFile(abs, JSON.stringify(cert.toJSON(), null, 2)); } catch { } }
+    if (abs) { try { fs.writeFile(abs, JSON.stringify(await cert.toSaveData(), null, 2)); } catch { } }
   }
 
   /** @param {TlsCertificate} cert @param {string} name */
@@ -551,6 +582,82 @@ export class CertManagerApp extends GenericProcess {
       fs.writeFile(TRUSTED_DIR + "/" + name, JSON.stringify(cert.toJSON(), null, 2));
       this.os.reloadCertStore();
     } catch { /* ignore */ }
+  }
+
+  // ── clipboard ─────────────────────────────────────────────────────────────
+
+  /**
+   * @param {TlsCertificate} cert
+   * @param {boolean} withKey
+   */
+  async _copyToClipboard(cert, withKey) {
+    CertClipboard.data         = withKey ? await cert.toSaveData() : cert.toJSON();
+    CertClipboard.hasPrivateKey = withKey && cert.hasPrivateKey;
+    CertClipboard.cn           = cnOf(cert.subject);
+    this._updatePasteButtons();
+  }
+
+  /** @param {"certs"|"trusted"} target */
+  async _pasteFromClipboard(target) {
+    const fs = this._fs;
+    if (!fs || !CertClipboard.data) return;
+    const dir = target === "trusted" ? TRUSTED_DIR : CERT_DIR;
+
+    const data = target === "trusted"
+      ? (() => { const d = /** @type {any} */ ({ ...CertClipboard.data }); delete d.privateKeyJwk; return d; })()
+      : CertClipboard.data;
+
+    const name = this._pasteFilename(CertClipboard.cn, dir);
+    if (!name) return;
+    try {
+      fs.writeFile(`${dir}/${name}`, JSON.stringify(data, null, 2));
+      if (target === "trusted") { this.os.reloadCertStore(); this._refreshT3(); }
+      else                      { this._refreshT1(); }
+    } catch { /* ignore */ }
+  }
+
+  /**
+   * Find a unique filename for a pasted cert in the given dir.
+   * @param {string} cn @param {string} dir
+   * @returns {string|null}
+   */
+  _pasteFilename(cn, dir) {
+    const fs = this._fs;
+    if (!fs) return null;
+    const base = cn.replace(/[^a-zA-Z0-9._-]/g, "-") || "cert";
+    const try_ = (/** @type {string} */ name) => fs.exists(`${dir}/${name}`) ? null : name;
+    const result = try_(`${base}.cert.json`);
+    if (result) return result;
+    for (let i = 1; i <= 99; i++) {
+      const r = try_(`${base}-${i}.cert.json`);
+      if (r) return r;
+    }
+    return null;
+  }
+
+  _updatePasteButtons() {
+    const clip = CertClipboard;
+    const empty = t("app.certmanager.clipboard.pasteEmpty");
+
+    for (const [btn, isT3] of /** @type {[HTMLButtonElement|null, boolean][]} */ ([
+      [this._t1PasteEl, false],
+      [this._t3PasteEl, true],
+    ])) {
+      if (!btn) continue;
+      if (!clip.data) {
+        btn.disabled = true;
+        // lastChild is the text node created by UI.button with icon
+        if (btn.lastChild) btn.lastChild.textContent = " " + empty;
+        continue;
+      }
+      btn.disabled = false;
+      const base = t("app.certmanager.clipboard.paste", { cn: clip.cn });
+      const suffix = clip.hasPrivateKey
+        ? (isT3 ? t("app.certmanager.clipboard.pastePublic")
+                : t("app.certmanager.clipboard.pasteKey"))
+        : "";
+      if (btn.lastChild) btn.lastChild.textContent = " " + base + suffix;
+    }
   }
 
   /** @param {HTMLElement|null} el @param {string} msg */

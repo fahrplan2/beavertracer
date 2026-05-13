@@ -10,6 +10,7 @@
  *   name: string,
  *   parent: DirNode|null,
  *   data: string,
+ *   binary?: boolean,
  *   mtime: number,
  *   ctime: number,
  * }} FileNode
@@ -32,6 +33,7 @@
  *   type: "file",
  *   name: string,
  *   data: string,
+ *   binary?: boolean,
  *   mtime: number,
  *   ctime: number,
  * }} SerializedFileNode
@@ -190,9 +192,19 @@ export class VirtualFileSystem {
   stat(path) {
     const n = this._getNode(path);
     if (n.type === "file") {
-      return { type: "file", size: n.data.length, mtime: n.mtime, ctime: n.ctime };
+      const size = n.binary ? VirtualFileSystem._base64ByteLen(n.data) : n.data.length;
+      return { type: "file", size, mtime: n.mtime, ctime: n.ctime };
     }
     return { type: "dir", size: n.children.size, mtime: n.mtime, ctime: n.ctime };
+  }
+
+  /** @param {string} b64 */
+  static _base64ByteLen(b64) {
+    if (!b64) return 0;
+    let len = Math.floor(b64.length * 3 / 4);
+    if (b64.endsWith("==")) len -= 2;
+    else if (b64.endsWith("=")) len -= 1;
+    return len;
   }
 
   /**
@@ -249,6 +261,58 @@ export class VirtualFileSystem {
 
     parent.children.set(name, file);
     parent.mtime = now;
+  }
+
+  /**
+   * Writes a binary file. Data is stored as base64 internally.
+   * @param {string} path
+   * @param {Uint8Array} data
+   */
+  writeBinaryFile(path, data) {
+    const abs = this._normalize(path);
+    const now = Date.now();
+    if (abs === "/") throw new Error("cannot write to /");
+
+    const { parent, name } = this._getParent(abs);
+    const existing = parent.children.get(name);
+    if (existing && existing.type === "dir") throw new Error("is a directory: " + abs);
+
+    const CHUNK = 8192;
+    let binaryStr = "";
+    for (let i = 0; i < data.length; i += CHUNK) {
+      binaryStr += String.fromCharCode(...data.subarray(i, Math.min(i + CHUNK, data.length)));
+    }
+    const base64 = btoa(binaryStr);
+
+    /** @type {FileNode} */
+    const file = existing && existing.type === "file"
+      ? existing
+      : { type: "file", name, parent, data: "", binary: true, ctime: now, mtime: now };
+
+    file.data = base64;
+    file.binary = true;
+    file.mtime = now;
+
+    parent.children.set(name, file);
+    parent.mtime = now;
+  }
+
+  /**
+   * Reads a file and returns its content as Uint8Array.
+   * Works for both text and binary files.
+   * @param {string} path
+   * @returns {Uint8Array}
+   */
+  readBinaryFile(path) {
+    const n = this._getNode(path);
+    if (n.type !== "file") throw new Error("not a file: " + path);
+    if (!n.binary) {
+      return new TextEncoder().encode(n.data);
+    }
+    const binaryStr = atob(n.data);
+    const bytes = new Uint8Array(binaryStr.length);
+    for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+    return bytes;
   }
 
   /**
@@ -353,6 +417,7 @@ export class VirtualFileSystem {
           type: "file",
           name: node.name,
           data: node.data,
+          binary: node.binary ?? false,
           ctime: node.ctime,
           mtime: node.mtime,
         };
@@ -391,6 +456,7 @@ export class VirtualFileSystem {
           name: node.name,
           parent,
           data: node.data,
+          binary: node.binary ?? false,
           ctime: node.ctime,
           mtime: node.mtime,
         };

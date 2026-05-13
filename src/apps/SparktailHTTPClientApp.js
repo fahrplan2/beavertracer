@@ -1128,7 +1128,10 @@ export class SparktailHTTPClientApp extends LoggedProcess {
 
     if (this.previewFrame) {
       if (isHtml(headers)) {
-        this.previewFrame.srcdoc = bodyText;
+        const isCancelled = () => !this.loading || this.requestSeq !== seq;
+        const inlined = await this._inlineResources(bodyText, url, isCancelled);
+        if (isCancelled()) return;
+        this.previewFrame.srcdoc = inlined;
       } else {
         this.previewFrame.srcdoc = internalErrorPage(
           t("app.sparktail.page.nonHtml.title", { statusCode }),
@@ -1262,5 +1265,164 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     if (this.headersEl) this.headersEl.value = t("app.sparktail.headers.aboutStart");
     this.tab = "preview";
     this._renderTab();
+  }
+
+  /**
+   * Fetch a URL through the simulated network without touching UI state.
+   * Returns null on any error or cancellation.
+   * @param {string} url
+   * @param {() => boolean} isCancelled
+   * @returns {Promise<{statusCode: number, headers: Record<string,string>, body: Uint8Array}|null>}
+   */
+  async _doGet(url, isCancelled) {
+    const parsed = parseHttpUrl(url);
+    if (!parsed.ok) return null;
+    const { scheme, host, port, path } = parsed;
+    const timeout = this._timeoutMs();
+
+    let dstIP;
+    try {
+      dstIP = await withTimeout(
+        resolveHostToIP(host, (n) => this.os.dns.resolveIP(n)),
+        SimTimer.DNS_TIMEOUT_MS, "dns"
+      );
+    } catch { return null; }
+    if (!dstIP || isCancelled()) return null;
+
+    /** @type {string|undefined} */
+    let key;
+    try {
+      const conn = await withTimeout(
+        this.os.net.connectTCPConn(dstIP, port),
+        SimTimer.TCP_CONNECT_TIMEOUT_MS, "connect"
+      );
+      key = conn?.key;
+      if (typeof key !== "string" || !key) return null;
+    } catch { return null; }
+    if (isCancelled()) { try { this.os.net.closeTCPConn(key); } catch {} return null; }
+
+    let sendFn = /** @type {(d: Uint8Array) => void|Promise<void>} */ (d) => this.os.net.sendTCPConn(key, d);
+    let recvFn = /** @type {() => Promise<Uint8Array|null>} */ () => this.os.net.recvTCPConn(key);
+
+    /** @type {import("../net/TlsSession.js").TlsSession|null} */
+    let tls = null;
+    if (scheme === "https") {
+      tls = new TlsSession({
+        send: sendFn, recv: recvFn, isServer: false,
+        trustStore: this.os.tls?.certStore ?? null,
+        timeoutMs: timeout,
+        sleepFn: (ms) => simTimer.sleep(ms),
+      });
+      try {
+        await withTimeout(tls.handshake(), timeout, "tls");
+      } catch {
+        try { tls.close(); } catch {}
+        try { this.os.net.closeTCPConn(key); } catch {}
+        return null;
+      }
+      sendFn = (d) => tls.send(/** @type {any} */ (d));
+      recvFn = () => tls.recv();
+    }
+
+    try {
+      const defaultPort = scheme === "https" ? 443 : 80;
+      const hostHdr = host.includes(":") ? `[${host}]` : host;
+      const portSuffix = port !== defaultPort ? `:${port}` : "";
+      const req = `GET ${path} HTTP/1.1\r\nHost: ${hostHdr}${portSuffix}\r\nUser-Agent: Sparktail/1.0\r\nConnection: close\r\n\r\n`;
+      await sendFn(encodeUTF8(req));
+
+      const r = new TcpBufferedReader({ recv: recvFn, isCancelled, timeoutMs: timeout });
+      const headerBlock = await r.readUntil(encodeUTF8("\r\n\r\n"), 2 * 1024 * 1024);
+      const headerText = decodeUTF8(headerBlock.subarray(0, headerBlock.length - 4));
+      const m = /^HTTP\/\d+\.\d+\s+(\d{3})/.exec(headerText);
+      const statusCode = m ? Number(m[1]) : 0;
+      const headers = parseHeaders(headerText);
+
+      const bodyLimit = 1_048_576;
+      const te = (headers["transfer-encoding"] || "").toLowerCase();
+      const cl = headers["content-length"];
+      /** @type {Uint8Array} */
+      let body;
+
+      if (te.includes("chunked")) {
+        const out = [];
+        while (true) {
+          const lineBytes = await r.readLine(64 * 1024);
+          const hex = decodeUTF8(lineBytes).trim().split(";")[0].trim();
+          if (!hex) break;
+          const size = parseInt(hex, 16);
+          if (!Number.isFinite(size) || size <= 0) break;
+          out.push(await r.readExactly(size));
+          await r.readExactly(2);
+        }
+        body = concatChunks(out);
+      } else if (cl && /^\d+$/.test(cl.trim())) {
+        body = await r.readExactly(Number(cl.trim()));
+      } else {
+        body = await r.readToClose(bodyLimit);
+      }
+
+      return { statusCode, headers, body };
+    } catch { return null; }
+    finally {
+      try { if (tls) tls.close(); } catch {}
+      try { this.os.net.closeTCPConn(key); } catch {}
+    }
+  }
+
+  /**
+   * Inline sub-resources into an HTML string before putting it into the iframe:
+   * - <img src="..."> → data URI
+   * - <link rel="stylesheet" href="..."> → <style> with the CSS text
+   * @param {string} html
+   * @param {string} baseUrl
+   * @param {() => boolean} isCancelled
+   * @returns {Promise<string>}
+   */
+  async _inlineResources(html, baseUrl, isCancelled) {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+
+    /** @param {string} href @returns {string|null} */
+    const resolve = (href) => {
+      try { return new URL(href, baseUrl).href; } catch { return null; }
+    };
+
+    /** @param {Uint8Array} bytes @returns {string} */
+    const toBase64 = (bytes) => {
+      const CHUNK = 8192;
+      let bin = "";
+      for (let i = 0; i < bytes.length; i += CHUNK) {
+        bin += String.fromCharCode(...bytes.subarray(i, Math.min(i + CHUNK, bytes.length)));
+      }
+      return btoa(bin);
+    };
+
+    for (const img of doc.querySelectorAll("img[src]")) {
+      if (isCancelled()) return html;
+      const src = img.getAttribute("src");
+      if (!src || src.startsWith("data:")) continue;
+      const abs = resolve(src);
+      if (!abs) continue;
+      const res = await this._doGet(abs, isCancelled);
+      if (!res || res.statusCode !== 200 || isCancelled()) continue;
+      const ct = (res.headers["content-type"] || "image/*").split(";")[0].trim();
+      img.setAttribute("src", `data:${ct};base64,${toBase64(res.body)}`);
+    }
+
+    for (const link of doc.querySelectorAll('link[rel="stylesheet"][href]')) {
+      if (isCancelled()) return html;
+      const href = link.getAttribute("href");
+      if (!href) continue;
+      const abs = resolve(href);
+      if (!abs) continue;
+      const res = await this._doGet(abs, isCancelled);
+      if (!res || res.statusCode !== 200 || isCancelled()) continue;
+      const style = doc.createElement("style");
+      style.textContent = decodeUTF8(res.body);
+      link.replaceWith(style);
+    }
+
+    if (isCancelled()) return html;
+    return "<!doctype html>\n" + doc.documentElement.outerHTML;
   }
 }
