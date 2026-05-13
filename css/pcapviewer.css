@@ -26,7 +26,7 @@
 
 .pcapviewer-status {
   opacity: 0.8;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 
 /* Main layout */
@@ -122,7 +122,7 @@
   border-collapse: collapse;
   table-layout: fixed;
   font-family: "Hack", monospace;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 
 .pcapviewer-table th,
@@ -173,7 +173,7 @@
 .pcapviewer-pane--tree,
 .pcapviewer-pane--raw {
   font-family: "Hack", monospace;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 
 .pcapviewer-treepane {
@@ -342,7 +342,7 @@
   height: 24px;         /* hit target */
   margin-left: 6px;
 
-  font-size: 16px;      /* glyph size */
+  font-size: 1rem;      /* glyph size */
   line-height: 1;
 
   border-radius: 6px;

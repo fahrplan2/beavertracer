@@ -131,6 +131,7 @@ export async function setLocale(next) {
   const available = ok ? next : fallback;
 
   locale = available;
+  document.documentElement.lang = locale;
 
   // Persist selection
   try {
@@ -211,7 +212,7 @@ export async function initLocale() {
   const urlLang = new URLSearchParams(location.search).get("lang");
   if (urlLang) {
     const ok = await loadLocaleDict(urlLang);
-    if (ok) { locale = urlLang; return; }
+    if (ok) { locale = urlLang; document.documentElement.lang = locale; return; }
   }
 
   // 1) Saved locale
@@ -221,6 +222,7 @@ export async function initLocale() {
       const ok = await loadLocaleDict(saved);
       if (ok) {
         locale = saved;
+        document.documentElement.lang = locale;
         return;
       }
     }
@@ -236,6 +238,7 @@ export async function initLocale() {
 
   // Ensure the chosen locale is loaded
   await loadLocaleDict(locale);
+  document.documentElement.lang = locale;
 }
 
 /**

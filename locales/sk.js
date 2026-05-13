@@ -575,7 +575,6 @@ export default {
   "router.rip.col.passive": "Pasívny",
   "router.rip.log": "Záznam",
   "sim.lessons": "Lekcie",
-  "lessons.noLessons": "Ľutujeme, ale v tomto jazyku zatiaľ nie sú dostupné žiadne lekcie. 😔",
   "sim.common": "Spoločné",
   "sim.new": "Nový",
   "sim.load": "Načítať",

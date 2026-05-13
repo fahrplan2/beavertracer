@@ -7,7 +7,9 @@
  *   ANTHROPIC_API_KEY=... node scripts/translate-all-i18n-via-claude.mjs
  *   ANTHROPIC_API_KEY=... node scripts/translate-all-i18n-via-claude.mjs --force
  *
- * --force  Re-translate all strings (not just missing ones)
+ * --force       Re-translate all strings (not just missing ones)
+ * --max-tokens  Max tokens per API call (default: 8192; increase for CJK languages)
+ * --batch       Strings per batch (default: 40)
  */
 
 import { spawnSync } from "node:child_process";
@@ -52,12 +54,24 @@ const TARGETS = [
 const args = process.argv.slice(2);
 const force = args.includes("--force");
 
+// Collect extra pass-through flags (e.g. --max-tokens 8192, --batch 20)
+const passThrough = [];
+for (let i = 0; i < args.length; i++) {
+  const a = args[i];
+  if (a === "--force") continue;
+  if (a.startsWith("--")) {
+    passThrough.push(a);
+    if (args[i + 1] && !args[i + 1].startsWith("--")) passThrough.push(args[++i]);
+  }
+}
+
 for (const t of TARGETS) {
   const cmdArgs = [
     TRANSLATE_SCRIPT,
     "--in", INPUT,
     "--out", `locales/${t.lang}.js`,
     "--target", t.name,
+    ...passThrough,
   ];
 
   if (force) cmdArgs.push("--update", "false");

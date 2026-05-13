@@ -145,10 +145,10 @@ function extractJson(text) {
   return JSON.parse(match[0]);
 }
 
-async function translateBatch({ client, model, sourceLang, targetLang, pairs }) {
+async function translateBatch({ client, model, maxTokens, sourceLang, targetLang, pairs }) {
   const msg = await client.messages.create({
     model,
-    max_tokens: 4096,
+    max_tokens: maxTokens,
     system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
     messages: [
       {
@@ -187,7 +187,7 @@ async function fileExists(p) {
   }
 }
 
-async function updateExistingLocale({ client, model, sourceLang, targetLang, inCode, outFile, batchSize }) {
+async function updateExistingLocale({ client, model, maxTokens, sourceLang, targetLang, inCode, outFile, batchSize }) {
   const sourceAst = babelParse(inCode);
   const sourceObj = findExportDefaultObjectExpression(sourceAst);
   if (!sourceObj) throw new Error("Could not find `export default { ... }` in input file.");
@@ -235,7 +235,7 @@ async function updateExistingLocale({ client, model, sourceLang, targetLang, inC
 
   const translations = {};
   for (const c of chunksArr) {
-    const t = await translateBatch({ client, model, sourceLang, targetLang, pairs: c.map(({ key, value }) => ({ key, value })) });
+    const t = await translateBatch({ client, model, maxTokens, sourceLang, targetLang, pairs: c.map(({ key, value }) => ({ key, value })) });
     Object.assign(translations, t);
     doneBatches++;
     doneStrings += c.length;
@@ -270,10 +270,11 @@ async function main() {
         "Usage: ANTHROPIC_API_KEY=... node translate-i18n-via-claude.mjs \\\n" +
         "         --in locales/en.js --out locales/de.js --target German\n" +
         "Options:\n" +
-        "  --source   English\n" +
-        "  --model    claude-haiku-4-5-20251001\n" +
-        "  --batch    40\n" +
-        "  --update   true|false (default: true)"
+        "  --source      English\n" +
+        "  --model       claude-haiku-4-5-20251001\n" +
+        "  --batch       40\n" +
+        "  --max-tokens  8192\n" +
+        "  --update      true|false (default: true)"
     );
     process.exit(1);
   }
@@ -286,12 +287,13 @@ async function main() {
 
   const model = args.model || "claude-haiku-4-5-20251001";
   const batchSize = Number(args.batch || 40);
+  const maxTokens = Number(args["max-tokens"] || 8192);
   const updateMode = asBool(args.update, true);
   const client = new Anthropic({ apiKey });
   const inCode = await fs.readFile(inFile, "utf8");
 
   if (updateMode) {
-    await updateExistingLocale({ client, model, sourceLang, targetLang, inCode, outFile, batchSize });
+    await updateExistingLocale({ client, model, maxTokens, sourceLang, targetLang, inCode, outFile, batchSize });
     return;
   }
 
@@ -320,7 +322,7 @@ async function main() {
 
   const translations = {};
   for (const c of chunksArr) {
-    const t = await translateBatch({ client, model, sourceLang, targetLang, pairs: c.map(({ key, value }) => ({ key, value })) });
+    const t = await translateBatch({ client, model, maxTokens, sourceLang, targetLang, pairs: c.map(({ key, value }) => ({ key, value })) });
     Object.assign(translations, t);
     doneBatches++;
     doneStrings += c.length;

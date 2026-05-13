@@ -101,6 +101,7 @@
   --blue: oklch(68% 0.18 250);
 }
 
+html { font-size: 16px; }
 html, body { height: 100%; margin: 0; }
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -112,7 +113,7 @@ body {
 
 h4 {
   background-color: var(--surface);
-  font-size: 16px;
+  font-size: 1rem;
   padding: 7px;
 }
 
@@ -224,5 +225,24 @@ textarea:focus {
 }
 .page .page-container {
   width: 100%;
-  max-width: 700px;          
+  max-width: 700px;
+}
+
+:lang(ar),
+:lang(fa) {
+  font-size: 18px;
+}
+
+:lang(ar) button,
+:lang(fa) button {
+  padding: 0.5rem 0.875rem;
+}
+
+:lang(ar) .sim-toolbar button,
+:lang(ar) .sim-sidebar-btn,
+:lang(fa) .sim-toolbar button,
+:lang(fa) .sim-sidebar-btn {
+  height: auto;
+  min-height: 44px;
+  padding: 6px 10px;
 }
