@@ -12,7 +12,6 @@ import { SimpleTCPServerApp } from "./SimpleTCPServerApp.js";
 import { SimpleTCPClientApp } from "./SimpleTCPClientApp.js";
 import { SparktailHTTPClientApp } from "./SparktailHTTPClientApp.js";
 import { SimpleHTTPServerApp } from "./SimpleHTTPServerApp.js";
-import { SimpleHTTPSServerApp } from "./SimpleHTTPSServerApp.js";
 import { TlsCertificate, TlsTrustStore } from "../net/models/TlsCertificate.js";
 import { CertManagerApp } from "./CertManagerApp.js";
 import { DNSServerApp } from "./DNSServerApp.js";
@@ -104,7 +103,7 @@ export class OS {
     _registerApps() {
         const launchlist =
             [IPv4ConfigApp, TerminalApp, TextEditorApp, SparktailHTTPClientApp, MailClientApp, SimpleIRCClientApp, SimpleTCPClientApp, SimpleTCPServerApp,
-            SimpleHTTPServerApp, SimpleHTTPSServerApp, UDPEchoServerApp, DNSServerApp, DHCPServerApp, DHCPv6ServerApp, SimpleMailServerApp,
+            SimpleHTTPServerApp, UDPEchoServerApp, DNSServerApp, DHCPServerApp, DHCPv6ServerApp, SimpleMailServerApp,
             SimpleIRCServerApp, CertManagerApp];
 
         launchlist.forEach((e) => this.exec(e));

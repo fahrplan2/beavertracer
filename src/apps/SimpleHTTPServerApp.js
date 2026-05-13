@@ -7,6 +7,10 @@ import { SimTimer, simTimer } from "../lib/SimTimer.js";
 import { t } from "../i18n/index.js";
 import { IPAddress } from "../net/models/IPAddress.js";
 import { nowStamp, encodeUTF8, decodeUTF8 } from "../lib/helpers.js";
+import { TlsSession } from "../net/TlsSession.js";
+import { TlsCertificate } from "../net/models/TlsCertificate.js";
+
+const CERT_DIR = "/etc/certs";
 
 /**
  * @param {Uint8Array[]} chunks
@@ -38,7 +42,6 @@ function indexOfBytes(hay, needle) {
 }
 
 /**
- * Small content-type mapping (text-first).
  * @param {string} path
  */
 function contentTypeOf(path) {
@@ -52,7 +55,6 @@ function contentTypeOf(path) {
 }
 
 /**
- * Normalize URL path into a safe filesystem relative path.
  * @param {string} urlPath
  */
 function normalizeUrlPath(urlPath) {
@@ -76,7 +78,6 @@ function normalizeUrlPath(urlPath) {
 }
 
 /**
- * Join docroot and normalized path.
  * @param {string} docRoot
  * @param {string} normPath
  */
@@ -87,7 +88,6 @@ function joinDocroot(docRoot, normPath) {
 }
 
 /**
- * Build an HTTP/1.1 response
  * @param {number} status
  * @param {string} reason
  * @param {Record<string,string>} headers
@@ -123,7 +123,6 @@ function internalHtml(title, details) {
 }
 
 /**
- * Promise wrapper with timeout in ms.
  * @template T
  * @param {Promise<T>} p
  * @param {number} ms
@@ -151,6 +150,8 @@ export class SimpleHTTPServerApp extends LoggedProcess {
   /** @type {Disposer} */
   disposer = new Disposer();
 
+  // ── HTTP state ──────────────────────────────────────────────────────────────
+
   /** @type {number} */
   port = 80;
 
@@ -166,17 +167,52 @@ export class SimpleHTTPServerApp extends LoggedProcess {
   /** @type {number} */
   runSeq = 0;
 
+  // ── HTTPS state ─────────────────────────────────────────────────────────────
+
+  /** @type {boolean} */
+  httpsEnabled = false;
+
+  /** @type {number} */
+  httpsPort = 443;
+
+  /** @type {boolean} */
+  httpsRunning = false;
+
+  /** @type {number|null} */
+  httpsServerRef = null;
+
+  /** @type {number} */
+  httpsRunSeq = 0;
+
+  /** @type {TlsCertificate|null} */
+  _cert = null;
+
+  // ── UI refs ─────────────────────────────────────────────────────────────────
+
   /** @type {HTMLInputElement|null} */
   portEl = null;
 
   /** @type {HTMLInputElement|null} */
   rootEl = null;
 
+  /** @type {HTMLInputElement|null} */
+  httpsEnabledEl = null;
+
+  /** @type {HTMLInputElement|null} */
+  httpsPortEl = null;
+
+  /** @type {HTMLSelectElement|null} */
+  _certSelectEl = null;
+
+  /** @type {HTMLElement|null} */
+  _certInfoEl = null;
+
   /** @type {HTMLButtonElement|null} */
   startBtn = null;
 
   /** @type {HTMLButtonElement|null} */
   stopBtn = null;
+
   icon = "fa-server";
   badge = "HTTP";
 
@@ -184,60 +220,93 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     this.root.classList.add("app", "app-simple-http-server");
   }
 
-  /**
-   * @param {HTMLElement} root
-   */
+  /** @param {HTMLElement} root */
   onMount(root) {
     super.onMount(root);
     this.disposer.dispose();
 
+    // HTTP tab
     const portInput = UI.input({ placeholder: t("app.simplehttpserver.placeholder.port"), value: String(this.port) });
     const rootInput = UI.input({ placeholder: t("app.simplehttpserver.placeholder.docRoot"), value: String(this.docRoot) });
     this.portEl = portInput;
     this.rootEl = rootInput;
 
-    const start = UI.button(t("app.simplehttpserver.button.start"), () => this._startFromUI(), { primary: true, icon: "fa-play" });
-    const stop = UI.button(t("app.simplehttpserver.button.stop"), () => this._stop(), { icon: "fa-stop" });
-    this.startBtn = start;
-    this.stopBtn = stop;
-
-    const logBox = UI.el("div", { className: "msg" });
-    this.logEl = logBox;
-
-    const configPane = UI.el("div", { children: [
+    const httpPane = UI.el("div", { children: [
       UI.row(t("app.simplehttpserver.label.port"), portInput),
       UI.row(t("app.simplehttpserver.label.docRoot"), rootInput),
     ]});
+
+    // HTTPS tab
+    const httpsEnabledInput = /** @type {HTMLInputElement} */ (UI.el("input", {
+      attrs: { type: "checkbox" },
+      init: (el) => { el.checked = this.httpsEnabled; },
+    }));
+    this.httpsEnabledEl = httpsEnabledInput;
+
+    const httpsPortInput = UI.input({ placeholder: "443", value: String(this.httpsPort) });
+    this.httpsPortEl = httpsPortInput;
+
+    const certSelect = UI.select([], {});
+    this._certSelectEl = certSelect;
+
+    const certInfo = UI.el("div", { className: "msg" });
+    this._certInfoEl = certInfo;
+
+    const httpsPane = UI.el("div", { children: [
+      UI.row(t("app.simplehttpserver.label.httpsEnabled"), httpsEnabledInput),
+      UI.row(t("app.simplehttpserver.label.httpsPort"), httpsPortInput),
+      UI.row(t("app.simplehttpsserver.label.cert"), certSelect),
+      UI.buttonRow([
+        UI.button(t("app.simplehttpsserver.button.use"), () => this._applyCert(), { primary: true, icon: "fa-check" }),
+      ]),
+      certInfo,
+    ]});
+
+    // Log tab
+    const logBox = UI.el("div", { className: "msg" });
+    this.logEl = logBox;
 
     const logPane = UI.el("div", { children: [
       UI.buttonRow([UI.button(t("app.simplehttpserver.button.clearLog"), () => { this.log = []; this._renderLog(); }, {})]),
       logBox,
     ]});
 
+    const start = UI.button(t("app.simplehttpserver.button.start"), () => this._startFromUI(), { primary: true, icon: "fa-play" });
+    const stop  = UI.button(t("app.simplehttpserver.button.stop"),  () => this._stop(),        { icon: "fa-stop" });
+    this.startBtn = start;
+    this.stopBtn  = stop;
+
     const { bar: tabBar } = UI.tabbedPane([
-      { id: "config", label: t("app.simplehttpserver.label.server"), pane: configPane },
-      { id: "log",    label: t("app.simplehttpserver.label.log"),    pane: logPane },
+      { id: "http",  label: "HTTP",  pane: httpPane },
+      { id: "https", label: "HTTPS", pane: httpsPane, onShow: () => this._refreshCertList() },
+      { id: "log",   label: t("app.simplehttpserver.label.log"), pane: logPane },
     ]);
 
     const panel = UI.panel([
       UI.buttonRow([start, stop]),
       tabBar,
-      configPane,
+      httpPane,
+      httpsPane,
       logPane,
     ]);
 
     this.root.replaceChildren(panel);
     this._syncUI();
     this._renderLog();
+    this._renderCertInfo();
   }
 
   onUnmount() {
     this.disposer.dispose();
-    this.logEl = null;
-    this.portEl = null;
-    this.rootEl = null;
-    this.startBtn = null;
-    this.stopBtn = null;
+    this.logEl         = null;
+    this.portEl        = null;
+    this.rootEl        = null;
+    this.httpsEnabledEl = null;
+    this.httpsPortEl   = null;
+    this._certSelectEl = null;
+    this._certInfoEl   = null;
+    this.startBtn      = null;
+    this.stopBtn       = null;
     super.onUnmount();
   }
 
@@ -247,21 +316,25 @@ export class SimpleHTTPServerApp extends LoggedProcess {
   }
 
   _syncUI() {
-    const r = this.running;
-    if (this.startBtn) this.startBtn.disabled = r;
-    if (this.stopBtn) this.stopBtn.disabled = !r;
-    if (this.portEl) this.portEl.disabled = r;
-    if (this.rootEl) this.rootEl.disabled = r;
+    const r = this.running || this.httpsRunning;
+    if (this.startBtn)      this.startBtn.disabled      = r;
+    if (this.stopBtn)       this.stopBtn.disabled        = !r;
+    if (this.portEl)        this.portEl.disabled         = r;
+    if (this.rootEl)        this.rootEl.disabled         = r;
+    if (this.httpsEnabledEl) this.httpsEnabledEl.disabled = r;
+    if (this.httpsPortEl)   this.httpsPortEl.disabled    = r;
+    if (this._certSelectEl) this._certSelectEl.disabled  = r;
   }
-
 
   _timeoutMs() {
     return SimTimer.HTTP_SERVER_TIMEOUT_MS;
   }
 
   _startFromUI() {
-    const portStr = (this.portEl?.value ?? "").trim();
-    const rootStr = (this.rootEl?.value ?? "").trim();
+    const portStr     = (this.portEl?.value      ?? "").trim();
+    const rootStr     = (this.rootEl?.value       ?? "").trim();
+    const httpsOn     = this.httpsEnabledEl?.checked ?? false;
+    const httpsPortStr = (this.httpsPortEl?.value ?? "").trim();
 
     const port = Number(portStr);
     if (!Number.isInteger(port) || port < 1 || port > 65535) {
@@ -269,31 +342,59 @@ export class SimpleHTTPServerApp extends LoggedProcess {
       return;
     }
 
-    this.port = port;
-    this.docRoot = rootStr || "/var/www/";
+    if (httpsOn) {
+      const httpsPort = Number(httpsPortStr);
+      if (!Number.isInteger(httpsPort) || httpsPort < 1 || httpsPort > 65535) {
+        this._appendLog(t("app.simplehttpserver.log.invalidPort", { time: nowStamp(), portStr: httpsPortStr }));
+        return;
+      }
+      if (!this._cert) {
+        this._appendLog(t("app.simplehttpsserver.log.noCert", { time: nowStamp() }));
+        return;
+      }
+      this.httpsPort = httpsPort;
+    }
+
+    this.port         = port;
+    this.docRoot      = rootStr || "/var/www/";
+    this.httpsEnabled = httpsOn;
     this._start();
   }
 
   _stop() {
-    if (!this.running) return;
+    if (!this.running && !this.httpsRunning) return;
 
-    this.running = false;
-    this._syncUI();
-    this.runSeq++;
-
-    const ref = this.serverRef;
-    this.serverRef = null;
-
-    if (ref != null) {
-      try {
-        this.os.net.closeTCPServerSocket(ref);
-      } catch (e) {
-        const reason = (e instanceof Error ? e.message : String(e));
-        this._appendLog(t("app.simplehttpserver.log.stopError", { time: nowStamp(), reason }));
+    if (this.running) {
+      this.running = false;
+      this.runSeq++;
+      const ref = this.serverRef;
+      this.serverRef = null;
+      if (ref != null) {
+        try { this.os.net.closeTCPServerSocket(ref); }
+        catch (e) {
+          const reason = (e instanceof Error ? e.message : String(e));
+          this._appendLog(t("app.simplehttpserver.log.stopError", { time: nowStamp(), reason }));
+        }
       }
+      this._appendLog(t("app.simplehttpserver.log.stopped", { time: nowStamp() }));
     }
 
-    this._appendLog(t("app.simplehttpserver.log.stopped", { time: nowStamp() }));
+    if (this.httpsRunning) {
+      this.httpsRunning = false;
+      this.httpsRunSeq++;
+      const ref = this.httpsServerRef;
+      this.httpsServerRef = null;
+      if (ref != null) {
+        try { this.os.net.closeTCPServerSocket(ref); }
+        catch (e) {
+          const reason = (e instanceof Error ? e.message : String(e));
+          this._appendLog(t("app.simplehttpserver.log.httpsStopError", { time: nowStamp(), reason }));
+        }
+      }
+      this._appendLog(t("app.simplehttpserver.log.httpsStopped", { time: nowStamp() }));
+    }
+
+    this._syncUI();
   }
 
   _ensureDocroot() {
@@ -329,9 +430,10 @@ export class SimpleHTTPServerApp extends LoggedProcess {
 
     this._ensureDocroot();
 
+    // Start HTTP listener
     let ref = null;
     try {
-      ref = this.os.net.openTCPServerSocket(IPAddress.fromString("::"), this.port); // dual-stack
+      ref = this.os.net.openTCPServerSocket(IPAddress.fromString("::"), this.port);
     } catch (e) {
       const reason = (e instanceof Error ? e.message : String(e));
       this._appendLog(t("app.simplehttpserver.log.openSocketError", { time: nowStamp(), reason }));
@@ -339,42 +441,60 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     }
 
     this.serverRef = ref;
-    this.running = true;
+    this.running   = true;
     this._syncUI();
-
     const seq = ++this.runSeq;
     this._appendLog(t("app.simplehttpserver.log.listen", { time: nowStamp(), port: this.port, docRoot: this.docRoot }));
+    this._acceptLoop(seq, ref, false);
 
-    this._acceptLoop(seq, ref);
+    // Start HTTPS listener if enabled
+    if (this.httpsEnabled && this._cert) {
+      let httpsRef = null;
+      try {
+        httpsRef = this.os.net.openTCPServerSocket(IPAddress.fromString("::"), this.httpsPort);
+      } catch (e) {
+        const reason = (e instanceof Error ? e.message : String(e));
+        this._appendLog(t("app.simplehttpserver.log.httpsOpenSocketError", { time: nowStamp(), reason }));
+        return;
+      }
+
+      this.httpsServerRef = httpsRef;
+      this.httpsRunning   = true;
+      this._syncUI();
+      const httpsSeq = ++this.httpsRunSeq;
+      this._appendLog(t("app.simplehttpserver.log.httpsListen", { time: nowStamp(), port: this.httpsPort }));
+      this._acceptLoop(httpsSeq, httpsRef, true);
+    }
   }
 
   /**
    * @param {number} seq
    * @param {number} ref
+   * @param {boolean} isTls
    */
-  async _acceptLoop(seq, ref) {
-    while (this.running && this.runSeq === seq && this.serverRef === ref) {
+  async _acceptLoop(seq, ref, isTls) {
+    const isActive = () => isTls
+      ? (this.httpsRunning && this.httpsRunSeq === seq && this.httpsServerRef === ref)
+      : (this.running      && this.runSeq      === seq && this.serverRef      === ref);
+
+    while (isActive()) {
       /** @type {string|null} */
       let connKey = null;
 
       try {
         connKey = await this.os.net.acceptTCPConn(ref);
       } catch (e) {
-        if (this.running && this.runSeq === seq) {
+        if (isActive()) {
           const reason = (e instanceof Error ? e.message : String(e));
           this._appendLog(t("app.simplehttpserver.log.acceptError", { time: nowStamp(), reason }));
         }
         continue;
       }
 
-      if (!this.running || this.runSeq !== seq || this.serverRef !== ref) break;
-      if (connKey == null) {
-        // listener closed
-        break;
-      }
+      if (!isActive()) break;
+      if (connKey == null) break;
 
-      // handle connection concurrently
-      this._handleConn(seq, connKey).catch((e) => {
+      this._handleConn(seq, connKey, isTls).catch((e) => {
         const reason = (e instanceof Error ? e.message : String(e));
         this._appendLog(t("app.simplehttpserver.log.connError", { time: nowStamp(), reason }));
         try { this.os.net.closeTCPConn(connKey); } catch { /* ignore */ }
@@ -383,44 +503,79 @@ export class SimpleHTTPServerApp extends LoggedProcess {
   }
 
   /**
-   * One request per connection, then close.
-   * @param {number} seq
    * @param {string} connKey
-   */
-  /**
-   * Returns a send/recv/close interface for a connection.
-   * Subclasses (e.g. HTTPS) override this to inject a TLS layer.
-   * Returns null if the connection setup failed and was already cleaned up.
-   * @param {string} connKey
+   * @param {boolean} isTls
    * @returns {Promise<{send:(d:Uint8Array)=>void, recv:()=>Promise<Uint8Array|null>, close:()=>void}|null>}
    */
-  async _ioForConn(connKey) {
+  async _ioForConn(connKey, isTls) {
     const net = this.os.net;
+
+    if (!isTls) {
+      return {
+        send:  (data) => net.sendTCPConn(connKey, data),
+        recv:  ()     => net.recvTCPConn(connKey),
+        close: ()     => net.closeTCPConn(connKey),
+      };
+    }
+
+    if (!this._cert) {
+      this._appendLog(t("app.simplehttpsserver.log.noCert", { time: nowStamp() }));
+      try { net.closeTCPConn(connKey); } catch { /* ignore */ }
+      return null;
+    }
+
+    const tls = new TlsSession({
+      send: (d) => net.sendTCPConn(connKey, d),
+      recv: ()  => net.recvTCPConn(connKey),
+      isServer:   true,
+      cert:       this._cert,
+      trustStore: this.os.tls?.certStore ?? null,
+      timeoutMs:  this._timeoutMs(),
+      sleepFn:    (ms) => simTimer.sleep(ms),
+    });
+
+    try {
+      await tls.handshake();
+      const info = net.getTCPConnInfo(connKey);
+      const peer = info ? `${info.peerIP}:${info.peerPort}` : "?";
+      this._appendLog(t("app.simplehttpsserver.log.tlsOk", { time: nowStamp(), peer }));
+    } catch (e) {
+      const reason = e instanceof Error ? e.message : String(e);
+      this._appendLog(t("app.simplehttpsserver.log.tlsFailed", { time: nowStamp(), reason }));
+      try { tls.close(); } catch { /* ignore */ }
+      try { net.closeTCPConn(connKey); } catch { /* ignore */ }
+      return null;
+    }
+
     return {
-      send:  (data) => net.sendTCPConn(connKey, data),
-      recv:  ()     => net.recvTCPConn(connKey),
-      close: ()     => net.closeTCPConn(connKey),
+      send:  /** @type {(d:Uint8Array<ArrayBuffer>)=>Promise<void>} */ ((d) => tls.send(d)),
+      recv:  ()  => tls.recv(),
+      close: ()  => { tls.close(); try { net.closeTCPConn(connKey); } catch { /* ignore */ } },
     };
   }
 
   /**
    * @param {number} seq
    * @param {string} connKey
+   * @param {boolean} isTls
    */
-  async _handleConn(seq, connKey) {
-    const io = await this._ioForConn(connKey);
+  async _handleConn(seq, connKey, isTls) {
+    const io = await this._ioForConn(connKey, isTls);
     if (io === null) return;
+
+    const isActive = () => isTls
+      ? (this.httpsRunning && this.httpsRunSeq === seq)
+      : (this.running      && this.runSeq      === seq);
 
     const timeout = this._timeoutMs();
 
-    // Read until header end
     const headerNeedle = encodeUTF8("\r\n\r\n");
     /** @type {Uint8Array[]} */
     const chunks = [];
     let total = 0;
     const limit = 64 * 1024;
 
-    while (this.running && this.runSeq === seq) {
+    while (isActive()) {
       const part = await withTimeout(io.recv(), timeout, "recv");
       if (part == null) break;
 
@@ -499,7 +654,6 @@ export class SimpleHTTPServerApp extends LoggedProcess {
       return;
     }
 
-    // map URL -> file
     let norm = normalizeUrlPath(target);
     if (norm.endsWith("/")) norm += "index.html";
 
@@ -526,7 +680,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     }
 
     const data = encodeUTF8(text);
-    const ct = contentTypeOf(fsPath);
+    const ct   = contentTypeOf(fsPath);
     const body = (method === "HEAD") ? new Uint8Array(0) : data;
 
     const resp = buildResponse(200, "OK", {
@@ -540,5 +694,68 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     await io.send(resp);
     io.close();
     this._appendLog(t("app.simplehttpserver.log.ok", { time: nowStamp(), method, norm, bytes: data.length }));
+  }
+
+  // ── HTTPS cert helpers ──────────────────────────────────────────────────────
+
+  async _refreshCertList() {
+    const sel = this._certSelectEl;
+    if (!sel) return;
+    const fs = this.os.fs;
+    if (!fs) return;
+
+    /** @type {Array<{cert: TlsCertificate, path: string, name: string}>} */
+    const entries = [];
+    try {
+      const names = fs.readdir(CERT_DIR);
+      await Promise.all(names.filter(n => n.endsWith(".json")).map(async name => {
+        try {
+          const cert = await TlsCertificate.fromJSON(JSON.parse(fs.readFile(`${CERT_DIR}/${name}`)));
+          if (cert.hasPrivateKey) entries.push({ cert, path: `${CERT_DIR}/${name}`, name });
+        } catch { /* skip invalid */ }
+      }));
+    } catch { /* dir missing */ }
+
+    if (entries.length === 0) {
+      sel.replaceChildren(
+        UI.el("option", { attrs: { value: "" }, text: t("app.simplehttpsserver.cert.noEntries") }),
+      );
+    } else {
+      const cn = (/** @type {string} */ s) => s.replace(/^CN=/, "");
+      sel.replaceChildren(
+        ...entries.map(e => UI.el("option", {
+          attrs: { value: e.path },
+          text: cn(e.cert.subject),
+        })),
+      );
+    }
+  }
+
+  _renderCertInfo() {
+    if (!this._certInfoEl) return;
+    if (!this._cert) {
+      this._certInfoEl.textContent = t("app.simplehttpsserver.cert.none");
+      return;
+    }
+    const expiry = new Date(this._cert.notAfter).toLocaleDateString();
+    this._certInfoEl.textContent = [
+      t("app.simplehttpsserver.cert.subject",     { subject: this._cert.subject }),
+      t("app.simplehttpsserver.cert.fingerprint", { fp: this._cert.fingerprint() }),
+      t("app.simplehttpsserver.cert.expiry",      { date: expiry }),
+    ].join("\n");
+  }
+
+  async _applyCert() {
+    const path = this._certSelectEl?.value;
+    const fs   = this.os.fs;
+    if (!path || !fs) return;
+    try {
+      this._cert = await TlsCertificate.fromJSON(JSON.parse(fs.readFile(path)));
+      this._appendLog(t("app.simplehttpsserver.log.certApplied",
+        { time: nowStamp(), subject: this._cert.subject }));
+      this._renderCertInfo();
+    } catch {
+      this._appendLog(t("app.simplehttpsserver.log.noCert", { time: nowStamp() }));
+    }
   }
 }
