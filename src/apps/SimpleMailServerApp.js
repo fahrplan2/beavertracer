@@ -6,6 +6,9 @@ import { UILib as UI } from "./lib/UILib.js";
 import { IPAddress } from "../net/models/IPAddress.js";
 import { t } from "../i18n/index.js";
 import { nowStamp, encodeUTF8, decodeUTF8 } from "../lib/helpers.js";
+import { simTimer } from "../lib/SimTimer.js";
+import { TlsSession } from "../net/TlsSession.js";
+import { TlsCertificate } from "../net/models/TlsCertificate.js";
 
 /** @param {string} s */
 function normalizeCRLF(s) {
@@ -142,7 +145,13 @@ function b64encodeFromString(s) {
  * @param {number} timeoutMs
  * @param {{buf: Uint8Array}} state
  */
-async function readLineCRLF(net, connKey, timeoutMs, state) {
+/**
+ * @param {MailTransport} tr
+ * @param {number} timeoutMs
+ * @param {{buf:Uint8Array}} state
+ * @returns {Promise<string|null>}
+ */
+async function readLineCRLF(tr, timeoutMs, state) {
   const CR = 13, LF = 10;
   while (true) {
     const b = state.buf;
@@ -154,7 +163,7 @@ async function readLineCRLF(net, connKey, timeoutMs, state) {
       }
     }
 
-    const part = await withTimeout(net.recvTCPConn(connKey), timeoutMs, "recv");
+    const part = await withTimeout(tr.recv(), timeoutMs, "recv");
     if (part == null) return null;
 
     const out = new Uint8Array(state.buf.length + part.length);
@@ -170,25 +179,21 @@ async function readLineCRLF(net, connKey, timeoutMs, state) {
 }
 
 /**
- * Write a CRLF line.
- * @param {any} net
- * @param {string} connKey
+ * @param {MailTransport} tr
  * @param {string} line
  */
-function writeLine(net, connKey, line) {
-  net.sendTCPConn(connKey, encodeUTF8(normalizeCRLF(line) + "\r\n"));
+function writeLine(tr, line) {
+  Promise.resolve(tr.send(encodeUTF8(normalizeCRLF(line) + "\r\n"))).catch(() => {});
 }
 
 /**
- * Read SMTP response (consumes multiline 250- style).
- * @param {any} net
- * @param {string} connKey
+ * @param {MailTransport} tr
  * @param {number} timeout
- * @param {{buf: Uint8Array}} st
+ * @param {{buf:Uint8Array}} st
  * @returns {Promise<{code:number, lines:string[]}>}
  */
-async function readSmtpResponse(net, connKey, timeout, st) {
-  const first = await readLineCRLF(net, connKey, timeout, st);
+async function readSmtpResponse(tr, timeout, st) {
+  const first = await readLineCRLF(tr, timeout, st);
   if (first == null) throw new Error("smtp: remote closed");
   const lines = [first];
   const code = Number(first.slice(0, 3)) | 0;
@@ -196,7 +201,7 @@ async function readSmtpResponse(net, connKey, timeout, st) {
   if (first.length >= 4 && first[3] === "-") {
     const endPrefix = String(code).padStart(3, "0") + " ";
     while (true) {
-      const l2 = await readLineCRLF(net, connKey, timeout, st);
+      const l2 = await readLineCRLF(tr, timeout, st);
       if (l2 == null) throw new Error("smtp: remote closed");
       lines.push(l2);
       if (l2.startsWith(endPrefix)) break;
@@ -248,7 +253,8 @@ function parseMbox(mbox) {
 
 /**
  * @typedef {{user:string,password:string}} UserRow
- * @typedef {{mailDomain:string, ports:{smtp:number,pop3:number,imap:number}, users:UserRow[]}} MailConfig
+ * @typedef {{mailDomain:string, ports:{smtp:number,pop3:number,imap:number}, tls?:{enabled:boolean,smtps:number,pop3s:number,imaps:number,certPath:string}, users:UserRow[]}} MailConfig
+ * @typedef {{send:(d:Uint8Array)=>void, recv:()=>Promise<Uint8Array|null>, close:()=>void}} MailTransport
  */
 
 export class SimpleMailServerApp extends LoggedProcess {
@@ -266,6 +272,11 @@ export class SimpleMailServerApp extends LoggedProcess {
   portSMTP = 25;
   portPOP3 = 110;
   portIMAP = 143;
+  tlsEnabled = false;
+  portSMTPS = 465;
+  portPOP3S = 995;
+  portIMAPS = 993;
+  certPath = "";
 
   /** @type {Array<{user:string,password:string}>} */
   users = []; // start empty until one is added
@@ -274,12 +285,14 @@ export class SimpleMailServerApp extends LoggedProcess {
   configPath = "/etc/mail.conf";
   mailRoot = "/var/mail";
   queueRoot = "/var/mail/queue";
+  certDir = "/etc/certs";
 
   // runtime
   running = false;
-  /** @type {{smtp:number|null, pop3:number|null, imap:number|null}} */
-  serverRef = { smtp: null, pop3: null, imap: null };
+  /** @type {{smtp:number|null, pop3:number|null, imap:number|null, smtps:number|null, pop3s:number|null, imaps:number|null}} */
+  serverRef = { smtp: null, pop3: null, imap: null, smtps: null, pop3s: null, imaps: null };
   runSeq = 0;
+  /** @type {TlsCertificate|null} */ _cert = null;
 
   // ui
   /** @type {HTMLElement|null} */ usersEl = null;
@@ -288,6 +301,13 @@ export class SimpleMailServerApp extends LoggedProcess {
   /** @type {HTMLInputElement|null} */ smtpEl = null;
   /** @type {HTMLInputElement|null} */ pop3El = null;
   /** @type {HTMLInputElement|null} */ imapEl = null;
+
+  /** @type {HTMLInputElement|null} */ tlsEnabledEl = null;
+  /** @type {HTMLInputElement|null} */ smtpsEl = null;
+  /** @type {HTMLInputElement|null} */ pop3sEl = null;
+  /** @type {HTMLInputElement|null} */ imapsEl = null;
+  /** @type {HTMLSelectElement|null} */ certSelectEl = null;
+  /** @type {HTMLElement|null} */      certInfoEl = null;
 
   /** @type {HTMLInputElement|null} */ userEl = null;
   /** @type {HTMLInputElement|null} */ passEl = null;
@@ -363,6 +383,11 @@ export class SimpleMailServerApp extends LoggedProcess {
     dis(this.smtpEl);
     dis(this.pop3El);
     dis(this.imapEl);
+    dis(this.tlsEnabledEl);
+    dis(this.smtpsEl);
+    dis(this.pop3sEl);
+    dis(this.imapsEl);
+    if (this.certSelectEl) this.certSelectEl.disabled = r;
 
     if (this.startBtn) this.startBtn.disabled = r;
     if (this.stopBtn) this.stopBtn.disabled = !r;
@@ -413,6 +438,13 @@ export class SimpleMailServerApp extends LoggedProcess {
           if (Number.isInteger(cfg.ports.pop3)) this.portPOP3 = cfg.ports.pop3;
           if (Number.isInteger(cfg.ports.imap)) this.portIMAP = cfg.ports.imap;
         }
+        if (cfg.tls && typeof cfg.tls === "object") {
+          this.tlsEnabled = !!cfg.tls.enabled;
+          if (Number.isInteger(cfg.tls.smtps)) this.portSMTPS = cfg.tls.smtps;
+          if (Number.isInteger(cfg.tls.pop3s)) this.portPOP3S = cfg.tls.pop3s;
+          if (Number.isInteger(cfg.tls.imaps)) this.portIMAPS = cfg.tls.imaps;
+          if (typeof cfg.tls.certPath === "string") this.certPath = cfg.tls.certPath;
+        }
         if (Array.isArray(cfg.users)) {
           this.users = cfg.users
             .filter((u) => u && typeof u.user === "string" && typeof u.password === "string")
@@ -437,6 +469,7 @@ export class SimpleMailServerApp extends LoggedProcess {
     const cfg = /** @type {MailConfig} */ ({
       mailDomain: this.mailDomain,
       ports: { smtp: this.portSMTP, pop3: this.portPOP3, imap: this.portIMAP },
+      tls: { enabled: this.tlsEnabled, smtps: this.portSMTPS, pop3s: this.portPOP3S, imaps: this.portIMAPS, certPath: this.certPath },
       users: this.users.slice(),
     });
     try {
@@ -645,10 +678,12 @@ export class SimpleMailServerApp extends LoggedProcess {
     const net = this.os.net;
     const timeout = this._timeoutMs();
     const st = { buf: new Uint8Array(0) };
+    /** @type {MailTransport} */
+    const tr = { send: (d) => net.sendTCPConn(connKey, d), recv: () => net.recvTCPConn(connKey), close: () => { try { net.closeTCPConn(connKey); } catch {} } };
 
     /** @param {number[]} okCodes */
     const expect = async (okCodes) => {
-      const r = await readSmtpResponse(net, connKey, timeout, st);
+      const r = await readSmtpResponse(tr, timeout, st);
       if (!okCodes.includes(r.code)) {
         throw new Error(`smtp remote error: ${r.lines.join(" | ")}`);
       }
@@ -657,32 +692,104 @@ export class SimpleMailServerApp extends LoggedProcess {
 
     await expect([220]);
 
-    writeLine(net, connKey, `EHLO ${this.mailDomain}`);
+    writeLine(tr, `EHLO ${this.mailDomain}`);
     await expect([250]);
 
-    writeLine(net, connKey, `MAIL FROM:<postmaster@${this.mailDomain}>`);
+    writeLine(tr, `MAIL FROM:<postmaster@${this.mailDomain}>`);
     await expect([250]);
 
-    writeLine(net, connKey, `RCPT TO:<${rcptAddr}>`);
+    writeLine(tr, `RCPT TO:<${rcptAddr}>`);
     await expect([250, 251]);
 
-    writeLine(net, connKey, `DATA`);
+    writeLine(tr, `DATA`);
     await expect([354]);
 
     const stuffed = dotStuff(rawRfc822);
-    net.sendTCPConn(connKey, encodeUTF8(normalizeCRLF(stuffed) + "\r\n.\r\n"));
+    tr.send(encodeUTF8(normalizeCRLF(stuffed) + "\r\n.\r\n"));
 
     await expect([250]);
 
-    writeLine(net, connKey, `QUIT`);
+    writeLine(tr, `QUIT`);
+  }
+
+  /**
+   * Wrap a raw TCP connection in a MailTransport (plain or TLS).
+   * Returns null if TLS setup fails (connection already closed).
+   * @param {string} connKey
+   * @param {boolean} isTls
+   * @returns {Promise<MailTransport|null>}
+   */
+  async _wrapConn(connKey, isTls) {
+    const net = this.os.net;
+    /** @type {MailTransport} */
+    const plain = {
+      send:  (d) => net.sendTCPConn(connKey, d),
+      recv:  ()  => net.recvTCPConn(connKey),
+      close: ()  => { try { net.closeTCPConn(connKey); } catch {} },
+    };
+    if (!isTls) return plain;
+
+    if (!this._cert) {
+      this._appendLog(`[${nowStamp()}] TLS: no certificate configured`);
+      plain.close();
+      return null;
+    }
+    const tls = new TlsSession({
+      send:       (d) => net.sendTCPConn(connKey, d),
+      recv:       ()  => net.recvTCPConn(connKey),
+      isServer:   true,
+      cert:       this._cert,
+      trustStore: this.os.tls?.certStore ?? null,
+      timeoutMs:  this._timeoutMs(),
+      sleepFn:    (ms) => simTimer.sleep(ms),
+    });
+    try {
+      await tls.handshake();
+    } catch (e) {
+      const reason = e instanceof Error ? e.message : String(e);
+      this._appendLog(`[${nowStamp()}] TLS handshake failed: ${reason}`);
+      tls.close();
+      plain.close();
+      return null;
+    }
+    return {
+      send:  (d) => tls.send(/** @type {Uint8Array<ArrayBuffer>} */ (d)),
+      recv:  ()  => tls.recv(),
+      close: ()  => { tls.close(); plain.close(); },
+    };
+  }
+
+  /**
+   * Upgrade an existing plain transport to server-side TLS (used for STARTTLS).
+   * @param {MailTransport} tr
+   * @returns {Promise<MailTransport>}
+   */
+  async _startTls(tr) {
+    if (!this._cert) throw new Error("no certificate");
+    const tls = new TlsSession({
+      send:       (d) => tr.send(d),
+      recv:       ()  => tr.recv(),
+      isServer:   true,
+      cert:       this._cert,
+      trustStore: this.os.tls?.certStore ?? null,
+      timeoutMs:  this._timeoutMs(),
+      sleepFn:    (ms) => simTimer.sleep(ms),
+    });
+    await tls.handshake();
+    return {
+      send:  (d) => tls.send(/** @type {Uint8Array<ArrayBuffer>} */ (d)),
+      recv:  ()  => tls.recv(),
+      close: ()  => { tls.close(); tr.close(); },
+    };
   }
 
   /**
    * Deliver local recipients and relay remote.
    * @param {string[]} rcptList
    * @param {string} rawRfc822
+   * @param {string} [mailFrom]
    */
-  async _deliverOrRelay(rcptList, rawRfc822) {
+  async _deliverOrRelay(rcptList, rawRfc822, mailFrom = "") {
     const localDomain = this.mailDomain.toLowerCase();
 
     /** @type {string[]} */
@@ -697,9 +804,14 @@ export class SimpleMailServerApp extends LoggedProcess {
       else remotes.push(p.addr);
     }
 
+    /** @type {{addr:string, reason:string}[]} */
+    const failures = [];
+
     for (const user of locals) {
       if (!this._findUser(user)) {
-        this._appendLog(`[${nowStamp()}] local delivery failed: unknown user ${user}@${localDomain}`);
+        const addr = `${user}@${localDomain}`;
+        this._appendLog(`[${nowStamp()}] local delivery failed: unknown user ${addr}`);
+        failures.push({ addr, reason: "unknown user" });
         continue;
       }
       this._storeLocal(user, rawRfc822);
@@ -714,7 +826,58 @@ export class SimpleMailServerApp extends LoggedProcess {
         const reason = (e instanceof Error ? e.message : String(e));
         this._appendLog(`[${nowStamp()}] relay failed: ${addr} (${reason})`);
         this._queueOutgoing(addr, rawRfc822, reason);
+        failures.push({ addr, reason });
       }
+    }
+
+    if (failures.length > 0) {
+      this._sendBounce(mailFrom, failures, rawRfc822);
+    }
+  }
+
+  /**
+   * Send a MAILER-DAEMON bounce to the original sender.
+   * @param {string} mailFrom  envelope sender
+   * @param {{addr:string, reason:string}[]} failures
+   * @param {string} rawRfc822  original message
+   */
+  _sendBounce(mailFrom, failures, rawRfc822) {
+    const from = mailFrom.replace(/^<|>$/g, "").trim();
+    if (!from || from === "<>" || /^mailer-daemon@/i.test(from)) return;
+
+    const p = parseEmailAddressLoose(from);
+    if (!p) return;
+
+    const daemon   = `MAILER-DAEMON@${this.mailDomain}`;
+    const date     = new Date().toUTCString();
+    const failList = failures.map(f => `  ${f.addr}: ${f.reason}`).join("\r\n");
+    const origHead = rawRfc822.split(/\r\n\r\n|\n\n/)[0] ?? "";
+
+    const bounce =
+      `From: ${daemon}\r\n` +
+      `To: ${from}\r\n` +
+      `Subject: ${t("app.simplemailserver.bounce.subject") || "Undelivered Mail Returned to Sender"}\r\n` +
+      `Date: ${date}\r\n` +
+      `\r\n` +
+      `${(t("app.simplemailserver.bounce.intro") || "This is the mail system at {domain}.").replace("{domain}", this.mailDomain)}\r\n` +
+      `\r\n` +
+      `${t("app.simplemailserver.bounce.failedRecipients") || "Your message could not be delivered to the following recipient(s):"}\r\n` +
+      `\r\n` +
+      `${failList}\r\n` +
+      `\r\n` +
+      `${t("app.simplemailserver.bounce.origHeaders") || "--- Original message headers ---"}\r\n` +
+      `${origHead}\r\n`;
+
+    if (p.domain === this.mailDomain.toLowerCase()) {
+      if (this._findUser(p.local)) {
+        this._storeLocal(p.local, bounce);
+        this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.bounceDelivered") || "bounce delivered to"} ${from}`);
+      }
+    } else {
+      this._relaySmtp(from, bounce).catch((e) => {
+        const reason = (e instanceof Error ? e.message : String(e));
+        this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.bounceRelayFailed") || "bounce relay failed for"} ${from}: ${reason}`);
+      });
     }
   }
 
@@ -763,17 +926,50 @@ export class SimpleMailServerApp extends LoggedProcess {
     const logBox = UI.el("div", { className: "msg" });
     this.logEl = logBox;
 
-    const configPane = UI.el("div", { children: [
+    // TLS section
+    const tlsEnabledInput = /** @type {HTMLInputElement} */ (UI.el("input", {
+      attrs: { type: "checkbox" }, init: (el) => { el.checked = this.tlsEnabled; },
+    }));
+    this.tlsEnabledEl = tlsEnabledInput;
+
+    const smtpsInput = UI.input({ placeholder: "465", value: String(this.portSMTPS) });
+    const pop3sInput = UI.input({ placeholder: "995", value: String(this.portPOP3S) });
+    const imapsInput = UI.input({ placeholder: "993", value: String(this.portIMAPS) });
+    this.smtpsEl = smtpsInput; this.pop3sEl = pop3sInput; this.imapsEl = imapsInput;
+
+    const certSelect = UI.select([], {});
+    this.certSelectEl = certSelect;
+    const certInfo = UI.el("div", { className: "msg" });
+    this.certInfoEl = certInfo;
+
+    const certApplyBtn = UI.button(
+      t("app.simplemailserver.tls.applyCert") || "Use",
+      () => this._applyCert(), { primary: true, icon: "fa-check" }
+    );
+
+    const serverPane = UI.el("div", { children: [
       UI.row(t("app.simplemailserver.label.domain") || "Maildomain", domainInput),
       UI.row(t("app.simplemailserver.label.smtpPort") || "SMTP port", smtpInput),
       UI.row(t("app.simplemailserver.label.pop3Port") || "POP3 port", pop3Input),
       UI.row(t("app.simplemailserver.label.imapPort") || "IMAP port", imapInput),
       UI.buttonRow([UI.button(t("app.simplemailserver.button.saveConfig") || "Save config", () => this._saveConfig(), {})]),
-      UI.el("h4", { text: t("app.simplemailserver.label.users") || "Mailboxes" }),
+    ]});
+
+    const mailboxPane = UI.el("div", { children: [
       UI.row(t("app.simplemailserver.label.user") || "User", userInput),
       UI.row(t("app.simplemailserver.label.password") || "Password", passInput),
       UI.buttonRow([addBtn, delBtn, seedBtn, clearQueueBtn]),
       usersBox,
+    ]});
+
+    const tlsPane = UI.el("div", { children: [
+      UI.row(t("app.simplemailserver.tls.enabled") || "TLS enabled", tlsEnabledInput),
+      UI.row(t("app.simplemailserver.tls.smtpsPort") || "SMTPS port", smtpsInput),
+      UI.row(t("app.simplemailserver.tls.pop3sPort") || "POP3S port", pop3sInput),
+      UI.row(t("app.simplemailserver.tls.imapsPort") || "IMAPS port", imapsInput),
+      UI.row(t("app.simplemailserver.tls.cert") || "Certificate", certSelect),
+      UI.buttonRow([certApplyBtn]),
+      certInfo,
     ]});
 
     const logPane = UI.el("div", { children: [
@@ -782,14 +978,18 @@ export class SimpleMailServerApp extends LoggedProcess {
     ]});
 
     const { bar: tabBar } = UI.tabbedPane([
-      { id: "config", label: t("app.simplemailserver.label.server") || "Konfiguration", pane: configPane },
-      { id: "log",    label: t("app.simplemailserver.label.log") || "Protokoll",        pane: logPane },
+      { id: "server",   label: t("app.simplemailserver.label.server") || "Server",      pane: serverPane },
+      { id: "mailboxes",label: t("app.simplemailserver.label.users")  || "Mailboxes",   pane: mailboxPane },
+      { id: "tls",      label: t("app.simplemailserver.tls.title")    || "TLS/SSL",     pane: tlsPane },
+      { id: "log",      label: t("app.simplemailserver.label.log")    || "Protokoll",   pane: logPane },
     ]);
 
     const panel = UI.panel([
       UI.buttonRow([start, stop]),
       tabBar,
-      configPane,
+      serverPane,
+      mailboxPane,
+      tlsPane,
       logPane,
     ]);
 
@@ -797,6 +997,7 @@ export class SimpleMailServerApp extends LoggedProcess {
     this._renderUsers();
     this._syncUI();
     this._renderLog();
+    this._refreshCertList();
 
     this.disposer.interval(() => {
       status.textContent =
@@ -816,6 +1017,12 @@ export class SimpleMailServerApp extends LoggedProcess {
     this.smtpEl = null;
     this.pop3El = null;
     this.imapEl = null;
+    this.tlsEnabledEl = null;
+    this.smtpsEl = null;
+    this.pop3sEl = null;
+    this.imapsEl = null;
+    this.certSelectEl = null;
+    this.certInfoEl = null;
 
     this.userEl = null;
     this.passEl = null;
@@ -914,11 +1121,77 @@ export class SimpleMailServerApp extends LoggedProcess {
     this._renderUsers();
   }
 
+  async _refreshCertList() {
+    const sel = this.certSelectEl;
+    if (!sel) return;
+    const fs = /** @type {any} */ (this.os.fs);
+    if (!fs) return;
+
+    /** @type {Array<{cert:TlsCertificate, path:string, name:string}>} */
+    const entries = [];
+    try {
+      const names = /** @type {string[]} */ (fs.readdir ? fs.readdir(this.certDir) : []);
+      for (const name of names) {
+        if (!name.endsWith(".json")) continue;
+        try {
+          const cert = await TlsCertificate.fromJSON(JSON.parse(fs.readFile(`${this.certDir}/${name}`)));
+          if (cert.hasPrivateKey) entries.push({ cert, path: `${this.certDir}/${name}`, name });
+        } catch { /* skip invalid */ }
+      }
+    } catch { /* dir missing */ }
+
+    sel.replaceChildren();
+    if (entries.length === 0) {
+      sel.appendChild(UI.el("option", { attrs: { value: "" }, text: t("app.simplemailserver.tls.noCerts") || "(no certificates)" }));
+    } else {
+      for (const e of entries) {
+        const cn = (/** @type {string} */ s) => s.replace(/.*CN=([^,]+).*/i, "$1");
+        sel.appendChild(UI.el("option", { attrs: { value: e.path }, text: cn(e.cert.subject) }));
+      }
+      if (this.certPath) sel.value = this.certPath;
+    }
+    this._updateCertInfo();
+  }
+
+  _updateCertInfo() {
+    if (!this.certInfoEl) return;
+    if (!this._cert) {
+      this.certInfoEl.textContent = t("app.simplemailserver.tls.noCertLoaded") || "No certificate loaded";
+      return;
+    }
+    const expiry = new Date(this._cert.notAfter).toLocaleDateString();
+    this.certInfoEl.textContent = [
+      `Subject: ${this._cert.subject}`,
+      `Fingerprint: ${this._cert.fingerprint()}`,
+      `Expires: ${expiry}`,
+    ].join(" | ");
+  }
+
+  async _applyCert() {
+    const path = this.certSelectEl?.value;
+    if (!path) return;
+    const fs = /** @type {any} */ (this.os.fs);
+    if (!fs) return;
+    try {
+      this._cert = await TlsCertificate.fromJSON(JSON.parse(fs.readFile(path)));
+      this.certPath = path;
+      this._appendLog(`[${nowStamp()}] TLS cert loaded: ${this._cert.subject}`);
+    } catch (e) {
+      this._appendLog(`[${nowStamp()}] TLS cert load failed: ${e instanceof Error ? e.message : e}`);
+      this._cert = null;
+    }
+    this._updateCertInfo();
+  }
+
   _startFromUI() {
     const domain = (this.domainEl?.value ?? "").trim().toLowerCase();
     const smtp = Number((this.smtpEl?.value ?? "").trim());
     const pop3 = Number((this.pop3El?.value ?? "").trim());
     const imap = Number((this.imapEl?.value ?? "").trim());
+    const tlsOn = this.tlsEnabledEl?.checked ?? false;
+    const smtps = Number((this.smtpsEl?.value ?? "").trim());
+    const pop3s = Number((this.pop3sEl?.value ?? "").trim());
+    const imaps = Number((this.imapsEl?.value ?? "").trim());
 
     /** @param {number} p */
     const okPort = (p) => Number.isInteger(p) && p >= 1 && p <= 65535;
@@ -928,11 +1201,23 @@ export class SimpleMailServerApp extends LoggedProcess {
       this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.invalidPorts") || "invalid ports"} (smtp=${smtp} pop3=${pop3} imap=${imap})`);
       return;
     }
+    if (tlsOn && (!okPort(smtps) || !okPort(pop3s) || !okPort(imaps))) {
+      this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.invalidPorts") || "invalid ports"} (smtps=${smtps} pop3s=${pop3s} imaps=${imaps})`);
+      return;
+    }
+    if (tlsOn && !this._cert) {
+      this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.tlsNoCert") || "TLS is enabled but no certificate is loaded — select and apply a certificate first"}`);
+      return;
+    }
 
     this.mailDomain = domain;
     this.portSMTP = smtp;
     this.portPOP3 = pop3;
     this.portIMAP = imap;
+    this.tlsEnabled = tlsOn;
+    this.portSMTPS = okPort(smtps) ? smtps : this.portSMTPS;
+    this.portPOP3S = okPort(pop3s) ? pop3s : this.portPOP3S;
+    this.portIMAPS = okPort(imaps) ? imaps : this.portIMAPS;
     this._saveConfig();
 
     this._start();
@@ -943,8 +1228,8 @@ export class SimpleMailServerApp extends LoggedProcess {
     this.running = false;
     this.runSeq++;
 
-    const { smtp, pop3, imap } = this.serverRef;
-    this.serverRef = { smtp: null, pop3: null, imap: null };
+    const { smtp, pop3, imap, smtps, pop3s, imaps } = this.serverRef;
+    this.serverRef = { smtp: null, pop3: null, imap: null, smtps: null, pop3s: null, imaps: null };
 
     /** @param {*} ref @param {string} name */
     const close = (ref, name) => {
@@ -958,6 +1243,9 @@ export class SimpleMailServerApp extends LoggedProcess {
     close(smtp, "smtp");
     close(pop3, "pop3");
     close(imap, "imap");
+    close(smtps, "smtps");
+    close(pop3s, "pop3s");
+    close(imaps, "imaps");
 
     this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.stopped") || "stopped"}`);
     this._syncUI();
@@ -969,40 +1257,49 @@ export class SimpleMailServerApp extends LoggedProcess {
     this._ensureDirs();
 
     let smtpRef = null, pop3Ref = null, imapRef = null;
+    let smtpsRef = null, pop3sRef = null, imapsRef = null;
     try {
       smtpRef = this.os.net.openTCPServerSocket(new IPAddress(4, 0), this.portSMTP);
       pop3Ref = this.os.net.openTCPServerSocket(new IPAddress(4, 0), this.portPOP3);
       imapRef = this.os.net.openTCPServerSocket(new IPAddress(4, 0), this.portIMAP);
+      if (this.tlsEnabled && this._cert) {
+        smtpsRef = this.os.net.openTCPServerSocket(new IPAddress(4, 0), this.portSMTPS);
+        pop3sRef = this.os.net.openTCPServerSocket(new IPAddress(4, 0), this.portPOP3S);
+        imapsRef = this.os.net.openTCPServerSocket(new IPAddress(4, 0), this.portIMAPS);
+      }
     } catch (e) {
       const reason = (e instanceof Error ? e.message : String(e));
       this._appendLog(`[${nowStamp()}] open socket error: ${reason}`);
-      try { if (smtpRef != null) this.os.net.closeTCPServerSocket(smtpRef); } catch {}
-      try { if (pop3Ref != null) this.os.net.closeTCPServerSocket(pop3Ref); } catch {}
-      try { if (imapRef != null) this.os.net.closeTCPServerSocket(imapRef); } catch {}
+      for (const r of [smtpRef, pop3Ref, imapRef, smtpsRef, pop3sRef, imapsRef]) {
+        try { if (r != null) this.os.net.closeTCPServerSocket(r); } catch {}
+      }
       return;
     }
 
-    this.serverRef = { smtp: smtpRef, pop3: pop3Ref, imap: imapRef };
+    this.serverRef = { smtp: smtpRef, pop3: pop3Ref, imap: imapRef, smtps: smtpsRef, pop3s: pop3sRef, imaps: imapsRef };
     this.running = true;
     const seq = ++this.runSeq;
     this._syncUI();
 
-    this._appendLog(
-      `[${nowStamp()}] ${t("app.simplemailserver.log.listening") || "listening"}: ` +
-      `smtp=${this.portSMTP} pop3=${this.portPOP3} imap=${this.portIMAP} domain=${this.mailDomain}`
-    );
+    let listenMsg = `smtp=${this.portSMTP} pop3=${this.portPOP3} imap=${this.portIMAP}`;
+    if (this.tlsEnabled && this._cert) listenMsg += ` smtps=${this.portSMTPS} pop3s=${this.portPOP3S} imaps=${this.portIMAPS}`;
+    this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.listening") || "listening"}: ${listenMsg} domain=${this.mailDomain}`);
 
-    this._acceptLoop(seq, smtpRef, "smtp");
-    this._acceptLoop(seq, pop3Ref, "pop3");
-    this._acceptLoop(seq, imapRef, "imap");
+    this._acceptLoop(seq, smtpRef, "smtp", false);
+    this._acceptLoop(seq, pop3Ref, "pop3", false);
+    this._acceptLoop(seq, imapRef, "imap", false);
+    if (smtpsRef) this._acceptLoop(seq, smtpsRef, "smtp", true);
+    if (pop3sRef) this._acceptLoop(seq, pop3sRef, "pop3", true);
+    if (imapsRef) this._acceptLoop(seq, imapsRef, "imap", true);
   }
 
   /**
    * @param {number} seq
    * @param {number} ref
    * @param {"smtp"|"pop3"|"imap"} proto
+   * @param {boolean} isTls
    */
-  async _acceptLoop(seq, ref, proto) {
+  async _acceptLoop(seq, ref, proto, isTls) {
     while (this.running && this.runSeq === seq) {
       /** @type {string|null} */
       let connKey = null;
@@ -1024,9 +1321,16 @@ export class SimpleMailServerApp extends LoggedProcess {
         proto === "pop3" ? this._handlePOP3.bind(this) :
         this._handleIMAP.bind(this);
 
-      h(seq, connKey).catch((/** @type {unknown} */ e) => {
+      this._wrapConn(connKey, isTls).then((tr) => {
+        if (!tr) return;
+        h(seq, tr, isTls).catch((/** @type {unknown} */ e) => {
+          const reason = (e instanceof Error ? e.message : String(e));
+          this._appendLog(`[${nowStamp()}] conn ${proto}${isTls ? "s" : ""} error: ${reason}`);
+          try { tr.close(); } catch { /* ignore */ }
+        });
+      }).catch((/** @type {unknown} */ e) => {
         const reason = (e instanceof Error ? e.message : String(e));
-        this._appendLog(`[${nowStamp()}] conn ${proto} error: ${reason}`);
+        this._appendLog(`[${nowStamp()}] TLS setup ${proto} error: ${reason}`);
         try { this.os.net.closeTCPConn(connKey); } catch { /* ignore */ }
       });
     }
@@ -1043,13 +1347,21 @@ export class SimpleMailServerApp extends LoggedProcess {
    * @param {number} seq
    * @param {string} connKey
    */
-  async _handleSMTP(seq, connKey) {
-    const net = this.os.net;
+  /**
+   * @param {number} seq
+   * @param {MailTransport} tr
+   */
+  /**
+   * @param {number} seq
+   * @param {MailTransport} tr
+   * @param {boolean} [isTls]
+   */
+  async _handleSMTP(seq, tr, isTls = false) {
     const timeout = this._timeoutMs();
     const st = { buf: new Uint8Array(0) };
 
     /** @param {string} line */
-    const send = (line) => writeLine(net, connKey, line);
+    const send = (line) => writeLine(tr, line);
 
     send(`220 ${this.mailDomain} SimpleMailServer ready`);
 
@@ -1065,10 +1377,12 @@ export class SimpleMailServerApp extends LoggedProcess {
     /** @type {string|null} */
     let authedUser = null;
 
+    let tlsActive = isTls;
+
     const resetTx = () => { mailFrom = null; rcptTo = []; };
 
     while (this.running && this.runSeq === seq) {
-      const line = await readLineCRLF(net, connKey, timeout, st);
+      const line = await readLineCRLF(tr, timeout, st);
       if (line == null) break;
 
       const raw = line;
@@ -1084,8 +1398,29 @@ export class SimpleMailServerApp extends LoggedProcess {
         send("250-SIZE 1048576");
         send("250-8BITMIME");
         send("250-PIPELINING");
+        if (!tlsActive && this.tlsEnabled && this._cert) send("250-STARTTLS");
         send("250-AUTH PLAIN LOGIN");
         send("250 OK");
+        continue;
+      }
+
+      if (upper === "STARTTLS") {
+        if (tlsActive || !this.tlsEnabled || !this._cert) {
+          send("454 4.7.0 TLS not available");
+          continue;
+        }
+        writeLine(tr, "220 2.0.0 Ready to start TLS");
+        try {
+          tr = await this._startTls(tr);
+          tlsActive = true;
+          heloName = null; authedUser = null; resetTx();
+          st.buf = new Uint8Array(0);
+          this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.starttlsOk") || "STARTTLS upgraded"}`);
+        } catch (e) {
+          const reason = e instanceof Error ? e.message : String(e);
+          this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.starttlsFailed") || "STARTTLS failed"}: ${reason}`);
+          break;
+        }
         continue;
       }
 
@@ -1117,11 +1452,11 @@ export class SimpleMailServerApp extends LoggedProcess {
 
       if (upper === "AUTH LOGIN") {
         send("334 " + b64encodeFromString("Username:"));
-        const u1 = await readLineCRLF(net, connKey, timeout, st);
+        const u1 = await readLineCRLF(tr, timeout, st);
         if (u1 == null) break;
         const user = b64decodeToString(u1.trim());
         send("334 " + b64encodeFromString("Password:"));
-        const p1 = await readLineCRLF(net, connKey, timeout, st);
+        const p1 = await readLineCRLF(tr, timeout, st);
         if (p1 == null) break;
         const pass = b64decodeToString(p1.trim());
         if (user && this._auth(user, pass)) {
@@ -1157,7 +1492,7 @@ export class SimpleMailServerApp extends LoggedProcess {
         /** @type {string[]} */
         const dataLines = [];
         while (true) {
-          const l = await readLineCRLF(net, connKey, timeout, st);
+          const l = await readLineCRLF(tr, timeout, st);
           if (l == null) { break; }
           if (l === ".") break;
           dataLines.push(l.startsWith("..") ? l.slice(1) : l);
@@ -1169,7 +1504,7 @@ export class SimpleMailServerApp extends LoggedProcess {
         if (!/^\s*To:/im.test(msg)) msg = `To: ${rcptTo.join(", ")}\r\n` + msg;
 
         try {
-          await this._deliverOrRelay(rcptTo, msg);
+          await this._deliverOrRelay(rcptTo, msg, mailFrom ?? "");
           send("250 2.0.0 OK queued");
           this._appendLog(`[${nowStamp()}] SMTP accepted: from=${mailFrom} rcpt=${rcptTo.length} helo=${heloName ?? "-"} auth=${authedUser ?? "-"}`);
         } catch (e) {
@@ -1185,7 +1520,7 @@ export class SimpleMailServerApp extends LoggedProcess {
       send("500 5.5.2 Command unrecognized");
     }
 
-    try { net.closeTCPConn(connKey); } catch { /* ignore */ }
+    tr.close();
   }
 
   // ---------------- POP3 (Server) ----------------
@@ -1196,13 +1531,16 @@ export class SimpleMailServerApp extends LoggedProcess {
    * @param {number} seq
    * @param {string} connKey
    */
-  async _handlePOP3(seq, connKey) {
-    const net = this.os.net;
+  /**
+   * @param {number} seq
+   * @param {MailTransport} tr
+   */
+  async _handlePOP3(seq, tr) {
     const timeout = this._timeoutMs();
     const st = { buf: new Uint8Array(0) };
 
     /** @param {string} line */
-    const send = (line) => writeLine(net, connKey, line);
+    const send = (line) => writeLine(tr, line);
 
     // More verbose greeting
     send(`+OK ${this.mailDomain} POP3 ready - authenticate with USER/PASS`);
@@ -1224,7 +1562,7 @@ export class SimpleMailServerApp extends LoggedProcess {
     const liveMsgs = () => msgs.filter((_, i) => !del.has(i));
 
     while (this.running && this.runSeq === seq) {
-      const line = await readLineCRLF(net, connKey, timeout, st);
+      const line = await readLineCRLF(tr, timeout, st);
       if (line == null) break;
 
       const cmd = line.trim();
@@ -1295,7 +1633,7 @@ export class SimpleMailServerApp extends LoggedProcess {
         const msg = normalizeCRLF(msgs[n - 1]);
         send(`+OK Message follows (${encodeUTF8(msg).length} octets)`);
         const stuffed = msg.split("\r\n").map(l => (l.startsWith(".") ? "." + l : l)).join("\r\n");
-        net.sendTCPConn(connKey, encodeUTF8(stuffed + "\r\n.\r\n"));
+        tr.send(encodeUTF8(stuffed + "\r\n.\r\n"));
         continue;
       }
 
@@ -1318,7 +1656,7 @@ export class SimpleMailServerApp extends LoggedProcess {
       send(`-ERR Unknown command "${op}". Try STAT, LIST, RETR, DELE, RSET, NOOP, QUIT.`);
     }
 
-    try { net.closeTCPConn(connKey); } catch { /* ignore */ }
+    tr.close();
   }
 
   // ---------------- IMAP (Server) ----------------
@@ -1334,12 +1672,15 @@ export class SimpleMailServerApp extends LoggedProcess {
    * @param {number} seq
    * @param {string} connKey
    */
-  async _handleIMAP(seq, connKey) {
-    const net = this.os.net;
+  /**
+   * @param {number} seq
+   * @param {MailTransport} tr
+   */
+  async _handleIMAP(seq, tr) {
     const timeout = this._timeoutMs();
     const st = { buf: new Uint8Array(0) };
     /** @param {string} line */
-    const send = (line) => writeLine(net, connKey, line);
+    const send = (line) => writeLine(tr, line);
 
     send(`* OK ${this.mailDomain} IMAP ready`);
 
@@ -1356,7 +1697,7 @@ export class SimpleMailServerApp extends LoggedProcess {
     };
 
     while (this.running && this.runSeq === seq) {
-      const line = await readLineCRLF(net, connKey, timeout, st);
+      const line = await readLineCRLF(tr, timeout, st);
       if (line == null) break;
       const raw = line.trimEnd();
       if (!raw) continue;
@@ -1397,6 +1738,7 @@ export class SimpleMailServerApp extends LoggedProcess {
         const mbox = (rest[0] || "").toUpperCase();
         if (mbox !== "INBOX") { send(`${tag} NO only INBOX supported`); continue; }
 
+        loadMailbox();
         const exists = msgs.length;
         send(`* ${exists} EXISTS`);
         send(`* ${exists} RECENT`);
@@ -1425,8 +1767,8 @@ export class SimpleMailServerApp extends LoggedProcess {
         }
         const msg = normalizeCRLF(msgs[n - 1]);
         const bytes = encodeUTF8(msg).length;
-        send(`* ${n} FETCH (BODY[] {${bytes}})`);
-        net.sendTCPConn(connKey, encodeUTF8(msg + "\r\n"));
+        send(`* ${n} FETCH (BODY[] {${bytes}}`);
+        tr.send(encodeUTF8(msg + "\r\n"));
         send(`)`);
         send(`${tag} OK FETCH completed`);
         continue;
@@ -1449,6 +1791,6 @@ export class SimpleMailServerApp extends LoggedProcess {
       send(`${tag} NO unsupported command`);
     }
 
-    try { net.closeTCPConn(connKey); } catch { /* ignore */ }
+    tr.close();
   }
 }

@@ -784,7 +784,7 @@ textarea.log {
 }
 
 .app-mail-client .mailclient-list-row:hover { background: var(--bg2, #222); }
-.app-mail-client .mailclient-list-row.selected { background: var(--accent-dim, #1e3a5f); }
+.app-mail-client .mailclient-list-row.selected { background: var(--accent-dim, #1e3a5f); color: oklch(93% 0.01 215); }
 
 .app-mail-client .ml-col-from,
 .app-mail-client .ml-col-subject,
@@ -869,6 +869,21 @@ textarea.log {
 
 .app-mail-client .mailclient-config-panel h5:first-of-type {
   margin-top: 4px;
+}
+
+.app-mail-client .mailclient-config-columns {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.app-mail-client .mailclient-config-col {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.app-mail-client .mailclient-config-col h5 {
+  margin-top: 0;
 }
 
 /* =========================================================
