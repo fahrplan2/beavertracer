@@ -1085,5 +1085,17 @@ export default {
   "app.certmanager.sign.ok":             "Signed certificate saved: {name}",
   "app.certmanager.sign.errSelect":      "Please select a certificate and a CA.",
   "app.certmanager.sign.errExists":      "File already exists: {name}",
-  "app.certmanager.sign.errFailed":      "Signing failed."
+  "app.certmanager.sign.errFailed":      "Signing failed.",
+
+  "router.vpn.tab":           "VPN",
+  "router.vpn.add":           "Add Tunnel",
+  "router.vpn.name":          "Name",
+  "router.vpn.remote":        "Remote Endpoint",
+  "router.vpn.network":       "Remote Network",
+  "router.vpn.delete":        "Delete",
+  "router.vpn.empty":         "No tunnels configured.",
+  "router.vpn.err.name":      "Name required",
+  "router.vpn.err.remote":    "Invalid remote IP",
+  "router.vpn.err.network":   "Invalid network (CIDR, e.g. 10.0.0.0/24)",
+  "router.vpn.err.duplicate": "Tunnel name already exists"
 };

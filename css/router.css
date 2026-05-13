@@ -164,3 +164,55 @@
   outline-offset: 1px;
 }
 
+/* VPN / Tunnel tab */
+.router-vpn-list {
+  margin-bottom: 12px;
+}
+
+.router-vpn-empty {
+  color: var(--muted);
+  font-style: italic;
+  font-size: 0.8125rem;
+}
+
+.router-vpn-row {
+  display: grid;
+  grid-template-columns: 6ch 1fr 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 0;
+  border-bottom: 1px solid color-mix(in oklch, var(--border), var(--text) 6%);
+  font-size: 0.8125rem;
+}
+
+.router-vpn-name   { font-weight: 600; }
+.router-vpn-remote { color: var(--muted); font-family: monospace; }
+.router-vpn-net    { color: var(--muted); font-family: monospace; }
+
+.router-vpn-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.router-vpn-form-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.router-vpn-form-label {
+  font-size: 0.6875rem;
+  color: var(--muted);
+  width: 10ch;
+  flex-shrink: 0;
+}
+
+.router-vpn-err {
+  color: var(--danger-strong);
+  font-size: 0.75rem;
+  min-height: 1em;
+  margin: 0;
+}
+
