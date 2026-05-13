@@ -8,7 +8,9 @@
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
-    "tauri:win": "tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc"
+    "tauri:win": "tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "name": "beavertracer",
   "description": "",
@@ -26,7 +28,8 @@
     "@tauri-apps/cli": "^2.9.6",
     "markdown-it": "^14.1.1",
     "typescript": "^5.9.3",
-    "vite": "^4.5.14"
+    "vite": "^4.5.14",
+    "vitest": "^4.1.6"
   },
   "build": {
     "appId": "eu.chklein.networksim",
