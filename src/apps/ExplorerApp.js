@@ -281,7 +281,7 @@ export class ExplorerApp extends GenericProcess {
     }
 
     // Directories first
-    const abs = (n) => this.cwd === "/" ? "/" + n : this.cwd + "/" + n;
+    const abs = (/** @type {string} */ n) => this.cwd === "/" ? "/" + n : this.cwd + "/" + n;
     const withStat = names.map(n => {
       try { return { name: n, stat: fs.stat(abs(n)) }; }
       catch { return { name: n, stat: null }; }
@@ -408,7 +408,7 @@ export class ExplorerApp extends GenericProcess {
 
       const name = this.selected.split("/").pop() ?? "file";
       const bytes = fs.readBinaryFile(this.selected);
-      const blob = new Blob([bytes], { type: "application/octet-stream" });
+      const blob = new Blob([/** @type {any} */ (bytes)], { type: "application/octet-stream" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;

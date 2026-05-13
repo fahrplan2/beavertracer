@@ -1320,7 +1320,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
         try { this.os.net.closeTCPConn(key); } catch {}
         return null;
       }
-      sendFn = (d) => tls.send(d);
+      sendFn = (d) => tls.send(/** @type {any} */ (d));
       recvFn = () => tls.recv();
     }
 
