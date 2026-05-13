@@ -910,5 +910,11 @@ export default {
   "app.certmanager.clipboard.pasteKey": " (anahtar ile)",
   "app.certmanager.clipboard.pastePublic": " (yalnızca genel)",
   "app.certmanager.clipboard.pasteEmpty": "Panodan Yapıştır",
-  "app.certmanager.trusted.emptyHint": "Bir CA sertifikası içe aktarın veya Sertifikalarım'dan bir tane ekleyin."
+  "app.certmanager.trusted.emptyHint": "Bir CA sertifikası içe aktarın veya Sertifikalarım'dan bir tane ekleyin.",
+  "app.simplehttpserver.label.httpsEnabled": "HTTPS'i Etkinleştir",
+  "app.simplehttpserver.label.httpsPort": "HTTPS Portu",
+  "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS DINLEME :{port}",
+  "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS DURDURULDU",
+  "app.simplehttpserver.log.httpsStopError": "[{time}] HATA HTTPS durdurulurken: {reason}",
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] HATA openTCPServerSocket (HTTPS): {reason}"
 };

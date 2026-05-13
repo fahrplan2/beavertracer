@@ -915,5 +915,11 @@ export default {
   "app.certmanager.clipboard.pasteKey": " (con chiave)",
   "app.certmanager.clipboard.pastePublic": " (solo pubblica)",
   "app.certmanager.clipboard.pasteEmpty": "Incolla da Appunti",
-  "app.certmanager.trusted.emptyHint": "Importa un certificato CA o aggiungine uno da I Miei Certificati."
+  "app.certmanager.trusted.emptyHint": "Importa un certificato CA o aggiungine uno da I Miei Certificati.",
+  "app.simplehttpserver.label.httpsEnabled": "Abilita HTTPS",
+  "app.simplehttpserver.label.httpsPort": "Porta HTTPS",
+  "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS LISTEN :{port}",
+  "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS STOPPED",
+  "app.simplehttpserver.log.httpsStopError": "[{time}] ERROR stop HTTPS: {reason}",
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] ERROR openTCPServerSocket (HTTPS): {reason}"
 };

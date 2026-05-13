@@ -910,5 +910,11 @@ export default {
   "app.certmanager.clipboard.pasteKey": " (met sleutel)",
   "app.certmanager.clipboard.pastePublic": " (alleen openbaar)",
   "app.certmanager.clipboard.pasteEmpty": "Plakken uit klembord",
-  "app.certmanager.trusted.emptyHint": "Importeer een CA-certificaat of voeg er een toe uit Mijn certificaten."
+  "app.certmanager.trusted.emptyHint": "Importeer een CA-certificaat of voeg er een toe uit Mijn certificaten.",
+  "app.simplehttpserver.label.httpsEnabled": "HTTPS inschakelen",
+  "app.simplehttpserver.label.httpsPort": "HTTPS-poort",
+  "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS LUISTEREN :{port}",
+  "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS GESTOPT",
+  "app.simplehttpserver.log.httpsStopError": "[{time}] FOUT HTTPS stoppen: {reason}",
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] FOUT openTCPServerSocket (HTTPS): {reason}"
 };

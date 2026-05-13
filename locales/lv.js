@@ -910,5 +910,11 @@ export default {
   "app.certmanager.clipboard.pasteKey": " (ar atslēgu)",
   "app.certmanager.clipboard.pastePublic": " (tikai publiskā)",
   "app.certmanager.clipboard.pasteEmpty": "Ielīmēt no starpliktuves",
-  "app.certmanager.trusted.emptyHint": "Importējiet CA sertifikātu vai pievienojiet vienu no Mani sertifikāti."
+  "app.certmanager.trusted.emptyHint": "Importējiet CA sertifikātu vai pievienojiet vienu no Mani sertifikāti.",
+  "app.simplehttpserver.label.httpsEnabled": "Iespējot HTTPS",
+  "app.simplehttpserver.label.httpsPort": "HTTPS ports",
+  "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS LISTEN :{port}",
+  "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS APTURĒTS",
+  "app.simplehttpserver.log.httpsStopError": "[{time}] KĻŪDA aptupējot HTTPS: {reason}",
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] KĻŪDA openTCPServerSocket (HTTPS): {reason}"
 };

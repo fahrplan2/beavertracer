@@ -910,5 +910,11 @@ export default {
   "app.certmanager.clipboard.pasteKey": " (med nøgle)",
   "app.certmanager.clipboard.pastePublic": " (kun offentlig)",
   "app.certmanager.clipboard.pasteEmpty": "Indsæt fra udklipsholder",
-  "app.certmanager.trusted.emptyHint": "Importér et CA-certifikat eller tilføj et fra Mine certifikater."
+  "app.certmanager.trusted.emptyHint": "Importér et CA-certifikat eller tilføj et fra Mine certifikater.",
+  "app.simplehttpserver.label.httpsEnabled": "Aktivér HTTPS",
+  "app.simplehttpserver.label.httpsPort": "HTTPS-port",
+  "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS LYTTER :{port}",
+  "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS STOPPET",
+  "app.simplehttpserver.log.httpsStopError": "[{time}] FEJL ved stopning af HTTPS: {reason}",
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] FEJL openTCPServerSocket (HTTPS): {reason}"
 };

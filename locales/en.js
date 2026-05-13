@@ -237,6 +237,13 @@ export default {
   "app.simplehttpsserver.log.tlsOk":           "[{time}] TLS OK from {peer}",
   "app.simplehttpsserver.log.tlsFailed":       "[{time}] TLS failed: {reason}",
 
+  "app.simplehttpserver.label.httpsEnabled":   "Enable HTTPS",
+  "app.simplehttpserver.label.httpsPort":      "HTTPS Port",
+  "app.simplehttpserver.log.httpsListen":      "[{time}] HTTPS LISTEN :{port}",
+  "app.simplehttpserver.log.httpsStopped":     "[{time}] HTTPS STOPPED",
+  "app.simplehttpserver.log.httpsStopError":   "[{time}] ERROR stop HTTPS: {reason}",
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] ERROR openTCPServerSocket (HTTPS): {reason}",
+
   "app.mailclient.title": "Mail",
   "app.mailclient.button.compose": "Compose",
   "app.mailclient.button.config": "Settings",

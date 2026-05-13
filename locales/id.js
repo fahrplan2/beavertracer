@@ -910,5 +910,11 @@ export default {
   "app.certmanager.clipboard.pasteKey": " (dengan kunci)",
   "app.certmanager.clipboard.pastePublic": " (publik saja)",
   "app.certmanager.clipboard.pasteEmpty": "Tempel dari Clipboard",
-  "app.certmanager.trusted.emptyHint": "Impor sertifikat CA atau tambahkan dari My Certs."
+  "app.certmanager.trusted.emptyHint": "Impor sertifikat CA atau tambahkan dari My Certs.",
+  "app.simplehttpserver.label.httpsEnabled": "Aktifkan HTTPS",
+  "app.simplehttpserver.label.httpsPort": "Port HTTPS",
+  "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS LISTEN :{port}",
+  "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS DIHENTIKAN",
+  "app.simplehttpserver.log.httpsStopError": "[{time}] KESALAHAN menghentikan HTTPS: {reason}",
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] KESALAHAN openTCPServerSocket (HTTPS): {reason}"
 };

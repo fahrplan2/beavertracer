@@ -910,5 +910,11 @@ export default {
   "app.certmanager.clipboard.pasteKey": " (キー付き)",
   "app.certmanager.clipboard.pastePublic": " (公開鍵のみ)",
   "app.certmanager.clipboard.pasteEmpty": "クリップボードから貼り付け",
-  "app.certmanager.trusted.emptyHint": "CA 証書をインポートするか、[マイ証書] から追加してください。"
+  "app.certmanager.trusted.emptyHint": "CA 証書をインポートするか、[マイ証書] から追加してください。",
+  "app.simplehttpserver.label.httpsEnabled": "HTTPS を有効にする",
+  "app.simplehttpserver.label.httpsPort": "HTTPS ポート",
+  "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS LISTEN :{port}",
+  "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS 停止",
+  "app.simplehttpserver.log.httpsStopError": "[{time}] エラー HTTPS を停止: {reason}",
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] エラー openTCPServerSocket (HTTPS): {reason}"
 };

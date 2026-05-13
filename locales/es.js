@@ -917,5 +917,11 @@ export default {
   "app.certmanager.clipboard.pasteKey": " (con clave)",
   "app.certmanager.clipboard.pastePublic": " (solo público)",
   "app.certmanager.clipboard.pasteEmpty": "Pegar desde portapapeles",
-  "app.certmanager.trusted.emptyHint": "Importa un certificado CA o agrega uno desde Mis certificados."
+  "app.certmanager.trusted.emptyHint": "Importa un certificado CA o agrega uno desde Mis certificados.",
+  "app.simplehttpserver.label.httpsEnabled": "Habilitar HTTPS",
+  "app.simplehttpserver.label.httpsPort": "Puerto HTTPS",
+  "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS ESCUCHANDO :{port}",
+  "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS DETENIDO",
+  "app.simplehttpserver.log.httpsStopError": "[{time}] ERROR detener HTTPS: {reason}",
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] ERROR openTCPServerSocket (HTTPS): {reason}"
 };

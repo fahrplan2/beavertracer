@@ -910,5 +910,11 @@ export default {
   "app.certmanager.clipboard.pasteKey": " (với khóa)",
   "app.certmanager.clipboard.pastePublic": " (chỉ công khai)",
   "app.certmanager.clipboard.pasteEmpty": "Dán từ Bảng nhớ tạm",
-  "app.certmanager.trusted.emptyHint": "Nhập một chứng chỉ CA hoặc thêm một từ Chứng chỉ của tôi."
+  "app.certmanager.trusted.emptyHint": "Nhập một chứng chỉ CA hoặc thêm một từ Chứng chỉ của tôi.",
+  "app.simplehttpserver.label.httpsEnabled": "Bật HTTPS",
+  "app.simplehttpserver.label.httpsPort": "Cổng HTTPS",
+  "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS LISTEN :{port}",
+  "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS STOPPED",
+  "app.simplehttpserver.log.httpsStopError": "[{time}] ERROR stop HTTPS: {reason}",
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] ERROR openTCPServerSocket (HTTPS): {reason}"
 };

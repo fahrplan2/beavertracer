@@ -910,5 +910,11 @@ export default {
   "app.certmanager.clipboard.pasteKey": " (με κλειδί)",
   "app.certmanager.clipboard.pastePublic": " (μόνο δημόσιο)",
   "app.certmanager.clipboard.pasteEmpty": "Επικόλληση από Πρόχειρο",
-  "app.certmanager.trusted.emptyHint": "Εισαγάγετε ένα πιστοποιητικό CA ή προσθέστε ένα από Τα πιστοποιητικά μου."
+  "app.certmanager.trusted.emptyHint": "Εισαγάγετε ένα πιστοποιητικό CA ή προσθέστε ένα από Τα πιστοποιητικά μου.",
+  "app.simplehttpserver.label.httpsEnabled": "Ενεργοποίηση HTTPS",
+  "app.simplehttpserver.label.httpsPort": "Θύρα HTTPS",
+  "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS LISTEN :{port}",
+  "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS STOPPED",
+  "app.simplehttpserver.log.httpsStopError": "[{time}] ERROR stop HTTPS: {reason}",
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] ERROR openTCPServerSocket (HTTPS): {reason}"
 };

@@ -917,5 +917,11 @@ export default {
   "app.simplehttpsserver.button.use": "Verwenden",
   "app.simplehttpsserver.cert.noEntries": "Keine Zertifikate in /etc/certs gefunden",
   "app.simplehttpsserver.log.certApplied": "[{time}] Zertifikat gesetzt: {subject}",
+  "app.simplehttpserver.label.httpsEnabled":   "HTTPS aktivieren",
+  "app.simplehttpserver.label.httpsPort":      "HTTPS-Port",
+  "app.simplehttpserver.log.httpsListen":      "[{time}] HTTPS LISTEN :{port}",
+  "app.simplehttpserver.log.httpsStopped":     "[{time}] HTTPS GESTOPPT",
+  "app.simplehttpserver.log.httpsStopError":   "[{time}] FEHLER Stopp HTTPS: {reason}",
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] FEHLER openTCPServerSocket (HTTPS): {reason}",
   "app.certmanager.detail.privateKey": "Privater Schlüssel"
 };

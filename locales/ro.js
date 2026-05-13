@@ -910,5 +910,11 @@ export default {
   "app.certmanager.clipboard.pasteKey": " (cu cheie)",
   "app.certmanager.clipboard.pastePublic": " (doar public)",
   "app.certmanager.clipboard.pasteEmpty": "Lipește din Clipboard",
-  "app.certmanager.trusted.emptyHint": "Importă un certificat CA sau adaugă unul din My Certs."
+  "app.certmanager.trusted.emptyHint": "Importă un certificat CA sau adaugă unul din My Certs.",
+  "app.simplehttpserver.label.httpsEnabled": "Activați HTTPS",
+  "app.simplehttpserver.label.httpsPort": "Port HTTPS",
+  "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS ASCULTĂ :{port}",
+  "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS OPRIT",
+  "app.simplehttpserver.log.httpsStopError": "[{time}] EROARE oprire HTTPS: {reason}",
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] EROARE deschidere TCPServerSocket (HTTPS): {reason}"
 };

@@ -910,5 +910,11 @@ export default {
   "app.certmanager.clipboard.pasteKey": " (yksityisen avaimen kanssa)",
   "app.certmanager.clipboard.pastePublic": " (vain julkinen)",
   "app.certmanager.clipboard.pasteEmpty": "Liitä leikepöydältä",
-  "app.certmanager.trusted.emptyHint": "Tuo CA-sertifikaatti tai lisää sellainen Omat sertifikaatit -osiosta."
+  "app.certmanager.trusted.emptyHint": "Tuo CA-sertifikaatti tai lisää sellainen Omat sertifikaatit -osiosta.",
+  "app.simplehttpserver.label.httpsEnabled": "Ota HTTPS käyttöön",
+  "app.simplehttpserver.label.httpsPort": "HTTPS-portti",
+  "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS KUUNTELEE :{port}",
+  "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS PYSÄYTETTY",
+  "app.simplehttpserver.log.httpsStopError": "[{time}] VIRHE HTTPS:n pysäyttämisessä: {reason}",
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] VIRHE openTCPServerSocket (HTTPS): {reason}"
 };

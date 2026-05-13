@@ -910,5 +910,11 @@ export default {
   "app.certmanager.clipboard.pasteKey": " (su raktu)",
   "app.certmanager.clipboard.pastePublic": " (tik viešasis)",
   "app.certmanager.clipboard.pasteEmpty": "Įklijuoti iš sritinio atminties",
-  "app.certmanager.trusted.emptyHint": "Importuokite CA sertifikatą arba pridėkite jį iš Mano sertifikatų."
+  "app.certmanager.trusted.emptyHint": "Importuokite CA sertifikatą arba pridėkite jį iš Mano sertifikatų.",
+  "app.simplehttpserver.label.httpsEnabled": "Įjungti HTTPS",
+  "app.simplehttpserver.label.httpsPort": "HTTPS prievadas",
+  "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS KLAUSOSI :{port}",
+  "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS SUSTABDYTA",
+  "app.simplehttpserver.log.httpsStopError": "[{time}] KLAIDA sustabdant HTTPS: {reason}",
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] KLAIDA atveriant TCPServerSocket (HTTPS): {reason}"
 };

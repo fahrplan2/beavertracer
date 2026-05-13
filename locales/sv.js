@@ -910,5 +910,11 @@ export default {
   "app.certmanager.clipboard.pasteKey": " (med nyckel)",
   "app.certmanager.clipboard.pastePublic": " (endast offentlig)",
   "app.certmanager.clipboard.pasteEmpty": "Klistra in från urklipp",
-  "app.certmanager.trusted.emptyHint": "Importera ett CA-certifikat eller lägg till ett från Mina certifikat."
+  "app.certmanager.trusted.emptyHint": "Importera ett CA-certifikat eller lägg till ett från Mina certifikat.",
+  "app.simplehttpserver.label.httpsEnabled": "Aktivera HTTPS",
+  "app.simplehttpserver.label.httpsPort": "HTTPS-port",
+  "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS LYSSNAR :{port}",
+  "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS STOPPAD",
+  "app.simplehttpserver.log.httpsStopError": "[{time}] FEL stoppa HTTPS: {reason}",
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] FEL openTCPServerSocket (HTTPS): {reason}"
 };

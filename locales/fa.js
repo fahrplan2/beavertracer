@@ -910,5 +910,11 @@ export default {
   "app.certmanager.clipboard.pasteKey": " (با کلید)",
   "app.certmanager.clipboard.pastePublic": " (فقط عمومی)",
   "app.certmanager.clipboard.pasteEmpty": "چسباندن از کلیپ‌برد",
-  "app.certmanager.trusted.emptyHint": "یک گواهی‌نامه CA وارد کنید یا یکی از گواهی‌نامه‌های من اضافه کنید."
+  "app.certmanager.trusted.emptyHint": "یک گواهی‌نامه CA وارد کنید یا یکی از گواهی‌نامه‌های من اضافه کنید.",
+  "app.simplehttpserver.label.httpsEnabled": "فعال‌سازی HTTPS",
+  "app.simplehttpserver.label.httpsPort": "درگاه HTTPS",
+  "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS در حال شنوایی :{port}",
+  "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS متوقف شد",
+  "app.simplehttpserver.log.httpsStopError": "[{time}] خطا در توقف HTTPS: {reason}",
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] خطا در openTCPServerSocket (HTTPS): {reason}"
 };

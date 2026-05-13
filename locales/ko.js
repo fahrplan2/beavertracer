@@ -910,5 +910,11 @@ export default {
   "app.certmanager.clipboard.pasteKey": " (키 포함)",
   "app.certmanager.clipboard.pastePublic": " (공개 전용)",
   "app.certmanager.clipboard.pasteEmpty": "클립보드에서 붙여넣기",
-  "app.certmanager.trusted.emptyHint": "CA 인증서를 가져오거나 내 인증서에서 추가하세요."
+  "app.certmanager.trusted.emptyHint": "CA 인증서를 가져오거나 내 인증서에서 추가하세요.",
+  "app.simplehttpserver.label.httpsEnabled": "HTTPS 활성화",
+  "app.simplehttpserver.label.httpsPort": "HTTPS 포트",
+  "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS LISTEN :{port}",
+  "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS STOPPED",
+  "app.simplehttpserver.log.httpsStopError": "[{time}] ERROR stop HTTPS: {reason}",
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] ERROR openTCPServerSocket (HTTPS): {reason}"
 };

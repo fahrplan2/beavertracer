@@ -915,5 +915,11 @@ export default {
   "app.certmanager.clipboard.pasteKey": " (com chave)",
   "app.certmanager.clipboard.pastePublic": " (apenas público)",
   "app.certmanager.clipboard.pasteEmpty": "Colar da Área de Transferência",
-  "app.certmanager.trusted.emptyHint": "Importe um certificado CA ou adicione um de Os Meus Certificados."
+  "app.certmanager.trusted.emptyHint": "Importe um certificado CA ou adicione um de Os Meus Certificados.",
+  "app.simplehttpserver.label.httpsEnabled": "Ativar HTTPS",
+  "app.simplehttpserver.label.httpsPort": "Porta HTTPS",
+  "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS ESCUTANDO :{port}",
+  "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS PARADO",
+  "app.simplehttpserver.log.httpsStopError": "[{time}] ERRO ao parar HTTPS: {reason}",
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] ERRO openTCPServerSocket (HTTPS): {reason}"
 };

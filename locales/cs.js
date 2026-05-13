@@ -910,5 +910,11 @@ export default {
   "app.certmanager.clipboard.pasteKey": " (s klíčem)",
   "app.certmanager.clipboard.pastePublic": " (pouze veřejný)",
   "app.certmanager.clipboard.pasteEmpty": "Vložit ze schránky",
-  "app.certmanager.trusted.emptyHint": "Importujte CA certifikát nebo přidejte jeden z Mých certifikátů."
+  "app.certmanager.trusted.emptyHint": "Importujte CA certifikát nebo přidejte jeden z Mých certifikátů.",
+  "app.simplehttpserver.label.httpsEnabled": "Povolit HTTPS",
+  "app.simplehttpserver.label.httpsPort": "Port HTTPS",
+  "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS NASLOUCHÁ :{port}",
+  "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS ZASTAVENO",
+  "app.simplehttpserver.log.httpsStopError": "[{time}] CHYBA zastavení HTTPS: {reason}",
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] CHYBA openTCPServerSocket (HTTPS): {reason}"
 };

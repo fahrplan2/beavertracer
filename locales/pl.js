@@ -910,5 +910,11 @@ export default {
   "app.certmanager.clipboard.pasteKey": " (z kluczem)",
   "app.certmanager.clipboard.pastePublic": " (tylko publiczny)",
   "app.certmanager.clipboard.pasteEmpty": "Wklej ze schowka",
-  "app.certmanager.trusted.emptyHint": "Zaimportuj certyfikat CA lub dodaj jeden z Moje certyfikaty."
+  "app.certmanager.trusted.emptyHint": "Zaimportuj certyfikat CA lub dodaj jeden z Moje certyfikaty.",
+  "app.simplehttpserver.label.httpsEnabled": "Włącz HTTPS",
+  "app.simplehttpserver.label.httpsPort": "Port HTTPS",
+  "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS NASŁUCHUJE :{port}",
+  "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS ZATRZYMANY",
+  "app.simplehttpserver.log.httpsStopError": "[{time}] BŁĄD zatrzymania HTTPS: {reason}",
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] BŁĄD openTCPServerSocket (HTTPS): {reason}"
 };

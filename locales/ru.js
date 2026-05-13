@@ -910,5 +910,11 @@ export default {
   "app.certmanager.clipboard.pasteKey": " (с ключом)",
   "app.certmanager.clipboard.pastePublic": " (только открытый)",
   "app.certmanager.clipboard.pasteEmpty": "Вставить из буфера обмена",
-  "app.certmanager.trusted.emptyHint": "Импортируйте сертификат ЦС или добавьте его из \"Мои сертификаты\"."
+  "app.certmanager.trusted.emptyHint": "Импортируйте сертификат ЦС или добавьте его из \"Мои сертификаты\".",
+  "app.simplehttpserver.label.httpsEnabled": "Включить HTTPS",
+  "app.simplehttpserver.label.httpsPort": "Порт HTTPS",
+  "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS LISTEN :{port}",
+  "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS STOPPED",
+  "app.simplehttpserver.log.httpsStopError": "[{time}] ERROR stop HTTPS: {reason}",
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] ERROR openTCPServerSocket (HTTPS): {reason}"
 };

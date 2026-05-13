@@ -910,5 +910,11 @@ export default {
   "app.certmanager.clipboard.pasteKey": " (koos võtmega)",
   "app.certmanager.clipboard.pastePublic": " (ainult avalik)",
   "app.certmanager.clipboard.pasteEmpty": "Kleebi lõikepuhvrist",
-  "app.certmanager.trusted.emptyHint": "Importi CA sertifikaat või lisa üks valikust Minu sertifikaadid."
+  "app.certmanager.trusted.emptyHint": "Importi CA sertifikaat või lisa üks valikust Minu sertifikaadid.",
+  "app.simplehttpserver.label.httpsEnabled": "HTTPS lubamine",
+  "app.simplehttpserver.label.httpsPort": "HTTPS port",
+  "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS KUULAMINE :{port}",
+  "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS PEATATUD",
+  "app.simplehttpserver.log.httpsStopError": "[{time}] VIGA HTTPS peatamisel: {reason}",
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] VIGA openTCPServerSocket (HTTPS): {reason}"
 };

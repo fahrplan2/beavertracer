@@ -910,5 +910,11 @@ export default {
   "app.certmanager.clipboard.pasteKey": " (z ključem)",
   "app.certmanager.clipboard.pastePublic": " (samo javno)",
   "app.certmanager.clipboard.pasteEmpty": "Prilepi iz odložišča",
-  "app.certmanager.trusted.emptyHint": "Uvozite potrdilo CA ali dodajte enega iz Moji certifikati."
+  "app.certmanager.trusted.emptyHint": "Uvozite potrdilo CA ali dodajte enega iz Moji certifikati.",
+  "app.simplehttpserver.label.httpsEnabled": "Omogoči HTTPS",
+  "app.simplehttpserver.label.httpsPort": "Vrata HTTPS",
+  "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS LISTENING :{port}",
+  "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS STOPPED",
+  "app.simplehttpserver.log.httpsStopError": "[{time}] ERROR stop HTTPS: {reason}",
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] ERROR openTCPServerSocket (HTTPS): {reason}"
 };
