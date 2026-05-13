@@ -1441,11 +1441,17 @@ sim-toolbar-langbtn {
 /* ── Embedded mode ─────────────────────────────────────────── */
 
 /* "Open in BeaverTracer" button stands out as primary CTA */
+.is-embedded .sim-toolbar [data-role="embed-open"] span {
+  display: inline;
+}
+
 .is-embedded .sim-toolbar [data-role="embed-open"] {
-  background: var(--primary, #5b9bd5);
-  color: #000;
-  border-color: var(--primary, #5b9bd5);
+  background: var(--blue, #5b9bd5);
+  color: #fff;
+  border-color: var(--blue, #5b9bd5);
   margin-left: auto;
+  height: auto;
+  align-self: stretch;
 }
 
 .is-embedded .sim-toolbar [data-role="embed-open"]:hover {

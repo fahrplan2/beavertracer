@@ -271,11 +271,9 @@ function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "") {
     const embedHref = simUrl
       ? `${base}?embed=1&sim=${encodeURIComponent(simUrl)}`
       : `${base}?embed=1`;
-    const fullHref = simUrl ? `${base}?sim=${encodeURIComponent(simUrl)}` : base;
     return [
       `<div class="lesson-sim">`,
       `<iframe src="${embedHref}" class="lesson-sim-frame" style="height:${height}" loading="lazy" allowfullscreen></iframe>`,
-      `<a href="${fullHref}" target="_blank" class="lesson-sim-open">Im BeaverTracer öffnen ↗</a>`,
       `</div>`,
     ].join("\n");
   });
@@ -458,9 +456,15 @@ function buildLessons(root) {
     const tree = buildTree(flatLessons);
     const ordered = flatOrder(tree);
 
-    // Build sidebar (will be the same for all pages in this lang)
-    // Individual pages pass their own href for active highlighting
-    // We render sidebar per-page inside the loop below
+    // Remove stale HTML files that no longer have a source .md
+    const expectedHtml = new Set(ordered.map((n) => n.href));
+    expectedHtml.add("index.html");
+    for (const existing of fs.readdirSync(langOut)) {
+      if (existing.endsWith(".html") && !expectedHtml.has(existing)) {
+        fs.rmSync(path.join(langOut, existing));
+        console.log(`[lessons] ✗ removed stale ${lang}/${existing}`);
+      }
+    }
 
     // Render each lesson
     for (let i = 0; i < ordered.length; i++) {

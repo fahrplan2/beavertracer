@@ -482,29 +482,27 @@ export class SimControl {
             return sep;
         };
 
-        // Branding group (full mode only)
-        if (!this.embedded) {
-            const brandingGroup = document.createElement("div");
-            brandingGroup.className = "sim-toolbar-group sim-toolbar-branding-group";
-            toolbar.appendChild(brandingGroup);
+        // Branding group
+        const brandingGroup = document.createElement("div");
+        brandingGroup.className = "sim-toolbar-group sim-toolbar-branding-group";
+        toolbar.appendChild(brandingGroup);
 
-            const brandingText = document.createElement("div");
-            brandingText.className = "sim-toolbar-branding-text";
-            brandingGroup.appendChild(brandingText);
+        const brandingText = document.createElement("div");
+        brandingText.className = "sim-toolbar-branding-text";
+        brandingGroup.appendChild(brandingText);
 
-            const branding = document.createElement("div");
-            branding.className = "sim-toolbar-branding";
-            branding.textContent = "Beaver Tracer";
-            brandingText.appendChild(branding);
+        const branding = document.createElement("div");
+        branding.className = "sim-toolbar-branding";
+        branding.textContent = "Beaver Tracer";
+        brandingText.appendChild(branding);
 
-            const ver = document.createElement("div");
-            ver.className = "sim-toolbar-branding-version";
-            const alpha = document.createElement("span");
-            alpha.className = "sim-toolbar-branding-alpha";
-            alpha.textContent = "ALPHA";
-            ver.appendChild(alpha);
-            brandingText.appendChild(ver);
-        }
+        const ver = document.createElement("div");
+        ver.className = "sim-toolbar-branding-version";
+        const alpha = document.createElement("span");
+        alpha.className = "sim-toolbar-branding-alpha";
+        alpha.textContent = "ALPHA";
+        ver.appendChild(alpha);
+        brandingText.appendChild(ver);
 
         //********** MODES  *********/
         addSeparator("sep-mode");
