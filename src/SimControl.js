@@ -469,33 +469,9 @@ export class SimControl {
     }
 
     _buildToolbar() {
-        if (this.embedded) return this._buildEmbeddedToolbar();
-
         const toolbar = this._toolbar;
         if (!toolbar) return;
         toolbar.replaceChildren();
-
-        // Branding group
-        const brandingGroup = document.createElement("div");
-        brandingGroup.className = "sim-toolbar-group sim-toolbar-branding-group";
-        toolbar.appendChild(brandingGroup);
-
-        const brandingText = document.createElement("div");
-        brandingText.className = "sim-toolbar-branding-text";
-        brandingGroup.appendChild(brandingText);
-
-        const branding = document.createElement("div");
-        branding.className = "sim-toolbar-branding";
-        branding.textContent = "Beaver Tracer";
-        brandingText.appendChild(branding);
-
-        const ver = document.createElement("div");
-        ver.className = "sim-toolbar-branding-version";
-        const alpha = document.createElement("span");
-        alpha.className = "sim-toolbar-branding-alpha";
-        alpha.textContent = "ALPHA";
-        ver.appendChild(alpha);
-        brandingText.appendChild(ver);
 
         /** @param {string} [role] */
         const addSeparator = (role) => {
@@ -506,34 +482,58 @@ export class SimControl {
             return sep;
         };
 
+        // Branding group (full mode only)
+        if (!this.embedded) {
+            const brandingGroup = document.createElement("div");
+            brandingGroup.className = "sim-toolbar-group sim-toolbar-branding-group";
+            toolbar.appendChild(brandingGroup);
+
+            const brandingText = document.createElement("div");
+            brandingText.className = "sim-toolbar-branding-text";
+            brandingGroup.appendChild(brandingText);
+
+            const branding = document.createElement("div");
+            branding.className = "sim-toolbar-branding";
+            branding.textContent = "Beaver Tracer";
+            brandingText.appendChild(branding);
+
+            const ver = document.createElement("div");
+            ver.className = "sim-toolbar-branding-version";
+            const alpha = document.createElement("span");
+            alpha.className = "sim-toolbar-branding-alpha";
+            alpha.textContent = "ALPHA";
+            ver.appendChild(alpha);
+            brandingText.appendChild(ver);
+        }
 
         //********** MODES  *********/
         addSeparator("sep-mode");
         const gMode = DOMBuilder.buttongroup(t("sim.mode"), toolbar);
         gMode.dataset.group = "mode";
 
-        // store buttons by dataset for easy update
-        const btnEdit = DOMBuilder.iconbutton({
-            label: t("sim.edit"),
-            icon: "fa-pencil",
-            onClick: () => {
-                if (window.location.pathname !== "/") {
-                    history.pushState({}, "", "/");
-                }
-                this._enterEditMode();
-            },
-        });
-        btnEdit.dataset.role = "mode-edit";
-        gMode.appendChild(btnEdit);
+        if (!this.embedded) {
+            const btnEdit = DOMBuilder.iconbutton({
+                label: t("sim.edit"),
+                icon: "fa-pencil",
+                onClick: () => {
+                    if (window.location.pathname !== "/") {
+                        history.pushState({}, "", "/");
+                    }
+                    this._enterEditMode();
+                },
+            });
+            btnEdit.dataset.role = "mode-edit";
+            gMode.appendChild(btnEdit);
+        }
 
         const btnRun = DOMBuilder.iconbutton({
             label: t("sim.run"),
             icon: "fa-play",
             onClick: () => {
-                if (window.location.pathname !== "/") {
+                if (!this.embedded && window.location.pathname !== "/") {
                     history.pushState({}, "", "/");
                 }
-                if (this.mode === "edit") this._leaveEditMode();
+                if (!this.embedded && this.mode === "edit") this._leaveEditMode();
                 if (this.mode === "trace") {
                     this._leaveTraceMode();
                     return;
@@ -558,10 +558,10 @@ export class SimControl {
             label: t("sim.trace"),
             icon: "fa-magnifying-glass",
             onClick: () => {
-                if (window.location.pathname !== "/") {
+                if (!this.embedded && window.location.pathname !== "/") {
                     history.pushState({}, "", "/");
                 }
-                if (this.mode === "edit") this._leaveEditMode();
+                if (!this.embedded && this.mode === "edit") this._leaveEditMode();
                 this._enterTraceMode();
             },
         });
@@ -592,9 +592,7 @@ export class SimControl {
             const b = DOMBuilder.iconbutton({
                 label: s.label,
                 icon: s.icon,
-                onClick: () => {
-                    this.setTick(s.ms);
-                }
+                onClick: () => this.setTick(s.ms),
             });
             b.dataset.role = `speed-${s.ms}`;
             gSpeeds.appendChild(b);
@@ -611,6 +609,21 @@ export class SimControl {
         });
         resetBtn.dataset.role = "reset";
         gSpeeds.appendChild(resetBtn);
+
+        if (this.embedded) {
+            const btnOpen = DOMBuilder.iconbutton({
+                label: t("sim.embed.open"),
+                icon: "fa-up-right-from-square",
+                onClick: () => {
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete("embed");
+                    window.open(url.toString(), "_blank");
+                },
+            });
+            btnOpen.dataset.role = "embed-open";
+            toolbar.appendChild(btnOpen);
+            return;
+        }
 
         //******** PROJECT ***********/
         addSeparator("sep-project");
@@ -722,49 +735,6 @@ export class SimControl {
         });
         aboutBtn.dataset.role = "mode-about";
         gCommon.appendChild(aboutBtn);
-
-    }
-
-    _buildEmbeddedToolbar() {
-        const toolbar = this._toolbar;
-        if (!toolbar) return;
-        toolbar.replaceChildren();
-
-        /** @param {string} role @param {string} icon @param {string} label @param {() => void} onClick */
-        const btn = (role, icon, label, onClick) => {
-            const b = DOMBuilder.iconbutton({ label, icon, iconOnly: true, onClick });
-            b.dataset.role = role;
-            toolbar.appendChild(b);
-            return b;
-        };
-
-        btn("mode-run",   "fa-play",             t("sim.run"),   () => { if (this.mode === "trace") { this._leaveTraceMode(); } else { this.mode = "run"; this.isPaused = false; this._invalidateUI(); this.scheduleNextStep(); } });
-        btn("mode-trace", "fa-magnifying-glass",  t("sim.trace"), () => { this._enterTraceMode(); });
-
-        btn("pause",      "fa-pause",             t("sim.pause"), () => this.pause());
-
-        const speeds = [
-            { label: "0.5×", ms: 500, icon: "fa-1" },
-            { label: "1×",   ms: 100, icon: "fa-2" },
-            { label: "4×",   ms: 40,  icon: "fa-3" },
-            { label: "8×",   ms: 20,  icon: "fa-4" },
-        ];
-        for (const s of speeds) btn(`speed-${s.ms}`, s.icon, s.label, () => this.setTick(s.ms));
-
-        btn("reset", "fa-arrow-rotate-left", t("sim.reset"), () => { this.restore(this.toJSON()); this.mode = "run"; this._invalidateUI(); });
-
-        // Open full app (with label, not icon-only)
-        const btnOpen = DOMBuilder.iconbutton({
-            label: t("sim.embed.open"),
-            icon: "fa-up-right-from-square",
-            onClick: () => {
-                const url = new URL(window.location.href);
-                url.searchParams.delete("embed");
-                window.open(url.toString(), "_blank");
-            },
-        });
-        btnOpen.dataset.role = "embed-open";
-        toolbar.appendChild(btnOpen);
     }
 
     _buildSidebar() {
