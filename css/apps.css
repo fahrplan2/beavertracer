@@ -871,6 +871,21 @@ textarea.log {
   margin-top: 4px;
 }
 
+.app-mail-client .mailclient-config-columns {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.app-mail-client .mailclient-config-col {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.app-mail-client .mailclient-config-col h5 {
+  margin-top: 0;
+}
+
 /* =========================================================
    IRC Client
    ========================================================= */

@@ -5,6 +5,8 @@ import { UILib as UI } from "./lib/UILib.js";
 import { Disposer } from "../lib/Disposer.js";
 import { t } from "../i18n/index.js";
 import { IPAddress } from "../net/models/IPAddress.js";
+import { simTimer } from "../lib/SimTimer.js";
+import { TlsSession } from "../net/TlsSession.js";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -36,14 +38,16 @@ function withTimeout(p, ms, label) {
 }
 
 /**
- * Read one CRLF-terminated line. Returns null on EOF.
- * @param {any} net
- * @param {string} key
+ * @typedef {{send:(d:Uint8Array)=>void, recv:()=>Promise<Uint8Array|null>, close:()=>void}} MailTransport
+ */
+
+/**
+ * @param {MailTransport} tr
  * @param {number} ms
  * @param {{buf:Uint8Array}} st
  * @returns {Promise<string|null>}
  */
-async function recvLine(net, key, ms, st) {
+async function recvLine(tr, ms, st) {
   while (true) {
     const b = st.buf;
     for (let i = 0; i + 1 < b.length; i++) {
@@ -53,7 +57,7 @@ async function recvLine(net, key, ms, st) {
         return line;
       }
     }
-    const part = await withTimeout(net.recvTCPConn(key), ms, "recv");
+    const part = await withTimeout(tr.recv(), ms, "recv");
     if (part == null) return null;
     const m = new Uint8Array(st.buf.length + part.length);
     m.set(st.buf, 0); m.set(part, st.buf.length);
@@ -63,17 +67,15 @@ async function recvLine(net, key, ms, st) {
 }
 
 /**
- * Read exactly n bytes from stream.
- * @param {any} net
- * @param {string} key
+ * @param {MailTransport} tr
  * @param {number} ms
  * @param {{buf:Uint8Array}} st
  * @param {number} n
  * @returns {Promise<string>}
  */
-async function recvExact(net, key, ms, st, n) {
+async function recvExact(tr, ms, st, n) {
   while (st.buf.length < n) {
-    const part = await withTimeout(net.recvTCPConn(key), ms, "recv");
+    const part = await withTimeout(tr.recv(), ms, "recv");
     if (part == null) throw new Error("EOF beim Lesen");
     const m = new Uint8Array(st.buf.length + part.length);
     m.set(st.buf, 0); m.set(part, st.buf.length);
@@ -85,23 +87,22 @@ async function recvExact(net, key, ms, st, n) {
   return dec(out);
 }
 
-/** @param {any} net @param {string} key @param {string} line */
-function sendLine(net, key, line) { net.sendTCPConn(key, enc(line + "\r\n")); }
+/** @param {MailTransport} tr @param {string} line */
+function sendLine(tr, line) { Promise.resolve(tr.send(enc(line + "\r\n"))).catch(() => {}); }
 
 /**
- * Read SMTP multi-line response (250-... style).
- * @param {any} net @param {string} key @param {number} ms @param {{buf:Uint8Array}} st
+ * @param {MailTransport} tr @param {number} ms @param {{buf:Uint8Array}} st
  * @returns {Promise<{code:number, lines:string[]}>}
  */
-async function recvSmtp(net, key, ms, st) {
-  const first = await recvLine(net, key, ms, st);
+async function recvSmtp(tr, ms, st) {
+  const first = await recvLine(tr, ms, st);
   if (first == null) throw new Error("SMTP: Verbindung getrennt");
   const lines = [first];
   const code = Number(first.slice(0, 3)) | 0;
   if (first.length >= 4 && first[3] === "-") {
     const prefix = String(code).padStart(3, "0") + " ";
     while (true) {
-      const l = await recvLine(net, key, ms, st);
+      const l = await recvLine(tr, ms, st);
       if (l == null) throw new Error("SMTP: Verbindung getrennt");
       lines.push(l);
       if (l.startsWith(prefix)) break;
@@ -238,8 +239,11 @@ export class MailClientApp extends LoggedProcess {
     user: "",
     pass: "",
     domain: "",
+    tls: false,
     smtpHost: "",
     smtpPort: "25",
+    /** @type {"off"|"starttls"|"implicit"} */
+    smtpTls: /** @type {"off"|"starttls"|"implicit"} */ ("off"),
   };
 
   // ── Runtime state ─────────────────────────────────────────────
@@ -279,6 +283,8 @@ export class MailClientApp extends LoggedProcess {
   /** @type {HTMLInputElement|null} */ cfgDomainIn = null;
   /** @type {HTMLInputElement|null} */ cfgSmtpHostIn = null;
   /** @type {HTMLInputElement|null} */ cfgSmtpPortIn = null;
+  /** @type {HTMLInputElement|null} */  cfgTlsIn = null;
+  /** @type {HTMLSelectElement|null} */ cfgSmtpTlsIn = null;
 
   /** @type {((id: string) => void)|null} */ _setTabActive = null;
 
@@ -313,6 +319,7 @@ export class MailClientApp extends LoggedProcess {
     this.cfgProtoSel = null; this.cfgHostIn = null; this.cfgPortIn = null;
     this.cfgUserIn = null; this.cfgPassIn = null; this.cfgDomainIn = null;
     this.cfgSmtpHostIn = null; this.cfgSmtpPortIn = null;
+    this.cfgTlsIn = null; this.cfgSmtpTlsIn = null;
     this._setTabActive = null;
     super.onUnmount();
   }
@@ -337,8 +344,15 @@ export class MailClientApp extends LoggedProcess {
           user:     str("user",     this.cfg.user),
           pass:     str("pass",     this.cfg.pass),
           domain:   str("domain",   this.cfg.domain),
+          tls:      typeof parsed.tls === "boolean" ? parsed.tls : this.cfg.tls,
           smtpHost: str("smtpHost", this.cfg.smtpHost),
           smtpPort: str("smtpPort", this.cfg.smtpPort),
+          smtpTls:  (() => {
+            const v = parsed.smtpTls;
+            if (v === "off" || v === "starttls" || v === "implicit") return v;
+            if (typeof v === "boolean") return /** @type {"off"|"implicit"} */ (v ? "implicit" : "off");
+            return this.cfg.smtpTls;
+          })(),
         };
       }
     } catch { /* corrupt config — keep defaults */ }
@@ -442,6 +456,12 @@ export class MailClientApp extends LoggedProcess {
     const cfgDomainIn  = UI.input({ value: this.cfg.domain,   placeholder: "example.local" });
     const cfgSmtpHostIn = UI.input({ value: this.cfg.smtpHost, placeholder: "z.B. 192.168.1.10" });
     const cfgSmtpPortIn = UI.input({ value: this.cfg.smtpPort, placeholder: "25" });
+    const cfgTlsIn     = /** @type {HTMLInputElement} */ (UI.el("input", { attrs: { type: "checkbox" }, init: (el) => { el.checked = !!this.cfg.tls; } }));
+    const cfgSmtpTlsIn = UI.select([
+      { value: "off",      label: t("app.mailclient.config.smtpTls.off")      || "Kein TLS" },
+      { value: "starttls", label: t("app.mailclient.config.smtpTls.starttls") || "STARTTLS" },
+      { value: "implicit", label: t("app.mailclient.config.smtpTls.implicit") || "Implicit TLS" },
+    ], { value: this.cfg.smtpTls });
 
     cfgPortIn.style.width = "90px";
     cfgSmtpPortIn.style.width = "90px";
@@ -459,8 +479,10 @@ export class MailClientApp extends LoggedProcess {
         user:     cfgUserIn.value.trim(),
         pass:     cfgPassIn.value,
         domain:   cfgDomainIn.value.trim(),
+        tls:      cfgTlsIn.checked,
         smtpHost: cfgSmtpHostIn.value.trim(),
         smtpPort: cfgSmtpPortIn.value.trim() || "25",
+        smtpTls:  /** @type {"off"|"starttls"|"implicit"} */ (cfgSmtpTlsIn.value),
       };
       this._saveConfig();
       this._setStatus(t("app.mailclient.status.configSaved") || "Konfiguration gespeichert");
@@ -475,22 +497,28 @@ export class MailClientApp extends LoggedProcess {
     this.cfgDomainIn   = cfgDomainIn;
     this.cfgSmtpHostIn = cfgSmtpHostIn;
     this.cfgSmtpPortIn = cfgSmtpPortIn;
+    this.cfgTlsIn     = cfgTlsIn;
+    this.cfgSmtpTlsIn = cfgSmtpTlsIn;
 
     const configPanel = UI.el("div", { className: "mailclient-config-panel panel", children: [
-      UI.el("h4", { text: t("app.mailclient.config.title") || "Konfiguration" }),
-
-      UI.el("h5", { text: t("app.mailclient.config.incoming") || "Eingehend" }),
-      UI.row(t("app.mailclient.config.protocol") || "Protokoll",        cfgProtoSel),
-      UI.row(t("app.mailclient.config.host")     || "Server (Adresse)", cfgHostIn),
-      UI.row(t("app.mailclient.config.port")     || "Port",             cfgPortIn),
-      UI.row(t("app.mailclient.config.user")     || "Benutzername",     cfgUserIn),
-      UI.row(t("app.mailclient.config.pass")     || "Passwort",         cfgPassIn),
-      UI.row(t("app.mailclient.config.domain")   || "Maildomäne",       cfgDomainIn),
-
-      UI.el("h5", { text: t("app.mailclient.config.outgoing") || "Ausgehend (SMTP)" }),
-      UI.row(t("app.mailclient.config.smtpHost") || "Server (Adresse)", cfgSmtpHostIn),
-      UI.row(t("app.mailclient.config.smtpPort") || "Port",             cfgSmtpPortIn),
-
+      UI.el("div", { className: "mailclient-config-columns", children: [
+        UI.el("div", { className: "mailclient-config-col", children: [
+          UI.el("h5", { text: t("app.mailclient.config.incoming") || "Eingehend" }),
+          UI.row(t("app.mailclient.config.protocol") || "Protokoll",        cfgProtoSel),
+          UI.row(t("app.mailclient.config.host")     || "Server (Adresse)", cfgHostIn),
+          UI.row(t("app.mailclient.config.port")     || "Port",             cfgPortIn),
+          UI.row(t("app.mailclient.config.user")     || "Benutzername",     cfgUserIn),
+          UI.row(t("app.mailclient.config.pass")     || "Passwort",         cfgPassIn),
+          UI.row(t("app.mailclient.config.domain")   || "Maildomäne",       cfgDomainIn),
+          UI.row(t("app.mailclient.config.tls")      || "TLS",              cfgTlsIn),
+        ]}),
+        UI.el("div", { className: "mailclient-config-col", children: [
+          UI.el("h5", { text: t("app.mailclient.config.outgoing") || "Ausgehend (SMTP)" }),
+          UI.row(t("app.mailclient.config.smtpHost") || "Server (Adresse)", cfgSmtpHostIn),
+          UI.row(t("app.mailclient.config.smtpPort") || "Port",             cfgSmtpPortIn),
+          UI.row(t("app.mailclient.config.smtpTls")  || "Verschlüsselung",  cfgSmtpTlsIn),
+        ]}),
+      ]}),
       UI.buttonRow([cfgSaveBtn]),
     ] });
     this.configPanel = configPanel;
@@ -619,6 +647,63 @@ export class MailClientApp extends LoggedProcess {
     this._appendLog(`[${nowStamp()}] ${line}`);
   }
 
+  // ── Transport ─────────────────────────────────────────────────
+
+  /**
+   * @param {string} connKey
+   * @param {boolean} isTls
+   * @returns {Promise<MailTransport>}
+   */
+  async _wrapConn(connKey, isTls) {
+    const net = this.os.net;
+    /** @type {MailTransport} */
+    const plain = {
+      send:  (d) => net.sendTCPConn(connKey, d),
+      recv:  ()  => net.recvTCPConn(connKey),
+      close: ()  => { try { net.closeTCPConn(connKey); } catch {} },
+    };
+    if (!isTls) return plain;
+
+    const tls = new TlsSession({
+      send:       (d) => net.sendTCPConn(connKey, d),
+      recv:       ()  => net.recvTCPConn(connKey),
+      isServer:   false,
+      cert:       null,
+      trustStore: this.os.tls?.certStore ?? null,
+      timeoutMs:  15000,
+      sleepFn:    (ms) => simTimer.sleep(ms),
+    });
+    await tls.handshake();
+    return {
+      send:  (d) => tls.send(/** @type {Uint8Array<ArrayBuffer>} */ (d)),
+      recv:  ()  => tls.recv(),
+      close: ()  => { tls.close(); plain.close(); },
+    };
+  }
+
+  /**
+   * Upgrade an existing plain transport to client-side TLS (used for STARTTLS).
+   * @param {MailTransport} tr
+   * @returns {Promise<MailTransport>}
+   */
+  async _upgradeTls(tr) {
+    const tls = new TlsSession({
+      send:       (d) => tr.send(d),
+      recv:       ()  => tr.recv(),
+      isServer:   false,
+      cert:       null,
+      trustStore: this.os.tls?.certStore ?? null,
+      timeoutMs:  15000,
+      sleepFn:    (ms) => simTimer.sleep(ms),
+    });
+    await tls.handshake();
+    return {
+      send:  (d) => tls.send(/** @type {Uint8Array<ArrayBuffer>} */ (d)),
+      recv:  ()  => tls.recv(),
+      close: ()  => { tls.close(); tr.close(); },
+    };
+  }
+
   // ── Fetch mail (POP3 / IMAP) ──────────────────────────────────
 
   async _fetchMail() {
@@ -661,15 +746,27 @@ export class MailClientApp extends LoggedProcess {
       return;
     }
 
+    let tr;
     try {
-      if (protocol === "imap") await this._fetchIMAP(connKey, user, pass);
-      else                      await this._fetchPOP3(connKey, user, pass);
+      tr = await this._wrapConn(connKey, !!this.cfg.tls);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      this._log(`TLS-Fehler: ${msg}`);
+      this._setStatus(`TLS-Fehler: ${msg}`);
+      try { this.os.net.closeTCPConn(connKey); } catch { /* ignore */ }
+      this._setBusy(false);
+      return;
+    }
+
+    try {
+      if (protocol === "imap") await this._fetchIMAP(tr, user, pass);
+      else                      await this._fetchPOP3(tr, user, pass);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       this._log(`Fehler: ${msg}`);
       this._setStatus(`Fehler: ${msg}`);
     } finally {
-      try { this.os.net.closeTCPConn(connKey); } catch { /* ignore */ }
+      tr.close();
       this._setBusy(false);
     }
   }
@@ -677,18 +774,18 @@ export class MailClientApp extends LoggedProcess {
   // ── POP3 client ───────────────────────────────────────────────
 
   /**
-   * @param {string} connKey
+   * @param {MailTransport} tr
    * @param {string} user
    * @param {string} pass
    */
-  async _fetchPOP3(connKey, user, pass) {
-    const net = this.os.net, TO = 15000;
+  async _fetchPOP3(tr, user, pass) {
+    const TO = 15000;
     const st  = { buf: new Uint8Array(0) };
 
     /** @param {string} l */
-    const send = (l) => { this._log(`> ${l}`); sendLine(net, connKey, l); };
+    const send = (l) => { this._log(`> ${l}`); sendLine(tr, l); };
     const recv = async () => {
-      const l = await recvLine(net, connKey, TO, st);
+      const l = await recvLine(tr, TO, st);
       if (l !== null) this._log(`< ${l}`);
       return l;
     };
@@ -720,7 +817,7 @@ export class MailClientApp extends LoggedProcess {
 
       const lines = [];
       while (true) {
-        const l = await recvLine(net, connKey, TO, st);
+        const l = await recvLine(tr, TO, st);
         if (l == null) throw new Error("POP3: EOF während RETR");
         if (l === ".") break;
         lines.push(l.startsWith("..") ? l.slice(1) : l);
@@ -743,24 +840,24 @@ export class MailClientApp extends LoggedProcess {
   // ── IMAP client ───────────────────────────────────────────────
 
   /**
-   * @param {string} connKey
+   * @param {MailTransport} tr
    * @param {string} user
    * @param {string} pass
    */
-  async _fetchIMAP(connKey, user, pass) {
-    const net = this.os.net, TO = 15000;
+  async _fetchIMAP(tr, user, pass) {
+    const TO = 15000;
     const st  = { buf: new Uint8Array(0) };
 
     let seq = 1;
     const tag  = () => `A${String(seq++).padStart(3, "0")}`;
     /** @param {string} l */
-    const send = (l) => { this._log(`> ${l}`); sendLine(net, connKey, l); };
+    const send = (l) => { this._log(`> ${l}`); sendLine(tr, l); };
 
     // Read lines until we see our tag response
     /** @param {string} expectedTag */
     const readTagged = async (expectedTag) => {
       while (true) {
-        const l = await recvLine(net, connKey, TO, st);
+        const l = await recvLine(tr, TO, st);
         if (l == null) throw new Error("IMAP: Verbindung getrennt");
         this._log(`< ${l}`);
         if (l.startsWith(`${expectedTag} OK`))  return l;
@@ -770,7 +867,7 @@ export class MailClientApp extends LoggedProcess {
     };
 
     // Greeting
-    const g = await recvLine(net, connKey, TO, st);
+    const g = await recvLine(tr, TO, st);
     if (g == null) throw new Error("IMAP: keine Begrüßung");
     this._log(`< ${g}`);
 
@@ -781,7 +878,7 @@ export class MailClientApp extends LoggedProcess {
     // SELECT INBOX
     const st2 = tag(); send(`${st2} SELECT INBOX`);
     while (true) {
-      const l = await recvLine(net, connKey, TO, st);
+      const l = await recvLine(tr, TO, st);
       if (l == null) throw new Error("IMAP: EOF bei SELECT");
       this._log(`< ${l}`);
       if (l.startsWith(`${st2} `)) break;
@@ -792,7 +889,7 @@ export class MailClientApp extends LoggedProcess {
     /** @type {number[]} */
     let seqNums = [];
     while (true) {
-      const l = await recvLine(net, connKey, TO, st);
+      const l = await recvLine(tr, TO, st);
       if (l == null) throw new Error("IMAP: EOF bei SEARCH");
       this._log(`< ${l}`);
       if (l.startsWith("* SEARCH"))
@@ -808,16 +905,16 @@ export class MailClientApp extends LoggedProcess {
 
       let raw = null;
       outer: while (true) {
-        const l = await recvLine(net, connKey, TO, st);
+        const l = await recvLine(tr, TO, st);
         if (l == null) throw new Error("IMAP: EOF bei FETCH");
         this._log(`< ${l.slice(0, 80)}`);
 
         const litM = /\{(\d+)\}$/.exec(l);
         if (litM) {
-          raw = await recvExact(net, connKey, TO, st, Number(litM[1]));
+          raw = await recvExact(tr, TO, st, Number(litM[1]));
           // drain until tagged OK
           while (true) {
-            const tl = await recvLine(net, connKey, TO, st);
+            const tl = await recvLine(tr, TO, st);
             if (tl == null) throw new Error("IMAP: EOF nach Literal");
             this._log(`< ${tl}`);
             if (tl.startsWith(`${ft} `)) break outer;
@@ -831,7 +928,7 @@ export class MailClientApp extends LoggedProcess {
 
     // LOGOUT
     const lo = tag(); send(`${lo} LOGOUT`);
-    await recvLine(net, connKey, TO, st);
+    await recvLine(tr, TO, st);
 
     this.inbox = fetched;
     this.inboxSel = -1;
@@ -892,8 +989,19 @@ export class MailClientApp extends LoggedProcess {
       this._setBusy(false); return;
     }
 
+    const smtpTlsMode = this.cfg.smtpTls;
+    let smtpTr;
     try {
-      await this._doSmtp(connKey, from, to, ccAddrs, bccAddrs, allRcpt, subject, body, user, pass);
+      smtpTr = await this._wrapConn(connKey, smtpTlsMode === "implicit");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      this._log(`TLS-Fehler: ${msg}`); this._setStatus(`TLS-Fehler: ${msg}`);
+      try { this.os.net.closeTCPConn(connKey); } catch { /* ignore */ }
+      this._setBusy(false); return;
+    }
+
+    try {
+      await this._doSmtp(smtpTr, from, to, ccAddrs, bccAddrs, allRcpt, subject, body, user, pass, smtpTlsMode);
 
       // Track in sent folder
       const date = new Date().toUTCString();
@@ -911,13 +1019,13 @@ export class MailClientApp extends LoggedProcess {
       const msg = e instanceof Error ? e.message : String(e);
       this._log(`Sendefehler: ${msg}`); this._setStatus(`Sendefehler: ${msg}`);
     } finally {
-      try { this.os.net.closeTCPConn(connKey); } catch { /* ignore */ }
+      smtpTr.close();
       this._setBusy(false);
     }
   }
 
   /**
-   * @param {string} connKey
+   * @param {MailTransport} tr
    * @param {string} from
    * @param {string} to
    * @param {string[]} cc
@@ -927,16 +1035,17 @@ export class MailClientApp extends LoggedProcess {
    * @param {string} body
    * @param {string} user
    * @param {string} pass
+   * @param {"off"|"starttls"|"implicit"} [tlsMode]
    */
-  async _doSmtp(connKey, from, to, cc, bcc, allRcpt, subject, body, user, pass) {
-    const net = this.os.net, TO = 15000;
+  async _doSmtp(tr, from, to, cc, bcc, allRcpt, subject, body, user, pass, tlsMode = "off") {
+    const TO = 15000;
     const st  = { buf: new Uint8Array(0) };
 
     /** @param {string} l */
-    const send = (l) => { this._log(`> ${l}`); sendLine(net, connKey, l); };
+    const send = (l) => { this._log(`> ${l}`); sendLine(tr, l); };
     /** @param {number[]} codes @param {string} label */
     const expect = async (codes, label) => {
-      const r = await recvSmtp(net, connKey, TO, st);
+      const r = await recvSmtp(tr, TO, st);
       for (const l of r.lines) this._log(`< ${l}`);
       if (!codes.includes(r.code)) throw new Error(`SMTP ${label}: ${r.lines.join(" | ")}`);
       return r;
@@ -946,15 +1055,29 @@ export class MailClientApp extends LoggedProcess {
 
     const localDomain = from.includes("@") ? from.split("@")[1] : "mail.local";
     send(`EHLO ${localDomain}`);
-    const ehlo = await recvSmtp(net, connKey, TO, st);
+    let ehlo = await recvSmtp(tr, TO, st);
     for (const l of ehlo.lines) this._log(`< ${l}`);
-    if (![250].includes(ehlo.code)) throw new Error(`EHLO: ${ehlo.lines[0]}`);
+    if (ehlo.code !== 250) throw new Error(`EHLO: ${ehlo.lines[0]}`);
+
+    // STARTTLS upgrade
+    if (tlsMode === "starttls") {
+      if (!ehlo.lines.some(l => l.toUpperCase().includes("STARTTLS")))
+        throw new Error("Server bietet kein STARTTLS an");
+      send("STARTTLS");
+      await expect([220], "STARTTLS");
+      tr = await this._upgradeTls(tr);
+      this._log("STARTTLS: TLS aktiv");
+      send(`EHLO ${localDomain}`);
+      ehlo = await recvSmtp(tr, TO, st);
+      for (const l of ehlo.lines) this._log(`< ${l}`);
+      if (ehlo.code !== 250) throw new Error(`EHLO nach STARTTLS: ${ehlo.lines[0]}`);
+    }
 
     // AUTH PLAIN if supported
     const supportsAuth = ehlo.lines.some(l => l.toUpperCase().includes("AUTH") && l.toUpperCase().includes("PLAIN"));
     if (supportsAuth && user && pass) {
       send(`AUTH PLAIN ${b64(`\0${user}\0${pass}`)}`);
-      const ar = await recvSmtp(net, connKey, TO, st);
+      const ar = await recvSmtp(tr, TO, st);
       for (const l of ar.lines) this._log(`< ${l}`);
       if (ar.code !== 235) this._log("Warnung: AUTH PLAIN fehlgeschlagen, fahre fort…");
     }
@@ -967,7 +1090,6 @@ export class MailClientApp extends LoggedProcess {
 
     // Build message with headers
     const date  = new Date().toUTCString();
-    const ccHdr = cc.length ? `CC: ${cc.join(", ")}\r\n` : "";
     const msgParts = [
       `From: ${from}`,
       `To: ${to}`,
@@ -978,13 +1100,13 @@ export class MailClientApp extends LoggedProcess {
       ...crlf(body).split("\r\n"),
     ];
     const stuffed = msgParts.map(l => l.startsWith(".") ? "." + l : l).join("\r\n");
-    net.sendTCPConn(connKey, enc(stuffed + "\r\n.\r\n"));
+    tr.send(enc(stuffed + "\r\n.\r\n"));
     this._log("> [Nachrichteninhalt]");
     this._log("> .");
 
     await expect([250], "accepted");
     send("QUIT");
-    await recvLine(net, connKey, TO, st);
+    await recvLine(tr, TO, st);
     this._log("SMTP: Nachricht erfolgreich übergeben");
   }
 }
