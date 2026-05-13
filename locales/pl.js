@@ -959,5 +959,19 @@ export default {
   "router.vpn.err.name": "Wymagana nazwa",
   "router.vpn.err.remote": "Nieprawidłowy zdalny adres IP",
   "router.vpn.err.network": "Nieprawidłowa sieć (CIDR, np. 10.0.0.0/24)",
-  "router.vpn.err.duplicate": "Nazwa tunelu już istnieje"
+  "router.vpn.err.duplicate": "Nazwa tunelu już istnieje",
+  "app.mailclient.config.smtpTls.off": "Brak",
+  "app.mailclient.config.smtpTls.starttls": "STARTTLS",
+  "app.mailclient.config.smtpTls.implicit": "Niejawny TLS",
+  "app.simplemailserver.log.starttlsOk": "STARTTLS zaktualizowany",
+  "app.simplemailserver.log.starttlsFailed": "STARTTLS nie powiódł się",
+  "firewall.col.enabled": "Włączone",
+  "firewall.col.direction": "Kierunek",
+  "firewall.col.ipversion": "IP",
+  "firewall.col.protocol": "Protokół",
+  "firewall.col.srcip": "IP źródłowy",
+  "firewall.col.srcport": "Port źródłowy",
+  "firewall.col.dstip": "IP docelowy",
+  "firewall.col.dstport": "Port docelowy",
+  "firewall.col.action": "Akcja"
 };

@@ -959,5 +959,19 @@ export default {
   "router.vpn.err.name": "Nosaukums ir obligāts",
   "router.vpn.err.remote": "Nederīga attālinātā IP adrese",
   "router.vpn.err.network": "Nederīgs tīkls (CIDR, piem., 10.0.0.0/24)",
-  "router.vpn.err.duplicate": "Tuneļa savienojuma nosaukums jau pastāv"
+  "router.vpn.err.duplicate": "Tuneļa savienojuma nosaukums jau pastāv",
+  "app.mailclient.config.smtpTls.off": "Neviens",
+  "app.mailclient.config.smtpTls.starttls": "STARTTLS",
+  "app.mailclient.config.smtpTls.implicit": "Implicītais TLS",
+  "app.simplemailserver.log.starttlsOk": "STARTTLS jaunināts",
+  "app.simplemailserver.log.starttlsFailed": "STARTTLS neizdevās",
+  "firewall.col.enabled": "Ieslēgts",
+  "firewall.col.direction": "Virziens",
+  "firewall.col.ipversion": "IP",
+  "firewall.col.protocol": "Protokols",
+  "firewall.col.srcip": "Avota IP",
+  "firewall.col.srcport": "Avota ports",
+  "firewall.col.dstip": "Galamērķa IP",
+  "firewall.col.dstport": "Galamērķa ports",
+  "firewall.col.action": "Darbība"
 };

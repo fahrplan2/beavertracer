@@ -959,5 +959,19 @@ export default {
   "router.vpn.err.name": "Nimi vaaditaan",
   "router.vpn.err.remote": "Virheellinen etä-IP-osoite",
   "router.vpn.err.network": "Virheellinen verkko (CIDR, esim. 10.0.0.0/24)",
-  "router.vpn.err.duplicate": "Yhteyden nimi on jo olemassa"
+  "router.vpn.err.duplicate": "Yhteyden nimi on jo olemassa",
+  "app.mailclient.config.smtpTls.off": "Ei mitään",
+  "app.mailclient.config.smtpTls.starttls": "STARTTLS",
+  "app.mailclient.config.smtpTls.implicit": "Implicit TLS",
+  "app.simplemailserver.log.starttlsOk": "STARTTLS päivitettiin",
+  "app.simplemailserver.log.starttlsFailed": "STARTTLS epäonnistui",
+  "firewall.col.enabled": "Päällä",
+  "firewall.col.direction": "Suunta",
+  "firewall.col.ipversion": "IP",
+  "firewall.col.protocol": "Protokolla",
+  "firewall.col.srcip": "Lähde-IP",
+  "firewall.col.srcport": "Lähdeportti",
+  "firewall.col.dstip": "Kohde-IP",
+  "firewall.col.dstport": "Kohdeportti",
+  "firewall.col.action": "Toiminto"
 };

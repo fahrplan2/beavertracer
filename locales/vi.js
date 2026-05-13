@@ -959,5 +959,19 @@ export default {
   "router.vpn.err.name": "Yêu cầu tên",
   "router.vpn.err.remote": "IP từ xa không hợp lệ",
   "router.vpn.err.network": "Mạng không hợp lệ (CIDR, ví dụ: 10.0.0.0/24)",
-  "router.vpn.err.duplicate": "Tên đường hầm đã tồn tại"
+  "router.vpn.err.duplicate": "Tên đường hầm đã tồn tại",
+  "app.mailclient.config.smtpTls.off": "Không",
+  "app.mailclient.config.smtpTls.starttls": "STARTTLS",
+  "app.mailclient.config.smtpTls.implicit": "TLS Ẩn",
+  "app.simplemailserver.log.starttlsOk": "STARTTLS nâng cấp thành công",
+  "app.simplemailserver.log.starttlsFailed": "STARTTLS thất bại",
+  "firewall.col.enabled": "Bật",
+  "firewall.col.direction": "Hướng",
+  "firewall.col.ipversion": "IP",
+  "firewall.col.protocol": "Giao thức",
+  "firewall.col.srcip": "IP nguồn",
+  "firewall.col.srcport": "Cổng nguồn",
+  "firewall.col.dstip": "IP đích",
+  "firewall.col.dstport": "Cổng đích",
+  "firewall.col.action": "Hành động"
 };

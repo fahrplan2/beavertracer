@@ -959,5 +959,19 @@ export default {
   "router.vpn.err.name": "Nume necesar",
   "router.vpn.err.remote": "IP distant nevalid",
   "router.vpn.err.network": "Rețea nevalidă (CIDR, ex. 10.0.0.0/24)",
-  "router.vpn.err.duplicate": "Numele tunelului există deja"
+  "router.vpn.err.duplicate": "Numele tunelului există deja",
+  "app.mailclient.config.smtpTls.off": "Niciunul",
+  "app.mailclient.config.smtpTls.starttls": "STARTTLS",
+  "app.mailclient.config.smtpTls.implicit": "TLS implicit",
+  "app.simplemailserver.log.starttlsOk": "STARTTLS actualizat",
+  "app.simplemailserver.log.starttlsFailed": "STARTTLS eșuat",
+  "firewall.col.enabled": "Activ",
+  "firewall.col.direction": "Direcție",
+  "firewall.col.ipversion": "IP",
+  "firewall.col.protocol": "Protocol",
+  "firewall.col.srcip": "IP sursă",
+  "firewall.col.srcport": "Port sursă",
+  "firewall.col.dstip": "IP destinație",
+  "firewall.col.dstport": "Port destinație",
+  "firewall.col.action": "Acțiune"
 };

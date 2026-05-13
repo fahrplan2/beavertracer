@@ -959,5 +959,19 @@ export default {
   "router.vpn.err.name": "이름이 필요합니다",
   "router.vpn.err.remote": "잘못된 원격 IP",
   "router.vpn.err.network": "잘못된 네트워크 (CIDR, 예: 10.0.0.0/24)",
-  "router.vpn.err.duplicate": "터널 이름이 이미 존재합니다"
+  "router.vpn.err.duplicate": "터널 이름이 이미 존재합니다",
+  "app.mailclient.config.smtpTls.off": "없음",
+  "app.mailclient.config.smtpTls.starttls": "STARTTLS",
+  "app.mailclient.config.smtpTls.implicit": "암시적 TLS",
+  "app.simplemailserver.log.starttlsOk": "STARTTLS 업그레이드됨",
+  "app.simplemailserver.log.starttlsFailed": "STARTTLS 실패",
+  "firewall.col.enabled": "켜짐",
+  "firewall.col.direction": "방향",
+  "firewall.col.ipversion": "IP",
+  "firewall.col.protocol": "프로토콜",
+  "firewall.col.srcip": "원본 IP",
+  "firewall.col.srcport": "원본 포트",
+  "firewall.col.dstip": "대상 IP",
+  "firewall.col.dstport": "대상 포트",
+  "firewall.col.action": "작업"
 };

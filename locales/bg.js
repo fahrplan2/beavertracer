@@ -959,5 +959,19 @@ export default {
   "router.vpn.err.name": "Име е задължително",
   "router.vpn.err.remote": "Невалиден отдалечен IP адрес",
   "router.vpn.err.network": "Невалидна мрежа (CIDR, напр. 10.0.0.0/24)",
-  "router.vpn.err.duplicate": "Тунелът с това име вече съществува"
+  "router.vpn.err.duplicate": "Тунелът с това име вече съществува",
+  "app.mailclient.config.smtpTls.off": "Няма",
+  "app.mailclient.config.smtpTls.starttls": "STARTTLS",
+  "app.mailclient.config.smtpTls.implicit": "Неявен TLS",
+  "app.simplemailserver.log.starttlsOk": "STARTTLS надграден",
+  "app.simplemailserver.log.starttlsFailed": "STARTTLS неуспешен",
+  "firewall.col.enabled": "Включен",
+  "firewall.col.direction": "Посока",
+  "firewall.col.ipversion": "IP",
+  "firewall.col.protocol": "Протокол",
+  "firewall.col.srcip": "Изх. IP",
+  "firewall.col.srcport": "Изх. порт",
+  "firewall.col.dstip": "Дест. IP",
+  "firewall.col.dstport": "Дест. порт",
+  "firewall.col.action": "Действие"
 };

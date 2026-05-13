@@ -959,5 +959,19 @@ export default {
   "router.vpn.err.name": "Reikalingas pavadinimas",
   "router.vpn.err.remote": "Neteisinga nuotolinė IP",
   "router.vpn.err.network": "Neteisingas tinklas (CIDR, pvz. 10.0.0.0/24)",
-  "router.vpn.err.duplicate": "Tunelys su tokiu pavadinimu jau egzistuoja"
+  "router.vpn.err.duplicate": "Tunelys su tokiu pavadinimu jau egzistuoja",
+  "app.mailclient.config.smtpTls.off": "Nėra",
+  "app.mailclient.config.smtpTls.starttls": "STARTTLS",
+  "app.mailclient.config.smtpTls.implicit": "Implicit TLS",
+  "app.simplemailserver.log.starttlsOk": "STARTTLS sėkmingai atnaujinta",
+  "app.simplemailserver.log.starttlsFailed": "STARTTLS nepavyko",
+  "firewall.col.enabled": "Įjungta",
+  "firewall.col.direction": "Kryptis",
+  "firewall.col.ipversion": "IP",
+  "firewall.col.protocol": "Protokolas",
+  "firewall.col.srcip": "Šalt. IP",
+  "firewall.col.srcport": "Šalt. prievadas",
+  "firewall.col.dstip": "Pasc. IP",
+  "firewall.col.dstport": "Pasc. prievadas",
+  "firewall.col.action": "Veiksmas"
 };

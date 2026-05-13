@@ -959,5 +959,19 @@ export default {
   "router.vpn.err.name": "Απαιτείται όνομα",
   "router.vpn.err.remote": "Μη έγκυρη απομακρυσμένη IP",
   "router.vpn.err.network": "Μη έγκυρο δίκτυο (CIDR, π.χ. 10.0.0.0/24)",
-  "router.vpn.err.duplicate": "Το όνομα της σήραγγας υπάρχει ήδη"
+  "router.vpn.err.duplicate": "Το όνομα της σήραγγας υπάρχει ήδη",
+  "app.mailclient.config.smtpTls.off": "Κανένα",
+  "app.mailclient.config.smtpTls.starttls": "STARTTLS",
+  "app.mailclient.config.smtpTls.implicit": "Implicit TLS",
+  "app.simplemailserver.log.starttlsOk": "STARTTLS αναβαθμίστηκε",
+  "app.simplemailserver.log.starttlsFailed": "STARTTLS απέτυχε",
+  "firewall.col.enabled": "Ενεργό",
+  "firewall.col.direction": "Κατεύθυνση",
+  "firewall.col.ipversion": "IP",
+  "firewall.col.protocol": "Πρωτόκολλο",
+  "firewall.col.srcip": "Src IP",
+  "firewall.col.srcport": "Src Port",
+  "firewall.col.dstip": "Dst IP",
+  "firewall.col.dstport": "Dst Port",
+  "firewall.col.action": "Ενέργεια"
 };

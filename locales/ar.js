@@ -959,5 +959,19 @@ export default {
   "router.vpn.err.name": "الاسم مطلوب",
   "router.vpn.err.remote": "عنوان IP بعيد غير صحيح",
   "router.vpn.err.network": "شبكة غير صحيحة (CIDR، على سبيل المثال 10.0.0.0/24)",
-  "router.vpn.err.duplicate": "اسم النفق موجود بالفعل"
+  "router.vpn.err.duplicate": "اسم النفق موجود بالفعل",
+  "app.mailclient.config.smtpTls.off": "بدون",
+  "app.mailclient.config.smtpTls.starttls": "STARTTLS",
+  "app.mailclient.config.smtpTls.implicit": "TLS ضمني",
+  "app.simplemailserver.log.starttlsOk": "تم ترقية STARTTLS",
+  "app.simplemailserver.log.starttlsFailed": "فشل STARTTLS",
+  "firewall.col.enabled": "تشغيل",
+  "firewall.col.direction": "الاتجاه",
+  "firewall.col.ipversion": "IP",
+  "firewall.col.protocol": "البروتوكول",
+  "firewall.col.srcip": "عنوان IP المصدر",
+  "firewall.col.srcport": "منفذ المصدر",
+  "firewall.col.dstip": "عنوان IP الوجهة",
+  "firewall.col.dstport": "منفذ الوجهة",
+  "firewall.col.action": "الإجراء"
 };

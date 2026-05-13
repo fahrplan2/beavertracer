@@ -959,5 +959,19 @@ export default {
   "router.vpn.err.name": "Nama diperlukan",
   "router.vpn.err.remote": "IP remote tidak valid",
   "router.vpn.err.network": "Jaringan tidak valid (CIDR, contoh 10.0.0.0/24)",
-  "router.vpn.err.duplicate": "Nama tunnel sudah ada"
+  "router.vpn.err.duplicate": "Nama tunnel sudah ada",
+  "app.mailclient.config.smtpTls.off": "Tidak ada",
+  "app.mailclient.config.smtpTls.starttls": "STARTTLS",
+  "app.mailclient.config.smtpTls.implicit": "Implicit TLS",
+  "app.simplemailserver.log.starttlsOk": "STARTTLS ditingkatkan",
+  "app.simplemailserver.log.starttlsFailed": "STARTTLS gagal",
+  "firewall.col.enabled": "Aktif",
+  "firewall.col.direction": "Arah",
+  "firewall.col.ipversion": "IP",
+  "firewall.col.protocol": "Protokol",
+  "firewall.col.srcip": "IP Sumber",
+  "firewall.col.srcport": "Port Sumber",
+  "firewall.col.dstip": "IP Tujuan",
+  "firewall.col.dstport": "Port Tujuan",
+  "firewall.col.action": "Aksi"
 };

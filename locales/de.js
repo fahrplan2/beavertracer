@@ -977,5 +977,8 @@ export default {
   "router.vpn.err.name": "Name erforderlich",
   "router.vpn.err.remote": "Ungültige Remote-IP",
   "router.vpn.err.network": "Ungültiges Netzwerk (CIDR, z.B. 10.0.0.0/24)",
-  "router.vpn.err.duplicate": "Tunnelname existiert bereits"
+  "router.vpn.err.duplicate": "Tunnelname existiert bereits",
+  "app.mailclient.config.smtpTls.off": "Keine",
+  "app.mailclient.config.smtpTls.starttls": "STARTTLS",
+  "app.mailclient.config.smtpTls.implicit": "Implizites TLS"
 };

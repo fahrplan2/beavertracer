@@ -959,5 +959,19 @@ export default {
   "router.vpn.err.name": "需要填写名称",
   "router.vpn.err.remote": "无效的远程 IP",
   "router.vpn.err.network": "无效的网络（CIDR 格式，例如 10.0.0.0/24）",
-  "router.vpn.err.duplicate": "隧道名称已存在"
+  "router.vpn.err.duplicate": "隧道名称已存在",
+  "app.mailclient.config.smtpTls.off": "无",
+  "app.mailclient.config.smtpTls.starttls": "STARTTLS",
+  "app.mailclient.config.smtpTls.implicit": "隐式 TLS",
+  "app.simplemailserver.log.starttlsOk": "STARTTLS 升级成功",
+  "app.simplemailserver.log.starttlsFailed": "STARTTLS 失败",
+  "firewall.col.enabled": "启用",
+  "firewall.col.direction": "方向",
+  "firewall.col.ipversion": "IP",
+  "firewall.col.protocol": "协议",
+  "firewall.col.srcip": "源 IP",
+  "firewall.col.srcport": "源端口",
+  "firewall.col.dstip": "目标 IP",
+  "firewall.col.dstport": "目标端口",
+  "firewall.col.action": "操作"
 };

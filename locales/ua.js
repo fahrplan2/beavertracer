@@ -959,5 +959,19 @@ export default {
   "router.vpn.err.name": "Обов'язково вказати ім'я",
   "router.vpn.err.remote": "Невірна віддалена IP-адреса",
   "router.vpn.err.network": "Невірна мережа (CIDR, наприклад 10.0.0.0/24)",
-  "router.vpn.err.duplicate": "Тунель з таким ім'ям уже існує"
+  "router.vpn.err.duplicate": "Тунель з таким ім'ям уже існує",
+  "app.mailclient.config.smtpTls.off": "Немає",
+  "app.mailclient.config.smtpTls.starttls": "STARTTLS",
+  "app.mailclient.config.smtpTls.implicit": "Implicit TLS",
+  "app.simplemailserver.log.starttlsOk": "STARTTLS оновлено",
+  "app.simplemailserver.log.starttlsFailed": "STARTTLS не вдалася",
+  "firewall.col.enabled": "Увімкнено",
+  "firewall.col.direction": "Напрямок",
+  "firewall.col.ipversion": "IP",
+  "firewall.col.protocol": "Протокол",
+  "firewall.col.srcip": "IP джерела",
+  "firewall.col.srcport": "Порт джерела",
+  "firewall.col.dstip": "IP призначення",
+  "firewall.col.dstport": "Порт призначення",
+  "firewall.col.action": "Дія"
 };

@@ -959,5 +959,19 @@ export default {
   "router.vpn.err.name": "Namn krävs",
   "router.vpn.err.remote": "Ogiltig fjärr-IP",
   "router.vpn.err.network": "Ogiltigt nätverk (CIDR, t.ex. 10.0.0.0/24)",
-  "router.vpn.err.duplicate": "Tunnelnamnet finns redan"
+  "router.vpn.err.duplicate": "Tunnelnamnet finns redan",
+  "app.mailclient.config.smtpTls.off": "Ingen",
+  "app.mailclient.config.smtpTls.starttls": "STARTTLS",
+  "app.mailclient.config.smtpTls.implicit": "Implicit TLS",
+  "app.simplemailserver.log.starttlsOk": "STARTTLS uppgraderad",
+  "app.simplemailserver.log.starttlsFailed": "STARTTLS misslyckades",
+  "firewall.col.enabled": "På",
+  "firewall.col.direction": "Riktning",
+  "firewall.col.ipversion": "IP",
+  "firewall.col.protocol": "Protokoll",
+  "firewall.col.srcip": "Källa IP",
+  "firewall.col.srcport": "Källport",
+  "firewall.col.dstip": "Mål IP",
+  "firewall.col.dstport": "Målport",
+  "firewall.col.action": "Åtgärd"
 };

@@ -959,5 +959,19 @@ export default {
   "router.vpn.err.name": "نام مورد نیاز است",
   "router.vpn.err.remote": "IP راه‌دور نامعتبر است",
   "router.vpn.err.network": "شبکه نامعتبر (CIDR، مثلاً 10.0.0.0/24)",
-  "router.vpn.err.duplicate": "نام تونل قبلاً وجود دارد"
+  "router.vpn.err.duplicate": "نام تونل قبلاً وجود دارد",
+  "app.mailclient.config.smtpTls.off": "هیچ کدام",
+  "app.mailclient.config.smtpTls.starttls": "STARTTLS",
+  "app.mailclient.config.smtpTls.implicit": "TLS ضمنی",
+  "app.simplemailserver.log.starttlsOk": "STARTTLS ارتقا یافت",
+  "app.simplemailserver.log.starttlsFailed": "STARTTLS ناموفق",
+  "firewall.col.enabled": "روشن",
+  "firewall.col.direction": "جهت",
+  "firewall.col.ipversion": "IP",
+  "firewall.col.protocol": "پروتکل",
+  "firewall.col.srcip": "IP مبدأ",
+  "firewall.col.srcport": "درگاه مبدأ",
+  "firewall.col.dstip": "IP مقصد",
+  "firewall.col.dstport": "درگاه مقصد",
+  "firewall.col.action": "عمل"
 };

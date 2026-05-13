@@ -959,5 +959,19 @@ export default {
   "router.vpn.err.name": "Nimi on nõutav",
   "router.vpn.err.remote": "Sobimatu kaugIP",
   "router.vpn.err.network": "Sobimatu võrk (CIDR, nt 10.0.0.0/24)",
-  "router.vpn.err.duplicate": "Tunneli nimi on juba olemas"
+  "router.vpn.err.duplicate": "Tunneli nimi on juba olemas",
+  "app.mailclient.config.smtpTls.off": "Puudub",
+  "app.mailclient.config.smtpTls.starttls": "STARTTLS",
+  "app.mailclient.config.smtpTls.implicit": "Implicit TLS",
+  "app.simplemailserver.log.starttlsOk": "STARTTLS uuendus õnnestus",
+  "app.simplemailserver.log.starttlsFailed": "STARTTLS ebaõnnestus",
+  "firewall.col.enabled": "Sees",
+  "firewall.col.direction": "Suund",
+  "firewall.col.ipversion": "IP",
+  "firewall.col.protocol": "Protokoll",
+  "firewall.col.srcip": "Lähte IP",
+  "firewall.col.srcport": "Lähte port",
+  "firewall.col.dstip": "Siht IP",
+  "firewall.col.dstport": "Siht port",
+  "firewall.col.action": "Tegevus"
 };

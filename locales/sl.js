@@ -959,5 +959,19 @@ export default {
   "router.vpn.err.name": "Ime je zahtevano",
   "router.vpn.err.remote": "Neveljavna oddaljena IP",
   "router.vpn.err.network": "Neveljavna mreža (CIDR, npr. 10.0.0.0/24)",
-  "router.vpn.err.duplicate": "Ime tunela že obstaja"
+  "router.vpn.err.duplicate": "Ime tunela že obstaja",
+  "app.mailclient.config.smtpTls.off": "Brez",
+  "app.mailclient.config.smtpTls.starttls": "STARTTLS",
+  "app.mailclient.config.smtpTls.implicit": "Implicitni TLS",
+  "app.simplemailserver.log.starttlsOk": "STARTTLS nadgrajen",
+  "app.simplemailserver.log.starttlsFailed": "STARTTLS ni uspel",
+  "firewall.col.enabled": "Vključeno",
+  "firewall.col.direction": "Smer",
+  "firewall.col.ipversion": "IP",
+  "firewall.col.protocol": "Protokol",
+  "firewall.col.srcip": "Izv. IP",
+  "firewall.col.srcport": "Izv. port",
+  "firewall.col.dstip": "Cilj. IP",
+  "firewall.col.dstport": "Cilj. port",
+  "firewall.col.action": "Dejanje"
 };

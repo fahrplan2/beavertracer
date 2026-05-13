@@ -959,5 +959,19 @@ export default {
   "router.vpn.err.name": "名前が必要です",
   "router.vpn.err.remote": "リモートIPが無効です",
   "router.vpn.err.network": "ネットワークが無効です（CIDR形式、例：10.0.0.0/24）",
-  "router.vpn.err.duplicate": "トンネル名が既に存在します"
+  "router.vpn.err.duplicate": "トンネル名が既に存在します",
+  "app.mailclient.config.smtpTls.off": "なし",
+  "app.mailclient.config.smtpTls.starttls": "STARTTLS",
+  "app.mailclient.config.smtpTls.implicit": "Implicit TLS",
+  "app.simplemailserver.log.starttlsOk": "STARTTLS アップグレード完了",
+  "app.simplemailserver.log.starttlsFailed": "STARTTLS 失敗",
+  "firewall.col.enabled": "ON",
+  "firewall.col.direction": "方向",
+  "firewall.col.ipversion": "IP",
+  "firewall.col.protocol": "プロトコル",
+  "firewall.col.srcip": "送信元 IP",
+  "firewall.col.srcport": "送信元ポート",
+  "firewall.col.dstip": "宛先 IP",
+  "firewall.col.dstport": "宛先ポート",
+  "firewall.col.action": "アクション"
 };

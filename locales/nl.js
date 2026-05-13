@@ -959,5 +959,19 @@ export default {
   "router.vpn.err.name": "Naam vereist",
   "router.vpn.err.remote": "Ongeldig extern IP",
   "router.vpn.err.network": "Ongeldig netwerk (CIDR, bijv. 10.0.0.0/24)",
-  "router.vpn.err.duplicate": "Tunnelnaam bestaat al"
+  "router.vpn.err.duplicate": "Tunnelnaam bestaat al",
+  "app.mailclient.config.smtpTls.off": "Geen",
+  "app.mailclient.config.smtpTls.starttls": "STARTTLS",
+  "app.mailclient.config.smtpTls.implicit": "Implicit TLS",
+  "app.simplemailserver.log.starttlsOk": "STARTTLS bijgewerkt",
+  "app.simplemailserver.log.starttlsFailed": "STARTTLS mislukt",
+  "firewall.col.enabled": "Aan",
+  "firewall.col.direction": "Richting",
+  "firewall.col.ipversion": "IP",
+  "firewall.col.protocol": "Protocol",
+  "firewall.col.srcip": "Bron-IP",
+  "firewall.col.srcport": "Bronpoort",
+  "firewall.col.dstip": "Doel-IP",
+  "firewall.col.dstport": "Doelpoort",
+  "firewall.col.action": "Actie"
 };

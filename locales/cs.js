@@ -959,5 +959,19 @@ export default {
   "router.vpn.err.name": "Vyžaduje se název",
   "router.vpn.err.remote": "Neplatná vzdálená IP adresa",
   "router.vpn.err.network": "Neplatná síť (CIDR, např. 10.0.0.0/24)",
-  "router.vpn.err.duplicate": "Název tunelu již existuje"
+  "router.vpn.err.duplicate": "Název tunelu již existuje",
+  "app.mailclient.config.smtpTls.off": "Žádný",
+  "app.mailclient.config.smtpTls.starttls": "STARTTLS",
+  "app.mailclient.config.smtpTls.implicit": "Implicitní TLS",
+  "app.simplemailserver.log.starttlsOk": "STARTTLS upgradován",
+  "app.simplemailserver.log.starttlsFailed": "STARTTLS selhal",
+  "firewall.col.enabled": "Zapnuto",
+  "firewall.col.direction": "Směr",
+  "firewall.col.ipversion": "IP",
+  "firewall.col.protocol": "Protokol",
+  "firewall.col.srcip": "Zdrojová IP",
+  "firewall.col.srcport": "Zdrojový port",
+  "firewall.col.dstip": "Cílová IP",
+  "firewall.col.dstport": "Cílový port",
+  "firewall.col.action": "Akce"
 };

@@ -959,5 +959,19 @@ export default {
   "router.vpn.err.name": "Navn påkrævet",
   "router.vpn.err.remote": "Ugyldig eksternt IP",
   "router.vpn.err.network": "Ugyldigt netværk (CIDR, f.eks. 10.0.0.0/24)",
-  "router.vpn.err.duplicate": "Tunnelnavn findes allerede"
+  "router.vpn.err.duplicate": "Tunnelnavn findes allerede",
+  "app.mailclient.config.smtpTls.off": "Ingen",
+  "app.mailclient.config.smtpTls.starttls": "STARTTLS",
+  "app.mailclient.config.smtpTls.implicit": "Implicit TLS",
+  "app.simplemailserver.log.starttlsOk": "STARTTLS opgraderet",
+  "app.simplemailserver.log.starttlsFailed": "STARTTLS mislykkedes",
+  "firewall.col.enabled": "Til",
+  "firewall.col.direction": "Retning",
+  "firewall.col.ipversion": "IP",
+  "firewall.col.protocol": "Protokol",
+  "firewall.col.srcip": "Kilde-IP",
+  "firewall.col.srcport": "Kilde-port",
+  "firewall.col.dstip": "Mål-IP",
+  "firewall.col.dstport": "Mål-port",
+  "firewall.col.action": "Handling"
 };

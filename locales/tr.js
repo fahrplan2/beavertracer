@@ -959,5 +959,19 @@ export default {
   "router.vpn.err.name": "Ad gerekli",
   "router.vpn.err.remote": "Geçersiz uzak IP",
   "router.vpn.err.network": "Geçersiz ağ (CIDR, örn. 10.0.0.0/24)",
-  "router.vpn.err.duplicate": "Tünel adı zaten var"
+  "router.vpn.err.duplicate": "Tünel adı zaten var",
+  "app.mailclient.config.smtpTls.off": "Yok",
+  "app.mailclient.config.smtpTls.starttls": "STARTTLS",
+  "app.mailclient.config.smtpTls.implicit": "Örtük TLS",
+  "app.simplemailserver.log.starttlsOk": "STARTTLS yükseltildi",
+  "app.simplemailserver.log.starttlsFailed": "STARTTLS başarısız",
+  "firewall.col.enabled": "Açık",
+  "firewall.col.direction": "Yön",
+  "firewall.col.ipversion": "IP",
+  "firewall.col.protocol": "Protokol",
+  "firewall.col.srcip": "Kaynak IP",
+  "firewall.col.srcport": "Kaynak Port",
+  "firewall.col.dstip": "Hedef IP",
+  "firewall.col.dstport": "Hedef Port",
+  "firewall.col.action": "İşlem"
 };
