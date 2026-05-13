@@ -167,18 +167,20 @@ body {
   margin: 0;
 }
 
-.lesson-sidebar-tree ul {
+.lesson-sidebar-subtree {
   list-style: none;
-  padding: 0 0 0 12px;
+  padding: 0 0 4px 12px;
   margin: 2px 0 0;
   border-left: 1px solid var(--border);
 }
 
-.lesson-sidebar-tree li {
+.lesson-sidebar-tree li,
+.lesson-sidebar-subtree li {
   margin: 0;
 }
 
-.lesson-sidebar-tree a {
+.lesson-sidebar-tree a,
+.lesson-sidebar-subtree a {
   display: block;
   padding: 4px 8px;
   border-radius: var(--radius);
@@ -187,15 +189,66 @@ body {
   line-height: 1.35;
 }
 
-.lesson-sidebar-tree a:hover {
+.lesson-sidebar-tree a:hover,
+.lesson-sidebar-subtree a:hover {
   background: var(--surface);
   color: var(--primary);
 }
 
-.lesson-sidebar-tree a.active {
+.lesson-sidebar-tree a.active,
+.lesson-sidebar-subtree a.active {
   background: var(--surface);
   color: var(--primary);
   font-weight: 600;
+}
+
+/* ── Collapsible chapter groups ───────────────────────────────── */
+.lesson-sidebar-tree details {
+  /* no extra margin – li already provides spacing */
+}
+
+.lesson-sidebar-tree details > summary {
+  /* suppress the default browser triangle */
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  cursor: pointer;
+  /* remove default marker in Safari/WebKit */
+  -webkit-appearance: none;
+}
+.lesson-sidebar-tree details > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* The toggle arrow sits before the link via ::before on summary */
+.lesson-sidebar-tree details > summary::before {
+  content: "›";
+  display: inline-block;
+  width: 16px;
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--muted);
+  transition: transform 150ms ease;
+  /* vertically align with the link text */
+  align-self: flex-start;
+  padding-top: 4px;
+}
+.lesson-sidebar-tree details[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+/* The <a> inside summary should fill the rest of the row */
+.lesson-sidebar-tree details > summary > a {
+  flex: 1;
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  padding: 4px 8px 4px 2px;
 }
 
 /* ── Children section ─────────────────────────────────────────── */
@@ -206,6 +259,14 @@ body {
 }
 .lesson-children h2 {
   margin-bottom: 12px;
+}
+
+/* ── Chapter number in H1 ────────────────────────────────────── */
+.lesson-num {
+  color: var(--muted);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  margin-right: 0.1em;
 }
 
 /* ── Article typography ───────────────────────────────────────── */
@@ -358,6 +419,50 @@ body {
   background: var(--surface);
   border-radius: 0 var(--radius) var(--radius) 0;
 }
+
+/* ── Callout boxes (:::note / :::tip / :::warning / :::danger) ── */
+.callout {
+  padding: 12px 16px;
+  margin: 16px 0;
+  border-left: 4px solid;
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.callout-note {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #1e3a5f;
+}
+
+.callout-tip {
+  border-color: #16a34a;
+  background: #f0fdf4;
+  color: #14532d;
+}
+
+.callout-warning {
+  border-color: #d97706;
+  background: #fffbeb;
+  color: #78350f;
+}
+
+.callout-danger {
+  border-color: #dc2626;
+  background: #fef2f2;
+  color: #7f1d1d;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .callout-note    { background: #1e3a5f; color: #bfdbfe; }
+  :root:not([data-theme="light"]) .callout-tip     { background: #14532d; color: #bbf7d0; }
+  :root:not([data-theme="light"]) .callout-warning { background: #451a03; color: #fde68a; }
+  :root:not([data-theme="light"]) .callout-danger  { background: #450a0a; color: #fecaca; }
+}
+
+[data-theme="dark"] .callout-note    { background: #1e3a5f; color: #bfdbfe; }
+[data-theme="dark"] .callout-tip     { background: #14532d; color: #bbf7d0; }
+[data-theme="dark"] .callout-warning { background: #451a03; color: #fde68a; }
+[data-theme="dark"] .callout-danger  { background: #450a0a; color: #fecaca; }
 
 /* ── Prev / Next navigation ───────────────────────────────────── */
 .lesson-nav {

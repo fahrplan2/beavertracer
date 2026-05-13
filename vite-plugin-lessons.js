@@ -5,6 +5,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import MarkdownIt from "markdown-it";
+import markdownItContainer from "markdown-it-container";
 
 const SRC_DIR = "lessons";
 const OUT_DIR = "public/lessons";
@@ -171,7 +172,31 @@ function flatOrder(tree) {
 }
 
 /**
+ * Format a num array as a chapter label prefix, e.g. [1] → "1.", [1,2] → "1.2".
+ * @param {number[]|null} num
+ * @returns {string}
+ */
+function numLabel(num) {
+  if (!num || num.length === 0) return "";
+  const s = num.join(".");
+  return num.length === 1 ? s + "." : s;
+}
+
+/**
+ * Returns true if the node or any descendant has the given href.
+ * @param {LessonNode} node
+ * @param {string} href
+ * @returns {boolean}
+ */
+function isActiveSubtree(node, href) {
+  if (node.href === href) return true;
+  return node.children.some((c) => isActiveSubtree(c, href));
+}
+
+/**
  * Render sidebar HTML for a tree.
+ * Top-level nodes with children get a <details>/<summary> toggle.
+ * All entries get an automatic number prefix from their num array.
  * @param {LessonNode[]} tree
  * @param {string} currentHref — href of current page (empty string = none active)
  * @returns {string}
@@ -179,15 +204,25 @@ function flatOrder(tree) {
 function renderSidebar(tree, currentHref) {
   function renderItems(/** @type {LessonNode[]} */ nodes, /** @type {boolean} */ isRoot) {
     const items = nodes.map((node) => {
-      const activeClass = node.href === currentHref ? ' class="active"' : "";
-      let li = `<li><a href="${node.href}"${activeClass}>${node.title}</a>`;
+      const isActive = node.href === currentHref;
+      const activeClass = isActive ? ' class="active"' : "";
+      const prefix = node.num ? numLabel(node.num) + " " : "";
+      const label = `${prefix}${node.title}`;
+
       if (node.children.length) {
-        li += "\n" + renderItems(node.children, false);
+        const open = isActiveSubtree(node, currentHref) ? " open" : "";
+        return (
+          `<li><details${open}>\n` +
+          `<summary><a href="${node.href}"${activeClass}>${label}</a></summary>\n` +
+          renderItems(node.children, false) +
+          `</details></li>`
+        );
       }
-      li += "</li>";
-      return li;
+
+      return `<li><a href="${node.href}"${activeClass}>${label}</a></li>`;
     }).join("\n");
-    const classAttr = isRoot ? ' class="lesson-sidebar-tree"' : "";
+
+    const classAttr = isRoot ? ' class="lesson-sidebar-tree"' : ' class="lesson-sidebar-subtree"';
     return `<ul${classAttr}>\n${items}\n</ul>`;
   }
   return renderItems(tree, true);
@@ -250,6 +285,16 @@ function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "") {
   const headings = [];
   const md = new MarkdownIt({ html: true, linkify: true, typographer: true });
 
+  for (const type of ["note", "tip", "warning", "danger"]) {
+    md.use(markdownItContainer, type, {
+      render(tokens, idx) {
+        return tokens[idx].nesting === 1
+          ? `<div class="callout callout-${type}">\n`
+          : `</div>\n`;
+      },
+    });
+  }
+
   md.renderer.rules.heading_open = (tokens, idx) => {
     const tag = tokens[idx].tag;
     const text = tokens[idx + 1].children?.map((t) => t.content).join("") ?? "";
@@ -274,6 +319,13 @@ function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "") {
     body = body.replace(/\[\[toc\]\]/gi, "");
   }
 
+  // ── Number prefix in H1 ───────────────────────────────────────
+  if (node.num) {
+    const prefix = numLabel(node.num);
+    // Inject <span class="lesson-num"> after the opening <h1 ...> tag
+    body = body.replace(/(<h1[^>]*>)/, `$1<span class="lesson-num">${prefix}</span> `);
+  }
+
   // ── Children section ───────────────────────────────────────────
   body += renderChildrenSection(node);
 
@@ -285,7 +337,8 @@ function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "") {
     body += `\n<nav class="lesson-nav" aria-label="Seitennavigation">${navParts.join("")}</nav>`;
   }
 
-  const title = headings.find((h) => h.level === 1)?.text ?? path.basename(srcFile, ".md");
+  const rawTitle = headings.find((h) => h.level === 1)?.text ?? path.basename(srcFile, ".md");
+  const title = node.num ? `${numLabel(node.num)} ${rawTitle}` : rawTitle;
 
   return templateHtml
     .replace(/\{\{title\}\}/g, title)
