@@ -923,5 +923,18 @@ export default {
   "app.simplehttpserver.log.httpsStopped":     "[{time}] HTTPS GESTOPPT",
   "app.simplehttpserver.log.httpsStopError":   "[{time}] FEHLER Stopp HTTPS: {reason}",
   "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] FEHLER openTCPServerSocket (HTTPS): {reason}",
-  "app.certmanager.detail.privateKey": "Privater Schlüssel"
+  "app.certmanager.detail.privateKey": "Privater Schlüssel",
+  "app.explorer.title": "Datei-Explorer",
+  "app.explorer.button.upload": "Hochladen",
+  "app.explorer.button.newFolder": "Neuer Ordner",
+  "app.explorer.button.download": "Herunterladen",
+  "app.explorer.button.openEditor": "Im Editor öffnen",
+  "app.explorer.button.delete": "Löschen",
+  "app.explorer.confirm.delete": "\"{name}\" löschen?",
+  "app.explorer.prompt.newFolder": "Ordnername:",
+  "app.explorer.label.empty": "(leer)",
+  "app.explorer.status.uploaded": "Hochgeladen: {name}",
+  "app.explorer.error.upload": "Hochladen fehlgeschlagen: {msg}",
+  "app.explorer.error.delete": "Löschen fehlgeschlagen: {msg}",
+  "app.explorer.error.mkdir": "Ordner kann nicht erstellt werden: {msg}"
 };

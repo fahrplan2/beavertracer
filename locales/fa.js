@@ -916,5 +916,18 @@ export default {
   "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS در حال شنوایی :{port}",
   "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS متوقف شد",
   "app.simplehttpserver.log.httpsStopError": "[{time}] خطا در توقف HTTPS: {reason}",
-  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] خطا در openTCPServerSocket (HTTPS): {reason}"
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] خطا در openTCPServerSocket (HTTPS): {reason}",
+  "app.explorer.title": "مرورگر فایل",
+  "app.explorer.button.upload": "آپلود",
+  "app.explorer.button.newFolder": "پوشه جدید",
+  "app.explorer.button.download": "دانلود",
+  "app.explorer.button.openEditor": "باز کردن در ویرایشگر",
+  "app.explorer.button.delete": "حذف",
+  "app.explorer.confirm.delete": "حذف \"{name}\"؟",
+  "app.explorer.prompt.newFolder": "نام پوشه:",
+  "app.explorer.label.empty": "(خالی)",
+  "app.explorer.status.uploaded": "آپلود شد: {name}",
+  "app.explorer.error.upload": "آپلود ناموفق: {msg}",
+  "app.explorer.error.delete": "حذف ناموفق: {msg}",
+  "app.explorer.error.mkdir": "نمی‌توان پوشه ایجاد کرد: {msg}"
 };

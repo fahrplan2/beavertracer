@@ -923,5 +923,18 @@ export default {
   "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS ESCUCHANDO :{port}",
   "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS DETENIDO",
   "app.simplehttpserver.log.httpsStopError": "[{time}] ERROR detener HTTPS: {reason}",
-  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] ERROR openTCPServerSocket (HTTPS): {reason}"
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] ERROR openTCPServerSocket (HTTPS): {reason}",
+  "app.explorer.title": "Explorador de archivos",
+  "app.explorer.button.upload": "Cargar",
+  "app.explorer.button.newFolder": "Nueva carpeta",
+  "app.explorer.button.download": "Descargar",
+  "app.explorer.button.openEditor": "Abrir en editor",
+  "app.explorer.button.delete": "Eliminar",
+  "app.explorer.confirm.delete": "¿Eliminar \"{name}\"?",
+  "app.explorer.prompt.newFolder": "Nombre de la carpeta:",
+  "app.explorer.label.empty": "(vacío)",
+  "app.explorer.status.uploaded": "Cargado: {name}",
+  "app.explorer.error.upload": "Error al cargar: {msg}",
+  "app.explorer.error.delete": "Error al eliminar: {msg}",
+  "app.explorer.error.mkdir": "No se puede crear la carpeta: {msg}"
 };

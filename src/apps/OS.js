@@ -24,6 +24,7 @@ import { MailClientApp } from "./MailClientApp.js";
 import { SimpleIRCServerApp } from "./SimpleIRCServerApp.js";
 import { SimpleIRCClientApp } from "./SimpleIRCClientApp.js";
 import { DOMBuilder } from "../lib/DomBuilder.js";
+import { ExplorerApp } from "./ExplorerApp.js";
 
 export class OS {
 
@@ -102,7 +103,7 @@ export class OS {
      */
     _registerApps() {
         const launchlist =
-            [IPv4ConfigApp, TerminalApp, TextEditorApp, SparktailHTTPClientApp, MailClientApp, SimpleIRCClientApp, SimpleTCPClientApp, SimpleTCPServerApp,
+            [IPv4ConfigApp, TerminalApp, TextEditorApp, ExplorerApp, SparktailHTTPClientApp, MailClientApp, SimpleIRCClientApp, SimpleTCPClientApp, SimpleTCPServerApp,
             SimpleHTTPServerApp, UDPEchoServerApp, DNSServerApp, DHCPServerApp, DHCPv6ServerApp, SimpleMailServerApp,
             SimpleIRCServerApp, CertManagerApp];
 

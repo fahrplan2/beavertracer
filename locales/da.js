@@ -916,5 +916,18 @@ export default {
   "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS LYTTER :{port}",
   "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS STOPPET",
   "app.simplehttpserver.log.httpsStopError": "[{time}] FEJL ved stopning af HTTPS: {reason}",
-  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] FEJL openTCPServerSocket (HTTPS): {reason}"
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] FEJL openTCPServerSocket (HTTPS): {reason}",
+  "app.explorer.title": "Filstyringsværktøj",
+  "app.explorer.button.upload": "Upload",
+  "app.explorer.button.newFolder": "Ny mappe",
+  "app.explorer.button.download": "Download",
+  "app.explorer.button.openEditor": "Åbn i editor",
+  "app.explorer.button.delete": "Slet",
+  "app.explorer.confirm.delete": "Slet \"{name}\"?",
+  "app.explorer.prompt.newFolder": "Mappenavn:",
+  "app.explorer.label.empty": "(tom)",
+  "app.explorer.status.uploaded": "Uploadet: {name}",
+  "app.explorer.error.upload": "Upload mislykkedes: {msg}",
+  "app.explorer.error.delete": "Sletning mislykkedes: {msg}",
+  "app.explorer.error.mkdir": "Kan ikke oprette mappe: {msg}"
 };

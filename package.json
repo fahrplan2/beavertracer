@@ -12,7 +12,7 @@
   },
   "name": "beavertracer",
   "description": "",
-  "version": "0.1.11+dev.68.6f4b1e9",
+  "version": "0.1.11+dev.70.36043bd",
   "main": "electron/main.cjs",
   "repository": {
     "type": "git",

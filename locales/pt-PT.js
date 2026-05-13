@@ -921,5 +921,18 @@ export default {
   "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS ESCUTANDO :{port}",
   "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS PARADO",
   "app.simplehttpserver.log.httpsStopError": "[{time}] ERRO ao parar HTTPS: {reason}",
-  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] ERRO openTCPServerSocket (HTTPS): {reason}"
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] ERRO openTCPServerSocket (HTTPS): {reason}",
+  "app.explorer.title": "Explorador de Ficheiros",
+  "app.explorer.button.upload": "Carregar",
+  "app.explorer.button.newFolder": "Nova Pasta",
+  "app.explorer.button.download": "Transferir",
+  "app.explorer.button.openEditor": "Abrir no Editor",
+  "app.explorer.button.delete": "Eliminar",
+  "app.explorer.confirm.delete": "Eliminar \"{name}\"?",
+  "app.explorer.prompt.newFolder": "Nome da pasta:",
+  "app.explorer.label.empty": "(vazio)",
+  "app.explorer.status.uploaded": "Carregado: {name}",
+  "app.explorer.error.upload": "Falha ao carregar: {msg}",
+  "app.explorer.error.delete": "Falha ao eliminar: {msg}",
+  "app.explorer.error.mkdir": "Não é possível criar a pasta: {msg}"
 };

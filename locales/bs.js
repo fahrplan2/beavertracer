@@ -916,5 +916,18 @@ export default {
   "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS SLUŠA :{port}",
   "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS ZAUSTAVLJEN",
   "app.simplehttpserver.log.httpsStopError": "[{time}] GREŠKA zaustavljanje HTTPS: {reason}",
-  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] GREŠKA openTCPServerSocket (HTTPS): {reason}"
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] GREŠKA openTCPServerSocket (HTTPS): {reason}",
+  "app.explorer.title": "Istraživač datoteka",
+  "app.explorer.button.upload": "Učitaj",
+  "app.explorer.button.newFolder": "Nova fascikla",
+  "app.explorer.button.download": "Preuzmi",
+  "app.explorer.button.openEditor": "Otvori u editoru",
+  "app.explorer.button.delete": "Obriši",
+  "app.explorer.confirm.delete": "Obriši \"{name}\"?",
+  "app.explorer.prompt.newFolder": "Naziv fascikle:",
+  "app.explorer.label.empty": "(prazno)",
+  "app.explorer.status.uploaded": "Učitano: {name}",
+  "app.explorer.error.upload": "Učitavanje nije uspjelo: {msg}",
+  "app.explorer.error.delete": "Brisanje nije uspjelo: {msg}",
+  "app.explorer.error.mkdir": "Nije moguće kreirati fasciklu: {msg}"
 };

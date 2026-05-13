@@ -916,5 +916,18 @@ export default {
   "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS NASŁUCHUJE :{port}",
   "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS ZATRZYMANY",
   "app.simplehttpserver.log.httpsStopError": "[{time}] BŁĄD zatrzymania HTTPS: {reason}",
-  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] BŁĄD openTCPServerSocket (HTTPS): {reason}"
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] BŁĄD openTCPServerSocket (HTTPS): {reason}",
+  "app.explorer.title": "Eksplorator plików",
+  "app.explorer.button.upload": "Prześlij",
+  "app.explorer.button.newFolder": "Nowy folder",
+  "app.explorer.button.download": "Pobierz",
+  "app.explorer.button.openEditor": "Otwórz w edytorze",
+  "app.explorer.button.delete": "Usuń",
+  "app.explorer.confirm.delete": "Usunąć \"{name}\"?",
+  "app.explorer.prompt.newFolder": "Nazwa folderu:",
+  "app.explorer.label.empty": "(puste)",
+  "app.explorer.status.uploaded": "Przesłano: {name}",
+  "app.explorer.error.upload": "Przesyłanie nie powiodło się: {msg}",
+  "app.explorer.error.delete": "Usunięcie nie powiodło się: {msg}",
+  "app.explorer.error.mkdir": "Nie można utworzyć folderu: {msg}"
 };

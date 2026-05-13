@@ -916,5 +916,18 @@ export default {
   "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS LISTEN :{port}",
   "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS STOPPED",
   "app.simplehttpserver.log.httpsStopError": "[{time}] ERROR stop HTTPS: {reason}",
-  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] ERROR openTCPServerSocket (HTTPS): {reason}"
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] ERROR openTCPServerSocket (HTTPS): {reason}",
+  "app.explorer.title": "Trình Quản Lý Tệp",
+  "app.explorer.button.upload": "Tải Lên",
+  "app.explorer.button.newFolder": "Thư Mục Mới",
+  "app.explorer.button.download": "Tải Xuống",
+  "app.explorer.button.openEditor": "Mở trong Trình Soạn Thảo",
+  "app.explorer.button.delete": "Xóa",
+  "app.explorer.confirm.delete": "Xóa \"{name}\"?",
+  "app.explorer.prompt.newFolder": "Tên thư mục:",
+  "app.explorer.label.empty": "(trống)",
+  "app.explorer.status.uploaded": "Đã tải lên: {name}",
+  "app.explorer.error.upload": "Tải lên thất bại: {msg}",
+  "app.explorer.error.delete": "Xóa thất bại: {msg}",
+  "app.explorer.error.mkdir": "Không thể tạo thư mục: {msg}"
 };

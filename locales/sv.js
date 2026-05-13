@@ -916,5 +916,18 @@ export default {
   "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS LYSSNAR :{port}",
   "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS STOPPAD",
   "app.simplehttpserver.log.httpsStopError": "[{time}] FEL stoppa HTTPS: {reason}",
-  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] FEL openTCPServerSocket (HTTPS): {reason}"
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] FEL openTCPServerSocket (HTTPS): {reason}",
+  "app.explorer.title": "Filhanterare",
+  "app.explorer.button.upload": "Ladda upp",
+  "app.explorer.button.newFolder": "Ny mapp",
+  "app.explorer.button.download": "Ladda ned",
+  "app.explorer.button.openEditor": "Öppna i redigerare",
+  "app.explorer.button.delete": "Ta bort",
+  "app.explorer.confirm.delete": "Ta bort \"{name}\"?",
+  "app.explorer.prompt.newFolder": "Mappnamn:",
+  "app.explorer.label.empty": "(tom)",
+  "app.explorer.status.uploaded": "Uppladdad: {name}",
+  "app.explorer.error.upload": "Uppladdning misslyckades: {msg}",
+  "app.explorer.error.delete": "Borttagning misslyckades: {msg}",
+  "app.explorer.error.mkdir": "Kan inte skapa mapp: {msg}"
 };

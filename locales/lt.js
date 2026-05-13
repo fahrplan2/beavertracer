@@ -916,5 +916,18 @@ export default {
   "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS KLAUSOSI :{port}",
   "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS SUSTABDYTA",
   "app.simplehttpserver.log.httpsStopError": "[{time}] KLAIDA sustabdant HTTPS: {reason}",
-  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] KLAIDA atveriant TCPServerSocket (HTTPS): {reason}"
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] KLAIDA atveriant TCPServerSocket (HTTPS): {reason}",
+  "app.explorer.title": "Failų naršyklė",
+  "app.explorer.button.upload": "Įkelti",
+  "app.explorer.button.newFolder": "Naujas aplankas",
+  "app.explorer.button.download": "Atsisiųsti",
+  "app.explorer.button.openEditor": "Atidaryti redaktoriuje",
+  "app.explorer.button.delete": "Ištrinti",
+  "app.explorer.confirm.delete": "Ištrinti \"{name}\"?",
+  "app.explorer.prompt.newFolder": "Aplanko pavadinimas:",
+  "app.explorer.label.empty": "(tuščia)",
+  "app.explorer.status.uploaded": "Įkelta: {name}",
+  "app.explorer.error.upload": "Įkėlimas nepavyko: {msg}",
+  "app.explorer.error.delete": "Ištrynimas nepavyko: {msg}",
+  "app.explorer.error.mkdir": "Nepavyko sukurti aplanko: {msg}"
 };

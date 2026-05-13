@@ -921,5 +921,18 @@ export default {
   "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS LISTEN :{port}",
   "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS STOPPED",
   "app.simplehttpserver.log.httpsStopError": "[{time}] ERROR stop HTTPS: {reason}",
-  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] ERROR openTCPServerSocket (HTTPS): {reason}"
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] ERROR openTCPServerSocket (HTTPS): {reason}",
+  "app.explorer.title": "Gestione File",
+  "app.explorer.button.upload": "Carica",
+  "app.explorer.button.newFolder": "Nuova Cartella",
+  "app.explorer.button.download": "Scarica",
+  "app.explorer.button.openEditor": "Apri in Editor",
+  "app.explorer.button.delete": "Elimina",
+  "app.explorer.confirm.delete": "Eliminare \"{name}\"?",
+  "app.explorer.prompt.newFolder": "Nome cartella:",
+  "app.explorer.label.empty": "(vuoto)",
+  "app.explorer.status.uploaded": "Caricato: {name}",
+  "app.explorer.error.upload": "Caricamento fallito: {msg}",
+  "app.explorer.error.delete": "Eliminazione fallita: {msg}",
+  "app.explorer.error.mkdir": "Impossibile creare la cartella: {msg}"
 };

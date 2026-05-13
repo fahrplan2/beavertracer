@@ -916,5 +916,18 @@ export default {
   "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS KUULAMINE :{port}",
   "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS PEATATUD",
   "app.simplehttpserver.log.httpsStopError": "[{time}] VIGA HTTPS peatamisel: {reason}",
-  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] VIGA openTCPServerSocket (HTTPS): {reason}"
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] VIGA openTCPServerSocket (HTTPS): {reason}",
+  "app.explorer.title": "Failide haldur",
+  "app.explorer.button.upload": "Laadi üles",
+  "app.explorer.button.newFolder": "Uus kaust",
+  "app.explorer.button.download": "Laadi alla",
+  "app.explorer.button.openEditor": "Ava redaktoris",
+  "app.explorer.button.delete": "Kustuta",
+  "app.explorer.confirm.delete": "Kustutada \"{name}\"?",
+  "app.explorer.prompt.newFolder": "Kausta nimi:",
+  "app.explorer.label.empty": "(tühi)",
+  "app.explorer.status.uploaded": "Üles laaditud: {name}",
+  "app.explorer.error.upload": "Üleslaadimise tõrge: {msg}",
+  "app.explorer.error.delete": "Kustutamise tõrge: {msg}",
+  "app.explorer.error.mkdir": "Kausta ei saa luua: {msg}"
 };

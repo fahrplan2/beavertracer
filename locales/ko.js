@@ -916,5 +916,18 @@ export default {
   "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS LISTEN :{port}",
   "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS STOPPED",
   "app.simplehttpserver.log.httpsStopError": "[{time}] ERROR stop HTTPS: {reason}",
-  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] ERROR openTCPServerSocket (HTTPS): {reason}"
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] ERROR openTCPServerSocket (HTTPS): {reason}",
+  "app.explorer.title": "파일 탐색기",
+  "app.explorer.button.upload": "업로드",
+  "app.explorer.button.newFolder": "새 폴더",
+  "app.explorer.button.download": "다운로드",
+  "app.explorer.button.openEditor": "편집기에서 열기",
+  "app.explorer.button.delete": "삭제",
+  "app.explorer.confirm.delete": "\"{name}\"을(를) 삭제하시겠습니까?",
+  "app.explorer.prompt.newFolder": "폴더 이름:",
+  "app.explorer.label.empty": "(비어 있음)",
+  "app.explorer.status.uploaded": "업로드됨: {name}",
+  "app.explorer.error.upload": "업로드 실패: {msg}",
+  "app.explorer.error.delete": "삭제 실패: {msg}",
+  "app.explorer.error.mkdir": "폴더를 생성할 수 없습니다: {msg}"
 };

@@ -916,5 +916,18 @@ export default {
   "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS LISTEN :{port}",
   "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS APTURĒTS",
   "app.simplehttpserver.log.httpsStopError": "[{time}] KĻŪDA aptupējot HTTPS: {reason}",
-  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] KĻŪDA openTCPServerSocket (HTTPS): {reason}"
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] KĻŪDA openTCPServerSocket (HTTPS): {reason}",
+  "app.explorer.title": "Failu pārlūks",
+  "app.explorer.button.upload": "Augšupielādēt",
+  "app.explorer.button.newFolder": "Jauna mape",
+  "app.explorer.button.download": "Lejupielādēt",
+  "app.explorer.button.openEditor": "Atvērt redaktorā",
+  "app.explorer.button.delete": "Dzēst",
+  "app.explorer.confirm.delete": "Dzēst \"{name}\"?",
+  "app.explorer.prompt.newFolder": "Mapes nosaukums:",
+  "app.explorer.label.empty": "(tukša)",
+  "app.explorer.status.uploaded": "Augšupielādēts: {name}",
+  "app.explorer.error.upload": "Augšupielāde neizdevās: {msg}",
+  "app.explorer.error.delete": "Dzēšana neizdevās: {msg}",
+  "app.explorer.error.mkdir": "Nevar izveidot mapi: {msg}"
 };

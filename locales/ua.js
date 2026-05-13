@@ -916,5 +916,18 @@ export default {
   "app.certmanager.clipboard.pasteKey": " (з ключем)",
   "app.certmanager.clipboard.pastePublic": " (тільки публічна)",
   "app.certmanager.clipboard.pasteEmpty": "Вставити з буфера обміну",
-  "app.certmanager.trusted.emptyHint": "Імпортуйте сертифікат ЦС або додайте один з розділу \"Мої сертифікати\"."
+  "app.certmanager.trusted.emptyHint": "Імпортуйте сертифікат ЦС або додайте один з розділу \"Мої сертифікати\".",
+  "app.explorer.title": "Провідник файлів",
+  "app.explorer.button.upload": "Завантажити",
+  "app.explorer.button.newFolder": "Нова папка",
+  "app.explorer.button.download": "Завантажити",
+  "app.explorer.button.openEditor": "Відкрити в редакторі",
+  "app.explorer.button.delete": "Видалити",
+  "app.explorer.confirm.delete": "Видалити \"{name}\"?",
+  "app.explorer.prompt.newFolder": "Назва папки:",
+  "app.explorer.label.empty": "(порожньо)",
+  "app.explorer.status.uploaded": "Завантажено: {name}",
+  "app.explorer.error.upload": "Помилка завантаження: {msg}",
+  "app.explorer.error.delete": "Помилка видалення: {msg}",
+  "app.explorer.error.mkdir": "Неможливо створити папку: {msg}"
 };

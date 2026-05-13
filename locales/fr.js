@@ -923,5 +923,18 @@ export default {
   "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS LISTEN :{port}",
   "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS ARRÊTÉ",
   "app.simplehttpserver.log.httpsStopError": "[{time}] ERREUR arrêt HTTPS : {reason}",
-  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] ERREUR openTCPServerSocket (HTTPS) : {reason}"
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] ERREUR openTCPServerSocket (HTTPS) : {reason}",
+  "app.explorer.title": "Explorateur de fichiers",
+  "app.explorer.button.upload": "Télécharger",
+  "app.explorer.button.newFolder": "Nouveau dossier",
+  "app.explorer.button.download": "Télécharger",
+  "app.explorer.button.openEditor": "Ouvrir dans l'éditeur",
+  "app.explorer.button.delete": "Supprimer",
+  "app.explorer.confirm.delete": "Supprimer \"{name}\" ?",
+  "app.explorer.prompt.newFolder": "Nom du dossier :",
+  "app.explorer.label.empty": "(vide)",
+  "app.explorer.status.uploaded": "Téléchargé : {name}",
+  "app.explorer.error.upload": "Échec du téléchargement : {msg}",
+  "app.explorer.error.delete": "Échec de la suppression : {msg}",
+  "app.explorer.error.mkdir": "Impossible de créer le dossier : {msg}"
 };

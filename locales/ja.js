@@ -916,5 +916,18 @@ export default {
   "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS LISTEN :{port}",
   "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS 停止",
   "app.simplehttpserver.log.httpsStopError": "[{time}] エラー HTTPS を停止: {reason}",
-  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] エラー openTCPServerSocket (HTTPS): {reason}"
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] エラー openTCPServerSocket (HTTPS): {reason}",
+  "app.explorer.title": "ファイルエクスプローラー",
+  "app.explorer.button.upload": "アップロード",
+  "app.explorer.button.newFolder": "新規フォルダー",
+  "app.explorer.button.download": "ダウンロード",
+  "app.explorer.button.openEditor": "エディターで開く",
+  "app.explorer.button.delete": "削除",
+  "app.explorer.confirm.delete": "\"{name}\"を削除しますか?",
+  "app.explorer.prompt.newFolder": "フォルダー名:",
+  "app.explorer.label.empty": "(空)",
+  "app.explorer.status.uploaded": "アップロード完了: {name}",
+  "app.explorer.error.upload": "アップロード失敗: {msg}",
+  "app.explorer.error.delete": "削除失敗: {msg}",
+  "app.explorer.error.mkdir": "フォルダーを作成できません: {msg}"
 };

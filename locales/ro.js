@@ -916,5 +916,18 @@ export default {
   "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS ASCULTĂ :{port}",
   "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS OPRIT",
   "app.simplehttpserver.log.httpsStopError": "[{time}] EROARE oprire HTTPS: {reason}",
-  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] EROARE deschidere TCPServerSocket (HTTPS): {reason}"
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] EROARE deschidere TCPServerSocket (HTTPS): {reason}",
+  "app.explorer.title": "Explorator de fișiere",
+  "app.explorer.button.upload": "Încărcare",
+  "app.explorer.button.newFolder": "Folder nou",
+  "app.explorer.button.download": "Descărcare",
+  "app.explorer.button.openEditor": "Deschideți în editor",
+  "app.explorer.button.delete": "Ștergere",
+  "app.explorer.confirm.delete": "Ștergeți \"{name}\"?",
+  "app.explorer.prompt.newFolder": "Numele folderului:",
+  "app.explorer.label.empty": "(gol)",
+  "app.explorer.status.uploaded": "Încărcat: {name}",
+  "app.explorer.error.upload": "Încărcarea a eșuat: {msg}",
+  "app.explorer.error.delete": "Ștergerea a eșuat: {msg}",
+  "app.explorer.error.mkdir": "Nu se poate crea folderul: {msg}"
 };

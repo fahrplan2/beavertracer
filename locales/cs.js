@@ -916,5 +916,18 @@ export default {
   "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS NASLOUCHÁ :{port}",
   "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS ZASTAVENO",
   "app.simplehttpserver.log.httpsStopError": "[{time}] CHYBA zastavení HTTPS: {reason}",
-  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] CHYBA openTCPServerSocket (HTTPS): {reason}"
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] CHYBA openTCPServerSocket (HTTPS): {reason}",
+  "app.explorer.title": "Průzkumník souborů",
+  "app.explorer.button.upload": "Nahrát",
+  "app.explorer.button.newFolder": "Nová složka",
+  "app.explorer.button.download": "Stáhnout",
+  "app.explorer.button.openEditor": "Otevřít v editoru",
+  "app.explorer.button.delete": "Odstranit",
+  "app.explorer.confirm.delete": "Odstranit \"{name}\"?",
+  "app.explorer.prompt.newFolder": "Název složky:",
+  "app.explorer.label.empty": "(prázdné)",
+  "app.explorer.status.uploaded": "Nahráno: {name}",
+  "app.explorer.error.upload": "Nahrávání se nezdařilo: {msg}",
+  "app.explorer.error.delete": "Odstranění se nezdařilo: {msg}",
+  "app.explorer.error.mkdir": "Nelze vytvořit složku: {msg}"
 };

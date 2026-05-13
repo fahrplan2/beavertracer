@@ -641,6 +641,20 @@ export default {
   "app.terminal.commands.traceroute.out.banner": "traceroute to {host} ({dst}), {maxTtl} hops max, {probes} probes",
 
 
+  "app.explorer.title":               "File Explorer",
+  "app.explorer.button.upload":       "Upload",
+  "app.explorer.button.newFolder":    "New Folder",
+  "app.explorer.button.download":     "Download",
+  "app.explorer.button.openEditor":   "Open in Editor",
+  "app.explorer.button.delete":       "Delete",
+  "app.explorer.confirm.delete":      "Delete \"{name}\"?",
+  "app.explorer.prompt.newFolder":    "Folder name:",
+  "app.explorer.label.empty":         "(empty)",
+  "app.explorer.status.uploaded":     "Uploaded: {name}",
+  "app.explorer.error.upload":        "Upload failed: {msg}",
+  "app.explorer.error.delete":        "Delete failed: {msg}",
+  "app.explorer.error.mkdir":         "Cannot create folder: {msg}",
+
   "app.texteditor.title": "Editor",
   "app.texteditor.noFilesystem": "No filesystem available.",
   "app.texteditor.status.newFile": "(new file)",

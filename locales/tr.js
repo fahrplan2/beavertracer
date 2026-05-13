@@ -916,5 +916,18 @@ export default {
   "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS DINLEME :{port}",
   "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS DURDURULDU",
   "app.simplehttpserver.log.httpsStopError": "[{time}] HATA HTTPS durdurulurken: {reason}",
-  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] HATA openTCPServerSocket (HTTPS): {reason}"
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] HATA openTCPServerSocket (HTTPS): {reason}",
+  "app.explorer.title": "Dosya Gezgini",
+  "app.explorer.button.upload": "Yükle",
+  "app.explorer.button.newFolder": "Yeni Klasör",
+  "app.explorer.button.download": "İndir",
+  "app.explorer.button.openEditor": "Editörde Aç",
+  "app.explorer.button.delete": "Sil",
+  "app.explorer.confirm.delete": "\"{name}\" silinsin mi?",
+  "app.explorer.prompt.newFolder": "Klasör adı:",
+  "app.explorer.label.empty": "(boş)",
+  "app.explorer.status.uploaded": "Yüklendi: {name}",
+  "app.explorer.error.upload": "Yükleme başarısız: {msg}",
+  "app.explorer.error.delete": "Silme başarısız: {msg}",
+  "app.explorer.error.mkdir": "Klasör oluşturulamadı: {msg}"
 };

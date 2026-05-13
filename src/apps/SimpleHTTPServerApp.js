@@ -47,11 +47,19 @@ function indexOfBytes(hay, needle) {
 function contentTypeOf(path) {
   const p = path.toLowerCase();
   if (p.endsWith(".html") || p.endsWith(".htm")) return "text/html; charset=utf-8";
-  if (p.endsWith(".css")) return "text/css; charset=utf-8";
-  if (p.endsWith(".js")) return "text/javascript; charset=utf-8";
+  if (p.endsWith(".css"))  return "text/css; charset=utf-8";
+  if (p.endsWith(".js") || p.endsWith(".mjs")) return "text/javascript; charset=utf-8";
   if (p.endsWith(".json")) return "application/json; charset=utf-8";
+  if (p.endsWith(".xml"))  return "application/xml; charset=utf-8";
+  if (p.endsWith(".svg"))  return "image/svg+xml";
+  if (p.endsWith(".png"))  return "image/png";
+  if (p.endsWith(".jpg") || p.endsWith(".jpeg")) return "image/jpeg";
+  if (p.endsWith(".gif"))  return "image/gif";
+  if (p.endsWith(".webp")) return "image/webp";
+  if (p.endsWith(".ico"))  return "image/x-icon";
+  if (p.endsWith(".pdf"))  return "application/pdf";
   if (p.endsWith(".txt") || p.endsWith(".log")) return "text/plain; charset=utf-8";
-  return "text/plain; charset=utf-8";
+  return "application/octet-stream";
 }
 
 /**
@@ -405,8 +413,8 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     } catch { /* ignore */ }
   }
 
-  /** @param {string} path */
-  _readFileText(path) {
+  /** @param {string} path @returns {Uint8Array|null} */
+  _readFileBytes(path) {
     const fs = /** @type {any} */ (this.os.fs);
     if (!fs) return null;
     try {
@@ -415,9 +423,10 @@ export class SimpleHTTPServerApp extends LoggedProcess {
         const st = fs.stat(path);
         if (st?.type !== "file") return null;
       }
+      if (typeof fs.readBinaryFile === "function") return fs.readBinaryFile(path);
       if (typeof fs.readFile === "function") {
         const s = fs.readFile(path);
-        return (typeof s === "string") ? s : null;
+        return (typeof s === "string") ? encodeUTF8(s) : null;
       }
       return null;
     } catch {
@@ -658,9 +667,9 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     if (norm.endsWith("/")) norm += "index.html";
 
     const fsPath = joinDocroot(this.docRoot, norm);
-    const text = this._readFileText(fsPath);
+    const data = this._readFileBytes(fsPath);
 
-    if (text == null) {
+    if (data == null) {
       const body = internalHtml(
         t("app.simplehttpserver.http.404.title"),
         t("app.simplehttpserver.http.404.details", { norm, fsPath })
@@ -679,7 +688,6 @@ export class SimpleHTTPServerApp extends LoggedProcess {
       return;
     }
 
-    const data = encodeUTF8(text);
     const ct   = contentTypeOf(fsPath);
     const body = (method === "HEAD") ? new Uint8Array(0) : data;
 

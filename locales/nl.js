@@ -916,5 +916,18 @@ export default {
   "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS LUISTEREN :{port}",
   "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS GESTOPT",
   "app.simplehttpserver.log.httpsStopError": "[{time}] FOUT HTTPS stoppen: {reason}",
-  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] FOUT openTCPServerSocket (HTTPS): {reason}"
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] FOUT openTCPServerSocket (HTTPS): {reason}",
+  "app.explorer.title": "Bestandsverkenner",
+  "app.explorer.button.upload": "Uploaden",
+  "app.explorer.button.newFolder": "Nieuwe map",
+  "app.explorer.button.download": "Downloaden",
+  "app.explorer.button.openEditor": "Openen in editor",
+  "app.explorer.button.delete": "Verwijderen",
+  "app.explorer.confirm.delete": "\"{name}\" verwijderen?",
+  "app.explorer.prompt.newFolder": "Mapnaam:",
+  "app.explorer.label.empty": "(leeg)",
+  "app.explorer.status.uploaded": "Geüpload: {name}",
+  "app.explorer.error.upload": "Upload mislukt: {msg}",
+  "app.explorer.error.delete": "Verwijderen mislukt: {msg}",
+  "app.explorer.error.mkdir": "Kan map niet maken: {msg}"
 };

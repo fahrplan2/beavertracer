@@ -916,5 +916,18 @@ export default {
   "app.certmanager.clipboard.pasteKey": " (مع المفتاح)",
   "app.certmanager.clipboard.pastePublic": " (عام فقط)",
   "app.certmanager.clipboard.pasteEmpty": "لصق من الحافظة",
-  "app.certmanager.trusted.emptyHint": "استيراد شهادة CA أو إضافة واحدة من شهاداتي."
+  "app.certmanager.trusted.emptyHint": "استيراد شهادة CA أو إضافة واحدة من شهاداتي.",
+  "app.explorer.title": "مستكشف الملفات",
+  "app.explorer.button.upload": "رفع",
+  "app.explorer.button.newFolder": "مجلد جديد",
+  "app.explorer.button.download": "تحميل",
+  "app.explorer.button.openEditor": "فتح في المحرر",
+  "app.explorer.button.delete": "حذف",
+  "app.explorer.confirm.delete": "حذف \"{name}\"؟",
+  "app.explorer.prompt.newFolder": "اسم المجلد:",
+  "app.explorer.label.empty": "(فارغ)",
+  "app.explorer.status.uploaded": "تم الرفع: {name}",
+  "app.explorer.error.upload": "فشل الرفع: {msg}",
+  "app.explorer.error.delete": "فشل الحذف: {msg}",
+  "app.explorer.error.mkdir": "لا يمكن إنشاء المجلد: {msg}"
 };

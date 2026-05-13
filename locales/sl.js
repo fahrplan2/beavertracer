@@ -916,5 +916,18 @@ export default {
   "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS LISTENING :{port}",
   "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS STOPPED",
   "app.simplehttpserver.log.httpsStopError": "[{time}] ERROR stop HTTPS: {reason}",
-  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] ERROR openTCPServerSocket (HTTPS): {reason}"
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] ERROR openTCPServerSocket (HTTPS): {reason}",
+  "app.explorer.title": "Datotečni iskalnik",
+  "app.explorer.button.upload": "Naloži",
+  "app.explorer.button.newFolder": "Nova mapa",
+  "app.explorer.button.download": "Prenesi",
+  "app.explorer.button.openEditor": "Odpri v urejevalniku",
+  "app.explorer.button.delete": "Izbriši",
+  "app.explorer.confirm.delete": "Izbriši \"{name}\"?",
+  "app.explorer.prompt.newFolder": "Ime mape:",
+  "app.explorer.label.empty": "(prazno)",
+  "app.explorer.status.uploaded": "Naloženo: {name}",
+  "app.explorer.error.upload": "Nalaganje neuspešno: {msg}",
+  "app.explorer.error.delete": "Brisanje neuspešno: {msg}",
+  "app.explorer.error.mkdir": "Ni mogoče ustvariti mape: {msg}"
 };

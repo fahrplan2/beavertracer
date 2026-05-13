@@ -916,5 +916,18 @@ export default {
   "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS LISTEN :{port}",
   "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS DIHENTIKAN",
   "app.simplehttpserver.log.httpsStopError": "[{time}] KESALAHAN menghentikan HTTPS: {reason}",
-  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] KESALAHAN openTCPServerSocket (HTTPS): {reason}"
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] KESALAHAN openTCPServerSocket (HTTPS): {reason}",
+  "app.explorer.title": "File Explorer",
+  "app.explorer.button.upload": "Unggah",
+  "app.explorer.button.newFolder": "Folder Baru",
+  "app.explorer.button.download": "Unduh",
+  "app.explorer.button.openEditor": "Buka di Editor",
+  "app.explorer.button.delete": "Hapus",
+  "app.explorer.confirm.delete": "Hapus \"{name}\"?",
+  "app.explorer.prompt.newFolder": "Nama folder:",
+  "app.explorer.label.empty": "(kosong)",
+  "app.explorer.status.uploaded": "Terunggah: {name}",
+  "app.explorer.error.upload": "Unggah gagal: {msg}",
+  "app.explorer.error.delete": "Hapus gagal: {msg}",
+  "app.explorer.error.mkdir": "Tidak dapat membuat folder: {msg}"
 };

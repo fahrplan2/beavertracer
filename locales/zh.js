@@ -1,4 +1,8 @@
+//@ts-check
+export const meta = { name: "🇨🇳 简体中文", order: 30 };
+
 export default {
+  "lang.name": "🇨🇳 简体中文",
   "app.generic.title": "通用应用",
   "app.dhcpserver.title": "DHCP 服务器",
   "app.dhcpserver.label.config": "配置",
@@ -912,5 +916,18 @@ export default {
   "app.certmanager.sign.ok": "已签署的证书已保存：{name}",
   "app.certmanager.sign.errSelect": "请选择一个证书和一个 CA。",
   "app.certmanager.sign.errExists": "文件已存在：{name}",
-  "app.certmanager.sign.errFailed": "签署失败。"
+  "app.certmanager.sign.errFailed": "签署失败。",
+  "app.explorer.title": "文件浏览器",
+  "app.explorer.button.upload": "上传",
+  "app.explorer.button.newFolder": "新建文件夹",
+  "app.explorer.button.download": "下载",
+  "app.explorer.button.openEditor": "在编辑器中打开",
+  "app.explorer.button.delete": "删除",
+  "app.explorer.confirm.delete": "删除 \"{name}\"？",
+  "app.explorer.prompt.newFolder": "文件夹名称：",
+  "app.explorer.label.empty": "（空）",
+  "app.explorer.status.uploaded": "已上传：{name}",
+  "app.explorer.error.upload": "上传失败：{msg}",
+  "app.explorer.error.delete": "删除失败：{msg}",
+  "app.explorer.error.mkdir": "无法创建文件夹：{msg}"
 };

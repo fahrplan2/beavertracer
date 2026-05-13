@@ -916,5 +916,18 @@ export default {
   "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS LISTEN :{port}",
   "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS STOPPED",
   "app.simplehttpserver.log.httpsStopError": "[{time}] ERROR stop HTTPS: {reason}",
-  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] ERROR openTCPServerSocket (HTTPS): {reason}"
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] ERROR openTCPServerSocket (HTTPS): {reason}",
+  "app.explorer.title": "Εξερευνητής Αρχείων",
+  "app.explorer.button.upload": "Μεταφόρτωση",
+  "app.explorer.button.newFolder": "Νέος Φάκελος",
+  "app.explorer.button.download": "Λήψη",
+  "app.explorer.button.openEditor": "Άνοιγμα στο Πρόγραμμα Επεξεργασίας",
+  "app.explorer.button.delete": "Διαγραφή",
+  "app.explorer.confirm.delete": "Διαγραφή \"{name}\";",
+  "app.explorer.prompt.newFolder": "Όνομα φακέλου:",
+  "app.explorer.label.empty": "(κενό)",
+  "app.explorer.status.uploaded": "Μεταφορτώθηκε: {name}",
+  "app.explorer.error.upload": "Η μεταφόρτωση απέτυχε: {msg}",
+  "app.explorer.error.delete": "Η διαγραφή απέτυχε: {msg}",
+  "app.explorer.error.mkdir": "Δεν είναι δυνατή η δημιουργία φακέλου: {msg}"
 };

@@ -916,5 +916,18 @@ export default {
   "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS СЛУША :{port}",
   "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS СПРЯН",
   "app.simplehttpserver.log.httpsStopError": "[{time}] ГРЕШКА при спиране на HTTPS: {reason}",
-  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] ГРЕШКА openTCPServerSocket (HTTPS): {reason}"
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] ГРЕШКА openTCPServerSocket (HTTPS): {reason}",
+  "app.explorer.title": "Файлов браузър",
+  "app.explorer.button.upload": "Качване",
+  "app.explorer.button.newFolder": "Нова папка",
+  "app.explorer.button.download": "Изтегляне",
+  "app.explorer.button.openEditor": "Отвори в редактор",
+  "app.explorer.button.delete": "Изтриване",
+  "app.explorer.confirm.delete": "Изтриване на \"{name}\"?",
+  "app.explorer.prompt.newFolder": "Име на папката:",
+  "app.explorer.label.empty": "(празна)",
+  "app.explorer.status.uploaded": "Качено: {name}",
+  "app.explorer.error.upload": "Качването не успя: {msg}",
+  "app.explorer.error.delete": "Изтриването не успя: {msg}",
+  "app.explorer.error.mkdir": "Не може да се създаде папка: {msg}"
 };

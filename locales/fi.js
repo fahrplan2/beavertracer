@@ -916,5 +916,18 @@ export default {
   "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS KUUNTELEE :{port}",
   "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS PYSÄYTETTY",
   "app.simplehttpserver.log.httpsStopError": "[{time}] VIRHE HTTPS:n pysäyttämisessä: {reason}",
-  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] VIRHE openTCPServerSocket (HTTPS): {reason}"
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] VIRHE openTCPServerSocket (HTTPS): {reason}",
+  "app.explorer.title": "Tiedostoselain",
+  "app.explorer.button.upload": "Lataa",
+  "app.explorer.button.newFolder": "Uusi kansio",
+  "app.explorer.button.download": "Lataa",
+  "app.explorer.button.openEditor": "Avaa editorissa",
+  "app.explorer.button.delete": "Poista",
+  "app.explorer.confirm.delete": "Poistetaanko \"{name}\"?",
+  "app.explorer.prompt.newFolder": "Kansion nimi:",
+  "app.explorer.label.empty": "(tyhjä)",
+  "app.explorer.status.uploaded": "Ladattu: {name}",
+  "app.explorer.error.upload": "Lataus epäonnistui: {msg}",
+  "app.explorer.error.delete": "Poistaminen epäonnistui: {msg}",
+  "app.explorer.error.mkdir": "Kansiota ei voida luoda: {msg}"
 };

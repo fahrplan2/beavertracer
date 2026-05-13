@@ -916,5 +916,18 @@ export default {
   "app.simplehttpserver.log.httpsListen": "[{time}] HTTPS LISTEN :{port}",
   "app.simplehttpserver.log.httpsStopped": "[{time}] HTTPS STOPPED",
   "app.simplehttpserver.log.httpsStopError": "[{time}] ERROR stop HTTPS: {reason}",
-  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] ERROR openTCPServerSocket (HTTPS): {reason}"
+  "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] ERROR openTCPServerSocket (HTTPS): {reason}",
+  "app.explorer.title": "Проводник файлов",
+  "app.explorer.button.upload": "Загрузить",
+  "app.explorer.button.newFolder": "Новая папка",
+  "app.explorer.button.download": "Скачать",
+  "app.explorer.button.openEditor": "Открыть в редакторе",
+  "app.explorer.button.delete": "Удалить",
+  "app.explorer.confirm.delete": "Удалить \"{name}\"?",
+  "app.explorer.prompt.newFolder": "Имя папки:",
+  "app.explorer.label.empty": "(пусто)",
+  "app.explorer.status.uploaded": "Загружено: {name}",
+  "app.explorer.error.upload": "Ошибка загрузки: {msg}",
+  "app.explorer.error.delete": "Ошибка удаления: {msg}",
+  "app.explorer.error.mkdir": "Не удалось создать папку: {msg}"
 };
