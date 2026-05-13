@@ -22,7 +22,7 @@ export class CertManagerApp extends GenericProcess {
 
   get title() { return t("app.certmanager.title"); }
   icon  = "fa-shield-halved";
-  badge = "CA";
+  badge = "";
 
   /** @type {Disposer} */
   disposer = new Disposer();

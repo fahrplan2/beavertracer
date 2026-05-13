@@ -152,10 +152,12 @@ export class Router extends SimulatedObject {
             { id: "routes-v4",  label: t("router.routingtable.ipv4") },
             { id: "routes-v6",  label: t("router.routingtable.ipv6") },
             { id: "rip",        label: t("router.rip.tab")            },
+            { id: "vpn",        label: t("router.vpn.tab")            },
         ], (id) => {
             ifSection.style.display    = id === "interfaces" ? "" : "none";
             routeSection.style.display = (id === "routes-v4" || id === "routes-v6") ? "" : "none";
             ripSection.style.display   = id === "rip" ? "" : "none";
+            vpnSection.style.display   = id === "vpn"  ? "" : "none";
             if (id === "routes-v4") { routeTitle.textContent = t("router.routingtable.ipv4"); this._selectedRouteFamily = 4; this._renderRoutes(); }
             if (id === "routes-v6") { routeTitle.textContent = t("router.routingtable.ipv6"); this._selectedRouteFamily = 6; this._renderRoutes(); }
         });
@@ -250,12 +252,17 @@ export class Router extends SimulatedObject {
         const ripSection = DOMBuilder.div("");
         this._buildRIPSection(ripSection);
 
-        outerContent.append(ifSection, routeSection, ripSection);
+        /* ================================ VPN ================================= */
+        const vpnSection = DOMBuilder.div("");
+        this._buildVPNSection(vpnSection);
+
+        outerContent.append(ifSection, routeSection, ripSection, vpnSection);
 
         /* ============================ Tab switching ============================ */
         ifSection.style.display = "";
         routeSection.style.display = "none";
         ripSection.style.display = "none";
+        vpnSection.style.display = "none";
         setOuterActive("interfaces");
 
         /* ============================ Init ============================ */
@@ -714,7 +721,13 @@ export class Router extends SimulatedObject {
             /** @type {HTMLSelectElement|null} */
             let ifSel = null;
 
-            if (r.interf === -1) {
+            if (r.tunnel) {
+                const span = document.createElement("span");
+                span.textContent = "tun:" + r.tunnel.name;
+                span.style.opacity = "0.8";
+                ifCellEl = span;
+                save.disabled = true;
+            } else if (r.interf === -1) {
                 const span = document.createElement("span");
                 span.textContent = "lo";
                 span.style.opacity = "0.8";
@@ -850,7 +863,11 @@ export class Router extends SimulatedObject {
                 const old = this.net.routingTable[idx];
                 if (old.auto) return;
 
-                this.net.delRoute(old.dst, old.prefixLength, old.interf, old.nexthop);
+                if (old.tunnel) {
+                    this.net.delTunnelRoute(old.dst, old.prefixLength, old.tunnel.name);
+                } else {
+                    this.net.delRoute(old.dst, old.prefixLength, old.interf, old.nexthop);
+                }
                 this._renderRoutes();
             });
 
@@ -1282,5 +1299,98 @@ export class Router extends SimulatedObject {
         const max   = 200;
         this._ripLogEl.value = (lines.length > max ? lines.slice(-max) : lines).join("\n");
         this._ripLogEl.scrollTop = this._ripLogEl.scrollHeight;
+    }
+
+    /* ----------------------------- VPN tab ----------------------------- */
+
+    /** @param {HTMLElement} host */
+    _buildVPNSection(host) {
+        DOMBuilder.clear(host);
+        host.appendChild(DOMBuilder.h4(t("router.vpn.tab")));
+
+        const listEl = DOMBuilder.div("router-vpn-list");
+
+        const renderList = () => {
+            DOMBuilder.clear(listEl);
+            if (this.net.tunnels.length === 0) {
+                listEl.appendChild(DOMBuilder.el("p", { text: t("router.vpn.empty"), className: "router-vpn-empty" }));
+                return;
+            }
+            for (const tun of this.net.tunnels) {
+                const routes = this.net.routingTable.filter(r => r.tunnel === tun);
+                const netStr = routes.map(r => `${r.dst}/${r.prefixLength}`).join(", ") || "—";
+
+                const delBtn = DOMBuilder.button(t("router.vpn.delete"), { className: "router-vpn-del" });
+                delBtn.addEventListener("click", () => {
+                    this.net.removeTunnel(tun.name);
+                    renderList();
+                    this._renderRoutes();
+                });
+
+                const row = DOMBuilder.div("router-vpn-row", [
+                    DOMBuilder.el("span", { text: tun.name,                      className: "router-vpn-name"   }),
+                    DOMBuilder.el("span", { text: tun.remoteEndpoint.toString(),  className: "router-vpn-remote" }),
+                    DOMBuilder.el("span", { text: netStr,                         className: "router-vpn-net"    }),
+                    delBtn,
+                ]);
+                listEl.appendChild(row);
+            }
+        };
+
+        renderList();
+        host.appendChild(listEl);
+
+        // ── Add-tunnel form ──
+        const nameIn   = DOMBuilder.input({ placeholder: "vpn0" });
+        const remoteIn = DOMBuilder.input({ placeholder: "203.0.113.1" });
+        const netIn    = DOMBuilder.input({ placeholder: "10.0.0.0/24" });
+        const errEl    = DOMBuilder.el("p", { className: "router-vpn-err" });
+        const addBtn   = DOMBuilder.button(t("router.vpn.add"), { className: "router-vpn-add" });
+
+        const mkRow = (/** @type {string} */ label, /** @type {HTMLElement} */ inp) =>
+            DOMBuilder.div("router-vpn-form-row", [
+                DOMBuilder.el("span", { text: label, className: "router-vpn-form-label" }),
+                inp,
+            ]);
+
+        addBtn.addEventListener("click", () => {
+            errEl.textContent = "";
+            try {
+                const name = nameIn.value.trim();
+                if (!name) throw new Error(t("router.vpn.err.name"));
+
+                let remote;
+                try { remote = IPAddress.fromString(remoteIn.value.trim()); }
+                catch { throw new Error(t("router.vpn.err.remote")); }
+                if (!remote.isV4()) throw new Error(t("router.vpn.err.remote"));
+
+                const cidr = netIn.value.trim();
+                const slash = cidr.indexOf("/");
+                if (slash < 0) throw new Error(t("router.vpn.err.network"));
+                let dstIp;
+                try { dstIp = IPAddress.fromString(cidr.slice(0, slash)); }
+                catch { throw new Error(t("router.vpn.err.network")); }
+                const prefix = Number(cidr.slice(slash + 1));
+                if (!Number.isInteger(prefix) || prefix < 0 || prefix > 32)
+                    throw new Error(t("router.vpn.err.network"));
+
+                this.net.addTunnel(name, remote);
+                this.net.addTunnelRoute(dstIp, prefix, name);
+
+                nameIn.value = remoteIn.value = netIn.value = "";
+                renderList();
+                this._renderRoutes();
+            } catch (e) {
+                errEl.textContent = String(e?.message ?? e);
+            }
+        });
+
+        host.appendChild(DOMBuilder.div("router-vpn-form", [
+            mkRow(t("router.vpn.name"),    nameIn),
+            mkRow(t("router.vpn.remote"),  remoteIn),
+            mkRow(t("router.vpn.network"), netIn),
+            addBtn,
+            errEl,
+        ]));
     }
 }

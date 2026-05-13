@@ -12,6 +12,14 @@ import { TcpEngine } from "./TcpEngine.js";
 import { UdpEngine } from "./UdpEngine.js";
 import { IPAddress } from "./models/IPAddress.js";
 import { ICMPv6Packet } from "../net/pdu/ICMPv6Packet.js";
+import { GREPacket } from "../net/pdu/GREPacket.js";
+
+class TunnelConfig {
+    /** @type {string} */
+    name = "";
+    /** @type {IPAddress} */
+    remoteEndpoint = IPAddress.fromString("0.0.0.0");
+}
 
 /**
  * Returns true if addr matches network/prefixLength.
@@ -49,6 +57,9 @@ export class IPStack extends Observable {
 
     /** @type {Array<Route>} */
     routingTable = [];
+
+    /** @type {TunnelConfig[]} */
+    tunnels = [];
 
     forwarding = false;
 
@@ -281,6 +292,17 @@ export class IPStack extends Observable {
             };
         }
 
+        // tunnel route — no physical interface needed
+        if (best.tunnel) {
+            return {
+                interfIndex: -2,
+                route: best,
+                nextHopIp: IPAddress.fromString("0.0.0.0"),
+                srcIp: IPAddress.fromString("0.0.0.0"),
+                prefixBits: bestBits,
+            };
+        }
+
         const interfIndex = best.interf | 0;
         const itf = this.interfaces[interfIndex];
         if (!itf) return null;
@@ -499,6 +521,11 @@ export class IPStack extends Observable {
                 this._sendICMPError(packet, 11, 0);
                 return;
             }
+        }
+
+        if (out.route.tunnel) {
+            await this._forwardGRE(packet, out.route.tunnel);
+            return;
         }
 
         const r = out.route;
@@ -791,6 +818,9 @@ export class IPStack extends Observable {
             case 17:
                 this._handleUDP(packet);
                 break;
+            case 47:
+                this._handleGRE(packet);
+                break;
             default:
                 this._sendICMPError(packet, 3, 2); // Protocol Unreachable
         }
@@ -826,6 +856,89 @@ export class IPStack extends Observable {
         console.debug("IP OUT", { dst: dst.toString(), src: src.toString(), protocol, ttl: packet.ttl, payloadLen: payload.length });
 
         this.route(packet, true).catch(console.error);
+    }
+
+    // ── GRE tunnel ────────────────────────────────────────────────────────────
+
+    /**
+     * @param {IPv4Packet} innerPacket
+     * @param {TunnelConfig} tunnel
+     */
+    async _forwardGRE(innerPacket, tunnel) {
+        const gre = new GREPacket({ protocol: 0x0800, payload: innerPacket.pack() });
+        await this.send({ dst: tunnel.remoteEndpoint, protocol: 47, payload: gre.pack() });
+    }
+
+    /** @param {IPv4Packet} outerPacket */
+    _handleGRE(outerPacket) {
+        try {
+            const gre = GREPacket.fromBytes(outerPacket.payload);
+            if (gre.protocol !== 0x0800) return; // only IPv4-in-GRE supported
+            const inner = IPv4Packet.fromBytes(gre.payload);
+            this.route(inner, false).catch(console.error);
+        } catch (e) {
+            console.warn("GRE decap error", e);
+        }
+    }
+
+    /**
+     * Add a named GRE tunnel endpoint.
+     * @param {string} name
+     * @param {IPAddress|string} remoteEndpoint
+     * @returns {TunnelConfig}
+     */
+    addTunnel(name, remoteEndpoint) {
+        if (this.tunnels.some(t => t.name === name))
+            throw new Error(`Tunnel "${name}" already exists`);
+        const tun = new TunnelConfig();
+        tun.name = String(name);
+        tun.remoteEndpoint = (remoteEndpoint instanceof IPAddress)
+            ? remoteEndpoint
+            : IPAddress.fromString(String(remoteEndpoint));
+        this.tunnels.push(tun);
+        return tun;
+    }
+
+    /**
+     * Remove a tunnel and all routes associated with it.
+     * @param {string} name
+     */
+    removeTunnel(name) {
+        this.routingTable = this.routingTable.filter(r => !r.tunnel || r.tunnel.name !== name);
+        this.tunnels = this.tunnels.filter(t => t.name !== name);
+    }
+
+    /**
+     * Add a route that forwards matching traffic into a named tunnel.
+     * @param {IPAddress|string} dst
+     * @param {number} prefixLength
+     * @param {string} tunnelName
+     */
+    addTunnelRoute(dst, prefixLength, tunnelName) {
+        const tun = this.tunnels.find(t => t.name === tunnelName);
+        if (!tun) throw new Error(`Tunnel "${tunnelName}" not found`);
+        const r = new Route();
+        r.dst = (dst instanceof IPAddress) ? dst : IPAddress.fromString(String(dst));
+        r.prefixLength = prefixLength | 0;
+        r.interf = -2;
+        r.nexthop = IPAddress.fromString("0.0.0.0");
+        r.auto = false;
+        r.tunnel = tun;
+        this.routingTable.push(r);
+    }
+
+    /**
+     * @param {IPAddress|string} dst
+     * @param {number} prefixLength
+     * @param {string} tunnelName
+     */
+    delTunnelRoute(dst, prefixLength, tunnelName) {
+        const dstStr = (dst instanceof IPAddress) ? dst.toString() : String(dst);
+        this.routingTable = this.routingTable.filter(r =>
+            !(r.tunnel?.name === tunnelName &&
+              r.dst.toString() === dstStr &&
+              r.prefixLength === (prefixLength | 0))
+        );
     }
 
     /**
@@ -1352,6 +1465,11 @@ export class IPStack extends Observable {
                     : {}),
             })),
 
+            tunnels: this.tunnels.map(t => ({
+                name: t.name,
+                remoteEndpoint: t.remoteEndpoint.toString(),
+            })),
+
             routes: this.routingTable
                 .filter(r => !r.auto)
                 .map(r => ({
@@ -1359,6 +1477,7 @@ export class IPStack extends Observable {
                     prefixLength: r.prefixLength,
                     interf: r.interf,
                     nexthop: r.nexthop.toString(),
+                    ...(r.tunnel ? { tunnel: r.tunnel.name } : {}),
                 })),
         };
     }
@@ -1425,10 +1544,31 @@ export class IPStack extends Observable {
         // rebuild auto routes
         stack._updateAutoRoutes();
 
+        // restore tunnels
+        for (const tj of (Array.isArray(json.tunnels) ? json.tunnels : [])) {
+            try {
+                stack.addTunnel(String(tj.name ?? ""), IPAddress.fromString(String(tj.remoteEndpoint ?? "0.0.0.0")));
+            } catch (e) {
+                console.warn("IPStack.fromJSON: could not restore tunnel", tj, e);
+            }
+        }
+
         // restore manual routes
         const routes = Array.isArray(json.routes) ? json.routes : [];
         for (const rr of routes) {
             if (!rr || typeof rr !== "object") continue;
+
+            if (rr.tunnel) {
+                // tunnel route
+                try {
+                    const dst = IPAddress.fromString(String(rr.dst ?? "0.0.0.0"));
+                    const prefixLength = Number(rr.prefixLength ?? 32);
+                    stack.addTunnelRoute(dst, prefixLength, String(rr.tunnel));
+                } catch (e) {
+                    console.warn("IPStack.fromJSON: could not restore tunnel route", rr, e);
+                }
+                continue;
+            }
 
             const dst = IPAddress.fromString(String(rr.dst ?? "0.0.0.0"));
             const prefixLength = Number(rr.prefixLength ?? (dst.isV4() ? 32 : 128));
@@ -1461,4 +1601,7 @@ export class Route {
     interf = 0;
 
     auto = true;
+
+    /** @type {TunnelConfig|null} set for GRE tunnel routes */
+    tunnel = null;
 }
