@@ -14,7 +14,7 @@
   },
   "name": "beavertracer",
   "description": "",
-  "version": "0.1.11+dev.81.c57f0b1",
+  "version": "0.1.11+dev.83.4991c7c",
   "main": "electron/main.cjs",
   "repository": {
     "type": "git",
@@ -28,7 +28,7 @@
     "@tauri-apps/cli": "^2.9.6",
     "markdown-it": "^14.1.1",
     "typescript": "^5.9.3",
-    "vite": "^4.5.14",
+    "vite": "^8.0.12",
     "vitest": "^4.1.6"
   },
   "build": {
