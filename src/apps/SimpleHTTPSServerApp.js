@@ -140,7 +140,7 @@ export class SimpleHTTPSServerApp extends SimpleHTTPServerApp {
 
   // ── cert helpers ───────────────────────────────────────────────────────────
 
-  _refreshCertList() {
+  async _refreshCertList() {
     const sel = this._certSelectEl;
     if (!sel) return;
     const fs = this.os.fs;
@@ -150,13 +150,13 @@ export class SimpleHTTPSServerApp extends SimpleHTTPServerApp {
     const entries = [];
     try {
       const names = fs.readdir(CERT_DIR);
-      for (const name of names) {
-        if (!name.endsWith(".json")) continue;
+      await Promise.all(names.filter(n => n.endsWith(".json")).map(async name => {
         try {
-          const cert = TlsCertificate.fromJSON(JSON.parse(fs.readFile(`${CERT_DIR}/${name}`)));
-          entries.push({ cert, path: `${CERT_DIR}/${name}`, name });
+          const cert = await TlsCertificate.fromJSON(JSON.parse(fs.readFile(`${CERT_DIR}/${name}`)));
+          // Only certs with a private key can be used as server certs
+          if (cert.hasPrivateKey) entries.push({ cert, path: `${CERT_DIR}/${name}`, name });
         } catch { /* skip invalid */ }
-      }
+      }));
     } catch { /* dir missing */ }
 
     if (entries.length === 0) {
@@ -188,12 +188,12 @@ export class SimpleHTTPSServerApp extends SimpleHTTPServerApp {
     ].join("\n");
   }
 
-  _applyCert() {
+  async _applyCert() {
     const path = this._certSelectEl?.value;
     const fs = this.os.fs;
     if (!path || !fs) return;
     try {
-      this._cert = TlsCertificate.fromJSON(JSON.parse(fs.readFile(path)));
+      this._cert = await TlsCertificate.fromJSON(JSON.parse(fs.readFile(path)));
       this._appendLog(t("app.simplehttpsserver.log.certApplied",
         { time: nowStamp(), subject: this._cert.subject }));
       this._renderCertInfo();

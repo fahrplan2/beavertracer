@@ -111,24 +111,24 @@ export class OS {
     }
 
     /** Populate tls.certStore from /etc/certs/trusted/*.json */
-    _loadCertStore() {
+    async _loadCertStore() {
         this.tls.certStore = new TlsTrustStore();
         try { this.fs.mkdir("/etc/certs",         { recursive: true }); } catch { /* exists */ }
         try { this.fs.mkdir("/etc/certs/trusted", { recursive: true }); } catch { /* exists */ }
         let entries = [];
         try { entries = this.fs.readdir("/etc/certs/trusted"); } catch { return; }
-        for (const name of entries) {
-            if (!name.endsWith(".json")) continue;
+        await Promise.all(entries.filter(n => n.endsWith(".json")).map(async name => {
             try {
                 const raw = this.fs.readFile("/etc/certs/trusted/" + name);
-                this.tls.certStore.add(TlsCertificate.fromJSON(JSON.parse(raw)));
+                const cert = await TlsCertificate.fromJSON(JSON.parse(raw));
+                this.tls.certStore.add(cert);
             } catch { /* skip invalid */ }
-        }
+        }));
     }
 
     /** Reload trust store from VFS (call after adding/removing trusted certs). */
     reloadCertStore() {
-        this._loadCertStore();
+        this._loadCertStore(); // fire-and-forget; trust store certs have no JWK so resolves instantly
     }
 
 
