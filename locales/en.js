@@ -261,6 +261,7 @@ export default {
   "app.mailclient.config.port": "Port",
   "app.mailclient.config.user": "Username",
   "app.mailclient.config.pass": "Password",
+  "app.mailclient.config.domain": "Mail domain",
   "app.mailclient.config.smtpHost": "Server (address)",
   "app.mailclient.config.smtpPort": "Port",
   "app.mailclient.status.configSaved": "Settings saved",
@@ -342,6 +343,13 @@ export default {
 
   "app.simplemailserver.log.stopped": "stopped",
   "app.simplemailserver.log.listening": "listening",
+  "app.simplemailserver.log.bounceDelivered": "bounce delivered to",
+  "app.simplemailserver.log.bounceRelayFailed": "bounce relay failed for",
+
+  "app.simplemailserver.bounce.subject": "Undelivered Mail Returned to Sender",
+  "app.simplemailserver.bounce.intro": "This is the mail system at {domain}.",
+  "app.simplemailserver.bounce.failedRecipients": "Your message could not be delivered to the following recipient(s):",
+  "app.simplemailserver.bounce.origHeaders": "--- Original message headers ---",
 
 
   "app.simpletcpclient.placeholder.host": "Host / Address",

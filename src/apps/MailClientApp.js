@@ -237,6 +237,7 @@ export class MailClientApp extends LoggedProcess {
     port: "110",
     user: "",
     pass: "",
+    domain: "",
     smtpHost: "",
     smtpPort: "25",
   };
@@ -275,6 +276,7 @@ export class MailClientApp extends LoggedProcess {
   /** @type {HTMLInputElement|null} */ cfgPortIn = null;
   /** @type {HTMLInputElement|null} */ cfgUserIn = null;
   /** @type {HTMLInputElement|null} */ cfgPassIn = null;
+  /** @type {HTMLInputElement|null} */ cfgDomainIn = null;
   /** @type {HTMLInputElement|null} */ cfgSmtpHostIn = null;
   /** @type {HTMLInputElement|null} */ cfgSmtpPortIn = null;
 
@@ -309,7 +311,7 @@ export class MailClientApp extends LoggedProcess {
     this.logPanel = null; this.logEl = null;
     this.configPanel = null;
     this.cfgProtoSel = null; this.cfgHostIn = null; this.cfgPortIn = null;
-    this.cfgUserIn = null; this.cfgPassIn = null;
+    this.cfgUserIn = null; this.cfgPassIn = null; this.cfgDomainIn = null;
     this.cfgSmtpHostIn = null; this.cfgSmtpPortIn = null;
     this._setTabActive = null;
     super.onUnmount();
@@ -334,6 +336,7 @@ export class MailClientApp extends LoggedProcess {
           port:     str("port",     this.cfg.port),
           user:     str("user",     this.cfg.user),
           pass:     str("pass",     this.cfg.pass),
+          domain:   str("domain",   this.cfg.domain),
           smtpHost: str("smtpHost", this.cfg.smtpHost),
           smtpPort: str("smtpPort", this.cfg.smtpPort),
         };
@@ -436,6 +439,7 @@ export class MailClientApp extends LoggedProcess {
     const cfgUserIn    = UI.input({ value: this.cfg.user,     placeholder: "alice" });
     const cfgPassIn    = UI.input({ value: this.cfg.pass,     placeholder: "••••••" });
     cfgPassIn.type     = "password";
+    const cfgDomainIn  = UI.input({ value: this.cfg.domain,   placeholder: "example.local" });
     const cfgSmtpHostIn = UI.input({ value: this.cfg.smtpHost, placeholder: "z.B. 192.168.1.10" });
     const cfgSmtpPortIn = UI.input({ value: this.cfg.smtpPort, placeholder: "25" });
 
@@ -454,6 +458,7 @@ export class MailClientApp extends LoggedProcess {
         port:     cfgPortIn.value.trim()     || "110",
         user:     cfgUserIn.value.trim(),
         pass:     cfgPassIn.value,
+        domain:   cfgDomainIn.value.trim(),
         smtpHost: cfgSmtpHostIn.value.trim(),
         smtpPort: cfgSmtpPortIn.value.trim() || "25",
       };
@@ -467,6 +472,7 @@ export class MailClientApp extends LoggedProcess {
     this.cfgPortIn     = cfgPortIn;
     this.cfgUserIn     = cfgUserIn;
     this.cfgPassIn     = cfgPassIn;
+    this.cfgDomainIn   = cfgDomainIn;
     this.cfgSmtpHostIn = cfgSmtpHostIn;
     this.cfgSmtpPortIn = cfgSmtpPortIn;
 
@@ -479,6 +485,7 @@ export class MailClientApp extends LoggedProcess {
       UI.row(t("app.mailclient.config.port")     || "Port",             cfgPortIn),
       UI.row(t("app.mailclient.config.user")     || "Benutzername",     cfgUserIn),
       UI.row(t("app.mailclient.config.pass")     || "Passwort",         cfgPassIn),
+      UI.row(t("app.mailclient.config.domain")   || "Maildomäne",       cfgDomainIn),
 
       UI.el("h5", { text: t("app.mailclient.config.outgoing") || "Ausgehend (SMTP)" }),
       UI.row(t("app.mailclient.config.smtpHost") || "Server (Adresse)", cfgSmtpHostIn),
@@ -854,7 +861,8 @@ export class MailClientApp extends LoggedProcess {
       this._setStatus(t("app.mailclient.err.invalidPort") || "Ungültiger SMTP-Port"); return;
     }
 
-    const from    = user.includes("@") ? user : `${user}@${smtpHost}`;
+    const fromDomain = this.cfg.domain || this.cfg.host || smtpHost;
+    const from    = user.includes("@") ? user : `${user}@${fromDomain}`;
     const ccAddrs  = splitAddrs([ccRaw]);
     const bccAddrs = splitAddrs([bccRaw]);
     const allRcpt  = [...splitAddrs([to]), ...ccAddrs, ...bccAddrs];

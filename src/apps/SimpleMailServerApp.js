@@ -681,8 +681,9 @@ export class SimpleMailServerApp extends LoggedProcess {
    * Deliver local recipients and relay remote.
    * @param {string[]} rcptList
    * @param {string} rawRfc822
+   * @param {string} [mailFrom]
    */
-  async _deliverOrRelay(rcptList, rawRfc822) {
+  async _deliverOrRelay(rcptList, rawRfc822, mailFrom = "") {
     const localDomain = this.mailDomain.toLowerCase();
 
     /** @type {string[]} */
@@ -697,9 +698,14 @@ export class SimpleMailServerApp extends LoggedProcess {
       else remotes.push(p.addr);
     }
 
+    /** @type {{addr:string, reason:string}[]} */
+    const failures = [];
+
     for (const user of locals) {
       if (!this._findUser(user)) {
-        this._appendLog(`[${nowStamp()}] local delivery failed: unknown user ${user}@${localDomain}`);
+        const addr = `${user}@${localDomain}`;
+        this._appendLog(`[${nowStamp()}] local delivery failed: unknown user ${addr}`);
+        failures.push({ addr, reason: "unknown user" });
         continue;
       }
       this._storeLocal(user, rawRfc822);
@@ -714,7 +720,58 @@ export class SimpleMailServerApp extends LoggedProcess {
         const reason = (e instanceof Error ? e.message : String(e));
         this._appendLog(`[${nowStamp()}] relay failed: ${addr} (${reason})`);
         this._queueOutgoing(addr, rawRfc822, reason);
+        failures.push({ addr, reason });
       }
+    }
+
+    if (failures.length > 0) {
+      this._sendBounce(mailFrom, failures, rawRfc822);
+    }
+  }
+
+  /**
+   * Send a MAILER-DAEMON bounce to the original sender.
+   * @param {string} mailFrom  envelope sender
+   * @param {{addr:string, reason:string}[]} failures
+   * @param {string} rawRfc822  original message
+   */
+  _sendBounce(mailFrom, failures, rawRfc822) {
+    const from = mailFrom.replace(/^<|>$/g, "").trim();
+    if (!from || from === "<>" || /^mailer-daemon@/i.test(from)) return;
+
+    const p = parseEmailAddressLoose(from);
+    if (!p) return;
+
+    const daemon   = `MAILER-DAEMON@${this.mailDomain}`;
+    const date     = new Date().toUTCString();
+    const failList = failures.map(f => `  ${f.addr}: ${f.reason}`).join("\r\n");
+    const origHead = rawRfc822.split(/\r\n\r\n|\n\n/)[0] ?? "";
+
+    const bounce =
+      `From: ${daemon}\r\n` +
+      `To: ${from}\r\n` +
+      `Subject: ${t("app.simplemailserver.bounce.subject") || "Undelivered Mail Returned to Sender"}\r\n` +
+      `Date: ${date}\r\n` +
+      `\r\n` +
+      `${(t("app.simplemailserver.bounce.intro") || "This is the mail system at {domain}.").replace("{domain}", this.mailDomain)}\r\n` +
+      `\r\n` +
+      `${t("app.simplemailserver.bounce.failedRecipients") || "Your message could not be delivered to the following recipient(s):"}\r\n` +
+      `\r\n` +
+      `${failList}\r\n` +
+      `\r\n` +
+      `${t("app.simplemailserver.bounce.origHeaders") || "--- Original message headers ---"}\r\n` +
+      `${origHead}\r\n`;
+
+    if (p.domain === this.mailDomain.toLowerCase()) {
+      if (this._findUser(p.local)) {
+        this._storeLocal(p.local, bounce);
+        this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.bounceDelivered") || "bounce delivered to"} ${from}`);
+      }
+    } else {
+      this._relaySmtp(from, bounce).catch((e) => {
+        const reason = (e instanceof Error ? e.message : String(e));
+        this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.bounceRelayFailed") || "bounce relay failed for"} ${from}: ${reason}`);
+      });
     }
   }
 
@@ -1169,7 +1226,7 @@ export class SimpleMailServerApp extends LoggedProcess {
         if (!/^\s*To:/im.test(msg)) msg = `To: ${rcptTo.join(", ")}\r\n` + msg;
 
         try {
-          await this._deliverOrRelay(rcptTo, msg);
+          await this._deliverOrRelay(rcptTo, msg, mailFrom ?? "");
           send("250 2.0.0 OK queued");
           this._appendLog(`[${nowStamp()}] SMTP accepted: from=${mailFrom} rcpt=${rcptTo.length} helo=${heloName ?? "-"} auth=${authedUser ?? "-"}`);
         } catch (e) {
@@ -1397,6 +1454,7 @@ export class SimpleMailServerApp extends LoggedProcess {
         const mbox = (rest[0] || "").toUpperCase();
         if (mbox !== "INBOX") { send(`${tag} NO only INBOX supported`); continue; }
 
+        loadMailbox();
         const exists = msgs.length;
         send(`* ${exists} EXISTS`);
         send(`* ${exists} RECENT`);
@@ -1425,7 +1483,7 @@ export class SimpleMailServerApp extends LoggedProcess {
         }
         const msg = normalizeCRLF(msgs[n - 1]);
         const bytes = encodeUTF8(msg).length;
-        send(`* ${n} FETCH (BODY[] {${bytes}})`);
+        send(`* ${n} FETCH (BODY[] {${bytes}}`);
         net.sendTCPConn(connKey, encodeUTF8(msg + "\r\n"));
         send(`)`);
         send(`${tag} OK FETCH completed`);
