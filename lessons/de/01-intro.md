@@ -8,7 +8,7 @@
 
 ## Embeded Simulation
 
-Hier eine Beispiel-Simulation:
+Hier eine Beispiel:fa-play:-Simulation:
 
 :::sim
 url=https://example.com/lessons/01-intro.btsim

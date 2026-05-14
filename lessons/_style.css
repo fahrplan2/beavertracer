@@ -13,6 +13,13 @@
   --code-text: #111827;
   --radius:    6px;
   --max-width: 860px;
+
+  --ok:           oklch(70% 0.17 145);
+  --warning:      oklch(78% 0.17 85);
+  --danger:       oklch(62% 0.20 25);
+  --green:        var(--ok);
+  --blue:         oklch(34.125% 0.19032 270.352);
+  --warning-soft: color-mix(in oklch, var(--warning), white 78%);
 }
 
 /* Dark – only when explicitly set via data-theme or system (if no manual override) */
@@ -37,6 +44,9 @@
     --primary:   #60a5fa;
     --code-bg:   #1e293b;
     --code-text: #e2e8f0;
+
+    --blue:         oklch(68% 0.18 250);
+    --warning-soft: color-mix(in oklch, var(--warning), oklch(16% 0.014 210) 78%);
   }
 }
 [data-theme="dark"] {
@@ -48,6 +58,9 @@
   --primary:   #60a5fa;
   --code-bg:   #1e293b;
   --code-text: #e2e8f0;
+
+  --blue:         oklch(68% 0.18 250);
+  --warning-soft: color-mix(in oklch, var(--warning), oklch(16% 0.014 210) 78%);
 }
 [data-theme="light"] {
   --bg:        #ffffff;
@@ -527,3 +540,11 @@ body {
     padding: 24px 16px 60px;
   }
 }
+
+/* ── FA icon colors (matching main app) ───────────────────────── */
+.fa-ban, .fa-stop           { color: var(--danger); }
+.fa-square                  { color: var(--warning-soft); }
+.fa-play                    { color: var(--green); }
+.fa-desktop, .fa-laptop,
+.fa-wifi, .fa-house-signal,
+.fa-shield-halved           { color: var(--blue); }
