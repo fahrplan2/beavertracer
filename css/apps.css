@@ -8,6 +8,27 @@
   height: 100%;
 }
 
+.explorer-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.explorer-toolbar .btn-row {
+  display: flex;
+  gap: 6px;
+}
+
+.explorer-toolbar-sep {
+  width: 1px;
+  align-self: stretch;
+  background: color-mix(in oklch, var(--border), var(--text) 15%);
+  margin: 0 2px;
+}
+
 .explorer-breadcrumb {
   display: flex;
   flex-wrap: wrap;
@@ -22,7 +43,9 @@
 
 .explorer-crumb {
   cursor: pointer;
-  color: var(--primary);
+  color: var(--primary-strong);
+  text-decoration: underline;
+  text-underline-offset: 2px;
   padding: 0.125rem 0.25rem;
   border-radius: 3px;
 }

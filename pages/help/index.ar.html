@@ -245,5 +245,50 @@
 
 <hr>
 
-<h3 id="trace">وضع التتبع — تحليل الحزم</h
-</div>
+<h3 id="trace">وضع التتبع — تحليل الحزم</h3>
+<p>
+  Switch to <i class="fas fa-magnifying-glass"></i> <strong>Trace</strong> mode to open the
+  built-in packet analyser — similar to Wireshark.
+</p>
+<p>
+  At the top, select the <strong>device</strong> and <strong>port</strong> you want to capture from.
+  All packets passing through that port are recorded and shown in a list.
+</p>
+<p>
+  Click on any packet in the list to see its full details:
+  the protocol layers, header fields, and payload — exactly as a professional network tool would show them.
+</p>
+<p>
+  The capture runs automatically while the simulation is running.
+  You can switch between Trace mode and Run mode at any time without losing the captured data.
+</p>
+
+<hr>
+
+<h3 id="project">Saving and Loading</h3>
+<p>
+  Your network design can be saved as a file and loaded again later.
+  Use the buttons in the top toolbar (visible in Edit mode):
+</p>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-file"></i></td>
+    <td><strong>New</strong></td>
+    <td>Start with a blank canvas. Any unsaved changes will be lost.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-file-arrow-up"></i></td>
+    <td><strong>Load</strong></td>
+    <td>Open a previously saved simulation file.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-file-arrow-down"></i></td>
+    <td><strong>Save</strong></td>
+    <td>Download the current simulation as a file to your computer.</td>
+  </tr>
+</table>
+
+<hr>
+<p class="footer">
+  Having trouble? Check that your network is correctly connected and that all devices have valid IP addresses configured.
+</p>

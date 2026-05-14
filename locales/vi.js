@@ -583,7 +583,7 @@ export default {
   "sim.run": "Chạy",
   "sim.mode": "Chế độ",
   "sim.project": "Dự án",
-  "sim.speed": "Tốc độ",
+  
   "sim.pause": "Tạm dừng",
   "sim.about": "Về",
   "sim.downloads": "Tải xuống",

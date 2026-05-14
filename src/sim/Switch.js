@@ -142,7 +142,7 @@ export class Switch extends SimulatedObject {
         const ports = this.backplane?.ports ?? [];
         return ports.map((p, i) => ({
             key: `sw${i}`,
-            label: `port ${i + 1}`,
+            label: `${i + 1}`,
             port: p,
         }));
     }

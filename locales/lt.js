@@ -583,7 +583,7 @@ export default {
   "sim.run": "Paleisti",
   "sim.mode": "Režimas",
   "sim.project": "Projektas",
-  "sim.speed": "Greitis",
+  
   "sim.pause": "Pauzė",
   "sim.about": "Apie",
   "sim.downloads": "Atsisiuntimai",

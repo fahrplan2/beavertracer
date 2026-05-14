@@ -583,7 +583,7 @@ export default {
   "sim.run": "Rulare",
   "sim.mode": "Mod",
   "sim.project": "Proiect",
-  "sim.speed": "Viteză",
+  
   "sim.pause": "Pauză",
   "sim.about": "Despre",
   "sim.downloads": "Descărcări",

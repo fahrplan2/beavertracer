@@ -34,6 +34,7 @@ export class RectOverlay extends SimulatedObject {
   static DEFAULT_H = 140;
 
   kind="RectOverlay";
+  icon="fa-square";
 
   /** @type {number} */
   w = RectOverlay.DEFAULT_W;

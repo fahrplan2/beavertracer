@@ -7,6 +7,7 @@ import { MiniMarkdown } from "../lib/MiniMarkdown.js";
 export class TextBox extends SimulatedObject {
 
   kind="TextBox";
+  icon="fa-font";
 
   /** @type {string} */
   text = "Note";

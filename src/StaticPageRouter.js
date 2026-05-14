@@ -30,7 +30,7 @@ export class StaticPageRouter {
    * @type {Record<string, () => Promise<string>>}
    */
   // @ts-ignore
-  static #modules = import.meta.glob("/pages/**/*.html", { as: "raw" });
+  static #modules = import.meta.glob("/pages/**/*.html", { query: "?raw", import: "default" });
 
   /** @type {Map<string, string[]>} route -> baseUrl keys (module keys for index.html) */
   #routeToBaseUrls = new Map();

@@ -583,7 +583,7 @@ export default {
   "sim.run": "Suorita",
   "sim.mode": "Tila",
   "sim.project": "Projekti",
-  "sim.speed": "Nopeus",
+  
   "sim.pause": "Tauko",
   "sim.about": "Tietoja",
   "sim.downloads": "Lataukset",

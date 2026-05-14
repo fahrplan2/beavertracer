@@ -583,7 +583,7 @@ export default {
   "sim.run": "Palaist",
   "sim.mode": "Režīms",
   "sim.project": "Projekts",
-  "sim.speed": "Ātrums",
+  
   "sim.pause": "Pauzēt",
   "sim.about": "Par programmu",
   "sim.downloads": "Lejupielādes",

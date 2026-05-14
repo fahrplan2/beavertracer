@@ -583,7 +583,7 @@ export default {
   "sim.run": "اجرا",
   "sim.mode": "حالت",
   "sim.project": "پروژه",
-  "sim.speed": "سرعت",
+  
   "sim.pause": "توقف موقت",
   "sim.about": "درباره",
   "sim.downloads": "دانلودها",

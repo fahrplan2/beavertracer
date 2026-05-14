@@ -583,7 +583,7 @@ export default {
   "sim.run": "실행",
   "sim.mode": "모드",
   "sim.project": "프로젝트",
-  "sim.speed": "속도",
+  
   "sim.pause": "일시 중지",
   "sim.about": "정보",
   "sim.downloads": "다운로드",

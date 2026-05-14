@@ -145,6 +145,7 @@ export default defineConfig({
     }),
   ],
   build: {
+    chunkSizeWarningLimit: 700,
     rollupOptions: {
       input: buildInputs(),
       output: {
