@@ -83,6 +83,37 @@ export class TcpEngine {
   }
 
   /**
+   * Build a 4-byte TCP MSS option (Kind=2, Length=4).
+   * @param {number} mss
+   * @returns {Uint8Array}
+   */
+  static _buildMssOption(mss) {
+    return new Uint8Array([2, 4, (mss >> 8) & 0xff, mss & 0xff]);
+  }
+
+  /**
+   * Parse MSS value from raw TCP options bytes. Returns null if not present.
+   * @param {Uint8Array} options
+   * @returns {number|null}
+   */
+  static _parseMssOption(options) {
+    let i = 0;
+    while (i < options.length) {
+      if (options[i] === 0) break;            // End of Options List
+      if (options[i] === 1) { i++; continue; } // NOP
+      const kind = options[i];
+      if (i + 1 >= options.length) break;
+      const len = options[i + 1];
+      if (len < 2) break;
+      if (kind === 2 && len === 4 && i + 4 <= options.length) {
+        return (options[i + 2] << 8) | options[i + 3];
+      }
+      i += len;
+    }
+    return null;
+  }
+
+  /**
    * Advance TCP timers by one master tick.
    * In this simulation, 1 tick == 1 simulated millisecond.
    */
@@ -230,6 +261,7 @@ export class TcpEngine {
       ack: 0,
       flags: TCPPacket.FLAG_SYN,
       window: this._calcRcvWnd(conn),
+      options: TcpEngine._buildMssOption(this.defaultMSS),
       payload: new Uint8Array(),
     });
 
@@ -478,6 +510,10 @@ export class TcpEngine {
 
         conn.finSeq = null;
 
+        // Respect peer's advertised MSS (RFC 1122 §4.2.2.6)
+        const peerMss = TcpEngine._parseMssOption(tcp.options ?? new Uint8Array());
+        if (peerMss != null) conn.mss = Math.min(peerMss, this.defaultMSS);
+
         this.conns.set(key, conn);
 
         const synAckSeq = conn.myacc;
@@ -488,14 +524,15 @@ export class TcpEngine {
           ack: conn.theiracc,
           flags: TCPPacket.FLAG_SYN | TCPPacket.FLAG_ACK,
           window: this._calcRcvWnd(conn),
+          options: TcpEngine._buildMssOption(this.defaultMSS),
           payload: new Uint8Array(),
         });
         return;
       }
 
-      // Port closed => RST for SYN or segments carrying ACK
+      // Port closed => RST for SYN or segments carrying ACK (RFC 793 §3.4: never RST a RST)
       if (!isListening) {
-        if (syn || ack) {
+        if (!rst && (syn || ack)) {
           this._sendRstForSegment(localIP, localPort, remoteIP, remotePort, tcp);
         }
       }
@@ -547,6 +584,8 @@ export class TcpEngine {
       if (syn && ack && (tcp.ack >>> 0) === (conn.myacc >>> 0)) {
         conn.theiracc = u32((tcp.seq >>> 0) + 1);
         conn.state = "ESTABLISHED";
+        const peerMss = TcpEngine._parseMssOption(tcp.options ?? new Uint8Array());
+        if (peerMss != null) conn.mss = Math.min(peerMss, this.defaultMSS);
 
         while (conn.connectWaiters.length) conn.connectWaiters.shift()?.(null);
 
@@ -647,10 +686,11 @@ export class TcpEngine {
    *   ack:number,
    *   flags:number,
    *   window?:number,
+   *   options?:Uint8Array,
    *   payload:Uint8Array
    * }} seg
    */
-  _sendSegment(conn, { seq, ack, flags, window, payload }) {
+  _sendSegment(conn, { seq, ack, flags, window, options, payload }) {
     const syn = (flags & TCPPacket.FLAG_SYN) !== 0;
     const fin = (flags & TCPPacket.FLAG_FIN) !== 0;
 
@@ -679,6 +719,7 @@ export class TcpEngine {
       ack,
       flags,
       window: (window ?? this._calcRcvWnd(conn)) | 0,
+      options,
       payload
     }).pack();
 

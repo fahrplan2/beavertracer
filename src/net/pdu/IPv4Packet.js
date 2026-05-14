@@ -122,6 +122,12 @@ export class IPv4Packet {
     const src = IPAddress.fromUInt8(bytes.slice(12, 16));
     const dst = IPAddress.fromUInt8(bytes.slice(16, 20));
 
+    const headerCopy = bytes.slice(0, headerLen);
+    headerCopy[10] = 0; headerCopy[11] = 0;
+    if (IPv4Packet.computeHeaderChecksum(headerCopy) !== headerChecksum) {
+      throw new Error("IPv4 header checksum invalid");
+    }
+
     const options = headerLen > 20 ? bytes.slice(20, headerLen) : new Uint8Array(0);
 
     const payload = bytes.slice(headerLen, totalLength);
