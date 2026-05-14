@@ -988,5 +988,19 @@ export default {
   "router.vpn.err.duplicate": "Tunnelname existiert bereits",
   "app.mailclient.config.smtpTls.off": "Keine",
   "app.mailclient.config.smtpTls.starttls": "STARTTLS",
-  "app.mailclient.config.smtpTls.implicit": "Implizites TLS"
+  "app.mailclient.config.smtpTls.implicit": "Implizites TLS",
+  "app.terminal.commands.nmap.usage": "Verwendung: nmap [-p <Ports>] [--open] <Ziel> [<Ziel>...]",
+  "app.terminal.commands.nmap.err.missingPortSpec": "nmap: -p erfordert eine Portangabe",
+  "app.terminal.commands.nmap.err.invalidPortSpec": "nmap: ungültige Portangabe: {spec}",
+  "app.terminal.commands.nmap.err.tooManyPorts": "nmap: Portbereich überschreitet Limit von {max} Ports",
+  "app.terminal.commands.nmap.err.invalidTarget": "nmap: ungültiges Ziel: {target}",
+  "app.terminal.commands.nmap.err.cannotResolve": "nmap: kann '{host}' nicht auflösen",
+  "app.terminal.commands.nmap.err.rangeTooBig": "nmap: Subnetz zu groß (Mindestpräfixlänge: /24)",
+  "app.terminal.commands.nmap.err.tooManyHosts": "nmap: zu viele Hosts (Limit: {max})",
+  "app.terminal.commands.nmap.err.ipv4only": "nmap: nur IPv4-Ziele werden unterstützt",
+  "app.terminal.commands.nmap.out.banner": "nmap-Scan wird gestartet: {hosts} Host(s), {ports} Port(s)",
+  "app.terminal.commands.nmap.out.scanReport": "nmap-Scanbericht für {ip}",
+  "app.terminal.commands.nmap.out.tableHeader": "PORT       ZUSTAND   DIENST",
+  "app.terminal.commands.nmap.out.allClosed": "Alle gescannten Ports sind geschlossen oder gefiltert.",
+  "app.terminal.commands.nmap.out.done": "Scan abgeschlossen: {hosts} Host(s) gescannt."
 };
