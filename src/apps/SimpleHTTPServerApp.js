@@ -195,6 +195,9 @@ export class SimpleHTTPServerApp extends LoggedProcess {
   /** @type {TlsCertificate|null} */
   _cert = null;
 
+  /** @type {string} */
+  certPath = "";
+
   // ── UI refs ─────────────────────────────────────────────────────────────────
 
   /** @type {HTMLInputElement|null} */
@@ -226,6 +229,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
 
   run() {
     this.root.classList.add("app", "app-simple-http-server");
+    this._loadConfig();
   }
 
   /** @param {HTMLElement} root */
@@ -302,6 +306,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     this._syncUI();
     this._renderLog();
     this._renderCertInfo();
+    if (this.certPath) this._loadCertFromPath(this.certPath);
   }
 
   onUnmount() {
@@ -366,6 +371,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     this.port         = port;
     this.docRoot      = rootStr || "/var/www/";
     this.httpsEnabled = httpsOn;
+    this._saveConfig();
     this._start();
   }
 
@@ -759,11 +765,49 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     if (!path || !fs) return;
     try {
       this._cert = await TlsCertificate.fromJSON(JSON.parse(fs.readFile(path)));
+      this.certPath = path;
+      this._saveConfig();
       this._appendLog(t("app.simplehttpsserver.log.certApplied",
         { time: nowStamp(), subject: this._cert.subject }));
       this._renderCertInfo();
     } catch {
       this._appendLog(t("app.simplehttpsserver.log.noCert", { time: nowStamp() }));
     }
+  }
+
+  _loadConfig() {
+    const fs = this.os.fs;
+    if (!fs) return;
+    try {
+      const json = JSON.parse(fs.readFile("/etc/httpd.conf"));
+      if (Number.isInteger(json.port) && json.port >= 1 && json.port <= 65535) this.port = json.port;
+      if (typeof json.docRoot === "string" && json.docRoot) this.docRoot = json.docRoot;
+      if (typeof json.httpsEnabled === "boolean") this.httpsEnabled = json.httpsEnabled;
+      if (Number.isInteger(json.httpsPort) && json.httpsPort >= 1 && json.httpsPort <= 65535) this.httpsPort = json.httpsPort;
+      if (typeof json.certPath === "string") this.certPath = json.certPath;
+    } catch { /* use defaults */ }
+  }
+
+  _saveConfig() {
+    const fs = this.os.fs;
+    if (!fs) return;
+    try {
+      fs.writeFile("/etc/httpd.conf", JSON.stringify({
+        port: this.port,
+        docRoot: this.docRoot,
+        httpsEnabled: this.httpsEnabled,
+        httpsPort: this.httpsPort,
+        certPath: this.certPath,
+      }, null, 2));
+    } catch { /* ignore */ }
+  }
+
+  async _loadCertFromPath(/** @type {string} */ path) {
+    const fs = this.os.fs;
+    if (!fs || !path) return;
+    try {
+      this._cert = await TlsCertificate.fromJSON(JSON.parse(fs.readFile(path)));
+      this._renderCertInfo();
+    } catch { /* cert file gone -> ignore */ }
   }
 }

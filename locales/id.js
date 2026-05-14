@@ -583,7 +583,7 @@ export default {
   "sim.run": "Jalankan",
   "sim.mode": "Mode",
   "sim.project": "Proyek",
-  "sim.speed": "Kecepatan",
+  
   "sim.pause": "Jeda",
   "sim.about": "Tentang",
   "sim.downloads": "Unduhan",

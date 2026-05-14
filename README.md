@@ -44,10 +44,21 @@ Creates a production-ready bundle in the `dist/` directory:
 npm run build
 ```
 
-Creates a production-ready bundle with tauri: (Read tauri docs for requirements and specifics; this pipeline is not yet automated yet).
+Creates a production-ready bundle with Tauri (read the Tauri docs for requirements; this pipeline is not yet fully automated):
 
 ```bash
-npm run tauri:build
+npm run tauri:dev      # local Tauri dev window
+npm run tauri:build    # production Tauri build
+npm run tauri:win      # cross-compile for Windows (requires cargo-xwin)
+```
+
+---
+
+## Testing
+
+```bash
+npm run test          # run tests once
+npm run test:watch    # re-run tests on file changes
 ```
 
 ---

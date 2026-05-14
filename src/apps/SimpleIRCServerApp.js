@@ -89,7 +89,7 @@ export class SimpleIRCServerApp extends LoggedProcess {
   /** @type {HTMLInputElement|null} */ nameEl = null;
   /** @type {HTMLInputElement|null} */ motdEl = null;
 
-  run() { this.root.classList.add("app", "app-irc-server"); }
+  run() { this.root.classList.add("app", "app-irc-server"); this._loadConfig(); }
 
   /** @param {HTMLElement} root */
   onMount(root) {
@@ -171,7 +171,31 @@ export class SimpleIRCServerApp extends LoggedProcess {
     this.port = p;
     this.serverName = (this.nameEl?.value ?? "").trim() || "irc.sim";
     this.motd = (this.motdEl?.value ?? "").trim() || "Welcome!";
+    this._saveConfig();
     this._start();
+  }
+
+  _loadConfig() {
+    const fs = this.os.fs;
+    if (!fs) return;
+    try {
+      const json = JSON.parse(fs.readFile("/etc/ircd.conf"));
+      if (Number.isInteger(json.port) && json.port >= 1 && json.port <= 65535) this.port = json.port;
+      if (typeof json.serverName === "string" && json.serverName) this.serverName = json.serverName;
+      if (typeof json.motd === "string" && json.motd) this.motd = json.motd;
+    } catch { /* use defaults */ }
+  }
+
+  _saveConfig() {
+    const fs = this.os.fs;
+    if (!fs) return;
+    try {
+      fs.writeFile("/etc/ircd.conf", JSON.stringify({
+        port: this.port,
+        serverName: this.serverName,
+        motd: this.motd,
+      }, null, 2));
+    } catch { /* ignore */ }
   }
 
   _start() {

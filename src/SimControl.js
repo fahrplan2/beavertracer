@@ -568,7 +568,7 @@ export class SimControl {
 
         //********** SPEED  *********/
         addSeparator("sep-speeds");
-        const gSpeeds = DOMBuilder.buttongroup(t("sim.speed"), toolbar);
+        const gSpeeds = DOMBuilder.buttongroup(t("sim.simulation"), toolbar);
         gSpeeds.dataset.group = "speeds";
 
         const pauseBtn = DOMBuilder.iconbutton({
@@ -580,21 +580,24 @@ export class SimControl {
         gSpeeds.appendChild(pauseBtn);
 
         const speeds = [
-            { label: "0.5×", ms: 500, icon: "fa-1" },
-            { label: "1×",   ms: 100, icon: "fa-2" },
-            { label: "4×",   ms: 40,  icon: "fa-3" },
-            { label: "8×",   ms: 20,  icon: "fa-4" },
+            { label: "0.5×", ms: 500 },
+            { label: "1×",   ms: 100 },
+            { label: "4×",   ms: 40  },
+            { label: "8×",   ms: 20  },
         ];
+
+        const speedGrid = document.createElement("div");
+        speedGrid.className = "sim-speed-grid";
 
         for (const s of speeds) {
             const b = DOMBuilder.iconbutton({
                 label: s.label,
-                icon: s.icon,
                 onClick: () => this.setTick(s.ms),
             });
             b.dataset.role = `speed-${s.ms}`;
-            gSpeeds.appendChild(b);
+            speedGrid.appendChild(b);
         }
+        gSpeeds.appendChild(speedGrid);
 
         const resetBtn = DOMBuilder.iconbutton({
             label: t("sim.reset"),
@@ -750,7 +753,7 @@ export class SimControl {
             ["place-homerouter", t("sim.tool.homerouter"), "fa-house-signal"],
             ["place-ap", t("sim.tool.ap"), "fa-wifi"],
             ["place-firewall", t("sim.tool.firewall"), "fa-shield-halved"],
-            ["place-text", t("sim.tool.textbox"), "fa-t"],
+            ["place-text", t("sim.tool.textbox"), "fa-font"],
             ["place-rect", t("sim.tool.rectangle"), "fa-square"],
             ["delete", t("sim.tool.delete"), "fa-ban"],
         ];

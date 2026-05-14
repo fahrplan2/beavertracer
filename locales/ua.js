@@ -583,7 +583,7 @@ export default {
   "sim.run": "Запустити",
   "sim.mode": "Режим",
   "sim.project": "Проект",
-  "sim.speed": "Швидкість",
+  
   "sim.pause": "Пауза",
   "sim.about": "Про програму",
   "sim.downloads": "Завантаження",

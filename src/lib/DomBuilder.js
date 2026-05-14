@@ -197,10 +197,11 @@ export class DOMBuilder {
         btn.title = label;
 
         // 1) icon
-        const iconEl = document.createElement("i");
-        iconEl.classList.add("fas");
-        if (icon) iconEl.classList.add(icon);
-        btn.appendChild(iconEl);
+        if (icon) {
+            const iconEl = document.createElement("i");
+            iconEl.classList.add("fas", icon);
+            btn.appendChild(iconEl);
+        }
 
         // 2) optional badge overlay on the icon tile
         if (badge) {

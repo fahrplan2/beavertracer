@@ -583,7 +583,7 @@ export default {
   "sim.run": "Pokreni",
   "sim.mode": "Način",
   "sim.project": "Projekat",
-  "sim.speed": "Brzina",
+  
   "sim.pause": "Pauzira",
   "sim.about": "O programu",
   "sim.downloads": "Preuzimanja",

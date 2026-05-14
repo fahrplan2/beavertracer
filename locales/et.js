@@ -583,7 +583,7 @@ export default {
   "sim.run": "Käivita",
   "sim.mode": "Režiim",
   "sim.project": "Projekt",
-  "sim.speed": "Kiirus",
+  
   "sim.pause": "Paus",
   "sim.about": "Teave",
   "sim.downloads": "Allkirjutused",

@@ -71,7 +71,7 @@ export class UILib {
       className: opts.className ?? (opts.primary ? ["btn", "btn-primary"] : "btn"),
       text: opts.icon ? undefined : label,
       children: opts.icon
-        ? [UILib.el("i", { className: `fas ${opts.icon}` }), " " + label]
+        ? [UILib.el("i", { className: `fas ${opts.icon}` }), UILib.el("span", { text: label })]
         : undefined,
       init: (el) => {
         el.type = "button";
