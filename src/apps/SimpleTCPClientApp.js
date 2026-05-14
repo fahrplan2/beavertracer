@@ -197,6 +197,7 @@ export class SimpleTCPClientApp extends LoggedProcess {
 
   run() {
     this.root.classList.add("app", "app-simple-tcp-client");
+    this._loadConfig();
   }
 
   /**
@@ -319,8 +320,27 @@ export class SimpleTCPClientApp extends LoggedProcess {
 
     this.host = host;
     this.port = port;
+    this._saveConfig();
 
     await this._connect();
+  }
+
+  _loadConfig() {
+    const fs = this.os.fs;
+    if (!fs) return;
+    try {
+      const json = JSON.parse(fs.readFile("/etc/tcpclient.conf"));
+      if (typeof json.host === "string" && json.host) this.host = json.host;
+      if (Number.isInteger(json.port) && json.port >= 1 && json.port <= 65535) this.port = json.port;
+    } catch { /* use defaults */ }
+  }
+
+  _saveConfig() {
+    const fs = this.os.fs;
+    if (!fs) return;
+    try {
+      fs.writeFile("/etc/tcpclient.conf", JSON.stringify({ host: this.host, port: this.port }, null, 2));
+    } catch { /* ignore */ }
   }
 
   async _connect() {

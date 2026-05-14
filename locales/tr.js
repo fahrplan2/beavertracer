@@ -583,7 +583,7 @@ export default {
   "sim.run": "Çalıştır",
   "sim.mode": "Mod",
   "sim.project": "Proje",
-  "sim.speed": "Hız",
+  
   "sim.pause": "Duraklat",
   "sim.about": "Hakkında",
   "sim.downloads": "İndirmeler",

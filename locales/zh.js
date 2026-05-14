@@ -619,7 +619,7 @@ export default {
   "sim.run": "运行",
   "sim.mode": "模式",
   "sim.project": "项目",
-  "sim.speed": "速度",
+  
   "sim.pause": "暂停",
   "sim.about": "关于",
   "sim.downloads": "下载",

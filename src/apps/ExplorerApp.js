@@ -148,7 +148,15 @@ export class ExplorerApp extends GenericProcess {
     this.btnEditor   = btnEditor;
     this.btnDelete   = btnDelete;
 
-    const toolbar = UI.buttonRow([btnUpload, btnFolder, btnDownload, btnEditor, btnDelete]);
+    const toolbarSep = UI.el("div", { className: "explorer-toolbar-sep" });
+    const toolbar = UI.el("div", {
+      className: "explorer-toolbar",
+      children: [
+        UI.buttonRow([btnUpload, btnFolder]),
+        toolbarSep,
+        UI.buttonRow([btnDownload, btnEditor, btnDelete]),
+      ],
+    });
 
     const breadcrumb = UI.el("div", { className: "explorer-breadcrumb" });
     this.breadcrumbEl = breadcrumb;
@@ -264,11 +272,6 @@ export class ExplorerApp extends GenericProcess {
         this.selected = null;
         this._render();
       });
-      row.addEventListener("dblclick", () => {
-        this.cwd = dirOf(this.cwd);
-        this.selected = null;
-        this._render();
-      });
       return row;
     })() : null;
 
@@ -310,6 +313,17 @@ export class ExplorerApp extends GenericProcess {
       });
 
       row.addEventListener("click", () => {
+        if (this.selected === absPath) {
+          if (isDir) {
+            this.cwd = absPath;
+            this.selected = null;
+            this._render();
+            return;
+          } else if (fileCategory(name) === "text") {
+            this._openEditor();
+            return;
+          }
+        }
         this.selected = absPath;
         if (this.listEl) {
           for (const el of this.listEl.querySelectorAll(".explorer-item.selected")) {
@@ -319,16 +333,6 @@ export class ExplorerApp extends GenericProcess {
         }
         this._renderPreview();
         this._updateButtons();
-      });
-
-      row.addEventListener("dblclick", () => {
-        if (isDir) {
-          this.cwd = absPath;
-          this.selected = null;
-          this._render();
-        } else if (fileCategory(name) === "text") {
-          this._openEditor();
-        }
       });
 
       return row;

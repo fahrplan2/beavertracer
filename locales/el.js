@@ -583,7 +583,7 @@ export default {
   "sim.run": "Εκτέλεση",
   "sim.mode": "Λειτουργία",
   "sim.project": "Έργο",
-  "sim.speed": "Ταχύτητα",
+  
   "sim.pause": "Παύση",
   "sim.about": "Σχετικά",
   "sim.downloads": "Λήψεις",

@@ -583,7 +583,7 @@ export default {
   "sim.run": "Kør",
   "sim.mode": "Tilstand",
   "sim.project": "Projekt",
-  "sim.speed": "Hastighed",
+  
   "sim.pause": "Pause",
   "sim.about": "Om",
   "sim.downloads": "Downloads",

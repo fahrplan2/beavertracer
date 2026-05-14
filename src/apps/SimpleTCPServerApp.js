@@ -86,6 +86,7 @@ export class SimpleTCPServerApp extends LoggedProcess {
 
   run() {
     this.root.classList.add("app", "app-simple-tcp-server");
+    this._loadConfig();
   }
 
   /**
@@ -166,7 +167,25 @@ export class SimpleTCPServerApp extends LoggedProcess {
       return;
     }
     this.port = p;
+    this._saveConfig();
     this._start();
+  }
+
+  _loadConfig() {
+    const fs = this.os.fs;
+    if (!fs) return;
+    try {
+      const json = JSON.parse(fs.readFile("/etc/tcpd.conf"));
+      if (Number.isInteger(json.port) && json.port >= 1 && json.port <= 65535) this.port = json.port;
+    } catch { /* use defaults */ }
+  }
+
+  _saveConfig() {
+    const fs = this.os.fs;
+    if (!fs) return;
+    try {
+      fs.writeFile("/etc/tcpd.conf", JSON.stringify({ port: this.port }, null, 2));
+    } catch { /* ignore */ }
   }
 
   _start() {
