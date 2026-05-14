@@ -802,7 +802,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     } catch { /* ignore */ }
   }
 
-  async _loadCertFromPath(path) {
+  async _loadCertFromPath(/** @type {string} */ path) {
     const fs = this.os.fs;
     if (!fs || !path) return;
     try {
