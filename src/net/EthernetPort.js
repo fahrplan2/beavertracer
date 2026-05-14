@@ -20,6 +20,8 @@ export class EthernetPort extends Observable {
     /** @type {Array<LoggedFrame>} */
     loggedFrames = [];
 
+    static MAX_LOGGED_FRAMES = 10_000;
+
     /** @type {EthernetLink|Null} */
     linkref = null;
 
@@ -72,6 +74,7 @@ export class EthernetPort extends Observable {
         }
         this.outBuffer.push(frame);
         this.loggedFrames.push(new LoggedFrame(frame.pack()));
+        if (this.loggedFrames.length > EthernetPort.MAX_LOGGED_FRAMES) this.loggedFrames.shift();
     }
 
     /**
@@ -87,6 +90,7 @@ export class EthernetPort extends Observable {
         let frame = EthernetFrame.fromBytes(bytes);
         this.inBuffer.push(frame);
         this.loggedFrames.push(new LoggedFrame(bytes));
+        if (this.loggedFrames.length > EthernetPort.MAX_LOGGED_FRAMES) this.loggedFrames.shift();
         this.doUpdate();
     }
 

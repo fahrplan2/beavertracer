@@ -52,6 +52,7 @@ export class Pcap {
 
         // Remove link from body
         document.body.removeChild(link);
+        URL.revokeObjectURL(blobUrl);
     }
 
     /**
