@@ -237,9 +237,9 @@ export class DHCPv6ServerApp extends LoggedProcess {
     this.saveBtn = saveBtn;
 
     /** @type {HTMLButtonElement} */
-    const start = UI.button(t("app.dhcpv6server.button.start"), () => this._startFromUI(), { primary: true });
+    const start = UI.button(t("app.dhcpv6server.button.start"), () => this._startFromUI(), { primary: true, icon: "fa-play" });
     /** @type {HTMLButtonElement} */
-    const stop  = UI.button(t("app.dhcpv6server.button.stop"), () => this._stop(), {});
+    const stop  = UI.button(t("app.dhcpv6server.button.stop"), () => this._stop(), { icon: "fa-stop" });
     /** @type {HTMLButtonElement} */
     const clear = UI.button(t("app.dhcpv6server.button.clearLog"), () => { this.log = []; this._renderLog(); }, {});
     this.startBtn = start;
@@ -318,7 +318,7 @@ export class DHCPv6ServerApp extends LoggedProcess {
     }, 3000);
 
     const panel = UI.panel([
-      UI.buttonRow([start, stop]),
+      UI.el("div", { className: "app-toolbar", children: [UI.buttonRow([start, stop])] }),
       tabBar,
       configPane,
       logPane,

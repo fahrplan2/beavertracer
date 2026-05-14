@@ -126,7 +126,7 @@ export class SimpleIRCServerApp extends LoggedProcess {
       { id: "log",    label: t("app.ircserver.tab.log"),    pane: logPane },
     ]);
 
-    const panel = UI.panel([UI.buttonRow([start, stop]), tabBar, configPane, logPane]);
+    const panel = UI.panel([UI.el("div", { className: "app-toolbar", children: [UI.buttonRow([start, stop])] }), tabBar, configPane, logPane]);
     this.root.replaceChildren(panel);
 
     this._syncButtons();
@@ -418,7 +418,7 @@ export class SimpleIRCServerApp extends LoggedProcess {
       if (ch.members.has(ck)) continue;
       ch.members.add(ck);
       const joinLine = `:${this._mask(cl)} JOIN :${ch.name}`;
-      this._bcast(key, joinLine); this._sendRaw(ck, joinLine);
+      this._bcast(key, joinLine, ck); this._sendRaw(ck, joinLine);
       this._num(ck, cl, ch.topic ? 332 : 331, `${ch.name} :${ch.topic || "No topic is set"}`);
       this._sendNamesTo(ck, cl, ch);
       this._appendLog(`[${nowStamp()}] ${t("app.ircserver.log.joined", { nick: cl.nick, channel: ch.name })}`);

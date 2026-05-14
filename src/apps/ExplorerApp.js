@@ -150,7 +150,7 @@ export class ExplorerApp extends GenericProcess {
 
     const toolbarSep = UI.el("div", { className: "explorer-toolbar-sep" });
     const toolbar = UI.el("div", {
-      className: "explorer-toolbar",
+      className: "app-toolbar",
       children: [
         UI.buttonRow([btnUpload, btnFolder]),
         toolbarSep,

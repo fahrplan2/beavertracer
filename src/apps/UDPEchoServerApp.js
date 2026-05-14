@@ -80,7 +80,7 @@ export class UDPEchoServerApp extends LoggedProcess {
       { id: "log",    label: t("app.udpechoserver.label.log"),    pane: logPane },
     ]);
 
-    const panel = UI.panel([UI.buttonRow([start, stop]), tabBar, serverPane, logPane]);
+    const panel = UI.panel([UI.el("div", { className: "app-toolbar", children: [UI.buttonRow([start, stop])] }), tabBar, serverPane, logPane]);
 
     this.root.replaceChildren(panel);
 

@@ -295,7 +295,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     ]);
 
     const panel = UI.panel([
-      UI.buttonRow([start, stop]),
+      UI.el("div", { className: "app-toolbar", children: [UI.buttonRow([start, stop])] }),
       tabBar,
       httpPane,
       httpsPane,

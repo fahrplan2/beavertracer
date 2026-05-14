@@ -131,15 +131,20 @@ export class TextEditorApp extends GenericProcess {
       ],
     });
 
-    const actions = UI.buttonRow([
-      UI.button(t("app.texteditor.button.new"), () => this._newFile()),
-      UI.button(t("app.texteditor.button.open"), () => this._openPicker()),
-      UI.button(t("app.texteditor.button.save"), () => this._save(), { primary: true }),
-      UI.button(t("app.texteditor.button.saveAs"), () => this._saveAs()),
-    ]);
+    const toolbar = UI.el("div", {
+      className: "app-toolbar",
+      children: [
+        UI.buttonRow([
+          UI.button(t("app.texteditor.button.new"), () => this._newFile(), { icon: "fa-file" }),
+          UI.button(t("app.texteditor.button.open"), () => this._openPicker(), { icon: "fa-folder-open" }),
+          UI.button(t("app.texteditor.button.save"), () => this._save(), { primary: true, icon: "fa-floppy-disk" }),
+          UI.button(t("app.texteditor.button.saveAs"), () => this._saveAs(), { icon: "fa-file-export" }),
+        ]),
+      ],
+    });
 
     const panel = UI.panel([
-      actions,
+      toolbar,
       ta,
       statusBar,
     ]);
