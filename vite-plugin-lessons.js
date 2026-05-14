@@ -278,6 +278,12 @@ function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "") {
     ].join("\n");
   });
 
+  // ── Pre-process :fa-icon: shortcuts ───────────────────────────
+  // :fa-house:   → fa-solid   :far-house:  → fa-regular   :fab-github: → fa-brands
+  src = src.replace(/:fab-([a-z0-9-]+):/g, '<i class="fa-brands fa-$1"></i>');
+  src = src.replace(/:far-([a-z0-9-]+):/g, '<i class="fa-regular fa-$1"></i>');
+  src = src.replace(/:fa-([a-z0-9-]+):/g, '<i class="fa-solid fa-$1"></i>');
+
   // ── Set up markdown-it with heading ID collection ──────────────
   /** @type {{level:number, text:string, id:string}[]} */
   const headings = [];
@@ -400,12 +406,31 @@ function generateRootIndex(langs, rootTemplateHtml, localeInfo) {
   return rootTemplateHtml.replace(/\{\{body\}\}/g, body);
 }
 
+/**
+ * Copy Font Awesome CSS + webfonts into outDir/fa/ so lesson pages can use them.
+ * @param {string} outDir
+ */
+function copyFontAwesome(outDir) {
+  const faSrc = path.resolve("node_modules/@fortawesome/fontawesome-free");
+  const faDest = path.join(outDir, "fa");
+  if (!fs.existsSync(faSrc)) return;
+  // Preserve the original css/ + webfonts/ structure so relative url() paths work
+  fs.mkdirSync(path.join(faDest, "css"), { recursive: true });
+  fs.mkdirSync(path.join(faDest, "webfonts"), { recursive: true });
+  fs.copyFileSync(path.join(faSrc, "css", "all.min.css"), path.join(faDest, "css", "all.min.css"));
+  for (const f of fs.readdirSync(path.join(faSrc, "webfonts"))) {
+    fs.copyFileSync(path.join(faSrc, "webfonts", f), path.join(faDest, "webfonts", f));
+  }
+}
+
 /** @param {string} root */
 function buildLessons(root) {
   const srcDir = path.join(root, SRC_DIR);
   const outDir = path.join(root, OUT_DIR);
 
   if (!fs.existsSync(srcDir)) return;
+
+  copyFontAwesome(outDir);
 
   const templatePath = path.join(srcDir, "_template.html");
   const rootTemplatePath = path.join(srcDir, "_template.root.html");

@@ -61,6 +61,7 @@ export class SimpleIRCClientApp extends GenericProcess {
   server = "";
   port = 6667;
   /** @type {string|null} */ connKey = null;
+  _expectingClose = false;
 
   // buffers: lowercase key → IRCBuffer
   /** @type {Map<string, IRCBuffer>} */
@@ -266,9 +267,17 @@ export class SimpleIRCClientApp extends GenericProcess {
     if (this.nickEl)        this.nickEl.disabled        = this.connected;
   }
 
+  _clearChannelBuffers() {
+    for (const key of [...this.buffers.keys()]) {
+      if (key !== "status") this.buffers.delete(key);
+    }
+    this.activeBuffer = "status";
+  }
+
   // ───────── connection ─────────
 
   async _connectFromUI() {
+    this._expectingClose = false;
     const server = (this.serverEl?.value ?? "").trim();
     const portStr = (this.portEl?.value ?? "").trim();
     const nick = (this.nickEl?.value ?? "").trim();
@@ -330,15 +339,15 @@ export class SimpleIRCClientApp extends GenericProcess {
 
   _disconnect() {
     if (!this.connected && this.connKey == null) return;
+    this._expectingClose = true;
     if (this.connKey) {
       try { this._sendRaw("QUIT :Goodbye"); } catch { /* ignore */ }
       try { this.os.net.closeTCPConn(this.connKey); } catch { /* ignore */ }
     }
     this.connKey = null;
     this.connected = false;
-    // clear user lists
-    for (const buf of this.buffers.values()) buf.users.clear();
-    if (this.mounted) { this._syncButtons(); this._renderTopic(); }
+    this._clearChannelBuffers();
+    if (this.mounted) { this._syncButtons(); this._renderSidebar(); this._renderTopic(); this._renderMessages(); }
     this._appendMsg("status", `[${nowStamp()}] ${t("app.ircclient.status.disconnected")}`, "irc-system");
   }
 
@@ -369,8 +378,8 @@ export class SimpleIRCClientApp extends GenericProcess {
     if (this.connKey === ck) {
       this.connKey = null;
       this.connected = false;
-      for (const buf of this.buffers.values()) buf.users.clear();
-      if (this.mounted) { this._syncButtons(); this._renderTopic(); }
+      this._clearChannelBuffers();
+      if (this.mounted) { this._syncButtons(); this._renderSidebar(); this._renderTopic(); this._renderMessages(); }
       this._appendMsg("status", `[${nowStamp()}] ${t("app.ircclient.status.connectionclosed")}`, "irc-system");
     }
   }
@@ -397,7 +406,11 @@ export class SimpleIRCClientApp extends GenericProcess {
       case "NICK":    this._onNick(prefix, params); break;
       case "TOPIC":   this._onTopic(prefix, params); break;
       case "KICK":    this._onKick(prefix, params); break;
-      case "ERROR":   this._appendMsg("status", `[${nowStamp()}] ${t("app.ircclient.err.servererror", { msg: params[0] ?? "" })}`, "irc-error"); this._disconnect(); break;
+      case "ERROR":
+        if (!this._expectingClose)
+          this._appendMsg("status", `[${nowStamp()}] ${t("app.ircclient.err.servererror", { msg: params[0] ?? "" })}`, "irc-error");
+        this._disconnect();
+        break;
     }
   }
 
@@ -407,6 +420,7 @@ export class SimpleIRCClientApp extends GenericProcess {
     if (num === 1) {
       if (params[0]) this.nick = params[0];
       this._appendMsg("status", `[${nowStamp()}] ${t("app.ircclient.status.connected", { server: prefix, nick: this.nick })}`, "irc-system");
+      this._showHelp();
       return;
     }
     // 332 - TOPIC on join
@@ -431,6 +445,19 @@ export class SimpleIRCClientApp extends GenericProcess {
     if (num === 366) {
       const chan = params[1] ?? "";
       if (this.activeBuffer === chan.toLowerCase() && this.mounted) this._renderTopic();
+      return;
+    }
+    // 321 - LIST header (suppress)
+    if (num === 321) return;
+    // 322 - LIST entry
+    if (num === 322) {
+      const chan = params[1] ?? "", users = params[2] ?? "0", topic = params[3] ?? "";
+      this._appendMsg("status", `[${nowStamp()}]  ${chan}  (${users})${topic ? "  " + topic : ""}`, "irc-system");
+      return;
+    }
+    // 323 - end of LIST
+    if (num === 323) {
+      this._appendMsg("status", `[${nowStamp()}] ${t("app.ircclient.cmd.list.end")}`, "irc-system");
       return;
     }
     // 372/375/376 - MOTD
@@ -569,6 +596,21 @@ export class SimpleIRCClientApp extends GenericProcess {
     if (this.activeBuffer === key && this.mounted) this._renderTopic();
   }
 
+  _showHelp() {
+    const cmds = [
+      ["/join <#channel>",   t("app.ircclient.help.cmd.join")],
+      ["/part",              t("app.ircclient.help.cmd.part")],
+      ["/list",              t("app.ircclient.help.cmd.list")],
+      ["/msg <nick> <text>", t("app.ircclient.help.cmd.msg")],
+      ["/me <text>",         t("app.ircclient.help.cmd.me")],
+      ["/nick <name>",       t("app.ircclient.help.cmd.nick")],
+    ];
+    this._appendMsg("status", t("app.ircclient.help.header"), "irc-help");
+    for (const [cmd, desc] of cmds) {
+      this._appendMsg("status", `  ${cmd.padEnd(22)} ${desc}`, "irc-help");
+    }
+  }
+
   // ───────── user input ─────────
 
   _sendInput() {
@@ -621,6 +663,7 @@ export class SimpleIRCClientApp extends GenericProcess {
         break;
       }
       case "quit": {
+        this._expectingClose = true;
         this._sendRaw(`QUIT :${rest || "Goodbye"}`);
         setTimeout(() => this._disconnect(), 200);
         break;

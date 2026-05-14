@@ -110,7 +110,7 @@ function createTableEditor(cols, onChange, makeDefaultRow) {
 
   const root = UI.el("div", {
     className: "tblwrap",
-    children: [controls, table],
+    children: [table, controls],
   });
 
   /** @returns {any[]} */
@@ -267,13 +267,14 @@ export class DNSServerApp extends LoggedProcess {
     ]);
 
     const panel = UI.panel([
-      UI.buttonRow([start, stop, save]),
+      UI.el("div", { className: "app-toolbar", children: [UI.buttonRow([start, stop])] }),
       tabBar,
       this.aEditor.root,
       this.aaaaEditor.root,
       this.mxEditor.root,
       this.nsEditor.root,
       logPane,
+      UI.buttonRow([save]),
     ]);
 
     this.root.replaceChildren(panel);

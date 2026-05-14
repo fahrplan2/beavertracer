@@ -127,7 +127,7 @@ export class SimpleTCPServerApp extends LoggedProcess {
     ]);
 
     const panel = UI.panel([
-      UI.buttonRow([start, stop]),
+      UI.el("div", { className: "app-toolbar", children: [UI.buttonRow([start, stop])] }),
       tabBar,
       serverPane,
       logPane,

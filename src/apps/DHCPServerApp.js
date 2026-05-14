@@ -268,7 +268,7 @@ export class DHCPServerApp extends LoggedProcess {
     }, 3000);
 
     const panel = UI.panel([
-      UI.buttonRow([start, stop]),
+      UI.el("div", { className: "app-toolbar", children: [UI.buttonRow([start, stop])] }),
       tabBar,
       configPane,
       logPane,

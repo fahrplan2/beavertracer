@@ -317,7 +317,11 @@ export class NetworkInterface extends Observable {
 
         switch (frame.etherType) {
             case 0x0800:  // IPv4
-                this._handleIPv4(IPv4Packet.fromBytes(frame.payload));
+                try {
+                    this._handleIPv4(IPv4Packet.fromBytes(frame.payload));
+                } catch (e) {
+                    console.warn("IPv4 parse error:", e);
+                }
                 break;
 
             case 0x0806:  // ARP (IPv4 only)

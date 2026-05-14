@@ -980,6 +980,14 @@ export default {
   "app.ircclient.event.kick": "✕ {kicked} was kicked by {by} ({reason})",
   "app.ircclient.cmd.join.usage": "Usage: /join #channel",
   "app.ircclient.cmd.msg.usage": "Usage: /msg nick message",
+  "app.ircclient.cmd.list.end": "End of channel list.",
+  "app.ircclient.help.header": "── Commands ────────────────────────────────────────",
+  "app.ircclient.help.cmd.join": "Join a channel",
+  "app.ircclient.help.cmd.part": "Leave channel",
+  "app.ircclient.help.cmd.msg": "Send private message",
+  "app.ircclient.help.cmd.me": "Perform an action",
+  "app.ircclient.help.cmd.nick": "Change nickname",
+  "app.ircclient.help.cmd.list": "List all channels",
   "app.ircclient.cmd.unknown": "Unknown command: /{cmd}",
 
   "app.terminal.commands.curl.usage": "Usage: curl [-v] [-I] [-X method] [-d data] [-H header] <url>",
@@ -1132,5 +1140,45 @@ export default {
   "router.vpn.err.name":      "Name required",
   "router.vpn.err.remote":    "Invalid remote IP",
   "router.vpn.err.network":   "Invalid network (CIDR, e.g. 10.0.0.0/24)",
-  "router.vpn.err.duplicate": "Tunnel name already exists"
+  "router.vpn.err.duplicate": "Tunnel name already exists",
+
+  "app.terminal.commands.nmap.usage": "usage: nmap [-p <ports>] [--open] <target> [<target>...]",
+  "app.terminal.commands.nmap.help":
+    "nmap — network port scanner\n" +
+    "\n" +
+    "Usage: nmap [-p <ports>] [--open] <target> [<target>...]\n" +
+    "\n" +
+    "Targets:\n" +
+    "  192.168.1.1          single host\n" +
+    "  192.168.1.0/24       subnet (max /24, up to 254 hosts)\n" +
+    "  hostname             resolved via DNS\n" +
+    "\n" +
+    "Options:\n" +
+    "  -p <spec>   ports to scan (default: top 20 common ports)\n" +
+    "              examples: -p 80  -p 22,80,443  -p 1-1024\n" +
+    "              maximum: 1000 ports per scan\n" +
+    "  --open      show only open ports\n" +
+    "  -h, --help  show this help\n" +
+    "\n" +
+    "Port states:\n" +
+    "  open      SYN-ACK received (service listening)\n" +
+    "  filtered  no response (firewall drops packets)\n" +
+    "  closed    RST received (no service on this port)\n" +
+    "\n" +
+    "Tip: use Wiregasm filters to analyse the scan traffic:\n" +
+    "  tcp.flags.syn==1 && tcp.flags.ack==0   show probes\n" +
+    "  tcp.flags.syn==1 && tcp.flags.ack==1   show open ports",
+  "app.terminal.commands.nmap.err.missingPortSpec":   "nmap: -p requires a port specification",
+  "app.terminal.commands.nmap.err.invalidPortSpec":   "nmap: invalid port specification: {spec}",
+  "app.terminal.commands.nmap.err.tooManyPorts":      "nmap: port range exceeds limit of {max} ports",
+  "app.terminal.commands.nmap.err.invalidTarget":     "nmap: invalid target: {target}",
+  "app.terminal.commands.nmap.err.cannotResolve":     "nmap: cannot resolve '{host}'",
+  "app.terminal.commands.nmap.err.rangeTooBig":       "nmap: subnet too large (minimum prefix length: /24)",
+  "app.terminal.commands.nmap.err.tooManyHosts":      "nmap: too many hosts (limit: {max})",
+  "app.terminal.commands.nmap.err.ipv4only":          "nmap: only IPv4 targets are supported",
+  "app.terminal.commands.nmap.out.banner":            "Starting nmap scan: {hosts} host(s), {ports} port(s)",
+  "app.terminal.commands.nmap.out.scanReport":        "Nmap scan report for {ip}",
+  "app.terminal.commands.nmap.out.tableHeader":       "PORT       STATE     SERVICE",
+  "app.terminal.commands.nmap.out.allClosed":         "All scanned ports are closed or filtered.",
+  "app.terminal.commands.nmap.out.done":              "Scan complete: {hosts} host(s) scanned."
 };

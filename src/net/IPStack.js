@@ -13,6 +13,7 @@ import { UdpEngine } from "./UdpEngine.js";
 import { IPAddress } from "./models/IPAddress.js";
 import { ICMPv6Packet } from "../net/pdu/ICMPv6Packet.js";
 import { GREPacket } from "../net/pdu/GREPacket.js";
+import { write32BE } from "../net/util/byteUtils.js";
 
 class TunnelConfig {
     /** @type {string} */
@@ -431,8 +432,9 @@ export class IPStack extends Observable {
     /**
      * @param {IPv4Packet} packet
      * @param {Boolean} internal
+     * @param {number} recvIfIndex  interface the packet arrived on (-1 = locally generated)
      */
-    async route(packet, internal = false) {
+    async route(packet, internal = false, recvIfIndex = -1) {
         const dst = packet.dst;
         const src = packet.src;
 
@@ -520,6 +522,13 @@ export class IPStack extends Observable {
             if (packet.ttl <= 0) {
                 this._sendICMPError(packet, 11, 0);
                 return;
+            }
+
+            // RFC 1122 §3.3.1.2: send ICMP Redirect when outgoing == incoming interface
+            if (recvIfIndex >= 0 && out.interfIndex === recvIfIndex) {
+                const gw = this._isZero(out.route.nexthop) ? dst : out.route.nexthop;
+                this._sendICMPRedirect(packet, gw);
+                // Continue forwarding anyway (RFC 1122 requirement)
             }
         }
 
@@ -666,12 +675,41 @@ export class IPStack extends Observable {
     }
 
     /**
+     * Send an ICMP Redirect (Type 5 Code 1 – Host Redirect) to the sender of a forwarded packet.
+     * Built manually because ICMPPacket.pack() uses echo layout (identifier+sequence).
+     * RFC 792 §5, RFC 1122 §3.3.1.2.
+     * @param {IPv4Packet} original
+     * @param {IPAddress} gateway  better next-hop to advertise
+     */
+    _sendICMPRedirect(original, gateway) {
+        if (this._isZero(original.src)) return;
+        if (this._isLimitedBroadcast(original.src)) return;
+
+        const quotedLen = Math.min(original.payload.length, 8);
+        const origHeader = original.pack().slice(0, original.ihl * 4);
+        // ICMP Redirect layout: type(1) code(1) checksum(2) gateway(4) orig-header+8
+        const icmp = new Uint8Array(4 + 4 + origHeader.length + quotedLen);
+        icmp[0] = 5; // Type: Redirect
+        icmp[1] = 1; // Code: Redirect for Host
+        // icmp[2,3] = checksum placeholder (0)
+        icmp.set(gateway.toUInt8(), 4);
+        icmp.set(origHeader, 8);
+        icmp.set(original.payload.slice(0, quotedLen), 8 + origHeader.length);
+        const cs = ICMPPacket.computeChecksum(icmp);
+        icmp[2] = (cs >> 8) & 0xff;
+        icmp[3] = cs & 0xff;
+
+        this.send({ dst: original.src, protocol: 1, payload: icmp });
+    }
+
+    /**
      * Send an ICMPv6 error message in response to an incoming IPv6 packet.
      * @param {IPv6Packet} original
      * @param {number} type
      * @param {number} code
+     * @param {number} [pointer] For Type 4 (Parameter Problem): byte offset of the offending field.
      */
-    _sendICMPv6Error(original, type, code) {
+    _sendICMPv6Error(original, type, code, pointer = 0) {
         if (!(original instanceof IPv6Packet)) return;
 
         const src = original.src;
@@ -686,10 +724,11 @@ export class IPStack extends Observable {
         // Don't reply to multicast destinations
         if (src.toUInt8()[0] === 0xff) return;
 
-        // Body: 4 unused bytes + original packet (capped at 1232 bytes per RFC 4443)
+        // Body: 4-byte field (unused for Type 1/3; pointer for Type 4) + original packet (max 1232 bytes)
         const origBytes = original.pack();
         const quotedLen = Math.min(origBytes.length, 1232);
         const body = new Uint8Array(4 + quotedLen);
+        write32BE(body, 0, pointer);
         body.set(origBytes.slice(0, quotedLen), 4);
 
         const mySrc = this._pickSrcIpV6(src);
@@ -1006,7 +1045,7 @@ export class IPStack extends Observable {
             if (packet instanceof IPv6Packet) {
                 this.routeV6(packet, false, i);
             } else {
-                this.route(packet, false);
+                this.route(packet, false, i);
             }
         }
 
@@ -1047,8 +1086,37 @@ export class IPStack extends Observable {
             return;
         }
 
+        // RFC 4007: link-local addresses are interface-scoped.
+        // When dst is fe80::/10, resolve the interface via recvIfIndex (reply path)
+        // or by searching the neighbor cache (locally-generated traffic).
+        const dstBytes = dst.toUInt8();
+        if (dstBytes[0] === 0xfe && (dstBytes[1] & 0xc0) === 0x80) {
+            let ifIdx = recvIfIndex >= 0 ? recvIfIndex : -1;
+            if (ifIdx < 0) {
+                const key = dst.toString();
+                for (let i = 0; i < this.interfaces.length; i++) {
+                    if (this.interfaces[i].neighborCache.has(key)) { ifIdx = i; break; }
+                }
+            }
+            if (ifIdx >= 0) {
+                if (!internal && !this.forwarding) return;
+                if (!internal) {
+                    packet.hopLimit = (packet.hopLimit - 1) & 0xff;
+                    if (packet.hopLimit === 0) { this._sendICMPv6Error(packet, 3, 0); return; }
+                }
+                const mac = await this.interfaces[ifIdx].resolveNeighbor(dst);
+                if (mac == null) return;
+                this.interfaces[ifIdx].sendFrame(mac, 0x86DD, packet.pack());
+                return;
+            }
+            // No interface found for this link-local destination — fall through to normal routing
+        }
+
         const out = this._resolveOutgoing(dst);
-        if (!out) return; // no route, drop silently
+        if (!out) {
+            if (!internal) this._sendICMPv6Error(packet, 1, 0); // No route to destination (RFC 4443 §3.1)
+            return;
+        }
 
         if (out.interfIndex === -1) {
             this.acceptV6(packet);
@@ -1068,7 +1136,7 @@ export class IPStack extends Observable {
         const interf = this.interfaces[out.interfIndex];
         const nh = this._isZero(out.route.nexthop) ? dst : out.route.nexthop;
 
-        const mac = await interf.resolveNeighbor(nh); // throws if NDP not yet implemented
+        const mac = await interf.resolveNeighbor(nh);
         if (mac == null) return;
         interf.sendFrame(mac, 0x86DD, packet.pack());
     }
@@ -1084,6 +1152,8 @@ export class IPStack extends Observable {
             case 17:  this._handleUDP(packet);    break;
             case 6:   this.tcp.handle(packet);    break;
             default:
+                // RFC 4443 §3.4: Type 4 Code 1 – unrecognized Next Header; pointer = offset 6
+                this._sendICMPv6Error(packet, 4, 1, 6);
                 console.debug(this.name + ": IPv6 unknown nextHeader=" + packet.nextHeader);
         }
     }

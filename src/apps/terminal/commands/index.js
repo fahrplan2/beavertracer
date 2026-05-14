@@ -32,6 +32,7 @@ import { dig } from "./net/dig.js";
 import { telnet } from "./net/telnet.js";
 import { curl } from "./net/curl.js";
 import { nc } from "./net/nc.js";
+import { nmap } from "./net/nmap.js";
 import { beaver } from "./misc/beaver.js";
 
 /**
@@ -69,6 +70,7 @@ export function registerBuiltins(app) {
         telnet,
         curl,
         nc,
+        nmap,
         beaver,
     ];
 
