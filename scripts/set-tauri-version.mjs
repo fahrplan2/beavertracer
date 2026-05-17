@@ -12,17 +12,21 @@ function computeVersion() {
   if (ciTag) return ciTag.replace(/^v/, "");
 
   try {
-    const raw = execSync("git describe --tags --long --dirty", { encoding: "utf8" }).trim();
-
-    const m = raw.match(/^v?(\d+\.\d+\.\d+)(?:-(\d+)-g([0-9a-f]+))?(?:-dirty)?$/);
+    const raw = execSync("git describe --tags --long", { encoding: "utf8" }).trim();
+    // Greedy capture of tag name, then -{N}-g{hash} suffix that git always appends
+    const m = raw.match(/^v?(.+)-(\d+)-g([0-9a-f]+)$/);
     if (!m) return raw.replace(/^v/, "");
-
     const [, base, commits, hash] = m;
+    if (commits === "0") return base;
 
-    if (!commits || commits === "0") return base;
-
-    let v = `${base}+dev.${commits}.${hash}`;
-    return v;
+    // Pre-release tag (e.g. 1.0.0-rc.1): extend its pre-release identifier
+    if (/^\d+\.\d+\.\d+-/.test(base)) {
+      return `${base}.dev.${commits}.${hash}`;
+    }
+    // Stable tag (e.g. 0.1.17): bump patch and mark as pre-release of next
+    const parts = base.split(".");
+    parts[2] = String(Number(parts[2]) + 1);
+    return `${parts.join(".")}-dev.${commits}.${hash}`;
   } catch {
     return "0.0.0";
   }
@@ -30,11 +34,10 @@ function computeVersion() {
 
 const version = computeVersion();
 
-// Pfade anpassen, falls dein Script woanders liegt
 const cargoTomlPath = path.resolve(ROOT, "src-tauri", "Cargo.toml");
 let cargoToml = readFileSync(cargoTomlPath, "utf8");
 
-// Ersetzt version = "..." nur im [package]-Abschnitt
+// Replace version only in the [package] section
 cargoToml = cargoToml.replace(
   /(\[package\][\s\S]*?\nversion\s*=\s*")([^"]*)(")/,
   `$1${version}$3`
@@ -43,7 +46,6 @@ cargoToml = cargoToml.replace(
 writeFileSync(cargoTomlPath, cargoToml);
 console.log(`[tauri] set Cargo.toml version -> ${version}`);
 
-// Also keep package.json in sync
 const pkgPath = path.resolve(ROOT, "package.json");
 const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
 pkg.version = version;

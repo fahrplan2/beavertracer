@@ -165,7 +165,7 @@ export class TerminalApp extends GenericProcess {
 
             let suppressNextInput = false;
 
-            this.disposer.on(mi, "keydown", /** @type {any} */ ((ev) => {
+            this.disposer.on(mi, "keydown", /** @type {any} */ ((/** @type {Event} */ ev) => {
                 const ke = /** @type {KeyboardEvent} */ (ev);
 
                 if ((ke.ctrlKey || ke.metaKey) && (ke.key === "c" || ke.key === "C")) {
@@ -197,7 +197,7 @@ export class TerminalApp extends GenericProcess {
                 }
             }));
 
-            this.disposer.on(mi, "input", /** @type {any} */ ((ev) => {
+            this.disposer.on(mi, "input", /** @type {any} */ ((/** @type {Event} */ ev) => {
                 if (suppressNextInput) { suppressNextInput = false; mi.value = ""; return; }
                 const ie = /** @type {InputEvent} */ (ev);
                 if (ie.inputType === "insertText" && ie.data) {

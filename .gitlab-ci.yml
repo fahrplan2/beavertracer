@@ -2,7 +2,12 @@
 #
 # Builds:
 #  - on branch "development": typecheck + web build (dist/)
-#  - on tags v*.*.* : web build + Tauri (Linux/Windows) + GitLab Release
+#  - on tags v*.*.*        : web build + Tauri (Linux/Windows) + GitLab Release (stable)
+#  - on tags v*.*.*-<pre>  : web build + Tauri (Linux/Windows) + GitLab Release (pre-release)
+#
+# Tag conventions (SemVer):
+#   v0.1.17          stable release
+#   v1.0.0-rc.1      pre-release  (rc, beta, alpha, …)
 #
 # Einmalige Einrichtung:
 #  - Project Access Token mit Scope "api" als CI-Variable RELEASE_TOKEN hinterlegen
@@ -19,6 +24,15 @@ variables:
   GIT_DEPTH: 0
   # Cargo-Cache ins Projektverzeichnis (Runner-Cache greift dann)
   CARGO_HOME: "$CI_PROJECT_DIR/.cargo"
+
+# ── Tag-Regexe ────────────────────────────────────────────────────────────────
+# Stable:      v1.2.3
+# Pre-release: v1.2.3-rc.1  v1.2.3-beta.2  v1.2.3-alpha.1  …
+# Any release: both of the above (used for build + upload jobs)
+
+.rule-stable:    &rule-stable    '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+.rule-prerelease: &rule-prerelease '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+-[a-zA-Z]/'
+.rule-any-release: &rule-any-release '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+/'
 
 # ── Shared defaults (Web-Jobs) ────────────────────────────────────────────────
 
@@ -71,7 +85,7 @@ typecheck:
     - npx tsc --noEmit
   rules:
     - if: '$CI_COMMIT_BRANCH == "development"'
-    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+    - if: *rule-any-release
     - when: never
 
 # ── build ─────────────────────────────────────────────────────────────────────
@@ -90,7 +104,6 @@ build_dev:
     - when: never
 
 # Web-Build für Release (sync-version läuft automatisch in prebuild)
-# VITE_DOWNLOAD_BASE ist per Default https://www.beavertracer.eu/releases — passt so
 build_release:
   stage: build
   script:
@@ -100,14 +113,14 @@ build_release:
       - dist/
     expire_in: 7 days
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+    - if: *rule-any-release
 
 # Tauri – Linux (AppImage + .deb)
 tauri:linux:
   stage: build
   extends: .tauri-setup
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+    - if: *rule-any-release
   script:
     - node scripts/set-tauri-version.mjs
     - npm run tauri:build
@@ -123,7 +136,7 @@ tauri:windows:
   stage: build
   extends: .tauri-setup
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+    - if: *rule-any-release
   script:
     - node scripts/set-tauri-version.mjs
     - ln -sf "$(which makensis)" /usr/local/bin/makensis.exe
@@ -149,7 +162,7 @@ upload:
     - job: tauri:windows
       artifacts: true
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+    - if: *rule-any-release
   before_script:
     - apk add --no-cache curl
   script:
@@ -173,8 +186,8 @@ upload:
     reports:
       dotenv: release.env
 
-# Job 2: GitLab Release erstellen – liest $VERSION/$DL_BASE aus dem dotenv oben
-release:
+# Job 2a: GitLab Release für stabile Versionen
+release:stable:
   stage: release
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   before_script: []
@@ -182,14 +195,46 @@ release:
     - job: upload
       artifacts: true
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+    - if: *rule-stable
   script:
-    - echo "Creating release for $CI_COMMIT_TAG"
+    - echo "Creating stable release for $CI_COMMIT_TAG"
   release:
     name: "Beaver Tracer $CI_COMMIT_TAG"
     tag_name: "$CI_COMMIT_TAG"
     description: |
       ## Beaver Tracer $CI_COMMIT_TAG
+
+      Desktop-Downloads: https://www.beavertracer.eu
+    assets:
+      links:
+        - name: "Linux AppImage"
+          url: "$DL_BASE/beavertracer_${VERSION}_amd64.AppImage"
+          link_type: package
+        - name: "Linux .deb"
+          url: "$DL_BASE/beavertracer_${VERSION}_amd64.deb"
+          link_type: package
+        - name: "Windows Installer (.exe)"
+          url: "$DL_BASE/beavertracer_${VERSION}_x64-setup.exe"
+          link_type: package
+
+# Job 2b: GitLab Release für Pre-release-Versionen (rc, beta, alpha, …)
+release:prerelease:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  before_script: []
+  needs:
+    - job: upload
+      artifacts: true
+  rules:
+    - if: *rule-prerelease
+  script:
+    - echo "Creating pre-release for $CI_COMMIT_TAG"
+  release:
+    name: "Beaver Tracer $CI_COMMIT_TAG"
+    tag_name: "$CI_COMMIT_TAG"
+    prerelease: true
+    description: |
+      ## Beaver Tracer $CI_COMMIT_TAG (Pre-release)
 
       Desktop-Downloads: https://www.beavertracer.eu
     assets:
