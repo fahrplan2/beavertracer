@@ -521,6 +521,7 @@ export class IPStack extends Observable {
                 return;
             }
             packet.ttl = packet.ttl - 1;
+            packet.headerChecksum = 0; // force recalc in pack() after TTL change
             if (packet.ttl <= 0) {
                 this._sendICMPError(packet, 11, 0);
                 return;
