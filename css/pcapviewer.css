@@ -13,7 +13,7 @@
 
 .pcapviewer-toolbar {
   display: flex;
-  gap: 8px;
+  gap: var(--pad-md);
   padding: 8px;
   align-items: center;
   background-color: var(--surface);
@@ -212,7 +212,7 @@
 .pcapviewer-tree-node {
   display: grid;
   grid-template-columns: 16px 1fr;
-  gap: 6px;
+  gap: var(--pad-sm);
   padding: 4px 6px;
   border-radius: 6px;
   cursor: default;
@@ -226,7 +226,7 @@
 .pcapviewer-tree-proto {
   font-weight: 600;
   background: color-mix(in oklch, var(--surface, #fff) 80%, var(--text, #000) 8%);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   margin-bottom: 1px;
 }
 .pcapviewer-tree-proto:hover {
@@ -435,7 +435,7 @@
   color: inherit;
   text-align: left;
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 
 .pcapviewer-tabpicker-item:hover {

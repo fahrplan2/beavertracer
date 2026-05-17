@@ -1,0 +1,51 @@
+/* ===== DNS Server App ===== */
+
+.app-dnsd .tblwrap {
+  margin: var(--pad-md) 0 var(--pad-lg) 0;
+}
+
+.app-dnsd .tbl {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.app-dnsd .tbl th,
+.app-dnsd .tbl td {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  padding: var(--pad-sm);
+  vertical-align: middle;
+}
+
+.app-dnsd .tbl th {
+  text-align: left;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0.95;
+}
+
+.app-dnsd .tbl td .input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--pad-sm) var(--pad-md);
+}
+
+.app-dnsd .tbl th:last-child,
+.app-dnsd .tbl td:last-child {
+  width: 42px;
+  text-align: center;
+}
+
+.app-dnsd .tbl td:last-child .btn {
+  padding: var(--pad-xs) var(--pad-md);
+  min-width: 0;
+}
+
+.app-dnsd .tabcontent {
+  margin-bottom: 10px;
+}
+
+.app-dnsd .msg {
+  white-space: pre;
+  overflow: auto;
+}
