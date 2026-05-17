@@ -1,0 +1,40 @@
+/************************************ TERMINAL ***********************/
+
+.app-terminal .term {
+  font-family: "Hack", monospace;
+  font-size: 1rem;
+  line-height: 21px;
+  white-space: pre;
+  overflow: hidden;
+  background-color: #202020;
+  color: #00FF20;
+  padding: 7px;
+}
+
+.app-terminal .term:focus {
+  outline: none;
+}
+
+.app-terminal .term::selection {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+@media (max-width: 600px) {
+  .term-mobile-input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 1px;
+    border: none;
+    padding: 0;
+    font-size: 16px; /* prevents iOS viewport zoom on focus */
+  }
+
+  .app-terminal .term {
+    font-size: 0.8rem;
+    line-height: 17px;
+  }
+}

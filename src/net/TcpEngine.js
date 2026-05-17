@@ -5,7 +5,7 @@ import { simTimer, SimTimer } from "../lib/SimTimer.js";
 
 /**
  * TCP connection states (simplified).
- * @typedef {"LISTEN"|"SYN-RECEIVED"|"ESTABLISHED"|"CLOSED"|"SYN-SENT"|"FIN-WAIT-1"|"FIN-WAIT-2"|"LAST-ACK"|"CLOSE-WAIT"|"TIME-WAIT"} TcpState
+ * @typedef {"LISTEN"|"SYN-RECEIVED"|"ESTABLISHED"|"CLOSED"|"SYN-SENT"|"FIN-WAIT-1"|"FIN-WAIT-2"|"LAST-ACK"|"CLOSE-WAIT"|"TIME-WAIT"|"CLOSING"} TcpState
  */
 
 // -----------------------------------------------------------------------------
@@ -610,11 +610,23 @@ export class TcpEngine {
       return;
     }
 
-    // FIN-WAIT-1 -> FIN-WAIT-2 when our FIN is ACKed
+    // FIN-WAIT-1: our FIN ACKed → FIN-WAIT-2 (or TIME-WAIT if their FIN already consumed)
     if (conn.state === "FIN-WAIT-1") {
       if (ack && (tcp.ack >>> 0) === (conn.myacc >>> 0)) {
-        conn.state = "FIN-WAIT-2";
+        conn.state = conn.eof ? "TIME-WAIT" : "FIN-WAIT-2";
+        if (conn.state === "TIME-WAIT") {
+          conn.timeWaitUntil = (this.nowMs + this.timeWaitMs) | 0;
+        }
       }
+    }
+
+    // CLOSING: waiting for ACK of our FIN after simultaneous close
+    if (conn.state === "CLOSING") {
+      if (ack && (tcp.ack >>> 0) === (conn.myacc >>> 0)) {
+        conn.state = "TIME-WAIT";
+        conn.timeWaitUntil = (this.nowMs + this.timeWaitMs) | 0;
+      }
+      return;
     }
 
     // Accept data/FIN only in these states
@@ -968,6 +980,9 @@ export class TcpEngine {
 
       if (conn.state === "ESTABLISHED") {
         conn.state = "CLOSE-WAIT";
+      } else if (conn.state === "FIN-WAIT-1") {
+        // Simultaneous close: their FIN arrived before ACK of ours → CLOSING
+        conn.state = "CLOSING";
       } else if (conn.state === "FIN-WAIT-2") {
         conn.state = "TIME-WAIT";
         conn.timeWaitUntil = (this.nowMs + this.timeWaitMs) | 0;

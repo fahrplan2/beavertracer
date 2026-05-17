@@ -485,6 +485,8 @@ export class SimControl {
         // Branding group
         const brandingGroup = document.createElement("div");
         brandingGroup.className = "sim-toolbar-group sim-toolbar-branding-group";
+        brandingGroup.style.cursor = "pointer";
+        brandingGroup.addEventListener("click", () => this._staticRouter?.navigate("/about", { replace: true }));
         toolbar.appendChild(brandingGroup);
 
         const brandingText = document.createElement("div");

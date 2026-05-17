@@ -1,0 +1,182 @@
+/************************************* BROWSER **********************/
+
+.app-sparktail-http {
+  padding: var(--pad-sm);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Chrome / Address bar */
+.app-sparktail-http .sparktail-chrome {
+  display: flex;
+  align-items: center;
+  gap: var(--pad-md);
+  padding: 10px;
+
+  background: linear-gradient(180deg, var(--bg1), var(--bg2));
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+/* Address bar */
+.app-sparktail-http .sparktail-chrome input {
+  flex: 1;
+  min-width: 120px;
+
+  padding: 10px 14px;
+  border-radius: 999px;
+
+  background: white;
+  color: var(--text);
+
+  border: 1px solid var(--primary-soft);
+  outline: none;
+
+  font-family: ui-sans-serif, system-ui;
+  font-size: 0.875rem;
+}
+
+.app-sparktail-http .sparktail-chrome input::placeholder {
+  color: color-mix(in oklch, var(--muted), transparent 50%);
+  font-style: italic;
+}
+
+.app-sparktail-http .sparktail-chrome input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-tint);
+}
+
+/* Loading indicator */
+.app-sparktail-http .sparktail-throbber {
+  width: 26px;
+  text-align: center;
+  user-select: none;
+  color: var(--muted);
+}
+
+/* Main content area */
+.app-sparktail-http .panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+}
+
+/* Preview / Devtools */
+.app-sparktail-http iframe.sparktail-preview {
+  background: white;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow);
+}
+
+.app-sparktail-http textarea.sparktail-source,
+.app-sparktail-http textarea.sparktail-headers,
+.app-sparktail-http .sparktail-log {
+  background: var(--surface);
+  color: var(--text);
+
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+
+  padding: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+               "Liberation Mono", monospace;
+  font-size: 0.78125rem;
+  line-height: 1.35;
+}
+
+/* Tabs */
+.app-sparktail-http .button-row {
+  margin-top: var(--pad-md);
+  gap: var(--pad-md);
+}
+
+/* Status bar */
+.app-sparktail-http .sparktail-status {
+  margin-top: auto;
+  padding: var(--pad-sm) 10px;
+
+  background: none;
+  border: none;
+  box-shadow: none;
+
+  color: var(--muted);
+  font-family: ui-sans-serif, system-ui;
+  font-size: 0.75rem;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Cert popup */
+.app-sparktail-http .sparktail-cert-popup {
+  position: absolute;
+  top: 44px;
+  left: 4px;
+  z-index: 200;
+  width: 300px;
+
+  background: var(--surface);
+  border: 1px solid var(--border, #ccc);
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.25);
+  padding: var(--pad-lg) 14px;
+  font-size: 0.78125rem;
+  line-height: 1.45;
+}
+
+.app-sparktail-http .cert-popup-title {
+  font-weight: 600;
+  font-size: 0.8125rem;
+  margin-bottom: var(--pad-md);
+  color: var(--text);
+}
+
+.app-sparktail-http .cert-popup-trust {
+  font-size: 0.75rem;
+  margin-bottom: 10px;
+  padding: 5px var(--pad-md);
+  border-radius: var(--radius-sm);
+}
+
+.app-sparktail-http .cert-trust-ok   { background: #d4edda; color: #155724; }
+.app-sparktail-http .cert-trust-warn { background: #fff3cd; color: #856404; }
+
+.app-sparktail-http .cert-popup-row {
+  display: flex;
+  gap: var(--pad-sm);
+  padding: 3px 0;
+  border-bottom: 1px solid var(--border-light, rgba(128,128,128,.15));
+}
+.app-sparktail-http .cert-popup-row:last-child { border-bottom: none; }
+
+.app-sparktail-http .cert-popup-label {
+  color: var(--muted);
+  min-width: 78px;
+  flex-shrink: 0;
+  font-size: 0.71875rem;
+}
+
+.app-sparktail-http .cert-popup-value {
+  color: var(--text);
+  font-family: ui-monospace, monospace;
+  font-size: 0.6875rem;
+  word-break: break-all;
+}
+
+.app-sparktail-http .sparktail-lock-secure,
+.app-sparktail-http .sparktail-lock-insecure {
+  cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  .app-sparktail-http .sparktail-cert-popup {
+    width: calc(100% - 8px);
+    left: 4px;
+    right: 4px;
+    box-sizing: border-box;
+  }
+}

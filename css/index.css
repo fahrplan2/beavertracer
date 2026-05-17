@@ -1,20 +1,22 @@
 @import "global.css";
 
-
 @import "sim.css";
-/* SimIcon, SimPanel */
 @import "os.css";
-/* OS */
+
+/* Shared app components */
 @import "apps.css";
-/* OS-App-specific stuff */
+
+/* Per-app styles */
+@import "app-explorer.css";
+@import "app-terminal.css";
+@import "app-browser.css";
+@import "app-editor.css";
+@import "app-dns.css";
+@import "app-mail.css";
+@import "app-irc.css";
+@import "app-certmanager.css";
+
 @import "router.css";
-/* OS-App-specific stuff */
-
 @import "minimarkdown.css";
-/* Mini Markdown support */
-
 @import "pcapviewer.css";
-/* PCAPViewer */
-
 @import "about.css";
-/* for Static Pages */

@@ -1,6 +1,6 @@
 //@ts-check
 
-import { computeIPv4PseudoChecksum } from "../util/checksumUtils.js";
+import { computeIPv4PseudoChecksum, computeIPv6PseudoChecksum } from "../util/checksumUtils.js";
 import { read16BE, read32BE, write16BE, write32BE } from "../util/byteUtils.js";
 
 export class TCPPacket {
@@ -209,8 +209,9 @@ export class TCPPacket {
         const dstBytes = (rawDst instanceof Uint8Array) ? rawDst : rawDst.toUInt8();
         if (srcBytes.length === 4 && dstBytes.length === 4) {
           cs = TCPPacket.computeChecksumIPv4Pseudo(seg, srcBytes, dstBytes);
+        } else if (srcBytes.length === 16 && dstBytes.length === 16) {
+          cs = computeIPv6PseudoChecksum(seg, srcBytes, dstBytes, 6);
         }
-        // IPv6 pseudo-header: TODO Phase 3
       }
     }
 

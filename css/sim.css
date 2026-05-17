@@ -148,7 +148,7 @@
 .sim-panel-title-group {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--pad-xs);
   flex: 1;
   min-width: 0;
 }
@@ -201,7 +201,7 @@
   overflow-x: auto;
   overflow-y: hidden;
   align-items: stretch;
-  gap: 6px;
+  gap: var(--pad-sm);
   padding: var(--pad-md);
   background-color: var(--surface);
   user-select: none;
@@ -238,7 +238,7 @@
 .sim-toolbar-buttons {
   display: flex;
   flex-wrap: nowrap;
-  gap: 6px;
+  gap: var(--pad-sm);
 }
 
 .sim-speed-grid {
@@ -260,7 +260,7 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 8px;
+  gap: var(--pad-md);
   border: none;
   padding: 0 var(--pad-lg);
 }
@@ -344,7 +344,7 @@
 .sim-sidebar-tools {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--pad-md);
 }
 
 .sim-toolbar button,
@@ -355,7 +355,7 @@
   flex-direction: column;         /* icon above text */
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: var(--pad-xs);
 
   height: 44px;
   min-width: 58px;
@@ -693,7 +693,7 @@
 .sim-wifi-config {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--pad-sm);
   padding: 8px 10px;
   border-bottom: 1px solid var(--ui-border);
   margin-bottom: 4px;
@@ -744,7 +744,7 @@
 
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--pad-sm);
 
   box-shadow: var(--shadow-soft);
   border: 1px solid var(--ui-border);
@@ -907,7 +907,7 @@ sim-toolbar-langbtn {
   width: min(720px, 94vw);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--pad-lg);
 }
 
 .sim-langdialog-header {
@@ -962,7 +962,7 @@ sim-toolbar-langbtn {
 .sim-langdialog-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 8px;
+  gap: var(--pad-md);
   max-height: 55vh;
   overflow-y: auto;
   padding-right: 2px;
@@ -972,7 +972,7 @@ sim-toolbar-langbtn {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: var(--pad-sm);
   padding: var(--pad-md) var(--pad-sm);
   border-radius: var(--radius-md);
   border: 1px solid var(--ui-border);
@@ -1177,7 +1177,7 @@ sim-toolbar-langbtn {
   width: 90vw;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--pad-xl);
 }
 
 .sim-dialog-msg {
@@ -1208,7 +1208,7 @@ sim-toolbar-langbtn {
 .sim-dialog-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: var(--pad-md);
 }
 
 .sim-dialog-btn {
@@ -1252,7 +1252,7 @@ sim-toolbar-langbtn {
 .ui-tab {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--pad-sm);
   padding: var(--pad-sm) var(--pad-lg);
   border: 1px solid var(--ui-border);
   border-bottom: 3px solid transparent;
@@ -1352,7 +1352,7 @@ sim-toolbar-langbtn {
   .sim-toolbar-group { padding: 4px 6px 6px; }
   .sim-toolbar-group-label { font-size: 0.625rem; margin-bottom: 4px; }
   .sim-toolbar-branding { font-size: 1.25rem; }
-  .sim-sidebar-tools { gap: 6px; }
+  .sim-sidebar-tools { gap: var(--pad-sm); }
 }
 
 @media (max-width: 1050px) {
@@ -1373,13 +1373,13 @@ sim-toolbar-langbtn {
     width: 17px; height: 17px;
     -webkit-mask-size: 17px 17px; mask-size: 17px 17px;
   }
-  .sim-toolbar-buttons { gap: 4px; }
+  .sim-toolbar-buttons { gap: var(--pad-xs); }
   .sim-toolbar-group { padding: 3px 5px 5px; }
   .sim-toolbar-group-label { font-size: 0.5625rem; margin-bottom: 2px; min-height: 10px; }
-  .sim-toolbar { gap: 4px; padding: 5px; }
+  .sim-toolbar { gap: var(--pad-xs); padding: 5px; }
   .sim-toolbar-branding { font-size: 1.0625rem; }
   .sim-toolbar-branding-alpha { font-size: 0.5625rem; padding: 1px 4px; }
-  .sim-sidebar-tools { gap: 4px; }
+  .sim-sidebar-tools { gap: var(--pad-xs); }
   /* speed grid: (38px − 2px gap) / 2 rows = 18px per button */
   .sim-speed-grid button { height: 18px !important; }
 }
@@ -1440,7 +1440,7 @@ sim-toolbar-langbtn {
     width: 20px; height: 20px;
     -webkit-mask-size: 20px 20px; mask-size: 20px 20px;
   }
-  .sim-sidebar-tools { gap: 4px; }
+  .sim-sidebar-tools { gap: var(--pad-xs); }
 }
 
 @media (max-height: 650px) {
@@ -1487,7 +1487,7 @@ sim-toolbar-langbtn {
 .download-cards {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: var(--pad-xl);
   margin: 20px 0;
 }
 
@@ -1522,7 +1522,7 @@ sim-toolbar-langbtn {
 .download-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--pad-sm);
   padding: var(--pad-md) var(--pad-lg);
   border-radius: var(--radius-md);
   font-size: 0.8125rem;
@@ -1587,7 +1587,7 @@ sim-toolbar-langbtn {
   .sim-sidebar-tools {
     flex-direction: row;
     flex-wrap: nowrap;
-    gap: 6px;
+    gap: var(--pad-sm);
     /* make scrollable touch-friendly */
     -webkit-overflow-scrolling: touch;
   }

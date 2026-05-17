@@ -4,12 +4,24 @@ import path from "node:path";
 import process from "node:process";
 import { parse } from "@babel/parser";
 
-/**
- * Simple CLI args:
- *   --src <dir>        default: "./src"
- *   --locale <file>    default: "./i18n/locales/en.js"
- *   --ext <csv>        default: "js,jsx,ts,tsx"
- */
+const HELP_TEXT = `
+Usage: node scripts/check-i18n.mjs [options]
+
+Scans source files for t("key") calls and checks them against the source locale.
+Reports missing keys (used in code but not in locale) and unused keys (in locale but not in code).
+
+Options:
+  --src <dir>      Directory to scan for source files (default: ./)
+  --locale <file>  Source locale file to check against (default: ./locales/en.js)
+  --ext <csv>      File extensions to scan (default: js,jsx,ts,tsx)
+  --help           Show this help
+`.trim();
+
+if (process.argv.includes("--help") || process.argv.includes("-h")) {
+  console.log(HELP_TEXT);
+  process.exit(0);
+}
+
 function getArg(name, fallback) {
   const idx = process.argv.indexOf(name);
   if (idx !== -1 && process.argv[idx + 1]) return process.argv[idx + 1];

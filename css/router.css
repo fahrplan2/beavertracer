@@ -1,6 +1,6 @@
 .router-name-row {
   display: flex;
-  gap: 8px;
+  gap: var(--pad-md);
   align-items: center;
 }
 
@@ -31,13 +31,13 @@
 .router-if-grid {
   display: grid;
   grid-template-columns: 1fr 1fr 120px auto;
-  gap: 8px;
+  gap: var(--pad-md);
   margin-bottom: 10px;
 }
 
 .router-if-actions {
   display: flex;
-  gap: 8px;
+  gap: var(--pad-md);
 }
 
 /* Dual-stack interface form sections */
@@ -48,7 +48,7 @@
 .router-if-section-header {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--pad-sm);
   margin-bottom: 4px;
 }
 
@@ -59,7 +59,7 @@
 
 .router-if-fields {
   display: flex;
-  gap: 8px;
+  gap: var(--pad-md);
   flex-wrap: wrap;
   padding-left: 22px;
 }
@@ -129,7 +129,7 @@
 
 .router-route-actions {
   display: flex;
-  gap: 6px;
+  gap: var(--pad-sm);
 }
 
 /* Auto routes: use muted + dashed */
@@ -178,7 +178,7 @@
 .router-vpn-row {
   display: grid;
   grid-template-columns: 6ch 1fr 1fr auto;
-  gap: 8px;
+  gap: var(--pad-md);
   align-items: center;
   padding: 4px 0;
   border-bottom: 1px solid color-mix(in oklch, var(--border), var(--text) 6%);
@@ -192,14 +192,14 @@
 .router-vpn-form {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--pad-sm);
   margin-top: 8px;
 }
 
 .router-vpn-form-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--pad-md);
 }
 
 .router-vpn-form-label {

@@ -1,0 +1,241 @@
+/**************** MAIL SERVER *******************************/
+
+.app-simple-mail-server .user-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pad-md);
+  margin-top: var(--pad-sm);
+}
+
+.app-simple-mail-server .user-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pad-lg);
+
+  padding: 10px var(--pad-lg);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.app-simple-mail-server .user-row-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.app-simple-mail-server .user-row-title {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-simple-mail-server .user-row-sub {
+  font-size: 0.75rem;
+  opacity: 0.75;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-simple-mail-server .user-row-right {
+  display: flex;
+  gap: var(--pad-md);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.app-simple-mail-server .user-row-right button {
+  white-space: nowrap;
+}
+
+.app-simple-mail-server .user-list .msg {
+  padding: var(--pad-md) 10px;
+  opacity: 0.8;
+}
+
+/* =========================================================
+   Mail Client App
+   ========================================================= */
+
+.app-mail-client {
+  padding: var(--pad-sm);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Toolbar */
+.app-mail-client .mailclient-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--pad-sm);
+  padding: var(--pad-sm) var(--pad-md);
+  background: linear-gradient(180deg, var(--bg1, #1a1a1a), var(--bg2, #222));
+  border-radius: 10px;
+  margin-bottom: var(--pad-xs);
+  box-shadow: var(--shadow, 0 1px 4px rgba(0,0,0,.4));
+}
+
+.app-mail-client .mailclient-toolbar .btn:last-child {
+  margin-left: auto;
+}
+
+/* Folder panels */
+.app-mail-client .mailclient-folder-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pad-sm);
+  margin-top: var(--pad-sm);
+}
+
+/* Message list */
+.app-mail-client .mailclient-list {
+  border: 1px solid var(--border, #444);
+  border-radius: var(--radius-md);
+  background: var(--bg1, #1a1a1a);
+  overflow: hidden;
+}
+
+.app-mail-client .mailclient-list-header,
+.app-mail-client .mailclient-list-row {
+  display: grid;
+  grid-template-columns: 28% 1fr 20%;
+  gap: 0;
+  padding: 5px var(--pad-md);
+  font-size: 0.82em;
+}
+
+.app-mail-client .mailclient-list-header {
+  background: var(--bg2, #2a2a2a);
+  font-weight: 600;
+  color: var(--text-dim, #aaa);
+  font-size: 0.78em;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  border-bottom: 1px solid var(--border, #444);
+}
+
+.app-mail-client .mailclient-list-row {
+  border-bottom: 1px solid var(--border, #333);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.app-mail-client .mailclient-list-row:last-child {
+  border-bottom: none;
+}
+
+.app-mail-client .mailclient-list-row:hover { background: var(--bg2, #222); }
+.app-mail-client .mailclient-list-row.selected { background: var(--accent-dim, #1e3a5f); color: oklch(93% 0.01 215); }
+
+.app-mail-client .ml-col-from,
+.app-mail-client .ml-col-subject,
+.app-mail-client .ml-col-date {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-mail-client .ml-col-from    { font-weight: 600; }
+.app-mail-client .ml-col-date    { opacity: 0.55; font-size: 0.9em; text-align: right; }
+
+.app-mail-client .mailclient-list-empty {
+  padding: var(--pad-lg);
+  opacity: 0.55;
+  font-size: 0.85em;
+}
+
+/* Message preview */
+.app-mail-client .mailclient-preview {
+  width: 100%;
+  min-height: 180px;
+  max-height: 300px;
+  resize: vertical;
+  font-family: monospace;
+  font-size: 0.82em;
+  box-sizing: border-box;
+}
+
+/* Compose panel */
+.app-mail-client .mailclient-compose-panel {
+  margin-top: var(--pad-sm);
+}
+
+.app-mail-client .mailclient-compose-body {
+  width: 100%;
+  min-height: 180px;
+  resize: vertical;
+  box-sizing: border-box;
+  margin-top: var(--pad-sm);
+  font-family: monospace;
+  font-size: 0.85em;
+}
+
+/* Log panel */
+.app-mail-client .mailclient-log-panel {
+  margin-top: var(--pad-sm);
+}
+
+.app-mail-client .mailclient-log {
+  min-height: 200px;
+  max-height: 360px;
+  overflow-y: auto;
+  font-size: 0.78em;
+  font-family: monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* Status bar */
+.app-mail-client .mailclient-status {
+  font-size: 0.80em;
+  margin-top: 5px;
+  padding: 3px var(--pad-sm);
+  opacity: 0.75;
+}
+
+/* Config panel */
+.app-mail-client .mailclient-config-panel {
+  margin-top: var(--pad-sm);
+}
+
+.app-mail-client .mailclient-config-panel h5 {
+  margin: var(--pad-lg) 0 var(--pad-xs);
+  font-size: 0.80em;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  opacity: 0.55;
+  border-bottom: 1px solid var(--border, #444);
+  padding-bottom: 3px;
+}
+
+.app-mail-client .mailclient-config-panel h5:first-of-type {
+  margin-top: var(--pad-xs);
+}
+
+.app-mail-client .mailclient-config-columns {
+  display: flex;
+  gap: var(--pad-xl);
+  align-items: flex-start;
+}
+
+.app-mail-client .mailclient-config-col {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.app-mail-client .mailclient-config-col h5 {
+  margin-top: 0;
+}
+
+@media (max-width: 600px) {
+  .app-mail-client .mailclient-config-columns {
+    flex-direction: column;
+    gap: 0;
+  }
+}

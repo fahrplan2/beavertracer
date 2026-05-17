@@ -14,6 +14,23 @@ import path from "node:path";
 import process from "node:process";
 import { parse } from "@babel/parser";
 
+const HELP_TEXT = `
+Usage: node scripts/check-locale-sync.mjs [options]
+
+Compares all locale files against en.js (source of truth).
+Reports missing keys and removes obsolete keys from target locales.
+
+Options:
+  --locales <dir>   Directory containing locale files (default: ./locales)
+  --source <file>   Source locale filename (default: en.js)
+  --help            Show this help
+`.trim();
+
+if (process.argv.includes("--help") || process.argv.includes("-h")) {
+  console.log(HELP_TEXT);
+  process.exit(0);
+}
+
 function getArg(name, fallback) {
   const idx = process.argv.indexOf(name);
   if (idx !== -1 && process.argv[idx + 1]) return process.argv[idx + 1];
