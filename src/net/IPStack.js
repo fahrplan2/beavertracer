@@ -415,6 +415,8 @@ export class IPStack extends Observable {
         });
 
         // 6) delete interface (and unregister from parent if it's a subinterface)
+        interf.unsubscribe(this);
+        interf.port.unsubscribe(interf);
         if (interf instanceof VLANSubInterface) {
             interf._parentIface._subInterfaces.delete(interf.vid);
         }
