@@ -53,6 +53,12 @@ export class SimulatedObject {
     /** @type {HTMLElement|null} */
     panelHeaderEl = null;
 
+    /** @type {import('../lib/dragabble.js').DraggableController|null} */
+    _iconDraggable = null;
+
+    /** @type {import('../lib/dragabble.js').DraggableController|null} */
+    _panelDraggable = null;
+
     /** @type {number} icon position */
     x = 50;
     /** @type {number} icon position */
@@ -201,7 +207,7 @@ export class SimulatedObject {
         this.iconEl.addEventListener("mouseleave", () => this.simcontrol?._onNodeHover(this, false));
 
         //make icon traggable and toggle the panel
-        makeDraggable(this.iconEl, {
+        this._iconDraggable = makeDraggable(this.iconEl, {
             handle: this.iconEl,
             canDrag: () => {
                 return (this.simcontrol?.mode === "edit");
@@ -232,7 +238,7 @@ export class SimulatedObject {
         //make panel draggable
         const handle = this.panelEl.querySelector('.sim-panel-header');
         if (handle instanceof HTMLElement) {
-            makeDraggable(this.panelEl, {
+            this._panelDraggable = makeDraggable(this.panelEl, {
                 handle: handle,
                 boundary: () => this.simcontrol.movementBoundary,
                 onDragEnd: ({ x, y }) => {
@@ -342,6 +348,10 @@ export class SimulatedObject {
     }
 
     destroy() {
+        this._iconDraggable?.destroy();
+        this._iconDraggable = null;
+        this._panelDraggable?.destroy();
+        this._panelDraggable = null;
         this.root.remove();
     }
 
