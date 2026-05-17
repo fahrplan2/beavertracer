@@ -7,6 +7,20 @@
 import Anthropic from "@anthropic-ai/sdk";
 import fs from "node:fs";
 import path from "node:path";
+import process from "node:process";
+
+if (process.argv.includes("--help") || process.argv.includes("-h")) {
+  console.log(`
+Usage: ANTHROPIC_API_KEY=... node scripts/translate-pages-via-claude.mjs
+
+Translates about/help HTML pages into all configured locales.
+Skips locale files that already exist (add manually to force re-run).
+
+Options:
+  --help  Show this help
+  `.trim());
+  process.exit(0);
+}
 
 const ROOT = path.resolve(import.meta.dirname, "..");
 

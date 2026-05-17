@@ -274,7 +274,7 @@ async function fileExists(p) {
   }
 }
 
-async function updateExistingLocale({ client, model, maxTokens, sourceLang, targetLang, inCode, outFile, batchSize }) {
+async function updateExistingLocale({ client, model, maxTokens, sourceLang, targetLang, inCode, outFile, batchSize, forceKeys = new Set() }) {
   const sourceAst = babelParse(inCode);
   const sourceObj = findExportDefaultObjectExpression(sourceAst);
   if (!sourceObj) throw new Error("Could not find `export default { ... }` in input file.");
@@ -307,8 +307,20 @@ async function updateExistingLocale({ client, model, maxTokens, sourceLang, targ
     }
   }
 
-  if (missing.length === 0) {
-    console.log(destExists ? "No new strings. Destination is up to date." : "No strings found.");
+  const forced = [];
+  for (const key of forceKeys) {
+    if (!sourceIndex.has(key)) {
+      process.stderr.write(`  [force-keys] Key not in source, skipping: ${key}\n`);
+      continue;
+    }
+    if (!destIndex.has(key)) continue; // picked up as missing above
+    const { prop: sourceProp, nodeRef: sourceValueNode } = sourceIndex.get(key);
+    const { nodeRef: destValueNode } = destIndex.get(key);
+    forced.push({ key, value: sourceValueNode.value, sourceProp, destNodeRef: destValueNode });
+  }
+
+  if (missing.length === 0 && forced.length === 0) {
+    console.log(destExists ? "No new or forced strings. Destination is up to date." : "No strings found.");
     if (!destExists) {
       await fs.writeFile(outFile, recast.print(destAst).code, "utf8");
       console.log(`Wrote ${outFile}`);
@@ -316,9 +328,10 @@ async function updateExistingLocale({ client, model, maxTokens, sourceLang, targ
     return;
   }
 
-  const chunksArr = chunk(missing, batchSize);
+  const toTranslate = [...missing, ...forced];
+  const chunksArr = chunk(toTranslate, batchSize);
   let doneBatches = 0, doneStrings = 0;
-  renderProgress({ doneBatches, totalBatches: chunksArr.length, doneStrings, totalStrings: missing.length });
+  renderProgress({ doneBatches, totalBatches: chunksArr.length, doneStrings, totalStrings: toTranslate.length });
 
   const translations = {};
   for (const c of chunksArr) {
@@ -326,7 +339,7 @@ async function updateExistingLocale({ client, model, maxTokens, sourceLang, targ
     Object.assign(translations, t);
     doneBatches++;
     doneStrings += c.length;
-    renderProgress({ doneBatches, totalBatches: chunksArr.length, doneStrings, totalStrings: missing.length });
+    renderProgress({ doneBatches, totalBatches: chunksArr.length, doneStrings, totalStrings: toTranslate.length });
   }
   process.stdout.write("\n");
 
@@ -336,33 +349,58 @@ async function updateExistingLocale({ client, model, maxTokens, sourceLang, targ
     destObj.properties.push(makeObjectPropertyFromSourceKey(item.sourceProp, translated));
   }
 
+  for (const item of forced) {
+    const translated = translations[item.key];
+    if (typeof translated !== "string" || translated.length === 0) continue;
+    item.destNodeRef.value = translated;
+  }
+
   await fs.writeFile(outFile, recast.print(destAst).code, "utf8");
+  const parts = [];
+  if (missing.length > 0) parts.push(`added ${missing.length} new`);
+  if (forced.length > 0) parts.push(`updated ${forced.length} forced`);
   console.log(
     destExists
-      ? `Updated ${outFile}: added ${missing.length} new strings`
+      ? `Updated ${outFile}: ${parts.join(", ")} strings`
       : `Created ${outFile}: translated ${missing.length} strings`
   );
 }
 
+const HELP_TEXT = `
+Usage: ANTHROPIC_API_KEY=... node scripts/translate-i18n-via-claude.mjs \\
+         --in locales/en.js --out locales/de.js --target German
+
+Required:
+  --in <file>          Source locale file (e.g. locales/en.js)
+  --out <file>         Target locale file (e.g. locales/de.js)
+  --target <language>  Target language name (e.g. German, French, Japanese)
+
+Options:
+  --source <language>  Source language name (default: English)
+  --model <id>         Claude model ID (default: claude-haiku-4-5-20251001)
+  --batch <n>          Strings per API batch (default: 40)
+  --max-tokens <n>     Max tokens per API call (default: 8192)
+  --update <bool>      true = only missing keys, false = full re-translate (default: true)
+  --force-keys <keys>  Comma-separated keys to re-translate even if already present
+                       Example: --force-keys app.foo.title,app.bar.button.label
+  --help               Show this help
+`.trim();
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
+
+  if (args.help || args.h) {
+    console.log(HELP_TEXT);
+    process.exit(0);
+  }
+
   const inFile = args.in || args.input;
   const outFile = args.out || args.output;
   const targetLang = args.target;
   const sourceLang = args.source || "English";
 
   if (!inFile || !outFile || !targetLang) {
-    console.error(
-      "Missing required args.\n" +
-        "Usage: ANTHROPIC_API_KEY=... node translate-i18n-via-claude.mjs \\\n" +
-        "         --in locales/en.js --out locales/de.js --target German\n" +
-        "Options:\n" +
-        "  --source      English\n" +
-        "  --model       claude-haiku-4-5-20251001\n" +
-        "  --batch       40\n" +
-        "  --max-tokens  8192\n" +
-        "  --update      true|false (default: true)"
-    );
+    console.error("Missing required args. Run with --help for usage.");
     process.exit(1);
   }
 
@@ -376,11 +414,13 @@ async function main() {
   const batchSize = Number(args.batch || 40);
   const maxTokens = Number(args["max-tokens"] || 8192);
   const updateMode = asBool(args.update, true);
+  const forceKeysRaw = args["force-keys"] || "";
+  const forceKeys = new Set(forceKeysRaw ? forceKeysRaw.split(",").map((k) => k.trim()).filter(Boolean) : []);
   const client = new Anthropic({ apiKey });
   const inCode = await fs.readFile(inFile, "utf8");
 
   if (updateMode) {
-    await updateExistingLocale({ client, model, maxTokens, sourceLang, targetLang, inCode, outFile, batchSize });
+    await updateExistingLocale({ client, model, maxTokens, sourceLang, targetLang, inCode, outFile, batchSize, forceKeys });
     return;
   }
 
