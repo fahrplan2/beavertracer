@@ -1380,6 +1380,8 @@ sim-toolbar-langbtn {
   .sim-toolbar-branding { font-size: 1.0625rem; }
   .sim-toolbar-branding-alpha { font-size: 0.5625rem; padding: 1px 4px; }
   .sim-sidebar-tools { gap: 4px; }
+  /* speed grid: (38px − 2px gap) / 2 rows = 18px per button */
+  .sim-speed-grid button { height: 18px !important; }
 }
 
 /* ── Icon-only mode (≤960px) ─────────────────────────────────── */
@@ -1413,8 +1415,11 @@ sim-toolbar-langbtn {
   .sim-toolbar-branding-group { flex-direction: column; padding: 2px 4px; gap: 0; min-width: 36px; }
   .sim-toolbar-branding { font-size: 0.6875rem; }
   .sim-toolbar-branding-alpha { font-size: 0.5rem; padding: 1px 3px; letter-spacing: 0.4px; }
+  .sim-toolbar-group { justify-content: center; }
   .sim-toolbar-buttons { gap: 3px; }
   .sim-toolbar { gap: 3px; padding: 4px; }
+  /* speed grid: (34px − 2px gap) / 2 rows = 16px per button */
+  .sim-speed-grid button { height: 16px !important; }
   .sim-sidebar-title { display: none; }
   .sim-sidebar-tools { gap: 3px; }
   .sim-sidebar { padding: 6px; }
@@ -1549,4 +1554,132 @@ sim-toolbar-langbtn {
 
 .download-note i {
   margin-right: 4px;
+}
+
+/* =========================================================
+   MOBILE (≤ 600 px) — adaptive layout
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+  /* ── Canvas area: stacked column, sidebar at bottom ── */
+  .sim-body {
+    flex-direction: column;
+  }
+
+  .sim-sidebar {
+    order: 2;
+    flex: 0 0 auto;
+    border-right: none;
+    border-top: 1px solid var(--ui-border);
+    padding: var(--pad-sm);
+    overflow-x: auto;
+    overflow-y: hidden;
+    /* prevent height expansion from pushing canvas up */
+    height: auto;
+    min-height: 0;
+  }
+
+  .sim-sidebar-title {
+    display: none;
+  }
+
+  .sim-sidebar-tools {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 6px;
+    /* make scrollable touch-friendly */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* sidebar buttons: icon-only square touch targets */
+  .sim-sidebar-btn {
+    height: 48px !important;
+    min-width: 48px !important;
+    padding: 6px !important;
+    gap: 0 !important;
+  }
+
+  .sim-sidebar-btn span {
+    display: none;
+  }
+
+  .sim-sidebar-btn .fas {
+    font-size: 1.375rem;
+  }
+
+  .sim-sidebar-btn .my-icon-router,
+  .sim-sidebar-btn .my-icon-switch {
+    width: 22px;
+    height: 22px;
+    -webkit-mask-size: 22px 22px;
+    mask-size: 22px 22px;
+  }
+
+  /* ── Canvas: allow native touch-scroll on the node area ── */
+  .sim-nodes {
+    touch-action: pan-x pan-y;
+  }
+
+  /* ── Panels: full-screen when relocated to .sim-root ── */
+  .sim-root > .sim-panel {
+    position: absolute !important;
+    inset: 0 !important;
+    min-width: unset !important;
+    max-width: unset !important;
+    max-height: unset !important;
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    box-shadow: none !important;
+    transform: none !important;
+    z-index: 5000 !important;
+  }
+
+  .sim-root > .sim-panel .sim-panel-header {
+    cursor: default;
+  }
+
+  /* ── Panel body: scrollable so wide tables don't clip ── */
+  .sim-root > .sim-panel .sim-panel-body {
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── Port picker: wider touch targets ── */
+  .sim-port-chip {
+    padding: 10px 14px;
+    font-size: 0.9rem;
+  }
+
+  /* ── Toolbar: scrolls horizontally on small screens ── */
+  .sim-toolbar {
+    flex-shrink: 0;
+  }
+
+  /* ── Sidebar: respect iPhone home-bar safe area ── */
+  .sim-sidebar {
+    padding-bottom: calc(var(--pad-sm) + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* ── Firewall: wrap table in horizontal scroll ── */
+  .fw-rules-host {
+    max-height: none;
+  }
+
+  /* ── Switch tables: horizontal scroll on narrow screens ── */
+  .switch-sat-table,
+  .switch-stp-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── Firewall inputs: full available width ── */
+  .fw-input {
+    width: 100%;
+    box-sizing: border-box;
+  }
 }

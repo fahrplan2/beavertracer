@@ -216,3 +216,26 @@
   margin: 0;
 }
 
+/* =========================================================
+   MOBILE (≤ 600 px) — router panel content
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+  /* Interface grid: drop fixed 3rd column, let it wrap */
+  .router-if-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* Routes table: horizontal scroll wrapper */
+  .router-routes-host {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* NAT / VLAN grids: single column */
+  .router-nat-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
