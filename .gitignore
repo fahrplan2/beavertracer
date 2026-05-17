@@ -34,3 +34,6 @@ public/lessons/
 
 # i18n review results (input for triage-i18n.mjs)
 results/
+
+# Miscellaneous / scratch files
+misc/
