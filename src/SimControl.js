@@ -1496,6 +1496,13 @@ export class SimControl {
 
         // PLACE tools: click empty canvas places
         if (this.tool.startsWith("place-")) {
+            // On touch there is no mousemove, so the ghost is never created via hover.
+            // Create and position the ghost at the tap point so placement can proceed.
+            if ((!this._ghostNodeEl || !this._ghostReady) && ev.pointerType !== "mouse") {
+                this._ensureGhostNode(/** @type {any} */ (this.tool));
+                const tp = this._getLocalPoint(ev);
+                this._moveGhostNode(tp.x, tp.y);
+            }
             // Only place if ghost exists and has size
             if (!this._ghostNodeEl || !this._ghostReady) return;
 

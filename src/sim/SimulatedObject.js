@@ -53,6 +53,12 @@ export class SimulatedObject {
     /** @type {HTMLElement|null} */
     panelHeaderEl = null;
 
+    /** @type {import('../lib/dragabble.js').DraggableController|null} */
+    _iconDraggable = null;
+
+    /** @type {import('../lib/dragabble.js').DraggableController|null} */
+    _panelDraggable = null;
+
     /** @type {number} icon position */
     x = 50;
     /** @type {number} icon position */
@@ -201,7 +207,7 @@ export class SimulatedObject {
         this.iconEl.addEventListener("mouseleave", () => this.simcontrol?._onNodeHover(this, false));
 
         //make icon traggable and toggle the panel
-        makeDraggable(this.iconEl, {
+        this._iconDraggable = makeDraggable(this.iconEl, {
             handle: this.iconEl,
             canDrag: () => {
                 return (this.simcontrol?.mode === "edit");
@@ -229,10 +235,12 @@ export class SimulatedObject {
     wirePanelInteractions() {
         if (!this.panelEl) return;
 
+        if (this._isMobile()) return;
+
         //make panel draggable
         const handle = this.panelEl.querySelector('.sim-panel-header');
         if (handle instanceof HTMLElement) {
-            makeDraggable(this.panelEl, {
+            this._panelDraggable = makeDraggable(this.panelEl, {
                 handle: handle,
                 boundary: () => this.simcontrol.movementBoundary,
                 onDragEnd: ({ x, y }) => {
@@ -252,15 +260,29 @@ export class SimulatedObject {
         });
     }
 
+    _isMobile() {
+        return window.matchMedia("(max-width: 600px)").matches;
+    }
+
     /**
-     * 
-     * @param {boolean} open 
+     *
+     * @param {boolean} open
      */
     setPanelOpen(open) {
         if (open && this.simcontrol?.tool === "link") return;
         if (open && this.simcontrol?.mode === "edit") return;
 
         this.panelOpen = open;
+
+        if (this._isMobile() && this.panelEl) {
+            const simRoot = this.simcontrol?.root;
+            if (open && simRoot) {
+                simRoot.appendChild(this.panelEl);
+            } else if (!open && this.panelEl.parentElement !== this.root) {
+                this.root.appendChild(this.panelEl);
+            }
+        }
+
         this._applyPositions();
         this._applyPanelVisibility();
     }
@@ -276,6 +298,7 @@ export class SimulatedObject {
     }
 
     _clampPanelToViewport() {
+        if (this._isMobile()) return;
         if (!this.panelEl) return;
         const boundary = this.simcontrol?.movementBoundary;
         if (!(boundary instanceof HTMLElement)) return;
@@ -302,7 +325,7 @@ export class SimulatedObject {
         if (this.iconEl) {
             this.iconEl.style.transform = `translate(${this.x}px, ${this.y}px)`;
         }
-        if (this.panelEl) {
+        if (this.panelEl && !this._isMobile()) {
             this.panelEl.style.transform = `translate(${this.px}px, ${this.py}px)`;
             if (this.pw) this.panelEl.style.width = `${this.pw}px`;
             if (this.ph) this.panelEl.style.height = `${this.ph}px`;
@@ -342,6 +365,14 @@ export class SimulatedObject {
     }
 
     destroy() {
+        this._iconDraggable?.destroy();
+        this._iconDraggable = null;
+        this._panelDraggable?.destroy();
+        this._panelDraggable = null;
+        // On mobile the panel may have been relocated outside this.root
+        if (this.panelEl && this.panelEl.parentElement !== this.root) {
+            this.panelEl.remove();
+        }
         this.root.remove();
     }
 
@@ -380,6 +411,10 @@ export class SimulatedObject {
      * destroys UI objects. Only when changing languages or doing something extreme
      */
     invalidateUI() {
+        // If panel was relocated outside this.root (mobile full-screen), clean it up
+        if (this.panelEl && this.panelEl.parentElement !== this.root) {
+            this.panelEl.remove();
+        }
         this.root.replaceChildren();
         this.panelEl = null;
         this.iconEl = null;

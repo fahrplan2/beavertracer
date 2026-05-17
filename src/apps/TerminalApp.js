@@ -112,6 +112,9 @@ export class TerminalApp extends GenericProcess {
     /** @type {number | null} */
     blinkTimer = null;
 
+    /** @type {HTMLInputElement|null} */
+    _mobileInput = null;
+
 
     run() {
         this.root.classList.add("app", "app-terminal");
@@ -132,6 +135,8 @@ export class TerminalApp extends GenericProcess {
         super.onMount(root);
         this.disposer.dispose();
 
+        const isMobile = window.matchMedia("(max-width: 600px)").matches;
+
         const term = /** @type {HTMLPreElement} */ (
             UI.el("pre", {
                 className: "term",
@@ -140,24 +145,128 @@ export class TerminalApp extends GenericProcess {
         );
 
         this.outEl = term;
-        this.focusTarget = term;
-        this.root.replaceChildren(term);
 
-        this.disposer.on(term, "keydown", (ev) => this._onKeyDown(/** @type {KeyboardEvent} */(ev)));
-        this.disposer.on(term, "pointerdown", () => term.focus());
-        this.disposer.on(this.root, "pointerdown", () => term.focus());
+        if (isMobile) {
+            // Hidden input captures virtual keyboard on touch devices.
+            // font-size ≥ 16px prevents iOS from zooming the viewport on focus.
+            const mi = /** @type {HTMLInputElement} */ (UI.el("input", {
+                className: "term-mobile-input",
+                attrs: {
+                    type: "text",
+                    autocomplete: "off",
+                    autocorrect: "off",
+                    autocapitalize: "off",
+                    spellcheck: "false",
+                },
+            }));
+            this._mobileInput = mi;
+            this.focusTarget = mi;
+            this.root.replaceChildren(mi, term);
+
+            let suppressNextInput = false;
+
+            this.disposer.on(mi, "keydown", /** @type {any} */ ((/** @type {Event} */ ev) => {
+                const ke = /** @type {KeyboardEvent} */ (ev);
+
+                if ((ke.ctrlKey || ke.metaKey) && (ke.key === "c" || ke.key === "C")) {
+                    ke.preventDefault(); mi.value = ""; suppressNextInput = true;
+                    this._interrupt(); return;
+                }
+                if ((ke.ctrlKey || ke.metaKey) && ke.key === "l") {
+                    ke.preventDefault(); mi.value = ""; suppressNextInput = true;
+                    this._clear(); return;
+                }
+
+                // Printable single chars → handled by `input` event
+                if (ke.key.length === 1 && !ke.ctrlKey && !ke.metaKey) return;
+
+                ke.preventDefault();
+                suppressNextInput = true;
+                mi.value = "";
+
+                switch (ke.key) {
+                    case "Enter":    this._commitLine(); break;
+                    case "Backspace": this._backspace(); break;
+                    case "Delete":   this._moveCursor(1); this._backspace(); break;
+                    case "ArrowLeft":  this._moveCursor(-1); break;
+                    case "ArrowRight": this._moveCursor(1); break;
+                    case "ArrowUp":    this._historyUp(); break;
+                    case "ArrowDown":  this._historyDown(); break;
+                    case "Home": this.cursor = 0; this._renderScreen(); break;
+                    case "End":  this.cursor = this.lineBuffer.length; this._renderScreen(); break;
+                }
+            }));
+
+            this.disposer.on(mi, "input", /** @type {any} */ ((/** @type {Event} */ ev) => {
+                if (suppressNextInput) { suppressNextInput = false; mi.value = ""; return; }
+                const ie = /** @type {InputEvent} */ (ev);
+                if (ie.inputType === "insertText" && ie.data) {
+                    for (const ch of ie.data) this._insert(ch);
+                } else if (ie.inputType === "deleteContentBackward") {
+                    this._backspace();
+                } else if (ie.inputType === "insertLineBreak" || ie.inputType === "insertParagraph") {
+                    this._commitLine();
+                }
+                mi.value = "";
+            }));
+
+            this.disposer.on(term,      "pointerdown", () => mi.focus());
+            this.disposer.on(this.root, "pointerdown", () => mi.focus());
+        } else {
+            this.focusTarget = term;
+            this.root.replaceChildren(term);
+            this.disposer.on(term, "keydown", (ev) => this._onKeyDown(/** @type {KeyboardEvent} */(ev)));
+            this.disposer.on(term,      "pointerdown", () => term.focus());
+            this.disposer.on(this.root, "pointerdown", () => term.focus());
+        }
+
+        // Recalculate column count based on actual pixel width (mobile font is smaller)
+        requestAnimationFrame(() => {
+            this._recalcCols(term);
+            this._renderScreen();
+        });
 
         this._startCursorBlink();
         this._renderScreen();
-        setTimeout(() => term.focus(), 0);
+        setTimeout(() => (this._mobileInput ?? term).focus(), 0);
     }
 
     onUnmount() {
         this._stopCursorBlink();
         this.disposer.dispose();
         this.outEl = null;
+        this._mobileInput = null;
         this.focusTarget = null;
         super.onUnmount();
+    }
+
+    /**
+     * Recalculate `cols` from the terminal element's rendered width.
+     * Uses a single-char probe so the result matches the actual font.
+     * @param {HTMLElement} termEl
+     */
+    _recalcCols(termEl) {
+        const probe = document.createElement("span");
+        probe.style.cssText = "position:absolute;visibility:hidden;white-space:pre;font:inherit";
+        probe.textContent = "X".repeat(10);
+        termEl.appendChild(probe);
+        const charWidth = probe.getBoundingClientRect().width / 10;
+        probe.remove();
+
+        if (!charWidth) return;
+
+        const padding = 14; // 2 × 7px from .term { padding: 7px }
+        const available = termEl.clientWidth - padding;
+        const newCols = Math.max(20, Math.floor(available / charWidth));
+
+        if (newCols !== this.cols) {
+            this.cols = newCols;
+            this._resetScreen();
+            this.println(t("app.terminal.welcome", { host: this.env.HOST }));
+            this.println("");
+            this.println(t("app.terminal.hintHelp", { cmd: "help" }));
+            this.println("");
+        }
     }
 
     // ---------------------------

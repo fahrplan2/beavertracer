@@ -12,10 +12,10 @@ export function version(short = false) {
 
   if (!short) return v;
 
-  const devIndex = v.indexOf("+dev");
+  const devIndex = v.indexOf("-dev");
   if (devIndex === -1) {
     return v;
   }
 
-  return v.slice(0, devIndex + 4); // "+dev".length === 4
+  return v.slice(0, devIndex + 4); // "-dev".length === 4
 }

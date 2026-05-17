@@ -8,11 +8,20 @@ function computeVersion() {
 
   try {
     const raw = execSync("git describe --tags --long", { encoding: "utf8" }).trim();
-    const m = raw.match(/^v?(\d+\.\d+\.\d+)(?:-(\d+)-g([0-9a-f]+))?$/);
+    // Greedy capture of tag name, then -{N}-g{hash} suffix that git always appends
+    const m = raw.match(/^v?(.+)-(\d+)-g([0-9a-f]+)$/);
     if (!m) return raw.replace(/^v/, "");
     const [, base, commits, hash] = m;
-    if (!commits || commits === "0") return base;
-    return `${base}+dev.${commits}.${hash}`;
+    if (commits === "0") return base;
+
+    // Pre-release tag (e.g. 1.0.0-rc.1): extend its pre-release identifier
+    if (/^\d+\.\d+\.\d+-/.test(base)) {
+      return `${base}.dev.${commits}.${hash}`;
+    }
+    // Stable tag (e.g. 0.1.17): bump patch and mark as pre-release of next
+    const parts = base.split(".");
+    parts[2] = String(Number(parts[2]) + 1);
+    return `${parts.join(".")}-dev.${commits}.${hash}`;
   } catch {
     return null;
   }

@@ -148,13 +148,25 @@ fi
 
 # 11. Tauri-Releases herunterladen (läuft bei jedem Cron-Lauf, damit nachgeladene
 #     CI-Artifacts auch ankommen wenn der Build beim ersten Versuch noch nicht fertig war)
-ALL_TAGS="$(git tag | grep -E '^v[0-9]' | LC_ALL=C sort -V)"
-LATEST_TAG="$(echo "$ALL_TAGS" | tail -n1)"
-VERSION="${LATEST_TAG#v}"
+#
+# Strategie:
+#   - Stabile Tags (v1.2.3)           → immer herunterladen
+#   - Pre-release-Tags (v1.2.3-rc.1)  → herunterladen (offizielle Releases)
+#   - Dev-Builds (kein Tag)           → ignorieren
+#
+# LATEST_STABLE wird für den "aktuellen" Download verwendet.
+# Pre-release-Artifacts werden zusätzlich bereitgestellt.
 
-if [[ -n "$VERSION" ]]; then
-  RELEASES_DIR="${WEBROOT}/releases"
-  mkdir -p "$RELEASES_DIR"
+LATEST_STABLE="$(git tag | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | LC_ALL=C sort -V | tail -n1)"
+LATEST_PRERELEASE="$(git tag | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+-[a-zA-Z]' | LC_ALL=C sort -V | tail -n1)"
+
+RELEASES_DIR="${WEBROOT}/releases"
+mkdir -p "$RELEASES_DIR"
+
+download_artifacts() {
+  local TAG="$1"
+  [[ -z "$TAG" ]] && return
+  local VERSION="${TAG#v}"
 
   for filename in \
     "beavertracer_${VERSION}_amd64.AppImage" \
@@ -171,7 +183,12 @@ if [[ -n "$VERSION" ]]; then
            "$url" || echo "  (not available yet: ${filename})"
     fi
   done
+}
 
+download_artifacts "$LATEST_STABLE"
+download_artifacts "$LATEST_PRERELEASE"
+
+if [[ -d "$RELEASES_DIR" ]]; then
   chown -R www-data:www-data "$RELEASES_DIR"
   find "$RELEASES_DIR" -type f -exec chmod 644 {} +
 fi

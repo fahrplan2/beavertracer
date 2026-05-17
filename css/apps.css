@@ -1139,3 +1139,104 @@ textarea.log {
 }
 
 .app-certmanager .cm-check-label { display: flex; align-items: center; gap: 6px; font-size: 0.8125rem; cursor: pointer; }
+
+/* =========================================================
+   MOBILE (≤ 600 px) — app panel content
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+  /* ── Log textareas: drop forced desktop width ── */
+  textarea.log,
+  .msg {
+    min-width: unset;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* ── Explorer: hide type / size / date, keep icon + name ── */
+  .explorer-item {
+    grid-template-columns: 1.375rem 1fr;
+  }
+
+  .explorer-item-type,
+  .explorer-item-size,
+  .explorer-item-date {
+    display: none;
+  }
+
+  /* ── CertManager: stack side-by-side split vertically ── */
+  .app-certmanager .cm-split {
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .app-certmanager .cm-list,
+  .app-certmanager .cm-list-col {
+    width: 100%;
+    max-height: 160px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    overflow-x: auto;
+  }
+
+  .app-certmanager .cm-detail {
+    max-height: none;
+  }
+
+  /* ── IRC: channel list becomes horizontal strip ── */
+  .app-irc-client .irc-body {
+    flex-direction: column;
+  }
+
+  .app-irc-client .irc-sidebar {
+    width: 100%;
+    min-height: unset;
+    max-height: 48px;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 4px 6px;
+    border-right: none;
+    border-bottom: 1px solid var(--border, #333);
+  }
+
+  .app-irc-client .irc-messages {
+    min-height: 0;
+    max-height: none;
+    flex: 1;
+  }
+
+  /* ── Mail client config: stack two columns ── */
+  .app-mail-client .mailclient-config-columns {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  /* ── Sparktail cert popup: full-width below address bar ── */
+  .app-sparktail-http .sparktail-cert-popup {
+    width: calc(100% - 8px);
+    left: 4px;
+    right: 4px;
+    box-sizing: border-box;
+  }
+
+  /* ── Terminal: virtual keyboard capture input ── */
+  .term-mobile-input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 1px;
+    border: none;
+    padding: 0;
+    font-size: 16px; /* prevents iOS viewport zoom on focus */
+  }
+
+  .app-terminal .term {
+    font-size: 0.8rem;
+    line-height: 17px;
+  }
+}
