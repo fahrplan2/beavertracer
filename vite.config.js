@@ -38,6 +38,18 @@ function computeVersion() {
   }
 }
 
+// The actual last tag — used for download URLs so dev builds point to real artifacts.
+// "0.1.12-dev.100.abc" is after tag "0.1.11", so downloads must use "0.1.11".
+function computeLastTag() {
+  const ciTag = process.env.CI_COMMIT_TAG;
+  if (ciTag) return ciTag.replace(/^v/, "");
+  try {
+    return execSync("git describe --tags --abbrev=0", { encoding: "utf8" }).trim().replace(/^v/, "");
+  } catch {
+    return null;
+  }
+}
+
 
 
 function wiregasmAssets() {
@@ -153,6 +165,7 @@ export default defineConfig({
 
   define: {
     "import.meta.env.VITE_APP_VERSION": JSON.stringify(computeVersion()),
+    "import.meta.env.VITE_LAST_RELEASE": JSON.stringify(computeLastTag()),
     "import.meta.env.VITE_DOWNLOAD_BASE": JSON.stringify(
       process.env.VITE_DOWNLOAD_BASE ?? "https://www.beavertracer.eu/releases"
     ),
