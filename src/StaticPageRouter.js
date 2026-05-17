@@ -212,7 +212,9 @@ export class StaticPageRouter {
     // @ts-ignore
     const downloadBase = import.meta.env.VITE_DOWNLOAD_BASE ?? "https://www.beavertracer.eu/releases";
     const v = String(version());
-    const vBase = v.split("+")[0]; // "0.1.4+dev.3.abc" → "0.1.4"
+    // VITE_LAST_RELEASE = the actual last git tag (e.g. "0.1.11" when dev version is "0.1.12-dev.x")
+    // @ts-ignore
+    const vBase = String(import.meta.env.VITE_LAST_RELEASE || v);
     const vDisplay = route === "/downloads" ? vBase : v;
     return String(html)
       .replace(/\{VERSION\}/g, vDisplay)
