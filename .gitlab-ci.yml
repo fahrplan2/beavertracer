@@ -230,9 +230,8 @@ release:prerelease:
   script:
     - echo "Creating pre-release for $CI_COMMIT_TAG"
   release:
-    name: "Beaver Tracer $CI_COMMIT_TAG"
+    name: "Beaver Tracer $CI_COMMIT_TAG (Pre-release)"
     tag_name: "$CI_COMMIT_TAG"
-    prerelease: true
     description: |
       ## Beaver Tracer $CI_COMMIT_TAG (Pre-release)
 
