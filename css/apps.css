@@ -37,6 +37,7 @@ textarea.log {
   font-family: "Hack", monospace;
   font-size: 0.78125rem;
   line-height: 1.4;
+  user-select: text;
 
   border: 1px solid #2a2f3a;
   border-radius: 6px;
@@ -58,4 +59,47 @@ textarea.log {
     width: 100%;
     box-sizing: border-box;
   }
+}
+
+.info-value {
+  font-family: "Hack", monospace;
+  font-size: 0.78125rem;
+  user-select: text;
+}
+
+.wallet-display {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ledger-msg { white-space: normal; }
+
+.ledger-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: "Hack", monospace;
+  font-size: 0.78125rem;
+}
+
+.ledger-table th {
+  text-align: left;
+  padding: 2px 8px 4px 2px;
+  border-bottom: 1px solid #3a4050;
+  color: #8a9ab5;
+}
+
+.ledger-table td {
+  padding: 2px 8px 2px 2px;
+  border-bottom: 1px solid #1e2330;
+}
+
+.ledger-table td.ledger-amount {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.ledger-table td.ledger-own {
+  font-weight: bold;
+  color: #7ec8a0;
 }
