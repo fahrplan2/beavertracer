@@ -23,6 +23,7 @@ import { SimpleMailServerApp } from "./SimpleMailServerApp.js";
 import { MailClientApp } from "./MailClientApp.js";
 import { SimpleIRCServerApp } from "./SimpleIRCServerApp.js";
 import { SimpleIRCClientApp } from "./SimpleIRCClientApp.js";
+import { BitcoinNodeApp } from "./BitcoinNodeApp.js";
 import { DOMBuilder } from "../lib/DomBuilder.js";
 import { ExplorerApp } from "./ExplorerApp.js";
 
@@ -103,9 +104,9 @@ export class OS {
      */
     _registerApps() {
         const launchlist =
-            [IPv4ConfigApp, TerminalApp, TextEditorApp, ExplorerApp, SparktailHTTPClientApp, MailClientApp, SimpleIRCClientApp, SimpleTCPClientApp, SimpleTCPServerApp,
+            [IPv4ConfigApp, TerminalApp, TextEditorApp, ExplorerApp, SparktailHTTPClientApp, MailClientApp, CertManagerApp, SimpleIRCClientApp, SimpleTCPClientApp, SimpleTCPServerApp,
             SimpleHTTPServerApp, UDPEchoServerApp, DNSServerApp, DHCPServerApp, DHCPv6ServerApp, SimpleMailServerApp,
-            SimpleIRCServerApp, CertManagerApp];
+            SimpleIRCServerApp, BitcoinNodeApp];
 
         launchlist.forEach((e) => this.exec(e));
     }
