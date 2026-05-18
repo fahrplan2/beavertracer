@@ -157,15 +157,16 @@ function msgTx(tx) { return btcMsg("tx", rawTx(tx.id, tx.from, tx.to, Math.round
  * @returns {Uint8Array}
  */
 function msgBlock(block, txMap) {
-  const prevHash = block.prevHash ? fromHex(block.prevHash) : new Uint8Array(32);
-  const header = cat(
-    u32le(1),                                                // block version
-    prevHash,                                                // prev block hash
-    fakeHash(block.id + "_merkle"),                          // merkle root
-    u32le(Math.floor((block.ts || Date.now()) / 1000)),      // timestamp
-    u32le(0x1d00ffff),                                       // bits (mainnet genesis)
-    u32le(0),                                                // nonce
-  );
+  const header = block._header
+    ? fromHex(block._header)
+    : cat(
+        u32le(1),
+        block.prevHash ? fromHex(block.prevHash) : new Uint8Array(32),
+        fakeHash(block.id + "_merkle"),
+        u32le(Math.floor((block.ts || Date.now()) / 1000)),
+        u32le(0x1d00ffff),
+        u32le(0),
+      );
   const coinbase = rawTx("cb_" + block.id, "coinbase", block.miner, 1e8);
   const txs = [coinbase];
   for (const txId of block.txs) {
@@ -322,7 +323,7 @@ function parseTxPayload(p) {
 // ============================================================
 
 /**
- * @typedef {{ id: string, prev: string|null, prevHash: string|null, _hash: string, height: number, txs: string[], miner: string, ts: number }} Block
+ * @typedef {{ id: string, prev: string|null, prevHash: string|null, _hash: string, _header?: string, height: number, txs: string[], miner: string, ts: number }} Block
  * @typedef {{ id: string, from: string, to: string, amount: number }} Tx
  * @typedef {{ addr: string, height: number, ready: boolean }} PeerInfo
  */
@@ -539,10 +540,11 @@ export class BitcoinNodeApp extends LoggedProcess {
       u32le(1), prevHashBytes, fakeHash(id + "_merkle"),
       u32le(Math.floor(ts / 1000)), u32le(0x1d00ffff), u32le(0),
     );
-    const _hash = hex(fakeHash(Array.from(headerBytes).join(",")));
+    const _hash   = hex(fakeHash(Array.from(headerBytes).join(",")));
+    const _header = hex(headerBytes);
 
     /** @type {Block} */
-    const block = { id, prev, prevHash, _hash, height, txs, miner: this.walletAddr, ts };
+    const block = { id, prev, prevHash, _hash, _header, height, txs, miner: this.walletAddr, ts };
     this._integrateBlock(block);
     this._appendLog(t("app.bitcoin.log.mined", { time: nowStamp(), id, height, txCount: txs.length }));
     this._broadcastExcept(msgInv(MSG_BLOCK, fromHex(_hash)), "");
@@ -568,9 +570,13 @@ export class BitcoinNodeApp extends LoggedProcess {
     const tx = { id, from: this.walletAddr, to, amount };
     this.mempool.set(id, tx);
     this._indexTx(tx);
+    // Also store the content-based key so bounced-back tx is dedup'd in _onTx.
+    const txRawBytes = rawTx(tx.id, tx.from, tx.to, Math.round(tx.amount * 1e8));
+    const txContentHash = fakeHash(Array.from(txRawBytes.slice(0, 32)).join(","));
+    this.hashIndex.set(hex(txContentHash), { type: "tx", id });
     this._renderMempool();
     this._appendLog(t("app.bitcoin.log.txcreated", { time: nowStamp(), id, to, amount: amount.toFixed(8) }));
-    this._broadcastExcept(msgInv(MSG_TX, fakeHash(id)), "");
+    this._broadcastExcept(msgInv(MSG_TX, txContentHash), "");
     if (this.toEl) this.toEl.value = "";
   }
 
@@ -687,11 +693,22 @@ export class BitcoinNodeApp extends LoggedProcess {
           case "getdata":  this._onGetdata(msg.payload, connKey); break;
           case "block":    this._onBlock(msg.payload, connKey);   break;
           case "tx":       this._onTx(msg.payload, connKey);      break;
-          case "getblocks":
-            for (const block of this.chain) {
+          case "getblocks": {
+            // Parse block locator hash (first entry after version+count)
+            const p = msg.payload;
+            const locatorCount = p.length > 4 ? (p[4] < 0xfd ? p[4] : 0) : 0;
+            const locatorOff   = 4 + (p[4] < 0xfd ? 1 : 3);
+            const locatorHex   = locatorCount > 0 && p.length >= locatorOff + 32
+              ? hex(p.slice(locatorOff, locatorOff + 32)) : null;
+            const locatorIdx   = locatorHex
+              ? this.chain.findIndex(b => b._hash === locatorHex)
+              : -1;
+            const startIdx = locatorIdx >= 0 ? locatorIdx + 1 : 0;
+            for (const block of this.chain.slice(startIdx)) {
               net.sendTCPConn(connKey, msgInv(MSG_BLOCK, block._hash ? fromHex(block._hash) : fakeHash(block.id)));
             }
             break;
+          }
         }
       }
     } finally {
@@ -746,6 +763,8 @@ export class BitcoinNodeApp extends LoggedProcess {
       const prevEntry = this.hashIndex.get(prevHashHex);
       if (!prevEntry || prevEntry.type !== "block") {
         if (this.orphans.size < 50) this.orphans.set(headerKey, { payload, fromKey });
+        // Request the missing parent so sync doesn't stall waiting for it.
+        try { this.os.net.sendTCPConn(fromKey, msgGetdata(MSG_BLOCK, prevHashBytes)); } catch { }
         return;
       }
       prevId    = prevEntry.id;
@@ -763,17 +782,34 @@ export class BitcoinNodeApp extends LoggedProcess {
       const p = parseTxPayload(txPay);
       if (!p) continue;
       const pSats = Math.round(p.amount * 1e8);
+      let found = false;
       for (const [txId, tx] of this.mempool) {
         if (tx.from === p.from && tx.to === p.to && Math.round(tx.amount * 1e8) === pSats) {
-          txsInBlock.push(txId);
-          break;
+          txsInBlock.push(txId); found = true; break;
+        }
+      }
+      if (!found) {
+        // Tx wasn't in our mempool (e.g. full sync from scratch).
+        // Check by content hash first to avoid duplicates with late relay arrivals.
+        const txKey = hex(fakeHash(Array.from(txPay.slice(0, 32)).join(",")));
+        const existing = this.hashIndex.get(txKey);
+        if (existing?.type === "tx") {
+          txsInBlock.push(existing.id);
+        } else {
+          const id = `tx#${++this._txSeq}`;
+          const tx = { id, from: p.from, to: p.to, amount: p.amount };
+          this.confirmedTxs.set(id, tx);
+          this._indexTx(tx);
+          this.hashIndex.set(txKey, { type: "tx", id });
+          txsInBlock.push(id);
         }
       }
     }
 
+    const tsRaw   = ((payload[68] | (payload[69] << 8) | (payload[70] << 16) | (payload[71] << 24)) >>> 0) * 1000;
+    const _header = hex(payload.slice(0, 80));
     /** @type {Block} */
-    const block = { id, prev: prevId, prevHash, _hash: headerKey, height, txs: txsInBlock, miner, ts: Date.now() };
-    this.hashIndex.set(headerKey, { type: "block", id });
+    const block = { id, prev: prevId, prevHash, _hash: headerKey, _header, height, txs: txsInBlock, miner, ts: tsRaw };
     this._integrateBlock(block);
     this._appendLog(t("app.bitcoin.log.blockrcv", { time: nowStamp(), id, height, miner }));
     this._broadcastExcept(msgInv(MSG_BLOCK, fromHex(headerKey)), fromKey);
@@ -795,7 +831,8 @@ export class BitcoinNodeApp extends LoggedProcess {
     this._appendLog(t("app.bitcoin.log.txrcv", { time: nowStamp(), id, from: tx.from, to: tx.to, amount: tx.amount.toFixed(8) }));
     this._renderMempool();
     this._renderWalletBalance();
-    this._broadcastExcept(msgInv(MSG_TX, fakeHash(id)), fromKey);
+    // Relay with the same content-based hash so all nodes use a consistent inv key.
+    this._broadcastExcept(msgInv(MSG_TX, fromHex(txKey)), fromKey);
   }
 
   // ---- Internal helpers ----
