@@ -152,7 +152,7 @@ function rawTx(txId, from, to, satoshis) {
 function msgTx(tx) { return btcMsg("tx", rawTx(tx.id, tx.from, tx.to, Math.round(tx.amount * 1e8))); }
 
 /**
- * @param {{id:string,prev:string|null,prevHash:string|null,_hash:string,height:number,txs:string[],miner:string,ts:number}} block
+ * @param {{id:string,prev:string|null,prevHash:string|null,_hash:string,_header?:string,height:number,txs:string[],miner:string,ts:number}} block
  * @param {Map<string,{id:string,from:string,to:string,amount:number}>} txMap
  * @returns {Uint8Array}
  */
