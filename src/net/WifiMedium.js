@@ -14,6 +14,19 @@ export class WifiMedium {
     /** @type {Array<{src: any, data: Uint8Array, ssid: string}>} */
     _inFlight = [];
 
+    /** @type {import('../tracer/PCapControler.js').PCapController|null} */
+    _pcap = null;
+
+    /** @param {import('../tracer/PCapControler.js').PCapController} ctrl */
+    setPcapController(ctrl) {
+        this._pcap = ctrl;
+    }
+
+    /** @param {any} obj @returns {string} */
+    _ifName(obj) {
+        return `${obj.id}: ${obj._wPort.name}`;
+    }
+
     /**
      * Phase 1: extract one outgoing frame from every wireless-capable object.
      * @param {any[]} simobjects
@@ -23,7 +36,10 @@ export class WifiMedium {
         for (const obj of simobjects) {
             if (!obj._wPort || !obj._ssid) continue;
             const data = obj._wPort.getNextOutgoingFrame();
-            if (data) this._inFlight.push({ src: obj, data, ssid: obj._ssid });
+            if (data) {
+                this._inFlight.push({ src: obj, data, ssid: obj._ssid });
+                this._pcap?.updateIf(this._ifName(obj), obj._wPort.loggedFrames);
+            }
         }
     }
 
@@ -38,6 +54,7 @@ export class WifiMedium {
                 if (obj === src || !obj._wPort || obj._ssid !== ssid) continue;
                 obj._wPort.recieve(data);
                 delivered = true;
+                this._pcap?.updateIf(this._ifName(obj), obj._wPort.loggedFrames);
             }
             if (delivered) this._spawnRipple(src.getX(), src.getY());
         }

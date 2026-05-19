@@ -181,6 +181,7 @@ export class SimControl {
             simControl: this,
         });
         this.pcapController = new PCapController(this.pcapViewer);
+        this.wifiMedium.setPcapController(this.pcapController);
 
         this._mount();          // build DOM once
         this._syncSceneDOM();   // render current objects
@@ -289,6 +290,10 @@ export class SimControl {
         this.simobjects.push(obj);
         obj.simcontrol = this;
 
+        if (/** @type {any} */ (obj)._wPort) {
+            this.pcapController.addIf(`${obj.id}: ${/** @type {any} */ (obj)._wPort.name}`);
+        }
+
         this._syncSceneDOM();     // add just this node (and link)
         this._requestRedrawLinks();
     }
@@ -316,6 +321,10 @@ export class SimControl {
             // also remove packet elements if it was a Link
             if (o instanceof Link) {
                 for (const p of o._packets) p.el?.remove?.();
+            }
+
+            if (/** @type {any} */ (o)._wPort) {
+                this.pcapController.removeIf(`${o.id}: ${/** @type {any} */ (o)._wPort.name}`);
             }
         }
 
@@ -1863,6 +1872,13 @@ export class SimControl {
         // 3) fix id generator
         SimulatedObject.idnumber = maxId + 1;
 
+        // 4) register wifi pcap interfaces (bypassed addObject, so do it here)
+        for (const obj of this.simobjects) {
+            if (/** @type {any} */ (obj)._wPort) {
+                this.pcapController.addIf(`${obj.id}: ${/** @type {any} */ (obj)._wPort.name}`);
+            }
+        }
+
         this.isPaused = true;
         this._syncSceneDOM();
         this.redrawLinks();
@@ -1946,9 +1962,14 @@ export class SimControl {
             }
         }
 
-        // 3) destroy remaining objects
+        // 3) destroy remaining objects + unregister wifi pcap sessions
         for (const o of this.simobjects) {
-            if (!(o instanceof Link)) o.destroy?.();
+            if (!(o instanceof Link)) {
+                if (/** @type {any} */ (o)._wPort) {
+                    this.pcapController.removeIf(`${o.id}: ${/** @type {any} */ (o)._wPort.name}`);
+                }
+                o.destroy?.();
+            }
         }
 
         // 4) clear arrays + maps
