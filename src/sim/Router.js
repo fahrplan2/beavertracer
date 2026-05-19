@@ -6,7 +6,7 @@ import { VLANSubInterface } from "../net/NetworkInterface.js";
 import { RIPDaemon } from "../net/RIPDaemon.js";
 import { SimulatedObject } from "./SimulatedObject.js";
 import { PollTimer } from "../lib/PollTimer.js";
-import { netmaskStrToPrefix, prefixToNetmaskStr } from "../lib/helpers.js";
+import { netmaskStrToPrefix, prefixToNetmaskStr, normalizeMaskInput } from "../lib/helpers.js";
 
 import { DOMBuilder } from "../lib/DomBuilder.js";
 import { t } from "../i18n/index.js";
@@ -825,6 +825,10 @@ export class Router extends SimulatedObject {
 
             dst.addEventListener("input", updateRowState);
             mask.addEventListener("input", updateRowState);
+            mask.addEventListener("blur", () => {
+                const norm = normalizeMaskInput(mask.value);
+                if (norm !== mask.value) { mask.value = norm; updateRowState(); }
+            });
             nh.addEventListener("input", updateRowState);
             if (ifSel) ifSel.addEventListener("change", updateRowState);
 
@@ -950,6 +954,10 @@ export class Router extends SimulatedObject {
 
             addDst.addEventListener("input", updateAddState);
             addMask.addEventListener("input", updateAddState);
+            addMask.addEventListener("blur", () => {
+                const norm = normalizeMaskInput(addMask.value);
+                if (norm !== addMask.value) { addMask.value = norm; updateAddState(); }
+            });
             addNh.addEventListener("input", updateAddState);
             addIf.addEventListener("change", updateAddState);
 

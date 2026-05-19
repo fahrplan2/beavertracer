@@ -155,11 +155,21 @@ export function prefixToNetmask(bits) {
 
 /**
  * "255.255.255.0" → prefix length (0..32), or null if not a valid contiguous mask.
+ * Also accepts CIDR shorthand: a bare integer "0"–"32".
  * @param {string} s
  * @returns {number|null}
  */
 export function netmaskStrToPrefix(s) {
-    const parts = String(s).trim().split(".");
+    const trimmed = String(s).trim();
+
+    // CIDR shorthand: bare integer 0–32
+    if (/^\d{1,2}$/.test(trimmed)) {
+        const n = Number(trimmed);
+        if (Number.isInteger(n) && n >= 0 && n <= 32) return n;
+        return null;
+    }
+
+    const parts = trimmed.split(".");
     if (parts.length !== 4) return null;
     const octets = parts.map(Number);
     if (octets.some(o => !Number.isInteger(o) || o < 0 || o > 255)) return null;
@@ -177,6 +187,22 @@ export function netmaskStrToPrefix(s) {
         }
     }
     return c;
+}
+
+/**
+ * If s is a CIDR shorthand (bare integer 0–32), returns the equivalent
+ * dotted-decimal mask string. Otherwise returns s unchanged.
+ * Use on `blur` to auto-expand what the user typed.
+ * @param {string} s
+ * @returns {string}
+ */
+export function normalizeMaskInput(s) {
+    const trimmed = String(s).trim();
+    if (/^\d{1,2}$/.test(trimmed)) {
+        const n = Number(trimmed);
+        if (Number.isInteger(n) && n >= 0 && n <= 32) return prefixToNetmaskStr(n);
+    }
+    return s;
 }
 
 /**
