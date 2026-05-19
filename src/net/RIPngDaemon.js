@@ -14,7 +14,7 @@ const DELETE_MS = 20_000;
 
 // ── IPv6 helpers ────────────────────────────────────────────────────────────
 
-/** fe80::/10 check */
+/** fe80::/10 check @param {import("./models/IPAddress.js").IPAddress} ip */
 function isLinkLocal6(ip) {
     const b = ip.toUInt8();
     return b[0] === 0xfe && (b[1] & 0xc0) === 0x80;

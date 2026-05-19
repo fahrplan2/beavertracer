@@ -123,6 +123,7 @@ export function buildUpdate({ withdrawn, nextHop, asPath, localPref, med, nlri }
     write16BE(wdrLenBuf, 0, wdrBytes.length);
 
     // Path attributes (only when NLRI is non-empty)
+    /** @type {Uint8Array<ArrayBufferLike>} */
     let paBytes = new Uint8Array(0);
     if (nlri.length > 0) {
         paBytes = buildPathAttrs(nextHop, asPath, localPref, med);

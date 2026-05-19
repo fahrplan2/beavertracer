@@ -69,7 +69,11 @@ class BGPSession {
         this._buf = new Uint8Array(0);
     }
 
-    /** Called by server accept loop when peer initiates the connection. */
+    /**
+     * Called by server accept loop when peer initiates the connection.
+     * @param {string} key
+     * @param {IPAddress} localIP
+     */
     handleAccepted(key, localIP) {
         if (!this._running || (this.state !== "Idle" && this.state !== "Active")) {
             // Already busy or stopped — reject the incoming connection.
@@ -782,7 +786,7 @@ export class BGPDaemon {
         if (!d) return;
         this.localAS  = Number(d.localAS)  || 0;
         this.routerId = String(d.routerId  || "");
-        this.peers    = Array.isArray(d.peers) ? d.peers.map(p => ({
+        this.peers    = Array.isArray(d.peers) ? d.peers.map((/** @type {any} */ p) => ({
             ip: String(p.ip || ""), remoteAS: Number(p.remoteAS) || 0,
             description: String(p.description || ""), passive: !!p.passive,
         })) : [];
