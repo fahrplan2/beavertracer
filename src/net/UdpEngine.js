@@ -8,7 +8,8 @@ import { IPAddress } from "./models/IPAddress.js";
  *   dst: IPAddress,
  *   srcPort: number,
  *   dstPort: number,
- *   payload: Uint8Array
+ *   payload: Uint8Array,
+ *   recvIfIndex: number
  * }} UdpMessage
  */
 
@@ -116,10 +117,11 @@ export class UdpEngine {
     }
 
     /**
-     * Called by IPStack when a UDP IPv4Packet was accepted (protocol 17).
-     * @param {any} packet IPv4Packet
+     * Called by IPStack when a UDP packet was accepted (protocol 17).
+     * @param {any} packet IPv4Packet or IPv6Packet
+     * @param {number} [recvIfIndex]
      */
-    handle(packet) {
+    handle(packet, recvIfIndex = -1) {
         const datagram = UDPPacket.fromBytes(packet.payload);
         const socket = this.sockets.get(datagram.dstPort);
 
@@ -136,6 +138,7 @@ export class UdpEngine {
             srcPort: datagram.srcPort,
             dstPort: datagram.dstPort,
             payload: datagram.payload,
+            recvIfIndex,
         };
 
         const resolve = socket.waiters.shift();

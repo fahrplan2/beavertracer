@@ -95,10 +95,16 @@ export class StaticPageRouter {
     const route = this.#normalizeRouteOrUrl(to);
     const baseUrl = this.#resolveRouteToBaseUrl(route);
 
+    // Preserve existing query params when staying on the same path (e.g. initial
+    // mount at /?sim=... must not strip the ?sim= parameter).
+    const historyUrl = route === window.location.pathname
+      ? route + window.location.search
+      : route;
+
     if (!baseUrl) {
       this.#root.innerHTML = `<div class="content"><p>Page not found.</p></div>`;
-      if (opts.replace) history.replaceState({ route }, "", route);
-      else history.pushState({ route }, "", route);
+      if (opts.replace) history.replaceState({ route }, "", historyUrl);
+      else history.pushState({ route }, "", historyUrl);
       return;
     }
 
@@ -116,8 +122,8 @@ export class StaticPageRouter {
     const scroller = this.#root.closest(".about");
     if (scroller) scroller.scrollTop = 0;
 
-    if (opts.replace) history.replaceState({ route }, "", route);
-    else history.pushState({ route }, "", route);
+    if (opts.replace) history.replaceState({ route }, "", historyUrl);
+    else history.pushState({ route }, "", historyUrl);
   }
 
   /**

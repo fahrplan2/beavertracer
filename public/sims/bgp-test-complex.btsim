@@ -1,0 +1,640 @@
+{
+  "version": 4,
+  "tick": 100,
+  "objects": [
+    {
+      "kind": "TextBox",
+      "id": 1,
+      "name": "",
+      "x": 340,
+      "y": 20,
+      "px": 200,
+      "py": 150,
+      "panelOpen": false,
+      "text": "BGP-Test (komplex): 10 Router, 10 autonome Systeme\n\nTier-1-Backbone: AS65001 (R1) ─── AS65002 (R2)\n                      │   ╲      ╱   │    ╲\nRegionale ISPs:  AS65003(R3) AS65004(R4) AS65005(R5)\n                    │   ╲      │    ╲      │    ╲\nKunden-AS:    R6(65006) R7(65007) R8(65008) R9(65009) R10(65010)\n\nR7 ist dual-homed: eBGP-Peers zu R3 (AS65003) und R4 (AS65004).\nStub-Netze: 10.6.0.0/24 · 10.7.0.0/24 · 10.8.0.0/24 · 10.9.0.0/24 · 10.10.0.0/24\nR1 und R2 initiieren alle Sessions (niedrigste AS-Nummer)."
+    },
+    {
+      "kind": "Router",
+      "id": 2,
+      "name": "R1",
+      "x": 300,
+      "y": 130,
+      "px": 240,
+      "py": 200,
+      "panelOpen": false,
+      "net": {
+        "name": "R1",
+        "forwarding": true,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "10.1.2.1",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          },
+          {
+            "name": "eth1",
+            "ip": "10.1.3.1",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          },
+          {
+            "name": "eth2",
+            "ip": "10.1.4.1",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": []
+      },
+      "rip":   { "enabled": false, "passive": [] },
+      "ripng": { "enabled": false, "passive": [] },
+      "bgp": {
+        "enabled": true,
+        "localAS": 65001,
+        "routerId": "10.1.2.1",
+        "peers": [
+          { "ip": "10.1.2.2", "remoteAS": 65002, "description": "R2 (AS65002)", "passive": false },
+          { "ip": "10.1.3.2", "remoteAS": 65003, "description": "R3 (AS65003)", "passive": false },
+          { "ip": "10.1.4.2", "remoteAS": 65004, "description": "R4 (AS65004)", "passive": false }
+        ]
+      }
+    },
+    {
+      "kind": "Router",
+      "id": 3,
+      "name": "R2",
+      "x": 750,
+      "y": 130,
+      "px": 690,
+      "py": 200,
+      "panelOpen": false,
+      "net": {
+        "name": "R2",
+        "forwarding": true,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "10.1.2.2",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          },
+          {
+            "name": "eth1",
+            "ip": "10.2.4.1",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          },
+          {
+            "name": "eth2",
+            "ip": "10.2.5.1",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": []
+      },
+      "rip":   { "enabled": false, "passive": [] },
+      "ripng": { "enabled": false, "passive": [] },
+      "bgp": {
+        "enabled": true,
+        "localAS": 65002,
+        "routerId": "10.1.2.2",
+        "peers": [
+          { "ip": "10.1.2.1", "remoteAS": 65001, "description": "R1 (AS65001)", "passive": true },
+          { "ip": "10.2.4.2", "remoteAS": 65004, "description": "R4 (AS65004)", "passive": false },
+          { "ip": "10.2.5.2", "remoteAS": 65005, "description": "R5 (AS65005)", "passive": false }
+        ]
+      }
+    },
+    {
+      "kind": "Router",
+      "id": 4,
+      "name": "R3",
+      "x": 100,
+      "y": 330,
+      "px": 40,
+      "py": 400,
+      "panelOpen": false,
+      "net": {
+        "name": "R3",
+        "forwarding": true,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "10.1.3.2",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          },
+          {
+            "name": "eth1",
+            "ip": "10.3.6.1",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          },
+          {
+            "name": "eth2",
+            "ip": "10.3.7.1",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": []
+      },
+      "rip":   { "enabled": false, "passive": [] },
+      "ripng": { "enabled": false, "passive": [] },
+      "bgp": {
+        "enabled": true,
+        "localAS": 65003,
+        "routerId": "10.1.3.2",
+        "peers": [
+          { "ip": "10.1.3.1", "remoteAS": 65001, "description": "R1 (AS65001)", "passive": true },
+          { "ip": "10.3.6.2", "remoteAS": 65006, "description": "R6 (AS65006)", "passive": false },
+          { "ip": "10.3.7.2", "remoteAS": 65007, "description": "R7 (AS65007)", "passive": false }
+        ]
+      }
+    },
+    {
+      "kind": "Router",
+      "id": 5,
+      "name": "R4",
+      "x": 500,
+      "y": 330,
+      "px": 440,
+      "py": 400,
+      "panelOpen": false,
+      "net": {
+        "name": "R4",
+        "forwarding": true,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "10.1.4.2",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          },
+          {
+            "name": "eth1",
+            "ip": "10.2.4.2",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          },
+          {
+            "name": "eth2",
+            "ip": "10.4.7.1",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          },
+          {
+            "name": "eth3",
+            "ip": "10.4.8.1",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": []
+      },
+      "rip":   { "enabled": false, "passive": [] },
+      "ripng": { "enabled": false, "passive": [] },
+      "bgp": {
+        "enabled": true,
+        "localAS": 65004,
+        "routerId": "10.1.4.2",
+        "peers": [
+          { "ip": "10.1.4.1", "remoteAS": 65001, "description": "R1 (AS65001)", "passive": true },
+          { "ip": "10.2.4.1", "remoteAS": 65002, "description": "R2 (AS65002)", "passive": true },
+          { "ip": "10.4.7.2", "remoteAS": 65007, "description": "R7 (AS65007)", "passive": false },
+          { "ip": "10.4.8.2", "remoteAS": 65008, "description": "R8 (AS65008)", "passive": false }
+        ]
+      }
+    },
+    {
+      "kind": "Router",
+      "id": 6,
+      "name": "R5",
+      "x": 950,
+      "y": 330,
+      "px": 890,
+      "py": 400,
+      "panelOpen": false,
+      "net": {
+        "name": "R5",
+        "forwarding": true,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "10.2.5.2",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          },
+          {
+            "name": "eth1",
+            "ip": "10.5.9.1",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          },
+          {
+            "name": "eth2",
+            "ip": "10.5.10.1",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": []
+      },
+      "rip":   { "enabled": false, "passive": [] },
+      "ripng": { "enabled": false, "passive": [] },
+      "bgp": {
+        "enabled": true,
+        "localAS": 65005,
+        "routerId": "10.2.5.2",
+        "peers": [
+          { "ip": "10.2.5.1", "remoteAS": 65002, "description": "R2 (AS65002)", "passive": true },
+          { "ip": "10.5.9.2",  "remoteAS": 65009, "description": "R9 (AS65009)",  "passive": false },
+          { "ip": "10.5.10.2", "remoteAS": 65010, "description": "R10 (AS65010)", "passive": false }
+        ]
+      }
+    },
+    {
+      "kind": "Router",
+      "id": 7,
+      "name": "R6",
+      "x": 30,
+      "y": 530,
+      "px": 10,
+      "py": 600,
+      "panelOpen": false,
+      "net": {
+        "name": "R6",
+        "forwarding": true,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "10.3.6.2",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          },
+          {
+            "name": "eth1",
+            "ip": "10.6.0.1",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": []
+      },
+      "rip":   { "enabled": false, "passive": [] },
+      "ripng": { "enabled": false, "passive": [] },
+      "bgp": {
+        "enabled": true,
+        "localAS": 65006,
+        "routerId": "10.3.6.2",
+        "peers": [
+          { "ip": "10.3.6.1", "remoteAS": 65003, "description": "R3 (AS65003)", "passive": true }
+        ]
+      }
+    },
+    {
+      "kind": "Router",
+      "id": 8,
+      "name": "R7",
+      "x": 260,
+      "y": 530,
+      "px": 200,
+      "py": 600,
+      "panelOpen": false,
+      "net": {
+        "name": "R7",
+        "forwarding": true,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "10.3.7.2",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          },
+          {
+            "name": "eth1",
+            "ip": "10.4.7.2",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          },
+          {
+            "name": "eth2",
+            "ip": "10.7.0.1",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": []
+      },
+      "rip":   { "enabled": false, "passive": [] },
+      "ripng": { "enabled": false, "passive": [] },
+      "bgp": {
+        "enabled": true,
+        "localAS": 65007,
+        "routerId": "10.3.7.2",
+        "peers": [
+          { "ip": "10.3.7.1", "remoteAS": 65003, "description": "R3 (AS65003)", "passive": true },
+          { "ip": "10.4.7.1", "remoteAS": 65004, "description": "R4 (AS65004)", "passive": true }
+        ]
+      }
+    },
+    {
+      "kind": "Router",
+      "id": 9,
+      "name": "R8",
+      "x": 660,
+      "y": 530,
+      "px": 600,
+      "py": 600,
+      "panelOpen": false,
+      "net": {
+        "name": "R8",
+        "forwarding": true,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "10.4.8.2",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          },
+          {
+            "name": "eth1",
+            "ip": "10.8.0.1",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": []
+      },
+      "rip":   { "enabled": false, "passive": [] },
+      "ripng": { "enabled": false, "passive": [] },
+      "bgp": {
+        "enabled": true,
+        "localAS": 65008,
+        "routerId": "10.4.8.2",
+        "peers": [
+          { "ip": "10.4.8.1", "remoteAS": 65004, "description": "R4 (AS65004)", "passive": true }
+        ]
+      }
+    },
+    {
+      "kind": "Router",
+      "id": 10,
+      "name": "R9",
+      "x": 870,
+      "y": 530,
+      "px": 810,
+      "py": 600,
+      "panelOpen": false,
+      "net": {
+        "name": "R9",
+        "forwarding": true,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "10.5.9.2",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          },
+          {
+            "name": "eth1",
+            "ip": "10.9.0.1",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": []
+      },
+      "rip":   { "enabled": false, "passive": [] },
+      "ripng": { "enabled": false, "passive": [] },
+      "bgp": {
+        "enabled": true,
+        "localAS": 65009,
+        "routerId": "10.5.9.2",
+        "peers": [
+          { "ip": "10.5.9.1", "remoteAS": 65005, "description": "R5 (AS65005)", "passive": true }
+        ]
+      }
+    },
+    {
+      "kind": "Router",
+      "id": 11,
+      "name": "R10",
+      "x": 1070,
+      "y": 530,
+      "px": 1010,
+      "py": 600,
+      "panelOpen": false,
+      "net": {
+        "name": "R10",
+        "forwarding": true,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "10.5.10.2",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          },
+          {
+            "name": "eth1",
+            "ip": "10.10.0.1",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": []
+      },
+      "rip":   { "enabled": false, "passive": [] },
+      "ripng": { "enabled": false, "passive": [] },
+      "bgp": {
+        "enabled": true,
+        "localAS": 65010,
+        "routerId": "10.5.10.2",
+        "peers": [
+          { "ip": "10.5.10.1", "remoteAS": 65005, "description": "R5 (AS65005)", "passive": true }
+        ]
+      }
+    },
+    {
+      "kind": "Link",
+      "id": 12,
+      "a": 2,
+      "b": 3,
+      "portA": "eth0",
+      "portB": "eth0"
+    },
+    {
+      "kind": "Link",
+      "id": 13,
+      "a": 2,
+      "b": 4,
+      "portA": "eth1",
+      "portB": "eth0"
+    },
+    {
+      "kind": "Link",
+      "id": 14,
+      "a": 2,
+      "b": 5,
+      "portA": "eth2",
+      "portB": "eth0"
+    },
+    {
+      "kind": "Link",
+      "id": 15,
+      "a": 3,
+      "b": 5,
+      "portA": "eth1",
+      "portB": "eth1"
+    },
+    {
+      "kind": "Link",
+      "id": 16,
+      "a": 3,
+      "b": 6,
+      "portA": "eth2",
+      "portB": "eth0"
+    },
+    {
+      "kind": "Link",
+      "id": 17,
+      "a": 4,
+      "b": 7,
+      "portA": "eth1",
+      "portB": "eth0"
+    },
+    {
+      "kind": "Link",
+      "id": 18,
+      "a": 4,
+      "b": 8,
+      "portA": "eth2",
+      "portB": "eth0"
+    },
+    {
+      "kind": "Link",
+      "id": 19,
+      "a": 5,
+      "b": 8,
+      "portA": "eth2",
+      "portB": "eth1"
+    },
+    {
+      "kind": "Link",
+      "id": 20,
+      "a": 5,
+      "b": 9,
+      "portA": "eth3",
+      "portB": "eth0"
+    },
+    {
+      "kind": "Link",
+      "id": 21,
+      "a": 6,
+      "b": 10,
+      "portA": "eth1",
+      "portB": "eth0"
+    },
+    {
+      "kind": "Link",
+      "id": 22,
+      "a": 6,
+      "b": 11,
+      "portA": "eth2",
+      "portB": "eth0"
+    }
+  ]
+}
