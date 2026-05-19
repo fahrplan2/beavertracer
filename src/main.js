@@ -10,8 +10,11 @@ import { defaultSimulation } from "./defaultsim.js";
  * Falls back to defaultSimulation on any error or missing param.
  * @returns {Promise<object>}
  */
+// Capture before StaticPageRouter's navigate() strips query params via history.replaceState
+const _simParam = new URLSearchParams(window.location.search).get("sim");
+
 async function resolveStartupSim() {
-    const simUrl = new URLSearchParams(window.location.search).get("sim");
+    const simUrl = _simParam;
     if (!simUrl) return defaultSimulation;
 
     const isSameOrigin = simUrl.startsWith("/");

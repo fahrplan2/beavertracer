@@ -81,6 +81,13 @@ export class SimTimer {
     /** STP Max Age — discard BPDU info not refreshed within this window (simulation-scaled, ~IEEE 20 s). */
     static STP_MAX_AGE_MS           =  1_500;  // 300 ticks  → ~30 s real at 4× speed
 
+    /** BGP connect-retry interval (~RFC 4271 ConnectRetry timer, simulation-scaled). */
+    static BGP_CONNECT_RETRY_MS     =  1_000;  // 200 ticks
+    /** BGP keepalive interval (simulation-scaled, ~RFC 4271 recommends holdtime/3). */
+    static BGP_KEEPALIVE_MS         =  2_000;  // 400 ticks
+    /** BGP hold time (simulation-scaled, ~RFC 4271 recommends 90 s). */
+    static BGP_HOLDTIME_MS          =  6_000;  // 1200 ticks
+
     // -------------------------------------------------------------------------
     // Internal state
     // -------------------------------------------------------------------------

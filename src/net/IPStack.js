@@ -585,7 +585,8 @@ export class IPStack extends Observable {
     /** @param {number} port */
     closeUDPSocket(port) { return this.udp.close(port); }
     /** @param {*} packet */
-    _handleUDP(packet) { return this.udp.handle(packet); }
+    /** @param {any} packet @param {number} [recvIfIndex] */
+    _handleUDP(packet, recvIfIndex = -1) { return this.udp.handle(packet, recvIfIndex); }
 
     /****************************************************** ICMP ************************************/
 
@@ -1152,7 +1153,7 @@ export class IPStack extends Observable {
     acceptV6(packet, recvIfIndex = -1) {
         switch (packet.nextHeader) {
             case 58:  this._handleICMPv6(packet, recvIfIndex); break;
-            case 17:  this._handleUDP(packet);    break;
+            case 17:  this._handleUDP(packet, recvIfIndex); break;
             case 6:   this.tcp.handle(packet);    break;
             default:
                 // RFC 4443 §3.4: Type 4 Code 1 – unrecognized Next Header; pointer = offset 6

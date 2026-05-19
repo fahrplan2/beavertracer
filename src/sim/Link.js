@@ -54,7 +54,8 @@ export class Link extends SimulatedObject {
    *   el: HTMLDivElement,
    *   dir: "AtoB"|"BtoA",
    *   data: Uint8Array,
-   *   progress: number
+   *   progress: number,
+   *   positioned: boolean
    * }>}
    */
   _packets = [];
@@ -214,13 +215,18 @@ export class Link extends SimulatedObject {
       console.log(`[Packet ${dir}]`, data);
     });
 
+    // Bug 1: hide until renderPacket() sets correct position (avoids flash at 0,0)
+    el.style.visibility = "hidden";
     SimControl.packetsLayer.appendChild(el);
-    this._packets.push({ el, dir, data, progress: 0 });
+    this._packets.push({ el, dir, data, progress: 0, positioned: false });
   }
 
   /** @param {number} dtMs */
   advance(dtMs) {
     if (this._paused) return;
+    // Bug 2: at very high speeds (stepMs < ~2 frames), animation is physically
+    // impossible to be smooth – packets stay at start position and just flash briefly
+    if (this._stepMs < 35) return;
     const dp = dtMs / this._stepMs;
     for (const p of this._packets) p.progress = Math.min(1, p.progress + dp);
   }
@@ -249,6 +255,10 @@ export class Link extends SimulatedObject {
       p.el.style.left = `${x}px`;
       p.el.style.top = `${y}px`;
       p.el.style.transform = "translate(-50%, -50%)";
+      if (!p.positioned) {
+        p.el.style.visibility = "";
+        p.positioned = true;
+      }
     }
   }
 

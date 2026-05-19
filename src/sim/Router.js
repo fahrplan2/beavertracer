@@ -4,9 +4,11 @@ import { VirtualFileSystem } from "../apps/lib/VirtualFileSystem.js";
 import { IPStack } from "../net/IPStack.js";
 import { VLANSubInterface } from "../net/NetworkInterface.js";
 import { RIPDaemon } from "../net/RIPDaemon.js";
+import { RIPngDaemon } from "../net/RIPngDaemon.js";
+import { BGPDaemon } from "../net/BGPDaemon.js";
 import { SimulatedObject } from "./SimulatedObject.js";
 import { PollTimer } from "../lib/PollTimer.js";
-import { netmaskStrToPrefix, prefixToNetmaskStr } from "../lib/helpers.js";
+import { netmaskStrToPrefix, prefixToNetmaskStr, normalizeMaskInput } from "../lib/helpers.js";
 
 import { DOMBuilder } from "../lib/DomBuilder.js";
 import { t } from "../i18n/index.js";
@@ -92,12 +94,24 @@ export class Router extends SimulatedObject {
   rip;
   /** @type {HTMLTextAreaElement|null} */ _ripLogEl = null;
 
+  /** @type {RIPngDaemon} */
+  ripng;
+  /** @type {HTMLTextAreaElement|null} */ _ripngLogEl = null;
+
+  /** @type {BGPDaemon} */
+  bgp;
+  /** @type {HTMLElement|null} */ _bgpPeersHost = null;
+  /** @type {HTMLElement|null} */ _bgpRoutesHost = null;
+  /** @type {HTMLTextAreaElement|null} */ _bgpLogEl = null;
+
     constructor(name = t("router.title")) {
         super((name = t("router.title")));
         this.net = new IPStack(2, name);
         this.net.forwarding = true;
         this.fs = new VirtualFileSystem();
-        this.rip = new RIPDaemon(this.net);
+        this.rip   = new RIPDaemon(this.net);
+        this.ripng = new RIPngDaemon(this.net);
+        this.bgp   = new BGPDaemon(this.net);
 
         /** @param {HTMLElement} body */
         this.onPanelCreated = (body) => {
@@ -111,7 +125,9 @@ export class Router extends SimulatedObject {
             ...super.toJSON(),
             kind: "Router",
             net: this.net.toJSON(),
-            rip: this.rip.toJSON(),
+            rip:   this.rip.toJSON(),
+            ripng: this.ripng.toJSON(),
+            bgp:   this.bgp.toJSON(),
         };
     }
 
@@ -120,8 +136,12 @@ export class Router extends SimulatedObject {
         const obj = new Router(n.name ?? "Router");
         obj._applyBaseJSON(n);
         if (n.net) obj.net = IPStack.fromJSON(n.net);
-        obj.rip = new RIPDaemon(obj.net);
-        if (n.rip) obj.rip.applyJSON(n.rip);
+        obj.rip   = new RIPDaemon(obj.net);
+        if (n.rip)   obj.rip.applyJSON(n.rip);
+        obj.ripng = new RIPngDaemon(obj.net);
+        if (n.ripng) obj.ripng.applyJSON(n.ripng);
+        obj.bgp = new BGPDaemon(obj.net);
+        if (n.bgp) obj.bgp.applyJSON(n.bgp);
         return obj;
     }
 
@@ -152,12 +172,16 @@ export class Router extends SimulatedObject {
             { id: "routes-v4",  label: t("router.routingtable.ipv4") },
             { id: "routes-v6",  label: t("router.routingtable.ipv6") },
             { id: "rip",        label: t("router.rip.tab")            },
+            { id: "ripng",      label: t("router.ripng.tab")          },
+            { id: "bgp",        label: t("router.bgp.tab")            },
             { id: "vpn",        label: t("router.vpn.tab")            },
         ], (id) => {
             ifSection.style.display    = id === "interfaces" ? "" : "none";
             routeSection.style.display = (id === "routes-v4" || id === "routes-v6") ? "" : "none";
-            ripSection.style.display   = id === "rip" ? "" : "none";
-            vpnSection.style.display   = id === "vpn"  ? "" : "none";
+            ripSection.style.display   = id === "rip"   ? "" : "none";
+            ripngSection.style.display = id === "ripng" ? "" : "none";
+            bgpSection.style.display   = id === "bgp"   ? "" : "none";
+            vpnSection.style.display   = id === "vpn"   ? "" : "none";
             if (id === "routes-v4") { routeTitle.textContent = t("router.routingtable.ipv4"); this._selectedRouteFamily = 4; this._renderRoutes(); }
             if (id === "routes-v6") { routeTitle.textContent = t("router.routingtable.ipv6"); this._selectedRouteFamily = 6; this._renderRoutes(); }
         });
@@ -252,17 +276,27 @@ export class Router extends SimulatedObject {
         const ripSection = DOMBuilder.div("");
         this._buildRIPSection(ripSection);
 
+        /* ================================ RIPng ================================ */
+        const ripngSection = DOMBuilder.div("");
+        this._buildRIPngSection(ripngSection);
+
+        /* ================================ BGP ================================= */
+        const bgpSection = DOMBuilder.div("");
+        this._buildBGPSection(bgpSection);
+
         /* ================================ VPN ================================= */
         const vpnSection = DOMBuilder.div("");
         this._buildVPNSection(vpnSection);
 
-        outerContent.append(ifSection, routeSection, ripSection, vpnSection);
+        outerContent.append(ifSection, routeSection, ripSection, ripngSection, bgpSection, vpnSection);
 
         /* ============================ Tab switching ============================ */
         ifSection.style.display = "";
         routeSection.style.display = "none";
-        ripSection.style.display = "none";
-        vpnSection.style.display = "none";
+        ripSection.style.display   = "none";
+        ripngSection.style.display = "none";
+        bgpSection.style.display   = "none";
+        vpnSection.style.display   = "none";
         setOuterActive("interfaces");
 
         /* ============================ Init ============================ */
@@ -825,6 +859,10 @@ export class Router extends SimulatedObject {
 
             dst.addEventListener("input", updateRowState);
             mask.addEventListener("input", updateRowState);
+            mask.addEventListener("blur", () => {
+                const norm = normalizeMaskInput(mask.value);
+                if (norm !== mask.value) { mask.value = norm; updateRowState(); }
+            });
             nh.addEventListener("input", updateRowState);
             if (ifSel) ifSel.addEventListener("change", updateRowState);
 
@@ -950,6 +988,10 @@ export class Router extends SimulatedObject {
 
             addDst.addEventListener("input", updateAddState);
             addMask.addEventListener("input", updateAddState);
+            addMask.addEventListener("blur", () => {
+                const norm = normalizeMaskInput(addMask.value);
+                if (norm !== addMask.value) { addMask.value = norm; updateAddState(); }
+            });
             addNh.addEventListener("input", updateAddState);
             addIf.addEventListener("change", updateAddState);
 
@@ -1299,6 +1341,305 @@ export class Router extends SimulatedObject {
         const max   = 200;
         this._ripLogEl.value = (lines.length > max ? lines.slice(-max) : lines).join("\n");
         this._ripLogEl.scrollTop = this._ripLogEl.scrollHeight;
+    }
+
+    /* ----------------------------- RIPng tab ----------------------------- */
+
+    /** @param {HTMLElement} host */
+    _buildRIPngSection(host) {
+        host.appendChild(DOMBuilder.h4(t("router.ripng.tab")));
+
+        // ── global enable ──────────────────────────────────────────────────
+        const enableCb = DOMBuilder.input({ type: "checkbox" });
+        enableCb.checked = this.ripng.enabled;
+        enableCb.addEventListener("change", () => {
+            this.ripng.setEnabled(enableCb.checked);
+            this._renderRIPngLog();
+        });
+        const enableRow = DOMBuilder.div("router-name-row");
+        enableRow.style.gap = "6px";
+        enableRow.appendChild(enableCb);
+        enableRow.appendChild(DOMBuilder.label(t("router.ripng.enabled")));
+        host.appendChild(enableRow);
+
+        // ── per-interface passive toggles ──────────────────────────────────
+        const ifTable = document.createElement("table");
+        ifTable.className = "router-routes";
+        ifTable.style.marginTop = "8px";
+        const thead = document.createElement("thead");
+        const htr   = document.createElement("tr");
+        const thIf  = document.createElement("th"); thIf.textContent  = t("router.ripng.col.interface");
+        const thPas = document.createElement("th"); thPas.textContent = t("router.ripng.col.passive");
+        htr.append(thIf, thPas);
+        thead.appendChild(htr);
+        const tbody = document.createElement("tbody");
+
+        for (const iface of this.net.interfaces) {
+            const ifName = iface.name;
+            const tr  = document.createElement("tr");
+            const tdN = document.createElement("td"); tdN.textContent = ifName;
+            const tdP = document.createElement("td");
+            const cb  = DOMBuilder.input({ type: "checkbox" });
+            cb.checked = this.ripng.passiveInterfaces.has(ifName);
+            cb.addEventListener("change", () => this.ripng.setPassive(ifName, cb.checked));
+            tdP.appendChild(cb);
+            tr.append(tdN, tdP);
+            tbody.appendChild(tr);
+        }
+        ifTable.append(thead, tbody);
+        host.appendChild(ifTable);
+
+        // ── log ───────────────────────────────────────────────────────────
+        host.appendChild(DOMBuilder.h4(t("router.ripng.log")));
+        const logEl = /** @type {HTMLTextAreaElement} */ (DOMBuilder.el("textarea", {
+            className: "log",
+            attrs: { readonly: "true", spellcheck: "false" },
+        }));
+        logEl.style.width  = "100%";
+        logEl.style.height = "140px";
+        host.appendChild(logEl);
+        this._ripngLogEl = logEl;
+        this._renderRIPngLog();
+
+        this.ripng.onLogUpdate = () => this._renderRIPngLog();
+    }
+
+    _renderRIPngLog() {
+        if (!this._ripngLogEl) return;
+        const lines = this.ripng.log;
+        const max   = 200;
+        this._ripngLogEl.value = (lines.length > max ? lines.slice(-max) : lines).join("\n");
+        this._ripngLogEl.scrollTop = this._ripngLogEl.scrollHeight;
+    }
+
+    /* ----------------------------- BGP tab ----------------------------- */
+
+    /** @param {HTMLElement} host */
+    _buildBGPSection(host) {
+        const { bar: innerBar, setActive: setInnerActive } = DOMBuilder.tabGroup([
+            { id: "config", label: t("router.bgp.tab.config") },
+            { id: "routes", label: t("router.bgp.tab.routes") },
+            { id: "log",    label: t("router.bgp.tab.log")    },
+        ], (id) => {
+            configSection.style.display = id === "config" ? "" : "none";
+            routesSection.style.display = id === "routes" ? "" : "none";
+            logSection.style.display    = id === "log"    ? "" : "none";
+            if (id === "routes") this._renderBGPRoutes();
+            if (id === "log")    this._renderBGPLog();
+        });
+        host.appendChild(innerBar);
+
+        // ── Konfiguration ────────────────────────────────────────────────
+        const configSection = DOMBuilder.div("");
+
+        const enableCb = DOMBuilder.input({ type: "checkbox" });
+        enableCb.checked = this.bgp.enabled;
+        enableCb.addEventListener("change", () => {
+            this.bgp.setEnabled(enableCb.checked);
+            this._renderBGPLog();
+        });
+        const enableRow = DOMBuilder.div("router-name-row");
+        enableRow.style.gap = "6px";
+        enableRow.append(enableCb, DOMBuilder.label(t("router.bgp.enabled")));
+        configSection.appendChild(enableRow);
+
+        const asIn  = DOMBuilder.input({ placeholder: "65001" });
+        asIn.value  = this.bgp.localAS ? String(this.bgp.localAS) : "";
+        const ridIn = DOMBuilder.input({ placeholder: "1.2.3.4" });
+        ridIn.value = this.bgp.routerId;
+        const cfgSaveBtn = DOMBuilder.button(t("router.save"), { className: "router-vpn-add" });
+        cfgSaveBtn.style.marginTop = "4px";
+        cfgSaveBtn.addEventListener("click", () => {
+            const as = Number(asIn.value.trim());
+            if (!Number.isInteger(as) || as < 1 || as > 65535) {
+                SimDialog.alert("AS-Nummer muss 1..65535 sein");
+                return;
+            }
+            this.bgp.localAS  = as;
+            this.bgp.routerId = ridIn.value.trim();
+        });
+
+        const mkRow = (/** @type {string} */ lbl, /** @type {HTMLElement} */ inp) =>
+            DOMBuilder.div("router-vpn-form-row", [
+                DOMBuilder.el("span", { text: lbl, className: "router-vpn-form-label" }),
+                inp,
+            ]);
+        configSection.appendChild(DOMBuilder.div("router-vpn-form", [
+            mkRow(t("router.bgp.localas"),  asIn),
+            mkRow(t("router.bgp.routerid"), ridIn),
+            cfgSaveBtn,
+        ]));
+
+        configSection.appendChild(DOMBuilder.h4(t("router.bgp.peers.title")));
+        const peersHost = DOMBuilder.div("");
+        this._bgpPeersHost = peersHost;
+        configSection.appendChild(peersHost);
+        this._renderBGPPeers();
+
+        // ── Routen ───────────────────────────────────────────────────────
+        const routesSection = DOMBuilder.div("");
+        const routesHost = DOMBuilder.div("");
+        this._bgpRoutesHost = routesHost;
+        routesSection.appendChild(routesHost);
+
+        // ── Protokoll ────────────────────────────────────────────────────
+        const logSection = DOMBuilder.div("");
+        logSection.appendChild(DOMBuilder.h4(t("router.bgp.log")));
+        const logEl = /** @type {HTMLTextAreaElement} */ (DOMBuilder.el("textarea", {
+            className: "log",
+            attrs: { readonly: "true", spellcheck: "false" },
+        }));
+        logEl.style.width  = "100%";
+        logEl.style.height = "200px";
+        logSection.appendChild(logEl);
+        this._bgpLogEl = logEl;
+        this._renderBGPLog();
+
+        host.append(configSection, routesSection, logSection);
+        configSection.style.display = "";
+        routesSection.style.display = "none";
+        logSection.style.display    = "none";
+        setInnerActive("config");
+
+        this.bgp.onUpdate = () => {
+            this._renderBGPPeers();
+            this._renderBGPLog();
+        };
+    }
+
+    _renderBGPPeers() {
+        const host = this._bgpPeersHost;
+        if (!host) return;
+        DOMBuilder.clear(host);
+
+        if (this.bgp.peers.length > 0) {
+            const table = document.createElement("table");
+            table.className = "router-routes-table";
+            const thead = document.createElement("thead");
+            thead.innerHTML =
+                "<tr>" +
+                "<th>" + t("router.bgp.peers.col.ip")       + "</th>" +
+                "<th>" + t("router.bgp.peers.col.remoteas")  + "</th>" +
+                "<th>" + t("router.bgp.peers.col.desc")      + "</th>" +
+                "<th>" + t("router.bgp.peers.col.passive")   + "</th>" +
+                "<th>" + t("router.bgp.peers.col.state")     + "</th>" +
+                "<th>" + t("router.bgp.peers.col.prefixes")  + "</th>" +
+                "<th></th>" +
+                "</tr>";
+            const tbody = document.createElement("tbody");
+
+            for (const peer of this.bgp.peers) {
+                const session = this.bgp.getSession(peer.ip);
+                const tr = document.createElement("tr");
+                const mkTd = (/** @type {string} */ txt) => {
+                    const td = document.createElement("td");
+                    td.textContent = txt;
+                    return td;
+                };
+                const delBtn = document.createElement("button");
+                delBtn.textContent = t("router.bgp.peers.delete");
+                delBtn.addEventListener("click", () => this.bgp.removePeer(peer.ip));
+                const actTd = document.createElement("td");
+                actTd.appendChild(delBtn);
+
+                tr.append(
+                    mkTd(peer.ip),
+                    mkTd(String(peer.remoteAS)),
+                    mkTd(peer.description),
+                    mkTd(peer.passive ? "✓" : ""),
+                    mkTd(session?.state ?? "—"),
+                    mkTd(session ? String(session.prefixesReceived) : "—"),
+                    actTd,
+                );
+                tbody.appendChild(tr);
+            }
+            table.append(thead, tbody);
+            host.appendChild(table);
+        }
+
+        // Inline add-peer form
+        const ipIn  = DOMBuilder.input({ placeholder: "10.0.0.1" });
+        const asIn  = DOMBuilder.input({ placeholder: "65002" });
+        asIn.style.width = "5em";
+        const descIn    = DOMBuilder.input({ placeholder: t("router.bgp.peers.col.desc") });
+        const passiveCb = DOMBuilder.input({ type: "checkbox" });
+        const addBtn    = DOMBuilder.button("+ " + t("router.bgp.peers.add"), { className: "router-route-footer-btn" });
+        addBtn.style.marginTop = "6px";
+
+        addBtn.addEventListener("click", () => {
+            const ip = ipIn.value.trim();
+            const as = Number(asIn.value.trim());
+            if (!ip) { SimDialog.alert("IP-Adresse fehlt"); return; }
+            try { IPAddress.fromString(ip); } catch { SimDialog.alert("Ungültige IP-Adresse"); return; }
+            if (!Number.isInteger(as) || as < 1 || as > 65535) { SimDialog.alert("AS-Nummer muss 1..65535 sein"); return; }
+            this.bgp.addPeer({ ip, remoteAS: as, description: descIn.value.trim(), passive: passiveCb.checked });
+            ipIn.value = asIn.value = descIn.value = "";
+            passiveCb.checked = false;
+        });
+
+        const addRow = DOMBuilder.div("router-name-row");
+        addRow.style.gap = "4px";
+        addRow.style.flexWrap = "wrap";
+        addRow.style.marginTop = "6px";
+        addRow.append(
+            ipIn, asIn, descIn,
+            passiveCb, DOMBuilder.label(t("router.bgp.peers.col.passive")),
+            addBtn,
+        );
+        host.appendChild(addRow);
+    }
+
+    _renderBGPRoutes() {
+        const host = this._bgpRoutesHost;
+        if (!host) return;
+        DOMBuilder.clear(host);
+
+        const learned = [...this.bgp._learned.values()];
+        if (learned.length === 0) {
+            host.appendChild(DOMBuilder.el("p", { text: t("router.bgp.routes.empty"), className: "router-vpn-empty" }));
+            return;
+        }
+
+        const table = document.createElement("table");
+        table.className = "router-routes-table";
+        const thead = document.createElement("thead");
+        thead.innerHTML =
+            "<tr>" +
+            "<th>" + t("router.bgp.routes.col.prefix")  + "</th>" +
+            "<th>" + t("router.bgp.routes.col.nexthop") + "</th>" +
+            "<th>" + t("router.bgp.routes.col.aspath")  + "</th>" +
+            "<th>" + t("router.bgp.routes.col.lp")      + "</th>" +
+            "<th>" + t("router.bgp.routes.col.med")     + "</th>" +
+            "<th>" + t("router.bgp.routes.col.peer")    + "</th>" +
+            "</tr>";
+        const tbody = document.createElement("tbody");
+
+        for (const e of learned) {
+            const tr = document.createElement("tr");
+            const mkTd = (/** @type {string} */ txt) => {
+                const td = document.createElement("td"); td.textContent = txt; return td;
+            };
+            tr.append(
+                mkTd(`${e.dst}/${e.prefLen}`),
+                mkTd(e.nexthop.toString()),
+                mkTd(e.asPath.join(" ")),
+                mkTd(String(e.localPref)),
+                mkTd(String(e.med)),
+                mkTd(e.fromPeer),
+            );
+            tbody.appendChild(tr);
+        }
+
+        table.append(thead, tbody);
+        host.appendChild(table);
+    }
+
+    _renderBGPLog() {
+        if (!this._bgpLogEl) return;
+        const lines = this.bgp.log;
+        const max   = 200;
+        this._bgpLogEl.value = (lines.length > max ? lines.slice(-max) : lines).join("\n");
+        this._bgpLogEl.scrollTop = this._bgpLogEl.scrollHeight;
     }
 
     /* ----------------------------- VPN tab ----------------------------- */
