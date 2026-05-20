@@ -555,8 +555,8 @@ export class OspfPacket {
         this.header.length = total;
         this.header.writeTo(buf, 0);
         buf.set(bodyBytes, 24);
-        // Checksum over entire packet, auth field (bytes 16-23) treated as zero per RFC
-        const cs = ospfChecksum(buf.slice(0, 16));
+        // Checksum over entire packet; auth field (bytes 16-23) is already zero per RFC §A.3.1
+        const cs = ospfChecksum(buf);
         write16BE(buf, 12, cs);
         return buf;
     }

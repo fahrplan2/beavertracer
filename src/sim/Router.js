@@ -4,7 +4,6 @@ import { VirtualFileSystem } from "../apps/lib/VirtualFileSystem.js";
 import { IPStack } from "../net/IPStack.js";
 import { VLANSubInterface } from "../net/NetworkInterface.js";
 import { RIPDaemon } from "../net/RIPDaemon.js";
-import { RIPngDaemon } from "../net/RIPngDaemon.js";
 import { BGPDaemon } from "../net/BGPDaemon.js";
 import { OSPFDaemon } from "../net/OSPFDaemon.js";
 import { SimulatedObject } from "./SimulatedObject.js";
@@ -93,11 +92,9 @@ export class Router extends SimulatedObject {
 
   /** @type {RIPDaemon} */
   rip;
-  /** @type {HTMLTextAreaElement|null} */ _ripLogEl = null;
-
-  /** @type {RIPngDaemon} */
+  /** @type {RIPDaemon} */
   ripng;
-  /** @type {HTMLTextAreaElement|null} */ _ripngLogEl = null;
+  /** @type {HTMLTextAreaElement|null} */ _ripCombinedLogEl = null;
 
   /** @type {BGPDaemon} */
   bgp;
@@ -115,8 +112,8 @@ export class Router extends SimulatedObject {
         this.net = new IPStack(2, name);
         this.net.forwarding = true;
         this.fs = new VirtualFileSystem();
-        this.rip   = new RIPDaemon(this.net);
-        this.ripng = new RIPngDaemon(this.net);
+        this.rip   = new RIPDaemon(this.net, 4);
+        this.ripng = new RIPDaemon(this.net, 6);
         this.bgp   = new BGPDaemon(this.net);
         this.ospf  = new OSPFDaemon(this.net);
 
@@ -144,9 +141,9 @@ export class Router extends SimulatedObject {
         const obj = new Router(n.name ?? "Router");
         obj._applyBaseJSON(n);
         if (n.net) obj.net = IPStack.fromJSON(n.net);
-        obj.rip   = new RIPDaemon(obj.net);
+        obj.rip   = new RIPDaemon(obj.net, 4);
         if (n.rip)   obj.rip.applyJSON(n.rip);
-        obj.ripng = new RIPngDaemon(obj.net);
+        obj.ripng = new RIPDaemon(obj.net, 6);
         if (n.ripng) obj.ripng.applyJSON(n.ripng);
         obj.bgp   = new BGPDaemon(obj.net);
         if (n.bgp)   obj.bgp.applyJSON(n.bgp);
@@ -181,16 +178,14 @@ export class Router extends SimulatedObject {
             { id: "interfaces", label: t("router.interfaces")        },
             { id: "routes-v4",  label: t("router.routingtable.ipv4") },
             { id: "routes-v6",  label: t("router.routingtable.ipv6") },
-            { id: "rip",        label: t("router.rip.tab")            },
-            { id: "ripng",      label: t("router.ripng.tab")          },
-            { id: "bgp",        label: t("router.bgp.tab")            },
+            { id: "rip",        label: "RIP / RIPng"                  },
             { id: "ospf",       label: t("router.ospf.tab")           },
+            { id: "bgp",        label: t("router.bgp.tab")            },
             { id: "vpn",        label: t("router.vpn.tab")            },
         ], (id) => {
             ifSection.style.display    = id === "interfaces" ? "" : "none";
             routeSection.style.display = (id === "routes-v4" || id === "routes-v6") ? "" : "none";
             ripSection.style.display   = id === "rip"   ? "" : "none";
-            ripngSection.style.display = id === "ripng" ? "" : "none";
             bgpSection.style.display   = id === "bgp"   ? "" : "none";
             ospfSection.style.display  = id === "ospf"  ? "" : "none";
             vpnSection.style.display   = id === "vpn"   ? "" : "none";
@@ -284,13 +279,9 @@ export class Router extends SimulatedObject {
         this._routesHost = routesHost;
         routeSection.appendChild(routesHost);
 
-        /* ================================ RIP ================================= */
+        /* ============================== RIP / RIPng ============================ */
         const ripSection = DOMBuilder.div("");
         this._buildRIPSection(ripSection);
-
-        /* ================================ RIPng ================================ */
-        const ripngSection = DOMBuilder.div("");
-        this._buildRIPngSection(ripngSection);
 
         /* ================================ BGP ================================= */
         const bgpSection = DOMBuilder.div("");
@@ -304,13 +295,12 @@ export class Router extends SimulatedObject {
         const vpnSection = DOMBuilder.div("");
         this._buildVPNSection(vpnSection);
 
-        outerContent.append(ifSection, routeSection, ripSection, ripngSection, bgpSection, ospfSection, vpnSection);
+        outerContent.append(ifSection, routeSection, ripSection, bgpSection, ospfSection, vpnSection);
 
         /* ============================ Tab switching ============================ */
         ifSection.style.display    = "";
         routeSection.style.display = "none";
         ripSection.style.display   = "none";
-        ripngSection.style.display = "none";
         bgpSection.style.display   = "none";
         ospfSection.style.display  = "none";
         vpnSection.style.display   = "none";
@@ -697,6 +687,8 @@ export class Router extends SimulatedObject {
 
             if (this._panelBody) this.mount(this._panelBody);
             else this._renderRoutes();
+
+            this.ospf?.onInterfaceChange();
         } catch (e) {
             SimDialog.alert(String(e?.message ?? e));
         }
@@ -1294,50 +1286,62 @@ export class Router extends SimulatedObject {
     }
 
     /** @param {HTMLElement} host */
+    /** @param {HTMLElement} host */
     _buildRIPSection(host) {
-        host.appendChild(DOMBuilder.h4(t("router.rip.tab")));
+        // ── enable row: RIP and RIPng side by side ─────────────────────────
+        const ripCb = DOMBuilder.input({ type: "checkbox" });
+        ripCb.checked = this.rip.enabled;
+        ripCb.addEventListener("change", () => { this.rip.setEnabled(ripCb.checked); this._renderRIPCombinedLog(); });
 
-        // ── global enable ──────────────────────────────────────────────────
-        const enableCb = DOMBuilder.input({ type: "checkbox" });
-        enableCb.checked = this.rip.enabled;
-        enableCb.addEventListener("change", () => {
-            this.rip.setEnabled(enableCb.checked);
-            this._renderRIPLog();
-        });
+        const ripngCb = DOMBuilder.input({ type: "checkbox" });
+        ripngCb.checked = this.ripng.enabled;
+        ripngCb.addEventListener("change", () => { this.ripng.setEnabled(ripngCb.checked); this._renderRIPCombinedLog(); });
+
+        const ripWrap = DOMBuilder.div("router-name-row"); ripWrap.style.gap = "6px";
+        ripWrap.append(ripCb, DOMBuilder.label(t("router.rip.enabled")));
+
+        const ripngWrap = DOMBuilder.div("router-name-row"); ripngWrap.style.gap = "6px";
+        ripngWrap.append(ripngCb, DOMBuilder.label(t("router.ripng.enabled")));
+
         const enableRow = DOMBuilder.div("router-name-row");
-        enableRow.style.gap = "6px";
-        enableRow.appendChild(enableCb);
-        enableRow.appendChild(DOMBuilder.label(t("router.rip.enabled")));
+        enableRow.style.gap = "16px";
+        enableRow.append(ripWrap, ripngWrap);
         host.appendChild(enableRow);
 
-        // ── per-interface passive toggles ──────────────────────────────────
+        // ── combined interface table: Interface | RIP Passive | RIPng Passive
         const ifTable = document.createElement("table");
         ifTable.className = "router-routes";
         ifTable.style.marginTop = "8px";
         const thead = document.createElement("thead");
         const htr   = document.createElement("tr");
-        const thIf  = document.createElement("th"); thIf.textContent  = t("router.rip.col.interface");
-        const thPas = document.createElement("th"); thPas.textContent = t("router.rip.col.passive");
-        htr.append(thIf, thPas);
+        const thIf  = document.createElement("th"); thIf.textContent = t("router.rip.col.interface");
+        const thR   = document.createElement("th"); thR.textContent  = "RIP";
+        const thRng = document.createElement("th"); thRng.textContent = "RIPng";
+        htr.append(thIf, thR, thRng);
         thead.appendChild(htr);
         const tbody = document.createElement("tbody");
 
         for (const iface of this.net.interfaces) {
             const ifName = iface.name;
-            const tr  = document.createElement("tr");
-            const tdN = document.createElement("td"); tdN.textContent = ifName;
-            const tdP = document.createElement("td");
-            const cb  = DOMBuilder.input({ type: "checkbox" });
-            cb.checked = this.rip.passiveInterfaces.has(ifName);
-            cb.addEventListener("change", () => this.rip.setPassive(ifName, cb.checked));
-            tdP.appendChild(cb);
-            tr.append(tdN, tdP);
+            const tr   = document.createElement("tr");
+            const tdN  = document.createElement("td"); tdN.textContent = ifName;
+            const tdR  = document.createElement("td");
+            const tdRng = document.createElement("td");
+            const cbR  = DOMBuilder.input({ type: "checkbox" });
+            cbR.checked = this.rip.passiveInterfaces.has(ifName);
+            cbR.addEventListener("change", () => this.rip.setPassive(ifName, cbR.checked));
+            const cbRng = DOMBuilder.input({ type: "checkbox" });
+            cbRng.checked = this.ripng.passiveInterfaces.has(ifName);
+            cbRng.addEventListener("change", () => this.ripng.setPassive(ifName, cbRng.checked));
+            tdR.appendChild(cbR);
+            tdRng.appendChild(cbRng);
+            tr.append(tdN, tdR, tdRng);
             tbody.appendChild(tr);
         }
         ifTable.append(thead, tbody);
         host.appendChild(ifTable);
 
-        // ── log ───────────────────────────────────────────────────────────
+        // ── combined log ──────────────────────────────────────────────────
         host.appendChild(DOMBuilder.h4(t("router.rip.log")));
         const logEl = /** @type {HTMLTextAreaElement} */ (DOMBuilder.el("textarea", {
             className: "log",
@@ -1346,87 +1350,18 @@ export class Router extends SimulatedObject {
         logEl.style.width  = "100%";
         logEl.style.height = "140px";
         host.appendChild(logEl);
-        this._ripLogEl = logEl;
-        this._renderRIPLog();
+        this._ripCombinedLogEl = logEl;
+        this._renderRIPCombinedLog();
 
-        this.rip.onLogUpdate = () => this._renderRIPLog();
+        this.rip.onLogUpdate   = () => this._renderRIPCombinedLog();
+        this.ripng.onLogUpdate = () => this._renderRIPCombinedLog();
     }
 
-    _renderRIPLog() {
-        if (!this._ripLogEl) return;
-        const lines = this.rip.log;
-        const max   = 200;
-        this._ripLogEl.value = (lines.length > max ? lines.slice(-max) : lines).join("\n");
-        this._ripLogEl.scrollTop = this._ripLogEl.scrollHeight;
-    }
-
-    /* ----------------------------- RIPng tab ----------------------------- */
-
-    /** @param {HTMLElement} host */
-    _buildRIPngSection(host) {
-        host.appendChild(DOMBuilder.h4(t("router.ripng.tab")));
-
-        // ── global enable ──────────────────────────────────────────────────
-        const enableCb = DOMBuilder.input({ type: "checkbox" });
-        enableCb.checked = this.ripng.enabled;
-        enableCb.addEventListener("change", () => {
-            this.ripng.setEnabled(enableCb.checked);
-            this._renderRIPngLog();
-        });
-        const enableRow = DOMBuilder.div("router-name-row");
-        enableRow.style.gap = "6px";
-        enableRow.appendChild(enableCb);
-        enableRow.appendChild(DOMBuilder.label(t("router.ripng.enabled")));
-        host.appendChild(enableRow);
-
-        // ── per-interface passive toggles ──────────────────────────────────
-        const ifTable = document.createElement("table");
-        ifTable.className = "router-routes";
-        ifTable.style.marginTop = "8px";
-        const thead = document.createElement("thead");
-        const htr   = document.createElement("tr");
-        const thIf  = document.createElement("th"); thIf.textContent  = t("router.ripng.col.interface");
-        const thPas = document.createElement("th"); thPas.textContent = t("router.ripng.col.passive");
-        htr.append(thIf, thPas);
-        thead.appendChild(htr);
-        const tbody = document.createElement("tbody");
-
-        for (const iface of this.net.interfaces) {
-            const ifName = iface.name;
-            const tr  = document.createElement("tr");
-            const tdN = document.createElement("td"); tdN.textContent = ifName;
-            const tdP = document.createElement("td");
-            const cb  = DOMBuilder.input({ type: "checkbox" });
-            cb.checked = this.ripng.passiveInterfaces.has(ifName);
-            cb.addEventListener("change", () => this.ripng.setPassive(ifName, cb.checked));
-            tdP.appendChild(cb);
-            tr.append(tdN, tdP);
-            tbody.appendChild(tr);
-        }
-        ifTable.append(thead, tbody);
-        host.appendChild(ifTable);
-
-        // ── log ───────────────────────────────────────────────────────────
-        host.appendChild(DOMBuilder.h4(t("router.ripng.log")));
-        const logEl = /** @type {HTMLTextAreaElement} */ (DOMBuilder.el("textarea", {
-            className: "log",
-            attrs: { readonly: "true", spellcheck: "false" },
-        }));
-        logEl.style.width  = "100%";
-        logEl.style.height = "140px";
-        host.appendChild(logEl);
-        this._ripngLogEl = logEl;
-        this._renderRIPngLog();
-
-        this.ripng.onLogUpdate = () => this._renderRIPngLog();
-    }
-
-    _renderRIPngLog() {
-        if (!this._ripngLogEl) return;
-        const lines = this.ripng.log;
-        const max   = 200;
-        this._ripngLogEl.value = (lines.length > max ? lines.slice(-max) : lines).join("\n");
-        this._ripngLogEl.scrollTop = this._ripngLogEl.scrollHeight;
+    _renderRIPCombinedLog() {
+        if (!this._ripCombinedLogEl) return;
+        const combined = [...this.rip.log, ...this.ripng.log].sort().slice(-200);
+        this._ripCombinedLogEl.value = combined.join("\n");
+        this._ripCombinedLogEl.scrollTop = this._ripCombinedLogEl.scrollHeight;
     }
 
     /* ----------------------------- BGP tab ----------------------------- */

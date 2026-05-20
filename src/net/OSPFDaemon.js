@@ -135,7 +135,6 @@ export class OSPFDaemon {
         for (let i = 0; i < this._net.interfaces.length; i++) {
             const iface = this._net.interfaces[i];
             if (!iface.ip?.isV4() || ip2n(iface.ip) === 0) continue;
-            if (!iface.port?.linkref) continue;
             this._initIface(i);
         }
 
@@ -162,6 +161,13 @@ export class OSPFDaemon {
     setEnabled(enabled) {
         this.enabled = enabled;
         if (enabled) this.start(); else this.stop();
+    }
+
+    /** Call when an interface IP or prefix changes while OSPF is running. */
+    onInterfaceChange() {
+        if (!this.enabled) return;
+        this._originateRouterLSA();
+        this._scheduleSPF();
     }
 
     /** @param {string} ifName @param {boolean} passive */
@@ -497,15 +503,22 @@ export class OSPFDaemon {
                 nb.state     = "Exchange";
                 this._log(`Neighbor ${src} state: ExStart → Exchange (slave)`);
                 const myHeaders = [...this._lsdb.values()].map(e => e.header);
-                const moreFlag  = 0; // send all at once for simplicity
-                this._sendDBD(nb, ifIndex, myHeaders, moreFlag);
+                this._sendDBD(nb, ifIndex, myHeaders, 0);
             } else if (!(dbd.flags & DBD_FLAG_I) && !theyClaimMaster && iAmMaster &&
                        dbd.ddSeqNum === nb.ddSeqNum) {
-                // We are master, they acked our initial
+                // We are master; slave's first response carries their headers — process them now
                 nb.isMaster = true;
                 nb.state    = "Exchange";
                 nb.ddSeqNum++;
                 this._log(`Neighbor ${src} state: ExStart → Exchange (master)`);
+                for (const rxHdr of dbd.lsaHeaders) {
+                    const existing = this._lsdb.get(rxHdr.key);
+                    if (!existing || seqNewer(rxHdr.seqNum, existing.header.seqNum)) {
+                        nb.pendingLSRs.push(new LsaRequest({
+                            lsType: rxHdr.type, lsId: rxHdr.lsId, advertisingRouter: rxHdr.advertisingRouter,
+                        }));
+                    }
+                }
                 const myHeaders = [...this._lsdb.values()].map(e => e.header);
                 this._sendDBD(nb, ifIndex, myHeaders, DBD_FLAG_MS);
             }
@@ -513,29 +526,52 @@ export class OSPFDaemon {
         }
 
         if (nb.state === "Exchange") {
-            // Process received headers — queue any LSAs we don't have or are older
-            for (const rxHdr of dbd.lsaHeaders) {
-                const existing = this._lsdb.get(rxHdr.key);
-                if (!existing || seqNewer(rxHdr.seqNum, existing.header.seqNum)) {
-                    nb.pendingLSRs.push(new LsaRequest({
-                        lsType: rxHdr.type,
-                        lsId:   rxHdr.lsId,
-                        advertisingRouter: rxHdr.advertisingRouter,
-                    }));
+            if (!nb.isMaster) {
+                // Slave: receiving master's DBD with headers — process, ACK, then finish
+                for (const rxHdr of dbd.lsaHeaders) {
+                    const existing = this._lsdb.get(rxHdr.key);
+                    if (!existing || seqNewer(rxHdr.seqNum, existing.header.seqNum)) {
+                        nb.pendingLSRs.push(new LsaRequest({
+                            lsType: rxHdr.type, lsId: rxHdr.lsId, advertisingRouter: rxHdr.advertisingRouter,
+                        }));
+                    }
                 }
-            }
-
-            const moreFromThem = !!(dbd.flags & DBD_FLAG_M);
-            if (!moreFromThem) {
-                // Exchange complete on their side
-                if (nb.pendingLSRs.length > 0) {
-                    nb.state = "Loading";
-                    this._log(`Neighbor ${src} state: Exchange → Loading`);
-                    this._sendLSR(nb, ifIndex);
-                } else {
-                    nb.state = "Full";
-                    this._log(`Neighbor ${src} -> Full`);
-                    this._onNeighborFull(nb, ifIndex);
+                // Update slave's seq to master's and send ACK (empty DBD, no flags)
+                nb.ddSeqNum = dbd.ddSeqNum;
+                this._sendDBD(nb, ifIndex, [], 0);
+                if (!(dbd.flags & DBD_FLAG_M)) {
+                    if (nb.pendingLSRs.length > 0) {
+                        nb.state = "Loading";
+                        this._log(`Neighbor ${src} state: Exchange → Loading`);
+                        this._sendLSR(nb, ifIndex);
+                    } else {
+                        nb.state = "Full";
+                        this._log(`Neighbor ${src} -> Full`);
+                        this._onNeighborFull(nb, ifIndex);
+                    }
+                }
+            } else {
+                // Master: receiving slave's ACK — seq must match what we sent
+                if (dbd.ddSeqNum !== nb.ddSeqNum) return;
+                // Any additional slave headers (multi-packet; in practice empty on ACK)
+                for (const rxHdr of dbd.lsaHeaders) {
+                    const existing = this._lsdb.get(rxHdr.key);
+                    if (!existing || seqNewer(rxHdr.seqNum, existing.header.seqNum)) {
+                        nb.pendingLSRs.push(new LsaRequest({
+                            lsType: rxHdr.type, lsId: rxHdr.lsId, advertisingRouter: rxHdr.advertisingRouter,
+                        }));
+                    }
+                }
+                if (!(dbd.flags & DBD_FLAG_M)) {
+                    if (nb.pendingLSRs.length > 0) {
+                        nb.state = "Loading";
+                        this._log(`Neighbor ${src} state: Exchange → Loading`);
+                        this._sendLSR(nb, ifIndex);
+                    } else {
+                        nb.state = "Full";
+                        this._log(`Neighbor ${src} -> Full`);
+                        this._onNeighborFull(nb, ifIndex);
+                    }
                 }
             }
             return;
@@ -686,8 +722,17 @@ export class OSPFDaemon {
             // Full neighbors → transit link (to DR)
             const fullNeighbors = [...(oif.neighbors.values())].filter(nb => nb.state === "Full");
             if (fullNeighbors.length > 0 && oif.dr !== 0) {
+                // linkId must be the DR's interface IP on this segment (= Network-LSA lsId),
+                // not the DR's Router-ID. Find it from the neighbor table; if we are DR use own IP.
+                let drIfaceIp;
+                if (oif.dr === this._myRouterId) {
+                    drIfaceIp = ip2n(iface.ip);
+                } else {
+                    const drNb = [...oif.neighbors.values()].find(nb => nb.routerId === oif.dr);
+                    drIfaceIp = drNb ? ip2n(drNb.ip) : oif.dr;
+                }
                 links.push(new RouterLink({
-                    linkId:   oif.dr,           // DR's interface address (= network DR's interface IP)
+                    linkId:   drIfaceIp,        // DR's interface IP on this segment (= Network-LSA lsId)
                     linkData: ip2n(iface.ip),   // our own interface address
                     type:     LINK_TYPE_TRANSIT,
                     metric:   10,
@@ -792,21 +837,70 @@ export class OSPFDaemon {
 
     /**
      * Flood an LSA to all Full neighbors except those on fromIfIndex.
+     * RFC 2328 §13.3: one LSU per interface (multicast), not one per neighbor.
+     *   DR/BDR  → AllSPFRouters (224.0.0.5) — every router receives it
+     *   DR-Other → AllDRouters   (224.0.0.6) — only DR+BDR receive and re-flood
      * @param {Lsa} lsa
      * @param {number} fromIfIndex
      */
     _floodLSA(lsa, fromIfIndex) {
+        const rawBytes = lsa.pack();
         for (const [ifIndex, oif] of this._ifaces) {
             if (ifIndex === fromIfIndex) continue;
-            for (const [, nb] of oif.neighbors) {
-                if (nb.state !== "Full") continue;
-                const dst = (oif.state === "DR" || oif.state === "BDR")
-                    ? IPAddress.fromString(OSPF_ALL_SPF)
-                    : nb.ip;
-                const lsu = new OspfLSU({ lsas: [lsa] });
-                this._sendOSPF(ifIndex, dst, OSPF_TYPE_LSU, lsu);
+            const fullNeighbors = [...oif.neighbors.values()].filter(nb => nb.state === "Full");
+            if (fullNeighbors.length === 0) continue;
+
+            const dst = (oif.state === "DR" || oif.state === "BDR")
+                ? IPAddress.fromString(OSPF_ALL_SPF)
+                : IPAddress.fromString(OSPF_ALL_DR);
+
+            this._sendOSPF(ifIndex, dst, OSPF_TYPE_LSU, new OspfLSU({ lsas: [lsa] }));
+
+            // Track per-neighbor so each ACK can cancel the retransmit timer
+            for (const nb of fullNeighbors) {
+                this._trackUnacked(nb, ifIndex, lsa.key, rawBytes);
             }
         }
+    }
+
+    /**
+     * Register an unacknowledged LSU for a neighbor and arm the retransmit timer.
+     * @param {OspfNeighbor} nb
+     * @param {number} ifIndex
+     * @param {string} lsaKey
+     * @param {Uint8Array} rawBytes
+     */
+    _trackUnacked(nb, ifIndex, lsaKey, rawBytes) {
+        const existing = nb.unackedLSUs.get(lsaKey);
+        if (existing?.timerId != null) simTimer.cancel(existing.timerId);
+        const timerId = simTimer.schedule(
+            () => this._retransmitLSU(nb, ifIndex, lsaKey),
+            SimTimer.OSPF_RXMT_MS,
+        );
+        nb.unackedLSUs.set(lsaKey, { lsaBytes: rawBytes, timerId });
+    }
+
+    /**
+     * Retransmit a single unacknowledged LSA to a specific neighbor (unicast).
+     * Reschedules itself until an LSAck is received or the neighbor goes down.
+     * @param {OspfNeighbor} nb
+     * @param {number} ifIndex
+     * @param {string} lsaKey
+     */
+    _retransmitLSU(nb, ifIndex, lsaKey) {
+        if (nb.state !== "Full") { nb.unackedLSUs.delete(lsaKey); return; }
+        const lsdbEntry = this._lsdb.get(lsaKey);
+        if (!lsdbEntry) { nb.unackedLSUs.delete(lsaKey); return; }
+
+        const lsa = new Lsa({ header: lsdbEntry.header, body: lsdbEntry.body });
+        this._sendOSPF(ifIndex, nb.ip, OSPF_TYPE_LSU, new OspfLSU({ lsas: [lsa] }));
+
+        const timerId = simTimer.schedule(
+            () => this._retransmitLSU(nb, ifIndex, lsaKey),
+            SimTimer.OSPF_RXMT_MS,
+        );
+        const entry = nb.unackedLSUs.get(lsaKey);
+        if (entry) entry.timerId = timerId;
     }
 
     // ── SPF ───────────────────────────────────────────────────────────────────
@@ -820,21 +914,20 @@ export class OSPFDaemon {
     }
 
     _runSPF() {
-        // Dijkstra on the LSDB graph
-        // Nodes: Router-IDs and Network-LSA node-IDs (= DR interface IP on that segment)
-        // Edge: RouterLSA Transit link → NetworkLSA; NetworkLSA attachedRouter → RouterLSA
+        // Dijkstra over Router-ID nodes only.
+        // Transit links are resolved to Router→Router edges via Network-LSAs inline,
+        // so NetworkNode IDs never enter the dist map — avoiding the collision where
+        // the DR's interface IP equals its own Router-ID.
 
-        /** @type {Map<number, number>} nodeId → cost */
+        /** @type {Map<number, number>} routerId → cost */
         const dist = new Map();
-        /** @type {Map<number, {prevNode: number, ifIndex: number, nexthop: IPAddress}>} */
-        const prev = new Map();
+        /** @type {Map<number, {ifIndex: number, nexthop: IPAddress}>} routerId → first-hop info */
+        const reach = new Map();
         /** @type {Set<number>} */
         const visited = new Set();
 
         const myId = this._myRouterId;
         dist.set(myId, 0);
-
-        /** Simple priority queue via sorted array (small graph) */
         const queue = [{ id: myId, cost: 0 }];
 
         while (queue.length > 0) {
@@ -843,68 +936,68 @@ export class OSPFDaemon {
             if (visited.has(u)) continue;
             visited.add(u);
 
-            const routerKey  = `${LSA_TYPE_ROUTER}-${u}-${u}`;
-            const networkKey = [...this._lsdb.keys()].find(k => k.startsWith(`${LSA_TYPE_NETWORK}-`) && k.endsWith(`-${u}`));
+            const rEntry = this._lsdb.get(`${LSA_TYPE_ROUTER}-${u}-${u}`);
+            if (!(rEntry?.body instanceof RouterLSA)) continue;
 
-            const rEntry = this._lsdb.get(routerKey);
-            if (rEntry && rEntry.body instanceof RouterLSA) {
-                for (const link of rEntry.body.links) {
-                    if (link.type === LINK_TYPE_TRANSIT) {
-                        // link.linkId = DR's interface IP = NetworkLSA LS-ID
-                        const netNodeId = link.linkId;
-                        const alt       = uCost + link.metric;
-                        if (!dist.has(netNodeId) || alt < (dist.get(netNodeId) ?? Infinity)) {
-                            dist.set(netNodeId, alt);
-                            prev.set(netNodeId, { prevNode: u, ifIndex: this._ifIndexForNeighbor(u), nexthop: n2ip(0) });
-                            queue.push({ id: netNodeId, cost: alt });
-                        }
+            for (const link of rEntry.body.links) {
+                if (link.type !== LINK_TYPE_TRANSIT) continue;
+
+                // Resolve the Network-LSA for this segment
+                const netLsId = link.linkId; // DR's interface IP
+                const netEntry = [...this._lsdb.values()].find(
+                    e => e.header.type === LSA_TYPE_NETWORK && e.header.lsId === netLsId
+                );
+                if (!(netEntry?.body instanceof NetworkLSA)) continue;
+
+                const segCost = uCost + link.metric;
+
+                // Find ifIndex / nexthop for this segment from root's perspective
+                let ifIndex, baseNexthop;
+                if (u === myId) {
+                    // Own transit link: ifIndex = interface whose IP equals link.linkData
+                    ifIndex = -1;
+                    for (const [idx] of this._ifaces) {
+                        const iface = this._net.interfaces[idx];
+                        if (iface?.ip && ip2n(iface.ip) === link.linkData) { ifIndex = idx; break; }
                     }
+                    baseNexthop = null; // per-router nexthop resolved below
+                } else {
+                    const ri = reach.get(u);
+                    ifIndex = ri?.ifIndex ?? -1;
+                    baseNexthop = ri?.nexthop ?? n2ip(0);
                 }
-            }
 
-            // From a Network-LSA node, expand to attached routers
-            const netEntry = [...this._lsdb.values()].find(
-                e => e.header.type === LSA_TYPE_NETWORK && e.header.lsId === u
-            );
-            if (netEntry && netEntry.body instanceof NetworkLSA) {
                 for (const attRouter of netEntry.body.attachedRouters) {
                     if (attRouter === myId) continue;
-                    const alt = uCost; // no cost from network node to router
-                    if (!dist.has(attRouter) || alt < (dist.get(attRouter) ?? Infinity)) {
-                        dist.set(attRouter, alt);
-                        const parentEntry = prev.get(u);
-                        prev.set(attRouter, {
-                            prevNode: u,
-                            ifIndex:  parentEntry?.ifIndex ?? -1,
-                            nexthop:  n2ip(0),
-                        });
-                        queue.push({ id: attRouter, cost: alt });
-                    }
+                    const prev = dist.get(attRouter) ?? Infinity;
+                    if (prev <= segCost) continue;
+                    dist.set(attRouter, segCost);
+
+                    const nexthop = (u === myId)
+                        ? (this._neighborByRouterId(attRouter)?.ip ?? n2ip(0))
+                        : (baseNexthop ?? n2ip(0));
+                    reach.set(attRouter, { ifIndex, nexthop });
+                    queue.push({ id: attRouter, cost: segCost });
                 }
             }
         }
 
-        // Resolve nexthops and collect routes
+        // Collect stub-network routes from all reachable remote routers' LSAs
         /** @type {{dst: IPAddress, prefix: number, ifIndex: number, nexthop: IPAddress}[]} */
         const newRoutes = [];
-
         for (const [, entry] of this._lsdb) {
             if (entry.header.type !== LSA_TYPE_ROUTER) continue;
             if (!(entry.body instanceof RouterLSA)) continue;
             const rid = entry.header.advertisingRouter;
             if (rid === myId) continue;
+            const info = reach.get(rid);
+            if (!info || info.ifIndex < 0) continue;
 
             for (const link of entry.body.links) {
                 if (link.type !== LINK_TYPE_STUB) continue;
-                const prefix  = mask32ToPrefix(link.linkData);
-                const net32   = (link.linkId & link.linkData) >>> 0;
-                const routerDist = dist.get(rid);
-                if (routerDist === undefined) continue;
-
-                const { ifIndex, nexthop } = this._resolveNexthop(rid, prev, dist) ?? { ifIndex: -1, nexthop: n2ip(0) };
-                if (ifIndex < 0) continue;
-
-                newRoutes.push({ dst: n2ip(net32), prefix, ifIndex, nexthop });
+                const prefix = mask32ToPrefix(link.linkData);
+                const net32  = (link.linkId & link.linkData) >>> 0;
+                newRoutes.push({ dst: n2ip(net32), prefix, ifIndex: info.ifIndex, nexthop: info.nexthop });
             }
         }
 
@@ -914,32 +1007,6 @@ export class OSPFDaemon {
         }
         this._installedRoutes = newRoutes;
         this._log(`SPF: ${newRoutes.length} routes installed`);
-    }
-
-    /**
-     * Walk prev-map back to find the first-hop (ifIndex + nexthop IP) from myId.
-     * @param {number} target
-     * @param {Map<number, {prevNode: number, ifIndex: number, nexthop: IPAddress}>} prev
-     * @param {Map<number, number>} dist
-     * @returns {{ifIndex: number, nexthop: IPAddress}|null}
-     */
-    _resolveNexthop(target, prev, dist) {
-        const myId = this._myRouterId;
-        let node = target;
-        let hops = 0;
-        while (node !== myId && hops < 64) {
-            const p = prev.get(node);
-            if (!p) return null;
-            if (p.prevNode === myId) {
-                // Direct first hop — find neighbor IP
-                const ifIndex = this._ifIndexForNeighbor(node);
-                const nb      = this._neighborByRouterId(node);
-                return { ifIndex: ifIndex >= 0 ? ifIndex : (p.ifIndex >= 0 ? p.ifIndex : 0), nexthop: nb?.ip ?? n2ip(0) };
-            }
-            node = p.prevNode;
-            hops++;
-        }
-        return null;
     }
 
     /** @param {number} rid @returns {number} */

@@ -1,0 +1,295 @@
+{
+  "version": 4,
+  "tick": 100,
+  "objects": [
+    {
+      "kind": "TextBox",
+      "id": 1,
+      "name": "",
+      "x": 40,
+      "y": 20,
+      "px": 200,
+      "py": 200,
+      "panelOpen": false,
+      "text": "OSPF-Test: zwei Szenarien\n\n── Szenario 1 (P2P) ──────────────────────────────────────────\nR1 (10.12.0.1) ── eth0─eth0 ── R2 (10.12.0.2)\n  Stub: 10.1.0.0/24              Stub: 10.2.0.0/24\n\nErwartet: Beide Nachbarn gehen in Full; R1 lernt 10.2.0.0/24, R2 lernt 10.1.0.0/24.\n\n── Szenario 2 (Broadcast / DR-BDR) ──────────────────────────\nR3 (10.0.1.3) ┐\nR4 (10.0.1.4) ├── SW1 (10.0.1.0/24)\nR5 (10.0.1.5) ┘\n  Stubs: 10.3.0/24  10.4.0/24  10.5.0/24\n\nErwartet: Höchste Router-ID (R5 = 10.5.0.1) wird DR, R4 BDR.\nR3–R4 und R3–R5 je Full; R4–R5 Full; R3–R4 und R3–R5 sind 2-Way untereinander\n(DR-Other zu DR/BDR bilden Full, DR-Other zu DR-Other bleiben 2-Way).\nNach Konvergenz kennen alle drei Router alle drei Stub-Netze."
+    },
+    {
+      "kind": "TextBox",
+      "id": 2,
+      "name": "",
+      "x": 40,
+      "y": 145,
+      "px": 200,
+      "py": 200,
+      "panelOpen": false,
+      "text": "**Szenario 1 – P2P**",
+      "showTitle": false
+    },
+    {
+      "kind": "TextBox",
+      "id": 3,
+      "name": "",
+      "x": 40,
+      "y": 350,
+      "px": 200,
+      "py": 200,
+      "panelOpen": false,
+      "text": "**Szenario 2 – Broadcast / DR-BDR**",
+      "showTitle": false
+    },
+    {
+      "kind": "Router",
+      "id": 10,
+      "name": "R1",
+      "x": 200,
+      "y": 190,
+      "px": 140,
+      "py": 260,
+      "panelOpen": false,
+      "net": {
+        "name": "R1",
+        "forwarding": true,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "10.12.0.1",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          },
+          {
+            "name": "eth1",
+            "ip": "10.1.0.1",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": []
+      },
+      "rip":   { "enabled": false, "passive": [] },
+      "ripng": { "enabled": false, "passive": [] },
+      "bgp":   { "enabled": false, "localAS": 0, "routerId": "", "peers": [] },
+      "ospf":  { "enabled": true, "passive": ["eth1"], "routerIdOverride": null }
+    },
+    {
+      "kind": "Router",
+      "id": 11,
+      "name": "R2",
+      "x": 560,
+      "y": 190,
+      "px": 500,
+      "py": 260,
+      "panelOpen": false,
+      "net": {
+        "name": "R2",
+        "forwarding": true,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "10.12.0.2",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          },
+          {
+            "name": "eth1",
+            "ip": "10.2.0.1",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": []
+      },
+      "rip":   { "enabled": false, "passive": [] },
+      "ripng": { "enabled": false, "passive": [] },
+      "bgp":   { "enabled": false, "localAS": 0, "routerId": "", "peers": [] },
+      "ospf":  { "enabled": true, "passive": ["eth1"], "routerIdOverride": null }
+    },
+    {
+      "kind": "Link",
+      "id": 12,
+      "a": 10,
+      "b": 11,
+      "portA": "eth0",
+      "portB": "eth0"
+    },
+    {
+      "kind": "Switch",
+      "id": 20,
+      "name": "SW1",
+      "x": 380,
+      "y": 490,
+      "px": 320,
+      "py": 560,
+      "panelOpen": false,
+      "vlanEnabled": false,
+      "stpEnabled": false,
+      "vlanPorts": [
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] }
+      ]
+    },
+    {
+      "kind": "Router",
+      "id": 30,
+      "name": "R3",
+      "x": 160,
+      "y": 390,
+      "px": 100,
+      "py": 460,
+      "panelOpen": false,
+      "net": {
+        "name": "R3",
+        "forwarding": true,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "10.0.1.3",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          },
+          {
+            "name": "eth1",
+            "ip": "10.3.0.1",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": []
+      },
+      "rip":   { "enabled": false, "passive": [] },
+      "ripng": { "enabled": false, "passive": [] },
+      "bgp":   { "enabled": false, "localAS": 0, "routerId": "", "peers": [] },
+      "ospf":  { "enabled": true, "passive": ["eth1"], "routerIdOverride": null }
+    },
+    {
+      "kind": "Router",
+      "id": 31,
+      "name": "R4",
+      "x": 380,
+      "y": 390,
+      "px": 320,
+      "py": 460,
+      "panelOpen": false,
+      "net": {
+        "name": "R4",
+        "forwarding": true,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "10.0.1.4",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          },
+          {
+            "name": "eth1",
+            "ip": "10.4.0.1",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": []
+      },
+      "rip":   { "enabled": false, "passive": [] },
+      "ripng": { "enabled": false, "passive": [] },
+      "bgp":   { "enabled": false, "localAS": 0, "routerId": "", "peers": [] },
+      "ospf":  { "enabled": true, "passive": ["eth1"], "routerIdOverride": null }
+    },
+    {
+      "kind": "Router",
+      "id": 32,
+      "name": "R5",
+      "x": 600,
+      "y": 390,
+      "px": 540,
+      "py": 460,
+      "panelOpen": false,
+      "net": {
+        "name": "R5",
+        "forwarding": true,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "10.0.1.5",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          },
+          {
+            "name": "eth1",
+            "ip": "10.5.0.1",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": []
+      },
+      "rip":   { "enabled": false, "passive": [] },
+      "ripng": { "enabled": false, "passive": [] },
+      "bgp":   { "enabled": false, "localAS": 0, "routerId": "", "peers": [] },
+      "ospf":  { "enabled": true, "passive": ["eth1"], "routerIdOverride": null }
+    },
+    {
+      "kind": "Link",
+      "id": 33,
+      "a": 30,
+      "b": 20,
+      "portA": "eth0",
+      "portB": "sw0"
+    },
+    {
+      "kind": "Link",
+      "id": 34,
+      "a": 31,
+      "b": 20,
+      "portA": "eth0",
+      "portB": "sw1"
+    },
+    {
+      "kind": "Link",
+      "id": 35,
+      "a": 32,
+      "b": 20,
+      "portA": "eth0",
+      "portB": "sw2"
+    }
+  ]
+}
