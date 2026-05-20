@@ -493,6 +493,18 @@ export class SwitchBackplane extends Observable {
     }
 
     /**
+     * Bridge Group Address range 01:80:c2:00:00:00–0f (IEEE 802.1D §7.12.6).
+     * These frames must be terminated at the bridge and never forwarded.
+     * @param {EthernetFrame} frame
+     * @returns {boolean}
+     */
+    _isBridgeGroupAddress(frame) {
+        const m = frame.dstMac;
+        return m[0] === 0x01 && m[1] === 0x80 && m[2] === 0xc2 &&
+               m[3] === 0x00 && m[4] === 0x00 && m[5] <= 0x0f;
+    }
+
+    /**
      * Convert 8-byte bridge ID into bigint for comparisons.
      * @param {Uint8Array} id8
      * @returns {bigint}
@@ -1010,11 +1022,16 @@ export class SwitchBackplane extends Observable {
                 // LEARNING ports may update the CAM but must not send frames out.
                 const stpLearningOnly = this.stpEnabled && this.stpPortState[i] === STP_STATE.LEARNING;
 
+                // Bridge Group Address (01:80:c2:00:00:00–0f): terminate at bridge, never forward
+                if (this._isBridgeGroupAddress(frame)) continue;
+
                 // VLAN DISABLED
                 if (!this.vlanEnabled) {
-                    // Learn source MAC globally
-                    const srcKey = MACToNumber(frame.srcMac);
-                    this.sat.set(srcKey, i);
+                    // Learn source MAC globally (IEEE 802.1D §7.8: never learn multicast source MACs)
+                    if (!(frame.srcMac[0] & 0x01)) {
+                        const srcKey = MACToNumber(frame.srcMac);
+                        this.sat.set(srcKey, i);
+                    }
 
                     if (stpLearningOnly) continue;
 
@@ -1052,14 +1069,16 @@ export class SwitchBackplane extends Observable {
                 const vid = this.getIngressVid(inPort, frame);
                 if (vid == null) continue; // dropped by VLAN ingress rules
 
-                // Learn source MAC per VLAN
-                const srcKey = MACToNumber(frame.srcMac);
-                let vlanMap = this.sat.get(vid);
-                if (!vlanMap) {
-                    vlanMap = new Map();
-                    this.sat.set(vid, vlanMap);
+                // Learn source MAC per VLAN (IEEE 802.1D §7.8: never learn multicast source MACs)
+                if (!(frame.srcMac[0] & 0x01)) {
+                    const srcKey = MACToNumber(frame.srcMac);
+                    let vlanMap = this.sat.get(vid);
+                    if (!vlanMap) {
+                        vlanMap = new Map();
+                        this.sat.set(vid, vlanMap);
+                    }
+                    vlanMap.set(srcKey, i);
                 }
-                vlanMap.set(srcKey, i);
 
                 if (stpLearningOnly) continue;
 
