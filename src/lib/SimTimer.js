@@ -88,6 +88,17 @@ export class SimTimer {
     /** BGP hold time (simulation-scaled, ~RFC 4271 recommends 90 s). */
     static BGP_HOLDTIME_MS          =  6_000;  // 1200 ticks
 
+    /** OSPF Hello interval (~RFC 10 s, simulation-scaled). */
+    static OSPF_HELLO_MS            =  2_000;  //  400 ticks
+    /** OSPF Dead interval (4× hello; neighbor declared down if no Hello received). */
+    static OSPF_DEAD_MS             =  8_000;  // 1600 ticks
+    /** OSPF Wait interval (= dead interval; used before first DR/BDR election, RFC §9.4). */
+    static OSPF_WAIT_MS             =  8_000;  // 1600 ticks
+    /** OSPF LSA retransmit interval. */
+    static OSPF_RXMT_MS             =  1_000;  //  200 ticks
+    /** Delay between LSA receipt and SPF calculation. */
+    static OSPF_SPF_DELAY_MS        =    200;  //   40 ticks
+
     // -------------------------------------------------------------------------
     // Internal state
     // -------------------------------------------------------------------------

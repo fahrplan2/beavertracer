@@ -6,6 +6,7 @@ import { VLANSubInterface } from "../net/NetworkInterface.js";
 import { RIPDaemon } from "../net/RIPDaemon.js";
 import { RIPngDaemon } from "../net/RIPngDaemon.js";
 import { BGPDaemon } from "../net/BGPDaemon.js";
+import { OSPFDaemon } from "../net/OSPFDaemon.js";
 import { SimulatedObject } from "./SimulatedObject.js";
 import { PollTimer } from "../lib/PollTimer.js";
 import { netmaskStrToPrefix, prefixToNetmaskStr, normalizeMaskInput } from "../lib/helpers.js";
@@ -104,6 +105,11 @@ export class Router extends SimulatedObject {
   /** @type {HTMLElement|null} */ _bgpRoutesHost = null;
   /** @type {HTMLTextAreaElement|null} */ _bgpLogEl = null;
 
+  /** @type {OSPFDaemon} */
+  ospf;
+  /** @type {HTMLTextAreaElement|null} */ _ospfLogEl = null;
+  _ospfPollTimer = new PollTimer();
+
     constructor(name = t("router.title")) {
         super((name = t("router.title")));
         this.net = new IPStack(2, name);
@@ -112,6 +118,7 @@ export class Router extends SimulatedObject {
         this.rip   = new RIPDaemon(this.net);
         this.ripng = new RIPngDaemon(this.net);
         this.bgp   = new BGPDaemon(this.net);
+        this.ospf  = new OSPFDaemon(this.net);
 
         /** @param {HTMLElement} body */
         this.onPanelCreated = (body) => {
@@ -124,10 +131,11 @@ export class Router extends SimulatedObject {
         return {
             ...super.toJSON(),
             kind: "Router",
-            net: this.net.toJSON(),
+            net:   this.net.toJSON(),
             rip:   this.rip.toJSON(),
             ripng: this.ripng.toJSON(),
             bgp:   this.bgp.toJSON(),
+            ospf:  this.ospf.toJSON(),
         };
     }
 
@@ -140,8 +148,10 @@ export class Router extends SimulatedObject {
         if (n.rip)   obj.rip.applyJSON(n.rip);
         obj.ripng = new RIPngDaemon(obj.net);
         if (n.ripng) obj.ripng.applyJSON(n.ripng);
-        obj.bgp = new BGPDaemon(obj.net);
-        if (n.bgp) obj.bgp.applyJSON(n.bgp);
+        obj.bgp   = new BGPDaemon(obj.net);
+        if (n.bgp)   obj.bgp.applyJSON(n.bgp);
+        obj.ospf  = new OSPFDaemon(obj.net);
+        if (n.ospf)  obj.ospf.applyJSON(n.ospf);
         return obj;
     }
 
@@ -174,6 +184,7 @@ export class Router extends SimulatedObject {
             { id: "rip",        label: t("router.rip.tab")            },
             { id: "ripng",      label: t("router.ripng.tab")          },
             { id: "bgp",        label: t("router.bgp.tab")            },
+            { id: "ospf",       label: t("router.ospf.tab")           },
             { id: "vpn",        label: t("router.vpn.tab")            },
         ], (id) => {
             ifSection.style.display    = id === "interfaces" ? "" : "none";
@@ -181,6 +192,7 @@ export class Router extends SimulatedObject {
             ripSection.style.display   = id === "rip"   ? "" : "none";
             ripngSection.style.display = id === "ripng" ? "" : "none";
             bgpSection.style.display   = id === "bgp"   ? "" : "none";
+            ospfSection.style.display  = id === "ospf"  ? "" : "none";
             vpnSection.style.display   = id === "vpn"   ? "" : "none";
             if (id === "routes-v4") { routeTitle.textContent = t("router.routingtable.ipv4"); this._selectedRouteFamily = 4; this._renderRoutes(); }
             if (id === "routes-v6") { routeTitle.textContent = t("router.routingtable.ipv6"); this._selectedRouteFamily = 6; this._renderRoutes(); }
@@ -284,18 +296,23 @@ export class Router extends SimulatedObject {
         const bgpSection = DOMBuilder.div("");
         this._buildBGPSection(bgpSection);
 
+        /* ================================ OSPF ================================ */
+        const ospfSection = DOMBuilder.div("");
+        this._buildOSPFSection(ospfSection);
+
         /* ================================ VPN ================================= */
         const vpnSection = DOMBuilder.div("");
         this._buildVPNSection(vpnSection);
 
-        outerContent.append(ifSection, routeSection, ripSection, ripngSection, bgpSection, vpnSection);
+        outerContent.append(ifSection, routeSection, ripSection, ripngSection, bgpSection, ospfSection, vpnSection);
 
         /* ============================ Tab switching ============================ */
-        ifSection.style.display = "";
+        ifSection.style.display    = "";
         routeSection.style.display = "none";
         ripSection.style.display   = "none";
         ripngSection.style.display = "none";
         bgpSection.style.display   = "none";
+        ospfSection.style.display  = "none";
         vpnSection.style.display   = "none";
         setOuterActive("interfaces");
 
@@ -1640,6 +1657,143 @@ export class Router extends SimulatedObject {
         const max   = 200;
         this._bgpLogEl.value = (lines.length > max ? lines.slice(-max) : lines).join("\n");
         this._bgpLogEl.scrollTop = this._bgpLogEl.scrollHeight;
+    }
+
+    /* ----------------------------- OSPF tab ----------------------------- */
+
+    /** @param {HTMLElement} host */
+    _buildOSPFSection(host) {
+        DOMBuilder.clear(host);
+
+        // ── Enable checkbox ──────────────────────────────────────────────
+        const enableCb = DOMBuilder.input({ type: "checkbox" });
+        enableCb.checked = this.ospf.enabled;
+        enableCb.addEventListener("change", () => {
+            this.ospf.setEnabled(enableCb.checked);
+            this._renderOSPFLog();
+        });
+        const enableRow = DOMBuilder.div("router-name-row");
+        enableRow.style.gap = "6px";
+        enableRow.appendChild(enableCb);
+        enableRow.appendChild(DOMBuilder.label(t("router.ospf.enabled")));
+        host.appendChild(enableRow);
+
+        // ── Router ID ────────────────────────────────────────────────────
+        const ridRow = DOMBuilder.div("router-name-row");
+        ridRow.style.gap = "6px";
+        ridRow.style.marginTop = "6px";
+        const ridLabel = DOMBuilder.el("span", { text: t("router.ospf.routerid") + ":", className: "router-if-field-label" });
+        const ridInput = DOMBuilder.input({ placeholder: t("router.ospf.routerid.auto") });
+        ridInput.style.width = "130px";
+        if (this.ospf._routerIdOverride !== null) {
+            ridInput.value = new (/** @type {any} */ (IPAddress))(4, this.ospf._routerIdOverride).toString();
+        }
+        ridInput.addEventListener("change", () => {
+            const v = ridInput.value.trim();
+            if (!v) {
+                this.ospf._routerIdOverride = null;
+            } else {
+                try {
+                    const ip = IPAddress.fromString(v);
+                    if (ip.isV4()) this.ospf._routerIdOverride = /** @type {number} */ (ip.getNumber()) >>> 0;
+                } catch { /* ignore */ }
+            }
+        });
+        ridRow.append(ridLabel, ridInput);
+        host.appendChild(ridRow);
+
+        // ── Per-interface passive toggles ────────────────────────────────
+        const ifTable = document.createElement("table");
+        ifTable.className = "router-routes";
+        ifTable.style.marginTop = "8px";
+        const ifThead = document.createElement("thead");
+        const ifHtr   = document.createElement("tr");
+        const ifThIf  = document.createElement("th"); ifThIf.textContent  = t("router.ospf.col.interface");
+        const ifThPas = document.createElement("th"); ifThPas.textContent = t("router.ospf.col.passive");
+        ifHtr.append(ifThIf, ifThPas);
+        ifThead.appendChild(ifHtr);
+        const ifTbody = document.createElement("tbody");
+
+        for (const iface of this.net.interfaces) {
+            const ifName = iface.name;
+            const tr  = document.createElement("tr");
+            const tdN = document.createElement("td"); tdN.textContent = ifName;
+            const tdP = document.createElement("td");
+            const cb  = DOMBuilder.input({ type: "checkbox" });
+            cb.checked = this.ospf.passiveInterfaces.has(ifName);
+            cb.addEventListener("change", () => this.ospf.setPassive(ifName, cb.checked));
+            tdP.appendChild(cb);
+            tr.append(tdN, tdP);
+            ifTbody.appendChild(tr);
+        }
+        ifTable.append(ifThead, ifTbody);
+        host.appendChild(ifTable);
+
+        // ── Neighbor table (live) ────────────────────────────────────────
+        host.appendChild(DOMBuilder.h4(t("router.ospf.neighbors")));
+        const nbTable = document.createElement("table");
+        nbTable.className = "router-routes";
+        const nbThead = document.createElement("thead");
+        const nbHtr   = document.createElement("tr");
+        for (const col of [
+            t("router.ospf.col.interface"),
+            t("router.ospf.col.neighbor"),
+            t("router.ospf.col.state"),
+            t("router.ospf.col.dr"),
+            t("router.ospf.col.bdr"),
+        ]) {
+            const th = document.createElement("th"); th.textContent = col; nbHtr.appendChild(th);
+        }
+        nbThead.appendChild(nbHtr);
+        const nbTbody = document.createElement("tbody");
+        nbTable.append(nbThead, nbTbody);
+        host.appendChild(nbTable);
+
+        const renderNeighbors = () => {
+            nbTbody.innerHTML = "";
+            for (const [ifIndex, oif] of this.ospf._ifaces) {
+                const ifName = this.net.interfaces[ifIndex]?.name ?? `eth${ifIndex}`;
+                for (const [, nb] of oif.neighbors) {
+                    const tr = document.createElement("tr");
+                    const n2s = (/** @type {number} */ n) => n ? new IPAddress(4, n >>> 0).toString() : "—";
+                    for (const v of [ifName, nb.ip.toString(), nb.state, n2s(oif.dr), n2s(oif.bdr)]) {
+                        const td = document.createElement("td"); td.textContent = v; tr.appendChild(td);
+                    }
+                    nbTbody.appendChild(tr);
+                }
+            }
+            if (nbTbody.childElementCount === 0) {
+                const tr = document.createElement("tr");
+                const td = document.createElement("td"); td.colSpan = 5; td.textContent = "—";
+                td.style.textAlign = "center"; td.style.opacity = "0.5";
+                tr.appendChild(td); nbTbody.appendChild(tr);
+            }
+        };
+        renderNeighbors();
+        this._ospfPollTimer.stop();
+        this._ospfPollTimer.start(renderNeighbors, 1000);
+
+        // ── Log ──────────────────────────────────────────────────────────
+        host.appendChild(DOMBuilder.h4(t("router.ospf.log")));
+        const ospfLogEl = /** @type {HTMLTextAreaElement} */ (DOMBuilder.el("textarea", {
+            className: "log",
+            attrs: { readonly: "true", spellcheck: "false" },
+        }));
+        ospfLogEl.style.width  = "100%";
+        ospfLogEl.style.height = "140px";
+        host.appendChild(ospfLogEl);
+        this._ospfLogEl = ospfLogEl;
+        this._renderOSPFLog();
+
+        this.ospf.onLogUpdate = () => this._renderOSPFLog();
+    }
+
+    _renderOSPFLog() {
+        if (!this._ospfLogEl) return;
+        const lines = this.ospf.log;
+        const max   = 200;
+        this._ospfLogEl.value = (lines.length > max ? lines.slice(-max) : lines).join("\n");
+        this._ospfLogEl.scrollTop = this._ospfLogEl.scrollHeight;
     }
 
     /* ----------------------------- VPN tab ----------------------------- */

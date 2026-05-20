@@ -76,6 +76,9 @@ export class IPStack extends Observable {
     /** @type {Map<number, string|null>} interfaceIndex → last seen ip6 string */
     _lastKnownIp6 = new Map();
 
+    /** @type {Map<number, (pkt: IPv4Packet, ifIndex: number) => void>} */
+    _rawProtoHandlers = new Map();
+
     name = '';
 
     /**
@@ -443,7 +446,7 @@ export class IPStack extends Observable {
         // loopback
         if (this._isLoopback(dst)) {
             if (!internal) return;
-            this.accept(packet);
+            this.accept(packet, recvIfIndex);
             return;
         }
 
@@ -452,7 +455,7 @@ export class IPStack extends Observable {
             const itf = this.interfaces[i];
             if (!itf.ip.isV4()) continue;
             if (this._v4n(dst) === this._v4n(itf.ip)) {
-                this.accept(packet);
+                this.accept(packet, recvIfIndex);
                 return;
             }
         }
@@ -498,7 +501,12 @@ export class IPStack extends Observable {
             }
         } else {
             if (isLimited || bIf !== -1) {
-                this.accept(packet);
+                this.accept(packet, recvIfIndex);
+                return;
+            }
+            // Deliver link-local multicast (224.0.0.0/4) to registered protocol handlers
+            if ((this._v4n(dst) >>> 28) === 0xe) {
+                this.accept(packet, recvIfIndex);
                 return;
             }
         }
@@ -511,7 +519,7 @@ export class IPStack extends Observable {
         }
 
         if (out.interfIndex === -1) {
-            this.accept(packet);
+            this.accept(packet, recvIfIndex);
             return;
         }
 
@@ -847,7 +855,8 @@ export class IPStack extends Observable {
     /**
      * @param {IPv4Packet} packet
      */
-    accept(packet) {
+    /** @param {IPv4Packet} packet @param {number} [recvIfIndex] */
+    accept(packet, recvIfIndex = -1) {
         console.debug(this.name + ": Accepted packet");
         console.debug(packet);
 
@@ -865,8 +874,57 @@ export class IPStack extends Observable {
                 this._handleGRE(packet);
                 break;
             default:
-                this._sendICMPError(packet, 3, 2); // Protocol Unreachable
+                if (this._rawProtoHandlers.has(packet.protocol)) {
+                    this._rawProtoHandlers.get(packet.protocol)(packet, recvIfIndex);
+                } else {
+                    this._sendICMPError(packet, 3, 2); // Protocol Unreachable
+                }
         }
+    }
+
+    /**
+     * Register a handler for a raw IP protocol number.
+     * @param {number} proto
+     * @param {(pkt: IPv4Packet, ifIndex: number) => void} fn
+     */
+    registerProtoHandler(proto, fn) {
+        this._rawProtoHandlers.set(proto, fn);
+    }
+
+    /** @param {number} proto */
+    unregisterProtoHandler(proto) {
+        this._rawProtoHandlers.delete(proto);
+    }
+
+    /**
+     * Send a raw IPv4 packet directly out one interface, bypassing routing.
+     * Multicast destinations get the standard 01:00:5e multicast MAC;
+     * unicast destinations are resolved via ARP.
+     * @param {number} ifIndex
+     * @param {IPAddress} dst
+     * @param {number} proto
+     * @param {Uint8Array} payload
+     * @param {IPAddress|null} [src]
+     */
+    async sendOnInterface(ifIndex, dst, proto, payload, src = null) {
+        const iface = this.interfaces[ifIndex];
+        if (!iface) return;
+        const srcIp = src ?? iface.ip;
+        const pkt = new IPv4Packet({ dst, src: srcIp, protocol: proto, payload, ttl: 1 });
+        const dstNum = this._v4n(dst);
+        let dstMac;
+        if ((dstNum >>> 28) === 0xe) {
+            dstMac = new Uint8Array([
+                0x01, 0x00, 0x5e,
+                (dstNum >>> 16) & 0x7f,
+                (dstNum >>>  8) & 0xff,
+                 dstNum         & 0xff,
+            ]);
+        } else {
+            dstMac = await iface.resolveNeighbor(dst);
+            if (!dstMac) return;
+        }
+        iface.sendFrame(dstMac, 0x0800, pkt.pack());
     }
 
     /**
