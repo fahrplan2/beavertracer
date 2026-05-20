@@ -1,0 +1,405 @@
+{
+  "version": 4,
+  "tick": 0,
+  "objects": [
+    {
+      "kind": "TextBox",
+      "id": 1,
+      "name": "",
+      "x": 20,
+      "y": 10,
+      "px": 200,
+      "py": 200,
+      "panelOpen": false,
+      "text": "**STP-Test – vermaschte Switch-Topologie**\n\nTopologie (alle Switches haben STP aktiviert):\n\n          PC0\n           |\n      [SW1]  ← Root Bridge (Priority 4096)\n       /  \\\nPC1─[SW2]──[SW3]─PC2\n     |   ╲╱   |\n    [SW4]──[SW5]\n     |          |\n    PC3        PC4\n\nRedundante Links (werden von STP blockiert):\n• SW2 ↔ SW3  (einer der Ports wird blockiert)\n• SW4 ↔ SW5  (einer der Ports wird blockiert)\n\nErwartetes Verhalten nach Konvergenz:\n• SW1 = Root Bridge (Priority 4096 < 32768 der anderen)\n• SW2, SW3: Root Port → Richtung SW1 (cost 1)\n• SW4: Root Port → Richtung SW2 (cost 2)\n• SW5: Root Port → Richtung SW3 (cost 2)\n• Wegen Bridge-ID-Reihenfolge: SW2 gewinnt Designated-Election\n  auf dem SW2–SW3-Segment → SW3-Port (→SW2) wird BLOCKED\n• SW4 gewinnt auf dem SW4–SW5-Segment → SW5-Port (→SW4) wird BLOCKED\n\nTest: PCs (192.168.1.0/24) nach Konvergenz anpingen.\nNach dem Abziehen eines Links konvergiert STP neu."
+    },
+    {
+      "kind": "Switch",
+      "id": 10,
+      "name": "SW1",
+      "x": 350,
+      "y": 130,
+      "px": 290,
+      "py": 200,
+      "panelOpen": false,
+      "vlanEnabled": false,
+      "stpEnabled": true,
+      "stpBridgePriority": 4096,
+      "vlanPorts": [
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] }
+      ]
+    },
+    {
+      "kind": "Switch",
+      "id": 11,
+      "name": "SW2",
+      "x": 130,
+      "y": 290,
+      "px": 70,
+      "py": 360,
+      "panelOpen": false,
+      "vlanEnabled": false,
+      "stpEnabled": true,
+      "stpBridgePriority": 32768,
+      "vlanPorts": [
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] }
+      ]
+    },
+    {
+      "kind": "Switch",
+      "id": 12,
+      "name": "SW3",
+      "x": 570,
+      "y": 290,
+      "px": 510,
+      "py": 360,
+      "panelOpen": false,
+      "vlanEnabled": false,
+      "stpEnabled": true,
+      "stpBridgePriority": 32768,
+      "vlanPorts": [
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] }
+      ]
+    },
+    {
+      "kind": "Switch",
+      "id": 13,
+      "name": "SW4",
+      "x": 130,
+      "y": 460,
+      "px": 70,
+      "py": 530,
+      "panelOpen": false,
+      "vlanEnabled": false,
+      "stpEnabled": true,
+      "stpBridgePriority": 32768,
+      "vlanPorts": [
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] }
+      ]
+    },
+    {
+      "kind": "Switch",
+      "id": 14,
+      "name": "SW5",
+      "x": 570,
+      "y": 460,
+      "px": 510,
+      "py": 530,
+      "panelOpen": false,
+      "vlanEnabled": false,
+      "stpEnabled": true,
+      "stpBridgePriority": 32768,
+      "vlanPorts": [
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] },
+        { "vlanMode": "untagged", "pvid": 1, "allowedVlans": [1] }
+      ]
+    },
+    {
+      "kind": "PC",
+      "id": 20,
+      "name": "PC0",
+      "x": 490,
+      "y": 80,
+      "px": 560,
+      "py": 80,
+      "panelOpen": false,
+      "net": {
+        "name": "PC0",
+        "forwarding": false,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "192.168.1.1",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": []
+      },
+      "fs": {
+        "type": "dir",
+        "name": "/",
+        "ctime": 0,
+        "mtime": 0,
+        "children": [
+          { "type": "dir", "name": "home", "ctime": 0, "mtime": 0, "children": [] }
+        ]
+      },
+      "dns": null
+    },
+    {
+      "kind": "PC",
+      "id": 21,
+      "name": "PC1",
+      "x": 10,
+      "y": 380,
+      "px": 80,
+      "py": 380,
+      "panelOpen": false,
+      "net": {
+        "name": "PC1",
+        "forwarding": false,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "192.168.1.2",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": []
+      },
+      "fs": {
+        "type": "dir",
+        "name": "/",
+        "ctime": 0,
+        "mtime": 0,
+        "children": [
+          { "type": "dir", "name": "home", "ctime": 0, "mtime": 0, "children": [] }
+        ]
+      },
+      "dns": null
+    },
+    {
+      "kind": "PC",
+      "id": 22,
+      "name": "PC2",
+      "x": 700,
+      "y": 380,
+      "px": 770,
+      "py": 380,
+      "panelOpen": false,
+      "net": {
+        "name": "PC2",
+        "forwarding": false,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "192.168.1.3",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": []
+      },
+      "fs": {
+        "type": "dir",
+        "name": "/",
+        "ctime": 0,
+        "mtime": 0,
+        "children": [
+          { "type": "dir", "name": "home", "ctime": 0, "mtime": 0, "children": [] }
+        ]
+      },
+      "dns": null
+    },
+    {
+      "kind": "PC",
+      "id": 23,
+      "name": "PC3",
+      "x": 10,
+      "y": 550,
+      "px": 80,
+      "py": 550,
+      "panelOpen": false,
+      "net": {
+        "name": "PC3",
+        "forwarding": false,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "192.168.1.4",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": []
+      },
+      "fs": {
+        "type": "dir",
+        "name": "/",
+        "ctime": 0,
+        "mtime": 0,
+        "children": [
+          { "type": "dir", "name": "home", "ctime": 0, "mtime": 0, "children": [] }
+        ]
+      },
+      "dns": null
+    },
+    {
+      "kind": "PC",
+      "id": 24,
+      "name": "PC4",
+      "x": 700,
+      "y": 550,
+      "px": 770,
+      "py": 550,
+      "panelOpen": false,
+      "net": {
+        "name": "PC4",
+        "forwarding": false,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "192.168.1.5",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": []
+      },
+      "fs": {
+        "type": "dir",
+        "name": "/",
+        "ctime": 0,
+        "mtime": 0,
+        "children": [
+          { "type": "dir", "name": "home", "ctime": 0, "mtime": 0, "children": [] }
+        ]
+      },
+      "dns": null
+    },
+    {
+      "kind": "Link",
+      "id": 30,
+      "a": 10,
+      "b": 11,
+      "portA": "sw0",
+      "portB": "sw0"
+    },
+    {
+      "kind": "Link",
+      "id": 31,
+      "a": 10,
+      "b": 12,
+      "portA": "sw1",
+      "portB": "sw0"
+    },
+    {
+      "kind": "Link",
+      "id": 32,
+      "a": 11,
+      "b": 12,
+      "portA": "sw1",
+      "portB": "sw1"
+    },
+    {
+      "kind": "Link",
+      "id": 33,
+      "a": 11,
+      "b": 13,
+      "portA": "sw2",
+      "portB": "sw0"
+    },
+    {
+      "kind": "Link",
+      "id": 34,
+      "a": 12,
+      "b": 14,
+      "portA": "sw2",
+      "portB": "sw0"
+    },
+    {
+      "kind": "Link",
+      "id": 35,
+      "a": 13,
+      "b": 14,
+      "portA": "sw1",
+      "portB": "sw1"
+    },
+    {
+      "kind": "Link",
+      "id": 36,
+      "a": 10,
+      "b": 20,
+      "portA": "sw2",
+      "portB": "eth0"
+    },
+    {
+      "kind": "Link",
+      "id": 37,
+      "a": 11,
+      "b": 21,
+      "portA": "sw3",
+      "portB": "eth0"
+    },
+    {
+      "kind": "Link",
+      "id": 38,
+      "a": 12,
+      "b": 22,
+      "portA": "sw3",
+      "portB": "eth0"
+    },
+    {
+      "kind": "Link",
+      "id": 39,
+      "a": 13,
+      "b": 23,
+      "portA": "sw2",
+      "portB": "eth0"
+    },
+    {
+      "kind": "Link",
+      "id": 40,
+      "a": 14,
+      "b": 24,
+      "portA": "sw2",
+      "portB": "eth0"
+    }
+  ]
+}

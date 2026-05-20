@@ -890,6 +890,7 @@ export default {
 
   "switch.stp.disabled": "STP is disabled",
   "switch.stp.enable": "enable Spanning Tree Protocol (STP)",
+  "switch.stp.priority": "Bridge Priority:",
   "switch.stp.status": "STP status",
   "switch.vlan.config": "VLAN configuration",
   "switch.vlan.enable": "enable VLAN",

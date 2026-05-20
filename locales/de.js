@@ -651,6 +651,7 @@ export default {
   "switch.sat.port": "Port",
   "switch.stp.disabled": "STP ist deaktiviert",
   "switch.stp.enable": "Spanning Tree Protocol (STP) aktivieren",
+  "switch.stp.priority": "Bridge-Priorität:",
   "switch.stp.status": "STP-Status",
   "switch.vlan.config": "VLAN-Konfiguration",
   "switch.vlan.enable": "VLAN aktivieren",
