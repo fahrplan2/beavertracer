@@ -1445,6 +1445,7 @@ export class IPStack extends Observable {
      * @param {number} prefixLength
      * @param {Number} interf
      * @param {IPAddress} nexthop 0.0.0.0 for direct
+     * @param {"connected"|"static"|"ospf"|"rip"|"bgp"} [source]
      */
     addRoute(dst, prefixLength, interf, nexthop, source = "static") {
         const r = new Route();
