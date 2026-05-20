@@ -1131,7 +1131,7 @@ export class OSPFDaemon {
 
         this._removeLearnedRoutes();
         for (const r of newRoutes) {
-            try { this._net.addRoute(r.dst, r.prefix, r.ifIndex, r.nexthop); } catch {}
+            try { this._net.addRoute(r.dst, r.prefix, r.ifIndex, r.nexthop, "ospf"); } catch {}
         }
         this._installedRoutes = newRoutes;
         this._log(`SPF: ${newRoutes.length} routes installed`);

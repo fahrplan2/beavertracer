@@ -43,6 +43,13 @@ function assertPrefix(p) {
 }
 
 
+/** @param {"connected"|"static"|"ospf"|"rip"|"bgp"|string} source */
+function routeSourceLabel(source) {
+    if (source === "connected") return t("router.routingtable.source.connected");
+    if (source === "static") return t("router.routingtable.source.static");
+    return source.toUpperCase();
+}
+
 /** deterministic via EthernetPort.linkref @param {*} iface */
 function getInterfaceLinkStatus(iface) {
     // Subinterfaces use the parent's physical port for link state
@@ -719,7 +726,7 @@ export class Router extends SimulatedObject {
             "<th>" + t("router.routingtable.netmask") + "</th>" +
             "<th>" + t("router.routingtable.nexthop") + "</th>" +
             "<th>" + t("router.routingtable.interface") + "</th>" +
-            "<th>" + t("router.routingtable.auto") + "</th>" +
+            "<th>" + t("router.routingtable.source") + "</th>" +
             "<th>" + t("router.routingtable.actions") + "</th>" +
             "</tr>";
         table.appendChild(thead);
@@ -730,27 +737,30 @@ export class Router extends SimulatedObject {
         routes.forEach((r, idx) => {
             if (r.dst?.isV6?.()) return; // skip IPv6 routes in IPv4 tab
 
+            const source = r.source ?? "static";
+            const editable = source === "static";
+
             const tr = document.createElement("tr");
             tr.className = "router-route-row";
-            tr.dataset.auto = String(!!r.auto);
-            tr.classList.add(r.auto ? "router-route-auto" : "router-route-manual");
-
-            const auto = !!r.auto;
+            tr.dataset.source = source;
+            if (source === "connected") tr.classList.add("router-route-auto");
+            else if (!editable) tr.classList.add("router-route-dynamic");
+            else tr.classList.add("router-route-manual");
 
             const dst = document.createElement("input");
             dst.value = ipToStr(r.dst);
-            dst.disabled = auto;
+            dst.disabled = !editable;
 
             const mask = document.createElement("input");
             mask.value = prefixToNetmaskStr(Number(r.prefixLength ?? 0));
-            mask.disabled = auto;
+            mask.disabled = !editable;
 
             const nh = document.createElement("input");
             nh.value = ipToStr(r.nexthop);
-            nh.disabled = auto;
+            nh.disabled = !editable;
 
             const autoTd = document.createElement("td");
-            autoTd.textContent = auto ? t("router.routingtable.yes") : t("router.routingtable.no");
+            autoTd.textContent = routeSourceLabel(source);
 
             const save = document.createElement("button");
             save.textContent = t("router.routingtable.save");
@@ -758,7 +768,7 @@ export class Router extends SimulatedObject {
 
             const del = document.createElement("button");
             del.textContent = t("router.routingtable.delete");
-            del.disabled = auto;
+            del.disabled = !editable;
 
             // interface cell
             let ifCellEl;
@@ -778,7 +788,7 @@ export class Router extends SimulatedObject {
                 ifCellEl = span;
             } else {
                 ifSel = document.createElement("select");
-                ifSel.disabled = auto;
+                ifSel.disabled = !editable;
 
                 for (const iface of this.net.interfaces) {
                     const o = document.createElement("option");
@@ -804,7 +814,7 @@ export class Router extends SimulatedObject {
             const setDirty = (on) => tr.classList.toggle("router-route-dirty", !!on);
 
             const computeCanSave = () => {
-                if (auto) return false;
+                if (!editable) return false;
                 if (r.interf !== -1 && ifSel && !ifSel.value) return false;
 
                 let okDst = false, okMask = false, okNh = false;
@@ -880,7 +890,7 @@ export class Router extends SimulatedObject {
                 if (save.disabled) return;
 
                 const old = this.net.routingTable[idx];
-                if (old.auto) return;
+                if ((old.source ?? "static") !== "static") return;
 
                 try {
                     const newDst = ipFromStr(dst.value);
@@ -909,7 +919,7 @@ export class Router extends SimulatedObject {
 
             del.addEventListener("click", () => {
                 const old = this.net.routingTable[idx];
-                if (old.auto) return;
+                if ((old.source ?? "static") !== "static") return;
 
                 if (old.tunnel) {
                     this.net.delTunnelRoute(old.dst, old.prefixLength, old.tunnel.name);
@@ -943,7 +953,9 @@ export class Router extends SimulatedObject {
         });
 
         table.appendChild(tbody);
-        this._routesHost.appendChild(table);
+        const scrollWrap = DOMBuilder.div("router-routes-scroll");
+        scrollWrap.appendChild(table);
+        this._routesHost.appendChild(scrollWrap);
 
         // ---- Footer: "+ Route hinzufügen" button ----
         const hasIfaces = this.net.interfaces.length > 0;
@@ -976,7 +988,7 @@ export class Router extends SimulatedObject {
             addIf.disabled = !hasIfaces;
 
             const addAuto = document.createElement("td");
-            addAuto.textContent = t("router.routingtable.no");
+            addAuto.textContent = t("router.routingtable.source.static");
 
             const saveBtn = document.createElement("button");
             saveBtn.textContent = t("router.routingtable.save");
@@ -1055,7 +1067,7 @@ export class Router extends SimulatedObject {
             "<th>" + t("router.routingtable.prefix") + "</th>" +
             "<th>" + t("router.routingtable.nexthop") + "</th>" +
             "<th>" + t("router.routingtable.interface") + "</th>" +
-            "<th>" + t("router.routingtable.auto") + "</th>" +
+            "<th>" + t("router.routingtable.source") + "</th>" +
             "<th>" + t("router.routingtable.actions") + "</th>" +
             "</tr>";
         table.appendChild(thead);
@@ -1066,23 +1078,24 @@ export class Router extends SimulatedObject {
         routes.forEach((r, idx) => {
             if (!r.dst?.isV6?.()) return; // only IPv6
 
-            const auto = !!r.auto;
+            const source = r.source ?? "static";
+            const editable = source === "static";
 
             const dst = document.createElement("input");
             dst.value = ipToStr(r.dst);
-            dst.disabled = auto;
+            dst.disabled = !editable;
 
             const prefix = document.createElement("input");
             prefix.value = String(r.prefixLength ?? 0);
-            prefix.disabled = auto;
+            prefix.disabled = !editable;
             prefix.style.width = "4em";
 
             const nh = document.createElement("input");
             nh.value = ipToStr(r.nexthop);
-            nh.disabled = auto;
+            nh.disabled = !editable;
 
             const autoTd = document.createElement("td");
-            autoTd.textContent = auto ? t("router.routingtable.yes") : t("router.routingtable.no");
+            autoTd.textContent = routeSourceLabel(source);
 
             const save = document.createElement("button");
             save.textContent = t("router.routingtable.save");
@@ -1090,7 +1103,7 @@ export class Router extends SimulatedObject {
 
             const del = document.createElement("button");
             del.textContent = t("router.routingtable.delete");
-            del.disabled = auto;
+            del.disabled = !editable;
 
             let ifCellEl;
             /** @type {HTMLSelectElement|null} */
@@ -1103,7 +1116,7 @@ export class Router extends SimulatedObject {
                 ifCellEl = span;
             } else {
                 ifSel = document.createElement("select");
-                ifSel.disabled = auto;
+                ifSel.disabled = !editable;
                 for (const iface of this.net.interfaces) {
                     const o = document.createElement("option");
                     o.value = iface.name;
@@ -1123,7 +1136,7 @@ export class Router extends SimulatedObject {
             }
 
             const computeCanSave = () => {
-                if (auto) return false;
+                if (!editable) return false;
                 let okDst = false, okPfx = false, okNh = false;
                 try { const ip = ipFromStr(dst.value); okDst = ip.isV6(); } catch { okDst = false; }
                 try { const n = Number(prefix.value); okPfx = Number.isInteger(n) && n >= 0 && n <= 128; } catch { okPfx = false; }
@@ -1144,7 +1157,7 @@ export class Router extends SimulatedObject {
             save.addEventListener("click", () => {
                 if (save.disabled) return;
                 const old = this.net.routingTable[idx];
-                if (old.auto) return;
+                if ((old.source ?? "static") !== "static") return;
                 try {
                     const newDst = ipFromStr(dst.value);
                     if (!newDst.isV6()) throw new Error("IPv6-Adresse erwartet.");
@@ -1167,7 +1180,7 @@ export class Router extends SimulatedObject {
 
             del.addEventListener("click", () => {
                 const old = this.net.routingTable[idx];
-                if (old.auto) return;
+                if ((old.source ?? "static") !== "static") return;
                 this.net.delRoute(old.dst, old.prefixLength, old.interf, old.nexthop);
                 this._renderRoutes();
             });
@@ -1175,7 +1188,10 @@ export class Router extends SimulatedObject {
             /** @param {HTMLElement} el */
             const td = (el) => { const tdd = document.createElement("td"); tdd.appendChild(el); return tdd; };
             const tr = document.createElement("tr");
-            tr.className = "router-route-row " + (auto ? "router-route-auto" : "router-route-manual");
+            let sourceClass = "router-route-manual";
+            if (source === "connected") sourceClass = "router-route-auto";
+            else if (!editable) sourceClass = "router-route-dynamic";
+            tr.className = "router-route-row " + sourceClass;
             tr.appendChild(td(dst));
             tr.appendChild(td(prefix));
             tr.appendChild(td(nh));
@@ -1191,7 +1207,9 @@ export class Router extends SimulatedObject {
         });
 
         table.appendChild(tbody);
-        this._routesHost.appendChild(table);
+        const scrollWrapV6 = DOMBuilder.div("router-routes-scroll");
+        scrollWrapV6.appendChild(table);
+        this._routesHost.appendChild(scrollWrapV6);
 
         // ---- Footer: "+ Route hinzufügen" button (IPv6) ----
         const hasIfaces = this.net.interfaces.length > 0;
@@ -1225,7 +1243,7 @@ export class Router extends SimulatedObject {
             addIf.disabled = !hasIfaces;
 
             const addAuto = document.createElement("td");
-            addAuto.textContent = t("router.routingtable.no");
+            addAuto.textContent = t("router.routingtable.source.static");
 
             const saveBtn = document.createElement("button");
             saveBtn.textContent = t("router.routingtable.save");

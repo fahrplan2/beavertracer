@@ -757,16 +757,6 @@ export class IPStack extends Observable {
         const ip_src = packet.src;
         const ip_dst = packet.dst;
 
-        console.debug("ICMP IN", {
-            ip_src: ip_src.toString(),
-            ip_dst: ip_dst.toString(),
-            ttl: packet.ttl,
-            len: packet.payload?.length,
-            icmp_type: icmp.type,
-            icmp_code: icmp.code,
-            id: icmp.identifier,
-            seq: icmp.sequence
-        });
 
         switch (icmp.type) {
             case 0: { // Echo reply
@@ -857,9 +847,6 @@ export class IPStack extends Observable {
      */
     /** @param {IPv4Packet} packet @param {number} [recvIfIndex] */
     accept(packet, recvIfIndex = -1) {
-        console.debug(this.name + ": Accepted packet");
-        console.debug(packet);
-
         switch (packet.protocol) {
             case 1:
                 this._handleICMP(packet);
@@ -953,8 +940,6 @@ export class IPStack extends Observable {
             payload,
             ttl
         });
-
-        console.debug("IP OUT", { dst: dst.toString(), src: src.toString(), protocol, ttl: packet.ttl, payloadLen: payload.length });
 
         this.route(packet, true).catch(console.error);
     }
@@ -1216,7 +1201,6 @@ export class IPStack extends Observable {
             default:
                 // RFC 4443 §3.4: Type 4 Code 1 – unrecognized Next Header; pointer = offset 6
                 this._sendICMPv6Error(packet, 4, 1, 6);
-                console.debug(this.name + ": IPv6 unknown nextHeader=" + packet.nextHeader);
         }
     }
 
@@ -1292,7 +1276,6 @@ export class IPStack extends Observable {
                 break;
             }
             default:
-                console.debug(this.name + ": ICMPv6 unhandled type=" + icmp6.type);
         }
     }
 
@@ -1316,8 +1299,6 @@ export class IPStack extends Observable {
         const payload    = opts.payload    ?? new Uint8Array();
 
         const packet = new IPv6Packet({ dst, src, nextHeader, hopLimit, payload });
-
-        console.debug("IPv6 OUT", { dst: dst.toString(), src: src.toString(), nextHeader });
 
         this.routeV6(packet, true).catch(console.error);
     }
@@ -1465,13 +1446,14 @@ export class IPStack extends Observable {
      * @param {Number} interf
      * @param {IPAddress} nexthop 0.0.0.0 for direct
      */
-    addRoute(dst, prefixLength, interf, nexthop) {
+    addRoute(dst, prefixLength, interf, nexthop, source = "static") {
         const r = new Route();
         r.dst = dst;
         r.prefixLength = prefixLength | 0;
         r.interf = interf | 0;
         r.nexthop = nexthop;
         r.auto = false;
+        r.source = source;
         this.routingTable.push(r);
     }
 
@@ -1511,6 +1493,7 @@ export class IPStack extends Observable {
                 r.interf = i;
                 r.nexthop = IPAddress.fromString("0.0.0.0");
                 r.auto = true;
+                r.source = "connected";
                 this.routingTable.push(r);
             }
 
@@ -1530,6 +1513,7 @@ export class IPStack extends Observable {
                 r6c.interf = i;
                 r6c.nexthop = IPAddress.fromString("::");
                 r6c.auto = true;
+                r6c.source = "connected";
                 this.routingTable.push(r6c);
             }
 
@@ -1540,6 +1524,7 @@ export class IPStack extends Observable {
                 rLL.interf = i;
                 rLL.nexthop = IPAddress.fromString("::");
                 rLL.auto = true;
+                rLL.source = "connected";
                 this.routingTable.push(rLL);
             }
         }
@@ -1551,6 +1536,7 @@ export class IPStack extends Observable {
         r4.interf = -1;
         r4.nexthop = IPAddress.fromString("0.0.0.0");
         r4.auto = true;
+        r4.source = "connected";
         this.routingTable.push(r4);
 
         // IPv6 loopback (::1/128)
@@ -1560,6 +1546,7 @@ export class IPStack extends Observable {
         r6.interf = -1;
         r6.nexthop = IPAddress.fromString("::");
         r6.auto = true;
+        r6.source = "connected";
         this.routingTable.push(r6);
     }
 
@@ -1733,6 +1720,9 @@ export class Route {
     interf = 0;
 
     auto = true;
+
+    /** @type {"connected"|"static"|"ospf"|"rip"|"bgp"} */
+    source = "static";
 
     /** @type {TunnelConfig|null} set for GRE tunnel routes */
     tunnel = null;

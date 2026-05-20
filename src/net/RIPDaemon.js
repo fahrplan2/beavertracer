@@ -368,7 +368,7 @@ export class RIPDaemon {
      * @param {number} ifIndex @param {IPAddress} nexthop
      */
     _addToStack(dst, prefix, ifIndex, nexthop) {
-        try { this._net.addRoute(dst, prefix, ifIndex, nexthop); } catch {}
+        try { this._net.addRoute(dst, prefix, ifIndex, nexthop, "rip"); } catch {}
     }
 
     /** @param {{dst: IPAddress, prefix: number, learnedIfIndex: number, nexthop: IPAddress}} r */
