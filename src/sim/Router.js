@@ -8,6 +8,7 @@ import { BGPDaemon } from "../net/BGPDaemon.js";
 import { OSPFDaemon } from "../net/OSPFDaemon.js";
 import { SimulatedObject } from "./SimulatedObject.js";
 import { PollTimer } from "../lib/PollTimer.js";
+import { simTimer, SimTimer } from "../lib/SimTimer.js";
 import { netmaskStrToPrefix, prefixToNetmaskStr, normalizeMaskInput } from "../lib/helpers.js";
 
 import { DOMBuilder } from "../lib/DomBuilder.js";
@@ -178,7 +179,7 @@ export class Router extends SimulatedObject {
             { id: "interfaces", label: t("router.interfaces")        },
             { id: "routes-v4",  label: t("router.routingtable.ipv4") },
             { id: "routes-v6",  label: t("router.routingtable.ipv6") },
-            { id: "rip",        label: "RIP / RIPng"                  },
+            { id: "rip",        label: "RIP"                           },
             { id: "ospf",       label: t("router.ospf.tab")           },
             { id: "bgp",        label: t("router.bgp.tab")            },
             { id: "vpn",        label: t("router.vpn.tab")            },
@@ -1309,9 +1310,14 @@ export class Router extends SimulatedObject {
         host.appendChild(enableRow);
 
         // ── combined interface table: Interface | RIP Passive | RIPng Passive
+        const hintEl = document.createElement("p");
+        hintEl.textContent = t("router.rip.passive.hint");
+        hintEl.style.cssText = "margin:6px 0 4px;font-size:0.82em;opacity:0.65";
+        host.appendChild(hintEl);
+
         const ifTable = document.createElement("table");
         ifTable.className = "router-routes";
-        ifTable.style.marginTop = "8px";
+        ifTable.style.marginTop = "4px";
         const thead = document.createElement("thead");
         const htr   = document.createElement("tr");
         const thIf  = document.createElement("th"); thIf.textContent = t("router.rip.col.interface");
@@ -1600,7 +1606,23 @@ export class Router extends SimulatedObject {
     _buildOSPFSection(host) {
         DOMBuilder.clear(host);
 
-        // ── Enable checkbox ──────────────────────────────────────────────
+        const { bar: innerBar, setActive: setInnerActive } = DOMBuilder.tabGroup([
+            { id: "config", label: t("router.ospf.tab.config") },
+            { id: "status", label: t("router.ospf.tab.status") },
+            { id: "lsdb",   label: t("router.ospf.tab.lsdb")   },
+            { id: "log",    label: t("router.ospf.tab.log")     },
+        ], (id) => {
+            configSection.style.display = id === "config" ? "" : "none";
+            statusSection.style.display = id === "status" ? "" : "none";
+            lsdbSection.style.display   = id === "lsdb"   ? "" : "none";
+            logSection.style.display    = id === "log"     ? "" : "none";
+            if (id === "status" || id === "lsdb") renderAll();
+        });
+        host.appendChild(innerBar);
+
+        // ── Config ───────────────────────────────────────────────────────
+        const configSection = DOMBuilder.div("");
+
         const enableCb = DOMBuilder.input({ type: "checkbox" });
         enableCb.checked = this.ospf.enabled;
         enableCb.addEventListener("change", () => {
@@ -1611,9 +1633,8 @@ export class Router extends SimulatedObject {
         enableRow.style.gap = "6px";
         enableRow.appendChild(enableCb);
         enableRow.appendChild(DOMBuilder.label(t("router.ospf.enabled")));
-        host.appendChild(enableRow);
+        configSection.appendChild(enableRow);
 
-        // ── Router ID ────────────────────────────────────────────────────
         const ridRow = DOMBuilder.div("router-name-row");
         ridRow.style.gap = "6px";
         ridRow.style.marginTop = "6px";
@@ -1635,9 +1656,8 @@ export class Router extends SimulatedObject {
             }
         });
         ridRow.append(ridLabel, ridInput);
-        host.appendChild(ridRow);
+        configSection.appendChild(ridRow);
 
-        // ── Per-interface passive toggles ────────────────────────────────
         const ifTable = document.createElement("table");
         ifTable.className = "router-routes";
         ifTable.style.marginTop = "8px";
@@ -1648,7 +1668,6 @@ export class Router extends SimulatedObject {
         ifHtr.append(ifThIf, ifThPas);
         ifThead.appendChild(ifHtr);
         const ifTbody = document.createElement("tbody");
-
         for (const iface of this.net.interfaces) {
             const ifName = iface.name;
             const tr  = document.createElement("tr");
@@ -1662,10 +1681,28 @@ export class Router extends SimulatedObject {
             ifTbody.appendChild(tr);
         }
         ifTable.append(ifThead, ifTbody);
-        host.appendChild(ifTable);
+        configSection.appendChild(ifTable);
 
-        // ── Neighbor table (live) ────────────────────────────────────────
-        host.appendChild(DOMBuilder.h4(t("router.ospf.neighbors")));
+        // ── Status ───────────────────────────────────────────────────────
+        const statusSection = DOMBuilder.div("");
+
+        statusSection.appendChild(DOMBuilder.h4(t("router.ospf.ifstatus")));
+        const ifStatusTable = document.createElement("table");
+        ifStatusTable.className = "router-routes";
+        const ifStatusThead = document.createElement("thead");
+        const ifStatusHtr   = document.createElement("tr");
+        for (const col of [
+            t("router.ospf.col.interface"),
+            t("router.ospf.col.ifstate"),
+            t("router.ospf.col.dr"),
+            t("router.ospf.col.bdr"),
+        ]) { const th = document.createElement("th"); th.textContent = col; ifStatusHtr.appendChild(th); }
+        ifStatusThead.appendChild(ifStatusHtr);
+        const ifStatusTbody = document.createElement("tbody");
+        ifStatusTable.append(ifStatusThead, ifStatusTbody);
+        statusSection.appendChild(ifStatusTable);
+
+        statusSection.appendChild(DOMBuilder.h4(t("router.ospf.neighbors")));
         const nbTable = document.createElement("table");
         nbTable.className = "router-routes";
         const nbThead = document.createElement("thead");
@@ -1674,51 +1711,123 @@ export class Router extends SimulatedObject {
             t("router.ospf.col.interface"),
             t("router.ospf.col.neighbor"),
             t("router.ospf.col.state"),
-            t("router.ospf.col.dr"),
-            t("router.ospf.col.bdr"),
-        ]) {
-            const th = document.createElement("th"); th.textContent = col; nbHtr.appendChild(th);
-        }
+            t("router.ospf.col.priority"),
+            t("router.ospf.col.dead"),
+        ]) { const th = document.createElement("th"); th.textContent = col; nbHtr.appendChild(th); }
         nbThead.appendChild(nbHtr);
         const nbTbody = document.createElement("tbody");
         nbTable.append(nbThead, nbTbody);
-        host.appendChild(nbTable);
+        statusSection.appendChild(nbTable);
 
-        const renderNeighbors = () => {
-            nbTbody.innerHTML = "";
-            for (const [ifIndex, oif] of this.ospf._ifaces) {
-                const ifName = this.net.interfaces[ifIndex]?.name ?? `eth${ifIndex}`;
-                for (const [, nb] of oif.neighbors) {
-                    const tr = document.createElement("tr");
-                    const n2s = (/** @type {number} */ n) => n ? new IPAddress(4, n >>> 0).toString() : "—";
-                    for (const v of [ifName, nb.ip.toString(), nb.state, n2s(oif.dr), n2s(oif.bdr)]) {
-                        const td = document.createElement("td"); td.textContent = v; tr.appendChild(td);
-                    }
-                    nbTbody.appendChild(tr);
-                }
-            }
-            if (nbTbody.childElementCount === 0) {
-                const tr = document.createElement("tr");
-                const td = document.createElement("td"); td.colSpan = 5; td.textContent = "—";
-                td.style.textAlign = "center"; td.style.opacity = "0.5";
-                tr.appendChild(td); nbTbody.appendChild(tr);
-            }
-        };
-        renderNeighbors();
-        this._ospfPollTimer.stop();
-        this._ospfPollTimer.start(renderNeighbors, 1000);
+        // ── LSDB ─────────────────────────────────────────────────────────
+        const lsdbSection = DOMBuilder.div("");
+        const lsdbTable = document.createElement("table");
+        lsdbTable.className = "router-routes";
+        const lsdbThead = document.createElement("thead");
+        const lsdbHtr   = document.createElement("tr");
+        for (const col of [
+            t("router.ospf.col.lstype"),
+            t("router.ospf.col.lsid"),
+            t("router.ospf.col.advrtr"),
+            t("router.ospf.col.age"),
+            t("router.ospf.col.seqnum"),
+        ]) { const th = document.createElement("th"); th.textContent = col; lsdbHtr.appendChild(th); }
+        lsdbThead.appendChild(lsdbHtr);
+        const lsdbTbody = document.createElement("tbody");
+        lsdbTable.append(lsdbThead, lsdbTbody);
+        lsdbSection.appendChild(lsdbTable);
 
-        // ── Log ──────────────────────────────────────────────────────────
-        host.appendChild(DOMBuilder.h4(t("router.ospf.log")));
+        // ── Log ───────────────────────────────────────────────────────────
+        const logSection = DOMBuilder.div("");
         const ospfLogEl = /** @type {HTMLTextAreaElement} */ (DOMBuilder.el("textarea", {
             className: "log",
             attrs: { readonly: "true", spellcheck: "false" },
         }));
         ospfLogEl.style.width  = "100%";
-        ospfLogEl.style.height = "140px";
-        host.appendChild(ospfLogEl);
+        ospfLogEl.style.height = "200px";
+        logSection.appendChild(ospfLogEl);
         this._ospfLogEl = ospfLogEl;
         this._renderOSPFLog();
+
+        // ── shared render helpers ─────────────────────────────────────────
+        const n2s = (/** @type {number} */ n) => n ? new IPAddress(4, n >>> 0).toString() : "—";
+        const mkTd = (/** @type {string} */ v) => {
+            const td = document.createElement("td"); td.textContent = v; return td;
+        };
+        const emptyRow = (/** @type {HTMLElement} */ tbody, /** @type {number} */ cols) => {
+            const tr = document.createElement("tr");
+            const td = document.createElement("td");
+            td.colSpan = cols; td.textContent = "—";
+            td.style.textAlign = "center"; td.style.opacity = "0.5";
+            tr.appendChild(td); tbody.appendChild(tr);
+        };
+
+        const renderAll = () => {
+            // interface status
+            ifStatusTbody.innerHTML = "";
+            for (const [ifIndex, oif] of this.ospf._ifaces) {
+                const ifName = this.net.interfaces[ifIndex]?.name ?? `eth${ifIndex}`;
+                const tr = document.createElement("tr");
+                tr.append(mkTd(ifName), mkTd(oif.state), mkTd(n2s(oif.dr)), mkTd(n2s(oif.bdr)));
+                ifStatusTbody.appendChild(tr);
+            }
+            if (ifStatusTbody.childElementCount === 0) emptyRow(ifStatusTbody, 4);
+
+            // neighbors
+            nbTbody.innerHTML = "";
+            for (const [ifIndex, oif] of this.ospf._ifaces) {
+                const ifName = this.net.interfaces[ifIndex]?.name ?? `eth${ifIndex}`;
+                for (const [, nb] of oif.neighbors) {
+                    const tr = document.createElement("tr");
+                    const elapsedMs = (simTimer.currentTick - nb.lastHelloTick) * SimTimer.SIM_MS_PER_TICK;
+                    const remaining = Math.max(0, SimTimer.OSPF_DEAD_MS - elapsedMs);
+                    const pct       = Math.round(remaining / SimTimer.OSPF_DEAD_MS * 100);
+                    const barColor  = pct > 50 ? "#4caf50" : pct > 25 ? "#ff9800" : "#f44336";
+                    const deadTd    = document.createElement("td");
+                    deadTd.innerHTML =
+                        `<div style="display:flex;align-items:center;gap:4px">` +
+                        `<div style="width:36px;height:5px;background:#e0e0e0;border-radius:3px;flex-shrink:0">` +
+                        `<div style="width:${pct}%;height:100%;background:${barColor};border-radius:3px"></div></div>` +
+                        `<span style="font-size:0.85em">${(remaining / 1000).toFixed(1)}s</span></div>`;
+                    tr.append(mkTd(ifName), mkTd(nb.ip.toString()), mkTd(nb.state),
+                              mkTd(String(nb.priority)), deadTd);
+                    nbTbody.appendChild(tr);
+                }
+            }
+            if (nbTbody.childElementCount === 0) emptyRow(nbTbody, 5);
+
+            // LSDB
+            lsdbTbody.innerHTML = "";
+            const myRid = this.ospf._myRouterId;
+            const lsaTypeLabel = (/** @type {number} */ t) => t === 1 ? "Router" : t === 2 ? "Network" : String(t);
+            const seqHex = (/** @type {number} */ s) => "0x" + (s >>> 0).toString(16).padStart(8, "0").toUpperCase();
+            for (const [, entry] of this.ospf._lsdb) {
+                const h   = entry.header;
+                const tr  = document.createElement("tr");
+                const own = h.advertisingRouter === myRid;
+                if (own) tr.style.background = "rgba(33,150,243,0.07)";
+                tr.append(
+                    mkTd(lsaTypeLabel(h.type)),
+                    mkTd(n2s(h.lsId)),
+                    mkTd(n2s(h.advertisingRouter) + (own ? " ★" : "")),
+                    mkTd(String(h.age)),
+                    mkTd(seqHex(h.seqNum)),
+                );
+                lsdbTbody.appendChild(tr);
+            }
+            if (lsdbTbody.childElementCount === 0) emptyRow(lsdbTbody, 5);
+        };
+
+        renderAll();
+        this._ospfPollTimer.stop();
+        this._ospfPollTimer.start(renderAll, 1000);
+
+        host.append(configSection, statusSection, lsdbSection, logSection);
+        configSection.style.display = "";
+        statusSection.style.display = "none";
+        lsdbSection.style.display   = "none";
+        logSection.style.display    = "none";
+        setInnerActive("config");
 
         this.ospf.onLogUpdate = () => this._renderOSPFLog();
     }

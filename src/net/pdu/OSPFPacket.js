@@ -468,7 +468,13 @@ export class Lsa {
      * @returns {Lsa}
      */
     static fromBytes(data, off = 0) {
-        const hdr      = LsaHeader.readFrom(data, off);
+        const hdr = LsaHeader.readFrom(data, off);
+        if (hdr.length < 20 || off + hdr.length > data.length) throw new Error("LSA length invalid");
+        // Verify Fletcher-16 checksum (age bytes 0-1 excluded; checksum at offsets 16-17)
+        const c0s = data[off + 16], c1s = data[off + 17];
+        const copy = data.slice(off, off + hdr.length);
+        const { c0, c1 } = fletcher16(copy, 2, hdr.length, 16, 17);
+        if (c0 !== c0s || c1 !== c1s) throw new Error("LSA checksum invalid");
         const bodyData = data.slice(off + 20, off + hdr.length);
         let body;
         if (hdr.type === LSA_TYPE_ROUTER)  body = RouterLSA.fromBytes(bodyData);
