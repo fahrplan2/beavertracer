@@ -97,6 +97,7 @@ export class Router extends SimulatedObject {
 
   /** @type {HTMLDivElement|null} */ _routesHost = null;
   /** @type {number} */ _selectedRouteFamily = 4;
+  /** @type {string} */ _lastRoutesFingerprint = "";
 
   /** @type {RIPDaemon} */
   rip;
@@ -488,7 +489,21 @@ export class Router extends SimulatedObject {
 
     _startLinkPolling() {
         this._updateAllTabStatuses();
-        this._pollTimer.start(() => this._updateAllTabStatuses(), 1000);
+        this._pollTimer.start(() => {
+            this._updateAllTabStatuses();
+            this._pollRefreshRoutes();
+        }, 1000);
+    }
+
+    _pollRefreshRoutes() {
+        if (!this._routesHost || this._routesHost.closest("[style*='display: none']")) return;
+        const fp = (this.net.routingTable ?? [])
+            .map(r => `${r.source}|${r.dst}|${r.prefixLength}|${r.nexthop}|${r.interf}`)
+            .join(";");
+        if (fp === this._lastRoutesFingerprint) return;
+        if (this._routesHost.querySelector(".router-route-dirty")) return;
+        this._lastRoutesFingerprint = fp;
+        this._renderRoutes();
     }
 
     _stopLinkPolling() {

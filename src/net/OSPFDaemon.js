@@ -356,6 +356,8 @@ export class OSPFDaemon {
 
         nb.ip       = src;
         nb.priority = hello.routerPriority;
+        const prevNbDr  = nb.dr;
+        const prevNbBdr = nb.bdr;
         nb.dr       = hello.dr;
         nb.bdr      = hello.bdr;
 
@@ -392,7 +394,7 @@ export class OSPFDaemon {
         }
 
         // DR/BDR field changed → re-elect
-        const drChanged = (nb.dr !== hello.dr || nb.bdr !== hello.bdr);
+        const drChanged = (prevNbDr !== hello.dr || prevNbBdr !== hello.bdr);
         if (drChanged && oif.state !== "Waiting") {
             this._electDRBDR(ifIndex);
         }
@@ -806,9 +808,9 @@ export class OSPFDaemon {
 
     /** @param {OspfNeighbor} nb @param {number} ifIndex */
     _onNeighborFull(nb, ifIndex) {
-        this._originateRouterLSA();
+        this._originateRouterLSA(true);
         const oif = this._ifaces.get(ifIndex);
-        if (oif?.state === "DR") this._originateNetworkLSA(ifIndex);
+        if (oif?.state === "DR") this._originateNetworkLSA(ifIndex, true);
         this._scheduleSPF();
     }
 
