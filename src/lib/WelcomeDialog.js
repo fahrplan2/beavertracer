@@ -4,6 +4,7 @@ import { MiniMarkdown } from "./MiniMarkdown.js";
 import { isTauri } from "../tauri.js";
 import { defaultSimulation } from "../defaultsim.js";
 import { version } from "./version.js";
+import { SimDialog } from "./SimDialog.js";
 
 export class WelcomeDialog {
     /**
@@ -21,7 +22,7 @@ export class WelcomeDialog {
             dlg.setAttribute("aria-modal", "true");
             dlg.setAttribute("aria-label", "Beaver Tracer");
 
-            dlg.appendChild(WelcomeDialog._buildHeader());
+            dlg.appendChild(WelcomeDialog._buildHeader(close));
             dlg.appendChild(WelcomeDialog._buildBody(sim, close));
             dlg.appendChild(WelcomeDialog._buildFooter(sim, close));
 
@@ -50,7 +51,10 @@ export class WelcomeDialog {
         });
     }
 
-    static _buildHeader() {
+    /**
+     * @param {(action?: () => void) => void} close
+     */
+    static _buildHeader(close) {
         const header = document.createElement("div");
         header.className = "welcome-header";
 
@@ -75,11 +79,23 @@ export class WelcomeDialog {
         ver.className = "welcome-version";
         ver.textContent = version(true);
 
+        const closeBtn = document.createElement("button");
+        closeBtn.type = "button";
+        closeBtn.className = "welcome-close-btn";
+        closeBtn.setAttribute("aria-label", t("sim.close") || "Close");
+        closeBtn.innerHTML = "&times;";
+        closeBtn.addEventListener("click", () => close());
+
+        const headerRight = document.createElement("div");
+        headerRight.className = "welcome-header-right";
+        headerRight.appendChild(closeBtn);
+        headerRight.appendChild(ver);
+
         titleBlock.appendChild(title);
         titleBlock.appendChild(subtitle);
         header.appendChild(logo);
         header.appendChild(titleBlock);
-        header.appendChild(ver);
+        header.appendChild(headerRight);
         return header;
     }
 
@@ -96,15 +112,24 @@ export class WelcomeDialog {
 
         actions.appendChild(WelcomeDialog._actionBtn(
             "fa-file", t("welcome.new"), t("welcome.new.desc"),
-            () => close(() => sim.new())
+            async () => {
+                if (!await SimDialog.confirm(t("sim.discardandnewwarning"))) return;
+                close(() => sim.new());
+            }
         ));
         actions.appendChild(WelcomeDialog._actionBtn(
             "fa-file-arrow-up", t("welcome.open"), t("welcome.open.desc"),
-            () => close(() => sim.open())
+            async () => {
+                if (!await SimDialog.confirm(t("sim.discardandloadwarning"))) return;
+                close(() => sim.open());
+            }
         ));
         actions.appendChild(WelcomeDialog._actionBtn(
             "fa-network-wired", t("welcome.example"), t("welcome.example.desc"),
-            () => close(() => sim.restore(defaultSimulation))
+            async () => {
+                if (!await SimDialog.confirm(t("sim.discardandnewwarning"))) return;
+                close(() => sim.restore(defaultSimulation));
+            }
         ));
 
         const news = document.createElement("div");
@@ -140,8 +165,9 @@ export class WelcomeDialog {
 
         const left = document.createElement("div");
         left.className = "welcome-footer-left";
+        const langLabel = t("sim.language");
         left.appendChild(WelcomeDialog._footerBtn(
-            "fa-language", t("sim.language"),
+            "fa-language", langLabel === "Language" ? langLabel : `${langLabel} / Language`,
             () => close(() => sim.openLanguageDialog())
         ));
 
