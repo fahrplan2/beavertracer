@@ -1,0 +1,42 @@
+/**
+ * Central locale registry.
+ * Used by translate-all-i18n-via-claude.mjs and translate-pages-via-claude.mjs.
+ *
+ * rtl: true for right-to-left languages (affects page wrapping in translate-pages).
+ */
+export const LOCALES = [
+  { code: "de",      name: "German" },
+  { code: "es",      name: "Spanish" },
+  { code: "fr",      name: "French" },
+  { code: "it",      name: "Italian" },
+  { code: "id",      name: "Indonesian" },
+  { code: "bg",      name: "Bulgarian" },
+  { code: "bs",      name: "Bosnian" },
+  { code: "cs",      name: "Czech" },
+  { code: "sk",      name: "Slovak" },
+  { code: "da",      name: "Danish" },
+  { code: "et",      name: "Estonian" },
+  { code: "fi",      name: "Finnish" },
+  { code: "lv",      name: "Latvian" },
+  { code: "lt",      name: "Lithuanian" },
+  { code: "hu",      name: "Hungarian" },
+  { code: "sl",      name: "Slovenian" },
+  { code: "el",      name: "Greek" },
+  { code: "hr",      name: "Croatian" },
+  { code: "pt-PT",   name: "European Portuguese (Portugal)" },
+  { code: "ro",      name: "Romanian" },
+  { code: "ru",      name: "Russian" },
+  { code: "sr-Cyrl", name: "Serbian (Cyrillic script)" },
+  { code: "sr-Latn", name: "Serbian (Latin script)" },
+  { code: "nl",      name: "Dutch" },
+  { code: "pl",      name: "Polish" },
+  { code: "tr",      name: "Turkish" },
+  { code: "vi",      name: "Vietnamese" },
+  { code: "sv",      name: "Swedish" },
+  { code: "ja",      name: "Japanese" },
+  { code: "ko",      name: "Korean" },
+  { code: "zh",      name: "Simplified Chinese" },
+  { code: "ar",      name: "Arabic",          rtl: true },
+  { code: "fa",      name: "Persian (Farsi)", rtl: true },
+  { code: "ua",      name: "Ukrainian" },
+];

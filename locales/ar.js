@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇸🇦 العربية (translated by AI)", order: 32 };
+export const meta = { name: "🇸🇦 العربية (translated by AI)", order: 34 };
 
 export default {
   "lang.name": "🇸🇦 العربية",
