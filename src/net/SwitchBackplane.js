@@ -25,6 +25,10 @@ export const STP_STATE = Object.freeze({
 const STP_DEST_MAC = new Uint8Array([0x01, 0x80, 0xc2, 0x00, 0x00, 0x00]);
 const STP_LLC = new Uint8Array([0x42, 0x42, 0x03]); // DSAP/SSAP/UI
 
+/** IEEE 802.1D flags byte bits */
+const STP_FLAG_TC  = 0x80; // Topology Change
+const STP_FLAG_TCA = 0x01; // Topology Change Acknowledgment
+
 /**
  * Compare STP tuples (lower is better):
  * (rootId, cost, senderBridgeId, senderPortId)
@@ -67,7 +71,6 @@ export class SwitchBackplane extends Observable {
     vlanEnabled = false;
     stpEnabled = false;
 
-    // -------------------- SAT --------------------
     /**
      * VLAN disabled:
      *   Map<bigint, number>
@@ -89,6 +92,9 @@ export class SwitchBackplane extends Observable {
     /** @type {bigint} */
     stpBridgeIdVal;
 
+    /** @type {number} Bridge priority (multiple of 4096, 0–61440, default 32768) */
+    _stpBridgePriority = 32768;
+
     // -------------------- STP state --------------------
     /** @type {bigint} root bridge id (as bigint of 8-byte bridge-id) */
     stpRootId;
@@ -101,8 +107,8 @@ export class SwitchBackplane extends Observable {
 
     /**
      * Best STP info received on each port (from neighbor).
-     * Tuple stores *bridge-id bigints* (consistent across all devices).
-     * @type {Array<{rootId: bigint, cost: number, bridgeId: bigint, portId: number} | null>}
+     * messageAge is stored so non-root bridges can increment it when forwarding.
+     * @type {Array<{rootId: bigint, cost: number, bridgeId: bigint, portId: number, messageAge: number} | null>}
      */
     stpRxBest = [];
 
@@ -112,6 +118,13 @@ export class SwitchBackplane extends Observable {
      * @type {Array<string>}
      */
     stpPortState = [];
+
+    /**
+     * IEEE 802.1D port role per port: 'root' | 'designated' | 'nondesignated'.
+     * Only designated ports send Config BPDUs.
+     * @type {Array<string>}
+     */
+    stpPortRole = [];
 
     /** Pending ForwardDelay timer ID per port (null = no timer). @type {Array<number|null>} */
     _stpPortTimers = [];
@@ -131,6 +144,25 @@ export class SwitchBackplane extends Observable {
     /** Force emitting HELLO BPDUs once, even if snapshot did not change */
     _stpForceEmit = false;
 
+    // -------------------- TC / TCN state --------------------
+    /** messageAge from the last BPDU received on the root port (0 when we are root) */
+    _stpRootPortMessageAge = 0;
+
+    /** TC bit active — set in all Config BPDUs for maxAge + forwardDelay after a topology change */
+    _stpTcActive = false;
+
+    /** @type {number|null} */
+    _stpTcTimer = null;
+
+    /** TCN BPDUs pending to be sent on the root port until TCA is received */
+    _stpTcnPending = false;
+
+    /** @type {number|null} */
+    _stpTcnTimer = null;
+
+    /** Per-port: include TCA bit in the next Config BPDU (after receiving a TCN). @type {Array<boolean>} */
+    _stpTcaOnPort = [];
+
     /**
      * Backward-compat getter: true when port is in FORWARDING state.
      * @returns {Array<boolean>}
@@ -148,25 +180,25 @@ export class SwitchBackplane extends Observable {
         this.bridgeId = _switchIdCounter++;
 
         // STP identity (priority + MAC)
-        this.stpBridgeIdBytes = this._makeBridgeId(32768);
+        this.stpBridgeIdBytes = this._makeBridgeId(this._stpBridgePriority);
         this.stpBridgeIdVal = this._bridgeIdBytesToBigInt(this.stpBridgeIdBytes);
 
-        // root starts as self (in the same ID space!)
+        // root starts as self
         this.stpRootId = this.stpBridgeIdVal;
 
-        // Create ports FIRST
+        // Create ports FIRST (addPort pushes to all arrays)
         for (let i = 0; i < numberOfPorts; i++) {
             this.addPort(new EthernetPort("" + i));
         }
 
-        // Default: STP disabled => all forwarding
-        this.stpPortState = this.ports.map(() => STP_STATE.FORWARDING);
+        // Default: STP disabled => all forwarding, all designated
+        this.stpPortState   = this.ports.map(() => STP_STATE.FORWARDING);
+        this.stpPortRole    = this.ports.map(() => "designated");
         this._stpPortTimers = this.ports.map(/** @returns {null} */ () => null);
         this._stpRxBestTick = this.ports.map(() => 0);
-        this.stpRxBest = this.ports.map(/** @returns {null} */ () => null);
+        this.stpRxBest      = this.ports.map(/** @returns {null} */ () => null);
+        this._stpTcaOnPort  = this.ports.map(() => false);
         this.stpPortLinkedLast = this.ports.map(p => p.isLinked());
-
-        // STP disabled by default — enable explicitly via the switch panel.
     }
 
     // ---------------------------------------------------------------------------
@@ -201,6 +233,8 @@ export class SwitchBackplane extends Observable {
     disableSTPFeature() {
         this.stpEnabled = false;
         this._stpStopHello();
+        this._stpStopTc();
+        this._stpStopTcn();
 
         // Cancel all per-port ForwardDelay timers
         for (let i = 0; i < this._stpPortTimers.length; i++) {
@@ -210,20 +244,23 @@ export class SwitchBackplane extends Observable {
             }
         }
 
-        this.stpRxBest = this.ports.map(/** @returns {null} */ () => null);
+        this.stpRxBest    = this.ports.map(/** @returns {null} */ () => null);
         this.stpPortState = this.ports.map(() => STP_STATE.FORWARDING);
+        this.stpPortRole  = this.ports.map(() => "designated");
+        this._stpTcaOnPort = this.ports.map(() => false);
 
         // root resets to self
-        this.stpRootId = this.stpBridgeIdVal;
+        this.stpRootId   = this.stpBridgeIdVal;
         this.stpRootCost = 0;
         this.stpRootPort = null;
+        this._stpRootPortMessageAge = 0;
 
         this._stpLastSnapshot = "";
         this._stpForceEmit = false;
     }
 
     /**
-     * Optional: deterministic override for experiments
+     * Optional: deterministic override for experiments.
      * Note: this changes the Ethernet source MAC derived from bridgeId,
      * so we also rebuild STP bridge identity.
      *
@@ -233,7 +270,31 @@ export class SwitchBackplane extends Observable {
         this.bridgeId = id;
 
         // rebuild STP identity to match new MAC
-        this.stpBridgeIdBytes = this._makeBridgeId(32768);
+        this.stpBridgeIdBytes = this._makeBridgeId(this._stpBridgePriority);
+        this.stpBridgeIdVal = this._bridgeIdBytesToBigInt(this.stpBridgeIdBytes);
+
+        if (this.stpEnabled) {
+            this._resetStpToSelfRoot();
+            this._stpForceEmit = true;
+            this._recomputeStpAndMaybeEmit();
+        } else {
+            this.stpRootId = this.stpBridgeIdVal;
+        }
+    }
+
+    /**
+     * Set STP bridge priority. Must be a multiple of 4096 (0–61440, default 32768).
+     * Lower value = higher priority = more likely to become root bridge.
+     *
+     * @param {number} priority
+     */
+    setBridgePriority(priority) {
+        const p = priority & 0xffff;
+        if (p % 4096 !== 0 || p > 61440) {
+            throw new Error("Bridge priority must be a multiple of 4096 (0–61440)");
+        }
+        this._stpBridgePriority = p;
+        this.stpBridgeIdBytes = this._makeBridgeId(p);
         this.stpBridgeIdVal = this._bridgeIdBytesToBigInt(this.stpBridgeIdBytes);
 
         if (this.stpEnabled) {
@@ -259,8 +320,10 @@ export class SwitchBackplane extends Observable {
         // keep STP arrays in sync
         this.stpRxBest.push(null);
         this.stpPortState.push(this.stpEnabled ? STP_STATE.BLOCKING : STP_STATE.FORWARDING);
+        this.stpPortRole.push(this.stpEnabled ? "nondesignated" : "designated");
         this._stpPortTimers.push(null);
         this._stpRxBestTick.push(0);
+        this._stpTcaOnPort.push(false);
         this.stpPortLinkedLast.push(port.isLinked());
     }
 
@@ -367,10 +430,10 @@ export class SwitchBackplane extends Observable {
 
     /**
      * Build an 8-byte STP Bridge ID: [priority(2 bytes), mac(6 bytes)].
-     * @param {number} priority
+     * @param {number} [priority]
      * @returns {Uint8Array}
      */
-    _makeBridgeId(priority = 32768) {
+    _makeBridgeId(priority = this._stpBridgePriority) {
         const mac = bigintToMac(this.bridgeId); // 6 bytes
         const out = new Uint8Array(8);
         const pr = priority & 0xffff;
@@ -381,18 +444,22 @@ export class SwitchBackplane extends Observable {
     }
 
     _initStpArrays() {
-        this.stpRxBest = this.ports.map(/** @returns {null} */ () => null);
-        this.stpPortState = this.ports.map(() => STP_STATE.BLOCKING);
+        this.stpRxBest      = this.ports.map(/** @returns {null} */ () => null);
+        this.stpPortState   = this.ports.map(() => STP_STATE.BLOCKING);
+        this.stpPortRole    = this.ports.map(() => "nondesignated");
         this._stpPortTimers = this.ports.map(/** @returns {null} */ () => null);
         this._stpRxBestTick = this.ports.map(() => 0);
+        this._stpTcaOnPort  = this.ports.map(() => false);
     }
 
     _resetStpToSelfRoot() {
-        this.stpRootId = this.stpBridgeIdVal;
+        this.stpRootId   = this.stpBridgeIdVal;
         this.stpRootCost = 0;
         this.stpRootPort = null;
-        this.stpRxBest = this.ports.map(/** @returns {null} */ () => null);
+        this._stpRootPortMessageAge = 0;
+        this.stpRxBest    = this.ports.map(/** @returns {null} */ () => null);
         this.stpPortState = this.ports.map(() => STP_STATE.BLOCKING);
+        this.stpPortRole  = this.ports.map(() => "nondesignated");
         // Cancel any pending port timers
         for (let i = 0; i < this._stpPortTimers.length; i++) {
             if (this._stpPortTimers[i] != null) {
@@ -400,6 +467,8 @@ export class SwitchBackplane extends Observable {
                 this._stpPortTimers[i] = null;
             }
         }
+        this._stpStopTc();
+        this._stpStopTcn();
     }
 
     /**
@@ -421,6 +490,18 @@ export class SwitchBackplane extends Observable {
         if (!isEqualUint8(frame.dstMac, STP_DEST_MAC)) return false;
         if (!(frame.payload instanceof Uint8Array) || frame.payload.length < 3) return false;
         return frame.payload[0] === 0x42 && frame.payload[1] === 0x42 && frame.payload[2] === 0x03;
+    }
+
+    /**
+     * Bridge Group Address range 01:80:c2:00:00:00–0f (IEEE 802.1D §7.12.6).
+     * These frames must be terminated at the bridge and never forwarded.
+     * @param {EthernetFrame} frame
+     * @returns {boolean}
+     */
+    _isBridgeGroupAddress(frame) {
+        const m = frame.dstMac;
+        return m[0] === 0x01 && m[1] === 0x80 && m[2] === 0xc2 &&
+               m[3] === 0x00 && m[4] === 0x00 && m[5] <= 0x0f;
     }
 
     /**
@@ -454,22 +535,23 @@ export class SwitchBackplane extends Observable {
      * @param {number} cost
      * @param {Uint8Array} bridgeId 8 bytes
      * @param {number} portId
+     * @param {number} [messageAge] in 1/256 s ticks (0 for root bridge)
+     * @param {number} [flags] TC/TCA bits
      * @returns {Uint8Array}
      */
-    _packConfigBpduPayload(rootId, cost, bridgeId, portId) {
+    _packConfigBpduPayload(rootId, cost, bridgeId, portId, messageAge = 0, flags = 0) {
         const bpdu = new STPBPDU({
             protocolId: 0x0000,
             protocolVersion: 0,
             bpduType: 0x00, // Configuration BPDU
-            flags: 0,
+            flags: flags & 0xff,
 
             rootId,
             rootPathCost: cost >>> 0,
             bridgeId,
             portId: portId & 0xffff,
 
-            // timers in 1/256s ticks (Wireshark likes sane defaults)
-            messageAge: 0,
+            messageAge: messageAge & 0xffff,
             maxAge: 20 * 256,
             helloTime: 2 * 256,
             forwardDelay: 15 * 256,
@@ -505,6 +587,7 @@ export class SwitchBackplane extends Observable {
      * Transition a port toward the desired forwarding target.
      * Blocking is immediate; Forwarding goes Blocking→Listening→Learning→Forwarding,
      * with one ForwardDelay timer per phase.
+     * TC is triggered when a port enters or leaves Forwarding/Learning state.
      * @param {number} portIdx
      * @param {boolean} shouldForward
      */
@@ -518,6 +601,10 @@ export class SwitchBackplane extends Observable {
                 this._stpPortTimers[portIdx] = null;
             }
             if (cur !== STP_STATE.BLOCKING) {
+                // A formerly active port going to Blocking = topology change
+                if (cur === STP_STATE.FORWARDING || cur === STP_STATE.LEARNING) {
+                    this._stpTriggerTc();
+                }
                 this.stpPortState[portIdx] = STP_STATE.BLOCKING;
             }
             return;
@@ -539,6 +626,8 @@ export class SwitchBackplane extends Observable {
                 this._stpPortTimers[portIdx] = null;
                 if (this.stpPortState[portIdx] !== STP_STATE.LEARNING) return;
                 this.stpPortState[portIdx] = STP_STATE.FORWARDING;
+                // Port entering Forwarding = topology change per IEEE 802.1D
+                this._stpTriggerTc();
             }, SimTimer.STP_FORWARD_DELAY_MS);
         }, SimTimer.STP_FORWARD_DELAY_MS);
     }
@@ -585,7 +674,7 @@ export class SwitchBackplane extends Observable {
     }
 
     /**
-     * Recompute root / root port / forwarding ports.
+     * Recompute root / root port / designated ports.
      * Port cost is fixed at 1 in this simplified model.
      * Emits BPDU only if state changed (or forced).
      */
@@ -614,9 +703,16 @@ export class SwitchBackplane extends Observable {
             }
         }
 
-        this.stpRootId = best.rootId;
+        this.stpRootId   = best.rootId;
         this.stpRootCost = bestPort == null ? 0 : best.cost;
         this.stpRootPort = bestPort;
+
+        // Update messageAge from root port info (non-root bridges add ~1 s per hop)
+        if (this.stpRootPort !== null && this.stpRxBest[this.stpRootPort]) {
+            this._stpRootPortMessageAge = this.stpRxBest[this.stpRootPort].messageAge;
+        } else {
+            this._stpRootPortMessageAge = 0;
+        }
 
         // designated-port election per segment:
         // our advertised tuple on that port vs neighbor's advertised tuple on that port
@@ -624,11 +720,14 @@ export class SwitchBackplane extends Observable {
 
         for (let i = 0; i < this.ports.length; i++) {
             if (!this.ports[i].isLinked()) {
-                this._setPortTargetState(i, true);
+                // Unlinked ports are non-designated and stay blocking
+                this.stpPortRole[i] = "nondesignated";
+                this._setPortTargetState(i, false);
                 continue;
             }
 
             if (this.stpRootPort === i) {
+                this.stpPortRole[i] = "root";
                 this._setPortTargetState(i, true);
                 continue;
             }
@@ -636,6 +735,7 @@ export class SwitchBackplane extends Observable {
             const rx = this.stpRxBest[i];
             if (!rx) {
                 // no neighbor info => assume designated
+                this.stpPortRole[i] = "designated";
                 this._setPortTargetState(i, true);
                 continue;
             }
@@ -644,7 +744,9 @@ export class SwitchBackplane extends Observable {
             const neighTuple = rx;
 
             // If our tuple is better, we are designated => forward, else block
-            this._setPortTargetState(i, compareTuple(ourTuple, neighTuple) < 0);
+            const isDesignated = compareTuple(ourTuple, neighTuple) < 0;
+            this.stpPortRole[i] = isDesignated ? "designated" : "nondesignated";
+            this._setPortTargetState(i, isDesignated);
         }
 
         const snap = this._stpSnapshot();
@@ -664,6 +766,10 @@ export class SwitchBackplane extends Observable {
         return ((0x80 << 8) | ((portIndex + 1) & 0xff)) & 0xffff;
     }
 
+    /**
+     * Send Config BPDUs out all designated ports (IEEE 802.1D: only designated ports
+     * originate Configuration BPDUs; root and non-designated ports do not).
+     */
     _emitBPDUs() {
         const srcMac = bigintToMac(this.bridgeId);
         const ourBridgeIdBytes = this.stpBridgeIdBytes;
@@ -673,15 +779,29 @@ export class SwitchBackplane extends Observable {
                 ? ourBridgeIdBytes
                 : this._bigIntTo8Bytes(this.stpRootId);
 
+        // Non-root bridges increment messageAge by ~1 s (256 ticks in 1/256 s encoding)
+        const messageAge = this.stpRootPort === null
+            ? 0
+            : Math.min(this._stpRootPortMessageAge + 256, 20 * 256 - 256);
+
         for (let i = 0; i < this.ports.length; i++) {
+            // Only designated ports send Config BPDUs (IEEE 802.1D §8.5.3)
+            if (this.stpPortRole[i] !== "designated") continue;
+
             const p = this.ports[i];
             if (!p.isLinked()) continue;
+
+            const flags = (this._stpTcActive     ? STP_FLAG_TC  : 0) |
+                          (this._stpTcaOnPort[i] ? STP_FLAG_TCA : 0);
+            this._stpTcaOnPort[i] = false; // clear after sending
 
             const payload = this._packConfigBpduPayload(
                 rootIdBytes,
                 this.stpRootCost >>> 0,
                 ourBridgeIdBytes,
-                this._makePortId(i)
+                this._makePortId(i),
+                messageAge,
+                flags,
             );
 
             const f = new EthernetFrame({
@@ -699,9 +819,99 @@ export class SwitchBackplane extends Observable {
         }
     }
 
+    // ---------------------------------------------------------------------------
+    // TC / TCN
+    // ---------------------------------------------------------------------------
+
+    /**
+     * Trigger a topology change.
+     * Activates the TC bit in Config BPDUs for maxAge + forwardDelay, flushes the
+     * MAC table, and — for non-root bridges — starts sending TCN BPDUs upstream.
+     */
+    _stpTriggerTc() {
+        if (!this.stpEnabled) return;
+
+        // Flush MAC table so stale entries don't cause black holes
+        this.sat.clear();
+
+        if (this._stpTcTimer != null) simTimer.cancel(this._stpTcTimer);
+        this._stpTcActive = true;
+        this._stpTcTimer = simTimer.schedule(() => {
+            this._stpTcActive = false;
+            this._stpTcTimer = null;
+        }, SimTimer.STP_MAX_AGE_MS + SimTimer.STP_FORWARD_DELAY_MS);
+
+        if (this.stpRootPort !== null) {
+            // Non-root bridge: send TCN BPDUs up the root port until TCA received
+            this._stpStartTcn();
+        }
+    }
+
+    _stpStopTc() {
+        this._stpTcActive = false;
+        if (this._stpTcTimer != null) {
+            simTimer.cancel(this._stpTcTimer);
+            this._stpTcTimer = null;
+        }
+    }
+
+    _stpStartTcn() {
+        if (this._stpTcnPending) return; // already running
+        this._stpTcnPending = true;
+        this._stpSendTcnNow();
+    }
+
+    _stpSendTcnNow() {
+        if (!this._stpTcnPending || this.stpRootPort === null || !this.stpEnabled) {
+            this._stpStopTcn();
+            return;
+        }
+
+        const port = this.ports[this.stpRootPort];
+        if (port && port.isLinked()) {
+            this._sendTcnBpdu(this.stpRootPort);
+        }
+
+        // Retry every Hello interval until TCA received
+        this._stpTcnTimer = simTimer.schedule(() => {
+            this._stpTcnTimer = null;
+            this._stpSendTcnNow();
+        }, SimTimer.STP_HELLO_MS);
+    }
+
+    _stpStopTcn() {
+        this._stpTcnPending = false;
+        if (this._stpTcnTimer != null) {
+            simTimer.cancel(this._stpTcnTimer);
+            this._stpTcnTimer = null;
+        }
+    }
+
+    /**
+     * Send a single TCN BPDU (type 0x80) out the specified port.
+     * @param {number} portIdx
+     */
+    _sendTcnBpdu(portIdx) {
+        const srcMac = bigintToMac(this.bridgeId);
+        const bpduBytes = new STPBPDU({ bpduType: 0x80 }).pack();
+        const payload = new Uint8Array(STP_LLC.length + bpduBytes.length);
+        payload.set(STP_LLC, 0);
+        payload.set(bpduBytes, STP_LLC.length);
+
+        const f = new EthernetFrame({ dstMac: STP_DEST_MAC, srcMac, etherType: 0, payload });
+        f.vlan = null;
+        f.useLengthField = true;
+        f.length = payload.length;
+        this.ports[portIdx].send(f);
+    }
+
+    // ---------------------------------------------------------------------------
+    // Link-change detection
+    // ---------------------------------------------------------------------------
+
     /**
      * Clear neighbor info for ports that changed link state and trigger recompute.
-     * Timer-free topology change handling.
+     * TC is fired naturally via _setPortTargetState when ports change state.
      */
     _stpHandleLinkChanges() {
         let changed = false;
@@ -748,13 +958,41 @@ export class SwitchBackplane extends Observable {
                 if (this.stpEnabled && this._isBpdu(frame)) {
                     const bpdu = this._unpackBpdu(frame.payload);
 
-                    // Handle only config BPDUs in this simplified sim
+                    // TCN BPDU: received on a designated port, relay toward root
+                    if (bpdu && bpdu.bpduType === 0x80) {
+                        if (this.stpPortRole[i] === "designated") {
+                            // Acknowledge with TCA in next Config BPDU on this port
+                            this._stpTcaOnPort[i] = true;
+                            if (this.stpRootPort === null) {
+                                // We are root — activate TC period
+                                this._stpTriggerTc();
+                            } else {
+                                // Relay TCN upstream
+                                this._stpStartTcn();
+                                this.sat.clear();
+                            }
+                        }
+                        continue;
+                    }
+
+                    // Config BPDU
                     if (bpdu && bpdu.bpduType === 0x00) {
+                        // TC bit: flush MAC table to avoid stale forwarding during reconvergence
+                        if (bpdu.flags & STP_FLAG_TC) {
+                            this.sat.clear();
+                        }
+
+                        // TCA bit on root port: the designated bridge ack'd our TCN
+                        if (i === this.stpRootPort && (bpdu.flags & STP_FLAG_TCA)) {
+                            this._stpStopTcn();
+                        }
+
                         const rx = {
-                            rootId: this._bridgeIdBytesToBigInt(bpdu.rootId),
-                            cost: bpdu.rootPathCost >>> 0,
-                            bridgeId: this._bridgeIdBytesToBigInt(bpdu.bridgeId),
-                            portId: bpdu.portId & 0xffff,
+                            rootId:     this._bridgeIdBytesToBigInt(bpdu.rootId),
+                            cost:       bpdu.rootPathCost >>> 0,
+                            bridgeId:   this._bridgeIdBytesToBigInt(bpdu.bridgeId),
+                            portId:     bpdu.portId & 0xffff,
+                            messageAge: bpdu.messageAge,
                         };
 
                         const prev = this.stpRxBest[i];
@@ -784,11 +1022,16 @@ export class SwitchBackplane extends Observable {
                 // LEARNING ports may update the CAM but must not send frames out.
                 const stpLearningOnly = this.stpEnabled && this.stpPortState[i] === STP_STATE.LEARNING;
 
+                // Bridge Group Address (01:80:c2:00:00:00–0f): terminate at bridge, never forward
+                if (this._isBridgeGroupAddress(frame)) continue;
+
                 // VLAN DISABLED
                 if (!this.vlanEnabled) {
-                    // Learn source MAC globally
-                    const srcKey = MACToNumber(frame.srcMac);
-                    this.sat.set(srcKey, i);
+                    // Learn source MAC globally (IEEE 802.1D §7.8: never learn multicast source MACs)
+                    if (!(frame.srcMac[0] & 0x01)) {
+                        const srcKey = MACToNumber(frame.srcMac);
+                        this.sat.set(srcKey, i);
+                    }
 
                     if (stpLearningOnly) continue;
 
@@ -826,14 +1069,16 @@ export class SwitchBackplane extends Observable {
                 const vid = this.getIngressVid(inPort, frame);
                 if (vid == null) continue; // dropped by VLAN ingress rules
 
-                // Learn source MAC per VLAN
-                const srcKey = MACToNumber(frame.srcMac);
-                let vlanMap = this.sat.get(vid);
-                if (!vlanMap) {
-                    vlanMap = new Map();
-                    this.sat.set(vid, vlanMap);
+                // Learn source MAC per VLAN (IEEE 802.1D §7.8: never learn multicast source MACs)
+                if (!(frame.srcMac[0] & 0x01)) {
+                    const srcKey = MACToNumber(frame.srcMac);
+                    let vlanMap = this.sat.get(vid);
+                    if (!vlanMap) {
+                        vlanMap = new Map();
+                        this.sat.set(vid, vlanMap);
+                    }
+                    vlanMap.set(srcKey, i);
                 }
-                vlanMap.set(srcKey, i);
 
                 if (stpLearningOnly) continue;
 

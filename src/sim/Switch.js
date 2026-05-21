@@ -83,6 +83,7 @@ export class Switch extends SimulatedObject {
             // feature flags
             vlanEnabled: !!this.backplane.vlanEnabled,
             stpEnabled: !!this.backplane.stpEnabled,
+            stpBridgePriority: this.backplane._stpBridgePriority,
 
             // per-port vlan config
             vlanPorts: ports.map(p => ({
@@ -128,6 +129,11 @@ export class Switch extends SimulatedObject {
                     p.setTagged(allowed, pvid);
                 }
             }
+        }
+
+        // --- STP priority before enabling STP ---
+        if (typeof n.stpBridgePriority === "number") {
+            obj.backplane.setBridgePriority(n.stpBridgePriority);
         }
 
         // --- STP flag last (enables HELLO emission / state recompute) ---
@@ -234,10 +240,28 @@ export class Switch extends SimulatedObject {
     /** @param {HTMLElement} host */
     _buildStpTab(host) {
         host.appendChild(DOMBuilder.h4(t("switch.stp.settings")));
+
+        // Enable/disable checkbox
         const cb = /** @type {HTMLInputElement} */ (DOMBuilder.input({ type: "checkbox" }));
         cb.checked = !!this.backplane.stpEnabled;
         this._stpEnabledCheckbox = cb;
         host.appendChild(DOMBuilder.div("router-name-row", [cb, DOMBuilder.label(t("switch.stp.enable"))]));
+
+        // Bridge priority selector (multiple of 4096, 0–61440)
+        const priorityLabel = DOMBuilder.label(t("switch.stp.priority") ?? "Bridge Priority:");
+        const prioritySelect = document.createElement("select");
+        for (let p = 0; p <= 61440; p += 4096) {
+            const opt = document.createElement("option");
+            opt.value = String(p);
+            opt.textContent = p === 32768 ? `${p} (default)` : String(p);
+            if (p === (this.backplane._stpBridgePriority ?? 32768)) opt.selected = true;
+            prioritySelect.appendChild(opt);
+        }
+        prioritySelect.addEventListener("change", () => {
+            this.backplane.setBridgePriority(Number(prioritySelect.value));
+            this._renderSTPSection();
+        });
+        host.appendChild(DOMBuilder.div("router-name-row", [priorityLabel, prioritySelect]));
 
         const section = DOMBuilder.div("switch-stp-section");
         this._stpSection = section;
@@ -471,7 +495,8 @@ export class Switch extends SimulatedObject {
         // Minimal status
         const ownId = DOMBuilder.div("");
         const isRoot = this.backplane.stpRootId === this.backplane.stpBridgeIdVal;
-        ownId.textContent = `Bridge ID: 0x${this.backplane.stpBridgeIdVal.toString(16)}${isRoot ? " (Root)" : ""}`;
+        const prio = this.backplane._stpBridgePriority ?? 32768;
+        ownId.textContent = `Bridge ID: 0x${this.backplane.stpBridgeIdVal.toString(16)} (Priority ${prio})${isRoot ? " — Root" : ""}`;
 
         const root = DOMBuilder.div("");
         root.textContent = `Root ID: 0x${this.backplane.stpRootId.toString(16)}`;
@@ -504,11 +529,7 @@ export class Switch extends SimulatedObject {
             const tr = document.createElement("tr");
             const linked = ports[i].isLinked();
             const state = this.backplane.stpPortState?.[i] ?? (this.backplane.stpForwarding[i] ? "forwarding" : "blocking");
-
-            const role = !linked ? "—"
-                : this.backplane.stpRootPort === i ? "root"
-                : state === "blocking" ? "blocked"
-                : "designated";
+            const role = !linked ? "—" : (this.backplane.stpPortRole?.[i] ?? "—");
 
             const statusClass = { forwarding: "status-up", blocking: "status-down",
                 listening: "status-warning", learning: "status-warning" }[state] ?? "status-unknown";

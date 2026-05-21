@@ -27,6 +27,10 @@ const ROOT = path.resolve(import.meta.dirname, "..");
 const RTL_LOCALES = new Set(["ar", "he", "fa", "ur"]);
 
 const LOCALES = [
+  { code: "de", name: "German" },
+  { code: "es", name: "Spanish" },
+  { code: "fr", name: "French" },
+  { code: "it", name: "Italian" },
   { code: "id", name: "Indonesian" },
   { code: "bg", name: "Bulgarian" },
   { code: "bs", name: "Bosnian" },
@@ -36,7 +40,6 @@ const LOCALES = [
   { code: "fi", name: "Finnish" },
   { code: "lv", name: "Latvian" },
   { code: "lt", name: "Lithuanian" },
-  { code: "sk", name: "Slovak" },
   { code: "sl", name: "Slovenian" },
   { code: "el", name: "Greek" },
   { code: "hr", name: "Croatian" },
@@ -44,16 +47,18 @@ const LOCALES = [
   { code: "pt-PT", name: "European Portuguese (Portugal)" },
   { code: "ro", name: "Romanian" },
   { code: "ru", name: "Russian" },
-  { code: "vi", name: "Vietnamese" },
-  { code: "sv", name: "Swedish" },
-  { code: "ko", name: "Korean" },
+  { code: "sr-Cyrl", name: "Serbian (Cyrillic script)" },
+  { code: "sr-Latn", name: "Serbian (Latin script)" },
   { code: "nl", name: "Dutch" },
   { code: "pl", name: "Polish" },
   { code: "tr", name: "Turkish" },
+  { code: "vi", name: "Vietnamese" },
+  { code: "sv", name: "Swedish" },
   { code: "ja", name: "Japanese" },
+  { code: "ko", name: "Korean" },
   { code: "zh", name: "Simplified Chinese" },
-  { code: "ua", name: "Ukrainian" },
   { code: "ar", name: "Arabic" },
+  { code: "ua", name: "Ukrainian" },
 ];
 
 // For "about", only translate the part before this marker — Credits/License stay English.

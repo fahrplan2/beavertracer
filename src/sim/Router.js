@@ -4,10 +4,11 @@ import { VirtualFileSystem } from "../apps/lib/VirtualFileSystem.js";
 import { IPStack } from "../net/IPStack.js";
 import { VLANSubInterface } from "../net/NetworkInterface.js";
 import { RIPDaemon } from "../net/RIPDaemon.js";
-import { RIPngDaemon } from "../net/RIPngDaemon.js";
 import { BGPDaemon } from "../net/BGPDaemon.js";
+import { OSPFDaemon } from "../net/OSPFDaemon.js";
 import { SimulatedObject } from "./SimulatedObject.js";
 import { PollTimer } from "../lib/PollTimer.js";
+import { simTimer, SimTimer } from "../lib/SimTimer.js";
 import { netmaskStrToPrefix, prefixToNetmaskStr, normalizeMaskInput } from "../lib/helpers.js";
 
 import { DOMBuilder } from "../lib/DomBuilder.js";
@@ -41,6 +42,13 @@ function assertPrefix(p) {
     return x | 0;
 }
 
+
+/** @param {"connected"|"static"|"ospf"|"rip"|"bgp"|string} source */
+function routeSourceLabel(source) {
+    if (source === "connected") return t("router.routingtable.source.connected");
+    if (source === "static") return t("router.routingtable.source.static");
+    return source.toUpperCase();
+}
 
 /** deterministic via EthernetPort.linkref @param {*} iface */
 function getInterfaceLinkStatus(iface) {
@@ -89,14 +97,13 @@ export class Router extends SimulatedObject {
 
   /** @type {HTMLDivElement|null} */ _routesHost = null;
   /** @type {number} */ _selectedRouteFamily = 4;
+  /** @type {string} */ _lastRoutesFingerprint = "";
 
   /** @type {RIPDaemon} */
   rip;
-  /** @type {HTMLTextAreaElement|null} */ _ripLogEl = null;
-
-  /** @type {RIPngDaemon} */
+  /** @type {RIPDaemon} */
   ripng;
-  /** @type {HTMLTextAreaElement|null} */ _ripngLogEl = null;
+  /** @type {HTMLTextAreaElement|null} */ _ripCombinedLogEl = null;
 
   /** @type {BGPDaemon} */
   bgp;
@@ -104,14 +111,20 @@ export class Router extends SimulatedObject {
   /** @type {HTMLElement|null} */ _bgpRoutesHost = null;
   /** @type {HTMLTextAreaElement|null} */ _bgpLogEl = null;
 
+  /** @type {OSPFDaemon} */
+  ospf;
+  /** @type {HTMLTextAreaElement|null} */ _ospfLogEl = null;
+  _ospfPollTimer = new PollTimer();
+
     constructor(name = t("router.title")) {
         super((name = t("router.title")));
         this.net = new IPStack(2, name);
         this.net.forwarding = true;
         this.fs = new VirtualFileSystem();
-        this.rip   = new RIPDaemon(this.net);
-        this.ripng = new RIPngDaemon(this.net);
+        this.rip   = new RIPDaemon(this.net, 4);
+        this.ripng = new RIPDaemon(this.net, 6);
         this.bgp   = new BGPDaemon(this.net);
+        this.ospf  = new OSPFDaemon(this.net);
 
         /** @param {HTMLElement} body */
         this.onPanelCreated = (body) => {
@@ -124,10 +137,11 @@ export class Router extends SimulatedObject {
         return {
             ...super.toJSON(),
             kind: "Router",
-            net: this.net.toJSON(),
+            net:   this.net.toJSON(),
             rip:   this.rip.toJSON(),
             ripng: this.ripng.toJSON(),
             bgp:   this.bgp.toJSON(),
+            ospf:  this.ospf.toJSON(),
         };
     }
 
@@ -136,12 +150,14 @@ export class Router extends SimulatedObject {
         const obj = new Router(n.name ?? "Router");
         obj._applyBaseJSON(n);
         if (n.net) obj.net = IPStack.fromJSON(n.net);
-        obj.rip   = new RIPDaemon(obj.net);
+        obj.rip   = new RIPDaemon(obj.net, 4);
         if (n.rip)   obj.rip.applyJSON(n.rip);
-        obj.ripng = new RIPngDaemon(obj.net);
+        obj.ripng = new RIPDaemon(obj.net, 6);
         if (n.ripng) obj.ripng.applyJSON(n.ripng);
-        obj.bgp = new BGPDaemon(obj.net);
-        if (n.bgp) obj.bgp.applyJSON(n.bgp);
+        obj.bgp   = new BGPDaemon(obj.net);
+        if (n.bgp)   obj.bgp.applyJSON(n.bgp);
+        obj.ospf  = new OSPFDaemon(obj.net);
+        if (n.ospf)  obj.ospf.applyJSON(n.ospf);
         return obj;
     }
 
@@ -171,16 +187,16 @@ export class Router extends SimulatedObject {
             { id: "interfaces", label: t("router.interfaces")        },
             { id: "routes-v4",  label: t("router.routingtable.ipv4") },
             { id: "routes-v6",  label: t("router.routingtable.ipv6") },
-            { id: "rip",        label: t("router.rip.tab")            },
-            { id: "ripng",      label: t("router.ripng.tab")          },
+            { id: "rip",        label: "RIP"                           },
+            { id: "ospf",       label: t("router.ospf.tab")           },
             { id: "bgp",        label: t("router.bgp.tab")            },
             { id: "vpn",        label: t("router.vpn.tab")            },
         ], (id) => {
             ifSection.style.display    = id === "interfaces" ? "" : "none";
             routeSection.style.display = (id === "routes-v4" || id === "routes-v6") ? "" : "none";
             ripSection.style.display   = id === "rip"   ? "" : "none";
-            ripngSection.style.display = id === "ripng" ? "" : "none";
             bgpSection.style.display   = id === "bgp"   ? "" : "none";
+            ospfSection.style.display  = id === "ospf"  ? "" : "none";
             vpnSection.style.display   = id === "vpn"   ? "" : "none";
             if (id === "routes-v4") { routeTitle.textContent = t("router.routingtable.ipv4"); this._selectedRouteFamily = 4; this._renderRoutes(); }
             if (id === "routes-v6") { routeTitle.textContent = t("router.routingtable.ipv6"); this._selectedRouteFamily = 6; this._renderRoutes(); }
@@ -272,30 +288,30 @@ export class Router extends SimulatedObject {
         this._routesHost = routesHost;
         routeSection.appendChild(routesHost);
 
-        /* ================================ RIP ================================= */
+        /* ============================== RIP / RIPng ============================ */
         const ripSection = DOMBuilder.div("");
         this._buildRIPSection(ripSection);
-
-        /* ================================ RIPng ================================ */
-        const ripngSection = DOMBuilder.div("");
-        this._buildRIPngSection(ripngSection);
 
         /* ================================ BGP ================================= */
         const bgpSection = DOMBuilder.div("");
         this._buildBGPSection(bgpSection);
 
+        /* ================================ OSPF ================================ */
+        const ospfSection = DOMBuilder.div("");
+        this._buildOSPFSection(ospfSection);
+
         /* ================================ VPN ================================= */
         const vpnSection = DOMBuilder.div("");
         this._buildVPNSection(vpnSection);
 
-        outerContent.append(ifSection, routeSection, ripSection, ripngSection, bgpSection, vpnSection);
+        outerContent.append(ifSection, routeSection, ripSection, bgpSection, ospfSection, vpnSection);
 
         /* ============================ Tab switching ============================ */
-        ifSection.style.display = "";
+        ifSection.style.display    = "";
         routeSection.style.display = "none";
         ripSection.style.display   = "none";
-        ripngSection.style.display = "none";
         bgpSection.style.display   = "none";
+        ospfSection.style.display  = "none";
         vpnSection.style.display   = "none";
         setOuterActive("interfaces");
 
@@ -473,7 +489,21 @@ export class Router extends SimulatedObject {
 
     _startLinkPolling() {
         this._updateAllTabStatuses();
-        this._pollTimer.start(() => this._updateAllTabStatuses(), 1000);
+        this._pollTimer.start(() => {
+            this._updateAllTabStatuses();
+            this._pollRefreshRoutes();
+        }, 1000);
+    }
+
+    _pollRefreshRoutes() {
+        if (!this._routesHost || this._routesHost.closest("[style*='display: none']")) return;
+        const fp = (this.net.routingTable ?? [])
+            .map(r => `${r.source}|${r.dst}|${r.prefixLength}|${r.nexthop}|${r.interf}`)
+            .join(";");
+        if (fp === this._lastRoutesFingerprint) return;
+        if (this._routesHost.querySelector(".router-route-dirty")) return;
+        this._lastRoutesFingerprint = fp;
+        this._renderRoutes();
     }
 
     _stopLinkPolling() {
@@ -680,12 +710,31 @@ export class Router extends SimulatedObject {
 
             if (this._panelBody) this.mount(this._panelBody);
             else this._renderRoutes();
+
+            this.ospf?.onInterfaceChange();
         } catch (e) {
             SimDialog.alert(String(e?.message ?? e));
         }
     }
 
     /* ----------------------------- routes UI ---------------------------- */
+
+    /** @param {HTMLElement} scrollWrap */
+    _attachScrollHint(scrollWrap) {
+        const hint = document.createElement("div");
+        hint.className = "router-scroll-hint";
+        hint.setAttribute("aria-hidden", "true");
+        hint.textContent = "▼";
+        scrollWrap.appendChild(hint);
+
+        const update = () => {
+            const canScroll = scrollWrap.scrollHeight > scrollWrap.clientHeight + 2;
+            const atBottom = scrollWrap.scrollTop + scrollWrap.clientHeight >= scrollWrap.scrollHeight - 4;
+            hint.style.display = (canScroll && !atBottom) ? "block" : "none";
+        };
+        scrollWrap.addEventListener("scroll", update, { passive: true });
+        requestAnimationFrame(update);
+    }
 
     _renderRoutes() {
         if (this._selectedRouteFamily === 6) {
@@ -709,7 +758,7 @@ export class Router extends SimulatedObject {
             "<th>" + t("router.routingtable.netmask") + "</th>" +
             "<th>" + t("router.routingtable.nexthop") + "</th>" +
             "<th>" + t("router.routingtable.interface") + "</th>" +
-            "<th>" + t("router.routingtable.auto") + "</th>" +
+            "<th>" + t("router.routingtable.source") + "</th>" +
             "<th>" + t("router.routingtable.actions") + "</th>" +
             "</tr>";
         table.appendChild(thead);
@@ -720,27 +769,30 @@ export class Router extends SimulatedObject {
         routes.forEach((r, idx) => {
             if (r.dst?.isV6?.()) return; // skip IPv6 routes in IPv4 tab
 
+            const source = r.source ?? "static";
+            const editable = source === "static";
+
             const tr = document.createElement("tr");
             tr.className = "router-route-row";
-            tr.dataset.auto = String(!!r.auto);
-            tr.classList.add(r.auto ? "router-route-auto" : "router-route-manual");
-
-            const auto = !!r.auto;
+            tr.dataset.source = source;
+            if (source === "connected") tr.classList.add("router-route-auto");
+            else if (!editable) tr.classList.add("router-route-dynamic");
+            else tr.classList.add("router-route-manual");
 
             const dst = document.createElement("input");
             dst.value = ipToStr(r.dst);
-            dst.disabled = auto;
+            dst.disabled = !editable;
 
             const mask = document.createElement("input");
             mask.value = prefixToNetmaskStr(Number(r.prefixLength ?? 0));
-            mask.disabled = auto;
+            mask.disabled = !editable;
 
             const nh = document.createElement("input");
             nh.value = ipToStr(r.nexthop);
-            nh.disabled = auto;
+            nh.disabled = !editable;
 
             const autoTd = document.createElement("td");
-            autoTd.textContent = auto ? t("router.routingtable.yes") : t("router.routingtable.no");
+            autoTd.textContent = routeSourceLabel(source);
 
             const save = document.createElement("button");
             save.textContent = t("router.routingtable.save");
@@ -748,7 +800,7 @@ export class Router extends SimulatedObject {
 
             const del = document.createElement("button");
             del.textContent = t("router.routingtable.delete");
-            del.disabled = auto;
+            del.disabled = !editable;
 
             // interface cell
             let ifCellEl;
@@ -768,7 +820,7 @@ export class Router extends SimulatedObject {
                 ifCellEl = span;
             } else {
                 ifSel = document.createElement("select");
-                ifSel.disabled = auto;
+                ifSel.disabled = !editable;
 
                 for (const iface of this.net.interfaces) {
                     const o = document.createElement("option");
@@ -794,7 +846,7 @@ export class Router extends SimulatedObject {
             const setDirty = (on) => tr.classList.toggle("router-route-dirty", !!on);
 
             const computeCanSave = () => {
-                if (auto) return false;
+                if (!editable) return false;
                 if (r.interf !== -1 && ifSel && !ifSel.value) return false;
 
                 let okDst = false, okMask = false, okNh = false;
@@ -870,7 +922,7 @@ export class Router extends SimulatedObject {
                 if (save.disabled) return;
 
                 const old = this.net.routingTable[idx];
-                if (old.auto) return;
+                if ((old.source ?? "static") !== "static") return;
 
                 try {
                     const newDst = ipFromStr(dst.value);
@@ -899,7 +951,7 @@ export class Router extends SimulatedObject {
 
             del.addEventListener("click", () => {
                 const old = this.net.routingTable[idx];
-                if (old.auto) return;
+                if ((old.source ?? "static") !== "static") return;
 
                 if (old.tunnel) {
                     this.net.delTunnelRoute(old.dst, old.prefixLength, old.tunnel.name);
@@ -933,7 +985,10 @@ export class Router extends SimulatedObject {
         });
 
         table.appendChild(tbody);
-        this._routesHost.appendChild(table);
+        const scrollWrap = DOMBuilder.div("router-routes-scroll");
+        scrollWrap.appendChild(table);
+        this._routesHost.appendChild(scrollWrap);
+        this._attachScrollHint(scrollWrap);
 
         // ---- Footer: "+ Route hinzufügen" button ----
         const hasIfaces = this.net.interfaces.length > 0;
@@ -966,7 +1021,7 @@ export class Router extends SimulatedObject {
             addIf.disabled = !hasIfaces;
 
             const addAuto = document.createElement("td");
-            addAuto.textContent = t("router.routingtable.no");
+            addAuto.textContent = t("router.routingtable.source.static");
 
             const saveBtn = document.createElement("button");
             saveBtn.textContent = t("router.routingtable.save");
@@ -1045,7 +1100,7 @@ export class Router extends SimulatedObject {
             "<th>" + t("router.routingtable.prefix") + "</th>" +
             "<th>" + t("router.routingtable.nexthop") + "</th>" +
             "<th>" + t("router.routingtable.interface") + "</th>" +
-            "<th>" + t("router.routingtable.auto") + "</th>" +
+            "<th>" + t("router.routingtable.source") + "</th>" +
             "<th>" + t("router.routingtable.actions") + "</th>" +
             "</tr>";
         table.appendChild(thead);
@@ -1056,23 +1111,24 @@ export class Router extends SimulatedObject {
         routes.forEach((r, idx) => {
             if (!r.dst?.isV6?.()) return; // only IPv6
 
-            const auto = !!r.auto;
+            const source = r.source ?? "static";
+            const editable = source === "static";
 
             const dst = document.createElement("input");
             dst.value = ipToStr(r.dst);
-            dst.disabled = auto;
+            dst.disabled = !editable;
 
             const prefix = document.createElement("input");
             prefix.value = String(r.prefixLength ?? 0);
-            prefix.disabled = auto;
+            prefix.disabled = !editable;
             prefix.style.width = "4em";
 
             const nh = document.createElement("input");
             nh.value = ipToStr(r.nexthop);
-            nh.disabled = auto;
+            nh.disabled = !editable;
 
             const autoTd = document.createElement("td");
-            autoTd.textContent = auto ? t("router.routingtable.yes") : t("router.routingtable.no");
+            autoTd.textContent = routeSourceLabel(source);
 
             const save = document.createElement("button");
             save.textContent = t("router.routingtable.save");
@@ -1080,7 +1136,7 @@ export class Router extends SimulatedObject {
 
             const del = document.createElement("button");
             del.textContent = t("router.routingtable.delete");
-            del.disabled = auto;
+            del.disabled = !editable;
 
             let ifCellEl;
             /** @type {HTMLSelectElement|null} */
@@ -1093,7 +1149,7 @@ export class Router extends SimulatedObject {
                 ifCellEl = span;
             } else {
                 ifSel = document.createElement("select");
-                ifSel.disabled = auto;
+                ifSel.disabled = !editable;
                 for (const iface of this.net.interfaces) {
                     const o = document.createElement("option");
                     o.value = iface.name;
@@ -1113,7 +1169,7 @@ export class Router extends SimulatedObject {
             }
 
             const computeCanSave = () => {
-                if (auto) return false;
+                if (!editable) return false;
                 let okDst = false, okPfx = false, okNh = false;
                 try { const ip = ipFromStr(dst.value); okDst = ip.isV6(); } catch { okDst = false; }
                 try { const n = Number(prefix.value); okPfx = Number.isInteger(n) && n >= 0 && n <= 128; } catch { okPfx = false; }
@@ -1134,7 +1190,7 @@ export class Router extends SimulatedObject {
             save.addEventListener("click", () => {
                 if (save.disabled) return;
                 const old = this.net.routingTable[idx];
-                if (old.auto) return;
+                if ((old.source ?? "static") !== "static") return;
                 try {
                     const newDst = ipFromStr(dst.value);
                     if (!newDst.isV6()) throw new Error("IPv6-Adresse erwartet.");
@@ -1157,7 +1213,7 @@ export class Router extends SimulatedObject {
 
             del.addEventListener("click", () => {
                 const old = this.net.routingTable[idx];
-                if (old.auto) return;
+                if ((old.source ?? "static") !== "static") return;
                 this.net.delRoute(old.dst, old.prefixLength, old.interf, old.nexthop);
                 this._renderRoutes();
             });
@@ -1165,7 +1221,10 @@ export class Router extends SimulatedObject {
             /** @param {HTMLElement} el */
             const td = (el) => { const tdd = document.createElement("td"); tdd.appendChild(el); return tdd; };
             const tr = document.createElement("tr");
-            tr.className = "router-route-row " + (auto ? "router-route-auto" : "router-route-manual");
+            let sourceClass = "router-route-manual";
+            if (source === "connected") sourceClass = "router-route-auto";
+            else if (!editable) sourceClass = "router-route-dynamic";
+            tr.className = "router-route-row " + sourceClass;
             tr.appendChild(td(dst));
             tr.appendChild(td(prefix));
             tr.appendChild(td(nh));
@@ -1181,7 +1240,10 @@ export class Router extends SimulatedObject {
         });
 
         table.appendChild(tbody);
-        this._routesHost.appendChild(table);
+        const scrollWrapV6 = DOMBuilder.div("router-routes-scroll");
+        scrollWrapV6.appendChild(table);
+        this._routesHost.appendChild(scrollWrapV6);
+        this._attachScrollHint(scrollWrapV6);
 
         // ---- Footer: "+ Route hinzufügen" button (IPv6) ----
         const hasIfaces = this.net.interfaces.length > 0;
@@ -1215,7 +1277,7 @@ export class Router extends SimulatedObject {
             addIf.disabled = !hasIfaces;
 
             const addAuto = document.createElement("td");
-            addAuto.textContent = t("router.routingtable.no");
+            addAuto.textContent = t("router.routingtable.source.static");
 
             const saveBtn = document.createElement("button");
             saveBtn.textContent = t("router.routingtable.save");
@@ -1277,50 +1339,67 @@ export class Router extends SimulatedObject {
     }
 
     /** @param {HTMLElement} host */
+    /** @param {HTMLElement} host */
     _buildRIPSection(host) {
-        host.appendChild(DOMBuilder.h4(t("router.rip.tab")));
+        // ── enable row: RIP and RIPng side by side ─────────────────────────
+        const ripCb = DOMBuilder.input({ type: "checkbox" });
+        ripCb.checked = this.rip.enabled;
+        ripCb.addEventListener("change", () => { this.rip.setEnabled(ripCb.checked); this._renderRIPCombinedLog(); });
 
-        // ── global enable ──────────────────────────────────────────────────
-        const enableCb = DOMBuilder.input({ type: "checkbox" });
-        enableCb.checked = this.rip.enabled;
-        enableCb.addEventListener("change", () => {
-            this.rip.setEnabled(enableCb.checked);
-            this._renderRIPLog();
-        });
+        const ripngCb = DOMBuilder.input({ type: "checkbox" });
+        ripngCb.checked = this.ripng.enabled;
+        ripngCb.addEventListener("change", () => { this.ripng.setEnabled(ripngCb.checked); this._renderRIPCombinedLog(); });
+
+        const ripWrap = DOMBuilder.div("router-name-row"); ripWrap.style.gap = "6px";
+        ripWrap.append(ripCb, DOMBuilder.label(t("router.rip.enabled")));
+
+        const ripngWrap = DOMBuilder.div("router-name-row"); ripngWrap.style.gap = "6px";
+        ripngWrap.append(ripngCb, DOMBuilder.label(t("router.ripng.enabled")));
+
         const enableRow = DOMBuilder.div("router-name-row");
-        enableRow.style.gap = "6px";
-        enableRow.appendChild(enableCb);
-        enableRow.appendChild(DOMBuilder.label(t("router.rip.enabled")));
+        enableRow.style.gap = "16px";
+        enableRow.append(ripWrap, ripngWrap);
         host.appendChild(enableRow);
 
-        // ── per-interface passive toggles ──────────────────────────────────
+        // ── combined interface table: Interface | RIP Passive | RIPng Passive
+        const hintEl = document.createElement("p");
+        hintEl.textContent = t("router.rip.passive.hint");
+        hintEl.style.cssText = "margin:6px 0 4px;font-size:0.82em;opacity:0.65";
+        host.appendChild(hintEl);
+
         const ifTable = document.createElement("table");
         ifTable.className = "router-routes";
-        ifTable.style.marginTop = "8px";
+        ifTable.style.marginTop = "4px";
         const thead = document.createElement("thead");
         const htr   = document.createElement("tr");
-        const thIf  = document.createElement("th"); thIf.textContent  = t("router.rip.col.interface");
-        const thPas = document.createElement("th"); thPas.textContent = t("router.rip.col.passive");
-        htr.append(thIf, thPas);
+        const thIf  = document.createElement("th"); thIf.textContent = t("router.rip.col.interface");
+        const thR   = document.createElement("th"); thR.textContent  = "RIP";
+        const thRng = document.createElement("th"); thRng.textContent = "RIPng";
+        htr.append(thIf, thR, thRng);
         thead.appendChild(htr);
         const tbody = document.createElement("tbody");
 
         for (const iface of this.net.interfaces) {
             const ifName = iface.name;
-            const tr  = document.createElement("tr");
-            const tdN = document.createElement("td"); tdN.textContent = ifName;
-            const tdP = document.createElement("td");
-            const cb  = DOMBuilder.input({ type: "checkbox" });
-            cb.checked = this.rip.passiveInterfaces.has(ifName);
-            cb.addEventListener("change", () => this.rip.setPassive(ifName, cb.checked));
-            tdP.appendChild(cb);
-            tr.append(tdN, tdP);
+            const tr   = document.createElement("tr");
+            const tdN  = document.createElement("td"); tdN.textContent = ifName;
+            const tdR  = document.createElement("td");
+            const tdRng = document.createElement("td");
+            const cbR  = DOMBuilder.input({ type: "checkbox" });
+            cbR.checked = this.rip.passiveInterfaces.has(ifName);
+            cbR.addEventListener("change", () => this.rip.setPassive(ifName, cbR.checked));
+            const cbRng = DOMBuilder.input({ type: "checkbox" });
+            cbRng.checked = this.ripng.passiveInterfaces.has(ifName);
+            cbRng.addEventListener("change", () => this.ripng.setPassive(ifName, cbRng.checked));
+            tdR.appendChild(cbR);
+            tdRng.appendChild(cbRng);
+            tr.append(tdN, tdR, tdRng);
             tbody.appendChild(tr);
         }
         ifTable.append(thead, tbody);
         host.appendChild(ifTable);
 
-        // ── log ───────────────────────────────────────────────────────────
+        // ── combined log ──────────────────────────────────────────────────
         host.appendChild(DOMBuilder.h4(t("router.rip.log")));
         const logEl = /** @type {HTMLTextAreaElement} */ (DOMBuilder.el("textarea", {
             className: "log",
@@ -1329,87 +1408,18 @@ export class Router extends SimulatedObject {
         logEl.style.width  = "100%";
         logEl.style.height = "140px";
         host.appendChild(logEl);
-        this._ripLogEl = logEl;
-        this._renderRIPLog();
+        this._ripCombinedLogEl = logEl;
+        this._renderRIPCombinedLog();
 
-        this.rip.onLogUpdate = () => this._renderRIPLog();
+        this.rip.onLogUpdate   = () => this._renderRIPCombinedLog();
+        this.ripng.onLogUpdate = () => this._renderRIPCombinedLog();
     }
 
-    _renderRIPLog() {
-        if (!this._ripLogEl) return;
-        const lines = this.rip.log;
-        const max   = 200;
-        this._ripLogEl.value = (lines.length > max ? lines.slice(-max) : lines).join("\n");
-        this._ripLogEl.scrollTop = this._ripLogEl.scrollHeight;
-    }
-
-    /* ----------------------------- RIPng tab ----------------------------- */
-
-    /** @param {HTMLElement} host */
-    _buildRIPngSection(host) {
-        host.appendChild(DOMBuilder.h4(t("router.ripng.tab")));
-
-        // ── global enable ──────────────────────────────────────────────────
-        const enableCb = DOMBuilder.input({ type: "checkbox" });
-        enableCb.checked = this.ripng.enabled;
-        enableCb.addEventListener("change", () => {
-            this.ripng.setEnabled(enableCb.checked);
-            this._renderRIPngLog();
-        });
-        const enableRow = DOMBuilder.div("router-name-row");
-        enableRow.style.gap = "6px";
-        enableRow.appendChild(enableCb);
-        enableRow.appendChild(DOMBuilder.label(t("router.ripng.enabled")));
-        host.appendChild(enableRow);
-
-        // ── per-interface passive toggles ──────────────────────────────────
-        const ifTable = document.createElement("table");
-        ifTable.className = "router-routes";
-        ifTable.style.marginTop = "8px";
-        const thead = document.createElement("thead");
-        const htr   = document.createElement("tr");
-        const thIf  = document.createElement("th"); thIf.textContent  = t("router.ripng.col.interface");
-        const thPas = document.createElement("th"); thPas.textContent = t("router.ripng.col.passive");
-        htr.append(thIf, thPas);
-        thead.appendChild(htr);
-        const tbody = document.createElement("tbody");
-
-        for (const iface of this.net.interfaces) {
-            const ifName = iface.name;
-            const tr  = document.createElement("tr");
-            const tdN = document.createElement("td"); tdN.textContent = ifName;
-            const tdP = document.createElement("td");
-            const cb  = DOMBuilder.input({ type: "checkbox" });
-            cb.checked = this.ripng.passiveInterfaces.has(ifName);
-            cb.addEventListener("change", () => this.ripng.setPassive(ifName, cb.checked));
-            tdP.appendChild(cb);
-            tr.append(tdN, tdP);
-            tbody.appendChild(tr);
-        }
-        ifTable.append(thead, tbody);
-        host.appendChild(ifTable);
-
-        // ── log ───────────────────────────────────────────────────────────
-        host.appendChild(DOMBuilder.h4(t("router.ripng.log")));
-        const logEl = /** @type {HTMLTextAreaElement} */ (DOMBuilder.el("textarea", {
-            className: "log",
-            attrs: { readonly: "true", spellcheck: "false" },
-        }));
-        logEl.style.width  = "100%";
-        logEl.style.height = "140px";
-        host.appendChild(logEl);
-        this._ripngLogEl = logEl;
-        this._renderRIPngLog();
-
-        this.ripng.onLogUpdate = () => this._renderRIPngLog();
-    }
-
-    _renderRIPngLog() {
-        if (!this._ripngLogEl) return;
-        const lines = this.ripng.log;
-        const max   = 200;
-        this._ripngLogEl.value = (lines.length > max ? lines.slice(-max) : lines).join("\n");
-        this._ripngLogEl.scrollTop = this._ripngLogEl.scrollHeight;
+    _renderRIPCombinedLog() {
+        if (!this._ripCombinedLogEl) return;
+        const combined = [...this.rip.log, ...this.ripng.log].sort().slice(-200);
+        this._ripCombinedLogEl.value = combined.join("\n");
+        this._ripCombinedLogEl.scrollTop = this._ripCombinedLogEl.scrollHeight;
     }
 
     /* ----------------------------- BGP tab ----------------------------- */
@@ -1640,6 +1650,246 @@ export class Router extends SimulatedObject {
         const max   = 200;
         this._bgpLogEl.value = (lines.length > max ? lines.slice(-max) : lines).join("\n");
         this._bgpLogEl.scrollTop = this._bgpLogEl.scrollHeight;
+    }
+
+    /* ----------------------------- OSPF tab ----------------------------- */
+
+    /** @param {HTMLElement} host */
+    _buildOSPFSection(host) {
+        DOMBuilder.clear(host);
+
+        const { bar: innerBar, setActive: setInnerActive } = DOMBuilder.tabGroup([
+            { id: "config", label: t("router.ospf.tab.config") },
+            { id: "status", label: t("router.ospf.tab.status") },
+            { id: "lsdb",   label: t("router.ospf.tab.lsdb")   },
+            { id: "log",    label: t("router.ospf.tab.log")     },
+        ], (id) => {
+            configSection.style.display = id === "config" ? "" : "none";
+            statusSection.style.display = id === "status" ? "" : "none";
+            lsdbSection.style.display   = id === "lsdb"   ? "" : "none";
+            logSection.style.display    = id === "log"     ? "" : "none";
+            if (id === "status" || id === "lsdb") renderAll();
+        });
+        host.appendChild(innerBar);
+
+        // ── Config ───────────────────────────────────────────────────────
+        const configSection = DOMBuilder.div("");
+
+        const enableCb = DOMBuilder.input({ type: "checkbox" });
+        enableCb.checked = this.ospf.enabled;
+        enableCb.addEventListener("change", () => {
+            this.ospf.setEnabled(enableCb.checked);
+            this._renderOSPFLog();
+        });
+        const enableRow = DOMBuilder.div("router-name-row");
+        enableRow.style.gap = "6px";
+        enableRow.appendChild(enableCb);
+        enableRow.appendChild(DOMBuilder.label(t("router.ospf.enabled")));
+        configSection.appendChild(enableRow);
+
+        const ridRow = DOMBuilder.div("router-name-row");
+        ridRow.style.gap = "6px";
+        ridRow.style.marginTop = "6px";
+        const ridLabel = DOMBuilder.el("span", { text: t("router.ospf.routerid") + ":", className: "router-if-field-label" });
+        const ridInput = DOMBuilder.input({ placeholder: t("router.ospf.routerid.auto") });
+        ridInput.style.width = "130px";
+        if (this.ospf._routerIdOverride !== null) {
+            ridInput.value = new (/** @type {any} */ (IPAddress))(4, this.ospf._routerIdOverride).toString();
+        }
+        ridInput.addEventListener("change", () => {
+            const v = ridInput.value.trim();
+            if (!v) {
+                this.ospf._routerIdOverride = null;
+            } else {
+                try {
+                    const ip = IPAddress.fromString(v);
+                    if (ip.isV4()) this.ospf._routerIdOverride = /** @type {number} */ (ip.getNumber()) >>> 0;
+                } catch { /* ignore */ }
+            }
+        });
+        ridRow.append(ridLabel, ridInput);
+        configSection.appendChild(ridRow);
+
+        const ifTable = document.createElement("table");
+        ifTable.className = "router-routes";
+        ifTable.style.marginTop = "8px";
+        const ifThead = document.createElement("thead");
+        const ifHtr   = document.createElement("tr");
+        const ifThIf  = document.createElement("th"); ifThIf.textContent  = t("router.ospf.col.interface");
+        const ifThPas = document.createElement("th"); ifThPas.textContent = t("router.ospf.col.passive");
+        ifHtr.append(ifThIf, ifThPas);
+        ifThead.appendChild(ifHtr);
+        const ifTbody = document.createElement("tbody");
+        for (const iface of this.net.interfaces) {
+            const ifName = iface.name;
+            const tr  = document.createElement("tr");
+            const tdN = document.createElement("td"); tdN.textContent = ifName;
+            const tdP = document.createElement("td");
+            const cb  = DOMBuilder.input({ type: "checkbox" });
+            cb.checked = this.ospf.passiveInterfaces.has(ifName);
+            cb.addEventListener("change", () => this.ospf.setPassive(ifName, cb.checked));
+            tdP.appendChild(cb);
+            tr.append(tdN, tdP);
+            ifTbody.appendChild(tr);
+        }
+        ifTable.append(ifThead, ifTbody);
+        configSection.appendChild(ifTable);
+
+        // ── Status ───────────────────────────────────────────────────────
+        const statusSection = DOMBuilder.div("");
+
+        statusSection.appendChild(DOMBuilder.h4(t("router.ospf.ifstatus")));
+        const ifStatusTable = document.createElement("table");
+        ifStatusTable.className = "router-routes";
+        const ifStatusThead = document.createElement("thead");
+        const ifStatusHtr   = document.createElement("tr");
+        for (const col of [
+            t("router.ospf.col.interface"),
+            t("router.ospf.col.ifstate"),
+            t("router.ospf.col.dr"),
+            t("router.ospf.col.bdr"),
+        ]) { const th = document.createElement("th"); th.textContent = col; ifStatusHtr.appendChild(th); }
+        ifStatusThead.appendChild(ifStatusHtr);
+        const ifStatusTbody = document.createElement("tbody");
+        ifStatusTable.append(ifStatusThead, ifStatusTbody);
+        statusSection.appendChild(ifStatusTable);
+
+        statusSection.appendChild(DOMBuilder.h4(t("router.ospf.neighbors")));
+        const nbTable = document.createElement("table");
+        nbTable.className = "router-routes";
+        const nbThead = document.createElement("thead");
+        const nbHtr   = document.createElement("tr");
+        for (const col of [
+            t("router.ospf.col.interface"),
+            t("router.ospf.col.neighbor"),
+            t("router.ospf.col.state"),
+            t("router.ospf.col.priority"),
+            t("router.ospf.col.dead"),
+        ]) { const th = document.createElement("th"); th.textContent = col; nbHtr.appendChild(th); }
+        nbThead.appendChild(nbHtr);
+        const nbTbody = document.createElement("tbody");
+        nbTable.append(nbThead, nbTbody);
+        statusSection.appendChild(nbTable);
+
+        // ── LSDB ─────────────────────────────────────────────────────────
+        const lsdbSection = DOMBuilder.div("");
+        const lsdbTable = document.createElement("table");
+        lsdbTable.className = "router-routes";
+        const lsdbThead = document.createElement("thead");
+        const lsdbHtr   = document.createElement("tr");
+        for (const col of [
+            t("router.ospf.col.lstype"),
+            t("router.ospf.col.lsid"),
+            t("router.ospf.col.advrtr"),
+            t("router.ospf.col.age"),
+            t("router.ospf.col.seqnum"),
+        ]) { const th = document.createElement("th"); th.textContent = col; lsdbHtr.appendChild(th); }
+        lsdbThead.appendChild(lsdbHtr);
+        const lsdbTbody = document.createElement("tbody");
+        lsdbTable.append(lsdbThead, lsdbTbody);
+        lsdbSection.appendChild(lsdbTable);
+
+        // ── Log ───────────────────────────────────────────────────────────
+        const logSection = DOMBuilder.div("");
+        const ospfLogEl = /** @type {HTMLTextAreaElement} */ (DOMBuilder.el("textarea", {
+            className: "log",
+            attrs: { readonly: "true", spellcheck: "false" },
+        }));
+        ospfLogEl.style.width  = "100%";
+        ospfLogEl.style.height = "200px";
+        logSection.appendChild(ospfLogEl);
+        this._ospfLogEl = ospfLogEl;
+        this._renderOSPFLog();
+
+        // ── shared render helpers ─────────────────────────────────────────
+        const n2s = (/** @type {number} */ n) => n ? new IPAddress(4, n >>> 0).toString() : "—";
+        const mkTd = (/** @type {string} */ v) => {
+            const td = document.createElement("td"); td.textContent = v; return td;
+        };
+        const emptyRow = (/** @type {HTMLElement} */ tbody, /** @type {number} */ cols) => {
+            const tr = document.createElement("tr");
+            const td = document.createElement("td");
+            td.colSpan = cols; td.textContent = "—";
+            td.style.textAlign = "center"; td.style.opacity = "0.5";
+            tr.appendChild(td); tbody.appendChild(tr);
+        };
+
+        const renderAll = () => {
+            // interface status
+            ifStatusTbody.innerHTML = "";
+            for (const [ifIndex, oif] of this.ospf._ifaces) {
+                const ifName = this.net.interfaces[ifIndex]?.name ?? `eth${ifIndex}`;
+                const tr = document.createElement("tr");
+                tr.append(mkTd(ifName), mkTd(oif.state), mkTd(n2s(oif.dr)), mkTd(n2s(oif.bdr)));
+                ifStatusTbody.appendChild(tr);
+            }
+            if (ifStatusTbody.childElementCount === 0) emptyRow(ifStatusTbody, 4);
+
+            // neighbors
+            nbTbody.innerHTML = "";
+            for (const [ifIndex, oif] of this.ospf._ifaces) {
+                const ifName = this.net.interfaces[ifIndex]?.name ?? `eth${ifIndex}`;
+                for (const [, nb] of oif.neighbors) {
+                    const tr = document.createElement("tr");
+                    const elapsedMs = (simTimer.currentTick - nb.lastHelloTick) * SimTimer.SIM_MS_PER_TICK;
+                    const remaining = Math.max(0, SimTimer.OSPF_DEAD_MS - elapsedMs);
+                    const pct       = Math.round(remaining / SimTimer.OSPF_DEAD_MS * 100);
+                    const barColor  = pct > 50 ? "#4caf50" : pct > 25 ? "#ff9800" : "#f44336";
+                    const deadTd    = document.createElement("td");
+                    deadTd.innerHTML =
+                        `<div style="display:flex;align-items:center;gap:4px">` +
+                        `<div style="width:36px;height:5px;background:#e0e0e0;border-radius:3px;flex-shrink:0">` +
+                        `<div style="width:${pct}%;height:100%;background:${barColor};border-radius:3px"></div></div>` +
+                        `<span style="font-size:0.85em">${(remaining / 1000).toFixed(1)}s</span></div>`;
+                    tr.append(mkTd(ifName), mkTd(nb.ip.toString()), mkTd(nb.state),
+                              mkTd(String(nb.priority)), deadTd);
+                    nbTbody.appendChild(tr);
+                }
+            }
+            if (nbTbody.childElementCount === 0) emptyRow(nbTbody, 5);
+
+            // LSDB
+            lsdbTbody.innerHTML = "";
+            const myRid = this.ospf._myRouterId;
+            const lsaTypeLabel = (/** @type {number} */ t) => t === 1 ? "Router" : t === 2 ? "Network" : String(t);
+            const seqHex = (/** @type {number} */ s) => "0x" + (s >>> 0).toString(16).padStart(8, "0").toUpperCase();
+            for (const [, entry] of this.ospf._lsdb) {
+                const h   = entry.header;
+                const tr  = document.createElement("tr");
+                const own = h.advertisingRouter === myRid;
+                if (own) tr.style.background = "rgba(33,150,243,0.07)";
+                tr.append(
+                    mkTd(lsaTypeLabel(h.type)),
+                    mkTd(n2s(h.lsId)),
+                    mkTd(n2s(h.advertisingRouter) + (own ? " ★" : "")),
+                    mkTd(String(h.age)),
+                    mkTd(seqHex(h.seqNum)),
+                );
+                lsdbTbody.appendChild(tr);
+            }
+            if (lsdbTbody.childElementCount === 0) emptyRow(lsdbTbody, 5);
+        };
+
+        renderAll();
+        this._ospfPollTimer.stop();
+        this._ospfPollTimer.start(renderAll, 1000);
+
+        host.append(configSection, statusSection, lsdbSection, logSection);
+        configSection.style.display = "";
+        statusSection.style.display = "none";
+        lsdbSection.style.display   = "none";
+        logSection.style.display    = "none";
+        setInnerActive("config");
+
+        this.ospf.onLogUpdate = () => this._renderOSPFLog();
+    }
+
+    _renderOSPFLog() {
+        if (!this._ospfLogEl) return;
+        const lines = this.ospf.log;
+        const max   = 200;
+        this._ospfLogEl.value = (lines.length > max ? lines.slice(-max) : lines).join("\n");
+        this._ospfLogEl.scrollTop = this._ospfLogEl.scrollHeight;
     }
 
     /* ----------------------------- VPN tab ----------------------------- */

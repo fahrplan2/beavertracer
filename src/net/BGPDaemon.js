@@ -569,7 +569,7 @@ export class BGPDaemon {
         if (!oldBest) {
             // Completely new prefix
             this._learned.set(key, newBest);
-            try { this._net.addRoute(dst, prefLen, newBest.ifIndex, newBest.nexthop); } catch {}
+            try { this._net.addRoute(dst, prefLen, newBest.ifIndex, newBest.nexthop, "bgp"); } catch {}
             this._log(`[BGP] gelernt ${key} via ${newBest.nexthop} AS-Pfad [${newBest.asPath.join(" ")}]`);
             this._propagateLearnedRoute(newBest, newBest.fromPeer);
             return;
@@ -579,7 +579,7 @@ export class BGPDaemon {
             // Failover: best path switched to a different peer
             try { this._net.delRoute(oldBest.dst, oldBest.prefLen, oldBest.ifIndex, oldBest.nexthop); } catch {}
             this._learned.set(key, newBest);
-            try { this._net.addRoute(dst, prefLen, newBest.ifIndex, newBest.nexthop); } catch {}
+            try { this._net.addRoute(dst, prefLen, newBest.ifIndex, newBest.nexthop, "bgp"); } catch {}
             this._log(`[BGP] Pfadwechsel ${key} → via ${newBest.nexthop} [${newBest.asPath.join(" ")}]`);
             this._propagateLearnedRoute(newBest, newBest.fromPeer);
             return;

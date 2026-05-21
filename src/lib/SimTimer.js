@@ -74,12 +74,12 @@ export class SimTimer {
     /** HTTP client request timeout. */
     static HTTP_CLIENT_TIMEOUT_MS   =  400;  //  80 ticks
 
-    /** STP Hello interval (simulation-scaled, ~IEEE 2 s). */
-    static STP_HELLO_MS             =    500;  // 100 ticks  → ~10 s real at 4× speed
-    /** STP Forward Delay per phase — Listening→Learning and Learning→Forwarding (simulation-scaled, ~IEEE 15 s). */
-    static STP_FORWARD_DELAY_MS     =    150;  //  30 ticks  → ~3 s real at 4× speed
-    /** STP Max Age — discard BPDU info not refreshed within this window (simulation-scaled, ~IEEE 20 s). */
-    static STP_MAX_AGE_MS           =  1_500;  // 300 ticks  → ~30 s real at 4× speed
+    /** STP Hello interval (IEEE default: 2 s). */
+    static STP_HELLO_MS             =    500;  // 100 ticks  → 10 s @ 1×,  2 s @ 8×
+    /** STP Forward Delay per phase — Listening→Learning and Learning→Forwarding (IEEE default: 15 s). */
+    static STP_FORWARD_DELAY_MS     =    150;  //  30 ticks  →  3 s @ 1×,  0.6 s @ 8×
+    /** STP Max Age — discard BPDU info not refreshed within this window (IEEE default: 20 s). */
+    static STP_MAX_AGE_MS           =  1_500;  // 300 ticks  → 30 s @ 1×,  6 s @ 8×
 
     /** BGP connect-retry interval (~RFC 4271 ConnectRetry timer, simulation-scaled). */
     static BGP_CONNECT_RETRY_MS     =  1_000;  // 200 ticks
@@ -87,6 +87,21 @@ export class SimTimer {
     static BGP_KEEPALIVE_MS         =  2_000;  // 400 ticks
     /** BGP hold time (simulation-scaled, ~RFC 4271 recommends 90 s). */
     static BGP_HOLDTIME_MS          =  6_000;  // 1200 ticks
+
+    /** OSPF Hello interval (~RFC 10 s, simulation-scaled). */
+    static OSPF_HELLO_MS            =    500;  //  100 ticks
+    /** OSPF Dead interval (4× hello; neighbor declared down if no Hello received). */
+    static OSPF_DEAD_MS             =  2_000;  //  400 ticks
+    /** OSPF Wait interval (= dead interval; used before first DR/BDR election, RFC §9.4). */
+    static OSPF_WAIT_MS             =  2_000;  //  400 ticks
+    /** OSPF LSA retransmit interval. */
+    static OSPF_RXMT_MS             =    500;  //  100 ticks
+    /** Delay between LSA receipt and SPF calculation. */
+    static OSPF_SPF_DELAY_MS        =     50;  //   10 ticks
+    /** Minimum interval between re-originations of the same LSA (~RFC 5 s real). */
+    static OSPF_MIN_LS_INTERVAL_MS  =    250;  //   50 ticks  (~5 s real)
+    /** Age increment period: LSA age field increases by 1 per this interval. */
+    static OSPF_AGE_INTERVAL_MS     =  1_000;  //  200 ticks  (1 sim-second per age unit)
 
     // -------------------------------------------------------------------------
     // Internal state

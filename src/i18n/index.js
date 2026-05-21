@@ -230,9 +230,12 @@ export async function initLocale() {
     /* ignore */
   }
 
-  // 2) Browser locale — map all pt-* variants (pt-BR, pt-PT, pt, …) to pt-PT
-  const short = (navigator.language ?? "").split("-")[0].toLowerCase();
-  const browser = short === "pt" ? "pt-PT" : short;
+  // 2) Browser locale — map pt-* → pt-PT, sr-Latn-* → sr-Latn, sr-* → sr-Cyrl
+  const full = (navigator.language ?? "").toLowerCase();
+  const short = full.split("-")[0];
+  const browser = short === "pt" ? "pt-PT"
+                : short === "sr" ? (full.includes("latn") ? "sr-Latn" : "sr-Cyrl")
+                : short;
   if (browser && (await loadLocaleDict(browser))) locale = browser;
   else locale = "de";
 
