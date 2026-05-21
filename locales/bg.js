@@ -1104,5 +1104,13 @@ export default {
   "router.routingtable.source": "Източник",
   "router.routingtable.source.connected": "Свързан",
   "router.routingtable.source.static": "Статичен",
-  "switch.stp.priority": "Приоритет на моста:"
+  "switch.stp.priority": "Приоритет на моста:",
+  "welcome.subtitle": "Симулатор на мрежи в браузър",
+  "welcome.new": "Нов документ",
+  "welcome.new.desc": "Започнете с празен лист",
+  "welcome.open": "Отворете файл",
+  "welcome.open.desc": "Заредете .btsim файл от диска",
+  "welcome.example": "Заредете пример",
+  "welcome.example.desc": "Изучете готова мрежа",
+  "welcome.news": "Какво е ново"
 };

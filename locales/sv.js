@@ -1104,5 +1104,13 @@ export default {
   "router.routingtable.source": "Källa",
   "router.routingtable.source.connected": "Ansluten",
   "router.routingtable.source.static": "Statisk",
-  "switch.stp.priority": "Bridge-prioritet:"
+  "switch.stp.priority": "Bridge-prioritet:",
+  "welcome.subtitle": "Webbaserad nätverkssimulator",
+  "welcome.new": "Nytt dokument",
+  "welcome.new.desc": "Börja med en tom arbetsyta",
+  "welcome.open": "Öppna fil",
+  "welcome.open.desc": "Ladda en .btsim-fil från disken",
+  "welcome.example": "Läs in exempel",
+  "welcome.example.desc": "Utforska ett färdigt nätverk",
+  "welcome.news": "Vad är nytt"
 };

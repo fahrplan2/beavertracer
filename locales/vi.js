@@ -1104,5 +1104,13 @@ export default {
   "router.routingtable.source": "Nguồn",
   "router.routingtable.source.connected": "Đã kết nối",
   "router.routingtable.source.static": "Tĩnh",
-  "switch.stp.priority": "Ưu tiên Bridge:"
+  "switch.stp.priority": "Ưu tiên Bridge:",
+  "welcome.subtitle": "Trình mô phỏng mạng dựa trên trình duyệt",
+  "welcome.new": "Tài liệu mới",
+  "welcome.new.desc": "Bắt đầu với một bảng vẽ trống",
+  "welcome.open": "Mở tệp",
+  "welcome.open.desc": "Tải tệp .btsim từ đĩa",
+  "welcome.example": "Tải ví dụ",
+  "welcome.example.desc": "Khám phá một mạng được chuẩn bị sẵn",
+  "welcome.news": "Có gì mới"
 };

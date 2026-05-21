@@ -1103,5 +1103,13 @@ export default {
   "app.bitcoin.log.connectfailed": "[{time}] Kapcsolódás {addr} -hez sikertelen: {reason}",
   "app.bitcoin.log.blockrcv": "[{time}] Blokk {id} magasság={height} bányász={miner}",
   "app.bitcoin.log.reorg": "[{time}] Lánc átszervezés: átváltás az ágra a(z) {height} magasságban",
-  "app.bitcoin.log.txrcv": "[{time}] TX {id}: {amount} BTC {from} -> {to}"
+  "app.bitcoin.log.txrcv": "[{time}] TX {id}: {amount} BTC {from} -> {to}",
+  "welcome.subtitle": "Böngészőalapú hálózati szimulátor",
+  "welcome.new": "Új dokumentum",
+  "welcome.new.desc": "Kezdjen üres vászonnal",
+  "welcome.open": "Fájl megnyitása",
+  "welcome.open.desc": "Töltsön be egy .btsim fájlt a lemezről",
+  "welcome.example": "Példa betöltése",
+  "welcome.example.desc": "Fedezze fel az előkészített hálózatot",
+  "welcome.news": "Mi az új"
 };

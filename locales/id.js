@@ -1104,5 +1104,13 @@ export default {
   "router.routingtable.source": "Sumber",
   "router.routingtable.source.connected": "Terhubung",
   "router.routingtable.source.static": "Statis",
-  "switch.stp.priority": "Prioritas Bridge:"
+  "switch.stp.priority": "Prioritas Bridge:",
+  "welcome.subtitle": "Simulator Jaringan Berbasis Browser",
+  "welcome.new": "Dokumen Baru",
+  "welcome.new.desc": "Mulai dengan kanvas kosong",
+  "welcome.open": "Buka File",
+  "welcome.open.desc": "Muat file .btsim dari disk",
+  "welcome.example": "Muat Contoh",
+  "welcome.example.desc": "Jelajahi jaringan yang sudah siap pakai",
+  "welcome.news": "Apa yang Baru"
 };

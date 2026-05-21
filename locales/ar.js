@@ -1104,5 +1104,13 @@ export default {
   "router.routingtable.source": "المصدر",
   "router.routingtable.source.connected": "متصل",
   "router.routingtable.source.static": "ثابت",
-  "switch.stp.priority": "أولوية الجسر:"
+  "switch.stp.priority": "أولوية الجسر:",
+  "welcome.subtitle": "محاكاة شبكات قائمة على المتصفح",
+  "welcome.new": "وثيقة جديدة",
+  "welcome.new.desc": "ابدأ بلوحة فارغة",
+  "welcome.open": "فتح ملف",
+  "welcome.open.desc": "تحميل ملف .btsim من القرص",
+  "welcome.example": "تحميل مثال",
+  "welcome.example.desc": "استكشف شبكة جاهزة",
+  "welcome.news": "ما الجديد"
 };

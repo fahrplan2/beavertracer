@@ -1104,5 +1104,13 @@ export default {
   "router.routingtable.source": "送信元",
   "router.routingtable.source.connected": "接続済み",
   "router.routingtable.source.static": "静的",
-  "switch.stp.priority": "ブリッジ優先度："
+  "switch.stp.priority": "ブリッジ優先度：",
+  "welcome.subtitle": "ブラウザベースのネットワークシミュレータ",
+  "welcome.new": "新しいドキュメント",
+  "welcome.new.desc": "空のキャンバスで開始",
+  "welcome.open": "ファイルを開く",
+  "welcome.open.desc": "ディスクから .btsim ファイルを読み込む",
+  "welcome.example": "例を読み込む",
+  "welcome.example.desc": "既製のネットワークを探索",
+  "welcome.news": "新機能"
 };

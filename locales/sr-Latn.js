@@ -1103,5 +1103,13 @@ export default {
   "app.bitcoin.log.connectfailed": "[{time}] Povezivanje sa {addr} neuspešno: {reason}",
   "app.bitcoin.log.blockrcv": "[{time}] Blok {id} height={height} miner={miner}",
   "app.bitcoin.log.reorg": "[{time}] Reorganizacija lanca: prebačen na granu na visini {height}",
-  "app.bitcoin.log.txrcv": "[{time}] TX {id}: {amount} BTC  {from} -> {to}"
+  "app.bitcoin.log.txrcv": "[{time}] TX {id}: {amount} BTC  {from} -> {to}",
+  "welcome.subtitle": "Mrežni simulator zasnovan na pregledniku",
+  "welcome.new": "Novi dokument",
+  "welcome.new.desc": "Počnite sa praznom kanovom",
+  "welcome.open": "Otvori fajl",
+  "welcome.open.desc": "Učitaj .btsim fajl sa diska",
+  "welcome.example": "Učitaj primer",
+  "welcome.example.desc": "Istraži gotovu mrežu",
+  "welcome.news": "Šta je novo"
 };

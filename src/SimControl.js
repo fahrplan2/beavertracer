@@ -18,6 +18,7 @@ import { StaticPageRouter } from "./StaticPageRouter.js";
 import { PCapController } from "./tracer/PCapControler.js";
 import { DOMBuilder } from "./lib/DomBuilder.js";
 import { SimDialog } from "./lib/SimDialog.js";
+import { WelcomeDialog } from "./lib/WelcomeDialog.js";
 import { version } from "./lib/version.js";
 import { isTauri } from "./tauri.js";
 
@@ -140,6 +141,9 @@ export class SimControl {
     /** @type {boolean} */
     _uiDirty = false;
 
+    /** @type {boolean} */
+    _isDirty = false;
+
     /** @type {number|null} */
     _uiRaf = null;
 
@@ -190,6 +194,10 @@ export class SimControl {
         this.scheduleNextStep();
         this._startRafLoop();
 
+        if (!this.embedded && !isTauri()) {
+            window.addEventListener("beforeunload", this._onBeforeUnload);
+        }
+
         document.addEventListener("show-pcap", (ev) => {
             const { sessionName, frames } = /** @type {any} */ (ev).detail;
             this.pcapController.updateIf(sessionName, frames);
@@ -200,6 +208,14 @@ export class SimControl {
             this.pcapViewer.render();
         });
     }
+
+    markDirty() {
+        this._isDirty = true;
+    }
+
+    _onBeforeUnload = (/** @type {BeforeUnloadEvent} */ ev) => {
+        if (this._isDirty) ev.preventDefault();
+    };
 
     scheduleNextStep() {
         if (this.timeoutId !== null) window.clearTimeout(this.timeoutId);
@@ -296,6 +312,7 @@ export class SimControl {
 
         this._syncSceneDOM();     // add just this node (and link)
         this._requestRedrawLinks();
+        this.markDirty();
     }
 
     /** @param {SimulatedObject} obj */
@@ -330,6 +347,7 @@ export class SimControl {
 
         this._requestRedrawLinks();
         this._invalidateUI();
+        this.markDirty();
     }
 
     /** @param {SimulatedObject|null} obj */
@@ -495,7 +513,7 @@ export class SimControl {
         const brandingGroup = document.createElement("div");
         brandingGroup.className = "sim-toolbar-group sim-toolbar-branding-group";
         brandingGroup.style.cursor = "pointer";
-        brandingGroup.addEventListener("click", () => this._staticRouter?.navigate("/about", { replace: true }));
+        brandingGroup.addEventListener("click", () => WelcomeDialog.show(this));
         toolbar.appendChild(brandingGroup);
 
         const brandingText = document.createElement("div");
@@ -550,6 +568,7 @@ export class SimControl {
 
                 this.mode = "run";
                 this.isPaused = false;
+                this.markDirty();
 
                 if (this.root) {
                     this.root.classList.remove("edit-mode");
@@ -1270,6 +1289,18 @@ export class SimControl {
         this._langPanel = null;
     }
 
+    openLanguageDialog() {
+        this._openLanguageDialog();
+    }
+
+    /** @param {string} path */
+    navigateTo(path) {
+        this.pause();
+        this.mode = "page";
+        this._invalidateUI();
+        this._staticRouter?.navigate(path, { replace: true });
+    }
+
     // --------------------
     // RAF loop for packets
     // --------------------
@@ -1831,6 +1862,7 @@ export class SimControl {
 
     /** @param {*} state */
     restore(state) {
+        this._isDirty = false;
         //@ts-ignore
         const REGISTRY = new Map([
             ["PC", PC],
@@ -1915,6 +1947,7 @@ export class SimControl {
 
         this._enterEditMode();
         this._syncSceneDOM();
+        this._isDirty = false;
     }
 
     /**
@@ -1966,6 +1999,7 @@ export class SimControl {
         a.click();
 
         URL.revokeObjectURL(url);
+        this._isDirty = false;
     }
 
     _clearScene() {

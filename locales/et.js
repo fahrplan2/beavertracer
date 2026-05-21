@@ -1104,5 +1104,13 @@ export default {
   "router.routingtable.source": "Allikas",
   "router.routingtable.source.connected": "Ühendatud",
   "router.routingtable.source.static": "Staatiline",
-  "switch.stp.priority": "Silla prioriteet:"
+  "switch.stp.priority": "Silla prioriteet:",
+  "welcome.subtitle": "Brauseris töötav võrgusimulator",
+  "welcome.new": "Uus dokument",
+  "welcome.new.desc": "Alustage tühja lõuendiga",
+  "welcome.open": "Avage fail",
+  "welcome.open.desc": "Laadige .btsim fail kettalt",
+  "welcome.example": "Laadige näide",
+  "welcome.example.desc": "Uurige valmis võrku",
+  "welcome.news": "Mis on uut"
 };

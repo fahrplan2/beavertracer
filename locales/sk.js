@@ -1103,5 +1103,13 @@ export default {
   "app.bitcoin.log.connectfailed": "[{time}] Pripojenie na {addr} zlyhalo: {reason}",
   "app.bitcoin.log.blockrcv": "[{time}] Blok {id} height={height} miner={miner}",
   "app.bitcoin.log.reorg": "[{time}] Reorganizácia reťazca: prepnuté na fork na výške {height}",
-  "app.bitcoin.log.txrcv": "[{time}] TX {id}: {amount} BTC  {from} -> {to}"
+  "app.bitcoin.log.txrcv": "[{time}] TX {id}: {amount} BTC  {from} -> {to}",
+  "welcome.subtitle": "Simulátor siete založený na prehliadači",
+  "welcome.new": "Nový dokument",
+  "welcome.new.desc": "Začnite s prázdnym plátnom",
+  "welcome.open": "Otvoriť súbor",
+  "welcome.open.desc": "Načítajte súbor .btsim z disku",
+  "welcome.example": "Načítať príklad",
+  "welcome.example.desc": "Preskúmajte hotovú sieť",
+  "welcome.news": "Čo je nové"
 };

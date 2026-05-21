@@ -1104,5 +1104,13 @@ export default {
   "router.routingtable.source": "Avots",
   "router.routingtable.source.connected": "Savienots",
   "router.routingtable.source.static": "Statisks",
-  "switch.stp.priority": "Tilta prioritāte:"
+  "switch.stp.priority": "Tilta prioritāte:",
+  "welcome.subtitle": "Pārlūkprogrammā balstīts tīkla simulators",
+  "welcome.new": "Jauns dokuments",
+  "welcome.new.desc": "Sākt ar tukšu kanvu",
+  "welcome.open": "Atvērt failu",
+  "welcome.open.desc": "Ielādēt .btsim failu no diska",
+  "welcome.example": "Ielādēt piemēru",
+  "welcome.example.desc": "Izpētīt gatavu tīklu",
+  "welcome.news": "Jaunumi"
 };

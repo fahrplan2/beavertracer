@@ -1104,5 +1104,13 @@ export default {
   "router.routingtable.source": "Šaltinis",
   "router.routingtable.source.connected": "Prijungtas",
   "router.routingtable.source.static": "Statinis",
-  "switch.stp.priority": "Tilto prioritetas:"
+  "switch.stp.priority": "Tilto prioritetas:",
+  "welcome.subtitle": "Naršyklėje veikiantis tinklo simuliatorius",
+  "welcome.new": "Naujas dokumentas",
+  "welcome.new.desc": "Pradėti nuo tuščio drobės",
+  "welcome.open": "Atidaryti failą",
+  "welcome.open.desc": "Įkelti .btsim failą iš disko",
+  "welcome.example": "Įkelti pavyzdį",
+  "welcome.example.desc": "Ištirti paruoštą tinklą",
+  "welcome.news": "Naujienos"
 };
