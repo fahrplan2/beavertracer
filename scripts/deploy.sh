@@ -157,8 +157,8 @@ fi
 # LATEST_STABLE wird für den "aktuellen" Download verwendet.
 # Pre-release-Artifacts werden zusätzlich bereitgestellt.
 
-LATEST_STABLE="$(git tag | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | LC_ALL=C sort -V | tail -n1)"
-LATEST_PRERELEASE="$(git tag | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+-[a-zA-Z]' | LC_ALL=C sort -V | tail -n1)"
+LATEST_STABLE="$(git tag | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | LC_ALL=C sort -V | tail -n1 || true)"
+LATEST_PRERELEASE="$(git tag | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+-[a-zA-Z]' | LC_ALL=C sort -V | tail -n1 || true)"
 
 RELEASES_DIR="${WEBROOT}/releases"
 mkdir -p "$RELEASES_DIR"
@@ -177,10 +177,16 @@ download_artifacts() {
     if [[ ! -f "$dest" ]]; then
       url="${PKG_BASE}/${VERSION}/${filename}"
       echo "Downloading ${filename} ..."
-      curl --silent --fail \
-           --header "DEPLOY-TOKEN: ${GITLAB_DEPLOY_TOKEN}" \
-           --output "$dest" \
-           "$url" || echo "  (not available yet: ${filename})"
+      tmp="$(mktemp)"
+      if curl --silent --fail \
+              --header "DEPLOY-TOKEN: ${GITLAB_DEPLOY_TOKEN}" \
+              --output "$tmp" \
+              "$url"; then
+        mv "$tmp" "$dest"
+      else
+        rm -f "$tmp"
+        echo "  (not available yet: ${filename})"
+      fi
     fi
   done
 }
