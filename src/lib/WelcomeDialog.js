@@ -150,6 +150,10 @@ export class WelcomeDialog {
 
         if (!isTauri()) {
             right.appendChild(WelcomeDialog._footerBtn(
+                "fa-download", t("sim.downloads"),
+                () => close(() => sim.navigateTo("/downloads"))
+            ));
+            right.appendChild(WelcomeDialog._footerBtn(
                 "fa-book-open", t("sim.lessons"),
                 () => { window.open(`/lessons/${getLocale()}/`, "_blank"); }
             ));
