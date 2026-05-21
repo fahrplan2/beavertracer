@@ -1147,8 +1147,29 @@ export class SimControl {
         const locales = await getLocales();
         const current = getLocale();
 
-        const grid = document.createElement("div");
-        grid.className = "sim-langdialog-grid";
+        const FEATURED = new Set(["de", "en"]);
+
+        /** @param {{ key: string, label: string }} loc */
+        const makeClickHandler = (loc) => async (/** @type {MouseEvent} */ ev) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            if (loc.key === getLocale()) { this._closeLanguageDialog(); return; }
+            const oldLoc = getLocale();
+            await setLocale(loc.key);
+            const ok = await SimDialog.confirm(t("sim.langswitch.confirmdiscard"));
+            if (!ok) { setLocale(oldLoc); return; }
+            setLocale(loc.key);
+            window.location.reload();
+        };
+
+        const featured = document.createElement("div");
+        featured.className = "sim-langdialog-featured";
+
+        const sep = document.createElement("hr");
+        sep.className = "sim-langdialog-sep";
+
+        const list = document.createElement("div");
+        list.className = "sim-langlist";
 
         let hasAI = false;
 
@@ -1159,59 +1180,58 @@ export class SimControl {
             const name = parts.slice(1).join(" ").replace(/\s*\(translated by AI\)\s*$/g, "").trim();
             if (isAI) hasAI = true;
 
-            const card = document.createElement("button");
-            card.type = "button";
-            card.className = "sim-lang-card";
-            if (loc.key === current) card.classList.add("active");
+            if (FEATURED.has(loc.key)) {
+                const card = document.createElement("button");
+                card.type = "button";
+                card.className = "sim-lang-card";
+                if (loc.key === current) card.classList.add("active");
 
-            const flagEl = document.createElement("span");
-            flagEl.className = "sim-lang-card-flag";
-            flagEl.textContent = flag;
+                const flagEl = document.createElement("span");
+                flagEl.className = "sim-lang-card-flag";
+                flagEl.textContent = flag;
 
-            const nameEl = document.createElement("span");
-            nameEl.className = "sim-lang-card-name";
-            nameEl.textContent = isAI ? `${name} *` : name;
+                const nameEl = document.createElement("span");
+                nameEl.className = "sim-lang-card-name";
+                nameEl.textContent = name;
 
-            card.appendChild(flagEl);
-            card.appendChild(nameEl);
+                card.appendChild(flagEl);
+                card.appendChild(nameEl);
+                card.addEventListener("click", makeClickHandler(loc));
+                featured.appendChild(card);
+            } else {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = "sim-langlist-item";
+                if (loc.key === current) btn.classList.add("active");
 
-            card.addEventListener("click", async (ev) => {
-                ev.preventDefault();
-                ev.stopPropagation();
+                const flagEl = document.createElement("span");
+                flagEl.className = "sim-langlist-item-flag";
+                flagEl.textContent = flag;
 
-                if (loc.key === getLocale()) {
-                    this._closeLanguageDialog();
-                    return;
-                }
+                const nameEl = document.createElement("span");
+                nameEl.className = "sim-langlist-item-name";
+                nameEl.textContent = isAI ? `${name} *` : name;
 
-                const oldLoc = getLocale();
-                await setLocale(loc.key);
-                const ok = await SimDialog.confirm(t("sim.langswitch.confirmdiscard"));
-                if (!ok) {
-                    setLocale(oldLoc);
-                    return;
-                }
-
-                setLocale(loc.key);
-                window.location.reload();
-            });
-
-            grid.appendChild(card);
-
-            if (loc.key === "en") {
-                const sep = document.createElement("hr");
-                sep.className = "sim-langdialog-sep";
-                grid.appendChild(sep);
+                btn.appendChild(flagEl);
+                btn.appendChild(nameEl);
+                btn.addEventListener("click", makeClickHandler(loc));
+                list.appendChild(btn);
             }
         }
 
-        dlg.appendChild(grid);
+        dlg.appendChild(featured);
+        dlg.appendChild(sep);
+        dlg.appendChild(list);
 
         search.addEventListener("input", () => {
             const q = search.value.toLowerCase();
-            for (const card of /** @type {HTMLCollectionOf<HTMLElement>} */ (grid.children)) {
-                const nameEl = card.querySelector(".sim-lang-card-name");
-                card.style.display = !q || nameEl?.textContent?.toLowerCase().includes(q) ? "" : "none";
+            for (const el of /** @type {HTMLCollectionOf<HTMLElement>} */ (featured.children)) {
+                const nameEl = el.querySelector(".sim-lang-card-name");
+                el.style.display = !q || nameEl?.textContent?.toLowerCase().includes(q) ? "" : "none";
+            }
+            for (const el of /** @type {HTMLCollectionOf<HTMLElement>} */ (list.children)) {
+                const nameEl = el.querySelector(".sim-langlist-item-name");
+                el.style.display = !q || nameEl?.textContent?.toLowerCase().includes(q) ? "" : "none";
             }
         });
 
