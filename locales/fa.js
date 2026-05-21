@@ -1100,5 +1100,9 @@ export default {
   "router.ospf.tab.config": "پیکربندی",
   "router.ospf.tab.status": "وضعیت",
   "router.ospf.tab.lsdb": "LSDB",
-  "router.ospf.tab.log": "گزارش"
+  "router.ospf.tab.log": "گزارش",
+  "router.routingtable.source": "منبع",
+  "router.routingtable.source.connected": "متصل",
+  "router.routingtable.source.static": "ایستا",
+  "switch.stp.priority": "اولویت پل:"
 };

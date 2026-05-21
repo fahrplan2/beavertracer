@@ -1100,5 +1100,9 @@ export default {
   "router.ospf.tab.config": "설정",
   "router.ospf.tab.status": "상태",
   "router.ospf.tab.lsdb": "LSDB",
-  "router.ospf.tab.log": "로그"
+  "router.ospf.tab.log": "로그",
+  "router.routingtable.source": "소스",
+  "router.routingtable.source.connected": "연결됨",
+  "router.routingtable.source.static": "정적",
+  "switch.stp.priority": "브릿지 우선순위:"
 };

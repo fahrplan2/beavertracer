@@ -1100,5 +1100,9 @@ export default {
   "router.ospf.tab.config": "Конфігурація",
   "router.ospf.tab.status": "Стан",
   "router.ospf.tab.lsdb": "LSDB",
-  "router.ospf.tab.log": "Журнал"
+  "router.ospf.tab.log": "Журнал",
+  "router.routingtable.source": "Джерело",
+  "router.routingtable.source.connected": "Підключено",
+  "router.routingtable.source.static": "Статичне",
+  "switch.stp.priority": "Пріоритет моста:"
 };

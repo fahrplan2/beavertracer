@@ -1107,5 +1107,9 @@ export default {
   "router.ospf.tab.config": "Configuración",
   "router.ospf.tab.status": "Estado",
   "router.ospf.tab.lsdb": "LSDB",
-  "router.ospf.tab.log": "Registro"
+  "router.ospf.tab.log": "Registro",
+  "router.routingtable.source": "Origen",
+  "router.routingtable.source.connected": "Conectado",
+  "router.routingtable.source.static": "Estático",
+  "switch.stp.priority": "Prioridad del puente:"
 };

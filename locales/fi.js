@@ -1100,5 +1100,9 @@ export default {
   "router.ospf.tab.config": "Asetukset",
   "router.ospf.tab.status": "Tila",
   "router.ospf.tab.lsdb": "LSDB",
-  "router.ospf.tab.log": "Loki"
+  "router.ospf.tab.log": "Loki",
+  "router.routingtable.source": "Lähde",
+  "router.routingtable.source.connected": "Yhdistetty",
+  "router.routingtable.source.static": "Staattinen",
+  "switch.stp.priority": "Sillan prioriteetti:"
 };

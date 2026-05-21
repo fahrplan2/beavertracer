@@ -1100,5 +1100,9 @@ export default {
   "router.ospf.tab.config": "Konfigūracija",
   "router.ospf.tab.status": "Būsena",
   "router.ospf.tab.lsdb": "LSDB",
-  "router.ospf.tab.log": "Žurnalas"
+  "router.ospf.tab.log": "Žurnalas",
+  "router.routingtable.source": "Šaltinis",
+  "router.routingtable.source.connected": "Prijungtas",
+  "router.routingtable.source.static": "Statinis",
+  "switch.stp.priority": "Tilto prioritetas:"
 };

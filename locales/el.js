@@ -1100,5 +1100,9 @@ export default {
   "router.ospf.tab.config": "Ρύθμιση",
   "router.ospf.tab.status": "Κατάσταση",
   "router.ospf.tab.lsdb": "LSDB",
-  "router.ospf.tab.log": "Αρχείο καταγραφής"
+  "router.ospf.tab.log": "Αρχείο καταγραφής",
+  "router.routingtable.source": "Προέλευση",
+  "router.routingtable.source.connected": "Συνδεδεμένο",
+  "router.routingtable.source.static": "Στατικό",
+  "switch.stp.priority": "Προτεραιότητα Γέφυρας:"
 };

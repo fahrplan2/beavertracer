@@ -1100,5 +1100,9 @@ export default {
   "router.ospf.tab.config": "Konfiguracija",
   "router.ospf.tab.status": "Stanje",
   "router.ospf.tab.lsdb": "LSDB",
-  "router.ospf.tab.log": "Dnevnik"
+  "router.ospf.tab.log": "Dnevnik",
+  "router.routingtable.source": "Vir",
+  "router.routingtable.source.connected": "Povezano",
+  "router.routingtable.source.static": "Statično",
+  "switch.stp.priority": "Prioriteta mostu:"
 };

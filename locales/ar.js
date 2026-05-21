@@ -1100,5 +1100,9 @@ export default {
   "router.ospf.tab.config": "الإعدادات",
   "router.ospf.tab.status": "الحالة",
   "router.ospf.tab.lsdb": "LSDB",
-  "router.ospf.tab.log": "السجل"
+  "router.ospf.tab.log": "السجل",
+  "router.routingtable.source": "المصدر",
+  "router.routingtable.source.connected": "متصل",
+  "router.routingtable.source.static": "ثابت",
+  "switch.stp.priority": "أولوية الجسر:"
 };

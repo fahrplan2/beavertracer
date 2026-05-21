@@ -1100,5 +1100,9 @@ export default {
   "router.ospf.tab.config": "Yapılandırma",
   "router.ospf.tab.status": "Durum",
   "router.ospf.tab.lsdb": "LSDB",
-  "router.ospf.tab.log": "Günlük"
+  "router.ospf.tab.log": "Günlük",
+  "router.routingtable.source": "Kaynak",
+  "router.routingtable.source.connected": "Bağlı",
+  "router.routingtable.source.static": "Statik",
+  "switch.stp.priority": "Köprü Önceliği:"
 };

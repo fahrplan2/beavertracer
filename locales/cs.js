@@ -1100,5 +1100,9 @@ export default {
   "router.ospf.tab.config": "Konfigurace",
   "router.ospf.tab.status": "Stav",
   "router.ospf.tab.lsdb": "LSDB",
-  "router.ospf.tab.log": "Protokol"
+  "router.ospf.tab.log": "Protokol",
+  "router.routingtable.source": "Zdroj",
+  "router.routingtable.source.connected": "Připojeno",
+  "router.routingtable.source.static": "Statické",
+  "switch.stp.priority": "Priorita mostu:"
 };

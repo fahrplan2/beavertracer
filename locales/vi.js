@@ -1100,5 +1100,9 @@ export default {
   "router.ospf.tab.config": "Cấu hình",
   "router.ospf.tab.status": "Trạng thái",
   "router.ospf.tab.lsdb": "LSDB",
-  "router.ospf.tab.log": "Nhật ký"
+  "router.ospf.tab.log": "Nhật ký",
+  "router.routingtable.source": "Nguồn",
+  "router.routingtable.source.connected": "Đã kết nối",
+  "router.routingtable.source.static": "Tĩnh",
+  "switch.stp.priority": "Ưu tiên Bridge:"
 };

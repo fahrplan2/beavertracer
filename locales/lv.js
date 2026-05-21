@@ -1100,5 +1100,9 @@ export default {
   "router.ospf.tab.config": "Konfigurācija",
   "router.ospf.tab.status": "Stāvoklis",
   "router.ospf.tab.lsdb": "LSDB",
-  "router.ospf.tab.log": "Žurnāls"
+  "router.ospf.tab.log": "Žurnāls",
+  "router.routingtable.source": "Avots",
+  "router.routingtable.source.connected": "Savienots",
+  "router.routingtable.source.static": "Statisks",
+  "switch.stp.priority": "Tilta prioritāte:"
 };

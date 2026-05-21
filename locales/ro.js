@@ -1100,5 +1100,9 @@ export default {
   "router.ospf.tab.config": "Configurare",
   "router.ospf.tab.status": "Stare",
   "router.ospf.tab.lsdb": "LSDB",
-  "router.ospf.tab.log": "Jurnal"
+  "router.ospf.tab.log": "Jurnal",
+  "router.routingtable.source": "Sursă",
+  "router.routingtable.source.connected": "Conectat",
+  "router.routingtable.source.static": "Static",
+  "switch.stp.priority": "Prioritate punte:"
 };

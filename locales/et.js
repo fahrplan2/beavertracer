@@ -1100,5 +1100,9 @@ export default {
   "router.ospf.tab.config": "Konfiguratsioon",
   "router.ospf.tab.status": "Olek",
   "router.ospf.tab.lsdb": "LSDB",
-  "router.ospf.tab.log": "Logi"
+  "router.ospf.tab.log": "Logi",
+  "router.routingtable.source": "Allikas",
+  "router.routingtable.source.connected": "Ühendatud",
+  "router.routingtable.source.static": "Staatiline",
+  "switch.stp.priority": "Silla prioriteet:"
 };

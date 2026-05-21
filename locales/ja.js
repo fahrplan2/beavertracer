@@ -1100,5 +1100,9 @@ export default {
   "router.ospf.tab.config": "設定",
   "router.ospf.tab.status": "ステータス",
   "router.ospf.tab.lsdb": "LSDB",
-  "router.ospf.tab.log": "ログ"
+  "router.ospf.tab.log": "ログ",
+  "router.routingtable.source": "送信元",
+  "router.routingtable.source.connected": "接続済み",
+  "router.routingtable.source.static": "静的",
+  "switch.stp.priority": "ブリッジ優先度："
 };

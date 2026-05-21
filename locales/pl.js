@@ -1100,5 +1100,9 @@ export default {
   "router.ospf.tab.config": "Konfiguracja",
   "router.ospf.tab.status": "Stan",
   "router.ospf.tab.lsdb": "LSDB",
-  "router.ospf.tab.log": "Dziennik"
+  "router.ospf.tab.log": "Dziennik",
+  "router.routingtable.source": "Źródło",
+  "router.routingtable.source.connected": "Połączone",
+  "router.routingtable.source.static": "Statyczne",
+  "switch.stp.priority": "Priorytet mostu:"
 };

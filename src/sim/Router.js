@@ -719,6 +719,23 @@ export class Router extends SimulatedObject {
 
     /* ----------------------------- routes UI ---------------------------- */
 
+    /** @param {HTMLElement} scrollWrap */
+    _attachScrollHint(scrollWrap) {
+        const hint = document.createElement("div");
+        hint.className = "router-scroll-hint";
+        hint.setAttribute("aria-hidden", "true");
+        hint.textContent = "▼";
+        scrollWrap.appendChild(hint);
+
+        const update = () => {
+            const canScroll = scrollWrap.scrollHeight > scrollWrap.clientHeight + 2;
+            const atBottom = scrollWrap.scrollTop + scrollWrap.clientHeight >= scrollWrap.scrollHeight - 4;
+            hint.style.display = (canScroll && !atBottom) ? "block" : "none";
+        };
+        scrollWrap.addEventListener("scroll", update, { passive: true });
+        requestAnimationFrame(update);
+    }
+
     _renderRoutes() {
         if (this._selectedRouteFamily === 6) {
             this._renderRoutesV6();
@@ -971,6 +988,7 @@ export class Router extends SimulatedObject {
         const scrollWrap = DOMBuilder.div("router-routes-scroll");
         scrollWrap.appendChild(table);
         this._routesHost.appendChild(scrollWrap);
+        this._attachScrollHint(scrollWrap);
 
         // ---- Footer: "+ Route hinzufügen" button ----
         const hasIfaces = this.net.interfaces.length > 0;
@@ -1225,6 +1243,7 @@ export class Router extends SimulatedObject {
         const scrollWrapV6 = DOMBuilder.div("router-routes-scroll");
         scrollWrapV6.appendChild(table);
         this._routesHost.appendChild(scrollWrapV6);
+        this._attachScrollHint(scrollWrapV6);
 
         // ---- Footer: "+ Route hinzufügen" button (IPv6) ----
         const hasIfaces = this.net.interfaces.length > 0;
