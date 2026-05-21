@@ -1104,5 +1104,13 @@ export default {
   "router.routingtable.source": "Προέλευση",
   "router.routingtable.source.connected": "Συνδεδεμένο",
   "router.routingtable.source.static": "Στατικό",
-  "switch.stp.priority": "Προτεραιότητα Γέφυρας:"
+  "switch.stp.priority": "Προτεραιότητα Γέφυρας:",
+  "welcome.subtitle": "Προσομοιωτής Δικτύου με Βάση τον Περιηγητή",
+  "welcome.new": "Νέο Έγγραφο",
+  "welcome.new.desc": "Ξεκινήστε με έναν κενό καμβά",
+  "welcome.open": "Άνοιγμα Αρχείου",
+  "welcome.open.desc": "Φορτώστε ένα αρχείο .btsim από τον δίσκο",
+  "welcome.example": "Φόρτωση Παραδείγματος",
+  "welcome.example.desc": "Εξερευνήστε ένα έτοιμο δίκτυο",
+  "welcome.news": "Τι Νέο"
 };

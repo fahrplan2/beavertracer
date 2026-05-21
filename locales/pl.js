@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇵🇱 Polski (translated by AI)", order: 17 };
+export const meta = { name: "🇵🇱 Polski (translated by AI)", order: 18 };
 
 export default {
   "lang.name": "🇵🇱 Polski",
@@ -1104,5 +1104,13 @@ export default {
   "router.routingtable.source": "Źródło",
   "router.routingtable.source.connected": "Połączone",
   "router.routingtable.source.static": "Statyczne",
-  "switch.stp.priority": "Priorytet mostu:"
+  "switch.stp.priority": "Priorytet mostu:",
+  "welcome.subtitle": "Symulator sieci oparty na przeglądarce",
+  "welcome.new": "Nowy dokument",
+  "welcome.new.desc": "Zacznij z pustym płótnem",
+  "welcome.open": "Otwórz plik",
+  "welcome.open.desc": "Załaduj plik .btsim z dysku",
+  "welcome.example": "Załaduj przykład",
+  "welcome.example.desc": "Poznaj gotową sieć",
+  "welcome.news": "Co nowego"
 };

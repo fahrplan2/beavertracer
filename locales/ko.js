@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇰🇷 한국어 (translated by AI)", order: 30 };
+export const meta = { name: "🇰🇷 한국어 (translated by AI)", order: 32 };
 
 export default {
   "lang.name": "🇰🇷 한국어",
@@ -1104,5 +1104,13 @@ export default {
   "router.routingtable.source": "소스",
   "router.routingtable.source.connected": "연결됨",
   "router.routingtable.source.static": "정적",
-  "switch.stp.priority": "브릿지 우선순위:"
+  "switch.stp.priority": "브릿지 우선순위:",
+  "welcome.subtitle": "브라우저 기반 네트워크 시뮬레이터",
+  "welcome.new": "새 문서",
+  "welcome.new.desc": "빈 캔버스로 시작",
+  "welcome.open": "파일 열기",
+  "welcome.open.desc": "디스크에서 .btsim 파일 로드",
+  "welcome.example": "예제 로드",
+  "welcome.example.desc": "미리 만들어진 네트워크 살펴보기",
+  "welcome.news": "새로운 기능"
 };

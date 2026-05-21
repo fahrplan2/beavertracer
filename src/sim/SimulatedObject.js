@@ -228,6 +228,7 @@ export class SimulatedObject {
                 this.x = x;
                 this.y = y;
                 this.simcontrol?.redrawLinks?.();
+                this.simcontrol?.markDirty?.();
             }
         });
     }

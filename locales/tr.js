@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇹🇷 Türkçe (translated by AI)", order: 27 };
+export const meta = { name: "🇹🇷 Türkçe (translated by AI)", order: 29 };
 
 export default {
   "lang.name": "🇹🇷 Türkçe",
@@ -1104,5 +1104,13 @@ export default {
   "router.routingtable.source": "Kaynak",
   "router.routingtable.source.connected": "Bağlı",
   "router.routingtable.source.static": "Statik",
-  "switch.stp.priority": "Köprü Önceliği:"
+  "switch.stp.priority": "Köprü Önceliği:",
+  "welcome.subtitle": "Tarayıcı Tabanlı Ağ Simülatörü",
+  "welcome.new": "Yeni Belge",
+  "welcome.new.desc": "Boş bir tuval ile başlayın",
+  "welcome.open": "Dosya Aç",
+  "welcome.open.desc": "Diskten bir .btsim dosyası yükleyin",
+  "welcome.example": "Örneği Yükle",
+  "welcome.example.desc": "Hazır bir ağı keşfedin",
+  "welcome.news": "Yenilikleri Gör"
 };

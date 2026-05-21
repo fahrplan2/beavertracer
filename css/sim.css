@@ -904,7 +904,7 @@ sim-toolbar-langbtn {
   border-radius: var(--radius-lg);
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
   padding: var(--pad-xl);
-  width: min(720px, 94vw);
+  width: min(560px, 94vw);
   display: flex;
   flex-direction: column;
   gap: var(--pad-lg);
@@ -953,19 +953,15 @@ sim-toolbar-langbtn {
 }
 
 .sim-langdialog-sep {
-  grid-column: 1 / -1;
   border: none;
   border-top: 1px solid var(--ui-border);
-  margin: 2px 0;
+  margin: 0;
 }
 
-.sim-langdialog-grid {
+.sim-langdialog-featured {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  grid-template-columns: 1fr 1fr;
   gap: var(--pad-md);
-  max-height: 55vh;
-  overflow-y: auto;
-  padding-right: 2px;
 }
 
 .sim-lang-card {
@@ -995,13 +991,61 @@ sim-toolbar-langbtn {
 .sim-lang-card-flag {
   font-size: 1.75rem;
   line-height: 1;
-  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  font-family: "Apple Color Emoji", "Noto Color Emoji", "Segoe UI Emoji", sans-serif;
 }
 
 .sim-lang-card-name {
   font-size: 0.72rem;
   text-align: center;
   line-height: 1.2;
+}
+
+.sim-langlist {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 2px;
+  max-height: 50vh;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.sim-langlist-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  transition: background 120ms;
+}
+
+.sim-langlist-item:hover {
+  background: color-mix(in oklch, var(--bg), var(--text) 8%);
+}
+
+.sim-langlist-item.active {
+  background: color-mix(in oklch, var(--primary, #5b9bd5), transparent 82%);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.sim-langlist-item-flag {
+  font-size: 1rem;
+  line-height: 1;
+  flex-shrink: 0;
+  font-family: "Apple Color Emoji", "Noto Color Emoji", "Segoe UI Emoji", sans-serif;
+}
+
+.sim-langlist-item-name {
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sim-langdialog-note {

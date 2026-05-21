@@ -1111,5 +1111,13 @@ export default {
   "router.routingtable.source": "Source",
   "router.routingtable.source.connected": "Connecté",
   "router.routingtable.source.static": "Statique",
-  "switch.stp.priority": "Priorité du pont :"
+  "switch.stp.priority": "Priorité du pont :",
+  "welcome.subtitle": "Simulateur réseau basé sur navigateur",
+  "welcome.new": "Nouveau document",
+  "welcome.new.desc": "Commencer avec un canevas vide",
+  "welcome.open": "Ouvrir un fichier",
+  "welcome.open.desc": "Charger un fichier .btsim depuis le disque",
+  "welcome.example": "Charger un exemple",
+  "welcome.example.desc": "Explorer un réseau prêt à l'emploi",
+  "welcome.news": "Quoi de neuf"
 };

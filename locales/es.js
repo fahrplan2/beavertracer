@@ -1111,5 +1111,13 @@ export default {
   "router.routingtable.source": "Origen",
   "router.routingtable.source.connected": "Conectado",
   "router.routingtable.source.static": "Estático",
-  "switch.stp.priority": "Prioridad del puente:"
+  "switch.stp.priority": "Prioridad del puente:",
+  "welcome.subtitle": "Simulador de Redes Basado en Navegador",
+  "welcome.new": "Nuevo Documento",
+  "welcome.new.desc": "Comenzar con un lienzo vacío",
+  "welcome.open": "Abrir Archivo",
+  "welcome.open.desc": "Cargar un archivo .btsim desde el disco",
+  "welcome.example": "Cargar Ejemplo",
+  "welcome.example.desc": "Explorar una red preconfigurada",
+  "welcome.news": "Novedades"
 };

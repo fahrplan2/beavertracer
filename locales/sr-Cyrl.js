@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇷🇸 Српски (translated by AI)", order: 21 };
+export const meta = { name: "🇷🇸 Српски (translated by AI)", order: 24 };
 
 export default {
   "app.generic.title": "Генеричка апликација",
@@ -1103,5 +1103,13 @@ export default {
   "app.bitcoin.log.connectfailed": "[{time}] Повезивање на {addr} није успело: {reason}",
   "app.bitcoin.log.blockrcv": "[{time}] Блок {id} висина={height} рудар={miner}",
   "app.bitcoin.log.reorg": "[{time}] Реорганизација ланца: пребачен на грану на висини {height}",
-  "app.bitcoin.log.txrcv": "[{time}] TX {id}: {amount} BTC  {from} -> {to}"
+  "app.bitcoin.log.txrcv": "[{time}] TX {id}: {amount} BTC  {from} -> {to}",
+  "welcome.subtitle": "Симулатор мреже заснован на прегледачу",
+  "welcome.new": "Нови документ",
+  "welcome.new.desc": "Почните са празним платном",
+  "welcome.open": "Отварање датотеке",
+  "welcome.open.desc": "Учитајте .btsim датотеку са диска",
+  "welcome.example": "Учитај пример",
+  "welcome.example.desc": "Истражите готову мрежу",
+  "welcome.news": "Шта је ново"
 };

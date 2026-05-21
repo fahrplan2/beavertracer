@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇺🇦 Українська (translated by AI)", order: 28 };
+export const meta = { name: "🇺🇦 Українська (translated by AI)", order: 30 };
 
 export default {
   "lang.name": "🇺🇦 Українська",
@@ -1104,5 +1104,13 @@ export default {
   "router.routingtable.source": "Джерело",
   "router.routingtable.source.connected": "Підключено",
   "router.routingtable.source.static": "Статичне",
-  "switch.stp.priority": "Пріоритет моста:"
+  "switch.stp.priority": "Пріоритет моста:",
+  "welcome.subtitle": "Мережевий симулятор на основі браузера",
+  "welcome.new": "Новий документ",
+  "welcome.new.desc": "Почніть з порожнього полотна",
+  "welcome.open": "Відкрити файл",
+  "welcome.open.desc": "Завантажте файл .btsim з диска",
+  "welcome.example": "Завантажити приклад",
+  "welcome.example.desc": "Дослідіть готову мережу",
+  "welcome.news": "Що нового"
 };

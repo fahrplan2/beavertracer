@@ -1104,5 +1104,13 @@ export default {
   "router.routingtable.source": "Zdroj",
   "router.routingtable.source.connected": "Připojeno",
   "router.routingtable.source.static": "Statické",
-  "switch.stp.priority": "Priorita mostu:"
+  "switch.stp.priority": "Priorita mostu:",
+  "welcome.subtitle": "Síťový simulátor v prohlížeči",
+  "welcome.new": "Nový dokument",
+  "welcome.new.desc": "Začněte s prázdným plátnem",
+  "welcome.open": "Otevřít soubor",
+  "welcome.open.desc": "Načtěte soubor .btsim z disku",
+  "welcome.example": "Načíst příklad",
+  "welcome.example.desc": "Prozkoumejte připravenou síť",
+  "welcome.news": "Co je nového"
 };

@@ -1104,5 +1104,13 @@ export default {
   "router.routingtable.source": "Kilde",
   "router.routingtable.source.connected": "Forbundet",
   "router.routingtable.source.static": "Statisk",
-  "switch.stp.priority": "Bro-prioritet:"
+  "switch.stp.priority": "Bro-prioritet:",
+  "welcome.subtitle": "Browserbaseret netværkssimulator",
+  "welcome.new": "Nyt dokument",
+  "welcome.new.desc": "Start med et tomt lærred",
+  "welcome.open": "Åbn fil",
+  "welcome.open.desc": "Indlæs en .btsim-fil fra disk",
+  "welcome.example": "Indlæs eksempel",
+  "welcome.example.desc": "Udforsk et klar netværk",
+  "welcome.news": "Hvad er nyt"
 };

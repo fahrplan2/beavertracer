@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇫🇮 Suomi (translated by AI)", order: 24 };
+export const meta = { name: "🇫🇮 Suomi (translated by AI)", order: 26 };
 
 export default {
   "lang.name": "🇫🇮 Suomi",
@@ -1104,5 +1104,13 @@ export default {
   "router.routingtable.source": "Lähde",
   "router.routingtable.source.connected": "Yhdistetty",
   "router.routingtable.source.static": "Staattinen",
-  "switch.stp.priority": "Sillan prioriteetti:"
+  "switch.stp.priority": "Sillan prioriteetti:",
+  "welcome.subtitle": "Selainpohjainen verkkosimulaattori",
+  "welcome.new": "Uusi asiakirja",
+  "welcome.new.desc": "Aloita tyhjällä pohjalla",
+  "welcome.open": "Avaa tiedosto",
+  "welcome.open.desc": "Lataa .btsim-tiedosto levyltä",
+  "welcome.example": "Lataa esimerkki",
+  "welcome.example.desc": "Tutustu valmiiseen verkkoon",
+  "welcome.news": "Mitä uutta"
 };

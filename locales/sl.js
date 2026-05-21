@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇸🇮 Slovenščina (translated by AI)", order: 22 };
+export const meta = { name: "🇸🇮 Slovenščina (translated by AI)", order: 23 };
 
 export default {
   "lang.name": "🇸🇮 Slovenščina",
@@ -1104,5 +1104,13 @@ export default {
   "router.routingtable.source": "Vir",
   "router.routingtable.source.connected": "Povezano",
   "router.routingtable.source.static": "Statično",
-  "switch.stp.priority": "Prioriteta mostu:"
+  "switch.stp.priority": "Prioriteta mostu:",
+  "welcome.subtitle": "Omrežni simulator v brskalniku",
+  "welcome.new": "Nov dokument",
+  "welcome.new.desc": "Začnite s prazno platno",
+  "welcome.open": "Odpri datoteko",
+  "welcome.open.desc": "Naložite datoteko .btsim s diska",
+  "welcome.example": "Naloži primer",
+  "welcome.example.desc": "Raziščite pripravljeno omrežje",
+  "welcome.news": "Kaj je novo"
 };

@@ -1291,5 +1291,14 @@ export default {
   "app.bitcoin.log.connectfailed":    "[{time}] Connect to {addr} failed: {reason}",
   "app.bitcoin.log.blockrcv":         "[{time}] Block {id} height={height} miner={miner}",
   "app.bitcoin.log.reorg":            "[{time}] Chain reorg: switched to fork at height {height}",
-  "app.bitcoin.log.txrcv":            "[{time}] TX {id}: {amount} BTC  {from} -> {to}"
+  "app.bitcoin.log.txrcv":            "[{time}] TX {id}: {amount} BTC  {from} -> {to}",
+
+  "welcome.subtitle":   "Browser-based Network Simulator",
+  "welcome.new":        "New Document",
+  "welcome.new.desc":   "Start with an empty canvas",
+  "welcome.open":       "Open File",
+  "welcome.open.desc":  "Load a .btsim file from disk",
+  "welcome.example":    "Load Example",
+  "welcome.example.desc": "Explore a ready-made network",
+  "welcome.news":       "What's New"
 };

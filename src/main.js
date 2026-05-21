@@ -3,6 +3,7 @@
 import { initLocale } from "./i18n/index.js";
 import { SimControl } from "./SimControl.js";
 import { defaultSimulation } from "./defaultsim.js";
+import { WelcomeDialog } from "./lib/WelcomeDialog.js";
 
 /**
  * If ?sim=<url> is present, fetch that JSON.
@@ -35,13 +36,25 @@ async function resolveStartupSim() {
 initLocale().then(async () => {
     const simRoot = /** @type {HTMLElement} */ (document.getElementById("simcontrol"));
     const params = new URLSearchParams(window.location.search);
-    const sim = new SimControl(simRoot, { embedded: params.get("embed") === "1" });
-    sim.restore(await resolveStartupSim());
+    const embedded = params.get("embed") === "1";
+    const sim = new SimControl(simRoot, { embedded });
+
+    if (_simParam) {
+        sim.restore(await resolveStartupSim());
+    } else if (!embedded) {
+        sim.new();
+    } else {
+        sim.restore(defaultSimulation);
+    }
 
     const splash = document.getElementById("splash");
     if (splash) {
         splash.classList.add("is-hiding");
         splash.addEventListener("transitionend", () => splash.remove(), { once: true });
+    }
+
+    if (!_simParam && !embedded) {
+        WelcomeDialog.show(sim);
     }
 
     // Prefetch wiregasm assets in idle time so first trace use is faster

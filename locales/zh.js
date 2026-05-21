@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇨🇳 简体中文", order: 30 };
+export const meta = { name: "🇨🇳 简体中文", order: 33 };
 
 export default {
   "lang.name": "🇨🇳 简体中文",
@@ -1104,5 +1104,13 @@ export default {
   "router.routingtable.source": "源",
   "router.routingtable.source.connected": "已连接",
   "router.routingtable.source.static": "静态",
-  "switch.stp.priority": "网桥优先级："
+  "switch.stp.priority": "网桥优先级：",
+  "welcome.subtitle": "基于浏览器的网络模拟器",
+  "welcome.new": "新建文档",
+  "welcome.new.desc": "从空白画布开始",
+  "welcome.open": "打开文件",
+  "welcome.open.desc": "从磁盘加载 .btsim 文件",
+  "welcome.example": "加载示例",
+  "welcome.example.desc": "探索现成的网络",
+  "welcome.news": "新增功能"
 };

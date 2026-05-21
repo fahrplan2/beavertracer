@@ -1111,5 +1111,14 @@ export default {
   "router.ospf.tab.config": "Konfiguration",
   "router.ospf.tab.status": "Status",
   "router.ospf.tab.lsdb": "LSDB",
-  "router.ospf.tab.log": "Protokoll"
+  "router.ospf.tab.log": "Protokoll",
+
+  "welcome.subtitle":   "Browser-basierter Netzwerksimulator",
+  "welcome.new":        "Neues Dokument",
+  "welcome.new.desc":   "Mit leerem Arbeitsbereich starten",
+  "welcome.open":       "Datei öffnen",
+  "welcome.open.desc":  "Eine .btsim-Datei laden",
+  "welcome.example":    "Beispiel laden",
+  "welcome.example.desc": "Fertige Netzwerktopologie erkunden",
+  "welcome.news":       "Neuigkeiten"
 };

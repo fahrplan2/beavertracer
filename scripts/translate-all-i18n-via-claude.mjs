@@ -14,44 +14,10 @@
 
 import { spawnSync } from "node:child_process";
 import process from "node:process";
+import { LOCALES } from "./locales.mjs";
 
 const TRANSLATE_SCRIPT = "./scripts/translate-i18n-via-claude.mjs";
 const INPUT = "locales/en.js";
-
-const TARGETS = [
-  { lang: "de", name: "German" },
-  { lang: "es", name: "Spanish" },
-  { lang: "fr", name: "French" },
-  { lang: "it", name: "Italian" },
-  { lang: "id", name: "Indonesian" },
-  { lang: "bg", name: "Bulgarian" },
-  { lang: "bs", name: "Bosnian" },
-  { lang: "cs", name: "Czech" },
-  { lang: "da", name: "Danish" },
-  { lang: "et", name: "Estonian" },
-  { lang: "fi", name: "Finnish" },
-  { lang: "lv", name: "Latvian" },
-  { lang: "lt", name: "Lithuanian" },
-  { lang: "sl", name: "Slovenian" },
-  { lang: "el", name: "Greek" },
-  { lang: "hr", name: "Croatian" },
-  { lang: "fa", name: "Persian (Farsi)" },
-  { lang: "pt-PT", name: "European Portuguese (Portugal)" },
-  { lang: "ro", name: "Romanian" },
-  { lang: "ru", name: "Russian" },
-  { lang: "sr-Cyrl", name: "Serbian (Cyrillic script)" },
-  { lang: "sr-Latn", name: "Serbian (Latin script)" },
-  { lang: "nl", name: "Dutch" },
-  { lang: "pl", name: "Polish" },
-  { lang: "tr", name: "Turkish" },
-  { lang: "vi", name: "Vietnamese" },
-  { lang: "sv", name: "Swedish" },
-  { lang: "ja", name: "Japanese" },
-  { lang: "ko", name: "Korean" },
-  { lang: "zh", name: "Simplified Chinese" },
-  { lang: "ar", name: "Arabic" },
-  { lang: "ua", name: "Ukrainian" },
-];
 
 const HELP_TEXT = `
 Usage: ANTHROPIC_API_KEY=... node scripts/translate-all-i18n-via-claude.mjs [options]
@@ -88,23 +54,23 @@ for (let i = 0; i < args.length; i++) {
   }
 }
 
-for (const t of TARGETS) {
+for (const t of LOCALES) {
   const cmdArgs = [
     TRANSLATE_SCRIPT,
     "--in", INPUT,
-    "--out", `locales/${t.lang}.js`,
+    "--out", `locales/${t.code}.js`,
     "--target", t.name,
     ...passThrough,
   ];
 
   if (force) cmdArgs.push("--update", "false");
 
-  console.log(`\n→ Translating to ${t.name} (${t.lang})${force ? " [FORCE]" : ""}`);
+  console.log(`\n→ Translating to ${t.name} (${t.code})${force ? " [FORCE]" : ""}`);
 
   const res = spawnSync("node", cmdArgs, { stdio: "inherit" });
 
   if (res.status !== 0) {
-    console.error(`✖ Failed for ${t.lang}`);
+    console.error(`✖ Failed for ${t.code}`);
     process.exit(res.status ?? 1);
   }
 }

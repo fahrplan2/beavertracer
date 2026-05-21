@@ -1104,5 +1104,13 @@ export default {
   "router.routingtable.source": "Izvor",
   "router.routingtable.source.connected": "Povezano",
   "router.routingtable.source.static": "Statičko",
-  "switch.stp.priority": "Prioritet mosta:"
+  "switch.stp.priority": "Prioritet mosta:",
+  "welcome.subtitle": "Simulator mreže baziran na pregledniku",
+  "welcome.new": "Novi dokument",
+  "welcome.new.desc": "Počnite s praznom canvasom",
+  "welcome.open": "Otvori datoteku",
+  "welcome.open.desc": "Učitaj .btsim datoteku s diska",
+  "welcome.example": "Učitaj primjer",
+  "welcome.example.desc": "Istražite gotovu mrežu",
+  "welcome.news": "Što je novo"
 };

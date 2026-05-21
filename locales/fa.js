@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇮🇷 فارسی (translated by AI)", order: 33 };
+export const meta = { name: "🇮🇷 فارسی (translated by AI)", order: 35 };
 
 export default {
   "lang.name": "🇮🇷 فارسی",
@@ -1104,5 +1104,13 @@ export default {
   "router.routingtable.source": "منبع",
   "router.routingtable.source.connected": "متصل",
   "router.routingtable.source.static": "ایستا",
-  "switch.stp.priority": "اولویت پل:"
+  "switch.stp.priority": "اولویت پل:",
+  "welcome.subtitle": "شبیه‌ساز شبکه مبتنی بر مرورگر",
+  "welcome.new": "سند جدید",
+  "welcome.new.desc": "شروع با یک بوم خالی",
+  "welcome.open": "باز کردن فایل",
+  "welcome.open.desc": "بارگذاری فایل .btsim از دیسک",
+  "welcome.example": "بارگذاری مثال",
+  "welcome.example.desc": "کاوش یک شبکه آماده‌شده",
+  "welcome.news": "تازه‌ها"
 };

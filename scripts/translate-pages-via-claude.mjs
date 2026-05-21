@@ -8,6 +8,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import { LOCALES } from "./locales.mjs";
 
 if (process.argv.includes("--help") || process.argv.includes("-h")) {
   console.log(`
@@ -24,42 +25,6 @@ Options:
 
 const ROOT = path.resolve(import.meta.dirname, "..");
 
-const RTL_LOCALES = new Set(["ar", "he", "fa", "ur"]);
-
-const LOCALES = [
-  { code: "de", name: "German" },
-  { code: "es", name: "Spanish" },
-  { code: "fr", name: "French" },
-  { code: "it", name: "Italian" },
-  { code: "id", name: "Indonesian" },
-  { code: "bg", name: "Bulgarian" },
-  { code: "bs", name: "Bosnian" },
-  { code: "cs", name: "Czech" },
-  { code: "da", name: "Danish" },
-  { code: "et", name: "Estonian" },
-  { code: "fi", name: "Finnish" },
-  { code: "lv", name: "Latvian" },
-  { code: "lt", name: "Lithuanian" },
-  { code: "sl", name: "Slovenian" },
-  { code: "el", name: "Greek" },
-  { code: "hr", name: "Croatian" },
-  { code: "fa", name: "Persian (Farsi)" },
-  { code: "pt-PT", name: "European Portuguese (Portugal)" },
-  { code: "ro", name: "Romanian" },
-  { code: "ru", name: "Russian" },
-  { code: "sr-Cyrl", name: "Serbian (Cyrillic script)" },
-  { code: "sr-Latn", name: "Serbian (Latin script)" },
-  { code: "nl", name: "Dutch" },
-  { code: "pl", name: "Polish" },
-  { code: "tr", name: "Turkish" },
-  { code: "vi", name: "Vietnamese" },
-  { code: "sv", name: "Swedish" },
-  { code: "ja", name: "Japanese" },
-  { code: "ko", name: "Korean" },
-  { code: "zh", name: "Simplified Chinese" },
-  { code: "ar", name: "Arabic" },
-  { code: "ua", name: "Ukrainian" },
-];
 
 // For "about", only translate the part before this marker — Credits/License stay English.
 const ABOUT_STOP_MARKER = "<h3>Credits</h3>";
@@ -115,7 +80,7 @@ for (const page of ["about", "help"]) {
     process.stdout.write(`  …     ${page} → ${locale.name} `);
     try {
       let translated = await translateHtml(translatePart, locale.name);
-      if (RTL_LOCALES.has(locale.code.split("-")[0])) {
+      if (locale.rtl) {
         translated = `<div dir="rtl">\n${translated}\n</div>`;
       }
       fs.writeFileSync(outPath, translated + keepPart + "\n", "utf8");

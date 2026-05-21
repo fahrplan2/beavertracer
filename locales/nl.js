@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇳🇱 Nederlands (translated by AI)", order: 16 };
+export const meta = { name: "🇳🇱 Nederlands (translated by AI)", order: 17 };
 
 export default {
   "lang.name": "🇳🇱 Nederlands",
@@ -1104,5 +1104,13 @@ export default {
   "router.routingtable.source": "Bron",
   "router.routingtable.source.connected": "Verbonden",
   "router.routingtable.source.static": "Statisch",
-  "switch.stp.priority": "Bridge-prioriteit:"
+  "switch.stp.priority": "Bridge-prioriteit:",
+  "welcome.subtitle": "Browsergebaseerde netwerksimulator",
+  "welcome.new": "Nieuw document",
+  "welcome.new.desc": "Begin met een leeg canvas",
+  "welcome.open": "Bestand openen",
+  "welcome.open.desc": "Laad een .btsim-bestand van schijf",
+  "welcome.example": "Voorbeeld laden",
+  "welcome.example.desc": "Verken een kant-en-klaar netwerk",
+  "welcome.news": "Wat is er nieuw"
 };

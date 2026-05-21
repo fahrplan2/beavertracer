@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇷🇴 Română (translated by AI)", order: 19 };
+export const meta = { name: "🇷🇴 Română (translated by AI)", order: 20 };
 
 export default {
   "lang.name": "🇷🇴 Română",
@@ -1104,5 +1104,13 @@ export default {
   "router.routingtable.source": "Sursă",
   "router.routingtable.source.connected": "Conectat",
   "router.routingtable.source.static": "Static",
-  "switch.stp.priority": "Prioritate punte:"
+  "switch.stp.priority": "Prioritate punte:",
+  "welcome.subtitle": "Simulator de rețea bazat pe browser",
+  "welcome.new": "Document nou",
+  "welcome.new.desc": "Începeți cu o pagină albă",
+  "welcome.open": "Deschideți fișier",
+  "welcome.open.desc": "Încărcați un fișier .btsim de pe disc",
+  "welcome.example": "Încărcați exemplu",
+  "welcome.example.desc": "Explorați o rețea gata făcută",
+  "welcome.news": "Ce-i nou"
 };
