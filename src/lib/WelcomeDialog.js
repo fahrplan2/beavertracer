@@ -113,21 +113,21 @@ export class WelcomeDialog {
         actions.appendChild(WelcomeDialog._actionBtn(
             "fa-file", t("welcome.new"), t("welcome.new.desc"),
             async () => {
-                if (!await SimDialog.confirm(t("sim.discardandnewwarning"))) return;
+                if (sim._isDirty && !await SimDialog.confirm(t("sim.discardandnewwarning"))) return;
                 close(() => sim.new());
             }
         ));
         actions.appendChild(WelcomeDialog._actionBtn(
             "fa-file-arrow-up", t("welcome.open"), t("welcome.open.desc"),
             async () => {
-                if (!await SimDialog.confirm(t("sim.discardandloadwarning"))) return;
+                if (sim._isDirty && !await SimDialog.confirm(t("sim.discardandloadwarning"))) return;
                 close(() => sim.open());
             }
         ));
         actions.appendChild(WelcomeDialog._actionBtn(
             "fa-network-wired", t("welcome.example"), t("welcome.example.desc"),
             async () => {
-                if (!await SimDialog.confirm(t("sim.discardandnewwarning"))) return;
+                if (sim._isDirty && !await SimDialog.confirm(t("sim.discardandnewwarning"))) return;
                 close(() => sim.restore(defaultSimulation));
             }
         ));
