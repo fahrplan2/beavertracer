@@ -5,6 +5,7 @@ import { isTauri } from "../tauri.js";
 import { defaultSimulation } from "../defaultsim.js";
 import { version } from "./version.js";
 import { SimDialog } from "./SimDialog.js";
+import { Tour } from "./Tour.js";
 
 export class WelcomeDialog {
     /**
@@ -12,6 +13,7 @@ export class WelcomeDialog {
      * @returns {Promise<void>}
      */
     static show(sim) {
+        sim._activeTour?._finish();
         return new Promise((resolve) => {
             const backdrop = document.createElement("div");
             backdrop.className = "welcome-backdrop";
@@ -130,6 +132,10 @@ export class WelcomeDialog {
                 if (sim._isDirty && !await SimDialog.confirm(t("sim.discardandnewwarning"))) return;
                 close(() => sim.restore(defaultSimulation));
             }
+        ));
+        actions.appendChild(WelcomeDialog._actionBtn(
+            "fa-route", t("tour.welcome.title"), t("tour.welcome.desc"),
+            () => close(() => Tour.start(sim))
         ));
 
         const news = document.createElement("div");
