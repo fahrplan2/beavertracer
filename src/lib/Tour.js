@@ -8,7 +8,7 @@ import { IPv4ConfigApp } from '../apps/IPv4ConfigApp.js';
 import { TerminalApp } from '../apps/TerminalApp.js';
 import { t } from '../i18n/index.js';
 
-const TOUR_SIM = {
+const TOUR_SIM = /** @type {any} */ ({
     '_info': 'Beaver Tracer Tour',
     'version': 4,
     'tick': 40,
@@ -63,7 +63,7 @@ const TOUR_SIM = {
             'portB': 'sw0'
         }
     ]
-};
+});
 
 /**
  * @typedef {{
@@ -109,7 +109,7 @@ function buildSteps(sim) {
             text: t('tour.step.add-pc-tool.text'),
             action: 'observe-tool-active',
             toolSelector: '[data-role="tool-place-pc"]',
-            fallback: () => { document.querySelector('[data-role="tool-place-pc"]')?.click(); },
+            fallback: () => { /** @type {HTMLElement|null} */ (document.querySelector('[data-role="tool-place-pc"]'))?.click(); },
         },
 
         // ── Step 1b: Place PC on canvas ────────────────────────────────────────
@@ -133,7 +133,7 @@ function buildSteps(sim) {
             text: t('tour.step.link-tool.text'),
             action: 'observe-tool-active',
             toolSelector: '[data-role="tool-link"]',
-            fallback: () => { document.querySelector('[data-role="tool-link"]')?.click(); },
+            fallback: () => { /** @type {HTMLElement|null} */ (document.querySelector('[data-role="tool-link"]'))?.click(); },
         },
 
         // ── Step 2b: Click PC1 to start the link ──────────────────────────────
@@ -209,7 +209,7 @@ function buildSteps(sim) {
             text: t('tour.step.run-mode.text'),
             action: 'observe-mode',
             modeRole: 'mode-run',
-            fallback: () => { document.querySelector('[data-role="mode-run"]')?.click(); },
+            fallback: () => { /** @type {HTMLElement|null} */ (document.querySelector('[data-role="mode-run"]'))?.click(); },
         },
 
         // ── Step 4: Click PC 1 to open its panel ──────────────────────────────
@@ -331,7 +331,7 @@ function buildSteps(sim) {
             text: t('tour.step.trace-mode.text'),
             action: 'observe-mode',
             modeRole: 'mode-trace',
-            fallback: () => { document.querySelector('[data-role="mode-trace"]')?.click(); },
+            fallback: () => { /** @type {HTMLElement|null} */ (document.querySelector('[data-role="mode-trace"]'))?.click(); },
         },
 
         // ── Step 10a: Click "+" to open trace picker ───────────────────────────
@@ -341,7 +341,7 @@ function buildSteps(sim) {
             text: t('tour.step.trace-open.text'),
             action: 'observe-body-element',
             bodySelector: '.pcapviewer-tabpicker2',
-            fallback: () => { document.querySelector('.pcapviewer-tab--plus')?.click(); },
+            fallback: () => { /** @type {HTMLElement|null} */ (document.querySelector('.pcapviewer-tab--plus'))?.click(); },
         },
 
         // ── Step 10b: Select device + port ────────────────────────────────────
@@ -640,7 +640,7 @@ export class Tour {
 
     /** @param {string} expectedIp @param {() => void} cb */
     _waitForInterfaceIP(expectedIp, cb) {
-        const p = this._sim.simobjects.find((/** @type {any} */ o) => o instanceof PC && o.id !== 20);
+        const p = /** @type {any} */ (this._sim.simobjects.find((/** @type {any} */ o) => o instanceof PC && o.id !== 20));
         if (!p) return;
         const check = () => p.net?.interfaces?.[0]?.ip?.toString() === expectedIp;
         if (check()) { setTimeout(cb, 0); return; }

@@ -101,6 +101,9 @@ export class SimControl {
     /** @type {HTMLElement|null} */
     _deleteHoverEl = null;
 
+    /** @type {import('./lib/Tour.js').Tour|null} */
+    _activeTour = null;
+
     /** @type {null|(()=>void)} */
     _langCleanup = null;
 
