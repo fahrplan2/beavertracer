@@ -248,6 +248,7 @@ export class HomeRouter extends SimulatedObject {
                 const pfRuleUdp = this._matchPortRule(17, udp.dstPort);
                 if (pfRuleUdp) {
                     if (this._nat.dnat(pkt, pfRuleUdp.lanIp, pfRuleUdp.lanPort)) {
+                        this._nat.installDnatSession(17, pfRuleUdp.wanPort, pfRuleUdp.lanIp, pfRuleUdp.lanPort);
                         void this._forwardToLan(pkt, pfRuleUdp.lanIp);
                     }
                     return;
@@ -262,6 +263,7 @@ export class HomeRouter extends SimulatedObject {
                     const pfRuleTcp = this._matchPortRule(6, tcp.dstPort);
                     if (pfRuleTcp) {
                         if (this._nat.dnat(pkt, pfRuleTcp.lanIp, pfRuleTcp.lanPort)) {
+                            this._nat.installDnatSession(6, pfRuleTcp.wanPort, pfRuleTcp.lanIp, pfRuleTcp.lanPort);
                             void this._forwardToLan(pkt, pfRuleTcp.lanIp);
                         }
                         return;
@@ -282,7 +284,7 @@ export class HomeRouter extends SimulatedObject {
      * proto 0 matches both TCP and UDP.
      * @param {number} proto 6=TCP, 17=UDP
      * @param {number} dstPort
-     * @returns {{lanIp:number, lanPort:number}|null}
+     * @returns {{proto:number, wanPort:number, lanIp:number, lanPort:number}|null}
      */
     _matchPortRule(proto, dstPort) {
         for (const r of this._portRules) {
