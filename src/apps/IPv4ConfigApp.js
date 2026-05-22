@@ -73,8 +73,12 @@ export class IPv4ConfigApp extends GenericProcess {
   /** @type {boolean} */
   applying = false;
 
-  /** @type {Map<number, { serverId:number, ip:number }>} */
+  /** @type {Map<number, { serverId:number, ip:number, leaseTimeSec:number }>} */
   dhcpStateByIface = new Map();
+
+  /** Generation counter per iface — increment to cancel a running renewal loop. */
+  /** @type {Map<number, number>} */
+  _dhcpRenewalGen = new Map();
 
   run() {
     this.root.classList.add("app", "app-ipv4");
@@ -608,7 +612,10 @@ export class IPv4ConfigApp extends GenericProcess {
         return;
       }
 
-      // STATIC mode
+      // STATIC mode – cancel any DHCP renewal loop for this interface
+      this._dhcpRenewalGen.set(i, (this._dhcpRenewalGen.get(i) ?? 0) + 1);
+      this.dhcpStateByIface.delete(i);
+
       const ipStr = (this.ipEl?.value ?? "").trim();
       const prefixStr = (this.prefixEl?.value ?? "").trim();
       const gwStr = (this.gwEl?.value ?? "").trim();
@@ -846,7 +853,17 @@ export class IPv4ConfigApp extends GenericProcess {
           if (dns?.setServer) dns.setServer(dnsNum, 53);
         }
 
-        this.dhcpStateByIface.set(ifaceIdx, { serverId, ip: ipNum });
+        const ltOpt = ackPkt.getOption(DHCPPacket.OPT_LEASE_TIME);
+        const leaseTimeSec = (ltOpt && ltOpt.length === 4)
+          ? ((ltOpt[0] << 24 | ltOpt[1] << 16 | ltOpt[2] << 8 | ltOpt[3]) >>> 0)
+          : 3600;
+
+        this.dhcpStateByIface.set(ifaceIdx, { serverId, ip: ipNum, leaseTimeSec });
+
+        // Cancel any previous renewal loop and start a fresh one
+        const renewGen = (this._dhcpRenewalGen.get(ifaceIdx) ?? 0) + 1;
+        this._dhcpRenewalGen.set(ifaceIdx, renewGen);
+        void this._dhcpRenewalLoop(ifaceIdx, renewGen, leaseTimeSec, serverId);
 
         this._setMsg(t("app.ipv4config.msg.dhcpSuccess", {
           i: ifaceIdx,
@@ -865,6 +882,109 @@ export class IPv4ConfigApp extends GenericProcess {
     }
 
     return false;
+  }
+
+  /**
+   * Renewal loop: waits T1, unicast-renews with server; on failure waits T2
+   * and rebinds via broadcast; on lease expiry re-runs full DORA.
+   * @param {number} ifaceIdx
+   * @param {number} gen
+   * @param {number} leaseTimeSec
+   * @param {number} serverId
+   */
+  async _dhcpRenewalLoop(ifaceIdx, gen, leaseTimeSec, serverId) {
+    const t1SimMs  = Math.floor(leaseTimeSec * 1000 * 0.5);
+    const t2SimMs  = Math.floor(leaseTimeSec * 1000 * 0.875);
+
+    await this._simSleep(t1SimMs);
+    if (this._dhcpRenewalGen.get(ifaceIdx) !== gen) return;
+
+    const net = this.os.net;
+    const itf = net?.interfaces?.[ifaceIdx];
+    const st  = this.dhcpStateByIface.get(ifaceIdx);
+    if (!itf || !st) return;
+
+    const mac = this._getIfaceMac(itf, ifaceIdx);
+
+    // T1: RENEW – unicast to server
+    const renewedLease = await this._dhcpSendRenewRequest(
+      ifaceIdx, mac, st.ip, serverId, SimTimer.DHCP_ACK_WAIT_MS,
+    );
+    if (this._dhcpRenewalGen.get(ifaceIdx) !== gen) return;
+
+    if (renewedLease !== null) {
+      void this._dhcpRenewalLoop(ifaceIdx, gen, renewedLease, serverId);
+      return;
+    }
+
+    // T2: REBIND – broadcast
+    await this._simSleep(t2SimMs - t1SimMs);
+    if (this._dhcpRenewalGen.get(ifaceIdx) !== gen) return;
+
+    const reboundLease = await this._dhcpSendRenewRequest(
+      ifaceIdx, mac, st.ip, 0,
+      Math.floor(leaseTimeSec * 1000 - t2SimMs),
+    );
+    if (this._dhcpRenewalGen.get(ifaceIdx) !== gen) return;
+
+    if (reboundLease !== null) {
+      void this._dhcpRenewalLoop(ifaceIdx, gen, reboundLease, serverId);
+      return;
+    }
+
+    // Lease expired – drop IP and re-acquire
+    this.dhcpStateByIface.delete(ifaceIdx);
+    this._dropInterfaceForDhcp(ifaceIdx);
+    const ok = await this._dhcpAcquireAndConfigure(ifaceIdx);
+    if (!ok) this._applyApipa(ifaceIdx);
+  }
+
+  /**
+   * Sends a RENEW (unicast) or REBIND (broadcast) REQUEST and waits for ACK.
+   * Returns the new leaseTimeSec on success, null on NAK or timeout.
+   * @param {number} ifaceIdx
+   * @param {Uint8Array} mac
+   * @param {number} curIpNum
+   * @param {number} serverIdNum  0 = broadcast (REBIND), nonzero = unicast (RENEW)
+   * @param {number} waitSimMs
+   * @returns {Promise<number|null>}
+   */
+  async _dhcpSendRenewRequest(ifaceIdx, mac, curIpNum, serverIdNum, waitSimMs) {
+    let sock = null;
+    try { sock = this._openDhcpClientSocket(); } catch { return null; }
+
+    try {
+      const xid = (Math.random() * 0xffffffff) >>> 0;
+      const isBroadcast = serverIdNum === 0;
+
+      const req = new DHCPPacket({ op: 1, xid, flags: isBroadcast ? 0x8000 : 0 });
+      req.setClientMAC(mac);
+      req.setMessageType(DHCPPacket.MT_REQUEST);
+      req.ciaddr = numberToIPv4Bytes(curIpNum);
+
+      const dst = isBroadcast
+        ? IPAddress.fromString("255.255.255.255")
+        : new IPAddress(4, serverIdNum);
+
+      this.os.net.sendUDPSocket(sock, dst, 67, req.pack());
+
+      const ack = await this._waitDhcp(sock, xid, DHCPPacket.MT_ACK, waitSimMs);
+      if (!ack) return null;
+
+      const ltOpt = ack.getOption(DHCPPacket.OPT_LEASE_TIME);
+      const newLeaseTimeSec = (ltOpt && ltOpt.length === 4)
+        ? ((ltOpt[0] << 24 | ltOpt[1] << 16 | ltOpt[2] << 8 | ltOpt[3]) >>> 0)
+        : 3600;
+
+      const st = this.dhcpStateByIface.get(ifaceIdx);
+      if (st) this.dhcpStateByIface.set(ifaceIdx, { ...st, leaseTimeSec: newLeaseTimeSec });
+
+      return newLeaseTimeSec;
+    } catch {
+      return null;
+    } finally {
+      try { this.os.net.closeUDPSocket(sock); } catch { }
+    }
   }
 
   /**
@@ -901,9 +1021,8 @@ export class IPv4ConfigApp extends GenericProcess {
         if ((dh.xid >>> 0) !== (xid >>> 0)) continue;
 
         const mt = dh.getMessageType();
-        if (mt !== wantType) continue;
-
-        return dh;
+        if (mt === wantType) return dh;
+        if (wantType === DHCPPacket.MT_ACK && mt === DHCPPacket.MT_NAK) return null;
       }
     } finally {
       void killer;
@@ -1020,6 +1139,7 @@ export class IPv4ConfigApp extends GenericProcess {
     }
 
     this.dhcpStateByIface.delete(ifaceIdx);
+    this._dhcpRenewalGen.set(ifaceIdx, (this._dhcpRenewalGen.get(ifaceIdx) ?? 0) + 1);
     this._dropInterfaceForDhcp(ifaceIdx);
   }
 

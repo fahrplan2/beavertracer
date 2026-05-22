@@ -4,15 +4,15 @@
 <hr>
 
 <nav class="help-toc">
-  <strong>Indholdsfortegnelse</strong>
+  <strong>Indhold</strong>
   <ol>
     <li><a href="#modes">De tre tilstande</a></li>
     <li><a href="#edit">Redigeringstilstand — Opbygning af et netværk</a></li>
     <li><a href="#devices">Enheder</a></li>
     <li><a href="#panels">Enhedspaneler</a></li>
-    <li><a href="#run">Kørselstilstand — Kørsel af simuleringen</a></li>
-    <li><a href="#trace">Sporingtilstand — Analyse af pakker</a></li>
-    <li><a href="#project">Gemning og indlæsning</a></li>
+    <li><a href="#run">Køretilstand — Kørsel af simuleringen</a></li>
+    <li><a href="#trace">Sporetilstand — Analyse af pakker</a></li>
+    <li><a href="#project">Lagring og indlæsning</a></li>
   </ol>
 </nav>
 
@@ -20,7 +20,7 @@
 
 <h3 id="modes">De tre tilstande</h3>
 <p>
-  Beaver Tracer har tre tilstande. Du skifter mellem dem ved hjælp af knapperne i øverste værktøjslinje.
+  Beaver Tracer har tre tilstande. Du skifter mellem dem ved hjælp af knapperne i værktøjslinjen øverst.
 </p>
 <table class="help-table">
   <tr>
@@ -31,12 +31,12 @@
   <tr>
     <td><i class="fas fa-play"></i></td>
     <td><strong>Kør</strong></td>
-    <td>Start simuleringen og se trafik flyde gennem dit netværk.</td>
+    <td>Start simuleringen og se trafikken flyde gennem dit netværk.</td>
   </tr>
   <tr>
     <td><i class="fas fa-magnifying-glass"></i></td>
     <td><strong>Spor</strong></td>
-    <td>Indfang og inspicér pakkerne, der rejser gennem dit netværk.</td>
+    <td>Opsaml og inspicér de pakker, der transporteres på tværs af dit netværk.</td>
   </tr>
 </table>
 
@@ -45,7 +45,7 @@
 <h3 id="edit">Redigeringstilstand — Opbygning af et netværk</h3>
 <p>
   I redigeringstilstand vises en værktøjslinje på venstre side af skærmen.
-  Vælg et værktøj ved at klikke på det, derefter bruger du det på lærredet.
+  Vælg et værktøj ved at klikke på det, og brug det derefter på lærredet.
 </p>
 
 <h4>Værktøjer</h4>
@@ -57,8 +57,18 @@
   </tr>
   <tr>
     <td><i class="fas fa-link"></i></td>
-    <td><strong>Forbindelse</strong></td>
+    <td><strong>Link</strong></td>
     <td>Forbind to enheder med et kabel (se nedenfor).</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-font"></i></td>
+    <td><strong>Tekst</strong></td>
+    <td>Placér en tekstmærkat på lærredet for at annotere dit diagram.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-square"></i></td>
+    <td><strong>Rektangel</strong></td>
+    <td>Tegn et rektangel på lærredet for visuelt at gruppere enheder.</td>
   </tr>
   <tr>
     <td><i class="fas fa-ban"></i></td>
@@ -74,16 +84,16 @@
 
 <h4>Placering af en enhed</h4>
 <ol>
-  <li>Klik på en enhedsknap i venstre værktøjslinje (f.eks. <i class="fas fa-desktop"></i> PC).</li>
-  <li>Et eksempel følger din musemarkør.</li>
+  <li>Klik på en enhedsknap i værktøjslinjen til venstre (f.eks. <i class="fas fa-desktop"></i> PC).</li>
+  <li>Et forhåndsvisning følger din musemarkør.</li>
   <li>Klik på lærredet for at placere enheden.</li>
 </ol>
 
-<h4>Forbinding af to enheder</h4>
+<h4>Forbindelse af to enheder</h4>
 <ol>
-  <li>Klik på <i class="fas fa-link"></i> <strong>Forbindelse</strong>-værktøjet.</li>
+  <li>Klik på værktøjet <i class="fas fa-link"></i> <strong>Link</strong>.</li>
   <li>Klik på den første enhed — en portvælger vises. Vælg en port.</li>
-  <li>Flyt musen til den anden enhed og klik på den — vælg også en port der.</li>
+  <li>Flyt musen til den anden enhed og klik på den — vælg en port der også.</li>
   <li>Kablet oprettes automatisk.</li>
 </ol>
 <p>
@@ -92,12 +102,12 @@
 
 <h4>Flytning af en enhed</h4>
 <p>
-  I <i class="fas fa-arrow-pointer"></i> Vælg-tilstand klikker og trækker du en enhed for at omplacere den på lærredet.
+  I <i class="fas fa-arrow-pointer"></i> Vælg-tilstand skal du klikke og trække en enhed for at flytte den på lærredet.
 </p>
 
 <h4>Sletning af en enhed eller et kabel</h4>
 <ol>
-  <li>Klik på <i class="fas fa-ban"></i> <strong>Slet</strong>-værktøjet.</li>
+  <li>Klik på værktøjet <i class="fas fa-ban"></i> <strong>Slet</strong>.</li>
   <li>Klik på den enhed eller det kabel, du vil fjerne.</li>
 </ol>
 <p>
@@ -108,7 +118,7 @@
 
 <h3 id="devices">Enheder</h3>
 <p>
-  Disse enheder er tilgængelige i venstre værktøjslinje under redigeringstilstand:
+  Disse enheder er tilgængelige i værktøjslinjen til venstre under redigeringstilstand:
 </p>
 
 <table class="help-table">
@@ -116,23 +126,23 @@
     <td><i class="fas fa-desktop"></i></td>
     <td><strong>PC</strong></td>
     <td>
-      En personlig computer med et trådet netværksgrænseflad. Du kan køre apps på den
+      En personlig computer med et kablet netværksgrænseflade. Du kan køre apps på den
       (f.eks. en webbrowser eller et ping-værktøj) og konfigurere dens IP-adresse.
     </td>
   </tr>
   <tr>
     <td><i class="fas fa-laptop"></i></td>
-    <td><strong>Bærbar computer</strong></td>
+    <td><strong>Laptop</strong></td>
     <td>
       Som en PC, men forbinder via Wi-Fi i stedet for et kabel.
-      Brug den sammen med et Access Point eller en hjemmerouter.
+      Brug den sammen med et Access Point eller Home Router.
     </td>
   </tr>
   <tr>
     <td>SW</td>
     <td><strong>Switch</strong></td>
     <td>
-      Forbinder flere enheder i samme netværkssegment.
+      Forbinder flere enheder i det samme netværkssegment.
       Videresender frames baseret på MAC-adresser.
       Understøtter VLAN'er og Spanning Tree Protocol (STP).
     </td>
@@ -142,24 +152,33 @@
     <td><strong>Router</strong></td>
     <td>
       Forbinder forskellige netværk og videresender pakker mellem dem.
-      Du kan konfigurere statiske ruter og IP-adresser på hver grænseflade.
+      Understøtter statiske ruter, OSPF, BGP og IP-tunneler (VPN).
     </td>
   </tr>
   <tr>
     <td><i class="fas fa-house-signal"></i></td>
-    <td><strong>Hjemmerouter</strong></td>
+    <td><strong>Home Router</strong></td>
     <td>
       En kombineret router, DHCP-server, NAT-gateway og Wi-Fi-adgangspunkt —
-      svarende til en typisk hjemme-internetrouter.
-      Forbind den til en router (som WAN) og til PC'er eller bærbare computere (som LAN/Wi-Fi).
+      ligner en typisk hjemme-internetrouter.
+      Forbind den til en Router (som WAN) og til PC'er eller Laptops (som LAN/Wi-Fi).
+      Understøtter port forwarding-regler.
     </td>
   </tr>
   <tr>
     <td><i class="fas fa-wifi"></i></td>
-    <td><strong>Adgangspunkt</strong></td>
+    <td><strong>Access Point</strong></td>
     <td>
-      Udvider et trådet netværk med en Wi-Fi-forbindelse.
-      Forbind dens trådet port til en switch eller router, forbind derefter bærbare computere til den trådløst.
+      Udvider et kablet netværk med en Wi-Fi-forbindelse.
+      Forbind dets kablede port til en Switch eller Router, og forbind derefter Laptops til det trådløst.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-shield-halved"></i></td>
+    <td><strong>Firewall</strong></td>
+    <td>
+      Filtrerer trafik mellem netværkssegmenter baseret på konfigurerbare regler.
+      Panelet viser regelsættet og en live-log over matchede pakker.
     </td>
   </tr>
 </table>
@@ -168,56 +187,77 @@
 
 <h3 id="panels">Enhedspaneler</h3>
 <p>
-  Klik på en enhed på lærredet for at åbne dens <strong>panel</strong> — et konfigurationsvindue,
+  Klik på en enhed på lærredet for at åbne dens <strong>panel</strong> — et konfigurationsvindue
   der vises på højre side af skærmen.
-  Klik på enheden igen (eller knappen <strong>×</strong> i paneloverskriften) for at lukke det.
+  Klik på enheden igen (eller på knappen <strong>×</strong> i panelhovedet) for at lukke det.
 </p>
 
 <h4>Omdøbning af en enhed</h4>
 <p>
-  Klik på <i class="fas fa-pen"></i>-knappen ved siden af enhedsnavnet i paneloverskriften
-  for at give den et brugerdefineret navn (f.eks. "Kontor-PC" eller "Core-Router").
+  Klik på knappen <i class="fas fa-pen"></i> ved siden af enhedsnavnet i panelhovedet
+  for at give den et brugerdefineret navn (f.eks. "Office-PC" eller "Core-Router").
 </p>
 
-<h4>Faner</h4>
+<h4>Router-faner</h4>
 <p>
-  De fleste enheder har flere faner inden i panelet.
-  For eksempel har en router:
+  Et Router-panel har følgende faner:
 </p>
 <ul>
   <li><strong>Grænseflader</strong> — konfigurér IP-adresser på hver port</li>
-  <li><strong>Routingtabel IPv4</strong> — vis og rediger IPv4 statiske ruter</li>
-  <li><strong>Routingtabel IPv6</strong> — vis og rediger IPv6 statiske ruter</li>
+  <li><strong>Routingtabel IPv4</strong> — se og rediger IPv4-ruter (statiske og lærte)</li>
+  <li><strong>Routingtabel IPv6</strong> — se og rediger IPv6-ruter</li>
+  <li><strong>OSPF</strong> — konfigurér og overvåg dynamisk OSPF-routing</li>
+  <li><strong>BGP</strong> — konfigurér BGP-naboer og se BGP-tabellen</li>
+  <li><strong>VPN</strong> — opret IP-tunneler mellem routere</li>
 </ul>
+
+<h4>Switch-faner</h4>
 <p>
-  En switch har faner til sin <strong>Switch Address Table (SAT)</strong>, <strong>VLAN</strong>-konfiguration
-  og indstillinger for <strong>Spanning Tree Protocol (STP)</strong>.
-</p>
-<p>
-  En hjemmerouter har faner til <strong>Status</strong>, <strong>WAN</strong>-indstillinger og <strong>DHCP</strong>-leasinger.
+  Et Switch-panel har faner til dets <strong>Switch Address Table (SAT)</strong>, <strong>VLAN</strong>
+  konfiguration og indstillinger for <strong>Spanning Tree Protocol (STP)</strong>.
 </p>
 
-<h4>PC og bærbar computer</h4>
+<h4>Home Router-faner</h4>
 <p>
-  PC'er og bærbare computere har et fuldt simuleret operativsystem inden i deres panel.
+  Et Home Router-panel har følgende faner:
+</p>
+<ul>
+  <li><strong>Status</strong> — oversigt over aktuel WAN/LAN-tilstand og forbundne klienter</li>
+  <li><strong>WAN</strong> — konfigurér uplinket (statisk IP eller DHCP)</li>
+  <li><strong>LAN</strong> — konfigurér LAN-subnettet og IP-adressen</li>
+  <li><strong>DHCP</strong> — se aktive leases og konfigurér DHCP-puljen</li>
+  <li><strong>WiFi</strong> — konfigurér det indbyggede adgangspunkt (SSID, password)</li>
+  <li><strong>NAT</strong> — se den aktive NAT-forbindelsestabel</li>
+  <li><strong>Port Forwarding</strong> — definer regler for at videresende indgående porte til LAN-værter</li>
+</ul>
+
+<h4>Firewall-faner</h4>
+<p>
+  Et Firewall-panel har en <strong>Regler</strong>-fane til styring af filterregler og en
+  <strong>Log</strong>-fane, der viser, hvilke pakker der er blevet tilladt eller droppet.
+</p>
+
+<h4>PC og Laptop</h4>
+<p>
+  PC'er og Laptops har et fuldt simuleret operativsystem inde i deres panel.
   Du kan åbne apps fra skrivebordet, konfigurere netværksindstillinger og køre kommandoer.
 </p>
 
 <hr>
 
-<h3 id="run">Kørselstilstand — Kørsel af simuleringen</h3>
+<h3 id="run">Køretilstand — Kørsel af simuleringen</h3>
 <p>
   Skift til <i class="fas fa-play"></i> <strong>Kør</strong>-tilstand for at starte simuleringen.
-  Netværket bliver live: enheder udveksler pakker, DHCP-leasinger tildeles,
+  Netværket bliver live: enheder udveksler pakker, DHCP-leases tildeles,
   routingtabeller opdateres, og så videre.
 </p>
 
 <h4>Hastighedskontroller</h4>
 <p>
-  Brug hastighedsknapperne i øverste værktøjslinje for at styre, hvor hurtigt simuleringen kører:
+  Brug hastighedsknapperne i værktøjslinjen øverst til at styre, hvor hurtigt simuleringen kører:
 </p>
 <table class="help-table">
-  <tr><td><strong>0,5×</strong></td><td>Langsom — god til at observere individuelle trin</td></tr>
+  <tr><td><strong>0.5×</strong></td><td>Langsom — god til at observere individuelle trin</td></tr>
   <tr><td><strong>1×</strong></td><td>Normal hastighed</td></tr>
   <tr><td><strong>4×</strong></td><td>Hurtig</td></tr>
   <tr><td><strong>8×</strong></td><td>Meget hurtig</td></tr>
@@ -228,66 +268,34 @@
   <tr>
     <td><i class="fas fa-pause"></i></td>
     <td><strong>Pause</strong></td>
-    <td>Frys simuleringen i dens nuværende tilstand.</td>
+    <td>Frys simuleringen i dens aktuelle tilstand.</td>
   </tr>
   <tr>
     <td><i class="fas fa-arrow-rotate-left"></i></td>
     <td><strong>Nulstil</strong></td>
-    <td>Genstart simuleringen fra begyndelsen (al dynamisk tilstand slettes).</td>
+    <td>Genstart simuleringen fra begyndelsen (al dynamisk tilstand ryddes).</td>
   </tr>
 </table>
 
 <p>
-  <strong>Bemærk:</strong> Du kan ikke redigere netværkstopologien mens du er i kørselstilstand.
-  Skift tilbage til <i class="fas fa-pencil"></i> redigeringstilstand først.
+  <strong>Bemærk:</strong> Du kan ikke redigere netværkstopologien mens du er i Køretilstand.
+  Skift først tilbage til <i class="fas fa-pencil"></i> Redigeringstilstand.
 </p>
 
 <hr>
 
-<h3 id="trace">Sporingtilstand — Analyse af pakker</h3>
+<h3 id="trace">Sporetilstand — Analyse af pakker</h3>
 <p>
   Skift til <i class="fas fa-magnifying-glass"></i> <strong>Spor</strong>-tilstand for at åbne den
-  indbyggede pakkeparsler — svarende til Wireshark.
+  indbyggede pakkeanalysator — svarende til Wireshark.
 </p>
 <p>
-  Øverst vælger du den <strong>enhed</strong> og <strong>port</strong>, du vil indfange fra.
-  Alle pakker, der passerer gennem denne port, registreres og vises på en liste.
+  Øverst skal du vælge den <strong>enhed</strong> og <strong>port</strong>, du vil capture fra.
+  Alle pakker, der passerer gennem denne port, optages og vises i en liste.
 </p>
 <p>
-  Klik på en pakkke på listen for at se alle dens detaljer:
-  protokollayene, headerfelterne og payloaden — præcis som et professionelt netværksværktøj ville vise det.
+  Klik på en pakke i listen for at se dens fulde detaljer:
+  protokollagene, headerfelter og payload — præcis som et professionelt netværksværktøj ville vise det.
 </p>
 <p>
-  Infangningen kører automatisk, mens simuleringen kører.
-  Du kan skifte mellem sporingtilstand og kørselstilstand når som helst uden at miste de indfangede data.
-</p>
-
-<hr>
-
-<h3 id="project">Gemning og indlæsning</h3>
-<p>
-  Dit netværksdesign kan gemmes som en fil og indlæses senere.
-  Brug knapperne i øverste værktøjslinje (synlig i redigeringstilstand):
-</p>
-<table class="help-table">
-  <tr>
-    <td><i class="fas fa-file"></i></td>
-    <td><strong>Ny</strong></td>
-    <td>Start med et tomt lærred. Eventuelle usparede ændringer går tabt.</td>
-  </tr>
-  <tr>
-    <td><i class="fas fa-file-arrow-up"></i></td>
-    <td><strong>Indlæs</strong></td>
-    <td>Åbn en tidligere gemt simulationsfil.</td>
-  </tr>
-  <tr>
-    <td><i class="fas fa-file-arrow-down"></i></td>
-    <td><strong>Gem</strong></td>
-    <td>Download den nuværende simulering som en fil til din computer.</td>
-  </tr>
-</table>
-
-<hr>
-<p class="footer">
-  Har du problemer? Kontrollér, at dit netværk er korrekt forbundet, og at alle enheder har gyldige IP-adresser konfigureret.
-</p>
+  Capturen kører

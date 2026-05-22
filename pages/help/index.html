@@ -61,6 +61,16 @@
     <td>Connect two devices with a cable (see below).</td>
   </tr>
   <tr>
+    <td><i class="fas fa-font"></i></td>
+    <td><strong>Text</strong></td>
+    <td>Place a text label on the canvas to annotate your diagram.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-square"></i></td>
+    <td><strong>Rectangle</strong></td>
+    <td>Draw a rectangle on the canvas to visually group devices.</td>
+  </tr>
+  <tr>
     <td><i class="fas fa-ban"></i></td>
     <td><strong>Delete</strong></td>
     <td>Click a device or cable to remove it.</td>
@@ -142,7 +152,7 @@
     <td><strong>Router</strong></td>
     <td>
       Connects different networks and forwards packets between them.
-      You can configure static routes and IP addresses on each interface.
+      Supports static routes, OSPF, BGP, and IP tunnels (VPN).
     </td>
   </tr>
   <tr>
@@ -152,6 +162,7 @@
       A combined router, DHCP server, NAT gateway and Wi-Fi access point —
       similar to a typical home internet router.
       Connect it to a Router (as WAN) and to PCs or Laptops (as LAN/Wi-Fi).
+      Supports port forwarding rules.
     </td>
   </tr>
   <tr>
@@ -160,6 +171,14 @@
     <td>
       Extends a wired network with a Wi-Fi connection.
       Connect its wired port to a Switch or Router, then connect Laptops to it wirelessly.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-shield-halved"></i></td>
+    <td><strong>Firewall</strong></td>
+    <td>
+      Filters traffic between network segments based on configurable rules.
+      The panel shows the rule set and a live log of matched packets.
     </td>
   </tr>
 </table>
@@ -179,22 +198,43 @@
   to give it a custom name (e.g. "Office-PC" or "Core-Router").
 </p>
 
-<h4>Tabs</h4>
+<h4>Router Tabs</h4>
 <p>
-  Most devices have multiple tabs inside the panel.
-  For example, a Router has:
+  A Router panel has the following tabs:
 </p>
 <ul>
   <li><strong>Interfaces</strong> — configure IP addresses on each port</li>
-  <li><strong>Routing table IPv4</strong> — view and edit IPv4 static routes</li>
-  <li><strong>Routing table IPv6</strong> — view and edit IPv6 static routes</li>
+  <li><strong>Routing table IPv4</strong> — view and edit IPv4 routes (static and learned)</li>
+  <li><strong>Routing table IPv6</strong> — view and edit IPv6 routes</li>
+  <li><strong>OSPF</strong> — configure and monitor OSPF dynamic routing</li>
+  <li><strong>BGP</strong> — configure BGP neighbours and view the BGP table</li>
+  <li><strong>VPN</strong> — set up IP tunnels between routers</li>
 </ul>
+
+<h4>Switch Tabs</h4>
 <p>
-  A Switch has tabs for its <strong>Switch Address Table (SAT)</strong>, <strong>VLAN</strong>
+  A Switch panel has tabs for its <strong>Switch Address Table (SAT)</strong>, <strong>VLAN</strong>
   configuration, and <strong>Spanning Tree Protocol (STP)</strong> settings.
 </p>
+
+<h4>Home Router Tabs</h4>
 <p>
-  A Home Router has tabs for <strong>Status</strong>, <strong>WAN</strong> settings, and <strong>DHCP</strong> leases.
+  A Home Router panel has the following tabs:
+</p>
+<ul>
+  <li><strong>Status</strong> — overview of current WAN/LAN state and connected clients</li>
+  <li><strong>WAN</strong> — configure the uplink (static IP or DHCP)</li>
+  <li><strong>LAN</strong> — configure the LAN subnet and IP address</li>
+  <li><strong>DHCP</strong> — view active leases and configure the DHCP pool</li>
+  <li><strong>WiFi</strong> — configure the built-in access point (SSID, password)</li>
+  <li><strong>NAT</strong> — view the active NAT connection table</li>
+  <li><strong>Port Forwarding</strong> — define rules to forward incoming ports to LAN hosts</li>
+</ul>
+
+<h4>Firewall Tabs</h4>
+<p>
+  A Firewall panel has a <strong>Rules</strong> tab to manage filter rules and a
+  <strong>Log</strong> tab showing which packets have been allowed or dropped.
 </p>
 
 <h4>PC and Laptop</h4>

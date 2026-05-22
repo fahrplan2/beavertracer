@@ -1607,6 +1607,10 @@ sim-toolbar-langbtn {
 
 @media (max-width: 600px) {
 
+  .sim-langlist {
+    grid-template-columns: 1fr 1fr;
+  }
+
   /* ── Canvas area: stacked column, sidebar at bottom ── */
   .sim-body {
     flex-direction: column;

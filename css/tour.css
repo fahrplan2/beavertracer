@@ -1,0 +1,103 @@
+/* Tour overlay */
+
+.tour-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  pointer-events: none;
+}
+
+.tour-spotlight {
+  position: fixed;
+  border-radius: 6px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+  z-index: 5001;
+  transition: top 0.25s ease, left 0.25s ease, width 0.25s ease, height 0.25s ease;
+}
+
+.tour-tooltip {
+  position: fixed;
+  z-index: 5002;
+  pointer-events: all;
+  background: var(--bg);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-md);
+  padding: var(--pad-lg) var(--pad-xl);
+  width: 300px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+}
+
+.tour-step-counter {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: var(--pad-sm);
+}
+
+.tour-step-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: var(--pad-sm);
+}
+
+.tour-step-text {
+  font-size: 0.81rem;
+  color: var(--text);
+  line-height: 1.55;
+  margin: 0 0 var(--pad-lg);
+  white-space: pre-line;
+}
+
+.tour-btns {
+  display: flex;
+  gap: var(--pad-sm);
+  justify-content: flex-end;
+}
+
+.tour-btn {
+  padding: var(--pad-xs) var(--pad-md);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--ui-border);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+}
+
+.tour-btn:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.tour-btn-skip {
+  background: transparent;
+  color: var(--muted);
+}
+
+.tour-btn-skip:hover {
+  background: var(--ui-card);
+  color: var(--text);
+  border-color: var(--ui-border-strong);
+}
+
+.tour-btn-next {
+  background: oklch(52% 0.17 232);
+  color: white;
+  border-color: transparent;
+  font-weight: 600;
+}
+
+.tour-btn-next:hover {
+  background: oklch(46% 0.17 232);
+}
+
+[data-theme="dark"] .tour-btn-next {
+  background: oklch(62% 0.15 232);
+}
+
+[data-theme="dark"] .tour-btn-next:hover {
+  background: oklch(67% 0.15 232);
+}

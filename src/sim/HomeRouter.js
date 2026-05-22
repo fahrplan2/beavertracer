@@ -9,6 +9,7 @@ import { ArpPacket } from "../net/pdu/ArpPacket.js";
 import { IPv4Packet } from "../net/pdu/IPv4Packet.js";
 import { ICMPPacket } from "../net/pdu/ICMPPacket.js";
 import { UDPPacket } from "../net/pdu/UDPPacket.js";
+import { TCPPacket } from "../net/pdu/TCPPacket.js";
 import { DHCPPacket } from "../net/pdu/DHCPPacket.js";
 import { DHCPv6Packet } from "../net/pdu/DHCPv6Packet.js";
 import { IPv6Packet } from "../net/pdu/IPv6Packet.js";
@@ -105,6 +106,10 @@ export class HomeRouter extends SimulatedObject {
 
     // ── NAT ───────────────────────────────────────────────────────────────
     /** @type {NatEngine} */ _nat = new NatEngine();
+
+    // ── Port Forwarding (DNAT) ────────────────────────────────────────────
+    /** @type {Array<{proto:number, wanPort:number, lanIp:number, lanPort:number}>} */
+    _portRules = [];
 
     // ── DNS relay ─────────────────────────────────────────────────────────
     /** @type {Map<number,{clientIpNum:number,clientPort:number,origId:number,expiresAt:number}>} */
@@ -239,10 +244,31 @@ export class HomeRouter extends SimulatedObject {
                     this._handleDnsRelayResponse(pkt, udp);
                     return;
                 }
+                // Port forwarding (DNAT) check before stateful un-NAT
+                const pfRuleUdp = this._matchPortRule(17, udp.dstPort);
+                if (pfRuleUdp) {
+                    if (this._nat.dnat(pkt, pfRuleUdp.lanIp, pfRuleUdp.lanPort)) {
+                        this._nat.installDnatSession(17, pfRuleUdp.wanPort, pfRuleUdp.lanIp, pfRuleUdp.lanPort);
+                        void this._forwardToLan(pkt, pfRuleUdp.lanIp);
+                    }
+                    return;
+                }
                 // Regular inbound NAT (TCP/UDP response)
                 const origSrc = this._nat.natInbound(pkt);
                 if (origSrc) void this._forwardToLan(pkt, origSrc);
             } else if (proto === 6) {
+                // Port forwarding (DNAT) check before stateful un-NAT
+                try {
+                    const tcp = TCPPacket.fromBytes(pkt.payload);
+                    const pfRuleTcp = this._matchPortRule(6, tcp.dstPort);
+                    if (pfRuleTcp) {
+                        if (this._nat.dnat(pkt, pfRuleTcp.lanIp, pfRuleTcp.lanPort)) {
+                            this._nat.installDnatSession(6, pfRuleTcp.wanPort, pfRuleTcp.lanIp, pfRuleTcp.lanPort);
+                            void this._forwardToLan(pkt, pfRuleTcp.lanIp);
+                        }
+                        return;
+                    }
+                } catch {}
                 const origSrc = this._nat.natInbound(pkt);
                 if (origSrc) void this._forwardToLan(pkt, origSrc);
             } else if (proto === 1) {
@@ -251,6 +277,20 @@ export class HomeRouter extends SimulatedObject {
                 if (origSrc) void this._forwardToLan(pkt, origSrc);
             }
         }
+    }
+
+    /**
+     * Find the first port forwarding rule matching a given protocol and WAN destination port.
+     * proto 0 matches both TCP and UDP.
+     * @param {number} proto 6=TCP, 17=UDP
+     * @param {number} dstPort
+     * @returns {{proto:number, wanPort:number, lanIp:number, lanPort:number}|null}
+     */
+    _matchPortRule(proto, dstPort) {
+        for (const r of this._portRules) {
+            if ((r.proto === 0 || r.proto === proto) && r.wanPort === dstPort) return r;
+        }
+        return null;
     }
 
     // ── LAN frame processing ──────────────────────────────────────────────
@@ -1034,6 +1074,12 @@ export class HomeRouter extends SimulatedObject {
                 prefix: Array.from(this._wanDhcpv6PdDelegated.prefix16bytes),
                 prefixLen: this._wanDhcpv6PdDelegated.prefixLen,
             } : null,
+            portRules: this._portRules.map(r => ({
+                proto: r.proto,
+                wanPort: r.wanPort,
+                lanIp: ipToString(r.lanIp),
+                lanPort: r.lanPort,
+            })),
         };
     }
 
@@ -1061,6 +1107,14 @@ export class HomeRouter extends SimulatedObject {
                 obj._wanDhcpv6PdDelegated = { prefix16bytes: bytes, prefixLen: Number(n.pdDelegated.prefixLen) };
                 obj._applyDelegatedPrefix(bytes, obj._wanDhcpv6PdDelegated.prefixLen);
             }
+        }
+        if (Array.isArray(n.portRules)) {
+            obj._portRules = n.portRules.map(/** @param {any} r */ r => ({
+                proto:   Number(r.proto)   | 0,
+                wanPort: Number(r.wanPort) | 0,
+                lanIp:   strToNum(r.lanIp ?? "0.0.0.0"),
+                lanPort: Number(r.lanPort) | 0,
+            })).filter(/** @param {{wanPort:number,lanIp:number,lanPort:number}} r */ r => r.wanPort > 0 && r.lanIp !== 0 && r.lanPort > 0);
         }
         return obj;
     }
@@ -1092,6 +1146,7 @@ export class HomeRouter extends SimulatedObject {
             { id: "dhcp",   label: t("homerouter.tab.dhcp")   },
             { id: "wifi",   label: t("homerouter.tab.wifi")   },
             { id: "nat",    label: t("homerouter.tab.nat")    },
+            { id: "pf",     label: t("homerouter.tab.pf")     },
         ], (id) => {
             this._activeTab = id;
             DOMBuilder.clear(content);
@@ -1101,6 +1156,7 @@ export class HomeRouter extends SimulatedObject {
             else if (id === "dhcp") this._buildDhcpTab(content);
             else if (id === "wifi") this._buildWifiTab(content);
             else if (id === "nat")  this._buildNatTab(content);
+            else if (id === "pf")   this._buildPortForwardTab(content);
         });
         card.appendChild(tabBar);
         card.appendChild(content);
@@ -1111,6 +1167,7 @@ export class HomeRouter extends SimulatedObject {
         else if (this._activeTab === "dhcp") this._buildDhcpTab(content);
         else if (this._activeTab === "wifi") this._buildWifiTab(content);
         else if (this._activeTab === "nat")  this._buildNatTab(content);
+        else if (this._activeTab === "pf")   this._buildPortForwardTab(content);
         selectTab(this._activeTab);
         this._startPoll();
     }
@@ -1309,6 +1366,104 @@ export class HomeRouter extends SimulatedObject {
             this._mount(/** @type {HTMLElement} */ (this._panelBody));
         });
         host.appendChild(applyBtn);
+    }
+
+    /** @param {HTMLElement} host */
+    _buildPortForwardTab(host) {
+        host.appendChild(DOMBuilder.h4(t("homerouter.pf.title")));
+
+        // ── existing rules table ──
+        const table = DOMBuilder.el("table", { className: "router-routes-table" });
+        const thead = DOMBuilder.el("thead");
+        thead.innerHTML = `<tr>
+            <th>${t("homerouter.pf.col.proto")}</th>
+            <th>${t("homerouter.pf.col.wanport")}</th>
+            <th>${t("homerouter.pf.col.lanip")}</th>
+            <th>${t("homerouter.pf.col.lanport")}</th>
+            <th></th>
+        </tr>`;
+        table.appendChild(thead);
+
+        const tbody = DOMBuilder.el("tbody");
+        table.appendChild(tbody);
+        host.appendChild(table);
+
+        const renderRows = () => {
+            tbody.innerHTML = "";
+            if (this._portRules.length === 0) {
+                const tr = DOMBuilder.el("tr");
+                const td = DOMBuilder.el("td", { text: t("homerouter.pf.empty") });
+                td.setAttribute("colspan", "5");
+                td.style.color = "var(--muted)";
+                td.style.fontSize = "12px";
+                tr.appendChild(td);
+                tbody.appendChild(tr);
+            } else {
+                for (let i = 0; i < this._portRules.length; i++) {
+                    const r = this._portRules[i];
+                    const protoStr = r.proto === 6 ? "TCP" : r.proto === 17 ? "UDP" : "TCP+UDP";
+                    const delBtn = DOMBuilder.button("✕", { className: "router-del-btn" });
+                    const idx = i;
+                    delBtn.addEventListener("click", () => {
+                        this._portRules.splice(idx, 1);
+                        renderRows();
+                    });
+                    const tr = DOMBuilder.el("tr", { children: [
+                        DOMBuilder.el("td", { text: protoStr, style: { fontFamily: "monospace" } }),
+                        DOMBuilder.el("td", { text: String(r.wanPort), style: { fontFamily: "monospace" } }),
+                        DOMBuilder.el("td", { text: ipToString(r.lanIp), style: { fontFamily: "monospace" } }),
+                        DOMBuilder.el("td", { text: String(r.lanPort), style: { fontFamily: "monospace" } }),
+                        DOMBuilder.el("td", { children: [delBtn] }),
+                    ]});
+                    tbody.appendChild(tr);
+                }
+            }
+        };
+        renderRows();
+
+        // ── add rule row ──
+        const protoSel = /** @type {HTMLSelectElement} */ (DOMBuilder.el("select"));
+        for (const [val, lbl] of [["0", "TCP+UDP"], ["6", "TCP"], ["17", "UDP"]]) {
+            const o = DOMBuilder.el("option", { text: lbl, attrs: { value: val } });
+            protoSel.appendChild(o);
+        }
+        protoSel.value = "6";
+
+        const wanPortIn = DOMBuilder.input({ placeholder: "8080" });
+        const lanIpIn   = DOMBuilder.input({ placeholder: "192.168.1.10" });
+        const lanPortIn = DOMBuilder.input({ placeholder: "80" });
+
+        const addBtn = DOMBuilder.button("+ Add", { className: "router-route-footer-btn" });
+        addBtn.style.marginTop = "4px";
+        addBtn.addEventListener("click", () => {
+            const wanPort = parseInt(wanPortIn.value) | 0;
+            const lanIp   = strToNum(lanIpIn.value);
+            const lanPort = parseInt(lanPortIn.value) | 0;
+            const proto   = parseInt(protoSel.value) | 0;
+            if (wanPort < 1 || wanPort > 65535 || !lanIp || lanPort < 1 || lanPort > 65535) {
+                SimDialog.alert(t("homerouter.pf.invalid"));
+                return;
+            }
+            this._portRules.push({ proto, wanPort, lanIp, lanPort });
+            wanPortIn.value = ""; lanIpIn.value = ""; lanPortIn.value = "";
+            renderRows();
+        });
+
+        host.appendChild(DOMBuilder.div("router-if-section", [
+            DOMBuilder.div("router-name-row", [
+                DOMBuilder.label(t("homerouter.pf.col.proto")), protoSel,
+            ]),
+            DOMBuilder.div("router-name-row", [
+                DOMBuilder.label(t("homerouter.pf.col.wanport")), wanPortIn,
+            ]),
+            DOMBuilder.div("router-name-row", [
+                DOMBuilder.label(t("homerouter.pf.col.lanip")), lanIpIn,
+            ]),
+            DOMBuilder.div("router-name-row", [
+                DOMBuilder.label(t("homerouter.pf.col.lanport")), lanPortIn,
+            ]),
+        ]));
+        host.appendChild(addBtn);
     }
 
     /** @param {HTMLElement} host */

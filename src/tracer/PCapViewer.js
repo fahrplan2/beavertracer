@@ -104,6 +104,8 @@ export class PCapViewer {
   /** @type {boolean} */ #tabPickerOpen = false;
   /** @type {AbortController|null} */ #tabPickerAbort = null;
 
+  /** @type {Set<number>} */ #openLayers = new Set();
+
   /** @type {string|null} */ #pickerDevice = null;
   /** @type {TabPicker} */ #tabPicker = new TabPicker();
   /** @type {SplitGrid} */ #splitGrid = new SplitGrid();
@@ -848,25 +850,32 @@ export class PCapViewer {
     const ul = document.createElement("ul");
     const nodes = Array.isArray(nodeOrArray) ? nodeOrArray : [nodeOrArray];
 
+    let protoIdx = 0;
+
     for (const n of nodes) {
       if (!n) continue;
 
       const kidsRaw = n.tree ?? n.children ?? n.items ?? n.subtree ?? null;
       const kids = Array.isArray(kidsRaw) ? kidsRaw : (kidsRaw ? [kidsRaw] : []);
-      const hasKids = kids.length > 0;
 
       const hideComputed = this.#opt.hideComputedTreeNodes ?? true; // default: hide for teaching
       const isComputed = this.#isComputedTreeNode(n);
 
       // ✅ If computed: hide it, but keep its children (promote)
       if (hideComputed && isComputed) {
-        if (hasKids) {
+        if (kids.length > 0) {
           // append children directly at this level
           ul.appendChild(this.#buildTree(kids, depth));
         }
         // if it has no kids -> just skip it entirely
         continue;
       }
+
+      const layerIdx = depth === 0 ? protoIdx++ : -1;
+
+      // Build children first so we know if any survive after computed filtering
+      const childUl = kids.length > 0 ? this.#buildTree(kids, depth + 1) : null;
+      const hasKids = !!childUl && childUl.children.length > 0;
 
       // ----- normal rendering below (your existing code) -----
       const li = document.createElement("li");
@@ -896,15 +905,25 @@ export class PCapViewer {
       if (hasKids) {
         const childWrap = document.createElement("div");
         childWrap.className = "pcapviewer-tree-children";
-        childWrap.appendChild(this.#buildTree(kids, depth + 1));
+        childWrap.appendChild(/** @type {HTMLElement} */ (childUl));
         li.appendChild(childWrap);
 
-        li.classList.add("pcapviewer-collapsed");
-        twisty.textContent = "▸";
+        const startOpen = layerIdx >= 0 && this.#openLayers.has(layerIdx);
+
+        if (startOpen) {
+          twisty.textContent = "▾";
+        } else {
+          li.classList.add("pcapviewer-collapsed");
+          twisty.textContent = "▸";
+        }
 
         const toggle = () => {
           const collapsedNow = li.classList.toggle("pcapviewer-collapsed");
           twisty.textContent = collapsedNow ? "▸" : "▾";
+          if (layerIdx >= 0) {
+            if (collapsedNow) this.#openLayers.delete(layerIdx);
+            else this.#openLayers.add(layerIdx);
+          }
         };
 
         twisty.addEventListener("click", (ev) => { ev.stopPropagation(); toggle(); });
@@ -918,6 +937,7 @@ export class PCapViewer {
       row.addEventListener("pointerleave", () => this.#highlightHexRange(0, 0, ds));
       row.addEventListener("click", (ev) => {
         ev.stopPropagation();
+        if (!(length > 0)) return;
         this.#highlightHexRange(start, length, ds);
         const s = this.#active();
         if (!s) return;

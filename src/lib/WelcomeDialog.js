@@ -5,6 +5,7 @@ import { isTauri } from "../tauri.js";
 import { defaultSimulation } from "../defaultsim.js";
 import { version } from "./version.js";
 import { SimDialog } from "./SimDialog.js";
+import { Tour } from "./Tour.js";
 
 export class WelcomeDialog {
     /**
@@ -12,6 +13,7 @@ export class WelcomeDialog {
      * @returns {Promise<void>}
      */
     static show(sim) {
+        sim._activeTour?._finish();
         return new Promise((resolve) => {
             const backdrop = document.createElement("div");
             backdrop.className = "welcome-backdrop";
@@ -86,10 +88,19 @@ export class WelcomeDialog {
         closeBtn.innerHTML = "&times;";
         closeBtn.addEventListener("click", () => close());
 
+        const alpha = document.createElement("span");
+        alpha.className = "welcome-alpha";
+        alpha.textContent = "ALPHA";
+
+        const verBlock = document.createElement("div");
+        verBlock.className = "welcome-ver-block";
+        verBlock.appendChild(ver);
+        verBlock.appendChild(alpha);
+
         const headerRight = document.createElement("div");
         headerRight.className = "welcome-header-right";
         headerRight.appendChild(closeBtn);
-        headerRight.appendChild(ver);
+        headerRight.appendChild(verBlock);
 
         titleBlock.appendChild(title);
         titleBlock.appendChild(subtitle);
@@ -131,6 +142,12 @@ export class WelcomeDialog {
                 close(() => sim.restore(defaultSimulation));
             }
         ));
+        const tourBtn = WelcomeDialog._actionBtn(
+            "fa-route", t("tour.welcome.title"), t("tour.welcome.desc"),
+            () => close(() => Tour.start(sim))
+        );
+        tourBtn.classList.add("welcome-action-btn--tour");
+        actions.appendChild(tourBtn);
 
         const news = document.createElement("div");
         news.className = "welcome-news";
@@ -166,10 +183,12 @@ export class WelcomeDialog {
         const left = document.createElement("div");
         left.className = "welcome-footer-left";
         const langLabel = t("sim.language");
-        left.appendChild(WelcomeDialog._footerBtn(
+        const langBtn = WelcomeDialog._footerBtn(
             "fa-language", langLabel === "Language" ? langLabel : `${langLabel} / Language`,
             () => close(() => sim.openLanguageDialog())
-        ));
+        );
+        langBtn.classList.add("welcome-footer-btn--lang");
+        left.appendChild(langBtn);
 
         const right = document.createElement("div");
         right.className = "welcome-footer-right";

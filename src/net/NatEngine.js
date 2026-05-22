@@ -76,6 +76,54 @@ export class NatEngine {
     }
 
     /**
+     * Apply stateless DNAT for an inbound packet (port forwarding).
+     * Rewrites destination IP and port without consulting the session table.
+     * @param {import("./pdu/IPv4Packet.js").IPv4Packet} packet
+     * @param {number} lanIpNum uint32 - target LAN host IP
+     * @param {number} lanPort  destination port to rewrite to
+     * @returns {boolean} false if packet could not be rewritten
+     */
+    dnat(packet, lanIpNum, lanPort) {
+        const proto = packet.protocol;
+        if (proto !== 6 && proto !== 17) return false;
+
+        const isUdp = proto === 17;
+        packet.dst = new IPAddress(4, lanIpNum);
+        packet.headerChecksum = 0;
+
+        try {
+            if (isUdp) {
+                const u = UDPPacket.fromBytes(packet.payload);
+                u.dstPort = lanPort; u.checksum = 0;
+                packet.payload = u.pack({ srcIp: packet.src, dstIp: packet.dst });
+            } else {
+                const t = TCPPacket.fromBytes(packet.payload);
+                t.dstPort = lanPort; t.checksum = 0;
+                packet.payload = t.pack({ srcIp: packet.src, dstIp: packet.dst });
+            }
+        } catch { return false; }
+
+        return true;
+    }
+
+    /**
+     * Pre-populate the SNAT session for the return path of a DNAT'd connection.
+     * Without this, SNAT allocates a random port for the LAN host's replies,
+     * so the client sees the SYN-ACK from an unexpected src port and sends RST.
+     * Calling this locks the LAN host's (lanIpNum:lanPort:proto) outbound SNAT
+     * to use wanPort, so replies reach the client with the expected src port.
+     * @param {number} proto 6=TCP, 17=UDP
+     * @param {number} wanPort the forwarded WAN port (e.g. 8080)
+     * @param {number} lanIpNum target LAN host IP
+     * @param {number} lanPort target LAN port (e.g. 80)
+     */
+    installDnatSession(proto, wanPort, lanIpNum, lanPort) {
+        const outKey = `${lanIpNum}:${lanPort}:${proto}`;
+        this._out.set(outKey, wanPort);
+        this._in.set(`${wanPort}:${proto}`, { srcIpNum: lanIpNum, srcPort: lanPort });
+    }
+
+    /**
      * Apply inbound un-NAT (WAN → LAN).
      * @param {import("./pdu/IPv4Packet.js").IPv4Packet} packet
      * @returns {number|null} original LAN host IP (uint32) or null if no mapping

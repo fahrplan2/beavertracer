@@ -315,7 +315,34 @@ export class DNSResolver {
     const resp = await this._queryOnce(nameNorm, qtype, serverIp, port);
     if (!resp) return null;
 
-    if ((resp.answers?.length ?? 0) > 0) return resp;
+    if ((resp.answers?.length ?? 0) > 0) {
+      // Follow CNAME chain when the answer doesn't contain the requested type yet
+      if (qtype !== DNSPacket.TYPE_CNAME) {
+        const hasTarget = resp.answers.some(rr => (rr.type & 0xffff) === qtype);
+        if (!hasTarget) {
+          for (const rr of resp.answers) {
+            if ((rr.type & 0xffff) !== DNSPacket.TYPE_CNAME) continue;
+            if (this._normalizeName(rr.name) !== nameNorm) continue;
+            if (typeof rr.data !== "string") continue;
+            const target = this._normalizeName(rr.data);
+            if (!target || target === nameNorm) break;
+            const chain = await this._queryRecursive(target, qtype, serverIp, port, depth - 1, visited);
+            if (chain && (chain.answers?.length ?? 0) > 0) {
+              return new DNSPacket({
+                id: resp.id, qr: 1, opcode: 0, aa: resp.aa, tc: 0,
+                rd: resp.rd, ra: resp.ra, z: 0, rcode: 0,
+                questions: resp.questions,
+                answers: [...resp.answers, ...chain.answers],
+                authorities: chain.authorities,
+                additionals: chain.additionals,
+              });
+            }
+            break;
+          }
+        }
+      }
+      return resp;
+    }
 
     const nsHosts = this._extractNSHosts(resp);
     if (nsHosts.length === 0) return resp;

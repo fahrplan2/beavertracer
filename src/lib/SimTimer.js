@@ -94,14 +94,14 @@ export class SimTimer {
     static OSPF_DEAD_MS             =  2_000;  //  400 ticks
     /** OSPF Wait interval (= dead interval; used before first DR/BDR election, RFC §9.4). */
     static OSPF_WAIT_MS             =  2_000;  //  400 ticks
-    /** OSPF LSA retransmit interval. */
-    static OSPF_RXMT_MS             =    500;  //  100 ticks
-    /** Delay between LSA receipt and SPF calculation. */
-    static OSPF_SPF_DELAY_MS        =     50;  //   10 ticks
+    /** OSPF LSA retransmit interval (~RFC 5 s real). */
+    static OSPF_RXMT_MS             =    250;  //   50 ticks  (~5 s real)
+    /** Delay between LSA receipt and SPF calculation (~RFC/Cisco default 5 s real). */
+    static OSPF_SPF_DELAY_MS        =    250;  //   50 ticks  (~5 s real)
     /** Minimum interval between re-originations of the same LSA (~RFC 5 s real). */
     static OSPF_MIN_LS_INTERVAL_MS  =    250;  //   50 ticks  (~5 s real)
-    /** Age increment period: LSA age field increases by 1 per this interval. */
-    static OSPF_AGE_INTERVAL_MS     =  1_000;  //  200 ticks  (1 sim-second per age unit)
+    /** Age increment period: LSA age field increases by 1 per this interval (~RFC 1 s real). */
+    static OSPF_AGE_INTERVAL_MS     =     50;  //   10 ticks  (~1 s real)
 
     // -------------------------------------------------------------------------
     // Internal state

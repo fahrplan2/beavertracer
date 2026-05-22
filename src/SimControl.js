@@ -101,6 +101,9 @@ export class SimControl {
     /** @type {HTMLElement|null} */
     _deleteHoverEl = null;
 
+    /** @type {import('./lib/Tour.js').Tour|null} */
+    _activeTour = null;
+
     /** @type {null|(()=>void)} */
     _langCleanup = null;
 
@@ -525,13 +528,6 @@ export class SimControl {
         branding.textContent = "Beaver Tracer";
         brandingText.appendChild(branding);
 
-        const ver = document.createElement("div");
-        ver.className = "sim-toolbar-branding-version";
-        const alpha = document.createElement("span");
-        alpha.className = "sim-toolbar-branding-alpha";
-        alpha.textContent = "ALPHA";
-        ver.appendChild(alpha);
-        brandingText.appendChild(ver);
 
         //********** MODES  *********/
         addSeparator("sep-mode");
@@ -1173,12 +1169,11 @@ export class SimControl {
             ev.preventDefault();
             ev.stopPropagation();
             if (loc.key === getLocale()) { this._closeLanguageDialog(); return; }
-            const oldLoc = getLocale();
-            await setLocale(loc.key);
             if (this._isDirty) {
                 const ok = await SimDialog.confirm(t("sim.langswitch.confirmdiscard"));
-                if (!ok) { setLocale(oldLoc); return; }
+                if (!ok) return;
             }
+            await setLocale(loc.key);
             this._isDirty = false;
             window.location.reload();
         };

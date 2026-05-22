@@ -7,7 +7,7 @@
   <strong>Obsah</strong>
   <ol>
     <li><a href="#modes">Tři režimy</a></li>
-    <li><a href="#edit">Režim úprav — Budování sítě</a></li>
+    <li><a href="#edit">Režim úprav — Vytváření sítě</a></li>
     <li><a href="#devices">Zařízení</a></li>
     <li><a href="#panels">Panely zařízení</a></li>
     <li><a href="#run">Režim spuštění — Spuštění simulace</a></li>
@@ -20,32 +20,32 @@
 
 <h3 id="modes">Tři režimy</h3>
 <p>
-  Beaver Tracer má tři režimy. Mezi nimi se přepínáte pomocí tlačítek v horním panelu nástrojů.
+  Beaver Tracer má tři režimy. Přepínáte mezi nimi pomocí tlačítek v horní lišti nástrojů.
 </p>
 <table class="help-table">
   <tr>
     <td><i class="fas fa-pencil"></i></td>
     <td><strong>Úpravy</strong></td>
-    <td>Navrhněte svou síť — umísťujte zařízení, připojujte je a konfigurujte je.</td>
+    <td>Navrhněte svou síť — umístěte zařízení, propojte je, nakonfigurujte je.</td>
   </tr>
   <tr>
     <td><i class="fas fa-play"></i></td>
     <td><strong>Spuštění</strong></td>
-    <td>Spusťte simulaci a sledujte, jak se provoz šíří vaší sítí.</td>
+    <td>Spusťte simulaci a sledujte tok provozu vaší sítí.</td>
   </tr>
   <tr>
     <td><i class="fas fa-magnifying-glass"></i></td>
     <td><strong>Trasování</strong></td>
-    <td>Zachycujte a kontrolujte pakety cestující vaší sítí.</td>
+    <td>Zachytávejte a kontrolujte pakety cestující vaší sítí.</td>
   </tr>
 </table>
 
 <hr>
 
-<h3 id="edit">Režim úprav — Budování sítě</h3>
+<h3 id="edit">Režim úprav — Vytváření sítě</h3>
 <p>
-  V režimu úprav se na levé straně obrazovky zobrazí panel nástrojů.
-  Vyberte nástroj kliknutím na něj a poté jej použijte na plátně.
+  V režimu úprav se na levé straně obrazovky zobrazí lista nástrojů.
+  Nástroj vyberte kliknutím, pak jej použijte na plátně.
 </p>
 
 <h4>Nástroje</h4>
@@ -53,62 +53,72 @@
   <tr>
     <td><i class="fas fa-arrow-pointer"></i></td>
     <td><strong>Výběr</strong></td>
-    <td>Kliknutím na zařízení otevřete jeho panel. Přetažením zařízení jej můžete přesunout.</td>
+    <td>Kliknutím na zařízení otevřete jeho panel. Přetažením zařízení ho přesunete.</td>
   </tr>
   <tr>
     <td><i class="fas fa-link"></i></td>
-    <td><strong>Odkaz</strong></td>
-    <td>Spojte dvě zařízení kabelem (viz níže).</td>
+    <td><strong>Propojení</strong></td>
+    <td>Propojte dvě zařízení kabelem (viz níže).</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-font"></i></td>
+    <td><strong>Text</strong></td>
+    <td>Umístěte textový popisek na plátno pro anotaci diagramu.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-square"></i></td>
+    <td><strong>Obdélník</strong></td>
+    <td>Nakreslete obdélník na plátno pro vizuální seskupení zařízení.</td>
   </tr>
   <tr>
     <td><i class="fas fa-ban"></i></td>
-    <td><strong>Odstranit</strong></td>
+    <td><strong>Smazání</strong></td>
     <td>Kliknutím na zařízení nebo kabel jej odstraníte.</td>
   </tr>
 </table>
 
 <p>
-  <strong>Tip:</strong> Klikněte pravým tlačítkem myši kdekoli na plátně, abyste zrušili aktuální nástroj
-  a vrátili se k <i class="fas fa-arrow-pointer"></i> Výběru.
+  <strong>Tip:</strong> Klikněte pravým tlačítkem kamkoli na plátnu pro zrušení aktuálního nástroje
+  a návrat na <i class="fas fa-arrow-pointer"></i> Výběr.
 </p>
 
 <h4>Umístění zařízení</h4>
 <ol>
-  <li>Klikněte na tlačítko zařízení v levém panelu nástrojů (např. <i class="fas fa-desktop"></i> PC).</li>
-  <li>Náhled se pohybuje spolu s kurzorem myši.</li>
+  <li>Klikněte na tlačítko zařízení v levé liště nástrojů (např. <i class="fas fa-desktop"></i> PC).</li>
+  <li>Náhled se pohybuje podle kurzoru myši.</li>
   <li>Kliknutím na plátno umístěte zařízení.</li>
 </ol>
 
-<h4>Připojení dvou zařízení</h4>
+<h4>Propojení dvou zařízení</h4>
 <ol>
-  <li>Klikněte na nástroj <i class="fas fa-link"></i> <strong>Odkaz</strong>.</li>
-  <li>Klikněte na první zařízení — objeví se výběr portů. Vyberte port.</li>
-  <li>Přesuňte myš na druhé zařízení a klikněte na něj — vyberte port také tam.</li>
+  <li>Klikněte na nástroj <i class="fas fa-link"></i> <strong>Propojení</strong>.</li>
+  <li>Klikněte na první zařízení — zobrazí se výběr portů. Vyberte port.</li>
+  <li>Přesuňte myš na druhé zařízení a klikněte na něj — vyberte také port.</li>
   <li>Kabel se vytvoří automaticky.</li>
 </ol>
 <p>
-  Porty, které se již používají, se zobrazují jako zakázané a nelze je vybrat.
+  Porty, které jsou již používány, se zobrazují jako zakázané a nelze je vybrat.
 </p>
 
 <h4>Přesun zařízení</h4>
 <p>
-  V režimu <i class="fas fa-arrow-pointer"></i> Výběr klikněte na libovolné zařízení a přetáhněte jej, abyste jej přemístili na plátně.
+  V režimu <i class="fas fa-arrow-pointer"></i> Výběr kliknutím a přetažením libovolného zařízení jej přesunete na plátně.
 </p>
 
-<h4>Odstranění zařízení nebo kabelu</h4>
+<h4>Smazání zařízení nebo kabelu</h4>
 <ol>
-  <li>Klikněte na nástroj <i class="fas fa-ban"></i> <strong>Odstranit</strong>.</li>
-  <li>Klikněte na zařízení nebo kabel, který chcete odebrat.</li>
+  <li>Klikněte na nástroj <i class="fas fa-ban"></i> <strong>Smazání</strong>.</li>
+  <li>Klikněte na zařízení nebo kabel, který chcete odstranit.</li>
 </ol>
 <p>
-  Když odstraníte zařízení, všechny kabely k němu připojené budou automaticky odstraněny.
+  Když odstraníte zařízení, všechny kabely k němu připojené se automaticky odeberou.
 </p>
 
 <hr>
 
 <h3 id="devices">Zařízení</h3>
 <p>
-  Tato zařízení jsou dostupná v levém panelu nástrojů během režimu úprav:
+  Tato zařízení jsou dostupná v levé liště během režimu úprav:
 </p>
 
 <table class="help-table">
@@ -124,25 +134,25 @@
     <td><i class="fas fa-laptop"></i></td>
     <td><strong>Laptop</strong></td>
     <td>
-      Stejně jako PC, ale připojuje se přes Wi-Fi místo kabelu.
+      Podobně jako PC, ale připojuje se přes Wi-Fi namísto kabelu.
       Používejte jej spolu s přístupovým bodem nebo domácím routerem.
     </td>
   </tr>
   <tr>
     <td>SW</td>
-    <td><strong>Přepínač</strong></td>
+    <td><strong>Switch</strong></td>
     <td>
-      Spojuje více zařízení ve stejném síťovém segmentu.
-      Předává snímky na základě MAC adres.
-      Podporuje VLAN a Spanning Tree Protocol (STP).
+      Připojuje více zařízení ve stejném segmentu sítě.
+      Přesměrovává snímky na základě MAC adres.
+      Podporuje sítě VLAN a protokol Spanning Tree Protocol (STP).
     </td>
   </tr>
   <tr>
     <td>RT</td>
     <td><strong>Router</strong></td>
     <td>
-      Spojuje různé sítě a předává mezi nimi pakety.
-      Můžete konfigurovat statické trasy a IP adresy na každém rozhraní.
+      Připojuje různé sítě a přesměrovává pakety mezi nimi.
+      Podporuje statické trasy, OSPF, BGP a IP tunely (VPN).
     </td>
   </tr>
   <tr>
@@ -151,15 +161,24 @@
     <td>
       Kombinovaný router, server DHCP, brána NAT a přístupový bod Wi-Fi —
       podobný typickému domácímu internetovému routeru.
-      Připojte jej k routeru (jako WAN) a k PC nebo laptopům (jako LAN/Wi-Fi).
+      Připojte jej k routeru (jako WAN) a k počítačům nebo laptopu (jako LAN/Wi-Fi).
+      Podporuje pravidla přesměrování portů.
     </td>
   </tr>
   <tr>
     <td><i class="fas fa-wifi"></i></td>
     <td><strong>Přístupový bod</strong></td>
     <td>
-      Rozšiřuje drátovou síť o bezdrátové připojení Wi-Fi.
-      Připojte jeho drátový port k přepínači nebo routeru a poté připojte laptopy bezdrátově.
+      Rozšiřuje drátovanou síť o bezdrátové připojení Wi-Fi.
+      Připojte jeho drátový port ke Switchi nebo Routeru, poté se k němu bezdrátově připojte Laptopy.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-shield-halved"></i></td>
+    <td><strong>Firewall</strong></td>
+    <td>
+      Filtruje provoz mezi síťovými segmenty na základě konfigurovatelných pravidel.
+      Panel zobrazuje sadu pravidel a živý protokol odpovídajících paketů.
     </td>
   </tr>
 </table>
@@ -168,53 +187,74 @@
 
 <h3 id="panels">Panely zařízení</h3>
 <p>
-  Kliknutím na libovolné zařízení na plátně otevřete jeho <strong>panel</strong> — konfigurační okno,
+  Kliknutím na libovolné zařízení na plátně otevřete jeho <strong>panel</strong> — okno konfigurace,
   které se zobrazí na pravé straně obrazovky.
-  Klikněte na zařízení znovu (nebo na tlačítko <strong>×</strong> v záhlaví panelu), abyste jej zavřeli.
+  Kliknutím na zařízení znovu (nebo na tlačítko <strong>×</strong> v záhlaví panelu) jej zavřete.
 </p>
 
 <h4>Přejmenování zařízení</h4>
 <p>
   Klikněte na tlačítko <i class="fas fa-pen"></i> vedle názvu zařízení v záhlaví panelu
-  a přidělte mu vlastní název (např. "Kancelářský-PC" nebo "Hlavní-Router").
+  a přiřaďte mu vlastní název (např. "Office-PC" nebo "Core-Router").
 </p>
 
-<h4>Taby</h4>
+<h4>Záložky routeru</h4>
 <p>
-  Většina zařízení má v panelu více tabs.
-  Například router má:
+  Panel routeru má následující záložky:
 </p>
 <ul>
-  <li><strong>Rozhraní</strong> — konfigurace IP adres na každém portu</li>
-  <li><strong>Tabulka směrování IPv4</strong> — zobrazení a úprava statických tras IPv4</li>
-  <li><strong>Tabulka směrování IPv6</strong> — zobrazení a úprava statických tras IPv6</li>
+  <li><strong>Rozhraní</strong> — konfigurujte IP adresy na každém portu</li>
+  <li><strong>Směrovací tabulka IPv4</strong> — zobrazujte a upravujte trasy IPv4 (statické a naučené)</li>
+  <li><strong>Směrovací tabulka IPv6</strong> — zobrazujte a upravujte trasy IPv6</li>
+  <li><strong>OSPF</strong> — konfigurujte a monitorujte dynamické směrování OSPF</li>
+  <li><strong>BGP</strong> — konfigurujte BGP sousedy a prohlédněte si tabulku BGP</li>
+  <li><strong>VPN</strong> — nastavte IP tunely mezi routery</li>
 </ul>
+
+<h4>Záložky switche</h4>
 <p>
-  Přepínač má taby pro <strong>Tabulku adres přepínače (SAT)</strong>, konfiguraci <strong>VLAN</strong>
-  a nastavení <strong>Spanning Tree Protocol (STP)</strong>.
+  Panel switche má záložky pro <strong>tabulku adres switche (SAT)</strong>, konfiguraci <strong>VLAN</strong>
+  a nastavení <strong>protokolu Spanning Tree Protocol (STP)</strong>.
 </p>
+
+<h4>Záložky domácího routeru</h4>
 <p>
-  Domácí router má taby pro <strong>Stav</strong>, nastavení <strong>WAN</strong> a <strong>DHCP</strong> pronájmy.
+  Panel domácího routeru má následující záložky:
+</p>
+<ul>
+  <li><strong>Stav</strong> — přehled aktuálního stavu WAN/LAN a připojených klientů</li>
+  <li><strong>WAN</strong> — nakonfigurujte uplink (statická IP nebo DHCP)</li>
+  <li><strong>LAN</strong> — nakonfigurujte podsíť LAN a IP adresu</li>
+  <li><strong>DHCP</strong> — prohlédněte si aktivní leasingy a konfigurujte fond DHCP</li>
+  <li><strong>WiFi</strong> — nakonfigurujte vestavěný přístupový bod (SSID, heslo)</li>
+  <li><strong>NAT</strong> — zobrazujte tabulku aktivních připojení NAT</li>
+  <li><strong>Přesměrování portů</strong> — definujte pravidla pro přesměrování příchozích portů na hostitele LAN</li>
+</ul>
+
+<h4>Záložky firewalli</h4>
+<p>
+  Panel firewall má záložku <strong>Pravidla</strong> pro správu pravidel filtrování a
+  záložku <strong>Protokol</strong> zobrazující, které pakety byly povoleny nebo zavrženy.
 </p>
 
 <h4>PC a Laptop</h4>
 <p>
-  PC a Laptopy mají v panelu plně simulovaný operační systém.
-  Můžete spouštět aplikace z plochy, konfigurovat nastavení sítě a spouštět příkazy.
+  PC a Laptopy mají uvnitř svého panelu plně simulovaný operační systém.
+  Můžete otevírat aplikace z plochy, konfigurovat nastavení sítě a spouštět příkazy.
 </p>
 
 <hr>
 
 <h3 id="run">Režim spuštění — Spuštění simulace</h3>
 <p>
-  Přepněte do režimu <i class="fas fa-play"></i> <strong>Spuštění</strong>, abyste spustili simulaci.
-  Síť se stane živou: zařízení si vyměňují pakety, přiřazují se pronájmy DHCP,
+  Přejděte do režimu <i class="fas fa-play"></i> <strong>Spuštění</strong> pro spuštění simulace.
+  Síť se aktivuje: zařízení si vyměňují pakety, přidělují se leasingy DHCP,
   aktualizují se směrovací tabulky atd.
 </p>
 
 <h4>Ovládání rychlosti</h4>
 <p>
-  Pomocí tlačítek rychlosti v horním panelu nástrojů určete, jak rychle se simulace spouští:
+  Pomocí tlačítek rychlosti v horní liště nástrojů kontrolujte, jak rychle se simulace spouští:
 </p>
 <table class="help-table">
   <tr><td><strong>0,5×</strong></td><td>Pomalá — vhodná pro pozorování jednotlivých kroků</td></tr>
@@ -227,66 +267,21 @@
 <table class="help-table">
   <tr>
     <td><i class="fas fa-pause"></i></td>
-    <td><strong>Pozastavit</strong></td>
-    <td>Zmrazit simulaci v jejím aktuálním stavu.</td>
+    <td><strong>Pozastavení</strong></td>
+    <td>Zmrazte simulaci v jejím aktuálním stavu.</td>
   </tr>
   <tr>
     <td><i class="fas fa-arrow-rotate-left"></i></td>
-    <td><strong>Resetovat</strong></td>
-    <td>Restartovat simulaci od začátku (všechny dynamické stavy jsou vymazány).</td>
+    <td><strong>Reset</strong></td>
+    <td>Restartujte simulaci od začátku (všechny dynamické stavy budou vymazány).</td>
   </tr>
 </table>
 
 <p>
-  <strong>Poznámka:</strong> Nemůžete upravovat topologii sítě v režimu spuštění.
-  Nejdříve se vraťte do režimu <i class="fas fa-pencil"></i> Úpravy.
+  <strong>Poznámka:</strong> Během režimu spuštění nemůžete upravovat topologii sítě.
+  Nejdřív se vraťte do <i class="fas fa-pencil"></i> režimu úprav.
 </p>
 
 <hr>
 
-<h3 id="trace">Režim trasování — Analýza paketů</h3>
-<p>
-  Přepněte do režimu <i class="fas fa-magnifying-glass"></i> <strong>Trasování</strong>, abyste otevřeli
-  vestavěný analyzátor paketů — podobný Wireshark.
-</p>
-<p>
-  V horní části vyberte <strong>zařízení</strong> a <strong>port</strong>, ze kterého chcete zachytávat.
-  Všechny pakety procházející tímto portem jsou zaznamenány a zobrazeny v seznamu.
-</p>
-<p>
-  Kliknutím na libovolný paket v seznamu si můžete prohlédnout jeho podrobnosti:
-  vrstvy protokolů, pole záhlaví a užitečné zatížení — přesně jak by je zobrazil profesionální síťový nástroj.
-</p>
-<p>
-  Zachytávání se spouští automaticky během běhu simulace.
-  Můžete se přepínat mezi režimem trasování a režimem spuštění kdykoli, aniž byste ztratili zachycená data.
-</p>
-
-<hr>
-
-<h3 id="project">Ukládání a načítání</h3>
-<p>
-  Váš návrh sítě lze uložit jako soubor a později jej znovu načíst.
-  Použijte tlačítka v horním panelu nástrojů (viditelná v režimu úprav):
-</p>
-<table class="help-table">
-  <tr>
-    <td><i class="fas fa-file"></i></td>
-    <td><strong>Nový</strong></td>
-    <td>Začněte s prázdným plátnem. Všechny neuložené změny budou ztraceny.</td>
-  </tr>
-  <tr>
-    <td><i class="fas fa-file-arrow-up"></i></td>
-    <td><strong>Načíst</strong></td>
-    <td>Otevřete dříve uložený soubor simulace.</td>
-  </tr>
-  <tr>
-    <td><i class="fas fa-file-arrow-down"></i></td>
-    <td><strong>Uložit</strong></td>
-    <td>Stáhněte aktuální simulaci jako soubor do svého počítače.</td>
-  </tr>
-</table>
-
-<hr>
-<p class="footer">
-  Máte problém? Zkontrolujte, že je vaše síť správně připojena a že všechna zařízení mají nakonfigurované platné IP adresy.
+<h3 id="trace">Režim trasování —

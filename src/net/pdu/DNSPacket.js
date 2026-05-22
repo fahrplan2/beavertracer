@@ -26,7 +26,7 @@ import { read16BE, read32BE, write16BE, write32BE } from "../util/byteUtils.js";
  * - When packing, this implementation does NOT compress names (simpler, still valid).
  *
  * Records supported in decode/encode:
- * - A (1), AAAA (28), CNAME (5), NS (2), PTR (12), TXT (16)
+ * - A (1), AAAA (28), CNAME (5), NS (2), PTR (12), SOA (6), TXT (16), MX (15)
  * - Other types are kept as raw rdata bytes (Uint8Array).
  */
 export class DNSPacket {
@@ -107,6 +107,7 @@ export class DNSPacket {
   static TYPE_A = 1;
   static TYPE_NS = 2;
   static TYPE_CNAME = 5;
+  static TYPE_SOA = 6;
   static TYPE_PTR = 12;
   static TYPE_MX = 15;
   static TYPE_TXT = 16;
@@ -313,6 +314,22 @@ export class DNSPacket {
       const nameRes = DNSPacket._readName(fullMsg, rdataOffset + 2);
       return { preference: pref, exchange: nameRes.name };
     }
+    if (type === DNSPacket.TYPE_SOA) {
+      // SOA RDATA: MNAME + RNAME + SERIAL + REFRESH + RETRY + EXPIRE + MINIMUM
+      const mnameRes = DNSPacket._readName(fullMsg, rdataOffset);
+      const rnameRes = DNSPacket._readName(fullMsg, mnameRes.nextOffset);
+      const off = rnameRes.nextOffset;
+      if (off + 20 > fullMsg.length) return new Uint8Array(rdataBytes);
+      return {
+        mname:   mnameRes.name,
+        rname:   rnameRes.name,
+        serial:  read32BE(fullMsg, off),
+        refresh: read32BE(fullMsg, off + 4),
+        retry:   read32BE(fullMsg, off + 8),
+        expire:  read32BE(fullMsg, off + 12),
+        minimum: read32BE(fullMsg, off + 16),
+      };
+    }
     return new Uint8Array(rdataBytes);
   }
 
@@ -391,6 +408,19 @@ export class DNSPacket {
       write16BE(out, 0, pref);
       out.set(nameBytes, 2);
       return out;
+    }
+
+    if (type === DNSPacket.TYPE_SOA) {
+      if (!data || typeof data !== "object") throw new Error("SOA data must be object");
+      const mname = DNSPacket._writeName(String(data.mname ?? ""));
+      const rname = DNSPacket._writeName(String(data.rname ?? ""));
+      const tail = new Uint8Array(20);
+      write32BE(tail, 0,  (data.serial  ?? 1) >>> 0);
+      write32BE(tail, 4,  (data.refresh ?? 3600) >>> 0);
+      write32BE(tail, 8,  (data.retry   ?? 900)  >>> 0);
+      write32BE(tail, 12, (data.expire  ?? 86400) >>> 0);
+      write32BE(tail, 16, (data.minimum ?? 60)   >>> 0);
+      return DNSPacket._concat([mname, rname, tail]);
     }
 
     if (!(data instanceof Uint8Array)) {
