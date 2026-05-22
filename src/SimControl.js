@@ -1176,12 +1176,11 @@ export class SimControl {
             ev.preventDefault();
             ev.stopPropagation();
             if (loc.key === getLocale()) { this._closeLanguageDialog(); return; }
-            const oldLoc = getLocale();
-            await setLocale(loc.key);
             if (this._isDirty) {
                 const ok = await SimDialog.confirm(t("sim.langswitch.confirmdiscard"));
-                if (!ok) { setLocale(oldLoc); return; }
+                if (!ok) return;
             }
+            await setLocale(loc.key);
             this._isDirty = false;
             window.location.reload();
         };

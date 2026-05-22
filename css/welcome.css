@@ -264,7 +264,7 @@
 
 /* ---- Mobile ---- */
 
-@media (max-width: 520px) {
+@media (max-width: 600px) {
   .welcome-backdrop {
     padding: 0;
     align-items: flex-end;
@@ -301,5 +301,9 @@
 
   .welcome-footer {
     padding: var(--pad-md) var(--pad-lg);
+  }
+
+  .welcome-action-btn--tour {
+    display: none;
   }
 }

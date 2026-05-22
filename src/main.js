@@ -1,5 +1,8 @@
 //@ts-check
 
+import { polyfillCountryFlagEmojis } from "country-flag-emoji-polyfill";
+polyfillCountryFlagEmojis("TwemojiCountryFlags", "/fonts/TwemojiCountryFlags.woff2");
+
 import { initLocale } from "./i18n/index.js";
 import { SimControl } from "./SimControl.js";
 import { defaultSimulation } from "./defaultsim.js";

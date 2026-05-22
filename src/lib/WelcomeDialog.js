@@ -133,10 +133,12 @@ export class WelcomeDialog {
                 close(() => sim.restore(defaultSimulation));
             }
         ));
-        actions.appendChild(WelcomeDialog._actionBtn(
+        const tourBtn = WelcomeDialog._actionBtn(
             "fa-route", t("tour.welcome.title"), t("tour.welcome.desc"),
             () => close(() => Tour.start(sim))
-        ));
+        );
+        tourBtn.classList.add("welcome-action-btn--tour");
+        actions.appendChild(tourBtn);
 
         const news = document.createElement("div");
         news.className = "welcome-news";
