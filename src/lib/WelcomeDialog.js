@@ -88,10 +88,19 @@ export class WelcomeDialog {
         closeBtn.innerHTML = "&times;";
         closeBtn.addEventListener("click", () => close());
 
+        const alpha = document.createElement("span");
+        alpha.className = "welcome-alpha";
+        alpha.textContent = "ALPHA";
+
+        const verBlock = document.createElement("div");
+        verBlock.className = "welcome-ver-block";
+        verBlock.appendChild(ver);
+        verBlock.appendChild(alpha);
+
         const headerRight = document.createElement("div");
         headerRight.className = "welcome-header-right";
         headerRight.appendChild(closeBtn);
-        headerRight.appendChild(ver);
+        headerRight.appendChild(verBlock);
 
         titleBlock.appendChild(title);
         titleBlock.appendChild(subtitle);
@@ -174,10 +183,12 @@ export class WelcomeDialog {
         const left = document.createElement("div");
         left.className = "welcome-footer-left";
         const langLabel = t("sim.language");
-        left.appendChild(WelcomeDialog._footerBtn(
+        const langBtn = WelcomeDialog._footerBtn(
             "fa-language", langLabel === "Language" ? langLabel : `${langLabel} / Language`,
             () => close(() => sim.openLanguageDialog())
-        ));
+        );
+        langBtn.classList.add("welcome-footer-btn--lang");
+        left.appendChild(langBtn);
 
         const right = document.createElement("div");
         right.className = "welcome-footer-right";

@@ -4,23 +4,23 @@
 <hr>
 
 <nav class="help-toc">
-  <strong>Contenido</strong>
+  <strong>Contenidos</strong>
   <ol>
-    <li><a href="#modes">Los tres modos</a></li>
-    <li><a href="#edit">Modo Edición — Construir una red</a></li>
+    <li><a href="#modes">Los Tres Modos</a></li>
+    <li><a href="#edit">Modo Edición — Construir una Red</a></li>
     <li><a href="#devices">Dispositivos</a></li>
-    <li><a href="#panels">Paneles de dispositivo</a></li>
-    <li><a href="#run">Modo Ejecución — Ejecutar la simulación</a></li>
-    <li><a href="#trace">Modo Rastreo — Analizar paquetes</a></li>
-    <li><a href="#project">Guardar y cargar</a></li>
+    <li><a href="#panels">Paneles de Dispositivos</a></li>
+    <li><a href="#run">Modo Ejecución — Ejecutar la Simulación</a></li>
+    <li><a href="#trace">Modo Rastreo — Analizar Paquetes</a></li>
+    <li><a href="#project">Guardar y Cargar</a></li>
   </ol>
 </nav>
 
 <hr>
 
-<h3 id="modes">Los tres modos</h3>
+<h3 id="modes">Los Tres Modos</h3>
 <p>
-  Beaver Tracer tiene tres modos. Puedes cambiar entre ellos usando los botones de la barra de herramientas superior.
+  Beaver Tracer tiene tres modos. Cambias entre ellos usando los botones en la barra de herramientas superior.
 </p>
 <table class="help-table">
   <tr>
@@ -31,21 +31,21 @@
   <tr>
     <td><i class="fas fa-play"></i></td>
     <td><strong>Ejecución</strong></td>
-    <td>Inicia la simulación y observa cómo fluye el tráfico por tu red.</td>
+    <td>Inicia la simulación y observa el tráfico fluir a través de tu red.</td>
   </tr>
   <tr>
     <td><i class="fas fa-magnifying-glass"></i></td>
     <td><strong>Rastreo</strong></td>
-    <td>Captura e inspecciona los paquetes que viajan por tu red.</td>
+    <td>Captura e inspecciona los paquetes que viajan a través de tu red.</td>
   </tr>
 </table>
 
 <hr>
 
-<h3 id="edit">Modo Edición — Construir una red</h3>
+<h3 id="edit">Modo Edición — Construir una Red</h3>
 <p>
-  En el modo Edición, aparece una barra de herramientas en el lado izquierdo de la pantalla.
-  Selecciona una herramienta haciendo clic en ella y úsala en el lienzo.
+  En modo Edición, una barra de herramientas aparece en el lado izquierdo de la pantalla.
+  Selecciona una herramienta haciendo clic en ella, luego úsala en el lienzo.
 </p>
 
 <h4>Herramientas</h4>
@@ -53,12 +53,22 @@
   <tr>
     <td><i class="fas fa-arrow-pointer"></i></td>
     <td><strong>Seleccionar</strong></td>
-    <td>Haz clic en un dispositivo para abrir su panel. Arrástralo para moverlo.</td>
+    <td>Haz clic en un dispositivo para abrir su panel. Arrastra un dispositivo para moverlo.</td>
   </tr>
   <tr>
     <td><i class="fas fa-link"></i></td>
-    <td><strong>Conectar</strong></td>
-    <td>Conecta dos dispositivos con un cable (ver más abajo).</td>
+    <td><strong>Enlace</strong></td>
+    <td>Conecta dos dispositivos con un cable (ver abajo).</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-font"></i></td>
+    <td><strong>Texto</strong></td>
+    <td>Coloca una etiqueta de texto en el lienzo para anotar tu diagrama.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-square"></i></td>
+    <td><strong>Rectángulo</strong></td>
+    <td>Dibuja un rectángulo en el lienzo para agrupar dispositivos visualmente.</td>
   </tr>
   <tr>
     <td><i class="fas fa-ban"></i></td>
@@ -68,47 +78,47 @@
 </table>
 
 <p>
-  <strong>Consejo:</strong> Haz clic derecho en cualquier lugar del lienzo para cancelar la herramienta actual
+  <strong>Consejo:</strong> Haz clic derecho en cualquier parte del lienzo para cancelar la herramienta actual
   y volver a <i class="fas fa-arrow-pointer"></i> Seleccionar.
 </p>
 
-<h4>Colocar un dispositivo</h4>
+<h4>Colocar un Dispositivo</h4>
 <ol>
-  <li>Haz clic en un botón de dispositivo en la barra de herramientas izquierda (ej. <i class="fas fa-desktop"></i> PC).</li>
-  <li>Una vista previa sigue al cursor del ratón.</li>
+  <li>Haz clic en un botón de dispositivo en la barra de herramientas izquierda (p. ej. <i class="fas fa-desktop"></i> PC).</li>
+  <li>Una vista previa sigue tu cursor del ratón.</li>
   <li>Haz clic en el lienzo para colocar el dispositivo.</li>
 </ol>
 
-<h4>Conectar dos dispositivos</h4>
+<h4>Conectar Dos Dispositivos</h4>
 <ol>
-  <li>Haz clic en la herramienta <i class="fas fa-link"></i> <strong>Conectar</strong>.</li>
+  <li>Haz clic en la herramienta <i class="fas fa-link"></i> <strong>Enlace</strong>.</li>
   <li>Haz clic en el primer dispositivo — aparece un selector de puerto. Selecciona un puerto.</li>
-  <li>Mueve el ratón al segundo dispositivo y haz clic — selecciona también un puerto.</li>
+  <li>Mueve tu ratón al segundo dispositivo y haz clic en él — selecciona un puerto allí también.</li>
   <li>El cable se crea automáticamente.</li>
 </ol>
 <p>
-  Los puertos ya en uso aparecen desactivados y no se pueden seleccionar.
+  Los puertos que ya están en uso se muestran deshabilitados y no se pueden seleccionar.
 </p>
 
-<h4>Mover un dispositivo</h4>
+<h4>Mover un Dispositivo</h4>
 <p>
   En el modo <i class="fas fa-arrow-pointer"></i> Seleccionar, haz clic y arrastra cualquier dispositivo para reposicionarlo en el lienzo.
 </p>
 
-<h4>Eliminar un dispositivo o cable</h4>
+<h4>Eliminar un Dispositivo o Cable</h4>
 <ol>
   <li>Haz clic en la herramienta <i class="fas fa-ban"></i> <strong>Eliminar</strong>.</li>
-  <li>Haz clic en el dispositivo o cable que deseas eliminar.</li>
+  <li>Haz clic en el dispositivo o cable que quieres eliminar.</li>
 </ol>
 <p>
-  Al eliminar un dispositivo, todos los cables conectados a él se eliminan automáticamente.
+  Cuando eliminas un dispositivo, todos los cables conectados a él se eliminan automáticamente.
 </p>
 
 <hr>
 
 <h3 id="devices">Dispositivos</h3>
 <p>
-  Estos dispositivos están disponibles en la barra de herramientas izquierda en el modo Edición:
+  Estos dispositivos están disponibles en la barra de herramientas izquierda durante el modo Edición:
 </p>
 
 <table class="help-table">
@@ -116,178 +126,172 @@
     <td><i class="fas fa-desktop"></i></td>
     <td><strong>PC</strong></td>
     <td>
-      Un ordenador con interfaz de red cableada. Puedes ejecutar aplicaciones en él
-      (ej. un navegador web o una herramienta ping) y configurar su dirección IP.
+      Una computadora personal con una interfaz de red cableada. Puedes ejecutar aplicaciones en ella
+      (p. ej. un navegador web o una herramienta de ping) y configurar su dirección IP.
     </td>
   </tr>
   <tr>
     <td><i class="fas fa-laptop"></i></td>
     <td><strong>Laptop</strong></td>
     <td>
-      Como un PC, pero se conecta por Wi-Fi en vez de cable.
-      Úsalo junto con un punto de acceso o un router doméstico.
+      Como una PC, pero se conecta a través de Wi-Fi en lugar de un cable.
+      Úsala junto con un Punto de Acceso o un Enrutador de Hogar.
     </td>
   </tr>
   <tr>
     <td>SW</td>
-    <td><strong>Switch</strong></td>
+    <td><strong>Conmutador</strong></td>
     <td>
-      Conecta varios dispositivos en el mismo segmento de red.
+      Conecta múltiples dispositivos en el mismo segmento de red.
       Reenvía tramas basándose en direcciones MAC.
-      Compatible con VLANs y el Spanning Tree Protocol (STP).
+      Soporta VLANs y Protocolo Spanning Tree (STP).
     </td>
   </tr>
   <tr>
     <td>RT</td>
-    <td><strong>Router</strong></td>
+    <td><strong>Enrutador</strong></td>
     <td>
       Conecta diferentes redes y reenvía paquetes entre ellas.
-      Puedes configurar rutas estáticas y direcciones IP en cada interfaz.
+      Soporta rutas estáticas, OSPF, BGP y túneles IP (VPN).
     </td>
   </tr>
   <tr>
     <td><i class="fas fa-house-signal"></i></td>
-    <td><strong>Router doméstico</strong></td>
+    <td><strong>Enrutador de Hogar</strong></td>
     <td>
-      Un router, servidor DHCP, puerta de enlace NAT y punto de acceso Wi-Fi combinados —
-      similar a un router de internet doméstico típico.
-      Conéctalo a un router (como WAN) y a PCs o laptops (como LAN/Wi-Fi).
+      Un enrutador combinado, servidor DHCP, puerta de enlace NAT y punto de acceso Wi-Fi —
+      similar a un típico enrutador de internet para el hogar.
+      Conéctalo a un Enrutador (como WAN) y a PCs o Laptops (como LAN/Wi-Fi).
+      Soporta reglas de reenvío de puertos.
     </td>
   </tr>
   <tr>
     <td><i class="fas fa-wifi"></i></td>
-    <td><strong>Punto de acceso</strong></td>
+    <td><strong>Punto de Acceso</strong></td>
     <td>
-      Amplía una red cableada con una conexión Wi-Fi.
-      Conecta su puerto cableado a un switch o router y luego conecta laptops de forma inalámbrica.
+      Extiende una red cableada con una conexión Wi-Fi.
+      Conecta su puerto cableado a un Conmutador o Enrutador, luego conecta Laptops a él de forma inalámbrica.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-shield-halved"></i></td>
+    <td><strong>Cortafuegos</strong></td>
+    <td>
+      Filtra el tráfico entre segmentos de red basándose en reglas configurables.
+      El panel muestra el conjunto de reglas y un registro en vivo de paquetes coincidentes.
     </td>
   </tr>
 </table>
 
 <hr>
 
-<h3 id="panels">Paneles de dispositivo</h3>
+<h3 id="panels">Paneles de Dispositivos</h3>
 <p>
-  Haz clic en cualquier dispositivo del lienzo para abrir su <strong>panel</strong> — una ventana de configuración
+  Haz clic en cualquier dispositivo en el lienzo para abrir su <strong>panel</strong> — una ventana de configuración
   que aparece en el lado derecho de la pantalla.
-  Haz clic de nuevo en el dispositivo (o en el botón <strong>×</strong> del encabezado del panel) para cerrarlo.
+  Haz clic en el dispositivo nuevamente (o en el botón <strong>×</strong> en el encabezado del panel) para cerrarlo.
 </p>
 
-<h4>Renombrar un dispositivo</h4>
+<h4>Renombrar un Dispositivo</h4>
 <p>
   Haz clic en el botón <i class="fas fa-pen"></i> junto al nombre del dispositivo en el encabezado del panel
-  para darle un nombre personalizado (ej. "PC-Oficina" o "Router-Principal").
+  para darle un nombre personalizado (p. ej. "Office-PC" o "Core-Router").
 </p>
 
-<h4>Pestañas</h4>
+<h4>Pestañas del Enrutador</h4>
 <p>
-  La mayoría de los dispositivos tienen varias pestañas en el panel.
-  Por ejemplo, un router tiene:
+  Un panel de Enrutador tiene las siguientes pestañas:
 </p>
 <ul>
-  <li><strong>Interfaces</strong> — configurar direcciones IP en cada puerto</li>
-  <li><strong>Tabla de enrutamiento IPv4</strong> — ver y editar rutas estáticas IPv4</li>
-  <li><strong>Tabla de enrutamiento IPv6</strong> — ver y editar rutas estáticas IPv6</li>
+  <li><strong>Interfaces</strong> — configura direcciones IP en cada puerto</li>
+  <li><strong>Tabla de enrutamiento IPv4</strong> — visualiza y edita rutas IPv4 (estáticas y aprendidas)</li>
+  <li><strong>Tabla de enrutamiento IPv6</strong> — visualiza y edita rutas IPv6</li>
+  <li><strong>OSPF</strong> — configura y monitorea enrutamiento dinámico OSPF</li>
+  <li><strong>BGP</strong> — configura vecinos BGP y visualiza la tabla BGP</li>
+  <li><strong>VPN</strong> — configura túneles IP entre enrutadores</li>
 </ul>
+
+<h4>Pestañas del Conmutador</h4>
 <p>
-  Un switch tiene pestañas para la <strong>Switch Address Table (SAT)</strong>, configuración de <strong>VLAN</strong>
-  y configuración del <strong>Spanning Tree Protocol (STP)</strong>.
+  Un panel de Conmutador tiene pestañas para su <strong>Tabla de Direcciones del Conmutador (SAT)</strong>, configuración de <strong>VLAN</strong>,
+  y configuración del <strong>Protocolo Spanning Tree (STP)</strong>.
 </p>
+
+<h4>Pestañas del Enrutador de Hogar</h4>
 <p>
-  Un router doméstico tiene pestañas para <strong>Estado</strong>, configuración <strong>WAN</strong> y concesiones <strong>DHCP</strong>.
+  Un panel de Enrutador de Hogar tiene las siguientes pestañas:
+</p>
+<ul>
+  <li><strong>Estado</strong> — descripción general del estado actual de WAN/LAN y clientes conectados</li>
+  <li><strong>WAN</strong> — configura el enlace ascendente (IP estática o DHCP)</li>
+  <li><strong>LAN</strong> — configura la subred LAN y la dirección IP</li>
+  <li><strong>DHCP</strong> — visualiza arrendamientos activos y configura el grupo DHCP</li>
+  <li><strong>WiFi</strong> — configura el punto de acceso integrado (SSID, contraseña)</li>
+  <li><strong>NAT</strong> — visualiza la tabla de conexiones NAT activas</li>
+  <li><strong>Reenvío de Puertos</strong> — define reglas para reenviar puertos entrantes a hosts LAN</li>
+</ul>
+
+<h4>Pestañas del Cortafuegos</h4>
+<p>
+  Un panel de Cortafuegos tiene una pestaña <strong>Reglas</strong> para gestionar reglas de filtro y una
+  pestaña <strong>Registro</strong> que muestra qué paquetes han sido permitidos o descartados.
 </p>
 
 <h4>PC y Laptop</h4>
 <p>
-  Los PCs y laptops tienen un sistema operativo completamente simulado en su panel.
-  Puedes abrir aplicaciones, configurar los parámetros de red y ejecutar comandos.
+  PCs y Laptops tienen un sistema operativo completamente simulado dentro de su panel.
+  Puedes abrir aplicaciones desde el escritorio, configurar parámetros de red y ejecutar comandos.
 </p>
 
 <hr>
 
-<h3 id="run">Modo Ejecución — Ejecutar la simulación</h3>
+<h3 id="run">Modo Ejecución — Ejecutar la Simulación</h3>
 <p>
   Cambia al modo <i class="fas fa-play"></i> <strong>Ejecución</strong> para iniciar la simulación.
-  La red se vuelve activa: los dispositivos intercambian paquetes, se asignan concesiones DHCP,
-  las tablas de enrutamiento se actualizan, etc.
+  La red se activa: los dispositivos intercambian paquetes, se asignan arrendamientos DHCP,
+  las tablas de enrutamiento se actualizan, y así sucesivamente.
 </p>
 
-<h4>Control de velocidad</h4>
+<h4>Controles de Velocidad</h4>
 <p>
-  Usa los botones de velocidad en la barra de herramientas para controlar la rapidez de la simulación:
+  Usa los botones de velocidad en la barra de herramientas superior para controlar la rapidez de la simulación:
 </p>
 <table class="help-table">
-  <tr><td><strong>0,5×</strong></td><td>Lento — ideal para observar pasos individuales</td></tr>
+  <tr><td><strong>0.5×</strong></td><td>Lento — bueno para observar pasos individuales</td></tr>
   <tr><td><strong>1×</strong></td><td>Velocidad normal</td></tr>
   <tr><td><strong>4×</strong></td><td>Rápido</td></tr>
   <tr><td><strong>8×</strong></td><td>Muy rápido</td></tr>
 </table>
 
-<h4>Pausar y restablecer</h4>
+<h4>Pausa y Reinicio</h4>
 <table class="help-table">
   <tr>
     <td><i class="fas fa-pause"></i></td>
-    <td><strong>Pausar</strong></td>
-    <td>Congelar la simulación en su estado actual.</td>
+    <td><strong>Pausa</strong></td>
+    <td>Congela la simulación en su estado actual.</td>
   </tr>
   <tr>
     <td><i class="fas fa-arrow-rotate-left"></i></td>
-    <td><strong>Restablecer</strong></td>
-    <td>Reiniciar la simulación desde el principio (todos los estados dinámicos se borran).</td>
+    <td><strong>Reinicio</strong></td>
+    <td>Reinicia la simulación desde el principio (todo el estado dinámico se borra).</td>
   </tr>
 </table>
 
 <p>
-  <strong>Nota:</strong> No puedes editar la topología de red en el modo Ejecución.
-  Vuelve primero al modo <i class="fas fa-pencil"></i> Edición.
+  <strong>Nota:</strong> No puedes editar la topología de la red mientras estés en modo Ejecución.
+  Cambia primero al modo <i class="fas fa-pencil"></i> Edición.
 </p>
 
 <hr>
 
-<h3 id="trace">Modo Rastreo — Analizar paquetes</h3>
+<h3 id="trace">Modo Rastreo — Analizar Paquetes</h3>
 <p>
   Cambia al modo <i class="fas fa-magnifying-glass"></i> <strong>Rastreo</strong> para abrir el
   analizador de paquetes integrado — similar a Wireshark.
 </p>
 <p>
-  En la parte superior, selecciona el <strong>dispositivo</strong> y el <strong>puerto</strong> que deseas capturar.
-  Todos los paquetes que pasan por ese puerto se registran y muestran en una lista.
+  En la parte superior, selecciona el <strong>dispositivo</strong> y el <strong>puerto</strong> desde el cual quieres capturar.
+  Todos los paquetes que pasan a través de ese puerto se registran y se muestran en una lista.
 </p>
 <p>
-  Haz clic en cualquier paquete de la lista para ver todos sus detalles:
-  las capas de protocolo, campos de cabecera y carga útil — exactamente como una herramienta de red profesional.
-</p>
-<p>
-  La captura se ejecuta automáticamente mientras la simulación está en marcha.
-  Puedes cambiar entre los modos Rastreo y Ejecución en cualquier momento sin perder los datos capturados.
-</p>
-
-<hr>
-
-<h3 id="project">Guardar y cargar</h3>
-<p>
-  Tu diseño de red puede guardarse como archivo y cargarse más tarde.
-  Usa los botones de la barra de herramientas (visibles en el modo Edición):
-</p>
-<table class="help-table">
-  <tr>
-    <td><i class="fas fa-file"></i></td>
-    <td><strong>Nuevo</strong></td>
-    <td>Comenzar con un lienzo en blanco. Los cambios no guardados se perderán.</td>
-  </tr>
-  <tr>
-    <td><i class="fas fa-file-arrow-up"></i></td>
-    <td><strong>Cargar</strong></td>
-    <td>Abrir un archivo de simulación guardado anteriormente.</td>
-  </tr>
-  <tr>
-    <td><i class="fas fa-file-arrow-down"></i></td>
-    <td><strong>Guardar</strong></td>
-    <td>Descargar la simulación actual como archivo en tu ordenador.</td>
-  </tr>
-</table>
-
-<hr>
-<p class="footer">
-  ¿Problemas? Comprueba que tu red esté correctamente conectada y que todos los dispositivos tengan direcciones IP válidas.
-</p>
+  Haz clic en cualquier

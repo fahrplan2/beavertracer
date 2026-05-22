@@ -1,4 +1,4 @@
-<h2>Pomocník</h2>
+<h2>Pomoc</h2>
 <p class="subtitle">Ako používať Beaver Tracer</p>
 
 <hr>
@@ -7,12 +7,12 @@
   <strong>Obsah</strong>
   <ol>
     <li><a href="#modes">Tri režimy</a></li>
-    <li><a href="#edit">Režim úpravy — Vytvorenie siete</a></li>
+    <li><a href="#edit">Režim úprav — Budovanie siete</a></li>
     <li><a href="#devices">Zariadenia</a></li>
     <li><a href="#panels">Panely zariadení</a></li>
     <li><a href="#run">Režim spustenia — Spustenie simulácie</a></li>
-    <li><a href="#trace">Režim analýzy — Analýza paketov</a></li>
-    <li><a href="#project">Uloženie a načítanie</a></li>
+    <li><a href="#trace">Režim sledovania — Analýza paketov</a></li>
+    <li><a href="#project">Ukladanie a načítavanie</a></li>
   </ol>
 </nav>
 
@@ -20,95 +20,105 @@
 
 <h3 id="modes">Tri režimy</h3>
 <p>
-  Beaver Tracer má tri režimy. Prepínate medzi nimi pomocou tlačidiel v hornej lište s nástrojmi.
+  Beaver Tracer má tri režimy. Medzi nimi prepínate pomocou tlačidiel v hornej lište nástrojov.
 </p>
 <table class="help-table">
   <tr>
     <td><i class="fas fa-pencil"></i></td>
-    <td><strong>Úprava</strong></td>
-    <td>Navrhnite vašu sieť — umiestnite zariadenia, pripojte ich, nakonfigurujte ich.</td>
+    <td><strong>Úpravy</strong></td>
+    <td>Navrhnite svoju sieť — umiestnite zariadenia, spojte ich, nakonfigurujte ich.</td>
   </tr>
   <tr>
     <td><i class="fas fa-play"></i></td>
     <td><strong>Spustenie</strong></td>
-    <td>Spustite simuláciu a pozorujte prenos dát vo vašej sieti.</td>
+    <td>Spustite simuláciu a sledujte tok prevádzky cez vašu sieť.</td>
   </tr>
   <tr>
     <td><i class="fas fa-magnifying-glass"></i></td>
-    <td><strong>Analýza</strong></td>
-    <td>Zaznamenajte a skúmajte pakety cestujúce cez vašu sieť.</td>
+    <td><strong>Sledovanie</strong></td>
+    <td>Zachytite a preskúmajte pakety cestujúce cez vašu sieť.</td>
   </tr>
 </table>
 
 <hr>
 
-<h3 id="edit">Režim úpravy — Vytvorenie siete</h3>
+<h3 id="edit">Režim úprav — Budovanie siete</h3>
 <p>
-  V režime úpravy sa na ľavej strane obrazovky zobrazí lišta s nástrojmi.
-  Vyberte nástroj kliknutím a potom ho použite na plátne.
+  V režime úprav sa objaví lišta nástrojov na ľavej strane obrazovky.
+  Vyberte nástroj kliknutím naň a potom ho použite na plátne.
 </p>
 
 <h4>Nástroje</h4>
 <table class="help-table">
   <tr>
     <td><i class="fas fa-arrow-pointer"></i></td>
-    <td><strong>Výber</strong></td>
-    <td>Kliknutím na zariadenie otvoríte jeho panel. Ťahaním zariadenia ho presuniete.</td>
+    <td><strong>Vybrať</strong></td>
+    <td>Kliknite na zariadenie, aby ste otvorili jeho panel. Potiahnite zariadenie, aby ste ho presunuli.</td>
   </tr>
   <tr>
     <td><i class="fas fa-link"></i></td>
-    <td><strong>Prepojenie</strong></td>
-    <td>Pripojte dve zariadenia pomocou kábla (pozri nižšie).</td>
+    <td><strong>Odkaz</strong></td>
+    <td>Spojte dve zariadenia kablom (pozri nižšie).</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-font"></i></td>
+    <td><strong>Text</strong></td>
+    <td>Umiestnite textový štítok na plátne, aby ste anotovali svoj diagram.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-square"></i></td>
+    <td><strong>Obdĺžnik</strong></td>
+    <td>Nakreslite obdĺžnik na plátne, aby ste vizuálne zoskupili zariadenia.</td>
   </tr>
   <tr>
     <td><i class="fas fa-ban"></i></td>
-    <td><strong>Vymazanie</strong></td>
-    <td>Kliknutím na zariadenie alebo kábel ho odstránite.</td>
+    <td><strong>Vymazať</strong></td>
+    <td>Kliknite na zariadenie alebo kábel, aby ste ho odstránili.</td>
   </tr>
 </table>
 
 <p>
-  <strong>Tip:</strong> Pravým kliknutím na plátne zrušíte aktuálny nástroj
-  a vrátite sa k <i class="fas fa-arrow-pointer"></i> Výberu.
+  <strong>Tip:</strong> Kliknite pravým tlačidlom kdekoľvek na plátne, aby ste zrušili aktuálny nástroj
+  a vrátili sa k <i class="fas fa-arrow-pointer"></i> Výberu.
 </p>
 
 <h4>Umiestnenie zariadenia</h4>
 <ol>
-  <li>Kliknutím na tlačidlo zariadenia v ľavej lište s nástrojmi (napr. <i class="fas fa-desktop"></i> PC).</li>
+  <li>Kliknite na tlačidlo zariadenia v ľavej lište nástrojov (napr. <i class="fas fa-desktop"></i> PC).</li>
   <li>Náhľad sleduje váš kurzor myši.</li>
-  <li>Kliknutím na plátne umiestnite zariadenie.</li>
+  <li>Kliknite na plátno a umiestnite zariadenie.</li>
 </ol>
 
-<h4>Pripojenie dvoch zariadení</h4>
+<h4>Spojenie dvoch zariadení</h4>
 <ol>
-  <li>Kliknutím na <i class="fas fa-link"></i> nástroj <strong>Prepojenie</strong>.</li>
-  <li>Kliknutím na prvé zariadenie — objaví sa výber portu. Vyberte port.</li>
-  <li>Presuňte myš na druhé zariadenie a kliknutím naň — vyberte aj tam port.</li>
+  <li>Kliknite na nástroj <i class="fas fa-link"></i> <strong>Odkaz</strong>.</li>
+  <li>Kliknite na prvé zariadenie — objaví sa výber portu. Vyberte port.</li>
+  <li>Presuňte myš na druhé zariadenie a kliknite naň — vyberte aj tam port.</li>
   <li>Kábel sa vytvorí automaticky.</li>
 </ol>
 <p>
-  Porty, ktoré sú už v použití, sú zobrazené ako zakázané a nemôžu byť vybrané.
+  Porty, ktoré sú už používané, sú zobrazené ako vypnuté a nemôžu byť vybrané.
 </p>
 
 <h4>Presun zariadenia</h4>
 <p>
-  V režime <i class="fas fa-arrow-pointer"></i> Výberu kliknutím a ťahaním akéhokoľvek zariadenia ho presuniete na plátne.
+  V režime <i class="fas fa-arrow-pointer"></i> Výber kliknite a potiahnite akékoľvek zariadenie, aby ste ho presunutí na plátne.
 </p>
 
 <h4>Vymazanie zariadenia alebo kábla</h4>
 <ol>
-  <li>Kliknutím na <i class="fas fa-ban"></i> nástroj <strong>Vymazanie</strong>.</li>
-  <li>Kliknutím na zariadenie alebo kábel, ktorý chcete odstrániť.</li>
+  <li>Kliknite na nástroj <i class="fas fa-ban"></i> <strong>Vymazať</strong>.</li>
+  <li>Kliknite na zariadenie alebo kábel, ktorý chcete odstrániť.</li>
 </ol>
 <p>
-  Pri vymazaní zariadenia sú všetky kabely s ním spojené automaticky odstránené.
+  Keď vymažete zariadenie, všetky kabely naň pripojené sa automaticky odstránia.
 </p>
 
 <hr>
 
 <h3 id="devices">Zariadenia</h3>
 <p>
-  Tieto zariadenia sú dostupné v ľavej lište počas režimu úpravy:
+  Tieto zariadenia sú dostupné v ľavej lište nástrojov počas režimu úprav:
 </p>
 
 <table class="help-table">
@@ -117,49 +127,58 @@
     <td><strong>PC</strong></td>
     <td>
       Osobný počítač s drôteným sieťovým rozhraním. Môžete na ňom spúšťať aplikácie
-      (napr. webový prehliadač alebo nástroj ping) a nakonfigurujte jeho IP adresu.
+      (napr. webový prehliadač alebo nástroj ping) a nakonfigurujete jeho IP adresu.
     </td>
   </tr>
   <tr>
     <td><i class="fas fa-laptop"></i></td>
     <td><strong>Laptop</strong></td>
     <td>
-      Podobný ako PC, ale pripája sa cez Wi-Fi namiesto kábla.
-      Používajte ho spolu s Prístupovým bodom alebo Domácim smerovačom.
+      Ako PC, ale pripája sa cez Wi-Fi namiesto kábla.
+      Používajte ho spolu s Prístupovým bodom alebo domácim smerovačom.
     </td>
   </tr>
   <tr>
     <td>SW</td>
     <td><strong>Prepínač</strong></td>
     <td>
-      Pripája viacero zariadení v rovnakom segmente siete.
-      Presmerúva rámce na základe MAC adries.
-      Podporuje VLAN a Spanning Tree Protocol (STP).
+      Spája viacero zariadení v rovnakom segmente siete.
+      Presmerovávajú rámce na základe MAC adries.
+      Podporuje VLANy a Spanning Tree Protocol (STP).
     </td>
   </tr>
   <tr>
     <td>RT</td>
     <td><strong>Smerovač</strong></td>
     <td>
-      Spája rôzne siete a presmerúva pakety medzi nimi.
-      Môžete nakonfigurujte statické trasy a IP adresy na každom rozhraní.
+      Spája rôzne siete a presmerovávajú pakety medzi nimi.
+      Podporuje statické trasy, OSPF, BGP a IP tunely (VPN).
     </td>
   </tr>
   <tr>
     <td><i class="fas fa-house-signal"></i></td>
     <td><strong>Domáci smerovač</strong></td>
     <td>
-      Kombinovaný smerovač, DHCP server, NAT brána a Wi-Fi prístupový bod —
-      podobný typickému domácemu internetovému smerovačovi.
-      Pripojte ho na Smerovač (ako WAN) a na PC alebo Laptopy (ako LAN/Wi-Fi).
+      Kombinovaný smerovač, DHCP server, brána NAT a Wi-Fi prístupový bod —
+      podobný typickému domácemu internetu smerovač.
+      Pripojte ho k Smerovaču (ako WAN) a k PC alebo Laptopom (ako LAN/Wi-Fi).
+      Podporuje pravidlá presmerovávania portov.
     </td>
   </tr>
   <tr>
     <td><i class="fas fa-wifi"></i></td>
     <td><strong>Prístupový bod</strong></td>
     <td>
-      Rozširuje drôtenú sieť o Wi-Fi pripojenie.
-      Pripojte jeho drôtený port na Prepínač alebo Smerovač a potom naň bezdrôtovo pripojte Laptopy.
+      Rozširíva drôtenú sieť pomocou Wi-Fi spojenia.
+      Pripojte jeho drôtený port k Prepínaču alebo Smerovaču a potom k nemu bezdrôtovo pripojte Laptopy.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-shield-halved"></i></td>
+    <td><strong>Firewall</strong></td>
+    <td>
+      Filtruje prevádzku medzi sieťovými segmentami na základe konfigurovateľných pravidiel.
+      Panel zobrazuje sadu pravidiel a živý záznam zhodujúcich sa paketov.
     </td>
   </tr>
 </table>
@@ -168,119 +187,90 @@
 
 <h3 id="panels">Panely zariadení</h3>
 <p>
-  Kliknutím na akékoľvek zariadenie na plátne otvoríte jeho <strong>panel</strong> — konfiguračné okno,
-  ktoré sa zobrazí na pravej strane obrazovky.
-  Kliknutím na zariadenie znova (alebo na tlačidlo <strong>×</strong> v záhlaví panelu) ho zatvoríte.
+  Kliknite na akékoľvek zariadenie na plátne, aby ste otvorili jeho <strong>panel</strong> — konfiguračné okno,
+  ktoré sa objaví na pravej strane obrazovky.
+  Kliknite na zariadenie znova (alebo na tlačidlo <strong>×</strong> v záhlaví panelu), aby ste ho zatvorili.
 </p>
 
 <h4>Premenovanie zariadenia</h4>
 <p>
-  Kliknutím na tlačidlo <i class="fas fa-pen"></i> vedľa názvu zariadenia v záhlaví panelu
-  mu dajte vlastný názov (napr. "Office-PC" alebo "Core-Router").
+  Kliknite na tlačidlo <i class="fas fa-pen"></i> vedľa názvu zariadenia v záhlaví panelu,
+  aby ste mu dali vlastný názov (napr. "Office-PC" alebo "Core-Router").
 </p>
 
-<h4>Karty</h4>
+<h4>Karty smerovača</h4>
 <p>
-  Väčšina zariadení má vo vnútri panelu viacero kariet.
-  Napríklad Smerovač má:
+  Panel smerovača má nasledujúce karty:
 </p>
 <ul>
   <li><strong>Rozhrania</strong> — nakonfigurujte IP adresy na každom porte</li>
-  <li><strong>Tabuľka smerovania IPv4</strong> — prezerajte a upravujte statické trasy IPv4</li>
-  <li><strong>Tabuľka smerovania IPv6</strong> — prezerajte a upravujte statické trasy IPv6</li>
+  <li><strong>Tabuľka smerovania IPv4</strong> — zobrazte a upravte trasy IPv4 (statické a naučené)</li>
+  <li><strong>Tabuľka smerovania IPv6</strong> — zobrazte a upravte trasy IPv6</li>
+  <li><strong>OSPF</strong> — nakonfigurujte a sledujte dynamické smerovanie OSPF</li>
+  <li><strong>BGP</strong> — nakonfigurujte susedov BGP a zobrazte tabuľku BGP</li>
+  <li><strong>VPN</strong> — nastavte IP tunely medzi smerovačmi</li>
 </ul>
+
+<h4>Karty prepínača</h4>
 <p>
-  Prepínač má karty pre svoju <strong>Tabuľku adries prepínača (SAT)</strong>, <strong>VLAN</strong>
-  konfiguráciu a nastavenia <strong>Spanning Tree Protocol (STP)</strong>.
+  Panel prepínača má karty pre <strong>Tabuľku adries prepínača (SAT)</strong>, konfiguráciu <strong>VLAN</strong>
+  a nastavenia <strong>Spanning Tree Protocol (STP)</strong>.
 </p>
+
+<h4>Karty domáceho smerovača</h4>
 <p>
-  Domáci smerovač má karty pre <strong>Stav</strong>, nastavenia <strong>WAN</strong> a <strong>DHCP</strong> prenajatia.
+  Panel domáceho smerovača má nasledujúce karty:
+</p>
+<ul>
+  <li><strong>Stav</strong> — prehľad aktuálneho stavu WAN/LAN a pripojených klientov</li>
+  <li><strong>WAN</strong> — nakonfigurujte vzostupnú linku (statická IP alebo DHCP)</li>
+  <li><strong>LAN</strong> — nakonfigurujte LAN podsieť a IP adresu</li>
+  <li><strong>DHCP</strong> — zobrazte aktívne prenájmy a nakonfigurujte DHCP pool</li>
+  <li><strong>WiFi</strong> — nakonfigurujte zabudovaný prístupový bod (SSID, heslo)</li>
+  <li><strong>NAT</strong> — zobrazte tabuľku aktívnych spojení NAT</li>
+  <li><strong>Presmerovanie portov</strong> — definujte pravidlá na presmerovanie príchodzích portov na hostiteľov v sieti LAN</li>
+</ul>
+
+<h4>Karty firewallu</h4>
+<p>
+  Panel firewallu má kartu <strong>Pravidlá</strong> na správu pravidiel filtrovania a kartu
+  <strong>Záznam</strong> zobrazujúcu, ktoré pakety boli povolené alebo zablokované.
 </p>
 
 <h4>PC a Laptop</h4>
 <p>
-  PC a Laptopy majú vo vnútri svojho panelu úplne simulovaný operačný systém.
-  Môžete otvoriť aplikácie z pracovnej plochy, nakonfigurujte nastavenia siete a spúšťajte príkazy.
+  PC a Laptopy majú úplne simulovaný operačný systém v rámci ich panelu.
+  Môžete otvoriť aplikácie z pultu, nakonfigurujte nastavenia siete a spustite príkazy.
 </p>
 
 <hr>
 
 <h3 id="run">Režim spustenia — Spustenie simulácie</h3>
 <p>
-  Prepnite sa do režimu <i class="fas fa-play"></i> <strong>Spustenie</strong> na spustenie simulácie.
-  Sieť sa aktivuje: zariadenia si vymieňajú pakety, DHCP prenajatia sa priradia,
-  tabuľky smerovania sa aktualizujú a tak ďalej.
+  Prepnite na režim <i class="fas fa-play"></i> <strong>Spustenie</strong>, aby ste spustili simuláciu.
+  Sieť sa stane živou: zariadenia si vymieňajú pakety, prideľujú sa DHCP prenájmy,
+  aktualizujú sa tabuľky smerovania a podobne.
 </p>
 
-<h4>Ovládanie rýchlosti</h4>
+<h4>Ovládacie prvky rýchlosti</h4>
 <p>
-  Použite tlačidlá rýchlosti v hornej lište s nástrojmi na kontrolu rýchlosti spustenia simulácie:
+  Použite tlačidlá rýchlosti v hornej lište nástrojov na kontrolu rýchlosti spustenia simulácie:
 </p>
 <table class="help-table">
-  <tr><td><strong>0.5×</strong></td><td>Pomaly — vhodné pre pozorovanie jednotlivých krokov</td></tr>
+  <tr><td><strong>0,5×</strong></td><td>Pomaly — vhodné na pozorovanie jednotlivých krokov</td></tr>
   <tr><td><strong>1×</strong></td><td>Normálna rýchlosť</td></tr>
   <tr><td><strong>4×</strong></td><td>Rýchlo</td></tr>
   <tr><td><strong>8×</strong></td><td>Veľmi rýchlo</td></tr>
 </table>
 
-<h4>Pozastavenie a Reset</h4>
+<h4>Pauza a Reset</h4>
 <table class="help-table">
   <tr>
     <td><i class="fas fa-pause"></i></td>
-    <td><strong>Pozastavenie</strong></td>
-    <td>Zmraziť simuláciu v jej aktuálnom stave.</td>
+    <td><strong>Pauza</strong></td>
+    <td>Zmrazte simuláciu v jej aktuálnom stave.</td>
   </tr>
   <tr>
     <td><i class="fas fa-arrow-rotate-left"></i></td>
     <td><strong>Reset</strong></td>
-    <td>Reštartovať simuláciu od začiatku (všetok dynamický stav je vymazaný).</td>
-  </tr>
-</table>
-
-<p>
-  <strong>Poznámka:</strong> Topológiu siete nemôžete upravovať v režime Spustenie.
-  Najskôr prepnite späť na režim <i class="fas fa-pencil"></i> Úprava.
-</p>
-
-<hr>
-
-<h3 id="trace">Režim analýzy — Analýza paketov</h3>
-<p>
-  Prepnite sa na režim <i class="fas fa-magnifying-glass"></i> <strong>Analýza</strong> na otvorenie
-  vstavaného analizátora paketov — podobného ako Wireshark.
-</p>
-<p>
-  V hornej časti vyberte <strong>zariadenie</strong> a <strong>port</strong>, z ktorého chcete zachytávať.
-  Všetky pakety prechádzajúce týmto portom sú zaznamenané a zobrazené v zozname.
-</p>
-<p>
-  Kliknutím na ktorýkoľvek paket v zozname si pozriete jeho úplné podrobnosti:
-  vrstvy protokolu, polia záhlavia a záťaž — presne ako by ich zobrazil profesionálny nástroj na sieť.
-</p>
-<p>
-  Zachytávanie prebieha automaticky počas spúšťania simulácie.
-  Môžete prepínať medzi režimom Analýza a režimom Spustenie kedykoľvek bez straty zachytených dát.
-</p>
-
-<hr>
-
-<h3 id="project">Uloženie a načítanie</h3>
-<p>
-  Váš návrh siete môže byť uložený ako súbor a neskôr načítaný znova.
-  Použite tlačidlá v hornej lište s nástrojmi (viditeľné v režime Úprava):
-</p>
-<table class="help-table">
-  <tr>
-    <td><i class="fas fa-file"></i></td>
-    <td><strong>Nový</strong></td>
-    <td>Začnite s prázdnym plátnom. Všetky neuložené zmeny budú stratené.</td>
-  </tr>
-  <tr>
-    <td><i class="fas fa-file-arrow-up"></i></td>
-    <td><strong>Načítanie</strong></td>
-    <td>Otvorte predtým uložený súbor simulácie.</td>
-  </tr>
-  <tr>
-    <td><i class="fas fa-file-arrow-down"></i></td>
-    <td><strong>Uloženie</strong></td>
-    <td>Stiahnite aktuálnu simuláciu ako
+    <td>

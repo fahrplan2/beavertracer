@@ -528,13 +528,6 @@ export class SimControl {
         branding.textContent = "Beaver Tracer";
         brandingText.appendChild(branding);
 
-        const ver = document.createElement("div");
-        ver.className = "sim-toolbar-branding-version";
-        const alpha = document.createElement("span");
-        alpha.className = "sim-toolbar-branding-alpha";
-        alpha.textContent = "ALPHA";
-        ver.appendChild(alpha);
-        brandingText.appendChild(ver);
 
         //********** MODES  *********/
         addSeparator("sep-mode");

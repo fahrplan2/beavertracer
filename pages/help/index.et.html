@@ -7,11 +7,11 @@
   <strong>Sisukord</strong>
   <ol>
     <li><a href="#modes">Kolm režiimi</a></li>
-    <li><a href="#edit">Redigeerimisrežiim — võrgu loomine</a></li>
+    <li><a href="#edit">Redigeerimisrežiim — võrgu koostamine</a></li>
     <li><a href="#devices">Seadmed</a></li>
     <li><a href="#panels">Seadmete paneelid</a></li>
-    <li><a href="#run">Käitamisrežiim — simulatsiooni käivitamine</a></li>
-    <li><a href="#trace">Jälitamise režiim — pakettide analüüsimine</a></li>
+    <li><a href="#run">Käivitamisrežiim — simulatsiooni käitamine</a></li>
+    <li><a href="#trace">Jälitusrežiim — pakettide analüüsimine</a></li>
     <li><a href="#project">Salvestamine ja laadimine</a></li>
   </ol>
 </nav>
@@ -20,32 +20,32 @@
 
 <h3 id="modes">Kolm režiimi</h3>
 <p>
-  Beaver Traceril on kolm režiimi. Saate nende vahel vahetada kasutades nuppusid ülemises tööriistaribas.
+  Beaver Traceriel on kolm režiimi. Vahetate nende vahel, kasutades ülemise tööriba nuppe.
 </p>
 <table class="help-table">
   <tr>
     <td><i class="fas fa-pencil"></i></td>
     <td><strong>Redigeerimine</strong></td>
-    <td>Kujundage oma võrk — paigutage seadmed, ühendage need, konfigureerige need.</td>
+    <td>Kujundage oma võrk — paigutage seadmeid, ühendage neid, konfigureerige neid.</td>
   </tr>
   <tr>
     <td><i class="fas fa-play"></i></td>
     <td><strong>Käitamine</strong></td>
-    <td>Alustage simulatsiooni ja jälgige liikluse voogu oma võrgus.</td>
+    <td>Käivitage simulatsioon ja vaadake, kuidas liiklus teie võrgus liigub.</td>
   </tr>
   <tr>
     <td><i class="fas fa-magnifying-glass"></i></td>
-    <td><strong>Jälitamine</strong></td>
-    <td>Fiks ja kontrollige pakette, mis liiguvad oma võrgus.</td>
+    <td><strong>Jälitus</strong></td>
+    <td>Jäädvustage ja kontrollege pakette, mis liiguvad teie võrgus.</td>
   </tr>
 </table>
 
 <hr>
 
-<h3 id="edit">Redigeerimisrežiim — võrgu loomine</h3>
+<h3 id="edit">Redigeerimisrežiim — võrgu koostamine</h3>
 <p>
-  Redigeerimisrežiimis kuvatakse tööriistariist ekraani vasakul küljel.
-  Valige tööriist, klõpsates sellel, seejärel kasutage seda kanvaalil.
+  Redigeerimisrežiimis ilmub ekraani vasemale poole tööriba.
+  Valige tööriist, klõpsates sellel, seejärel kasutage seda lõuendil.
 </p>
 
 <h4>Tööriistad</h4>
@@ -53,7 +53,7 @@
   <tr>
     <td><i class="fas fa-arrow-pointer"></i></td>
     <td><strong>Valimine</strong></td>
-    <td>Klõpsake seadmel selle paneeli avamiseks. Lohistage seadet, et seda liigutada.</td>
+    <td>Klõpsake seadmel, et avada selle paneel. Lohistage seadet, et seda liigutada.</td>
   </tr>
   <tr>
     <td><i class="fas fa-link"></i></td>
@@ -61,38 +61,48 @@
     <td>Ühendage kaks seadet kaabliga (vt allpool).</td>
   </tr>
   <tr>
+    <td><i class="fas fa-font"></i></td>
+    <td><strong>Tekst</strong></td>
+    <td>Asetage tekstimärk lõuendile, et kommenteerida oma diagrammi.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-square"></i></td>
+    <td><strong>Ristkülik</strong></td>
+    <td>Joonistage ristkülik lõuendile, et visuaalselt rühmitada seadmeid.</td>
+  </tr>
+  <tr>
     <td><i class="fas fa-ban"></i></td>
     <td><strong>Kustutamine</strong></td>
-    <td>Klõpsake seadmel või kaablil, et see eemaldada.</td>
+    <td>Klõpsake seadmel või kaablil, et seda eemaldada.</td>
   </tr>
 </table>
 
 <p>
-  <strong>Näpunäide:</strong> Paremklõpsake kanvaalil, et tühistada praegune tööriist
-  ja naasta <i class="fas fa-arrow-pointer"></i> valikule.
+  <strong>Vihje:</strong> Paremklõpsake lõuendil kõikjal, et tühistada praegune tööriist
+  ja naasta <i class="fas fa-arrow-pointer"></i> Valimisse.
 </p>
 
 <h4>Seadme paigutamine</h4>
 <ol>
-  <li>Klõpsake vasakul tööriistariibas seadme nuppu (nt <i class="fas fa-desktop"></i> PC).</li>
-  <li>Eelvaade järgneb teie kursori.</li>
-  <li>Klõpsake kanvaalil seadme paigutamiseks.</li>
+  <li>Klõpsake seadmete nupul vasaku tööriistarea (nt <i class="fas fa-desktop"></i> PC).</li>
+  <li>Eelvaade järgneb teie hiire kursorit.</li>
+  <li>Klõpsake lõuendil seadme paigutamiseks.</li>
 </ol>
 
 <h4>Kahe seadme ühendamine</h4>
 <ol>
   <li>Klõpsake <i class="fas fa-link"></i> <strong>Link</strong> tööriista.</li>
-  <li>Klõpsake esimest seadet — ilmub pordi valija. Valige port.</li>
-  <li>Liigutage hiir teisele seadmele ja klõpsake seda — valige ka selle port.</li>
+  <li>Klõpsake esimesel seadmel — ilmub pordi valija. Valige port.</li>
+  <li>Liigutage hiirt teise seadme poole ja klõpsake seda — valige ka seal port.</li>
   <li>Kaabel luuakse automaatselt.</li>
 </ol>
 <p>
-  Juba kasutusel olevad pordid on näidatud keelatud ja neid ei saa valida.
+  Juba kasutusel olevad pordid näidatakse keelatud olekus ja neid ei saa valida.
 </p>
 
 <h4>Seadme liigutamine</h4>
 <p>
-  <i class="fas fa-arrow-pointer"></i> Valimisrežiimis klõpsake ja lohistage seadet, et seda kanvaalil ümber paigutada.
+  <i class="fas fa-arrow-pointer"></i> Valimisrežiimis klõpsake ja lohistage seadet, et seda lõuendil ümber paigutada.
 </p>
 
 <h4>Seadme või kaabli kustutamine</h4>
@@ -101,14 +111,14 @@
   <li>Klõpsake seadmel või kaablil, mille soovite eemaldada.</li>
 </ol>
 <p>
-  Kui kustutate seadme, eemaldatakse automaatselt kõik sellega ühendatud kaablid.
+  Seadme kustutamisel eemaldatakse automaatselt kõik sellega ühendatud kaablid.
 </p>
 
 <hr>
 
 <h3 id="devices">Seadmed</h3>
 <p>
-  Redigeerimisrežiimi ajal on vasakul tööriistariibas saadaval järgmised seadmed:
+  Need seadmed on saadaval vasak tööriistariba redigeerimisrežiimis:
 </p>
 
 <table class="help-table">
@@ -116,23 +126,23 @@
     <td><i class="fas fa-desktop"></i></td>
     <td><strong>PC</strong></td>
     <td>
-      Isiklik arvuti juhtmega võrguinterfeitsiga. Saate sellel käitada rakendusi
-      (nt veebilehitsejat või ping-tööriista) ja konfigureerida selle IP-aadress.
+      Isiklik arvuti, millel on juhtmega võrguliides. Sellel saate käitada rakendusi
+      (nt veebibrauserit või ping-tööriista) ja konfigureerida selle IP-aadressi.
     </td>
   </tr>
   <tr>
     <td><i class="fas fa-laptop"></i></td>
     <td><strong>Sülearvuti</strong></td>
     <td>
-      Nagu PC, kuid ühendub Wi-Fi kaudu juhtme asemel.
-      Kasutage seda koos juurdepääsupunktiga või koduruuteriga.
+      Sarnane arvutiga, kuid ühendub Wi-Fi kaudu juhtme asemel.
+      Kasutage seda koos juurdepääsupunktiga või kodurooteriga.
     </td>
   </tr>
   <tr>
     <td>SW</td>
     <td><strong>Lüliti</strong></td>
     <td>
-      Ühendab mitut seadet samasse võrgusegmenti.
+      Ühendab mitut seadet samale võrgusegmendile.
       Edastab kaadrid MAC-aadresside alusel.
       Toetab VLAN-e ja Spanning Tree Protocol (STP).
     </td>
@@ -142,16 +152,17 @@
     <td><strong>Ruuter</strong></td>
     <td>
       Ühendab erinevaid võrke ja edastab pakette nende vahel.
-      Saate konfigureerida staatilisi marsruute ja IP-aadresse igal liidesel.
+      Toetab staatilisi marsruute, OSPF, BGP ja IP-tunneleid (VPN).
     </td>
   </tr>
   <tr>
     <td><i class="fas fa-house-signal"></i></td>
-    <td><strong>Koduruuter</strong></td>
+    <td><strong>Koduruter</strong></td>
     <td>
       Kombineeritud ruuter, DHCP-server, NAT-lüüs ja Wi-Fi juurdepääsupunkt —
-      sarnane tüüpilisele koduinternetiruuritele.
-      Ühendage see ruuterile (WAN-iks) ja PC-dega või sülearvutiga (LAN/Wi-Fi-ks).
+      sarnane tüüpilisele koduste interneti ruuterile.
+      Ühendage see ruuterisse (WAN-ks) ja arvutitega või sülearvutitega (LAN/Wi-Fi).
+      Toetab pordi ümbersuunamise reegleid.
     </td>
   </tr>
   <tr>
@@ -159,7 +170,15 @@
     <td><strong>Juurdepääsupunkt</strong></td>
     <td>
       Laiendab juhtmega võrku Wi-Fi ühendusega.
-      Ühendage selle juhtmega port lülitiga või ruuteriga, seejärel ühendage sülearvutid juhtmevabalt.
+      Ühendage selle juhtmega port lülitiga või ruuteriga, seejärel ühendage sülearvutid sellega traadita.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-shield-halved"></i></td>
+    <td><strong>Tulemüür</strong></td>
+    <td>
+      Filtreerib liiklust võrgusegmentide vahel konfigureeritavate reeglite alusel.
+      Paneel näitab reeglistikku ja reaalajas logit sobitatud pakettidest.
     </td>
   </tr>
 </table>
@@ -168,126 +187,85 @@
 
 <h3 id="panels">Seadmete paneelid</h3>
 <p>
-  Klõpsake kanvaalil mis tahes seadmele, et avada selle <strong>paneel</strong> — konfigureerimisaken,
-  mis ilmub ekraani paremale küljele.
-  Klõpsake seadmel uuesti (või <strong>×</strong> nupul paneeli päises), et see sulgeda.
+  Klõpsake lõuendil olevale seadmele, et avada selle <strong>paneel</strong> — konfiguratsioonaken,
+  mis ilmub ekraani paremale poole.
+  Klõpsake seadmel uuesti (või paneel päise nupule <strong>×</strong>), et see sulgeda.
 </p>
 
 <h4>Seadme ümbernimetamine</h4>
 <p>
-  Klõpsake <i class="fas fa-pen"></i> nuppu seadme nime kõrval paneeli päises,
+  Klõpsake <i class="fas fa-pen"></i> nupul seadme nime kõrval paneel päises,
   et anda sellele kohandatud nimi (nt "Office-PC" või "Core-Router").
 </p>
 
-<h4>Vahelehed</h4>
+<h4>Ruuteri vahelehed</h4>
 <p>
-  Enamikul seadmetel on paneeli sees mitmed vahelehed.
-  Näiteks ruuteril on:
+  Ruuteri paneelil on järgmised vahelehed:
 </p>
 <ul>
-  <li><strong>Liidesed</strong> — konfigureerige IP-aadresse igal pordil</li>
-  <li><strong>Marsruutimistabel IPv4</strong> — vaadake ja muutke IPv4 staatilisi marsruute</li>
-  <li><strong>Marsruutimistabel IPv6</strong> — vaadake ja muutke IPv6 staatilisi marsruute</li>
+  <li><strong>Liidesed</strong> — IP-aadresside konfigureerimine igal pordil</li>
+  <li><strong>Marsruutimistabel IPv4</strong> — IPv4 marsruutide vaatamine ja redigeerimine (staatilised ja õpitud)</li>
+  <li><strong>Marsruutimistabel IPv6</strong> — IPv6 marsruutide vaatamine ja redigeerimine</li>
+  <li><strong>OSPF</strong> — OSPF dünaamilise marsruutimise konfigureerimine ja jälgimine</li>
+  <li><strong>BGP</strong> — BGP naabruskonna konfigureerimine ja BGP tabeli vaatamine</li>
+  <li><strong>VPN</strong> — IP-tunnelite seadistamine ruuterite vahel</li>
 </ul>
+
+<h4>Lüliti vahelehed</h4>
 <p>
-  Lülitil on vahelehed selle <strong>Switch Address Table (SAT)</strong>, <strong>VLAN</strong>
+  Lüliti paneelil on vahekaardid <strong>Switch Address Table (SAT)</strong>, <strong>VLAN</strong>
   konfiguratsiooni ja <strong>Spanning Tree Protocol (STP)</strong> sätete jaoks.
 </p>
+
+<h4>Kodurauteri vahelehed</h4>
 <p>
-  Koduruuteril on vahelehed <strong>Staatuse</strong>, <strong>WAN</strong> sätete ja <strong>DHCP</strong> rendite jaoks.
+  Kodurauteri paneelil on järgmised vahelehed:
+</p>
+<ul>
+  <li><strong>Olek</strong> — praeguse WAN/LAN seisundi ja ühendatud klientide ülevaade</li>
+  <li><strong>WAN</strong> — üleslaadimise konfigureerimine (staatiline IP või DHCP)</li>
+  <li><strong>LAN</strong> — LAN-alamvõrgu ja IP-aadressi konfigureerimine</li>
+  <li><strong>DHCP</strong> — aktiivsete rendilepingute vaatamine ja DHCP-kausta konfigureerimine</li>
+  <li><strong>WiFi</strong> — sisseehitatud juurdepääsupunkti konfigureerimine (SSID, parool)</li>
+  <li><strong>NAT</strong> — aktiivsete NAT-ühenduste tabeli vaatamine</li>
+  <li><strong>Pordi ümbersuunamine</strong> — reeglite määratlemine saapuhkuse portide ümbersuunamiseks LAN-hostidele</li>
+</ul>
+
+<h4>Tulemüüri vahelehed</h4>
+<p>
+  Tulemüüri paneelil on <strong>Reeglid</strong> vahekaart filtrireeglite haldamiseks ja
+  <strong>Logi</strong> vahekaart, mis näitab, millised paketid on lubatud või kukutatud.
 </p>
 
 <h4>PC ja sülearvuti</h4>
 <p>
-  PC-del ja sülearvutitel on nende paneeli sees täielik simuleeritud operatsioonisüsteem.
+  PC-del ja sülearvutitel on nende paneeli sisse täielikult simuleeritud operatsioonisüsteem.
   Saate avada rakendusi töölaualt, konfigureerida võrgusätteid ja käivitada käske.
 </p>
 
 <hr>
 
-<h3 id="run">Käitamisrežiim — simulatsiooni käivitamine</h3>
+<h3 id="run">Käivitamisrežiim — simulatsiooni käitamine</h3>
 <p>
-  Lülitage <i class="fas fa-play"></i> <strong>Käitamise</strong> režiimile simulatsiooni alustamiseks.
-  Võrk muutub aktiivseks: seadmed vahetavad pakette, DHCP-rendu määratakse,
-  marsruutimistabelid värskendavad jne.
+  Lülituge <i class="fas fa-play"></i> <strong>Käivitamise</strong> režiimile simulatsiooni alustamiseks.
+  Võrk muutub reaalajas: seadmed vahetavad pakette, DHCP rendid määratakse,
+  marsruutimistabelid uuendatakse jne.
 </p>
 
-<h4>Kiiruse juhtelemendid</h4>
+<h4>Kiiruse juhtimine</h4>
 <p>
-  Kasutage kiiruse nuppe ülemises tööriistaribas, et kontrollida, kui kiiresti simulatsioon käib:
+  Kasutage ülemise tööriba kiiruse nuppe, et kontrollida simulatsiooni kiirust:
 </p>
 <table class="help-table">
   <tr><td><strong>0,5×</strong></td><td>Aeglane — hea üksikute sammude jälgimiseks</td></tr>
-  <tr><td><strong>1×</strong></td><td>Normaalne kiirus</td></tr>
+  <tr><td><strong>1×</strong></td><td>Tavaline kiirus</td></tr>
   <tr><td><strong>4×</strong></td><td>Kiire</td></tr>
   <tr><td><strong>8×</strong></td><td>Väga kiire</td></tr>
 </table>
 
-<h4>Pausimine ja lähtestamine</h4>
+<h4>Paus ja lähtestamine</h4>
 <table class="help-table">
   <tr>
     <td><i class="fas fa-pause"></i></td>
     <td><strong>Paus</strong></td>
-    <td>Külmutage simulatsioon selle praeguses seisus.</td>
-  </tr>
-  <tr>
-    <td><i class="fas fa-arrow-rotate-left"></i></td>
-    <td><strong>Lähtesta</strong></td>
-    <td>Alustage simulatsiooni uuesti algusest (kogu dünaamiline seisund tühjendatakse).</td>
-  </tr>
-</table>
-
-<p>
-  <strong>Märkus:</strong> Te ei saa käitamisrežiimis võrgu topoloogiat redigeerida.
-  Lülitage esmalt <i class="fas fa-pencil"></i> redigeerimisrežiimile.
-</p>
-
-<hr>
-
-<h3 id="trace">Jälitamise režiim — pakettide analüüsimine</h3>
-<p>
-  Lülitage <i class="fas fa-magnifying-glass"></i> <strong>Jälitamise</strong> režiimile, et avada
-  sisseehitatud paketi analüsaator — sarnane Wireshark-ile.
-</p>
-<p>
-  Ülaosas valige <strong>seade</strong> ja <strong>port</strong>, kust soovite jäädvustada.
-  Kõik selle pordi kaudu liikuvad paketid salvestatakse ja kuvatakse loendis.
-</p>
-<p>
-  Klõpsake loendis mis tahes paketil, et näha selle täielikke üksikasju:
-  protokollide kihid, päise väljad ja last — täpselt nagu professionaalne võrguaja näitaks.
-</p>
-<p>
-  Jäädvustamine käib automaatselt, kui simulatsioon käib.
-  Saate jälitamise ja käitamise režiimi vahel vahetada igal ajal ilma jäädvustatud andmeid kaotamata.
-</p>
-
-<hr>
-
-<h3 id="project">Salvestamine ja laadimine</h3>
-<p>
-  Teie võrgu kujundus saab salvestada failina ja laadida hiljem uuesti.
-  Kasutage nuppe ülemises tööriistaribas (nähtavad redigeerimisrežiimis):
-</p>
-<table class="help-table">
-  <tr>
-    <td><i class="fas fa-file"></i></td>
-    <td><strong>Uus</strong></td>
-    <td>Alustage tühja kanvaaliga. Kõik salvestamata muudatused lähevad kaotsi.</td>
-  </tr>
-  <tr>
-    <td><i class="fas fa-file-arrow-up"></i></td>
-    <td><strong>Laadi</strong></td>
-    <td>Avage varem salvestatud simulatsioonifail.</td>
-  </tr>
-  <tr>
-    <td><i class="fas fa-file-arrow-down"></i></td>
-    <td><strong>Save</strong></td>
-    <td>Download the current simulation as a file to your computer.</td>
-  </tr>
-</table>
-
-<hr>
-<p class="footer">
-  Having trouble? Check that your network is correctly connected and that all devices have valid IP addresses configured.
-</p>
+    <td>Külmutage simulatsi

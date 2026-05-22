@@ -4,14 +4,14 @@
 <hr>
 
 <nav class="help-toc">
-  <strong>Daftar Isi</strong>
+  <strong>Isi</strong>
   <ol>
     <li><a href="#modes">Tiga Mode</a></li>
     <li><a href="#edit">Mode Edit — Membangun Jaringan</a></li>
     <li><a href="#devices">Perangkat</a></li>
     <li><a href="#panels">Panel Perangkat</a></li>
     <li><a href="#run">Mode Jalankan — Menjalankan Simulasi</a></li>
-    <li><a href="#trace">Mode Trace — Menganalisis Paket</a></li>
+    <li><a href="#trace">Mode Lacak — Menganalisis Paket</a></li>
     <li><a href="#project">Menyimpan dan Memuat</a></li>
   </ol>
 </nav>
@@ -20,23 +20,23 @@
 
 <h3 id="modes">Tiga Mode</h3>
 <p>
-  Beaver Tracer memiliki tiga mode. Anda beralih di antara mereka menggunakan tombol di toolbar atas.
+  Beaver Tracer memiliki tiga mode. Anda beralih di antara mereka menggunakan tombol di bilah alat atas.
 </p>
 <table class="help-table">
   <tr>
     <td><i class="fas fa-pencil"></i></td>
     <td><strong>Edit</strong></td>
-    <td>Rancang jaringan Anda — letakkan perangkat, hubungkan, dan konfigurasi.</td>
+    <td>Rancang jaringan Anda — letakkan perangkat, hubungkan mereka, konfigurasi mereka.</td>
   </tr>
   <tr>
     <td><i class="fas fa-play"></i></td>
     <td><strong>Jalankan</strong></td>
-    <td>Mulai simulasi dan tonton lalu lintas mengalir melalui jaringan Anda.</td>
+    <td>Mulai simulasi dan lihat lalu lintas mengalir melalui jaringan Anda.</td>
   </tr>
   <tr>
     <td><i class="fas fa-magnifying-glass"></i></td>
-    <td><strong>Trace</strong></td>
-    <td>Tangkap dan periksa paket yang berpindah di jaringan Anda.</td>
+    <td><strong>Lacak</strong></td>
+    <td>Tangkap dan periksa paket yang bepergian di seluruh jaringan Anda.</td>
   </tr>
 </table>
 
@@ -44,8 +44,8 @@
 
 <h3 id="edit">Mode Edit — Membangun Jaringan</h3>
 <p>
-  Dalam mode Edit, toolbar muncul di sisi kiri layar.
-  Pilih alat dengan mengkliknya, lalu gunakan pada kanvas.
+  Dalam mode Edit, bilah alat muncul di sisi kiri layar.
+  Pilih alat dengan mengkliknya, lalu gunakan di kanvas.
 </p>
 
 <h4>Alat</h4>
@@ -61,6 +61,16 @@
     <td>Hubungkan dua perangkat dengan kabel (lihat di bawah).</td>
   </tr>
   <tr>
+    <td><i class="fas fa-font"></i></td>
+    <td><strong>Teks</strong></td>
+    <td>Tempatkan label teks di kanvas untuk memberikan anotasi pada diagram Anda.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-square"></i></td>
+    <td><strong>Persegi Panjang</strong></td>
+    <td>Gambar persegi panjang di kanvas untuk mengelompokkan perangkat secara visual.</td>
+  </tr>
+  <tr>
     <td><i class="fas fa-ban"></i></td>
     <td><strong>Hapus</strong></td>
     <td>Klik perangkat atau kabel untuk menghapusnya.</td>
@@ -68,13 +78,13 @@
 </table>
 
 <p>
-  <strong>Tip:</strong> Klik kanan di mana saja pada kanvas untuk membatalkan alat saat ini
+  <strong>Tips:</strong> Klik kanan di mana pun pada kanvas untuk membatalkan alat saat ini
   dan kembali ke <i class="fas fa-arrow-pointer"></i> Pilih.
 </p>
 
 <h4>Menempatkan Perangkat</h4>
 <ol>
-  <li>Klik tombol perangkat di toolbar kiri (misalnya <i class="fas fa-desktop"></i> PC).</li>
+  <li>Klik tombol perangkat di bilah alat kiri (mis. <i class="fas fa-desktop"></i> PC).</li>
   <li>Pratinjau mengikuti kursor mouse Anda.</li>
   <li>Klik pada kanvas untuk menempatkan perangkat.</li>
 </ol>
@@ -83,7 +93,7 @@
 <ol>
   <li>Klik alat <i class="fas fa-link"></i> <strong>Hubung</strong>.</li>
   <li>Klik perangkat pertama — pemilih port muncul. Pilih port.</li>
-  <li>Pindahkan mouse Anda ke perangkat kedua dan kliknya — pilih port di sana juga.</li>
+  <li>Pindahkan mouse ke perangkat kedua dan kliknya — pilih port di sana juga.</li>
   <li>Kabel dibuat secara otomatis.</li>
 </ol>
 <p>
@@ -92,7 +102,7 @@
 
 <h4>Memindahkan Perangkat</h4>
 <p>
-  Dalam mode <i class="fas fa-arrow-pointer"></i> Pilih, klik dan seret perangkat apa pun untuk memposisikan ulang di kanvas.
+  Dalam mode <i class="fas fa-arrow-pointer"></i> Pilih, klik dan seret perangkat apa pun untuk mengubah posisinya di kanvas.
 </p>
 
 <h4>Menghapus Perangkat atau Kabel</h4>
@@ -101,14 +111,14 @@
   <li>Klik perangkat atau kabel yang ingin Anda hapus.</li>
 </ol>
 <p>
-  Saat Anda menghapus perangkat, semua kabel yang terhubung padanya dihapus secara otomatis.
+  Ketika Anda menghapus perangkat, semua kabel yang terhubung kepadanya otomatis dihapus.
 </p>
 
 <hr>
 
 <h3 id="devices">Perangkat</h3>
 <p>
-  Perangkat ini tersedia di toolbar kiri selama mode Edit:
+  Perangkat ini tersedia di bilah alat kiri selama mode Edit:
 </p>
 
 <table class="help-table">
@@ -117,7 +127,7 @@
     <td><strong>PC</strong></td>
     <td>
       Komputer pribadi dengan antarmuka jaringan berkabel. Anda dapat menjalankan aplikasi di dalamnya
-      (misalnya browser web atau alat ping) dan mengonfigurasi alamat IP-nya.
+      (mis. web browser atau alat ping) dan mengonfigurasi alamat IP-nya.
     </td>
   </tr>
   <tr>
@@ -125,14 +135,14 @@
     <td><strong>Laptop</strong></td>
     <td>
       Seperti PC, tetapi terhubung melalui Wi-Fi bukan kabel.
-      Gunakan bersama Access Point atau Home Router.
+      Gunakan bersama dengan Access Point atau Home Router.
     </td>
   </tr>
   <tr>
     <td>SW</td>
     <td><strong>Switch</strong></td>
     <td>
-      Menghubungkan beberapa perangkat dalam segmen jaringan yang sama.
+      Menghubungkan banyak perangkat dalam segmen jaringan yang sama.
       Meneruskan frame berdasarkan alamat MAC.
       Mendukung VLAN dan Spanning Tree Protocol (STP).
     </td>
@@ -142,16 +152,17 @@
     <td><strong>Router</strong></td>
     <td>
       Menghubungkan jaringan berbeda dan meneruskan paket di antara mereka.
-      Anda dapat mengonfigurasi rute statis dan alamat IP di setiap antarmuka.
+      Mendukung rute statis, OSPF, BGP, dan terowongan IP (VPN).
     </td>
   </tr>
   <tr>
     <td><i class="fas fa-house-signal"></i></td>
     <td><strong>Home Router</strong></td>
     <td>
-      Router gabungan, server DHCP, gateway NAT, dan access point Wi-Fi —
-      mirip dengan router internet rumah biasa.
+      Router gabungan, server DHCP, gateway NAT dan access point Wi-Fi —
+      mirip dengan router internet rumah khas.
       Hubungkan ke Router (sebagai WAN) dan ke PC atau Laptop (sebagai LAN/Wi-Fi).
+      Mendukung aturan port forwarding.
     </td>
   </tr>
   <tr>
@@ -159,7 +170,15 @@
     <td><strong>Access Point</strong></td>
     <td>
       Memperluas jaringan berkabel dengan koneksi Wi-Fi.
-      Hubungkan port berakatnya ke Switch atau Router, kemudian hubungkan Laptop ke dalamnya secara nirkabel.
+      Hubungkan port berkabelnya ke Switch atau Router, lalu hubungkan Laptop ke dalamnya secara nirkabel.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-shield-halved"></i></td>
+    <td><strong>Firewall</strong></td>
+    <td>
+      Memfilter lalu lintas antara segmen jaringan berdasarkan aturan yang dapat dikonfigurasi.
+      Panel menampilkan set aturan dan log langsung paket yang cocok.
     </td>
   </tr>
 </table>
@@ -168,38 +187,59 @@
 
 <h3 id="panels">Panel Perangkat</h3>
 <p>
-  Klik perangkat apa pun pada kanvas untuk membuka <strong>panelnya</strong> — jendela konfigurasi
+  Klik perangkat apa pun di kanvas untuk membuka <strong>panelnya</strong> — jendela konfigurasi
   yang muncul di sisi kanan layar.
   Klik perangkat lagi (atau tombol <strong>×</strong> di header panel) untuk menutupnya.
 </p>
 
 <h4>Mengganti Nama Perangkat</h4>
 <p>
-  Klik tombol <i class="fas fa-pen"></i> di samping nama perangkat di header panel
-  untuk memberinya nama khusus (misalnya "Office-PC" atau "Core-Router").
+  Klik tombol <i class="fas fa-pen"></i> di sebelah nama perangkat di header panel
+  untuk memberikan nama khusus (mis. "Office-PC" atau "Core-Router").
 </p>
 
-<h4>Tab</h4>
+<h4>Tab Router</h4>
 <p>
-  Sebagian besar perangkat memiliki beberapa tab di dalam panel.
-  Misalnya, Router memiliki:
+  Panel Router memiliki tab berikut:
 </p>
 <ul>
-  <li><strong>Antarmuka</strong> — konfigurasi alamat IP di setiap port</li>
-  <li><strong>Tabel Routing IPv4</strong> — lihat dan edit rute statis IPv4</li>
-  <li><strong>Tabel Routing IPv6</strong> — lihat dan edit rute statis IPv6</li>
+  <li><strong>Antarmuka</strong> — konfigurasi alamat IP pada setiap port</li>
+  <li><strong>Tabel Routing IPv4</strong> — lihat dan edit rute IPv4 (statis dan dipelajari)</li>
+  <li><strong>Tabel Routing IPv6</strong> — lihat dan edit rute IPv6</li>
+  <li><strong>OSPF</strong> — konfigurasi dan pantau perutean dinamis OSPF</li>
+  <li><strong>BGP</strong> — konfigurasi tetangga BGP dan lihat tabel BGP</li>
+  <li><strong>VPN</strong> — siapkan terowongan IP antara router</li>
 </ul>
+
+<h4>Tab Switch</h4>
 <p>
-  Switch memiliki tab untuk <strong>Tabel Alamat Switch (SAT)</strong>, konfigurasi <strong>VLAN</strong>,
+  Panel Switch memiliki tab untuk <strong>Switch Address Table (SAT)</strong>, konfigurasi <strong>VLAN</strong>,
   dan pengaturan <strong>Spanning Tree Protocol (STP)</strong>.
 </p>
+
+<h4>Tab Home Router</h4>
 <p>
-  Home Router memiliki tab untuk <strong>Status</strong>, pengaturan <strong>WAN</strong>, dan lease <strong>DHCP</strong>.
+  Panel Home Router memiliki tab berikut:
+</p>
+<ul>
+  <li><strong>Status</strong> — gambaran umum keadaan WAN/LAN saat ini dan klien yang terhubung</li>
+  <li><strong>WAN</strong> — konfigurasi uplink (IP statis atau DHCP)</li>
+  <li><strong>LAN</strong> — konfigurasi subnet LAN dan alamat IP</li>
+  <li><strong>DHCP</strong> — lihat lease aktif dan konfigurasi pool DHCP</li>
+  <li><strong>WiFi</strong> — konfigurasi access point bawaan (SSID, password)</li>
+  <li><strong>NAT</strong> — lihat tabel koneksi NAT aktif</li>
+  <li><strong>Port Forwarding</strong> — tentukan aturan untuk meneruskan port masuk ke host LAN</li>
+</ul>
+
+<h4>Tab Firewall</h4>
+<p>
+  Panel Firewall memiliki tab <strong>Aturan</strong> untuk mengelola aturan filter dan
+  tab <strong>Log</strong> yang menampilkan paket mana yang telah diizinkan atau ditolak.
 </p>
 
 <h4>PC dan Laptop</h4>
 <p>
-  PC dan Laptop memiliki sistem operasi simulasi penuh di dalam panelnya.
+  PC dan Laptop memiliki sistem operasi yang disimulasikan sepenuhnya di dalam panelnya.
   Anda dapat membuka aplikasi dari desktop, mengonfigurasi pengaturan jaringan, dan menjalankan perintah.
 </p>
 
@@ -209,15 +249,15 @@
 <p>
   Beralih ke mode <i class="fas fa-play"></i> <strong>Jalankan</strong> untuk memulai simulasi.
   Jaringan menjadi aktif: perangkat menukar paket, lease DHCP diberikan,
-  tabel routing diperbarui, dan sebagainya.
+  tabel routing diperbarui, dan seterusnya.
 </p>
 
 <h4>Kontrol Kecepatan</h4>
 <p>
-  Gunakan tombol kecepatan di toolbar atas untuk mengontrol seberapa cepat simulasi berjalan:
+  Gunakan tombol kecepatan di bilah alat atas untuk mengontrol seberapa cepat simulasi berjalan:
 </p>
 <table class="help-table">
-  <tr><td><strong>0.5×</strong></td><td>Lambat — bagus untuk mengamati langkah individual</td></tr>
+  <tr><td><strong>0,5×</strong></td><td>Lambat — bagus untuk mengamati langkah individual</td></tr>
   <tr><td><strong>1×</strong></td><td>Kecepatan normal</td></tr>
   <tr><td><strong>4×</strong></td><td>Cepat</td></tr>
   <tr><td><strong>8×</strong></td><td>Sangat cepat</td></tr>
@@ -228,12 +268,12 @@
   <tr>
     <td><i class="fas fa-pause"></i></td>
     <td><strong>Jeda</strong></td>
-    <td>Bekukan simulasi pada status saat ini.</td>
+    <td>Bekukan simulasi pada keadaan saat ini.</td>
   </tr>
   <tr>
     <td><i class="fas fa-arrow-rotate-left"></i></td>
     <td><strong>Reset</strong></td>
-    <td>Mulai ulang simulasi dari awal (semua status dinamis dihapus).</td>
+    <td>Mulai ulang simulasi dari awal (semua keadaan dinamis dihapus).</td>
   </tr>
 </table>
 
@@ -244,50 +284,19 @@
 
 <hr>
 
-<h3 id="trace">Mode Trace — Menganalisis Paket</h3>
+<h3 id="trace">Mode Lacak — Menganalisis Paket</h3>
 <p>
-  Beralih ke mode <i class="fas fa-magnifying-glass"></i> <strong>Trace</strong> untuk membuka
+  Beralih ke mode <i class="fas fa-magnifying-glass"></i> <strong>Lacak</strong> untuk membuka
   penganalisis paket bawaan — mirip dengan Wireshark.
 </p>
 <p>
-  Di bagian atas, pilih <strong>perangkat</strong> dan <strong>port</strong> yang ingin Anda tangkap.
+  Di bagian atas, pilih <strong>perangkat</strong> dan <strong>port</strong> yang ingin Anda tangkap dari.
   Semua paket yang melewati port itu dicatat dan ditampilkan dalam daftar.
 </p>
 <p>
-  Klik paket apa pun dalam daftar untuk melihat detail lengkapnya:
-  lapisan protokol, bidang header, dan payload — seperti yang ditunjukkan alat jaringan profesional.
+  Klik pada paket apa pun dalam daftar untuk melihat detail lengkapnya:
+  lapisan protokol, bidang header, dan payload — persis seperti yang ditunjukkan alat jaringan profesional.
 </p>
 <p>
   Penangkapan berjalan otomatis saat simulasi berjalan.
-  Anda dapat beralih antara mode Trace dan mode Jalankan kapan saja tanpa kehilangan data yang ditangkap.
-</p>
-
-<hr>
-
-<h3 id="project">Menyimpan dan Memuat</h3>
-<p>
-  Desain jaringan Anda dapat disimpan sebagai file dan dimuat lagi nanti.
-  Gunakan tombol di toolbar atas (terlihat dalam mode Edit):
-</p>
-<table class="help-table">
-  <tr>
-    <td><i class="fas fa-file"></i></td>
-    <td><strong>Baru</strong></td>
-    <td>Mulai dengan kanvas kosong. Perubahan yang belum disimpan akan hilang.</td>
-  </tr>
-  <tr>
-    <td><i class="fas fa-file-arrow-up"></i></td>
-    <td><strong>Muat</strong></td>
-    <td>Buka file simulasi yang disimpan sebelumnya.</td>
-  </tr>
-  <tr>
-    <td><i class="fas fa-file-arrow-down"></i></td>
-    <td><strong>Simpan</strong></td>
-    <td>Unduh simulasi saat ini sebagai file ke komputer Anda.</td>
-  </tr>
-</table>
-
-<hr>
-<p class="footer">
-  Mengalami kesulitan? Periksa bahwa jaringan Anda terhubung dengan benar dan semua perangkat memiliki alamat IP yang valid yang dikonfigurasi.
-</p>
+  Anda dapat beralih antara mode Lacak dan mode Jalankan kapan saja tanpa kehilangan data

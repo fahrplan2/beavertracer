@@ -1,42 +1,42 @@
-<h2>Guida</h2>
+<h2>Aiuto</h2>
 <p class="subtitle">Come usare Beaver Tracer</p>
 
 <hr>
 
 <nav class="help-toc">
-  <strong>Contenuto</strong>
+  <strong>Contenuti</strong>
   <ol>
-    <li><a href="#modes">I tre modalità</a></li>
+    <li><a href="#modes">Le tre modalità</a></li>
     <li><a href="#edit">Modalità Modifica — Costruire una rete</a></li>
     <li><a href="#devices">Dispositivi</a></li>
-    <li><a href="#panels">Pannelli di configurazione</a></li>
-    <li><a href="#run">Modalità Esecuzione — Avviare la simulazione</a></li>
+    <li><a href="#panels">Pannelli dei dispositivi</a></li>
+    <li><a href="#run">Modalità Esecuzione — Eseguire la simulazione</a></li>
     <li><a href="#trace">Modalità Traccia — Analizzare i pacchetti</a></li>
-    <li><a href="#project">Salvare e caricare</a></li>
+    <li><a href="#project">Salvataggio e caricamento</a></li>
   </ol>
 </nav>
 
 <hr>
 
-<h3 id="modes">I tre modalità</h3>
+<h3 id="modes">Le tre modalità</h3>
 <p>
-  Beaver Tracer ha tre modalità. Puoi passare da una all'altra usando i pulsanti nella barra degli strumenti in alto.
+  Beaver Tracer ha tre modalità. Puoi passare tra loro usando i pulsanti nella barra degli strumenti in alto.
 </p>
 <table class="help-table">
   <tr>
     <td><i class="fas fa-pencil"></i></td>
     <td><strong>Modifica</strong></td>
-    <td>Progetta la tua rete — posiziona dispositivi, collegali, configurali.</td>
+    <td>Progetta la tua rete — posiziona i dispositivi, collegali, configurali.</td>
   </tr>
   <tr>
     <td><i class="fas fa-play"></i></td>
     <td><strong>Esecuzione</strong></td>
-    <td>Avvia la simulazione e osserva il traffico scorrere nella tua rete.</td>
+    <td>Avvia la simulazione e osserva il traffico fluire attraverso la tua rete.</td>
   </tr>
   <tr>
     <td><i class="fas fa-magnifying-glass"></i></td>
     <td><strong>Traccia</strong></td>
-    <td>Cattura e ispeziona i pacchetti che viaggiano nella tua rete.</td>
+    <td>Cattura e ispeziona i pacchetti che viaggiano attraverso la tua rete.</td>
   </tr>
 </table>
 
@@ -45,7 +45,7 @@
 <h3 id="edit">Modalità Modifica — Costruire una rete</h3>
 <p>
   In modalità Modifica, una barra degli strumenti appare sul lato sinistro dello schermo.
-  Seleziona uno strumento facendo clic su di esso, poi usalo sull'area di lavoro.
+  Seleziona uno strumento facendo clic su di esso, quindi usalo sulla tela.
 </p>
 
 <h4>Strumenti</h4>
@@ -53,52 +53,62 @@
   <tr>
     <td><i class="fas fa-arrow-pointer"></i></td>
     <td><strong>Seleziona</strong></td>
-    <td>Fai clic su un dispositivo per aprire il suo pannello. Trascinalo per spostarlo.</td>
+    <td>Fai clic su un dispositivo per aprire il suo pannello. Trascina un dispositivo per spostarlo.</td>
   </tr>
   <tr>
     <td><i class="fas fa-link"></i></td>
-    <td><strong>Collega</strong></td>
+    <td><strong>Collegamento</strong></td>
     <td>Collega due dispositivi con un cavo (vedi sotto).</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-font"></i></td>
+    <td><strong>Testo</strong></td>
+    <td>Posiziona un'etichetta di testo sulla tela per annotare il tuo diagramma.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-square"></i></td>
+    <td><strong>Rettangolo</strong></td>
+    <td>Disegna un rettangolo sulla tela per raggruppare visivamente i dispositivi.</td>
   </tr>
   <tr>
     <td><i class="fas fa-ban"></i></td>
     <td><strong>Elimina</strong></td>
-    <td>Fai clic su un dispositivo o cavo per rimuoverlo.</td>
+    <td>Fai clic su un dispositivo o un cavo per rimuoverlo.</td>
   </tr>
 </table>
 
 <p>
-  <strong>Suggerimento:</strong> Fai clic destro in qualsiasi punto dell'area di lavoro per annullare lo strumento attuale
+  <strong>Suggerimento:</strong> Fai clic con il tasto destro in qualsiasi punto della tela per annullare lo strumento corrente
   e tornare a <i class="fas fa-arrow-pointer"></i> Seleziona.
 </p>
 
-<h4>Posizionare un dispositivo</h4>
+<h4>Posizionamento di un dispositivo</h4>
 <ol>
-  <li>Fai clic su un pulsante dispositivo nella barra degli strumenti sinistra (es. <i class="fas fa-desktop"></i> PC).</li>
+  <li>Fai clic su un pulsante di dispositivo nella barra degli strumenti di sinistra (ad es. <i class="fas fa-desktop"></i> PC).</li>
   <li>Un'anteprima segue il cursore del mouse.</li>
-  <li>Fai clic sull'area di lavoro per posizionare il dispositivo.</li>
+  <li>Fai clic sulla tela per posizionare il dispositivo.</li>
 </ol>
 
-<h4>Collegare due dispositivi</h4>
+<h4>Collegamento di due dispositivi</h4>
 <ol>
-  <li>Fai clic sullo strumento <i class="fas fa-link"></i> <strong>Collega</strong>.</li>
+  <li>Fai clic su <i class="fas fa-link"></i> lo strumento <strong>Collegamento</strong>.</li>
   <li>Fai clic sul primo dispositivo — appare un selettore di porta. Seleziona una porta.</li>
-  <li>Sposta il mouse sul secondo dispositivo e fai clic — seleziona anche lì una porta.</li>
+  <li>Sposta il mouse verso il secondo dispositivo e fai clic su di esso — seleziona una porta anche lì.</li>
   <li>Il cavo viene creato automaticamente.</li>
 </ol>
 <p>
-  Le porte già in uso appaiono disabilitate e non possono essere selezionate.
+  Le porte già in uso sono visualizzate come disabilitate e non possono essere selezionate.
 </p>
 
-<h4>Spostare un dispositivo</h4>
+<h4>Spostamento di un dispositivo</h4>
 <p>
-  In modalità <i class="fas fa-arrow-pointer"></i> Seleziona, fai clic e trascina qualsiasi dispositivo per riposizionarlo sull'area di lavoro.
+  In modalità <i class="fas fa-arrow-pointer"></i> Seleziona, fai clic e trascina qualsiasi dispositivo per riposizionarlo sulla tela.
 </p>
 
-<h4>Eliminare un dispositivo o un cavo</h4>
+<h4>Eliminazione di un dispositivo o di un cavo</h4>
 <ol>
-  <li>Fai clic sullo strumento <i class="fas fa-ban"></i> <strong>Elimina</strong>.</li>
-  <li>Fai clic sul dispositivo o cavo che vuoi rimuovere.</li>
+  <li>Fai clic su <i class="fas fa-ban"></i> lo strumento <strong>Elimina</strong>.</li>
+  <li>Fai clic sul dispositivo o sul cavo che desideri rimuovere.</li>
 </ol>
 <p>
   Quando elimini un dispositivo, tutti i cavi collegati ad esso vengono rimossi automaticamente.
@@ -108,7 +118,7 @@
 
 <h3 id="devices">Dispositivi</h3>
 <p>
-  Questi dispositivi sono disponibili nella barra degli strumenti sinistra in modalità Modifica:
+  Questi dispositivi sono disponibili nella barra degli strumenti di sinistra durante la modalità Modifica:
 </p>
 
 <table class="help-table">
@@ -116,15 +126,15 @@
     <td><i class="fas fa-desktop"></i></td>
     <td><strong>PC</strong></td>
     <td>
-      Un computer con interfaccia di rete cablata. Puoi eseguire applicazioni su di esso
-      (es. un browser web o uno strumento ping) e configurare il suo indirizzo IP.
+      Un personal computer con un'interfaccia di rete cablata. Puoi eseguire app su di esso
+      (ad es. un browser web o uno strumento ping) e configurare il suo indirizzo IP.
     </td>
   </tr>
   <tr>
     <td><i class="fas fa-laptop"></i></td>
     <td><strong>Laptop</strong></td>
     <td>
-      Come un PC, ma si connette via Wi-Fi invece che via cavo.
+      Come un PC, ma si connette tramite Wi-Fi anziché un cavo.
       Usalo insieme a un punto di accesso o a un router domestico.
     </td>
   </tr>
@@ -134,24 +144,25 @@
     <td>
       Collega più dispositivi nello stesso segmento di rete.
       Inoltra i frame in base agli indirizzi MAC.
-      Supporta VLAN e lo Spanning Tree Protocol (STP).
+      Supporta VLAN e Spanning Tree Protocol (STP).
     </td>
   </tr>
   <tr>
     <td>RT</td>
     <td><strong>Router</strong></td>
     <td>
-      Collega reti diverse e instrada i pacchetti tra loro.
-      Puoi configurare route statiche e indirizzi IP su ogni interfaccia.
+      Collega reti diverse e inoltra i pacchetti tra loro.
+      Supporta route statiche, OSPF, BGP e tunnel IP (VPN).
     </td>
   </tr>
   <tr>
     <td><i class="fas fa-house-signal"></i></td>
     <td><strong>Router domestico</strong></td>
     <td>
-      Un router, server DHCP, gateway NAT e punto di accesso Wi-Fi combinati —
+      Un router combinato, server DHCP, gateway NAT e punto di accesso Wi-Fi —
       simile a un tipico router internet domestico.
       Collegalo a un router (come WAN) e a PC o laptop (come LAN/Wi-Fi).
+      Supporta regole di port forwarding.
     </td>
   </tr>
   <tr>
@@ -159,65 +170,94 @@
     <td><strong>Punto di accesso</strong></td>
     <td>
       Estende una rete cablata con una connessione Wi-Fi.
-      Collega la sua porta cablata a uno switch o router, poi connetti laptop in modalità wireless.
+      Collega la sua porta cablata a uno switch o un router, quindi collega i laptop ad esso in modalità wireless.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-shield-halved"></i></td>
+    <td><strong>Firewall</strong></td>
+    <td>
+      Filtra il traffico tra segmenti di rete in base a regole configurabili.
+      Il pannello mostra il set di regole e un registro in tempo reale dei pacchetti corrispondenti.
     </td>
   </tr>
 </table>
 
 <hr>
 
-<h3 id="panels">Pannelli di configurazione</h3>
+<h3 id="panels">Pannelli dei dispositivi</h3>
 <p>
-  Fai clic su qualsiasi dispositivo nell'area di lavoro per aprire il suo <strong>pannello</strong> — una finestra di configurazione
+  Fai clic su qualsiasi dispositivo sulla tela per aprire il suo <strong>pannello</strong> — una finestra di configurazione
   che appare sul lato destro dello schermo.
-  Fai clic di nuovo sul dispositivo (o sul pulsante <strong>×</strong> nell'intestazione del pannello) per chiuderlo.
+  Fai di nuovo clic sul dispositivo (o sul pulsante <strong>×</strong> nell'intestazione del pannello) per chiuderlo.
 </p>
 
-<h4>Rinominare un dispositivo</h4>
+<h4>Rinominazione di un dispositivo</h4>
 <p>
-  Fai clic sul pulsante <i class="fas fa-pen"></i> accanto al nome del dispositivo nell'intestazione del pannello
-  per assegnargli un nome personalizzato (es. "PC-Ufficio" o "Router-Principale").
+  Fai clic su <i class="fas fa-pen"></i> il pulsante accanto al nome del dispositivo nell'intestazione del pannello
+  per dargli un nome personalizzato (ad es. "Office-PC" o "Core-Router").
 </p>
 
-<h4>Schede</h4>
+<h4>Schede del router</h4>
 <p>
-  La maggior parte dei dispositivi ha più schede nel pannello.
-  Ad esempio, un router ha:
+  Un pannello di router ha le seguenti schede:
 </p>
 <ul>
-  <li><strong>Interfacce</strong> — configurare gli indirizzi IP su ogni porta</li>
-  <li><strong>Tabella di routing IPv4</strong> — visualizzare e modificare le route statiche IPv4</li>
-  <li><strong>Tabella di routing IPv6</strong> — visualizzare e modificare le route statiche IPv6</li>
+  <li><strong>Interfacce</strong> — configura gli indirizzi IP su ogni porta</li>
+  <li><strong>Tabella di routing IPv4</strong> — visualizza e modifica le route IPv4 (statiche e apprese)</li>
+  <li><strong>Tabella di routing IPv6</strong> — visualizza e modifica le route IPv6</li>
+  <li><strong>OSPF</strong> — configura e monitora il routing dinamico OSPF</li>
+  <li><strong>BGP</strong> — configura i vicini BGP e visualizza la tabella BGP</li>
+  <li><strong>VPN</strong> — configura i tunnel IP tra i router</li>
 </ul>
+
+<h4>Schede dello switch</h4>
 <p>
-  Uno switch ha schede per la <strong>Switch Address Table (SAT)</strong>, la configurazione <strong>VLAN</strong>
-  e le impostazioni dello <strong>Spanning Tree Protocol (STP)</strong>.
+  Un pannello di switch ha schede per la sua <strong>Switch Address Table (SAT)</strong>, la configurazione <strong>VLAN</strong>
+  e le impostazioni di <strong>Spanning Tree Protocol (STP)</strong>.
 </p>
+
+<h4>Schede del router domestico</h4>
 <p>
-  Un router domestico ha schede per <strong>Stato</strong>, impostazioni <strong>WAN</strong> e lease <strong>DHCP</strong>.
+  Un pannello di router domestico ha le seguenti schede:
+</p>
+<ul>
+  <li><strong>Stato</strong> — panoramica dello stato WAN/LAN corrente e dei client connessi</li>
+  <li><strong>WAN</strong> — configura il collegamento in salita (IP statico o DHCP)</li>
+  <li><strong>LAN</strong> — configura la subnet LAN e l'indirizzo IP</li>
+  <li><strong>DHCP</strong> — visualizza i lease attivi e configura il pool DHCP</li>
+  <li><strong>WiFi</strong> — configura il punto di accesso integrato (SSID, password)</li>
+  <li><strong>NAT</strong> — visualizza la tabella di connessione NAT attiva</li>
+  <li><strong>Port Forwarding</strong> — definisci regole per inoltrare le porte in entrata agli host LAN</li>
+</ul>
+
+<h4>Schede del firewall</h4>
+<p>
+  Un pannello di firewall ha una scheda <strong>Regole</strong> per gestire le regole di filtro e una
+  scheda <strong>Registro</strong> che mostra quali pacchetti sono stati consentiti o scartati.
 </p>
 
 <h4>PC e Laptop</h4>
 <p>
-  PC e laptop hanno un sistema operativo completamente simulato nel loro pannello.
-  Puoi aprire applicazioni, configurare le impostazioni di rete ed eseguire comandi.
+  PC e Laptop hanno un sistema operativo completamente simulato all'interno del loro pannello.
+  Puoi aprire app dal desktop, configurare le impostazioni di rete ed eseguire comandi.
 </p>
 
 <hr>
 
-<h3 id="run">Modalità Esecuzione — Avviare la simulazione</h3>
+<h3 id="run">Modalità Esecuzione — Eseguire la simulazione</h3>
 <p>
   Passa alla modalità <i class="fas fa-play"></i> <strong>Esecuzione</strong> per avviare la simulazione.
   La rete diventa attiva: i dispositivi scambiano pacchetti, i lease DHCP vengono assegnati,
-  le tabelle di routing si aggiornano, e così via.
+  le tabelle di routing si aggiornano e così via.
 </p>
 
-<h4>Controllo della velocità</h4>
+<h4>Controlli di velocità</h4>
 <p>
-  Usa i pulsanti di velocità nella barra degli strumenti per controllare la rapidità della simulazione:
+  Usa i pulsanti di velocità nella barra degli strumenti in alto per controllare la velocità di esecuzione della simulazione:
 </p>
 <table class="help-table">
-  <tr><td><strong>0,5×</strong></td><td>Lento — ideale per osservare i singoli passaggi</td></tr>
+  <tr><td><strong>0.5×</strong></td><td>Lento — buono per osservare i singoli passaggi</td></tr>
   <tr><td><strong>1×</strong></td><td>Velocità normale</td></tr>
   <tr><td><strong>4×</strong></td><td>Veloce</td></tr>
   <tr><td><strong>8×</strong></td><td>Molto veloce</td></tr>
@@ -228,17 +268,17 @@
   <tr>
     <td><i class="fas fa-pause"></i></td>
     <td><strong>Pausa</strong></td>
-    <td>Congelare la simulazione nel suo stato attuale.</td>
+    <td>Congela la simulazione nel suo stato corrente.</td>
   </tr>
   <tr>
     <td><i class="fas fa-arrow-rotate-left"></i></td>
     <td><strong>Ripristina</strong></td>
-    <td>Riavviare la simulazione dall'inizio (tutti gli stati dinamici vengono cancellati).</td>
+    <td>Riavvia la simulazione dall'inizio (tutto lo stato dinamico viene cancellato).</td>
   </tr>
 </table>
 
 <p>
-  <strong>Nota:</strong> Non puoi modificare la topologia di rete in modalità Esecuzione.
+  <strong>Nota:</strong> Non puoi modificare la topologia della rete mentre sei in modalità Esecuzione.
   Torna prima alla modalità <i class="fas fa-pencil"></i> Modifica.
 </p>
 
@@ -250,44 +290,12 @@
   l'analizzatore di pacchetti integrato — simile a Wireshark.
 </p>
 <p>
-  In alto, seleziona il <strong>dispositivo</strong> e la <strong>porta</strong> da cui vuoi catturare.
-  Tutti i pacchetti che passano per quella porta vengono registrati e mostrati in un elenco.
+  In alto, seleziona il <strong>dispositivo</strong> e la <strong>porta</strong> da cui desideri acquisire.
+  Tutti i pacchetti che passano attraverso quella porta vengono registrati e mostrati in un elenco.
 </p>
 <p>
-  Fai clic su qualsiasi pacchetto dell'elenco per vedere tutti i dettagli:
-  i livelli di protocollo, i campi di intestazione e il payload — esattamente come uno strumento di rete professionale.
+  Fai clic su qualsiasi pacchetto nell'elenco per vederne i dettagli completi:
+  i livelli di protocollo, i campi dell'intestazione e il payload — esattamente come mostrerebbe uno strumento di rete professionale.
 </p>
 <p>
-  La cattura viene eseguita automaticamente mentre la simulazione è in esecuzione.
-  Puoi passare tra la modalità Traccia e la modalità Esecuzione in qualsiasi momento senza perdere i dati catturati.
-</p>
-
-<hr>
-
-<h3 id="project">Salvare e caricare</h3>
-<p>
-  Il tuo progetto di rete può essere salvato come file e ricaricato in seguito.
-  Usa i pulsanti nella barra degli strumenti (visibili in modalità Modifica):
-</p>
-<table class="help-table">
-  <tr>
-    <td><i class="fas fa-file"></i></td>
-    <td><strong>Nuovo</strong></td>
-    <td>Iniziare con un'area di lavoro vuota. Le modifiche non salvate andranno perse.</td>
-  </tr>
-  <tr>
-    <td><i class="fas fa-file-arrow-up"></i></td>
-    <td><strong>Carica</strong></td>
-    <td>Aprire un file di simulazione salvato in precedenza.</td>
-  </tr>
-  <tr>
-    <td><i class="fas fa-file-arrow-down"></i></td>
-    <td><strong>Salva</strong></td>
-    <td>Scaricare la simulazione attuale come file sul tuo computer.</td>
-  </tr>
-</table>
-
-<hr>
-<p class="footer">
-  Problemi? Verifica che la tua rete sia correttamente collegata e che tutti i dispositivi abbiano indirizzi IP validi.
-</p>
+  L'acquisizione viene es
