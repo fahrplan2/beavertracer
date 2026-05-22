@@ -666,7 +666,7 @@ export class SimControl {
             label: t("sim.new"),
             icon: "fa-file",
             onClick: async () => {
-                if (!await SimDialog.confirm(t("sim.discardandnewwarning"))) return;
+                if (this._isDirty && !await SimDialog.confirm(t("sim.discardandnewwarning"))) return;
                 this.new();
             },
         });
@@ -678,7 +678,7 @@ export class SimControl {
             label: t("sim.load"),
             icon: "fa-file-arrow-up",
             onClick: async () => {
-                if (!await SimDialog.confirm(t("sim.discardandloadwarning"))) return;
+                if (this._isDirty && !await SimDialog.confirm(t("sim.discardandloadwarning"))) return;
                 this.open();
             },
         });
@@ -1175,9 +1175,11 @@ export class SimControl {
             if (loc.key === getLocale()) { this._closeLanguageDialog(); return; }
             const oldLoc = getLocale();
             await setLocale(loc.key);
-            const ok = await SimDialog.confirm(t("sim.langswitch.confirmdiscard"));
-            if (!ok) { setLocale(oldLoc); return; }
-            setLocale(loc.key);
+            if (this._isDirty) {
+                const ok = await SimDialog.confirm(t("sim.langswitch.confirmdiscard"));
+                if (!ok) { setLocale(oldLoc); return; }
+            }
+            this._isDirty = false;
             window.location.reload();
         };
 
