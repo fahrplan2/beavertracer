@@ -1,0 +1,726 @@
+{
+  "_info": "This file was created by BeaverTracer, a network simulation tool. Open it with the BeaverTracer app or at https://beavertracer.eu/",
+  "version": 4,
+  "tick": 100,
+  "objects": [
+    {
+      "kind": "TextBox",
+      "id": 1,
+      "name": "",
+      "x": 30.833356857299805,
+      "y": 529.2496948242188,
+      "px": 200,
+      "py": 200,
+      "panelOpen": false,
+      "text": "Heimrouter-Demo: Portfreigabe (DNAT)\n\nZwei Heimnetzwerke sind über ein simuliertes Internet (3 ISP-Router mit OSPF) verbunden.\n\nLAN 1 (blau): PC1, PC2 und Laptop (WLAN) hinter HomeRouter 1 (192.168.1.1)\nInternet: ISP-R1 / ISP-R2 / ISP-R3 mit OSPF-Routing\nLAN 2 (grün): Webserver (192.168.2.10) hinter HomeRouter 2 (192.168.2.1)\n  → Portfreigabe konfiguriert: TCP 8080 → 192.168.2.10:80\n\nSo testen:\n1. Simulation starten (▶)\n2. Webserver-PC öffnen → Apps → HTTP-Server auf Port 80 starten\n3. PC1 oder Laptop → Browser → http://10.0.3.2:8080\n   (10.0.3.2 = WAN-IP von HomeRouter 2)\n4. Antwort kommt durch das simulierte Internet zurück.",
+      "showTitle": false
+    },
+    {
+      "kind": "RectOverlay",
+      "id": 2,
+      "name": "LAN 1",
+      "x": 23.250320434570312,
+      "y": 69.83366394042969,
+      "px": 200,
+      "py": 200,
+      "panelOpen": false,
+      "w": 428,
+      "h": 451,
+      "color": "#4488ff",
+      "opacity": 0.08
+    },
+    {
+      "kind": "RectOverlay",
+      "id": 3,
+      "name": "Internet",
+      "x": 452.08331298828125,
+      "y": 70.91668701171875,
+      "px": 200,
+      "py": 200,
+      "panelOpen": false,
+      "w": 405,
+      "h": 450,
+      "color": "#888888",
+      "opacity": 0.08
+    },
+    {
+      "kind": "RectOverlay",
+      "id": 4,
+      "name": "LAN 2",
+      "x": 856.9166870117188,
+      "y": 71.66665649414062,
+      "px": 200,
+      "py": 200,
+      "panelOpen": false,
+      "w": 378,
+      "h": 266,
+      "color": "#44aa44",
+      "opacity": 0.08
+    },
+    {
+      "kind": "PC",
+      "id": 10,
+      "name": "PC1",
+      "x": 60,
+      "y": 155,
+      "px": 135,
+      "py": 155,
+      "panelOpen": false,
+      "net": {
+        "name": "PC1",
+        "forwarding": false,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "192.168.1.10",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a843:90ff:fe49:9532",
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": [
+          {
+            "dst": "0.0.0.0",
+            "prefixLength": 0,
+            "interf": 0,
+            "nexthop": "192.168.1.1"
+          }
+        ]
+      },
+      "fs": {
+        "type": "dir",
+        "name": "/",
+        "ctime": 0,
+        "mtime": 0,
+        "children": [
+          {
+            "type": "dir",
+            "name": "home",
+            "ctime": 0,
+            "mtime": 0,
+            "children": []
+          }
+        ]
+      },
+      "dns": {
+        "_version": 4,
+        "_numberv4": 3232235777,
+        "_numberv6": {
+          "0": 0,
+          "1": 0,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0,
+          "10": 0,
+          "11": 0,
+          "12": 0,
+          "13": 0,
+          "14": 0,
+          "15": 0
+        }
+      }
+    },
+    {
+      "kind": "PC",
+      "id": 11,
+      "name": "PC2",
+      "x": 60,
+      "y": 300,
+      "px": 135,
+      "py": 300,
+      "panelOpen": false,
+      "net": {
+        "name": "PC2",
+        "forwarding": false,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "192.168.1.11",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a883:40ff:fe07:d46",
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": [
+          {
+            "dst": "0.0.0.0",
+            "prefixLength": 0,
+            "interf": 0,
+            "nexthop": "192.168.1.1"
+          }
+        ]
+      },
+      "fs": {
+        "type": "dir",
+        "name": "/",
+        "ctime": 0,
+        "mtime": 0,
+        "children": [
+          {
+            "type": "dir",
+            "name": "home",
+            "ctime": 0,
+            "mtime": 0,
+            "children": []
+          }
+        ]
+      },
+      "dns": {
+        "_version": 4,
+        "_numberv4": 3232235777,
+        "_numberv6": {
+          "0": 0,
+          "1": 0,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0,
+          "10": 0,
+          "11": 0,
+          "12": 0,
+          "13": 0,
+          "14": 0,
+          "15": 0
+        }
+      }
+    },
+    {
+      "kind": "Laptop",
+      "id": 12,
+      "name": "Laptop",
+      "x": 175,
+      "y": 430,
+      "px": 250,
+      "py": 430,
+      "panelOpen": false,
+      "net": {
+        "name": "Laptop",
+        "forwarding": false,
+        "interfaces": [
+          {
+            "name": "wlan0",
+            "ip": "192.168.1.12",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a8ee:b8ff:fe7e:87ee",
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": [
+          {
+            "dst": "0.0.0.0",
+            "prefixLength": 0,
+            "interf": 0,
+            "nexthop": "192.168.1.1"
+          }
+        ]
+      },
+      "fs": {
+        "type": "dir",
+        "name": "/",
+        "ctime": 0,
+        "mtime": 0,
+        "children": [
+          {
+            "type": "dir",
+            "name": "home",
+            "ctime": 0,
+            "mtime": 0,
+            "children": []
+          }
+        ]
+      },
+      "dns": {
+        "_version": 4,
+        "_numberv4": 3232235777,
+        "_numberv6": {
+          "0": 0,
+          "1": 0,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0,
+          "10": 0,
+          "11": 0,
+          "12": 0,
+          "13": 0,
+          "14": 0,
+          "15": 0
+        }
+      },
+      "ssid": "Heimnetz-A"
+    },
+    {
+      "kind": "Switch",
+      "id": 20,
+      "name": "SW1",
+      "x": 230,
+      "y": 228,
+      "px": 300,
+      "py": 228,
+      "panelOpen": false,
+      "vlanEnabled": false,
+      "stpEnabled": false,
+      "stpBridgePriority": 32768,
+      "vlanPorts": [
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "HomeRouter",
+      "id": 30,
+      "name": "HomeRouter 1",
+      "x": 395,
+      "y": 228,
+      "px": 465,
+      "py": 228,
+      "panelOpen": false,
+      "wanMode": "static",
+      "wanIp": "10.0.1.2",
+      "wanPrefix": 30,
+      "wanGw": "10.0.1.1",
+      "upstreamDns": "0.0.0.0",
+      "lanIp": "192.168.1.1",
+      "lanPrefix": 24,
+      "dhcpEnabled": true,
+      "dhcpRangeStart": "192.168.1.100",
+      "dhcpRangeEnd": "192.168.1.200",
+      "dhcpLeaseTime": 3600,
+      "ssid": "Heimnetz-A",
+      "wanMac": "02:aa:00:01:00:01",
+      "lanMac": "02:aa:00:01:00:02",
+      "pdDelegated": null,
+      "portRules": []
+    },
+    {
+      "kind": "Router",
+      "id": 40,
+      "name": "ISP-R1",
+      "x": 555,
+      "y": 228,
+      "px": 620,
+      "py": 228,
+      "panelOpen": false,
+      "net": {
+        "name": "ISP-R1",
+        "forwarding": true,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "10.0.1.1",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a8bd:80ff:fef2:cd02",
+            "raEnabled": false
+          },
+          {
+            "name": "eth1",
+            "ip": "10.0.12.1",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a8c6:6aff:fee6:a53c",
+            "raEnabled": false
+          },
+          {
+            "name": "eth2",
+            "ip": "10.0.13.1",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a8a9:13ff:fe29:d427",
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": []
+      },
+      "rip": {
+        "enabled": false,
+        "passive": []
+      },
+      "ripng": {
+        "enabled": false,
+        "passive": []
+      },
+      "bgp": {
+        "enabled": false,
+        "localAS": 0,
+        "routerId": "",
+        "peers": []
+      },
+      "ospf": {
+        "enabled": true,
+        "passive": [
+          "eth0"
+        ],
+        "routerIdOverride": null
+      }
+    },
+    {
+      "kind": "Router",
+      "id": 41,
+      "name": "ISP-R2",
+      "x": 700,
+      "y": 130,
+      "px": 770,
+      "py": 130,
+      "panelOpen": false,
+      "net": {
+        "name": "ISP-R2",
+        "forwarding": true,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "10.0.12.2",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a83f:ddff:fe63:b3df",
+            "raEnabled": false
+          },
+          {
+            "name": "eth1",
+            "ip": "10.0.23.1",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a86e:7aff:fec3:c33b",
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": []
+      },
+      "rip": {
+        "enabled": false,
+        "passive": []
+      },
+      "ripng": {
+        "enabled": false,
+        "passive": []
+      },
+      "bgp": {
+        "enabled": false,
+        "localAS": 0,
+        "routerId": "",
+        "peers": []
+      },
+      "ospf": {
+        "enabled": true,
+        "passive": [],
+        "routerIdOverride": null
+      }
+    },
+    {
+      "kind": "Router",
+      "id": 42,
+      "name": "ISP-R3",
+      "x": 700,
+      "y": 350,
+      "px": 770,
+      "py": 350,
+      "panelOpen": false,
+      "net": {
+        "name": "ISP-R3",
+        "forwarding": true,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "10.0.13.2",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a887:14ff:fece:e60d",
+            "raEnabled": false
+          },
+          {
+            "name": "eth1",
+            "ip": "10.0.23.2",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a88c:15ff:feb9:9a41",
+            "raEnabled": false
+          },
+          {
+            "name": "eth2",
+            "ip": "10.0.3.1",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a8b2:a4ff:fe99:dde2",
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": []
+      },
+      "rip": {
+        "enabled": false,
+        "passive": []
+      },
+      "ripng": {
+        "enabled": false,
+        "passive": []
+      },
+      "bgp": {
+        "enabled": false,
+        "localAS": 0,
+        "routerId": "",
+        "peers": []
+      },
+      "ospf": {
+        "enabled": true,
+        "passive": [
+          "eth2"
+        ],
+        "routerIdOverride": null
+      }
+    },
+    {
+      "kind": "HomeRouter",
+      "id": 50,
+      "name": "HomeRouter 2",
+      "x": 920,
+      "y": 190,
+      "px": 990,
+      "py": 190,
+      "panelOpen": false,
+      "wanMode": "static",
+      "wanIp": "10.0.3.2",
+      "wanPrefix": 30,
+      "wanGw": "10.0.3.1",
+      "upstreamDns": "0.0.0.0",
+      "lanIp": "192.168.2.1",
+      "lanPrefix": 24,
+      "dhcpEnabled": true,
+      "dhcpRangeStart": "192.168.2.100",
+      "dhcpRangeEnd": "192.168.2.200",
+      "dhcpLeaseTime": 3600,
+      "ssid": "Heimnetz-B",
+      "wanMac": "02:bb:00:02:00:01",
+      "lanMac": "02:bb:00:02:00:02",
+      "pdDelegated": null,
+      "portRules": [
+        {
+          "proto": 6,
+          "wanPort": 8080,
+          "lanIp": "192.168.2.10",
+          "lanPort": 80
+        }
+      ]
+    },
+    {
+      "kind": "PC",
+      "id": 60,
+      "name": "Webserver",
+      "x": 1090,
+      "y": 190,
+      "px": 1010,
+      "py": 265,
+      "panelOpen": false,
+      "net": {
+        "name": "Webserver",
+        "forwarding": false,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "192.168.2.10",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a89b:39ff:febd:c98e",
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": [
+          {
+            "dst": "0.0.0.0",
+            "prefixLength": 0,
+            "interf": 0,
+            "nexthop": "192.168.2.1"
+          }
+        ]
+      },
+      "fs": {
+        "type": "dir",
+        "name": "/",
+        "ctime": 0,
+        "mtime": 0,
+        "children": [
+          {
+            "type": "dir",
+            "name": "home",
+            "ctime": 0,
+            "mtime": 0,
+            "children": []
+          }
+        ]
+      },
+      "dns": null
+    },
+    {
+      "kind": "TextBox",
+      "id": 70,
+      "name": "",
+      "x": 951.3333740234375,
+      "y": 338.75,
+      "px": 200,
+      "py": 200,
+      "panelOpen": false,
+      "text": "Portfreigabe (HR2):\nTCP 8080 → 192.168.2.10:80\n\nWebserver starten:\nTerminal → Apps → HTTP-Server\nPort: 80\n\nAufruf von LAN 1:\nhttp://10.0.3.2:8080",
+      "showTitle": false
+    },
+    {
+      "kind": "Link",
+      "id": 100,
+      "a": 10,
+      "b": 20,
+      "portA": "eth0",
+      "portB": "sw0"
+    },
+    {
+      "kind": "Link",
+      "id": 101,
+      "a": 11,
+      "b": 20,
+      "portA": "eth0",
+      "portB": "sw1"
+    },
+    {
+      "kind": "Link",
+      "id": 102,
+      "a": 20,
+      "b": 30,
+      "portA": "sw2",
+      "portB": "eth1"
+    },
+    {
+      "kind": "Link",
+      "id": 103,
+      "a": 30,
+      "b": 40,
+      "portA": "wan0",
+      "portB": "eth0"
+    },
+    {
+      "kind": "Link",
+      "id": 104,
+      "a": 40,
+      "b": 41,
+      "portA": "eth1",
+      "portB": "eth0"
+    },
+    {
+      "kind": "Link",
+      "id": 105,
+      "a": 40,
+      "b": 42,
+      "portA": "eth2",
+      "portB": "eth0"
+    },
+    {
+      "kind": "Link",
+      "id": 106,
+      "a": 41,
+      "b": 42,
+      "portA": "eth1",
+      "portB": "eth1"
+    },
+    {
+      "kind": "Link",
+      "id": 107,
+      "a": 42,
+      "b": 50,
+      "portA": "eth2",
+      "portB": "wan0"
+    },
+    {
+      "kind": "Link",
+      "id": 108,
+      "a": 50,
+      "b": 60,
+      "portA": "eth1",
+      "portB": "eth0"
+    }
+  ]
+}

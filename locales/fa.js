@@ -1157,5 +1157,13 @@ export default {
   "tour.step.trace-packets.title": "بسته‌ها در ردیاب",
   "tour.step.trace-packets.text": "می‌توانید بسته‌های ضبط شده را ببینید! برای مشاهده تمام جزئیات روی یک فریم کلیک کنید.",
   "tour.step.finish.title": "تور تکمیل شد!",
-  "tour.step.finish.text": "شما با موفقیت تور را تکمیل کردید و اولین شبکه‌ی خود را ساختید، پیکربندی کردید و تحلیل کردید.\n\nلذت ببرید از آزمایش!"
+  "tour.step.finish.text": "شما با موفقیت تور را تکمیل کردید و اولین شبکه‌ی خود را ساختید، پیکربندی کردید و تحلیل کردید.\n\nلذت ببرید از آزمایش!",
+  "homerouter.tab.pf": "بازگذری پورت",
+  "homerouter.pf.title": "بازگذری پورت",
+  "homerouter.pf.col.proto": "پروتکل",
+  "homerouter.pf.col.wanport": "پورت WAN",
+  "homerouter.pf.col.lanip": "آی‌پی LAN",
+  "homerouter.pf.col.lanport": "پورت LAN",
+  "homerouter.pf.empty": "هیچ قانونی پیکربندی نشده است.",
+  "homerouter.pf.invalid": "قانون بازگذری پورت نامعتبر است."
 };

@@ -1157,5 +1157,13 @@ export default {
   "tour.step.trace-packets.title": "الحزم في أداة التتبع",
   "tour.step.trace-packets.text": "يمكنك رؤية الحزم المسجلة! انقر على إطار لعرض جميع التفاصيل.",
   "tour.step.finish.title": "اكتمل الجولة!",
-  "tour.step.finish.text": "لقد أكملت الجولة بنجاح وقمت ببناء وتكوين وتحليل شبكتك الأولى.\n\nاستمتع بالتجريب!"
+  "tour.step.finish.text": "لقد أكملت الجولة بنجاح وقمت ببناء وتكوين وتحليل شبكتك الأولى.\n\nاستمتع بالتجريب!",
+  "homerouter.tab.pf": "إعادة توجيه المنافذ",
+  "homerouter.pf.title": "إعادة توجيه المنافذ",
+  "homerouter.pf.col.proto": "البروتوكول",
+  "homerouter.pf.col.wanport": "منفذ WAN",
+  "homerouter.pf.col.lanip": "عنوان IP للشبكة المحلية",
+  "homerouter.pf.col.lanport": "منفذ الشبكة المحلية",
+  "homerouter.pf.empty": "لم يتم تكوين أي قواعد.",
+  "homerouter.pf.invalid": "قاعدة إعادة توجيه المنافذ غير صحيحة."
 };

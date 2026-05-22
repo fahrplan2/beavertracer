@@ -76,6 +76,37 @@ export class NatEngine {
     }
 
     /**
+     * Apply stateless DNAT for an inbound packet (port forwarding).
+     * Rewrites destination IP and port without consulting the session table.
+     * @param {import("./pdu/IPv4Packet.js").IPv4Packet} packet
+     * @param {number} lanIpNum uint32 - target LAN host IP
+     * @param {number} lanPort  destination port to rewrite to
+     * @returns {boolean} false if packet could not be rewritten
+     */
+    dnat(packet, lanIpNum, lanPort) {
+        const proto = packet.protocol;
+        if (proto !== 6 && proto !== 17) return false;
+
+        const isUdp = proto === 17;
+        packet.dst = new IPAddress(4, lanIpNum);
+        packet.headerChecksum = 0;
+
+        try {
+            if (isUdp) {
+                const u = UDPPacket.fromBytes(packet.payload);
+                u.dstPort = lanPort; u.checksum = 0;
+                packet.payload = u.pack({ srcIp: packet.src, dstIp: packet.dst });
+            } else {
+                const t = TCPPacket.fromBytes(packet.payload);
+                t.dstPort = lanPort; t.checksum = 0;
+                packet.payload = t.pack({ srcIp: packet.src, dstIp: packet.dst });
+            }
+        } catch { return false; }
+
+        return true;
+    }
+
+    /**
      * Apply inbound un-NAT (WAN → LAN).
      * @param {import("./pdu/IPv4Packet.js").IPv4Packet} packet
      * @returns {number|null} original LAN host IP (uint32) or null if no mapping

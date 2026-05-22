@@ -162,8 +162,8 @@ export class DNSServerApp extends LoggedProcess {
 
   configPath = "/etc/dnsd.conf";
 
-  /** @type {{a:any[], aaaa:any[], mx:any[], ns:any[]}} */
-  cfg = { a: [], aaaa: [], mx: [], ns: [] };
+  /** @type {{a:any[], aaaa:any[], cname:any[], mx:any[], ns:any[]}} */
+  cfg = { a: [], aaaa: [], cname: [], mx: [], ns: [] };
 
   /** @type {HTMLButtonElement|null} */
   startBtn = null;
@@ -176,6 +176,8 @@ export class DNSServerApp extends LoggedProcess {
   aEditor = null;
   /** @type {{root:HTMLElement,getRows:()=>any[],setRows:(rows:any[])=>void}|null} */
   aaaaEditor = null;
+  /** @type {{root:HTMLElement,getRows:()=>any[],setRows:(rows:any[])=>void}|null} */
+  cnameEditor = null;
   /** @type {{root:HTMLElement,getRows:()=>any[],setRows:(rows:any[])=>void}|null} */
   mxEditor = null;
   /** @type {{root:HTMLElement,getRows:()=>any[],setRows:(rows:any[])=>void}|null} */
@@ -225,6 +227,16 @@ export class DNSServerApp extends LoggedProcess {
       () => ({ name: "", ip: "", ttl: 60 })
     );
 
+    this.cnameEditor = createTableEditor(
+      [
+        { key: "name",   label: "Alias",  type: "text", placeholder: "www.example.com" },
+        { key: "target", label: "Target", type: "text", placeholder: "example.com" },
+        { key: "ttl",    label: "TTL",    type: "number", placeholder: "60", widthPx: 90 },
+      ],
+      onEdit,
+      () => ({ name: "", target: "", ttl: 60 })
+    );
+
     this.mxEditor = createTableEditor(
       [
         { key: "name", label: "Name", type: "text", placeholder: "example.com" },
@@ -259,11 +271,12 @@ export class DNSServerApp extends LoggedProcess {
     const logPane = UI.el("div", { children: [status, logBox] });
 
     const { bar: tabBar } = UI.tabbedPane([
-      { id: "a",    label: "A",                    pane: this.aEditor.root    },
-      { id: "aaaa", label: "AAAA",                 pane: this.aaaaEditor.root },
-      { id: "mx",   label: "MX",                   pane: this.mxEditor.root   },
-      { id: "ns",   label: "NS",                   pane: this.nsEditor.root   },
-      { id: "log",  label: t("app.dnsd.label.log"), pane: logPane             },
+      { id: "a",     label: "A",                    pane: this.aEditor.root     },
+      { id: "aaaa",  label: "AAAA",                 pane: this.aaaaEditor.root  },
+      { id: "cname", label: "CNAME",                pane: this.cnameEditor.root },
+      { id: "mx",    label: "MX",                   pane: this.mxEditor.root    },
+      { id: "ns",    label: "NS",                   pane: this.nsEditor.root    },
+      { id: "log",   label: t("app.dnsd.label.log"), pane: logPane              },
     ]);
 
     const panel = UI.panel([
@@ -271,6 +284,7 @@ export class DNSServerApp extends LoggedProcess {
       tabBar,
       this.aEditor.root,
       this.aaaaEditor.root,
+      this.cnameEditor.root,
       this.mxEditor.root,
       this.nsEditor.root,
       logPane,
@@ -288,7 +302,7 @@ export class DNSServerApp extends LoggedProcess {
         `pid: ${this.pid}\n` +
         `running: ${this.running}\n` +
         `port: ${(this.socketPort ?? "-")}\n` +
-        `A/AAAA/MX/NS: ${this.cfg.a.length}/${this.cfg.aaaa.length}/${this.cfg.mx.length}/${this.cfg.ns.length}\n` +
+        `A/AAAA/CNAME/MX/NS: ${this.cfg.a.length}/${this.cfg.aaaa.length}/${this.cfg.cname.length}/${this.cfg.mx.length}/${this.cfg.ns.length}\n` +
         `log: ${this.log.length}`;
     }, 300);
   }
@@ -301,6 +315,7 @@ export class DNSServerApp extends LoggedProcess {
     this.saveBtn = null;
     this.aEditor = null;
     this.aaaaEditor = null;
+    this.cnameEditor = null;
     this.mxEditor = null;
     this.nsEditor = null;
     if (this.saveTimer) clearTimeout(this.saveTimer);
@@ -326,14 +341,16 @@ export class DNSServerApp extends LoggedProcess {
 
       const obj = JSON.parse(s);
       this.cfg = {
-        a:    Array.isArray(obj.a)    ? obj.a    : [],
-        aaaa: Array.isArray(obj.aaaa) ? obj.aaaa : [],
-        mx:   Array.isArray(obj.mx)   ? obj.mx   : [],
-        ns:   Array.isArray(obj.ns)   ? obj.ns   : [],
+        a:     Array.isArray(obj.a)     ? obj.a     : [],
+        aaaa:  Array.isArray(obj.aaaa)  ? obj.aaaa  : [],
+        cname: Array.isArray(obj.cname) ? obj.cname : [],
+        mx:    Array.isArray(obj.mx)    ? obj.mx    : [],
+        ns:    Array.isArray(obj.ns)    ? obj.ns    : [],
       };
 
       this.aEditor?.setRows(this.cfg.a);
       this.aaaaEditor?.setRows(this.cfg.aaaa);
+      this.cnameEditor?.setRows(this.cfg.cname);
       this.mxEditor?.setRows(this.cfg.mx);
       this.nsEditor?.setRows(this.cfg.ns);
 
@@ -345,10 +362,11 @@ export class DNSServerApp extends LoggedProcess {
   }
 
   _rebuildConfigFromUI() {
-    const aRows    = this.aEditor?.getRows()    ?? [];
-    const aaaaRows = this.aaaaEditor?.getRows() ?? [];
-    const mxRows   = this.mxEditor?.getRows()   ?? [];
-    const nsRows   = this.nsEditor?.getRows()   ?? [];
+    const aRows     = this.aEditor?.getRows()     ?? [];
+    const aaaaRows  = this.aaaaEditor?.getRows()  ?? [];
+    const cnameRows = this.cnameEditor?.getRows() ?? [];
+    const mxRows    = this.mxEditor?.getRows()    ?? [];
+    const nsRows    = this.nsEditor?.getRows()    ?? [];
 
     /** @type {{name:string, ip:string, ttl:number}[]} */
     const a = [];
@@ -368,6 +386,16 @@ export class DNSServerApp extends LoggedProcess {
       const ttl = Number(r.ttl ?? 60);
       if (!name || !ip || !parseIPv6(ip)) continue;
       aaaa.push({ name, ip, ttl: Number.isFinite(ttl) ? Math.max(0, ttl | 0) : 60 });
+    }
+
+    /** @type {{name:string, target:string, ttl:number}[]} */
+    const cname = [];
+    for (const r of cnameRows) {
+      const name   = normalizeName(r.name);
+      const target = normalizeName(r.target);
+      const ttl    = Number(r.ttl ?? 60);
+      if (!name || !target) continue;
+      cname.push({ name, target, ttl: Number.isFinite(ttl) ? Math.max(0, ttl | 0) : 60 });
     }
 
     /** @type {{name:string, preference:number, exchange:string, ttl:number}[]} */
@@ -396,7 +424,7 @@ export class DNSServerApp extends LoggedProcess {
       ns.push({ name, host, ttl: Number.isFinite(ttl) ? Math.max(0, ttl | 0) : 300 });
     }
 
-    this.cfg = { a, aaaa, mx, ns };
+    this.cfg = { a, aaaa, cname, mx, ns };
   }
 
   _scheduleSave() {
@@ -497,11 +525,78 @@ export class DNSServerApp extends LoggedProcess {
   /** @param {string} qname */
   _nameExists(qname) {
     const n = normalizeName(qname);
-    for (const r of this.cfg.a)    if (normalizeName(r.name) === n) return true;
-    for (const r of this.cfg.aaaa) if (normalizeName(r.name) === n) return true;
-    for (const r of this.cfg.mx)   if (normalizeName(r.name) === n) return true;
-    for (const r of this.cfg.ns)   if (normalizeName(r.name) === n) return true;
+    for (const r of this.cfg.a)     if (normalizeName(r.name) === n) return true;
+    for (const r of this.cfg.aaaa)  if (normalizeName(r.name) === n) return true;
+    for (const r of this.cfg.cname) if (normalizeName(r.name) === n) return true;
+    for (const r of this.cfg.mx)    if (normalizeName(r.name) === n) return true;
+    for (const r of this.cfg.ns)    if (normalizeName(r.name) === n) return true;
+    // For in-addr.arpa PTR queries, name "exists" if we have a matching A record
+    const ptrIp = this._reverseArpaToIPv4(n);
+    if (ptrIp) {
+      for (const r of this.cfg.a) {
+        const ip = parseIPv4(r.ip);
+        if (ip && ip[0] === ptrIp[0] && ip[1] === ptrIp[1] && ip[2] === ptrIp[2] && ip[3] === ptrIp[3]) return true;
+      }
+    }
     return false;
+  }
+
+  /**
+   * Converts "4.3.2.1.in-addr.arpa" → Uint8Array [1,2,3,4] (real IP octets).
+   * Returns null if not a valid in-addr.arpa reverse name.
+   * @param {string} name normalized
+   * @returns {Uint8Array|null}
+   */
+  _reverseArpaToIPv4(name) {
+    const suffix = "in-addr.arpa";
+    if (!name.endsWith(suffix)) return null;
+    const rest = name.slice(0, -(suffix.length + 1));
+    const parts = rest.split(".");
+    if (parts.length !== 4) return null;
+    const result = new Uint8Array(4);
+    for (let i = 0; i < 4; i++) {
+      const n = parseInt(parts[i], 10);
+      if (!Number.isInteger(n) || n < 0 || n > 255) return null;
+      result[3 - i] = n;
+    }
+    return result;
+  }
+
+  /**
+   * Synthesizes a minimal SOA for NODATA responses (RFC 2308 §2.1).
+   * @param {string} qname normalized
+   * @returns {import("../net/pdu/DNSPacket.js").DNSResourceRecord|null}
+   */
+  _buildSOAForZone(qname) {
+    // Walk up the hierarchy to find the closest configured NS zone
+    let zone = qname;
+    let nsHost = null;
+    while (zone) {
+      for (const r of this.cfg.ns) {
+        if (normalizeName(r.name) === zone) { nsHost = normalizeName(r.host); break; }
+      }
+      if (nsHost) break;
+      const dot = zone.indexOf(".");
+      if (dot === -1) break;
+      zone = zone.slice(dot + 1);
+    }
+    if (!zone) zone = qname;
+
+    return {
+      name: zone,
+      type: DNSPacket.TYPE_SOA,
+      cls:  DNSPacket.CLASS_IN,
+      ttl:  60,
+      data: {
+        mname:   nsHost ?? `ns.${zone}`,
+        rname:   `hostmaster.${zone}`,
+        serial:  1,
+        refresh: 3600,
+        retry:   900,
+        expire:  86400,
+        minimum: 60,
+      },
+    };
   }
 
   /** @param {number} sockPort @param {IPAddress} srcIp @param {number} srcPort @param {Uint8Array} payload */
@@ -559,7 +654,14 @@ export class DNSServerApp extends LoggedProcess {
       if (answersForThis.length > 0) anyAnswered = true;
     }
 
-    if (!anyAnswered) resp.rcode = anyNameExists ? 0 : 3;
+    if (!anyAnswered) {
+      resp.rcode = anyNameExists ? 0 : 3;
+      // NODATA: add SOA to authority section so clients can cache the negative (RFC 2308)
+      if (anyNameExists && questions.length > 0) {
+        const soa = this._buildSOAForZone(normalizeName(questions[0].name));
+        if (soa) resp.authorities.push(soa);
+      }
+    }
 
     const out = resp.pack();
 
@@ -610,6 +712,24 @@ export class DNSServerApp extends LoggedProcess {
       }
     }
 
+    // CNAME – return alias record; if qtype != CNAME and no direct records found, also return CNAME
+    if (qtype === DNSPacket.TYPE_CNAME || qtype === 255) {
+      for (const r of this.cfg.cname) {
+        if (normalizeName(r.name) !== qname) continue;
+        const target = normalizeName(r.target);
+        if (!target) continue;
+        out.push(mkRR({ name: r.name, type: DNSPacket.TYPE_CNAME, ttl: r.ttl ?? 60, data: target }));
+      }
+    } else if (out.length === 0) {
+      // For other qtypes, return CNAME so the resolver can follow the chain
+      for (const r of this.cfg.cname) {
+        if (normalizeName(r.name) !== qname) continue;
+        const target = normalizeName(r.target);
+        if (!target) continue;
+        out.push(mkRR({ name: r.name, type: DNSPacket.TYPE_CNAME, ttl: r.ttl ?? 60, data: target }));
+      }
+    }
+
     // NS
     if (qtype === DNSPacket.TYPE_NS || qtype === 255) {
       for (const r of this.cfg.ns) {
@@ -617,6 +737,20 @@ export class DNSServerApp extends LoggedProcess {
         const host = normalizeName(r.host);
         if (!host) continue;
         out.push(mkRR({ name: r.name, type: DNSPacket.TYPE_NS, ttl: r.ttl ?? 300, data: host }));
+      }
+    }
+
+    // PTR – reverse DNS via in-addr.arpa, mapped to A records
+    if (qtype === DNSPacket.TYPE_PTR || qtype === 255) {
+      const ptrIp = this._reverseArpaToIPv4(qname);
+      if (ptrIp) {
+        for (const r of this.cfg.a) {
+          const ip = parseIPv4(r.ip);
+          if (!ip) continue;
+          if (ip[0] === ptrIp[0] && ip[1] === ptrIp[1] && ip[2] === ptrIp[2] && ip[3] === ptrIp[3]) {
+            out.push(mkRR({ name: qname, type: DNSPacket.TYPE_PTR, ttl: r.ttl ?? 60, data: normalizeName(r.name) }));
+          }
+        }
       }
     }
 
