@@ -1717,7 +1717,8 @@ export class Router extends SimulatedObject {
         const ifHtr   = document.createElement("tr");
         const ifThIf  = document.createElement("th"); ifThIf.textContent  = t("router.ospf.col.interface");
         const ifThPas = document.createElement("th"); ifThPas.textContent = t("router.ospf.col.passive");
-        ifHtr.append(ifThIf, ifThPas);
+        const ifThAr  = document.createElement("th"); ifThAr.textContent  = t("router.ospf.area");
+        ifHtr.append(ifThIf, ifThPas, ifThAr);
         ifThead.appendChild(ifHtr);
         const ifTbody = document.createElement("tbody");
         for (const iface of this.net.interfaces) {
@@ -1729,7 +1730,15 @@ export class Router extends SimulatedObject {
             cb.checked = this.ospf.passiveInterfaces.has(ifName);
             cb.addEventListener("change", () => this.ospf.setPassive(ifName, cb.checked));
             tdP.appendChild(cb);
-            tr.append(tdN, tdP);
+            const tdA  = document.createElement("td");
+            const aIn  = DOMBuilder.input({ type: "number", min: "0", style: "width:60px" });
+            aIn.value  = String(this.ospf._ifaceAreaMap.get(ifName) ?? 0);
+            aIn.addEventListener("change", () => {
+                const v = parseInt(aIn.value, 10);
+                this.ospf.setIfaceArea(ifName, isNaN(v) ? 0 : v);
+            });
+            tdA.appendChild(aIn);
+            tr.append(tdN, tdP, tdA);
             ifTbody.appendChild(tr);
         }
         ifTable.append(ifThead, ifTbody);

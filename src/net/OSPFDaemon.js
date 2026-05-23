@@ -1,18 +1,18 @@
 //@ts-check
-// OSPFv2 daemon — RFC 2328 (single area, broadcast network type)
+// OSPFv2 daemon — RFC 2328 (multi-area, broadcast network type)
 
 import { simTimer, SimTimer } from "../lib/SimTimer.js";
 import { IPAddress } from "./models/IPAddress.js";
 import {
     OSPF_PROTO, OSPF_VERSION, OSPF_ALL_SPF, OSPF_ALL_DR,
     OSPF_TYPE_HELLO, OSPF_TYPE_DBD, OSPF_TYPE_LSR, OSPF_TYPE_LSU, OSPF_TYPE_LSACK,
-    LSA_TYPE_ROUTER, LSA_TYPE_NETWORK,
+    LSA_TYPE_ROUTER, LSA_TYPE_NETWORK, LSA_TYPE_SUMMARY,
     LINK_TYPE_TRANSIT, LINK_TYPE_STUB,
     DBD_FLAG_I, DBD_FLAG_M, DBD_FLAG_MS,
-    LSA_INIT_SEQ, LSA_MAX_AGE,
+    LSA_INIT_SEQ, LSA_MAX_AGE, LSA_MAX_SEQ,
     ospfChecksum,
     OspfPacket, OspfHeader, OspfHello, OspfDBD, OspfLSR, OspfLSU, OspfLSAck,
-    LsaHeader, RouterLSA, RouterLink, NetworkLSA, Lsa, LsaRequest,
+    LsaHeader, RouterLSA, RouterLink, NetworkLSA, SummaryLSA, Lsa, LsaRequest,
 } from "./pdu/OSPFPacket.js";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -69,6 +69,7 @@ function seqNewer(a, b) {
  *
  * @typedef {{
  *   ifIndex: number,
+ *   areaId: number,
  *   state: IfaceState,
  *   dr: number,
  *   bdr: number,
@@ -79,7 +80,7 @@ function seqNewer(a, b) {
  *
  * @typedef {{
  *   header: LsaHeader,
- *   body: RouterLSA|NetworkLSA,
+ *   body: RouterLSA|NetworkLSA|SummaryLSA,
  *   rawBytes: Uint8Array,
  *   ageTimer: number|null,
  * }} LsaEntry
@@ -99,26 +100,28 @@ export class OSPFDaemon {
         this.passiveInterfaces = new Set();
         /** @type {number|null} manually configured Router-ID (u32) */
         this._routerIdOverride = null;
+        /** @type {Map<string, number>} ifName → areaId (u32); default area 0 */
+        this._ifaceAreaMap = new Map();
 
         this._running = false;
         /** @type {Map<number, OspfIface>} ifIndex → OspfIface */
         this._ifaces = new Map();
-        /** @type {Map<string, LsaEntry>} */
-        this._lsdb = new Map();
+        /** @type {Map<number, Map<string, LsaEntry>>} areaId → lsaKey → LsaEntry */
+        this._lsdbByArea = new Map();
         /** @type {Array<{dst: IPAddress, prefix: number, ifIndex: number, nexthop: IPAddress}>} */
         this._installedRoutes = [];
         /** @type {number|null} pending SPF timer */
         this._spfTimer = null;
         /** @type {number} own Router-ID (u32, computed at start) */
         this._myRouterId = 0;
-        /** @type {number} own area ID (always 0) */
-        this._areaId = 0;
-        /** @type {Map<string, number>} lsaKey → current seqNum */
+        /** @type {Map<string, number>} "${areaId}-${lsaKey}" → current seqNum */
         this._ownLsaSeq = new Map();
-        /** @type {Map<string, number>} lsaKey → simTimer tick of last origination */
+        /** @type {Map<string, number>} "${areaId}-${lsaKey}" → simTimer tick of last origination */
         this._ownLsaOriginatedAt = new Map();
         /** @type {number|null} global age-increment interval timer */
         this._ageIntervalTimer = null;
+        /** @type {Map<string, {targetAreaId: number, lsId: number, mask32: number}>} active Summary-LSAs originated by this ABR */
+        this._summaryLsaKeys = new Map();
 
         /** @type {string[]} */
         this.log = [];
@@ -157,7 +160,8 @@ export class OSPFDaemon {
             this._teardownIface(oif);
         }
         this._ifaces.clear();
-        this._lsdb.clear();
+        this._lsdbByArea.clear();
+        this._summaryLsaKeys.clear();
         this._ownLsaSeq.clear();
         this._ownLsaOriginatedAt.clear();
         if (this._ageIntervalTimer != null) { simTimer.cancel(this._ageIntervalTimer); this._ageIntervalTimer = null; }
@@ -175,7 +179,7 @@ export class OSPFDaemon {
     /** Call when an interface IP or prefix changes while OSPF is running. */
     onInterfaceChange() {
         if (!this.enabled) return;
-        this._originateRouterLSA();
+        this._originateAllRouterLSAs();
         this._scheduleSPF();
     }
 
@@ -185,13 +189,47 @@ export class OSPFDaemon {
         else         this.passiveInterfaces.delete(ifName);
     }
 
+    /** @param {string} ifName @param {number} areaId */
+    setIfaceArea(ifName, areaId) {
+        this._ifaceAreaMap.set(ifName, areaId >>> 0);
+        if (this._running) { this.stop(); this.start(); }
+    }
+
+    // ── LSDB helpers ─────────────────────────────────────────────────────────
+
+    /** @param {number} areaId @returns {Map<string, LsaEntry>} */
+    _lsdbFor(areaId) {
+        if (!this._lsdbByArea.has(areaId)) this._lsdbByArea.set(areaId, new Map());
+        return /** @type {Map<string, LsaEntry>} */ (this._lsdbByArea.get(areaId));
+    }
+
+    /** @returns {Set<number>} area IDs with at least one active interface */
+    _activeAreas() {
+        const s = new Set();
+        for (const [, oif] of this._ifaces) s.add(oif.areaId);
+        return s;
+    }
+
+    /** @returns {boolean} true if this router has interfaces in more than one area */
+    _isABR() {
+        return this._activeAreas().size > 1;
+    }
+
+    /** Originate Router-LSA in every active area (called on topology changes). */
+    _originateAllRouterLSAs(force = false) {
+        for (const areaId of this._activeAreas()) this._originateRouterLSA(areaId, force);
+    }
+
     // ── interface init/teardown ───────────────────────────────────────────────
 
     /** @param {number} ifIndex */
     _initIface(ifIndex) {
+        const ifName = `eth${ifIndex}`;
+        const areaId = this._ifaceAreaMap.get(ifName) ?? 0;
         /** @type {OspfIface} */
         const oif = {
             ifIndex,
+            areaId,
             state: "Waiting",
             dr: 0, bdr: 0,
             waitTimer: null,
@@ -229,30 +267,37 @@ export class OSPFDaemon {
     }
 
     _tickAge() {
-        for (const [key, entry] of this._lsdb) {
-            entry.header.age = Math.min(entry.header.age + 1, LSA_MAX_AGE);
+        for (const [, lsdb] of this._lsdbByArea) {
+            for (const [, entry] of lsdb) {
+                entry.header.age = Math.min(entry.header.age + 1, LSA_MAX_AGE);
+            }
         }
     }
 
-    /** Called when a per-LSA age timer fires (LSA_MAX_AGE reached). */
-    /** @param {string} key */
-    _expireLsa(key) {
-        const entry = this._lsdb.get(key);
+    /**
+     * Called when a per-LSA age timer fires (LSA_MAX_AGE reached).
+     * @param {string} key
+     * @param {number} areaId
+     */
+    _expireLsa(key, areaId) {
+        const lsdb  = this._lsdbFor(areaId);
+        const entry = lsdb.get(key);
         if (!entry) return;
         if (entry.header.advertisingRouter === this._myRouterId) {
             // Re-originate own LSA (force: bypass MinLSInterval)
             if (entry.header.type === LSA_TYPE_ROUTER) {
-                this._originateRouterLSA(true);
+                this._originateRouterLSA(areaId, true);
             } else if (entry.header.type === LSA_TYPE_NETWORK) {
                 const ifIndex = this._ifaceForNetworkLsaLsId(entry.header.lsId);
                 if (ifIndex >= 0) this._originateNetworkLSA(ifIndex, true);
             }
+            // Summary-LSAs: let _reconcileSummaryLSAs re-originate on next SPF
         } else {
             // Flood MaxAge copy so other routers flush it, then delete locally
             const maxAgeHdr = new LsaHeader({ ...entry.header, age: LSA_MAX_AGE });
             const maxAgeLsa = new Lsa({ header: maxAgeHdr, body: entry.body });
-            this._floodLSA(maxAgeLsa, -1);
-            this._lsdb.delete(key);
+            this._floodLSA(maxAgeLsa, -1, areaId);
+            lsdb.delete(key);
             this._scheduleSPF();
         }
     }
@@ -311,7 +356,7 @@ export class OSPFDaemon {
             type:     OSPF_TYPE_HELLO,
             length:   0,
             routerId: this._myRouterId,
-            areaId:   this._areaId,
+            areaId:   oif.areaId,
         });
 
         const pkt = new OspfPacket({ header: hdr, body: helloBody });
@@ -331,10 +376,12 @@ export class OSPFDaemon {
 
         // RFC §10.5 parameter validation — discard on mismatch
         const iface = this._net.interfaces[ifIndex];
-        const expectedMask = prefixToMask32(iface.prefixLength ?? 0);
-        const expectedDead = Math.trunc(SimTimer.OSPF_DEAD_MS / 1000);
-        if (hello.networkMask !== expectedMask) return;
-        if (hello.deadInterval !== expectedDead)  return;
+        const expectedMask  = prefixToMask32(iface.prefixLength ?? 0);
+        const expectedHello = Math.trunc(SimTimer.OSPF_HELLO_MS / 1000);
+        const expectedDead  = Math.trunc(SimTimer.OSPF_DEAD_MS  / 1000);
+        if (hello.networkMask   !== expectedMask)  return;
+        if (hello.helloInterval !== expectedHello) return;
+        if (hello.deadInterval  !== expectedDead)  return;
 
         const rid = hdr.routerId;
         let nb = oif.neighbors.get(rid);
@@ -385,7 +432,7 @@ export class OSPFDaemon {
             nb.state = "Init";
             if (wasAdj) {
                 this._electDRBDR(ifIndex);
-                this._originateRouterLSA();
+                this._originateAllRouterLSAs();
                 this._scheduleSPF();
             }
         } else if (iSeeMyself && nb.state === "Init") {
@@ -427,7 +474,7 @@ export class OSPFDaemon {
 
         if (wasFullOrLoading) {
             this._electDRBDR(oif.ifIndex);
-            this._originateRouterLSA();
+            this._originateAllRouterLSAs();
             this._scheduleSPF();
         }
     }
@@ -445,30 +492,13 @@ export class OSPFDaemon {
 
     // ── DR/BDR election (RFC 2328 §9.4) ─────────────────────────────────────
 
-    /** @param {number} ifIndex */
-    _electDRBDR(ifIndex) {
-        const oif = this._ifaces.get(ifIndex);
-        if (!oif) return;
-
-        // Collect candidates: all neighbors in 2-Way or above + self
-        const iface = this._net.interfaces[ifIndex];
-        const selfPri = 1; // own priority
-
-        /** @type {{rid: number, pri: number, dr: number, bdr: number}[]} */
-        const candidates = [];
-        if (selfPri > 0) candidates.push({ rid: this._myRouterId, pri: selfPri, dr: oif.dr, bdr: oif.bdr });
-        for (const [, nb] of oif.neighbors) {
-            if (nb.state === "Down" || nb.state === "Init") continue;
-            if (nb.priority > 0) candidates.push({ rid: nb.routerId, pri: nb.priority, dr: nb.dr, bdr: nb.bdr });
-        }
-
-        if (candidates.length === 0) {
-            oif.dr = 0; oif.bdr = 0;
-            oif.state = "DR-Other";
-            return;
-        }
-
-        // Step 1: elect BDR (highest pri among non-self-declared-DR, then highest RID)
+    /**
+     * Single-pass DR/BDR calculation from a candidate list (RFC §9.4 inner loop).
+     * @param {{rid: number, pri: number, dr: number, bdr: number}[]} candidates
+     * @returns {{dr: number, bdr: number}}
+     */
+    _calcDRBDR(candidates) {
+        // Step 1: elect BDR — highest pri among those not declaring themselves DR
         const notDr = candidates.filter(c => c.dr !== c.rid);
         let bdr = 0;
         if (notDr.length > 0) {
@@ -479,7 +509,7 @@ export class OSPFDaemon {
             ).rid;
         }
 
-        // Step 2: elect DR (highest pri among self-declared-DR, else BDR takes over)
+        // Step 2: elect DR — highest pri among those declaring themselves DR, else BDR becomes DR
         let dr = 0;
         const drCands = candidates.filter(c => c.dr === c.rid);
         if (drCands.length > 0) {
@@ -491,6 +521,52 @@ export class OSPFDaemon {
             bdr = candidates.filter(c => c.rid !== dr).reduce((best, c) =>
                 c.pri > best.pri || (c.pri === best.pri && c.rid > best.rid) ? c : best, { rid: 0, pri: -1 }
             ).rid;
+        }
+
+        return { dr, bdr };
+    }
+
+    /** @param {number} ifIndex */
+    _electDRBDR(ifIndex) {
+        const oif = this._ifaces.get(ifIndex);
+        if (!oif) return;
+
+        const selfPri = 1; // own priority
+
+        /** Build candidate list using current declared dr/bdr values. */
+        const buildCandidates = (selfDr, selfBdr) => {
+            /** @type {{rid: number, pri: number, dr: number, bdr: number}[]} */
+            const list = [];
+            if (selfPri > 0) list.push({ rid: this._myRouterId, pri: selfPri, dr: selfDr, bdr: selfBdr });
+            for (const [, nb] of oif.neighbors) {
+                if (nb.state === "Down" || nb.state === "Init") continue;
+                if (nb.priority > 0) list.push({ rid: nb.routerId, pri: nb.priority, dr: nb.dr, bdr: nb.bdr });
+            }
+            return list;
+        };
+
+        let candidates = buildCandidates(oif.dr, oif.bdr);
+
+        if (candidates.length === 0) {
+            oif.dr = 0; oif.bdr = 0;
+            oif.state = "DR-Other";
+            return;
+        }
+
+        // RFC §9.4: first pass
+        let { dr, bdr } = this._calcDRBDR(candidates);
+
+        // RFC §9.4: if own claim changed, run a second pass with updated self entry
+        const selfWasDR  = oif.dr  === this._myRouterId;
+        const selfWasBDR = oif.bdr === this._myRouterId;
+        const selfIsDR   = dr  === this._myRouterId;
+        const selfIsBDR  = bdr === this._myRouterId;
+        if (selfWasDR !== selfIsDR || selfWasBDR !== selfIsBDR) {
+            candidates = buildCandidates(
+                selfIsDR  ? this._myRouterId : 0,
+                selfIsBDR ? this._myRouterId : 0,
+            );
+            ({ dr, bdr } = this._calcDRBDR(candidates));
         }
 
         const prevDR  = oif.dr;
@@ -523,7 +599,7 @@ export class OSPFDaemon {
             } else if (prevDR === this._myRouterId) {
                 this._withdrawNetworkLSA(ifIndex);
             }
-            this._originateRouterLSA();
+            this._originateAllRouterLSAs();
         }
     }
 
@@ -579,6 +655,8 @@ export class OSPFDaemon {
 
         const iAmMaster = this._myRouterId > nb.routerId;
 
+        const lsdb = this._lsdbFor(oif.areaId);
+
         if (nb.state === "ExStart") {
             const theyClaimMaster = !!(dbd.flags & DBD_FLAG_MS);
             if ((dbd.flags & DBD_FLAG_I) && theyClaimMaster && nb.routerId > this._myRouterId) {
@@ -587,7 +665,7 @@ export class OSPFDaemon {
                 nb.ddSeqNum  = dbd.ddSeqNum;
                 nb.state     = "Exchange";
                 this._log(`Neighbor ${src} state: ExStart → Exchange (slave)`);
-                const myHeaders = [...this._lsdb.values()].map(e => e.header);
+                const myHeaders = [...lsdb.values()].map(e => e.header);
                 this._sendDBD(nb, ifIndex, myHeaders, 0);
             } else if (!(dbd.flags & DBD_FLAG_I) && !theyClaimMaster && iAmMaster &&
                        dbd.ddSeqNum === nb.ddSeqNum) {
@@ -597,14 +675,14 @@ export class OSPFDaemon {
                 nb.ddSeqNum++;
                 this._log(`Neighbor ${src} state: ExStart → Exchange (master)`);
                 for (const rxHdr of dbd.lsaHeaders) {
-                    const existing = this._lsdb.get(rxHdr.key);
+                    const existing = lsdb.get(rxHdr.key);
                     if (!existing || seqNewer(rxHdr.seqNum, existing.header.seqNum)) {
                         nb.pendingLSRs.push(new LsaRequest({
                             lsType: rxHdr.type, lsId: rxHdr.lsId, advertisingRouter: rxHdr.advertisingRouter,
                         }));
                     }
                 }
-                const myHeaders = [...this._lsdb.values()].map(e => e.header);
+                const myHeaders = [...lsdb.values()].map(e => e.header);
                 this._sendDBD(nb, ifIndex, myHeaders, DBD_FLAG_MS);
             }
             return;
@@ -612,9 +690,15 @@ export class OSPFDaemon {
 
         if (nb.state === "Exchange") {
             if (!nb.isMaster) {
+                // Slave: master must increment its own seq each step (RFC §10.6)
+                if (dbd.ddSeqNum !== nb.ddSeqNum + 1) {
+                    this._log(`Neighbor ${src}: SeqNumberMismatch (slave)`);
+                    this._restartAdjacency(nb, oif);
+                    return;
+                }
                 // Slave: receiving master's DBD with headers — process, ACK, then finish
                 for (const rxHdr of dbd.lsaHeaders) {
-                    const existing = this._lsdb.get(rxHdr.key);
+                    const existing = lsdb.get(rxHdr.key);
                     if (!existing || seqNewer(rxHdr.seqNum, existing.header.seqNum)) {
                         nb.pendingLSRs.push(new LsaRequest({
                             lsType: rxHdr.type, lsId: rxHdr.lsId, advertisingRouter: rxHdr.advertisingRouter,
@@ -645,7 +729,7 @@ export class OSPFDaemon {
                 }
                 // Any additional slave headers (multi-packet; in practice empty on ACK)
                 for (const rxHdr of dbd.lsaHeaders) {
-                    const existing = this._lsdb.get(rxHdr.key);
+                    const existing = lsdb.get(rxHdr.key);
                     if (!existing || seqNewer(rxHdr.seqNum, existing.header.seqNum)) {
                         nb.pendingLSRs.push(new LsaRequest({
                             lsType: rxHdr.type, lsId: rxHdr.lsId, advertisingRouter: rxHdr.advertisingRouter,
@@ -690,9 +774,10 @@ export class OSPFDaemon {
         const nb = oif.neighbors.get(hdr.routerId);
 
         const lsas = [];
+        const lsrLsdb = this._lsdbFor(oif.areaId);
         for (const req of lsr.requests) {
             const key   = `${req.lsType}-${req.lsId}-${req.advertisingRouter}`;
-            const entry = this._lsdb.get(key);
+            const entry = lsrLsdb.get(key);
             if (!entry) {
                 // BadLSReq: requested LSA unknown → restart adjacency (RFC §10.3)
                 if (nb) {
@@ -721,23 +806,27 @@ export class OSPFDaemon {
 
         const ackHeaders = [];
         let changed = false;
+        const lsdb = this._lsdbFor(oif.areaId);
 
         for (const lsa of lsu.lsas) {
-            if (lsa.header.type !== LSA_TYPE_ROUTER && lsa.header.type !== LSA_TYPE_NETWORK) continue;
+            if (lsa.header.type !== LSA_TYPE_ROUTER &&
+                lsa.header.type !== LSA_TYPE_NETWORK &&
+                lsa.header.type !== LSA_TYPE_SUMMARY) continue;
 
             // Self-originated LSA with a newer seq: re-originate to reclaim ownership (RFC §13.4)
             if (lsa.header.advertisingRouter === this._myRouterId) {
                 if (lsa.header.type === LSA_TYPE_ROUTER) {
-                    this._originateRouterLSA(true);
-                } else {
+                    this._originateRouterLSA(oif.areaId, true);
+                } else if (lsa.header.type === LSA_TYPE_NETWORK) {
                     const ifIdx = this._ifaceForNetworkLsaLsId(lsa.header.lsId);
                     if (ifIdx >= 0) this._originateNetworkLSA(ifIdx, true);
                 }
+                // Own Summary-LSAs: let _reconcileSummaryLSAs handle them
                 continue;
             }
 
             const key      = lsa.key;
-            const existing = this._lsdb.get(key);
+            const existing = lsdb.get(key);
 
             if (existing && !seqNewer(lsa.header.seqNum, existing.header.seqNum)) {
                 // Not newer — send ACK but don't install
@@ -745,17 +834,18 @@ export class OSPFDaemon {
                 continue;
             }
 
-            // Install into LSDB
+            // Install into area LSDB
             const rawBytes = lsa.pack();
             if (existing?.ageTimer != null) simTimer.cancel(existing.ageTimer);
-            const ageTimer = simTimer.schedule(() => this._expireLsa(key), LSA_MAX_AGE * 1000);
+            const areaId   = oif.areaId;
+            const ageTimer = simTimer.schedule(() => this._expireLsa(key, areaId), LSA_MAX_AGE * 1000);
 
-            this._lsdb.set(key, { header: lsa.header, body: lsa.body, rawBytes, ageTimer });
+            lsdb.set(key, { header: lsa.header, body: lsa.body, rawBytes, ageTimer });
             ackHeaders.push(lsa.header);
             changed = true;
 
-            // Flood to other interfaces (not the incoming one)
-            this._floodLSA(lsa, ifIndex);
+            // Flood within area (not the incoming interface)
+            this._floodLSA(lsa, ifIndex, oif.areaId);
         }
 
         // Send ACK
@@ -808,7 +898,7 @@ export class OSPFDaemon {
 
     /** @param {OspfNeighbor} nb @param {number} ifIndex */
     _onNeighborFull(nb, ifIndex) {
-        this._originateRouterLSA(true);
+        this._originateAllRouterLSAs(true);
         const oif = this._ifaces.get(ifIndex);
         if (oif?.state === "DR") this._originateNetworkLSA(ifIndex, true);
         this._scheduleSPF();
@@ -827,12 +917,16 @@ export class OSPFDaemon {
 
     // ── LSA Origination ───────────────────────────────────────────────────────
 
-    /** @param {boolean} [force] bypass MinLSInterval (e.g. for age-expiry re-origination) */
-    _originateRouterLSA(force = false) {
+    /**
+     * @param {number} areaId  area to originate Router-LSA into
+     * @param {boolean} [force] bypass MinLSInterval
+     */
+    _originateRouterLSA(areaId, force = false) {
         if (!this._running) return;
-        const _key = `${LSA_TYPE_ROUTER}-${this._myRouterId}-${this._myRouterId}`;
+        const lsaKey = `${LSA_TYPE_ROUTER}-${this._myRouterId}-${this._myRouterId}`;
+        const seqKey = `${areaId}-${lsaKey}`;
         if (!force) {
-            const lastTick = this._ownLsaOriginatedAt.get(_key) ?? -Infinity;
+            const lastTick = this._ownLsaOriginatedAt.get(seqKey) ?? -Infinity;
             if (simTimer.currentTick - lastTick < SimTimer.toTicks(SimTimer.OSPF_MIN_LS_INTERVAL_MS)) return;
         }
         const links = [];
@@ -841,7 +935,7 @@ export class OSPFDaemon {
             const iface = this._net.interfaces[i];
             if (!iface.ip?.isV4() || ip2n(iface.ip) === 0) continue;
             const oif = this._ifaces.get(i);
-            if (!oif) continue;
+            if (!oif || oif.areaId !== areaId) continue;  // only links in this area
 
             const mask32 = prefixToMask32(iface.prefixLength ?? 0);
             const net32  = (ip2n(iface.ip) & mask32) >>> 0;
@@ -849,8 +943,7 @@ export class OSPFDaemon {
             // Full neighbors → transit link (to DR)
             const fullNeighbors = [...(oif.neighbors.values())].filter(nb => nb.state === "Full");
             if (fullNeighbors.length > 0 && oif.dr !== 0) {
-                // linkId must be the DR's interface IP on this segment (= Network-LSA lsId),
-                // not the DR's Router-ID. Find it from the neighbor table; if we are DR use own IP.
+                // linkId = DR's interface IP on this segment (= Network-LSA lsId)
                 let drIfaceIp;
                 if (oif.dr === this._myRouterId) {
                     drIfaceIp = ip2n(iface.ip);
@@ -859,13 +952,12 @@ export class OSPFDaemon {
                     drIfaceIp = drNb ? ip2n(drNb.ip) : oif.dr;
                 }
                 links.push(new RouterLink({
-                    linkId:   drIfaceIp,        // DR's interface IP on this segment (= Network-LSA lsId)
-                    linkData: ip2n(iface.ip),   // our own interface address
+                    linkId:   drIfaceIp,
+                    linkData: ip2n(iface.ip),
                     type:     LINK_TYPE_TRANSIT,
                     metric:   10,
                 }));
             } else {
-                // Stub: no full adjacency on this segment
                 links.push(new RouterLink({
                     linkId:   net32,
                     linkData: mask32,
@@ -875,11 +967,23 @@ export class OSPFDaemon {
             }
         }
 
-        const key    = `${LSA_TYPE_ROUTER}-${this._myRouterId}-${this._myRouterId}`;
-        const oldSeq = this._ownLsaSeq.get(key) ?? (LSA_INIT_SEQ - 1);
+        const lsdb   = this._lsdbFor(areaId);
+        const oldSeq = this._ownLsaSeq.get(seqKey) ?? (LSA_INIT_SEQ - 1);
+        if (oldSeq === LSA_MAX_SEQ) {
+            const existing = lsdb.get(lsaKey);
+            if (existing) {
+                const maxAgeHdr = new LsaHeader({ ...existing.header, age: LSA_MAX_AGE });
+                this._floodLSA(new Lsa({ header: maxAgeHdr, body: existing.body }), -1, areaId);
+                if (existing.ageTimer != null) simTimer.cancel(existing.ageTimer);
+                lsdb.delete(lsaKey);
+            }
+            this._ownLsaSeq.delete(seqKey);
+            simTimer.schedule(() => this._originateRouterLSA(areaId, true), 1);
+            return;
+        }
         const seqNum = (oldSeq + 1) >>> 0;
-        this._ownLsaSeq.set(key, seqNum);
-        this._ownLsaOriginatedAt.set(key, simTimer.currentTick);
+        this._ownLsaSeq.set(seqKey, seqNum);
+        this._ownLsaOriginatedAt.set(seqKey, simTimer.currentTick);
 
         const body   = new RouterLSA({ links });
         const header = new LsaHeader({
@@ -893,13 +997,13 @@ export class OSPFDaemon {
         const lsa      = new Lsa({ header, body });
         const rawBytes = lsa.pack();
 
-        if (this._lsdb.get(key)?.ageTimer != null) {
-            simTimer.cancel(/** @type {number} */ (this._lsdb.get(key)?.ageTimer));
+        if (lsdb.get(lsaKey)?.ageTimer != null) {
+            simTimer.cancel(/** @type {number} */ (lsdb.get(lsaKey)?.ageTimer));
         }
-        const ageTimer = simTimer.schedule(() => this._expireLsa(key), LSA_MAX_AGE * 1000);
+        const ageTimer = simTimer.schedule(() => this._expireLsa(lsaKey, areaId), LSA_MAX_AGE * 1000);
 
-        this._lsdb.set(key, { header, body, rawBytes, ageTimer });
-        this._floodLSA(lsa, -1);
+        lsdb.set(lsaKey, { header, body, rawBytes, ageTimer });
+        this._floodLSA(lsa, -1, areaId);
     }
 
     /** @param {number} ifIndex @param {boolean} [force] bypass MinLSInterval */
@@ -918,15 +1022,29 @@ export class OSPFDaemon {
 
         const body   = new NetworkLSA({ networkMask: mask32, attachedRouters: fullRouters });
         const lsId   = ip2n(iface.ip);
-        const key    = `${LSA_TYPE_NETWORK}-${lsId}-${this._myRouterId}`;
+        const lsaKey = `${LSA_TYPE_NETWORK}-${lsId}-${this._myRouterId}`;
+        const seqKey = `${oif.areaId}-${lsaKey}`;
         if (!force) {
-            const lastTick = this._ownLsaOriginatedAt.get(key) ?? -Infinity;
+            const lastTick = this._ownLsaOriginatedAt.get(seqKey) ?? -Infinity;
             if (simTimer.currentTick - lastTick < SimTimer.toTicks(SimTimer.OSPF_MIN_LS_INTERVAL_MS)) return;
         }
-        const oldSeq = this._ownLsaSeq.get(key) ?? (LSA_INIT_SEQ - 1);
+        const lsdb   = this._lsdbFor(oif.areaId);
+        const oldSeq = this._ownLsaSeq.get(seqKey) ?? (LSA_INIT_SEQ - 1);
+        if (oldSeq === LSA_MAX_SEQ) {
+            const existing = lsdb.get(lsaKey);
+            if (existing) {
+                const maxAgeHdr = new LsaHeader({ ...existing.header, age: LSA_MAX_AGE });
+                this._floodLSA(new Lsa({ header: maxAgeHdr, body: existing.body }), -1, oif.areaId);
+                if (existing.ageTimer != null) simTimer.cancel(existing.ageTimer);
+                lsdb.delete(lsaKey);
+            }
+            this._ownLsaSeq.delete(seqKey);
+            simTimer.schedule(() => this._originateNetworkLSA(ifIndex, true), 1);
+            return;
+        }
         const seqNum = (oldSeq + 1) >>> 0;
-        this._ownLsaSeq.set(key, seqNum);
-        this._ownLsaOriginatedAt.set(key, simTimer.currentTick);
+        this._ownLsaSeq.set(seqKey, seqNum);
+        this._ownLsaOriginatedAt.set(seqKey, simTimer.currentTick);
 
         const header = new LsaHeader({
             age: 0, type: LSA_TYPE_NETWORK,
@@ -936,47 +1054,51 @@ export class OSPFDaemon {
         const lsa      = new Lsa({ header, body });
         const rawBytes = lsa.pack();
 
-        if (this._lsdb.get(key)?.ageTimer != null) {
-            simTimer.cancel(/** @type {number} */ (this._lsdb.get(key)?.ageTimer));
+        if (lsdb.get(lsaKey)?.ageTimer != null) {
+            simTimer.cancel(/** @type {number} */ (lsdb.get(lsaKey)?.ageTimer));
         }
-        const ageTimer = simTimer.schedule(() => this._expireLsa(key), LSA_MAX_AGE * 1000);
-        this._lsdb.set(key, { header, body, rawBytes, ageTimer });
-        this._floodLSA(lsa, -1);
+        const netAreaId = oif.areaId;
+        const ageTimer = simTimer.schedule(() => this._expireLsa(lsaKey, netAreaId), LSA_MAX_AGE * 1000);
+        lsdb.set(lsaKey, { header, body, rawBytes, ageTimer });
+        this._floodLSA(lsa, -1, oif.areaId);
     }
 
     /** @param {number} ifIndex */
     _withdrawNetworkLSA(ifIndex) {
         const iface = this._net.interfaces[ifIndex];
         if (!iface?.ip?.isV4()) return;
+        const oif  = this._ifaces.get(ifIndex);
+        if (!oif) return;
         const lsId = ip2n(iface.ip);
         const key  = `${LSA_TYPE_NETWORK}-${lsId}-${this._myRouterId}`;
-        const entry = this._lsdb.get(key);
+        const lsdb = this._lsdbFor(oif.areaId);
+        const entry = lsdb.get(key);
         if (!entry) return;
 
-        // Flood MaxAge LSA to trigger removal everywhere
         const hdr = new LsaHeader({ ...entry.header, age: LSA_MAX_AGE, seqNum: entry.header.seqNum });
         const maxAgeLsa = new Lsa({ header: hdr, body: entry.body });
-        this._floodLSA(maxAgeLsa, -1);
+        this._floodLSA(maxAgeLsa, -1, oif.areaId);
 
         if (entry.ageTimer != null) simTimer.cancel(entry.ageTimer);
-        this._lsdb.delete(key);
-        this._ownLsaSeq.delete(key);
+        lsdb.delete(key);
+        this._ownLsaSeq.delete(`${oif.areaId}-${key}`);
     }
 
     // ── Flooding ──────────────────────────────────────────────────────────────
 
     /**
-     * Flood an LSA to all Full neighbors except those on fromIfIndex.
-     * RFC 2328 §13.3: one LSU per interface (multicast), not one per neighbor.
-     *   DR/BDR  → AllSPFRouters (224.0.0.5) — every router receives it
-     *   DR-Other → AllDRouters   (224.0.0.6) — only DR+BDR receive and re-flood
+     * Flood an LSA within an area. RFC 2328 §13.3.
+     *   DR/BDR  → AllSPFRouters (224.0.0.5)
+     *   DR-Other → AllDRouters   (224.0.0.6)
      * @param {Lsa} lsa
-     * @param {number} fromIfIndex
+     * @param {number} fromIfIndex  incoming interface index (-1 for self-originated)
+     * @param {number} areaId       only flood on interfaces in this area
      */
-    _floodLSA(lsa, fromIfIndex) {
+    _floodLSA(lsa, fromIfIndex, areaId) {
         const rawBytes = lsa.pack();
         for (const [ifIndex, oif] of this._ifaces) {
             if (ifIndex === fromIfIndex) continue;
+            if (oif.areaId !== areaId) continue;
             const fullNeighbors = [...oif.neighbors.values()].filter(nb => nb.state === "Full");
             if (fullNeighbors.length === 0) continue;
 
@@ -984,7 +1106,10 @@ export class OSPFDaemon {
                 ? IPAddress.fromString(OSPF_ALL_SPF)
                 : IPAddress.fromString(OSPF_ALL_DR);
 
-            this._sendOSPF(ifIndex, dst, OSPF_TYPE_LSU, new OspfLSU({ lsas: [lsa] }));
+            // RFC §12.1: increment age by InfTransDelay (1 s) before sending
+            const txHdr = new LsaHeader({ ...lsa.header, age: Math.min(lsa.header.age + 1, LSA_MAX_AGE) });
+            const txLsa = new Lsa({ header: txHdr, body: lsa.body });
+            this._sendOSPF(ifIndex, dst, OSPF_TYPE_LSU, new OspfLSU({ lsas: [txLsa] }));
 
             // Track per-neighbor so each ACK can cancel the retransmit timer
             for (const nb of fullNeighbors) {
@@ -1019,7 +1144,8 @@ export class OSPFDaemon {
      */
     _retransmitLSU(nb, ifIndex, lsaKey) {
         if (nb.state !== "Full") { nb.unackedLSUs.delete(lsaKey); return; }
-        const lsdbEntry = this._lsdb.get(lsaKey);
+        const areaId    = this._ifaces.get(ifIndex)?.areaId ?? 0;
+        const lsdbEntry = this._lsdbFor(areaId).get(lsaKey);
         if (!lsdbEntry) { nb.unackedLSUs.delete(lsaKey); return; }
 
         const lsa = new Lsa({ header: lsdbEntry.header, body: lsdbEntry.body });
@@ -1043,20 +1169,23 @@ export class OSPFDaemon {
         }, SimTimer.OSPF_SPF_DELAY_MS);
     }
 
-    _runSPF() {
-        // Dijkstra over Router-ID nodes only.
-        // Transit links are resolved to Router→Router edges via Network-LSAs inline,
-        // so NetworkNode IDs never enter the dist map — avoiding the collision where
-        // the DR's interface IP equals its own Router-ID.
+    /**
+     * Dijkstra for one area.
+     * Returns reach map (routerId → {ifIndex, nexthop, cost}) and intra-area routes.
+     * @param {number} areaId
+     * @returns {{ reach: Map<number,{ifIndex:number,nexthop:IPAddress,cost:number}>, intraRoutes: {dst:IPAddress,prefix:number,ifIndex:number,nexthop:IPAddress,cost:number}[] }}
+     */
+    _runSPFArea(areaId) {
+        const lsdb  = this._lsdbFor(areaId);
+        const myId  = this._myRouterId;
 
-        /** @type {Map<number, number>} routerId → cost */
+        /** @type {Map<number, number>} routerId �� cost */
         const dist = new Map();
-        /** @type {Map<number, {ifIndex: number, nexthop: IPAddress}>} routerId → first-hop info */
+        /** @type {Map<number, {ifIndex: number, nexthop: IPAddress, cost: number}>} */
         const reach = new Map();
         /** @type {Set<number>} */
         const visited = new Set();
 
-        const myId = this._myRouterId;
         dist.set(myId, 0);
         const queue = [{ id: myId, cost: 0 }];
 
@@ -1066,34 +1195,32 @@ export class OSPFDaemon {
             if (visited.has(u)) continue;
             visited.add(u);
 
-            const rEntry = this._lsdb.get(`${LSA_TYPE_ROUTER}-${u}-${u}`);
+            const rEntry = lsdb.get(`${LSA_TYPE_ROUTER}-${u}-${u}`);
             if (!(rEntry?.body instanceof RouterLSA)) continue;
 
             for (const link of rEntry.body.links) {
                 if (link.type !== LINK_TYPE_TRANSIT) continue;
 
-                // Resolve the Network-LSA for this segment
-                const netLsId = link.linkId; // DR's interface IP
-                const netEntry = [...this._lsdb.values()].find(
+                const netLsId  = link.linkId;
+                const netEntry = [...lsdb.values()].find(
                     e => e.header.type === LSA_TYPE_NETWORK && e.header.lsId === netLsId
                 );
                 if (!(netEntry?.body instanceof NetworkLSA)) continue;
 
                 const segCost = uCost + link.metric;
 
-                // Find ifIndex / nexthop for this segment from root's perspective
                 let ifIndex, baseNexthop;
                 if (u === myId) {
-                    // Own transit link: ifIndex = interface whose IP equals link.linkData
                     ifIndex = -1;
-                    for (const [idx] of this._ifaces) {
+                    for (const [idx, oif] of this._ifaces) {
+                        if (oif.areaId !== areaId) continue;
                         const iface = this._net.interfaces[idx];
                         if (iface?.ip && ip2n(iface.ip) === link.linkData) { ifIndex = idx; break; }
                     }
-                    baseNexthop = null; // per-router nexthop resolved below
+                    baseNexthop = null;
                 } else {
                     const ri = reach.get(u);
-                    ifIndex = ri?.ifIndex ?? -1;
+                    ifIndex    = ri?.ifIndex ?? -1;
                     baseNexthop = ri?.nexthop ?? n2ip(0);
                 }
 
@@ -1106,19 +1233,20 @@ export class OSPFDaemon {
                     const nexthop = (u === myId)
                         ? (this._neighborByRouterId(attRouter)?.ip ?? n2ip(0))
                         : (baseNexthop ?? n2ip(0));
-                    reach.set(attRouter, { ifIndex, nexthop });
+                    reach.set(attRouter, { ifIndex, nexthop, cost: segCost });
                     queue.push({ id: attRouter, cost: segCost });
                 }
             }
         }
 
-        // Collect stub-network routes from all reachable remote routers' LSAs
-        /** @type {{dst: IPAddress, prefix: number, ifIndex: number, nexthop: IPAddress}[]} */
-        const newRoutes = [];
-        for (const [, entry] of this._lsdb) {
+        /** @type {{dst:IPAddress,prefix:number,ifIndex:number,nexthop:IPAddress,cost:number}[]} */
+        const intraRoutes = [];
+
+        // Stub-network routes from reachable remote routers
+        for (const [, entry] of lsdb) {
             if (entry.header.type !== LSA_TYPE_ROUTER) continue;
             if (!(entry.body instanceof RouterLSA)) continue;
-            const rid = entry.header.advertisingRouter;
+            const rid  = entry.header.advertisingRouter;
             if (rid === myId) continue;
             const info = reach.get(rid);
             if (!info || info.ifIndex < 0) continue;
@@ -1127,16 +1255,192 @@ export class OSPFDaemon {
                 if (link.type !== LINK_TYPE_STUB) continue;
                 const prefix = mask32ToPrefix(link.linkData);
                 const net32  = (link.linkId & link.linkData) >>> 0;
-                newRoutes.push({ dst: n2ip(net32), prefix, ifIndex: info.ifIndex, nexthop: info.nexthop });
+                const cost   = info.cost + link.metric;
+                intraRoutes.push({ dst: n2ip(net32), prefix, ifIndex: info.ifIndex, nexthop: info.nexthop, cost });
             }
         }
 
+        // RFC §16.1 step 3: transit network routes (Network-LSAs)
+        for (const [, entry] of lsdb) {
+            if (entry.header.type !== LSA_TYPE_NETWORK) continue;
+            if (!(entry.body instanceof NetworkLSA)) continue;
+            if (entry.body.attachedRouters.includes(myId)) continue;
+            const info = reach.get(entry.header.advertisingRouter);
+            if (!info || info.ifIndex < 0) continue;
+            const mask32 = entry.body.networkMask;
+            const net32  = (entry.header.lsId & mask32) >>> 0;
+            const prefix = mask32ToPrefix(mask32);
+            intraRoutes.push({ dst: n2ip(net32), prefix, ifIndex: info.ifIndex, nexthop: info.nexthop, cost: info.cost });
+        }
+
+        return { reach, intraRoutes };
+    }
+
+    _runSPF() {
         this._removeLearnedRoutes();
-        for (const r of newRoutes) {
+
+        /** @type {Map<number, Map<number,{ifIndex:number,nexthop:IPAddress,cost:number}>>} */
+        const reachByArea = new Map();
+        /** @type {{dst:IPAddress,prefix:number,ifIndex:number,nexthop:IPAddress,cost:number}[]} */
+        const allRoutes = [];
+
+        for (const areaId of this._activeAreas()) {
+            const { reach, intraRoutes } = this._runSPFArea(areaId);
+            reachByArea.set(areaId, reach);
+            allRoutes.push(...intraRoutes);
+        }
+
+        allRoutes.push(...this._computeInterAreaRoutes(reachByArea));
+
+        if (this._isABR()) this._reconcileSummaryLSAs(reachByArea);
+
+        // De-duplicate: for same dst/prefix keep lowest cost
+        const best = new Map();
+        for (const r of allRoutes) {
+            const k = `${ip2n(r.dst)}-${r.prefix}`;
+            if (!best.has(k) || r.cost < best.get(k).cost) best.set(k, r);
+        }
+
+        const finalRoutes = [...best.values()];
+        for (const r of finalRoutes) {
             try { this._net.addRoute(r.dst, r.prefix, r.ifIndex, r.nexthop, "ospf"); } catch {}
         }
-        this._installedRoutes = newRoutes;
-        this._log(`SPF: ${newRoutes.length} routes installed`);
+        this._installedRoutes = finalRoutes;
+        this._log(`SPF: ${finalRoutes.length} routes installed`);
+    }
+
+    /**
+     * Compute inter-area routes from Summary-LSAs (RFC §16.2).
+     * @param {Map<number, Map<number,{ifIndex:number,nexthop:IPAddress,cost:number}>>} reachByArea
+     * @returns {{dst:IPAddress,prefix:number,ifIndex:number,nexthop:IPAddress,cost:number}[]}
+     */
+    _computeInterAreaRoutes(reachByArea) {
+        /** @type {Map<string, {dst:IPAddress,prefix:number,ifIndex:number,nexthop:IPAddress,cost:number}>} */
+        const best = new Map();
+
+        for (const [areaId, reach] of reachByArea) {
+            const lsdb = this._lsdbFor(areaId);
+            for (const [, entry] of lsdb) {
+                if (entry.header.type !== LSA_TYPE_SUMMARY) continue;
+                if (!(entry.body instanceof SummaryLSA)) continue;
+                const abrRid  = entry.header.advertisingRouter;
+                const abrInfo = reach.get(abrRid);
+                if (!abrInfo || abrInfo.ifIndex < 0) continue;
+                const totalCost = abrInfo.cost + entry.body.metric;
+                const mask32    = entry.body.networkMask;
+                const net32     = (entry.header.lsId & mask32) >>> 0;
+                const prefix    = mask32ToPrefix(mask32);
+                const k         = `${net32}-${prefix}`;
+                if (!best.has(k) || totalCost < best.get(k).cost) {
+                    best.set(k, { dst: n2ip(net32), prefix, ifIndex: abrInfo.ifIndex, nexthop: abrInfo.nexthop, cost: totalCost });
+                }
+            }
+        }
+        return [...best.values()];
+    }
+
+    /**
+     * ABR: originate/withdraw Summary-LSAs based on current SPF results.
+     * @param {Map<number, Map<number,{ifIndex:number,nexthop:IPAddress,cost:number}>>} reachByArea
+     */
+    _reconcileSummaryLSAs(reachByArea) {
+        const myAreas = [...this._activeAreas()];
+        /** @type {Map<string, {targetAreaId:number,lsId:number,mask32:number,metric:number}>} */
+        const newSummaries = new Map();  // key = "${targetAreaId}-${net32}-${mask32}"
+
+        for (const [srcAreaId, reach] of reachByArea) {
+            const lsdb = this._lsdbFor(srcAreaId);
+
+            // Collect intra-area destinations from this area's LSDB
+            for (const [, entry] of lsdb) {
+                if (entry.header.type === LSA_TYPE_ROUTER && entry.body instanceof RouterLSA) {
+                    const rid  = entry.header.advertisingRouter;
+                    const cost = rid === this._myRouterId ? 0 : (reach.get(rid)?.cost ?? null);
+                    if (cost === null) continue;
+                    for (const link of entry.body.links) {
+                        if (link.type !== LINK_TYPE_STUB) continue;
+                        const net32  = (link.linkId & link.linkData) >>> 0;
+                        const mask32 = link.linkData;
+                        const metric = cost + link.metric;
+                        for (const tgt of myAreas) {
+                            if (tgt === srcAreaId) continue;
+                            const k = `${tgt}-${net32}-${mask32}`;
+                            if (!newSummaries.has(k) || newSummaries.get(k).metric > metric)
+                                newSummaries.set(k, { targetAreaId: tgt, lsId: net32, mask32, metric });
+                        }
+                    }
+                }
+                if (entry.header.type === LSA_TYPE_NETWORK && entry.body instanceof NetworkLSA) {
+                    if (entry.body.attachedRouters.includes(this._myRouterId)) continue;
+                    const drInfo = reach.get(entry.header.advertisingRouter);
+                    if (!drInfo) continue;
+                    const mask32 = entry.body.networkMask;
+                    const net32  = (entry.header.lsId & mask32) >>> 0;
+                    const metric = drInfo.cost;
+                    for (const tgt of myAreas) {
+                        if (tgt === srcAreaId) continue;
+                        const k = `${tgt}-${net32}-${mask32}`;
+                        if (!newSummaries.has(k) || newSummaries.get(k).metric > metric)
+                            newSummaries.set(k, { targetAreaId: tgt, lsId: net32, mask32, metric });
+                    }
+                }
+            }
+        }
+
+        // Withdraw stale Summary-LSAs
+        for (const [mapKey, info] of this._summaryLsaKeys) {
+            if (!newSummaries.has(mapKey)) {
+                const lsaKey = `${LSA_TYPE_SUMMARY}-${info.lsId}-${this._myRouterId}`;
+                const lsdb   = this._lsdbFor(info.targetAreaId);
+                const entry  = lsdb.get(lsaKey);
+                if (entry) {
+                    const hdr = new LsaHeader({ ...entry.header, age: LSA_MAX_AGE });
+                    this._floodLSA(new Lsa({ header: hdr, body: entry.body }), -1, info.targetAreaId);
+                    if (entry.ageTimer != null) simTimer.cancel(entry.ageTimer);
+                    lsdb.delete(lsaKey);
+                    this._ownLsaSeq.delete(`${info.targetAreaId}-${lsaKey}`);
+                }
+            }
+        }
+
+        // Originate new/updated Summary-LSAs
+        for (const [mapKey, info] of newSummaries) {
+            this._originateSummaryLSA(info.targetAreaId, info.lsId, info.mask32, info.metric);
+        }
+
+        this._summaryLsaKeys = newSummaries;
+    }
+
+    /**
+     * @param {number} areaId   target area to originate into
+     * @param {number} lsId     network address (u32)
+     * @param {number} mask32   network mask (u32)
+     * @param {number} metric   cost
+     */
+    _originateSummaryLSA(areaId, lsId, mask32, metric) {
+        if (!this._running) return;
+        const lsaKey = `${LSA_TYPE_SUMMARY}-${lsId}-${this._myRouterId}`;
+        const seqKey = `${areaId}-${lsaKey}`;
+        const lsdb   = this._lsdbFor(areaId);
+        const oldSeq = this._ownLsaSeq.get(seqKey) ?? (LSA_INIT_SEQ - 1);
+        const seqNum = (oldSeq + 1) >>> 0;
+        this._ownLsaSeq.set(seqKey, seqNum);
+
+        const body   = new SummaryLSA({ networkMask: mask32, metric });
+        const header = new LsaHeader({
+            age: 0, type: LSA_TYPE_SUMMARY,
+            lsId, advertisingRouter: this._myRouterId,
+            seqNum, length: 20 + body.pack().length,
+        });
+        const lsa      = new Lsa({ header, body });
+        const rawBytes = lsa.pack();
+
+        const existing = lsdb.get(lsaKey);
+        if (existing?.ageTimer != null) simTimer.cancel(existing.ageTimer);
+        const sumAreaId = areaId;
+        const ageTimer  = simTimer.schedule(() => this._expireLsa(lsaKey, sumAreaId), LSA_MAX_AGE * 1000);
+        lsdb.set(lsaKey, { header, body, rawBytes, ageTimer });
+        this._floodLSA(lsa, -1, areaId);
     }
 
     /** @param {number} rid @returns {number} */
@@ -1174,7 +1478,8 @@ export class OSPFDaemon {
      * @param {OspfHello|OspfDBD|OspfLSR|OspfLSU|OspfLSAck} body
      */
     _sendOSPF(ifIndex, dst, type, body) {
-        const hdr = new OspfHeader({ type, length: 0, routerId: this._myRouterId, areaId: this._areaId });
+        const areaId = this._ifaces.get(ifIndex)?.areaId ?? 0;
+        const hdr = new OspfHeader({ type, length: 0, routerId: this._myRouterId, areaId });
         const pkt = new OspfPacket({ header: hdr, body });
         this._net.sendOnInterface(ifIndex, dst, OSPF_PROTO, pkt.pack()).catch(() => {});
     }
@@ -1195,6 +1500,8 @@ export class OSPFDaemon {
         try { ospf = OspfPacket.fromBytes(ipPkt.payload); } catch { return; }
 
         if (ospf.header.version !== OSPF_VERSION) return;
+        const oifCheck = this._ifaces.get(ifIndex);
+        if (!oifCheck || ospf.header.areaId !== oifCheck.areaId) return;  // RFC §10.5
         // Ignore our own packets
         if (ospf.header.routerId === this._myRouterId) return;
 
@@ -1240,6 +1547,7 @@ export class OSPFDaemon {
             enabled:          this.enabled,
             passive:          [...this.passiveInterfaces],
             routerIdOverride: this._routerIdOverride,
+            interfaceAreas:   Object.fromEntries(this._ifaceAreaMap),
         };
     }
 
@@ -1249,6 +1557,10 @@ export class OSPFDaemon {
         this.enabled           = !!data.enabled;
         this.passiveInterfaces = new Set(Array.isArray(data.passive) ? data.passive : []);
         this._routerIdOverride = typeof data.routerIdOverride === "number" ? data.routerIdOverride : null;
+        if (data.interfaceAreas && typeof data.interfaceAreas === "object") {
+            for (const [ifName, areaId] of Object.entries(data.interfaceAreas))
+                this._ifaceAreaMap.set(ifName, (areaId >>> 0));
+        }
         if (this.enabled) this.start();
     }
 }
