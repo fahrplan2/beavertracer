@@ -7,7 +7,7 @@ import {
     OSPF_PROTO, OSPF_VERSION, OSPF_ALL_SPF, OSPF_ALL_DR,
     OSPF_TYPE_HELLO, OSPF_TYPE_DBD, OSPF_TYPE_LSR, OSPF_TYPE_LSU, OSPF_TYPE_LSACK,
     LSA_TYPE_ROUTER, LSA_TYPE_NETWORK, LSA_TYPE_SUMMARY,
-    LINK_TYPE_TRANSIT, LINK_TYPE_STUB,
+    LINK_TYPE_P2P, LINK_TYPE_TRANSIT, LINK_TYPE_STUB,
     DBD_FLAG_I, DBD_FLAG_M, DBD_FLAG_MS,
     LSA_INIT_SEQ, LSA_MAX_AGE, LSA_MAX_SEQ,
     ospfChecksum,
@@ -98,6 +98,8 @@ export class OSPFDaemon {
         this.enabled = false;
         /** @type {Set<string>} interface names that don't send Hellos */
         this.passiveInterfaces = new Set();
+        /** @type {Set<string>} interface names on point-to-point links (no DR election) */
+        this.p2pInterfaces = new Set();
         /** @type {number|null} manually configured Router-ID (u32) */
         this._routerIdOverride = null;
         /** @type {Map<string, number>} ifName → areaId (u32); default area 0 */
@@ -189,6 +191,20 @@ export class OSPFDaemon {
         else         this.passiveInterfaces.delete(ifName);
     }
 
+    /** @param {string} ifName @param {boolean} isP2P */
+    setP2P(ifName, isP2P) {
+        if (isP2P) this.p2pInterfaces.add(ifName);
+        else       this.p2pInterfaces.delete(ifName);
+        // Cancel Wait timer if interface is already initialized
+        const ifIndex = parseInt(ifName.replace("eth", ""), 10);
+        const oif = this._ifaces.get(ifIndex);
+        if (oif && isP2P && oif.waitTimer != null) {
+            simTimer.cancel(oif.waitTimer);
+            oif.waitTimer = null;
+            oif.state = "DR-Other";
+        }
+    }
+
     /** @param {string} ifName @param {number} areaId */
     setIfaceArea(ifName, areaId) {
         this._ifaceAreaMap.set(ifName, areaId >>> 0);
@@ -226,22 +242,27 @@ export class OSPFDaemon {
     _initIface(ifIndex) {
         const ifName = `eth${ifIndex}`;
         const areaId = this._ifaceAreaMap.get(ifName) ?? 0;
+        const isPassive = this.passiveInterfaces.has(ifName);
+        const isP2P     = this.p2pInterfaces.has(ifName);
         /** @type {OspfIface} */
         const oif = {
             ifIndex,
             areaId,
-            state: "Waiting",
+            // Passive and P2P interfaces skip DR/BDR election entirely
+            state: (isPassive || isP2P) ? "DR-Other" : "Waiting",
             dr: 0, bdr: 0,
             waitTimer: null,
             helloTimer: null,
             neighbors: new Map(),
         };
         this._ifaces.set(ifIndex, oif);
-        // Start Wait timer — after OSPF_WAIT_MS elect DR/BDR without hearing from others
-        oif.waitTimer = simTimer.schedule(() => {
-            oif.waitTimer = null;
-            this._electDRBDR(ifIndex);
-        }, SimTimer.OSPF_WAIT_MS);
+        // Broadcast interfaces: start Wait timer so DR/BDR election fires if no hellos arrive
+        if (!isPassive && !isP2P) {
+            oif.waitTimer = simTimer.schedule(() => {
+                oif.waitTimer = null;
+                this._electDRBDR(ifIndex);
+            }, SimTimer.OSPF_WAIT_MS);
+        }
         this._scheduleHello(ifIndex, 0);
     }
 
@@ -530,6 +551,9 @@ export class OSPFDaemon {
     _electDRBDR(ifIndex) {
         const oif = this._ifaces.get(ifIndex);
         if (!oif) return;
+        // P2P and passive interfaces don't run DR/BDR election
+        const _elIfName = `eth${ifIndex}`;
+        if (this.p2pInterfaces.has(_elIfName) || this.passiveInterfaces.has(_elIfName)) return;
 
         const selfPri = 1; // own priority
 
@@ -609,6 +633,7 @@ export class OSPFDaemon {
      * @returns {boolean}
      */
     _shouldFormAdjacency(nb, oif) {
+        if (this.p2pInterfaces.has(`eth${oif.ifIndex}`)) return true;
         return (
             nb.routerId === oif.dr  ||
             nb.routerId === oif.bdr ||
@@ -939,11 +964,27 @@ export class OSPFDaemon {
 
             const mask32 = prefixToMask32(iface.prefixLength ?? 0);
             const net32  = (ip2n(iface.ip) & mask32) >>> 0;
+            const ifName = `eth${i}`;
 
-            // Full neighbors → transit link (to DR)
             const fullNeighbors = [...(oif.neighbors.values())].filter(nb => nb.state === "Full");
-            if (fullNeighbors.length > 0 && oif.dr !== 0) {
-                // linkId = DR's interface IP on this segment (= Network-LSA lsId)
+            if (this.p2pInterfaces.has(ifName)) {
+                // P2P link: one Type-1 link per Full neighbor + stub for the subnet (RFC §12.4.1.1)
+                for (const nb of fullNeighbors) {
+                    links.push(new RouterLink({
+                        linkId:   nb.routerId,
+                        linkData: ip2n(iface.ip),
+                        type:     LINK_TYPE_P2P,
+                        metric:   10,
+                    }));
+                }
+                links.push(new RouterLink({
+                    linkId:   net32,
+                    linkData: mask32,
+                    type:     LINK_TYPE_STUB,
+                    metric:   0,
+                }));
+            } else if (fullNeighbors.length > 0 && oif.dr !== 0) {
+                // Broadcast: transit link to DR (= Network-LSA lsId)
                 let drIfaceIp;
                 if (oif.dr === this._myRouterId) {
                     drIfaceIp = ip2n(iface.ip);
@@ -1009,6 +1050,7 @@ export class OSPFDaemon {
     /** @param {number} ifIndex @param {boolean} [force] bypass MinLSInterval */
     _originateNetworkLSA(ifIndex, force = false) {
         if (!this._running) return;
+        if (this.p2pInterfaces.has(`eth${ifIndex}`)) return;
         const iface = this._net.interfaces[ifIndex];
         if (!iface?.ip?.isV4()) return;
         const oif = this._ifaces.get(ifIndex);
@@ -1199,6 +1241,29 @@ export class OSPFDaemon {
             if (!(rEntry?.body instanceof RouterLSA)) continue;
 
             for (const link of rEntry.body.links) {
+                if (link.type === LINK_TYPE_P2P) {
+                    // P2P: linkId = neighbor router-ID, linkData = own IP (RFC §12.4.1.1)
+                    const neighborRid = link.linkId;
+                    if (neighborRid === myId) continue;
+                    const newCost = uCost + link.metric;
+                    const prev = dist.get(neighborRid) ?? Infinity;
+                    if (prev <= newCost) continue;
+                    dist.set(neighborRid, newCost);
+
+                    let ifIndex, nexthop;
+                    if (u === myId) {
+                        ifIndex = this._ifIndexForNeighbor(neighborRid);
+                        nexthop = this._neighborByRouterId(neighborRid)?.ip ?? n2ip(0);
+                    } else {
+                        const ri = reach.get(u);
+                        ifIndex  = ri?.ifIndex ?? -1;
+                        nexthop  = ri?.nexthop ?? n2ip(0);
+                    }
+                    reach.set(neighborRid, { ifIndex, nexthop, cost: newCost });
+                    queue.push({ id: neighborRid, cost: newCost });
+                    continue;
+                }
+
                 if (link.type !== LINK_TYPE_TRANSIT) continue;
 
                 const netLsId  = link.linkId;
@@ -1384,6 +1449,22 @@ export class OSPFDaemon {
                             newSummaries.set(k, { targetAreaId: tgt, lsId: net32, mask32, metric });
                     }
                 }
+                // RFC 2328 §12.4.3: re-originate inter-area routes from backbone into non-backbone areas.
+                // Only process Summary-LSAs that arrived from Area 0 and target non-backbone areas.
+                if (srcAreaId === 0 && entry.header.type === LSA_TYPE_SUMMARY && entry.body instanceof SummaryLSA) {
+                    if (entry.header.advertisingRouter === this._myRouterId) continue;
+                    const abrInfo = reach.get(entry.header.advertisingRouter);
+                    if (!abrInfo) continue;
+                    const mask32    = entry.body.networkMask;
+                    const net32     = (entry.header.lsId & mask32) >>> 0;
+                    const metric    = abrInfo.cost + entry.body.metric;
+                    for (const tgt of myAreas) {
+                        if (tgt === 0) continue; // only into non-backbone areas
+                        const k = `${tgt}-${net32}-${mask32}`;
+                        if (!newSummaries.has(k) || newSummaries.get(k).metric > metric)
+                            newSummaries.set(k, { targetAreaId: tgt, lsId: net32, mask32, metric });
+                    }
+                }
             }
         }
 
@@ -1436,6 +1517,9 @@ export class OSPFDaemon {
         const rawBytes = lsa.pack();
 
         const existing = lsdb.get(lsaKey);
+        if (existing?.body instanceof SummaryLSA &&
+            existing.body.networkMask === mask32 &&
+            existing.body.metric === metric) return;
         if (existing?.ageTimer != null) simTimer.cancel(existing.ageTimer);
         const sumAreaId = areaId;
         const ageTimer  = simTimer.schedule(() => this._expireLsa(lsaKey, sumAreaId), LSA_MAX_AGE * 1000);

@@ -1591,7 +1591,7 @@ export class IPStack extends Observable {
             })),
 
             routes: this.routingTable
-                .filter(r => !r.auto)
+                .filter(r => !r.auto && r.source === "static")
                 .map(r => ({
                     dst: r.dst.toString(),
                     prefixLength: r.prefixLength,

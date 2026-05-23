@@ -721,16 +721,35 @@ export class Router extends SimulatedObject {
 
     /** @param {HTMLElement} scrollWrap */
     _attachScrollHint(scrollWrap) {
-        const hint = document.createElement("div");
-        hint.className = "router-scroll-hint";
-        hint.setAttribute("aria-hidden", "true");
-        hint.textContent = "▼";
-        scrollWrap.appendChild(hint);
+        // Wrap scrollWrap so the top hint can be absolutely positioned over it
+        // without affecting scroll layout (sticky-inside-scroll causes z-index and
+        // layout-shift issues with the sticky thead).
+        const outer = document.createElement("div");
+        outer.className = "router-scroll-hint-outer";
+        scrollWrap.replaceWith(outer);
+        outer.appendChild(scrollWrap);
 
+        const hintTop = document.createElement("div");
+        hintTop.className = "router-scroll-hint router-scroll-hint--top";
+        hintTop.setAttribute("aria-hidden", "true");
+        hintTop.textContent = "▲";
+        outer.appendChild(hintTop);
+
+        const hintBottom = document.createElement("div");
+        hintBottom.className = "router-scroll-hint router-scroll-hint--bottom";
+        hintBottom.setAttribute("aria-hidden", "true");
+        hintBottom.textContent = "▼";
+        scrollWrap.appendChild(hintBottom);
+
+        const thead = scrollWrap.querySelector("thead");
         const update = () => {
             const canScroll = scrollWrap.scrollHeight > scrollWrap.clientHeight + 2;
+            const atTop    = scrollWrap.scrollTop <= 4;
             const atBottom = scrollWrap.scrollTop + scrollWrap.clientHeight >= scrollWrap.scrollHeight - 4;
-            hint.style.display = (canScroll && !atBottom) ? "block" : "none";
+            hintTop.style.display    = (canScroll && !atTop)    ? "block" : "none";
+            hintBottom.style.display = (canScroll && !atBottom) ? "block" : "none";
+            // sit just below the sticky thead so the two don't overlap
+            if (thead) hintTop.style.top = thead.offsetHeight + "px";
         };
         scrollWrap.addEventListener("scroll", update, { passive: true });
         requestAnimationFrame(update);

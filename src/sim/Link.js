@@ -84,6 +84,14 @@ export class Link extends SimulatedObject {
 
     this.simcontrol = simcontrol;
 
+    // Notify both ends if this is a direct router-to-router (P2P) link
+    const aAny = /** @type {any} */ (A);
+    const bAny = /** @type {any} */ (B);
+    if (aAny.ospf && bAny.ospf) {
+      aAny.ospf.setP2P(portAKey, true);
+      bAny.ospf.setP2P(portBKey, true);
+    }
+
     this.simcontrol.pcapController.addIf(this.A.id + ": "+this.link.portA.name);
     this.simcontrol.pcapController.addIf(this.B.id + ": "+this.link.portB.name);
   }
@@ -150,6 +158,12 @@ export class Link extends SimulatedObject {
     this._labelA = null;
     this._labelB?.remove();
     this._labelB = null;
+    const aAny = /** @type {any} */ (this.A);
+    const bAny = /** @type {any} */ (this.B);
+    if (aAny.ospf && bAny.ospf) {
+      aAny.ospf.setP2P(this.portAKey, false);
+      bAny.ospf.setP2P(this.portBKey, false);
+    }
     this.link.destroy();
     this.simcontrol.pcapController.removeIf(this.A.id + ": "+this.link.portA.name);
     this.simcontrol.pcapController.removeIf(this.B.id + ": "+this.link.portB.name);
