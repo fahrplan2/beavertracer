@@ -468,7 +468,7 @@ export class Lsa {
     /**
      * @param {{
      *   header: LsaHeader,
-     *   body: RouterLSA | NetworkLSA,
+     *   body: RouterLSA | NetworkLSA | SummaryLSA,
      * }} opts
      */
     constructor({ header, body }) {

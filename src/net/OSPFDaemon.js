@@ -534,7 +534,7 @@ export class OSPFDaemon {
         const selfPri = 1; // own priority
 
         /** Build candidate list using current declared dr/bdr values. */
-        const buildCandidates = (selfDr, selfBdr) => {
+        const buildCandidates = (/** @type {number} */ selfDr, /** @type {number} */ selfBdr) => {
             /** @type {{rid: number, pri: number, dr: number, bdr: number}[]} */
             const list = [];
             if (selfPri > 0) list.push({ rid: this._myRouterId, pri: selfPri, dr: selfDr, bdr: selfBdr });

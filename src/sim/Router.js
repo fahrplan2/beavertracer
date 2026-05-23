@@ -1862,7 +1862,7 @@ export class Router extends SimulatedObject {
             const myRid = this.ospf._myRouterId;
             const lsaTypeLabel = (/** @type {number} */ t) => t === 1 ? "Router" : t === 2 ? "Network" : String(t);
             const seqHex = (/** @type {number} */ s) => "0x" + (s >>> 0).toString(16).padStart(8, "0").toUpperCase();
-            for (const [, entry] of this.ospf._lsdb) {
+            for (const [, areaLsdb] of this.ospf._lsdbByArea) for (const [, entry] of areaLsdb) {
                 const h   = entry.header;
                 const tr  = document.createElement("tr");
                 const own = h.advertisingRouter === myRid;
