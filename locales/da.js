@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇩🇰 Dansk (translated by AI)", order: 7 };
+export const meta = { name: "🇩🇰 Dansk (translated by AI)", order: 6 };
 
 export default {
   "lang.name": "🇩🇰 Dansk",
@@ -681,8 +681,8 @@ export default {
   "homerouter.pf.col.wanport": "WAN Port",
   "homerouter.pf.col.lanip": "LAN IP",
   "homerouter.pf.col.lanport": "LAN Port",
-  "homerouter.pf.empty": "No rules configured.",
-  "homerouter.pf.invalid": "Invalid port forward rule.",
+  "homerouter.pf.empty": "Ingen regler konfigureret.",
+  "homerouter.pf.invalid": "Ugyldig port forward-regel.",
   "homerouter.wan.mode": "Tilstand",
   "homerouter.wan.mode.static": "Statisk",
   "homerouter.wan.mode.dhcp": "DHCP",

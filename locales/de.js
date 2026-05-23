@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇩🇪 Deutsch", order: 1 };
+export const meta = { name: "🇩🇪 Deutsch", order: 7 };
 
 export default {
   "lang.name": "🇩🇪 Deutsch",
@@ -694,8 +694,8 @@ export default {
   "homerouter.pf.col.wanport": "WAN Port",
   "homerouter.pf.col.lanip": "LAN IP",
   "homerouter.pf.col.lanport": "LAN Port",
-  "homerouter.pf.empty": "No rules configured.",
-  "homerouter.pf.invalid": "Invalid port forward rule.",
+  "homerouter.pf.empty": "Keine Regeln konfiguriert.",
+  "homerouter.pf.invalid": "Ungültige Port-Weiterleitungsregel.",
   "homerouter.wan.mode": "Modus",
   "homerouter.wan.mode.static": "Statisch",
   "homerouter.wan.mode.dhcp": "DHCP",
@@ -1031,6 +1031,31 @@ export default {
   "app.mailclient.config.smtpTls.starttls": "STARTTLS",
   "app.mailclient.config.smtpTls.implicit": "Implizites TLS",
   "app.terminal.commands.nmap.usage": "Verwendung: nmap [-p <Ports>] [--open] <Ziel> [<Ziel>...]",
+  "app.terminal.commands.nmap.help":
+    "nmap — Netzwerk-Portscanner\n" +
+    "\n" +
+    "Verwendung: nmap [-p <Ports>] [--open] <Ziel> [<Ziel>...]\n" +
+    "\n" +
+    "Ziele:\n" +
+    "  192.168.1.1          einzelner Host\n" +
+    "  192.168.1.0/24       Subnetz (max. /24, bis zu 254 Hosts)\n" +
+    "  hostname             wird per DNS aufgelöst\n" +
+    "\n" +
+    "Optionen:\n" +
+    "  -p <Angabe>  zu scannende Ports (Standard: 20 häufige Ports)\n" +
+    "               Beispiele: -p 80  -p 22,80,443  -p 1-1024\n" +
+    "               Maximum: 1000 Ports pro Scan\n" +
+    "  --open       nur offene Ports anzeigen\n" +
+    "  -h, --help   diese Hilfe anzeigen\n" +
+    "\n" +
+    "Port-Zustände:\n" +
+    "  open      SYN-ACK empfangen (Dienst lauscht)\n" +
+    "  filtered  keine Antwort (Firewall verwirft Pakete)\n" +
+    "  closed    RST empfangen (kein Dienst auf diesem Port)\n" +
+    "\n" +
+    "Tipp: Wiregasm-Filter zur Analyse des Scan-Traffics:\n" +
+    "  tcp.flags.syn==1 && tcp.flags.ack==0   Probes anzeigen\n" +
+    "  tcp.flags.syn==1 && tcp.flags.ack==1   offene Ports anzeigen",
   "app.terminal.commands.nmap.err.missingPortSpec": "nmap: -p erfordert eine Portangabe",
   "app.terminal.commands.nmap.err.invalidPortSpec": "nmap: ungültige Portangabe: {spec}",
   "app.terminal.commands.nmap.err.tooManyPorts": "nmap: Portbereich überschreitet Limit von {max} Ports",

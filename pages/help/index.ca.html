@@ -1,0 +1,329 @@
+<h2>Ajuda</h2>
+<p class="subtitle">Com utilitzar Beaver Tracer</p>
+
+<hr>
+
+<nav class="help-toc">
+  <strong>Continguts</strong>
+  <ol>
+    <li><a href="#modes">Els Tres Modes</a></li>
+    <li><a href="#edit">Mode Edició — Construint una Xarxa</a></li>
+    <li><a href="#devices">Dispositius</a></li>
+    <li><a href="#panels">Panells de Dispositiu</a></li>
+    <li><a href="#run">Mode Execució — Executant la Simulació</a></li>
+    <li><a href="#trace">Mode Traça — Analitzant Paquets</a></li>
+    <li><a href="#project">Guardant i Carregant</a></li>
+  </ol>
+</nav>
+
+<hr>
+
+<h3 id="modes">Els tres modes</h3>
+<p>
+  Beaver Tracer té tres modes. Canvies entre ells utilitzant els botons de la barra d'eines superior.
+</p>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-pencil"></i></td>
+    <td><strong>Edita</strong></td>
+    <td>Dissenya la teva xarxa — col·loca dispositius, connecta'ls, configura'ls.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-play"></i></td>
+    <td><strong>Executa</strong></td>
+    <td>Inicia la simulació i observa el tràfic fluint per la teva xarxa.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-magnifying-glass"></i></td>
+    <td><strong>Traça</strong></td>
+    <td>Captura i inspecciona els paquets que viatgen per la teva xarxa.</td>
+  </tr>
+</table>
+
+<hr>
+
+<h3 id="edit">Mode d'edició — Construir una xarxa</h3>
+<p>
+  En mode d'edició, apareix una barra d'eines al costat esquerre de la pantalla.
+  Selecciona una eina fent clic a sobre seu, després utilitza-la al tauler.
+</p>
+
+<h4>Eines</h4>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-arrow-pointer"></i></td>
+    <td><strong>Seleccionar</strong></td>
+    <td>Fes clic a un dispositiu per obrir el seu panell. Arrossega un dispositiu per moure'l.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-link"></i></td>
+    <td><strong>Enllaç</strong></td>
+    <td>Connecta dos dispositius amb un cable (mira més avall).</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-font"></i></td>
+    <td><strong>Text</strong></td>
+    <td>Col·loca una etiqueta de text al tauler per anotar el teu diagrama.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-square"></i></td>
+    <td><strong>Rectangle</strong></td>
+    <td>Dibuixa un rectangle al tauler per agrupar visualment els dispositius.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-ban"></i></td>
+    <td><strong>Eliminar</strong></td>
+    <td>Fes clic a un dispositiu o cable per suprimir-lo.</td>
+  </tr>
+</table>
+
+<p>
+  <strong>Consell:</strong> Fes clic dret en qualsevol lloc del tauler per cancel·lar l'eina actual
+  i tornar a <i class="fas fa-arrow-pointer"></i> Seleccionar.
+</p>
+
+<h4>Col·locar un dispositiu</h4>
+<ol>
+  <li>Fes clic a un botó de dispositiu a la barra d'eines esquerra (p. ex. <i class="fas fa-desktop"></i> PC).</li>
+  <li>Una vista prèvia segueix el cursor del teu ratolí.</li>
+  <li>Fes clic al tauler per col·locar el dispositiu.</li>
+</ol>
+
+<h4>Connectar dos dispositius</h4>
+<ol>
+  <li>Fes clic a l'eina <i class="fas fa-link"></i> <strong>Enllaç</strong>.</li>
+  <li>Fes clic al primer dispositiu — apareix un selector de ports. Selecciona un port.</li>
+  <li>Mou el ratolí al segon dispositiu i fes clic — selecciona un port allà també.</li>
+  <li>El cable es crea automàticament.</li>
+</ol>
+<p>
+  Els ports que ja estan en ús es mostren com a desactivats i no es poden seleccionar.
+</p>
+
+<h4>Moure un dispositiu</h4>
+<p>
+  En mode <i class="fas fa-arrow-pointer"></i> Seleccionar, fes clic i arrossega qualsevol dispositiu per reposicionar-lo al tauler.
+</p>
+
+<h4>Eliminar un dispositiu o cable</h4>
+<ol>
+  <li>Fes clic a l'eina <i class="fas fa-ban"></i> <strong>Eliminar</strong>.</li>
+  <li>Fes clic al dispositiu o cable que vols suprimir.</li>
+</ol>
+<p>
+  Quan suprimeixis un dispositiu, tots els cables connectats a ell es treuen automàticament.
+</p>
+
+<hr>
+
+<h3 id="devices">Dispositius</h3>
+<p>
+  Aquests dispositius estan disponibles a la barra d'eines esquerra durant el mode d'edició:
+</p>
+
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-desktop"></i></td>
+    <td><strong>PC</strong></td>
+    <td>
+      Un ordinador personal amb una interfície de xarxa cablada. Pots executar aplicacions (per exemple, un navegador web o una eina ping) i configurar la seva adreça IP.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-laptop"></i></td>
+    <td><strong>Laptop</strong></td>
+    <td>
+      Com un PC, però es connecta via Wi-Fi en lloc de cable.
+      Utilitza-la juntament amb un Punt d'Accés o un Encaminador de Casa.
+    </td>
+  </tr>
+  <tr>
+    <td>SW</td>
+    <td><strong>Switch</strong></td>
+    <td>
+      Connecta múltiples dispositius en el mateix segment de xarxa.
+      Reencamina trames basades en adreces MAC.
+      Suporta VLAN i Protocol Spanning Tree (STP).
+    </td>
+  </tr>
+  <tr>
+    <td>RT</td>
+    <td><strong>Encaminador</strong></td>
+    <td>
+      Connecta diferents xarxes i reencamina paquets entre elles.
+      Suporta rutes estàtiques, OSPF, BGP i túnels IP (VPN).
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-house-signal"></i></td>
+    <td><strong>Encaminador de Casa</strong></td>
+    <td>
+      Un encaminador combinat, servidor DHCP, passarel·la NAT i punt d'accés Wi-Fi —
+      similar a un encaminador típic d'internet per a casa.
+      Connecta'l a un Encaminador (com a WAN) i a PCs o Laptops (com a LAN/Wi-Fi).
+      Suporta regles de reencaminament de ports.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-wifi"></i></td>
+    <td><strong>Punt d'Accés</strong></td>
+    <td>
+      Estén una xarxa cablada amb una connexió Wi-Fi.
+      Connecta el seu port cablat a un Switch o Encaminador, després connecta Laptops de forma sense fil.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-shield-halved"></i></td>
+    <td><strong>Firewall</strong></td>
+    <td>
+      Filtra el tràfic entre segments de xarxa basant-se en regles configurables.
+      El panell mostra el conjunt de regles i un registre en directe dels paquets coincidents.
+    </td>
+  </tr>
+</table>
+
+<hr>
+
+<h3 id="panels">Panells de dispositius</h3>
+<p>
+  Fes clic en qualsevol dispositiu del tauler per obrir el seu <strong>panell</strong> — una finestra de configuració
+  que apareix al costat dret de la pantalla.
+  Fes clic en el dispositiu altre cop (o al botó <strong>×</strong> de la capçalera del panell) per tancar-lo.
+</p>
+
+<h4>Canviar el nom d'un dispositiu</h4>
+<p>
+  Fes clic al botó <i class="fas fa-pen"></i> al costat del nom del dispositiu a la capçalera del panell
+  per donar-li un nom personalitzat (p. ex. "Office-PC" o "Core-Router").
+</p>
+
+<h4>Pestanyes de Router</h4>
+<p>
+  Un panell de Router té les pestanyes següents:
+</p>
+<ul>
+  <li><strong>Interfaces</strong> — configura les adreces IP en cada port</li>
+  <li><strong>Taula d'encaminament IPv4</strong> — visualitza i edita rutes IPv4 (estàtiques i apressas)</li>
+  <li><strong>Taula d'encaminament IPv6</strong> — visualitza i edita rutes IPv6</li>
+  <li><strong>OSPF</strong> — configura i supervisa l'encaminament dinàmic OSPF</li>
+  <li><strong>BGP</strong> — configura veïns BGP i visualitza la taula BGP</li>
+  <li><strong>VPN</strong> — estableix túnels IP entre routers</li>
+</ul>
+
+<h4>Pestanyes de Switch</h4>
+<p>
+  Un panell de Switch té pestanyes per a la seva <strong>Taula d'adreces del Switch (SAT)</strong>, configuració de <strong>VLAN</strong>
+  i configuració de <strong>Spanning Tree Protocol (STP)</strong>.
+</p>
+
+<h4>Pestanyes de Router domèstic</h4>
+<p>
+  Un panell de Router domèstic té les pestanyes següents:
+</p>
+<ul>
+  <li><strong>Estat</strong> — resum de l'estat actual de WAN/LAN i clients connectats</li>
+  <li><strong>WAN</strong> — configura l'enllaç ascendent (IP estàtica o DHCP)</li>
+  <li><strong>LAN</strong> — configura la subxarxa LAN i l'adreça IP</li>
+  <li><strong>DHCP</strong> — visualitza els arrendaments actius i configura el pool DHCP</li>
+  <li><strong>WiFi</strong> — configura el punt d'accés integrat (SSID, contrasenya)</li>
+  <li><strong>NAT</strong> — visualitza la taula de connexions NAT actives</li>
+  <li><strong>Reencaminament de ports</strong> — defineix regles per reencaminar ports entrants a hosts LAN</li>
+</ul>
+
+<h4>Pestanyes de Firewall</h4>
+<p>
+  Un panell de Firewall té una pestanya de <strong>Regles</strong> per gestionar les regles de filtre i una
+  pestanya de <strong>Registre</strong> que mostra quins paquets s'han permès o descartat.
+</p>
+
+<h4>PC i Ordinador portàtil</h4>
+<p>
+  Els PCs i Ordinadors portàtils tenen un sistema operatiu completament simulat dins del seu panell.
+  Pots obrir aplicacions des de l'escriptori, configurar la xarxa i executar ordres.
+</p>
+
+<hr>
+
+<h3 id="run">Mode d'Execució — Executar la Simulació</h3>
+<p>
+  Canvia a <i class="fas fa-play"></i> <strong>Execució</strong> per iniciar la simulació.
+  La xarxa es fa en directe: els dispositius intercanvien paquets, s'assignen arrendaments DHCP,
+  es fan actualitzacions de les taules de ruta, i així successivament.
+</p>
+
+<h4>Controls de Velocitat</h4>
+<p>
+  Utilitza els botons de velocitat de la barra d'eines superior per controlar la rapidesa amb què s'executa la simulació:
+</p>
+<table class="help-table">
+  <tr><td><strong>0.5×</strong></td><td>Lent — bé per observar passos individuals</td></tr>
+  <tr><td><strong>1×</strong></td><td>Velocitat normal</td></tr>
+  <tr><td><strong>4×</strong></td><td>Ràpid</td></tr>
+  <tr><td><strong>8×</strong></td><td>Molt ràpid</td></tr>
+</table>
+
+<h4>Pausa i Reinici</h4>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-pause"></i></td>
+    <td><strong>Pausa</strong></td>
+    <td>Congela la simulació en el seu estat actual.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-arrow-rotate-left"></i></td>
+    <td><strong>Reinici</strong></td>
+    <td>Reinicia la simulació des del principi (tot l'estat dinàmic s'esborrada).</td>
+  </tr>
+</table>
+
+<p>
+  <strong>Nota:</strong> No pots editar la topologia de la xarxa mentre estàs en mode d'Execució.
+  Canvia primer al mode <i class="fas fa-pencil"></i> Edició.
+</p>
+
+<hr>
+
+<h3 id="trace">Mode Traça — Anàlisi de Paquets</h3>
+<p>
+  Canvia a mode <i class="fas fa-magnifying-glass"></i> <strong>Traça</strong> per obrir l'analisador de paquets integrat — similar a Wireshark.
+</p>
+<p>
+  A la part superior, selecciona el <strong>dispositiu</strong> i el <strong>port</strong> del qual vols capturar. Tots els paquets que passen per aquest port es graven i es mostren en una llista.
+</p>
+<p>
+  Fes clic en qualsevol paquet de la llista per veure els seus detalls complets: les capes de protocol, els camps de capçalera i la càrrega — exactament com ho mostraria una eina professional de xarxa.
+</p>
+<p>
+  La captura s'executa automàticament mentre la simulació està en execució. Pots canviar entre el mode Traça i el mode Execució en qualsevol moment sense perdre les dades capturades.
+</p>
+
+<hr>
+
+<h3 id="project">Guardar i Carregar</h3>
+<p>
+  El teu disseny de xarxa es pot guardar com a fitxer i carregar més tard.
+  Utilitza els botons de la barra d'eines superior (visibles en mode Edició):
+</p>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-file"></i></td>
+    <td><strong>Nou</strong></td>
+    <td>Comença amb un llenç en blanc. Es perderan tots els canvis no guardats.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-file-arrow-up"></i></td>
+    <td><strong>Carregar</strong></td>
+    <td>Obri un fitxer de simulació guardat anteriorment.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-file-arrow-down"></i></td>
+    <td><strong>Guardar</strong></td>
+    <td>Descarrega la simulació actual com a fitxer al teu ordinador.</td>
+  </tr>
+</table>
+
+<hr>
+
+<p class="footer">
+  Tens problemes? Comprova que la teva xarxa està correctament connectada i que tots els dispositius tenen adreces IP vàlides configurades.
+</p>

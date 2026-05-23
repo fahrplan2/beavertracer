@@ -1164,6 +1164,6 @@ export default {
   "homerouter.pf.col.wanport": "منفذ WAN",
   "homerouter.pf.col.lanip": "عنوان IP للشبكة المحلية",
   "homerouter.pf.col.lanport": "منفذ الشبكة المحلية",
-  "homerouter.pf.empty": "لم يتم تكوين أي قواعد.",
-  "homerouter.pf.invalid": "قاعدة إعادة توجيه المنافذ غير صحيحة."
+  "homerouter.pf.empty": "لا توجد قواعد مكونة.",
+  "homerouter.pf.invalid": "قاعدة إعادة توجيه المنفذ غير صحيحة."
 };

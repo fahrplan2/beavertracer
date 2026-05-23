@@ -9,7 +9,7 @@
     <li><a href="#modes">De drie modi</a></li>
     <li><a href="#edit">Bewerkingsmodus — Een netwerk bouwen</a></li>
     <li><a href="#devices">Apparaten</a></li>
-    <li><a href="#panels">Apparaatvensters</a></li>
+    <li><a href="#panels">Apparaatpanelen</a></li>
     <li><a href="#run">Uitvoeringsmodus — De simulatie uitvoeren</a></li>
     <li><a href="#trace">Tracemodus — Pakketten analyseren</a></li>
     <li><a href="#project">Opslaan en laden</a></li>
@@ -20,22 +20,22 @@
 
 <h3 id="modes">De drie modi</h3>
 <p>
-  Beaver Tracer heeft drie modi. Je schakelt ertussen door op de knoppen in de bovenste werkbalk te klikken.
+  Beaver Tracer heeft drie modi. Je schakelt tussen hen met behulp van de knoppen in de bovenste werkbalk.
 </p>
 <table class="help-table">
   <tr>
     <td><i class="fas fa-pencil"></i></td>
-    <td><strong>Bewerking</strong></td>
+    <td><strong>Bewerken</strong></td>
     <td>Ontwerp je netwerk — plaats apparaten, verbind ze, configureer ze.</td>
   </tr>
   <tr>
     <td><i class="fas fa-play"></i></td>
-    <td><strong>Uitvoering</strong></td>
-    <td>Start de simulatie en bekijk het verkeer door je netwerk stromen.</td>
+    <td><strong>Uitvoeren</strong></td>
+    <td>Start de simulatie en bekijk verkeer door je netwerk stromen.</td>
   </tr>
   <tr>
     <td><i class="fas fa-magnifying-glass"></i></td>
-    <td><strong>Trace</strong></td>
+    <td><strong>Traceren</strong></td>
     <td>Vang en inspecteer de pakketten die door je netwerk reizen.</td>
   </tr>
 </table>
@@ -44,8 +44,8 @@
 
 <h3 id="edit">Bewerkingsmodus — Een netwerk bouwen</h3>
 <p>
-  In de bewerkingsmodus verschijnt een werkbalk aan de linkerkant van het scherm.
-  Selecteer een gereedschap door erop te klikken en gebruik het op het canvas.
+  In de bewerkingsmodus verschijnt er een werkbalk aan de linkerkant van het scherm.
+  Selecteer een gereedschap door erop te klikken en gebruik het vervolgens op het canvas.
 </p>
 
 <h4>Gereedschappen</h4>
@@ -53,11 +53,11 @@
   <tr>
     <td><i class="fas fa-arrow-pointer"></i></td>
     <td><strong>Selecteren</strong></td>
-    <td>Klik op een apparaat om het venster ervan te openen. Sleep een apparaat om het te verplaatsen.</td>
+    <td>Klik op een apparaat om het paneel ervan te openen. Sleep een apparaat om het te verplaatsen.</td>
   </tr>
   <tr>
     <td><i class="fas fa-link"></i></td>
-    <td><strong>Koppeling</strong></td>
+    <td><strong>Verbinding</strong></td>
     <td>Verbind twee apparaten met een kabel (zie hieronder).</td>
   </tr>
   <tr>
@@ -85,29 +85,29 @@
 <h4>Een apparaat plaatsen</h4>
 <ol>
   <li>Klik op een apparaatknop in de linkerwerkbalk (bijv. <i class="fas fa-desktop"></i> PC).</li>
-  <li>Een voorvertoning volgt je muiscursor.</li>
+  <li>Een voorbeeld volgt je muiscursor.</li>
   <li>Klik op het canvas om het apparaat te plaatsen.</li>
 </ol>
 
 <h4>Twee apparaten verbinden</h4>
 <ol>
-  <li>Klik op het <i class="fas fa-link"></i> <strong>Koppeling</strong>-gereedschap.</li>
+  <li>Klik op het <i class="fas fa-link"></i> <strong>Verbinding</strong> gereedschap.</li>
   <li>Klik op het eerste apparaat — een poortkiezer verschijnt. Selecteer een poort.</li>
-  <li>Beweeg je muis naar het tweede apparaat en klik erop — selecteer ook daar een poort.</li>
+  <li>Beweeg je muis naar het tweede apparaat en klik erop — selecteer daar ook een poort.</li>
   <li>De kabel wordt automatisch aangemaakt.</li>
 </ol>
 <p>
-  Poorten die al in gebruik zijn, worden grijs weergegeven en kunnen niet worden geselecteerd.
+  Poorten die al in gebruik zijn, worden als uitgeschakeld weergegeven en kunnen niet worden geselecteerd.
 </p>
 
 <h4>Een apparaat verplaatsen</h4>
 <p>
-  In <i class="fas fa-arrow-pointer"></i> Selecteren-modus kun je elk apparaat klikken en slepen om het op het canvas opnieuw in te stellen.
+  In <i class="fas fa-arrow-pointer"></i> Selecteren modus, klik en sleep elk apparaat om het op het canvas te herpositioneren.
 </p>
 
 <h4>Een apparaat of kabel verwijderen</h4>
 <ol>
-  <li>Klik op het <i class="fas fa-ban"></i> <strong>Verwijderen</strong>-gereedschap.</li>
+  <li>Klik op het <i class="fas fa-ban"></i> <strong>Verwijderen</strong> gereedschap.</li>
   <li>Klik op het apparaat of de kabel die je wilt verwijderen.</li>
 </ol>
 <p>
@@ -126,15 +126,15 @@
     <td><i class="fas fa-desktop"></i></td>
     <td><strong>PC</strong></td>
     <td>
-      Een persoonlijke computer met een bedrade netwerkinterface. Je kunt ervan apps uitvoeren
-      (bijv. een webbrowser of een pingtool) en het IP-adres ervan configureren.
+      Een persoonlijke computer met een bedrade netwerkinterface. Je kunt er apps op uitvoeren
+      (bijv. een webbrowser of een ping-tool) en het IP-adres configureren.
     </td>
   </tr>
   <tr>
     <td><i class="fas fa-laptop"></i></td>
     <td><strong>Laptop</strong></td>
     <td>
-      Net als een PC, maar verbindt via Wi-Fi in plaats van een kabel.
+      Net als een PC, maar maakt verbinding via Wi-Fi in plaats van een kabel.
       Gebruik het samen met een Access Point of Home Router.
     </td>
   </tr>
@@ -144,14 +144,14 @@
     <td>
       Verbindt meerdere apparaten in hetzelfde netwerksegment.
       Stuurt frames door op basis van MAC-adressen.
-      Ondersteunt VLAN's en Spanning Tree Protocol (STP).
+      Ondersteunt VLANs en Spanning Tree Protocol (STP).
     </td>
   </tr>
   <tr>
     <td>RT</td>
     <td><strong>Router</strong></td>
     <td>
-      Verbindt verschillende netwerken en stuurt pakketten ertussenin.
+      Verbindt verschillende netwerken en stuurt pakketten ertussen door.
       Ondersteunt statische routes, OSPF, BGP en IP-tunnels (VPN).
     </td>
   </tr>
@@ -160,9 +160,9 @@
     <td><strong>Home Router</strong></td>
     <td>
       Een gecombineerde router, DHCP-server, NAT-gateway en Wi-Fi-toegangspunt —
-      vergelijkbaar met een typische thuisinternet-router.
+      vergelijkbaar met een typische huisinternet-router.
       Verbind het met een Router (als WAN) en met PC's of Laptops (als LAN/Wi-Fi).
-      Ondersteunt port-doorstuurregels.
+      Ondersteunt poortwaarschuwingsregels.
     </td>
   </tr>
   <tr>
@@ -170,7 +170,7 @@
     <td><strong>Access Point</strong></td>
     <td>
       Breidt een bedraad netwerk uit met een Wi-Fi-verbinding.
-      Verbind de bedrade poort ervan met een Switch of Router, en verbind Laptops er draadloos mee.
+      Verbind de bedrade poort met een Switch of Router en verbind Laptops er draadloos mee.
     </td>
   </tr>
   <tr>
@@ -178,76 +178,76 @@
     <td><strong>Firewall</strong></td>
     <td>
       Filtert verkeer tussen netwerksegmenten op basis van configureerbare regels.
-      Het venster toont de regelset en een live logboek van overeenkomende pakketten.
+      Het paneel toont de regelset en een live-logboek van overeenkomende pakketten.
     </td>
   </tr>
 </table>
 
 <hr>
 
-<h3 id="panels">Apparaatvensters</h3>
+<h3 id="panels">Apparaatpanelen</h3>
 <p>
-  Klik op een apparaat op het canvas om het <strong>venster</strong> ervan te openen — een configuratievenster
+  Klik op een apparaat op het canvas om het bijbehorende <strong>paneel</strong> te openen — een configuratievenster
   dat aan de rechterkant van het scherm verschijnt.
-  Klik opnieuw op het apparaat (of op de <strong>×</strong>-knop in de vensteropmaak) om het te sluiten.
+  Klik opnieuw op het apparaat (of op de <strong>×</strong>-knop in de paneelkoptekst) om het te sluiten.
 </p>
 
 <h4>Een apparaat hernoemen</h4>
 <p>
-  Klik op de <i class="fas fa-pen"></i>-knop naast de apparaatnaam in de vensterkop
+  Klik op de <i class="fas fa-pen"></i>-knop naast de apparaatnaam in de paneelkoptekst
   om het een aangepaste naam te geven (bijv. "Office-PC" of "Core-Router").
 </p>
 
-<h4>Router-tabbladen</h4>
+<h4>Routertabbladen</h4>
 <p>
-  Een routervenster heeft de volgende tabbladen:
+  Een Routerpaneel heeft de volgende tabbladen:
 </p>
 <ul>
   <li><strong>Interfaces</strong> — configureer IP-adressen op elke poort</li>
   <li><strong>Routeringstabel IPv4</strong> — bekijk en bewerk IPv4-routes (statisch en geleerd)</li>
   <li><strong>Routeringstabel IPv6</strong> — bekijk en bewerk IPv6-routes</li>
-  <li><strong>OSPF</strong> — configureer en controleer dynamische OSPF-routering</li>
+  <li><strong>OSPF</strong> — configureer en controleer OSPF dynamische routering</li>
   <li><strong>BGP</strong> — configureer BGP-buren en bekijk de BGP-tabel</li>
   <li><strong>VPN</strong> — stel IP-tunnels tussen routers in</li>
 </ul>
 
-<h4>Switch-tabbladen</h4>
+<h4>Switchtabbladen</h4>
 <p>
-  Een switchvenster heeft tabbladen voor de <strong>Switch Address Table (SAT)</strong>, <strong>VLAN</strong>-
+  Een Switchpaneel heeft tabbladen voor de <strong>Switch Address Table (SAT)</strong>, <strong>VLAN</strong>-
   configuratie en <strong>Spanning Tree Protocol (STP)</strong>-instellingen.
 </p>
 
 <h4>Home Router-tabbladen</h4>
 <p>
-  Een home routervenster heeft de volgende tabbladen:
+  Een Home Router-paneel heeft de volgende tabbladen:
 </p>
 <ul>
-  <li><strong>Status</strong> — overzicht van huidige WAN/LAN-staat en verbonden clients</li>
+  <li><strong>Status</strong> — overzicht van huidige WAN/LAN-status en verbonden clients</li>
   <li><strong>WAN</strong> — configureer de uplink (statisch IP of DHCP)</li>
   <li><strong>LAN</strong> — configureer het LAN-subnet en IP-adres</li>
   <li><strong>DHCP</strong> — bekijk actieve leases en configureer de DHCP-pool</li>
   <li><strong>WiFi</strong> — configureer het ingebouwde toegangspunt (SSID, wachtwoord)</li>
   <li><strong>NAT</strong> — bekijk de actieve NAT-verbindingstabel</li>
-  <li><strong>Port Forwarding</strong> — definieer regels om binnenkomende poorten naar LAN-hosts door te sturen</li>
+  <li><strong>Poortweitergave</strong> — definieer regels om inkomende poorten naar LAN-hosts door te sturen</li>
 </ul>
 
 <h4>Firewall-tabbladen</h4>
 <p>
-  Een firewall-venster heeft een <strong>Regels</strong>-tabblad om filterregels te beheren en een
-  <strong>Logboek</strong>-tabblad dat toont welke pakketten zijn toegestaan of verwijderd.
+  Een Firewall-paneel heeft een <strong>Regels</strong>-tabblad om filterbegels te beheren en een
+  <strong>Logboek</strong>-tabblad waarin wordt weergegeven welke pakketten zijn toegestaan of geweigerd.
 </p>
 
-<h4>PC en Laptop</h4>
+<h4>PC en laptop</h4>
 <p>
-  PC's en Laptops hebben een volledig gesimuleerd besturingssysteem in hun venster.
-  Je kunt apps vanaf het bureaublad openen, netwerkinstellingen configureren en commando's uitvoeren.
+  PC's en laptops hebben een volledig gesimuleerd besturingssysteem in hun paneel.
+  Je kunt apps vanaf het bureaublad openen, netwerkinstellen configureren en commando's uitvoeren.
 </p>
 
 <hr>
 
-<h3 id="run">Uitvoeringsmodus — De simulatie uitvoeren</h3>
+<h3 id="run">Runmodus — De simulatie uitvoeren</h3>
 <p>
-  Schakel naar <i class="fas fa-play"></i> <strong>Uitvoerings</strong>modus om de simulatie te starten.
+  Schakel over naar <i class="fas fa-play"></i> <strong>Run</strong>-modus om de simulatie te starten.
   Het netwerk wordt live: apparaten wisselen pakketten uit, DHCP-leases worden toegewezen,
   routeringstabellen worden bijgewerkt, enzovoort.
 </p>
@@ -257,46 +257,78 @@
   Gebruik de snelheidsknoppen in de bovenste werkbalk om te bepalen hoe snel de simulatie wordt uitgevoerd:
 </p>
 <table class="help-table">
-  <tr><td><strong>0,5×</strong></td><td>Langzaam — goed voor het observeren van afzonderlijke stappen</td></tr>
+  <tr><td><strong>0.5×</strong></td><td>Langzaam — goed voor het observeren van afzonderlijke stappen</td></tr>
   <tr><td><strong>1×</strong></td><td>Normale snelheid</td></tr>
   <tr><td><strong>4×</strong></td><td>Snel</td></tr>
   <tr><td><strong>8×</strong></td><td>Zeer snel</td></tr>
 </table>
 
-<h4>Pauze en Opnieuw instellen</h4>
+<h4>Pauzeren en opnieuw instellen</h4>
 <table class="help-table">
   <tr>
     <td><i class="fas fa-pause"></i></td>
-    <td><strong>Pauze</strong></td>
-    <td>Bevries de simulatie in zijn huidige staat.</td>
+    <td><strong>Pauzeren</strong></td>
+    <td>Bevries de simulatie in de huidige staat.</td>
   </tr>
   <tr>
     <td><i class="fas fa-arrow-rotate-left"></i></td>
     <td><strong>Opnieuw instellen</strong></td>
-    <td>Start de simulatie opnieuw (alle dynamische staat wordt gewist).</td>
+    <td>Start de simulatie opnieuw vanaf het begin (alle dynamische status wordt gewist).</td>
   </tr>
 </table>
 
 <p>
-  <strong>Opmerking:</strong> Je kunt de netwerktopologie niet bewerken terwijl je in de uitvoeringsmodus bent.
+  <strong>Opmerking:</strong> Je kunt de netwerktopologie niet bewerken terwijl je in Runmodus bent.
   Schakel eerst terug naar <i class="fas fa-pencil"></i> Bewerkingsmodus.
 </p>
 
 <hr>
 
-<h3 id="trace">Tracemodus — Pakketten analyseren</h3>
+<h3 id="trace">Trace Mode — Pakketten analyseren</h3>
 <p>
-  Schakel naar <i class="fas fa-magnifying-glass"></i> <strong>Trace</strong>modus om de
-  ingebouwde paketanalisator te openen — vergelijkbaar met Wireshark.
+  Schakel over naar <i class="fas fa-magnifying-glass"></i> <strong>Trace</strong> modus om de
+  ingebouwde pakketanalyzer te openen — vergelijkbaar met Wireshark.
 </p>
 <p>
   Selecteer bovenaan het <strong>apparaat</strong> en de <strong>poort</strong> waarvan je wilt vastleggen.
-  Alle pakketten die door die poort gaan, worden opgenomen en weergegeven in een lijst.
+  Alle pakketten die door die poort gaan, worden opgenomen en in een lijst weergegeven.
 </p>
 <p>
-  Klik op een pakket in de lijst om de volledige details te zien:
-  de protocollagen, headervelden en payload — precies zoals een professioneel netwerkhulpmiddel dit zou tonen.
+  Klik op een pakket in de lijst om de volledige details ervan te zien:
+  de protocollagen, headervelden en payload — precies zoals een professioneel netwerkhulpmiddel dat zou tonen.
 </p>
 <p>
-  De opname wordt automatisch uitgevoerd terwijl de simulatie wordt uitgevoerd.
-  Je kunt op elk moment
+  De opname wordt automatisch uitgevoerd terwijl de simulatie actief is.
+  Je kunt op elk moment tussen Trace modus en Run modus schakelen zonder de vastgelegde gegevens kwijt te raken.
+</p>
+
+<hr>
+
+<h3 id="project">Opslaan en Laden</h3>
+<p>
+  Je netwerkontwerp kan als bestand worden opgeslagen en later opnieuw worden geladen.
+  Gebruik de knoppen in de bovenste werkbalk (zichtbaar in de bewerkingsmodus):
+</p>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-file"></i></td>
+    <td><strong>Nieuw</strong></td>
+    <td>Begin met een leeg canvas. Eventuele niet-opgeslagen wijzigingen gaan verloren.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-file-arrow-up"></i></td>
+    <td><strong>Laden</strong></td>
+    <td>Open een eerder opgeslagen simulatiebestand.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-file-arrow-down"></i></td>
+    <td><strong>Opslaan</strong></td>
+    <td>Download de huidige simulatie als bestand naar je computer.</td>
+  </tr>
+</table>
+
+<hr>
+
+<p class="footer">
+  Heb je problemen? Controleer dat je netwerk correct is verbonden en dat alle apparaten geldige IP-adressen hebben geconfigureerd.
+</p>

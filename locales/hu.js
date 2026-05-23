@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇭🇺 Magyar (translated by AI)", order: 16 };
+export const meta = { name: "🇭🇺 Magyar (translated by AI)", order: 17 };
 
 export default {
   "app.generic.title": "Gernic alkalmazás",
@@ -797,8 +797,8 @@ export default {
   "homerouter.pf.col.wanport": "WAN Port",
   "homerouter.pf.col.lanip": "LAN IP",
   "homerouter.pf.col.lanport": "LAN Port",
-  "homerouter.pf.empty": "No rules configured.",
-  "homerouter.pf.invalid": "Invalid port forward rule.",
+  "homerouter.pf.empty": "Nincsenek konfigurált szabályok.",
+  "homerouter.pf.invalid": "Érvénytelen port továbbítási szabály.",
   "homerouter.wan.mode": "Mód",
   "homerouter.wan.mode.static": "Statikus",
   "homerouter.wan.mode.dhcp": "DHCP",

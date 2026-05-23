@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇰🇷 한국어 (translated by AI)", order: 32 };
+export const meta = { name: "🇰🇷 한국어 (translated by AI)", order: 37 };
 
 export default {
   "lang.name": "🇰🇷 한국어",
@@ -681,8 +681,8 @@ export default {
   "homerouter.pf.col.wanport": "WAN Port",
   "homerouter.pf.col.lanip": "LAN IP",
   "homerouter.pf.col.lanport": "LAN Port",
-  "homerouter.pf.empty": "No rules configured.",
-  "homerouter.pf.invalid": "Invalid port forward rule.",
+  "homerouter.pf.empty": "구성된 규칙이 없습니다.",
+  "homerouter.pf.invalid": "잘못된 포트 포워딩 규칙입니다.",
   "homerouter.wan.mode": "모드",
   "homerouter.wan.mode.static": "정적",
   "homerouter.wan.mode.dhcp": "DHCP",

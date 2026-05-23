@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇮🇩 Bahasa Indonesia (translated by AI)", order: 3 };
+export const meta = { name: "🇮🇩 Bahasa Indonesia (translated by AI)", order: 1 };
 
 export default {
   "lang.name": "🇮🇩 Bahasa Indonesia",
@@ -681,8 +681,8 @@ export default {
   "homerouter.pf.col.wanport": "WAN Port",
   "homerouter.pf.col.lanip": "LAN IP",
   "homerouter.pf.col.lanport": "LAN Port",
-  "homerouter.pf.empty": "No rules configured.",
-  "homerouter.pf.invalid": "Invalid port forward rule.",
+  "homerouter.pf.empty": "Tidak ada aturan yang dikonfigurasi.",
+  "homerouter.pf.invalid": "Aturan penerusan port tidak valid.",
   "homerouter.wan.mode": "Mode",
   "homerouter.wan.mode.static": "Statis",
   "homerouter.wan.mode.dhcp": "DHCP",

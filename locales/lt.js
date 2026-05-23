@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇱🇹 Lietuvių (translated by AI)", order: 15 };
+export const meta = { name: "🇱🇹 Lietuvių (translated by AI)", order: 16 };
 
 export default {
   "lang.name": "🇱🇹 Lietuvių",
@@ -681,8 +681,8 @@ export default {
   "homerouter.pf.col.wanport": "WAN Port",
   "homerouter.pf.col.lanip": "LAN IP",
   "homerouter.pf.col.lanport": "LAN Port",
-  "homerouter.pf.empty": "No rules configured.",
-  "homerouter.pf.invalid": "Invalid port forward rule.",
+  "homerouter.pf.empty": "Nėra sukonfigūruotų taisyklių.",
+  "homerouter.pf.invalid": "Nevalidali prievado peradresavimo taisyklė.",
   "homerouter.wan.mode": "Režimas",
   "homerouter.wan.mode.static": "Statinis",
   "homerouter.wan.mode.dhcp": "DHCP",

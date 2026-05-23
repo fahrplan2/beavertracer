@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇳🇱 Nederlands (translated by AI)", order: 17 };
+export const meta = { name: "🇳🇱 Nederlands (translated by AI)", order: 18 };
 
 export default {
   "lang.name": "🇳🇱 Nederlands",
@@ -681,8 +681,8 @@ export default {
   "homerouter.pf.col.wanport": "WAN Port",
   "homerouter.pf.col.lanip": "LAN IP",
   "homerouter.pf.col.lanport": "LAN Port",
-  "homerouter.pf.empty": "No rules configured.",
-  "homerouter.pf.invalid": "Invalid port forward rule.",
+  "homerouter.pf.empty": "Geen regels geconfigureerd.",
+  "homerouter.pf.invalid": "Ongeldige poortwijd-regel.",
   "homerouter.wan.mode": "Modus",
   "homerouter.wan.mode.static": "Statisch",
   "homerouter.wan.mode.dhcp": "DHCP",

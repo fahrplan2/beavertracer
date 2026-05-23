@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇧🇦 Bosanski (translated by AI)", order: 4 };
+export const meta = { name: "🇧🇦 Bosanski (translated by AI)", order: 3 };
 
 export default {
   "lang.name": "🇧🇦 Bosanski",
@@ -681,8 +681,8 @@ export default {
   "homerouter.pf.col.wanport": "WAN Port",
   "homerouter.pf.col.lanip": "LAN IP",
   "homerouter.pf.col.lanport": "LAN Port",
-  "homerouter.pf.empty": "No rules configured.",
-  "homerouter.pf.invalid": "Invalid port forward rule.",
+  "homerouter.pf.empty": "Nema konfiguriranih pravila.",
+  "homerouter.pf.invalid": "Nevaljano pravilo preusmjeravanja porta.",
   "homerouter.wan.mode": "Režim",
   "homerouter.wan.mode.static": "Statički",
   "homerouter.wan.mode.dhcp": "DHCP",
