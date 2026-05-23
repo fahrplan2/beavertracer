@@ -1304,11 +1304,11 @@ export default {
   "app.bitcoin.log.txrcv":            "[{time}] TX {id}: {amount} BTC  {from} -> {to}",
 
   "welcome.subtitle":   "Browser-based Network Simulator",
-  "welcome.new":        "New Document",
+  "welcome.new":        "New Simulation",
   "welcome.new.desc":   "Start with an empty canvas",
-  "welcome.open":       "Open File",
+  "welcome.open":       "Open Simulation",
   "welcome.open.desc":  "Load a .btsim file from disk",
-  "welcome.example":    "Load Example",
+  "welcome.example":    "Browse Examples",
   "welcome.example.desc": "Explore a ready-made network",
   "welcome.news":       "What's New",
 

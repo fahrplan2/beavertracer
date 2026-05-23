@@ -1149,11 +1149,11 @@ export default {
   "router.ospf.tab.log": "Protokoll",
 
   "welcome.subtitle":   "Browser-basierter Netzwerksimulator",
-  "welcome.new":        "Neues Dokument",
+  "welcome.new":        "Neue Simulation",
   "welcome.new.desc":   "Mit leerem Arbeitsbereich starten",
-  "welcome.open":       "Datei öffnen",
+  "welcome.open":       "Simulation öffnen",
   "welcome.open.desc":  "Eine .btsim-Datei laden",
-  "welcome.example":    "Beispiel laden",
+  "welcome.example":    "Beispiele ansehen",
   "welcome.example.desc": "Fertige Netzwerktopologie erkunden",
   "welcome.news":       "Neuigkeiten",
 
