@@ -1165,5 +1165,7 @@ export default {
   "homerouter.pf.col.lanip": "عنوان IP للشبكة المحلية",
   "homerouter.pf.col.lanport": "منفذ الشبكة المحلية",
   "homerouter.pf.empty": "لا توجد قواعد مكونة.",
-  "homerouter.pf.invalid": "قاعدة إعادة توجيه المنفذ غير صحيحة."
+  "homerouter.pf.invalid": "قاعدة إعادة توجيه المنفذ غير صحيحة.",
+  "app.terminal.copy": "نسخ",
+  "app.terminal.paste": "لصق"
 };

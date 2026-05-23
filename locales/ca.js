@@ -1164,5 +1164,7 @@ export default {
   "tour.step.trace-packets.title": "Paquets al traçador",
   "tour.step.trace-packets.text": "Podeu veure els paquets enregistrats! Feu clic en una trama per veure tots els detalls.",
   "tour.step.finish.title": "Tour completat!",
-  "tour.step.finish.text": "Heu completat correctament el tour i heu construït, configurat i analitzat la vostra primera xarxa.\n\nQue disfruteu experimentant!"
+  "tour.step.finish.text": "Heu completat correctament el tour i heu construït, configurat i analitzat la vostra primera xarxa.\n\nQue disfruteu experimentant!",
+  "app.terminal.copy": "Copiar",
+  "app.terminal.paste": "Enganxar"
 };

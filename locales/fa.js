@@ -1165,5 +1165,7 @@ export default {
   "homerouter.pf.col.lanip": "آی‌پی LAN",
   "homerouter.pf.col.lanport": "پورت LAN",
   "homerouter.pf.empty": "هیچ قانونی پیکربندی نشده است.",
-  "homerouter.pf.invalid": "قانون انتقال پورت نامعتبر است."
+  "homerouter.pf.invalid": "قانون انتقال پورت نامعتبر است.",
+  "app.terminal.copy": "کپی",
+  "app.terminal.paste": "چسباندن"
 };

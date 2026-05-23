@@ -1165,5 +1165,7 @@ export default {
   "tour.step.trace-packets.title": "Paketid jälgijas",
   "tour.step.trace-packets.text": "Näete salvestatud pakette! Klõpsake kaadril, et vaadata kõiki üksikasju.",
   "tour.step.finish.title": "Ekskursioon lõppenud!",
-  "tour.step.finish.text": "Olete juhendis edukalt lõpetanud ning ehitanud, konfigureerinud ja analüüsinud oma esimest võrku.\n\nTeadaolevate katsetuste lõbu!"
+  "tour.step.finish.text": "Olete juhendis edukalt lõpetanud ning ehitanud, konfigureerinud ja analüüsinud oma esimest võrku.\n\nTeadaolevate katsetuste lõbu!",
+  "app.terminal.copy": "Kopeeri",
+  "app.terminal.paste": "Kleebi"
 };

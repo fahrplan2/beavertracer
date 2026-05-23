@@ -1165,5 +1165,7 @@ export default {
   "tour.step.trace-packets.title": "Pakketten in de Tracer",
   "tour.step.trace-packets.text": "U kunt de opgenomen pakketten zien! Klik op een frame om alle details weer te geven.",
   "tour.step.finish.title": "Tour voltooid!",
-  "tour.step.finish.text": "U heeft de tour met succes voltooid en uw eerste netwerk gebouwd, geconfigureerd en geanalyseerd.\n\nVeel plezier met experimenteren!"
+  "tour.step.finish.text": "U heeft de tour met succes voltooid en uw eerste netwerk gebouwd, geconfigureerd en geanalyseerd.\n\nVeel plezier met experimenteren!",
+  "app.terminal.copy": "Kopiëren",
+  "app.terminal.paste": "Plakken"
 };

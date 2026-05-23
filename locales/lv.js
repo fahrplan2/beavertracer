@@ -1165,5 +1165,7 @@ export default {
   "tour.step.trace-packets.title": "Paketes Tracer",
   "tour.step.trace-packets.text": "Jūs varat redzēt ierakstītās paketes! Noklikšķiniet uz kadra, lai skatītu visas detaļas.",
   "tour.step.finish.title": "Apskate pabeigta!",
-  "tour.step.finish.text": "Jūs veiksmīgi pabeiguši apskati un izveidojuši, konfigurējuši un analizējuši savu pirmo tīklu.\n\nBavējieties eksperimentēšanu!"
+  "tour.step.finish.text": "Jūs veiksmīgi pabeiguši apskati un izveidojuši, konfigurējuši un analizējuši savu pirmo tīklu.\n\nBavējieties eksperimentēšanu!",
+  "app.terminal.copy": "Kopēt",
+  "app.terminal.paste": "Ielīmēt"
 };

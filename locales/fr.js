@@ -1027,6 +1027,7 @@ export default {
   "app.ircclient.help.cmd.nick": "Changer de pseudo",
   "app.ircclient.help.cmd.list": "Lister tous les canaux",
   "app.terminal.commands.nmap.usage": "utilisation: nmap [-p <ports>] [--open] <cible> [<cible>...]",
+
   "app.terminal.commands.nmap.help":
     "nmap — scanner de ports réseau\n" +
     "\n" +
@@ -1052,6 +1053,7 @@ export default {
     "Astuce : utilisez les filtres Wiregasm pour analyser le trafic du scan :\n" +
     "  tcp.flags.syn==1 && tcp.flags.ack==0   afficher les sondes\n" +
     "  tcp.flags.syn==1 && tcp.flags.ack==1   afficher les ports ouverts",
+
   "app.terminal.commands.nmap.err.missingPortSpec": "nmap: -p nécessite une spécification de port",
   "app.terminal.commands.nmap.err.invalidPortSpec": "nmap: spécification de port invalide: {spec}",
   "app.terminal.commands.nmap.err.tooManyPorts": "nmap: la plage de ports dépasse la limite de {max} ports",
@@ -1197,5 +1199,7 @@ export default {
   "tour.step.trace-packets.title": "Paquets dans le Tracer",
   "tour.step.trace-packets.text": "Vous pouvez voir les paquets enregistrés ! Cliquez sur une trame pour afficher tous les détails.",
   "tour.step.finish.title": "Visite guidée terminée !",
-  "tour.step.finish.text": "Vous avez complété avec succès la visite guidée et construit, configuré et analysé votre premier réseau.\n\nAmusez-vous à expérimenter !"
+  "tour.step.finish.text": "Vous avez complété avec succès la visite guidée et construit, configuré et analysé votre premier réseau.\n\nAmusez-vous à expérimenter !",
+  "app.terminal.copy": "Copier",
+  "app.terminal.paste": "Coller"
 };

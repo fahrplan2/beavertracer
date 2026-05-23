@@ -1165,5 +1165,7 @@ export default {
   "tour.step.trace-packets.title": "Paketit Tracerissa",
   "tour.step.trace-packets.text": "Näet tallennetut paketit! Napsauta kehystä nähdäksesi kaikki tiedot.",
   "tour.step.finish.title": "Kierros valmis!",
-  "tour.step.finish.text": "Olet onnistuneesti suorittanut kierroksen ja rakentanut, konfiguroinut sekä analysoinut ensimmäisen verkostosi.\n\nDivertissä kokeilua!"
+  "tour.step.finish.text": "Olet onnistuneesti suorittanut kierroksen ja rakentanut, konfiguroinut sekä analysoinut ensimmäisen verkostosi.\n\nDivertissä kokeilua!",
+  "app.terminal.copy": "Kopioi",
+  "app.terminal.paste": "Liitä"
 };

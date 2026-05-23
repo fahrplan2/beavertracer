@@ -1164,5 +1164,7 @@ export default {
   "tour.step.trace-packets.title": "Paketat në Tracer",
   "tour.step.trace-packets.text": "Mund të shikoni paketat e regjistruara! Klikoni në një kornizë për të parë të gjithë detajet.",
   "tour.step.finish.title": "Turi Përfundoi!",
-  "tour.step.finish.text": "Keni përfunduar me sukses turin dhe keni ndërtuar, konfiguruar dhe analizuar rrjetin tuaj të parë.\n\nDivertohuni me eksperimentim!"
+  "tour.step.finish.text": "Keni përfunduar me sukses turin dhe keni ndërtuar, konfiguruar dhe analizuar rrjetin tuaj të parë.\n\nDivertohuni me eksperimentim!",
+  "app.terminal.copy": "Kopjo",
+  "app.terminal.paste": "Ngjit"
 };

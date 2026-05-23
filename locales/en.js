@@ -542,6 +542,8 @@ export default {
   "app.terminal.err.commandNotFound": "command not found: {cmd}",
   "app.terminal.err.errorPrefix": "error: {msg}",
   "app.terminal.interrupt": "^C",
+  "app.terminal.copy": "Copy",
+  "app.terminal.paste": "Paste",
 
   "app.terminal.commands.cat.err.noFilesystem": "cat: no filesystem",
   "app.terminal.commands.cat.usage": "usage: {cmd} <file>",

@@ -1165,5 +1165,7 @@ export default {
   "tour.step.trace-packets.title": "Paket dalam Tracer",
   "tour.step.trace-packets.text": "Anda dapat melihat paket yang tercatat! Klik pada frame untuk melihat semua detail.",
   "tour.step.finish.title": "Tur Selesai!",
-  "tour.step.finish.text": "Anda telah berhasil menyelesaikan tur dan membangun, mengonfigurasi, serta menganalisis jaringan pertama Anda.\n\nSelamat bereksperimen!"
+  "tour.step.finish.text": "Anda telah berhasil menyelesaikan tur dan membangun, mengonfigurasi, serta menganalisis jaringan pertama Anda.\n\nSelamat bereksperimen!",
+  "app.terminal.copy": "Salin",
+  "app.terminal.paste": "Tempel"
 };

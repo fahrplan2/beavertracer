@@ -1164,5 +1164,7 @@ export default {
   "tour.step.trace-packets.title": "Pakety v Traceri",
   "tour.step.trace-packets.text": "Vidíte zaznamenané pakety! Kliknite na rámec a zobrazte si všetky podrobnosti.",
   "tour.step.finish.title": "Prehliadka Hotová!",
-  "tour.step.finish.text": "Úspešne ste absolvovali prehliadku a vybudovali, nakonfigurovali a analyzovali vašu prvú sieť.\n\nZabavte sa experimentovaním!"
+  "tour.step.finish.text": "Úspešne ste absolvovali prehliadku a vybudovali, nakonfigurovali a analyzovali vašu prvú sieť.\n\nZabavte sa experimentovaním!",
+  "app.terminal.copy": "Kopírovať",
+  "app.terminal.paste": "Vložiť"
 };

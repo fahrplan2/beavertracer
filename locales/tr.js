@@ -1165,5 +1165,7 @@ export default {
   "tour.step.trace-packets.title": "Tracer'daki Paketler",
   "tour.step.trace-packets.text": "Kaydedilen paketleri görebilirsiniz! Tüm ayrıntıları görüntülemek için bir frame'e tıklayın.",
   "tour.step.finish.title": "Tur Tamamlandı!",
-  "tour.step.finish.text": "Tur'u başarıyla tamamladınız ve ilk ağınızı oluşturdunuz, yapılandırdınız ve analiz ettiniz.\n\nDenemelerin keyfini çıkar!"
+  "tour.step.finish.text": "Tur'u başarıyla tamamladınız ve ilk ağınızı oluşturdunuz, yapılandırdınız ve analiz ettiniz.\n\nDenemelerin keyfini çıkar!",
+  "app.terminal.copy": "Kopyala",
+  "app.terminal.paste": "Yapıştır"
 };
