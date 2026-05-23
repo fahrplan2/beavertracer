@@ -20,6 +20,7 @@ export const LSA_TYPE_ROUTER   = 1;
 export const LSA_TYPE_NETWORK  = 2;
 export const LSA_TYPE_SUMMARY  = 3;  // inter-area summary (ABR-originated)
 
+export const LINK_TYPE_P2P     = 1;  // Router-LSA point-to-point link to adjacent router
 export const LINK_TYPE_TRANSIT = 2;  // Router-LSA link to transit network (via DR)
 export const LINK_TYPE_STUB    = 3;  // Router-LSA stub (connected subnet, no neighbors)
 
