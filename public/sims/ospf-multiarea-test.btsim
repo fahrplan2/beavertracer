@@ -1,52 +1,64 @@
 {
   "_info": "This file was created by BeaverTracer, a network simulation tool. Open it with the BeaverTracer app or at https://beavertracer.eu/",
   "version": 4,
-  "tick": 20,
+  "tick": 100,
   "objects": [
     {
       "kind": "TextBox",
       "id": 1,
       "name": "",
-      "x": 39.99998474121094,
-      "y": 424.2500305175781,
+      "x": 338.0003128051758,
+      "y": 276.25030517578125,
       "px": 200,
       "py": 200,
       "panelOpen": false,
-      "text": "OSPF-Test: zwei Szenarien\n\n── Szenario 1 (P2P) ──────────────────────────────────────────\nR1 (10.12.0.1) ── eth0─eth0 ── R2 (10.12.0.2)\n  Stub: 10.1.0.0/24              Stub: 10.2.0.0/24\n\nErwartet: Beide Nachbarn gehen in Full; R1 lernt 10.2.0.0/24, R2 lernt 10.1.0.0/24.\n\n── Szenario 2 (Broadcast / DR-BDR) ──────────────────────────\nR3 (10.0.1.3) ┐\nR4 (10.0.1.4) ├── SW1 (10.0.1.0/24)\nR5 (10.0.1.5) ┘\n  Stubs: 10.3.0/24  10.4.0/24  10.5.0/24\n\nErwartet: Höchste Router-ID (R5 = 10.5.0.1) wird DR, R4 BDR.\nR3–R4 und R3–R5 je Full; R4–R5 Full; R3–R4 und R3–R5 sind 2-Way untereinander\n(DR-Other zu DR/BDR bilden Full, DR-Other zu DR-Other bleiben 2-Way).\nNach Konvergenz kennen alle drei Router alle drei Stub-Netze.",
+      "text": "OSPF Multi-Area Test (RFC 2328 §12)\n\nTopologie:\n  Area 1 (Broadcast): R1 + R2 → SW1 → ABR1\n  Area 0 (Backbone, P2P): ABR1 ── ABR2\n  Area 2 (Broadcast): ABR2 → SW2 ← R3 + R4\n\nABR1 und ABR2 haben je ein Interface in Area 0 und ein Interface in einer Non-Backbone-Area.\n\nErwartetes Verhalten nach Konvergenz:\n  • Area 1: R1/R2/ABR1 bilden Full-Adjacencies (DR-BDR-Wahl)\n  • Area 2: R3/R4/ABR2 bilden Full-Adjacencies (DR-BDR-Wahl)\n  • Backbone: ABR1 ↔ ABR2 Full (P2P, kein DR)\n  • ABR1 annonciert Summary-LSAs aus Area 1 in Area 0 (und umgekehrt)\n  • ABR2 annonciert Summary-LSAs aus Area 2 in Area 0 (und umgekehrt)\n  • R1 lernt 10.2.x.x-Routen via Inter-Area (über ABR1 → ABR2)\n  • R3 lernt 10.1.x.x-Routen via Inter-Area (über ABR2 → ABR1)\n\nStub-Netze (passive):\n  R1: 10.1.1.0/24   R2: 10.1.2.0/24\n  R3: 10.2.3.0/24   R4: 10.2.4.0/24",
       "showTitle": false
     },
     {
       "kind": "TextBox",
       "id": 2,
       "name": "",
-      "x": 28.083343505859375,
-      "y": 22.166671752929688,
+      "x": 101.5,
+      "y": 28.666656494140625,
       "px": 200,
       "py": 200,
       "panelOpen": false,
-      "text": "**Szenario 1 – P2P**",
+      "text": "**Area 1**",
       "showTitle": false
     },
     {
       "kind": "TextBox",
       "id": 3,
       "name": "",
-      "x": 33.58331298828125,
-      "y": 151.08334350585938,
+      "x": 627.8333129882812,
+      "y": 35.08332824707031,
       "px": 200,
       "py": 200,
       "panelOpen": false,
-      "text": "**Szenario 2 – Broadcast / DR-BDR**",
+      "text": "**Area 0 (Backbone)**",
+      "showTitle": false
+    },
+    {
+      "kind": "TextBox",
+      "id": 4,
+      "name": "",
+      "x": 1178.0000610351562,
+      "y": 33.25,
+      "px": 200,
+      "py": 200,
+      "panelOpen": false,
+      "text": "**Area 2**",
       "showTitle": false
     },
     {
       "kind": "Router",
       "id": 10,
       "name": "R1",
-      "x": 24.916627883911133,
-      "y": 66.25003051757812,
-      "px": 140,
-      "py": 260,
+      "x": 71.75,
+      "y": 75.83332824707031,
+      "px": 20,
+      "py": 430,
       "panelOpen": false,
       "net": {
         "name": "R1",
@@ -54,32 +66,25 @@
         "interfaces": [
           {
             "name": "eth0",
-            "ip": "10.12.0.1",
-            "prefixLength": 30,
-            "ip6": null,
-            "prefixLength6": 0,
-            "ip6LL": "fe80::a891:2fff:fe64:4559",
-            "raEnabled": false
-          },
-          {
-            "name": "eth1",
             "ip": "10.1.0.1",
             "prefixLength": 24,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a83d:c2ff:fe8f:811d",
+            "ip6LL": "fe80::a8c8:baff:fed6:c75a",
+            "raEnabled": false
+          },
+          {
+            "name": "eth1",
+            "ip": "10.1.1.1",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a876:b8ff:fe0c:937c",
             "raEnabled": false
           }
         ],
         "tunnels": [],
-        "routes": [
-          {
-            "dst": "10.2.0.0",
-            "prefixLength": 24,
-            "interf": 0,
-            "nexthop": "10.12.0.2"
-          }
-        ]
+        "routes": []
       },
       "rip": {
         "enabled": false,
@@ -101,17 +106,20 @@
           "eth1"
         ],
         "routerIdOverride": null,
-        "interfaceAreas": {}
+        "interfaceAreas": {
+          "eth0": 1,
+          "eth1": 1
+        }
       }
     },
     {
       "kind": "Router",
       "id": 11,
       "name": "R2",
-      "x": 282.2499694824219,
-      "y": 65.33334350585938,
-      "px": 500,
-      "py": 260,
+      "x": 75.41665649414062,
+      "y": 239.83334350585938,
+      "px": 20,
+      "py": 550,
       "panelOpen": false,
       "net": {
         "name": "R2",
@@ -119,32 +127,25 @@
         "interfaces": [
           {
             "name": "eth0",
-            "ip": "10.12.0.2",
-            "prefixLength": 30,
+            "ip": "10.1.0.2",
+            "prefixLength": 24,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a877:23ff:fe96:4f1a",
+            "ip6LL": "fe80::a872:eff:fe90:e4b9",
             "raEnabled": false
           },
           {
             "name": "eth1",
-            "ip": "10.2.0.1",
+            "ip": "10.1.2.1",
             "prefixLength": 24,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a860:13ff:fed4:2f66",
+            "ip6LL": "fe80::a84b:35ff:fe24:383a",
             "raEnabled": false
           }
         ],
         "tunnels": [],
-        "routes": [
-          {
-            "dst": "10.1.0.0",
-            "prefixLength": 24,
-            "interf": 0,
-            "nexthop": "10.12.0.1"
-          }
-        ]
+        "routes": []
       },
       "rip": {
         "enabled": false,
@@ -166,17 +167,20 @@
           "eth1"
         ],
         "routerIdOverride": null,
-        "interfaceAreas": {}
+        "interfaceAreas": {
+          "eth0": 1,
+          "eth1": 1
+        }
       }
     },
     {
       "kind": "Switch",
       "id": 20,
       "name": "SW1",
-      "x": 267.2499694824219,
-      "y": 335.9999694824219,
-      "px": 320,
-      "py": 560,
+      "x": 289.8333435058594,
+      "y": 169.74996948242188,
+      "px": 250,
+      "py": 490,
       "panelOpen": false,
       "vlanEnabled": false,
       "stpEnabled": false,
@@ -243,11 +247,200 @@
     {
       "kind": "Router",
       "id": 30,
+      "name": "ABR1",
+      "x": 488.0833740234375,
+      "y": 169.75,
+      "px": 440,
+      "py": 490,
+      "panelOpen": false,
+      "net": {
+        "name": "ABR1",
+        "forwarding": true,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "10.1.0.10",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a89a:75ff:fe1c:96c0",
+            "raEnabled": false
+          },
+          {
+            "name": "eth1",
+            "ip": "10.0.0.1",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a8f4:eaff:fe42:8599",
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": []
+      },
+      "rip": {
+        "enabled": false,
+        "passive": []
+      },
+      "ripng": {
+        "enabled": false,
+        "passive": []
+      },
+      "bgp": {
+        "enabled": false,
+        "localAS": 0,
+        "routerId": "",
+        "peers": []
+      },
+      "ospf": {
+        "enabled": true,
+        "passive": [],
+        "routerIdOverride": null,
+        "interfaceAreas": {
+          "eth0": 1,
+          "eth1": 0
+        }
+      }
+    },
+    {
+      "kind": "Router",
+      "id": 31,
+      "name": "ABR2",
+      "x": 705.0003662109375,
+      "y": 169.7503204345703,
+      "px": 700,
+      "py": 490,
+      "panelOpen": false,
+      "net": {
+        "name": "ABR2",
+        "forwarding": true,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "10.0.0.2",
+            "prefixLength": 30,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a812:6eff:fe50:49b2",
+            "raEnabled": false
+          },
+          {
+            "name": "eth1",
+            "ip": "10.2.0.10",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a85b:66ff:fe5f:fd48",
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": []
+      },
+      "rip": {
+        "enabled": false,
+        "passive": []
+      },
+      "ripng": {
+        "enabled": false,
+        "passive": []
+      },
+      "bgp": {
+        "enabled": false,
+        "localAS": 0,
+        "routerId": "",
+        "peers": []
+      },
+      "ospf": {
+        "enabled": true,
+        "passive": [],
+        "routerIdOverride": null,
+        "interfaceAreas": {
+          "eth0": 0,
+          "eth1": 2
+        }
+      }
+    },
+    {
+      "kind": "Switch",
+      "id": 40,
+      "name": "SW2",
+      "x": 926.0830078125,
+      "y": 168.83331298828125,
+      "px": 900,
+      "py": 490,
+      "panelOpen": false,
+      "vlanEnabled": false,
+      "stpEnabled": false,
+      "stpBridgePriority": 32768,
+      "vlanPorts": [
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "Router",
+      "id": 50,
       "name": "R3",
-      "x": 17.916671752929688,
-      "y": 194.75,
-      "px": 100,
-      "py": 460,
+      "x": 1139.0833740234375,
+      "y": 66.66665649414062,
+      "px": 1200,
+      "py": 430,
       "panelOpen": false,
       "net": {
         "name": "R3",
@@ -255,38 +448,25 @@
         "interfaces": [
           {
             "name": "eth0",
-            "ip": "10.0.1.3",
+            "ip": "10.2.0.3",
             "prefixLength": 24,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a8d1:5ff:fe2b:c892",
+            "ip6LL": "fe80::a828:bbff:fe36:daa7",
             "raEnabled": false
           },
           {
             "name": "eth1",
-            "ip": "10.3.0.1",
+            "ip": "10.2.3.1",
             "prefixLength": 24,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a88a:10ff:feaf:54d4",
+            "ip6LL": "fe80::a8e0:64ff:fefe:727c",
             "raEnabled": false
           }
         ],
         "tunnels": [],
-        "routes": [
-          {
-            "dst": "10.4.0.0",
-            "prefixLength": 24,
-            "interf": 0,
-            "nexthop": "10.0.1.4"
-          },
-          {
-            "dst": "10.5.0.0",
-            "prefixLength": 24,
-            "interf": 0,
-            "nexthop": "10.0.1.5"
-          }
-        ]
+        "routes": []
       },
       "rip": {
         "enabled": false,
@@ -308,17 +488,20 @@
           "eth1"
         ],
         "routerIdOverride": null,
-        "interfaceAreas": {}
+        "interfaceAreas": {
+          "eth0": 2,
+          "eth1": 2
+        }
       }
     },
     {
       "kind": "Router",
-      "id": 31,
+      "id": 51,
       "name": "R4",
-      "x": 270,
-      "y": 205.75,
-      "px": 320,
-      "py": 460,
+      "x": 1131.75,
+      "y": 240.75,
+      "px": 1200,
+      "py": 550,
       "panelOpen": false,
       "net": {
         "name": "R4",
@@ -326,38 +509,25 @@
         "interfaces": [
           {
             "name": "eth0",
-            "ip": "10.0.1.4",
+            "ip": "10.2.0.4",
             "prefixLength": 24,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a885:a1ff:fee4:bf95",
+            "ip6LL": "fe80::a817:61ff:fe43:eb7",
             "raEnabled": false
           },
           {
             "name": "eth1",
-            "ip": "10.4.0.1",
+            "ip": "10.2.4.1",
             "prefixLength": 24,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a8b2:44ff:fe4b:94cd",
+            "ip6LL": "fe80::a8db:6fff:fe14:c290",
             "raEnabled": false
           }
         ],
         "tunnels": [],
-        "routes": [
-          {
-            "dst": "10.3.0.0",
-            "prefixLength": 24,
-            "interf": 0,
-            "nexthop": "10.0.1.3"
-          },
-          {
-            "dst": "10.5.0.0",
-            "prefixLength": 24,
-            "interf": 0,
-            "nexthop": "10.0.1.5"
-          }
-        ]
+        "routes": []
       },
       "rip": {
         "enabled": false,
@@ -379,109 +549,65 @@
           "eth1"
         ],
         "routerIdOverride": null,
-        "interfaceAreas": {}
-      }
-    },
-    {
-      "kind": "Router",
-      "id": 32,
-      "name": "R5",
-      "x": 504.6666259765625,
-      "y": 206.66668701171875,
-      "px": 540,
-      "py": 460,
-      "panelOpen": false,
-      "net": {
-        "name": "R5",
-        "forwarding": true,
-        "interfaces": [
-          {
-            "name": "eth0",
-            "ip": "10.0.1.5",
-            "prefixLength": 24,
-            "ip6": null,
-            "prefixLength6": 0,
-            "ip6LL": "fe80::a8af:6eff:fecc:f3a7",
-            "raEnabled": false
-          },
-          {
-            "name": "eth1",
-            "ip": "10.5.0.1",
-            "prefixLength": 24,
-            "ip6": null,
-            "prefixLength6": 0,
-            "ip6LL": "fe80::a824:33ff:febe:4c9d",
-            "raEnabled": false
-          }
-        ],
-        "tunnels": [],
-        "routes": [
-          {
-            "dst": "10.3.0.0",
-            "prefixLength": 24,
-            "interf": 0,
-            "nexthop": "10.0.1.3"
-          },
-          {
-            "dst": "10.4.0.0",
-            "prefixLength": 24,
-            "interf": 0,
-            "nexthop": "10.0.1.4"
-          }
-        ]
-      },
-      "rip": {
-        "enabled": false,
-        "passive": []
-      },
-      "ripng": {
-        "enabled": false,
-        "passive": []
-      },
-      "bgp": {
-        "enabled": false,
-        "localAS": 0,
-        "routerId": "",
-        "peers": []
-      },
-      "ospf": {
-        "enabled": true,
-        "passive": [
-          "eth1"
-        ],
-        "routerIdOverride": null,
-        "interfaceAreas": {}
+        "interfaceAreas": {
+          "eth0": 2,
+          "eth1": 2
+        }
       }
     },
     {
       "kind": "Link",
-      "id": 12,
+      "id": 60,
       "a": 10,
-      "b": 11,
-      "portA": "eth0",
-      "portB": "eth0"
-    },
-    {
-      "kind": "Link",
-      "id": 33,
-      "a": 30,
       "b": 20,
       "portA": "eth0",
       "portB": "sw0"
     },
     {
       "kind": "Link",
-      "id": 34,
-      "a": 31,
+      "id": 61,
+      "a": 11,
       "b": 20,
       "portA": "eth0",
       "portB": "sw1"
     },
     {
       "kind": "Link",
-      "id": 35,
-      "a": 32,
+      "id": 62,
+      "a": 30,
       "b": 20,
+      "portA": "eth0",
+      "portB": "sw2"
+    },
+    {
+      "kind": "Link",
+      "id": 63,
+      "a": 30,
+      "b": 31,
+      "portA": "eth1",
+      "portB": "eth0"
+    },
+    {
+      "kind": "Link",
+      "id": 64,
+      "a": 31,
+      "b": 40,
+      "portA": "eth1",
+      "portB": "sw0"
+    },
+    {
+      "kind": "Link",
+      "id": 65,
+      "a": 50,
+      "b": 40,
+      "portA": "eth0",
+      "portB": "sw1"
+    },
+    {
+      "kind": "Link",
+      "id": 66,
+      "a": 51,
+      "b": 40,
       "portA": "eth0",
       "portB": "sw2"
     }
