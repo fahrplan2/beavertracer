@@ -454,7 +454,15 @@ export class SimControl {
         };
 
         window.addEventListener("keydown", (ev) => {
-            if (ev.key === "Escape") this._cancelLinking();
+            if (ev.key === "Escape") {
+                this._cancelLinking();
+                if (this.tool.startsWith("place-")) {
+                    this._removeGhostNode();
+                    this.tool = "select";
+                    if (this.root) this.root.dataset.tool = this.tool;
+                    this._invalidateUI();
+                }
+            }
         });
 
         // Trace tab
@@ -1603,13 +1611,10 @@ export class SimControl {
             this.addObject(newObj);
             this._requestRedrawLinks();
 
-            // Clean up placement tool state
+            // Ghost entfernen, aber im Place-Modus bleiben (neuer Ghost folgt beim nächsten Move)
             this._removeGhostNode();
             this._justPlaced = true;
             setTimeout(() => { this._justPlaced = false; }, 0);
-            this.tool = "select";
-            if (this.root) this.root.dataset.tool = this.tool;
-            this._invalidateUI();
             return;
         }
 
