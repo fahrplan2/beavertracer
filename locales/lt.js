@@ -1165,5 +1165,7 @@ export default {
   "tour.step.trace-packets.title": "Paketai Trace'e",
   "tour.step.trace-packets.text": "Galite pamatyti įrašytus paketų! Spustelėkite kadrą, norėdami peržiūrėti visas detales.",
   "tour.step.finish.title": "Tūras baigtas!",
-  "tour.step.finish.text": "Sėkmingai baigėte tūrą ir sukūrėte, sukonfigūravote bei analizavote savo pirmąjį tinklą.\n\nMaloniai eksperimentuokite!"
+  "tour.step.finish.text": "Sėkmingai baigėte tūrą ir sukūrėte, sukonfigūravote bei analizavote savo pirmąjį tinklą.\n\nMaloniai eksperimentuokite!",
+  "app.terminal.copy": "Kopijuoti",
+  "app.terminal.paste": "Įklijuoti"
 };

@@ -1165,5 +1165,7 @@ export default {
   "tour.step.trace-packets.title": "追踪器中的数据包",
   "tour.step.trace-packets.text": "您可以看到已记录的数据包！点击一个帧以查看所有详细信息。",
   "tour.step.finish.title": "教程完成！",
-  "tour.step.finish.text": "您已成功完成教程，并构建、配置和分析了您的第一个网络。\n\n祝您实验愉快！"
+  "tour.step.finish.text": "您已成功完成教程，并构建、配置和分析了您的第一个网络。\n\n祝您实验愉快！",
+  "app.terminal.copy": "复制",
+  "app.terminal.paste": "粘贴"
 };

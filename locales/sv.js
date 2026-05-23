@@ -1165,5 +1165,7 @@ export default {
   "tour.step.trace-packets.title": "Paket i spåraren",
   "tour.step.trace-packets.text": "Du kan se de inspelade paketen! Klicka på en ram för att visa alla detaljer.",
   "tour.step.finish.title": "Guidad tur slutförd!",
-  "tour.step.finish.text": "Du har slutfört guiden och byggt, konfigurerat och analyserat ditt första nätverk.\n\nRoligt att experimentera!"
+  "tour.step.finish.text": "Du har slutfört guiden och byggt, konfigurerat och analyserat ditt första nätverk.\n\nRoligt att experimentera!",
+  "app.terminal.copy": "Kopiera",
+  "app.terminal.paste": "Klistra in"
 };

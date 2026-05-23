@@ -1164,5 +1164,7 @@ export default {
   "tour.step.trace-packets.title": "Csomagok a Tracerben",
   "tour.step.trace-packets.text": "Megtekintheti a rögzített csomagokat! Kattintson egy framere az összes részlet megtekintéséhez.",
   "tour.step.finish.title": "Bemutató befejezve!",
-  "tour.step.finish.text": "Sikeresen befejezte a bemutatót, és felépített, konfigurált és elemzett az első hálózatát.\n\nSzórakozzon a kísérletezéssel!"
+  "tour.step.finish.text": "Sikeresen befejezte a bemutatót, és felépített, konfigurált és elemzett az első hálózatát.\n\nSzórakozzon a kísérletezéssel!",
+  "app.terminal.copy": "Másolás",
+  "app.terminal.paste": "Beillesztés"
 };

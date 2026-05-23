@@ -1165,5 +1165,7 @@ export default {
   "tour.step.trace-packets.title": "Pachete în Tracer",
   "tour.step.trace-packets.text": "Puteți vedea pachetele înregistrate! Faceți clic pe un cadru pentru a vedea toate detaliile.",
   "tour.step.finish.title": "Turul complet!",
-  "tour.step.finish.text": "Ați completat cu succes turul și ați construit, configurat și analizat prima voastră rețea.\n\nDivertiți-vă experimentând!"
+  "tour.step.finish.text": "Ați completat cu succes turul și ați construit, configurat și analizat prima voastră rețea.\n\nDivertiți-vă experimentând!",
+  "app.terminal.copy": "Copiere",
+  "app.terminal.paste": "Lipire"
 };

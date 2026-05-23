@@ -1165,5 +1165,7 @@ export default {
   "tour.step.trace-packets.title": "Gói tin trong Trình theo dõi",
   "tour.step.trace-packets.text": "Bạn có thể xem các gói tin đã ghi lại! Nhấp vào một khung để xem tất cả chi tiết.",
   "tour.step.finish.title": "Hoàn thành chuyến tham quan!",
-  "tour.step.finish.text": "Bạn đã hoàn thành thành công chuyến tham quan và xây dựng, cấu hình cũng như phân tích mạng đầu tiên của mình.\n\nChúc bạn vui vẻ khi thử nghiệm!"
+  "tour.step.finish.text": "Bạn đã hoàn thành thành công chuyến tham quan và xây dựng, cấu hình cũng như phân tích mạng đầu tiên của mình.\n\nChúc bạn vui vẻ khi thử nghiệm!",
+  "app.terminal.copy": "Sao chép",
+  "app.terminal.paste": "Dán"
 };

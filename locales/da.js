@@ -1165,5 +1165,7 @@ export default {
   "tour.step.trace-packets.title": "Pakker i Traceren",
   "tour.step.trace-packets.text": "Du kan se de registrerede pakker! Klik på en ramme for at få vist alle detaljer.",
   "tour.step.finish.title": "Rundvisning gennemført!",
-  "tour.step.finish.text": "Du har med succes gennemført rundvisningen og bygget, konfigureret og analyseret dit første netværk.\n\nHaving sjov med eksperimenter!"
+  "tour.step.finish.text": "Du har med succes gennemført rundvisningen og bygget, konfigureret og analyseret dit første netværk.\n\nHaving sjov med eksperimenter!",
+  "app.terminal.copy": "Kopiér",
+  "app.terminal.paste": "Indsæt"
 };

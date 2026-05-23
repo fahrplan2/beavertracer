@@ -1165,5 +1165,7 @@ export default {
   "tour.step.trace-packets.title": "トレーサー内のパケット",
   "tour.step.trace-packets.text": "記録されたパケットが表示されます!フレームをクリックしてすべての詳細を表示できます。",
   "tour.step.finish.title": "ツアー完了!",
-  "tour.step.finish.text": "ツアーを正常に完了し、最初のネットワークを構築、設定、および分析しました。\n\n実験を楽しんでください!"
+  "tour.step.finish.text": "ツアーを正常に完了し、最初のネットワークを構築、設定、および分析しました。\n\n実験を楽しんでください!",
+  "app.terminal.copy": "コピー",
+  "app.terminal.paste": "貼り付け"
 };

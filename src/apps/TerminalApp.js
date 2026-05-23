@@ -115,6 +115,9 @@ export class TerminalApp extends GenericProcess {
     /** @type {HTMLInputElement|null} */
     _mobileInput = null;
 
+    /** @type {boolean} true while mouse button is held down for text selection */
+    _isSelecting = false;
+
 
     run() {
         this.root.classList.add("app", "app-terminal");
@@ -218,6 +221,12 @@ export class TerminalApp extends GenericProcess {
             this.disposer.on(term, "keydown", (ev) => this._onKeyDown(/** @type {KeyboardEvent} */(ev)));
             this.disposer.on(term,      "pointerdown", () => term.focus());
             this.disposer.on(this.root, "pointerdown", () => term.focus());
+            this.disposer.on(term, "mousedown", () => { this._isSelecting = true; });
+            this.disposer.on(document, "mouseup", () => { this._isSelecting = false; });
+            this.disposer.on(term, "contextmenu", (ev) => {
+                ev.preventDefault();
+                this._showContextMenu(/** @type {MouseEvent} */ (ev).clientX, /** @type {MouseEvent} */ (ev).clientY);
+            });
         }
 
         // Recalculate column count based on actual pixel width (mobile font is smaller)
@@ -387,6 +396,20 @@ export class TerminalApp extends GenericProcess {
         if ((ev.ctrlKey || ev.metaKey) && (ev.key === "c" || ev.key === "C")) {
             ev.preventDefault();
             this._interrupt();
+            return;
+        }
+
+        // Ctrl+Shift+C — copy selection (Ctrl+C is reserved for interrupt)
+        if ((ev.ctrlKey || ev.metaKey) && ev.shiftKey && (ev.key === "c" || ev.key === "C")) {
+            ev.preventDefault();
+            this._copySelection();
+            return;
+        }
+
+        // Ctrl+V / Cmd+V
+        if ((ev.ctrlKey || ev.metaKey) && (ev.key === "v" || ev.key === "V")) {
+            ev.preventDefault();
+            this._pasteFromClipboard();
             return;
         }
 
@@ -567,6 +590,11 @@ export class TerminalApp extends GenericProcess {
 
     _renderScreen() {
         if (!this.outEl) return;
+
+        // Don't overwrite textContent while mouse is held down or text is selected — destroys the selection
+        if (this._isSelecting) return;
+        const sel = window.getSelection();
+        if (sel && !sel.isCollapsed && this.outEl.contains(sel.anchorNode)) return;
 
         // Clone base screen
         /** @type {string[]} */
@@ -774,6 +802,80 @@ export class TerminalApp extends GenericProcess {
         // Unbusy immediately so prompt returns
         this.busy = false;
         this._renderScreen();
+    }
+
+    async _pasteFromClipboard() {
+        try {
+            const text = await navigator.clipboard.readText();
+            for (const ch of text) {
+                if (ch === "\n" || ch === "\r") continue;
+                if (ch >= " " || ch === "\t") this._insert(ch);
+            }
+        } catch {
+            // clipboard permission denied or unavailable — silently ignore
+        }
+    }
+
+    async _copySelection() {
+        const sel = window.getSelection()?.toString();
+        if (!sel) return;
+        try {
+            await navigator.clipboard.writeText(sel);
+        } catch {
+            // clipboard permission denied or unavailable — silently ignore
+        }
+    }
+
+    /**
+     * @param {number} x clientX
+     * @param {number} y clientY
+     */
+    _showContextMenu(x, y) {
+        const existing = document.querySelector(".term-context-menu");
+        if (existing) existing.remove();
+
+        const selectedText = window.getSelection()?.toString() ?? "";
+
+        const menu = document.createElement("div");
+        menu.className = "term-context-menu";
+        menu.style.cssText = `position:fixed;left:${x}px;top:${y}px;z-index:9999`;
+
+        if (selectedText) {
+            const copyBtn = document.createElement("button");
+            copyBtn.type = "button";
+            copyBtn.textContent = t("app.terminal.copy");
+            copyBtn.addEventListener("pointerdown", (ev) => {
+                ev.preventDefault();
+                menu.remove();
+                this._copySelection();
+            });
+            menu.appendChild(copyBtn);
+        }
+
+        const pasteBtn = document.createElement("button");
+        pasteBtn.type = "button";
+        pasteBtn.textContent = t("app.terminal.paste");
+        pasteBtn.addEventListener("pointerdown", (ev) => {
+            ev.preventDefault();
+            menu.remove();
+            this._pasteFromClipboard();
+        });
+        menu.appendChild(pasteBtn);
+
+        document.body.appendChild(menu);
+
+        // clamp into viewport
+        const r = menu.getBoundingClientRect();
+        if (r.right  > window.innerWidth)  menu.style.left = `${x - r.width}px`;
+        if (r.bottom > window.innerHeight) menu.style.top  = `${y - r.height}px`;
+
+        const close = (/** @type {Event} */ ev) => {
+            if (!menu.contains(/** @type {Node} */(ev.target))) {
+                menu.remove();
+                document.removeEventListener("pointerdown", close, { capture: true });
+            }
+        };
+        document.addEventListener("pointerdown", close, { capture: true });
     }
 
     _startCursorBlink() {

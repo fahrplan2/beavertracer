@@ -403,6 +403,8 @@ export default {
   "app.terminal.err.commandNotFound": "Befehl nicht gefunden: {cmd}",
   "app.terminal.err.errorPrefix": "Fehler: {msg}",
   "app.terminal.interrupt": "^C",
+  "app.terminal.copy": "Kopieren",
+  "app.terminal.paste": "Einfügen",
   "app.terminal.commands.cat.err.noFilesystem": "cat: kein Dateisystem",
   "app.terminal.commands.cat.usage": "Verwendung: {cmd} <Datei>",
   "app.terminal.commands.cp.usage": "Verwendung: cp [-r] <src>... <dst>",

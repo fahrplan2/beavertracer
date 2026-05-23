@@ -1165,5 +1165,7 @@ export default {
   "tour.step.trace-packets.title": "Paketi u Traceru",
   "tour.step.trace-packets.text": "Možete vidjeti snimljene pakete! Kliknite na okvir da biste vidjeli sve detalje.",
   "tour.step.finish.title": "Obilazak je završen!",
-  "tour.step.finish.text": "Uspješno ste završili obilazak i izgradili, konfigurirali i analizirali vašu prvu mrežu.\n\nDivertite se eksperimentiranjem!"
+  "tour.step.finish.text": "Uspješno ste završili obilazak i izgradili, konfigurirali i analizirali vašu prvu mrežu.\n\nDivertite se eksperimentiranjem!",
+  "app.terminal.copy": "Kopiraj",
+  "app.terminal.paste": "Zalijepi"
 };

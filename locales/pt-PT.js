@@ -1170,5 +1170,7 @@ export default {
   "tour.step.trace-packets.title": "Pacotes no Rastreador",
   "tour.step.trace-packets.text": "Pode ver os pacotes gravados! Clique num frame para ver todos os detalhes.",
   "tour.step.finish.title": "Tour Concluído!",
-  "tour.step.finish.text": "Completou com sucesso o tour e construiu, configurou e analisou a sua primeira rede.\n\nDivirta-se a experimentar!"
+  "tour.step.finish.text": "Completou com sucesso o tour e construiu, configurou e analisou a sua primeira rede.\n\nDivirta-se a experimentar!",
+  "app.terminal.copy": "Copiar",
+  "app.terminal.paste": "Colar"
 };

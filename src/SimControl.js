@@ -98,6 +98,9 @@ export class SimControl {
     /** @type {string|null} */
     _linkStartKey = null;
 
+    /** @type {boolean} */
+    _linkPaused = false;
+
     /** @type {HTMLElement|null} */
     _deleteHoverEl = null;
 
@@ -451,7 +454,15 @@ export class SimControl {
         };
 
         window.addEventListener("keydown", (ev) => {
-            if (ev.key === "Escape") this._cancelLinking();
+            if (ev.key === "Escape") {
+                this._cancelLinking();
+                if (this.tool.startsWith("place-")) {
+                    this._removeGhostNode();
+                    this.tool = "select";
+                    if (this.root) this.root.dataset.tool = this.tool;
+                    this._invalidateUI();
+                }
+            }
         });
 
         // Trace tab
@@ -1393,6 +1404,7 @@ export class SimControl {
     _cancelLinking() {
         this._linkStart = null;
         this._linkStartKey = null;
+        this._linkPaused = false;
         if (this._ghostLink) this._ghostLink.remove();
         this._ghostLink = null;
     }
@@ -1420,7 +1432,7 @@ export class SimControl {
             this._removeGhostNode();
         }
 
-        if (this.tool === "link" && this._linkStart) {
+        if (this.tool === "link" && this._linkStart && !this._linkPaused) {
             this._ensureGhostLink();
             this._updateGhost(p.x, p.y);
         }
@@ -1484,19 +1496,23 @@ export class SimControl {
 
             // First click: pick A port
             if (!this._linkStart) {
+                // Show ghost immediately at click point, frozen while picker is open
+                this._linkStart = obj;
+                this._ensureGhostLink();
+                const p = this._getLocalPoint(ev);
+                this._updateGhost(p.x, p.y);
+                this._linkPaused = true;
+
                 const pickA = await this._pickPortForObjectAt(obj, ev.clientX + 8, ev.clientY + 8);
+                this._linkPaused = false;
+
                 if (!pickA) {
+                    this._cancelLinking();
                     this._showToast(t("sim.link.error.noFreePort"));
                     return;
                 }
 
-                this._linkStart = obj;
                 this._linkStartKey = pickA.key;
-
-                // start ghost link
-                this._ensureGhostLink();
-                const p = this._getLocalPoint(ev);
-                this._updateGhost(p.x, p.y);
                 return;
             }
 
@@ -1513,8 +1529,11 @@ export class SimControl {
                 return;
             }
 
-            // Second click: pick B port
+            // Second click: pick B port — snap ghost to Node B and freeze while picker is open
+            this._linkPaused = true;
+            this._updateGhost(obj.getX(), obj.getY());
             const pickB = await this._pickPortForObjectAt(obj, ev.clientX + 8, ev.clientY + 8);
+            this._linkPaused = false;
             if (!pickB) return;
 
             const B = obj;
@@ -1592,13 +1611,10 @@ export class SimControl {
             this.addObject(newObj);
             this._requestRedrawLinks();
 
-            // Clean up placement tool state
+            // Ghost entfernen, aber im Place-Modus bleiben (neuer Ghost folgt beim nächsten Move)
             this._removeGhostNode();
             this._justPlaced = true;
             setTimeout(() => { this._justPlaced = false; }, 0);
-            this.tool = "select";
-            if (this.root) this.root.dataset.tool = this.tool;
-            this._invalidateUI();
             return;
         }
 

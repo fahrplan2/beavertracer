@@ -1165,5 +1165,7 @@ export default {
   "tour.step.trace-packets.title": "Pakiety w narzędziu śledzenia",
   "tour.step.trace-packets.text": "Możesz zobaczyć zarejestrowane pakiety! Kliknij na ramkę, aby wyświetlić wszystkie szczegóły.",
   "tour.step.finish.title": "Przewodnik zakończony!",
-  "tour.step.finish.text": "Pomyślnie ukończyłeś przewodnik i zbudowałeś, skonfigurowałeś i przeanalizowałeś swoją pierwszą sieć.\n\nBaw się dobrze, eksperymentując!"
+  "tour.step.finish.text": "Pomyślnie ukończyłeś przewodnik i zbudowałeś, skonfigurowałeś i przeanalizowałeś swoją pierwszą sieć.\n\nBaw się dobrze, eksperymentując!",
+  "app.terminal.copy": "Kopiuj",
+  "app.terminal.paste": "Wklej"
 };

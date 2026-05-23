@@ -1165,5 +1165,7 @@ export default {
   "tour.step.trace-packets.title": "Tracer의 패킷",
   "tour.step.trace-packets.text": "기록된 패킷을 볼 수 있습니다! 프레임을 클릭하여 모든 세부 정보를 확인하세요.",
   "tour.step.finish.title": "투어 완료!",
-  "tour.step.finish.text": "투어를 성공적으로 완료했으며 첫 번째 네트워크를 구축, 구성 및 분석했습니다.\n\n실험을 즐기세요!"
+  "tour.step.finish.text": "투어를 성공적으로 완료했으며 첫 번째 네트워크를 구축, 구성 및 분석했습니다.\n\n실험을 즐기세요!",
+  "app.terminal.copy": "복사",
+  "app.terminal.paste": "붙여넣기"
 };
