@@ -7,11 +7,11 @@
   <strong>Tartalom</strong>
   <ol>
     <li><a href="#modes">A három mód</a></li>
-    <li><a href="#edit">Szerkesztés mód — Hálózat építése</a></li>
+    <li><a href="#edit">Szerkesztési mód — Hálózat építése</a></li>
     <li><a href="#devices">Eszközök</a></li>
-    <li><a href="#panels">Eszközpanelok</a></li>
-    <li><a href="#run">Futtatás mód — A szimuláció futtatása</a></li>
-    <li><a href="#trace">Nyomkövetés mód — Csomagok elemzése</a></li>
+    <li><a href="#panels">Eszköz panelek</a></li>
+    <li><a href="#run">Futtatási mód — A szimuláció futtatása</a></li>
+    <li><a href="#trace">Nyomkövetési mód — Csomagok elemzése</a></li>
     <li><a href="#project">Mentés és betöltés</a></li>
   </ol>
 </nav>
@@ -20,32 +20,32 @@
 
 <h3 id="modes">A három mód</h3>
 <p>
-  A Beaver Tracer három móddal rendelkezik. A felső eszköztárban található gombokkal válthat közöttük.
+  A Beaver Tracer három móddal rendelkezik. A felső eszköztár gombjaival váltasz közöttük.
 </p>
 <table class="help-table">
   <tr>
     <td><i class="fas fa-pencil"></i></td>
     <td><strong>Szerkesztés</strong></td>
-    <td>Tervezd meg a hálózatod — helyezz el eszközöket, kösd össze és konfigurálj őket.</td>
+    <td>Tervezd meg a hálózatodat — helyezz el eszközöket, kösd össze őket, állítsd be őket.</td>
   </tr>
   <tr>
     <td><i class="fas fa-play"></i></td>
     <td><strong>Futtatás</strong></td>
-    <td>Indítsd el a szimulációt és figyeld meg, ahogy a forgalom áramlik a hálózaton.</td>
+    <td>Indítsd el a szimulációt és nézd meg, ahogy a forgalom átfolyik a hálózatodon.</td>
   </tr>
   <tr>
     <td><i class="fas fa-magnifying-glass"></i></td>
     <td><strong>Nyomkövetés</strong></td>
-    <td>Rögzítsd és vizsgáld meg a hálózaton keresztül utazó csomagokat.</td>
+    <td>Rögzítsd és vizsgáld meg a csomagokat, amelyek áthaladnak a hálózatodon.</td>
   </tr>
 </table>
 
 <hr>
 
-<h3 id="edit">Szerkesztés mód — Hálózat építése</h3>
+<h3 id="edit">Szerkesztési mód — Hálózat építése</h3>
 <p>
-  Szerkesztés módban egy eszköztár jelenik meg a képernyő bal oldalán.
-  Válassz egy eszközt a rákattintásával, majd használd azt a vásznon.
+  Szerkesztési módban az eszköztár a képernyő bal oldalán jelenik meg.
+  Válassz egy eszközt rákattintással, majd használd a vásznon.
 </p>
 
 <h4>Eszközök</h4>
@@ -53,17 +53,17 @@
   <tr>
     <td><i class="fas fa-arrow-pointer"></i></td>
     <td><strong>Kijelölés</strong></td>
-    <td>Kattints egy eszközre annak paneljének megnyitásához. Húzz egy eszközt az elmozdításához.</td>
+    <td>Kattints egy eszközre a paneljének megnyitásához. Húzz egy eszközt a mozgatásához.</td>
   </tr>
   <tr>
     <td><i class="fas fa-link"></i></td>
-    <td><strong>Kapcsolat</strong></td>
-    <td>Kösd össze két eszközt egy kábellel (lásd alább).</td>
+    <td><strong>Összekötés</strong></td>
+    <td>Kösd össze két eszközt kábellel (lásd alább).</td>
   </tr>
   <tr>
     <td><i class="fas fa-font"></i></td>
     <td><strong>Szöveg</strong></td>
-    <td>Helyezz egy szövegcímkét a vásznon a diagram megjegyzéséhez.</td>
+    <td>Helyezz egy szöveges címkét a vásznon a diagram megjegyzéseihez.</td>
   </tr>
   <tr>
     <td><i class="fas fa-square"></i></td>
@@ -78,31 +78,31 @@
 </table>
 
 <p>
-  <strong>Tipp:</strong> Jobb gombbal kattints a vásznon bárhol az aktuális eszköz törlésére
-  és visszatérésre az <i class="fas fa-arrow-pointer"></i> Kijelölésre.
+  <strong>Tipp:</strong> Jobb kattintás bárhol a vásznon az aktuális eszköz törléséhez
+  és a <i class="fas fa-arrow-pointer"></i> Kijelöléshez való visszatéréshez.
 </p>
 
 <h4>Eszköz elhelyezése</h4>
 <ol>
   <li>Kattints egy eszköz gombra a bal eszköztárban (pl. <i class="fas fa-desktop"></i> PC).</li>
-  <li>Egy előnézet követi az egér kurzort.</li>
+  <li>Az egér kurzora mellett megjelenik egy előnézet.</li>
   <li>Kattints a vásznon az eszköz elhelyezéséhez.</li>
 </ol>
 
 <h4>Két eszköz összekapcsolása</h4>
 <ol>
-  <li>Kattints az <i class="fas fa-link"></i> <strong>Kapcsolat</strong> eszközre.</li>
-  <li>Kattints az első eszközre — egy portválasztó jelenik meg. Válassz egy portot.</li>
-  <li>Mozgasd az egeret a második eszközhöz és kattints rá — ott is válassz egy portot.</li>
+  <li>Kattints az <i class="fas fa-link"></i> <strong>Összekötés</strong> eszközre.</li>
+  <li>Kattints az első eszközre — megjelenik egy port választó. Válassz ki egy portot.</li>
+  <li>Vidd az egérkurzort a második eszközhöz és kattints rá — válassz ki egy portot ott is.</li>
   <li>A kábel automatikusan létrejön.</li>
 </ol>
 <p>
-  A már használatban lévő portok letiltottként jelennek meg és nem választhatók ki.
+  Az már használatban lévő portok letiltottként jelennek meg és nem választhatók ki.
 </p>
 
 <h4>Eszköz mozgatása</h4>
 <p>
-  Az <i class="fas fa-arrow-pointer"></i> Kijelölés módban kattints és húzz bármely eszközt az elmozdításához a vásznon.
+  A <i class="fas fa-arrow-pointer"></i> Kijelölés módban kattints és húzz bármilyen eszközt a vásznon való átpozicionáláshoz.
 </p>
 
 <h4>Eszköz vagy kábel törlése</h4>
@@ -111,14 +111,14 @@
   <li>Kattints az eltávolítandó eszközre vagy kábelre.</li>
 </ol>
 <p>
-  Amikor törlöl egy eszközt, az ahhoz csatlakoztatott összes kábel automatikusan eltávolításra kerül.
+  Amikor törlöl egy eszközt, az összes hozzá csatlakoztatott kábel automatikusan eltávolításra kerül.
 </p>
 
 <hr>
 
 <h3 id="devices">Eszközök</h3>
 <p>
-  Ezek az eszközök érhetők el a bal eszköztárban a Szerkesztés módban:
+  Ezek az eszközök a bal oldali eszköztárban érhetők el Szerkesztés módban:
 </p>
 
 <table class="help-table">
@@ -126,24 +126,24 @@
     <td><i class="fas fa-desktop"></i></td>
     <td><strong>PC</strong></td>
     <td>
-      Egy személyi számítógép vezetékes hálózati interfésszel. Futtathat rajta alkalmazásokat
-      (pl. webböngészőt vagy ping eszközt) és beállíthatja az IP-címet.
+      Egy személyi számítógép vezetékes hálózati interfész-szel. Futtathat rajta alkalmazásokat
+      (pl. webböngészőt vagy ping eszközt) és beállíthatod az IP-címét.
     </td>
   </tr>
   <tr>
     <td><i class="fas fa-laptop"></i></td>
     <td><strong>Laptop</strong></td>
     <td>
-      Hasonló egy PC-hez, de Wi-Fi-n keresztül csatlakozik kábel helyett.
-      Használd együtt egy hozzáférési ponttal vagy otthoni routerrel.
+      Hasonló a PC-hez, de Wi-Fi-n keresztül csatlakozik a kábel helyett.
+      Használd egy Access Point vagy Home Router-rel.
     </td>
   </tr>
   <tr>
     <td>SW</td>
-    <td><strong>Kapcsoló</strong></td>
+    <td><strong>Switch</strong></td>
     <td>
       Több eszközt köt össze ugyanabban a hálózati szegmensben.
-      Kereteket továbbít MAC-címek alapján.
+      Frame-eket továbbít MAC-címek alapján.
       Támogatja a VLAN-okat és a Spanning Tree Protocol (STP) protokollt.
     </td>
   </tr>
@@ -152,112 +152,112 @@
     <td><strong>Router</strong></td>
     <td>
       Különböző hálózatokat köt össze és csomagokat továbbít közöttük.
-      Támogatja a statikus útvonalakat, az OSPF-t, a BGP-t és az IP-alagutakat (VPN).
+      Támogatja a statikus útvonalakat, az OSPF-et, a BGP-t és az IP tunneleket (VPN).
     </td>
   </tr>
   <tr>
     <td><i class="fas fa-house-signal"></i></td>
-    <td><strong>Otthoni router</strong></td>
+    <td><strong>Home Router</strong></td>
     <td>
-      Egy kombinált router, DHCP-kiszolgáló, NAT-kapu és Wi-Fi hozzáférési pont —
-      hasonló egy tipikus otthoni internetrouter-hez.
-      Kösd össze egy routerrel (WAN-ként) és PC-kkel vagy laptopokkal (LAN/Wi-Fi-ként).
-      Támogatja a portátirányítási szabályokat.
+      Egy kombinált router, DHCP szerver, NAT átjáró és Wi-Fi access point —
+      hasonló egy tipikus otthoni internetes routerhez.
+      Csatlakoztasd egy Router-hez (WAN-ként) és PC-khez vagy Laptopokhoz (LAN/Wi-Fi-ként).
+      Támogatja a port forward szabályokat.
     </td>
   </tr>
   <tr>
     <td><i class="fas fa-wifi"></i></td>
-    <td><strong>Hozzáférési pont</strong></td>
+    <td><strong>Access Point</strong></td>
     <td>
-      Kiterjeszti a vezetékes hálózatot Wi-Fi-kapcsolattal.
-      Kösd össze a vezetékes portját egy kapcsolóhoz vagy routerhez, majd vezeték nélkül csatlakoztatj laptopokat rá.
+      Kiterjeszti a vezetékes hálózatot Wi-Fi kapcsolattal.
+      Csatlakoztasd a vezetékes portját egy Switch-hez vagy Router-hez, majd vezetékmentesen kapcsolódj hozzá Laptopokkal.
     </td>
   </tr>
   <tr>
     <td><i class="fas fa-shield-halved"></i></td>
-    <td><strong>Tűzfal</strong></td>
+    <td><strong>Firewall</strong></td>
     <td>
-      Szűri a forgalmat a hálózati szegmensek között konfigurálható szabályok alapján.
-      A panel megjeleníti a szabálykészletet és az egyeztetett csomagok élő naplóját.
+      Szűri a hálózati szegmensek közötti forgalmat beállítható szabályok alapján.
+      A panel megjeleníti a szabály készletet és az egyeztetett csomagok élő naplóját.
     </td>
   </tr>
 </table>
 
 <hr>
 
-<h3 id="panels">Eszközpanelok</h3>
+<h3 id="panels">Eszközpanelek</h3>
 <p>
-  Kattints a vásznon bármely eszközre egy <strong>panel</strong> megnyitásához — egy konfigurációs ablak,
+  Kattints bármelyik eszközre a vásznon annak <strong>panelje</strong> megnyitásához – egy konfigurációs ablak,
   amely a képernyő jobb oldalán jelenik meg.
-  Kattints az eszközre újra (vagy az <strong>×</strong> gombra a panel fejlécében) a bezáráshoz.
+  Kattints az eszközre újra (vagy a panel fejlécében lévő <strong>×</strong> gombra) a bezáráshoz.
 </p>
 
-<h4>Eszköz átnevezése</h4>
+<h4>Eszköz Átnevezése</h4>
 <p>
-  Kattints az <i class="fas fa-pen"></i> gombra az eszköz neve mellett a panel fejlécében
-  egy egyéni név megadásához (pl. "Iroda-PC" vagy "Fő-Router").
+  Kattints a <i class="fas fa-pen"></i> gombra az eszköz neve mellett a panel fejlécében,
+  hogy egyéni nevet adj neki (például „Iroda-PC" vagy „Fő-Router").
 </p>
 
-<h4>Router fülek</h4>
+<h4>Router Lapok</h4>
 <p>
-  Egy Router panel a következő fülek tartalmaz:
-</p>
-<ul>
-  <li><strong>Interfészek</strong> — IP-címek konfigurálása az egyes portokon</li>
-  <li><strong>Útválasztási táblázat IPv4</strong> — IPv4-útvonalak megtekintése és szerkesztése (statikus és tanult)</li>
-  <li><strong>Útválasztási táblázat IPv6</strong> — IPv6-útvonalak megtekintése és szerkesztése</li>
-  <li><strong>OSPF</strong> — OSPF dinamikus útválasztás konfigurálása és figyelése</li>
-  <li><strong>BGP</strong> — BGP szomszédok konfigurálása és a BGP táblázat megtekintése</li>
-  <li><strong>VPN</strong> — IP-alagutak beállítása routerek között</li>
-</ul>
-
-<h4>Kapcsoló fülek</h4>
-<p>
-  Egy Kapcsoló panel a <strong>Kapcsoló Címtáblázat (SAT)</strong>, <strong>VLAN</strong>
-  konfigurálás és <strong>Spanning Tree Protocol (STP)</strong> beállítások füleivel rendelkezik.
-</p>
-
-<h4>Otthoni router fülek</h4>
-<p>
-  Egy Otthoni router panel a következő fülek tartalmaz:
+  A Router panel a következő lapokkal rendelkezik:
 </p>
 <ul>
-  <li><strong>Állapot</strong> — az aktuális WAN/LAN állapot és csatlakoztatott kliensek áttekintése</li>
-  <li><strong>WAN</strong> — az uplink konfigurálása (statikus IP vagy DHCP)</li>
-  <li><strong>LAN</strong> — a LAN alhálózat és IP-cím konfigurálása</li>
-  <li><strong>DHCP</strong> — aktív bérletek megtekintése és a DHCP-készlet konfigurálása</li>
-  <li><strong>WiFi</strong> — a beépített hozzáférési pont konfigurálása (SSID, jelszó)</li>
-  <li><strong>NAT</strong> — az aktív NAT-kapcsolatok táblázatának megtekintése</li>
-  <li><strong>Portátirányítás</strong> — szabályok meghatározása a bejövő portok LAN-gazdákra történő átirányításához</li>
+  <li><strong>Interfészek</strong> – IP-címek beállítása az egyes portokon</li>
+  <li><strong>IPv4 útválasztási táblázat</strong> – IPv4 útvonalak megtekintése és szerkesztése (statikus és megtanult)</li>
+  <li><strong>IPv6 útválasztási táblázat</strong> – IPv6 útvonalak megtekintése és szerkesztése</li>
+  <li><strong>OSPF</strong> – OSPF dinamikus útválasztás konfigurálása és monitorozása</li>
+  <li><strong>BGP</strong> – BGP szomszédok konfigurálása és a BGP táblázat megtekintése</li>
+  <li><strong>VPN</strong> – IP alagút beállítása útválasztók között</li>
 </ul>
 
-<h4>Tűzfal fülek</h4>
+<h4>Switch Lapok</h4>
 <p>
-  Egy Tűzfal panel egy <strong>Szabályok</strong> füllel rendelkezik a szűrési szabályok kezeléséhez és egy
-  <strong>Napló</strong> fülmel, amely megmutatja, mely csomagok voltak engedélyezve vagy elvetve.
+  A Switch panel lapokkal rendelkezik a <strong>Switch Address Table (SAT)</strong>, <strong>VLAN</strong>
+  konfigurációhoz és a <strong>Spanning Tree Protocol (STP)</strong> beállításokhoz.
 </p>
 
-<h4>PC és laptop</h4>
+<h4>Otthoni Router Lapok</h4>
 <p>
-  A PC-k és laptopok teljes szimulált operációs rendszerrel rendelkeznek paneljükön belül.
-  Megnyithatsz alkalmazásokat az asztalról, beállíthatod a hálózati beállításokat és futtathat parancsokat.
+  Az Otthoni Router panel a következő lapokkal rendelkezik:
+</p>
+<ul>
+  <li><strong>Állapot</strong> – áttekintés az aktuális WAN/LAN állapotról és csatlakoztatott kliensekről</li>
+  <li><strong>WAN</strong> – az uplink konfigurálása (statikus IP vagy DHCP)</li>
+  <li><strong>LAN</strong> – a LAN alhálózat és IP-cím konfigurálása</li>
+  <li><strong>DHCP</strong> – aktív bérletek megtekintése és a DHCP pool konfigurálása</li>
+  <li><strong>WiFi</strong> – a beépített hozzáférési pont konfigurálása (SSID, jelszó)</li>
+  <li><strong>NAT</strong> – az aktív NAT kapcsolattábla megtekintése</li>
+  <li><strong>Port továbbítás</strong> – szabályok definiálása a bejövő portok LAN-eszközökre való továbbításához</li>
+</ul>
+
+<h4>Tűzfal Lapok</h4>
+<p>
+  A Tűzfal panel egy <strong>Szabályok</strong> lappal rendelkezik a szűrési szabályok kezeléséhez és egy
+  <strong>Napló</strong> lappal, amely megjeleníti, mely csomagok voltak engedélyezve vagy eldobva.
+</p>
+
+<h4>PC és Laptop</h4>
+<p>
+  A PC-k és Laptopok paneljében egy teljes szimulált operációs rendszer található.
+  Megnyithatsz appokat az asztalról, konfigurálhatsz hálózati beállításokat és futathatsz parancsokat.
 </p>
 
 <hr>
 
-<h3 id="run">Futtatás mód — A szimuláció futtatása</h3>
+<h3 id="run">Futtatási mód — a szimuláció futtatása</h3>
 <p>
-  Váltsd az <i class="fas fa-play"></i> <strong>Futtatás</strong> módra a szimuláció indításához.
-  A hálózat élővé válik: az eszközök csomagokat cserélnek, DHCP-bérletek kerülnek hozzárendelésre,
-  útválasztási táblázatok frissülnek, stb.
+  Válts az <i class="fas fa-play"></i> <strong>Futtatás</strong> módra a szimuláció elindításához.
+  A hálózat élő lesz: az eszközök csomagokat cserélnek, DHCP bérletek kerülnek hozzárendelésre,
+  az útválasztási táblázatok frissülnek, és így tovább.
 </p>
 
-<h4>Sebességszabályozás</h4>
+<h4>Sebesség szabályozása</h4>
 <p>
-  Használd a felső eszköztárban található sebességgombokat a szimuláció futási sebességének vezérléséhez:
+  A felső eszköztár sebesség gombjaival szabályozhatod, milyen gyorsan fut a szimuláció:
 </p>
 <table class="help-table">
-  <tr><td><strong>0,5×</strong></td><td>Lassú — jó az egyes lépések megfigyeléséhez</td></tr>
+  <tr><td><strong>0.5×</strong></td><td>Lassú — jó az egyedi lépések megfigyeléséhez</td></tr>
   <tr><td><strong>1×</strong></td><td>Normál sebesség</td></tr>
   <tr><td><strong>4×</strong></td><td>Gyors</td></tr>
   <tr><td><strong>8×</strong></td><td>Nagyon gyors</td></tr>
@@ -267,4 +267,67 @@
 <table class="help-table">
   <tr>
     <td><i class="fas fa-pause"></i></td>
-    <td><strong>Szü
+    <td><strong>Szünet</strong></td>
+    <td>Fagyaszd meg a szimulációt az aktuális állapotában.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-arrow-rotate-left"></i></td>
+    <td><strong>Visszaállítás</strong></td>
+    <td>Indítsd újra a szimulációt az elejéről (az összes dinamikus állapot törlődik).</td>
+  </tr>
+</table>
+
+<p>
+  <strong>Megjegyzés:</strong> A hálózat topológiáját nem tudod szerkeszteni a Futtatási módban.
+  Először válts vissza az <i class="fas fa-pencil"></i> Szerkesztés módra.
+</p>
+
+<hr>
+
+<h3 id="trace">Trace Mode — Csomagok elemzése</h3>
+<p>
+  Váltson az <i class="fas fa-magnifying-glass"></i> <strong>Trace</strong> módra a beépített csomaganalizátor megnyitásához — hasonlóan a Wireshark-hoz.
+</p>
+<p>
+  A tetején válaszd ki az <strong>eszközt</strong> és az <strong>portot</strong>, amelyből rögzíteni szeretnél.
+  Az ezen a porton áthaladó összes csomag rögzítésre kerül és egy listában jelenik meg.
+</p>
+<p>
+  Kattints a listában bármely csomagra, hogy lásd annak teljes részleteit:
+  a protokollrétegeket, fejléc mezőket és adattartalmat — pontosan úgy, ahogy egy professzionális hálózati eszköz mutatná.
+</p>
+<p>
+  A rögzítés automatikusan fut, miközben a szimuláció fut.
+  Bármikor válthat a Trace mód és a Run mód között anélkül, hogy elveszítené a rögzített adatokat.
+</p>
+
+<hr>
+
+<h3 id="project">Mentés és betöltés</h3>
+<p>
+  A hálózati terved fájlként mentheted és később újra betöltheted.
+  Használd a felső eszköztárban lévő gombokat (Szerkesztés módban látható):
+</p>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-file"></i></td>
+    <td><strong>Új</strong></td>
+    <td>Kezdj egy üres vászonnal. A nem mentett módosítások elvesznek.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-file-arrow-up"></i></td>
+    <td><strong>Betöltés</strong></td>
+    <td>Nyiss meg egy korábban mentett szimulációs fájlt.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-file-arrow-down"></i></td>
+    <td><strong>Mentés</strong></td>
+    <td>Töltsd le az aktuális szimulációt fájlként a számítógépedre.</td>
+  </tr>
+</table>
+
+<hr>
+
+<p class="footer">
+  Gondban vagy? Ellenőrizd, hogy a hálózatod megfelelően csatlakoztatva van, és hogy az összes eszköznek érvényes IP-cím van beállítva.
+</p>

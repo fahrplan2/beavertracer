@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇹🇷 Türkçe (translated by AI)", order: 29 };
+export const meta = { name: "🇹🇷 Türkçe (translated by AI)", order: 32 };
 
 export default {
   "lang.name": "🇹🇷 Türkçe",
@@ -681,8 +681,8 @@ export default {
   "homerouter.pf.col.wanport": "WAN Port",
   "homerouter.pf.col.lanip": "LAN IP",
   "homerouter.pf.col.lanport": "LAN Port",
-  "homerouter.pf.empty": "No rules configured.",
-  "homerouter.pf.invalid": "Invalid port forward rule.",
+  "homerouter.pf.empty": "Yapılandırılmış kural yok.",
+  "homerouter.pf.invalid": "Geçersiz port yönlendirme kuralı.",
   "homerouter.wan.mode": "Mod",
   "homerouter.wan.mode.static": "Statik",
   "homerouter.wan.mode.dhcp": "DHCP",

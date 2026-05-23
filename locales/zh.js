@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇨🇳 简体中文", order: 33 };
+export const meta = { name: "🇨🇳 简体中文", order: 38 };
 
 export default {
   "lang.name": "🇨🇳 简体中文",
@@ -721,8 +721,8 @@ export default {
   "homerouter.pf.col.wanport": "WAN Port",
   "homerouter.pf.col.lanip": "LAN IP",
   "homerouter.pf.col.lanport": "LAN Port",
-  "homerouter.pf.empty": "No rules configured.",
-  "homerouter.pf.invalid": "Invalid port forward rule.",
+  "homerouter.pf.empty": "未配置任何规则。",
+  "homerouter.pf.invalid": "无效的端口转发规则。",
   "homerouter.wan.mode": "模式",
   "homerouter.wan.mode.static": "静态",
   "homerouter.wan.mode.dhcp": "DHCP",

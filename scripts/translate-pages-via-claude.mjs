@@ -36,10 +36,10 @@ function stripFences(text) {
   return text.replace(/^```[a-z]*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
 }
 
-async function translateHtml(html, targetLanguage) {
+async function translateChunk(html, targetLanguage) {
   const msg = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 4096,
+    max_tokens: 8192,
     messages: [
       {
         role: "user",
@@ -50,6 +50,8 @@ async function translateHtml(html, targetLanguage) {
           `- Only translate visible text content\n` +
           `- Do NOT translate proper nouns: BeaverTracer, Wireshark, Wiregasm, Font Awesome, Hack, Claude, Anthropic\n` +
           `- Keep {VERSION} placeholder unchanged\n` +
+          `- Use informal address forms (e.g. "du" in German, "tu" in French) — this is a secondary school learning tool\n` +
+          `- Use sentence case for headings (only capitalise the first word and proper nouns) — do NOT copy English title case\n` +
           `- Return ONLY the raw HTML — no explanation, no markdown code fences, no \`\`\`html\n\n` +
           `HTML:\n${html}`,
       },
@@ -59,6 +61,22 @@ async function translateHtml(html, targetLanguage) {
   });
   const raw = "<" + (msg.content[0]?.text ?? "");
   return stripFences(raw).trim();
+}
+
+async function translateHtml(html, targetLanguage) {
+  // Split at <hr> boundaries so each section stays well within token limits
+  // regardless of how large the page grows in the future.
+  const HR_RE = /\n{1,2}<hr>\n{1,2}/g;
+  const sections = html.split(HR_RE);
+  if (sections.length === 1) {
+    return translateChunk(html, targetLanguage);
+  }
+  const translated = [];
+  for (const section of sections) {
+    const trimmed = section.trim();
+    if (trimmed) translated.push(await translateChunk(trimmed, targetLanguage));
+  }
+  return translated.join("\n\n<hr>\n\n");
 }
 
 for (const page of ["about", "help"]) {

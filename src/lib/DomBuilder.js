@@ -76,7 +76,9 @@ export class DOMBuilder {
      * @param {string} [opts.value]
      * @param {string} [opts.placeholder]
      * @param {boolean} [opts.disabled]
-     * @param {string} [opts.type]      
+     * @param {string} [opts.type]
+     * @param {string} [opts.min]
+     * @param {string} [opts.style]
      * @returns {HTMLInputElement}
      */
     static input(opts = {}) {

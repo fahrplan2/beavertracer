@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇫🇮 Suomi (translated by AI)", order: 26 };
+export const meta = { name: "🇫🇮 Suomi (translated by AI)", order: 29 };
 
 export default {
   "lang.name": "🇫🇮 Suomi",
@@ -681,8 +681,8 @@ export default {
   "homerouter.pf.col.wanport": "WAN Port",
   "homerouter.pf.col.lanip": "LAN IP",
   "homerouter.pf.col.lanport": "LAN Port",
-  "homerouter.pf.empty": "No rules configured.",
-  "homerouter.pf.invalid": "Invalid port forward rule.",
+  "homerouter.pf.empty": "Ei määritettyjä sääntöjä.",
+  "homerouter.pf.invalid": "Virheellinen portin välityssääntö.",
   "homerouter.wan.mode": "Tila",
   "homerouter.wan.mode.static": "Staattinen",
   "homerouter.wan.mode.dhcp": "DHCP",

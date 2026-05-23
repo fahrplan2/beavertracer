@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇯🇵 日本語 (translated by AI)", order: 31 };
+export const meta = { name: "🇯🇵 日本語 (translated by AI)", order: 36 };
 
 export default {
   "lang.name": "🇯🇵 日本語",
@@ -681,8 +681,8 @@ export default {
   "homerouter.pf.col.wanport": "WAN Port",
   "homerouter.pf.col.lanip": "LAN IP",
   "homerouter.pf.col.lanport": "LAN Port",
-  "homerouter.pf.empty": "No rules configured.",
-  "homerouter.pf.invalid": "Invalid port forward rule.",
+  "homerouter.pf.empty": "ルールが設定されていません。",
+  "homerouter.pf.invalid": "無効なポートフォワードルールです。",
   "homerouter.wan.mode": "モード",
   "homerouter.wan.mode.static": "静的",
   "homerouter.wan.mode.dhcp": "DHCP",

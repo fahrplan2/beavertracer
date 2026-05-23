@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇫🇷 Français (translated by AI)", order: 11 };
+export const meta = { name: "🇫🇷 Français (translated by AI)", order: 12 };
 
 export default {
   "lang.name": "🇫🇷 Français",
@@ -330,7 +330,7 @@ export default {
   "app.simpletcpserver.log.sendError": "[{time}] ERREUR envoi {who} : {reason}",
   "app.simpletcpserver.log.disconnect": "[{time}] DÉCONNEXION {who}",
   "app.sparktail.title": "Navigateur",
-  "app.sparktail.placeholder.url": "about:start ou http://hôte[:port]/chemin",
+  "app.sparktail.placeholder.url": "about:start ou http://host[:port]/chemin",
   "app.sparktail.button.back": "←",
   "app.sparktail.button.forward": "→",
   "app.sparktail.button.reload": "⟳",
@@ -566,7 +566,7 @@ export default {
   "router.routingtable.dst": "Destination",
   "router.routingtable.interface": "Iface",
   "router.routingtable.netmask": "Masque de sous-réseau",
-  "router.routingtable.nexthop": "Passerelle suivante",
+  "router.routingtable.nexthop": "Prochain saut",
   "router.routingtable.add": "ajouter",
   "router.routingtable.delete": "supprimer",
   "router.routingtable.save": "enregistrer",
@@ -580,34 +580,34 @@ export default {
   "router.rip.col.passive": "Passif",
   "router.rip.log": "Journal",
   "router.ripng.tab": "RIPng",
-  "router.ripng.enabled": "RIP activé",
+  "router.ripng.enabled": "RIPng activé",
   "router.ripng.col.interface": "Interface",
   "router.ripng.col.passive": "Passif",
   "router.ripng.log": "Journal",
   "router.bgp.tab": "BGP",
-  "router.bgp.tab.config": "Konfiguration",
-  "router.bgp.tab.routes": "Routen",
-  "router.bgp.tab.log": "Protokoll",
-  "router.bgp.enabled": "BGP aktiviert",
-  "router.bgp.localas": "AS-Nummer",
-  "router.bgp.routerid": "Router-ID",
-  "router.bgp.peers.title": "Peers",
-  "router.bgp.peers.col.ip": "IP-Adresse",
-  "router.bgp.peers.col.remoteas": "Remote-AS",
-  "router.bgp.peers.col.desc": "Beschreibung",
-  "router.bgp.peers.col.passive": "Passiv",
-  "router.bgp.peers.col.state": "Status",
-  "router.bgp.peers.col.prefixes": "Präfixe",
-  "router.bgp.peers.add": "Peer hinzufügen",
-  "router.bgp.peers.delete": "Löschen",
-  "router.bgp.routes.empty": "(keine gelernten Routen)",
-  "router.bgp.routes.col.prefix": "Präfix",
-  "router.bgp.routes.col.nexthop": "Next-Hop",
-  "router.bgp.routes.col.aspath": "AS-Pfad",
+  "router.bgp.tab.config": "Configuration",
+  "router.bgp.tab.routes": "Routes",
+  "router.bgp.tab.log": "Journal",
+  "router.bgp.enabled": "BGP activé",
+  "router.bgp.localas": "Numéro AS",
+  "router.bgp.routerid": "ID du routeur",
+  "router.bgp.peers.title": "Pairs",
+  "router.bgp.peers.col.ip": "Adresse IP",
+  "router.bgp.peers.col.remoteas": "AS distant",
+  "router.bgp.peers.col.desc": "Description",
+  "router.bgp.peers.col.passive": "Passif",
+  "router.bgp.peers.col.state": "État",
+  "router.bgp.peers.col.prefixes": "Préfixes",
+  "router.bgp.peers.add": "Ajouter un pair",
+  "router.bgp.peers.delete": "Supprimer",
+  "router.bgp.routes.empty": "(aucune route apprise)",
+  "router.bgp.routes.col.prefix": "Préfixe",
+  "router.bgp.routes.col.nexthop": "Next Hop",
+  "router.bgp.routes.col.aspath": "Chemin AS",
   "router.bgp.routes.col.lp": "LP",
   "router.bgp.routes.col.med": "MED",
-  "router.bgp.routes.col.peer": "Peer",
-  "router.bgp.log": "Protokoll",
+  "router.bgp.routes.col.peer": "Pair",
+  "router.bgp.log": "Journal",
   "sim.lessons": "Leçons",
   "sim.common": "Commun",
   "sim.new": "Nouveau",
@@ -686,8 +686,8 @@ export default {
   "homerouter.pf.col.wanport": "WAN Port",
   "homerouter.pf.col.lanip": "LAN IP",
   "homerouter.pf.col.lanport": "LAN Port",
-  "homerouter.pf.empty": "No rules configured.",
-  "homerouter.pf.invalid": "Invalid port forward rule.",
+  "homerouter.pf.empty": "Aucune règle configurée.",
+  "homerouter.pf.invalid": "Règle de redirection de port invalide.",
   "homerouter.wan.mode": "Mode",
   "homerouter.wan.mode.static": "Statique",
   "homerouter.wan.mode.dhcp": "DHCP",
@@ -855,11 +855,11 @@ export default {
   "switch.vlan.col.allowed": "VLANs autorisés",
   "app.simplehttpsserver.title": "Serveur HTTPS",
   "app.simplehttpsserver.label.cert": "Certificat",
-  "app.simplehttpsserver.cert.none": "Aucun certificat pour le moment. Générez-en un pour démarrer le serveur.",
+  "app.simplehttpsserver.cert.none": "Aucun certificat sélectionné.",
   "app.simplehttpsserver.cert.subject": "Sujet : {subject}",
   "app.simplehttpsserver.cert.fingerprint": "Empreinte : {fp}",
   "app.simplehttpsserver.cert.expiry": "Valide jusqu'au : {date}",
-  "app.simplehttpsserver.log.noCert": "[{time}] ERREUR : Aucun certificat — générez-en un d'abord.",
+  "app.simplehttpsserver.log.noCert": "[{time}] ERREUR : Aucun certificat sélectionné.",
   "app.simplehttpsserver.log.tlsOk": "[{time}] TLS OK depuis {peer}",
   "app.simplehttpsserver.log.tlsFailed": "[{time}] TLS échoué : {reason}",
   "app.sparktail.status.tlsHandshaking": "Négociation TLS…",
@@ -961,7 +961,7 @@ export default {
   "app.simplehttpserver.log.httpsStopError": "[{time}] ERREUR arrêt HTTPS : {reason}",
   "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] ERREUR openTCPServerSocket (HTTPS) : {reason}",
   "app.explorer.title": "Explorateur de fichiers",
-  "app.explorer.button.upload": "Télécharger",
+  "app.explorer.button.upload": "Téléverser",
   "app.explorer.button.newFolder": "Nouveau dossier",
   "app.explorer.button.download": "Télécharger",
   "app.explorer.button.openEditor": "Ouvrir dans l'éditeur",
@@ -974,8 +974,8 @@ export default {
   "app.explorer.error.delete": "Échec de la suppression : {msg}",
   "app.explorer.error.mkdir": "Impossible de créer le dossier : {msg}",
   "app.mailclient.config.domain": "Domaine de messagerie",
-  "app.mailclient.config.tls": "TLS (implicite)",
-  "app.mailclient.config.smtpTls": "SMTP TLS (implicite)",
+  "app.mailclient.config.tls": "TLS",
+  "app.mailclient.config.smtpTls": "Chiffrement SMTP",
   "app.simplemailserver.log.bounceDelivered": "rebond livré à",
   "app.simplemailserver.log.bounceRelayFailed": "échec du relai de rebond pour",
   "app.simplemailserver.bounce.subject": "Courrier non livré retourné à l'expéditeur",
@@ -1027,6 +1027,31 @@ export default {
   "app.ircclient.help.cmd.nick": "Changer de pseudo",
   "app.ircclient.help.cmd.list": "Lister tous les canaux",
   "app.terminal.commands.nmap.usage": "utilisation: nmap [-p <ports>] [--open] <cible> [<cible>...]",
+  "app.terminal.commands.nmap.help":
+    "nmap — scanner de ports réseau\n" +
+    "\n" +
+    "Usage : nmap [-p <ports>] [--open] <cible> [<cible>...]\n" +
+    "\n" +
+    "Cibles :\n" +
+    "  192.168.1.1          hôte unique\n" +
+    "  192.168.1.0/24       sous-réseau (max /24, jusqu'à 254 hôtes)\n" +
+    "  hostname             résolu via DNS\n" +
+    "\n" +
+    "Options :\n" +
+    "  -p <spec>   ports à scanner (défaut : 20 ports courants)\n" +
+    "              exemples : -p 80  -p 22,80,443  -p 1-1024\n" +
+    "              maximum : 1000 ports par scan\n" +
+    "  --open      afficher uniquement les ports ouverts\n" +
+    "  -h, --help  afficher cette aide\n" +
+    "\n" +
+    "États des ports :\n" +
+    "  open      SYN-ACK reçu (service en écoute)\n" +
+    "  filtered  pas de réponse (pare-feu bloque les paquets)\n" +
+    "  closed    RST reçu (aucun service sur ce port)\n" +
+    "\n" +
+    "Astuce : utilisez les filtres Wiregasm pour analyser le trafic du scan :\n" +
+    "  tcp.flags.syn==1 && tcp.flags.ack==0   afficher les sondes\n" +
+    "  tcp.flags.syn==1 && tcp.flags.ack==1   afficher les ports ouverts",
   "app.terminal.commands.nmap.err.missingPortSpec": "nmap: -p nécessite une spécification de port",
   "app.terminal.commands.nmap.err.invalidPortSpec": "nmap: spécification de port invalide: {spec}",
   "app.terminal.commands.nmap.err.tooManyPorts": "nmap: la plage de ports dépasse la limite de {max} ports",

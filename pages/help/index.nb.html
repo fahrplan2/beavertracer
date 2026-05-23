@@ -1,0 +1,334 @@
+<h2>Hjelp</h2>
+<p class="subtitle">Hvordan bruke Beaver Tracer</p>
+
+<hr>
+
+<nav class="help-toc">
+  <strong>Innhold</strong>
+  <ol>
+    <li><a href="#modes">De tre modusene</a></li>
+    <li><a href="#edit">Redigeringsmodus — Bygge et nettverk</a></li>
+    <li><a href="#devices">Enheter</a></li>
+    <li><a href="#panels">Enhetspaneler</a></li>
+    <li><a href="#run">Kjøringsmodus — Kjøre simuleringen</a></li>
+    <li><a href="#trace">Sporingsmodus — Analysere pakker</a></li>
+    <li><a href="#project">Lagre og laste inn</a></li>
+  </ol>
+</nav>
+
+<hr>
+
+<h3 id="modes">De tre modusene</h3>
+<p>
+  Beaver Tracer har tre moduser. Du bytter mellom dem ved hjelp av knappene i verktøylinjen øverst.
+</p>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-pencil"></i></td>
+    <td><strong>Rediger</strong></td>
+    <td>Utform nettverket ditt — plasser enheter, koble dem sammen, konfigurer dem.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-play"></i></td>
+    <td><strong>Kjør</strong></td>
+    <td>Start simuleringen og se trafikken flyte gjennom nettverket ditt.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-magnifying-glass"></i></td>
+    <td><strong>Spor</strong></td>
+    <td>Fang og inspiser pakkene som reiser gjennom nettverket ditt.</td>
+  </tr>
+</table>
+
+<hr>
+
+<h3 id="edit">Redigeringsmodus — Bygging av et nettverk</h3>
+<p>
+  I redigeringsmodus vises et verktøylinje på venstre side av skjermen.
+  Velg et verktøy ved å klikke på det, og bruk det deretter på lerretet.
+</p>
+
+<h4>Verktøy</h4>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-arrow-pointer"></i></td>
+    <td><strong>Velg</strong></td>
+    <td>Klikk på en enhet for å åpne panelet. Dra en enhet for å flytte den.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-link"></i></td>
+    <td><strong>Kobling</strong></td>
+    <td>Koble sammen to enheter med en kabel (se nedenfor).</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-font"></i></td>
+    <td><strong>Tekst</strong></td>
+    <td>Plasser en tekstetikett på lerretet for å kommentere diagrammet ditt.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-square"></i></td>
+    <td><strong>Rektangel</strong></td>
+    <td>Tegn et rektangel på lerretet for å visuelt gruppere enheter.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-ban"></i></td>
+    <td><strong>Slett</strong></td>
+    <td>Klikk på en enhet eller kabel for å fjerne den.</td>
+  </tr>
+</table>
+
+<p>
+  <strong>Tips:</strong> Høyreklikk hvor som helst på lerretet for å avbryte det gjeldende verktøyet
+  og gå tilbake til <i class="fas fa-arrow-pointer"></i> Velg.
+</p>
+
+<h4>Plassering av en enhet</h4>
+<ol>
+  <li>Klikk på en enhetsknapp i verktøylinjen til venstre (f.eks. <i class="fas fa-desktop"></i> PC).</li>
+  <li>En forhåndsvisning følger musemarkøren.</li>
+  <li>Klikk på lerretet for å plassere enheten.</li>
+</ol>
+
+<h4>Kobling av to enheter</h4>
+<ol>
+  <li>Klikk på <i class="fas fa-link"></i> <strong>Kobling</strong>-verktøyet.</li>
+  <li>Klikk på den første enheten — en portvalgprogram vises. Velg en port.</li>
+  <li>Flytt musemarkøren til den andre enheten og klikk på den — velg også en port der.</li>
+  <li>Kabelen opprettes automatisk.</li>
+</ol>
+<p>
+  Porter som allerede er i bruk vises som deaktivert og kan ikke velges.
+</p>
+
+<h4>Flytting av en enhet</h4>
+<p>
+  I <i class="fas fa-arrow-pointer"></i> Velg-modus klikker og drar du en hvilken som helst enhet for å omposisjonere den på lerretet.
+</p>
+
+<h4>Sletting av en enhet eller kabel</h4>
+<ol>
+  <li>Klikk på <i class="fas fa-ban"></i> <strong>Slett</strong>-verktøyet.</li>
+  <li>Klikk på enheten eller kabelen du vil fjerne.</li>
+</ol>
+<p>
+  Når du sletter en enhet, fjernes alle kabler som er koblet til den automatisk.
+</p>
+
+<hr>
+
+<h3 id="devices">Enheter</h3>
+<p>
+  Disse enhetene er tilgjengelige i venstre verktøylinje under Rediger-modus:
+</p>
+
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-desktop"></i></td>
+    <td><strong>PC</strong></td>
+    <td>
+      En personlig datamaskin med et kablet nettverksgrensesnitt. Du kan kjøre apper på den
+      (f.eks. en nettleser eller et ping-verktøy) og konfigurere IP-adressen.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-laptop"></i></td>
+    <td><strong>Laptop</strong></td>
+    <td>
+      Som en PC, men kobler til via Wi-Fi i stedet for en kabel.
+      Bruk den sammen med et tilgangspunkt eller en hjemmerouter.
+    </td>
+  </tr>
+  <tr>
+    <td>SW</td>
+    <td><strong>Switch</strong></td>
+    <td>
+      Kobler sammen flere enheter i samme nettverkssegment.
+      Videresender rammer basert på MAC-adresser.
+      Støtter VLAN-er og Spanning Tree Protocol (STP).
+    </td>
+  </tr>
+  <tr>
+    <td>RT</td>
+    <td><strong>Router</strong></td>
+    <td>
+      Kobler sammen ulike nettverk og videresender pakker mellom dem.
+      Støtter statiske ruter, OSPF, BGP og IP-tunneler (VPN).
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-house-signal"></i></td>
+    <td><strong>Hjemmerouter</strong></td>
+    <td>
+      En kombinert router, DHCP-server, NAT-gateway og Wi-Fi-tilgangspunkt —
+      lik en typisk hjemmeinternett-router.
+      Koble den til en Router (som WAN) og til PC-er eller Laptoper (som LAN/Wi-Fi).
+      Støtter portvideresendings-regler.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-wifi"></i></td>
+    <td><strong>Tilgangspunkt</strong></td>
+    <td>
+      Utviderer et kablet nettverk med en Wi-Fi-forbindelse.
+      Koble den kablede porten til en Switch eller Router, og koble deretter Laptoper til den trådløst.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-shield-halved"></i></td>
+    <td><strong>Brannmur</strong></td>
+    <td>
+      Filtrerer trafikk mellom nettverkssegmenter basert på konfigurerbare regler.
+      Panelet viser regelsettet og en live-logg over matchede pakker.
+    </td>
+  </tr>
+</table>
+
+<hr>
+
+<h3 id="panels">Enhetspaneler</h3>
+<p>
+  Klikk på en enhet på lerret for å åpne dens <strong>panel</strong> — et konfigureringsvindu
+  som vises på høyre side av skjermen.
+  Klikk på enheten igjen (eller knappen <strong>×</strong> i panelheaderen) for å lukke det.
+</p>
+
+<h4>Gi en enhet nytt navn</h4>
+<p>
+  Klikk på knappen <i class="fas fa-pen"></i> ved siden av enhetens navn i panelheaderen
+  for å gi den et egendefinert navn (f.eks. "Office-PC" eller "Core-Router").
+</p>
+
+<h4>Ruterkategorier</h4>
+<p>
+  Et Ruter-panel har følgende kategorier:
+</p>
+<ul>
+  <li><strong>Interfaces</strong> — konfigurer IP-adresser på hver port</li>
+  <li><strong>Routing table IPv4</strong> — vis og rediger IPv4-ruter (statisk og lærte)</li>
+  <li><strong>Routing table IPv6</strong> — vis og rediger IPv6-ruter</li>
+  <li><strong>OSPF</strong> — konfigurer og overvåk OSPF dynamisk ruting</li>
+  <li><strong>BGP</strong> — konfigurer BGP-naboer og vis BGP-tabellen</li>
+  <li><strong>VPN</strong> — opprett IP-tunneler mellom rutere</li>
+</ul>
+
+<h4>Svitsj-kategorier</h4>
+<p>
+  Et Svitsj-panel har kategorier for sin <strong>Switch Address Table (SAT)</strong>, <strong>VLAN</strong>
+  konfigurasjon og <strong>Spanning Tree Protocol (STP)</strong> innstillinger.
+</p>
+
+<h4>Hjemmeru­ter-kategorier</h4>
+<p>
+  Et Hjemmeru­ter-panel har følgende kategorier:
+</p>
+<ul>
+  <li><strong>Status</strong> — oversikt over gjeldende WAN/LAN-tilstand og tilkoblede klienter</li>
+  <li><strong>WAN</strong> — konfigurer opplinkingen (statisk IP eller DHCP)</li>
+  <li><strong>LAN</strong> — konfigurer LAN-subnett og IP-adresse</li>
+  <li><strong>DHCP</strong> — vis aktive leieavtaler og konfigurer DHCP-poolen</li>
+  <li><strong>WiFi</strong> — konfigurer det innebygde tilgangspunktet (SSID, passord)</li>
+  <li><strong>NAT</strong> — vis tabellen for aktive NAT-tilkoblinger</li>
+  <li><strong>Port Forwarding</strong> — definer regler for å videresende innkommende porter til LAN-verter</li>
+</ul>
+
+<h4>Brannmur-kategorier</h4>
+<p>
+  Et Brannmur-panel har en <strong>Rules</strong> kategori for å administrere filterregler og en
+  <strong>Log</strong> kategori som viser hvilke pakker som har blitt tillatt eller blokkert.
+</p>
+
+<h4>PC og laptop</h4>
+<p>
+  PCer og laptoper har et fullstendig simulert operativsystem inne i panelet deres.
+  Du kan åpne apper fra skrivebordet, konfigurere nettverksinnstillinger og kjøre kommandoer.
+</p>
+
+<hr>
+
+<h3 id="run">Kjøremodus — Kjøre simuleringen</h3>
+<p>
+  Bytt til <i class="fas fa-play"></i> <strong>Kjør</strong> modus for å starte simuleringen.
+  Nettverket blir live: enheter utveksler pakker, DHCP-leieavtaler tildeles,
+  rutingtabeller oppdateres, og så videre.
+</p>
+
+<h4>Hastighetskontroller</h4>
+<p>
+  Bruk hastighetsknappene i øverste verktøylinje for å kontrollere hvor fort simuleringen kjører:
+</p>
+<table class="help-table">
+  <tr><td><strong>0,5×</strong></td><td>Langsom — bra for å observere individuelle trinn</td></tr>
+  <tr><td><strong>1×</strong></td><td>Normal hastighet</td></tr>
+  <tr><td><strong>4×</strong></td><td>Rask</td></tr>
+  <tr><td><strong>8×</strong></td><td>Veldig rask</td></tr>
+</table>
+
+<h4>Pause og tilbakestill</h4>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-pause"></i></td>
+    <td><strong>Pause</strong></td>
+    <td>Frys simuleringen i dens nåværende tilstand.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-arrow-rotate-left"></i></td>
+    <td><strong>Tilbakestill</strong></td>
+    <td>Start simuleringen på nytt fra begynnelsen (all dynamisk tilstand blir slettet).</td>
+  </tr>
+</table>
+
+<p>
+  <strong>Merknad:</strong> Du kan ikke redigere nettverkstopologien mens du er i kjøremodus.
+  Bytt tilbake til <i class="fas fa-pencil"></i> Rediger modus først.
+</p>
+
+<hr>
+
+<h3 id="trace">Trace-modus — Analyse av pakker</h3>
+<p>
+  Bytt til <i class="fas fa-magnifying-glass"></i> <strong>Trace</strong>-modus for å åpne den
+  innebygde paketanalysatoren — tilsvarende Wireshark.
+</p>
+<p>
+  Øverst velger du <strong>enheten</strong> og <strong>porten</strong> du vil capture fra.
+  Alle pakker som passerer gjennom den porten blir registrert og vist i en liste.
+</p>
+<p>
+  Klikk på en hvilken som helst pakke i listen for å se alle detaljene:
+  protokollagene, hodeinformasjon og payload — akkurat som et profesjonelt nettverksverktøy ville vise det.
+</p>
+<p>
+  Capturen kjører automatisk mens simuleringen kjører.
+  Du kan bytte mellom Trace-modus og Run-modus når som helst uten å miste de capturededata.
+</p>
+
+<hr>
+
+<h3 id="project">Lagring og lasting</h3>
+<p>
+  Nettverksdesignen din kan lagres som en fil og lastes inn igjen senere.
+  Bruk knappene i øverste verktøylinje (synlig i Rediger-modus):
+</p>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-file"></i></td>
+    <td><strong>Ny</strong></td>
+    <td>Start med et tomt lerret. Eventuelle ulagrede endringer vil gå tapt.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-file-arrow-up"></i></td>
+    <td><strong>Last inn</strong></td>
+    <td>Åpne en tidligere lagret simuleringsfil.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-file-arrow-down"></i></td>
+    <td><strong>Lagre</strong></td>
+    <td>Last ned gjeldende simulering som en fil til datamaskinen din.</td>
+  </tr>
+</table>
+
+<hr>
+
+<p class="footer">
+  Har du problemer? Sjekk at nettverket ditt er korrekt tilkoblet og at alle enheter har gyldige IP-adresser konfigurert.
+</p>

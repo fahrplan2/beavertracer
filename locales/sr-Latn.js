@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇷🇸 Srpski (translated by AI)", order: 25 };
+export const meta = { name: "🇷🇸 Srpski (translated by AI)", order: 27 };
 
 export default {
   "app.generic.title": "Gernic App",
@@ -797,8 +797,8 @@ export default {
   "homerouter.pf.col.wanport": "WAN Port",
   "homerouter.pf.col.lanip": "LAN IP",
   "homerouter.pf.col.lanport": "LAN Port",
-  "homerouter.pf.empty": "No rules configured.",
-  "homerouter.pf.invalid": "Invalid port forward rule.",
+  "homerouter.pf.empty": "Nema konfiguriranih pravila.",
+  "homerouter.pf.invalid": "Nevažeće pravilo preusmjeravanja porta.",
   "homerouter.wan.mode": "Modus",
   "homerouter.wan.mode.static": "Statički",
   "homerouter.wan.mode.dhcp": "DHCP",

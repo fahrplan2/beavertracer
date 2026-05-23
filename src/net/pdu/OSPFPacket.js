@@ -18,6 +18,7 @@ export const OSPF_TYPE_LSACK   = 5;
 
 export const LSA_TYPE_ROUTER   = 1;
 export const LSA_TYPE_NETWORK  = 2;
+export const LSA_TYPE_SUMMARY  = 3;  // inter-area summary (ABR-originated)
 
 export const LINK_TYPE_TRANSIT = 2;  // Router-LSA link to transit network (via DR)
 export const LINK_TYPE_STUB    = 3;  // Router-LSA stub (connected subnet, no neighbors)
@@ -340,6 +341,38 @@ export class NetworkLSA {
     }
 }
 
+// ── SummaryLSA body (Type 3) ─────────────────────────────────────────────────
+
+export class SummaryLSA {
+    /**
+     * @param {{ networkMask: number, metric: number }} opts
+     */
+    constructor({ networkMask, metric }) {
+        this.networkMask = networkMask >>> 0;
+        this.metric      = metric & 0xffffff;  // 24-bit
+    }
+
+    /** @returns {Uint8Array} */
+    pack() {
+        const buf = new Uint8Array(8);
+        write32BE(buf, 0, this.networkMask);
+        buf[4] = 0;  // TOS = 0
+        buf[5] = (this.metric >> 16) & 0xff;
+        buf[6] = (this.metric >>  8) & 0xff;
+        buf[7] =  this.metric        & 0xff;
+        return buf;
+    }
+
+    /** @param {Uint8Array} data @returns {SummaryLSA} */
+    static fromBytes(data) {
+        if (data.length < 8) throw new Error("SummaryLSA too short");
+        return new SummaryLSA({
+            networkMask: read32BE(data, 0),
+            metric:      ((data[5] << 16) | (data[6] << 8) | data[7]),
+        });
+    }
+}
+
 // ── OspfDBD ──────────────────────────────────────────────────────────────────
 
 export class OspfDBD {
@@ -435,7 +468,7 @@ export class Lsa {
     /**
      * @param {{
      *   header: LsaHeader,
-     *   body: RouterLSA | NetworkLSA,
+     *   body: RouterLSA | NetworkLSA | SummaryLSA,
      * }} opts
      */
     constructor({ header, body }) {
@@ -477,8 +510,9 @@ export class Lsa {
         if (c0 !== c0s || c1 !== c1s) throw new Error("LSA checksum invalid");
         const bodyData = data.slice(off + 20, off + hdr.length);
         let body;
-        if (hdr.type === LSA_TYPE_ROUTER)  body = RouterLSA.fromBytes(bodyData);
+        if      (hdr.type === LSA_TYPE_ROUTER)  body = RouterLSA.fromBytes(bodyData);
         else if (hdr.type === LSA_TYPE_NETWORK) body = NetworkLSA.fromBytes(bodyData);
+        else if (hdr.type === LSA_TYPE_SUMMARY) body = SummaryLSA.fromBytes(bodyData);
         else throw new Error(`Unsupported LSA type ${hdr.type}`);
         return new Lsa({ header: hdr, body });
     }

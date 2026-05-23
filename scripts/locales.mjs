@@ -38,5 +38,8 @@ export const LOCALES = [
   { code: "zh",      name: "Simplified Chinese" },
   { code: "ar",      name: "Arabic",          rtl: true },
   { code: "fa",      name: "Persian (Farsi)", rtl: true },
-  { code: "ua",      name: "Ukrainian" },
+  { code: "uk",      name: "Ukrainian" },
+  { code: "nb",      name: "Norwegian Bokmål" },
+  { code: "sq",      name: "Albanian" },
+  { code: "ca",      name: "Catalan" },
 ];

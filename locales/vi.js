@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇻🇳 Tiếng Việt (translated by AI)", order: 28 };
+export const meta = { name: "🇻🇳 Tiếng Việt (translated by AI)", order: 31 };
 
 export default {
   "lang.name": "🇻🇳 Tiếng Việt",
@@ -681,8 +681,8 @@ export default {
   "homerouter.pf.col.wanport": "WAN Port",
   "homerouter.pf.col.lanip": "LAN IP",
   "homerouter.pf.col.lanport": "LAN Port",
-  "homerouter.pf.empty": "No rules configured.",
-  "homerouter.pf.invalid": "Invalid port forward rule.",
+  "homerouter.pf.empty": "Không có quy tắc nào được cấu hình.",
+  "homerouter.pf.invalid": "Quy tắc chuyển tiếp cổng không hợp lệ.",
   "homerouter.wan.mode": "Chế độ",
   "homerouter.wan.mode.static": "Tĩnh",
   "homerouter.wan.mode.dhcp": "DHCP",
