@@ -107,14 +107,14 @@
   grid-template-columns: 28% 1fr 20%;
   gap: 0;
   padding: 5px var(--pad-md);
-  font-size: 0.82em;
+  font-size: 0.8125rem;
 }
 
 .app-mail-client .mailclient-list-header {
   background: var(--bg2, #2a2a2a);
   font-weight: 600;
   color: var(--text-dim, #aaa);
-  font-size: 0.78em;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: .04em;
   border-bottom: 1px solid var(--border, #444);
@@ -142,12 +142,12 @@
 }
 
 .app-mail-client .ml-col-from    { font-weight: 600; }
-.app-mail-client .ml-col-date    { opacity: 0.55; font-size: 0.9em; text-align: right; }
+.app-mail-client .ml-col-date    { opacity: 0.55; font-size: 0.875rem; text-align: right; }
 
 .app-mail-client .mailclient-list-empty {
   padding: var(--pad-lg);
   opacity: 0.55;
-  font-size: 0.85em;
+  font-size: 0.875rem;
 }
 
 /* Message preview */
@@ -157,7 +157,7 @@
   max-height: 300px;
   resize: vertical;
   font-family: monospace;
-  font-size: 0.82em;
+  font-size: 0.8125rem;
   box-sizing: border-box;
 }
 
@@ -173,7 +173,7 @@
   box-sizing: border-box;
   margin-top: var(--pad-sm);
   font-family: monospace;
-  font-size: 0.85em;
+  font-size: 0.875rem;
 }
 
 /* Log panel */
@@ -185,7 +185,7 @@
   min-height: 200px;
   max-height: 360px;
   overflow-y: auto;
-  font-size: 0.78em;
+  font-size: 0.75rem;
   font-family: monospace;
   white-space: pre-wrap;
   word-break: break-all;
@@ -193,7 +193,7 @@
 
 /* Status bar */
 .app-mail-client .mailclient-status {
-  font-size: 0.80em;
+  font-size: 0.8125rem;
   margin-top: 5px;
   padding: 3px var(--pad-sm);
   opacity: 0.75;
@@ -206,7 +206,7 @@
 
 .app-mail-client .mailclient-config-panel h5 {
   margin: var(--pad-lg) 0 var(--pad-xs);
-  font-size: 0.80em;
+  font-size: 0.8125rem;
   text-transform: uppercase;
   letter-spacing: .05em;
   opacity: 0.55;

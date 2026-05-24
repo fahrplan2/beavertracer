@@ -101,7 +101,7 @@
   --blue: oklch(68% 0.18 250);
 }
 
-html { font-size: 16px; }
+html { font-size: 100%; }
 html, body { height: 100%; margin: 0; }
 *, *::before, *::after { box-sizing: border-box; }
 

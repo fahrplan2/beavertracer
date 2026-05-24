@@ -55,7 +55,7 @@
 }
 
 .welcome-title {
-  font-size: 1.35rem;
+  font-size: 1.375rem;
   font-weight: 700;
   margin: 0;
   color: var(--text);
@@ -64,7 +64,7 @@
 
 .welcome-subtitle {
   margin: 3px 0 0;
-  font-size: 0.83rem;
+  font-size: 0.8125rem;
   color: var(--text);
 }
 
@@ -80,7 +80,7 @@
 .welcome-close-btn {
   background: transparent;
   border: none;
-  font-size: 1.15rem;
+  font-size: 1.125rem;
   line-height: 1;
   color: var(--muted);
   cursor: pointer;
@@ -107,7 +107,7 @@
 }
 
 .welcome-version {
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   color: var(--text);
 }
 
@@ -181,7 +181,7 @@
 }
 
 .welcome-action-label {
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--text);
   line-height: 1.25;
@@ -204,7 +204,7 @@
 }
 
 .welcome-news-heading {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
@@ -216,7 +216,7 @@
 }
 
 .welcome-news-content .minimarkdown-h2 {
-  font-size: 0.82rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   margin: var(--pad-lg) 0 var(--pad-sm);
   color: var(--text);
@@ -232,7 +232,7 @@
 }
 
 .welcome-news-content .minimarkdown-li {
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   color: var(--muted);
   line-height: 1.5;
 }
@@ -264,7 +264,7 @@
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   background: transparent;
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   color: var(--text);
   cursor: pointer;
   transition: color 0.1s, background 0.1s, border-color 0.1s;

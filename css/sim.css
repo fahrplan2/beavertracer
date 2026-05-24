@@ -995,7 +995,7 @@ sim-toolbar-langbtn {
 }
 
 .sim-lang-card-name {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   text-align: center;
   line-height: 1.2;
 }
@@ -1042,7 +1042,7 @@ sim-toolbar-langbtn {
 }
 
 .sim-langlist-item-name {
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1050,7 +1050,7 @@ sim-toolbar-langbtn {
 
 .sim-langdialog-note {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--text-muted, var(--text));
   opacity: 0.5;
 }
@@ -1186,7 +1186,7 @@ sim-toolbar-langbtn {
   border: 1px solid var(--danger-strong);
   border-radius: var(--radius-md);
   padding: var(--pad-md) var(--pad-2xl);
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   pointer-events: none;
   z-index: 9999;
   animation: sim-toast-in 0.15s ease;
@@ -1228,7 +1228,7 @@ sim-toolbar-langbtn {
 .sim-dialog-msg {
   margin: 0;
   color: var(--text);
-  font-size: 0.95rem;
+  font-size: 0.9375rem;
   line-height: 1.5;
   white-space: pre-wrap;
 }
@@ -1241,7 +1241,7 @@ sim-toolbar-langbtn {
   border: 1px solid var(--ui-border-strong);
   background: var(--surface-strong);
   color: var(--text);
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   outline: none;
 }
 
@@ -1305,7 +1305,7 @@ sim-toolbar-langbtn {
   margin-bottom: -2px;
   background: transparent;
   color: var(--text);
-  font-size: 0.85em;
+  font-size: 0.875rem;
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.1s, color 0.1s, border-color 0.1s;
@@ -1327,7 +1327,7 @@ sim-toolbar-langbtn {
 }
 
 .ui-tab .fas {
-  font-size: 0.9em;
+  font-size: 0.875rem;
 }
 
 .ui-tab-badge {
@@ -1700,7 +1700,7 @@ sim-toolbar-langbtn {
   /* ── Port picker: wider touch targets ── */
   .sim-port-chip {
     padding: 10px 14px;
-    font-size: 0.9rem;
+    font-size: 0.875rem;
   }
 
   /* ── Toolbar: scrolls horizontally on small screens ── */

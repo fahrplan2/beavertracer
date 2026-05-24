@@ -29,7 +29,7 @@
 }
 
 .tour-step-counter {
-  font-size: 0.7rem;
+  font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -38,14 +38,14 @@
 }
 
 .tour-step-title {
-  font-size: 0.92rem;
+  font-size: 0.9375rem;
   font-weight: 700;
   color: var(--text);
   margin-bottom: var(--pad-sm);
 }
 
 .tour-step-text {
-  font-size: 0.81rem;
+  font-size: 0.8125rem;
   color: var(--text);
   line-height: 1.55;
   margin: 0 0 var(--pad-lg);
@@ -62,7 +62,7 @@
   padding: var(--pad-xs) var(--pad-md);
   border-radius: var(--radius-sm);
   border: 1px solid var(--ui-border);
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   cursor: pointer;
   transition: background 0.1s, border-color 0.1s, color 0.1s;
 }

@@ -37,7 +37,7 @@
   background: none;
   border: none;
   color: #e0e0e0;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   text-align: left;
   cursor: pointer;
   border-radius: 3px;
@@ -62,7 +62,7 @@
   }
 
   .app-terminal .term {
-    font-size: 0.8rem;
+    font-size: 0.8125rem;
     line-height: 17px;
   }
 }

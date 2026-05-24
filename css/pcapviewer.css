@@ -62,7 +62,7 @@
 @keyframes wg-spin { to { transform: rotate(360deg); } }
 
 .pcapviewer-wg-msg {
-  font-size: .85rem;
+  font-size: 0.875rem;
   color: var(--text-muted, #888);
   text-align: center;
   max-width: 220px;
@@ -297,7 +297,7 @@
 
   padding: 0.4em 1em;
   cursor: pointer;
-  font-size: 0.95em;
+  font-size: 0.9375rem;
   display: inline-flex;
 
 
