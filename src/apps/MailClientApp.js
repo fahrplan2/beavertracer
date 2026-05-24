@@ -449,22 +449,19 @@ export class MailClientApp extends LoggedProcess {
       { value: this.cfg.protocol }
     );
     const cfgHostIn    = UI.input({ value: this.cfg.host,     placeholder: "z.B. 192.168.1.10" });
-    const cfgPortIn    = UI.input({ value: this.cfg.port,     placeholder: "110" });
+    const cfgPortIn    = UI.input({ value: this.cfg.port,     placeholder: "110",  className: ["input", "input-narrow"] });
     const cfgUserIn    = UI.input({ value: this.cfg.user,     placeholder: "alice" });
     const cfgPassIn    = UI.input({ value: this.cfg.pass,     placeholder: "••••••" });
     cfgPassIn.type     = "password";
     const cfgDomainIn  = UI.input({ value: this.cfg.domain,   placeholder: "example.local" });
     const cfgSmtpHostIn = UI.input({ value: this.cfg.smtpHost, placeholder: "z.B. 192.168.1.10" });
-    const cfgSmtpPortIn = UI.input({ value: this.cfg.smtpPort, placeholder: "25" });
+    const cfgSmtpPortIn = UI.input({ value: this.cfg.smtpPort, placeholder: "25",   className: ["input", "input-narrow"] });
     const cfgTlsIn     = /** @type {HTMLInputElement} */ (UI.el("input", { attrs: { type: "checkbox" }, init: (el) => { el.checked = !!this.cfg.tls; } }));
     const cfgSmtpTlsIn = UI.select([
       { value: "off",      label: t("app.mailclient.config.smtpTls.off")      || "Kein TLS" },
       { value: "starttls", label: t("app.mailclient.config.smtpTls.starttls") || "STARTTLS" },
       { value: "implicit", label: t("app.mailclient.config.smtpTls.implicit") || "Implicit TLS" },
     ], { value: this.cfg.smtpTls });
-
-    cfgPortIn.style.width = "90px";
-    cfgSmtpPortIn.style.width = "90px";
 
     cfgProtoSel.addEventListener("change", () => {
       if (cfgProtoSel.value === "pop3" && cfgPortIn.value === "143") cfgPortIn.value = "110";

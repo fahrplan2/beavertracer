@@ -1128,9 +1128,6 @@ export class HomeRouter extends SimulatedObject {
         this._statusEl = null;
 
         const host = DOMBuilder.div("router-ui");
-        host.style.display = "flex";
-        host.style.flexDirection = "column";
-        host.style.gap = "12px";
         body.appendChild(host);
 
         const card = DOMBuilder.div("router-card");

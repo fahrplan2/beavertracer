@@ -169,9 +169,6 @@ export class Switch extends SimulatedObject {
         panelBody.innerHTML = "";
 
         const host = DOMBuilder.div("switch-ui");
-        host.style.display = "flex";
-        host.style.flexDirection = "column";
-        host.style.gap = "12px";
         panelBody.appendChild(host);
         this._host = host;
 
@@ -376,7 +373,7 @@ export class Switch extends SimulatedObject {
             return;
         }
 
-        this._vlanSection.style.display = "block";
+        this._vlanSection.style.display = "";
 
         const ports = this.backplane?.ports ?? [];
         const card = DOMBuilder.div("switch-card");

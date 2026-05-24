@@ -103,3 +103,10 @@ textarea.log {
   font-weight: bold;
   color: #7ec8a0;
 }
+
+.table-empty {
+  text-align: center;
+  color: var(--text-muted, #888);
+}
+
+.input-narrow { width: 90px; }

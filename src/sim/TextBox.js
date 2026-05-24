@@ -1,6 +1,7 @@
 //@ts-check
 import { SimulatedObject } from "./SimulatedObject.js";
 import { SimControl } from "../SimControl.js";
+import { DOMBuilder } from "../lib/DomBuilder.js";
 import { t } from "../i18n/index.js";
 import { MiniMarkdown } from "../lib/MiniMarkdown.js";
 
@@ -29,17 +30,10 @@ export class TextBox extends SimulatedObject {
   // ---------------------------------------------------------------------------
 
   buildIcon() {
-    const icon = document.createElement("div");
-    icon.className = "sim-textbox";
+    const icon = DOMBuilder.el("div", { className: "sim-textbox" });
     icon.dataset.objid = String(this.id);
-
-    const body = document.createElement("div");
-    body.className = "sim-textbox-body";
-    body.innerHTML = MiniMarkdown.render(this.text);
-    icon.appendChild(body);
-
-   return icon;
-  
+    icon.appendChild(DOMBuilder.el("div", { className: "sim-textbox-body", html: MiniMarkdown.render(this.text) }));
+    return icon;
   }
 
   _refreshIconText() {
@@ -60,30 +54,20 @@ export class TextBox extends SimulatedObject {
     const body = panel.querySelector(".sim-panel-body");
     if (!(body instanceof HTMLElement)) return panel;
 
-    // Text editor
-    const ta = document.createElement("textarea");
-    ta.className = "sim-textbox-panel-editor";
+    const ta = DOMBuilder.el("textarea", { className: "sim-textbox-panel-editor" });
     ta.value = this.text;
-
     ta.addEventListener("input", () => {
       this.text = ta.value;
       this._refreshIconText();
     });
-
     body.appendChild(ta);
 
-    // Hint
-    const hint = document.createElement("div");
-    hint.textContent = t("textbox.hint");
-    body.appendChild(hint);
+    body.appendChild(DOMBuilder.el("div", { text: t("textbox.hint") }));
 
-    // Options row
-    const row = document.createElement("div");
-    row.className = "sim-row";
+    const row = DOMBuilder.div("sim-row");
     body.appendChild(row);
 
-    const chk = document.createElement("input");
-    chk.type = "checkbox";
+    const chk = DOMBuilder.input({ type: "checkbox" });
     chk.checked = this.showTitle;
     chk.addEventListener("change", () => {
       this.showTitle = chk.checked;

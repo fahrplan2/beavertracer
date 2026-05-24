@@ -963,28 +963,17 @@ export class BitcoinNodeApp extends LoggedProcess {
     const bal = this._computeBalances();
     if (!bal.size) { this.ledgerEl.textContent = t("app.bitcoin.ledger.empty"); return; }
 
-    const table = document.createElement("table");
-    table.className = "ledger-table";
-
-    const thead = table.createTHead();
-    const hr = thead.insertRow();
-    for (const h of [t("app.bitcoin.ledger.col.address"), t("app.bitcoin.ledger.col.balance")]) {
-      const th = document.createElement("th");
-      th.textContent = h;
-      hr.appendChild(th);
-    }
-
-    const tbody = table.createTBody();
+    const { table, tbody } = UI.tableWithBody(
+      [t("app.bitcoin.ledger.col.address"), t("app.bitcoin.ledger.col.balance")],
+      "ledger-table"
+    );
     const sorted = [...bal.entries()].sort((a, b) => b[1] - a[1]);
     for (const [addr, sats] of sorted) {
-      const tr = tbody.insertRow();
       const isOwn = addr === this.walletAddr;
-      const tdAddr = tr.insertCell();
-      tdAddr.textContent = addr;
-      if (isOwn) tdAddr.className = "ledger-own";
-      const tdBal = tr.insertCell();
-      tdBal.textContent = (sats / 1e8).toFixed(8) + " BTC";
-      tdBal.className = "ledger-amount";
+      tbody.appendChild(UI.el("tr", { children: [
+        UI.el("td", { text: addr, className: isOwn ? "ledger-own" : undefined }),
+        UI.el("td", { text: (sats / 1e8).toFixed(8) + " BTC", className: "ledger-amount" }),
+      ]}));
     }
 
     this.ledgerEl.replaceChildren(table);

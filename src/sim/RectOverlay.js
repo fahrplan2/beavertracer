@@ -1,6 +1,7 @@
 //@ts-check
 import { SimulatedObject } from "./SimulatedObject.js";
 import { SimControl } from "../SimControl.js";
+import { DOMBuilder } from "../lib/DomBuilder.js";
 import { t } from "../i18n/index.js";
 
 /** @param {number} x */
@@ -128,36 +129,17 @@ export class RectOverlay extends SimulatedObject {
     const body = panel.querySelector(".sim-panel-body");
     if (!(body instanceof HTMLElement)) return panel;
 
-    // Color label
-    const label = document.createElement("div");
-    label.className = "sim-field-label";
-    label.textContent = t("rect.color");
-    body.appendChild(label);
-
-    // Color picker
-    const colorInput = document.createElement("input");
-    colorInput.type = "color";
-    colorInput.value = this.color;
-    colorInput.className = "sim-rect-color";
+    body.appendChild(DOMBuilder.el("div", { className: "sim-field-label", text: t("rect.color") }));
+    const colorInput = DOMBuilder.input({ type: "color", className: "sim-rect-color", value: this.color });
     colorInput.addEventListener("input", () => {
       this.color = String(colorInput.value || this.color);
       this._applyFill();
     });
     body.appendChild(colorInput);
 
-    // Opacity
-    const opLabel = document.createElement("div");
-    opLabel.className = "sim-field-label";
-    opLabel.textContent = t("rect.opacity");
-    body.appendChild(opLabel);
-
-    const op = document.createElement("input");
-    op.type = "range";
-    op.min = "0";
-    op.max = "1";
-    op.step = "0.01";
+    body.appendChild(DOMBuilder.el("div", { className: "sim-field-label", text: t("rect.opacity") }));
+    const op = DOMBuilder.el("input", { className: "sim-rect-opacity", attrs: { type: "range", min: "0", max: "1", step: "0.01" } });
     op.value = String(this.opacity);
-    op.className = "sim-rect-opacity";
     op.addEventListener("input", () => {
       this.opacity = clamp01(parseFloat(op.value));
       this._applyFill();

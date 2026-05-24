@@ -174,9 +174,6 @@ export class Router extends SimulatedObject {
         panelBody.innerHTML = "";
 
         const host = DOMBuilder.div("router-ui");
-        host.style.display = "flex";
-        host.style.flexDirection = "column";
-        host.style.gap = "12px";
         panelBody.appendChild(host);
 
         /* ============================ Outer tabs ============================ */
