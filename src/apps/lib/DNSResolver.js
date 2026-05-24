@@ -220,7 +220,7 @@ export class DNSResolver {
   _hasIPv6() {
     const interfaces = this.os?.net?.interfaces;
     if (!Array.isArray(interfaces)) return false;
-    return interfaces.some(itf => itf.ip6 || itf.ip6LL);
+    return interfaces.some(itf => itf.ip6);
   }
 
   _nowRealMs() {
