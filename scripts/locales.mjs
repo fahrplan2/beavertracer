@@ -36,6 +36,7 @@ export const LOCALES = [
   { code: "ja",      name: "Japanese" },
   { code: "ko",      name: "Korean" },
   { code: "zh",      name: "Simplified Chinese" },
+  { code: "zh-Hant", name: "Traditional Chinese" },
   { code: "ar",      name: "Arabic",          rtl: true },
   { code: "fa",      name: "Persian (Farsi)", rtl: true },
   { code: "uk",      name: "Ukrainian" },

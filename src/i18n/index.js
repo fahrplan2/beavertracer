@@ -230,11 +230,13 @@ export async function initLocale() {
     /* ignore */
   }
 
-  // 2) Browser locale — map pt-* → pt-PT, sr-Latn-* → sr-Latn, sr-* → sr-Cyrl
+  // 2) Browser locale — map pt-* → pt-PT, sr-Latn-* → sr-Latn, sr-* → sr-Cyrl,
+  //    zh-TW / zh-HK / zh-Hant-* → zh-Hant
   const full = (navigator.language ?? "").toLowerCase();
   const short = full.split("-")[0];
   const browser = short === "pt" ? "pt-PT"
                 : short === "sr" ? (full.includes("latn") ? "sr-Latn" : "sr-Cyrl")
+                : short === "zh" && (full.includes("tw") || full.includes("hk") || full.includes("hant")) ? "zh-Hant"
                 : short;
   if (browser && (await loadLocaleDict(browser))) locale = browser;
   else locale = "de";
