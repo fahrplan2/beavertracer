@@ -108,9 +108,14 @@ function createTableEditor(cols, onChange, makeDefaultRow) {
 
   const controls = UI.buttonRow([addBtn]);
 
+  const scrollWrap = UI.el("div", {
+    className: "tbl-scroll",
+    children: [table],
+  });
+
   const root = UI.el("div", {
     className: "tblwrap",
-    children: [table, controls],
+    children: [scrollWrap, controls],
   });
 
   /** @returns {any[]} */
