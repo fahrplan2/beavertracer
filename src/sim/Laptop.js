@@ -5,6 +5,7 @@ import { OS } from "../apps/OS.js";
 import { IPStack } from "../net/IPStack.js";
 import { WirelessPort } from "../net/WirelessPort.js";
 import { t } from "../i18n/index.js";
+import { IPv4ConfigApp } from "../apps/IPv4ConfigApp.js";
 
 export class Laptop extends SimulatedObject {
 
@@ -74,13 +75,15 @@ export class Laptop extends SimulatedObject {
     // --- Persistence ---
 
     toJSON() {
+        const ipConfig = /** @type {IPv4ConfigApp|undefined} */ (this.os.runningApps.find(a => a instanceof IPv4ConfigApp));
         return {
             ...super.toJSON(),
             kind: "Laptop",
             net:  this.net.toJSON(),
             fs:   this.fs.toJSON(),
-            dns:  this.dns.serverIp,
+            dns:  this.dns.serverIp?.toString() ?? null,
             ssid: this._ssid,
+            dhcpMode: { ...(ipConfig?.persisted?.modeByIface ?? {}) },
         };
     }
 
@@ -97,6 +100,12 @@ export class Laptop extends SimulatedObject {
         if (n.fs)  obj.os.fs = VirtualFileSystem.fromJSON(n.fs);
         if (n.dns) obj.os.dns.setServer(n.dns);
         obj._ssid = String(n.ssid ?? "");
+
+        const dhcpMode = n.dhcpMode ?? {};
+        if (Object.values(dhcpMode).some(v => v === "dhcp")) {
+            const ipConfig = /** @type {IPv4ConfigApp|undefined} */ (obj.os.runningApps.find(a => a instanceof IPv4ConfigApp));
+            if (ipConfig) void ipConfig._autoDhcpStartFromMode(dhcpMode);
+        }
 
         return obj;
     }
