@@ -188,7 +188,7 @@
             "prefixLength": 30,
             "ip6": "2001:db8:ff:12::1",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a81c:84ff:fe48:46bc",
+            "ip6LL": "fe80::a8d3:5dff:feec:f854",
             "raEnabled": false
           },
           {
@@ -197,7 +197,7 @@
             "prefixLength": 30,
             "ip6": "2001:db8:ff:13::1",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a8d8:aaff:fe2c:c696",
+            "ip6LL": "fe80::a8ec:91ff:fe22:d5ae",
             "raEnabled": false
           },
           {
@@ -206,7 +206,7 @@
             "prefixLength": 30,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a8fb:b0ff:fe4a:a0be",
+            "ip6LL": "fe80::a8fa:a1ff:fe11:f0d1",
             "raEnabled": false
           }
         ],
@@ -274,7 +274,7 @@
             "prefixLength": 30,
             "ip6": "2001:db8:ff:12::2",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a8bc:ebff:fe3f:fb01",
+            "ip6LL": "fe80::a86a:1bff:fe81:6b03",
             "raEnabled": false
           },
           {
@@ -283,7 +283,7 @@
             "prefixLength": 30,
             "ip6": "2001:db8:ff:23::1",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a895:14ff:fe49:184a",
+            "ip6LL": "fe80::a874:4cff:fe05:1036",
             "raEnabled": false
           },
           {
@@ -292,7 +292,7 @@
             "prefixLength": 30,
             "ip6": "2001:db8:ff:24::1",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a8f1:fbff:fe54:d04",
+            "ip6LL": "fe80::a867:3dff:fece:f7e2",
             "raEnabled": false
           },
           {
@@ -301,7 +301,7 @@
             "prefixLength": 30,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a84f:62ff:fe13:a8c0",
+            "ip6LL": "fe80::a80c:72ff:fe48:e70f",
             "raEnabled": false
           }
         ],
@@ -375,7 +375,7 @@
             "prefixLength": 30,
             "ip6": "2001:db8:ff:13::2",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a83d:99ff:fe49:1fd3",
+            "ip6LL": "fe80::a883:e9ff:fe16:7107",
             "raEnabled": false
           },
           {
@@ -384,7 +384,7 @@
             "prefixLength": 30,
             "ip6": "2001:db8:ff:23::2",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a822:54ff:fe49:dfd8",
+            "ip6LL": "fe80::a812:1dff:fedb:fb48",
             "raEnabled": false
           },
           {
@@ -393,7 +393,7 @@
             "prefixLength": 30,
             "ip6": "2001:db8:ff:34::1",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a81d:b5ff:fe46:6b17",
+            "ip6LL": "fe80::a833:50ff:fef7:da91",
             "raEnabled": false
           },
           {
@@ -402,7 +402,7 @@
             "prefixLength": 30,
             "ip6": "2001:db8:ff:35::1",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a8bb:d3ff:fe85:595e",
+            "ip6LL": "fe80::a8a0:84ff:fea0:bf4",
             "raEnabled": false
           },
           {
@@ -411,7 +411,7 @@
             "prefixLength": 30,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a825:b4ff:fe76:2afb",
+            "ip6LL": "fe80::a89a:55ff:feea:cc88",
             "raEnabled": false
           }
         ],
@@ -491,7 +491,7 @@
             "prefixLength": 30,
             "ip6": "2001:db8:ff:24::2",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a836:f5ff:fe16:90d0",
+            "ip6LL": "fe80::a8dc:3dff:fe3c:a03a",
             "raEnabled": false
           },
           {
@@ -500,7 +500,7 @@
             "prefixLength": 30,
             "ip6": "2001:db8:ff:34::2",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a824:b8ff:fea4:5dce",
+            "ip6LL": "fe80::a824:64ff:fe88:89cb",
             "raEnabled": false
           },
           {
@@ -509,7 +509,7 @@
             "prefixLength": 30,
             "ip6": "2001:db8:ff:45::1",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a8e8:17ff:fe2c:7380",
+            "ip6LL": "fe80::a871:64ff:fe2d:2d89",
             "raEnabled": false
           },
           {
@@ -518,7 +518,7 @@
             "prefixLength": 30,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a8c5:3ff:fed8:57a3",
+            "ip6LL": "fe80::a88b:24ff:fe55:30b1",
             "raEnabled": false
           }
         ],
@@ -592,7 +592,7 @@
             "prefixLength": 30,
             "ip6": "2001:db8:ff:35::2",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a8b7:89ff:fede:7ce3",
+            "ip6LL": "fe80::a841:42ff:fecd:ee5a",
             "raEnabled": false
           },
           {
@@ -601,7 +601,7 @@
             "prefixLength": 30,
             "ip6": "2001:db8:ff:45::2",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a823:cff:fec6:f9",
+            "ip6LL": "fe80::a872:46ff:fe16:c3eb",
             "raEnabled": false
           },
           {
@@ -610,7 +610,7 @@
             "prefixLength": 30,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a810:2dff:fe53:9d12",
+            "ip6LL": "fe80::a8c4:99ff:fe03:5cec",
             "raEnabled": false
           }
         ],
@@ -678,7 +678,7 @@
             "prefixLength": 30,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a8ec:dfff:fea2:c7ce",
+            "ip6LL": "fe80::a886:79ff:fefa:530e",
             "raEnabled": false
           },
           {
@@ -687,7 +687,7 @@
             "prefixLength": 30,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a8d7:c0ff:fe72:3143",
+            "ip6LL": "fe80::a813:d5ff:fee4:521a",
             "raEnabled": false
           },
           {
@@ -696,7 +696,7 @@
             "prefixLength": 30,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a83e:a2ff:fe64:4b8a",
+            "ip6LL": "fe80::a8c2:18ff:fec7:4960",
             "raEnabled": false
           },
           {
@@ -705,7 +705,7 @@
             "prefixLength": 30,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a809:a1ff:fe55:7434",
+            "ip6LL": "fe80::a862:59ff:fe81:8950",
             "raEnabled": false
           },
           {
@@ -714,7 +714,7 @@
             "prefixLength": 24,
             "ip6": "2001:db8:1:1::1",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a845:8fff:fe6e:13ca",
+            "ip6LL": "fe80::a84b:2bff:fec7:581c",
             "raEnabled": true
           }
         ],
@@ -774,7 +774,7 @@
             "prefixLength": 30,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a845:a9ff:fe98:d146",
+            "ip6LL": "fe80::a807:39ff:fe5a:dde0",
             "raEnabled": false
           },
           {
@@ -783,7 +783,7 @@
             "prefixLength": 30,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a826:80ff:fec4:47eb",
+            "ip6LL": "fe80::a884:50ff:fe58:530a",
             "raEnabled": false
           },
           {
@@ -792,7 +792,7 @@
             "prefixLength": 24,
             "ip6": "2001:db8:2:1::1",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a8bf:eaff:fea0:967b",
+            "ip6LL": "fe80::a894:d3ff:fe57:2e9",
             "raEnabled": true
           }
         ],
@@ -846,7 +846,7 @@
             "prefixLength": 30,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a8a5:21ff:fe71:2e4",
+            "ip6LL": "fe80::a80d:c6ff:fe1f:703c",
             "raEnabled": false
           },
           {
@@ -855,7 +855,7 @@
             "prefixLength": 30,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a88a:5aff:fe0d:5e66",
+            "ip6LL": "fe80::a8ec:26ff:fe98:88a3",
             "raEnabled": false
           },
           {
@@ -864,7 +864,7 @@
             "prefixLength": 30,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a879:94ff:fe84:2925",
+            "ip6LL": "fe80::a86e:bbff:fe6d:b4a2",
             "raEnabled": false
           },
           {
@@ -873,7 +873,7 @@
             "prefixLength": 24,
             "ip6": "2001:db8:3:1::1",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a8b8:c7ff:fe15:47aa",
+            "ip6LL": "fe80::a836:3aff:fe44:8a2c",
             "raEnabled": true
           }
         ],
@@ -924,6 +924,7 @@
       "py": 500,
       "panelOpen": false,
       "wanMode": "static",
+      "wanIp6Enabled": false,
       "wanIp": "185.1.0.2",
       "wanPrefix": 30,
       "wanGw": "185.1.0.1",
@@ -950,6 +951,7 @@
       "py": 500,
       "panelOpen": false,
       "wanMode": "static",
+      "wanIp6Enabled": false,
       "wanIp": "185.1.0.6",
       "wanPrefix": 30,
       "wanGw": "185.1.0.5",
@@ -976,6 +978,7 @@
       "py": 500,
       "panelOpen": false,
       "wanMode": "static",
+      "wanIp6Enabled": false,
       "wanIp": "185.2.0.2",
       "wanPrefix": 30,
       "wanGw": "185.2.0.1",
@@ -1002,6 +1005,7 @@
       "py": 500,
       "panelOpen": false,
       "wanMode": "static",
+      "wanIp6Enabled": false,
       "wanIp": "185.3.0.2",
       "wanPrefix": 30,
       "wanGw": "185.3.0.1",
@@ -1033,11 +1037,11 @@
         "interfaces": [
           {
             "name": "eth0",
-            "ip": "192.168.1.10",
+            "ip": "192.168.1.100",
             "prefixLength": 24,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a898:bbff:fe39:3cfb",
+            "ip6LL": "fe80::a809:a6ff:fe30:3b20",
             "raEnabled": false
           }
         ],
@@ -1066,27 +1070,9 @@
           }
         ]
       },
-      "dns": {
-        "_version": 4,
-        "_numberv4": 3103981834,
-        "_numberv6": {
-          "0": 0,
-          "1": 0,
-          "2": 0,
-          "3": 0,
-          "4": 0,
-          "5": 0,
-          "6": 0,
-          "7": 0,
-          "8": 0,
-          "9": 0,
-          "10": 0,
-          "11": 0,
-          "12": 0,
-          "13": 0,
-          "14": 0,
-          "15": 0
-        }
+      "dns": "185.3.1.10",
+      "dhcpMode": {
+        "0": "dhcp"
       }
     },
     {
@@ -1095,8 +1081,8 @@
       "name": "Laptop-Zuhause1",
       "x": 10.699254536128544,
       "y": 605.7861733603311,
-      "px": 210,
-      "py": 660,
+      "px": 252.5,
+      "py": 57,
       "panelOpen": false,
       "net": {
         "name": "Laptop-Zuhause1",
@@ -1104,11 +1090,11 @@
         "interfaces": [
           {
             "name": "wlan0",
-            "ip": "192.168.1.11",
+            "ip": "192.168.1.101",
             "prefixLength": 24,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a81f:d4ff:fe73:f222",
+            "ip6LL": "fe80::a8b9:55ff:fe96:e01e",
             "raEnabled": false
           }
         ],
@@ -1137,29 +1123,11 @@
           }
         ]
       },
-      "dns": {
-        "_version": 4,
-        "_numberv4": 3103981834,
-        "_numberv6": {
-          "0": 0,
-          "1": 0,
-          "2": 0,
-          "3": 0,
-          "4": 0,
-          "5": 0,
-          "6": 0,
-          "7": 0,
-          "8": 0,
-          "9": 0,
-          "10": 0,
-          "11": 0,
-          "12": 0,
-          "13": 0,
-          "14": 0,
-          "15": 0
-        }
-      },
-      "ssid": "Home-1-WiFi"
+      "dns": "185.3.1.10",
+      "ssid": "Home-1-WiFi",
+      "dhcpMode": {
+        "0": "dhcp"
+      }
     },
     {
       "kind": "PC",
@@ -1167,8 +1135,8 @@
       "name": "PC-Zuhause2",
       "x": 168.32899475097656,
       "y": 607.2906984982791,
-      "px": 312,
-      "py": 660,
+      "px": 313.5,
+      "py": 76.5,
       "panelOpen": false,
       "net": {
         "name": "PC-Zuhause2",
@@ -1176,11 +1144,11 @@
         "interfaces": [
           {
             "name": "eth0",
-            "ip": "192.168.2.10",
+            "ip": "192.168.2.100",
             "prefixLength": 24,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a810:a6ff:fe7c:f8cf",
+            "ip6LL": "fe80::a890:6fff:fe65:13ce",
             "raEnabled": false
           }
         ],
@@ -1209,27 +1177,9 @@
           }
         ]
       },
-      "dns": {
-        "_version": 4,
-        "_numberv4": 3103981834,
-        "_numberv6": {
-          "0": 0,
-          "1": 0,
-          "2": 0,
-          "3": 0,
-          "4": 0,
-          "5": 0,
-          "6": 0,
-          "7": 0,
-          "8": 0,
-          "9": 0,
-          "10": 0,
-          "11": 0,
-          "12": 0,
-          "13": 0,
-          "14": 0,
-          "15": 0
-        }
+      "dns": "185.3.1.10",
+      "dhcpMode": {
+        "0": "dhcp"
       }
     },
     {
@@ -1238,8 +1188,8 @@
       "name": "Laptop-Zuhause2",
       "x": 287.1227504490139,
       "y": 606.5387876283872,
-      "px": 412,
-      "py": 660,
+      "px": 396.5,
+      "py": 57.5,
       "panelOpen": false,
       "net": {
         "name": "Laptop-Zuhause2",
@@ -1247,11 +1197,11 @@
         "interfaces": [
           {
             "name": "wlan0",
-            "ip": "192.168.2.11",
+            "ip": "192.168.2.101",
             "prefixLength": 24,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a819:f6ff:febc:eed3",
+            "ip6LL": "fe80::a8b1:2fff:fed4:2460",
             "raEnabled": false
           }
         ],
@@ -1280,29 +1230,11 @@
           }
         ]
       },
-      "dns": {
-        "_version": 4,
-        "_numberv4": 3103981834,
-        "_numberv6": {
-          "0": 0,
-          "1": 0,
-          "2": 0,
-          "3": 0,
-          "4": 0,
-          "5": 0,
-          "6": 0,
-          "7": 0,
-          "8": 0,
-          "9": 0,
-          "10": 0,
-          "11": 0,
-          "12": 0,
-          "13": 0,
-          "14": 0,
-          "15": 0
-        }
-      },
-      "ssid": "Home-2-WiFi"
+      "dns": "185.3.1.10",
+      "ssid": "Home-2-WiFi",
+      "dhcpMode": {
+        "0": "dhcp"
+      }
     },
     {
       "kind": "PC",
@@ -1310,8 +1242,8 @@
       "name": "PC-Zuhause3",
       "x": 628.1573426573426,
       "y": 607.2902097902098,
-      "px": 738,
-      "py": 660,
+      "px": 511,
+      "py": 59.5,
       "panelOpen": false,
       "net": {
         "name": "PC-Zuhause3",
@@ -1319,11 +1251,11 @@
         "interfaces": [
           {
             "name": "eth0",
-            "ip": "192.168.3.10",
+            "ip": "192.168.3.100",
             "prefixLength": 24,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a818:bbff:fec7:b75f",
+            "ip6LL": "fe80::a843:18ff:fe40:7219",
             "raEnabled": false
           }
         ],
@@ -1352,27 +1284,9 @@
           }
         ]
       },
-      "dns": {
-        "_version": 4,
-        "_numberv4": 3103981834,
-        "_numberv6": {
-          "0": 0,
-          "1": 0,
-          "2": 0,
-          "3": 0,
-          "4": 0,
-          "5": 0,
-          "6": 0,
-          "7": 0,
-          "8": 0,
-          "9": 0,
-          "10": 0,
-          "11": 0,
-          "12": 0,
-          "13": 0,
-          "14": 0,
-          "15": 0
-        }
+      "dns": "185.3.1.10",
+      "dhcpMode": {
+        "0": "dhcp"
       }
     },
     {
@@ -1381,8 +1295,8 @@
       "name": "Laptop-Zuhause3",
       "x": 751.4615384615385,
       "y": 606.5384615384615,
-      "px": 838,
-      "py": 660,
+      "px": 637,
+      "py": 55,
       "panelOpen": false,
       "net": {
         "name": "Laptop-Zuhause3",
@@ -1390,11 +1304,11 @@
         "interfaces": [
           {
             "name": "wlan0",
-            "ip": "192.168.3.11",
+            "ip": "192.168.3.101",
             "prefixLength": 24,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a8a6:ffff:fe00:afd5",
+            "ip6LL": "fe80::a8c2:6dff:fecd:3b35",
             "raEnabled": false
           }
         ],
@@ -1423,29 +1337,11 @@
           }
         ]
       },
-      "dns": {
-        "_version": 4,
-        "_numberv4": 3103981834,
-        "_numberv6": {
-          "0": 0,
-          "1": 0,
-          "2": 0,
-          "3": 0,
-          "4": 0,
-          "5": 0,
-          "6": 0,
-          "7": 0,
-          "8": 0,
-          "9": 0,
-          "10": 0,
-          "11": 0,
-          "12": 0,
-          "13": 0,
-          "14": 0,
-          "15": 0
-        }
-      },
-      "ssid": "Home-3-WiFi"
+      "dns": "185.3.1.10",
+      "ssid": "Home-3-WiFi",
+      "dhcpMode": {
+        "0": "dhcp"
+      }
     },
     {
       "kind": "PC",
@@ -1453,8 +1349,8 @@
       "name": "PC-Zuhause4",
       "x": 1159.584550337358,
       "y": 610.2968425617352,
-      "px": 1192,
-      "py": 660,
+      "px": 610,
+      "py": 31.5,
       "panelOpen": false,
       "net": {
         "name": "PC-Zuhause4",
@@ -1462,11 +1358,11 @@
         "interfaces": [
           {
             "name": "eth0",
-            "ip": "192.168.4.10",
+            "ip": "192.168.4.100",
             "prefixLength": 24,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a85b:9ff:fe4a:c817",
+            "ip6LL": "fe80::a897:2dff:fef2:3b26",
             "raEnabled": false
           }
         ],
@@ -1495,27 +1391,9 @@
           }
         ]
       },
-      "dns": {
-        "_version": 4,
-        "_numberv4": 3103981834,
-        "_numberv6": {
-          "0": 0,
-          "1": 0,
-          "2": 0,
-          "3": 0,
-          "4": 0,
-          "5": 0,
-          "6": 0,
-          "7": 0,
-          "8": 0,
-          "9": 0,
-          "10": 0,
-          "11": 0,
-          "12": 0,
-          "13": 0,
-          "14": 0,
-          "15": 0
-        }
+      "dns": "185.3.1.10",
+      "dhcpMode": {
+        "0": "dhcp"
       }
     },
     {
@@ -1524,8 +1402,8 @@
       "name": "Laptop-Zuhause4",
       "x": 1290.4070336401878,
       "y": 609.5457977081512,
-      "px": 1292,
-      "py": 660,
+      "px": 709,
+      "py": 63.5,
       "panelOpen": false,
       "net": {
         "name": "Laptop-Zuhause4",
@@ -1533,11 +1411,11 @@
         "interfaces": [
           {
             "name": "wlan0",
-            "ip": "192.168.4.11",
+            "ip": "192.168.4.101",
             "prefixLength": 24,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a837:a8ff:fe8e:6e9",
+            "ip6LL": "fe80::a83f:e5ff:feaa:e96e",
             "raEnabled": false
           }
         ],
@@ -1566,29 +1444,11 @@
           }
         ]
       },
-      "dns": {
-        "_version": 4,
-        "_numberv4": 3103981834,
-        "_numberv6": {
-          "0": 0,
-          "1": 0,
-          "2": 0,
-          "3": 0,
-          "4": 0,
-          "5": 0,
-          "6": 0,
-          "7": 0,
-          "8": 0,
-          "9": 0,
-          "10": 0,
-          "11": 0,
-          "12": 0,
-          "13": 0,
-          "14": 0,
-          "15": 0
-        }
-      },
-      "ssid": "Home-4-WiFi"
+      "dns": "185.3.1.10",
+      "ssid": "Home-4-WiFi",
+      "dhcpMode": {
+        "0": "dhcp"
+      }
     },
     {
       "kind": "Switch",
@@ -1822,7 +1682,7 @@
             "prefixLength": 24,
             "ip6": "2001:db8:1:1::10",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a847:ecff:fe5b:edce",
+            "ip6LL": "fe80::a8df:72ff:fef8:35e0",
             "raEnabled": false
           }
         ],
@@ -1852,7 +1712,7 @@
             "type": "dir",
             "name": "etc",
             "ctime": 0,
-            "mtime": 1779654775914,
+            "mtime": 1779660092198,
             "children": [
               {
                 "type": "file",
@@ -1860,7 +1720,7 @@
                 "data": "{\n  \"port\": 80,\n  \"docRoot\": \"/var/www/\",\n  \"httpsEnabled\": false,\n  \"httpsPort\": 443,\n  \"certPath\": \"\",\n  \"autostart\": true\n}\n",
                 "binary": false,
                 "ctime": 0,
-                "mtime": 1779654775914
+                "mtime": 1779660092198
               }
             ]
           },
@@ -1897,28 +1757,8 @@
           }
         ]
       },
-      "dns": {
-        "_version": 4,
-        "_numberv4": 3103981834,
-        "_numberv6": {
-          "0": 0,
-          "1": 0,
-          "2": 0,
-          "3": 0,
-          "4": 0,
-          "5": 0,
-          "6": 0,
-          "7": 0,
-          "8": 0,
-          "9": 0,
-          "10": 0,
-          "11": 0,
-          "12": 0,
-          "13": 0,
-          "14": 0,
-          "15": 0
-        }
-      }
+      "dns": null,
+      "dhcpMode": {}
     },
     {
       "kind": "PC",
@@ -1939,7 +1779,7 @@
             "prefixLength": 24,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a8a3:eaff:fe98:dd9b",
+            "ip6LL": "fe80::a86c:f7ff:fe89:6904",
             "raEnabled": false
           }
         ],
@@ -1975,28 +1815,8 @@
           }
         ]
       },
-      "dns": {
-        "_version": 4,
-        "_numberv4": 3103981834,
-        "_numberv6": {
-          "0": 0,
-          "1": 0,
-          "2": 0,
-          "3": 0,
-          "4": 0,
-          "5": 0,
-          "6": 0,
-          "7": 0,
-          "8": 0,
-          "9": 0,
-          "10": 0,
-          "11": 0,
-          "12": 0,
-          "13": 0,
-          "14": 0,
-          "15": 0
-        }
-      }
+      "dns": null,
+      "dhcpMode": {}
     },
     {
       "kind": "PC",
@@ -2017,7 +1837,7 @@
             "prefixLength": 24,
             "ip6": "2001:db8:2:1::10",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a82f:57ff:fe5c:c2e6",
+            "ip6LL": "fe80::a847:f8ff:fe3a:da9d",
             "raEnabled": false
           }
         ],
@@ -2047,7 +1867,7 @@
             "type": "dir",
             "name": "etc",
             "ctime": 0,
-            "mtime": 1779654759715,
+            "mtime": 1779660092198,
             "children": [
               {
                 "type": "file",
@@ -2055,7 +1875,7 @@
                 "data": "{\n  \"port\": 80,\n  \"docRoot\": \"/var/www/\",\n  \"httpsEnabled\": false,\n  \"httpsPort\": 443,\n  \"certPath\": \"\",\n  \"autostart\": true\n}\n",
                 "binary": false,
                 "ctime": 0,
-                "mtime": 1779654759715
+                "mtime": 1779660092198
               },
               {
                 "type": "file",
@@ -2115,28 +1935,8 @@
           }
         ]
       },
-      "dns": {
-        "_version": 4,
-        "_numberv4": 3103981834,
-        "_numberv6": {
-          "0": 0,
-          "1": 0,
-          "2": 0,
-          "3": 0,
-          "4": 0,
-          "5": 0,
-          "6": 0,
-          "7": 0,
-          "8": 0,
-          "9": 0,
-          "10": 0,
-          "11": 0,
-          "12": 0,
-          "13": 0,
-          "14": 0,
-          "15": 0
-        }
-      }
+      "dns": null,
+      "dhcpMode": {}
     },
     {
       "kind": "PC",
@@ -2157,7 +1957,7 @@
             "prefixLength": 24,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a84b:60ff:fed0:1734",
+            "ip6LL": "fe80::a851:b8ff:fe48:b171",
             "raEnabled": false
           }
         ],
@@ -2181,7 +1981,7 @@
             "type": "dir",
             "name": "etc",
             "ctime": 0,
-            "mtime": 1779654739048,
+            "mtime": 1779660092198,
             "children": [
               {
                 "type": "file",
@@ -2189,7 +1989,7 @@
                 "data": "{\n  \"mailDomain\": \"example.local\",\n  \"ports\": {\n    \"smtp\": 25,\n    \"pop3\": 110,\n    \"imap\": 143\n  },\n  \"tls\": {\n    \"enabled\": false,\n    \"smtps\": 465,\n    \"pop3s\": 995,\n    \"imaps\": 993,\n    \"certPath\": \"\"\n  },\n  \"users\": [],\n  \"autostart\": true\n}\n",
                 "binary": false,
                 "ctime": 0,
-                "mtime": 1779654739048
+                "mtime": 1779660092198
               }
             ]
           },
@@ -2225,28 +2025,8 @@
           }
         ]
       },
-      "dns": {
-        "_version": 4,
-        "_numberv4": 3103981834,
-        "_numberv6": {
-          "0": 0,
-          "1": 0,
-          "2": 0,
-          "3": 0,
-          "4": 0,
-          "5": 0,
-          "6": 0,
-          "7": 0,
-          "8": 0,
-          "9": 0,
-          "10": 0,
-          "11": 0,
-          "12": 0,
-          "13": 0,
-          "14": 0,
-          "15": 0
-        }
-      }
+      "dns": null,
+      "dhcpMode": {}
     },
     {
       "kind": "PC",
@@ -2267,7 +2047,7 @@
             "prefixLength": 24,
             "ip6": "2001:db8:3:1::10",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a856:e0ff:fe72:5fb7",
+            "ip6LL": "fe80::a875:f2ff:fe61:8a0a",
             "raEnabled": false
           }
         ],
@@ -2297,7 +2077,7 @@
             "type": "dir",
             "name": "etc",
             "ctime": 0,
-            "mtime": 1779654730318,
+            "mtime": 1779660092198,
             "children": [
               {
                 "type": "file",
@@ -2305,7 +2085,7 @@
                 "data": "{\n  \"a\": [\n    {\n      \"name\": \"www.example.com\",\n      \"ip\": \"185.1.1.10\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"example.com\",\n      \"ip\": \"185.1.1.10\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"srv.example.com\",\n      \"ip\": \"185.1.1.20\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"ftp.example.com\",\n      \"ip\": \"185.1.1.20\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"www.betanet.de\",\n      \"ip\": \"185.2.1.10\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"betanet.de\",\n      \"ip\": \"185.2.1.10\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"mail.betanet.de\",\n      \"ip\": \"185.2.1.20\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"ns1.example.com\",\n      \"ip\": \"185.3.1.10\",\n      \"ttl\": 300\n    },\n    {\n      \"name\": \"ns1.betanet.de\",\n      \"ip\": \"185.3.1.10\",\n      \"ttl\": 300\n    },\n    {\n      \"name\": \"ns2.betanet.de\",\n      \"ip\": \"185.3.1.20\",\n      \"ttl\": 300\n    },\n    {\n      \"name\": \"ns1\",\n      \"ip\": \"185.3.1.10\",\n      \"ttl\": 60\n    }\n  ],\n  \"aaaa\": [\n    {\n      \"name\": \"www.example.com\",\n      \"ip\": \"2001:db8:1:1::10\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"example.com\",\n      \"ip\": \"2001:db8:1:1::10\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"www.betanet.de\",\n      \"ip\": \"2001:db8:2:1::10\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"ns1\",\n      \"ip\": \"2001:db8:3:1::10\",\n      \"ttl\": 60\n    }\n  ],\n  \"cname\": [\n    {\n      \"name\": \"ftp.example.com\",\n      \"target\": \"srv.example.com\",\n      \"ttl\": 60\n    }\n  ],\n  \"mx\": [\n    {\n      \"name\": \"example.com\",\n      \"preference\": 10,\n      \"exchange\": \"mail.betanet.de\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"betanet.de\",\n      \"preference\": 10,\n      \"exchange\": \"mail.betanet.de\",\n      \"ttl\": 60\n    }\n  ],\n  \"ns\": [\n    {\n      \"name\": \"example.com\",\n      \"host\": \"ns1.example.com\",\n      \"ttl\": 300\n    },\n    {\n      \"name\": \"betanet.de\",\n      \"host\": \"ns1.betanet.de\",\n      \"ttl\": 300\n    }\n  ],\n  \"autostart\": true\n}\n",
                 "binary": false,
                 "ctime": 0,
-                "mtime": 1779654730318
+                "mtime": 1779660092198
               }
             ]
           },
@@ -2318,28 +2098,8 @@
           }
         ]
       },
-      "dns": {
-        "_version": 4,
-        "_numberv4": 3103981834,
-        "_numberv6": {
-          "0": 0,
-          "1": 0,
-          "2": 0,
-          "3": 0,
-          "4": 0,
-          "5": 0,
-          "6": 0,
-          "7": 0,
-          "8": 0,
-          "9": 0,
-          "10": 0,
-          "11": 0,
-          "12": 0,
-          "13": 0,
-          "14": 0,
-          "15": 0
-        }
-      }
+      "dns": null,
+      "dhcpMode": {}
     },
     {
       "kind": "PC",
@@ -2360,7 +2120,7 @@
             "prefixLength": 24,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a8a9:e0ff:fe98:bf46",
+            "ip6LL": "fe80::a8f8:13ff:fed7:5a7d",
             "raEnabled": false
           }
         ],
@@ -2396,28 +2156,140 @@
           }
         ]
       },
-      "dns": {
-        "_version": 4,
-        "_numberv4": 3103981834,
-        "_numberv6": {
-          "0": 0,
-          "1": 0,
-          "2": 0,
-          "3": 0,
-          "4": 0,
-          "5": 0,
-          "6": 0,
-          "7": 0,
-          "8": 0,
-          "9": 0,
-          "10": 0,
-          "11": 0,
-          "12": 0,
-          "13": 0,
-          "14": 0,
-          "15": 0
-        }
-      }
+      "dns": null,
+      "dhcpMode": {}
+    },
+    {
+      "kind": "TextBox",
+      "id": 732,
+      "name": "Textfeld",
+      "x": -125.6169467440817,
+      "y": 238.6856490997086,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "text": "# Provider A",
+      "showTitle": false
+    },
+    {
+      "kind": "TextBox",
+      "id": 734,
+      "name": "Textfeld",
+      "x": 617.7620247615113,
+      "y": 234.0391342623484,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "text": "# Provider B",
+      "showTitle": false
+    },
+    {
+      "kind": "TextBox",
+      "id": 736,
+      "name": "Textfeld",
+      "x": 1136.5725237879813,
+      "y": 232.49076613212094,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "text": "# Provider C",
+      "showTitle": false
+    },
+    {
+      "kind": "TextBox",
+      "id": 738,
+      "name": "Textfeld",
+      "x": 54.03267057151035,
+      "y": 467.89409312449186,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "text": "## Home 1",
+      "showTitle": false
+    },
+    {
+      "kind": "TextBox",
+      "id": 740,
+      "name": "Textfeld",
+      "x": 325.05593799540884,
+      "y": 470.9919920645283,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "text": "## Home 2",
+      "showTitle": false
+    },
+    {
+      "kind": "TextBox",
+      "id": 742,
+      "name": "Textfeld",
+      "x": 786.5709221262682,
+      "y": 474.08897692780954,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "text": "## Home 3",
+      "showTitle": false
+    },
+    {
+      "kind": "TextBox",
+      "id": 744,
+      "name": "Textfeld",
+      "x": 1336.3625478610659,
+      "y": 469.442919073609,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "text": "## Home 4",
+      "showTitle": false
+    },
+    {
+      "kind": "TextBox",
+      "id": 746,
+      "name": "Textfeld",
+      "x": 816.7706296410478,
+      "y": 407.4939839271084,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "text": "## Datacenter 2",
+      "showTitle": false
+    },
+    {
+      "kind": "TextBox",
+      "id": 748,
+      "name": "Textfeld",
+      "x": 266.9802728309988,
+      "y": 393.5564592118846,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "text": "## Datacenter 1",
+      "showTitle": false
+    },
+    {
+      "kind": "TextBox",
+      "id": 750,
+      "name": "Textfeld",
+      "x": 1316.2257538117885,
+      "y": 410.59219988939947,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "text": "## Datacenter 3",
+      "showTitle": false
+    },
+    {
+      "kind": "TextBox",
+      "id": 755,
+      "name": "Textfeld",
+      "x": -120.1968250542353,
+      "y": -20.72283939562297,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "text": "# Internet Backbone",
+      "showTitle": false
     },
     {
       "kind": "Link",
@@ -2650,138 +2522,6 @@
       "b": 605,
       "portA": "sw2",
       "portB": "eth0"
-    },
-    {
-      "kind": "TextBox",
-      "id": 732,
-      "name": "Textfeld",
-      "x": -125.6169467440817,
-      "y": 238.6856490997086,
-      "px": 220,
-      "py": 120,
-      "panelOpen": false,
-      "text": "# Provider A",
-      "showTitle": false
-    },
-    {
-      "kind": "TextBox",
-      "id": 734,
-      "name": "Textfeld",
-      "x": 617.7620247615113,
-      "y": 234.0391342623484,
-      "px": 220,
-      "py": 120,
-      "panelOpen": false,
-      "text": "# Provider B",
-      "showTitle": false
-    },
-    {
-      "kind": "TextBox",
-      "id": 736,
-      "name": "Textfeld",
-      "x": 1136.5725237879813,
-      "y": 232.49076613212094,
-      "px": 220,
-      "py": 120,
-      "panelOpen": false,
-      "text": "# Provider C",
-      "showTitle": false
-    },
-    {
-      "kind": "TextBox",
-      "id": 738,
-      "name": "Textfeld",
-      "x": 54.03267057151035,
-      "y": 467.89409312449186,
-      "px": 220,
-      "py": 120,
-      "panelOpen": false,
-      "text": "## Home 1",
-      "showTitle": false
-    },
-    {
-      "kind": "TextBox",
-      "id": 740,
-      "name": "Textfeld",
-      "x": 325.05593799540884,
-      "y": 470.9919920645283,
-      "px": 220,
-      "py": 120,
-      "panelOpen": false,
-      "text": "## Home 2",
-      "showTitle": false
-    },
-    {
-      "kind": "TextBox",
-      "id": 742,
-      "name": "Textfeld",
-      "x": 786.5709221262682,
-      "y": 474.08897692780954,
-      "px": 220,
-      "py": 120,
-      "panelOpen": false,
-      "text": "## Home 3",
-      "showTitle": false
-    },
-    {
-      "kind": "TextBox",
-      "id": 744,
-      "name": "Textfeld",
-      "x": 1336.3625478610659,
-      "y": 469.442919073609,
-      "px": 220,
-      "py": 120,
-      "panelOpen": false,
-      "text": "## Home 4",
-      "showTitle": false
-    },
-    {
-      "kind": "TextBox",
-      "id": 746,
-      "name": "Textfeld",
-      "x": 816.7706296410478,
-      "y": 407.4939839271084,
-      "px": 220,
-      "py": 120,
-      "panelOpen": false,
-      "text": "## Datacenter 2",
-      "showTitle": false
-    },
-    {
-      "kind": "TextBox",
-      "id": 748,
-      "name": "Textfeld",
-      "x": 266.9802728309988,
-      "y": 393.5564592118846,
-      "px": 220,
-      "py": 120,
-      "panelOpen": false,
-      "text": "## Datacenter 1",
-      "showTitle": false
-    },
-    {
-      "kind": "TextBox",
-      "id": 750,
-      "name": "Textfeld",
-      "x": 1316.2257538117885,
-      "y": 410.59219988939947,
-      "px": 220,
-      "py": 120,
-      "panelOpen": false,
-      "text": "## Datacenter 3",
-      "showTitle": false
-    },
-    {
-      "kind": "TextBox",
-      "id": 755,
-      "name": "Textfeld",
-      "x": -120.1968250542353,
-      "y": -20.72283939562297,
-      "px": 220,
-      "py": 120,
-      "panelOpen": false,
-      "text": "# Internet Backbone",
-      "showTitle": false
     }
   ]
 }
