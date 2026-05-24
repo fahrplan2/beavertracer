@@ -1167,5 +1167,21 @@ export default {
   "tour.step.finish.title": "Тур завершено!",
   "tour.step.finish.text": "Ви успішно завершили тур і побудували, налаштували та проаналізували свою першу мережу.\n\nГайда вам у експериментах!",
   "app.terminal.copy": "Копіювати",
-  "app.terminal.paste": "Вставити"
+  "app.terminal.paste": "Вставити",
+  "sim.zoom": "Масштаб",
+  "sim.zoom.in": "Збільшити",
+  "sim.zoom.out": "Зменшити",
+  "sim.zoom.reset": "Скинути масштаб (клік)",
+  "sim.zoom.fit": "Вмістити",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "Включити DHCPv6-PD",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "LAN адреса IPv6",
+  "homerouter.lan.ipv6.ra": "Router Advertisements",
+  "homerouter.lan.ipv6.ra.active": "активна",
+  "homerouter.lan.ipv6.ra.inactive": "неактивна (немає делегованого префікса)",
+  "welcome.example.simple": "Простий приклад",
+  "welcome.example.simple.desc": "Невелика мережа, чудова стартова точка",
+  "welcome.example.complex": "Складний приклад",
+  "welcome.example.complex.desc": "Велика мережа з протоколами маршрутизації"
 };

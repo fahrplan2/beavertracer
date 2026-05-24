@@ -1167,5 +1167,21 @@ export default {
   "tour.step.finish.title": "Турът е завършен!",
   "tour.step.finish.text": "Успешно завършихте тура и построихте, конфигурирахте и анализирахте първата си мрежа.\n\nНаслаждавайте се на експериментирането!",
   "app.terminal.copy": "Копиране",
-  "app.terminal.paste": "Поставяне"
+  "app.terminal.paste": "Поставяне",
+  "sim.zoom": "Увеличение",
+  "sim.zoom.in": "Увеличи",
+  "sim.zoom.out": "Намали",
+  "sim.zoom.reset": "Възстанови увеличението (щракване)",
+  "sim.zoom.fit": "Прилепи",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "Включи DHCPv6-PD",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "LAN IPv6 адрес",
+  "homerouter.lan.ipv6.ra": "Router Advertisements",
+  "homerouter.lan.ipv6.ra.active": "активно",
+  "homerouter.lan.ipv6.ra.inactive": "неактивно (няма делегиран префикс)",
+  "welcome.example.simple": "Прост пример",
+  "welcome.example.simple.desc": "Малка мрежа, отличен начален вариант",
+  "welcome.example.complex": "Сложен пример",
+  "welcome.example.complex.desc": "Голяма мрежа с протоколи маршрутизиране"
 };

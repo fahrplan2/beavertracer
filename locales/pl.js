@@ -1167,5 +1167,21 @@ export default {
   "tour.step.finish.title": "Przewodnik zakończony!",
   "tour.step.finish.text": "Pomyślnie ukończyłeś przewodnik i zbudowałeś, skonfigurowałeś i przeanalizowałeś swoją pierwszą sieć.\n\nBaw się dobrze, eksperymentując!",
   "app.terminal.copy": "Kopiuj",
-  "app.terminal.paste": "Wklej"
+  "app.terminal.paste": "Wklej",
+  "sim.zoom": "Powiększenie",
+  "sim.zoom.in": "Powiększ",
+  "sim.zoom.out": "Pomniejsz",
+  "sim.zoom.reset": "Resetuj powiększenie (kliknij)",
+  "sim.zoom.fit": "Dopasuj",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "Włącz DHCPv6-PD",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "Adres IPv6 LAN",
+  "homerouter.lan.ipv6.ra": "Ogłoszenia routera",
+  "homerouter.lan.ipv6.ra.active": "aktywne",
+  "homerouter.lan.ipv6.ra.inactive": "nieaktywne (brak delegowanego prefiksu)",
+  "welcome.example.simple": "Prosty przykład",
+  "welcome.example.simple.desc": "Mała sieć, doskonały punkt wyjścia",
+  "welcome.example.complex": "Złożony przykład",
+  "welcome.example.complex.desc": "Duża sieć z protokołami routingu"
 };

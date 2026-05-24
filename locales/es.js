@@ -1174,5 +1174,21 @@ export default {
   "tour.step.finish.title": "¡Tour Completado!",
   "tour.step.finish.text": "Has completado exitosamente el tour y construido, configurado y analizado tu primera red.\n\n¡Diviértete experimentando!",
   "app.terminal.copy": "Copiar",
-  "app.terminal.paste": "Pegar"
+  "app.terminal.paste": "Pegar",
+  "sim.zoom": "Zoom",
+  "sim.zoom.in": "Acercar",
+  "sim.zoom.out": "Alejar",
+  "sim.zoom.reset": "Restablecer zoom (clic)",
+  "sim.zoom.fit": "Ajustar",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "Habilitar DHCPv6-PD",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "Dirección IPv6 de LAN",
+  "homerouter.lan.ipv6.ra": "Anuncios de Enrutador",
+  "homerouter.lan.ipv6.ra.active": "activo",
+  "homerouter.lan.ipv6.ra.inactive": "inactivo (sin prefijo delegado)",
+  "welcome.example.simple": "Ejemplo Simple",
+  "welcome.example.simple.desc": "Red pequeña, excelente punto de partida",
+  "welcome.example.complex": "Ejemplo Complejo",
+  "welcome.example.complex.desc": "Red grande con protocolos de enrutamiento"
 };

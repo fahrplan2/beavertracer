@@ -1172,5 +1172,21 @@ export default {
   "tour.step.finish.title": "Tour Completato!",
   "tour.step.finish.text": "Hai completato con successo il tour e costruito, configurato e analizzato la tua prima rete.\n\nDivertiti a sperimentare!",
   "app.terminal.copy": "Copia",
-  "app.terminal.paste": "Incolla"
+  "app.terminal.paste": "Incolla",
+  "sim.zoom": "Zoom",
+  "sim.zoom.in": "Ingrandisci",
+  "sim.zoom.out": "Riduci",
+  "sim.zoom.reset": "Ripristina zoom (fare clic)",
+  "sim.zoom.fit": "Adatta",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "Abilita DHCPv6-PD",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "Indirizzo IPv6 LAN",
+  "homerouter.lan.ipv6.ra": "Annunci Router",
+  "homerouter.lan.ipv6.ra.active": "attivo",
+  "homerouter.lan.ipv6.ra.inactive": "inattivo (nessun prefisso delegato)",
+  "welcome.example.simple": "Esempio Semplice",
+  "welcome.example.simple.desc": "Piccola rete, ottimo punto di partenza",
+  "welcome.example.complex": "Esempio Complesso",
+  "welcome.example.complex.desc": "Grande rete con protocolli di routing"
 };

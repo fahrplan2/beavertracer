@@ -1167,5 +1167,21 @@ export default {
   "tour.step.finish.title": "Apskate pabeigta!",
   "tour.step.finish.text": "Jūs veiksmīgi pabeiguši apskati un izveidojuši, konfigurējuši un analizējuši savu pirmo tīklu.\n\nBavējieties eksperimentēšanu!",
   "app.terminal.copy": "Kopēt",
-  "app.terminal.paste": "Ielīmēt"
+  "app.terminal.paste": "Ielīmēt",
+  "sim.zoom": "Tālummaiņa",
+  "sim.zoom.in": "Tuvināt",
+  "sim.zoom.out": "Attālināt",
+  "sim.zoom.reset": "Atiestatīt tālummaiņu (klikšķis)",
+  "sim.zoom.fit": "Pielāgot",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "Iespējot DHCPv6-PD",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "LAN IPv6 adrese",
+  "homerouter.lan.ipv6.ra": "Maršrutētāja paziņojumi",
+  "homerouter.lan.ipv6.ra.active": "aktīvs",
+  "homerouter.lan.ipv6.ra.inactive": "neaktīvs (nav deleģēta prefiksa)",
+  "welcome.example.simple": "Vienkāršs piemērs",
+  "welcome.example.simple.desc": "Maza tīkla, lielisks sākumpunkts",
+  "welcome.example.complex": "Sarežģīts piemērs",
+  "welcome.example.complex.desc": "Liels tīkls ar maršrutēšanas protokoliem"
 };

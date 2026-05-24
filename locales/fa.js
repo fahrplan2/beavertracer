@@ -1167,5 +1167,21 @@ export default {
   "homerouter.pf.empty": "هیچ قانونی پیکربندی نشده است.",
   "homerouter.pf.invalid": "قانون انتقال پورت نامعتبر است.",
   "app.terminal.copy": "کپی",
-  "app.terminal.paste": "چسباندن"
+  "app.terminal.paste": "چسباندن",
+  "sim.zoom": "بزرگ‌نمایی",
+  "sim.zoom.in": "بزرگ‌نمایی بیشتر",
+  "sim.zoom.out": "بزرگ‌نمایی کمتر",
+  "sim.zoom.reset": "بازنشانی بزرگ‌نمایی (کلیک کنید)",
+  "sim.zoom.fit": "تطابق",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "فعال‌سازی DHCPv6-PD",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "آدرس IPv6 شبکه محلی",
+  "homerouter.lan.ipv6.ra": "تبلیغات مسیریاب",
+  "homerouter.lan.ipv6.ra.active": "فعال",
+  "homerouter.lan.ipv6.ra.inactive": "غیرفعال (بدون پیشوند تفویض‌شده)",
+  "welcome.example.simple": "مثال ساده",
+  "welcome.example.simple.desc": "شبکه کوچک، نقطه‌ی شروع عالی",
+  "welcome.example.complex": "مثال پیچیده",
+  "welcome.example.complex.desc": "شبکه بزرگ با پروتکل‌های مسیریابی"
 };

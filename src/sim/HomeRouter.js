@@ -34,6 +34,9 @@ const numToIp = (n) => new IPAddress(4, n >>> 0);
 /** @param {string} s @returns {number} uint32 */
 const strToNum = (s) => { try { const ip = IPAddress.fromString(s.trim()); return ip.isV4() ? ipNum(ip) : 0; } catch { return 0; } };
 
+/** @param {Uint8Array} b @returns {string} */
+const bytes6ToKey = (b) => Array.from(b).map(x => x.toString(16).padStart(2, "0")).join("");
+
 /** @param {Uint8Array} m @returns {bigint} */
 const macToBig = (m) => BigInt("0x" + Array.from(m).map(b => b.toString(16).padStart(2,"0")).join(""));
 
@@ -131,6 +134,16 @@ export class HomeRouter extends SimulatedObject {
     /** @type {Uint8Array|null} 16-byte router LAN IPv6 (prefix::1) */ _lanIp6 = null;
     /** @type {Uint8Array|null} 16-byte LAN RA prefix (host bits zeroed) */ _lanRaPrefix = null;
     _raTimer = new PollTimer();
+
+    // ── Dual-Stack / IPv6 WAN ─────────────────────────────────────────────
+    /** DHCPv6-PD enabled independently of IPv4 WAN mode */
+    _wanIp6Enabled = false;
+    /** @type {Uint8Array|null} WAN-side IPv6 default gateway (link-local, learned) */
+    _wanGw6 = null;
+    /** @type {Map<string,Uint8Array>} WAN NDP cache: hex-key → MAC */
+    _wanNdpCache = new Map();
+    /** @type {Map<string,Uint8Array>} LAN NDP cache: hex-key → MAC */
+    _lanNdpCache = new Map();
 
     // ── Panel ─────────────────────────────────────────────────────────────
     /** @type {HTMLElement|null} */ _panelBody = null;
@@ -303,15 +316,16 @@ export class HomeRouter extends SimulatedObject {
         // L2 MAC learning
         this._lanMacTable.set(macToBig(frame.srcMac), srcPort);
 
-        const forRouter = isEqualUint8(frame.dstMac, this._lanMac);
-        const isBcast   = isEqualUint8(frame.dstMac, BCAST_MAC);
+        const forRouter    = isEqualUint8(frame.dstMac, this._lanMac);
+        const isBcast      = isEqualUint8(frame.dstMac, BCAST_MAC);
+        const isIpv6Mcast  = frame.dstMac[0] === 0x33 && frame.dstMac[1] === 0x33;
 
-        if (forRouter || isBcast) {
+        if (forRouter || isBcast || isIpv6Mcast) {
             this._handleLanL3(frame, srcPort);
         }
 
         if (!forRouter) {
-            if (isBcast) {
+            if (isBcast || isIpv6Mcast) {
                 this._lanFlood(srcPort, frame);
             } else {
                 this._lanForward(srcPort, frame);
@@ -342,6 +356,15 @@ export class HomeRouter extends SimulatedObject {
                 this._lanMacTable.set(macToBig(frame.srcMac), srcPort);
             }
             this._handleLanIpv4(pkt, frame.srcMac, srcPort);
+        } else if (frame.etherType === 0x86DD) {
+            try {
+                const ipv6 = IPv6Packet.fromBytes(frame.payload);
+                const srcBytes = ipv6.src.toUInt8();
+                if (!srcBytes.every(b => b === 0)) {
+                    this._lanNdpCache.set(bytes6ToKey(srcBytes), frame.srcMac.slice());
+                }
+                this._handleLanIpv6(ipv6, frame.srcMac, srcPort);
+            } catch {}
         }
     }
 
@@ -396,6 +419,56 @@ export class HomeRouter extends SimulatedObject {
         } catch {}
     }
 
+    // ── LAN IPv6 processing ───────────────────────────────────────────────
+
+    /**
+     * @param {IPv6Packet} ipv6
+     * @param {Uint8Array} srcMac
+     * @param {EthernetPort} srcPort
+     */
+    _handleLanIpv6(ipv6, srcMac, srcPort) {
+        const dst   = ipv6.dst.toUInt8();
+        const myLl  = this._lanLinkLocalBytes();
+        const myGlb = this._lanIp6;
+
+        const isMyLl     = dst.every((b, i) => b === myLl[i]);
+        const isMyGlb    = !!myGlb && dst.every((b, i) => b === myGlb[i]);
+        const isSolNode  = dst[0] === 0xff && dst[1] === 0x02 &&
+            dst[11] === 0x00 && dst[12] === 0x01 && dst[13] === 0xff &&
+            dst[14] === myLl[14] && dst[15] === myLl[15];
+        const isMcast    = dst[0] === 0xff;
+
+        const forUs = isMyLl || isMyGlb || isSolNode || isMcast;
+
+        if (forUs && ipv6.nextHeader === 58) {
+            try {
+                const icmp = ICMPv6Packet.fromBytes(ipv6.payload);
+                if (icmp.type === 135) {
+                    const targetB = icmp.ndpTarget?.toUInt8();
+                    if (targetB) {
+                        const isLl  = targetB.every((b, i) => b === myLl[i]);
+                        const isGlb = !!myGlb && targetB.every((b, i) => b === myGlb[i]);
+                        if (isLl || isGlb) {
+                            const replyFrom = IPAddress.fromUInt8(isGlb ? myGlb : myLl);
+                            const na = ICMPv6Packet.buildNA(replyFrom, this._lanMac, true);
+                            const naBytes = na.pack(replyFrom, ipv6.src);
+                            const rep6 = new IPv6Packet({ src: replyFrom, dst: ipv6.src, nextHeader: 58, hopLimit: 255, payload: naBytes });
+                            srcPort.send(new EthernetFrame({ dstMac: srcMac, srcMac: this._lanMac, etherType: 0x86DD, payload: rep6.pack() }));
+                        }
+                    }
+                } else if (icmp.type === 136) {
+                    const targetB = icmp.ndpTarget?.toUInt8();
+                    if (targetB) this._lanNdpCache.set(bytes6ToKey(targetB), srcMac.slice());
+                }
+            } catch {}
+            return;
+        }
+
+        if (!forUs && this._wanDhcpv6PdDelegated && ipv6.hopLimit > 1) {
+            void this._routeLanToWanIpv6(ipv6);
+        }
+    }
+
     // ── Routing: LAN → WAN ────────────────────────────────────────────────
 
     /** @param {IPv4Packet} pkt */
@@ -436,6 +509,26 @@ export class HomeRouter extends SimulatedObject {
         if (!mac) return;
 
         const frame = new EthernetFrame({ dstMac: mac, srcMac: this._lanMac, etherType: 0x0800, payload: pkt.pack() });
+        this._sendToLanHost(macToBig(mac), frame);
+    }
+
+    /** @param {IPv6Packet} ipv6 */
+    async _routeLanToWanIpv6(ipv6) {
+        if (!this._wanDhcpv6PdDelegated || !this._wanGw6) return;
+        ipv6.hopLimit--;
+        const mac = await this._resolveNdpWan(this._wanGw6);
+        if (!mac) return;
+        this.wan0.send(new EthernetFrame({ dstMac: mac, srcMac: this._wanMac, etherType: 0x86DD, payload: ipv6.pack() }));
+    }
+
+    /** @param {IPv6Packet} ipv6 */
+    async _forwardToLanIpv6(ipv6) {
+        if (ipv6.hopLimit <= 1) return;
+        ipv6.hopLimit--;
+        const dstBytes = ipv6.dst.toUInt8();
+        const mac = await this._resolveNdpLan(dstBytes);
+        if (!mac) return;
+        const frame = new EthernetFrame({ dstMac: mac, srcMac: this._lanMac, etherType: 0x86DD, payload: ipv6.pack() });
         this._sendToLanHost(macToBig(mac), frame);
     }
 
@@ -497,6 +590,69 @@ export class HomeRouter extends SimulatedObject {
         const reply = new ArpPacket({ oper: 2, sha: myMac, spa: IPNumberToUint8(myIp), tha: req.sha, tpa: req.spa });
         const frame = new EthernetFrame({ dstMac: req.sha, srcMac: myMac, etherType: 0x0806, payload: reply.pack() });
         port.send(frame);
+    }
+
+    // ── NDP resolution ───────────────────────────────────────────────────
+
+    /** @param {Uint8Array} targetBytes @returns {Promise<Uint8Array|null>} */
+    async _resolveNdpWan(targetBytes) {
+        const key = bytes6ToKey(targetBytes);
+        const cached = this._wanNdpCache.get(key);
+        if (cached) return cached;
+        this._sendNdpNs(targetBytes, this._wanLinkLocalBytes(), this._wanMac, "wan");
+        for (let i = 0; i < SimTimer.ARP_WAIT_RETRIES; i++) {
+            await simTimer.sleep(SimTimer.ARP_RETRY_DELAY_MS);
+            const m = this._wanNdpCache.get(key);
+            if (m) return m;
+        }
+        return null;
+    }
+
+    /** @param {Uint8Array} targetBytes @returns {Promise<Uint8Array|null>} */
+    async _resolveNdpLan(targetBytes) {
+        const key = bytes6ToKey(targetBytes);
+        const cached = this._lanNdpCache.get(key);
+        if (cached) return cached;
+        const srcIp6 = this._lanIp6 ?? this._lanLinkLocalBytes();
+        this._sendNdpNs(targetBytes, srcIp6, this._lanMac, "lan");
+        for (let i = 0; i < SimTimer.ARP_WAIT_RETRIES; i++) {
+            await simTimer.sleep(SimTimer.ARP_RETRY_DELAY_MS);
+            const m = this._lanNdpCache.get(key);
+            if (m) return m;
+        }
+        return null;
+    }
+
+    /**
+     * @param {Uint8Array} targetBytes
+     * @param {Uint8Array} srcIp6Bytes
+     * @param {Uint8Array} srcMac
+     * @param {"lan"|"wan"} side
+     */
+    _sendNdpNs(targetBytes, srcIp6Bytes, srcMac, side) {
+        const srcIp = IPAddress.fromUInt8(srcIp6Bytes);
+        const target = IPAddress.fromUInt8(targetBytes);
+        if (!srcIp || !target) return;
+        const snm = new Uint8Array([0xff,0x02,0,0,0,0,0,0,0,0,0,1,0xff,
+            targetBytes[13], targetBytes[14], targetBytes[15]]);
+        const dstIp  = IPAddress.fromUInt8(snm);
+        const dstMac = new Uint8Array([0x33,0x33,0xff, targetBytes[13], targetBytes[14], targetBytes[15]]);
+        if (!dstIp) return;
+        const ns = ICMPv6Packet.buildNS(target, srcMac);
+        const nsBytes = ns.pack(srcIp, dstIp);
+        const ipv6 = new IPv6Packet({ src: srcIp, dst: dstIp, nextHeader: 58, hopLimit: 255, payload: nsBytes });
+        const frame = new EthernetFrame({ dstMac, srcMac, etherType: 0x86DD, payload: ipv6.pack() });
+        if (side === "wan") this.wan0.send(frame);
+        else for (const p of this._lanPorts()) p.send(frame);
+    }
+
+    /** @param {Uint8Array} ip6bytes @returns {boolean} */
+    _isInLanPrefix(ip6bytes) {
+        if (!this._lanRaPrefix) return false;
+        for (let i = 0; i < 8; i++) {
+            if (ip6bytes[i] !== this._lanRaPrefix[i]) return false;
+        }
+        return true;
     }
 
     // ── L2 bridge helpers ─────────────────────────────────────────────────
@@ -783,35 +939,46 @@ export class HomeRouter extends SimulatedObject {
     }
 
     /**
-     * Handle incoming IPv6 frame on WAN: NDP NS → reply with NA, DHCPv6 → PD callback.
+     * Handle incoming IPv6 frame on WAN: learn gateway, NDP, DHCPv6, inbound forwarding.
      * @param {IPv6Packet} ipv6
      * @param {EthernetFrame} frame
      */
     _handleWanIpv6(ipv6, frame) {
+        // Learn WAN IPv6 default gateway from first link-local source seen
+        const srcBytes = ipv6.src.toUInt8();
+        if (!this._wanGw6 && srcBytes[0] === 0xfe && srcBytes[1] === 0x80) {
+            this._wanGw6 = srcBytes.slice();
+        }
+
         const myLl = this._wanLinkLocalBytes();
         const dstB = ipv6.dst.toUInt8();
 
-        const isMyLl = dstB.every((b, i) => b === myLl[i]);
+        const isMyLl    = dstB.every((b, i) => b === myLl[i]);
         const isSolNode = dstB[0] === 0xff && dstB[1] === 0x02 &&
             dstB[11] === 0x00 && dstB[12] === 0x01 && dstB[13] === 0xff &&
             dstB[14] === myLl[14] && dstB[15] === myLl[15];
         const isAllNodes = dstB[0] === 0xff && dstB[1] === 0x02 && dstB[15] === 0x01;
+        const isForLan   = this._isInLanPrefix(dstB);
 
-        if (!isMyLl && !isSolNode && !isAllNodes) return;
+        if (!isMyLl && !isSolNode && !isAllNodes && !isForLan) return;
 
         if (ipv6.nextHeader === 58) {
             try {
                 const icmp = ICMPv6Packet.fromBytes(ipv6.payload);
                 if (icmp.type === 135) {
+                    // NS for our WAN link-local → reply with NA
                     const target = icmp.ndpTarget;
                     if (target && target.toUInt8().every((b, i) => b === myLl[i])) {
                         const srcIp = IPAddress.fromUInt8(myLl);
                         const na = ICMPv6Packet.buildNA(srcIp, this._wanMac, true);
                         const naBytes = na.pack(srcIp, ipv6.src);
                         const rep6 = new IPv6Packet({ src: srcIp, dst: ipv6.src, nextHeader: 58, hopLimit: 255, payload: naBytes });
-                        const repFrame = new EthernetFrame({ dstMac: frame.srcMac, srcMac: this._wanMac, etherType: 0x86DD, payload: rep6.pack() });
-                        this.wan0.send(repFrame);
+                        this.wan0.send(new EthernetFrame({ dstMac: frame.srcMac, srcMac: this._wanMac, etherType: 0x86DD, payload: rep6.pack() }));
                     }
+                } else if (icmp.type === 136) {
+                    // NA → populate WAN NDP cache
+                    const targetB = icmp.ndpTarget?.toUInt8();
+                    if (targetB) this._wanNdpCache.set(bytes6ToKey(targetB), frame.srcMac.slice());
                 }
             } catch {}
         } else if (ipv6.nextHeader === 17) {
@@ -821,6 +988,11 @@ export class HomeRouter extends SimulatedObject {
                     this._handleWanDhcpv6PdResponse(udp.payload);
                 }
             } catch {}
+        }
+
+        // Forward inbound packet destined for a LAN host
+        if (isForLan) {
+            void this._forwardToLanIpv6(ipv6);
         }
     }
 
@@ -1057,6 +1229,7 @@ export class HomeRouter extends SimulatedObject {
             ...super.toJSON(),
             kind: "HomeRouter",
             wanMode: this._wanMode,
+            wanIp6Enabled: this._wanIp6Enabled,
             wanIp: ipToString(this._wanIp),
             wanPrefix: this._wanPrefix,
             wanGw: ipToString(this._wanGw),
@@ -1088,6 +1261,8 @@ export class HomeRouter extends SimulatedObject {
         const obj = new HomeRouter(n.name ?? t("homerouter.title"));
         obj._applyBaseJSON(n);
         obj._wanMode = n.wanMode === "dhcp" ? "dhcp" : "static";
+        // backward compat: old saves used wanMode="dhcpv6-pd"
+        obj._wanIp6Enabled = !!n.wanIp6Enabled || n.wanMode === "dhcpv6-pd";
         obj._wanIp = strToNum(n.wanIp ?? "0.0.0.0");
         obj._wanPrefix = Number(n.wanPrefix ?? 24) | 0;
         obj._wanGw = strToNum(n.wanGw ?? "0.0.0.0");
@@ -1104,6 +1279,7 @@ export class HomeRouter extends SimulatedObject {
         if (n.pdDelegated?.prefix && Array.isArray(n.pdDelegated.prefix)) {
             const bytes = new Uint8Array(n.pdDelegated.prefix);
             if (bytes.length === 16) {
+                obj._wanIp6Enabled = true;
                 obj._wanDhcpv6PdDelegated = { prefix16bytes: bytes, prefixLen: Number(n.pdDelegated.prefixLen) };
                 obj._applyDelegatedPrefix(bytes, obj._wanDhcpv6PdDelegated.prefixLen);
             }
@@ -1128,9 +1304,6 @@ export class HomeRouter extends SimulatedObject {
         this._statusEl = null;
 
         const host = DOMBuilder.div("router-ui");
-        host.style.display = "flex";
-        host.style.flexDirection = "column";
-        host.style.gap = "12px";
         body.appendChild(host);
 
         const card = DOMBuilder.div("router-card");
@@ -1212,12 +1385,12 @@ export class HomeRouter extends SimulatedObject {
 
     /** @param {HTMLElement} host */
     _buildWanTab(host) {
-        host.appendChild(DOMBuilder.h4(t("homerouter.tab.wan")));
+        // ── IPv4 ─────────────────────────────────────────────────────────
+        host.appendChild(DOMBuilder.h4("IPv4"));
         const modeSel = DOMBuilder.select({
             options: [
-                { value: "static",    label: t("homerouter.wan.mode.static") },
-                { value: "dhcp",      label: t("homerouter.wan.mode.dhcp") },
-                { value: "dhcpv6-pd", label: t("homerouter.wan.mode.dhcpv6pd") },
+                { value: "static", label: t("homerouter.wan.mode.static") },
+                { value: "dhcp",   label: t("homerouter.wan.mode.dhcp") },
             ],
         });
         modeSel.value = this._wanMode;
@@ -1239,10 +1412,15 @@ export class HomeRouter extends SimulatedObject {
         ]);
         host.appendChild(staticSection);
 
-        /** @param {boolean} show */
-        const showStatic = (show) => { staticSection.style.display = show ? "" : "none"; };
+        const showStatic = (/** @type {boolean} */ show) => { staticSection.style.display = show ? "" : "none"; };
         showStatic(this._wanMode === "static");
         modeSel.addEventListener("change", () => showStatic(modeSel.value === "static"));
+
+        // ── IPv6 ─────────────────────────────────────────────────────────
+        host.appendChild(DOMBuilder.h4(t("homerouter.wan.ipv6")));
+        const ip6Cb = DOMBuilder.input({ type: "checkbox" });
+        ip6Cb.checked = this._wanIp6Enabled;
+        host.appendChild(DOMBuilder.div("router-name-row", [ip6Cb, DOMBuilder.label(t("homerouter.wan.ipv6.dhcpv6pd"))]));
 
         if (this._wanDhcpv6PdDelegated) {
             const pd = this._wanDhcpv6PdDelegated;
@@ -1255,26 +1433,37 @@ export class HomeRouter extends SimulatedObject {
 
         const applyBtn = DOMBuilder.button(t("router.apply"), { className: "router-if-save" });
         applyBtn.addEventListener("click", () => {
-            if (modeSel.value === "dhcpv6-pd") {
-                this._wanMode = "dhcpv6-pd";
-                this._wanIp = 0; this._wanGw = 0; this._upstreamDns = 0;
-                this._nat.clear();
-                this._wanDhcpv6PdDelegated = null;
-                void this._runWanDhcpv6PdClient();
-            } else if (modeSel.value === "dhcp") {
+            // IPv4
+            if (modeSel.value === "dhcp") {
                 this._wanMode = "dhcp";
                 this._wanIp = 0; this._wanGw = 0; this._upstreamDns = 0;
                 this._nat.clear();
                 void this._runWanDhcpClient();
             } else {
-                const ip = strToNum(ipIn.value);
-                const pf = parseInt(maskIn.value) | 0;
-                const gw = strToNum(gwIn.value);
+                const ip  = strToNum(ipIn.value);
+                const pf  = parseInt(maskIn.value) | 0;
+                const gw  = strToNum(gwIn.value);
                 const dns = strToNum(dnsIn.value);
                 if (!ip || pf < 1 || pf > 32) { SimDialog.alert(t("homerouter.wan.invalid")); return; }
                 this._wanMode = "static";
                 this._wanIp = ip; this._wanPrefix = pf; this._wanGw = gw; this._upstreamDns = dns;
                 this._wanArpCache.clear(); this._nat.clear();
+            }
+            // IPv6
+            const ip6Enabled    = ip6Cb.checked;
+            const wasIp6Enabled = this._wanIp6Enabled;
+            this._wanIp6Enabled = ip6Enabled;
+            if (ip6Enabled && !wasIp6Enabled) {
+                this._wanDhcpv6PdDelegated = null;
+                this._wanGw6 = null;
+                this._wanNdpCache.clear();
+                void this._runWanDhcpv6PdClient();
+            } else if (!ip6Enabled && wasIp6Enabled) {
+                this._wanDhcpv6PdDelegated = null;
+                this._lanIp6 = null; this._lanRaPrefix = null;
+                this._stopRaTimer();
+                this._wanGw6 = null;
+                this._wanNdpCache.clear(); this._lanNdpCache.clear();
             }
             this._mount(/** @type {HTMLElement} */ (this._panelBody));
         });
@@ -1302,6 +1491,27 @@ export class HomeRouter extends SimulatedObject {
             this._mount(/** @type {HTMLElement} */ (this._panelBody));
         });
         host.appendChild(applyBtn);
+
+        // ── IPv6 (read-only, derived from DHCPv6-PD) ────────────────────
+        host.appendChild(DOMBuilder.h4(t("homerouter.lan.ipv6")));
+        const ip6Str = this._lanIp6
+            ? `${IPAddress.fromUInt8(this._lanIp6)?.toString() ?? "?"}/64`
+            : "–";
+        const raActive = !!this._lanIp6;
+        const raLabel  = raActive ? t("homerouter.lan.ipv6.ra.active") : t("homerouter.lan.ipv6.ra.inactive");
+        host.appendChild(DOMBuilder.div("router-if-section", [
+            DOMBuilder.div("router-name-row", [
+                DOMBuilder.label(t("homerouter.lan.ipv6.addr")),
+                DOMBuilder.el("span", { text: ip6Str, style: { fontFamily: "monospace", fontSize: "0.9em" } }),
+            ]),
+            DOMBuilder.div("router-name-row", [
+                DOMBuilder.label(t("homerouter.lan.ipv6.ra")),
+                DOMBuilder.el("span", {
+                    text: raLabel,
+                    className: `ui-tab-badge ${raActive ? "status-up" : "status-down"}`,
+                }),
+            ]),
+        ]));
     }
 
     /** @param {HTMLElement} host */

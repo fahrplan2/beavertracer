@@ -1167,5 +1167,21 @@ export default {
   "tour.step.finish.title": "Tūras baigtas!",
   "tour.step.finish.text": "Sėkmingai baigėte tūrą ir sukūrėte, sukonfigūravote bei analizavote savo pirmąjį tinklą.\n\nMaloniai eksperimentuokite!",
   "app.terminal.copy": "Kopijuoti",
-  "app.terminal.paste": "Įklijuoti"
+  "app.terminal.paste": "Įklijuoti",
+  "sim.zoom": "Mastelis",
+  "sim.zoom.in": "Padidinti",
+  "sim.zoom.out": "Sumažinti",
+  "sim.zoom.reset": "Iš naujo nustatyti mastelį (spustelėti)",
+  "sim.zoom.fit": "Prisitaikyti",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "Įjungti DHCPv6-PD",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "LAN IPv6 adresas",
+  "homerouter.lan.ipv6.ra": "Maršrutizatoriaus skelbimai",
+  "homerouter.lan.ipv6.ra.active": "aktyvus",
+  "homerouter.lan.ipv6.ra.inactive": "neaktyvus (nėra delegavoto prefikso)",
+  "welcome.example.simple": "Paprastas pavyzdys",
+  "welcome.example.simple.desc": "Maža tinkla, puikus pradžios taškas",
+  "welcome.example.complex": "Sudėtingas pavyzdys",
+  "welcome.example.complex.desc": "Didelis tinklas su maršrutizavimo protokolais"
 };

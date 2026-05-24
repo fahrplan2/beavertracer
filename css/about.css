@@ -38,12 +38,12 @@
 
 .about-container .version {
     margin-top: 1rem;
-    font-size: 0.95rem;
+    font-size: 0.9375rem;
     color: #444;
 }
 
 .about-container .license-text {
-    font-size: 0.9rem;
+    font-size: 0.875rem;
     color: #444;
     font-family: 'Courier New', Courier, monospace;
 }
@@ -55,7 +55,7 @@
 
 .about-container .footer {
     text-align: center;
-    font-size: 0.85rem;
+    font-size: 0.875rem;
     color: #777;
 }
 

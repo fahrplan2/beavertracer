@@ -29,6 +29,7 @@
  * @property {boolean=} longPressToDrag
  * @property {number=} longPressDelay
  * @property {(() => boolean)=} canDrag
+ * @property {(() => number)=} getScale  CSS scale factor of the element's parent transform (e.g. zoom). Mouse deltas are divided by this value so the element follows the cursor correctly inside a scaled container.
  */
 
 /**
@@ -105,17 +106,19 @@ function applyTranslate(el, x, y) {
  * IMPORTANT: clamps only TOP/LEFT (west/north) like you wanted.
  *
  * @param {HTMLElement} el
- * @param {{x:number, y:number}} proposed
- * @param {{x:number, y:number}} current
+ * @param {{x:number, y:number}} proposed  translate values in element-local units (canvas space when scale != 1)
+ * @param {{x:number, y:number}} current   same units as proposed
  * @param {BoundaryLike} boundaryLike
  * @param {boolean} clampToViewport
+ * @param {number} scale  parent CSS scale factor; deltas are multiplied to convert to screen pixels for comparison
  * @returns {{x:number, y:number}}
  */
-function clampTranslate(el, proposed, current, boundaryLike, clampToViewport) {
+function clampTranslate(el, proposed, current, boundaryLike, clampToViewport, scale = 1) {
   const elRectNow = el.getBoundingClientRect();
 
-  const dx = proposed.x - current.x;
-  const dy = proposed.y - current.y;
+  // Convert canvas-space delta to screen-space delta for boundary comparison
+  const dx = (proposed.x - current.x) * scale;
+  const dy = (proposed.y - current.y) * scale;
 
   const nextLeft = elRectNow.left + dx;
   const nextTop = elRectNow.top + dy;
@@ -147,9 +150,9 @@ function clampTranslate(el, proposed, current, boundaryLike, clampToViewport) {
   let clampedX = proposed.x;
   let clampedY = proposed.y;
 
-  // only prevent leaving west/north (left/top)
-  if (nextLeft < box.left) clampedX += (box.left - nextLeft);
-  if (nextTop < box.top) clampedY += (box.top - nextTop);
+  // only prevent leaving west/north (left/top); divide screen correction back to canvas units
+  if (nextLeft < box.left) clampedX += (box.left - nextLeft) / scale;
+  if (nextTop < box.top) clampedY += (box.top - nextTop) / scale;
 
   return { x: clampedX, y: clampedY };
 }
@@ -202,6 +205,7 @@ export function makeDraggable(el, options = {}) {
     onClick,
     onDragStart,
     onDragEnd,
+    getScale,
     moveTarget = window,
     cancelSelector = [
       "button",
@@ -308,17 +312,20 @@ export function makeDraggable(el, options = {}) {
   function updatePositionFromClientXY(clientX, clientY, ev) {
     if (!dragging || !dragStarted) return;
 
+    const scale = typeof getScale === "function" ? (getScale() || 1) : 1;
+
     const dxPointer = clientX - startPointerX;
     const dyPointer = clientY - startPointerY;
 
     const scrollDx = activeBoundaryEl ? (activeBoundaryEl.scrollLeft - startScrollLeft) : 0;
     const scrollDy = activeBoundaryEl ? (activeBoundaryEl.scrollTop - startScrollTop) : 0;
 
-    const dx = dxPointer + scrollDx;
-    const dy = dyPointer + scrollDy;
+    // Divide screen-space deltas by scale so the element moves in canvas units
+    const dx = (dxPointer + scrollDx) / scale;
+    const dy = (dyPointer + scrollDy) / scale;
 
     let proposed = { x: startTranslate.x + dx, y: startTranslate.y + dy };
-    proposed = clampTranslate(el, proposed, currentTranslate, boundary, clampToViewport);
+    proposed = clampTranslate(el, proposed, currentTranslate, boundary, clampToViewport, scale);
 
     currentTranslate = proposed;
     applyTranslate(el, currentTranslate.x, currentTranslate.y);

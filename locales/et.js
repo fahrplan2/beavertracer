@@ -1167,5 +1167,21 @@ export default {
   "tour.step.finish.title": "Ekskursioon lõppenud!",
   "tour.step.finish.text": "Olete juhendis edukalt lõpetanud ning ehitanud, konfigureerinud ja analüüsinud oma esimest võrku.\n\nTeadaolevate katsetuste lõbu!",
   "app.terminal.copy": "Kopeeri",
-  "app.terminal.paste": "Kleebi"
+  "app.terminal.paste": "Kleebi",
+  "sim.zoom": "Suurendamine",
+  "sim.zoom.in": "Suurenda",
+  "sim.zoom.out": "Vähenda",
+  "sim.zoom.reset": "Lähtesta suurendamine (kliki)",
+  "sim.zoom.fit": "Sobita",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "Luba DHCPv6-PD",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "LAN IPv6 aadress",
+  "homerouter.lan.ipv6.ra": "Ruuteri kuulutused",
+  "homerouter.lan.ipv6.ra.active": "aktiivne",
+  "homerouter.lan.ipv6.ra.inactive": "passiivne (delegeeritud eesliide puudub)",
+  "welcome.example.simple": "Lihtne näide",
+  "welcome.example.simple.desc": "Väike võrk, suurepärane alguspunkt",
+  "welcome.example.complex": "Keerulisem näide",
+  "welcome.example.complex.desc": "Suur võrk marsruutimisprotokollitega"
 };

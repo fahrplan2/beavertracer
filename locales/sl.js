@@ -1167,5 +1167,21 @@ export default {
   "tour.step.finish.title": "Tura je zaključena!",
   "tour.step.finish.text": "Uspešno ste zaključili turo in zgradili, konfigurirali ter analizirali prvo omrežje.\n\nPrijetno eksperimentiranje!",
   "app.terminal.copy": "Kopiraj",
-  "app.terminal.paste": "Prilepи"
+  "app.terminal.paste": "Prilepи",
+  "sim.zoom": "Povečava",
+  "sim.zoom.in": "Povečaj",
+  "sim.zoom.out": "Pomanjšaj",
+  "sim.zoom.reset": "Ponastavitev povečave (klik)",
+  "sim.zoom.fit": "Prilagodi",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "Omogoči DHCPv6-PD",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "LAN IPv6 Naslov",
+  "homerouter.lan.ipv6.ra": "Oglasi Usmerjevalnika",
+  "homerouter.lan.ipv6.ra.active": "aktiven",
+  "homerouter.lan.ipv6.ra.inactive": "neaktiven (brez delegiranega predpone)",
+  "welcome.example.simple": "Preprost Primer",
+  "welcome.example.simple.desc": "Majhna omrežja, odličen začetek",
+  "welcome.example.complex": "Kompleksen Primer",
+  "welcome.example.complex.desc": "Veliko omrežje s protokoli usmerjanja"
 };

@@ -1167,5 +1167,21 @@ export default {
   "homerouter.pf.empty": "لا توجد قواعد مكونة.",
   "homerouter.pf.invalid": "قاعدة إعادة توجيه المنفذ غير صحيحة.",
   "app.terminal.copy": "نسخ",
-  "app.terminal.paste": "لصق"
+  "app.terminal.paste": "لصق",
+  "sim.zoom": "تكبير/تصغير",
+  "sim.zoom.in": "تكبير",
+  "sim.zoom.out": "تصغير",
+  "sim.zoom.reset": "إعادة تعيين التكبير (انقر)",
+  "sim.zoom.fit": "ملاءمة",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "تفعيل DHCPv6-PD",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "عنوان IPv6 للشبكة المحلية",
+  "homerouter.lan.ipv6.ra": "إعلانات جهاز التوجيه",
+  "homerouter.lan.ipv6.ra.active": "نشط",
+  "homerouter.lan.ipv6.ra.inactive": "غير نشط (لا توجد بادئة مفوضة)",
+  "welcome.example.simple": "مثال بسيط",
+  "welcome.example.simple.desc": "شبكة صغيرة، نقطة انطلاق ممتازة",
+  "welcome.example.complex": "مثال معقد",
+  "welcome.example.complex.desc": "شبكة كبيرة مع بروتوكولات التوجيه"
 };

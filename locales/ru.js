@@ -1167,5 +1167,21 @@ export default {
   "tour.step.finish.title": "Тур завершен!",
   "tour.step.finish.text": "Вы успешно завершили тур и построили, настроили и проанализировали вашу первую сеть.\n\nПолучайте удовольствие от экспериментов!",
   "app.terminal.copy": "Копировать",
-  "app.terminal.paste": "Вставить"
+  "app.terminal.paste": "Вставить",
+  "sim.zoom": "Масштаб",
+  "sim.zoom.in": "Увеличить",
+  "sim.zoom.out": "Уменьшить",
+  "sim.zoom.reset": "Сбросить масштаб (нажмите)",
+  "sim.zoom.fit": "Подогнать",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "Включить DHCPv6-PD",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "Адрес IPv6 локальной сети",
+  "homerouter.lan.ipv6.ra": "Объявления маршрутизаторов",
+  "homerouter.lan.ipv6.ra.active": "активно",
+  "homerouter.lan.ipv6.ra.inactive": "неактивно (нет делегированного префикса)",
+  "welcome.example.simple": "Простой пример",
+  "welcome.example.simple.desc": "Небольшая сеть, отличная точка для начала",
+  "welcome.example.complex": "Сложный пример",
+  "welcome.example.complex.desc": "Большая сеть с протоколами маршрутизации"
 };

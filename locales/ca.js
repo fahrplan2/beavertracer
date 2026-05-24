@@ -1166,5 +1166,21 @@ export default {
   "tour.step.finish.title": "Tour completat!",
   "tour.step.finish.text": "Heu completat correctament el tour i heu construït, configurat i analitzat la vostra primera xarxa.\n\nQue disfruteu experimentant!",
   "app.terminal.copy": "Copiar",
-  "app.terminal.paste": "Enganxar"
+  "app.terminal.paste": "Enganxar",
+  "sim.zoom": "Zoom",
+  "sim.zoom.in": "Augmentar zoom",
+  "sim.zoom.out": "Disminuir zoom",
+  "sim.zoom.reset": "Restablir zoom (clic)",
+  "sim.zoom.fit": "Ajustar",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "Habilitar DHCPv6-PD",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "Adreça IPv6 de la LAN",
+  "homerouter.lan.ipv6.ra": "Anuncis de Router",
+  "homerouter.lan.ipv6.ra.active": "actiu",
+  "homerouter.lan.ipv6.ra.inactive": "inactiu (sense prefix delegat)",
+  "welcome.example.simple": "Exemple Simple",
+  "welcome.example.simple.desc": "Xarxa petita, excel·lent punt de partida",
+  "welcome.example.complex": "Exemple Complex",
+  "welcome.example.complex.desc": "Xarxa gran amb protocols d'encaminament"
 };

@@ -1166,5 +1166,21 @@ export default {
   "tour.step.finish.title": "Bemutató befejezve!",
   "tour.step.finish.text": "Sikeresen befejezte a bemutatót, és felépített, konfigurált és elemzett az első hálózatát.\n\nSzórakozzon a kísérletezéssel!",
   "app.terminal.copy": "Másolás",
-  "app.terminal.paste": "Beillesztés"
+  "app.terminal.paste": "Beillesztés",
+  "sim.zoom": "Nagyítás",
+  "sim.zoom.in": "Nagyítás",
+  "sim.zoom.out": "Kicsinyítés",
+  "sim.zoom.reset": "Nagyítás visszaállítása (kattintás)",
+  "sim.zoom.fit": "Illesztés",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "DHCPv6-PD engedélyezése",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "LAN IPv6 cím",
+  "homerouter.lan.ipv6.ra": "Útválasztó meghirdetések",
+  "homerouter.lan.ipv6.ra.active": "aktív",
+  "homerouter.lan.ipv6.ra.inactive": "inaktív (nincs delegált előtag)",
+  "welcome.example.simple": "Egyszerű példa",
+  "welcome.example.simple.desc": "Kicsi hálózat, jó kiindulópont",
+  "welcome.example.complex": "Összetett példa",
+  "welcome.example.complex.desc": "Nagy hálózat útválasztási protokollokkal"
 };

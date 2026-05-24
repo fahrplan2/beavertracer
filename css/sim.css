@@ -28,10 +28,21 @@
   min-width: 0;
   min-height: 0;
   position: relative;
-  overflow: auto;
+  overflow: hidden;
   width: 100%;
   height: 100%;
   z-index: 10;
+}
+
+/* Inner canvas — receives the CSS zoom/pan transform. */
+.sim-canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  transform-origin: 0 0;
+  will-change: transform;
 }
 
 
@@ -254,6 +265,7 @@
   font-size: 0.625rem;
   gap: 0;
 }
+
 
 .sim-toolbar-branding-group {
   position: relative;
@@ -524,6 +536,19 @@
 
 .ui-tab-badge.status-warning { background: var(--warning-tint); border-color: var(--warning-strong); }
 
+/* ── Shared panel-host layout ────────────────────────────────── */
+.router-ui,
+.switch-ui {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sim-hint {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
 /* ── Switch VLAN header ─────────────────────────────────────── */
 .switch-card {
   border: 1px solid color-mix(in oklch, var(--border), var(--text) 8%);
@@ -791,7 +816,8 @@
 
 .sim-root.edit-mode .sim-nodes {
   background-image: radial-gradient(circle, #b0b8c4 1px, transparent 1px);
-  background-size: 24px 24px;
+  background-size: var(--sim-dot-size, 24px) var(--sim-dot-size, 24px);
+  background-position: var(--sim-dot-x, 0px) var(--sim-dot-y, 0px);
 }
 
 .sim-root.edit-mode * {
@@ -995,7 +1021,7 @@ sim-toolbar-langbtn {
 }
 
 .sim-lang-card-name {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   text-align: center;
   line-height: 1.2;
 }
@@ -1042,7 +1068,7 @@ sim-toolbar-langbtn {
 }
 
 .sim-langlist-item-name {
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1050,7 +1076,7 @@ sim-toolbar-langbtn {
 
 .sim-langdialog-note {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--text-muted, var(--text));
   opacity: 0.5;
 }
@@ -1186,7 +1212,7 @@ sim-toolbar-langbtn {
   border: 1px solid var(--danger-strong);
   border-radius: var(--radius-md);
   padding: var(--pad-md) var(--pad-2xl);
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   pointer-events: none;
   z-index: 9999;
   animation: sim-toast-in 0.15s ease;
@@ -1228,7 +1254,7 @@ sim-toolbar-langbtn {
 .sim-dialog-msg {
   margin: 0;
   color: var(--text);
-  font-size: 0.95rem;
+  font-size: 0.9375rem;
   line-height: 1.5;
   white-space: pre-wrap;
 }
@@ -1241,7 +1267,7 @@ sim-toolbar-langbtn {
   border: 1px solid var(--ui-border-strong);
   background: var(--surface-strong);
   color: var(--text);
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   outline: none;
 }
 
@@ -1305,7 +1331,7 @@ sim-toolbar-langbtn {
   margin-bottom: -2px;
   background: transparent;
   color: var(--text);
-  font-size: 0.85em;
+  font-size: 0.875rem;
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.1s, color 0.1s, border-color 0.1s;
@@ -1327,7 +1353,7 @@ sim-toolbar-langbtn {
 }
 
 .ui-tab .fas {
-  font-size: 0.9em;
+  font-size: 0.875rem;
 }
 
 .ui-tab-badge {
@@ -1611,36 +1637,6 @@ sim-toolbar-langbtn {
     grid-template-columns: 1fr 1fr;
   }
 
-  /* ── Canvas area: stacked column, sidebar at bottom ── */
-  .sim-body {
-    flex-direction: column;
-  }
-
-  .sim-sidebar {
-    order: 2;
-    flex: 0 0 auto;
-    border-right: none;
-    border-top: 1px solid var(--ui-border);
-    padding: var(--pad-sm);
-    overflow-x: auto;
-    overflow-y: hidden;
-    /* prevent height expansion from pushing canvas up */
-    height: auto;
-    min-height: 0;
-  }
-
-  .sim-sidebar-title {
-    display: none;
-  }
-
-  .sim-sidebar-tools {
-    flex-direction: row;
-    flex-wrap: nowrap;
-    gap: var(--pad-sm);
-    /* make scrollable touch-friendly */
-    -webkit-overflow-scrolling: touch;
-  }
-
   /* sidebar buttons: icon-only square touch targets */
   .sim-sidebar-btn {
     height: 48px !important;
@@ -1700,17 +1696,12 @@ sim-toolbar-langbtn {
   /* ── Port picker: wider touch targets ── */
   .sim-port-chip {
     padding: 10px 14px;
-    font-size: 0.9rem;
+    font-size: 0.875rem;
   }
 
   /* ── Toolbar: scrolls horizontally on small screens ── */
   .sim-toolbar {
     flex-shrink: 0;
-  }
-
-  /* ── Sidebar: respect iPhone home-bar safe area ── */
-  .sim-sidebar {
-    padding-bottom: calc(var(--pad-sm) + env(safe-area-inset-bottom, 0px));
   }
 
   /* ── Firewall: wrap table in horizontal scroll ── */

@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇨🇳 简体中文", order: 38 };
+export const meta = { name: "🇨🇳 简体中文 (translated by AI)", order: 38 };
 
 export default {
   "lang.name": "🇨🇳 简体中文",
@@ -1167,5 +1167,21 @@ export default {
   "tour.step.finish.title": "教程完成！",
   "tour.step.finish.text": "您已成功完成教程，并构建、配置和分析了您的第一个网络。\n\n祝您实验愉快！",
   "app.terminal.copy": "复制",
-  "app.terminal.paste": "粘贴"
+  "app.terminal.paste": "粘贴",
+  "sim.zoom": "缩放",
+  "sim.zoom.in": "放大",
+  "sim.zoom.out": "缩小",
+  "sim.zoom.reset": "重置缩放（点击）",
+  "sim.zoom.fit": "适应",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "启用 DHCPv6-PD",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "LAN IPv6 地址",
+  "homerouter.lan.ipv6.ra": "路由器公告",
+  "homerouter.lan.ipv6.ra.active": "活跃",
+  "homerouter.lan.ipv6.ra.inactive": "非活跃（无委派前缀）",
+  "welcome.example.simple": "简单示例",
+  "welcome.example.simple.desc": "小型网络，良好的起点",
+  "welcome.example.complex": "复杂示例",
+  "welcome.example.complex.desc": "具有路由协议的大型网络"
 };

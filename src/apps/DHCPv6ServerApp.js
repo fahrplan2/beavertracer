@@ -1032,27 +1032,17 @@ export class DHCPv6ServerApp extends LoggedProcess {
       const min = Math.floor(sec / 60);
       const exp = min > 0 ? `${min}m ${sec % 60}s` : `${sec}s`;
 
-      const tr = document.createElement("tr");
-      const tdDuid = document.createElement("td");
-      tdDuid.textContent = "…" + duid.slice(-12);
-      tdDuid.title = duid;
-      const tdPrefix = document.createElement("td");
-      tdPrefix.textContent = `${prefix}/${lease.prefixLen}`;
-      const tdExp = document.createElement("td");
-      tdExp.textContent = exp;
-      tr.append(tdDuid, tdPrefix, tdExp);
-      rows.push(tr);
+      rows.push(UI.el("tr", { children: [
+        UI.el("td", { text: "…" + duid.slice(-12), attrs: { title: duid } }),
+        UI.el("td", { text: `${prefix}/${lease.prefixLen}` }),
+        UI.el("td", { text: exp }),
+      ]}));
     }
 
     if (rows.length === 0) {
-      const tr = document.createElement("tr");
-      const td = document.createElement("td");
-      td.colSpan = 3;
-      td.textContent = t("app.dhcpv6server.pd.leases.empty");
-      td.style.textAlign = "center";
-      td.style.color = "var(--color-text-muted, #888)";
-      tr.appendChild(td);
-      rows.push(tr);
+      rows.push(UI.el("tr", { children: [
+        UI.el("td", { text: t("app.dhcpv6server.pd.leases.empty"), className: "table-empty", attrs: { colspan: "3" } }),
+      ]}));
     }
 
     this.pdLeasesBody.replaceChildren(...rows);
@@ -1099,27 +1089,17 @@ export class DHCPv6ServerApp extends LoggedProcess {
       const rem = sec % 60;
       const exp = min > 0 ? `${min}m ${rem}s` : `${sec}s`;
 
-      const tr = document.createElement("tr");
-      const tdDuid = document.createElement("td");
-      tdDuid.textContent = "…" + duid.slice(-12);
-      tdDuid.title = duid;
-      const tdIp  = document.createElement("td");
-      tdIp.textContent  = ip;
-      const tdExp = document.createElement("td");
-      tdExp.textContent = exp;
-      tr.append(tdDuid, tdIp, tdExp);
-      rows.push(tr);
+      rows.push(UI.el("tr", { children: [
+        UI.el("td", { text: "…" + duid.slice(-12), attrs: { title: duid } }),
+        UI.el("td", { text: ip }),
+        UI.el("td", { text: exp }),
+      ]}));
     }
 
     if (rows.length === 0) {
-      const tr  = document.createElement("tr");
-      const td  = document.createElement("td");
-      td.colSpan = 3;
-      td.textContent  = t("app.dhcpv6server.leases.empty");
-      td.style.textAlign = "center";
-      td.style.color = "var(--color-text-muted, #888)";
-      tr.appendChild(td);
-      rows.push(tr);
+      rows.push(UI.el("tr", { children: [
+        UI.el("td", { text: t("app.dhcpv6server.leases.empty"), className: "table-empty", attrs: { colspan: "3" } }),
+      ]}));
     }
 
     this.leasesBody.replaceChildren(...rows);

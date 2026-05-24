@@ -44,6 +44,14 @@ export class SimulatedObject {
     /** @type {HTMLElement} */
     root;
 
+    /**
+     * Container for the floating panel element. Set by SimControl to nodesLayer
+     * so panels are not inside the zoomed sim-canvas.
+     * Falls back to this.root when null (e.g. before first render).
+     * @type {HTMLElement|null}
+     */
+    panelRoot = null;
+
     /** @type {HTMLElement|null} */
     iconEl = null;
 
@@ -103,7 +111,7 @@ export class SimulatedObject {
         //Panel
         if (!this.panelEl) {
             this.panelEl = this.buildPanel();
-            this.root.appendChild(this.panelEl);
+            (this.panelRoot ?? this.root).appendChild(this.panelEl);
             this.wirePanelInteractions();
         }
 
@@ -206,7 +214,7 @@ export class SimulatedObject {
         this.iconEl.addEventListener("mouseenter", () => this.simcontrol?._onNodeHover(this, true));
         this.iconEl.addEventListener("mouseleave", () => this.simcontrol?._onNodeHover(this, false));
 
-        //make icon traggable and toggle the panel
+        //make icon draggable and toggle the panel
         this._iconDraggable = makeDraggable(this.iconEl, {
             handle: this.iconEl,
             canDrag: () => {
@@ -216,6 +224,7 @@ export class SimulatedObject {
                 this.setPanelOpen(!this.panelOpen);
             },
             boundary: () => this.simcontrol.movementBoundary,
+            getScale: () => this.simcontrol?._zoom ?? 1,
             onMove: ({ dragging, x, y }) => {
                 this.x = x;
                 this.y = y;
@@ -277,10 +286,11 @@ export class SimulatedObject {
 
         if (this._isMobile() && this.panelEl) {
             const simRoot = this.simcontrol?.root;
+            const home = this.panelRoot ?? this.root;
             if (open && simRoot) {
                 simRoot.appendChild(this.panelEl);
-            } else if (!open && this.panelEl.parentElement !== this.root) {
-                this.root.appendChild(this.panelEl);
+            } else if (!open && this.panelEl.parentElement !== home) {
+                home.appendChild(this.panelEl);
             }
         }
 
@@ -337,13 +347,17 @@ export class SimulatedObject {
         if (!this.iconEl) return 0;
 
         const rect = this.iconEl.getBoundingClientRect();
-        const boundary = this.simcontrol.movementBoundary;
+        const boundary = this.simcontrol?.movementBoundary;
+        const zoom = this.simcontrol?._zoom ?? 1;
+        const panX = this.simcontrol?._panX ?? 0;
 
         if (boundary instanceof HTMLElement) {
             const b = boundary.getBoundingClientRect();
-
-            // local to boundary content box:
-            return (rect.left - b.left) + boundary.scrollLeft - boundary.clientLeft + rect.width / 2;
+            // screenOffset is the icon's left edge in nodesLayer-local screen space.
+            // With sim-canvas scaled by zoom: screenOffset = panX + canvas_x * zoom.
+            // Dividing back gives canvas_x; rect.width is the rendered (zoomed) width.
+            const screenOffset = (rect.left - b.left) + boundary.scrollLeft - boundary.clientLeft;
+            return (screenOffset - panX) / zoom + rect.width / (2 * zoom);
         }
 
         return rect.left + rect.width / 2;
@@ -353,13 +367,14 @@ export class SimulatedObject {
         if (!this.iconEl) return 0;
 
         const rect = this.iconEl.getBoundingClientRect();
-        const boundary = this.simcontrol.movementBoundary;
+        const boundary = this.simcontrol?.movementBoundary;
+        const zoom = this.simcontrol?._zoom ?? 1;
+        const panY = this.simcontrol?._panY ?? 0;
 
         if (boundary instanceof HTMLElement) {
             const b = boundary.getBoundingClientRect();
-
-            // local to boundary content box:
-            return (rect.top - b.top) + boundary.scrollTop - boundary.clientTop + rect.height / 2;
+            const screenOffset = (rect.top - b.top) + boundary.scrollTop - boundary.clientTop;
+            return (screenOffset - panY) / zoom + rect.height / (2 * zoom);
         }
 
         return rect.top + rect.height / 2;
@@ -370,10 +385,9 @@ export class SimulatedObject {
         this._iconDraggable = null;
         this._panelDraggable?.destroy();
         this._panelDraggable = null;
-        // On mobile the panel may have been relocated outside this.root
-        if (this.panelEl && this.panelEl.parentElement !== this.root) {
-            this.panelEl.remove();
-        }
+        // Panel lives outside this.root (in panelRoot / simRoot on mobile)
+        this.panelEl?.remove();
+        this.panelEl = null;
         this.root.remove();
     }
 
@@ -412,10 +426,8 @@ export class SimulatedObject {
      * destroys UI objects. Only when changing languages or doing something extreme
      */
     invalidateUI() {
-        // If panel was relocated outside this.root (mobile full-screen), clean it up
-        if (this.panelEl && this.panelEl.parentElement !== this.root) {
-            this.panelEl.remove();
-        }
+        // Panel lives outside this.root — remove it directly
+        this.panelEl?.remove();
         this.root.replaceChildren();
         this.panelEl = null;
         this.iconEl = null;

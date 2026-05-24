@@ -6,7 +6,6 @@ import {
     ERR_CEASE,
     buildOpen, buildKeepalive, buildUpdate, buildNotification,
     parseMessage, parseOpen, parseUpdate,
-    ORIGIN_IGP,
 } from "./pdu/BGPPacket.js";
 
 const BGP_DEFAULT_LP = 100;
@@ -225,20 +224,15 @@ class BGPSession {
     }
 
     async _sendInitialUpdate() {
-        if (!this._localIP) return;
+        if (!this._localIP || !this._connKey) return;
         const prefixes = this._daemon._connectedPrefixes();
         this._announcedConnected = new Set(prefixes.map(p => `${p.dst}/${p.prefLen}`));
         if (prefixes.length === 0) return;
-        const asPath = [this._daemon.localAS];
-        const msg = buildUpdate({
-            withdrawn: [],
-            nextHop:   this._localIP,
-            asPath,
-            localPref: BGP_DEFAULT_LP,
-            med: 0,
-            nlri: prefixes,
-        });
-        this._daemon._net.sendTCPConn(this._connKey, msg);
+        const localIPv6 = this._daemon._localIPv6For(this._localIP);
+        this._daemon._sendFamilyUpdate(
+            this._connKey, this._localIP, localIPv6,
+            [this._daemon.localAS], prefixes, [],
+        );
         this._daemon._log(`[BGP] ${this.cfg.ip}: ${prefixes.length} Präfixe gesendet`);
     }
 
@@ -258,15 +252,11 @@ class BGPSession {
 
         if (toAnnounce.length === 0 && toWithdraw.length === 0) return;
 
-        const msg = buildUpdate({
-            withdrawn: toWithdraw,
-            nextHop:   this._localIP,
-            asPath:    [this._daemon.localAS],
-            localPref: BGP_DEFAULT_LP,
-            med: 0,
-            nlri: toAnnounce,
-        });
-        try { this._daemon._net.sendTCPConn(this._connKey, msg); } catch {}
+        const localIPv6 = this._daemon._localIPv6For(this._localIP);
+        this._daemon._sendFamilyUpdate(
+            /** @type {string} */ (this._connKey), this._localIP, localIPv6,
+            [this._daemon.localAS], toAnnounce, toWithdraw,
+        );
 
         for (const p of toAnnounce) this._announcedConnected.add(`${p.dst}/${p.prefLen}`);
         for (const p of toWithdraw) this._announcedConnected.delete(`${p.dst}/${p.prefLen}`);
@@ -304,16 +294,36 @@ class BGPSession {
     /** @param {Uint8Array} body */
     _handleUpdate(body) {
         const { withdrawn, attrs, nlri } = parseUpdate(body);
+        const fallbackIP = this._localIP ?? IPAddress.fromString("0.0.0.0");
+        const ifIdx = this._daemon._ifIndexFor(fallbackIP);
+
+        // IPv4 withdrawals (traditional withdrawn-routes field)
         if (withdrawn.length > 0) {
             this._daemon._withdrawPrefixes(withdrawn, this.cfg.ip);
         }
+
+        // IPv4 NLRI (traditional path)
         if (nlri.length > 0 && attrs.nextHop) {
-            // AS_PATH loop detection
-            if (attrs.asPath.includes(this._daemon.localAS)) return;
-            const ifIdx = this._daemon._ifIndexFor(this._localIP ?? IPAddress.fromString("0.0.0.0"));
-            this._daemon._learnPrefixes(nlri, attrs, this.cfg.ip, ifIdx);
-            this.prefixesReceived += nlri.length;
-            this._daemon._notify();
+            if (!attrs.asPath.includes(this._daemon.localAS)) {
+                this._daemon._learnPrefixes(nlri, attrs, this.cfg.ip, ifIdx);
+                this.prefixesReceived += nlri.length;
+                this._daemon._notify();
+            }
+        }
+
+        // IPv6 withdrawals via MP_UNREACH_NLRI (RFC 4760 §4)
+        if (attrs.mp6Unreach.length > 0) {
+            this._daemon._withdrawPrefixes(attrs.mp6Unreach, this.cfg.ip);
+        }
+
+        // IPv6 NLRI via MP_REACH_NLRI (RFC 4760 §3)
+        if (attrs.mp6Reach != null && attrs.mp6Reach.nlri.length > 0) {
+            if (!attrs.asPath.includes(this._daemon.localAS)) {
+                const attrs6 = { ...attrs, nextHop: attrs.mp6Reach.nextHop };
+                this._daemon._learnPrefixes(attrs.mp6Reach.nlri, attrs6, this.cfg.ip, ifIdx);
+                this.prefixesReceived += attrs.mp6Reach.nlri.length;
+                this._daemon._notify();
+            }
         }
     }
 
@@ -493,7 +503,7 @@ export class BGPDaemon {
     _learnPrefixes(prefixes, attrs, fromPeer, ifIndex) {
         for (const { dst, prefLen } of prefixes) {
             const key = `${dst}/${prefLen}`;
-            const nexthop = attrs.nextHop ?? IPAddress.fromString("0.0.0.0");
+            const nexthop = attrs.nextHop ?? (dst.isV6() ? IPAddress.fromString("::") : IPAddress.fromString("0.0.0.0"));
             const entry = { dst, prefLen, nexthop, asPath: attrs.asPath, localPref: attrs.localPref, med: attrs.med, fromPeer, ifIndex };
             this._adjRibIn.set(`${key}|${fromPeer}`, entry);
             this._updateBestRoute(key, dst, prefLen, fromPeer);
@@ -600,18 +610,12 @@ export class BGPDaemon {
      */
     _propagateLearnedRoute(entry, fromPeer) {
         const asPath = [this.localAS, ...entry.asPath];
+        const prefix = [{ dst: entry.dst, prefLen: entry.prefLen }];
         for (const [peerIp, session] of this._sessions) {
             if (peerIp === fromPeer) continue;
             if (session.state !== "Established" || !session._localIP || !session._connKey) continue;
-            const msg = buildUpdate({
-                withdrawn: [],
-                nextHop: session._localIP,
-                asPath,
-                localPref: BGP_DEFAULT_LP,
-                med: 0,
-                nlri: [{ dst: entry.dst, prefLen: entry.prefLen }],
-            });
-            try { this._net.sendTCPConn(session._connKey, msg); } catch {}
+            const localIPv6 = this._localIPv6For(session._localIP);
+            this._sendFamilyUpdate(session._connKey, session._localIP, localIPv6, asPath, prefix, []);
             this._log(`[BGP] ${entry.dst}/${entry.prefLen} propagiert → ${peerIp}`);
         }
     }
@@ -623,19 +627,12 @@ export class BGPDaemon {
      * @param {string} fromPeer
      */
     _propagateWithdrawal(dst, prefLen, fromPeer) {
-        const withdrawn = [{ dst, prefLen }];
+        const prefix = [{ dst, prefLen }];
         for (const [peerIp, session] of this._sessions) {
             if (peerIp === fromPeer) continue;
-            if (session.state !== "Established" || !session._connKey) continue;
-            const msg = buildUpdate({
-                withdrawn,
-                nextHop: IPAddress.fromString("0.0.0.0"),
-                asPath: [],
-                localPref: 0,
-                med: 0,
-                nlri: [],
-            });
-            try { this._net.sendTCPConn(session._connKey, msg); } catch {}
+            if (session.state !== "Established" || !session._localIP || !session._connKey) continue;
+            const localIPv6 = this._localIPv6For(session._localIP);
+            this._sendFamilyUpdate(session._connKey, session._localIP, localIPv6, [], [], prefix);
         }
     }
 
@@ -646,23 +643,59 @@ export class BGPDaemon {
      */
     _sendLearnedRoutesToSession(session) {
         if (!session._localIP || !session._connKey) return;
+        const localIPv6 = this._localIPv6For(session._localIP);
         let sent = 0;
         for (const entry of this._learned.values()) {
             if (entry.fromPeer === session.cfg.ip) continue;
             if (entry.asPath.includes(this.localAS)) continue;
             const asPath = [this.localAS, ...entry.asPath];
-            const msg = buildUpdate({
-                withdrawn: [],
-                nextHop: session._localIP,
-                asPath,
-                localPref: BGP_DEFAULT_LP,
-                med: 0,
-                nlri: [{ dst: entry.dst, prefLen: entry.prefLen }],
-            });
-            try { this._net.sendTCPConn(session._connKey, msg); } catch {}
+            this._sendFamilyUpdate(
+                /** @type {string} */ (session._connKey), session._localIP, localIPv6,
+                asPath, [{ dst: entry.dst, prefLen: entry.prefLen }], [],
+            );
             sent++;
         }
         if (sent > 0) this._log(`[BGP] ${session.cfg.ip}: ${sent} gelernte Routen gesendet`);
+    }
+
+    /**
+     * Partition prefixes by address family and send the appropriate UPDATE message(s).
+     * IPv4 uses the traditional PA_NEXT_HOP + NLRI wire format.
+     * IPv6 uses MP_REACH_NLRI / MP_UNREACH_NLRI (RFC 4760).
+     * @param {string} connKey
+     * @param {IPAddress} localIPv4
+     * @param {IPAddress|null} localIPv6
+     * @param {number[]} asPath
+     * @param {Array<{dst: IPAddress, prefLen: number}>} toAnnounce
+     * @param {Array<{dst: IPAddress, prefLen: number}>} toWithdraw
+     */
+    _sendFamilyUpdate(connKey, localIPv4, localIPv6, asPath, toAnnounce, toWithdraw) {
+        const v4Ann = toAnnounce.filter(p => p.dst.isV4());
+        const v6Ann = toAnnounce.filter(p => p.dst.isV6());
+        const v4Wdr = toWithdraw.filter(p => p.dst.isV4());
+        const v6Wdr = toWithdraw.filter(p => p.dst.isV6());
+
+        if (v4Ann.length > 0 || v4Wdr.length > 0) {
+            const msg = buildUpdate({
+                withdrawn: v4Wdr,
+                nextHop: localIPv4,
+                asPath, localPref: BGP_DEFAULT_LP, med: 0,
+                nlri: v4Ann,
+            });
+            try { this._net.sendTCPConn(connKey, msg); } catch {}
+        }
+
+        if ((v6Ann.length > 0 || v6Wdr.length > 0) && localIPv6) {
+            const msg = buildUpdate({
+                withdrawn: [],
+                nextHop: localIPv4,
+                asPath, localPref: BGP_DEFAULT_LP, med: 0,
+                nlri: [],
+                mp6Reach:   v6Ann.length > 0 ? { nextHop: localIPv6, nlri: v6Ann } : undefined,
+                mp6Unreach: v6Wdr.length > 0 ? v6Wdr : undefined,
+            });
+            try { this._net.sendTCPConn(connKey, msg); } catch {}
+        }
     }
 
     _clearLearnedRoutes() {
@@ -679,23 +712,56 @@ export class BGPDaemon {
     _connectedPrefixes() {
         const result = [];
         for (const iface of this._net.interfaces) {
-            if (!iface.ip?.isV4()) continue;
-            const ip32 = iface.ip.toUInt8();
-            if (ip32[0] === 0) continue;      // 0.0.0.0
-            if (ip32[0] === 127) continue;    // loopback
-            const prefLen = iface.prefixLength;
-            if (!prefLen) continue;
-            // Network address
-            const netBytes = new Uint8Array(4);
-            const octets = Math.ceil(prefLen / 8);
-            for (let i = 0; i < 4; i++) {
-                if (i < octets - 1) netBytes[i] = ip32[i];
-                else if (i === octets - 1) netBytes[i] = ip32[i] & ((0xff << (8 - (prefLen % 8 || 8))) & 0xff);
-                // else 0
+            // IPv4
+            if (iface.ip?.isV4()) {
+                const ip32 = iface.ip.toUInt8();
+                if (ip32[0] !== 0 && ip32[0] !== 127) {
+                    const prefLen = iface.prefixLength;
+                    if (prefLen) {
+                        const netBytes = new Uint8Array(4);
+                        const octets = Math.ceil(prefLen / 8);
+                        for (let i = 0; i < 4; i++) {
+                            if (i < octets - 1) netBytes[i] = ip32[i];
+                            else if (i === octets - 1) netBytes[i] = ip32[i] & ((0xff << (8 - (prefLen % 8 || 8))) & 0xff);
+                        }
+                        result.push({ dst: IPAddress.fromUInt8(netBytes), prefLen });
+                    }
+                }
             }
-            result.push({ dst: IPAddress.fromUInt8(netBytes), prefLen });
+            // IPv6 — global unicast only (exclude loopback ::1 and link-local fe80::/10)
+            if (iface.ip6?.isV6()) {
+                const ip6 = iface.ip6.toUInt8();
+                const isLoopback  = ip6.slice(0, 15).every(b => b === 0) && ip6[15] === 1;
+                const isLinkLocal = ip6[0] === 0xfe && (ip6[1] & 0xc0) === 0x80;
+                if (!isLoopback && !isLinkLocal) {
+                    const prefLen = iface.prefixLength6;
+                    if (prefLen) {
+                        const netBytes = new Uint8Array(16);
+                        let rem = prefLen;
+                        for (let i = 0; i < 16; i++) {
+                            if (rem >= 8)     { netBytes[i] = ip6[i]; rem -= 8; }
+                            else if (rem > 0) { netBytes[i] = ip6[i] & ((0xff << (8 - rem)) & 0xff); rem = 0; }
+                        }
+                        result.push({ dst: IPAddress.fromUInt8(netBytes), prefLen });
+                    }
+                }
+            }
         }
         return result;
+    }
+
+    /**
+     * Returns the IPv6 global unicast address of the interface that holds the given IPv4 address,
+     * or null if the interface has no IPv6 address. Used to find the MP_REACH_NLRI next-hop.
+     * @param {IPAddress} localIPv4
+     * @returns {IPAddress|null}
+     */
+    _localIPv6For(localIPv4) {
+        const s = localIPv4.toString();
+        for (const iface of this._net.interfaces) {
+            if (iface.ip?.toString() === s) return iface.ip6 ?? null;
+        }
+        return null;
     }
 
     /** @param {IPAddress} localIP @returns {number} */

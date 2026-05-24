@@ -198,10 +198,7 @@ export class SimpleIRCClientApp extends GenericProcess {
 
     if (k === this.activeBuffer) {
       if (this.messagesEl) {
-        const div = document.createElement("div");
-        div.className = "irc-line" + (cls ? " " + cls : "");
-        div.textContent = text;
-        this.messagesEl.appendChild(div);
+        this.messagesEl.appendChild(UI.el("div", { className: "irc-line" + (cls ? " " + cls : ""), text }));
         while (this.messagesEl.childElementCount > 1000)
           this.messagesEl.removeChild(/** @type {Node} */(this.messagesEl.firstElementChild));
         this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
@@ -221,16 +218,9 @@ export class SimpleIRCClientApp extends GenericProcess {
     const order = ["status", ...[...this.buffers.keys()].filter(k => k !== "status").sort()];
     for (const key of order) {
       const buf = this.buffers.get(key); if (!buf) continue;
-      const btn = document.createElement("button");
-      btn.className = "irc-buf-btn" + (key === this.activeBuffer ? " active" : "") +
-                      (buf.unread > 0 ? " unread" : "");
-      btn.textContent = buf.displayName;
-      if (buf.unread > 0) {
-        const dot = document.createElement("span");
-        dot.className = "irc-unread-dot";
-        btn.appendChild(dot);
-      }
-      btn.addEventListener("click", () => this._switchBuffer(key));
+      const clsName = "irc-buf-btn" + (key === this.activeBuffer ? " active" : "") + (buf.unread > 0 ? " unread" : "");
+      const btn = UI.button(buf.displayName, () => this._switchBuffer(key), { className: clsName });
+      if (buf.unread > 0) btn.appendChild(UI.el("span", { className: "irc-unread-dot" }));
       this.sidebarEl.appendChild(btn);
     }
   }
@@ -250,10 +240,7 @@ export class SimpleIRCClientApp extends GenericProcess {
     if (!buf) { this.messagesEl.replaceChildren(); return; }
     const frag = document.createDocumentFragment();
     for (const l of buf.lines) {
-      const div = document.createElement("div");
-      div.className = "irc-line" + (l.cls ? " " + l.cls : "");
-      div.textContent = l.text;
-      frag.appendChild(div);
+      frag.appendChild(UI.el("div", { className: "irc-line" + (l.cls ? " " + l.cls : ""), text: l.text }));
     }
     this.messagesEl.replaceChildren(frag);
     this.messagesEl.scrollTop = this.messagesEl.scrollHeight;

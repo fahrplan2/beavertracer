@@ -1166,5 +1166,21 @@ export default {
   "tour.step.finish.title": "Prehliadka Hotová!",
   "tour.step.finish.text": "Úspešne ste absolvovali prehliadku a vybudovali, nakonfigurovali a analyzovali vašu prvú sieť.\n\nZabavte sa experimentovaním!",
   "app.terminal.copy": "Kopírovať",
-  "app.terminal.paste": "Vložiť"
+  "app.terminal.paste": "Vložiť",
+  "sim.zoom": "Priblíženie",
+  "sim.zoom.in": "Priblížiť",
+  "sim.zoom.out": "Oddaliť",
+  "sim.zoom.reset": "Resetovať priblíženie (kliknutie)",
+  "sim.zoom.fit": "Prispôsobiť",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "Aktivovať DHCPv6-PD",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "Adresa LAN IPv6",
+  "homerouter.lan.ipv6.ra": "Propagácia smerovača",
+  "homerouter.lan.ipv6.ra.active": "aktívne",
+  "homerouter.lan.ipv6.ra.inactive": "neaktívne (žiadna delegovaná predpona)",
+  "welcome.example.simple": "Jednoduchý príklad",
+  "welcome.example.simple.desc": "Malá sieť, skvelý počiatočný bod",
+  "welcome.example.complex": "Zložitý príklad",
+  "welcome.example.complex.desc": "Rozsiahla sieť so smerovacími protokolmi"
 };

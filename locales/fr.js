@@ -1201,5 +1201,21 @@ export default {
   "tour.step.finish.title": "Visite guidée terminée !",
   "tour.step.finish.text": "Vous avez complété avec succès la visite guidée et construit, configuré et analysé votre premier réseau.\n\nAmusez-vous à expérimenter !",
   "app.terminal.copy": "Copier",
-  "app.terminal.paste": "Coller"
+  "app.terminal.paste": "Coller",
+  "sim.zoom": "Zoom",
+  "sim.zoom.in": "Zoom avant",
+  "sim.zoom.out": "Zoom arrière",
+  "sim.zoom.reset": "Réinitialiser le zoom (clic)",
+  "sim.zoom.fit": "Ajuster",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "Activer DHCPv6-PD",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "Adresse IPv6 du LAN",
+  "homerouter.lan.ipv6.ra": "Annonces de routeur",
+  "homerouter.lan.ipv6.ra.active": "actif",
+  "homerouter.lan.ipv6.ra.inactive": "inactif (aucun préfixe délégué)",
+  "welcome.example.simple": "Exemple simple",
+  "welcome.example.simple.desc": "Petit réseau, point de départ idéal",
+  "welcome.example.complex": "Exemple complexe",
+  "welcome.example.complex.desc": "Grand réseau avec protocoles de routage"
 };

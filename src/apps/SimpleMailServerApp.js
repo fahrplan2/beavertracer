@@ -317,6 +317,33 @@ export class SimpleMailServerApp extends LoggedProcess {
 
   run() {
     this.root.classList.add("app", "app-simple-mail-server");
+    this._loadConfig();
+    setTimeout(() => this._tryAutostart(), 0);
+  }
+
+  _tryAutostart() {
+    try {
+      const fs = /** @type {any} */ (this.os.fs);
+      if (!fs) return;
+      const raw = readTextFile(fs, this.configPath);
+      if (!raw?.trim()) return;
+      const json = JSON.parse(raw);
+      if (json.autostart !== true) return;
+      this._start();
+    } catch { }
+  }
+
+  /** @param {*} val */
+  _writeAutostart(val) {
+    try {
+      const fs = /** @type {any} */ (this.os.fs);
+      if (!fs) return;
+      const raw = readTextFile(fs, this.configPath);
+      if (!raw?.trim()) return;
+      const o = JSON.parse(raw);
+      o.autostart = val;
+      writeTextFile(fs, this.configPath, JSON.stringify(o, null, 2) + "\n");
+    } catch { }
   }
 
   _timeoutMs() {
@@ -890,9 +917,6 @@ export class SimpleMailServerApp extends LoggedProcess {
     super.onMount(root);
     this.disposer.dispose();
 
-    // load persisted config
-    this._loadConfig();
-
     const domainInput = UI.input({ placeholder: t("app.simplemailserver.placeholder.domain") || "maildomain", value: this.mailDomain });
     const smtpInput = UI.input({ placeholder: "25", value: String(this.portSMTP) });
     const pop3Input = UI.input({ placeholder: "110", value: String(this.portPOP3) });
@@ -1225,6 +1249,7 @@ export class SimpleMailServerApp extends LoggedProcess {
 
   _stop() {
     if (!this.running) return;
+    this._writeAutostart(false);
     this.running = false;
     this.runSeq++;
 
@@ -1278,6 +1303,7 @@ export class SimpleMailServerApp extends LoggedProcess {
 
     this.serverRef = { smtp: smtpRef, pop3: pop3Ref, imap: imapRef, smtps: smtpsRef, pop3s: pop3sRef, imaps: imapsRef };
     this.running = true;
+    this._writeAutostart(true);
     const seq = ++this.runSeq;
     this._syncUI();
 

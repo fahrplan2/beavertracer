@@ -58,7 +58,6 @@ export class AccessPoint extends SimulatedObject {
     /** @param {HTMLElement} body */
     _buildPanel(body) {
         const host = DOMBuilder.div("router-ui");
-        host.style.cssText = "display:flex;flex-direction:column;gap:12px;";
         body.appendChild(host);
 
         host.appendChild(DOMBuilder.h4("WiFi"));
@@ -67,8 +66,7 @@ export class AccessPoint extends SimulatedObject {
         const label   = DOMBuilder.label(t("wifi.ssid"));
         const input   = DOMBuilder.input({ type: "text", placeholder: "SSID", value: this._ssid });
         const btn     = DOMBuilder.button(t("wifi.apply"));
-        const msg     = DOMBuilder.div("");
-        msg.style.cssText = "font-size:12px;color:var(--muted);";
+        const msg     = DOMBuilder.div("sim-hint");
 
         btn.addEventListener("click", () => {
             this._ssid = input.value.trim();

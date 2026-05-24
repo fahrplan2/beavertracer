@@ -1167,5 +1167,21 @@ export default {
   "tour.step.finish.title": "Tour voltooid!",
   "tour.step.finish.text": "U heeft de tour met succes voltooid en uw eerste netwerk gebouwd, geconfigureerd en geanalyseerd.\n\nVeel plezier met experimenteren!",
   "app.terminal.copy": "Kopiëren",
-  "app.terminal.paste": "Plakken"
+  "app.terminal.paste": "Plakken",
+  "sim.zoom": "Zoomen",
+  "sim.zoom.in": "Inzoomen",
+  "sim.zoom.out": "Uitzoomen",
+  "sim.zoom.reset": "Zoom opnieuw instellen (klikken)",
+  "sim.zoom.fit": "Aanpassen",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "DHCPv6-PD inschakelen",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "LAN IPv6-adres",
+  "homerouter.lan.ipv6.ra": "Routeradvertenties",
+  "homerouter.lan.ipv6.ra.active": "actief",
+  "homerouter.lan.ipv6.ra.inactive": "inactief (geen gedelegeerd prefix)",
+  "welcome.example.simple": "Eenvoudig voorbeeld",
+  "welcome.example.simple.desc": "Klein netwerk, geweldig startpunt",
+  "welcome.example.complex": "Complex voorbeeld",
+  "welcome.example.complex.desc": "Groot netwerk met routeringsprotocollen"
 };

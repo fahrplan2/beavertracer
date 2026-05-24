@@ -114,6 +114,34 @@ export class IPv4ConfigApp extends GenericProcess {
   }
 
   /**
+   * Called from fromJSON() after net/fs are fully restored.
+   * Starts DHCP for every interface that was in DHCP mode when saved.
+   * @param {Record<string, "static"|"dhcp">} modeByIface
+   */
+  async _autoDhcpStartFromMode(modeByIface) {
+    this.persisted.modeByIface = { ...modeByIface };
+    const net = this.os.net;
+    const ifs = net?.interfaces ?? [];
+    for (let i = 0; i < ifs.length; i++) {
+      const mode = modeByIface[String(i)] ?? "static";
+      if (mode !== "dhcp") continue;
+
+      void (async () => {
+        const ok = await this._dhcpAcquireAndConfigure(i);
+        if (!ok) this._applyApipa(i);
+
+        if (this.mounted) {
+          this._load();
+          this._setMsg(ok
+            ? t("app.ipv4config.msg.dhcpLeaseApplied", { i })
+            : t("app.ipv4config.msg.dhcpFailedApipa", { i })
+          );
+        }
+      })();
+    }
+  }
+
+  /**
    * @param {HTMLElement} root
    */
   async onMount(root) {

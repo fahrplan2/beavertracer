@@ -1167,5 +1167,21 @@ export default {
   "tour.step.finish.title": "Ολοκλήρωση Περιήγησης!",
   "tour.step.finish.text": "Έχετε ολοκληρώσει με επιτυχία την περιήγηση και δημιουργήσει, διαμορφώσει και αναλύσει το πρώτο σας δίκτυο.\n\nΔιασκεδάστε πειραματιζόμενοι!",
   "app.terminal.copy": "Αντιγραφή",
-  "app.terminal.paste": "Επικόλληση"
+  "app.terminal.paste": "Επικόλληση",
+  "sim.zoom": "Μεγέθυνση",
+  "sim.zoom.in": "Μεγέθυνση",
+  "sim.zoom.out": "Σμίκρυνση",
+  "sim.zoom.reset": "Επαναφορά μεγέθυνσης (κλικ)",
+  "sim.zoom.fit": "Προσαρμογή",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "Ενεργοποίηση DHCPv6-PD",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "Διεύθυνση IPv6 LAN",
+  "homerouter.lan.ipv6.ra": "Διαφημίσεις δρομολογητή",
+  "homerouter.lan.ipv6.ra.active": "ενεργό",
+  "homerouter.lan.ipv6.ra.inactive": "ανενεργό (χωρίς εκχυόμενο πρόθεμα)",
+  "welcome.example.simple": "Απλό παράδειγμα",
+  "welcome.example.simple.desc": "Μικρό δίκτυο, εξαιρετικό σημείο εκκίνησης",
+  "welcome.example.complex": "Σύνθετο παράδειγμα",
+  "welcome.example.complex.desc": "Μεγάλο δίκτυο με πρωτόκολλα δρομολόγησης"
 };

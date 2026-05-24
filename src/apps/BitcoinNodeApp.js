@@ -385,6 +385,30 @@ export class BitcoinNodeApp extends LoggedProcess {
     this.root.classList.add("app", "app-bitcoin");
     this._loadConfig();
     this._loadChain();
+    setTimeout(() => this._tryAutostart(), 0);
+  }
+
+  _tryAutostart() {
+    try {
+      const fs = this.os.fs;
+      if (!fs) return;
+      const json = JSON.parse(fs.readFile("/etc/bitcoin.conf"));
+      if (json.autostart !== true) return;
+      void this._start();
+    } catch { }
+  }
+
+  /** @param {*} val */
+  _writeAutostart(val) {
+    try {
+      const fs = this.os.fs;
+      if (!fs) return;
+      const txt = fs.readFile("/etc/bitcoin.conf");
+      if (!txt?.trim()) return;
+      const o = JSON.parse(txt);
+      o.autostart = val;
+      fs.writeFile("/etc/bitcoin.conf", JSON.stringify(o, null, 2) + "\n");
+    } catch { }
   }
 
   /** @param {HTMLElement} root */
@@ -504,6 +528,7 @@ export class BitcoinNodeApp extends LoggedProcess {
       return;
     }
     this.running = true;
+    this._writeAutostart(true);
     this._syncUI();
     this._appendLog(t("app.bitcoin.log.started", { time: nowStamp(), port: BITCOIN_PORT }));
     this._acceptLoop();
@@ -512,6 +537,7 @@ export class BitcoinNodeApp extends LoggedProcess {
 
   _stop() {
     if (!this.running && this.serverRef == null) return;
+    this._writeAutostart(false);
     this.running = false;
     for (const [key] of this.peers) { try { this.os.net.closeTCPConn(key); } catch { } }
     this.peers.clear();
@@ -963,28 +989,17 @@ export class BitcoinNodeApp extends LoggedProcess {
     const bal = this._computeBalances();
     if (!bal.size) { this.ledgerEl.textContent = t("app.bitcoin.ledger.empty"); return; }
 
-    const table = document.createElement("table");
-    table.className = "ledger-table";
-
-    const thead = table.createTHead();
-    const hr = thead.insertRow();
-    for (const h of [t("app.bitcoin.ledger.col.address"), t("app.bitcoin.ledger.col.balance")]) {
-      const th = document.createElement("th");
-      th.textContent = h;
-      hr.appendChild(th);
-    }
-
-    const tbody = table.createTBody();
+    const { table, tbody } = UI.tableWithBody(
+      [t("app.bitcoin.ledger.col.address"), t("app.bitcoin.ledger.col.balance")],
+      "ledger-table"
+    );
     const sorted = [...bal.entries()].sort((a, b) => b[1] - a[1]);
     for (const [addr, sats] of sorted) {
-      const tr = tbody.insertRow();
       const isOwn = addr === this.walletAddr;
-      const tdAddr = tr.insertCell();
-      tdAddr.textContent = addr;
-      if (isOwn) tdAddr.className = "ledger-own";
-      const tdBal = tr.insertCell();
-      tdBal.textContent = (sats / 1e8).toFixed(8) + " BTC";
-      tdBal.className = "ledger-amount";
+      tbody.appendChild(UI.el("tr", { children: [
+        UI.el("td", { text: addr, className: isOwn ? "ledger-own" : undefined }),
+        UI.el("td", { text: (sats / 1e8).toFixed(8) + " BTC", className: "ledger-amount" }),
+      ]}));
     }
 
     this.ledgerEl.replaceChildren(table);

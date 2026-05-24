@@ -338,26 +338,17 @@ export class DHCPServerApp extends LoggedProcess {
       const min = Math.floor(sec / 60);
       const exp = min > 0 ? `${min}m ${sec % 60}s` : `${sec}s`;
 
-      const tr = document.createElement("tr");
-      const tdMac = document.createElement("td");
-      tdMac.textContent = mac;
-      const tdIp  = document.createElement("td");
-      tdIp.textContent  = ip;
-      const tdExp = document.createElement("td");
-      tdExp.textContent = exp;
-      tr.append(tdMac, tdIp, tdExp);
-      rows.push(tr);
+      rows.push(UI.el("tr", { children: [
+        UI.el("td", { text: mac }),
+        UI.el("td", { text: ip }),
+        UI.el("td", { text: exp }),
+      ]}));
     }
 
     if (rows.length === 0) {
-      const tr = document.createElement("tr");
-      const td = document.createElement("td");
-      td.colSpan = 3;
-      td.textContent = t("app.dhcpserver.leases.empty");
-      td.style.textAlign = "center";
-      td.style.color = "var(--color-text-muted, #888)";
-      tr.appendChild(td);
-      rows.push(tr);
+      rows.push(UI.el("tr", { children: [
+        UI.el("td", { text: t("app.dhcpserver.leases.empty"), className: "table-empty", attrs: { colspan: "3" } }),
+      ]}));
     }
 
     this.leasesBody.replaceChildren(...rows);
