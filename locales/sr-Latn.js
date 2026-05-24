@@ -1166,5 +1166,10 @@ export default {
   "tour.step.finish.title": "Tura završena!",
   "tour.step.finish.text": "Uspešno ste završili turu i sagradili, konfigurisali i analizirali vašu prvu mrežu.\n\nDivite se eksperimentisanju!",
   "app.terminal.copy": "Kopirati",
-  "app.terminal.paste": "Nalepiti"
+  "app.terminal.paste": "Nalepiti",
+  "sim.zoom": "Zum",
+  "sim.zoom.in": "Zumiraj untar",
+  "sim.zoom.out": "Zumiraj napolje",
+  "sim.zoom.reset": "Resetuj zum (klik)",
+  "sim.zoom.fit": "Prilagodi"
 };

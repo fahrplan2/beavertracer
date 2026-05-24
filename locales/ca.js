@@ -1166,5 +1166,10 @@ export default {
   "tour.step.finish.title": "Tour completat!",
   "tour.step.finish.text": "Heu completat correctament el tour i heu construït, configurat i analitzat la vostra primera xarxa.\n\nQue disfruteu experimentant!",
   "app.terminal.copy": "Copiar",
-  "app.terminal.paste": "Enganxar"
+  "app.terminal.paste": "Enganxar",
+  "sim.zoom": "Zoom",
+  "sim.zoom.in": "Augmentar zoom",
+  "sim.zoom.out": "Disminuir zoom",
+  "sim.zoom.reset": "Restablir zoom (clic)",
+  "sim.zoom.fit": "Ajustar"
 };

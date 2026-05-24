@@ -1000,6 +1000,12 @@ export default {
   "sim.save.filename": "Filename",
   "sim.embed.open": "Open in BeaverTracer",
 
+  "sim.zoom":       "Zoom",
+  "sim.zoom.in":    "Zoom in",
+  "sim.zoom.out":   "Zoom out",
+  "sim.zoom.reset": "Reset zoom (click)",
+  "sim.zoom.fit":   "Fit",
+
   "app.ircserver.title": "IRC Server",
   "app.ircserver.btn.start": "Start",
   "app.ircserver.btn.stop": "Stop",

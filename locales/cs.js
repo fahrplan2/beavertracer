@@ -1167,5 +1167,10 @@ export default {
   "tour.step.finish.title": "Prohlídka je hotová!",
   "tour.step.finish.text": "Úspěšně jste dokončili prohlídku a vytvořili, nakonfigurovali a analyzovali svou první síť.\n\nBavte se experimentováním!",
   "app.terminal.copy": "Kopírovat",
-  "app.terminal.paste": "Vložit"
+  "app.terminal.paste": "Vložit",
+  "sim.zoom": "Přiblížení",
+  "sim.zoom.in": "Přiblížit",
+  "sim.zoom.out": "Oddálit",
+  "sim.zoom.reset": "Resetovat přiblížení (klikněte)",
+  "sim.zoom.fit": "Přizpůsobit"
 };

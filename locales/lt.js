@@ -1167,5 +1167,10 @@ export default {
   "tour.step.finish.title": "Tūras baigtas!",
   "tour.step.finish.text": "Sėkmingai baigėte tūrą ir sukūrėte, sukonfigūravote bei analizavote savo pirmąjį tinklą.\n\nMaloniai eksperimentuokite!",
   "app.terminal.copy": "Kopijuoti",
-  "app.terminal.paste": "Įklijuoti"
+  "app.terminal.paste": "Įklijuoti",
+  "sim.zoom": "Mastelis",
+  "sim.zoom.in": "Padidinti",
+  "sim.zoom.out": "Sumažinti",
+  "sim.zoom.reset": "Iš naujo nustatyti mastelį (spustelėti)",
+  "sim.zoom.fit": "Prisitaikyti"
 };

@@ -1167,5 +1167,10 @@ export default {
   "tour.step.finish.title": "Rundvisning gennemført!",
   "tour.step.finish.text": "Du har med succes gennemført rundvisningen og bygget, konfigureret og analyseret dit første netværk.\n\nHaving sjov med eksperimenter!",
   "app.terminal.copy": "Kopiér",
-  "app.terminal.paste": "Indsæt"
+  "app.terminal.paste": "Indsæt",
+  "sim.zoom": "Zoom",
+  "sim.zoom.in": "Zoom ind",
+  "sim.zoom.out": "Zoom ud",
+  "sim.zoom.reset": "Nulstil zoom (klik)",
+  "sim.zoom.fit": "Tilpas"
 };

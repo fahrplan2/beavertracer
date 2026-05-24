@@ -1167,5 +1167,10 @@ export default {
   "tour.step.finish.title": "Tur Tamamlandı!",
   "tour.step.finish.text": "Tur'u başarıyla tamamladınız ve ilk ağınızı oluşturdunuz, yapılandırdınız ve analiz ettiniz.\n\nDenemelerin keyfini çıkar!",
   "app.terminal.copy": "Kopyala",
-  "app.terminal.paste": "Yapıştır"
+  "app.terminal.paste": "Yapıştır",
+  "sim.zoom": "Yakınlaştır",
+  "sim.zoom.in": "Yakınlaştır",
+  "sim.zoom.out": "Uzaklaştır",
+  "sim.zoom.reset": "Yakınlaştırmayı sıfırla (tıkla)",
+  "sim.zoom.fit": "Sığdır"
 };

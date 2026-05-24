@@ -1167,5 +1167,10 @@ export default {
   "tour.step.finish.title": "Tour voltooid!",
   "tour.step.finish.text": "U heeft de tour met succes voltooid en uw eerste netwerk gebouwd, geconfigureerd en geanalyseerd.\n\nVeel plezier met experimenteren!",
   "app.terminal.copy": "Kopiëren",
-  "app.terminal.paste": "Plakken"
+  "app.terminal.paste": "Plakken",
+  "sim.zoom": "Zoomen",
+  "sim.zoom.in": "Inzoomen",
+  "sim.zoom.out": "Uitzoomen",
+  "sim.zoom.reset": "Zoom opnieuw instellen (klikken)",
+  "sim.zoom.fit": "Aanpassen"
 };

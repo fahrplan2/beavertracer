@@ -1167,5 +1167,10 @@ export default {
   "tour.step.finish.title": "ツアー完了!",
   "tour.step.finish.text": "ツアーを正常に完了し、最初のネットワークを構築、設定、および分析しました。\n\n実験を楽しんでください!",
   "app.terminal.copy": "コピー",
-  "app.terminal.paste": "貼り付け"
+  "app.terminal.paste": "貼り付け",
+  "sim.zoom": "ズーム",
+  "sim.zoom.in": "ズームイン",
+  "sim.zoom.out": "ズームアウト",
+  "sim.zoom.reset": "ズームをリセット（クリック）",
+  "sim.zoom.fit": "フィット"
 };

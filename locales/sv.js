@@ -1167,5 +1167,10 @@ export default {
   "tour.step.finish.title": "Guidad tur slutförd!",
   "tour.step.finish.text": "Du har slutfört guiden och byggt, konfigurerat och analyserat ditt första nätverk.\n\nRoligt att experimentera!",
   "app.terminal.copy": "Kopiera",
-  "app.terminal.paste": "Klistra in"
+  "app.terminal.paste": "Klistra in",
+  "sim.zoom": "Zoom",
+  "sim.zoom.in": "Zooma in",
+  "sim.zoom.out": "Zooma ut",
+  "sim.zoom.reset": "Återställ zoom (klick)",
+  "sim.zoom.fit": "Anpassa"
 };

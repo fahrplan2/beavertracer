@@ -1167,5 +1167,10 @@ export default {
   "tour.step.finish.title": "투어 완료!",
   "tour.step.finish.text": "투어를 성공적으로 완료했으며 첫 번째 네트워크를 구축, 구성 및 분석했습니다.\n\n실험을 즐기세요!",
   "app.terminal.copy": "복사",
-  "app.terminal.paste": "붙여넣기"
+  "app.terminal.paste": "붙여넣기",
+  "sim.zoom": "확대/축소",
+  "sim.zoom.in": "확대",
+  "sim.zoom.out": "축소",
+  "sim.zoom.reset": "확대/축소 초기화 (클릭)",
+  "sim.zoom.fit": "맞추기"
 };

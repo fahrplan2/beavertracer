@@ -1166,5 +1166,10 @@ export default {
   "tour.step.finish.title": "Turen er fullført!",
   "tour.step.finish.text": "Du har gjennomført turen og bygget, konfigurert og analysert ditt første nettverk.\n\nHa det gøy med eksperimenter!",
   "app.terminal.copy": "Kopier",
-  "app.terminal.paste": "Lim inn"
+  "app.terminal.paste": "Lim inn",
+  "sim.zoom": "Zoom",
+  "sim.zoom.in": "Zoom inn",
+  "sim.zoom.out": "Zoom ut",
+  "sim.zoom.reset": "Tilbakestill zoom (klikk)",
+  "sim.zoom.fit": "Tilpass"
 };

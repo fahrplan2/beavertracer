@@ -1166,5 +1166,10 @@ export default {
   "tour.step.finish.title": "Bemutató befejezve!",
   "tour.step.finish.text": "Sikeresen befejezte a bemutatót, és felépített, konfigurált és elemzett az első hálózatát.\n\nSzórakozzon a kísérletezéssel!",
   "app.terminal.copy": "Másolás",
-  "app.terminal.paste": "Beillesztés"
+  "app.terminal.paste": "Beillesztés",
+  "sim.zoom": "Nagyítás",
+  "sim.zoom.in": "Nagyítás",
+  "sim.zoom.out": "Kicsinyítés",
+  "sim.zoom.reset": "Nagyítás visszaállítása (kattintás)",
+  "sim.zoom.fit": "Illesztés"
 };

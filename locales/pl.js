@@ -1167,5 +1167,10 @@ export default {
   "tour.step.finish.title": "Przewodnik zakończony!",
   "tour.step.finish.text": "Pomyślnie ukończyłeś przewodnik i zbudowałeś, skonfigurowałeś i przeanalizowałeś swoją pierwszą sieć.\n\nBaw się dobrze, eksperymentując!",
   "app.terminal.copy": "Kopiuj",
-  "app.terminal.paste": "Wklej"
+  "app.terminal.paste": "Wklej",
+  "sim.zoom": "Powiększenie",
+  "sim.zoom.in": "Powiększ",
+  "sim.zoom.out": "Pomniejsz",
+  "sim.zoom.reset": "Resetuj powiększenie (kliknij)",
+  "sim.zoom.fit": "Dopasuj"
 };

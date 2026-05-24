@@ -1166,5 +1166,10 @@ export default {
   "tour.step.trace-packets.title": "追蹤器中的封包",
   "tour.step.trace-packets.text": "您可以看到記錄的封包！點擊一個幀以查看所有詳細信息。",
   "tour.step.finish.title": "導覽完成！",
-  "tour.step.finish.text": "您已成功完成導覽，並建立、設定和分析了您的第一個網路。\n\n祝您實驗愉快！"
+  "tour.step.finish.text": "您已成功完成導覽，並建立、設定和分析了您的第一個網路。\n\n祝您實驗愉快！",
+  "sim.zoom": "縮放",
+  "sim.zoom.in": "放大",
+  "sim.zoom.out": "縮小",
+  "sim.zoom.reset": "重設縮放 (按一下)",
+  "sim.zoom.fit": "適應"
 };

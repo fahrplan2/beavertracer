@@ -1167,5 +1167,10 @@ export default {
   "tour.step.finish.title": "Tur Selesai!",
   "tour.step.finish.text": "Anda telah berhasil menyelesaikan tur dan membangun, mengonfigurasi, serta menganalisis jaringan pertama Anda.\n\nSelamat bereksperimen!",
   "app.terminal.copy": "Salin",
-  "app.terminal.paste": "Tempel"
+  "app.terminal.paste": "Tempel",
+  "sim.zoom": "Perbesar",
+  "sim.zoom.in": "Perbesar",
+  "sim.zoom.out": "Perkecil",
+  "sim.zoom.reset": "Atur ulang perbesar (klik)",
+  "sim.zoom.fit": "Sesuaikan"
 };

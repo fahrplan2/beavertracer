@@ -1172,5 +1172,10 @@ export default {
   "tour.step.finish.title": "Tour Concluído!",
   "tour.step.finish.text": "Completou com sucesso o tour e construiu, configurou e analisou a sua primeira rede.\n\nDivirta-se a experimentar!",
   "app.terminal.copy": "Copiar",
-  "app.terminal.paste": "Colar"
+  "app.terminal.paste": "Colar",
+  "sim.zoom": "Zoom",
+  "sim.zoom.in": "Aumentar zoom",
+  "sim.zoom.out": "Reduzir zoom",
+  "sim.zoom.reset": "Repor zoom (clique)",
+  "sim.zoom.fit": "Ajustar"
 };

@@ -1167,5 +1167,10 @@ export default {
   "tour.step.finish.title": "Ekskursioon lõppenud!",
   "tour.step.finish.text": "Olete juhendis edukalt lõpetanud ning ehitanud, konfigureerinud ja analüüsinud oma esimest võrku.\n\nTeadaolevate katsetuste lõbu!",
   "app.terminal.copy": "Kopeeri",
-  "app.terminal.paste": "Kleebi"
+  "app.terminal.paste": "Kleebi",
+  "sim.zoom": "Suurendamine",
+  "sim.zoom.in": "Suurenda",
+  "sim.zoom.out": "Vähenda",
+  "sim.zoom.reset": "Lähtesta suurendamine (kliki)",
+  "sim.zoom.fit": "Sobita"
 };

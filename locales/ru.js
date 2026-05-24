@@ -1167,5 +1167,10 @@ export default {
   "tour.step.finish.title": "Тур завершен!",
   "tour.step.finish.text": "Вы успешно завершили тур и построили, настроили и проанализировали вашу первую сеть.\n\nПолучайте удовольствие от экспериментов!",
   "app.terminal.copy": "Копировать",
-  "app.terminal.paste": "Вставить"
+  "app.terminal.paste": "Вставить",
+  "sim.zoom": "Масштаб",
+  "sim.zoom.in": "Увеличить",
+  "sim.zoom.out": "Уменьшить",
+  "sim.zoom.reset": "Сбросить масштаб (нажмите)",
+  "sim.zoom.fit": "Подогнать"
 };

@@ -1167,5 +1167,10 @@ export default {
   "tour.step.finish.title": "Kierros valmis!",
   "tour.step.finish.text": "Olet onnistuneesti suorittanut kierroksen ja rakentanut, konfiguroinut sekä analysoinut ensimmäisen verkostosi.\n\nDivertissä kokeilua!",
   "app.terminal.copy": "Kopioi",
-  "app.terminal.paste": "Liitä"
+  "app.terminal.paste": "Liitä",
+  "sim.zoom": "Zoom",
+  "sim.zoom.in": "Lähennä",
+  "sim.zoom.out": "Loitonna",
+  "sim.zoom.reset": "Nollaa zoom (klikkaa)",
+  "sim.zoom.fit": "Sovita"
 };

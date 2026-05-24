@@ -1167,5 +1167,10 @@ export default {
   "tour.step.finish.title": "Apskate pabeigta!",
   "tour.step.finish.text": "Jūs veiksmīgi pabeiguši apskati un izveidojuši, konfigurējuši un analizējuši savu pirmo tīklu.\n\nBavējieties eksperimentēšanu!",
   "app.terminal.copy": "Kopēt",
-  "app.terminal.paste": "Ielīmēt"
+  "app.terminal.paste": "Ielīmēt",
+  "sim.zoom": "Tālummaiņa",
+  "sim.zoom.in": "Tuvināt",
+  "sim.zoom.out": "Attālināt",
+  "sim.zoom.reset": "Atiestatīt tālummaiņu (klikšķis)",
+  "sim.zoom.fit": "Pielāgot"
 };

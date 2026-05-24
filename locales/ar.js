@@ -1167,5 +1167,10 @@ export default {
   "homerouter.pf.empty": "لا توجد قواعد مكونة.",
   "homerouter.pf.invalid": "قاعدة إعادة توجيه المنفذ غير صحيحة.",
   "app.terminal.copy": "نسخ",
-  "app.terminal.paste": "لصق"
+  "app.terminal.paste": "لصق",
+  "sim.zoom": "تكبير/تصغير",
+  "sim.zoom.in": "تكبير",
+  "sim.zoom.out": "تصغير",
+  "sim.zoom.reset": "إعادة تعيين التكبير (انقر)",
+  "sim.zoom.fit": "ملاءمة"
 };

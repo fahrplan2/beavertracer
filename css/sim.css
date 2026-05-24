@@ -28,10 +28,21 @@
   min-width: 0;
   min-height: 0;
   position: relative;
-  overflow: auto;
+  overflow: hidden;
   width: 100%;
   height: 100%;
   z-index: 10;
+}
+
+/* Inner canvas — receives the CSS zoom/pan transform. */
+.sim-canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  transform-origin: 0 0;
+  will-change: transform;
 }
 
 
@@ -254,6 +265,7 @@
   font-size: 0.625rem;
   gap: 0;
 }
+
 
 .sim-toolbar-branding-group {
   position: relative;
@@ -804,7 +816,8 @@
 
 .sim-root.edit-mode .sim-nodes {
   background-image: radial-gradient(circle, #b0b8c4 1px, transparent 1px);
-  background-size: 24px 24px;
+  background-size: var(--sim-dot-size, 24px) var(--sim-dot-size, 24px);
+  background-position: var(--sim-dot-x, 0px) var(--sim-dot-y, 0px);
 }
 
 .sim-root.edit-mode * {
@@ -1624,36 +1637,6 @@ sim-toolbar-langbtn {
     grid-template-columns: 1fr 1fr;
   }
 
-  /* ── Canvas area: stacked column, sidebar at bottom ── */
-  .sim-body {
-    flex-direction: column;
-  }
-
-  .sim-sidebar {
-    order: 2;
-    flex: 0 0 auto;
-    border-right: none;
-    border-top: 1px solid var(--ui-border);
-    padding: var(--pad-sm);
-    overflow-x: auto;
-    overflow-y: hidden;
-    /* prevent height expansion from pushing canvas up */
-    height: auto;
-    min-height: 0;
-  }
-
-  .sim-sidebar-title {
-    display: none;
-  }
-
-  .sim-sidebar-tools {
-    flex-direction: row;
-    flex-wrap: nowrap;
-    gap: var(--pad-sm);
-    /* make scrollable touch-friendly */
-    -webkit-overflow-scrolling: touch;
-  }
-
   /* sidebar buttons: icon-only square touch targets */
   .sim-sidebar-btn {
     height: 48px !important;
@@ -1719,11 +1702,6 @@ sim-toolbar-langbtn {
   /* ── Toolbar: scrolls horizontally on small screens ── */
   .sim-toolbar {
     flex-shrink: 0;
-  }
-
-  /* ── Sidebar: respect iPhone home-bar safe area ── */
-  .sim-sidebar {
-    padding-bottom: calc(var(--pad-sm) + env(safe-area-inset-bottom, 0px));
   }
 
   /* ── Firewall: wrap table in horizontal scroll ── */

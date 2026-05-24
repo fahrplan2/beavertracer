@@ -144,6 +144,36 @@ export class SimControl {
     /** @type {boolean} */
     _mounted = false;
 
+    // --- Zoom / pan state ---
+
+    /** @type {number} current zoom factor (1.0 = 100 %) */
+    _zoom = 1.0;
+
+    /** @type {number} canvas pan X in screen pixels */
+    _panX = 0;
+
+    /** @type {number} canvas pan Y in screen pixels */
+    _panY = 0;
+
+    /** @type {HTMLDivElement|null} inner canvas that receives the CSS scale transform */
+    _simCanvas = null;
+
+    // pinch-to-zoom touch state
+    /** @type {number} */ _pinchStartDist = 0;
+    /** @type {number} */ _pinchStartZoom = 1;
+    /** @type {number} */ _pinchMidX = 0;
+    /** @type {number} */ _pinchMidY = 0;
+    /** @type {boolean} */ _pinchActive = false;
+
+    // middle-mouse / space pan state
+    /** @type {boolean} */ _isPanning = false;
+    /** @type {number|null} */ _panPointerId = null;
+    /** @type {number} */ _panStartClientX = 0;
+    /** @type {number} */ _panStartClientY = 0;
+    /** @type {number} */ _panStartX = 0;
+    /** @type {number} */ _panStartY = 0;
+    /** @type {boolean} */ _spaceDown = false;
+
     /** @type {boolean} */
     _uiDirty = false;
 
@@ -346,6 +376,12 @@ export class SimControl {
                 for (const p of o._packets) p.el?.remove?.();
             }
 
+            // panels now live in nodesLayer (outside obj.root) — remove explicitly
+            if (!(o instanceof Link) && o instanceof SimulatedObject) {
+                o.panelEl?.remove();
+                /** @type {any} */ (o).panelEl = null;
+            }
+
             if (/** @type {any} */ (o)._wPort) {
                 this.pcapController.removeIf(`${o.id}: ${/** @type {any} */ (o)._wPort.name}`);
             }
@@ -413,7 +449,7 @@ export class SimControl {
         sidebar.appendChild(toolsWrap);
         this._toolsWrap = toolsWrap;
 
-        // Nodes layer
+        // Nodes layer (outer container, never scrolls or scales)
         const nodes = document.createElement("div");
         nodes.className = "sim-nodes";
         simbody.appendChild(nodes);
@@ -427,19 +463,140 @@ export class SimControl {
         updateSizeVar();
         new ResizeObserver(updateSizeVar).observe(nodes);
 
+        // Inner canvas — receives translate + scale transform for zoom/pan
+        const simCanvas = document.createElement("div");
+        simCanvas.className = "sim-canvas";
+        nodes.appendChild(simCanvas);
+        this._simCanvas = simCanvas;
+
         const packetsLayer = document.createElement("div");
         packetsLayer.className = "sim-packets-layer";
-        nodes.appendChild(packetsLayer);
+        simCanvas.appendChild(packetsLayer);
         SimControl.packetsLayer = packetsLayer;
 
         const portLabelsLayer = document.createElement("div");
         portLabelsLayer.className = "sim-port-labels-layer";
-        nodes.appendChild(portLabelsLayer);
+        simCanvas.appendChild(portLabelsLayer);
         SimControl.portLabelsLayer = portLabelsLayer;
 
-        // Bind once
+        // Bind pointer events on the outer nodesLayer
         nodes.onpointerdown = (ev) => this._onPointerDown(ev);
         nodes.onpointermove = (ev) => this._onPointerMove(ev);
+
+        // ── Mouse wheel: Ctrl/Cmd → zoom, plain → pan ─────────────────────
+        nodes.addEventListener("wheel", (ev) => {
+            // Let panels scroll their own content
+            if (ev.target instanceof Element && ev.target.closest(".sim-panel")) return;
+
+            ev.preventDefault();
+
+            if (ev.ctrlKey || ev.metaKey) {
+                // Zoom centred on cursor
+                const r = nodes.getBoundingClientRect();
+                const factor = ev.deltaY > 0 ? (1 / 1.12) : 1.12;
+                this._zoomAt(factor, ev.clientX - r.left, ev.clientY - r.top);
+            } else {
+                // Pan (same direction as native scroll)
+                this._panX -= ev.deltaX;
+                this._panY -= ev.deltaY;
+                this._applyCanvasTransform();
+                this._requestRedrawLinks();
+            }
+        }, { passive: false });
+
+        // ── Touch pinch-to-zoom ────────────────────────────────────────────
+        nodes.addEventListener("touchstart", (ev) => {
+            if (ev.touches.length !== 2) return;
+            ev.preventDefault();
+            this._pinchActive = true;
+            this._pinchStartDist = Math.hypot(
+                ev.touches[0].clientX - ev.touches[1].clientX,
+                ev.touches[0].clientY - ev.touches[1].clientY,
+            );
+            this._pinchStartZoom = this._zoom;
+            const r = nodes.getBoundingClientRect();
+            this._pinchMidX = (ev.touches[0].clientX + ev.touches[1].clientX) / 2 - r.left;
+            this._pinchMidY = (ev.touches[0].clientY + ev.touches[1].clientY) / 2 - r.top;
+        }, { passive: false });
+
+        nodes.addEventListener("touchmove", (ev) => {
+            if (!this._pinchActive || ev.touches.length !== 2) return;
+            ev.preventDefault();
+            const dist = Math.hypot(
+                ev.touches[0].clientX - ev.touches[1].clientX,
+                ev.touches[0].clientY - ev.touches[1].clientY,
+            );
+            if (this._pinchStartDist < 1) return;
+            const targetZoom = Math.max(0.15, Math.min(4, this._pinchStartZoom * dist / this._pinchStartDist));
+            const factor = targetZoom / this._zoom;
+            this._panX = this._pinchMidX - (this._pinchMidX - this._panX) * factor;
+            this._panY = this._pinchMidY - (this._pinchMidY - this._panY) * factor;
+            this._zoom = targetZoom;
+            this._applyCanvasTransform();
+            this._requestRedrawLinks();
+        }, { passive: false });
+
+        nodes.addEventListener("touchend", () => { this._pinchActive = false; });
+        nodes.addEventListener("touchcancel", () => { this._pinchActive = false; });
+
+        // ── Middle-mouse drag → pan ────────────────────────────────────────
+        nodes.addEventListener("pointerdown", (ev) => {
+            const isMiddle = ev.button === 1;
+            const isSpaceDrag = ev.button === 0 && this._spaceDown;
+            if (!isMiddle && !isSpaceDrag) return;
+            ev.preventDefault();
+            ev.stopPropagation();
+            this._isPanning = true;
+            this._panPointerId = ev.pointerId;
+            this._panStartClientX = ev.clientX;
+            this._panStartClientY = ev.clientY;
+            this._panStartX = this._panX;
+            this._panStartY = this._panY;
+            nodes.setPointerCapture(ev.pointerId);
+            nodes.style.cursor = "grabbing";
+        });
+
+        window.addEventListener("pointermove", (ev) => {
+            if (!this._isPanning || ev.pointerId !== this._panPointerId) return;
+            this._panX = this._panStartX + (ev.clientX - this._panStartClientX);
+            this._panY = this._panStartY + (ev.clientY - this._panStartClientY);
+            this._applyCanvasTransform();
+            this._requestRedrawLinks();
+        });
+
+        window.addEventListener("pointerup", (ev) => {
+            if (!this._isPanning || ev.pointerId !== this._panPointerId) return;
+            this._isPanning = false;
+            this._panPointerId = null;
+            nodes.style.cursor = "";
+        });
+
+        // ── Space key → pan mode cursor ────────────────────────────────────
+        window.addEventListener("keydown", (ev) => {
+            if (ev.code === "Space" && !ev.repeat && document.activeElement === document.body) {
+                this._spaceDown = true;
+                if (nodes) nodes.style.cursor = "grab";
+            }
+        });
+        window.addEventListener("keyup", (ev) => {
+            if (ev.code === "Space") {
+                this._spaceDown = false;
+                if (!this._isPanning && nodes) nodes.style.cursor = "";
+            }
+        });
+
+        // ── Arrow keys → pan ────────────────────────────────────────────────
+        window.addEventListener("keydown", (ev) => {
+            const active = document.activeElement;
+            const tag = active?.tagName;
+            if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+            if (active?.classList.contains("term") || active?.classList.contains("term-mobile-input")) return;
+            const STEP = 40;
+            if (ev.key === "ArrowLeft")  { this._panX += STEP; this._applyCanvasTransform(); this._requestRedrawLinks(); ev.preventDefault(); }
+            else if (ev.key === "ArrowRight") { this._panX -= STEP; this._applyCanvasTransform(); this._requestRedrawLinks(); ev.preventDefault(); }
+            else if (ev.key === "ArrowUp")   { this._panY += STEP; this._applyCanvasTransform(); this._requestRedrawLinks(); ev.preventDefault(); }
+            else if (ev.key === "ArrowDown") { this._panY -= STEP; this._applyCanvasTransform(); this._requestRedrawLinks(); ev.preventDefault(); }
+        });
 
         nodes.oncontextmenu = (ev) => {
             if (this.mode !== "edit") return;
@@ -702,6 +859,46 @@ export class SimControl {
         });
         btnSave.dataset.role = "project-save";
         gProject.appendChild(btnSave);
+
+        //******** ZOOM ***********/
+        addSeparator("sep-zoom");
+        const gZoom = DOMBuilder.buttongroup(t("sim.zoom"), toolbar);
+        gZoom.dataset.group = "zoom";
+
+        const btnZoomOut = DOMBuilder.iconbutton({
+            label: "−",
+            icon: "fa-magnifying-glass-minus",
+            onClick: () => {
+                const layer = this.nodesLayer;
+                if (!layer) return;
+                this._zoomAt(1 / 1.25, layer.clientWidth / 2, layer.clientHeight / 2);
+            },
+        });
+        btnZoomOut.dataset.role = "zoom-out";
+        btnZoomOut.title = t("sim.zoom.out");
+        gZoom.appendChild(btnZoomOut);
+
+        const btnFit = DOMBuilder.iconbutton({
+            label: t("sim.zoom.fit"),
+            icon: "fa-expand",
+            onClick: () => this._fitToContent(),
+        });
+        btnFit.dataset.role = "zoom-fit";
+        btnFit.title = t("sim.zoom.fit");
+        gZoom.appendChild(btnFit);
+
+        const btnZoomIn = DOMBuilder.iconbutton({
+            label: "+",
+            icon: "fa-magnifying-glass-plus",
+            onClick: () => {
+                const layer = this.nodesLayer;
+                if (!layer) return;
+                this._zoomAt(1.25, layer.clientWidth / 2, layer.clientHeight / 2);
+            },
+        });
+        btnZoomIn.dataset.role = "zoom-in";
+        btnZoomIn.title = t("sim.zoom.in");
+        gZoom.appendChild(btnZoomIn);
 
 
         //******** COMMON ***********/
@@ -1009,14 +1206,21 @@ export class SimControl {
             /** @param {Element|null|undefined} el @param {boolean} hidden */
             const setHidden = (el, hidden) => el?.classList?.toggle("hidden", !!hidden);
 
-            const showSpeeds = (this.mode === "run");
+            const showSpeeds  = (this.mode === "run");
             const showProject = (this.mode === "edit");
+            const showZoom    = (this.mode === "edit" || this.mode === "run");
 
             setHidden(speedsGroup, !showSpeeds);
             setHidden(sepSpeeds, !showSpeeds);
 
             setHidden(projectGroup, !showProject);
             setHidden(sepProject, !showProject);
+
+            const zoomInner = toolbar.querySelector(`[data-group="zoom"]`);
+            const zoomGroup = zoomInner?.closest(".sim-toolbar-group") ?? zoomInner;
+            const sepZoom   = toolbar.querySelector(`[data-role="sep-zoom"]`);
+            setHidden(zoomGroup, !showZoom);
+            setHidden(sepZoom, !showZoom);
 
         }
 
@@ -1040,22 +1244,26 @@ export class SimControl {
         const nodes = this.nodesLayer;
         if (!nodes) return;
 
+        const simCanvas = this._simCanvas ?? nodes;
+
         // 1) Ensure node elements exist and attached
         for (const obj of this.simobjects) {
             if (obj instanceof Link) continue; // links are drawn via their own DOM; still include if your Link.render returns an element
 
             if (!this._objEls.has(obj.id)) {
+                // Place panel in nodesLayer (outside sim-canvas) so it is never zoomed
+                obj.panelRoot = nodes;
                 const el = obj.render();
                 this._objEls.set(obj.id, el);
 
                 // optional focus class
                 if (this.focusedObject?.id === obj.id) el.classList.add("is-focused");
 
-                nodes.appendChild(el);
+                simCanvas.appendChild(el);
             } else {
                 // already exists, ensure in DOM
                 const el = this._objEls.get(obj.id);
-                if (el && el.parentElement !== nodes) nodes.appendChild(el);
+                if (el && el.parentElement !== simCanvas) simCanvas.appendChild(el);
             }
         }
 
@@ -1066,7 +1274,7 @@ export class SimControl {
             if (!this._objEls.has(obj.id)) {
                 const el = obj.render();
                 this._objEls.set(obj.id, el);
-                nodes.appendChild(el);
+                simCanvas.appendChild(el);
 
                 // attach packet elements once
                 for (const p of obj._packets) {
@@ -1373,10 +1581,10 @@ export class SimControl {
 
         const r = layer.getBoundingClientRect();
 
-        // IMPORTANT: include scroll offset because ghosts are positioned in the scroll content space
+        // Convert screen position to canvas-space coordinates (accounting for zoom and pan).
         return {
-            x: (ev.clientX - r.left) + layer.scrollLeft,
-            y: (ev.clientY - r.top) + layer.scrollTop,
+            x: (ev.clientX - r.left - this._panX) / this._zoom,
+            y: (ev.clientY - r.top  - this._panY) / this._zoom,
         };
     }
 
@@ -1447,6 +1655,9 @@ export class SimControl {
     /** @param {PointerEvent} ev */
     async _onPointerDown(ev) {
         if (this.mode !== "edit") return;
+
+        // Middle mouse and space-drag are handled by the pan listener — ignore here
+        if (ev.button === 1 || (ev.button === 0 && this._spaceDown)) return;
 
         const obj = this._getObjFromEvent(ev);
         const link = this._getLinkFromEvent(ev); // may be null
@@ -1658,7 +1869,7 @@ export class SimControl {
             // Ghost soll nicht als echtes Objekt erkannt werden
             delete el.dataset.objid;
 
-            this.nodesLayer.appendChild(el);
+            (this._simCanvas ?? this.nodesLayer).appendChild(el);
 
             this._ghostNodeEl = /** @type {HTMLDivElement} */ (el);
             this._ghostNodeType = type;
@@ -1840,7 +2051,7 @@ export class SimControl {
         g.appendChild(hit);
         g.appendChild(line);
 
-        this.nodesLayer.appendChild(g);
+        (this._simCanvas ?? this.nodesLayer).appendChild(g);
         this._ghostLink = g;
     }
 
@@ -1947,6 +2158,7 @@ export class SimControl {
         this.isPaused = true;
         this._syncSceneDOM();
         this.redrawLinks();
+        requestAnimationFrame(() => this._fitToContent(1));
     }
 
     new() {
@@ -2059,6 +2271,139 @@ export class SimControl {
 
         // 8) redraw request reset
         this._redrawReq = false;
+    }
+
+    // ── Zoom / pan helpers ────────────────────────────────────────────────
+
+    /**
+     * Clamp _panX/_panY so that the content bounding box never fully leaves
+     * the visible area. At least MARGIN pixels of content must remain on-screen.
+     */
+    _clampPan() {
+        const layer = this.nodesLayer;
+        if (!layer) return;
+
+        const layerW = layer.clientWidth  || 0;
+        const layerH = layer.clientHeight || 0;
+        if (layerW < 2 || layerH < 2) return;
+
+        const zoom   = this._zoom;
+        const MARGIN = 80; // minimum visible content strip in px
+
+        // Content bounding box in canvas coordinates
+        const nodeObjs = this.simobjects.filter(
+            o => !(o instanceof Link) && o instanceof SimulatedObject,
+        );
+
+        let minX = 0, minY = 0;
+        let maxX = layerW / zoom;   // default: virtual canvas = viewport
+        let maxY = layerH / zoom;
+
+        if (nodeObjs.length > 0) {
+            minX = Infinity; minY = Infinity; maxX = -Infinity; maxY = -Infinity;
+            for (const obj of nodeObjs) {
+                const o = /** @type {any} */ (obj);
+                const w = (o.iconEl?.offsetWidth)  || 110;
+                const h = (o.iconEl?.offsetHeight) || 70;
+                minX = Math.min(minX, o.x);
+                minY = Math.min(minY, o.y);
+                maxX = Math.max(maxX, o.x + w);
+                maxY = Math.max(maxY, o.y + h);
+            }
+        }
+
+        // Content edges in screen space:
+        //   right  = panX + maxX * zoom  ≥ MARGIN
+        //   left   = panX + minX * zoom  ≤ layerW − MARGIN
+        //   bottom = panY + maxY * zoom  ≥ MARGIN
+        //   top    = panY + minY * zoom  ≤ layerH − MARGIN
+        const minPanX = MARGIN - maxX * zoom;
+        const maxPanX = layerW - MARGIN - minX * zoom;
+        const minPanY = MARGIN - maxY * zoom;
+        const maxPanY = layerH - MARGIN - minY * zoom;
+
+        if (minPanX <= maxPanX) {
+            this._panX = Math.max(minPanX, Math.min(maxPanX, this._panX));
+        } else {
+            // Content is narrower than 2×MARGIN: centre it horizontally
+            this._panX = (layerW - (maxX - minX) * zoom) / 2 - minX * zoom;
+        }
+
+        if (minPanY <= maxPanY) {
+            this._panY = Math.max(minPanY, Math.min(maxPanY, this._panY));
+        } else {
+            // Content is shorter than 2×MARGIN: centre it vertically
+            this._panY = (layerH - (maxY - minY) * zoom) / 2 - minY * zoom;
+        }
+    }
+
+    /** Apply the current pan+zoom state to the sim-canvas CSS transform. */
+    _applyCanvasTransform() {
+        if (!this._simCanvas) return;
+        this._clampPan();
+        this._simCanvas.style.transform =
+            `translate(${this._panX}px, ${this._panY}px) scale(${this._zoom})`;
+
+        // Keep the dot grid on nodesLayer aligned with the canvas content
+        const layer = this.nodesLayer;
+        if (layer) {
+            layer.style.setProperty("--sim-dot-size", `${24 * this._zoom}px`);
+            layer.style.setProperty("--sim-dot-x",    `${this._panX}px`);
+            layer.style.setProperty("--sim-dot-y",    `${this._panY}px`);
+        }
+    }
+
+    /**
+     * Zoom by `factor`, keeping the point (pivotX, pivotY) in nodesLayer-local
+     * screen coordinates stationary.
+     * @param {number} factor
+     * @param {number} pivotX  pixels from nodesLayer left edge
+     * @param {number} pivotY  pixels from nodesLayer top edge
+     */
+    _zoomAt(factor, pivotX, pivotY) {
+        const newZoom = Math.max(0.15, Math.min(4, this._zoom * factor));
+        const realFactor = newZoom / this._zoom;
+        this._panX = pivotX - (pivotX - this._panX) * realFactor;
+        this._panY = pivotY - (pivotY - this._panY) * realFactor;
+        this._zoom = newZoom;
+        this._applyCanvasTransform();
+        this._requestRedrawLinks();
+    }
+
+    /** Fit all placed nodes into the visible area.
+     * @param {number} [maxZoom] upper zoom limit (default 4); pass 1 to only zoom out, never in */
+    _fitToContent(maxZoom = 4) {
+        const layer = this.nodesLayer;
+        if (!layer) return;
+
+        const nodeObjs = this.simobjects.filter(
+            (o) => !(o instanceof Link) && o instanceof SimulatedObject && o.iconEl,
+        );
+        if (nodeObjs.length === 0) return;
+
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (const obj of nodeObjs) {
+            const o = /** @type {any} */ (obj);
+            const w = o.iconEl.offsetWidth  || 110;
+            const h = o.iconEl.offsetHeight || 70;
+            minX = Math.min(minX, o.x);
+            minY = Math.min(minY, o.y);
+            maxX = Math.max(maxX, o.x + w);
+            maxY = Math.max(maxY, o.y + h);
+        }
+
+        const PAD = 48;
+        const contentW = maxX - minX + PAD * 2;
+        const contentH = maxY - minY + PAD * 2;
+        const layerW = layer.clientWidth  || 800;
+        const layerH = layer.clientHeight || 600;
+
+        const zoom = Math.max(0.15, Math.min(maxZoom, Math.min(layerW / contentW, layerH / contentH)));
+        this._zoom = zoom;
+        this._panX = (layerW - contentW * zoom) / 2 - (minX - PAD) * zoom;
+        this._panY = (layerH - contentH * zoom) / 2 - (minY - PAD) * zoom;
+        this._applyCanvasTransform();
+        this._requestRedrawLinks();
     }
 
     /** @param {string} prefix */

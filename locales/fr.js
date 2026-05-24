@@ -1201,5 +1201,10 @@ export default {
   "tour.step.finish.title": "Visite guidée terminée !",
   "tour.step.finish.text": "Vous avez complété avec succès la visite guidée et construit, configuré et analysé votre premier réseau.\n\nAmusez-vous à expérimenter !",
   "app.terminal.copy": "Copier",
-  "app.terminal.paste": "Coller"
+  "app.terminal.paste": "Coller",
+  "sim.zoom": "Zoom",
+  "sim.zoom.in": "Zoom avant",
+  "sim.zoom.out": "Zoom arrière",
+  "sim.zoom.reset": "Réinitialiser le zoom (clic)",
+  "sim.zoom.fit": "Ajuster"
 };

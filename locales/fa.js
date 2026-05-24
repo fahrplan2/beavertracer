@@ -1167,5 +1167,10 @@ export default {
   "homerouter.pf.empty": "هیچ قانونی پیکربندی نشده است.",
   "homerouter.pf.invalid": "قانون انتقال پورت نامعتبر است.",
   "app.terminal.copy": "کپی",
-  "app.terminal.paste": "چسباندن"
+  "app.terminal.paste": "چسباندن",
+  "sim.zoom": "بزرگ‌نمایی",
+  "sim.zoom.in": "بزرگ‌نمایی بیشتر",
+  "sim.zoom.out": "بزرگ‌نمایی کمتر",
+  "sim.zoom.reset": "بازنشانی بزرگ‌نمایی (کلیک کنید)",
+  "sim.zoom.fit": "تطابق"
 };

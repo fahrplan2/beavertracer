@@ -1166,5 +1166,10 @@ export default {
   "tour.step.finish.title": "Turi Përfundoi!",
   "tour.step.finish.text": "Keni përfunduar me sukses turin dhe keni ndërtuar, konfiguruar dhe analizuar rrjetin tuaj të parë.\n\nDivertohuni me eksperimentim!",
   "app.terminal.copy": "Kopjo",
-  "app.terminal.paste": "Ngjit"
+  "app.terminal.paste": "Ngjit",
+  "sim.zoom": "Zmadhim",
+  "sim.zoom.in": "Zmadho",
+  "sim.zoom.out": "Zvogëlo",
+  "sim.zoom.reset": "Riktheje zmadhimin (kliko)",
+  "sim.zoom.fit": "Përshtat"
 };

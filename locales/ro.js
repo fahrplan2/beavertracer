@@ -1167,5 +1167,10 @@ export default {
   "tour.step.finish.title": "Turul complet!",
   "tour.step.finish.text": "Ați completat cu succes turul și ați construit, configurat și analizat prima voastră rețea.\n\nDivertiți-vă experimentând!",
   "app.terminal.copy": "Copiere",
-  "app.terminal.paste": "Lipire"
+  "app.terminal.paste": "Lipire",
+  "sim.zoom": "Zoom",
+  "sim.zoom.in": "Mărire",
+  "sim.zoom.out": "Micșorare",
+  "sim.zoom.reset": "Resetare zoom (clic)",
+  "sim.zoom.fit": "Potrivire"
 };

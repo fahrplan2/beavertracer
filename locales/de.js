@@ -752,6 +752,12 @@ export default {
   "ui.cancel": "Abbrechen",
   "sim.save.filename": "Dateiname",
   "sim.embed.open": "In BeaverTracer öffnen",
+
+  "sim.zoom":       "Zoom",
+  "sim.zoom.in":    "Hineinzoomen",
+  "sim.zoom.out":   "Herauszoomen",
+  "sim.zoom.reset": "Zoom zurücksetzen (klicken)",
+  "sim.zoom.fit":   "Anpassen",
   "app.ircserver.title": "IRC-Server",
   "app.ircserver.btn.start": "Starten",
   "app.ircserver.btn.stop": "Stoppen",
