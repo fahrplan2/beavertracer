@@ -15,11 +15,23 @@ export const BGP_MSG_NOTIFICATION = 3;
 export const BGP_MSG_KEEPALIVE    = 4;
 
 // Path attribute type codes
-export const PA_ORIGIN     = 1;
-export const PA_AS_PATH    = 2;
-export const PA_NEXT_HOP   = 3;
-export const PA_MED        = 4;
-export const PA_LOCAL_PREF = 5;
+export const PA_ORIGIN          = 1;
+export const PA_AS_PATH         = 2;
+export const PA_NEXT_HOP        = 3;
+export const PA_MED             = 4;
+export const PA_LOCAL_PREF      = 5;
+export const PA_MP_REACH_NLRI   = 14;  // RFC 4760 §3
+export const PA_MP_UNREACH_NLRI = 15;  // RFC 4760 §4
+
+// Address Family Identifiers (AFI)
+export const AFI_IPV4 = 1;
+export const AFI_IPV6 = 2;
+
+// Subsequent Address Family Identifiers (SAFI)
+export const SAFI_UNICAST = 1;
+
+// BGP Capability codes (RFC 5492)
+export const CAP_MP_BGP = 1;
 
 // ORIGIN values
 export const ORIGIN_IGP        = 0;
@@ -29,8 +41,9 @@ export const ORIGIN_INCOMPLETE = 2;
 export const AS_SEQUENCE = 2;
 
 // Attribute flags
-export const ATTR_TRANSITIVE = 0x40;
-export const ATTR_OPTIONAL   = 0x80;
+export const ATTR_TRANSITIVE              = 0x40;
+export const ATTR_OPTIONAL                = 0x80;
+export const ATTR_OPTIONAL_EXT_LEN       = 0x90; // optional + extended-length
 
 // NOTIFICATION error codes
 export const ERR_CEASE    = 6;
@@ -80,12 +93,22 @@ function buildMessage(type, body) {
  * @returns {Uint8Array}
  */
 export function buildOpen(localAS, holdTime, routerId) {
-    const body = new Uint8Array(10);
+    // Optional parameter: Capabilities (type 2, RFC 5492)
+    // Capability: Multiprotocol Extensions (code 1, RFC 4760) for IPv6 unicast
+    //   Capability code (1) + cap_len (1) + AFI (2) + reserved (1) + SAFI (1) = 6 bytes
+    const capValue = new Uint8Array([CAP_MP_BGP, 4, 0x00, AFI_IPV6, 0x00, SAFI_UNICAST]);
+    const optParam = new Uint8Array(2 + capValue.length);
+    optParam[0] = 2;               // Optional Parameter type = Capabilities
+    optParam[1] = capValue.length;
+    optParam.set(capValue, 2);
+
+    const body = new Uint8Array(10 + optParam.length);
     body[0] = BGP_VERSION;
     write16BE(body, 1, localAS & 0xffff);
     write16BE(body, 3, holdTime & 0xffff);
     body.set(routerId.toUInt8(), 5);
-    body[9] = 0; // no optional parameters
+    body[9] = optParam.length;
+    body.set(optParam, 10);
     return buildMessage(BGP_MSG_OPEN, body);
 }
 
@@ -112,26 +135,31 @@ export function buildNotification(code, subcode) {
  *   localPref: number,
  *   med: number,
  *   nlri: Array<{dst: IPAddress, prefLen: number}>,
+ *   mp6Reach?: { nextHop: IPAddress, nlri: Array<{dst: IPAddress, prefLen: number}> },
+ *   mp6Unreach?: Array<{dst: IPAddress, prefLen: number}>,
  * }} opts
  * @returns {Uint8Array}
  */
-export function buildUpdate({ withdrawn, nextHop, asPath, localPref, med, nlri }) {
-    // Withdrawn routes
-    const wdrParts = withdrawn.map(encodePrefix);
-    const wdrBytes = concat(wdrParts);
+export function buildUpdate({ withdrawn, nextHop, asPath, localPref, med, nlri, mp6Reach, mp6Unreach }) {
+    // Withdrawn routes (IPv4 only)
+    const wdrBytes = concat(withdrawn.map(encodePrefix));
     const wdrLenBuf = new Uint8Array(2);
     write16BE(wdrLenBuf, 0, wdrBytes.length);
 
-    // Path attributes (only when NLRI is non-empty)
-    /** @type {Uint8Array<ArrayBufferLike>} */
+    const hasV4Nlri   = nlri.length > 0;
+    const hasMp6Reach = mp6Reach != null && mp6Reach.nlri.length > 0;
+    const hasMp6Unreach = mp6Unreach != null && mp6Unreach.length > 0;
+
+    // Path attributes (required when any NLRI present)
+    /** @type {Uint8Array} */
     let paBytes = new Uint8Array(0);
-    if (nlri.length > 0) {
-        paBytes = buildPathAttrs(nextHop, asPath, localPref, med);
+    if (hasV4Nlri || hasMp6Reach || hasMp6Unreach) {
+        paBytes = buildPathAttrs(nextHop, asPath, localPref, med, mp6Reach, mp6Unreach);
     }
     const paLenBuf = new Uint8Array(2);
     write16BE(paLenBuf, 0, paBytes.length);
 
-    // NLRI
+    // NLRI (IPv4 only — IPv6 NLRI lives inside MP_REACH_NLRI path attribute)
     const nlriBytes = concat(nlri.map(encodePrefix));
 
     const body = concat([wdrLenBuf, wdrBytes, paLenBuf, paBytes, nlriBytes]);
@@ -139,13 +167,58 @@ export function buildUpdate({ withdrawn, nextHop, asPath, localPref, med, nlri }
 }
 
 /**
+ * Build MP_REACH_NLRI attribute (RFC 4760 §3) for IPv6 unicast.
+ * @param {IPAddress} nextHop  global unicast IPv6 address
+ * @param {Array<{dst: IPAddress, prefLen: number}>} nlri
+ * @returns {Uint8Array}
+ */
+function buildMPReachNLRI(nextHop, nlri) {
+    const nhBytes = nextHop.toUInt8(); // 16 bytes
+    const nlriBytes = concat(nlri.map(encodePrefix));
+    // value: AFI(2) + SAFI(1) + nhLen(1) + nh(16) + SNPA(1) + NLRI
+    const value = concat([
+        new Uint8Array([0x00, AFI_IPV6, SAFI_UNICAST, nhBytes.length]),
+        nhBytes,
+        new Uint8Array([0x00]), // SNPA count = 0
+        nlriBytes,
+    ]);
+    // flags: optional(0x80) + extended-length(0x10) = 0x90
+    const hdr = new Uint8Array(4);
+    hdr[0] = ATTR_OPTIONAL_EXT_LEN;
+    hdr[1] = PA_MP_REACH_NLRI;
+    write16BE(hdr, 2, value.length);
+    return concat([hdr, value]);
+}
+
+/**
+ * Build MP_UNREACH_NLRI attribute (RFC 4760 §4) for IPv6 unicast.
+ * @param {Array<{dst: IPAddress, prefLen: number}>} prefixes
+ * @returns {Uint8Array}
+ */
+function buildMPUnreachNLRI(prefixes) {
+    const nlriBytes = concat(prefixes.map(encodePrefix));
+    // value: AFI(2) + SAFI(1) + withdrawn NLRI
+    const value = concat([
+        new Uint8Array([0x00, AFI_IPV6, SAFI_UNICAST]),
+        nlriBytes,
+    ]);
+    const hdr = new Uint8Array(4);
+    hdr[0] = ATTR_OPTIONAL_EXT_LEN;
+    hdr[1] = PA_MP_UNREACH_NLRI;
+    write16BE(hdr, 2, value.length);
+    return concat([hdr, value]);
+}
+
+/**
  * @param {IPAddress} nextHop
  * @param {number[]} asPath
  * @param {number} localPref
  * @param {number} med
+ * @param {{ nextHop: IPAddress, nlri: Array<{dst: IPAddress, prefLen: number}> }|undefined} mp6Reach
+ * @param {Array<{dst: IPAddress, prefLen: number}>|undefined} mp6Unreach
  * @returns {Uint8Array}
  */
-function buildPathAttrs(nextHop, asPath, localPref, med) {
+function buildPathAttrs(nextHop, asPath, localPref, med, mp6Reach, mp6Unreach) {
     const parts = [];
 
     // ORIGIN: well-known mandatory, IGP (0)
@@ -156,15 +229,27 @@ function buildPathAttrs(nextHop, asPath, localPref, med) {
     const asPathHdr  = new Uint8Array([ATTR_TRANSITIVE, PA_AS_PATH, asPathBody.length]);
     parts.push(concat([asPathHdr, asPathBody]));
 
-    // NEXT_HOP: well-known mandatory (4 bytes IPv4)
-    const nhBytes = nextHop.toUInt8();
-    parts.push(new Uint8Array([ATTR_TRANSITIVE, PA_NEXT_HOP, 4, ...nhBytes]));
+    // NEXT_HOP: well-known mandatory for IPv4 (4 bytes); omit when only carrying IPv6 MP attributes
+    if (nextHop.isV4()) {
+        const nhBytes = nextHop.toUInt8();
+        parts.push(new Uint8Array([ATTR_TRANSITIVE, PA_NEXT_HOP, 4, ...nhBytes]));
+    }
 
     // LOCAL_PREF: well-known discretionary (4 bytes)
     parts.push(new Uint8Array([ATTR_TRANSITIVE, PA_LOCAL_PREF, 4, ...u32bytes(localPref)]));
 
     // MED: optional non-transitive (4 bytes)
     parts.push(new Uint8Array([ATTR_OPTIONAL, PA_MED, 4, ...u32bytes(med)]));
+
+    // MP_REACH_NLRI (RFC 4760 §3) — IPv6 announcements
+    if (mp6Reach != null && mp6Reach.nlri.length > 0) {
+        parts.push(buildMPReachNLRI(mp6Reach.nextHop, mp6Reach.nlri));
+    }
+
+    // MP_UNREACH_NLRI (RFC 4760 §4) — IPv6 withdrawals
+    if (mp6Unreach != null && mp6Unreach.length > 0) {
+        parts.push(buildMPUnreachNLRI(mp6Unreach));
+    }
 
     return concat(parts);
 }
@@ -233,7 +318,7 @@ export function parseOpen(body) {
  * @param {Uint8Array} body  UPDATE body (after header)
  * @returns {{
  *   withdrawn: Array<{dst: IPAddress, prefLen: number}>,
- *   attrs: { asPath: number[], nextHop: IPAddress|null, localPref: number, med: number },
+ *   attrs: { asPath: number[], nextHop: IPAddress|null, localPref: number, med: number, mp6Reach: { nextHop: IPAddress, nlri: Array<{dst: IPAddress, prefLen: number}> }|null, mp6Unreach: Array<{dst: IPAddress, prefLen: number}> },
  *   nlri: Array<{dst: IPAddress, prefLen: number}>,
  * }}
  */
@@ -258,16 +343,22 @@ export function parseUpdate(body) {
     return { withdrawn, attrs, nlri };
 }
 
-/** @returns {{ asPath: number[], nextHop: IPAddress|null, localPref: number, med: number }} */
+/**
+ * @returns {{
+ *   asPath: number[], nextHop: IPAddress|null, localPref: number, med: number,
+ *   mp6Reach: { nextHop: IPAddress, nlri: Array<{dst: IPAddress, prefLen: number}> }|null,
+ *   mp6Unreach: Array<{dst: IPAddress, prefLen: number}>,
+ * }}
+ */
 function emptyAttrs() {
-    return { asPath: [], nextHop: null, localPref: 100, med: 0 };
+    return { asPath: [], nextHop: null, localPref: 100, med: 0, mp6Reach: null, mp6Unreach: [] };
 }
 
 /**
  * @param {Uint8Array} data
  * @param {number} off
  * @param {number} end
- * @returns {{ asPath: number[], nextHop: IPAddress|null, localPref: number, med: number }}
+ * @returns {{ asPath: number[], nextHop: IPAddress|null, localPref: number, med: number, mp6Reach: { nextHop: IPAddress, nlri: Array<{dst: IPAddress, prefLen: number}> }|null, mp6Unreach: Array<{dst: IPAddress, prefLen: number}> }}
  */
 function parsePathAttrs(data, off, end) {
     const result = emptyAttrs();
@@ -294,6 +385,28 @@ function parsePathAttrs(data, off, end) {
             case PA_MED:
                 if (len >= 4) result.med = read32BE(data, off);
                 break;
+            case PA_MP_REACH_NLRI: {   // RFC 4760 §3
+                const afi  = read16BE(data, off);
+                const safi = data[off + 2];
+                const nhLen = data[off + 3];
+                if (afi === AFI_IPV6 && safi === SAFI_UNICAST && nhLen >= 16 && off + 4 + nhLen <= valEnd) {
+                    const nh6 = IPAddress.fromUInt8(data.subarray(off + 4, off + 4 + nhLen));
+                    const snpaOff = off + 4 + nhLen;
+                    // skip SNPA count byte
+                    const nlriOff = snpaOff + 1;
+                    const nlri6 = decodePrefixes(data, nlriOff, valEnd, 16);
+                    result.mp6Reach = { nextHop: nh6, nlri: nlri6 };
+                }
+                break;
+            }
+            case PA_MP_UNREACH_NLRI: { // RFC 4760 §4
+                const afi  = read16BE(data, off);
+                const safi = data[off + 2];
+                if (afi === AFI_IPV6 && safi === SAFI_UNICAST) {
+                    result.mp6Unreach = decodePrefixes(data, off + 3, valEnd, 16);
+                }
+                break;
+            }
         }
         off = valEnd;
     }
@@ -323,15 +436,16 @@ function parseASPath(data, off, end) {
  * @param {Uint8Array} data
  * @param {number} off
  * @param {number} end
+ * @param {4|16} addrLen  4 for IPv4, 16 for IPv6
  * @returns {Array<{dst: IPAddress, prefLen: number}>}
  */
-function decodePrefixes(data, off, end) {
+function decodePrefixes(data, off, end, addrLen = 4) {
     const result = [];
     while (off < end) {
         const prefLen = data[off++];
         const octets  = Math.ceil(prefLen / 8);
         if (off + octets > end) break;
-        const addrBytes = new Uint8Array(4);
+        const addrBytes = new Uint8Array(addrLen);
         addrBytes.set(data.subarray(off, off + octets));
         off += octets;
         result.push({ dst: IPAddress.fromUInt8(addrBytes), prefLen });

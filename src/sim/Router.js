@@ -811,11 +811,15 @@ export class Router extends SimulatedObject {
             autoTd.textContent = routeSourceLabel(source);
 
             const save = document.createElement("button");
-            save.textContent = t("router.routingtable.save");
+            save.innerHTML = '<i class="fa-solid fa-check"></i>';
+            save.title = t("router.routingtable.save");
+            save.className = "router-route-action-btn";
             save.disabled = true;
 
             const del = document.createElement("button");
-            del.textContent = t("router.routingtable.delete");
+            del.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
+            del.title = t("router.routingtable.delete");
+            del.className = "router-route-action-btn";
             del.disabled = !editable;
 
             // interface cell
@@ -992,8 +996,10 @@ export class Router extends SimulatedObject {
 
             const actions = document.createElement("td");
             actions.className = "router-route-actions";
-            actions.appendChild(save);
-            actions.appendChild(del);
+            if (editable) {
+                actions.appendChild(save);
+                actions.appendChild(del);
+            }
             tr.appendChild(actions);
 
             tbody.appendChild(tr);
@@ -1040,11 +1046,15 @@ export class Router extends SimulatedObject {
             addAuto.textContent = t("router.routingtable.source.static");
 
             const saveBtn = document.createElement("button");
-            saveBtn.textContent = t("router.routingtable.save");
+            saveBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
+            saveBtn.title = t("router.routingtable.save");
+            saveBtn.className = "router-route-action-btn";
             saveBtn.disabled = true;
 
             const cancelBtn = document.createElement("button");
-            cancelBtn.textContent = t("ui.cancel");
+            cancelBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+            cancelBtn.title = t("ui.cancel");
+            cancelBtn.className = "router-route-action-btn";
 
             const updateAddState = () => {
                 let okDst = false, okMask = false, okNh = false;
@@ -1147,11 +1157,15 @@ export class Router extends SimulatedObject {
             autoTd.textContent = routeSourceLabel(source);
 
             const save = document.createElement("button");
-            save.textContent = t("router.routingtable.save");
+            save.innerHTML = '<i class="fa-solid fa-check"></i>';
+            save.title = t("router.routingtable.save");
+            save.className = "router-route-action-btn";
             save.disabled = true;
 
             const del = document.createElement("button");
-            del.textContent = t("router.routingtable.delete");
+            del.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
+            del.title = t("router.routingtable.delete");
+            del.className = "router-route-action-btn";
             del.disabled = !editable;
 
             let ifCellEl;
@@ -1248,8 +1262,10 @@ export class Router extends SimulatedObject {
             tr.appendChild(autoTd);
             const actions = document.createElement("td");
             actions.className = "router-route-actions";
-            actions.appendChild(save);
-            actions.appendChild(del);
+            if (editable) {
+                actions.appendChild(save);
+                actions.appendChild(del);
+            }
             tr.appendChild(actions);
             tbody.appendChild(tr);
             updateRowState();
@@ -1296,11 +1312,15 @@ export class Router extends SimulatedObject {
             addAuto.textContent = t("router.routingtable.source.static");
 
             const saveBtn = document.createElement("button");
-            saveBtn.textContent = t("router.routingtable.save");
+            saveBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
+            saveBtn.title = t("router.routingtable.save");
+            saveBtn.className = "router-route-action-btn";
             saveBtn.disabled = true;
 
             const cancelBtn = document.createElement("button");
-            cancelBtn.textContent = t("ui.cancel");
+            cancelBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+            cancelBtn.title = t("ui.cancel");
+            cancelBtn.className = "router-route-action-btn";
 
             const updateAddState = () => {
                 let okDst = false, okPfx = false, okNh = false;
@@ -1530,6 +1550,7 @@ export class Router extends SimulatedObject {
         this.bgp.onUpdate = () => {
             this._renderBGPPeers();
             this._renderBGPLog();
+            this._renderBGPRoutes();
         };
     }
 

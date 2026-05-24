@@ -106,6 +106,7 @@
 .router-routes-scroll {
   max-height: 260px;
   overflow-y: auto;
+  overflow-x: auto;
   border: 1px solid color-mix(in oklch, var(--border), var(--text) 8%);
   border-radius: var(--radius-md);
   scrollbar-width: thin;
@@ -154,6 +155,7 @@
 
 .router-routes-table {
   width: 100%;
+  min-width: 480px;
   border-collapse: collapse;
 }
 
@@ -162,6 +164,21 @@
   padding: var(--pad-sm);
   border: none;
   vertical-align: middle;
+  word-break: break-all;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.router-routes-table td input {
+  min-width: 80px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.router-routes-table td select {
+  min-width: 52px;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .router-routes-table thead tr {
@@ -179,6 +196,20 @@
 .router-route-actions {
   display: flex;
   gap: var(--pad-sm);
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.router-route-action-btn {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Connected routes: muted + italic */

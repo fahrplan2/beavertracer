@@ -6,17 +6,20 @@ import {
     parseMessage, parseOpen, parseUpdate,
     BGP_MSG_OPEN, BGP_MSG_KEEPALIVE, BGP_MSG_NOTIFICATION, BGP_MSG_UPDATE,
     ERR_CEASE,
+    CAP_MP_BGP, AFI_IPV6, SAFI_UNICAST,
 } from '../../src/net/pdu/BGPPacket.js';
 
 // ── Mock Stack ─────────────────────────────────────────────────────────────────
 
-/** @param {{ ip: string, prefix: number }[]} ifaces */
+/** @param {{ ip: string, prefix: number, ip6?: string, prefix6?: number }[]} ifaces */
 function makeStack(ifaces = []) {
     const routes = [];
     return {
-        interfaces: ifaces.map(({ ip, prefix }) => ({
+        interfaces: ifaces.map(({ ip, prefix, ip6, prefix6 }) => ({
             ip: IPAddress.fromString(ip),
             prefixLength: prefix,
+            ip6: ip6 ? IPAddress.fromString(ip6) : null,
+            prefixLength6: prefix6 ?? 0,
             port: { linkref: {} },
         })),
         _routes: routes,
@@ -483,5 +486,266 @@ describe('BGPDaemon – persistence', () => {
         const daemon = new BGPDaemon(makeStack([]));
         daemon.applyJSON({ enabled: false, localAS: 65001, routerId: '', peers: [] });
         expect(daemon._running).toBe(false);
+    });
+});
+
+// ── BGPPacket – buildOpen mit MP-BGP-Capability (RFC 5492) ───────────────────
+
+describe('BGPPacket – buildOpen MP-BGP capability', () => {
+    it('includes IPv6 unicast capability in optional parameters', () => {
+        const rid = IPAddress.fromString('10.0.0.1');
+        const msg = buildOpen(65001, 90, rid);
+        const parsed = parseMessage(msg);
+        expect(parsed?.type).toBe(BGP_MSG_OPEN);
+        const body = parsed?.body ?? new Uint8Array();
+
+        // byte 9 = optional parameters length (must be > 0)
+        expect(body[9]).toBeGreaterThan(0);
+
+        // Optional parameter: type=2 (Capabilities), then capability bytes
+        expect(body[10]).toBe(2);          // param type = Capabilities
+        const capParamLen = body[11];
+        expect(capParamLen).toBeGreaterThan(0);
+
+        // Capability: code=CAP_MP_BGP(1), len=4, AFI_IPV6, reserved=0, SAFI_UNICAST
+        expect(body[12]).toBe(CAP_MP_BGP);
+        expect(body[13]).toBe(4);
+        const afi = (body[14] << 8) | body[15];
+        expect(afi).toBe(AFI_IPV6);
+        expect(body[16]).toBe(0);          // reserved
+        expect(body[17]).toBe(SAFI_UNICAST);
+    });
+
+    it('parseOpen still returns correct AS, holdTime, bgpId despite longer body', () => {
+        const rid = IPAddress.fromString('1.2.3.4');
+        const msg = buildOpen(65099, 120, rid);
+        const parsed = parseMessage(msg);
+        const od = parseOpen(parsed?.body ?? new Uint8Array());
+        expect(od.myAS).toBe(65099);
+        expect(od.holdTime).toBe(120);
+        expect(od.bgpId.toString()).toBe('1.2.3.4');
+    });
+});
+
+// ── BGPPacket – MP_REACH_NLRI encode/decode (RFC 4760) ───────────────────────
+
+describe('BGPPacket – MP_REACH_NLRI round-trip', () => {
+    it('encodes and decodes IPv6 prefixes via mp6Reach', () => {
+        const nh6 = IPAddress.fromString('2001:db8::1');
+        const msg = buildUpdate({
+            withdrawn: [],
+            nextHop: IPAddress.fromString('10.0.0.1'),
+            asPath: [65001, 65002],
+            localPref: 100,
+            med: 0,
+            nlri: [],
+            mp6Reach: {
+                nextHop: nh6,
+                nlri: [
+                    { dst: IPAddress.fromString('2001:db8:1::'), prefLen: 48 },
+                    { dst: IPAddress.fromString('2001:db8:2::'), prefLen: 48 },
+                ],
+            },
+        });
+
+        const parsed = parseMessage(msg);
+        expect(parsed?.type).toBe(BGP_MSG_UPDATE);
+        const u = parseUpdate(parsed?.body ?? new Uint8Array());
+
+        expect(u.nlri).toHaveLength(0);
+        expect(u.attrs.mp6Reach).not.toBeNull();
+        expect(u.attrs.mp6Reach?.nextHop.toString()).toBe('2001:db8::1');
+        expect(u.attrs.mp6Reach?.nlri).toHaveLength(2);
+        expect(u.attrs.mp6Reach?.nlri[0].dst.toString()).toBe('2001:db8:1::');
+        expect(u.attrs.mp6Reach?.nlri[0].prefLen).toBe(48);
+        expect(u.attrs.mp6Reach?.nlri[1].dst.toString()).toBe('2001:db8:2::');
+        expect(u.attrs.mp6Reach?.nlri[1].prefLen).toBe(48);
+        expect(u.attrs.asPath).toEqual([65001, 65002]);
+    });
+
+    it('handles /128 prefix correctly', () => {
+        const msg = buildUpdate({
+            withdrawn: [], nextHop: IPAddress.fromString('10.0.0.1'),
+            asPath: [65001], localPref: 100, med: 0, nlri: [],
+            mp6Reach: {
+                nextHop: IPAddress.fromString('2001:db8::1'),
+                nlri: [{ dst: IPAddress.fromString('2001:db8::cafe'), prefLen: 128 }],
+            },
+        });
+        const u = parseUpdate(parseMessage(msg)?.body ?? new Uint8Array());
+        expect(u.attrs.mp6Reach?.nlri[0].prefLen).toBe(128);
+        expect(u.attrs.mp6Reach?.nlri[0].dst.toString()).toBe('2001:db8::cafe');
+    });
+
+    it('handles /0 default route', () => {
+        const msg = buildUpdate({
+            withdrawn: [], nextHop: IPAddress.fromString('10.0.0.1'),
+            asPath: [65001], localPref: 100, med: 0, nlri: [],
+            mp6Reach: {
+                nextHop: IPAddress.fromString('2001:db8::1'),
+                nlri: [{ dst: IPAddress.fromString('::'), prefLen: 0 }],
+            },
+        });
+        const u = parseUpdate(parseMessage(msg)?.body ?? new Uint8Array());
+        expect(u.attrs.mp6Reach?.nlri[0].prefLen).toBe(0);
+        expect(u.attrs.mp6Reach?.nlri[0].dst.toString()).toBe('::');
+    });
+});
+
+// ── BGPPacket – MP_UNREACH_NLRI encode/decode (RFC 4760) ─────────────────────
+
+describe('BGPPacket – MP_UNREACH_NLRI round-trip', () => {
+    it('encodes and decodes IPv6 withdrawals via mp6Unreach', () => {
+        const msg = buildUpdate({
+            withdrawn: [], nextHop: IPAddress.fromString('10.0.0.1'),
+            asPath: [], localPref: 0, med: 0, nlri: [],
+            mp6Unreach: [
+                { dst: IPAddress.fromString('2001:db8:1::'), prefLen: 48 },
+            ],
+        });
+
+        const parsed = parseMessage(msg);
+        expect(parsed?.type).toBe(BGP_MSG_UPDATE);
+        const u = parseUpdate(parsed?.body ?? new Uint8Array());
+
+        expect(u.withdrawn).toHaveLength(0);
+        expect(u.attrs.mp6Unreach).toHaveLength(1);
+        expect(u.attrs.mp6Unreach[0].dst.toString()).toBe('2001:db8:1::');
+        expect(u.attrs.mp6Unreach[0].prefLen).toBe(48);
+    });
+
+    it('combined: mp6Reach + mp6Unreach in one UPDATE', () => {
+        const msg = buildUpdate({
+            withdrawn: [], nextHop: IPAddress.fromString('10.0.0.1'),
+            asPath: [65001], localPref: 100, med: 0, nlri: [],
+            mp6Reach: {
+                nextHop: IPAddress.fromString('2001:db8::1'),
+                nlri: [{ dst: IPAddress.fromString('2001:db8:a::'), prefLen: 48 }],
+            },
+            mp6Unreach: [{ dst: IPAddress.fromString('2001:db8:b::'), prefLen: 48 }],
+        });
+        const u = parseUpdate(parseMessage(msg)?.body ?? new Uint8Array());
+        expect(u.attrs.mp6Reach?.nlri).toHaveLength(1);
+        expect(u.attrs.mp6Unreach).toHaveLength(1);
+    });
+});
+
+// ── BGPPacket – IPv4 backward compatibility ───────────────────────────────────
+
+describe('BGPPacket – IPv4 backward compatibility', () => {
+    it('existing IPv4 UPDATE still parses correctly, mp6 fields are empty', () => {
+        const msg = buildUpdate({
+            withdrawn: [],
+            nextHop: IPAddress.fromString('192.168.1.1'),
+            asPath: [65001],
+            localPref: 100, med: 0,
+            nlri: [{ dst: IPAddress.fromString('10.0.0.0'), prefLen: 8 }],
+        });
+        const u = parseUpdate(parseMessage(msg)?.body ?? new Uint8Array());
+        expect(u.nlri).toHaveLength(1);
+        expect(u.attrs.mp6Reach).toBeNull();
+        expect(u.attrs.mp6Unreach).toHaveLength(0);
+    });
+});
+
+// ── BGPDaemon – _connectedPrefixes IPv6 ──────────────────────────────────────
+
+describe('BGPDaemon – _connectedPrefixes IPv6', () => {
+    it('includes global unicast IPv6 prefix alongside IPv4', () => {
+        const stack = makeStack([{
+            ip: '10.0.0.1', prefix: 24,
+            ip6: '2001:db8::1', prefix6: 64,
+        }]);
+        const d = new BGPDaemon(stack);
+        const prefixes = d._connectedPrefixes();
+        const keys = prefixes.map(p => `${p.dst}/${p.prefLen}`);
+        expect(keys).toContain('10.0.0.0/24');
+        expect(keys).toContain('2001:db8::/64');
+    });
+
+    it('excludes link-local IPv6 addresses (fe80::/10)', () => {
+        const stack = makeStack([{
+            ip: '10.0.0.1', prefix: 24,
+            ip6: 'fe80::1', prefix6: 64,
+        }]);
+        const d = new BGPDaemon(stack);
+        const keys = d._connectedPrefixes().map(p => `${p.dst}/${p.prefLen}`);
+        expect(keys.some(k => k.startsWith('fe80'))).toBe(false);
+        expect(keys).toContain('10.0.0.0/24');
+    });
+
+    it('excludes loopback ::1', () => {
+        const stack = makeStack([{
+            ip: '127.0.0.1', prefix: 8,
+            ip6: '::1', prefix6: 128,
+        }]);
+        const d = new BGPDaemon(stack);
+        const keys = d._connectedPrefixes().map(p => `${p.dst}/${p.prefLen}`);
+        expect(keys).toHaveLength(0);
+    });
+
+    it('skips IPv6 interface with no prefix length', () => {
+        const stack = makeStack([{
+            ip: '10.0.0.1', prefix: 24,
+            ip6: '2001:db8::1', prefix6: 0,
+        }]);
+        const d = new BGPDaemon(stack);
+        const keys = d._connectedPrefixes().map(p => `${p.dst}/${p.prefLen}`);
+        expect(keys).toEqual(['10.0.0.0/24']);
+    });
+});
+
+// ── BGPDaemon – _handleUpdate MP_REACH_NLRI ──────────────────────────────────
+
+describe('BGPDaemon – _handleUpdate MP_REACH_NLRI', () => {
+    it('installs IPv6 route in RIB on MP_REACH_NLRI', () => {
+        const stack = makeStack([{ ip: '10.0.0.1', prefix: 24, ip6: '2001:db8::1', prefix6: 64 }]);
+        const d = new BGPDaemon(stack);
+        d.localAS = 65001;
+        d.start();
+
+        // Simulate a received UPDATE with MP_REACH_NLRI
+        const msg = buildUpdate({
+            withdrawn: [], nextHop: IPAddress.fromString('10.0.0.2'),
+            asPath: [65002], localPref: 100, med: 0, nlri: [],
+            mp6Reach: {
+                nextHop: IPAddress.fromString('2001:db8::2'),
+                nlri: [{ dst: IPAddress.fromString('2001:db8:cafe::'), prefLen: 48 }],
+            },
+        });
+        const parsed = parseMessage(msg);
+        expect(parsed).not.toBeNull();
+
+        // Build a minimal session-like object to call _handleUpdate through BGPSession
+        const session = d._sessions.values().next().value;
+        // No session yet (no peers added), so call internal methods directly
+        const { withdrawn, attrs, nlri } = parseUpdate(parsed?.body ?? new Uint8Array());
+        d._learnPrefixes(attrs.mp6Reach?.nlri ?? [], { ...attrs, nextHop: attrs.mp6Reach?.nextHop ?? null }, '10.0.0.2', 0);
+
+        expect(d._learned.has('2001:db8:cafe::/48')).toBe(true);
+        const entry = d._learned.get('2001:db8:cafe::/48');
+        expect(entry?.nexthop.toString()).toBe('2001:db8::2');
+        expect(stack._routes.some(r => r.dst === '2001:db8:cafe::' && r.prefix === 48)).toBe(true);
+
+        d.stop();
+    });
+
+    it('removes IPv6 route from RIB on MP_UNREACH_NLRI', () => {
+        const stack = makeStack([{ ip: '10.0.0.1', prefix: 24, ip6: '2001:db8::1', prefix6: 64 }]);
+        const d = new BGPDaemon(stack);
+        d.localAS = 65001;
+        d.start();
+
+        // First learn the route
+        const attrs = { asPath: [65002], nextHop: IPAddress.fromString('2001:db8::2'), localPref: 100, med: 0, mp6Reach: null, mp6Unreach: [] };
+        d._learnPrefixes([{ dst: IPAddress.fromString('2001:db8:cafe::'), prefLen: 48 }], attrs, '10.0.0.2', 0);
+        expect(d._learned.has('2001:db8:cafe::/48')).toBe(true);
+
+        // Now withdraw it
+        d._withdrawPrefixes([{ dst: IPAddress.fromString('2001:db8:cafe::'), prefLen: 48 }], '10.0.0.2');
+        expect(d._learned.has('2001:db8:cafe::/48')).toBe(false);
+        expect(stack._routes.some(r => r.dst === '2001:db8:cafe::')).toBe(false);
+
+        d.stop();
     });
 });
