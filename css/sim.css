@@ -991,7 +991,7 @@ sim-toolbar-langbtn {
 .sim-lang-card-flag {
   font-size: 1.75rem;
   line-height: 1;
-  font-family: "Apple Color Emoji", "Noto Color Emoji", "Segoe UI Emoji", sans-serif;
+  font-family: "TwemojiCountryFlags", "Apple Color Emoji", "Noto Color Emoji", "Segoe UI Emoji", sans-serif;
 }
 
 .sim-lang-card-name {
@@ -1038,7 +1038,7 @@ sim-toolbar-langbtn {
   font-size: 1rem;
   line-height: 1;
   flex-shrink: 0;
-  font-family: "Apple Color Emoji", "Noto Color Emoji", "Segoe UI Emoji", sans-serif;
+  font-family: "TwemojiCountryFlags", "Apple Color Emoji", "Noto Color Emoji", "Segoe UI Emoji", sans-serif;
 }
 
 .sim-langlist-item-name {
