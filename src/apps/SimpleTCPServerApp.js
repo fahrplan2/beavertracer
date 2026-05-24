@@ -87,6 +87,30 @@ export class SimpleTCPServerApp extends LoggedProcess {
   run() {
     this.root.classList.add("app", "app-simple-tcp-server");
     this._loadConfig();
+    setTimeout(() => this._tryAutostart(), 0);
+  }
+
+  _tryAutostart() {
+    try {
+      const fs = this.os.fs;
+      if (!fs) return;
+      const json = JSON.parse(fs.readFile("/etc/tcpd.conf"));
+      if (json.autostart !== true) return;
+      this._start();
+    } catch { }
+  }
+
+  /** @param {*} val */
+  _writeAutostart(val) {
+    try {
+      const fs = this.os.fs;
+      if (!fs) return;
+      const txt = fs.readFile("/etc/tcpd.conf");
+      if (!txt?.trim()) return;
+      const o = JSON.parse(txt);
+      o.autostart = val;
+      fs.writeFile("/etc/tcpd.conf", JSON.stringify(o, null, 2) + "\n");
+    } catch { }
   }
 
   /**
@@ -195,6 +219,7 @@ export class SimpleTCPServerApp extends LoggedProcess {
       const port = this.os.net.openTCPServerSocket(IPAddress.fromString("::"), this.port);
       this.listenPort = port;
       this.running = true;
+      this._writeAutostart(true);
 
       this._appendLog(t("app.simpletcpserver.log.listening", { time: nowStamp(), port }));
       this._syncButtons();
@@ -213,6 +238,7 @@ export class SimpleTCPServerApp extends LoggedProcess {
   _stop() {
     if (!this.running && this.listenPort == null) return;
 
+    this._writeAutostart(false);
     const port = this.listenPort;
     this.running = false;
     this.listenPort = null;

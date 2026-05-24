@@ -39,6 +39,30 @@ export class UDPEchoServerApp extends LoggedProcess {
   run() {
     this.root.classList.add("app", "app-udp-echo");
     this._loadConfig();
+    setTimeout(() => this._tryAutostart(), 0);
+  }
+
+  _tryAutostart() {
+    try {
+      const fs = this.os.fs;
+      if (!fs) return;
+      const json = JSON.parse(fs.readFile("/etc/udpechod.conf"));
+      if (json.autostart !== true) return;
+      this._start();
+    } catch { }
+  }
+
+  /** @param {*} val */
+  _writeAutostart(val) {
+    try {
+      const fs = this.os.fs;
+      if (!fs) return;
+      const txt = fs.readFile("/etc/udpechod.conf");
+      if (!txt?.trim()) return;
+      const o = JSON.parse(txt);
+      o.autostart = val;
+      fs.writeFile("/etc/udpechod.conf", JSON.stringify(o, null, 2) + "\n");
+    } catch { }
   }
 
   /**
@@ -144,6 +168,7 @@ export class UDPEchoServerApp extends LoggedProcess {
       const port = this.os.net.openUDPSocket(new IPAddress(4,0), this.port);
       this.socketPort = port;
       this.running = true;
+      this._writeAutostart(true);
 
       this._appendLog(t("app.udpechoserver.log.listening", { time: nowStamp(), port }));
       this._syncButtons();
@@ -161,6 +186,7 @@ export class UDPEchoServerApp extends LoggedProcess {
   _stop() {
     if (!this.running && this.socketPort == null) return;
 
+    this._writeAutostart(false);
     const port = this.socketPort;
     this.running = false;
     this.socketPort = null;

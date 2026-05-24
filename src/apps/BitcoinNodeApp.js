@@ -385,6 +385,30 @@ export class BitcoinNodeApp extends LoggedProcess {
     this.root.classList.add("app", "app-bitcoin");
     this._loadConfig();
     this._loadChain();
+    setTimeout(() => this._tryAutostart(), 0);
+  }
+
+  _tryAutostart() {
+    try {
+      const fs = this.os.fs;
+      if (!fs) return;
+      const json = JSON.parse(fs.readFile("/etc/bitcoin.conf"));
+      if (json.autostart !== true) return;
+      void this._start();
+    } catch { }
+  }
+
+  /** @param {*} val */
+  _writeAutostart(val) {
+    try {
+      const fs = this.os.fs;
+      if (!fs) return;
+      const txt = fs.readFile("/etc/bitcoin.conf");
+      if (!txt?.trim()) return;
+      const o = JSON.parse(txt);
+      o.autostart = val;
+      fs.writeFile("/etc/bitcoin.conf", JSON.stringify(o, null, 2) + "\n");
+    } catch { }
   }
 
   /** @param {HTMLElement} root */
@@ -504,6 +528,7 @@ export class BitcoinNodeApp extends LoggedProcess {
       return;
     }
     this.running = true;
+    this._writeAutostart(true);
     this._syncUI();
     this._appendLog(t("app.bitcoin.log.started", { time: nowStamp(), port: BITCOIN_PORT }));
     this._acceptLoop();
@@ -512,6 +537,7 @@ export class BitcoinNodeApp extends LoggedProcess {
 
   _stop() {
     if (!this.running && this.serverRef == null) return;
+    this._writeAutostart(false);
     this.running = false;
     for (const [key] of this.peers) { try { this.os.net.closeTCPConn(key); } catch { } }
     this.peers.clear();

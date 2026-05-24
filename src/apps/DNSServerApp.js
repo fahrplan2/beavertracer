@@ -190,6 +190,35 @@ export class DNSServerApp extends LoggedProcess {
 
   run() {
     this.root.classList.add("app", "app-dnsd");
+    setTimeout(() => this._tryAutostart(), 0);
+  }
+
+  _tryAutostart() {
+    try {
+      const txt = this.os.fs.readFile(this.configPath);
+      if (!txt?.trim()) return;
+      const obj = JSON.parse(txt);
+      if (obj.autostart !== true) return;
+      this.cfg = {
+        a:     Array.isArray(obj.a)     ? obj.a     : [],
+        aaaa:  Array.isArray(obj.aaaa)  ? obj.aaaa  : [],
+        cname: Array.isArray(obj.cname) ? obj.cname : [],
+        mx:    Array.isArray(obj.mx)    ? obj.mx    : [],
+        ns:    Array.isArray(obj.ns)    ? obj.ns    : [],
+      };
+      this._start();
+    } catch { }
+  }
+
+  /** @param {*} val */
+  _writeAutostart(val) {
+    try {
+      const txt = this.os.fs.readFile(this.configPath);
+      if (!txt?.trim()) return;
+      const o = JSON.parse(txt);
+      o.autostart = val;
+      this.os.fs.writeFile(this.configPath, JSON.stringify(o, null, 2) + "\n");
+    } catch { }
   }
 
   /** @param {HTMLElement} root */
@@ -258,7 +287,7 @@ export class DNSServerApp extends LoggedProcess {
       () => ({ name: "", host: "", ttl: 300 })
     );
 
-    const start = UI.button(t("app.dnsd.button.start"), () => this._start(), { primary: true, icon: "fa-play" });
+    const start = UI.button(t("app.dnsd.button.start"), () => { this._rebuildConfigFromUI(); this._start(); }, { primary: true, icon: "fa-play" });
     const stop = UI.button(t("app.dnsd.button.stop"), () => this._stop(), { icon: "fa-stop" });
     const save = UI.button(t("app.dnsd.button.save"), () => this._saveConfigNow());
     this.startBtn = start;
@@ -450,10 +479,10 @@ export class DNSServerApp extends LoggedProcess {
     if (this.running) return;
 
     try {
-      this._rebuildConfigFromUI();
       const port = this.os.net.openUDPSocket(new IPAddress(4, 0), this.port);
       this.socketPort = port;
       this.running = true;
+      this._writeAutostart(true);
       this._appendLog(`[${nowStamp()}] DNS listening on UDP/${this.port}`);
       this._syncButtons();
       this._recvLoop();
@@ -469,6 +498,7 @@ export class DNSServerApp extends LoggedProcess {
   _stop() {
     if (!this.running && this.socketPort == null) return;
 
+    this._writeAutostart(false);
     const port = this.socketPort;
     this.running = false;
     this.socketPort = null;

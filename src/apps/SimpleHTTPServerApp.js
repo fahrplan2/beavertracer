@@ -230,6 +230,30 @@ export class SimpleHTTPServerApp extends LoggedProcess {
   run() {
     this.root.classList.add("app", "app-simple-http-server");
     this._loadConfig();
+    setTimeout(() => this._tryAutostart(), 0);
+  }
+
+  _tryAutostart() {
+    try {
+      const fs = this.os.fs;
+      if (!fs) return;
+      const json = JSON.parse(fs.readFile("/etc/httpd.conf"));
+      if (json.autostart !== true) return;
+      this._start();
+    } catch { }
+  }
+
+  /** @param {*} val */
+  _writeAutostart(val) {
+    try {
+      const fs = this.os.fs;
+      if (!fs) return;
+      const txt = fs.readFile("/etc/httpd.conf");
+      if (!txt?.trim()) return;
+      const o = JSON.parse(txt);
+      o.autostart = val;
+      fs.writeFile("/etc/httpd.conf", JSON.stringify(o, null, 2) + "\n");
+    } catch { }
   }
 
   /** @param {HTMLElement} root */
@@ -378,6 +402,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
   _stop() {
     if (!this.running && !this.httpsRunning) return;
 
+    this._writeAutostart(false);
     if (this.running) {
       this.running = false;
       this.runSeq++;
@@ -457,6 +482,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
 
     this.serverRef = ref;
     this.running   = true;
+    this._writeAutostart(true);
     this._syncUI();
     const seq = ++this.runSeq;
     this._appendLog(t("app.simplehttpserver.log.listen", { time: nowStamp(), port: this.port, docRoot: this.docRoot }));
