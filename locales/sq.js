@@ -1171,5 +1171,16 @@ export default {
   "sim.zoom.in": "Zmadho",
   "sim.zoom.out": "Zvogëlo",
   "sim.zoom.reset": "Riktheje zmadhimin (kliko)",
-  "sim.zoom.fit": "Përshtat"
+  "sim.zoom.fit": "Përshtat",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "Aktivizo DHCPv6-PD",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "Adresa IPv6 e LAN-it",
+  "homerouter.lan.ipv6.ra": "Njoftimet e Ruterit",
+  "homerouter.lan.ipv6.ra.active": "aktiv",
+  "homerouter.lan.ipv6.ra.inactive": "joaktiv (nuk ka parashtesë të deleguar)",
+  "welcome.example.simple": "Shembull i Thjeshtë",
+  "welcome.example.simple.desc": "Rrjet i vogël, pika e mirë për të filluar",
+  "welcome.example.complex": "Shembull i Kompleksuar",
+  "welcome.example.complex.desc": "Rrjet i madh me protokolle rutimi"
 };

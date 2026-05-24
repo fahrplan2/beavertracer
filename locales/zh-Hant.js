@@ -1171,5 +1171,16 @@ export default {
   "sim.zoom.in": "放大",
   "sim.zoom.out": "縮小",
   "sim.zoom.reset": "重設縮放 (按一下)",
-  "sim.zoom.fit": "適應"
+  "sim.zoom.fit": "適應",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "啟用 DHCPv6-PD",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "LAN IPv6 位址",
+  "homerouter.lan.ipv6.ra": "路由器通告",
+  "homerouter.lan.ipv6.ra.active": "啟用中",
+  "homerouter.lan.ipv6.ra.inactive": "停用（無委派前綴）",
+  "welcome.example.simple": "簡單範例",
+  "welcome.example.simple.desc": "小型網路，絕佳的起點",
+  "welcome.example.complex": "複雜範例",
+  "welcome.example.complex.desc": "具有路由協定的大型網路"
 };

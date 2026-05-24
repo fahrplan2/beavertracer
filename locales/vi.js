@@ -1172,5 +1172,16 @@ export default {
   "sim.zoom.in": "Phóng to",
   "sim.zoom.out": "Thu nhỏ",
   "sim.zoom.reset": "Đặt lại mức phóng (nhấp chuột)",
-  "sim.zoom.fit": "Vừa vặn"
+  "sim.zoom.fit": "Vừa vặn",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "Bật DHCPv6-PD",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "Địa chỉ IPv6 LAN",
+  "homerouter.lan.ipv6.ra": "Router Advertisements",
+  "homerouter.lan.ipv6.ra.active": "hoạt động",
+  "homerouter.lan.ipv6.ra.inactive": "không hoạt động (không có tiền tố được ủy quyền)",
+  "welcome.example.simple": "Ví dụ Đơn giản",
+  "welcome.example.simple.desc": "Mạng nhỏ, điểm khởi đầu tuyệt vời",
+  "welcome.example.complex": "Ví dụ Phức tạp",
+  "welcome.example.complex.desc": "Mạng lớn với giao thức định tuyến"
 };

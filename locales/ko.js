@@ -1172,5 +1172,16 @@ export default {
   "sim.zoom.in": "확대",
   "sim.zoom.out": "축소",
   "sim.zoom.reset": "확대/축소 초기화 (클릭)",
-  "sim.zoom.fit": "맞추기"
+  "sim.zoom.fit": "맞추기",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "DHCPv6-PD 활성화",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "LAN IPv6 주소",
+  "homerouter.lan.ipv6.ra": "라우터 공지",
+  "homerouter.lan.ipv6.ra.active": "활성",
+  "homerouter.lan.ipv6.ra.inactive": "비활성 (위임된 접두사 없음)",
+  "welcome.example.simple": "간단한 예제",
+  "welcome.example.simple.desc": "소규모 네트워크, 훌륭한 시작점",
+  "welcome.example.complex": "복잡한 예제",
+  "welcome.example.complex.desc": "라우팅 프로토콜을 포함한 대규모 네트워크"
 };

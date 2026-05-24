@@ -1172,5 +1172,16 @@ export default {
   "sim.zoom.in": "Lähennä",
   "sim.zoom.out": "Loitonna",
   "sim.zoom.reset": "Nollaa zoom (klikkaa)",
-  "sim.zoom.fit": "Sovita"
+  "sim.zoom.fit": "Sovita",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "Ota DHCPv6-PD käyttöön",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "LAN IPv6 -osoite",
+  "homerouter.lan.ipv6.ra": "Reititin-ilmoitukset",
+  "homerouter.lan.ipv6.ra.active": "aktiivinen",
+  "homerouter.lan.ipv6.ra.inactive": "passiivinen (ei delegoitua etuliitettä)",
+  "welcome.example.simple": "Yksinkertainen esimerkki",
+  "welcome.example.simple.desc": "Pieni verkko, loistava aloituspiste",
+  "welcome.example.complex": "Monimutkainen esimerkki",
+  "welcome.example.complex.desc": "Suuri verkko reititysprotokollineen"
 };

@@ -1171,5 +1171,16 @@ export default {
   "sim.zoom.in": "Zoom inn",
   "sim.zoom.out": "Zoom ut",
   "sim.zoom.reset": "Tilbakestill zoom (klikk)",
-  "sim.zoom.fit": "Tilpass"
+  "sim.zoom.fit": "Tilpass",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "Aktiver DHCPv6-PD",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "LAN IPv6-adresse",
+  "homerouter.lan.ipv6.ra": "Rutervarsler",
+  "homerouter.lan.ipv6.ra.active": "aktiv",
+  "homerouter.lan.ipv6.ra.inactive": "inaktiv (ingen delegert prefiks)",
+  "welcome.example.simple": "Enkelt eksempel",
+  "welcome.example.simple.desc": "Lite nettverk, flott utgangspunkt",
+  "welcome.example.complex": "Komplekst eksempel",
+  "welcome.example.complex.desc": "Stort nettverk med rutingprotokoller"
 };

@@ -1171,5 +1171,16 @@ export default {
   "sim.zoom.in": "Nagyítás",
   "sim.zoom.out": "Kicsinyítés",
   "sim.zoom.reset": "Nagyítás visszaállítása (kattintás)",
-  "sim.zoom.fit": "Illesztés"
+  "sim.zoom.fit": "Illesztés",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "DHCPv6-PD engedélyezése",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "LAN IPv6 cím",
+  "homerouter.lan.ipv6.ra": "Útválasztó meghirdetések",
+  "homerouter.lan.ipv6.ra.active": "aktív",
+  "homerouter.lan.ipv6.ra.inactive": "inaktív (nincs delegált előtag)",
+  "welcome.example.simple": "Egyszerű példa",
+  "welcome.example.simple.desc": "Kicsi hálózat, jó kiindulópont",
+  "welcome.example.complex": "Összetett példa",
+  "welcome.example.complex.desc": "Nagy hálózat útválasztási protokollokkal"
 };

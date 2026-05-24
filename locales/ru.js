@@ -1172,5 +1172,16 @@ export default {
   "sim.zoom.in": "Увеличить",
   "sim.zoom.out": "Уменьшить",
   "sim.zoom.reset": "Сбросить масштаб (нажмите)",
-  "sim.zoom.fit": "Подогнать"
+  "sim.zoom.fit": "Подогнать",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "Включить DHCPv6-PD",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "Адрес IPv6 локальной сети",
+  "homerouter.lan.ipv6.ra": "Объявления маршрутизаторов",
+  "homerouter.lan.ipv6.ra.active": "активно",
+  "homerouter.lan.ipv6.ra.inactive": "неактивно (нет делегированного префикса)",
+  "welcome.example.simple": "Простой пример",
+  "welcome.example.simple.desc": "Небольшая сеть, отличная точка для начала",
+  "welcome.example.complex": "Сложный пример",
+  "welcome.example.complex.desc": "Большая сеть с протоколами маршрутизации"
 };

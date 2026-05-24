@@ -5,32 +5,31 @@ polyfillCountryFlagEmojis("TwemojiCountryFlags", "/fonts/TwemojiCountryFlags.wof
 
 import { initLocale } from "./i18n/index.js";
 import { SimControl } from "./SimControl.js";
-import { defaultSimulation } from "./defaultsim.js";
 import { WelcomeDialog } from "./lib/WelcomeDialog.js";
 
 /**
  * If ?sim=<url> is present, fetch that JSON.
  * Accepts https:// (external) and /-paths (same-origin, e.g. /sims/foo.btsim).
- * Falls back to defaultSimulation on any error or missing param.
- * @returns {Promise<object>}
+ * Returns null on any error or unsupported URL format.
+ * @returns {Promise<object|null>}
  */
 // Capture before StaticPageRouter's navigate() strips query params via history.replaceState
 const _simParam = new URLSearchParams(window.location.search).get("sim");
 
 async function resolveStartupSim() {
     const simUrl = _simParam;
-    if (!simUrl) return defaultSimulation;
+    if (!simUrl) return null;
 
     const isSameOrigin = simUrl.startsWith("/");
     const isExternal   = simUrl.startsWith("https://");
-    if (!isSameOrigin && !isExternal) return defaultSimulation;
+    if (!isSameOrigin && !isExternal) return null;
 
     try {
         const res = await fetch(simUrl);
-        if (!res.ok) return defaultSimulation;
+        if (!res.ok) return null;
         return await res.json();
     } catch {
-        return defaultSimulation;
+        return null;
     }
 }
 
@@ -43,11 +42,10 @@ initLocale().then(async () => {
     const sim = new SimControl(simRoot, { embedded });
 
     if (_simParam) {
-        sim.restore(await resolveStartupSim());
-    } else if (!embedded) {
-        sim.new();
+        const scene = await resolveStartupSim();
+        if (scene) sim.restore(scene); else sim.new();
     } else {
-        sim.restore(defaultSimulation);
+        sim.new();
     }
 
     const splash = document.getElementById("splash");

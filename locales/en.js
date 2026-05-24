@@ -1323,6 +1323,10 @@ export default {
   "welcome.open.desc":  "Load a .btsim file from disk",
   "welcome.example":    "Browse Examples",
   "welcome.example.desc": "Explore a ready-made network",
+  "welcome.example.simple": "Simple Example",
+  "welcome.example.simple.desc": "Small network, great starting point",
+  "welcome.example.complex": "Complex Example",
+  "welcome.example.complex.desc": "Large network with routing protocols",
   "welcome.news":       "What's New",
 
   "tour.counter":                   "Step {n} of {total}",

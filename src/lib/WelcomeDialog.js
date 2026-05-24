@@ -2,7 +2,6 @@
 import { t, getLocale } from "../i18n/index.js";
 import { MiniMarkdown } from "./MiniMarkdown.js";
 import { isTauri } from "../tauri.js";
-import { defaultSimulation } from "../defaultsim.js";
 import { version } from "./version.js";
 import { SimDialog } from "./SimDialog.js";
 import { Tour } from "./Tour.js";
@@ -135,13 +134,7 @@ export class WelcomeDialog {
                 close(() => sim.open());
             }
         ));
-        actions.appendChild(WelcomeDialog._actionBtn(
-            "fa-network-wired", t("welcome.example"), t("welcome.example.desc"),
-            async () => {
-                if (sim._isDirty && !await SimDialog.confirm(t("sim.discardandnewwarning"))) return;
-                close(() => sim.restore(defaultSimulation));
-            }
-        ));
+        actions.appendChild(WelcomeDialog._exampleBtn(sim, close));
         const tourBtn = WelcomeDialog._actionBtn(
             "fa-route", t("tour.welcome.title"), t("tour.welcome.desc"),
             () => close(() => Tour.start(sim))
@@ -246,6 +239,91 @@ export class WelcomeDialog {
         btn.appendChild(dsc);
         btn.addEventListener("click", onClick);
         return btn;
+    }
+
+    /**
+     * @param {import("../SimControl.js").SimControl} sim
+     * @param {(action?: () => void) => void} close
+     */
+    static _exampleBtn(sim, close) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "welcome-example-wrapper";
+
+        const btn = WelcomeDialog._actionBtn(
+            "fa-network-wired", t("welcome.example"), t("welcome.example.desc"),
+            () => {
+                const open = wrapper.classList.toggle("welcome-example-wrapper--open");
+                chevron.style.transform = open ? "translateY(-50%) rotate(180deg)" : "translateY(-50%)";
+            }
+        );
+
+        const chevron = document.createElement("i");
+        chevron.className = "fa-solid fa-chevron-down welcome-example-chevron";
+        chevron.setAttribute("aria-hidden", "true");
+        btn.appendChild(chevron);
+
+        const sub = document.createElement("div");
+        sub.className = "welcome-example-sub";
+
+        sub.appendChild(WelcomeDialog._exampleSubItem(
+            t("welcome.example.simple"), t("welcome.example.simple.desc"),
+            async () => {
+                if (sim._isDirty && !await SimDialog.confirm(t("sim.discardandnewwarning"))) return;
+                const scene = await WelcomeDialog._fetchSim("/sims/demo.btsim");
+                if (scene) close(() => sim.restore(scene));
+            }
+        ));
+        sub.appendChild(WelcomeDialog._exampleSubItem(
+            t("welcome.example.complex"), t("welcome.example.complex.desc"),
+            async () => {
+                if (sim._isDirty && !await SimDialog.confirm(t("sim.discardandnewwarning"))) return;
+                const scene = await WelcomeDialog._fetchSim("/sims/demo-full.btsim");
+                if (scene) close(() => sim.restore(scene));
+            }
+        ));
+
+        wrapper.appendChild(btn);
+        wrapper.appendChild(sub);
+        return wrapper;
+    }
+
+    /**
+     * @param {string} label
+     * @param {string} desc
+     * @param {() => void} onClick
+     */
+    static _exampleSubItem(label, desc, onClick) {
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = "welcome-example-sub-item";
+
+        const lbl = document.createElement("span");
+        lbl.className = "welcome-example-sub-label";
+        lbl.textContent = label;
+
+        const dsc = document.createElement("span");
+        dsc.className = "welcome-example-sub-desc";
+        dsc.textContent = desc;
+
+        item.appendChild(lbl);
+        item.appendChild(dsc);
+        item.addEventListener("click", onClick);
+        return item;
+    }
+
+    /**
+     * @param {string} url
+     * @returns {Promise<object|null>}
+     */
+    static async _fetchSim(url) {
+        try {
+            const r = await fetch(url);
+            if (!r.ok) throw new Error("not ok");
+            return JSON.parse(await r.text());
+        } catch {
+            SimDialog.alert(t("sim.loadfailederror"));
+            return null;
+        }
     }
 
     /**

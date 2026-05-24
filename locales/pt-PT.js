@@ -1177,5 +1177,16 @@ export default {
   "sim.zoom.in": "Aumentar zoom",
   "sim.zoom.out": "Reduzir zoom",
   "sim.zoom.reset": "Repor zoom (clique)",
-  "sim.zoom.fit": "Ajustar"
+  "sim.zoom.fit": "Ajustar",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "Ativar DHCPv6-PD",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "Endereço IPv6 da LAN",
+  "homerouter.lan.ipv6.ra": "Anúncios de Router",
+  "homerouter.lan.ipv6.ra.active": "ativo",
+  "homerouter.lan.ipv6.ra.inactive": "inativo (sem prefixo delegado)",
+  "welcome.example.simple": "Exemplo Simples",
+  "welcome.example.simple.desc": "Pequena rede, ótimo ponto de partida",
+  "welcome.example.complex": "Exemplo Complexo",
+  "welcome.example.complex.desc": "Grande rede com protocolos de encaminhamento"
 };

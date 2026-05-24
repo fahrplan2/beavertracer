@@ -1172,5 +1172,16 @@ export default {
   "sim.zoom.in": "Zumiraj više",
   "sim.zoom.out": "Zumiraj manje",
   "sim.zoom.reset": "Resetuj zumiranje (klik)",
-  "sim.zoom.fit": "Prilagodi"
+  "sim.zoom.fit": "Prilagodi",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "Omogući DHCPv6-PD",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "LAN IPv6 Adresa",
+  "homerouter.lan.ipv6.ra": "Router Advertisements",
+  "homerouter.lan.ipv6.ra.active": "aktivna",
+  "homerouter.lan.ipv6.ra.inactive": "neaktivna (nema delegiranog prefiksa)",
+  "welcome.example.simple": "Jednostavan Primjer",
+  "welcome.example.simple.desc": "Mala mreža, odličan početak",
+  "welcome.example.complex": "Složen Primjer",
+  "welcome.example.complex.desc": "Velika mreža s protokolima rutiranja"
 };

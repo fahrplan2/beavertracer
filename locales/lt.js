@@ -1172,5 +1172,16 @@ export default {
   "sim.zoom.in": "Padidinti",
   "sim.zoom.out": "Sumažinti",
   "sim.zoom.reset": "Iš naujo nustatyti mastelį (spustelėti)",
-  "sim.zoom.fit": "Prisitaikyti"
+  "sim.zoom.fit": "Prisitaikyti",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "Įjungti DHCPv6-PD",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "LAN IPv6 adresas",
+  "homerouter.lan.ipv6.ra": "Maršrutizatoriaus skelbimai",
+  "homerouter.lan.ipv6.ra.active": "aktyvus",
+  "homerouter.lan.ipv6.ra.inactive": "neaktyvus (nėra delegavoto prefikso)",
+  "welcome.example.simple": "Paprastas pavyzdys",
+  "welcome.example.simple.desc": "Maža tinkla, puikus pradžios taškas",
+  "welcome.example.complex": "Sudėtingas pavyzdys",
+  "welcome.example.complex.desc": "Didelis tinklas su maršrutizavimo protokolais"
 };

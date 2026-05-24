@@ -1172,5 +1172,16 @@ export default {
   "sim.zoom.in": "Perbesar",
   "sim.zoom.out": "Perkecil",
   "sim.zoom.reset": "Atur ulang perbesar (klik)",
-  "sim.zoom.fit": "Sesuaikan"
+  "sim.zoom.fit": "Sesuaikan",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "Aktifkan DHCPv6-PD",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "Alamat IPv6 LAN",
+  "homerouter.lan.ipv6.ra": "Router Advertisements",
+  "homerouter.lan.ipv6.ra.active": "aktif",
+  "homerouter.lan.ipv6.ra.inactive": "tidak aktif (tidak ada awalan delegasi)",
+  "welcome.example.simple": "Contoh Sederhana",
+  "welcome.example.simple.desc": "Jaringan kecil, titik awal yang sempurna",
+  "welcome.example.complex": "Contoh Kompleks",
+  "welcome.example.complex.desc": "Jaringan besar dengan protokol routing"
 };

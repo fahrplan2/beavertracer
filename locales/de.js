@@ -1168,6 +1168,10 @@ export default {
   "welcome.open.desc":  "Eine .btsim-Datei laden",
   "welcome.example":    "Beispiele ansehen",
   "welcome.example.desc": "Fertige Netzwerktopologie erkunden",
+  "welcome.example.simple": "Einfaches Beispiel",
+  "welcome.example.simple.desc": "Kleines Netzwerk, ideal zum Einstieg",
+  "welcome.example.complex": "Komplexes Beispiel",
+  "welcome.example.complex.desc": "Großes Netzwerk mit Routing-Protokollen",
   "welcome.news":       "Neuigkeiten",
 
   "tour.counter":                   "Schritt {n} von {total}",

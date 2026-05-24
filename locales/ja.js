@@ -1172,5 +1172,16 @@ export default {
   "sim.zoom.in": "ズームイン",
   "sim.zoom.out": "ズームアウト",
   "sim.zoom.reset": "ズームをリセット（クリック）",
-  "sim.zoom.fit": "フィット"
+  "sim.zoom.fit": "フィット",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "DHCPv6-PDを有効にする",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "LAN IPv6アドレス",
+  "homerouter.lan.ipv6.ra": "ルータアドバタイズメント",
+  "homerouter.lan.ipv6.ra.active": "アクティブ",
+  "homerouter.lan.ipv6.ra.inactive": "非アクティブ（委譲されたプレフィックスなし）",
+  "welcome.example.simple": "シンプル例",
+  "welcome.example.simple.desc": "小規模ネットワーク、素晴らしい出発点",
+  "welcome.example.complex": "複雑な例",
+  "welcome.example.complex.desc": "ルーティングプロトコルを備えた大規模ネットワーク"
 };

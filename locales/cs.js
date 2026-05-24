@@ -1172,5 +1172,16 @@ export default {
   "sim.zoom.in": "Přiblížit",
   "sim.zoom.out": "Oddálit",
   "sim.zoom.reset": "Resetovat přiblížení (klikněte)",
-  "sim.zoom.fit": "Přizpůsobit"
+  "sim.zoom.fit": "Přizpůsobit",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "Povolit DHCPv6-PD",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "Adresa IPv6 LAN",
+  "homerouter.lan.ipv6.ra": "Oznámení směrovače",
+  "homerouter.lan.ipv6.ra.active": "aktivní",
+  "homerouter.lan.ipv6.ra.inactive": "neaktivní (žádná delegovaná předpona)",
+  "welcome.example.simple": "Jednoduchý příklad",
+  "welcome.example.simple.desc": "Malá síť, skvělý startovací bod",
+  "welcome.example.complex": "Komplexní příklad",
+  "welcome.example.complex.desc": "Velká síť se směrovacími protokoly"
 };

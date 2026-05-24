@@ -1172,5 +1172,16 @@ export default {
   "sim.zoom.in": "Yakınlaştır",
   "sim.zoom.out": "Uzaklaştır",
   "sim.zoom.reset": "Yakınlaştırmayı sıfırla (tıkla)",
-  "sim.zoom.fit": "Sığdır"
+  "sim.zoom.fit": "Sığdır",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "DHCPv6-PD'yi Etkinleştir",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "LAN IPv6 Adresi",
+  "homerouter.lan.ipv6.ra": "Router Duyuruları",
+  "homerouter.lan.ipv6.ra.active": "etkin",
+  "homerouter.lan.ipv6.ra.inactive": "etkin değil (temsilci öneki yok)",
+  "welcome.example.simple": "Basit Örnek",
+  "welcome.example.simple.desc": "Küçük ağ, harika bir başlangıç noktası",
+  "welcome.example.complex": "Karmaşık Örnek",
+  "welcome.example.complex.desc": "Yönlendirme protokolleri ile büyük ağ"
 };

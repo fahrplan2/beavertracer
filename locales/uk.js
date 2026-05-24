@@ -1172,5 +1172,16 @@ export default {
   "sim.zoom.in": "Збільшити",
   "sim.zoom.out": "Зменшити",
   "sim.zoom.reset": "Скинути масштаб (клік)",
-  "sim.zoom.fit": "Вмістити"
+  "sim.zoom.fit": "Вмістити",
+  "homerouter.wan.ipv6": "IPv6",
+  "homerouter.wan.ipv6.dhcpv6pd": "Включити DHCPv6-PD",
+  "homerouter.lan.ipv6": "IPv6",
+  "homerouter.lan.ipv6.addr": "LAN адреса IPv6",
+  "homerouter.lan.ipv6.ra": "Router Advertisements",
+  "homerouter.lan.ipv6.ra.active": "активна",
+  "homerouter.lan.ipv6.ra.inactive": "неактивна (немає делегованого префікса)",
+  "welcome.example.simple": "Простий приклад",
+  "welcome.example.simple.desc": "Невелика мережа, чудова стартова точка",
+  "welcome.example.complex": "Складний приклад",
+  "welcome.example.complex.desc": "Велика мережа з протоколами маршрутизації"
 };
