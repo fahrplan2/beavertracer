@@ -12,13 +12,13 @@
       "px": 230.5,
       "py": 171.5,
       "panelOpen": false,
-      "text": "# Internet-Demo — Ein vereinfachtes simuliertes Inernet\n\n## Features\n**Backbone:** Router BB1–BB5 — eBGP-Mesh (AS65100–65104) + OSPF auf Backbone-Links\n**ISPs:** ISP-Alpha (AS65001), ISP-Beta (AS65002), ISP-Gamma (AS65003) — sind mit BGP ans Backbone angebunden\n**Heimnetze:** 4 Heimrouter mit DHCP, WiFi-SSIDs und NAT — Laptops verbinden sich per WLAN\n**Rechenzentren:** DC-Alpha (www.example.com), DC-Beta (www.betanet.de + E-Mail), DC-Gamma (DNS ns1/ns2)\n\n## Ausprobieren\nSimulation starten und warten, bis die automatischen Routingprotokolle konvergiert sind (ca. 10 Sekunden)\n**Ping:** Terminal auf einem Heim-PC → ping www.example.com\n**Webseite:** Webseite öffnen: www.example.com oder www.betanet.de  ",
+      "text": "# Internet-Demo — Ein vereinfachtes simuliertes Inernet\n\n## Features\n**Backbone:** Router BB1–BB5 — eBGP-Mesh (AS65100–65104)\n**ISPs:** ISP-Alpha (AS65001), ISP-Beta (AS65002), ISP-Gamma (AS65003) — sind mit BGP ans Backbone angebunden\n**Heimnetze:** 4 Heimrouter mit DHCP, WiFi-SSIDs und NAT — Laptops verbinden sich per WLAN\n**Rechenzentren:** DC-Alpha (www.example.com), DC-Beta (www.betanet.de + E-Mail), DC-Gamma (DNS ns1/ns2)\n\n## Ausprobieren\nSimulation starten und warten, bis die automatischen Routingprotokolle konvergiert sind (ca. 10 Sekunden)\n**Ping:** Terminal auf einem Heim-PC → ping www.example.com\n**Webseite:** Webseite öffnen: www.example.com oder www.betanet.de  ",
       "showTitle": false
     },
     {
       "kind": "RectOverlay",
       "id": 2,
-      "name": "Backbone — BGP-Mesh (AS65100–65104) + OSPF",
+      "name": "Backbone — BGP-Mesh (AS65100–65104)",
       "x": -144.1736447777665,
       "y": -17.622390652537682,
       "px": 200,
@@ -247,10 +247,8 @@
         ]
       },
       "ospf": {
-        "enabled": true,
-        "passive": [
-          "eth2"
-        ],
+        "enabled": false,
+        "passive": [],
         "routerIdOverride": null,
         "interfaceAreas": {}
       }
@@ -348,10 +346,8 @@
         ]
       },
       "ospf": {
-        "enabled": true,
-        "passive": [
-          "eth3"
-        ],
+        "enabled": false,
+        "passive": [],
         "routerIdOverride": null,
         "interfaceAreas": {}
       }
@@ -464,10 +460,8 @@
         ]
       },
       "ospf": {
-        "enabled": true,
-        "passive": [
-          "eth4"
-        ],
+        "enabled": false,
+        "passive": [],
         "routerIdOverride": null,
         "interfaceAreas": {}
       }
@@ -565,10 +559,8 @@
         ]
       },
       "ospf": {
-        "enabled": true,
-        "passive": [
-          "eth3"
-        ],
+        "enabled": false,
+        "passive": [],
         "routerIdOverride": null,
         "interfaceAreas": {}
       }
@@ -651,10 +643,8 @@
         ]
       },
       "ospf": {
-        "enabled": true,
-        "passive": [
-          "eth2"
-        ],
+        "enabled": false,
+        "passive": [],
         "routerIdOverride": null,
         "interfaceAreas": {}
       }
