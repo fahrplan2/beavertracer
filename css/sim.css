@@ -1666,6 +1666,11 @@ sim-toolbar-langbtn {
     touch-action: pan-x pan-y;
   }
 
+  /* ── No dot grid on mobile (dots scale with zoom and look odd) ── */
+  .sim-root.edit-mode .sim-nodes {
+    background-image: none;
+  }
+
   /* ── Panels: full-screen when relocated to .sim-root ── */
   .sim-root > .sim-panel {
     position: absolute !important;
