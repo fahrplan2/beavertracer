@@ -27,6 +27,12 @@ export class GenericProcess {
   /** @type {HTMLElement|null} element to focus when app is brought to foreground */
   focusTarget = null;
 
+  /** @type {string|null} registry id assigned by OS.exec */
+  _appId = null;
+
+  /** @type {boolean} mandatory apps cannot be uninstalled */
+  _mandatory = false;
+
   static pidCounter = 1;
 
   /**

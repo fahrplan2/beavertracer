@@ -1183,5 +1183,15 @@ export default {
   "welcome.example.simple": "Простой пример",
   "welcome.example.simple.desc": "Небольшая сеть, отличная точка для начала",
   "welcome.example.complex": "Сложный пример",
-  "welcome.example.complex.desc": "Большая сеть с протоколами маршрутизации"
+  "welcome.example.complex.desc": "Большая сеть с протоколами маршрутизации",
+  "os.apps.manage": "Установка / Удаление программного обеспечения",
+  "os.apps.done": "Готово",
+  "os.apps.remove": "Удалить",
+  "os.apps.library.title": "Библиотека программного обеспечения",
+  "os.apps.library.addlabel": "Добавить",
+  "os.apps.library.install": "+ Установить",
+  "os.apps.library.empty": "Все доступное программное обеспечение уже установлено.",
+  "os.apps.category.system": "Система",
+  "os.apps.category.client": "Клиентское программное обеспечение",
+  "os.apps.category.server": "Серверное программное обеспечение"
 };

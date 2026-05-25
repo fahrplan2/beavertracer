@@ -1183,5 +1183,15 @@ export default {
   "welcome.example.simple": "Απλό παράδειγμα",
   "welcome.example.simple.desc": "Μικρό δίκτυο, εξαιρετικό σημείο εκκίνησης",
   "welcome.example.complex": "Σύνθετο παράδειγμα",
-  "welcome.example.complex.desc": "Μεγάλο δίκτυο με πρωτόκολλα δρομολόγησης"
+  "welcome.example.complex.desc": "Μεγάλο δίκτυο με πρωτόκολλα δρομολόγησης",
+  "os.apps.manage": "Εγκατάσταση / Κατάργηση Λογισμικού",
+  "os.apps.done": "Έγινε",
+  "os.apps.remove": "Κατάργηση εγκατάστασης",
+  "os.apps.library.title": "Βιβλιοθήκη Λογισμικού",
+  "os.apps.library.addlabel": "Προσθήκη",
+  "os.apps.library.install": "+ Εγκατάσταση",
+  "os.apps.library.empty": "Όλο το διαθέσιμο λογισμικό είναι ήδη εγκατεστημένο.",
+  "os.apps.category.system": "Σύστημα",
+  "os.apps.category.client": "Λογισμικό Πελάτη",
+  "os.apps.category.server": "Λογισμικό Διακομιστή"
 };

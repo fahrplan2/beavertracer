@@ -1183,5 +1183,15 @@ export default {
   "welcome.example.simple": "Preprost Primer",
   "welcome.example.simple.desc": "Majhna omrežja, odličen začetek",
   "welcome.example.complex": "Kompleksen Primer",
-  "welcome.example.complex.desc": "Veliko omrežje s protokoli usmerjanja"
+  "welcome.example.complex.desc": "Veliko omrežje s protokoli usmerjanja",
+  "os.apps.manage": "Namestitev / Odstranitev programske opreme",
+  "os.apps.done": "Dokončano",
+  "os.apps.remove": "Odstrani",
+  "os.apps.library.title": "Knjižnica programske opreme",
+  "os.apps.library.addlabel": "Dodaj",
+  "os.apps.library.install": "+ Namesti",
+  "os.apps.library.empty": "Vsa dostopna programska oprema je že nameščena.",
+  "os.apps.category.system": "Sistem",
+  "os.apps.category.client": "Programska oprema za odjemalce",
+  "os.apps.category.server": "Programska oprema za strežnike"
 };

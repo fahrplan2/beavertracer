@@ -109,7 +109,7 @@
 .sim-panel {
   position: absolute;
   min-width: 600px;
-  min-height: 200px;
+  min-height: 200px; /* overridden for OS panels below */
   max-width: 1000px;
   max-height: min(1000px, var(--sim-area-height, 1000px));
 
@@ -123,6 +123,15 @@
   pointer-events: auto;
   z-index: 1000;
 
+}
+
+/* OS panels (PC / Laptop)                                                      */
+/* min  = 3 icon rows: 38 header + 20 pad + 3×118 + 2×12 gap + 20 pad + 44 footer = 500px */
+/* default = 24 terminal lines: 38 header + 44 bar + 0 term-pad + 24×21px = 586px → 590px */
+/* saved pw/ph via inline style take precedence over the CSS default            */
+.sim-panel:has(.os-root) {
+  height: 590px;
+  min-height: 500px;
 }
 
 .sim-panel-header {
@@ -1666,6 +1675,11 @@ sim-toolbar-langbtn {
     touch-action: pan-x pan-y;
   }
 
+  /* ── No dot grid on mobile (dots scale with zoom and look odd) ── */
+  .sim-root.edit-mode .sim-nodes {
+    background-image: none;
+  }
+
   /* ── Panels: full-screen when relocated to .sim-root ── */
   .sim-root > .sim-panel {
     position: absolute !important;
@@ -1721,5 +1735,33 @@ sim-toolbar-langbtn {
   .fw-input {
     width: 100%;
     box-sizing: border-box;
+  }
+}
+
+/* ── Landscape phones: small height → panels fullscreen ── */
+@media (max-height: 500px) {
+  .sim-root > .sim-panel {
+    position: absolute !important;
+    inset: 0 !important;
+    min-width: unset !important;
+    max-width: unset !important;
+    max-height: unset !important;
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    box-shadow: none !important;
+    transform: none !important;
+    z-index: 5000 !important;
+  }
+
+  .sim-root > .sim-panel .sim-panel-header {
+    cursor: default;
+  }
+
+  .sim-root > .sim-panel .sim-panel-body {
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
   }
 }

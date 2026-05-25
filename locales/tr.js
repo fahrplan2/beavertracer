@@ -1183,5 +1183,15 @@ export default {
   "welcome.example.simple": "Basit Örnek",
   "welcome.example.simple.desc": "Küçük ağ, harika bir başlangıç noktası",
   "welcome.example.complex": "Karmaşık Örnek",
-  "welcome.example.complex.desc": "Yönlendirme protokolleri ile büyük ağ"
+  "welcome.example.complex.desc": "Yönlendirme protokolleri ile büyük ağ",
+  "os.apps.manage": "Yazılım Yükle / Kaldır",
+  "os.apps.done": "Tamam",
+  "os.apps.remove": "Kaldır",
+  "os.apps.library.title": "Yazılım Kütüphanesi",
+  "os.apps.library.addlabel": "Ekle",
+  "os.apps.library.install": "+ Yükle",
+  "os.apps.library.empty": "Tüm kullanılabilir yazılımlar zaten yüklü.",
+  "os.apps.category.system": "Sistem",
+  "os.apps.category.client": "İstemci Yazılımı",
+  "os.apps.category.server": "Sunucu Yazılımı"
 };

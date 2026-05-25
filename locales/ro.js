@@ -1183,5 +1183,15 @@ export default {
   "welcome.example.simple": "Exemplu Simplu",
   "welcome.example.simple.desc": "Rețea mică, punct de plecare excelent",
   "welcome.example.complex": "Exemplu Complex",
-  "welcome.example.complex.desc": "Rețea mare cu protocoale de rutare"
+  "welcome.example.complex.desc": "Rețea mare cu protocoale de rutare",
+  "os.apps.manage": "Instalare / Dezinstalare Software",
+  "os.apps.done": "Gata",
+  "os.apps.remove": "Dezinstalare",
+  "os.apps.library.title": "Biblioteca de Software",
+  "os.apps.library.addlabel": "Adaugă",
+  "os.apps.library.install": "+ Instalare",
+  "os.apps.library.empty": "Tot softul disponibil este deja instalat.",
+  "os.apps.category.system": "Sistem",
+  "os.apps.category.client": "Software Client",
+  "os.apps.category.server": "Software Server"
 };

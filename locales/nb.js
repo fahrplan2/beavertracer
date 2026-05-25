@@ -1182,5 +1182,15 @@ export default {
   "welcome.example.simple": "Enkelt eksempel",
   "welcome.example.simple.desc": "Lite nettverk, flott utgangspunkt",
   "welcome.example.complex": "Komplekst eksempel",
-  "welcome.example.complex.desc": "Stort nettverk med rutingprotokoller"
+  "welcome.example.complex.desc": "Stort nettverk med rutingprotokoller",
+  "os.apps.manage": "Installer / Avinstaller programvare",
+  "os.apps.done": "Ferdig",
+  "os.apps.remove": "Avinstaller",
+  "os.apps.library.title": "Programbibliotek",
+  "os.apps.library.addlabel": "Legg til",
+  "os.apps.library.install": "+ Installer",
+  "os.apps.library.empty": "All tilgjengelig programvare er allerede installert.",
+  "os.apps.category.system": "System",
+  "os.apps.category.client": "Klientprogramvare",
+  "os.apps.category.server": "Serverprogramvare"
 };

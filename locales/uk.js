@@ -1183,5 +1183,15 @@ export default {
   "welcome.example.simple": "Простий приклад",
   "welcome.example.simple.desc": "Невелика мережа, чудова стартова точка",
   "welcome.example.complex": "Складний приклад",
-  "welcome.example.complex.desc": "Велика мережа з протоколами маршрутизації"
+  "welcome.example.complex.desc": "Велика мережа з протоколами маршрутизації",
+  "os.apps.manage": "Встановити / Видалити програмне забезпечення",
+  "os.apps.done": "Готово",
+  "os.apps.remove": "Видалити",
+  "os.apps.library.title": "Бібліотека програм",
+  "os.apps.library.addlabel": "Додати",
+  "os.apps.library.install": "+ Встановити",
+  "os.apps.library.empty": "Усі доступні програми вже встановлені.",
+  "os.apps.category.system": "Система",
+  "os.apps.category.client": "Клієнтське ПО",
+  "os.apps.category.server": "Серверне ПО"
 };

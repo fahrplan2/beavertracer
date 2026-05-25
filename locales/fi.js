@@ -1183,5 +1183,15 @@ export default {
   "welcome.example.simple": "Yksinkertainen esimerkki",
   "welcome.example.simple.desc": "Pieni verkko, loistava aloituspiste",
   "welcome.example.complex": "Monimutkainen esimerkki",
-  "welcome.example.complex.desc": "Suuri verkko reititysprotokollineen"
+  "welcome.example.complex.desc": "Suuri verkko reititysprotokollineen",
+  "os.apps.manage": "Asenna / Poista ohjelmistoa",
+  "os.apps.done": "Valmis",
+  "os.apps.remove": "Poista",
+  "os.apps.library.title": "Ohjelmistokirjasto",
+  "os.apps.library.addlabel": "Lisää",
+  "os.apps.library.install": "+ Asenna",
+  "os.apps.library.empty": "Kaikki saatavilla oleva ohjelmisto on jo asennettu.",
+  "os.apps.category.system": "Järjestelmä",
+  "os.apps.category.client": "Asiakasohjelmisto",
+  "os.apps.category.server": "Palvelinohjelmisto"
 };

@@ -1183,5 +1183,15 @@ export default {
   "welcome.example.simple": "간단한 예제",
   "welcome.example.simple.desc": "소규모 네트워크, 훌륭한 시작점",
   "welcome.example.complex": "복잡한 예제",
-  "welcome.example.complex.desc": "라우팅 프로토콜을 포함한 대규모 네트워크"
+  "welcome.example.complex.desc": "라우팅 프로토콜을 포함한 대규모 네트워크",
+  "os.apps.manage": "소프트웨어 설치 / 제거",
+  "os.apps.done": "완료",
+  "os.apps.remove": "제거",
+  "os.apps.library.title": "소프트웨어 라이브러리",
+  "os.apps.library.addlabel": "추가",
+  "os.apps.library.install": "+ 설치",
+  "os.apps.library.empty": "사용 가능한 모든 소프트웨어가 이미 설치되어 있습니다.",
+  "os.apps.category.system": "시스템",
+  "os.apps.category.client": "클라이언트 소프트웨어",
+  "os.apps.category.server": "서버 소프트웨어"
 };

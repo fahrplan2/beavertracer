@@ -1183,5 +1183,15 @@ export default {
   "welcome.example.simple": "シンプル例",
   "welcome.example.simple.desc": "小規模ネットワーク、素晴らしい出発点",
   "welcome.example.complex": "複雑な例",
-  "welcome.example.complex.desc": "ルーティングプロトコルを備えた大規模ネットワーク"
+  "welcome.example.complex.desc": "ルーティングプロトコルを備えた大規模ネットワーク",
+  "os.apps.manage": "ソフトウェアのインストール/アンインストール",
+  "os.apps.done": "完了",
+  "os.apps.remove": "アンインストール",
+  "os.apps.library.title": "ソフトウェアライブラリ",
+  "os.apps.library.addlabel": "追加",
+  "os.apps.library.install": "+ インストール",
+  "os.apps.library.empty": "利用可能なソフトウェアはすべてインストール済みです。",
+  "os.apps.category.system": "システム",
+  "os.apps.category.client": "クライアントソフトウェア",
+  "os.apps.category.server": "サーバーソフトウェア"
 };

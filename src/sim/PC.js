@@ -47,7 +47,7 @@ export class PC extends SimulatedObject {
 
         const fs = new VirtualFileSystem();
         const net = new IPStack(1, name);
-        this.os = new OS(this, fs, net);
+        this.os = new OS(this, fs, net, { mandatoryOnly: true });
 
         this.onPanelCreated = (/** @type {HTMLElement} */ body) => {
             this.os.mount(body);
@@ -59,6 +59,7 @@ export class PC extends SimulatedObject {
 
     toJSON() {
         const ipConfig = /** @type {IPv4ConfigApp|undefined} */ (this.os.runningApps.find(a => a instanceof IPv4ConfigApp));
+        const installedApps = this.os.getInstalledAppIds();
         return {
             ...super.toJSON(),
             kind: "PC",
@@ -66,6 +67,7 @@ export class PC extends SimulatedObject {
             fs: this.fs.toJSON(),
             dns: this.dns.serverIp?.toString() ?? null,
             dhcpMode: { ...(ipConfig?.persisted?.modeByIface ?? {}) },
+            ...(installedApps.length > 0 && { installedApps }),
         };
     }
 
@@ -77,6 +79,9 @@ export class PC extends SimulatedObject {
         if (n.net) obj.os.net = IPStack.fromJSON(n.net);
         if (n.fs) obj.os.fs = VirtualFileSystem.fromJSON(n.fs);
         if (n.dns) obj.os.dns.setServer(n.dns);
+
+        if (n.installedApps?.length) obj.os._applyInstalledApps(n.installedApps);
+        else obj.os._installAllApps(); // old file without installedApps → restore all
 
         const dhcpMode = n.dhcpMode ?? {};
         if (Object.values(dhcpMode).some(v => v === "dhcp")) {
