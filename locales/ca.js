@@ -1182,5 +1182,15 @@ export default {
   "welcome.example.simple": "Exemple Simple",
   "welcome.example.simple.desc": "Xarxa petita, excel·lent punt de partida",
   "welcome.example.complex": "Exemple Complex",
-  "welcome.example.complex.desc": "Xarxa gran amb protocols d'encaminament"
+  "welcome.example.complex.desc": "Xarxa gran amb protocols d'encaminament",
+  "os.apps.manage": "Instal·lar / Desinstal·lar programari",
+  "os.apps.done": "Fet",
+  "os.apps.remove": "Desinstal·lar",
+  "os.apps.library.title": "Biblioteca de Software",
+  "os.apps.library.addlabel": "Afegir",
+  "os.apps.library.install": "+ Instal·lar",
+  "os.apps.library.empty": "Tot el software disponible ja està instal·lat.",
+  "os.apps.category.system": "Sistema",
+  "os.apps.category.client": "Software Client",
+  "os.apps.category.server": "Software Servidor"
 };

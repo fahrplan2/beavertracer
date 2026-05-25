@@ -1188,5 +1188,15 @@ export default {
   "welcome.example.simple": "Exemplo Simples",
   "welcome.example.simple.desc": "Pequena rede, ótimo ponto de partida",
   "welcome.example.complex": "Exemplo Complexo",
-  "welcome.example.complex.desc": "Grande rede com protocolos de encaminhamento"
+  "welcome.example.complex.desc": "Grande rede com protocolos de encaminhamento",
+  "os.apps.manage": "Instalar / Desinstalar Software",
+  "os.apps.done": "Concluído",
+  "os.apps.remove": "Desinstalar",
+  "os.apps.library.title": "Biblioteca de Software",
+  "os.apps.library.addlabel": "Adicionar",
+  "os.apps.library.install": "+ Instalar",
+  "os.apps.library.empty": "Todo o software disponível já está instalado.",
+  "os.apps.category.system": "Sistema",
+  "os.apps.category.client": "Software de Cliente",
+  "os.apps.category.server": "Software de Servidor"
 };

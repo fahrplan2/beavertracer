@@ -1183,5 +1183,15 @@ export default {
   "welcome.example.simple": "مثال بسيط",
   "welcome.example.simple.desc": "شبكة صغيرة، نقطة انطلاق ممتازة",
   "welcome.example.complex": "مثال معقد",
-  "welcome.example.complex.desc": "شبكة كبيرة مع بروتوكولات التوجيه"
+  "welcome.example.complex.desc": "شبكة كبيرة مع بروتوكولات التوجيه",
+  "os.apps.manage": "تثبيت / إلغاء تثبيت البرامج",
+  "os.apps.done": "تم",
+  "os.apps.remove": "إزالة",
+  "os.apps.library.title": "مكتبة البرامج",
+  "os.apps.library.addlabel": "إضافة",
+  "os.apps.library.install": "+ تثبيت",
+  "os.apps.library.empty": "جميع البرامج المتاحة مثبتة بالفعل.",
+  "os.apps.category.system": "النظام",
+  "os.apps.category.client": "برامج العميل",
+  "os.apps.category.server": "برامج الخادم"
 };

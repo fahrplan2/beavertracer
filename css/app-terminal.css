@@ -1,16 +1,27 @@
 /************************************ TERMINAL ***********************/
 
+.app-terminal {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 0; /* override process-root's 2px — term has its own padding */
+}
+
 .app-terminal .term {
+  flex: 1;
   font-family: "Hack", monospace;
   font-size: 1rem;
   line-height: 21px;
   white-space: pre;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: auto;
   background-color: #202020;
   color: #00FF20;
   padding: 7px;
+  margin: 0;
   user-select: text;
   cursor: text;
+  min-height: 0;
 }
 
 .app-terminal .term:focus {
@@ -64,5 +75,6 @@
   .app-terminal .term {
     font-size: 0.8125rem;
     line-height: 17px;
+    overflow-y: auto;
   }
 }

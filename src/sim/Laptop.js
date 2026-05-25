@@ -36,7 +36,7 @@ export class Laptop extends SimulatedObject {
         // Swap the EthernetPort on the first NIC for a WirelessPort.
         this._wPort = Laptop._installWirelessPort(net);
 
-        this.os = new OS(this, fs, net);
+        this.os = new OS(this, fs, net, { mandatoryOnly: true });
 
         this.onPanelCreated = (/** @type {HTMLElement} */ body) => {
             this.os.mount(body);
@@ -76,6 +76,7 @@ export class Laptop extends SimulatedObject {
 
     toJSON() {
         const ipConfig = /** @type {IPv4ConfigApp|undefined} */ (this.os.runningApps.find(a => a instanceof IPv4ConfigApp));
+        const installedApps = this.os.getInstalledAppIds();
         return {
             ...super.toJSON(),
             kind: "Laptop",
@@ -84,6 +85,7 @@ export class Laptop extends SimulatedObject {
             dns:  this.dns.serverIp?.toString() ?? null,
             ssid: this._ssid,
             dhcpMode: { ...(ipConfig?.persisted?.modeByIface ?? {}) },
+            ...(installedApps.length > 0 && { installedApps }),
         };
     }
 
@@ -100,6 +102,9 @@ export class Laptop extends SimulatedObject {
         if (n.fs)  obj.os.fs = VirtualFileSystem.fromJSON(n.fs);
         if (n.dns) obj.os.dns.setServer(n.dns);
         obj._ssid = String(n.ssid ?? "");
+
+        if (n.installedApps?.length) obj.os._applyInstalledApps(n.installedApps);
+        else obj.os._installAllApps(); // old file without installedApps → restore all
 
         const dhcpMode = n.dhcpMode ?? {};
         if (Object.values(dhcpMode).some(v => v === "dhcp")) {

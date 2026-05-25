@@ -1183,5 +1183,15 @@ export default {
   "welcome.example.simple": "Vienkāršs piemērs",
   "welcome.example.simple.desc": "Maza tīkla, lielisks sākumpunkts",
   "welcome.example.complex": "Sarežģīts piemērs",
-  "welcome.example.complex.desc": "Liels tīkls ar maršrutēšanas protokoliem"
+  "welcome.example.complex.desc": "Liels tīkls ar maršrutēšanas protokoliem",
+  "os.apps.manage": "Instalēt / Atinstalēt programmatūru",
+  "os.apps.done": "Gatavs",
+  "os.apps.remove": "Atinstalēt",
+  "os.apps.library.title": "Programmatūras bibliotēka",
+  "os.apps.library.addlabel": "Pievienot",
+  "os.apps.library.install": "+ Instalēt",
+  "os.apps.library.empty": "Visa pieejamā programmatūra jau ir instalēta.",
+  "os.apps.category.system": "Sistēma",
+  "os.apps.category.client": "Klienta programmatūra",
+  "os.apps.category.server": "Servera programmatūra"
 };

@@ -109,7 +109,7 @@
 .sim-panel {
   position: absolute;
   min-width: 600px;
-  min-height: 200px;
+  min-height: 200px; /* overridden for OS panels below */
   max-width: 1000px;
   max-height: min(1000px, var(--sim-area-height, 1000px));
 
@@ -123,6 +123,15 @@
   pointer-events: auto;
   z-index: 1000;
 
+}
+
+/* OS panels (PC / Laptop)                                                      */
+/* min  = 3 icon rows: 38 header + 20 pad + 3×118 + 2×12 gap + 20 pad + 44 footer = 500px */
+/* default = 24 terminal lines: 38 header + 44 bar + 0 term-pad + 24×21px = 586px → 590px */
+/* saved pw/ph via inline style take precedence over the CSS default            */
+.sim-panel:has(.os-root) {
+  height: 590px;
+  min-height: 500px;
 }
 
 .sim-panel-header {

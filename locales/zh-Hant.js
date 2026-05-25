@@ -1182,5 +1182,15 @@ export default {
   "welcome.example.simple": "簡單範例",
   "welcome.example.simple.desc": "小型網路，絕佳的起點",
   "welcome.example.complex": "複雜範例",
-  "welcome.example.complex.desc": "具有路由協定的大型網路"
+  "welcome.example.complex.desc": "具有路由協定的大型網路",
+  "os.apps.manage": "安裝 / 解除安裝軟體",
+  "os.apps.done": "完成",
+  "os.apps.remove": "解除安裝",
+  "os.apps.library.title": "軟體庫",
+  "os.apps.library.addlabel": "新增",
+  "os.apps.library.install": "+ 安裝",
+  "os.apps.library.empty": "所有可用軟體都已安裝。",
+  "os.apps.category.system": "系統",
+  "os.apps.category.client": "用戶端軟體",
+  "os.apps.category.server": "伺服器軟體"
 };

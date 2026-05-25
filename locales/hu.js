@@ -1182,5 +1182,15 @@ export default {
   "welcome.example.simple": "Egyszerű példa",
   "welcome.example.simple.desc": "Kicsi hálózat, jó kiindulópont",
   "welcome.example.complex": "Összetett példa",
-  "welcome.example.complex.desc": "Nagy hálózat útválasztási protokollokkal"
+  "welcome.example.complex.desc": "Nagy hálózat útválasztási protokollokkal",
+  "os.apps.manage": "Szoftver telepítése / eltávolítása",
+  "os.apps.done": "Kész",
+  "os.apps.remove": "Eltávolítás",
+  "os.apps.library.title": "Szoftver könyvtár",
+  "os.apps.library.addlabel": "Hozzáadás",
+  "os.apps.library.install": "+ Telepítés",
+  "os.apps.library.empty": "Az összes elérhető szoftver már telepítve van.",
+  "os.apps.category.system": "Rendszer",
+  "os.apps.category.client": "Ügyfélszoftver",
+  "os.apps.category.server": "Szervezőszoftver"
 };

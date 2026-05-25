@@ -1182,5 +1182,15 @@ export default {
   "welcome.example.simple": "Shembull i Thjeshtë",
   "welcome.example.simple.desc": "Rrjet i vogël, pika e mirë për të filluar",
   "welcome.example.complex": "Shembull i Kompleksuar",
-  "welcome.example.complex.desc": "Rrjet i madh me protokolle rutimi"
+  "welcome.example.complex.desc": "Rrjet i madh me protokolle rutimi",
+  "os.apps.manage": "Instalo / Çinstalo Softuer",
+  "os.apps.done": "Përfunduar",
+  "os.apps.remove": "Çinstaloj",
+  "os.apps.library.title": "Biblioteka e Softuerit",
+  "os.apps.library.addlabel": "Shto",
+  "os.apps.library.install": "+ Instalo",
+  "os.apps.library.empty": "I gjithë softueri i disponueshëm është tashmë i instaluar.",
+  "os.apps.category.system": "Sistemi",
+  "os.apps.category.client": "Softueri i Klientit",
+  "os.apps.category.server": "Softueri i Serverit"
 };

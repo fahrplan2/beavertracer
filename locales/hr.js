@@ -1183,5 +1183,15 @@ export default {
   "welcome.example.simple": "Jednostavan Primjer",
   "welcome.example.simple.desc": "Mala mreža, odličan početak",
   "welcome.example.complex": "Složen Primjer",
-  "welcome.example.complex.desc": "Velika mreža s protokolima rutiranja"
+  "welcome.example.complex.desc": "Velika mreža s protokolima rutiranja",
+  "os.apps.manage": "Instaliraj / Deinstaliraj softver",
+  "os.apps.done": "Završeno",
+  "os.apps.remove": "Deinstaliraj",
+  "os.apps.library.title": "Knjižnica softvera",
+  "os.apps.library.addlabel": "Dodaj",
+  "os.apps.library.install": "+ Instaliraj",
+  "os.apps.library.empty": "Sav dostupan softver je već instaliran.",
+  "os.apps.category.system": "Sustav",
+  "os.apps.category.client": "Klijentski softver",
+  "os.apps.category.server": "Serverski softver"
 };

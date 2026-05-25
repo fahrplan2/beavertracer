@@ -1183,5 +1183,15 @@ export default {
   "welcome.example.simple": "مثال ساده",
   "welcome.example.simple.desc": "شبکه کوچک، نقطه‌ی شروع عالی",
   "welcome.example.complex": "مثال پیچیده",
-  "welcome.example.complex.desc": "شبکه بزرگ با پروتکل‌های مسیریابی"
+  "welcome.example.complex.desc": "شبکه بزرگ با پروتکل‌های مسیریابی",
+  "os.apps.manage": "نصب / حذف نرم‌افزار",
+  "os.apps.done": "انجام شد",
+  "os.apps.remove": "حذف نصب",
+  "os.apps.library.title": "کتابخانه نرم‌افزار",
+  "os.apps.library.addlabel": "افزودن",
+  "os.apps.library.install": "+ نصب",
+  "os.apps.library.empty": "تمام نرم‌افزارهای موجود در حال حاضر نصب شده‌اند.",
+  "os.apps.category.system": "سیستم",
+  "os.apps.category.client": "نرم‌افزار کلاینت",
+  "os.apps.category.server": "نرم‌افزار سرور"
 };

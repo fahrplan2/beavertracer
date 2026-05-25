@@ -1182,5 +1182,15 @@ export default {
   "welcome.example.simple": "Једноставан пример",
   "welcome.example.simple.desc": "Мала мрежа, одличан почетак",
   "welcome.example.complex": "Сложен пример",
-  "welcome.example.complex.desc": "Велика мрежа са протоколима рутирања"
+  "welcome.example.complex.desc": "Велика мрежа са протоколима рутирања",
+  "os.apps.manage": "Инсталирај / Деинсталирај софтвер",
+  "os.apps.done": "Готово",
+  "os.apps.remove": "Деинсталирај",
+  "os.apps.library.title": "Библиотека софтвера",
+  "os.apps.library.addlabel": "Додај",
+  "os.apps.library.install": "+ Инсталирај",
+  "os.apps.library.empty": "Сав доступан софтвер је већ инсталиран.",
+  "os.apps.category.system": "Систем",
+  "os.apps.category.client": "Клијентски софтвер",
+  "os.apps.category.server": "Серверски софтвер"
 };

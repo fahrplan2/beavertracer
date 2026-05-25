@@ -1183,5 +1183,15 @@ export default {
   "welcome.example.simple": "Eenvoudig voorbeeld",
   "welcome.example.simple.desc": "Klein netwerk, geweldig startpunt",
   "welcome.example.complex": "Complex voorbeeld",
-  "welcome.example.complex.desc": "Groot netwerk met routeringsprotocollen"
+  "welcome.example.complex.desc": "Groot netwerk met routeringsprotocollen",
+  "os.apps.manage": "Software installeren / verwijderen",
+  "os.apps.done": "Gereed",
+  "os.apps.remove": "Verwijderen",
+  "os.apps.library.title": "Softwarebibliotheek",
+  "os.apps.library.addlabel": "Toevoegen",
+  "os.apps.library.install": "+ Installeren",
+  "os.apps.library.empty": "Alle beschikbare software is al geïnstalleerd.",
+  "os.apps.category.system": "Systeem",
+  "os.apps.category.client": "Clientsoftware",
+  "os.apps.category.server": "Serversoftware"
 };

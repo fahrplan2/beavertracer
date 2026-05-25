@@ -1183,5 +1183,15 @@ export default {
   "welcome.example.simple": "Enkelt exempel",
   "welcome.example.simple.desc": "Litet nätverk, perfekt utgångspunkt",
   "welcome.example.complex": "Komplext exempel",
-  "welcome.example.complex.desc": "Stort nätverk med routningsprotokoll"
+  "welcome.example.complex.desc": "Stort nätverk med routningsprotokoll",
+  "os.apps.manage": "Installera / Avinstallera programvara",
+  "os.apps.done": "Klar",
+  "os.apps.remove": "Avinstallera",
+  "os.apps.library.title": "Programbibliotek",
+  "os.apps.library.addlabel": "Lägg till",
+  "os.apps.library.install": "+ Installera",
+  "os.apps.library.empty": "All tillgänglig programvara är redan installerad.",
+  "os.apps.category.system": "System",
+  "os.apps.category.client": "Klientprogramvara",
+  "os.apps.category.server": "Serverprogramvara"
 };

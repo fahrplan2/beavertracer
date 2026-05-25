@@ -1183,5 +1183,15 @@ export default {
   "welcome.example.simple": "简单示例",
   "welcome.example.simple.desc": "小型网络，良好的起点",
   "welcome.example.complex": "复杂示例",
-  "welcome.example.complex.desc": "具有路由协议的大型网络"
+  "welcome.example.complex.desc": "具有路由协议的大型网络",
+  "os.apps.manage": "安装/卸载软件",
+  "os.apps.done": "完成",
+  "os.apps.remove": "卸载",
+  "os.apps.library.title": "软件库",
+  "os.apps.library.addlabel": "添加",
+  "os.apps.library.install": "+ 安装",
+  "os.apps.library.empty": "所有可用软件已安装。",
+  "os.apps.category.system": "系统",
+  "os.apps.category.client": "客户端软件",
+  "os.apps.category.server": "服务器软件"
 };

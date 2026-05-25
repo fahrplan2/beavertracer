@@ -1183,5 +1183,15 @@ export default {
   "welcome.example.simple": "Contoh Sederhana",
   "welcome.example.simple.desc": "Jaringan kecil, titik awal yang sempurna",
   "welcome.example.complex": "Contoh Kompleks",
-  "welcome.example.complex.desc": "Jaringan besar dengan protokol routing"
+  "welcome.example.complex.desc": "Jaringan besar dengan protokol routing",
+  "os.apps.manage": "Pasang / Hapus Perangkat Lunak",
+  "os.apps.done": "Selesai",
+  "os.apps.remove": "Copot Pemasangan",
+  "os.apps.library.title": "Perpustakaan Perangkat Lunak",
+  "os.apps.library.addlabel": "Tambah",
+  "os.apps.library.install": "+ Pasang",
+  "os.apps.library.empty": "Semua perangkat lunak yang tersedia sudah terpasang.",
+  "os.apps.category.system": "Sistem",
+  "os.apps.category.client": "Perangkat Lunak Klien",
+  "os.apps.category.server": "Perangkat Lunak Server"
 };

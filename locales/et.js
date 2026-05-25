@@ -1183,5 +1183,15 @@ export default {
   "welcome.example.simple": "Lihtne näide",
   "welcome.example.simple.desc": "Väike võrk, suurepärane alguspunkt",
   "welcome.example.complex": "Keerulisem näide",
-  "welcome.example.complex.desc": "Suur võrk marsruutimisprotokollitega"
+  "welcome.example.complex.desc": "Suur võrk marsruutimisprotokollitega",
+  "os.apps.manage": "Tarkvara paigaldamine / eemaldamine",
+  "os.apps.done": "Valmis",
+  "os.apps.remove": "Desinstalli",
+  "os.apps.library.title": "Tarkvara teek",
+  "os.apps.library.addlabel": "Lisa",
+  "os.apps.library.install": "+ Paigalda",
+  "os.apps.library.empty": "Kogu saadaolev tarkvara on juba installitud.",
+  "os.apps.category.system": "Süsteem",
+  "os.apps.category.client": "Kliendi tarkvara",
+  "os.apps.category.server": "Serveri tarkvara"
 };

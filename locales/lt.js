@@ -1183,5 +1183,15 @@ export default {
   "welcome.example.simple": "Paprastas pavyzdys",
   "welcome.example.simple.desc": "Maža tinkla, puikus pradžios taškas",
   "welcome.example.complex": "Sudėtingas pavyzdys",
-  "welcome.example.complex.desc": "Didelis tinklas su maršrutizavimo protokolais"
+  "welcome.example.complex.desc": "Didelis tinklas su maršrutizavimo protokolais",
+  "os.apps.manage": "Programinės įrangos diegimas / šalinimas",
+  "os.apps.done": "Atlikta",
+  "os.apps.remove": "Išdiegti",
+  "os.apps.library.title": "Programinės įrangos biblioteka",
+  "os.apps.library.addlabel": "Pridėti",
+  "os.apps.library.install": "+ Diegti",
+  "os.apps.library.empty": "Visa prieinama programinė įranga jau įdiegta.",
+  "os.apps.category.system": "Sistema",
+  "os.apps.category.client": "Kliento programinė įranga",
+  "os.apps.category.server": "Serverio programinė įranga"
 };

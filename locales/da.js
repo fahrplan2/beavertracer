@@ -1183,5 +1183,15 @@ export default {
   "welcome.example.simple": "Simpelt eksempel",
   "welcome.example.simple.desc": "Lille netværk, godt udgangspunkt",
   "welcome.example.complex": "Komplekst eksempel",
-  "welcome.example.complex.desc": "Stort netværk med routingprotokoller"
+  "welcome.example.complex.desc": "Stort netværk med routingprotokoller",
+  "os.apps.manage": "Installér / Fjern software",
+  "os.apps.done": "Udført",
+  "os.apps.remove": "Afinstaller",
+  "os.apps.library.title": "Softwarebibliotek",
+  "os.apps.library.addlabel": "Tilføj",
+  "os.apps.library.install": "+ Installér",
+  "os.apps.library.empty": "Al tilgængelig software er allerede installeret.",
+  "os.apps.category.system": "System",
+  "os.apps.category.client": "Klientsoftware",
+  "os.apps.category.server": "Serversoftware"
 };

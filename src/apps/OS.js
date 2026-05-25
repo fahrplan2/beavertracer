@@ -27,6 +27,30 @@ import { BitcoinNodeApp } from "./BitcoinNodeApp.js";
 import { DOMBuilder } from "../lib/DomBuilder.js";
 import { ExplorerApp } from "./ExplorerApp.js";
 
+/** @typedef {{ id: string, Class: new (...args: any[]) => any, mandatory: boolean, category: string, icon: string, labelKey: string }} AppRegistryEntry */
+
+/** @type {AppRegistryEntry[]} */
+const APP_REGISTRY = [
+    { id: "IPv4ConfigApp",          Class: IPv4ConfigApp,          mandatory: true,  category: "system", icon: "fa-gear",          labelKey: "app.ipv4config.title" },
+    { id: "TerminalApp",            Class: TerminalApp,            mandatory: true,  category: "system", icon: "fa-terminal",      labelKey: "app.terminal.title" },
+    { id: "ExplorerApp",            Class: ExplorerApp,            mandatory: true,  category: "system", icon: "fa-folder-open",   labelKey: "app.explorer.title" },
+    { id: "TextEditorApp",          Class: TextEditorApp,          mandatory: true,  category: "system", icon: "fa-file-pen",      labelKey: "app.texteditor.title" },
+    { id: "CertManagerApp",         Class: CertManagerApp,         mandatory: true,  category: "system", icon: "fa-shield-halved", labelKey: "app.certmanager.title" },
+    { id: "SparktailHTTPClientApp", Class: SparktailHTTPClientApp, mandatory: false, category: "client", icon: "fa-globe",         labelKey: "app.sparktail.title" },
+    { id: "MailClientApp",          Class: MailClientApp,          mandatory: false, category: "client", icon: "fa-envelope-open", labelKey: "app.mailclient.title" },
+    { id: "SimpleIRCClientApp",     Class: SimpleIRCClientApp,     mandatory: false, category: "client", icon: "fa-comments",      labelKey: "app.ircclient.title" },
+    { id: "SimpleTCPClientApp",     Class: SimpleTCPClientApp,     mandatory: false, category: "client", icon: "fa-message",       labelKey: "app.simpletcpclient.title" },
+    { id: "SimpleTCPServerApp",     Class: SimpleTCPServerApp,     mandatory: false, category: "server", icon: "fa-server",        labelKey: "app.simpletcpserver.title" },
+    { id: "SimpleHTTPServerApp",    Class: SimpleHTTPServerApp,    mandatory: false, category: "server", icon: "fa-server",        labelKey: "app.simplehttpserver.title" },
+    { id: "UDPEchoServerApp",       Class: UDPEchoServerApp,       mandatory: false, category: "server", icon: "fa-server",        labelKey: "app.udpechoserver.title" },
+    { id: "DNSServerApp",           Class: DNSServerApp,           mandatory: false, category: "server", icon: "fa-server",        labelKey: "app.dnsd.title" },
+    { id: "DHCPServerApp",          Class: DHCPServerApp,          mandatory: false, category: "server", icon: "fa-server",        labelKey: "app.dhcpserver.title" },
+    { id: "DHCPv6ServerApp",        Class: DHCPv6ServerApp,        mandatory: false, category: "server", icon: "fa-server",        labelKey: "app.dhcpv6server.title" },
+    { id: "SimpleMailServerApp",    Class: SimpleMailServerApp,    mandatory: false, category: "server", icon: "fa-server",        labelKey: "app.simplemailserver.title" },
+    { id: "SimpleIRCServerApp",     Class: SimpleIRCServerApp,     mandatory: false, category: "server", icon: "fa-server",        labelKey: "app.ircserver.title" },
+    { id: "BitcoinNodeApp",         Class: BitcoinNodeApp,         mandatory: false, category: "server", icon: "fa-coins",         labelKey: "app.bitcoin.title" },
+];
+
 export class OS {
 
     /**
@@ -76,6 +100,15 @@ export class OS {
     /** @type {Array<MenuItem>} */
     _menuItems = [];
 
+    /** @type {Set<string>} installed app IDs; empty = all apps (default/legacy) */
+    _installedApps = new Set();
+
+    /** @type {boolean} */
+    _appEditMode = false;
+
+    /** @type {boolean} */
+    _showLibrary = false;
+
     /** @type {HTMLElement|null} */
     host = null;
 
@@ -86,13 +119,17 @@ export class OS {
      * @param {SimulatedObject} obj
      * @param {VirtualFileSystem} fs
      * @param {IPStack} net
+     * @param {{ mandatoryOnly?: boolean }} [opts]
      */
-    constructor(obj, fs, net) {
+    constructor(obj, fs, net, { mandatoryOnly = false } = {}) {
         this.obj = obj;
         this.name = obj.name;
         this.net = net;
         this.fs = fs;
         this.root.classList.add("os-root");
+        if (mandatoryOnly) {
+            this._installedApps = new Set(APP_REGISTRY.filter(e => e.mandatory).map(e => e.id));
+        }
         this._registerApps();
         this._loadCertStore();
         this.title = "";
@@ -103,12 +140,10 @@ export class OS {
      * helper function to init the OS. Will register and start the apps
      */
     _registerApps() {
-        const launchlist =
-            [IPv4ConfigApp, TerminalApp, TextEditorApp, ExplorerApp, SparktailHTTPClientApp, MailClientApp, CertManagerApp, SimpleIRCClientApp, SimpleTCPClientApp, SimpleTCPServerApp,
-            SimpleHTTPServerApp, UDPEchoServerApp, DNSServerApp, DHCPServerApp, DHCPv6ServerApp, SimpleMailServerApp,
-            SimpleIRCServerApp, BitcoinNodeApp];
-
-        launchlist.forEach((e) => this.exec(e));
+        const list = this._installedApps.size === 0
+            ? APP_REGISTRY
+            : APP_REGISTRY.filter(e => e.mandatory || this._installedApps.has(e.id));
+        list.forEach(e => this.exec(e.Class));
     }
 
     /** Populate tls.certStore from /etc/certs/trusted/*.json */
@@ -140,6 +175,9 @@ export class OS {
      */
     exec(ClassName, ...params) {
         const app = new ClassName(this, ...params);
+        const entry = APP_REGISTRY.find(e => e.Class === ClassName);
+        app._appId = entry?.id ?? null;
+        app._mandatory = entry?.mandatory ?? false;
         this.runningApps.push(app);
         app.run();
         this.updateMenu();
@@ -167,6 +205,7 @@ export class OS {
         }
 
         this.runningApps = this.runningApps.filter(a => a.pid != pid);
+        this._menuItems = this._menuItems.filter(item => item.pid !== pid);
         app.destroy();
         this.render();
     }
@@ -236,6 +275,10 @@ export class OS {
         const view = this._getActiveView();
         this.root.replaceChildren(view.ui);
 
+        if (this._showLibrary && this.focusID === 0) {
+            this.root.appendChild(this._renderLibraryOverlay());
+        }
+
         if (view.pid !== 0) {
             const app = this._getFocusedApp();
             if (app && view.appRoot) {
@@ -250,26 +293,241 @@ export class OS {
 
     /**
      * renders the main menu
-     * @returns {HTMLElement} Element where everything gets renderd into
+     * @returns {HTMLElement}
      */
-
     _renderMenu() {
-        const el = document.createElement("div");
-        el.classList.add("menu");
+        const wrapper = document.createElement("div");
+        wrapper.classList.add("os-menu-wrapper");
+
+        const gridContainer = document.createElement("div");
+        gridContainer.className = "menu-grid-container";
+        wrapper.appendChild(gridContainer);
+
+        const grid = document.createElement("div");
+        grid.classList.add("menu");
+        gridContainer.appendChild(grid);
 
         for (const item of this._menuItems) {
+            const app = this.runningApps.find(a => a.pid === item.pid);
+            const isMandatory = app?._mandatory ?? false;
+
             const btn = DOMBuilder.iconbutton({
                 label: item.title,
                 icon: item.icon,
                 badge: item.badge,
-                onClick: () => {
-                    this.focus(item.pid);
-                },
+                onClick: () => this.focus(item.pid),
             });
-            el.appendChild(btn);
+
+            if (this._appEditMode) {
+                btn.classList.add("menu-tile-in-edit");
+                if (isMandatory) btn.classList.add("menu-tile-locked");
+            }
+
+            grid.appendChild(btn);
         }
 
-        return el;
+        if (this._appEditMode) {
+            const addTile = DOMBuilder.iconbutton({
+                label: t("os.apps.library.addlabel"),
+                icon: "fa-plus",
+                className: "menu-add-tile",
+                onClick: () => { this._showLibrary = true; this.render(); },
+            });
+            grid.appendChild(addTile);
+
+            // Second grid laid over the first — ⊗ remove buttons live here
+            // so the tile buttons below are never touched and their ::before layout is intact.
+            const overlay = document.createElement("div");
+            overlay.className = "menu menu-edit-overlay";
+            overlay.setAttribute("aria-hidden", "true");
+            gridContainer.appendChild(overlay);
+
+            for (const item of this._menuItems) {
+                const app = this.runningApps.find(a => a.pid === item.pid);
+                const isMandatory = app?._mandatory ?? false;
+
+                const cell = document.createElement("div");
+                cell.className = "menu-edit-cell";
+
+                if (!isMandatory) {
+                    const removeBtn = document.createElement("button");
+                    removeBtn.className = "menu-remove-btn";
+                    removeBtn.setAttribute("aria-label", t("os.apps.remove"));
+                    removeBtn.onclick = () => this._uninstallApp(item.pid);
+                    cell.appendChild(removeBtn);
+                }
+
+                overlay.appendChild(cell);
+            }
+
+            // empty cell to cover the [+] add tile position
+            const addCell = document.createElement("div");
+            addCell.className = "menu-edit-cell";
+            overlay.appendChild(addCell);
+        }
+
+        const footer = document.createElement("div");
+        footer.className = "os-menu-footer";
+
+        if (this._appEditMode) {
+            const doneBtn = document.createElement("button");
+            doneBtn.className = "menu-manage-btn";
+            doneBtn.textContent = t("os.apps.done");
+            doneBtn.onclick = () => { this._appEditMode = false; this._showLibrary = false; this.render(); };
+            footer.appendChild(doneBtn);
+        } else {
+            const manageBtn = document.createElement("button");
+            manageBtn.className = "menu-manage-btn";
+            manageBtn.textContent = t("os.apps.manage");
+            manageBtn.onclick = () => { this._appEditMode = true; this.render(); };
+            footer.appendChild(manageBtn);
+        }
+
+        wrapper.appendChild(footer);
+
+        return wrapper;
+    }
+
+    /** @returns {HTMLElement} */
+    _renderLibraryOverlay() {
+        const installedIds = new Set(this.runningApps.map(a => a._appId).filter(Boolean));
+
+        const overlay = document.createElement("div");
+        overlay.className = "app-library-overlay";
+        overlay.onclick = (e) => {
+            if (e.target === overlay) { this._showLibrary = false; this.render(); }
+        };
+
+        const panel = document.createElement("div");
+        panel.className = "app-library";
+
+        const header = document.createElement("div");
+        header.className = "app-library-header";
+        const titleEl = document.createElement("span");
+        titleEl.textContent = t("os.apps.library.title");
+        const closeBtn = document.createElement("button");
+        closeBtn.className = "app-library-close";
+        closeBtn.textContent = "✕";
+        closeBtn.onclick = () => { this._showLibrary = false; this.render(); };
+        header.appendChild(titleEl);
+        header.appendChild(closeBtn);
+        panel.appendChild(header);
+
+        const categories = [
+            { key: "system", label: t("os.apps.category.system") },
+            { key: "client", label: t("os.apps.category.client") },
+            { key: "server", label: t("os.apps.category.server") },
+        ];
+
+        let hasAny = false;
+        for (const cat of categories) {
+            const apps = APP_REGISTRY.filter(
+                e => e.category === cat.key && !e.mandatory && !installedIds.has(e.id)
+            );
+            if (apps.length === 0) continue;
+            hasAny = true;
+
+            const section = document.createElement("div");
+            section.className = "app-library-section";
+
+            const heading = document.createElement("div");
+            heading.className = "app-library-heading";
+            heading.textContent = cat.label;
+            section.appendChild(heading);
+
+            const libGrid = document.createElement("div");
+            libGrid.className = "app-library-list";
+
+            for (const entry of apps) {
+                const row = document.createElement("div");
+                row.className = "app-library-row";
+
+                const tile = document.createElement("button");
+                tile.className = "app-library-tile";
+                tile.onclick = () => this._installApp(entry.id);
+                const iconEl = document.createElement("i");
+                iconEl.classList.add("fas", entry.icon);
+                tile.appendChild(iconEl);
+                row.appendChild(tile);
+
+                const nameEl = document.createElement("div");
+                nameEl.className = "app-library-name";
+                nameEl.textContent = t(entry.labelKey);
+                row.appendChild(nameEl);
+
+                const addBtn = document.createElement("button");
+                addBtn.className = "app-library-add-btn";
+                addBtn.textContent = t("os.apps.library.install");
+                addBtn.onclick = () => this._installApp(entry.id);
+                row.appendChild(addBtn);
+
+                libGrid.appendChild(row);
+            }
+
+            section.appendChild(libGrid);
+            panel.appendChild(section);
+        }
+
+        if (!hasAny) {
+            const empty = document.createElement("div");
+            empty.className = "app-library-empty";
+            empty.textContent = t("os.apps.library.empty");
+            panel.appendChild(empty);
+        }
+
+        overlay.appendChild(panel);
+        return overlay;
+    }
+
+    /** @param {number} pid */
+    _uninstallApp(pid) {
+        const app = this.runningApps.find(a => a.pid === pid);
+        if (!app || app._mandatory) return;
+        if (this._installedApps.size === 0) {
+            for (const a of this.runningApps) {
+                if (a._appId) this._installedApps.add(a._appId);
+            }
+        }
+        if (app._appId) this._installedApps.delete(app._appId);
+        this.exit(pid);
+    }
+
+    /** @param {string} appId */
+    _installApp(appId) {
+        const entry = APP_REGISTRY.find(e => e.id === appId);
+        if (!entry) return;
+        if (this._installedApps.size === 0) {
+            for (const a of this.runningApps) {
+                if (a._appId) this._installedApps.add(a._appId);
+            }
+        }
+        this._installedApps.add(appId);
+        this.exec(entry.Class);
+    }
+
+    /** Install every non-mandatory app — used by fromJSON for old files (no installedApps key). */
+    _installAllApps() {
+        for (const entry of APP_REGISTRY) {
+            if (!entry.mandatory && !this.runningApps.some(a => a._appId === entry.id)) {
+                this.exec(entry.Class);
+            }
+        }
+        this._installedApps = new Set(); // empty = "all apps" for serialisation compat
+    }
+
+    /** @param {string[]} ids */
+    _applyInstalledApps(ids) {
+        this._installedApps = new Set(ids);
+        [...this.runningApps].forEach(app => {
+            if (!app._mandatory && app._appId && !this._installedApps.has(app._appId)) {
+                this.exit(app.pid);
+            }
+        });
+    }
+
+    /** @returns {string[]} */
+    getInstalledAppIds() {
+        return this._installedApps.size === 0 ? [] : [...this._installedApps];
     }
 
     /**
@@ -297,8 +555,12 @@ export class OS {
         title.textContent = (this._getFocusedApp()?.title ?? t("os.untitled"));
         bar.appendChild(title);
 
+        const content = document.createElement("div");
+        content.classList.add("os-frame-content");
+        content.appendChild(appRoot);
+
         frame.appendChild(bar);
-        frame.appendChild(appRoot);
+        frame.appendChild(content);
 
         return frame;
     }

@@ -1183,5 +1183,15 @@ export default {
   "welcome.example.simple": "Jednoduchý příklad",
   "welcome.example.simple.desc": "Malá síť, skvělý startovací bod",
   "welcome.example.complex": "Komplexní příklad",
-  "welcome.example.complex.desc": "Velká síť se směrovacími protokoly"
+  "welcome.example.complex.desc": "Velká síť se směrovacími protokoly",
+  "os.apps.manage": "Instalovat / Odinstalovat Software",
+  "os.apps.done": "Hotovo",
+  "os.apps.remove": "Odinstalovat",
+  "os.apps.library.title": "Knihovna softwaru",
+  "os.apps.library.addlabel": "Přidat",
+  "os.apps.library.install": "+ Instalovat",
+  "os.apps.library.empty": "Veškerý dostupný software je již nainstalován.",
+  "os.apps.category.system": "Systém",
+  "os.apps.category.client": "Klientský software",
+  "os.apps.category.server": "Serverový software"
 };

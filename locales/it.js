@@ -1188,5 +1188,15 @@ export default {
   "welcome.example.simple": "Esempio Semplice",
   "welcome.example.simple.desc": "Piccola rete, ottimo punto di partenza",
   "welcome.example.complex": "Esempio Complesso",
-  "welcome.example.complex.desc": "Grande rete con protocolli di routing"
+  "welcome.example.complex.desc": "Grande rete con protocolli di routing",
+  "os.apps.manage": "Installa / Disinstalla Software",
+  "os.apps.done": "Fatto",
+  "os.apps.remove": "Disinstalla",
+  "os.apps.library.title": "Libreria Software",
+  "os.apps.library.addlabel": "Aggiungi",
+  "os.apps.library.install": "+ Installa",
+  "os.apps.library.empty": "Tutto il software disponibile è già installato.",
+  "os.apps.category.system": "Sistema",
+  "os.apps.category.client": "Software Client",
+  "os.apps.category.server": "Software Server"
 };

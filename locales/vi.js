@@ -1183,5 +1183,15 @@ export default {
   "welcome.example.simple": "Ví dụ Đơn giản",
   "welcome.example.simple.desc": "Mạng nhỏ, điểm khởi đầu tuyệt vời",
   "welcome.example.complex": "Ví dụ Phức tạp",
-  "welcome.example.complex.desc": "Mạng lớn với giao thức định tuyến"
+  "welcome.example.complex.desc": "Mạng lớn với giao thức định tuyến",
+  "os.apps.manage": "Cài đặt / Gỡ cài đặt Phần mềm",
+  "os.apps.done": "Hoàn tất",
+  "os.apps.remove": "Gỡ cài đặt",
+  "os.apps.library.title": "Thư viện Phần mềm",
+  "os.apps.library.addlabel": "Thêm",
+  "os.apps.library.install": "+ Cài đặt",
+  "os.apps.library.empty": "Tất cả phần mềm có sẵn đã được cài đặt.",
+  "os.apps.category.system": "Hệ thống",
+  "os.apps.category.client": "Phần mềm Máy khách",
+  "os.apps.category.server": "Phần mềm Máy chủ"
 };
