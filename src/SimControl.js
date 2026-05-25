@@ -1593,6 +1593,11 @@ export class SimControl {
         return this.simobjects.find((o) => o.id === id) ?? null;
     }
 
+    /** @param {PointerEvent} ev */
+    _isPanelTarget(ev) {
+        return ev.target instanceof Element && ev.target.closest(".sim-panel") !== null;
+    }
+
     /** @param {Event} ev */
     _getLinkFromEvent(ev) {
         const t = /** @type {HTMLElement} */ (ev.target);
@@ -1670,7 +1675,7 @@ export class SimControl {
 
         // Run/trace mode: left-click on empty canvas → drag to pan
         if (this.mode !== "edit") {
-            if (ev.button === 0 && !this._getObjFromEvent(ev)) {
+            if (ev.button === 0 && !this._getObjFromEvent(ev) && !this._isPanelTarget(ev)) {
                 this._startDragPan(ev);
             }
             return;
@@ -1850,7 +1855,7 @@ export class SimControl {
         if (this.tool === "select") {
             if (obj) {
                 this.setFocus(obj);
-            } else if (ev.button === 0 && !link) {
+            } else if (ev.button === 0 && !link && !this._isPanelTarget(ev)) {
                 this._startDragPan(ev);
             }
             return;
