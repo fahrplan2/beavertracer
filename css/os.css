@@ -240,6 +240,7 @@
 .os-menu-footer {
     position: sticky;
     bottom: 0;
+    margin-top: auto;
     display: flex;
     justify-content: flex-end;
     align-items: center;

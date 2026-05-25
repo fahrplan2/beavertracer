@@ -8,7 +8,7 @@ import { TCPPacket } from "../net/pdu/TCPPacket.js";
 import { UDPPacket } from "../net/pdu/UDPPacket.js";
 import { IPAddress } from "../net/models/IPAddress.js";
 import { SimulatedObject } from "./SimulatedObject.js";
-import { DOMBuilder } from "../lib/DomBuilder.js";
+import { UILib } from "../lib/UILib.js";
 import { t } from "../i18n/index.js";
 
 // ── helpers ────────────────────────────────────────────────────────────────
@@ -317,17 +317,17 @@ export class Firewall extends SimulatedObject {
     _mountPanel(body) {
         body.innerHTML = "";
 
-        const statsEl = DOMBuilder.div("fw-stats");
+        const statsEl = UILib.div("fw-stats");
         this._statsEl = statsEl;
 
         // default policy row
-        const policyRow = DOMBuilder.div("router-name-row");
+        const policyRow = UILib.div("router-name-row");
         policyRow.style.gap = "6px";
         policyRow.style.marginBottom = "6px";
-        const policyLabel = DOMBuilder.label(t("firewall.defaultpolicy"));
-        const policySel = /** @type {HTMLSelectElement} */ (DOMBuilder.el("select", { className: "fw-select" }));
+        const policyLabel = UILib.label(t("firewall.defaultpolicy"));
+        const policySel = /** @type {HTMLSelectElement} */ (UILib.el("select", { className: "fw-select" }));
         for (const [val, lbl] of [["allow", t("firewall.policy.allow")], ["deny", t("firewall.policy.deny")]]) {
-            const o = DOMBuilder.el("option", { text: lbl, attrs: { value: val } });
+            const o = UILib.el("option", { text: lbl, attrs: { value: val } });
             policySel.appendChild(o);
         }
         policySel.value = this.defaultPolicy;
@@ -337,41 +337,38 @@ export class Firewall extends SimulatedObject {
         policyRow.append(policyLabel, policySel);
 
         // rules host
-        const rulesHost = DOMBuilder.div("fw-rules-host");
+        const rulesHost = UILib.div("fw-rules-host");
         this._rulesHost = rulesHost;
 
-        const addBtn = DOMBuilder.button(t("firewall.addrule"), { className: "fw-add-rule" });
+        const addBtn = UILib.button(t("firewall.addrule"), null, { className: "fw-add-rule" });
         addBtn.addEventListener("click", () => {
             this.rules.push(defaultRule());
             this._renderRules();
         });
 
         // log tab
-        const logEl = /** @type {HTMLTextAreaElement} */ (DOMBuilder.el("textarea", {
-            className: "log",
+        const logEl = /** @type {HTMLTextAreaElement} */ (UILib.el("textarea", {
+            className: "log router-log-fw",
             attrs: { readonly: "true", spellcheck: "false" },
         }));
-        logEl.style.width  = "100%";
-        logEl.style.height = "130px";
         this._logEl = logEl;
 
-        const clearBtn = DOMBuilder.button(t("firewall.log.clear"), {});
+        const clearBtn = UILib.button(t("firewall.log.clear"), null, {});
         clearBtn.addEventListener("click", () => { this._fwLog = []; this._renderLog(); });
 
-        const { bar: tabBar, setActive: setTab } = DOMBuilder.tabGroup([
+        const { bar: tabBar, setActive: setTab } = UILib.tabGroup([
             { id: "rules", label: t("firewall.tab.rules") },
             { id: "log",   label: t("firewall.tab.log")   },
         ], (id) => {
-            rulesPane.style.display = id === "rules" ? "" : "none";
-            logPane.style.display   = id === "log"   ? "" : "none";
+            rulesPane.classList.toggle("hidden", id !== "rules");
+            logPane.classList.toggle("hidden",   id !== "log");
         });
 
-        const rulesPane = DOMBuilder.div("");
+        const rulesPane = UILib.div("");
         rulesPane.append(policyRow, statsEl, rulesHost, addBtn);
 
-        const logPane = DOMBuilder.div("");
-        logPane.append(DOMBuilder.div("fw-log-controls", [clearBtn]), logEl);
-        logPane.style.display = "none";
+        const logPane = UILib.div("hidden");
+        logPane.append(UILib.div("fw-log-controls", [clearBtn]), logEl);
 
         body.append(tabBar, rulesPane, logPane);
         setTab("rules");
@@ -415,8 +412,8 @@ export class Firewall extends SimulatedObject {
 
         // order buttons
         const idx = () => this.rules.indexOf(rule);
-        const upBtn   = DOMBuilder.button("▲", { className: "fw-order-btn" });
-        const downBtn = DOMBuilder.button("▼", { className: "fw-order-btn" });
+        const upBtn   = UILib.button("▲", null, { className: "fw-order-btn" });
+        const downBtn = UILib.button("▼", null, { className: "fw-order-btn" });
         upBtn.title   = t("firewall.move.up");
         downBtn.title = t("firewall.move.down");
         upBtn.disabled   = idx() === 0;
@@ -437,7 +434,7 @@ export class Firewall extends SimulatedObject {
         tr.appendChild(orderTd);
 
         // enabled
-        const cbEn = DOMBuilder.input({ type: "checkbox" });
+        const cbEn = UILib.input({ type: "checkbox" });
         cbEn.checked = rule.enabled;
         cbEn.addEventListener("change", () => { rule.enabled = cbEn.checked; });
         tr.appendChild(this._td(cbEn));
@@ -475,7 +472,7 @@ export class Firewall extends SimulatedObject {
             ["dstIp",   "0.0.0.0/0",       isValidCidr, "fw-input"],
             ["dstPort", t("firewall.any"), isValidPort, "fw-input fw-port-input"],
         ])) {
-            const inp = DOMBuilder.input({ placeholder, className: cls });
+            const inp = UILib.input({ placeholder, className: cls });
             inp.value = /** @type {string} */ (rule[field]);
             const validate = () => inp.classList.toggle("is-invalid", !validator(inp.value));
             inp.addEventListener("input", () => { /** @type {any} */ (rule)[field] = inp.value; validate(); });
@@ -492,7 +489,7 @@ export class Firewall extends SimulatedObject {
         tr.appendChild(this._td(actSel));
 
         // delete
-        const delBtn = DOMBuilder.button("✕", { className: "fw-del-rule" });
+        const delBtn = UILib.button("✕", null, { className: "fw-del-rule" });
         delBtn.title = t("firewall.delrule");
         delBtn.addEventListener("click", () => {
             this.rules = this.rules.filter(r => r.id !== rule.id);
@@ -510,9 +507,9 @@ export class Firewall extends SimulatedObject {
      * @returns {HTMLSelectElement}
      */
     _select(options, value, onChange) {
-        const sel = /** @type {HTMLSelectElement} */ (DOMBuilder.el("select", { className: "fw-select" }));
+        const sel = /** @type {HTMLSelectElement} */ (UILib.el("select", { className: "fw-select" }));
         for (const [val, lbl] of options) {
-            const o = DOMBuilder.el("option", { text: lbl, attrs: { value: val } });
+            const o = UILib.el("option", { text: lbl, attrs: { value: val } });
             sel.appendChild(o);
         }
         sel.value = value;

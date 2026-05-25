@@ -1,7 +1,7 @@
 //@ts-check
 import { SimulatedObject } from "./SimulatedObject.js";
 import { SimControl } from "../SimControl.js";
-import { DOMBuilder } from "../lib/DomBuilder.js";
+import { UILib } from "../lib/UILib.js";
 import { t } from "../i18n/index.js";
 import { MiniMarkdown } from "../lib/MiniMarkdown.js";
 
@@ -30,9 +30,9 @@ export class TextBox extends SimulatedObject {
   // ---------------------------------------------------------------------------
 
   buildIcon() {
-    const icon = DOMBuilder.el("div", { className: "sim-textbox" });
+    const icon = UILib.el("div", { className: "sim-textbox" });
     icon.dataset.objid = String(this.id);
-    icon.appendChild(DOMBuilder.el("div", { className: "sim-textbox-body", html: MiniMarkdown.render(this.text) }));
+    icon.appendChild(UILib.el("div", { className: "sim-textbox-body", html: MiniMarkdown.render(this.text) }));
     return icon;
   }
 
@@ -54,7 +54,7 @@ export class TextBox extends SimulatedObject {
     const body = panel.querySelector(".sim-panel-body");
     if (!(body instanceof HTMLElement)) return panel;
 
-    const ta = DOMBuilder.el("textarea", { className: "sim-textbox-panel-editor" });
+    const ta = UILib.el("textarea", { className: "sim-textbox-panel-editor" });
     ta.value = this.text;
     ta.addEventListener("input", () => {
       this.text = ta.value;
@@ -62,12 +62,12 @@ export class TextBox extends SimulatedObject {
     });
     body.appendChild(ta);
 
-    body.appendChild(DOMBuilder.el("div", { text: t("textbox.hint") }));
+    body.appendChild(UILib.el("div", { text: t("textbox.hint") }));
 
-    const row = DOMBuilder.div("sim-row");
+    const row = UILib.div("sim-row");
     body.appendChild(row);
 
-    const chk = DOMBuilder.input({ type: "checkbox" });
+    const chk = UILib.input({ type: "checkbox" });
     chk.checked = this.showTitle;
     chk.addEventListener("change", () => {
       this.showTitle = chk.checked;

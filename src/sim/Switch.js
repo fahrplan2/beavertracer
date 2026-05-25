@@ -3,7 +3,7 @@
 import { SwitchBackplane } from "../net/SwitchBackplane.js";
 import { SimulatedObject } from "./SimulatedObject.js";
 import { PollTimer } from "../lib/PollTimer.js";
-import { DOMBuilder } from "../lib/DomBuilder.js";
+import { UILib } from "../lib/UILib.js";
 import { t } from "../i18n/index.js";
 
 /**
@@ -168,17 +168,16 @@ export class Switch extends SimulatedObject {
         this._stopSatPolling();
         panelBody.innerHTML = "";
 
-        const host = DOMBuilder.div("switch-ui");
+        const host = UILib.div("switch-ui");
         panelBody.appendChild(host);
         this._host = host;
 
-        const card = DOMBuilder.div("router-card");
+        const card = UILib.div("router-card");
         host.appendChild(card);
 
-        const content = DOMBuilder.div("");
-        content.style.padding = "8px";
+        const content = UILib.div("sim-panel-content");
 
-        const { bar: tabBar, setActive: selectTab } = DOMBuilder.tabGroup([
+        const { bar: tabBar, setActive: selectTab } = UILib.tabGroup([
             { id: "sat",  label: t("switch.tab.sat")  },
             { id: "vlan", label: t("switch.tab.vlan") },
             { id: "stp",  label: t("switch.tab.stp")  },
@@ -189,7 +188,7 @@ export class Switch extends SimulatedObject {
             this._vlanSection = null;
             this._stpEnabledCheckbox = null;
             this._stpSection = null;
-            DOMBuilder.clear(content);
+            UILib.clear(content);
             if (id === "sat")  this._buildMacTab(content);
             else if (id === "vlan") this._buildVlanTab(content);
             else if (id === "stp")  this._buildStpTab(content);
@@ -206,8 +205,8 @@ export class Switch extends SimulatedObject {
 
     /** @param {HTMLElement} host */
     _buildMacTab(host) {
-        host.appendChild(DOMBuilder.h4(t("switch.sat")));
-        const satHost = DOMBuilder.div("switch-sat");
+        host.appendChild(UILib.h4(t("switch.sat")));
+        const satHost = UILib.div("switch-sat");
         this._satHost = satHost;
         host.appendChild(satHost);
         this._renderSAT();
@@ -215,13 +214,13 @@ export class Switch extends SimulatedObject {
 
     /** @param {HTMLElement} host */
     _buildVlanTab(host) {
-        host.appendChild(DOMBuilder.h4(t("switch.vlan.config")));
-        const cb = /** @type {HTMLInputElement} */ (DOMBuilder.input({ type: "checkbox" }));
+        host.appendChild(UILib.h4(t("switch.vlan.config")));
+        const cb = /** @type {HTMLInputElement} */ (UILib.input({ type: "checkbox" }));
         cb.checked = !!this.backplane.vlanEnabled;
         this._vlanEnabledCheckbox = cb;
-        host.appendChild(DOMBuilder.div("router-name-row", [cb, DOMBuilder.label(t("switch.vlan.enable"))]));
+        host.appendChild(UILib.div("router-name-row", [cb, UILib.label(t("switch.vlan.enable"))]));
 
-        const section = DOMBuilder.div("switch-vlan-section");
+        const section = UILib.div("switch-vlan-section");
         this._vlanSection = section;
         host.appendChild(section);
 
@@ -236,16 +235,16 @@ export class Switch extends SimulatedObject {
 
     /** @param {HTMLElement} host */
     _buildStpTab(host) {
-        host.appendChild(DOMBuilder.h4(t("switch.stp.settings")));
+        host.appendChild(UILib.h4(t("switch.stp.settings")));
 
         // Enable/disable checkbox
-        const cb = /** @type {HTMLInputElement} */ (DOMBuilder.input({ type: "checkbox" }));
+        const cb = /** @type {HTMLInputElement} */ (UILib.input({ type: "checkbox" }));
         cb.checked = !!this.backplane.stpEnabled;
         this._stpEnabledCheckbox = cb;
-        host.appendChild(DOMBuilder.div("router-name-row", [cb, DOMBuilder.label(t("switch.stp.enable"))]));
+        host.appendChild(UILib.div("router-name-row", [cb, UILib.label(t("switch.stp.enable"))]));
 
         // Bridge priority selector (multiple of 4096, 0–61440)
-        const priorityLabel = DOMBuilder.label(t("switch.stp.priority") ?? "Bridge Priority:");
+        const priorityLabel = UILib.label(t("switch.stp.priority") ?? "Bridge Priority:");
         const prioritySelect = document.createElement("select");
         for (let p = 0; p <= 61440; p += 4096) {
             const opt = document.createElement("option");
@@ -258,9 +257,9 @@ export class Switch extends SimulatedObject {
             this.backplane.setBridgePriority(Number(prioritySelect.value));
             this._renderSTPSection();
         });
-        host.appendChild(DOMBuilder.div("router-name-row", [priorityLabel, prioritySelect]));
+        host.appendChild(UILib.div("router-name-row", [priorityLabel, prioritySelect]));
 
-        const section = DOMBuilder.div("switch-stp-section");
+        const section = UILib.div("switch-stp-section");
         this._stpSection = section;
         host.appendChild(section);
 
@@ -368,24 +367,18 @@ export class Switch extends SimulatedObject {
         this._vlanSection.innerHTML = "";
 
         if (!enabled) {
-            // Hide all VLAN controls when disabled
-            this._vlanSection.style.display = "none";
+            this._vlanSection.classList.add("hidden");
             return;
         }
 
-        this._vlanSection.style.display = "";
+        this._vlanSection.classList.remove("hidden");
 
         const ports = this.backplane?.ports ?? [];
-        const card = DOMBuilder.div("switch-card");
-        card.style.display = "flex";
-        card.style.flexDirection = "column";
+        const card = UILib.div("switch-card");
 
-        const header = DOMBuilder.div("switch-vlan-port-row switch-vlan-header");
-        header.style.display = "grid";
-        header.style.gridTemplateColumns = "120px 140px 120px 1fr auto";
-        header.style.gap = "8px";
+        const header = UILib.div("switch-vlan-port-row switch-vlan-header");
         for (const key of ["switch.vlan.col.port", "switch.vlan.col.mode", "switch.vlan.col.pvid", "switch.vlan.col.allowed", ""]) {
-            const th = DOMBuilder.el("span", { text: key ? t(key) : "", className: "switch-vlan-col-label" });
+            const th = UILib.el("span", { text: key ? t(key) : "", className: "switch-vlan-col-label" });
             header.appendChild(th);
         }
         card.appendChild(header);
@@ -393,13 +386,9 @@ export class Switch extends SimulatedObject {
         for (let i = 0; i < ports.length; i++) {
             const p = ports[i];
 
-            const row = DOMBuilder.div("switch-vlan-port-row");
-            row.style.display = "grid";
-            row.style.gridTemplateColumns = "120px 140px 120px 1fr auto";
-            row.style.gap = "8px";
-            row.style.alignItems = "center";
+            const row = UILib.div("switch-vlan-port-row");
 
-            const label = DOMBuilder.div("");
+            const label = UILib.div("");
             label.textContent = `port ${i + 1}`;
 
             // Mode select: tagged/untagged
@@ -411,18 +400,18 @@ export class Switch extends SimulatedObject {
             mode.value = p.vlanMode;
 
             // PVID
-            const pvid = /** @type {HTMLInputElement} */ (DOMBuilder.input({ type: "number", value: String(p.pvid) }));
+            const pvid = /** @type {HTMLInputElement} */ (UILib.input({ type: "number", value: String(p.pvid) }));
             pvid.min = "1";
             pvid.max = "4094";
             pvid.step = "1";
 
             // Allowed VLANs (only relevant for tagged)
-            const allowed = /** @type {HTMLInputElement} */ (DOMBuilder.input({ value: [...(p.allowedVlans ?? new Set([p.pvid]))].sort((a, b) => a - b).join(",") }));
+            const allowed = /** @type {HTMLInputElement} */ (UILib.input({ value: [...(p.allowedVlans ?? new Set([p.pvid]))].sort((a, b) => a - b).join(",") }));
             allowed.placeholder = "e.g. 1,10,20";
             allowed.style.width = "100%";
 
             // Apply button
-            const apply = DOMBuilder.button(t("switch.apply") ?? "Apply");
+            const apply = UILib.button(t("switch.apply") ?? "Apply", null);
 
             const updateEnabledFields = () => {
                 const isTagged = mode.value === "tagged";
@@ -473,15 +462,13 @@ export class Switch extends SimulatedObject {
 
         const enabled = this._stpEnabledCheckbox.checked;
 
-        const card = DOMBuilder.div("switch-card");
-        card.style.display = "flex";
-        card.style.flexDirection = "column";
+        const card = UILib.div("switch-card");
         card.style.gap = "8px";
 
-        card.appendChild(DOMBuilder.h4(t("switch.stp.status") ?? "STP Status"));
+        card.appendChild(UILib.h4(t("switch.stp.status") ?? "STP Status"));
 
         if (!enabled) {
-            const p = DOMBuilder.div("");
+            const p = UILib.div("");
             p.textContent = t("switch.stp.disabled") ?? "STP ist deaktiviert.";
             p.style.opacity = "0.8";
             card.appendChild(p);
@@ -490,18 +477,18 @@ export class Switch extends SimulatedObject {
         }
 
         // Minimal status
-        const ownId = DOMBuilder.div("");
+        const ownId = UILib.div("");
         const isRoot = this.backplane.stpRootId === this.backplane.stpBridgeIdVal;
         const prio = this.backplane._stpBridgePriority ?? 32768;
         ownId.textContent = `Bridge ID: 0x${this.backplane.stpBridgeIdVal.toString(16)} (Priority ${prio})${isRoot ? " — Root" : ""}`;
 
-        const root = DOMBuilder.div("");
+        const root = UILib.div("");
         root.textContent = `Root ID: 0x${this.backplane.stpRootId.toString(16)}`;
 
-        const rootCost = DOMBuilder.div("");
+        const rootCost = UILib.div("");
         rootCost.textContent = `Root Cost: ${this.backplane.stpRootCost}`;
 
-        const rootPort = DOMBuilder.div("");
+        const rootPort = UILib.div("");
         rootPort.textContent = `Root Port: ${this.backplane.stpRootPort == null ? "-" : `port ${this.backplane.stpRootPort + 1}`}`;
 
         card.append(ownId, root, rootCost, rootPort);

@@ -24,7 +24,7 @@ import { MailClientApp } from "./MailClientApp.js";
 import { SimpleIRCServerApp } from "./SimpleIRCServerApp.js";
 import { SimpleIRCClientApp } from "./SimpleIRCClientApp.js";
 import { BitcoinNodeApp } from "./BitcoinNodeApp.js";
-import { DOMBuilder } from "../lib/DomBuilder.js";
+import { UILib } from "../lib/UILib.js";
 import { ExplorerApp } from "./ExplorerApp.js";
 
 /** @typedef {{ id: string, Class: new (...args: any[]) => any, mandatory: boolean, category: string, icon: string, labelKey: string }} AppRegistryEntry */
@@ -311,7 +311,7 @@ export class OS {
             const app = this.runningApps.find(a => a.pid === item.pid);
             const isMandatory = app?._mandatory ?? false;
 
-            const btn = DOMBuilder.iconbutton({
+            const btn = UILib.iconbutton({
                 label: item.title,
                 icon: item.icon,
                 badge: item.badge,
@@ -327,7 +327,7 @@ export class OS {
         }
 
         if (this._appEditMode) {
-            const addTile = DOMBuilder.iconbutton({
+            const addTile = UILib.iconbutton({
                 label: t("os.apps.library.addlabel"),
                 icon: "fa-plus",
                 className: "menu-add-tile",

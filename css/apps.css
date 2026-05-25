@@ -1,5 +1,10 @@
 /* Shared app-level components used across multiple apps */
 
+.app {
+  height: 100%;
+  overflow-y: auto;
+}
+
 .app-toolbar {
   display: flex;
   align-items: center;

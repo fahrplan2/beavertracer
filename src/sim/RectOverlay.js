@@ -1,7 +1,7 @@
 //@ts-check
 import { SimulatedObject } from "./SimulatedObject.js";
 import { SimControl } from "../SimControl.js";
-import { DOMBuilder } from "../lib/DomBuilder.js";
+import { UILib } from "../lib/UILib.js";
 import { t } from "../i18n/index.js";
 
 /** @param {number} x */
@@ -129,16 +129,16 @@ export class RectOverlay extends SimulatedObject {
     const body = panel.querySelector(".sim-panel-body");
     if (!(body instanceof HTMLElement)) return panel;
 
-    body.appendChild(DOMBuilder.el("div", { className: "sim-field-label", text: t("rect.color") }));
-    const colorInput = DOMBuilder.input({ type: "color", className: "sim-rect-color", value: this.color });
+    body.appendChild(UILib.el("div", { className: "sim-field-label", text: t("rect.color") }));
+    const colorInput = UILib.input({ type: "color", className: "sim-rect-color", value: this.color });
     colorInput.addEventListener("input", () => {
       this.color = String(colorInput.value || this.color);
       this._applyFill();
     });
     body.appendChild(colorInput);
 
-    body.appendChild(DOMBuilder.el("div", { className: "sim-field-label", text: t("rect.opacity") }));
-    const op = DOMBuilder.el("input", { className: "sim-rect-opacity", attrs: { type: "range", min: "0", max: "1", step: "0.01" } });
+    body.appendChild(UILib.el("div", { className: "sim-field-label", text: t("rect.opacity") }));
+    const op = UILib.el("input", { className: "sim-rect-opacity", attrs: { type: "range", min: "0", max: "1", step: "0.01" } });
     op.value = String(this.opacity);
     op.addEventListener("input", () => {
       this.opacity = clamp01(parseFloat(op.value));

@@ -3,7 +3,7 @@ import { SimulatedObject } from "./SimulatedObject.js";
 import { EthernetPort } from "../net/EthernetPort.js";
 import { WirelessPort } from "../net/WirelessPort.js";
 import { Observable } from "../lib/Observeable.js";
-import { DOMBuilder } from "../lib/DomBuilder.js";
+import { UILib } from "../lib/UILib.js";
 import { t } from "../i18n/index.js";
 
 /** Bridges eth0 ↔ wlan0 at L2 (transparent, no MAC learning). */
@@ -57,16 +57,16 @@ export class AccessPoint extends SimulatedObject {
 
     /** @param {HTMLElement} body */
     _buildPanel(body) {
-        const host = DOMBuilder.div("router-ui");
+        const host = UILib.div("router-ui");
         body.appendChild(host);
 
-        host.appendChild(DOMBuilder.h4("WiFi"));
+        host.appendChild(UILib.h4("WiFi"));
 
-        const ssidRow = DOMBuilder.div("router-name-row");
-        const label   = DOMBuilder.label(t("wifi.ssid"));
-        const input   = DOMBuilder.input({ type: "text", placeholder: "SSID", value: this._ssid });
-        const btn     = DOMBuilder.button(t("wifi.apply"));
-        const msg     = DOMBuilder.div("sim-hint");
+        const ssidRow = UILib.div("router-name-row");
+        const label   = UILib.label(t("wifi.ssid"));
+        const input   = UILib.input({ type: "text", placeholder: "SSID", value: this._ssid });
+        const btn     = UILib.button(t("wifi.apply"), null);
+        const msg     = UILib.div("sim-hint");
 
         btn.addEventListener("click", () => {
             this._ssid = input.value.trim();
