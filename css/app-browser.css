@@ -58,15 +58,34 @@
 
 /* Main content area */
 .app-sparktail-http .panel {
+  position: relative; /* anchor for cert popup */
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   background: transparent;
 }
 
-/* Preview / Devtools */
+.app-sparktail-http .sparktail-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Preview / Source / Headers — fill available space */
+.app-sparktail-http iframe.sparktail-preview,
+.app-sparktail-http textarea.sparktail-source,
+.app-sparktail-http textarea.sparktail-headers {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
 .app-sparktail-http iframe.sparktail-preview {
   background: white;
+  border: 1px solid #444;
   border-radius: var(--radius-lg) !important;
   box-shadow: var(--shadow);
 }

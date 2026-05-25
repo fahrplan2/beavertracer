@@ -11,7 +11,7 @@ import { PollTimer } from "../lib/PollTimer.js";
 import { simTimer, SimTimer } from "../lib/SimTimer.js";
 import { netmaskStrToPrefix, prefixToNetmaskStr, normalizeMaskInput } from "../lib/helpers.js";
 
-import { DOMBuilder } from "../lib/DomBuilder.js";
+import { UILib } from "../lib/UILib.js";
 import { t } from "../i18n/index.js";
 import { IPAddress } from "../net/models/IPAddress.js"; // <- ggf. Pfad anpassen
 import { SimDialog } from "../lib/SimDialog.js";
@@ -173,14 +173,14 @@ export class Router extends SimulatedObject {
         this._stopLinkPolling();
         panelBody.innerHTML = "";
 
-        const host = DOMBuilder.div("router-ui");
+        const host = UILib.div("router-ui");
         panelBody.appendChild(host);
 
         /* ============================ Outer tabs ============================ */
-        const card = DOMBuilder.div("router-card");
+        const card = UILib.div("router-card");
         host.appendChild(card);
 
-        const { bar: outerTabBar, setActive: setOuterActive } = DOMBuilder.tabGroup([
+        const { bar: outerTabBar, setActive: setOuterActive } = UILib.tabGroup([
             { id: "interfaces", label: t("router.interfaces")        },
             { id: "routes-v4",  label: t("router.routingtable.ipv4") },
             { id: "routes-v6",  label: t("router.routingtable.ipv6") },
@@ -189,73 +189,72 @@ export class Router extends SimulatedObject {
             { id: "bgp",        label: t("router.bgp.tab")            },
             { id: "vpn",        label: t("router.vpn.tab")            },
         ], (id) => {
-            ifSection.style.display    = id === "interfaces" ? "" : "none";
-            routeSection.style.display = (id === "routes-v4" || id === "routes-v6") ? "" : "none";
-            ripSection.style.display   = id === "rip"   ? "" : "none";
-            bgpSection.style.display   = id === "bgp"   ? "" : "none";
-            ospfSection.style.display  = id === "ospf"  ? "" : "none";
-            vpnSection.style.display   = id === "vpn"   ? "" : "none";
+            ifSection.classList.toggle("hidden",    id !== "interfaces");
+            routeSection.classList.toggle("hidden", id !== "routes-v4" && id !== "routes-v6");
+            ripSection.classList.toggle("hidden",   id !== "rip");
+            bgpSection.classList.toggle("hidden",   id !== "bgp");
+            ospfSection.classList.toggle("hidden",  id !== "ospf");
+            vpnSection.classList.toggle("hidden",   id !== "vpn");
             if (id === "routes-v4") { routeTitle.textContent = t("router.routingtable.ipv4"); this._selectedRouteFamily = 4; this._renderRoutes(); }
             if (id === "routes-v6") { routeTitle.textContent = t("router.routingtable.ipv6"); this._selectedRouteFamily = 6; this._renderRoutes(); }
         });
         card.appendChild(outerTabBar);
 
-        const outerContent = DOMBuilder.div("");
-        outerContent.style.padding = "8px";
+        const outerContent = UILib.div("sim-panel-content");
         card.appendChild(outerContent);
 
         /* ============================ Interfaces ============================ */
-        const ifSection = DOMBuilder.div("");
-        ifSection.appendChild(DOMBuilder.h4(t("router.interfaces")));
+        const ifSection = UILib.div("");
+        ifSection.appendChild(UILib.h4(t("router.interfaces")));
 
-        const tabsBar = DOMBuilder.div("ui-tabbar");
+        const tabsBar = UILib.div("ui-tabbar");
         this._tabsBar = tabsBar;
 
-        const ifacePanel = DOMBuilder.div("router-if-panel");
+        const ifacePanel = UILib.div("router-if-panel");
         this._ifacePanel = ifacePanel;
 
         // --- IPv4 Section ---
-        const v4Cb = DOMBuilder.input({ type: "checkbox" });
-        const v4Header = DOMBuilder.div("router-if-section-header", [
+        const v4Cb = UILib.input({ type: "checkbox" });
+        const v4Header = UILib.div("router-if-section-header", [
             v4Cb,
-            DOMBuilder.el("span", { text: "IPv4", className: "router-if-section-label" }),
+            UILib.el("span", { text: "IPv4", className: "router-if-section-label" }),
         ]);
-        const ipIn   = DOMBuilder.input({ placeholder: "192.168.1.1" });
-        const maskIn = DOMBuilder.input({ placeholder: "255.255.255.0" });
-        const cidrIn = DOMBuilder.input({ placeholder: "24" });
-        const ifField = (/** @type {string} */ cls, /** @type {string} */ label, /** @type {HTMLElement} */ inp) => DOMBuilder.div("router-if-field " + cls, [
-            DOMBuilder.el("span", { text: label, className: "router-if-field-label" }),
+        const ipIn   = UILib.input({ placeholder: "192.168.1.1" });
+        const maskIn = UILib.input({ placeholder: "255.255.255.0" });
+        const cidrIn = UILib.input({ placeholder: "24" });
+        const ifField = (/** @type {string} */ cls, /** @type {string} */ label, /** @type {HTMLElement} */ inp) => UILib.div("router-if-field " + cls, [
+            UILib.el("span", { text: label, className: "router-if-field-label" }),
             inp,
         ]);
-        const v4Fields = DOMBuilder.div("router-if-fields", [
+        const v4Fields = UILib.div("router-if-fields", [
             ifField("router-if-ip",   t("router.if.address"), ipIn),
             ifField("router-if-mask", t("router.if.netmask"), maskIn),
             ifField("router-if-cidr", t("router.if.prefix"),  cidrIn),
         ]);
-        const v4Section = DOMBuilder.div("router-if-section", [v4Header, v4Fields]);
+        const v4Section = UILib.div("router-if-section", [v4Header, v4Fields]);
 
         // --- IPv6 Section ---
-        const v6Cb = DOMBuilder.input({ type: "checkbox" });
-        const v6Header = DOMBuilder.div("router-if-section-header", [
+        const v6Cb = UILib.input({ type: "checkbox" });
+        const v6Header = UILib.div("router-if-section-header", [
             v6Cb,
-            DOMBuilder.el("span", { text: "IPv6", className: "router-if-section-label" }),
+            UILib.el("span", { text: "IPv6", className: "router-if-section-label" }),
         ]);
-        const ip6In     = DOMBuilder.input({ placeholder: "2001:db8::1" });
-        const prefix6In = DOMBuilder.input({ placeholder: "64" });
-        const raCb    = DOMBuilder.input({ type: "checkbox" });
-        const raLabel = DOMBuilder.el("label", { className: "router-if-ra-label" });
+        const ip6In     = UILib.input({ placeholder: "2001:db8::1" });
+        const prefix6In = UILib.input({ placeholder: "64" });
+        const raCb    = UILib.input({ type: "checkbox" });
+        const raLabel = UILib.el("label", { className: "router-if-ra-label" });
         raLabel.append(raCb, " " + t("router.ra.enabled"));
-        const v6Fields = DOMBuilder.div("router-if-fields", [
+        const v6Fields = UILib.div("router-if-fields", [
             ifField("router-if-ip6",     t("router.if.address"), ip6In),
             ifField("router-if-prefix6", t("router.if.prefix"),  prefix6In),
         ]);
-        const v6Body = DOMBuilder.div("router-if-v6-body", [
+        const v6Body = UILib.div("router-if-v6-body", [
             v6Fields,
-            DOMBuilder.div("router-if-fields", [raLabel]),
+            UILib.div("router-if-fields", [raLabel]),
         ]);
-        const v6Section = DOMBuilder.div("router-if-section", [v6Header, v6Body]);
+        const v6Section = UILib.div("router-if-section", [v6Header, v6Body]);
 
-        const saveBtn = DOMBuilder.button(t("router.save"), { className: "router-if-save" });
+        const saveBtn = UILib.button(t("router.save"), null, { className: "router-if-save" });
 
         this._ipInput      = ipIn;
         this._maskInput    = maskIn;
@@ -269,47 +268,39 @@ export class Router extends SimulatedObject {
 
         ifacePanel.append(v4Section, v6Section, saveBtn);
 
-        const actionsHost = DOMBuilder.div("router-if-actions");
+        const actionsHost = UILib.div("router-if-actions");
         this._ifaceActionsHost = actionsHost;
         ifacePanel.appendChild(actionsHost);
 
         ifSection.append(tabsBar, ifacePanel);
 
         /* =========================== Routingtabelle ========================== */
-        const routeSection = DOMBuilder.div("");
+        const routeSection = UILib.div("hidden");
 
-        const routeTitle = DOMBuilder.h4("");
+        const routeTitle = UILib.h4("");
         routeSection.appendChild(routeTitle);
 
-        const routesHost = DOMBuilder.div("router-routes");
+        const routesHost = UILib.div("router-routes");
         this._routesHost = routesHost;
         routeSection.appendChild(routesHost);
 
         /* ============================== RIP / RIPng ============================ */
-        const ripSection = DOMBuilder.div("");
+        const ripSection = UILib.div("hidden");
         this._buildRIPSection(ripSection);
 
         /* ================================ BGP ================================= */
-        const bgpSection = DOMBuilder.div("");
+        const bgpSection = UILib.div("hidden");
         this._buildBGPSection(bgpSection);
 
         /* ================================ OSPF ================================ */
-        const ospfSection = DOMBuilder.div("");
+        const ospfSection = UILib.div("hidden");
         this._buildOSPFSection(ospfSection);
 
         /* ================================ VPN ================================= */
-        const vpnSection = DOMBuilder.div("");
+        const vpnSection = UILib.div("hidden");
         this._buildVPNSection(vpnSection);
 
         outerContent.append(ifSection, routeSection, ripSection, bgpSection, ospfSection, vpnSection);
-
-        /* ============================ Tab switching ============================ */
-        ifSection.style.display    = "";
-        routeSection.style.display = "none";
-        ripSection.style.display   = "none";
-        bgpSection.style.display   = "none";
-        ospfSection.style.display  = "none";
-        vpnSection.style.display   = "none";
         setOuterActive("interfaces");
 
         /* ============================ Init ============================ */
@@ -333,15 +324,15 @@ export class Router extends SimulatedObject {
         const tabsBar = this._tabsBar;
         if (!tabsBar) return;
 
-        DOMBuilder.clear(tabsBar);
+        UILib.clear(tabsBar);
         this._tabRefs.clear();
 
         for (const iface of this.net.interfaces) {
-            const btn = DOMBuilder.button("", { className: "ui-tab" });
+            const btn = UILib.button("", null, { className: "ui-tab" });
             btn.dataset.name = iface.name;
 
-            const label = DOMBuilder.el("span", { className: "router-tab-label", text: iface.name });
-            const badge = DOMBuilder.el("span", { className: "ui-tab-badge status-unknown", text: t("router.unknown") });
+            const label = UILib.el("span", { className: "router-tab-label", text: iface.name });
+            const badge = UILib.el("span", { className: "ui-tab-badge status-unknown", text: t("router.unknown") });
 
             btn.appendChild(label);
             btn.appendChild(badge);
@@ -358,7 +349,7 @@ export class Router extends SimulatedObject {
             this._tabRefs.set(iface.name, { btn, badge });
         }
 
-        const plusBtn = DOMBuilder.button("+", { className: "ui-tab router-tab-plus", title: t("router.addinterface") });
+        const plusBtn = UILib.button("+", null, { className: "ui-tab router-tab-plus", title: t("router.addinterface") });
         plusBtn.addEventListener("click", () => {
             this.net.addNewInterface();
             this._selectedIfaceName = this.net.interfaces[this.net.interfaces.length - 1]?.name ?? this._selectedIfaceName;
@@ -372,13 +363,13 @@ export class Router extends SimulatedObject {
         const actionsHost = this._ifaceActionsHost;
         if (!actionsHost) return;
 
-        DOMBuilder.clear(actionsHost);
+        UILib.clear(actionsHost);
 
         const iface = this._getSelectedIface();
         const isSub = iface instanceof VLANSubInterface;
 
         if (!isSub) {
-            const subBtn = DOMBuilder.button("+ VLAN", { className: "router-if-addsub" });
+            const subBtn = UILib.button("+ VLAN", null, { className: "router-if-addsub" });
             subBtn.title = "Add VLAN subinterface";
             subBtn.addEventListener("click", async () => {
                 const name = this._selectedIfaceName;
@@ -397,7 +388,7 @@ export class Router extends SimulatedObject {
             actionsHost.appendChild(subBtn);
         }
 
-        const delBtn = DOMBuilder.button(t("router.deleteinterface"), { className: "router-if-del" });
+        const delBtn = UILib.button(t("router.deleteinterface"), null, { className: "router-if-del" });
         this._delIfBtn = delBtn;
 
         delBtn.addEventListener("click", async () => {
@@ -546,10 +537,10 @@ export class Router extends SimulatedObject {
             if (this._ipv6EnableCb) this._ipv6EnableCb.checked = false;
             if (this._ip6Input)    this._ip6Input.value = "";
             if (this._prefix6Input) this._prefix6Input.value = "";
-            DOMBuilder.markInvalid(this._ipInput, false);
-            DOMBuilder.markInvalid(this._maskInput, false);
-            DOMBuilder.markInvalid(this._ip6Input, false);
-            DOMBuilder.markInvalid(this._prefix6Input, false);
+            UILib.markInvalid(this._ipInput, false);
+            UILib.markInvalid(this._maskInput, false);
+            UILib.markInvalid(this._ip6Input, false);
+            UILib.markInvalid(this._prefix6Input, false);
             return;
         }
 
@@ -570,10 +561,10 @@ export class Router extends SimulatedObject {
         if (this._prefix6Input)  this._prefix6Input.value     = v6Active ? String(p6) : "";
         if (this._raEnabledCb)   this._raEnabledCb.checked    = !!iface.raEnabled;
 
-        DOMBuilder.markInvalid(this._ipInput, false);
-        DOMBuilder.markInvalid(this._maskInput, false);
-        DOMBuilder.markInvalid(this._ip6Input, false);
-        DOMBuilder.markInvalid(this._prefix6Input, false);
+        UILib.markInvalid(this._ipInput, false);
+        UILib.markInvalid(this._maskInput, false);
+        UILib.markInvalid(this._ip6Input, false);
+        UILib.markInvalid(this._prefix6Input, false);
     }
 
     _updateInterfaceFormState() {
@@ -593,11 +584,11 @@ export class Router extends SimulatedObject {
 
         // Show/hide IPv4 fields
         const v4Fields = /** @type {HTMLElement|null} */ (ipIn.closest('.router-if-fields'));
-        if (v4Fields) v4Fields.style.display = v4Active ? '' : 'none';
+        if (v4Fields) v4Fields.classList.toggle("hidden", !v4Active);
 
         // Show/hide IPv6 fields (including RA checkbox)
         const v6Body = ip6In ? /** @type {HTMLElement|null} */ (ip6In.closest('.router-if-v6-body')) : null;
-        if (v6Body) v6Body.style.display = v6Active ? '' : 'none';
+        if (v6Body) v6Body.classList.toggle("hidden", !v6Active);
 
         // --- Validate IPv4 ---
         let v4Ok = true;
@@ -615,12 +606,12 @@ export class Router extends SimulatedObject {
                 const p = netmaskStrToPrefix(maskIn.value);
                 if (p != null) { v4Prefix = p; pOk = true; }
             }
-            DOMBuilder.markInvalid(ipIn, !ipOk);
-            DOMBuilder.markInvalid(maskIn, !pOk);
+            UILib.markInvalid(ipIn, !ipOk);
+            UILib.markInvalid(maskIn, !pOk);
             v4Ok = ipOk && pOk;
         } else {
-            DOMBuilder.markInvalid(ipIn, false);
-            DOMBuilder.markInvalid(maskIn, false);
+            UILib.markInvalid(ipIn, false);
+            UILib.markInvalid(maskIn, false);
         }
 
         // --- Validate IPv6 ---
@@ -638,12 +629,12 @@ export class Router extends SimulatedObject {
                 pOk = Number.isInteger(n) && n >= 0 && n <= 128;
                 if (pOk) v6Prefix = n;
             }
-            DOMBuilder.markInvalid(ip6In, !ipOk);
-            DOMBuilder.markInvalid(prefix6In, !pOk);
+            UILib.markInvalid(ip6In, !ipOk);
+            UILib.markInvalid(prefix6In, !pOk);
             v6Ok = ipOk && pOk;
         } else if (ip6In && prefix6In) {
-            DOMBuilder.markInvalid(ip6In, false);
-            DOMBuilder.markInvalid(prefix6In, false);
+            UILib.markInvalid(ip6In, false);
+            UILib.markInvalid(prefix6In, false);
         }
 
         if (!v4Ok || !v6Ok) { save.disabled = true; return; }
@@ -743,8 +734,8 @@ export class Router extends SimulatedObject {
             const canScroll = scrollWrap.scrollHeight > scrollWrap.clientHeight + 2;
             const atTop    = scrollWrap.scrollTop <= 4;
             const atBottom = scrollWrap.scrollTop + scrollWrap.clientHeight >= scrollWrap.scrollHeight - 4;
-            hintTop.style.display    = (canScroll && !atTop)    ? "block" : "none";
-            hintBottom.style.display = (canScroll && !atBottom) ? "block" : "none";
+            hintTop.classList.toggle("is-visible",    canScroll && !atTop);
+            hintBottom.classList.toggle("is-visible", canScroll && !atBottom);
             // sit just below the sticky thead so the two don't overlap
             if (thead) hintTop.style.top = thead.offsetHeight + "px";
         };
@@ -830,13 +821,13 @@ export class Router extends SimulatedObject {
             if (r.tunnel) {
                 const span = document.createElement("span");
                 span.textContent = "tun:" + r.tunnel.name;
-                span.style.opacity = "0.8";
+                span.className = "router-hint-span";
                 ifCellEl = span;
                 save.disabled = true;
             } else if (r.interf === -1) {
                 const span = document.createElement("span");
                 span.textContent = "lo";
-                span.style.opacity = "0.8";
+                span.className = "router-hint-span";
                 ifCellEl = span;
             } else {
                 ifSel = document.createElement("select");
@@ -899,9 +890,9 @@ export class Router extends SimulatedObject {
                     okNh = false;
                 }
 
-                DOMBuilder.markInvalid(dst, !okDst);
-                DOMBuilder.markInvalid(mask, !okMask);
-                DOMBuilder.markInvalid(nh, !okNh);
+                UILib.markInvalid(dst, !okDst);
+                UILib.markInvalid(mask, !okMask);
+                UILib.markInvalid(nh, !okNh);
 
                 if (!okDst || !okMask || !okNh || !dstIp || !nhIp) {
                     setDirty(true);
@@ -1007,19 +998,19 @@ export class Router extends SimulatedObject {
         });
 
         table.appendChild(tbody);
-        const scrollWrap = DOMBuilder.div("router-routes-scroll");
+        const scrollWrap = UILib.div("router-routes-scroll");
         scrollWrap.appendChild(table);
         this._routesHost.appendChild(scrollWrap);
         this._attachScrollHint(scrollWrap);
 
         // ---- Footer: "+ Route hinzufügen" button ----
         const hasIfaces = this.net.interfaces.length > 0;
-        const footerBtn = DOMBuilder.button("+ " + t("router.routingtable.add"), { className: "router-route-footer-btn" });
+        const footerBtn = UILib.button("+ " + t("router.routingtable.add"), null, { className: "router-route-footer-btn" });
         footerBtn.disabled = !hasIfaces;
         this._routesHost.appendChild(footerBtn);
 
         footerBtn.addEventListener("click", () => {
-            footerBtn.style.display = "none";
+            footerBtn.classList.add("hidden");
 
             const addTr = document.createElement("tr");
             addTr.className = "router-route-add-row";
@@ -1061,9 +1052,9 @@ export class Router extends SimulatedObject {
                 try { const ip = ipFromStr(addDst.value || "0.0.0.0"); okDst = ip.isV4(); } catch { okDst = false; }
                 try { const p = netmaskStrToPrefix(addMask.value || "0.0.0.0"); okMask = (p != null); } catch { okMask = false; }
                 try { const ip = ipFromStr(addNh.value || "0.0.0.0"); okNh = ip.isV4(); } catch { okNh = false; }
-                DOMBuilder.markInvalid(addDst, !okDst);
-                DOMBuilder.markInvalid(addMask, !okMask);
-                DOMBuilder.markInvalid(addNh, !okNh);
+                UILib.markInvalid(addDst, !okDst);
+                UILib.markInvalid(addMask, !okMask);
+                UILib.markInvalid(addNh, !okNh);
                 saveBtn.disabled = !(okDst && okMask && okNh);
             };
 
@@ -1147,7 +1138,7 @@ export class Router extends SimulatedObject {
             const prefix = document.createElement("input");
             prefix.value = String(r.prefixLength ?? 0);
             prefix.disabled = !editable;
-            prefix.style.width = "4em";
+            prefix.className = "router-input-prefix";
 
             const nh = document.createElement("input");
             nh.value = ipToStr(r.nexthop);
@@ -1175,7 +1166,7 @@ export class Router extends SimulatedObject {
             if (r.interf === -1) {
                 const span = document.createElement("span");
                 span.textContent = "lo";
-                span.style.opacity = "0.8";
+                span.className = "router-hint-span";
                 ifCellEl = span;
             } else {
                 ifSel = document.createElement("select");
@@ -1204,9 +1195,9 @@ export class Router extends SimulatedObject {
                 try { const ip = ipFromStr(dst.value); okDst = ip.isV6(); } catch { okDst = false; }
                 try { const n = Number(prefix.value); okPfx = Number.isInteger(n) && n >= 0 && n <= 128; } catch { okPfx = false; }
                 try { const ip = ipFromStr(nh.value); okNh = ip.isV6(); } catch { okNh = false; }
-                DOMBuilder.markInvalid(dst, !okDst);
-                DOMBuilder.markInvalid(prefix, !okPfx);
-                DOMBuilder.markInvalid(nh, !okNh);
+                UILib.markInvalid(dst, !okDst);
+                UILib.markInvalid(prefix, !okPfx);
+                UILib.markInvalid(nh, !okNh);
                 return okDst && okPfx && okNh;
             };
 
@@ -1272,19 +1263,19 @@ export class Router extends SimulatedObject {
         });
 
         table.appendChild(tbody);
-        const scrollWrapV6 = DOMBuilder.div("router-routes-scroll");
+        const scrollWrapV6 = UILib.div("router-routes-scroll");
         scrollWrapV6.appendChild(table);
         this._routesHost.appendChild(scrollWrapV6);
         this._attachScrollHint(scrollWrapV6);
 
         // ---- Footer: "+ Route hinzufügen" button (IPv6) ----
         const hasIfaces = this.net.interfaces.length > 0;
-        const footerBtn = DOMBuilder.button("+ " + t("router.routingtable.add"), { className: "router-route-footer-btn" });
+        const footerBtn = UILib.button("+ " + t("router.routingtable.add"), null, { className: "router-route-footer-btn" });
         footerBtn.disabled = !hasIfaces;
         this._routesHost.appendChild(footerBtn);
 
         footerBtn.addEventListener("click", () => {
-            footerBtn.style.display = "none";
+            footerBtn.classList.add("hidden");
 
             const addTr = document.createElement("tr");
             addTr.className = "router-route-add-row";
@@ -1294,7 +1285,7 @@ export class Router extends SimulatedObject {
 
             const addPrefix = document.createElement("input");
             addPrefix.placeholder = "64";
-            addPrefix.style.width = "4em";
+            addPrefix.className = "router-input-prefix";
 
             const addNh = document.createElement("input");
             addNh.placeholder = "::";
@@ -1327,9 +1318,9 @@ export class Router extends SimulatedObject {
                 try { const ip = ipFromStr(addDst.value || "::"); okDst = ip.isV6(); } catch { okDst = false; }
                 try { const n = Number(addPrefix.value || "0"); okPfx = Number.isInteger(n) && n >= 0 && n <= 128; } catch { okPfx = false; }
                 try { const ip = ipFromStr(addNh.value || "::"); okNh = ip.isV6(); } catch { okNh = false; }
-                DOMBuilder.markInvalid(addDst, !okDst);
-                DOMBuilder.markInvalid(addPrefix, !okPfx);
-                DOMBuilder.markInvalid(addNh, !okNh);
+                UILib.markInvalid(addDst, !okDst);
+                UILib.markInvalid(addPrefix, !okPfx);
+                UILib.markInvalid(addNh, !okNh);
                 saveBtn.disabled = !(okDst && okPfx && okNh);
             };
 
@@ -1378,29 +1369,27 @@ export class Router extends SimulatedObject {
     /** @param {HTMLElement} host */
     _buildRIPSection(host) {
         // ── enable row: RIP and RIPng side by side ─────────────────────────
-        const ripCb = DOMBuilder.input({ type: "checkbox" });
+        const ripCb = UILib.input({ type: "checkbox" });
         ripCb.checked = this.rip.enabled;
         ripCb.addEventListener("change", () => { this.rip.setEnabled(ripCb.checked); this._renderRIPCombinedLog(); });
 
-        const ripngCb = DOMBuilder.input({ type: "checkbox" });
+        const ripngCb = UILib.input({ type: "checkbox" });
         ripngCb.checked = this.ripng.enabled;
         ripngCb.addEventListener("change", () => { this.ripng.setEnabled(ripngCb.checked); this._renderRIPCombinedLog(); });
 
-        const ripWrap = DOMBuilder.div("router-name-row"); ripWrap.style.gap = "6px";
-        ripWrap.append(ripCb, DOMBuilder.label(t("router.rip.enabled")));
+        const ripWrap = UILib.div("router-name-row"); ripWrap.style.gap = "6px";
+        ripWrap.append(ripCb, UILib.label(t("router.rip.enabled")));
 
-        const ripngWrap = DOMBuilder.div("router-name-row"); ripngWrap.style.gap = "6px";
-        ripngWrap.append(ripngCb, DOMBuilder.label(t("router.ripng.enabled")));
+        const ripngWrap = UILib.div("router-name-row"); ripngWrap.style.gap = "6px";
+        ripngWrap.append(ripngCb, UILib.label(t("router.ripng.enabled")));
 
-        const enableRow = DOMBuilder.div("router-name-row");
+        const enableRow = UILib.div("router-name-row");
         enableRow.style.gap = "16px";
         enableRow.append(ripWrap, ripngWrap);
         host.appendChild(enableRow);
 
         // ── combined interface table: Interface | RIP Passive | RIPng Passive
-        const hintEl = document.createElement("p");
-        hintEl.textContent = t("router.rip.passive.hint");
-        hintEl.style.cssText = "margin:6px 0 4px;font-size:0.82em;opacity:0.65";
+        const hintEl = UILib.el("p", { text: t("router.rip.passive.hint"), className: "router-hint" });
         host.appendChild(hintEl);
 
         const ifTable = document.createElement("table");
@@ -1421,10 +1410,10 @@ export class Router extends SimulatedObject {
             const tdN  = document.createElement("td"); tdN.textContent = ifName;
             const tdR  = document.createElement("td");
             const tdRng = document.createElement("td");
-            const cbR  = DOMBuilder.input({ type: "checkbox" });
+            const cbR  = UILib.input({ type: "checkbox" });
             cbR.checked = this.rip.passiveInterfaces.has(ifName);
             cbR.addEventListener("change", () => this.rip.setPassive(ifName, cbR.checked));
-            const cbRng = DOMBuilder.input({ type: "checkbox" });
+            const cbRng = UILib.input({ type: "checkbox" });
             cbRng.checked = this.ripng.passiveInterfaces.has(ifName);
             cbRng.addEventListener("change", () => this.ripng.setPassive(ifName, cbRng.checked));
             tdR.appendChild(cbR);
@@ -1436,13 +1425,11 @@ export class Router extends SimulatedObject {
         host.appendChild(ifTable);
 
         // ── combined log ──────────────────────────────────────────────────
-        host.appendChild(DOMBuilder.h4(t("router.rip.log")));
-        const logEl = /** @type {HTMLTextAreaElement} */ (DOMBuilder.el("textarea", {
-            className: "log",
+        host.appendChild(UILib.h4(t("router.rip.log")));
+        const logEl = /** @type {HTMLTextAreaElement} */ (UILib.el("textarea", {
+            className: "log router-log-sm",
             attrs: { readonly: "true", spellcheck: "false" },
         }));
-        logEl.style.width  = "100%";
-        logEl.style.height = "140px";
         host.appendChild(logEl);
         this._ripCombinedLogEl = logEl;
         this._renderRIPCombinedLog();
@@ -1462,38 +1449,38 @@ export class Router extends SimulatedObject {
 
     /** @param {HTMLElement} host */
     _buildBGPSection(host) {
-        const { bar: innerBar, setActive: setInnerActive } = DOMBuilder.tabGroup([
+        const { bar: innerBar, setActive: setInnerActive } = UILib.tabGroup([
             { id: "config", label: t("router.bgp.tab.config") },
             { id: "routes", label: t("router.bgp.tab.routes") },
             { id: "log",    label: t("router.bgp.tab.log")    },
         ], (id) => {
-            configSection.style.display = id === "config" ? "" : "none";
-            routesSection.style.display = id === "routes" ? "" : "none";
-            logSection.style.display    = id === "log"    ? "" : "none";
+            configSection.classList.toggle("hidden", id !== "config");
+            routesSection.classList.toggle("hidden", id !== "routes");
+            logSection.classList.toggle("hidden",    id !== "log");
             if (id === "routes") this._renderBGPRoutes();
             if (id === "log")    this._renderBGPLog();
         });
         host.appendChild(innerBar);
 
         // ── Konfiguration ────────────────────────────────────────────────
-        const configSection = DOMBuilder.div("");
+        const configSection = UILib.div("");
 
-        const enableCb = DOMBuilder.input({ type: "checkbox" });
+        const enableCb = UILib.input({ type: "checkbox" });
         enableCb.checked = this.bgp.enabled;
         enableCb.addEventListener("change", () => {
             this.bgp.setEnabled(enableCb.checked);
             this._renderBGPLog();
         });
-        const enableRow = DOMBuilder.div("router-name-row");
+        const enableRow = UILib.div("router-name-row");
         enableRow.style.gap = "6px";
-        enableRow.append(enableCb, DOMBuilder.label(t("router.bgp.enabled")));
+        enableRow.append(enableCb, UILib.label(t("router.bgp.enabled")));
         configSection.appendChild(enableRow);
 
-        const asIn  = DOMBuilder.input({ placeholder: "65001" });
+        const asIn  = UILib.input({ placeholder: "65001" });
         asIn.value  = this.bgp.localAS ? String(this.bgp.localAS) : "";
-        const ridIn = DOMBuilder.input({ placeholder: "1.2.3.4" });
+        const ridIn = UILib.input({ placeholder: "1.2.3.4" });
         ridIn.value = this.bgp.routerId;
-        const cfgSaveBtn = DOMBuilder.button(t("router.save"), { className: "router-vpn-add" });
+        const cfgSaveBtn = UILib.button(t("router.save"), null, { className: "router-vpn-add" });
         cfgSaveBtn.style.marginTop = "4px";
         cfgSaveBtn.addEventListener("click", () => {
             const as = Number(asIn.value.trim());
@@ -1506,45 +1493,40 @@ export class Router extends SimulatedObject {
         });
 
         const mkRow = (/** @type {string} */ lbl, /** @type {HTMLElement} */ inp) =>
-            DOMBuilder.div("router-vpn-form-row", [
-                DOMBuilder.el("span", { text: lbl, className: "router-vpn-form-label" }),
+            UILib.div("router-vpn-form-row", [
+                UILib.el("span", { text: lbl, className: "router-vpn-form-label" }),
                 inp,
             ]);
-        configSection.appendChild(DOMBuilder.div("router-vpn-form", [
+        configSection.appendChild(UILib.div("router-vpn-form", [
             mkRow(t("router.bgp.localas"),  asIn),
             mkRow(t("router.bgp.routerid"), ridIn),
             cfgSaveBtn,
         ]));
 
-        configSection.appendChild(DOMBuilder.h4(t("router.bgp.peers.title")));
-        const peersHost = DOMBuilder.div("");
+        configSection.appendChild(UILib.h4(t("router.bgp.peers.title")));
+        const peersHost = UILib.div("");
         this._bgpPeersHost = peersHost;
         configSection.appendChild(peersHost);
         this._renderBGPPeers();
 
         // ── Routen ───────────────────────────────────────────────────────
-        const routesSection = DOMBuilder.div("");
-        const routesHost = DOMBuilder.div("");
+        const routesSection = UILib.div("hidden");
+        const routesHost = UILib.div("");
         this._bgpRoutesHost = routesHost;
         routesSection.appendChild(routesHost);
 
         // ── Protokoll ────────────────────────────────────────────────────
-        const logSection = DOMBuilder.div("");
-        logSection.appendChild(DOMBuilder.h4(t("router.bgp.log")));
-        const logEl = /** @type {HTMLTextAreaElement} */ (DOMBuilder.el("textarea", {
-            className: "log",
+        const logSection = UILib.div("hidden");
+        logSection.appendChild(UILib.h4(t("router.bgp.log")));
+        const logEl = /** @type {HTMLTextAreaElement} */ (UILib.el("textarea", {
+            className: "log router-log-md",
             attrs: { readonly: "true", spellcheck: "false" },
         }));
-        logEl.style.width  = "100%";
-        logEl.style.height = "200px";
         logSection.appendChild(logEl);
         this._bgpLogEl = logEl;
         this._renderBGPLog();
 
         host.append(configSection, routesSection, logSection);
-        configSection.style.display = "";
-        routesSection.style.display = "none";
-        logSection.style.display    = "none";
         setInnerActive("config");
 
         this.bgp.onUpdate = () => {
@@ -1557,7 +1539,7 @@ export class Router extends SimulatedObject {
     _renderBGPPeers() {
         const host = this._bgpPeersHost;
         if (!host) return;
-        DOMBuilder.clear(host);
+        UILib.clear(host);
 
         if (this.bgp.peers.length > 0) {
             const table = document.createElement("table");
@@ -1605,12 +1587,11 @@ export class Router extends SimulatedObject {
         }
 
         // Inline add-peer form
-        const ipIn  = DOMBuilder.input({ placeholder: "10.0.0.1" });
-        const asIn  = DOMBuilder.input({ placeholder: "65002" });
-        asIn.style.width = "5em";
-        const descIn    = DOMBuilder.input({ placeholder: t("router.bgp.peers.col.desc") });
-        const passiveCb = DOMBuilder.input({ type: "checkbox" });
-        const addBtn    = DOMBuilder.button("+ " + t("router.bgp.peers.add"), { className: "router-route-footer-btn" });
+        const ipIn  = UILib.input({ placeholder: "10.0.0.1" });
+        const asIn  = UILib.input({ placeholder: "65002", className: "router-input-as" });
+        const descIn    = UILib.input({ placeholder: t("router.bgp.peers.col.desc") });
+        const passiveCb = UILib.input({ type: "checkbox" });
+        const addBtn    = UILib.button("+ " + t("router.bgp.peers.add"), null, { className: "router-route-footer-btn" });
         addBtn.style.marginTop = "6px";
 
         addBtn.addEventListener("click", () => {
@@ -1624,13 +1605,13 @@ export class Router extends SimulatedObject {
             passiveCb.checked = false;
         });
 
-        const addRow = DOMBuilder.div("router-name-row");
+        const addRow = UILib.div("router-name-row");
         addRow.style.gap = "4px";
         addRow.style.flexWrap = "wrap";
         addRow.style.marginTop = "6px";
         addRow.append(
             ipIn, asIn, descIn,
-            passiveCb, DOMBuilder.label(t("router.bgp.peers.col.passive")),
+            passiveCb, UILib.label(t("router.bgp.peers.col.passive")),
             addBtn,
         );
         host.appendChild(addRow);
@@ -1639,11 +1620,11 @@ export class Router extends SimulatedObject {
     _renderBGPRoutes() {
         const host = this._bgpRoutesHost;
         if (!host) return;
-        DOMBuilder.clear(host);
+        UILib.clear(host);
 
         const learned = [...this.bgp._learned.values()];
         if (learned.length === 0) {
-            host.appendChild(DOMBuilder.el("p", { text: t("router.bgp.routes.empty"), className: "router-vpn-empty" }));
+            host.appendChild(UILib.el("p", { text: t("router.bgp.routes.empty"), className: "router-vpn-empty" }));
             return;
         }
 
@@ -1693,43 +1674,42 @@ export class Router extends SimulatedObject {
 
     /** @param {HTMLElement} host */
     _buildOSPFSection(host) {
-        DOMBuilder.clear(host);
+        UILib.clear(host);
 
-        const { bar: innerBar, setActive: setInnerActive } = DOMBuilder.tabGroup([
+        const { bar: innerBar, setActive: setInnerActive } = UILib.tabGroup([
             { id: "config", label: t("router.ospf.tab.config") },
             { id: "status", label: t("router.ospf.tab.status") },
             { id: "lsdb",   label: t("router.ospf.tab.lsdb")   },
             { id: "log",    label: t("router.ospf.tab.log")     },
         ], (id) => {
-            configSection.style.display = id === "config" ? "" : "none";
-            statusSection.style.display = id === "status" ? "" : "none";
-            lsdbSection.style.display   = id === "lsdb"   ? "" : "none";
-            logSection.style.display    = id === "log"     ? "" : "none";
+            configSection.classList.toggle("hidden", id !== "config");
+            statusSection.classList.toggle("hidden", id !== "status");
+            lsdbSection.classList.toggle("hidden",   id !== "lsdb");
+            logSection.classList.toggle("hidden",    id !== "log");
             if (id === "status" || id === "lsdb") renderAll();
         });
         host.appendChild(innerBar);
 
         // ── Config ───────────────────────────────────────────────────────
-        const configSection = DOMBuilder.div("");
+        const configSection = UILib.div("");
 
-        const enableCb = DOMBuilder.input({ type: "checkbox" });
+        const enableCb = UILib.input({ type: "checkbox" });
         enableCb.checked = this.ospf.enabled;
         enableCb.addEventListener("change", () => {
             this.ospf.setEnabled(enableCb.checked);
             this._renderOSPFLog();
         });
-        const enableRow = DOMBuilder.div("router-name-row");
+        const enableRow = UILib.div("router-name-row");
         enableRow.style.gap = "6px";
         enableRow.appendChild(enableCb);
-        enableRow.appendChild(DOMBuilder.label(t("router.ospf.enabled")));
+        enableRow.appendChild(UILib.label(t("router.ospf.enabled")));
         configSection.appendChild(enableRow);
 
-        const ridRow = DOMBuilder.div("router-name-row");
+        const ridRow = UILib.div("router-name-row");
         ridRow.style.gap = "6px";
         ridRow.style.marginTop = "6px";
-        const ridLabel = DOMBuilder.el("span", { text: t("router.ospf.routerid") + ":", className: "router-if-field-label" });
-        const ridInput = DOMBuilder.input({ placeholder: t("router.ospf.routerid.auto") });
-        ridInput.style.width = "130px";
+        const ridLabel = UILib.el("span", { text: t("router.ospf.routerid") + ":", className: "router-if-field-label" });
+        const ridInput = UILib.input({ placeholder: t("router.ospf.routerid.auto"), className: "router-input-rid" });
         if (this.ospf._routerIdOverride !== null) {
             ridInput.value = new (/** @type {any} */ (IPAddress))(4, this.ospf._routerIdOverride).toString();
         }
@@ -1763,12 +1743,12 @@ export class Router extends SimulatedObject {
             const tr  = document.createElement("tr");
             const tdN = document.createElement("td"); tdN.textContent = ifName;
             const tdP = document.createElement("td");
-            const cb  = DOMBuilder.input({ type: "checkbox" });
+            const cb  = UILib.input({ type: "checkbox" });
             cb.checked = this.ospf.passiveInterfaces.has(ifName);
             cb.addEventListener("change", () => this.ospf.setPassive(ifName, cb.checked));
             tdP.appendChild(cb);
             const tdA  = document.createElement("td");
-            const aIn  = DOMBuilder.input({ type: "number", min: "0", style: "width:60px" });
+            const aIn  = UILib.input({ type: "number", min: "0", className: "router-input-area" });
             aIn.value  = String(this.ospf._ifaceAreaMap.get(ifName) ?? 0);
             aIn.addEventListener("change", () => {
                 const v = parseInt(aIn.value, 10);
@@ -1782,9 +1762,9 @@ export class Router extends SimulatedObject {
         configSection.appendChild(ifTable);
 
         // ── Status ───────────────────────────────────────────────────────
-        const statusSection = DOMBuilder.div("");
+        const statusSection = UILib.div("hidden");
 
-        statusSection.appendChild(DOMBuilder.h4(t("router.ospf.ifstatus")));
+        statusSection.appendChild(UILib.h4(t("router.ospf.ifstatus")));
         const ifStatusTable = document.createElement("table");
         ifStatusTable.className = "router-routes";
         const ifStatusThead = document.createElement("thead");
@@ -1800,7 +1780,7 @@ export class Router extends SimulatedObject {
         ifStatusTable.append(ifStatusThead, ifStatusTbody);
         statusSection.appendChild(ifStatusTable);
 
-        statusSection.appendChild(DOMBuilder.h4(t("router.ospf.neighbors")));
+        statusSection.appendChild(UILib.h4(t("router.ospf.neighbors")));
         const nbTable = document.createElement("table");
         nbTable.className = "router-routes";
         const nbThead = document.createElement("thead");
@@ -1818,7 +1798,7 @@ export class Router extends SimulatedObject {
         statusSection.appendChild(nbTable);
 
         // ── LSDB ─────────────────────────────────────────────────────────
-        const lsdbSection = DOMBuilder.div("");
+        const lsdbSection = UILib.div("hidden");
         const lsdbTable = document.createElement("table");
         lsdbTable.className = "router-routes";
         const lsdbThead = document.createElement("thead");
@@ -1836,13 +1816,11 @@ export class Router extends SimulatedObject {
         lsdbSection.appendChild(lsdbTable);
 
         // ── Log ───────────────────────────────────────────────────────────
-        const logSection = DOMBuilder.div("");
-        const ospfLogEl = /** @type {HTMLTextAreaElement} */ (DOMBuilder.el("textarea", {
-            className: "log",
+        const logSection = UILib.div("hidden");
+        const ospfLogEl = /** @type {HTMLTextAreaElement} */ (UILib.el("textarea", {
+            className: "log router-log-md",
             attrs: { readonly: "true", spellcheck: "false" },
         }));
-        ospfLogEl.style.width  = "100%";
-        ospfLogEl.style.height = "200px";
         logSection.appendChild(ospfLogEl);
         this._ospfLogEl = ospfLogEl;
         this._renderOSPFLog();
@@ -1856,7 +1834,7 @@ export class Router extends SimulatedObject {
             const tr = document.createElement("tr");
             const td = document.createElement("td");
             td.colSpan = cols; td.textContent = "—";
-            td.style.textAlign = "center"; td.style.opacity = "0.5";
+            td.className = "router-lsdb-empty-td";
             tr.appendChild(td); tbody.appendChild(tr);
         };
 
@@ -1903,7 +1881,7 @@ export class Router extends SimulatedObject {
                 const h   = entry.header;
                 const tr  = document.createElement("tr");
                 const own = h.advertisingRouter === myRid;
-                if (own) tr.style.background = "rgba(33,150,243,0.07)";
+                if (own) tr.classList.add("router-own-row");
                 tr.append(
                     mkTd(lsaTypeLabel(h.type)),
                     mkTd(n2s(h.lsId)),
@@ -1921,10 +1899,6 @@ export class Router extends SimulatedObject {
         this._ospfPollTimer.start(renderAll, 1000);
 
         host.append(configSection, statusSection, lsdbSection, logSection);
-        configSection.style.display = "";
-        statusSection.style.display = "none";
-        lsdbSection.style.display   = "none";
-        logSection.style.display    = "none";
         setInnerActive("config");
 
         this.ospf.onLogUpdate = () => this._renderOSPFLog();
@@ -1942,32 +1916,32 @@ export class Router extends SimulatedObject {
 
     /** @param {HTMLElement} host */
     _buildVPNSection(host) {
-        DOMBuilder.clear(host);
-        host.appendChild(DOMBuilder.h4(t("router.vpn.tab")));
+        UILib.clear(host);
+        host.appendChild(UILib.h4(t("router.vpn.tab")));
 
-        const listEl = DOMBuilder.div("router-vpn-list");
+        const listEl = UILib.div("router-vpn-list");
 
         const renderList = () => {
-            DOMBuilder.clear(listEl);
+            UILib.clear(listEl);
             if (this.net.tunnels.length === 0) {
-                listEl.appendChild(DOMBuilder.el("p", { text: t("router.vpn.empty"), className: "router-vpn-empty" }));
+                listEl.appendChild(UILib.el("p", { text: t("router.vpn.empty"), className: "router-vpn-empty" }));
                 return;
             }
             for (const tun of this.net.tunnels) {
                 const routes = this.net.routingTable.filter(r => r.tunnel === tun);
                 const netStr = routes.map(r => `${r.dst}/${r.prefixLength}`).join(", ") || "—";
 
-                const delBtn = DOMBuilder.button(t("router.vpn.delete"), { className: "router-vpn-del" });
+                const delBtn = UILib.button(t("router.vpn.delete"), null, { className: "router-vpn-del" });
                 delBtn.addEventListener("click", () => {
                     this.net.removeTunnel(tun.name);
                     renderList();
                     this._renderRoutes();
                 });
 
-                const row = DOMBuilder.div("router-vpn-row", [
-                    DOMBuilder.el("span", { text: tun.name,                      className: "router-vpn-name"   }),
-                    DOMBuilder.el("span", { text: tun.remoteEndpoint.toString(),  className: "router-vpn-remote" }),
-                    DOMBuilder.el("span", { text: netStr,                         className: "router-vpn-net"    }),
+                const row = UILib.div("router-vpn-row", [
+                    UILib.el("span", { text: tun.name,                      className: "router-vpn-name"   }),
+                    UILib.el("span", { text: tun.remoteEndpoint.toString(),  className: "router-vpn-remote" }),
+                    UILib.el("span", { text: netStr,                         className: "router-vpn-net"    }),
                     delBtn,
                 ]);
                 listEl.appendChild(row);
@@ -1978,15 +1952,15 @@ export class Router extends SimulatedObject {
         host.appendChild(listEl);
 
         // ── Add-tunnel form ──
-        const nameIn   = DOMBuilder.input({ placeholder: "vpn0" });
-        const remoteIn = DOMBuilder.input({ placeholder: "203.0.113.1" });
-        const netIn    = DOMBuilder.input({ placeholder: "10.0.0.0/24" });
-        const errEl    = DOMBuilder.el("p", { className: "router-vpn-err" });
-        const addBtn   = DOMBuilder.button(t("router.vpn.add"), { className: "router-vpn-add" });
+        const nameIn   = UILib.input({ placeholder: "vpn0" });
+        const remoteIn = UILib.input({ placeholder: "203.0.113.1" });
+        const netIn    = UILib.input({ placeholder: "10.0.0.0/24" });
+        const errEl    = UILib.el("p", { className: "router-vpn-err" });
+        const addBtn   = UILib.button(t("router.vpn.add"), null, { className: "router-vpn-add" });
 
         const mkRow = (/** @type {string} */ label, /** @type {HTMLElement} */ inp) =>
-            DOMBuilder.div("router-vpn-form-row", [
-                DOMBuilder.el("span", { text: label, className: "router-vpn-form-label" }),
+            UILib.div("router-vpn-form-row", [
+                UILib.el("span", { text: label, className: "router-vpn-form-label" }),
                 inp,
             ]);
 
@@ -2022,7 +1996,7 @@ export class Router extends SimulatedObject {
             }
         });
 
-        host.appendChild(DOMBuilder.div("router-vpn-form", [
+        host.appendChild(UILib.div("router-vpn-form", [
             mkRow(t("router.vpn.name"),    nameIn),
             mkRow(t("router.vpn.remote"),  remoteIn),
             mkRow(t("router.vpn.network"), netIn),

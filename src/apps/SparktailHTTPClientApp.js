@@ -556,25 +556,17 @@ export class SparktailHTTPClientApp extends LoggedProcess {
       //@ts-ignore
       sandbox: "allow-forms allow-pointer-lock allow-popups-to-escape-sandbox", // external default: no scripts
     }));
-    iframe.style.width = "100%";
-    iframe.style.height = "420px";
-    iframe.style.border = "1px solid #444";
-    iframe.style.borderRadius = "12px";
     this.previewFrame = iframe;
 
     const source = /** @type {HTMLTextAreaElement} */ (UI.el("textarea", { className: "sparktail-source" }));
     source.readOnly = true;
-    source.style.width = "100%";
-    source.style.height = "420px";
     this.sourceEl = source;
 
     const headersTA = /** @type {HTMLTextAreaElement} */ (UI.el("textarea", { className: "sparktail-headers" }));
     headersTA.readOnly = true;
-    headersTA.style.width = "100%";
-    headersTA.style.height = "420px";
     this.headersEl = headersTA;
 
-    const content = UI.el("div", {});
+    const content = UI.el("div", { className: "sparktail-content" });
     content.appendChild(iframe);
     content.appendChild(source);
     content.appendChild(headersTA);
@@ -599,7 +591,6 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     chromeBar.appendChild(throbber);
 
     const panel = UI.panel([chromeBar, tabRow, content, status]);
-    panel.style.position = "relative";
     panel.appendChild(certPopupEl);
     this.root.replaceChildren(panel);
 

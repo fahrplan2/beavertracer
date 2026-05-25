@@ -62,11 +62,21 @@
    ========================================================= */
 
 .app-mail-client {
+  height: 100%;
+  overflow: hidden;
   padding: var(--pad-sm);
   color: var(--text);
   display: flex;
   flex-direction: column;
   gap: 0;
+}
+
+.app-mail-client .panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* Toolbar */
@@ -87,6 +97,8 @@
 
 /* Folder panels */
 .app-mail-client .mailclient-folder-panel {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: var(--pad-sm);
@@ -95,10 +107,12 @@
 
 /* Message list */
 .app-mail-client .mailclient-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   border: 1px solid var(--border, #444);
   border-radius: var(--radius-md);
   background: var(--bg1, #1a1a1a);
-  overflow: hidden;
 }
 
 .app-mail-client .mailclient-list-header,
@@ -152,9 +166,9 @@
 
 /* Message preview */
 .app-mail-client .mailclient-preview {
+  flex: 0 0 auto;
   width: 100%;
-  min-height: 180px;
-  max-height: 300px;
+  height: 180px;
   resize: vertical;
   font-family: monospace;
   font-size: 0.8125rem;
@@ -163,13 +177,18 @@
 
 /* Compose panel */
 .app-mail-client .mailclient-compose-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
   margin-top: var(--pad-sm);
 }
 
 .app-mail-client .mailclient-compose-body {
+  flex: 1;
+  min-height: 100px;
   width: 100%;
-  min-height: 180px;
-  resize: vertical;
   box-sizing: border-box;
   margin-top: var(--pad-sm);
   font-family: monospace;
@@ -178,12 +197,16 @@
 
 /* Log panel */
 .app-mail-client .mailclient-log-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   margin-top: var(--pad-sm);
 }
 
 .app-mail-client .mailclient-log {
-  min-height: 200px;
-  max-height: 360px;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   font-size: 0.75rem;
   font-family: monospace;
@@ -201,6 +224,9 @@
 
 /* Config panel */
 .app-mail-client .mailclient-config-panel {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   margin-top: var(--pad-sm);
 }
 

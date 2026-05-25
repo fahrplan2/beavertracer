@@ -16,7 +16,7 @@ import { simTimer } from "./lib/SimTimer.js";
 import { t, getLocale, setLocale, getLocales } from "./i18n/index.js";
 import { StaticPageRouter } from "./StaticPageRouter.js";
 import { PCapController } from "./tracer/PCapControler.js";
-import { DOMBuilder } from "./lib/DomBuilder.js";
+import { UILib } from "./lib/UILib.js";
 import { SimDialog } from "./lib/SimDialog.js";
 import { WelcomeDialog } from "./lib/WelcomeDialog.js";
 import { version } from "./lib/version.js";
@@ -694,11 +694,11 @@ export class SimControl {
 
         //********** MODES  *********/
         addSeparator("sep-mode");
-        const gMode = DOMBuilder.buttongroup(t("sim.mode"), toolbar);
+        const gMode = UILib.buttongroup(t("sim.mode"), toolbar);
         gMode.dataset.group = "mode";
 
         if (!this.embedded) {
-            const btnEdit = DOMBuilder.iconbutton({
+            const btnEdit = UILib.iconbutton({
                 label: t("sim.edit"),
                 icon: "fa-pencil",
                 onClick: () => {
@@ -712,7 +712,7 @@ export class SimControl {
             gMode.appendChild(btnEdit);
         }
 
-        const btnRun = DOMBuilder.iconbutton({
+        const btnRun = UILib.iconbutton({
             label: t("sim.run"),
             icon: "fa-play",
             onClick: () => {
@@ -741,7 +741,7 @@ export class SimControl {
         btnRun.dataset.role = "mode-run";
         gMode.appendChild(btnRun);
 
-        const btnTrace = DOMBuilder.iconbutton({
+        const btnTrace = UILib.iconbutton({
             label: t("sim.trace"),
             icon: "fa-magnifying-glass",
             onClick: () => {
@@ -757,10 +757,10 @@ export class SimControl {
 
         //********** SPEED  *********/
         addSeparator("sep-speeds");
-        const gSpeeds = DOMBuilder.buttongroup(t("sim.simulation"), toolbar);
+        const gSpeeds = UILib.buttongroup(t("sim.simulation"), toolbar);
         gSpeeds.dataset.group = "speeds";
 
-        const pauseBtn = DOMBuilder.iconbutton({
+        const pauseBtn = UILib.iconbutton({
             label: t("sim.pause"),
             icon: "fa-pause",
             onClick: () => this.pause(),
@@ -779,7 +779,7 @@ export class SimControl {
         speedGrid.className = "sim-speed-grid";
 
         for (const s of speeds) {
-            const b = DOMBuilder.iconbutton({
+            const b = UILib.iconbutton({
                 label: s.label,
                 onClick: () => this.setTick(s.ms),
             });
@@ -788,7 +788,7 @@ export class SimControl {
         }
         gSpeeds.appendChild(speedGrid);
 
-        const resetBtn = DOMBuilder.iconbutton({
+        const resetBtn = UILib.iconbutton({
             label: t("sim.reset"),
             icon: "fa-arrow-rotate-left",
             onClick: () => {
@@ -801,7 +801,7 @@ export class SimControl {
         gSpeeds.appendChild(resetBtn);
 
         if (this.embedded) {
-            const btnOpen = DOMBuilder.iconbutton({
+            const btnOpen = UILib.iconbutton({
                 label: t("sim.embed.open"),
                 icon: "fa-up-right-from-square",
                 onClick: () => {
@@ -817,11 +817,11 @@ export class SimControl {
 
         //******** PROJECT ***********/
         addSeparator("sep-project");
-        const gProject = DOMBuilder.buttongroup(t("sim.project"), toolbar);
+        const gProject = UILib.buttongroup(t("sim.project"), toolbar);
         gProject.dataset.group = "project";
 
         // New
-        const btnNew = DOMBuilder.iconbutton({
+        const btnNew = UILib.iconbutton({
             label: t("sim.new"),
             icon: "fa-file",
             onClick: async () => {
@@ -833,7 +833,7 @@ export class SimControl {
         gProject.appendChild(btnNew);
 
         // Load
-        const btnLoad = DOMBuilder.iconbutton({
+        const btnLoad = UILib.iconbutton({
             label: t("sim.load"),
             icon: "fa-file-arrow-up",
             onClick: async () => {
@@ -845,7 +845,7 @@ export class SimControl {
         gProject.appendChild(btnLoad);
 
         // Save
-        const btnSave = DOMBuilder.iconbutton({
+        const btnSave = UILib.iconbutton({
             label: t("sim.save"),
             icon: "fa-file-arrow-down",
             onClick: () => {
@@ -857,10 +857,10 @@ export class SimControl {
 
         //******** ZOOM ***********/
         addSeparator("sep-zoom");
-        const gZoom = DOMBuilder.buttongroup(t("sim.zoom"), toolbar);
+        const gZoom = UILib.buttongroup(t("sim.zoom"), toolbar);
         gZoom.dataset.group = "zoom";
 
-        const btnZoomOut = DOMBuilder.iconbutton({
+        const btnZoomOut = UILib.iconbutton({
             label: "−",
             icon: "fa-magnifying-glass-minus",
             onClick: () => {
@@ -873,7 +873,7 @@ export class SimControl {
         btnZoomOut.title = t("sim.zoom.out");
         gZoom.appendChild(btnZoomOut);
 
-        const btnFit = DOMBuilder.iconbutton({
+        const btnFit = UILib.iconbutton({
             label: t("sim.zoom.fit"),
             icon: "fa-expand",
             onClick: () => this._fitToContent(),
@@ -882,7 +882,7 @@ export class SimControl {
         btnFit.title = t("sim.zoom.fit");
         gZoom.appendChild(btnFit);
 
-        const btnZoomIn = DOMBuilder.iconbutton({
+        const btnZoomIn = UILib.iconbutton({
             label: "+",
             icon: "fa-magnifying-glass-plus",
             onClick: () => {
@@ -898,11 +898,11 @@ export class SimControl {
 
         //******** COMMON ***********/
         addSeparator("sep-common");
-        const gCommon = DOMBuilder.buttongroup(t("sim.common"), toolbar);
+        const gCommon = UILib.buttongroup(t("sim.common"), toolbar);
         gCommon.dataset.group = "common";
 
         if (!isTauri()) {
-            const lessonsBtn = DOMBuilder.iconbutton({
+            const lessonsBtn = UILib.iconbutton({
                 label: t("sim.lessons"),
                 icon: "fa-book-open",
                 onClick: () => {
@@ -914,7 +914,7 @@ export class SimControl {
         }
 
         if (!isTauri()) {
-            const downloadsBtn = DOMBuilder.iconbutton({
+            const downloadsBtn = UILib.iconbutton({
                 label: t("sim.downloads"),
                 icon: "fa-download",
                 onClick: () => {
@@ -928,7 +928,7 @@ export class SimControl {
             gCommon.appendChild(downloadsBtn);
         }
 
-        const langBtn = DOMBuilder.iconbutton({
+        const langBtn = UILib.iconbutton({
             label: t("sim.language"),
             icon: "fa-language",
             onClick: (/** @type {MouseEvent} */ ev) => {
@@ -940,7 +940,7 @@ export class SimControl {
         langBtn.dataset.role = "lang";
         gCommon.appendChild(langBtn);
 
-        const helpBtn = DOMBuilder.iconbutton({
+        const helpBtn = UILib.iconbutton({
             label: t("sim.help"),
             icon: "fa-circle-question",
             onClick: () => {
@@ -953,7 +953,7 @@ export class SimControl {
         helpBtn.dataset.role = "mode-help";
         gCommon.appendChild(helpBtn);
 
-        const aboutBtn = DOMBuilder.iconbutton({
+        const aboutBtn = UILib.iconbutton({
             label: t("sim.about"),
             icon: "fa-circle-info",
             onClick: () => {
@@ -988,7 +988,7 @@ export class SimControl {
         ];
 
         for (const [id, label, icon] of tools) {
-            const b = DOMBuilder.iconbutton({
+            const b = UILib.iconbutton({
                 className: "sim-sidebar-btn",
                 label,
                 icon,

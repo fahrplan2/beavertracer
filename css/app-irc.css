@@ -3,6 +3,8 @@
    ========================================================= */
 
 .app-irc-client {
+  height: 100%;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   padding: 0;
@@ -31,7 +33,10 @@
 }
 
 .app-irc-client .irc-body {
+  flex: 1;
+  min-height: 0;
   display: flex;
+  overflow: hidden;
   border-top: none;
 }
 
@@ -40,7 +45,6 @@
   flex-shrink: 0;
   border-right: 1px solid var(--border, #333);
   padding: var(--pad-sm) 0;
-  min-height: 420px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -86,8 +90,10 @@
 .app-irc-client .irc-main {
   flex: 1;
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .app-irc-client .irc-topic {
@@ -104,8 +110,7 @@
 
 .app-irc-client .irc-messages {
   flex: 1;
-  min-height: 360px;
-  max-height: 520px;
+  min-height: 0;
   overflow-y: auto;
   padding: var(--pad-sm) 10px;
   font-family: "Hack", monospace;

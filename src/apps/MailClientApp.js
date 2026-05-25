@@ -531,6 +531,10 @@ export class MailClientApp extends LoggedProcess {
     this.statusEl = statusEl;
 
     // ── Assemble ─────────────────────────────────────────────
+    sentPanel.classList.add("hidden");
+    composePanel.classList.add("hidden");
+    configPanel.classList.add("hidden");
+    logPanel.classList.add("hidden");
     const root = UI.panel([toolbar, tabBar, inboxPanel, sentPanel, composePanel, configPanel, logPanel, statusEl]);
     this.root.replaceChildren(root);
   }
@@ -540,11 +544,11 @@ export class MailClientApp extends LoggedProcess {
   /** @param {"inbox"|"sent"|"compose"|"config"|"log"} tab */
   _switchTab(tab) {
     this.tab = tab;
-    if (this.inboxPanel)   this.inboxPanel.style.display   = tab === "inbox"   ? "" : "none";
-    if (this.sentPanel)    this.sentPanel.style.display    = tab === "sent"    ? "" : "none";
-    if (this.composePanel) this.composePanel.style.display = tab === "compose" ? "" : "none";
-    if (this.configPanel)  this.configPanel.style.display  = tab === "config"  ? "" : "none";
-    if (this.logPanel)     this.logPanel.style.display     = tab === "log"     ? "" : "none";
+    this.inboxPanel?.classList.toggle("hidden",   tab !== "inbox");
+    this.sentPanel?.classList.toggle("hidden",    tab !== "sent");
+    this.composePanel?.classList.toggle("hidden", tab !== "compose");
+    this.configPanel?.classList.toggle("hidden",  tab !== "config");
+    this.logPanel?.classList.toggle("hidden",     tab !== "log");
     this._setTabActive?.(tab);
   }
 
