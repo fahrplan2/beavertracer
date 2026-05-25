@@ -1728,3 +1728,31 @@ sim-toolbar-langbtn {
     box-sizing: border-box;
   }
 }
+
+/* ── Landscape phones: small height → panels fullscreen ── */
+@media (max-height: 500px) {
+  .sim-root > .sim-panel {
+    position: absolute !important;
+    inset: 0 !important;
+    min-width: unset !important;
+    max-width: unset !important;
+    max-height: unset !important;
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    box-shadow: none !important;
+    transform: none !important;
+    z-index: 5000 !important;
+  }
+
+  .sim-root > .sim-panel .sim-panel-header {
+    cursor: default;
+  }
+
+  .sim-root > .sim-panel .sim-panel-body {
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}

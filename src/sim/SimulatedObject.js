@@ -271,7 +271,7 @@ export class SimulatedObject {
     }
 
     _isMobile() {
-        return window.matchMedia("(max-width: 600px)").matches;
+        return window.matchMedia("(max-width: 600px), (max-height: 500px)").matches;
     }
 
     /**
