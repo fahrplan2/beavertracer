@@ -173,6 +173,7 @@ export class SimControl {
     /** @type {number} */ _panStartX = 0;
     /** @type {number} */ _panStartY = 0;
     /** @type {boolean} */ _spaceDown = false;
+    /** @type {boolean} */ _isDragPanning = false;
 
     /** @type {boolean} */
     _uiDirty = false;
@@ -546,14 +547,7 @@ export class SimControl {
             if (!isMiddle && !isSpaceDrag) return;
             ev.preventDefault();
             ev.stopPropagation();
-            this._isPanning = true;
-            this._panPointerId = ev.pointerId;
-            this._panStartClientX = ev.clientX;
-            this._panStartClientY = ev.clientY;
-            this._panStartX = this._panX;
-            this._panStartY = this._panY;
-            nodes.setPointerCapture(ev.pointerId);
-            nodes.style.cursor = "grabbing";
+            this._startDragPan(ev);
         });
 
         window.addEventListener("pointermove", (ev) => {
@@ -567,6 +561,7 @@ export class SimControl {
         window.addEventListener("pointerup", (ev) => {
             if (!this._isPanning || ev.pointerId !== this._panPointerId) return;
             this._isPanning = false;
+            this._isDragPanning = false;
             this._panPointerId = null;
             nodes.style.cursor = "";
         });
@@ -1653,11 +1648,33 @@ export class SimControl {
     }
 
     /** @param {PointerEvent} ev */
-    async _onPointerDown(ev) {
-        if (this.mode !== "edit") return;
+    _startDragPan(ev) {
+        const nodes = this.nodesLayer;
+        if (!nodes) return;
+        ev.preventDefault();
+        this._isPanning = true;
+        this._isDragPanning = true;
+        this._panPointerId = ev.pointerId;
+        this._panStartClientX = ev.clientX;
+        this._panStartClientY = ev.clientY;
+        this._panStartX = this._panX;
+        this._panStartY = this._panY;
+        nodes.setPointerCapture(ev.pointerId);
+        nodes.style.cursor = "grabbing";
+    }
 
+    /** @param {PointerEvent} ev */
+    async _onPointerDown(ev) {
         // Middle mouse and space-drag are handled by the pan listener — ignore here
         if (ev.button === 1 || (ev.button === 0 && this._spaceDown)) return;
+
+        // Run/trace mode: left-click on empty canvas → drag to pan
+        if (this.mode !== "edit") {
+            if (ev.button === 0 && !this._getObjFromEvent(ev)) {
+                this._startDragPan(ev);
+            }
+            return;
+        }
 
         const obj = this._getObjFromEvent(ev);
         const link = this._getLinkFromEvent(ev); // may be null
@@ -1829,9 +1846,13 @@ export class SimControl {
             return;
         }
 
-        // SELECT tool: focus node
+        // SELECT tool: focus node, or drag-pan on empty canvas
         if (this.tool === "select") {
-            if (obj) this.setFocus(obj);
+            if (obj) {
+                this.setFocus(obj);
+            } else if (ev.button === 0 && !link) {
+                this._startDragPan(ev);
+            }
             return;
         }
     }
@@ -2155,7 +2176,7 @@ export class SimControl {
             }
         }
 
-        this.isPaused = true;
+        this._enterEditMode();
         this._syncSceneDOM();
         this.redrawLinks();
         requestAnimationFrame(() => this._fitToContent(1));
