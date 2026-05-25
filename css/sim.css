@@ -1669,6 +1669,14 @@ sim-toolbar-langbtn {
     grid-template-columns: 1fr 1fr;
   }
 
+  /* sidebar: hide scrollbar so it doesn't shift buttons off-center */
+  .sim-sidebar {
+    scrollbar-width: none;
+  }
+  .sim-sidebar::-webkit-scrollbar {
+    display: none;
+  }
+
   /* sidebar buttons: icon-only square touch targets */
   .sim-sidebar-btn {
     height: 48px !important;
