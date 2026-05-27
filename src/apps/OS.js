@@ -523,6 +523,12 @@ export class OS {
                 this.exit(app.pid);
             }
         });
+        for (const id of ids) {
+            if (!this.runningApps.some(a => a._appId === id)) {
+                const entry = APP_REGISTRY.find(e => e.id === id);
+                if (entry && !entry.mandatory) this.exec(entry.Class);
+            }
+        }
     }
 
     /** @returns {string[]} */
