@@ -35,7 +35,7 @@ const APP_REGISTRY = [
     { id: "TerminalApp",            Class: TerminalApp,            mandatory: true,  category: "system", icon: "fa-terminal",      labelKey: "app.terminal.title" },
     { id: "ExplorerApp",            Class: ExplorerApp,            mandatory: true,  category: "system", icon: "fa-folder-open",   labelKey: "app.explorer.title" },
     { id: "TextEditorApp",          Class: TextEditorApp,          mandatory: true,  category: "system", icon: "fa-file-pen",      labelKey: "app.texteditor.title" },
-    { id: "CertManagerApp",         Class: CertManagerApp,         mandatory: true,  category: "system", icon: "fa-shield-halved", labelKey: "app.certmanager.title" },
+    { id: "CertManagerApp",         Class: CertManagerApp,         mandatory: false,  category: "system", icon: "fa-shield-halved", labelKey: "app.certmanager.title" },
     { id: "SparktailHTTPClientApp", Class: SparktailHTTPClientApp, mandatory: false, category: "client", icon: "fa-globe",         labelKey: "app.sparktail.title" },
     { id: "MailClientApp",          Class: MailClientApp,          mandatory: false, category: "client", icon: "fa-envelope-open", labelKey: "app.mailclient.title" },
     { id: "SimpleIRCClientApp",     Class: SimpleIRCClientApp,     mandatory: false, category: "client", icon: "fa-comments",      labelKey: "app.ircclient.title" },
