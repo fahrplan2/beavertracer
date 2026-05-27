@@ -25,10 +25,6 @@ Options:
 
 const ROOT = path.resolve(import.meta.dirname, "..");
 
-
-// For "about", only translate the part before this marker — Credits/License stay English.
-const ABOUT_STOP_MARKER = "<h3>Credits</h3>";
-
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 /** Strip markdown code fences the model sometimes adds despite instructions. */
@@ -49,6 +45,7 @@ async function translateChunk(html, targetLanguage) {
           `- Preserve ALL HTML tags, attributes, and structure exactly as-is\n` +
           `- Only translate visible text content\n` +
           `- Do NOT translate proper nouns: BeaverTracer, Wireshark, Wiregasm, Font Awesome, Hack, Claude, Anthropic\n` +
+          `- Keep HTML comments (<!-- ... -->) exactly as-is — do not translate or remove them\n` +
           `- Keep {VERSION} placeholder unchanged\n` +
           `- Use informal address forms (e.g. "du" in German, "tu" in French) — this is a secondary school learning tool\n` +
           `- Use sentence case for headings (only capitalise the first word and proper nouns) — do NOT copy English title case\n` +
@@ -83,11 +80,6 @@ for (const page of ["about", "help", "downloads"]) {
   const srcPath = path.join(ROOT, "pages", page, "index.html");
   const src = fs.readFileSync(srcPath, "utf8");
 
-  // For "about": split at Credits heading so it stays in English
-  const stopIdx = page === "about" ? src.indexOf(ABOUT_STOP_MARKER) : -1;
-  const translatePart = stopIdx > -1 ? src.slice(0, stopIdx).trimEnd() : src;
-  const keepPart      = stopIdx > -1 ? "\n\n" + src.slice(stopIdx) : "";
-
   for (const locale of LOCALES) {
     const outPath = path.join(ROOT, "pages", page, `index.${locale.code}.html`);
     if (fs.existsSync(outPath)) {
@@ -97,11 +89,11 @@ for (const page of ["about", "help", "downloads"]) {
 
     process.stdout.write(`  …     ${page} → ${locale.name} `);
     try {
-      let translated = await translateHtml(translatePart, locale.name);
+      let translated = await translateHtml(src, locale.name);
       if (locale.rtl) {
         translated = `<div dir="rtl">\n${translated}\n</div>`;
       }
-      fs.writeFileSync(outPath, translated + keepPart + "\n", "utf8");
+      fs.writeFileSync(outPath, translated + "\n", "utf8");
       console.log(`✓`);
     } catch (e) {
       console.log(`✗ ${e.message}`);
