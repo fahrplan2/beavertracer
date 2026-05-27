@@ -100,8 +100,7 @@
   box-shadow: var(--shadow);
 
   padding: 10px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-               "Liberation Mono", monospace;
+  font-family: "Hack", monospace;
   font-size: 0.78125rem;
   line-height: 1.35;
 }
@@ -181,7 +180,7 @@
 
 .app-sparktail-http .cert-popup-value {
   color: var(--text);
-  font-family: ui-monospace, monospace;
+  font-family: "Hack", monospace;
   font-size: 0.6875rem;
   word-break: break-all;
 }

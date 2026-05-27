@@ -45,7 +45,7 @@
 .about-container .license-text {
     font-size: 0.875rem;
     color: #444;
-    font-family: 'Courier New', Courier, monospace;
+    font-family: "Hack", monospace;
 }
 
 .about-container .thanks {

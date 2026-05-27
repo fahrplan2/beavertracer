@@ -110,7 +110,7 @@
 }
 
 .router-if-mac-value {
-  font-family: monospace;
+  font-family: "Hack", monospace;
   font-size: 0.8125rem;
   color: var(--muted);
 }
@@ -268,8 +268,8 @@
 }
 
 .router-vpn-name   { font-weight: 600; }
-.router-vpn-remote { color: var(--muted); font-family: monospace; }
-.router-vpn-net    { color: var(--muted); font-family: monospace; }
+.router-vpn-remote { color: var(--muted); font-family: "Hack", monospace; }
+.router-vpn-net    { color: var(--muted); font-family: "Hack", monospace; }
 
 .router-vpn-form {
   display: flex;

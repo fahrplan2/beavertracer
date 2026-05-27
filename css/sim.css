@@ -1448,7 +1448,7 @@ sim-toolbar-langbtn {
 }
 
 .sim-node-tooltip-row {
-  font-family: monospace;
+  font-family: "Hack", monospace;
   font-size: 0.6875rem;
   opacity: 0.9;
 }

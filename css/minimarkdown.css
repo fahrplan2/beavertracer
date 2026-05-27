@@ -30,7 +30,7 @@
 .minimarkdown-h2 code,
 .minimarkdown-h3 code,
 .minimarkdown-ul code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: "Hack", monospace;
   background: rgba(0, 0, 0, 0.06);
   padding: 0.1em 0.3em;
   border-radius: 4px;
