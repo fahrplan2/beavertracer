@@ -1028,7 +1028,7 @@ export class SimControl {
             this._tooltipTimer = window.setTimeout(() => {
                 this._tooltipTimer = null;
                 this._showTooltip(obj, cx, cy);
-            }, 600);
+            }, 300);
         });
 
         nodes.addEventListener("mouseleave", () => {
@@ -1204,6 +1204,7 @@ export class SimControl {
                 btn.classList.toggle("active", this.mode === "edit" && this.tool === id);
             }
         }
+
     }
 
 

@@ -529,6 +529,10 @@
   opacity: 1;
 }
 
+@media (pointer: coarse) {
+  .sim-link-port-label { opacity: 1; }
+}
+
 /* ── Switch tables ──────────────────────────────────────────── */
 .switch-sat-table,
 .switch-stp-table {
