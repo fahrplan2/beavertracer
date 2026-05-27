@@ -283,7 +283,12 @@
   align-items: center;
   gap: var(--pad-md);
   border: none;
+  border-radius: var(--radius-md);
   padding: 0 var(--pad-lg);
+}
+
+.sim-toolbar-branding-group:active {
+  transform: translateY(1px);
 }
 
 .sim-toolbar-branding-text {
@@ -340,6 +345,17 @@
   opacity: 0.40;
   pointer-events: none;
   z-index: 0;
+  transition: opacity 0.2s, filter 0.2s;
+}
+
+.sim-toolbar-branding-group:hover::after {
+  opacity: 0.85;
+  filter: drop-shadow(0 0 6px var(--primary)) drop-shadow(0 0 12px color-mix(in oklch, var(--primary), transparent 50%));
+}
+
+.sim-toolbar-branding-group:active::after {
+  opacity: 1;
+  filter: drop-shadow(0 0 4px var(--primary));
 }
 
 /* =========================================================

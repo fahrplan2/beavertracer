@@ -640,6 +640,7 @@ export default {
   "sim.about": "Über",
   "sim.downloads": "Downloads",
   "sim.help": "Hilfe",
+  "sim.welcome": "Willkommen",
   "sim.trace": "Verfolgung",
   "sim.reset": "Zurücksetzen",
   "sim.invalidfilewarning": "Ungültiges Dateiformat oder nicht unterstütztes Speicherdateiformat.",

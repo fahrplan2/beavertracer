@@ -870,6 +870,7 @@ export default {
   "sim.about": "About",
   "sim.downloads": "Downloads",
   "sim.help": "Help",
+  "sim.welcome": "Welcome",
   "sim.trace": "Trace",
   "sim.reset": "Reset",
 

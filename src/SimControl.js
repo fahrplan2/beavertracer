@@ -679,6 +679,7 @@ export class SimControl {
         const brandingGroup = document.createElement("div");
         brandingGroup.className = "sim-toolbar-group sim-toolbar-branding-group";
         brandingGroup.style.cursor = "pointer";
+        brandingGroup.title = t("sim.welcome");
         brandingGroup.addEventListener("click", () => WelcomeDialog.show(this));
         toolbar.appendChild(brandingGroup);
 
@@ -901,32 +902,6 @@ export class SimControl {
         const gCommon = UILib.buttongroup(t("sim.common"), toolbar);
         gCommon.dataset.group = "common";
 
-        if (!isTauri()) {
-            const lessonsBtn = UILib.iconbutton({
-                label: t("sim.lessons"),
-                icon: "fa-book-open",
-                onClick: () => {
-                    window.open(`/lessons/${getLocale()}/`, "_blank");
-                },
-            });
-            lessonsBtn.dataset.role = "lessons-open";
-            gCommon.appendChild(lessonsBtn);
-        }
-
-        if (!isTauri()) {
-            const downloadsBtn = UILib.iconbutton({
-                label: t("sim.downloads"),
-                icon: "fa-download",
-                onClick: () => {
-                    this.pause();
-                    this.mode = "page";
-                    this._invalidateUI();
-                    this._staticRouter.navigate("/downloads", { replace: true });
-                },
-            });
-            downloadsBtn.dataset.role = "mode-downloads";
-            gCommon.appendChild(downloadsBtn);
-        }
 
         const langBtn = UILib.iconbutton({
             label: t("sim.language"),
