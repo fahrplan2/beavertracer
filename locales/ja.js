@@ -582,6 +582,7 @@ export default {
   "router.bgp.tab": "BGP",
   "router.bgp.tab.config": "Konfiguration",
   "router.bgp.tab.routes": "Routen",
+  "router.bgp.tab.peers": "Peers",
   "router.bgp.tab.log": "Protokoll",
   "router.bgp.enabled": "BGP aktiviert",
   "router.bgp.localas": "AS-Nummer",
@@ -1193,5 +1194,9 @@ export default {
   "os.apps.library.empty": "利用可能なソフトウェアはすべてインストール済みです。",
   "os.apps.category.system": "システム",
   "os.apps.category.client": "クライアントソフトウェア",
-  "os.apps.category.server": "サーバーソフトウェア"
+  "os.apps.category.server": "サーバーソフトウェア",
+  "router.rip.tab.config": "設定",
+  "router.rip.tab.log": "ログ",
+  "sim.welcome": "ようこそ",
+  "sim.resetwarning": "シミュレーションをリセットしますか？\n\nすべてのキャッシュと動的状態がリセットされます（ARP、SAT、ルーティング、TCP接続、DNS等）。"
 };

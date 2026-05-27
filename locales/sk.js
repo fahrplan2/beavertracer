@@ -650,6 +650,8 @@ export default {
   "router.rip.col.passive": "Pasívny",
   "router.rip.passive.hint": "Pasívny — rozhranie prijíma aktualizácie, ale neposiela žiadne",
   "router.rip.log": "Záznam",
+  "router.rip.tab.config": "Konfigurácia",
+  "router.rip.tab.log": "Záznam",
   "router.ripng.tab": "RIPng",
   "router.ripng.enabled": "RIPng povolený",
   "router.ripng.col.interface": "Rozhranie",
@@ -658,6 +660,7 @@ export default {
   "router.bgp.tab": "BGP",
   "router.bgp.tab.config": "Konfigurácia",
   "router.bgp.tab.routes": "Trasy",
+  "router.bgp.tab.peers": "Partneri",
   "router.bgp.tab.log": "Záznam",
   "router.bgp.enabled": "BGP povolený",
   "router.bgp.localas": "Číslo AS",
@@ -1192,5 +1195,7 @@ export default {
   "os.apps.library.empty": "Všetok dostupný softvér je už nainštalovaný.",
   "os.apps.category.system": "Systém",
   "os.apps.category.client": "Klientsky softvér",
-  "os.apps.category.server": "Serverový softvér"
+  "os.apps.category.server": "Serverový softvér",
+  "sim.welcome": "Vitajte",
+  "sim.resetwarning": "Resetovať simuláciu?\n\nVšetky vyrovnávacie pamäte a dynamický stav budú resetovaní (ARP, SAT, smerovanie, TCP spojenia, DNS atď.)."
 };

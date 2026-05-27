@@ -88,7 +88,7 @@ export class PCapViewer {
   /** @type {HTMLElement|null} */ #statusEl = null;
   /** @type {HTMLElement|null} */ #loadingOverlay = null;
   /** @type {HTMLElement|null} */ #treePane = null;
-  /** @type {HTMLPreElement|null} */ #rawPane = null;
+  /** @type {HTMLElement|null} */ #rawPane = null;
 
   // UI state
   /** @type {number} */ #filterTimer = 0;
@@ -405,7 +405,7 @@ export class PCapViewer {
           </div>
           <div class="pcapviewer-vsplitter"></div>
           <div class="pcapviewer-pane pcapviewer-pane--raw">
-            <pre class="pcapviewer-rawpane">${t("pcap.packet.select")}</pre>
+            <div class="pcapviewer-rawpane">${t("pcap.packet.select")}</div>
           </div>
         </div>
       </div>
@@ -421,7 +421,7 @@ export class PCapViewer {
     this.#statusEl = /** @type {HTMLElement} */ (root.querySelector(".pcapviewer-status"));
     this.#loadingOverlay = /** @type {HTMLElement} */ (root.querySelector(".pcapviewer-wg-overlay"));
     this.#treePane = /** @type {HTMLElement} */ (root.querySelector(".pcapviewer-treepane"));
-    this.#rawPane = /** @type {HTMLPreElement} */ (root.querySelector(".pcapviewer-rawpane"));
+    this.#rawPane = /** @type {HTMLElement} */ (root.querySelector(".pcapviewer-rawpane"));
   }
 
   #wireUI() {
@@ -985,7 +985,7 @@ export class PCapViewer {
       containerSel: ".pcapviewer-layout",
       splitterSel: ".pcapviewer-splitter",
       primaryPaneSel: ".pcapviewer-pane--table",
-      splitSizePx: 5,
+      splitSizePx: 16,
       minA: 80,
       minB: 120,
       defaultRatio: 0.4,
@@ -1004,7 +1004,7 @@ export class PCapViewer {
       containerSel: ".pcapviewer-bottom",
       splitterSel: ".pcapviewer-vsplitter",
       primaryPaneSel: ".pcapviewer-pane--tree",
-      splitSizePx: 4,
+      splitSizePx: 16,
       minA: 120,
       minB: 0,
       defaultRatio: 0.65,
@@ -1194,29 +1194,27 @@ export class PCapViewer {
       const base = row * COLS;
       const offset = base.toString(16).toUpperCase().padStart(4, "0");
 
-      // offset column
-      html += `<span class="hex-offset">${offset}</span>  `;
-
-      // hex bytes (with mid-gap after byte 8)
       let hexPart = "";
       let asciiPart = "";
       for (let col = 0; col < COLS; col++) {
         const i = base + col;
-        if (col === 8) hexPart += " ";
+        if (col === 8) hexPart += `<span class="hex-gap"> </span>`;
         if (i < bytes.length) {
           const hex = bytes[i].toString(16).toUpperCase().padStart(2, "0");
           hexPart += `<span class="pcapviewer-hexbyte" data-i="${i}">${hex}</span> `;
           const c = bytes[i];
-          asciiPart += (c >= 32 && c < 127) ? String.fromCharCode(c) : "·";
+          asciiPart += (c >= 32 && c < 127) ? String.fromCharCode(c) : `<span class="hex-ascii-dot">·</span>`;
         } else {
-          hexPart += "   ";
+          hexPart += `<span class="hex-pad">   </span>`;
           asciiPart += " ";
         }
       }
 
-      html += hexPart;
-      html += ` <span class="hex-ascii">${asciiPart}</span>`;
-      if ((row + 1) * COLS < bytes.length + COLS) html += "\n";
+      html += `<div class="hex-row">` +
+        `<span class="hex-offset">${offset}</span>` +
+        `<span class="hex-bytes">${hexPart}</span>` +
+        `<span class="hex-ascii">${asciiPart}</span>` +
+        `</div>`;
     }
 
     this.#rawPane.innerHTML = html;

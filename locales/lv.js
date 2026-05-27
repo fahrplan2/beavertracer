@@ -582,6 +582,7 @@ export default {
   "router.bgp.tab": "BGP",
   "router.bgp.tab.config": "Konfiguration",
   "router.bgp.tab.routes": "Routen",
+  "router.bgp.tab.peers": "Peers",
   "router.bgp.tab.log": "Protokoll",
   "router.bgp.enabled": "BGP aktiviert",
   "router.bgp.localas": "AS-Nummer",
@@ -1193,5 +1194,9 @@ export default {
   "os.apps.library.empty": "Visa pieejamā programmatūra jau ir instalēta.",
   "os.apps.category.system": "Sistēma",
   "os.apps.category.client": "Klienta programmatūra",
-  "os.apps.category.server": "Servera programmatūra"
+  "os.apps.category.server": "Servera programmatūra",
+  "router.rip.tab.config": "Konfigurācija",
+  "router.rip.tab.log": "Žurnāls",
+  "sim.welcome": "Sveiki",
+  "sim.resetwarning": "Pārstartēt simulāciju?\n\nVisas kešatmiņas un dinamiskas stāvokļi tiks atiestatīti (ARP, SAT, maršrutēšana, TCP savienojumi, DNS utt.)."
 };

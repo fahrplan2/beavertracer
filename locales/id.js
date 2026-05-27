@@ -582,6 +582,7 @@ export default {
   "router.bgp.tab": "BGP",
   "router.bgp.tab.config": "Konfiguration",
   "router.bgp.tab.routes": "Routen",
+  "router.bgp.tab.peers": "Peers",
   "router.bgp.tab.log": "Protokoll",
   "router.bgp.enabled": "BGP aktiviert",
   "router.bgp.localas": "AS-Nummer",
@@ -1193,5 +1194,9 @@ export default {
   "os.apps.library.empty": "Semua perangkat lunak yang tersedia sudah terpasang.",
   "os.apps.category.system": "Sistem",
   "os.apps.category.client": "Perangkat Lunak Klien",
-  "os.apps.category.server": "Perangkat Lunak Server"
+  "os.apps.category.server": "Perangkat Lunak Server",
+  "router.rip.tab.config": "Konfigurasi",
+  "router.rip.tab.log": "Log",
+  "sim.welcome": "Selamat Datang",
+  "sim.resetwarning": "Reset simulasi?\n\nSemua cache dan state dinamis akan direset (ARP, SAT, routing, koneksi TCP, DNS, dll)."
 };

@@ -582,6 +582,7 @@ export default {
   "router.bgp.tab": "BGP",
   "router.bgp.tab.config": "Konfiguration",
   "router.bgp.tab.routes": "Routen",
+  "router.bgp.tab.peers": "Peers",
   "router.bgp.tab.log": "Protokoll",
   "router.bgp.enabled": "BGP aktiviert",
   "router.bgp.localas": "AS-Nummer",
@@ -1193,5 +1194,9 @@ export default {
   "os.apps.library.empty": "Alle beschikbare software is al geïnstalleerd.",
   "os.apps.category.system": "Systeem",
   "os.apps.category.client": "Clientsoftware",
-  "os.apps.category.server": "Serversoftware"
+  "os.apps.category.server": "Serversoftware",
+  "router.rip.tab.config": "Configuratie",
+  "router.rip.tab.log": "Logboek",
+  "sim.welcome": "Welkom",
+  "sim.resetwarning": "Simulatie resetten?\n\nAlle caches en dynamische status worden opnieuw ingesteld (ARP, SAT, routering, TCP-verbindingen, DNS, enz.)."
 };

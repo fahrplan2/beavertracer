@@ -111,7 +111,7 @@ export class StaticPageRouter {
     // Notify host app so it can switch tab/mode when a static page is active
     this.#onRoute?.({ route, baseUrl });
 
-    const html = await this.#loadLocalized(baseUrl);
+    const html = await this.#resolvePartials(await this.#loadLocalized(baseUrl), baseUrl);
 
     const finalHtml = '<div class="about-container">' + this.#replaceTags(html, route) + '</div>';
 
@@ -226,6 +226,27 @@ export class StaticPageRouter {
       .replace(/\{VERSION\}/g, vDisplay)
       .replace(/\{VERSION_BASE\}/g, vBase)
       .replace(/\{DOWNLOAD_BASE\}/g, downloadBase);
+  }
+
+  /**
+   * Replaces <!-- CREDITS --> (and similar named partials) with the content of
+   * a _<name>.html file in the same directory as baseUrl.
+   * @param {string} html
+   * @param {string} baseUrl
+   */
+  async #resolvePartials(html, baseUrl) {
+    const PARTIAL_RE = /<!--\s*([A-Z_]+)\s*-->/g;
+    const dir = baseUrl.replace(/\/[^/]+$/, "/");
+    let result = html;
+    for (const [placeholder, name] of html.matchAll(PARTIAL_RE)) {
+      const partialUrl = `${dir}_${name.toLowerCase()}.html`;
+      const loader = StaticPageRouter.#modules[partialUrl];
+      if (!loader) continue;
+      try {
+        result = result.replace(placeholder, String(await loader()));
+      } catch { /* leave placeholder if partial fails to load */ }
+    }
+    return result;
   }
 
   /** @param {string} baseUrl */

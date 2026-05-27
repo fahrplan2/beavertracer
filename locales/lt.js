@@ -582,6 +582,7 @@ export default {
   "router.bgp.tab": "BGP",
   "router.bgp.tab.config": "Konfiguration",
   "router.bgp.tab.routes": "Routen",
+  "router.bgp.tab.peers": "Peers",
   "router.bgp.tab.log": "Protokoll",
   "router.bgp.enabled": "BGP aktiviert",
   "router.bgp.localas": "AS-Nummer",
@@ -1193,5 +1194,9 @@ export default {
   "os.apps.library.empty": "Visa prieinama programinė įranga jau įdiegta.",
   "os.apps.category.system": "Sistema",
   "os.apps.category.client": "Kliento programinė įranga",
-  "os.apps.category.server": "Serverio programinė įranga"
+  "os.apps.category.server": "Serverio programinė įranga",
+  "router.rip.tab.config": "Konfigūracija",
+  "router.rip.tab.log": "Žurnalas",
+  "sim.welcome": "Sveiki",
+  "sim.resetwarning": "Iš naujo nustatyti simuliaciją?\n\nVisos talpyklos ir dinaminė būsena bus iš naujo nustatyta (ARP, SAT, maršrutizavimas, TCP ryšiai, DNS ir kt.)."
 };

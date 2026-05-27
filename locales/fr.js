@@ -579,6 +579,8 @@ export default {
   "router.rip.col.interface": "Interface",
   "router.rip.col.passive": "Passif",
   "router.rip.log": "Journal",
+  "router.rip.tab.config": "Configuration",
+  "router.rip.tab.log": "Journal",
   "router.ripng.tab": "RIPng",
   "router.ripng.enabled": "RIPng activé",
   "router.ripng.col.interface": "Interface",
@@ -587,6 +589,7 @@ export default {
   "router.bgp.tab": "BGP",
   "router.bgp.tab.config": "Configuration",
   "router.bgp.tab.routes": "Routes",
+  "router.bgp.tab.peers": "Pairs",
   "router.bgp.tab.log": "Journal",
   "router.bgp.enabled": "BGP activé",
   "router.bgp.localas": "Numéro AS",
@@ -1227,5 +1230,7 @@ export default {
   "os.apps.library.empty": "Tous les logiciels disponibles sont déjà installés.",
   "os.apps.category.system": "Système",
   "os.apps.category.client": "Logiciels clients",
-  "os.apps.category.server": "Logiciels serveurs"
+  "os.apps.category.server": "Logiciels serveurs",
+  "sim.welcome": "Bienvenue",
+  "sim.resetwarning": "Réinitialiser la simulation ?\n\nTous les caches et états dynamiques seront réinitialisés (ARP, SAT, routage, connexions TCP, DNS, etc.)."
 };

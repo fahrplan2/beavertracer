@@ -582,6 +582,7 @@ export default {
   "router.bgp.tab": "BGP",
   "router.bgp.tab.config": "Konfiguration",
   "router.bgp.tab.routes": "Routen",
+  "router.bgp.tab.peers": "Peers",
   "router.bgp.tab.log": "Protokoll",
   "router.bgp.enabled": "BGP aktiviert",
   "router.bgp.localas": "AS-Nummer",
@@ -1193,5 +1194,9 @@ export default {
   "os.apps.library.empty": "Все доступное программное обеспечение уже установлено.",
   "os.apps.category.system": "Система",
   "os.apps.category.client": "Клиентское программное обеспечение",
-  "os.apps.category.server": "Серверное программное обеспечение"
+  "os.apps.category.server": "Серверное программное обеспечение",
+  "router.rip.tab.config": "Конфигурация",
+  "router.rip.tab.log": "Журнал",
+  "sim.welcome": "Добро пожаловать",
+  "sim.resetwarning": "Сбросить симуляцию?\n\nВсе кэши и динамическое состояние будут сброшены (ARP, SAT, маршрутизация, TCP соединения, DNS и т.д.)."
 };

@@ -582,6 +582,7 @@ export default {
   "router.bgp.tab": "BGP",
   "router.bgp.tab.config": "Konfiguration",
   "router.bgp.tab.routes": "Routen",
+  "router.bgp.tab.peers": "Peers",
   "router.bgp.tab.log": "Protokoll",
   "router.bgp.enabled": "BGP aktiviert",
   "router.bgp.localas": "AS-Nummer",
@@ -1193,5 +1194,9 @@ export default {
   "os.apps.library.empty": "Sav dostupan softver je već instaliran.",
   "os.apps.category.system": "Sistem",
   "os.apps.category.client": "Klijentski softver",
-  "os.apps.category.server": "Serverski softver"
+  "os.apps.category.server": "Serverski softver",
+  "router.rip.tab.config": "Konfiguracija",
+  "router.rip.tab.log": "Zapisnik",
+  "sim.welcome": "Dobrodošli",
+  "sim.resetwarning": "Resetovati simulaciju?\n\nSvi cachei i dinamičko stanje će biti resetovani (ARP, SAT, rutiranje, TCP konekcije, DNS, itd.)."
 };

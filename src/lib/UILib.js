@@ -79,7 +79,7 @@ export class UILib {
   /**
    * Button element (app variant — onClick is wired in).
    * @param {string} label
-   * @param {() => void} onClick
+   * @param {(() => void)|null} [onClick]
    * @param {Object} [opts]
    * @param {string|string[]} [opts.className]
    * @param {boolean} [opts.primary]
@@ -89,7 +89,7 @@ export class UILib {
    * @param {"button"|"submit"|"reset"} [opts.type]
    * @returns {HTMLButtonElement}
    */
-  static button(label, onClick, opts = {}) {
+  static button(label, onClick = null, opts = {}) {
     /** @type {HTMLButtonElement} */
     const b = UILib.el("button", {
       className: opts.className ?? (opts.primary ? ["btn", "btn-primary"] : "btn"),
@@ -440,5 +440,37 @@ export class UILib {
   static markInvalid(el, isInvalid) {
     if (!el) return;
     el.classList.toggle("is-invalid", !!isInvalid);
+  }
+
+  /**
+   * Wraps a .sim-table-scroll element in a hint-outer div and attaches
+   * ▲/▼ scroll indicators that appear when content overflows.
+   * Returns the outer wrapper — append that to the DOM instead of scrollWrap.
+   * @param {HTMLElement} scrollWrap
+   * @returns {HTMLElement} outer
+   */
+  static wrapWithScrollHints(scrollWrap) {
+    const outer = UILib.div("router-scroll-hint-outer");
+    outer.appendChild(scrollWrap);
+
+    const hintTop = UILib.el("div", { className: "router-scroll-hint router-scroll-hint--top", attrs: { "aria-hidden": "true" }, text: "▲" });
+    const hintBottom = UILib.el("div", { className: "router-scroll-hint router-scroll-hint--bottom", attrs: { "aria-hidden": "true" }, text: "▼" });
+    outer.appendChild(hintTop);
+    scrollWrap.appendChild(hintBottom);
+
+    const update = () => {
+      const canScroll = scrollWrap.scrollHeight > scrollWrap.clientHeight + 2;
+      const atTop     = scrollWrap.scrollTop <= 4;
+      const atBottom  = scrollWrap.scrollTop + scrollWrap.clientHeight >= scrollWrap.scrollHeight - 4;
+      hintTop.classList.toggle("is-visible",    canScroll && !atTop);
+      hintBottom.classList.toggle("is-visible", canScroll && !atBottom);
+      const thead = scrollWrap.querySelector("thead");
+      if (thead) hintTop.style.top = /** @type {HTMLElement} */ (thead).offsetHeight + "px";
+    };
+
+    scrollWrap.addEventListener("scroll", update, { passive: true });
+    new ResizeObserver(update).observe(scrollWrap);
+
+    return outer;
   }
 }

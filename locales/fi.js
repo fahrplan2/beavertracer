@@ -582,6 +582,7 @@ export default {
   "router.bgp.tab": "BGP",
   "router.bgp.tab.config": "Konfiguration",
   "router.bgp.tab.routes": "Routen",
+  "router.bgp.tab.peers": "Peers",
   "router.bgp.tab.log": "Protokoll",
   "router.bgp.enabled": "BGP aktiviert",
   "router.bgp.localas": "AS-Nummer",
@@ -1193,5 +1194,9 @@ export default {
   "os.apps.library.empty": "Kaikki saatavilla oleva ohjelmisto on jo asennettu.",
   "os.apps.category.system": "Järjestelmä",
   "os.apps.category.client": "Asiakasohjelmisto",
-  "os.apps.category.server": "Palvelinohjelmisto"
+  "os.apps.category.server": "Palvelinohjelmisto",
+  "router.rip.tab.config": "Asetukset",
+  "router.rip.tab.log": "Loki",
+  "sim.welcome": "Tervetuloa",
+  "sim.resetwarning": "Nollaa simulaatio?\n\nKaikki välimuistit ja dynaamiset tilat nollataan (ARP, SAT, reititys, TCP-yhteydet, DNS jne.)."
 };

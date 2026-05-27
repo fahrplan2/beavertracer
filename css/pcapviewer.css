@@ -32,7 +32,7 @@
 /* Main layout */
 .pcapviewer-layout {
   display: grid;
-  grid-template-rows: minmax(80px, 1fr) 5px minmax(120px, 1fr);
+  grid-template-rows: minmax(80px, 1fr) 16px minmax(120px, 1fr);
   min-height: 0;
   position: relative;
 }
@@ -73,27 +73,45 @@
   cursor: row-resize;
   background: transparent;
   position: relative;
+  touch-action: none;
 }
 
+/* visible line */
 .pcapviewer-splitter::before {
   content: "";
   position: absolute;
   left: 0;
   right: 0;
-  top: 2px;
+  top: 50%;
   height: 1px;
+  transform: translateY(-50%);
   background: var(--border, #ccc);
+  transition: background 120ms;
 }
 
-/* Hover feedback like Wireshark */
-.pcapviewer-splitter:hover::before {
-  background: #888;
+/* grip handle — 3 horizontal dots centered */
+.pcapviewer-splitter::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 24px;
+  height: 5px;
+  background-image: radial-gradient(circle, var(--text-muted, #aaa) 1.5px, transparent 1.5px);
+  background-size: 8px 5px;
+  background-repeat: repeat-x;
+  opacity: 0.6;
+  pointer-events: none;
 }
+
+.pcapviewer-splitter:hover::before { background: var(--primary, #888); }
+.pcapviewer-splitter:hover::after  { opacity: 1; }
 
 
 .pcapviewer-bottom {
   display: grid;
-  grid-template-columns: 1fr 4px 1fr;
+  grid-template-columns: 1fr 16px 1fr;
   min-height: 0;
 }
 
@@ -110,11 +128,10 @@
 /* vertical splitter */
 .pcapviewer-vsplitter {
   cursor: col-resize;
-  background: var(--ui-border, #ddd);
+  background: transparent;
   position: relative;
-  transition: background 120ms;
+  touch-action: none;
 }
-.pcapviewer-vsplitter:hover { background: #888; }
 
 /* Table */
 .pcapviewer-table {
@@ -182,19 +199,61 @@
 
 .pcapviewer-rawpane {
   margin: 0;
-  padding: 8px;
-  line-height: 1.6;
+  padding: 8px 10px;
+  font-family: "Hack", monospace;
+  font-size: 0.75rem;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+.hex-row {
+  display: flex;
+  gap: 0.75em;
+  align-items: baseline;
+  border-radius: 3px;
+}
+
+.hex-row:hover {
+  background: color-mix(in oklch, var(--surface) 80%, var(--text) 5%);
 }
 
 .hex-offset {
-  color: var(--text-muted, #888);
+  color: var(--primary, #2563eb);
   user-select: none;
+  opacity: 0.7;
+  min-width: 3em;
+  flex-shrink: 0;
+}
+
+.hex-bytes {
+  flex: 1;
+  letter-spacing: 0.04em;
+  white-space: pre;
+}
+
+.hex-gap {
+  display: inline-block;
+  width: 0.6em;
+}
+
+.hex-pad {
+  display: inline-block;
+  width: 1.8em;
+  visibility: hidden;
 }
 
 .hex-ascii {
-  color: var(--text-muted, #777);
+  color: var(--text-muted, #888);
   user-select: none;
-  opacity: 0.75;
+  white-space: pre;
+  border-left: 1px solid var(--border, #ddd);
+  padding-left: 0.6em;
+  min-width: 10em;
+  flex-shrink: 0;
+}
+
+.hex-ascii-dot {
+  opacity: 0.35;
 }
 
 /* Tree */
@@ -206,7 +265,7 @@
 .pcapviewer-tree ul {
   list-style: none;
   margin: 0;
-  padding-left: 14px;
+  padding-left: 0;
 }
 
 .pcapviewer-tree-node {
@@ -362,19 +421,37 @@
   touch-action: none;
 }
 
+/* visible line */
 .pcapviewer-vsplitter::before {
   content: "";
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 3px;
+  left: 50%;
   width: 1px;
+  transform: translateX(-50%);
   background: var(--border, #ccc);
+  transition: background 120ms;
 }
 
-.pcapviewer-vsplitter:hover::before {
-  background: #888;
+/* grip handle — 3 vertical dots centered */
+.pcapviewer-vsplitter::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 5px;
+  height: 24px;
+  background-image: radial-gradient(circle, var(--text-muted, #aaa) 1.5px, transparent 1.5px);
+  background-size: 5px 8px;
+  background-repeat: repeat-y;
+  opacity: 0.6;
+  pointer-events: none;
 }
+
+.pcapviewer-vsplitter:hover::before { background: var(--primary, #888); }
+.pcapviewer-vsplitter:hover::after  { opacity: 1; }
 
 
 /* allow grid children to shrink instead of forcing grid/container to grow */

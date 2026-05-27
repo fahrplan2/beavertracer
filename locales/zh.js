@@ -618,6 +618,7 @@ export default {
   "router.bgp.tab": "BGP",
   "router.bgp.tab.config": "Konfiguration",
   "router.bgp.tab.routes": "Routen",
+  "router.bgp.tab.peers": "Peers",
   "router.bgp.tab.log": "Protokoll",
   "router.bgp.enabled": "BGP aktiviert",
   "router.bgp.localas": "AS-Nummer",
@@ -1193,5 +1194,9 @@ export default {
   "os.apps.library.empty": "所有可用软件已安装。",
   "os.apps.category.system": "系统",
   "os.apps.category.client": "客户端软件",
-  "os.apps.category.server": "服务器软件"
+  "os.apps.category.server": "服务器软件",
+  "router.rip.tab.config": "配置",
+  "router.rip.tab.log": "日志",
+  "sim.welcome": "欢迎",
+  "sim.resetwarning": "重置仿真?\n\n所有缓存和动态状态将被重置 (ARP, SAT, 路由, TCP 连接, DNS, 等)。"
 };

@@ -650,6 +650,8 @@ export default {
   "router.rip.col.passive": "Passiu",
   "router.rip.passive.hint": "Passiu — la interfície rep actualitzacions però no n'envia cap",
   "router.rip.log": "Registre",
+  "router.rip.tab.config": "Configuració",
+  "router.rip.tab.log": "Registre",
   "router.ripng.tab": "RIPng",
   "router.ripng.enabled": "RIPng activat",
   "router.ripng.col.interface": "Interfície",
@@ -658,6 +660,7 @@ export default {
   "router.bgp.tab": "BGP",
   "router.bgp.tab.config": "Configuració",
   "router.bgp.tab.routes": "Rutes",
+  "router.bgp.tab.peers": "Homòlegs",
   "router.bgp.tab.log": "Registre",
   "router.bgp.enabled": "BGP activat",
   "router.bgp.localas": "Número AS",
@@ -1192,5 +1195,7 @@ export default {
   "os.apps.library.empty": "Tot el software disponible ja està instal·lat.",
   "os.apps.category.system": "Sistema",
   "os.apps.category.client": "Software Client",
-  "os.apps.category.server": "Software Servidor"
+  "os.apps.category.server": "Software Servidor",
+  "sim.welcome": "Benvingut",
+  "sim.resetwarning": "Voleu reiniciar la simulació?\n\nTotes les memòries cau i l'estat dinàmic es reiniciaran (ARP, SAT, encaminament, connexions TCP, DNS, etc.)."
 };

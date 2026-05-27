@@ -650,6 +650,8 @@ export default {
   "router.rip.col.passive": "Pasivan",
   "router.rip.passive.hint": "Pasivan — interfejs prima ažuriranja ali ne šalje nijedan",
   "router.rip.log": "Zapisnik",
+  "router.rip.tab.config": "Konfiguracija",
+  "router.rip.tab.log": "Zapisnik",
   "router.ripng.tab": "RIPng",
   "router.ripng.enabled": "RIPng omogućen",
   "router.ripng.col.interface": "Interfejs",
@@ -658,6 +660,7 @@ export default {
   "router.bgp.tab": "BGP",
   "router.bgp.tab.config": "Konfiguracija",
   "router.bgp.tab.routes": "Rute",
+  "router.bgp.tab.peers": "Vršnjaci",
   "router.bgp.tab.log": "Zapisnik",
   "router.bgp.enabled": "BGP omogućen",
   "router.bgp.localas": "Broj AS-a",
@@ -1192,5 +1195,7 @@ export default {
   "os.apps.library.empty": "Sav dostupan softver je već instaliran.",
   "os.apps.category.system": "Sistem",
   "os.apps.category.client": "Klijentski softver",
-  "os.apps.category.server": "Serverski softver"
+  "os.apps.category.server": "Serverski softver",
+  "sim.welcome": "Dobrodošli",
+  "sim.resetwarning": "Resetovati simulaciju?\n\nSvi keš memorijski sadržaji i dinamičko stanje će biti resetovani (ARP, SAT, rutiranje, TCP konekcije, DNS, itd.)."
 };

@@ -582,6 +582,7 @@ export default {
   "router.bgp.tab": "BGP",
   "router.bgp.tab.config": "Konfiguration",
   "router.bgp.tab.routes": "Routen",
+  "router.bgp.tab.peers": "Peers",
   "router.bgp.tab.log": "Protokoll",
   "router.bgp.enabled": "BGP aktiviert",
   "router.bgp.localas": "AS-Nummer",
@@ -1193,5 +1194,9 @@ export default {
   "os.apps.library.empty": "Όλο το διαθέσιμο λογισμικό είναι ήδη εγκατεστημένο.",
   "os.apps.category.system": "Σύστημα",
   "os.apps.category.client": "Λογισμικό Πελάτη",
-  "os.apps.category.server": "Λογισμικό Διακομιστή"
+  "os.apps.category.server": "Λογισμικό Διακομιστή",
+  "router.rip.tab.config": "Ρύθμιση",
+  "router.rip.tab.log": "Αρχείο καταγραφής",
+  "sim.welcome": "Καλώς ήρθατε",
+  "sim.resetwarning": "Επαναφορά προσομοίωσης;\n\nΌλες οι μνήμες cache και η δυναμική κατάσταση θα επαναφερθούν (ARP, SAT, δρομολόγηση, συνδέσεις TCP, DNS, κ.λπ.)."
 };

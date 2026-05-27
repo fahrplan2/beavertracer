@@ -652,6 +652,8 @@ export default {
   "router.rip.col.passive": "被動",
   "router.rip.passive.hint": "被動 — 介面接收更新但不發送更新",
   "router.rip.log": "日誌",
+  "router.rip.tab.config": "組態",
+  "router.rip.tab.log": "日誌",
   "router.ripng.tab": "RIPng",
   "router.ripng.enabled": "RIPng 已啟用",
   "router.ripng.col.interface": "介面",
@@ -660,6 +662,7 @@ export default {
   "router.bgp.tab": "BGP",
   "router.bgp.tab.config": "組態",
   "router.bgp.tab.routes": "路由",
+  "router.bgp.tab.peers": "對等體",
   "router.bgp.tab.log": "日誌",
   "router.bgp.enabled": "BGP 已啟用",
   "router.bgp.localas": "AS 號碼",
@@ -1192,5 +1195,7 @@ export default {
   "os.apps.library.empty": "所有可用軟體都已安裝。",
   "os.apps.category.system": "系統",
   "os.apps.category.client": "用戶端軟體",
-  "os.apps.category.server": "伺服器軟體"
+  "os.apps.category.server": "伺服器軟體",
+  "sim.welcome": "歡迎",
+  "sim.resetwarning": "重設模擬？\n\n所有快取和動態狀態將被重設（ARP、SAT、路由、TCP 連線、DNS 等）。"
 };

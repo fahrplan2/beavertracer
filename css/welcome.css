@@ -145,6 +145,8 @@
   gap: var(--pad-md);
   padding: var(--pad-xl) var(--pad-lg) var(--pad-xl) var(--pad-2xl);
   border-right: 1px solid var(--ui-border);
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .welcome-action-btn {
@@ -372,6 +374,25 @@
   font-size: 0.75rem;
   color: var(--muted);
   line-height: 1.3;
+}
+
+/* ---- Kompakte Höhe (z.B. kleines Tauri-Fenster, Laptop 768px) ---- */
+
+@media (max-height: 700px) {
+  .welcome-header {
+    padding: var(--pad-lg) var(--pad-2xl);
+  }
+
+  .welcome-logo {
+    width: 38px;
+    height: 38px;
+  }
+
+  .welcome-actions {
+    gap: var(--pad-sm);
+    padding-top: var(--pad-lg);
+    padding-bottom: var(--pad-lg);
+  }
 }
 
 /* ---- Mobile ---- */

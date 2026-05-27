@@ -582,6 +582,7 @@ export default {
   "router.bgp.tab": "BGP",
   "router.bgp.tab.config": "Konfiguration",
   "router.bgp.tab.routes": "Routen",
+  "router.bgp.tab.peers": "Peers",
   "router.bgp.tab.log": "Protokoll",
   "router.bgp.enabled": "BGP aktiviert",
   "router.bgp.localas": "AS-Nummer",
@@ -1193,5 +1194,9 @@ export default {
   "os.apps.library.empty": "Tất cả phần mềm có sẵn đã được cài đặt.",
   "os.apps.category.system": "Hệ thống",
   "os.apps.category.client": "Phần mềm Máy khách",
-  "os.apps.category.server": "Phần mềm Máy chủ"
+  "os.apps.category.server": "Phần mềm Máy chủ",
+  "router.rip.tab.config": "Cấu hình",
+  "router.rip.tab.log": "Nhật ký",
+  "sim.welcome": "Chào mừng",
+  "sim.resetwarning": "Đặt lại mô phỏng?\n\nTất cả các bộ đệm và trạng thái động sẽ được đặt lại (ARP, SAT, định tuyến, kết nối TCP, DNS, v.v.)."
 };

@@ -650,6 +650,8 @@ export default {
   "router.rip.col.passive": "Pasiv",
   "router.rip.passive.hint": "Pasiv — ndërfaqja merr përditësimet por nuk dërgon asnjë",
   "router.rip.log": "Regjistër",
+  "router.rip.tab.config": "Konfigurimi",
+  "router.rip.tab.log": "Regjistër",
   "router.ripng.tab": "RIPng",
   "router.ripng.enabled": "RIPng i aktivizuar",
   "router.ripng.col.interface": "Ndërfaqja",
@@ -658,6 +660,7 @@ export default {
   "router.bgp.tab": "BGP",
   "router.bgp.tab.config": "Konfigurimi",
   "router.bgp.tab.routes": "Itineraret",
+  "router.bgp.tab.peers": "Bashkëbiseduesit",
   "router.bgp.tab.log": "Regjistër",
   "router.bgp.enabled": "BGP i aktivizuar",
   "router.bgp.localas": "Numri AS",
@@ -1192,5 +1195,7 @@ export default {
   "os.apps.library.empty": "I gjithë softueri i disponueshëm është tashmë i instaluar.",
   "os.apps.category.system": "Sistemi",
   "os.apps.category.client": "Softueri i Klientit",
-  "os.apps.category.server": "Softueri i Serverit"
+  "os.apps.category.server": "Softueri i Serverit",
+  "sim.welcome": "Mirësevini",
+  "sim.resetwarning": "Rivendosni simulimin?\n\nTë gjitha caches dhe gjendja dinamike do të rivendosen (ARP, SAT, rutim, lidhje TCP, DNS, etj.)."
 };

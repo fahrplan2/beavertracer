@@ -582,6 +582,7 @@ export default {
   "router.bgp.tab": "BGP",
   "router.bgp.tab.config": "Konfiguration",
   "router.bgp.tab.routes": "Routen",
+  "router.bgp.tab.peers": "Peers",
   "router.bgp.tab.log": "Protokoll",
   "router.bgp.enabled": "BGP aktiviert",
   "router.bgp.localas": "AS-Nummer",
@@ -1193,5 +1194,9 @@ export default {
   "os.apps.library.empty": "사용 가능한 모든 소프트웨어가 이미 설치되어 있습니다.",
   "os.apps.category.system": "시스템",
   "os.apps.category.client": "클라이언트 소프트웨어",
-  "os.apps.category.server": "서버 소프트웨어"
+  "os.apps.category.server": "서버 소프트웨어",
+  "router.rip.tab.config": "구성",
+  "router.rip.tab.log": "로그",
+  "sim.welcome": "환영합니다",
+  "sim.resetwarning": "시뮬레이션을 초기화하시겠습니까?\n\n모든 캐시 및 동적 상태가 초기화됩니다(ARP, SAT, 라우팅, TCP 연결, DNS 등)."
 };

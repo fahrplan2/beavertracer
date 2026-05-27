@@ -208,11 +208,19 @@ export async function initLocale() {
   // Always load fallback first
   await loadLocaleDict(fallback);
 
-  // 0) URL parameter ?lang= — applied but not persisted
-  const urlLang = new URLSearchParams(location.search).get("lang");
+  // 0) URL parameter ?lang= — applied but not persisted; removed from URL afterwards
+  const urlParams = new URLSearchParams(location.search);
+  const urlLang = urlParams.get("lang");
   if (urlLang) {
     const ok = await loadLocaleDict(urlLang);
-    if (ok) { locale = urlLang; document.documentElement.lang = locale; return; }
+    if (ok) {
+      locale = urlLang;
+      document.documentElement.lang = locale;
+      urlParams.delete("lang");
+      const newSearch = urlParams.toString();
+      history.replaceState(null, "", location.pathname + (newSearch ? "?" + newSearch : "") + location.hash);
+      return;
+    }
   }
 
   // 1) Saved locale

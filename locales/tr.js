@@ -582,6 +582,7 @@ export default {
   "router.bgp.tab": "BGP",
   "router.bgp.tab.config": "Konfiguration",
   "router.bgp.tab.routes": "Routen",
+  "router.bgp.tab.peers": "Peers",
   "router.bgp.tab.log": "Protokoll",
   "router.bgp.enabled": "BGP aktiviert",
   "router.bgp.localas": "AS-Nummer",
@@ -1193,5 +1194,9 @@ export default {
   "os.apps.library.empty": "Tüm kullanılabilir yazılımlar zaten yüklü.",
   "os.apps.category.system": "Sistem",
   "os.apps.category.client": "İstemci Yazılımı",
-  "os.apps.category.server": "Sunucu Yazılımı"
+  "os.apps.category.server": "Sunucu Yazılımı",
+  "router.rip.tab.config": "Yapılandırma",
+  "router.rip.tab.log": "Günlük",
+  "sim.welcome": "Hoş Geldiniz",
+  "sim.resetwarning": "Simülasyonu sıfırla?\n\nTüm önbellekler ve dinamik durum sıfırlanacaktır (ARP, SAT, yönlendirme, TCP bağlantıları, DNS, vb.)."
 };

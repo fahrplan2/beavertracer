@@ -587,6 +587,7 @@ export default {
   "router.bgp.tab": "BGP",
   "router.bgp.tab.config": "Konfiguration",
   "router.bgp.tab.routes": "Routen",
+  "router.bgp.tab.peers": "Peers",
   "router.bgp.tab.log": "Protokoll",
   "router.bgp.enabled": "BGP aktiviert",
   "router.bgp.localas": "AS-Nummer",
@@ -1198,5 +1199,9 @@ export default {
   "os.apps.library.empty": "Tutto il software disponibile è già installato.",
   "os.apps.category.system": "Sistema",
   "os.apps.category.client": "Software Client",
-  "os.apps.category.server": "Software Server"
+  "os.apps.category.server": "Software Server",
+  "router.rip.tab.config": "Configurazione",
+  "router.rip.tab.log": "Registro",
+  "sim.welcome": "Benvenuto",
+  "sim.resetwarning": "Ripristinare la simulazione?\n\nTutte le cache e lo stato dinamico verranno ripristinati (ARP, SAT, routing, connessioni TCP, DNS, ecc.)."
 };
