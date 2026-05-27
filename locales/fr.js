@@ -1230,5 +1230,7 @@ export default {
   "os.apps.library.empty": "Tous les logiciels disponibles sont déjà installés.",
   "os.apps.category.system": "Système",
   "os.apps.category.client": "Logiciels clients",
-  "os.apps.category.server": "Logiciels serveurs"
+  "os.apps.category.server": "Logiciels serveurs",
+  "sim.welcome": "Bienvenue",
+  "sim.resetwarning": "Réinitialiser la simulation ?\n\nTous les caches et états dynamiques seront réinitialisés (ARP, SAT, routage, connexions TCP, DNS, etc.)."
 };

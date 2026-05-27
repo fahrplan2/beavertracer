@@ -1194,5 +1194,9 @@ export default {
   "os.apps.library.empty": "Veškerý dostupný software je již nainstalován.",
   "os.apps.category.system": "Systém",
   "os.apps.category.client": "Klientský software",
-  "os.apps.category.server": "Serverový software"
+  "os.apps.category.server": "Serverový software",
+  "router.rip.tab.config": "Konfigurace",
+  "router.rip.tab.log": "Protokol",
+  "sim.welcome": "Vítejte",
+  "sim.resetwarning": "Resetovat simulaci?\n\nVšechny mezipaměti a dynamický stav budou resetovány (ARP, SAT, směrování, TCP připojení, DNS atd.)."
 };

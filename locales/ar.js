@@ -1194,5 +1194,9 @@ export default {
   "os.apps.library.empty": "جميع البرامج المتاحة مثبتة بالفعل.",
   "os.apps.category.system": "النظام",
   "os.apps.category.client": "برامج العميل",
-  "os.apps.category.server": "برامج الخادم"
+  "os.apps.category.server": "برامج الخادم",
+  "router.rip.tab.config": "الإعدادات",
+  "router.rip.tab.log": "السجل",
+  "sim.welcome": "مرحباً",
+  "sim.resetwarning": "إعادة تعيين المحاكاة؟\n\nسيتم إعادة تعيين جميع ذاكرات التخزين المؤقت والحالة الديناميكية (ARP, SAT, التوجيه, اتصالات TCP, DNS، إلخ)."
 };

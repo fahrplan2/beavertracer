@@ -792,7 +792,8 @@ export class SimControl {
         const resetBtn = UILib.iconbutton({
             label: t("sim.reset"),
             icon: "fa-arrow-rotate-left",
-            onClick: () => {
+            onClick: async () => {
+                if (!await SimDialog.confirm(t("sim.resetwarning"))) return;
                 this.restore(this.toJSON());
                 this.mode = "run";
                 this._invalidateUI();

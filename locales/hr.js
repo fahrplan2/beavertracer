@@ -1194,5 +1194,9 @@ export default {
   "os.apps.library.empty": "Sav dostupan softver je već instaliran.",
   "os.apps.category.system": "Sustav",
   "os.apps.category.client": "Klijentski softver",
-  "os.apps.category.server": "Serverski softver"
+  "os.apps.category.server": "Serverski softver",
+  "router.rip.tab.config": "Konfiguracija",
+  "router.rip.tab.log": "Zapisnik",
+  "sim.welcome": "Dobrodošli",
+  "sim.resetwarning": "Resetiraj simulaciju?\n\nSvi cachevi i dinamičko stanje će biti resetirani (ARP, SAT, usmjeravanje, TCP veze, DNS, itd.)."
 };

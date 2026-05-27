@@ -1194,5 +1194,9 @@ export default {
   "os.apps.library.empty": "تمام نرم‌افزارهای موجود در حال حاضر نصب شده‌اند.",
   "os.apps.category.system": "سیستم",
   "os.apps.category.client": "نرم‌افزار کلاینت",
-  "os.apps.category.server": "نرم‌افزار سرور"
+  "os.apps.category.server": "نرم‌افزار سرور",
+  "router.rip.tab.config": "تنظیمات",
+  "router.rip.tab.log": "گزارش",
+  "sim.welcome": "خوش آمدید",
+  "sim.resetwarning": "شبیه‌سازی را بازنشانی کنید؟\n\nتمام کش‌ها و وضعیت پویا بازنشانی خواهند شد (ARP، SAT، مسیریابی، اتصالات TCP، DNS و غیره)."
 };

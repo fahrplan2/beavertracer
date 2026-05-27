@@ -1195,5 +1195,7 @@ export default {
   "os.apps.library.empty": "Az összes elérhető szoftver már telepítve van.",
   "os.apps.category.system": "Rendszer",
   "os.apps.category.client": "Ügyfélszoftver",
-  "os.apps.category.server": "Szervezőszoftver"
+  "os.apps.category.server": "Szervezőszoftver",
+  "sim.welcome": "Üdvözöljük",
+  "sim.resetwarning": "Szimulálás alaphelyzetbe állítása?\n\nAz összes gyorsítótár és dinamikus állapot alaphelyzetbe áll (ARP, SAT, routing, TCP-kapcsolatok, DNS, stb.)."
 };

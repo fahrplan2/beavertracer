@@ -1195,5 +1195,7 @@ export default {
   "os.apps.library.empty": "Všetok dostupný softvér je už nainštalovaný.",
   "os.apps.category.system": "Systém",
   "os.apps.category.client": "Klientsky softvér",
-  "os.apps.category.server": "Serverový softvér"
+  "os.apps.category.server": "Serverový softvér",
+  "sim.welcome": "Vitajte",
+  "sim.resetwarning": "Resetovať simuláciu?\n\nVšetky vyrovnávacie pamäte a dynamický stav budú resetovaní (ARP, SAT, smerovanie, TCP spojenia, DNS atď.)."
 };

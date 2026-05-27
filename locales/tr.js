@@ -1194,5 +1194,9 @@ export default {
   "os.apps.library.empty": "Tüm kullanılabilir yazılımlar zaten yüklü.",
   "os.apps.category.system": "Sistem",
   "os.apps.category.client": "İstemci Yazılımı",
-  "os.apps.category.server": "Sunucu Yazılımı"
+  "os.apps.category.server": "Sunucu Yazılımı",
+  "router.rip.tab.config": "Yapılandırma",
+  "router.rip.tab.log": "Günlük",
+  "sim.welcome": "Hoş Geldiniz",
+  "sim.resetwarning": "Simülasyonu sıfırla?\n\nTüm önbellekler ve dinamik durum sıfırlanacaktır (ARP, SAT, yönlendirme, TCP bağlantıları, DNS, vb.)."
 };

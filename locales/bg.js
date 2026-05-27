@@ -1194,5 +1194,9 @@ export default {
   "os.apps.library.empty": "Целият наличен софтуер е вече инсталиран.",
   "os.apps.category.system": "Система",
   "os.apps.category.client": "Клиентски софтуер",
-  "os.apps.category.server": "Сървърен софтуер"
+  "os.apps.category.server": "Сървърен софтуер",
+  "router.rip.tab.config": "Конфигурация",
+  "router.rip.tab.log": "Дневник",
+  "sim.welcome": "Добре дошли",
+  "sim.resetwarning": "Възстановяване на симулацията?\n\nВсички кешове и динамични състояния ще бъдат възстановени (ARP, SAT, маршрутизиране, TCP свързване, DNS и т.н.)."
 };

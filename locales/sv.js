@@ -1194,5 +1194,9 @@ export default {
   "os.apps.library.empty": "All tillgänglig programvara är redan installerad.",
   "os.apps.category.system": "System",
   "os.apps.category.client": "Klientprogramvara",
-  "os.apps.category.server": "Serverprogramvara"
+  "os.apps.category.server": "Serverprogramvara",
+  "router.rip.tab.config": "Konfiguration",
+  "router.rip.tab.log": "Logg",
+  "sim.welcome": "Välkommen",
+  "sim.resetwarning": "Återställ simulering?\n\nAlla cacheminnen och dynamiska tillstånd återställs (ARP, SAT, routing, TCP-anslutningar, DNS, osv.)."
 };

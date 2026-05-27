@@ -1195,5 +1195,7 @@ export default {
   "os.apps.library.empty": "所有可用軟體都已安裝。",
   "os.apps.category.system": "系統",
   "os.apps.category.client": "用戶端軟體",
-  "os.apps.category.server": "伺服器軟體"
+  "os.apps.category.server": "伺服器軟體",
+  "sim.welcome": "歡迎",
+  "sim.resetwarning": "重設模擬？\n\n所有快取和動態狀態將被重設（ARP、SAT、路由、TCP 連線、DNS 等）。"
 };

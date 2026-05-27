@@ -1195,5 +1195,7 @@ export default {
   "os.apps.library.empty": "I gjithë softueri i disponueshëm është tashmë i instaluar.",
   "os.apps.category.system": "Sistemi",
   "os.apps.category.client": "Softueri i Klientit",
-  "os.apps.category.server": "Softueri i Serverit"
+  "os.apps.category.server": "Softueri i Serverit",
+  "sim.welcome": "Mirësevini",
+  "sim.resetwarning": "Rivendosni simulimin?\n\nTë gjitha caches dhe gjendja dinamike do të rivendosen (ARP, SAT, rutim, lidhje TCP, DNS, etj.)."
 };

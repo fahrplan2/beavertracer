@@ -1195,5 +1195,7 @@ export default {
   "os.apps.library.empty": "All tilgjengelig programvare er allerede installert.",
   "os.apps.category.system": "System",
   "os.apps.category.client": "Klientprogramvare",
-  "os.apps.category.server": "Serverprogramvare"
+  "os.apps.category.server": "Serverprogramvare",
+  "sim.welcome": "Velkommen",
+  "sim.resetwarning": "Tilbakestille simulering?\n\nAlle hurtigminne og dynamisk tilstand vil bli tilbakestilt (ARP, SAT, ruting, TCP-tilkoblinger, DNS osv.)."
 };

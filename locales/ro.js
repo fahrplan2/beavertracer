@@ -1194,5 +1194,9 @@ export default {
   "os.apps.library.empty": "Tot softul disponibil este deja instalat.",
   "os.apps.category.system": "Sistem",
   "os.apps.category.client": "Software Client",
-  "os.apps.category.server": "Software Server"
+  "os.apps.category.server": "Software Server",
+  "router.rip.tab.config": "Configurare",
+  "router.rip.tab.log": "Jurnal",
+  "sim.welcome": "Bun venit",
+  "sim.resetwarning": "Resetați simularea?\n\nToate cache-urile și starea dinamică vor fi resetate (ARP, SAT, rutare, conexiuni TCP, DNS, etc.)."
 };

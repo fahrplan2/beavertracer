@@ -1199,5 +1199,9 @@ export default {
   "os.apps.library.empty": "Todo o software disponível já está instalado.",
   "os.apps.category.system": "Sistema",
   "os.apps.category.client": "Software de Cliente",
-  "os.apps.category.server": "Software de Servidor"
+  "os.apps.category.server": "Software de Servidor",
+  "router.rip.tab.config": "Configuração",
+  "router.rip.tab.log": "Registo",
+  "sim.welcome": "Bem-vindo",
+  "sim.resetwarning": "Repor simulação?\n\nTodas as memórias intermédias e estados dinâmicos serão repostos (ARP, SAT, encaminhamento, ligações TCP, DNS, etc.)."
 };

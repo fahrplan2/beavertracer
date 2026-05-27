@@ -1195,5 +1195,7 @@ export default {
   "os.apps.library.empty": "Sav dostupan softver je već instaliran.",
   "os.apps.category.system": "Sistem",
   "os.apps.category.client": "Klijentski softver",
-  "os.apps.category.server": "Serverski softver"
+  "os.apps.category.server": "Serverski softver",
+  "sim.welcome": "Dobrodošli",
+  "sim.resetwarning": "Resetovati simulaciju?\n\nSvi keš memorijski sadržaji i dinamičko stanje će biti resetovani (ARP, SAT, rutiranje, TCP konekcije, DNS, itd.)."
 };

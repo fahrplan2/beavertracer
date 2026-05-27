@@ -646,6 +646,7 @@ export default {
   "sim.welcome": "Willkommen",
   "sim.trace": "Verfolgung",
   "sim.reset": "Zurücksetzen",
+  "sim.resetwarning": "Simulation zurücksetzen?\n\nAlle Caches und dynamischen Zustände werden zurückgesetzt (ARP, SAT, Routing, TCP-Verbindungen, DNS u.a.).",
   "sim.invalidfilewarning": "Ungültiges Dateiformat oder nicht unterstütztes Speicherdateiformat.",
   "sim.loadfailederror": "Ladevorgang fehlgeschlagen.",
   "sim.discardandnewwarning": "Aktuelle Simulation verwerfen und eine neue starten?",

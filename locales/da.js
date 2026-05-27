@@ -1194,5 +1194,9 @@ export default {
   "os.apps.library.empty": "Al tilgængelig software er allerede installeret.",
   "os.apps.category.system": "System",
   "os.apps.category.client": "Klientsoftware",
-  "os.apps.category.server": "Serversoftware"
+  "os.apps.category.server": "Serversoftware",
+  "router.rip.tab.config": "Konfiguration",
+  "router.rip.tab.log": "Log",
+  "sim.welcome": "Velkommen",
+  "sim.resetwarning": "Nulstil simulering?\n\nAlle cacher og dynamisk tilstand vil blive nulstillet (ARP, SAT, routing, TCP-forbindelser, DNS osv.)."
 };

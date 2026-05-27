@@ -1195,5 +1195,7 @@ export default {
   "os.apps.library.empty": "Tot el software disponible ja està instal·lat.",
   "os.apps.category.system": "Sistema",
   "os.apps.category.client": "Software Client",
-  "os.apps.category.server": "Software Servidor"
+  "os.apps.category.server": "Software Servidor",
+  "sim.welcome": "Benvingut",
+  "sim.resetwarning": "Voleu reiniciar la simulació?\n\nTotes les memòries cau i l'estat dinàmic es reiniciaran (ARP, SAT, encaminament, connexions TCP, DNS, etc.)."
 };

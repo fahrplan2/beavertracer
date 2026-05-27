@@ -1194,5 +1194,9 @@ export default {
   "os.apps.library.empty": "Усі доступні програми вже встановлені.",
   "os.apps.category.system": "Система",
   "os.apps.category.client": "Клієнтське ПО",
-  "os.apps.category.server": "Серверне ПО"
+  "os.apps.category.server": "Серверне ПО",
+  "router.rip.tab.config": "Конфігурація",
+  "router.rip.tab.log": "Журнал",
+  "sim.welcome": "Ласкаво просимо",
+  "sim.resetwarning": "Скинути симуляцію?\n\nУсі кеші та динамічний стан будуть скинуті (ARP, SAT, маршрутизація, TCP-з'єднання, DNS тощо)."
 };

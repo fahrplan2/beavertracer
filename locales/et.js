@@ -1194,5 +1194,9 @@ export default {
   "os.apps.library.empty": "Kogu saadaolev tarkvara on juba installitud.",
   "os.apps.category.system": "Süsteem",
   "os.apps.category.client": "Kliendi tarkvara",
-  "os.apps.category.server": "Serveri tarkvara"
+  "os.apps.category.server": "Serveri tarkvara",
+  "router.rip.tab.config": "Konfiguratsioon",
+  "router.rip.tab.log": "Logi",
+  "sim.welcome": "Tere tulemast",
+  "sim.resetwarning": "Lähtestada simulatsioon?\n\nKõik puhvrid ja dünaamiline olek lähtestatakse (ARP, SAT, marsuruutimine, TCP-ühendused, DNS jne)."
 };

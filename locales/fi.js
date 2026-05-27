@@ -1194,5 +1194,9 @@ export default {
   "os.apps.library.empty": "Kaikki saatavilla oleva ohjelmisto on jo asennettu.",
   "os.apps.category.system": "Järjestelmä",
   "os.apps.category.client": "Asiakasohjelmisto",
-  "os.apps.category.server": "Palvelinohjelmisto"
+  "os.apps.category.server": "Palvelinohjelmisto",
+  "router.rip.tab.config": "Asetukset",
+  "router.rip.tab.log": "Loki",
+  "sim.welcome": "Tervetuloa",
+  "sim.resetwarning": "Nollaa simulaatio?\n\nKaikki välimuistit ja dynaamiset tilat nollataan (ARP, SAT, reititys, TCP-yhteydet, DNS jne.)."
 };

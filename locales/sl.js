@@ -1194,5 +1194,9 @@ export default {
   "os.apps.library.empty": "Vsa dostopna programska oprema je že nameščena.",
   "os.apps.category.system": "Sistem",
   "os.apps.category.client": "Programska oprema za odjemalce",
-  "os.apps.category.server": "Programska oprema za strežnike"
+  "os.apps.category.server": "Programska oprema za strežnike",
+  "router.rip.tab.config": "Konfiguracija",
+  "router.rip.tab.log": "Dnevnik",
+  "sim.welcome": "Dobrodošli",
+  "sim.resetwarning": "Ponastaviti simulacijo?\n\nVsi predpomnilniki in dinamično stanje bodo ponastavljeni (ARP, SAT, usmerjevanje, TCP povezave, DNS itd.)."
 };

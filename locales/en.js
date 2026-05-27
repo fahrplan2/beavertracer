@@ -876,6 +876,7 @@ export default {
   "sim.welcome": "Welcome",
   "sim.trace": "Trace",
   "sim.reset": "Reset",
+  "sim.resetwarning": "Reset simulation?\n\nAll caches and dynamic state will be reset (ARP, SAT, routing, TCP connections, DNS, etc.).",
 
   "sim.invalidfilewarning": "Invalid file format or unsupported save file format.",
   "sim.loadfailederror": "Load operation failed.",
