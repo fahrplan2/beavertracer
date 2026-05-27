@@ -403,7 +403,10 @@ export class Firewall extends SimulatedObject {
             tbody.appendChild(this._buildRuleRow(rule));
         }
         table.appendChild(tbody);
-        host.appendChild(table);
+
+        const scrollWrap = UILib.div("sim-table-scroll");
+        scrollWrap.appendChild(table);
+        host.appendChild(UILib.wrapWithScrollHints(scrollWrap));
     }
 
     /** @param {FWRule} rule */
