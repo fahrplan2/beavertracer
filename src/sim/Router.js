@@ -200,12 +200,11 @@ export class Router extends SimulatedObject {
         });
         card.appendChild(outerTabBar);
 
-        const outerContent = UILib.div("sim-panel-content");
+        const outerContent = UILib.div("sim-panel-content hr-panel-content");
         card.appendChild(outerContent);
 
         /* ============================ Interfaces ============================ */
         const ifSection = UILib.div("");
-        ifSection.appendChild(UILib.h4(t("router.interfaces")));
 
         const tabsBar = UILib.div("ui-tabbar");
         this._tabsBar = tabsBar;
@@ -284,7 +283,7 @@ export class Router extends SimulatedObject {
         /* =========================== Routingtabelle ========================== */
         const routeSection = UILib.div("hidden");
 
-        const routeTitle = UILib.h4("");
+        const routeTitle = UILib.el("div", { className: "hr-section-title" });
         routeSection.appendChild(routeTitle);
 
         const routesHost = UILib.div("router-routes");
@@ -1367,16 +1366,10 @@ export class Router extends SimulatedObject {
         ripngCb.checked = this.ripng.enabled;
         ripngCb.addEventListener("change", () => { this.ripng.setEnabled(ripngCb.checked); this._renderRIPCombinedLog(); });
 
-        const ripWrap = UILib.div("router-name-row"); ripWrap.style.gap = "6px";
-        ripWrap.append(ripCb, UILib.label(t("router.rip.enabled")));
-
-        const ripngWrap = UILib.div("router-name-row"); ripngWrap.style.gap = "6px";
-        ripngWrap.append(ripngCb, UILib.label(t("router.ripng.enabled")));
-
-        const enableRow = UILib.div("router-name-row");
-        enableRow.style.gap = "16px";
-        enableRow.append(ripWrap, ripngWrap);
-        configSection.appendChild(enableRow);
+        configSection.appendChild(UILib.div("hr-fields", [
+            UILib.div("hr-checkbox-row", [ripCb,   UILib.el("span", { text: t("router.rip.enabled")   })]),
+            UILib.div("hr-checkbox-row", [ripngCb, UILib.el("span", { text: t("router.ripng.enabled") })]),
+        ]));
 
         const hintEl = UILib.el("p", { text: t("router.rip.passive.hint"), className: "router-hint" });
         configSection.appendChild(hintEl);
@@ -1468,17 +1461,13 @@ export class Router extends SimulatedObject {
             this.bgp.setEnabled(enableCb.checked);
             this._renderBGPLog();
         });
-        const enableRow = UILib.div("router-name-row");
-        enableRow.style.gap = "6px";
-        enableRow.append(enableCb, UILib.label(t("router.bgp.enabled")));
-        configSection.appendChild(enableRow);
+        configSection.appendChild(UILib.div("hr-checkbox-row", [enableCb, UILib.el("span", { text: t("router.bgp.enabled") })]));
 
         const asIn  = UILib.input({ placeholder: "65001" });
         asIn.value  = this.bgp.localAS ? String(this.bgp.localAS) : "";
         const ridIn = UILib.input({ placeholder: "1.2.3.4" });
         ridIn.value = this.bgp.routerId;
-        const cfgSaveBtn = UILib.button(t("router.save"), null, { className: "router-vpn-add" });
-        cfgSaveBtn.style.marginTop = "4px";
+        const cfgSaveBtn = UILib.button(t("router.save"));
         cfgSaveBtn.addEventListener("click", () => {
             const as = Number(asIn.value.trim());
             if (!Number.isInteger(as) || as < 1 || as > 65535) {
@@ -1489,16 +1478,19 @@ export class Router extends SimulatedObject {
             this.bgp.routerId = ridIn.value.trim();
         });
 
-        const mkRow = (/** @type {string} */ lbl, /** @type {HTMLElement} */ inp) =>
-            UILib.div("router-vpn-form-row", [
-                UILib.el("span", { text: lbl, className: "router-vpn-form-label" }),
-                inp,
-            ]);
-        configSection.appendChild(UILib.div("router-vpn-form", [
-            mkRow(t("router.bgp.localas"),  asIn),
-            mkRow(t("router.bgp.routerid"), ridIn),
-            cfgSaveBtn,
-        ]));
+        configSection.appendChild(UILib.el("div", { className: "hr-section", children: [
+            UILib.div("hr-fields", [
+                UILib.el("div", { className: "hr-field hr-field-sm", children: [
+                    UILib.el("span", { text: t("router.bgp.localas"), className: "hr-label" }),
+                    asIn,
+                ]}),
+                UILib.el("div", { className: "hr-field", children: [
+                    UILib.el("span", { text: t("router.bgp.routerid"), className: "hr-label" }),
+                    ridIn,
+                ]}),
+            ]),
+            UILib.div("hr-btn-row", [cfgSaveBtn]),
+        ]}));
 
         // ── Peers ────────────────────────────────────────────────────────
         const peersSection = UILib.div("hidden");
@@ -1589,8 +1581,7 @@ export class Router extends SimulatedObject {
         const asIn  = UILib.input({ placeholder: "65002", className: "router-input-as" });
         const descIn    = UILib.input({ placeholder: t("router.bgp.peers.col.desc") });
         const passiveCb = UILib.input({ type: "checkbox" });
-        const addBtn    = UILib.button("+ " + t("router.bgp.peers.add"), null, { className: "router-route-footer-btn" });
-        addBtn.style.marginTop = "6px";
+        const addBtn = UILib.button("+ " + t("router.bgp.peers.add"));
 
         addBtn.addEventListener("click", () => {
             const ip = ipIn.value.trim();
@@ -1603,16 +1594,24 @@ export class Router extends SimulatedObject {
             passiveCb.checked = false;
         });
 
-        const addRow = UILib.div("router-name-row");
-        addRow.style.gap = "4px";
-        addRow.style.flexWrap = "wrap";
-        addRow.style.marginTop = "6px";
-        addRow.append(
-            ipIn, asIn, descIn,
-            passiveCb, UILib.label(t("router.bgp.peers.col.passive")),
-            addBtn,
-        );
-        host.appendChild(addRow);
+        host.appendChild(UILib.el("div", { className: "hr-section", children: [
+            UILib.div("hr-fields", [
+                UILib.el("div", { className: "hr-field", children: [
+                    UILib.el("span", { text: t("router.bgp.peers.col.ip"), className: "hr-label" }),
+                    ipIn,
+                ]}),
+                UILib.el("div", { className: "hr-field hr-field-sm", children: [
+                    UILib.el("span", { text: "AS", className: "hr-label" }),
+                    asIn,
+                ]}),
+                UILib.el("div", { className: "hr-field", children: [
+                    UILib.el("span", { text: t("router.bgp.peers.col.desc"), className: "hr-label" }),
+                    descIn,
+                ]}),
+            ]),
+            UILib.div("hr-checkbox-row", [passiveCb, UILib.el("span", { text: t("router.bgp.peers.col.passive") })]),
+            UILib.div("hr-btn-row", [addBtn]),
+        ]}));
     }
 
     _renderBGPRoutes() {
@@ -1699,16 +1698,8 @@ export class Router extends SimulatedObject {
             this.ospf.setEnabled(enableCb.checked);
             this._renderOSPFLog();
         });
-        const enableRow = UILib.div("router-name-row");
-        enableRow.style.gap = "6px";
-        enableRow.appendChild(enableCb);
-        enableRow.appendChild(UILib.label(t("router.ospf.enabled")));
-        configSection.appendChild(enableRow);
+        configSection.appendChild(UILib.div("hr-checkbox-row", [enableCb, UILib.el("span", { text: t("router.ospf.enabled") })]));
 
-        const ridRow = UILib.div("router-name-row");
-        ridRow.style.gap = "6px";
-        ridRow.style.marginTop = "6px";
-        const ridLabel = UILib.el("span", { text: t("router.ospf.routerid") + ":", className: "router-if-field-label" });
         const ridInput = UILib.input({ placeholder: t("router.ospf.routerid.auto"), className: "router-input-rid" });
         if (this.ospf._routerIdOverride !== null) {
             ridInput.value = new (/** @type {any} */ (IPAddress))(4, this.ospf._routerIdOverride).toString();
@@ -1724,8 +1715,12 @@ export class Router extends SimulatedObject {
                 } catch { /* ignore */ }
             }
         });
-        ridRow.append(ridLabel, ridInput);
-        configSection.appendChild(ridRow);
+        configSection.appendChild(UILib.div("hr-fields", [
+            UILib.el("div", { className: "hr-field", children: [
+                UILib.el("span", { text: t("router.ospf.routerid"), className: "hr-label" }),
+                ridInput,
+            ]}),
+        ]));
 
         const ifTable = document.createElement("table");
         ifTable.className = "router-routes";
@@ -1766,7 +1761,7 @@ export class Router extends SimulatedObject {
         // ── Status ───────────────────────────────────────────────────────
         const statusSection = UILib.div("hidden");
 
-        statusSection.appendChild(UILib.h4(t("router.ospf.ifstatus")));
+        statusSection.appendChild(UILib.el("span", { text: t("router.ospf.ifstatus"), className: "hr-section-title" }));
         const ifStatusTable = document.createElement("table");
         ifStatusTable.className = "router-routes";
         const ifStatusThead = document.createElement("thead");
@@ -1784,7 +1779,7 @@ export class Router extends SimulatedObject {
         ospfIfStatusScroll.appendChild(ifStatusTable);
         statusSection.appendChild(UILib.wrapWithScrollHints(ospfIfStatusScroll));
 
-        statusSection.appendChild(UILib.h4(t("router.ospf.neighbors")));
+        statusSection.appendChild(UILib.el("span", { text: t("router.ospf.neighbors"), className: "hr-section-title" }));
         const nbTable = document.createElement("table");
         nbTable.className = "router-routes";
         const nbThead = document.createElement("thead");
@@ -1925,7 +1920,6 @@ export class Router extends SimulatedObject {
     /** @param {HTMLElement} host */
     _buildVPNSection(host) {
         UILib.clear(host);
-        host.appendChild(UILib.h4(t("router.vpn.tab")));
 
         const listEl = UILib.div("router-vpn-list");
 
@@ -1964,13 +1958,7 @@ export class Router extends SimulatedObject {
         const remoteIn = UILib.input({ placeholder: "203.0.113.1" });
         const netIn    = UILib.input({ placeholder: "10.0.0.0/24" });
         const errEl    = UILib.el("p", { className: "router-vpn-err" });
-        const addBtn   = UILib.button(t("router.vpn.add"), null, { className: "router-vpn-add" });
-
-        const mkRow = (/** @type {string} */ label, /** @type {HTMLElement} */ inp) =>
-            UILib.div("router-vpn-form-row", [
-                UILib.el("span", { text: label, className: "router-vpn-form-label" }),
-                inp,
-            ]);
+        const addBtn = UILib.button(t("router.vpn.add"));
 
         addBtn.addEventListener("click", () => {
             errEl.textContent = "";
@@ -2004,12 +1992,23 @@ export class Router extends SimulatedObject {
             }
         });
 
-        host.appendChild(UILib.div("router-vpn-form", [
-            mkRow(t("router.vpn.name"),    nameIn),
-            mkRow(t("router.vpn.remote"),  remoteIn),
-            mkRow(t("router.vpn.network"), netIn),
-            addBtn,
+        host.appendChild(UILib.el("div", { className: "hr-section", children: [
+            UILib.div("hr-fields", [
+                UILib.el("div", { className: "hr-field hr-field-sm", children: [
+                    UILib.el("span", { text: t("router.vpn.name"), className: "hr-label" }),
+                    nameIn,
+                ]}),
+                UILib.el("div", { className: "hr-field", children: [
+                    UILib.el("span", { text: t("router.vpn.remote"), className: "hr-label" }),
+                    remoteIn,
+                ]}),
+                UILib.el("div", { className: "hr-field", children: [
+                    UILib.el("span", { text: t("router.vpn.network"), className: "hr-label" }),
+                    netIn,
+                ]}),
+            ]),
+            UILib.div("hr-btn-row", [addBtn]),
             errEl,
-        ]));
+        ]}));
     }
 }

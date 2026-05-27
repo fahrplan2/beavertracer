@@ -61,7 +61,11 @@ function bigintToMac(b) {
     return mac;
 }
 
-let _switchIdCounter = 1n;
+function randomBridgeId() {
+    let r = 0xAAn;
+    for (let i = 1; i < 6; i++) r = (r << 8n) | BigInt(Math.floor(Math.random() * 256));
+    return r;
+}
 
 export class SwitchBackplane extends Observable {
     /** @type {Array<EthernetPort>} */
@@ -177,7 +181,7 @@ export class SwitchBackplane extends Observable {
     constructor(numberOfPorts) {
         super();
 
-        this.bridgeId = _switchIdCounter++;
+        this.bridgeId = randomBridgeId();
 
         // STP identity (priority + MAC)
         this.stpBridgeIdBytes = this._makeBridgeId(this._stpBridgePriority);

@@ -1,0 +1,77 @@
+/* HomeRouter Panel — scoped to .hr-panel-content */
+
+.hr-panel-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pad-md);
+  padding: var(--pad-lg);
+}
+
+.hr-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pad-sm);
+}
+
+.hr-section-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding-bottom: var(--pad-sm);
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.hr-fields {
+  display: flex;
+  gap: var(--pad-md);
+  flex-wrap: wrap;
+}
+
+.hr-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1 1 auto;
+}
+
+.hr-field-wide { flex: 1 1 100%; }
+.hr-field-sm   { flex: 0 0 80px; }
+
+.hr-label {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.hr-info-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--pad-md);
+}
+
+.hr-info-label {
+  font-size: 0.75rem;
+  color: var(--muted);
+  flex: 0 0 90px;
+}
+
+.hr-info-value {
+  font-family: "Hack", monospace;
+  font-size: 0.8125rem;
+  user-select: text;
+}
+
+.hr-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: var(--pad-sm);
+  font-size: 0.875rem;
+}
+
+.hr-btn-row {
+  display: flex;
+  gap: var(--pad-md);
+  flex-wrap: wrap;
+  margin-top: 4px;
+}

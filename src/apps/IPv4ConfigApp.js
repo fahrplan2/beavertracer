@@ -164,7 +164,7 @@ export class IPv4ConfigApp extends GenericProcess {
     this.msgEl = msg;
 
     // Helper: stacked label + control
-    const field = (cls, label, inp) => UILib.el("div", { className: "ipcfg-field " + cls, children: [
+    const field = (/** @type {string} */ cls, /** @type {string} */ label, /** @type {HTMLElement} */ inp) => UILib.el("div", { className: "ipcfg-field " + cls, children: [
       UILib.el("span", { text: label, className: "ipcfg-label" }),
       inp,
     ]});
@@ -212,7 +212,7 @@ export class IPv4ConfigApp extends GenericProcess {
     this._dhcpGwEl   = dhcpGwEl;
     this._dhcpDnsEl  = dhcpDnsEl;
 
-    const infoRow = (label, el) => UILib.div("ipcfg-info-row", [
+    const infoRow = (/** @type {string} */ label, /** @type {HTMLElement} */ el) => UILib.div("ipcfg-info-row", [
       UILib.el("span", { text: label, className: "ipcfg-info-label" }),
       el,
     ]);

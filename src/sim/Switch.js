@@ -175,7 +175,7 @@ export class Switch extends SimulatedObject {
         const card = UILib.div("router-card");
         host.appendChild(card);
 
-        const content = UILib.div("sim-panel-content");
+        const content = UILib.div("sim-panel-content hr-panel-content");
 
         const { bar: tabBar, setActive: selectTab } = UILib.tabGroup([
             { id: "sat",  label: t("switch.tab.sat")  },
@@ -205,7 +205,6 @@ export class Switch extends SimulatedObject {
 
     /** @param {HTMLElement} host */
     _buildMacTab(host) {
-        host.appendChild(UILib.h4(t("switch.sat")));
         const satHost = UILib.div("switch-sat sim-table-scroll");
         this._satHost = satHost;
         host.appendChild(UILib.wrapWithScrollHints(satHost));
@@ -214,11 +213,10 @@ export class Switch extends SimulatedObject {
 
     /** @param {HTMLElement} host */
     _buildVlanTab(host) {
-        host.appendChild(UILib.h4(t("switch.vlan.config")));
         const cb = /** @type {HTMLInputElement} */ (UILib.input({ type: "checkbox" }));
         cb.checked = !!this.backplane.vlanEnabled;
         this._vlanEnabledCheckbox = cb;
-        host.appendChild(UILib.div("router-name-row", [cb, UILib.label(t("switch.vlan.enable"))]));
+        host.appendChild(UILib.div("hr-checkbox-row", [cb, UILib.el("span", { text: t("switch.vlan.enable") })]));
 
         const section = UILib.div("switch-vlan-section");
         this._vlanSection = section;
@@ -235,16 +233,11 @@ export class Switch extends SimulatedObject {
 
     /** @param {HTMLElement} host */
     _buildStpTab(host) {
-        host.appendChild(UILib.h4(t("switch.stp.settings")));
-
-        // Enable/disable checkbox
         const cb = /** @type {HTMLInputElement} */ (UILib.input({ type: "checkbox" }));
         cb.checked = !!this.backplane.stpEnabled;
         this._stpEnabledCheckbox = cb;
-        host.appendChild(UILib.div("router-name-row", [cb, UILib.label(t("switch.stp.enable"))]));
+        host.appendChild(UILib.div("hr-checkbox-row", [cb, UILib.el("span", { text: t("switch.stp.enable") })]));
 
-        // Bridge priority selector (multiple of 4096, 0–61440)
-        const priorityLabel = UILib.label(t("switch.stp.priority") ?? "Bridge Priority:");
         const prioritySelect = document.createElement("select");
         for (let p = 0; p <= 61440; p += 4096) {
             const opt = document.createElement("option");
@@ -257,7 +250,12 @@ export class Switch extends SimulatedObject {
             this.backplane.setBridgePriority(Number(prioritySelect.value));
             this._renderSTPSection();
         });
-        host.appendChild(UILib.div("router-name-row", [priorityLabel, prioritySelect]));
+        host.appendChild(UILib.div("hr-fields", [
+            UILib.el("div", { className: "hr-field", children: [
+                UILib.el("span", { text: t("switch.stp.priority") ?? "Bridge Priority", className: "hr-label" }),
+                prioritySelect,
+            ]}),
+        ]));
 
         const section = UILib.div("switch-stp-section");
         this._stpSection = section;
@@ -462,50 +460,33 @@ export class Switch extends SimulatedObject {
 
         const enabled = this._stpEnabledCheckbox.checked;
 
-        const card = UILib.div("switch-card");
-        card.style.gap = "8px";
-
-        card.appendChild(UILib.h4(t("switch.stp.status") ?? "STP Status"));
-
         if (!enabled) {
-            const p = UILib.div("");
-            p.textContent = t("switch.stp.disabled") ?? "STP ist deaktiviert.";
-            p.style.opacity = "0.8";
-            card.appendChild(p);
-            this._stpSection.appendChild(card);
+            this._stpSection.appendChild(UILib.el("p", {
+                text: t("switch.stp.disabled") ?? "STP ist deaktiviert.",
+                className: "router-empty-p",
+            }));
             return;
         }
 
-        // Minimal status
-        const ownId = UILib.div("");
+        const infoRow = (/** @type {string} */ label, /** @type {string} */ value) => UILib.div("hr-info-row", [
+            UILib.el("span", { text: label, className: "hr-info-label" }),
+            UILib.el("span", { text: value, className: "hr-info-value" }),
+        ]);
+
         const isRoot = this.backplane.stpRootId === this.backplane.stpBridgeIdVal;
         const prio = this.backplane._stpBridgePriority ?? 32768;
-        ownId.textContent = `Bridge ID: 0x${this.backplane.stpBridgeIdVal.toString(16)} (Priority ${prio})${isRoot ? " — Root" : ""}`;
 
-        const root = UILib.div("");
-        root.textContent = `Root ID: 0x${this.backplane.stpRootId.toString(16)}`;
+        this._stpSection.appendChild(UILib.el("div", { className: "hr-section", children: [
+            UILib.el("span", { text: t("switch.stp.status") ?? "STP Status", className: "hr-section-title" }),
+            infoRow("Bridge ID", `0x${this.backplane.stpBridgeIdVal.toString(16)} (Priority ${prio})${isRoot ? " — Root" : ""}`),
+            infoRow("Root ID",   `0x${this.backplane.stpRootId.toString(16)}`),
+            infoRow("Root Cost", String(this.backplane.stpRootCost)),
+            infoRow("Root Port", this.backplane.stpRootPort == null ? "–" : `port ${this.backplane.stpRootPort + 1}`),
+        ]}));
 
-        const rootCost = UILib.div("");
-        rootCost.textContent = `Root Cost: ${this.backplane.stpRootCost}`;
-
-        const rootPort = UILib.div("");
-        rootPort.textContent = `Root Port: ${this.backplane.stpRootPort == null ? "-" : `port ${this.backplane.stpRootPort + 1}`}`;
-
-        card.append(ownId, root, rootCost, rootPort);
-
-        // Port states table
         const table = document.createElement("table");
         table.className = "switch-stp-table";
-        table.innerHTML = `
-    <thead>
-      <tr>
-        <th>Port</th>
-        <th>Linked</th>
-        <th>Role</th>
-        <th>State</th>
-      </tr>
-    </thead>
-  `;
+        table.innerHTML = `<thead><tr><th>Port</th><th>Linked</th><th>Role</th><th>State</th></tr></thead>`;
         const tbody = document.createElement("tbody");
 
         const ports = this.backplane?.ports ?? [];
@@ -523,22 +504,17 @@ export class Switch extends SimulatedObject {
             badge.className = `ui-tab-badge ${statusClass}`;
             stateTd.appendChild(badge);
 
-            const portTd = document.createElement("td");
-            portTd.textContent = `port ${i + 1}`;
-            const linkedTd = document.createElement("td");
-            linkedTd.textContent = linked ? "yes" : "no";
-            const roleTd = document.createElement("td");
-            roleTd.textContent = role;
+            const portTd = document.createElement("td"); portTd.textContent = `port ${i + 1}`;
+            const linkedTd = document.createElement("td"); linkedTd.textContent = linked ? "yes" : "no";
+            const roleTd = document.createElement("td"); roleTd.textContent = role;
 
-            tr.appendChild(portTd);
-            tr.appendChild(linkedTd);
-            tr.appendChild(roleTd);
-            tr.appendChild(stateTd);
+            tr.append(portTd, linkedTd, roleTd, stateTd);
             tbody.appendChild(tr);
         }
         table.appendChild(tbody);
-        card.appendChild(table);
 
-        this._stpSection.appendChild(card);
+        const scroll = UILib.div("sim-table-scroll");
+        scroll.appendChild(table);
+        this._stpSection.appendChild(UILib.wrapWithScrollHints(scroll));
     }
 }

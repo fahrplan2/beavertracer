@@ -71,7 +71,7 @@
 }
 
 .router-if-field-label {
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   color: var(--muted);
 }
 
@@ -285,7 +285,7 @@
 }
 
 .router-vpn-form-label {
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   color: var(--muted);
   width: 10ch;
   flex-shrink: 0;

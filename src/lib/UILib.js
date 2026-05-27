@@ -79,7 +79,7 @@ export class UILib {
   /**
    * Button element (app variant — onClick is wired in).
    * @param {string} label
-   * @param {() => void} onClick
+   * @param {(() => void)|null} [onClick]
    * @param {Object} [opts]
    * @param {string|string[]} [opts.className]
    * @param {boolean} [opts.primary]
@@ -89,7 +89,7 @@ export class UILib {
    * @param {"button"|"submit"|"reset"} [opts.type]
    * @returns {HTMLButtonElement}
    */
-  static button(label, onClick, opts = {}) {
+  static button(label, onClick = null, opts = {}) {
     /** @type {HTMLButtonElement} */
     const b = UILib.el("button", {
       className: opts.className ?? (opts.primary ? ["btn", "btn-primary"] : "btn"),
