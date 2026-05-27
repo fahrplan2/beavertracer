@@ -15,6 +15,7 @@
 @import "app-mail.css";
 @import "app-irc.css";
 @import "app-certmanager.css";
+@import "app-ipconfig.css";
 
 @import "router.css";
 @import "minimarkdown.css";
