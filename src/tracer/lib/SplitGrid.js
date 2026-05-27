@@ -76,11 +76,13 @@ export class SplitGrid {
     const onUp = () => {
       window.removeEventListener("pointermove", onMove, true);
       window.removeEventListener("pointerup", onUp, true);
+      window.removeEventListener("pointercancel", onUp, true);
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
     };
 
     splitter.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
       startPos = cfg.axis === "y" ? e.clientY : e.clientX;
       startAPx = cfg.axis === "y"
         ? paneA.getBoundingClientRect().height
@@ -92,6 +94,7 @@ export class SplitGrid {
 
       window.addEventListener("pointermove", onMove, true);
       window.addEventListener("pointerup", onUp, true);
+      window.addEventListener("pointercancel", onUp, true);
     }, { signal });
 
     this.#ro = new ResizeObserver(() => {
