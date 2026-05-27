@@ -79,7 +79,7 @@ async function translateHtml(html, targetLanguage) {
   return translated.join("\n\n<hr>\n\n");
 }
 
-for (const page of ["about", "help"]) {
+for (const page of ["about", "help", "downloads"]) {
   const srcPath = path.join(ROOT, "pages", page, "index.html");
   const src = fs.readFileSync(srcPath, "utf8");
 
