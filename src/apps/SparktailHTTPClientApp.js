@@ -1413,6 +1413,13 @@ export class SparktailHTTPClientApp extends LoggedProcess {
       link.replaceWith(style);
     }
 
+    for (const el of doc.querySelectorAll("iframe, object, embed")) {
+      const placeholder = doc.createElement("div");
+      placeholder.className = "sparktail-iframe-blocked";
+      placeholder.textContent = `[${el.tagName.toLowerCase()} blocked]`;
+      el.replaceWith(placeholder);
+    }
+
     if (isCancelled()) return html;
     return "<!doctype html>\n" + doc.documentElement.outerHTML;
   }
