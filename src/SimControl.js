@@ -1535,6 +1535,7 @@ export class SimControl {
 
     _leaveEditMode() {
         this.tool = "select";
+        this.closeAllPanels();
         this._cancelLinking();
         this._removeGhostNode();
         this._clearDeleteHover();
