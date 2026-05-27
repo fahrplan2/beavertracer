@@ -101,6 +101,20 @@
   margin-top: 4px;
 }
 
+.router-if-mac-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-left: 22px;
+  margin-top: 6px;
+}
+
+.router-if-mac-value {
+  font-family: monospace;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
 
 /* Routing table scroll — see .sim-table-scroll in sim.css */
 

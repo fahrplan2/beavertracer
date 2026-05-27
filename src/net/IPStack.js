@@ -1518,16 +1518,7 @@ export class IPStack extends Observable {
                 this.routingTable.push(r6c);
             }
 
-            if (itf.ip6LL) {
-                const rLL = new Route();
-                rLL.dst = IPAddress.fromString("fe80::");
-                rLL.prefixLength = 64;
-                rLL.interf = i;
-                rLL.nexthop = IPAddress.fromString("::");
-                rLL.auto = true;
-                rLL.source = "connected";
-                this.routingTable.push(rLL);
-            }
+
         }
 
         // IPv4 loopback

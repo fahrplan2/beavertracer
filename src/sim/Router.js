@@ -272,6 +272,13 @@ export class Router extends SimulatedObject {
         this._ifaceActionsHost = actionsHost;
         ifacePanel.appendChild(actionsHost);
 
+        const macVal = UILib.el("span", { className: "router-if-mac-value" });
+        this._macDisplay = macVal;
+        ifacePanel.appendChild(UILib.div("router-if-mac-row", [
+            UILib.el("span", { text: "MAC", className: "router-if-field-label" }),
+            macVal,
+        ]));
+
         ifSection.append(tabsBar, ifacePanel);
 
         /* =========================== Routingtabelle ========================== */
@@ -537,6 +544,7 @@ export class Router extends SimulatedObject {
             if (this._ipv6EnableCb) this._ipv6EnableCb.checked = false;
             if (this._ip6Input)    this._ip6Input.value = "";
             if (this._prefix6Input) this._prefix6Input.value = "";
+            if (this._macDisplay) this._macDisplay.textContent = "";
             UILib.markInvalid(this._ipInput, false);
             UILib.markInvalid(this._maskInput, false);
             UILib.markInvalid(this._ip6Input, false);
@@ -565,6 +573,12 @@ export class Router extends SimulatedObject {
         UILib.markInvalid(this._maskInput, false);
         UILib.markInvalid(this._ip6Input, false);
         UILib.markInvalid(this._prefix6Input, false);
+
+        if (this._macDisplay) {
+            this._macDisplay.textContent = iface.mac
+                ? Array.from(iface.mac).map(b => b.toString(16).padStart(2, '0')).join(':')
+                : "";
+        }
     }
 
     _updateInterfaceFormState() {
