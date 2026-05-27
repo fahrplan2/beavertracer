@@ -206,9 +206,9 @@ export class Switch extends SimulatedObject {
     /** @param {HTMLElement} host */
     _buildMacTab(host) {
         host.appendChild(UILib.h4(t("switch.sat")));
-        const satHost = UILib.div("switch-sat");
+        const satHost = UILib.div("switch-sat sim-table-scroll");
         this._satHost = satHost;
-        host.appendChild(satHost);
+        host.appendChild(UILib.wrapWithScrollHints(satHost));
         this._renderSAT();
     }
 

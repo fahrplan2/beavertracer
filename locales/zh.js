@@ -618,6 +618,7 @@ export default {
   "router.bgp.tab": "BGP",
   "router.bgp.tab.config": "Konfiguration",
   "router.bgp.tab.routes": "Routen",
+  "router.bgp.tab.peers": "Peers",
   "router.bgp.tab.log": "Protokoll",
   "router.bgp.enabled": "BGP aktiviert",
   "router.bgp.localas": "AS-Nummer",

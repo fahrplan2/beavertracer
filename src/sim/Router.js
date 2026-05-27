@@ -707,41 +707,7 @@ export class Router extends SimulatedObject {
 
     /* ----------------------------- routes UI ---------------------------- */
 
-    /** @param {HTMLElement} scrollWrap */
-    _attachScrollHint(scrollWrap) {
-        // Wrap scrollWrap so the top hint can be absolutely positioned over it
-        // without affecting scroll layout (sticky-inside-scroll causes z-index and
-        // layout-shift issues with the sticky thead).
-        const outer = document.createElement("div");
-        outer.className = "router-scroll-hint-outer";
-        scrollWrap.replaceWith(outer);
-        outer.appendChild(scrollWrap);
 
-        const hintTop = document.createElement("div");
-        hintTop.className = "router-scroll-hint router-scroll-hint--top";
-        hintTop.setAttribute("aria-hidden", "true");
-        hintTop.textContent = "▲";
-        outer.appendChild(hintTop);
-
-        const hintBottom = document.createElement("div");
-        hintBottom.className = "router-scroll-hint router-scroll-hint--bottom";
-        hintBottom.setAttribute("aria-hidden", "true");
-        hintBottom.textContent = "▼";
-        scrollWrap.appendChild(hintBottom);
-
-        const thead = scrollWrap.querySelector("thead");
-        const update = () => {
-            const canScroll = scrollWrap.scrollHeight > scrollWrap.clientHeight + 2;
-            const atTop    = scrollWrap.scrollTop <= 4;
-            const atBottom = scrollWrap.scrollTop + scrollWrap.clientHeight >= scrollWrap.scrollHeight - 4;
-            hintTop.classList.toggle("is-visible",    canScroll && !atTop);
-            hintBottom.classList.toggle("is-visible", canScroll && !atBottom);
-            // sit just below the sticky thead so the two don't overlap
-            if (thead) hintTop.style.top = thead.offsetHeight + "px";
-        };
-        scrollWrap.addEventListener("scroll", update, { passive: true });
-        requestAnimationFrame(update);
-    }
 
     _renderRoutes() {
         if (this._selectedRouteFamily === 6) {
@@ -998,10 +964,9 @@ export class Router extends SimulatedObject {
         });
 
         table.appendChild(tbody);
-        const scrollWrap = UILib.div("router-routes-scroll");
+        const scrollWrap = UILib.div("sim-table-scroll");
         scrollWrap.appendChild(table);
-        this._routesHost.appendChild(scrollWrap);
-        this._attachScrollHint(scrollWrap);
+        this._routesHost.appendChild(UILib.wrapWithScrollHints(scrollWrap));
 
         // ---- Footer: "+ Route hinzufügen" button ----
         const hasIfaces = this.net.interfaces.length > 0;
@@ -1263,10 +1228,9 @@ export class Router extends SimulatedObject {
         });
 
         table.appendChild(tbody);
-        const scrollWrapV6 = UILib.div("router-routes-scroll");
+        const scrollWrapV6 = UILib.div("sim-table-scroll");
         scrollWrapV6.appendChild(table);
-        this._routesHost.appendChild(scrollWrapV6);
-        this._attachScrollHint(scrollWrapV6);
+        this._routesHost.appendChild(UILib.wrapWithScrollHints(scrollWrapV6));
 
         // ---- Footer: "+ Route hinzufügen" button (IPv6) ----
         const hasIfaces = this.net.interfaces.length > 0;
@@ -1368,7 +1332,19 @@ export class Router extends SimulatedObject {
     /** @param {HTMLElement} host */
     /** @param {HTMLElement} host */
     _buildRIPSection(host) {
-        // ── enable row: RIP and RIPng side by side ─────────────────────────
+        const { bar: innerBar, setActive: setInnerActive } = UILib.tabGroup([
+            { id: "config", label: t("router.rip.tab.config") },
+            { id: "log",    label: t("router.rip.tab.log")    },
+        ], (id) => {
+            configSection.classList.toggle("hidden", id !== "config");
+            logSection.classList.toggle("hidden",    id !== "log");
+            if (id === "log") this._renderRIPCombinedLog();
+        });
+        host.appendChild(innerBar);
+
+        // ── Konfiguration ─────────────────────────────────────────────────
+        const configSection = UILib.div("");
+
         const ripCb = UILib.input({ type: "checkbox" });
         ripCb.checked = this.rip.enabled;
         ripCb.addEventListener("change", () => { this.rip.setEnabled(ripCb.checked); this._renderRIPCombinedLog(); });
@@ -1386,11 +1362,10 @@ export class Router extends SimulatedObject {
         const enableRow = UILib.div("router-name-row");
         enableRow.style.gap = "16px";
         enableRow.append(ripWrap, ripngWrap);
-        host.appendChild(enableRow);
+        configSection.appendChild(enableRow);
 
-        // ── combined interface table: Interface | RIP Passive | RIPng Passive
         const hintEl = UILib.el("p", { text: t("router.rip.passive.hint"), className: "router-hint" });
-        host.appendChild(hintEl);
+        configSection.appendChild(hintEl);
 
         const ifTable = document.createElement("table");
         ifTable.className = "router-routes";
@@ -1422,17 +1397,22 @@ export class Router extends SimulatedObject {
             tbody.appendChild(tr);
         }
         ifTable.append(thead, tbody);
-        host.appendChild(ifTable);
+        const ripIfScroll = UILib.div("sim-table-scroll");
+        ripIfScroll.appendChild(ifTable);
+        configSection.appendChild(UILib.wrapWithScrollHints(ripIfScroll));
 
-        // ── combined log ──────────────────────────────────────────────────
-        host.appendChild(UILib.h4(t("router.rip.log")));
+        // ── Protokoll ─────────────────────────────────────────────────────
+        const logSection = UILib.div("hidden");
         const logEl = /** @type {HTMLTextAreaElement} */ (UILib.el("textarea", {
-            className: "log router-log-sm",
+            className: "log router-log-md",
             attrs: { readonly: "true", spellcheck: "false" },
         }));
-        host.appendChild(logEl);
+        logSection.appendChild(logEl);
         this._ripCombinedLogEl = logEl;
         this._renderRIPCombinedLog();
+
+        host.append(configSection, logSection);
+        setInnerActive("config");
 
         this.rip.onLogUpdate   = () => this._renderRIPCombinedLog();
         this.ripng.onLogUpdate = () => this._renderRIPCombinedLog();
@@ -1451,12 +1431,15 @@ export class Router extends SimulatedObject {
     _buildBGPSection(host) {
         const { bar: innerBar, setActive: setInnerActive } = UILib.tabGroup([
             { id: "config", label: t("router.bgp.tab.config") },
+            { id: "peers",  label: t("router.bgp.tab.peers")  },
             { id: "routes", label: t("router.bgp.tab.routes") },
             { id: "log",    label: t("router.bgp.tab.log")    },
         ], (id) => {
             configSection.classList.toggle("hidden", id !== "config");
+            peersSection.classList.toggle("hidden",  id !== "peers");
             routesSection.classList.toggle("hidden", id !== "routes");
             logSection.classList.toggle("hidden",    id !== "log");
+            if (id === "peers")  this._renderBGPPeers();
             if (id === "routes") this._renderBGPRoutes();
             if (id === "log")    this._renderBGPLog();
         });
@@ -1503,11 +1486,11 @@ export class Router extends SimulatedObject {
             cfgSaveBtn,
         ]));
 
-        configSection.appendChild(UILib.h4(t("router.bgp.peers.title")));
+        // ── Peers ────────────────────────────────────────────────────────
+        const peersSection = UILib.div("hidden");
         const peersHost = UILib.div("");
         this._bgpPeersHost = peersHost;
-        configSection.appendChild(peersHost);
-        this._renderBGPPeers();
+        peersSection.appendChild(peersHost);
 
         // ── Routen ───────────────────────────────────────────────────────
         const routesSection = UILib.div("hidden");
@@ -1517,7 +1500,6 @@ export class Router extends SimulatedObject {
 
         // ── Protokoll ────────────────────────────────────────────────────
         const logSection = UILib.div("hidden");
-        logSection.appendChild(UILib.h4(t("router.bgp.log")));
         const logEl = /** @type {HTMLTextAreaElement} */ (UILib.el("textarea", {
             className: "log router-log-md",
             attrs: { readonly: "true", spellcheck: "false" },
@@ -1526,7 +1508,7 @@ export class Router extends SimulatedObject {
         this._bgpLogEl = logEl;
         this._renderBGPLog();
 
-        host.append(configSection, routesSection, logSection);
+        host.append(configSection, peersSection, routesSection, logSection);
         setInnerActive("config");
 
         this.bgp.onUpdate = () => {
@@ -1583,7 +1565,9 @@ export class Router extends SimulatedObject {
                 tbody.appendChild(tr);
             }
             table.append(thead, tbody);
-            host.appendChild(table);
+            const peersScroll = UILib.div("sim-table-scroll");
+            peersScroll.appendChild(table);
+            host.appendChild(UILib.wrapWithScrollHints(peersScroll));
         }
 
         // Inline add-peer form
@@ -1659,7 +1643,9 @@ export class Router extends SimulatedObject {
         }
 
         table.append(thead, tbody);
-        host.appendChild(table);
+        const bgpRoutesScroll = UILib.div("sim-table-scroll");
+        bgpRoutesScroll.appendChild(table);
+        host.appendChild(UILib.wrapWithScrollHints(bgpRoutesScroll));
     }
 
     _renderBGPLog() {
@@ -1759,7 +1745,9 @@ export class Router extends SimulatedObject {
             ifTbody.appendChild(tr);
         }
         ifTable.append(ifThead, ifTbody);
-        configSection.appendChild(ifTable);
+        const ospfIfScroll = UILib.div("sim-table-scroll");
+        ospfIfScroll.appendChild(ifTable);
+        configSection.appendChild(UILib.wrapWithScrollHints(ospfIfScroll));
 
         // ── Status ───────────────────────────────────────────────────────
         const statusSection = UILib.div("hidden");
@@ -1778,7 +1766,9 @@ export class Router extends SimulatedObject {
         ifStatusThead.appendChild(ifStatusHtr);
         const ifStatusTbody = document.createElement("tbody");
         ifStatusTable.append(ifStatusThead, ifStatusTbody);
-        statusSection.appendChild(ifStatusTable);
+        const ospfIfStatusScroll = UILib.div("sim-table-scroll");
+        ospfIfStatusScroll.appendChild(ifStatusTable);
+        statusSection.appendChild(UILib.wrapWithScrollHints(ospfIfStatusScroll));
 
         statusSection.appendChild(UILib.h4(t("router.ospf.neighbors")));
         const nbTable = document.createElement("table");
@@ -1795,7 +1785,9 @@ export class Router extends SimulatedObject {
         nbThead.appendChild(nbHtr);
         const nbTbody = document.createElement("tbody");
         nbTable.append(nbThead, nbTbody);
-        statusSection.appendChild(nbTable);
+        const ospfNbScroll = UILib.div("sim-table-scroll");
+        ospfNbScroll.appendChild(nbTable);
+        statusSection.appendChild(UILib.wrapWithScrollHints(ospfNbScroll));
 
         // ── LSDB ─────────────────────────────────────────────────────────
         const lsdbSection = UILib.div("hidden");
@@ -1813,7 +1805,9 @@ export class Router extends SimulatedObject {
         lsdbThead.appendChild(lsdbHtr);
         const lsdbTbody = document.createElement("tbody");
         lsdbTable.append(lsdbThead, lsdbTbody);
-        lsdbSection.appendChild(lsdbTable);
+        const lsdbScroll = UILib.div("sim-table-scroll");
+        lsdbScroll.appendChild(lsdbTable);
+        lsdbSection.appendChild(UILib.wrapWithScrollHints(lsdbScroll));
 
         // ── Log ───────────────────────────────────────────────────────────
         const logSection = UILib.div("hidden");

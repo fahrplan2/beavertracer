@@ -4,28 +4,9 @@
   margin: var(--pad-md) 0 var(--pad-lg) 0;
 }
 
-/* Scroll container — mirrors .router-routes-scroll */
-.app-dnsd .tblwrap .tbl-scroll {
+/* OS-Fenster ist höhenbeschränkt — max-height kleiner als der globale clamp-Wert */
+.app-dnsd .sim-table-scroll {
   max-height: 260px;
-  overflow-x: auto;
-  overflow-y: auto;
-  border: 1px solid color-mix(in oklch, var(--border), var(--text) 8%);
-  border-radius: var(--radius-md);
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in oklch, var(--text) 35%, transparent) color-mix(in oklch, var(--border) 60%, transparent);
-}
-
-.app-dnsd .tblwrap .tbl-scroll::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-.app-dnsd .tblwrap .tbl-scroll::-webkit-scrollbar-track {
-  background: color-mix(in oklch, var(--border) 60%, transparent);
-  border-radius: 3px;
-}
-.app-dnsd .tblwrap .tbl-scroll::-webkit-scrollbar-thumb {
-  background-color: color-mix(in oklch, var(--text) 35%, transparent);
-  border-radius: 3px;
 }
 
 .app-dnsd .tbl {

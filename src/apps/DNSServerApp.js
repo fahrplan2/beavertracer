@@ -109,7 +109,7 @@ function createTableEditor(cols, onChange, makeDefaultRow) {
   const controls = UI.buttonRow([addBtn]);
 
   const scrollWrap = UI.el("div", {
-    className: "tbl-scroll",
+    className: "sim-table-scroll",
     children: [table],
   });
 
