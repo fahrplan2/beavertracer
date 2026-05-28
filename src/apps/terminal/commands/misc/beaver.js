@@ -13,9 +13,10 @@ const ART = [
     "     |         (   |     |",
     "    .'         )   |    :|",
     ".odCG8o_.---.__8E  |    .|",
-    "`Y8MMP\"\"       \"\"  `-...-'",
+    "`Y8MMP\"\"       \"\"  `-...-' cgmm",
     "",
     "    ~ log by log, dam by dam ~",
+    "         ASCII art by Christian Garbs",
 ];
 
 /** @type {import("../types.js").Command} */

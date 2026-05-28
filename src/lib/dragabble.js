@@ -191,6 +191,7 @@ export function makeDraggable(el, options = {}) {
   /** @type {{x:number, y:number, event: PointerEvent} | null} */
   let lastPointer = null;
 
+
   if (!(el instanceof HTMLElement)) {
     throw new TypeError("makeDraggable: el must be an HTMLElement");
   }

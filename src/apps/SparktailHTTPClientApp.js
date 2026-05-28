@@ -7,6 +7,8 @@ import { SimTimer, simTimer } from "../lib/SimTimer.js";
 
 //@ts-ignore Import ist raw für vite
 import startPage from "./assets/about-start.html?raw";
+//@ts-ignore Import ist raw für vite
+import beaverPage from "./assets/about-beaver.html?raw";
 import { t } from "../i18n/index.js";
 import { IPAddress } from "../net/models/IPAddress.js";
 import { nowStamp, encodeUTF8, decodeUTF8 } from "../lib/helpers.js";
@@ -828,6 +830,15 @@ export class SparktailHTTPClientApp extends LoggedProcess {
       return;
     }
 
+    if (utrim.toLowerCase() === "about:beaver") {
+      this._showBeaverGame();
+      this._appendLog(`[${nowStamp()}] about:beaver`);
+      this._setStatus("about:beaver");
+      this.loading = false;
+      this._syncUI();
+      return;
+    }
+
     // external policy
     this._setIframePolicy(false);
 
@@ -1258,6 +1269,15 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     this._renderTab();
   }
 
+  _showBeaverGame() {
+    this._setIframePolicy(true);
+    if (this.previewFrame) this.previewFrame.srcdoc = beaverPage;
+    if (this.sourceEl) this.sourceEl.value = "";
+    if (this.headersEl) this.headersEl.value = "";
+    this.tab = "preview";
+    this._renderTab();
+  }
+
   /**
    * Fetch a URL through the simulated network without touching UI state.
    * Returns null on any error or cancellation.
@@ -1411,6 +1431,13 @@ export class SparktailHTTPClientApp extends LoggedProcess {
       const style = doc.createElement("style");
       style.textContent = decodeUTF8(res.body);
       link.replaceWith(style);
+    }
+
+    for (const el of doc.querySelectorAll("iframe, object, embed")) {
+      const placeholder = doc.createElement("div");
+      placeholder.className = "sparktail-iframe-blocked";
+      placeholder.textContent = `[${el.tagName.toLowerCase()} blocked]`;
+      el.replaceWith(placeholder);
     }
 
     if (isCancelled()) return html;

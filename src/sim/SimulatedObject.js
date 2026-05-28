@@ -281,7 +281,7 @@ export class SimulatedObject {
     setPanelOpen(open) {
         if (open && this.simcontrol?.tool === "link") return;
         if (open && this.simcontrol?.mode === "edit") {
-            this.simcontrol._leaveEditMode();
+            this.simcontrol._resetEditTools();
             return;
         }
 
@@ -307,6 +307,9 @@ export class SimulatedObject {
         if (this.panelOpen) {
             this._clampPanelToViewport();
             bringToFront(this.panelEl);
+            // Suppress ghost clicks (touch → synthetic click lands on newly visible panel content)
+            this.panelEl.style.pointerEvents = "none";
+            setTimeout(() => { if (this.panelEl) this.panelEl.style.pointerEvents = ""; }, 350);
             this.onPanelOpen?.();
         }
     }

@@ -239,7 +239,7 @@ export class SimControl {
             const { sessionName, frames } = /** @type {any} */ (ev).detail;
             this.pcapController.updateIf(sessionName, frames);
             this.pcapViewer.switchTab(sessionName);
-            if (this.mode === "edit") this._leaveEditMode();
+            if (this.mode === "edit") this._resetEditTools();
             this.mode = "trace";
             this._invalidateUI();
             this.pcapViewer.render();
@@ -720,7 +720,7 @@ export class SimControl {
                 if (!this.embedded && window.location.pathname !== "/") {
                     history.pushState({}, "", "/");
                 }
-                if (!this.embedded && this.mode === "edit") this._leaveEditMode();
+                if (!this.embedded && this.mode === "edit") this._resetEditTools();
                 if (this.mode === "trace") {
                     this._leaveTraceMode();
                     return;
@@ -749,7 +749,7 @@ export class SimControl {
                 if (!this.embedded && window.location.pathname !== "/") {
                     history.pushState({}, "", "/");
                 }
-                if (!this.embedded && this.mode === "edit") this._leaveEditMode();
+                if (!this.embedded && this.mode === "edit") this._resetEditTools();
                 this._enterTraceMode();
             },
         });
@@ -1028,7 +1028,7 @@ export class SimControl {
             this._tooltipTimer = window.setTimeout(() => {
                 this._tooltipTimer = null;
                 this._showTooltip(obj, cx, cy);
-            }, 600);
+            }, 300);
         });
 
         nodes.addEventListener("mouseleave", () => {
@@ -1204,6 +1204,7 @@ export class SimControl {
                 btn.classList.toggle("active", this.mode === "edit" && this.tool === id);
             }
         }
+
     }
 
 
@@ -1529,12 +1530,12 @@ export class SimControl {
         this.isPaused = true;
         this.closeAllPanels();
 
-        this._leaveEditMode(); //does the same thing; selects default tool and 
-                               //redraws UI
+        this._resetEditTools();
     }
 
-    _leaveEditMode() {
+    _resetEditTools() {
         this.tool = "select";
+        this.closeAllPanels();
         this._cancelLinking();
         this._removeGhostNode();
         this._clearDeleteHover();
