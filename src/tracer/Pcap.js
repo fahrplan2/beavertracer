@@ -88,12 +88,6 @@ export class Pcap {
         URL.revokeObjectURL(blobUrl);
     }
 
-    /**
-     * converts a Timestamp to a PCAP Timestamp
-     * @param {*} timestamp 
-     * @returns 
-     */
-
     _writeData() {
         const chunks = [Pcap.header(), ...this.#framelog.map(f => Pcap.record(f))];
         let total = 0;

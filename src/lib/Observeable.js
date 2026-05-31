@@ -3,7 +3,7 @@
 export class Observable {
 
     /**
-     * @type {Array<Observable>}
+     * @type {Array<{update(): void}>}
      */
     #observers = [];
 
