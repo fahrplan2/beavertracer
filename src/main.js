@@ -55,15 +55,13 @@ initLocale().then(async () => {
         WelcomeDialog.show(sim);
     }
 
-    // Prefetch wiregasm assets in idle time so first trace use is faster
-    const prefetch = () => {
-        fetch("/wiregasm/wiregasm.wasm").catch(() => {});
-        fetch("/wiregasm/wiregasm.data").catch(() => {});
-    };
+    // Start loading + compiling the Wiregasm WASM module in idle time so the
+    // trace tab opens without delay on first use.
+    const preload = () => sim.pcapViewer.preloadWiregasm();
     if ("requestIdleCallback" in window) {
-        requestIdleCallback(prefetch, { timeout: 10_000 });
+        requestIdleCallback(preload, { timeout: 10_000 });
     } else {
-        setTimeout(prefetch, 5_000);
+        setTimeout(preload, 5_000);
     }
 
 });
