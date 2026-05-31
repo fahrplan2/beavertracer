@@ -20,6 +20,9 @@ export class EthernetPort extends Observable {
     /** @type {Array<LoggedFrame>} */
     loggedFrames = [];
 
+    /** Monotonically increasing counter — never decreases, even when ring buffer wraps */
+    frameSeq = 0;
+
     static MAX_LOGGED_FRAMES = 10_000;
 
     /** @type {EthernetLink|Null} */
@@ -75,6 +78,8 @@ export class EthernetPort extends Observable {
         this.outBuffer.push(frame);
         this.loggedFrames.push(new LoggedFrame(frame.pack()));
         if (this.loggedFrames.length > EthernetPort.MAX_LOGGED_FRAMES) this.loggedFrames.shift();
+        this.frameSeq++;
+        this.doUpdate();
     }
 
     /**
@@ -91,6 +96,7 @@ export class EthernetPort extends Observable {
         this.inBuffer.push(frame);
         this.loggedFrames.push(new LoggedFrame(bytes));
         if (this.loggedFrames.length > EthernetPort.MAX_LOGGED_FRAMES) this.loggedFrames.shift();
+        this.frameSeq++;
         this.doUpdate();
     }
 
@@ -123,6 +129,7 @@ export class EthernetPort extends Observable {
         this.inBuffer = [];
         this.outBuffer = [];
         this.loggedFrames = [];
+        this.frameSeq = 0;
         this.doUpdate();
     }
 

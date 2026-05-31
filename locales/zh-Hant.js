@@ -841,7 +841,7 @@ export default {
   "pcap.status.loading.pcap": "正在載入 PCAP…",
   "pcap.status.rendering": "正在渲染…",
   "pcap.status.ready": "就緒",
-  "pcap.status.active": "活躍: {name} — {shown} 個封包 (位移 {skip}, {matched} 個相符)",
+  "pcap.status.active": "活躍: {name} — {from}–{to} / {matched}",
   "pcap.status.active.nocapture": "活躍: {name} (未載入擷取)",
   "pcap.status.nosession": "無活躍工作階段",
   "pcap.tab.nocapture": "{name} (未擷取)",

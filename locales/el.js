@@ -721,7 +721,7 @@ export default {
   "pcap.status.loading.pcap": "Φόρτωση PCAP…",
   "pcap.status.rendering": "Απόδοση…",
   "pcap.status.ready": "Έτοιμο",
-  "pcap.status.active": "Ενεργό: {name} — {shown} πακέτα (offset {skip}, {matched} ταιριάσματα)",
+  "pcap.status.active": "Ενεργό: {name} — {from}–{to} / {matched}",
   "pcap.status.active.nocapture": "Ενεργό: {name} (καμία καταγραφή φορτωμένη)",
   "pcap.status.nosession": "Κανένα ενεργό session",
   "pcap.tabs.title": "Ίχνη:",

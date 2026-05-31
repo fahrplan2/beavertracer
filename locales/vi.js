@@ -721,7 +721,7 @@ export default {
   "pcap.status.loading.pcap": "Đang tải PCAP…",
   "pcap.status.rendering": "Đang hiển thị…",
   "pcap.status.ready": "Sẵn sàng",
-  "pcap.status.active": "Hoạt động: {name} — {shown} gói (offset {skip}, {matched} khớp)",
+  "pcap.status.active": "Hoạt động: {name} — {from}–{to} / {matched}",
   "pcap.status.active.nocapture": "Hoạt động: {name} (không có bản ghi được tải)",
   "pcap.status.nosession": "Không có phiên hoạt động",
   "pcap.tabs.title": "Dấu vết:",

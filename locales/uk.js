@@ -721,7 +721,7 @@ export default {
   "pcap.status.loading.pcap": "Завантаження PCAP…",
   "pcap.status.rendering": "Рендеринг…",
   "pcap.status.ready": "Готово",
-  "pcap.status.active": "Активний: {name} — {shown} пакетів (зміщення {skip}, {matched} збігів)",
+  "pcap.status.active": "Активний: {name} — {from}–{to} / {matched}",
   "pcap.status.active.nocapture": "Активний: {name} (захоплення не завантажено)",
   "pcap.status.nosession": "Немає активної сесії",
   "pcap.tabs.title": "Трасування:",

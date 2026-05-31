@@ -721,7 +721,7 @@ export default {
   "pcap.status.loading.pcap": "PCAP 로딩 중…",
   "pcap.status.rendering": "렌더링 중…",
   "pcap.status.ready": "준비 완료",
-  "pcap.status.active": "활성: {name} — {shown}개 패킷 (오프셋 {skip}, {matched}개 일치)",
+  "pcap.status.active": "활성: {name} — {from}–{to} / {matched}",
   "pcap.status.active.nocapture": "활성: {name} (캡처 로드됨 없음)",
   "pcap.status.nosession": "활성 세션 없음",
   "pcap.tabs.title": "추적:",

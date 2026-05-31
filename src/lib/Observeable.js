@@ -22,17 +22,14 @@ export class Observable {
     }
 
     /**
-     * subscribes to an object
-     * @param {Observable} obj 
+     * @param {{update(): void}} obj
      */
-
     subscribe(obj) {
         this.#observers.push(obj);
     }
 
     /**
-     * unsubscribs from an object
-     * @param {Observable} obj 
+     * @param {{update(): void}} obj
      */
     unsubscribe(obj) {
         this.#observers = this.#observers.filter(elem => elem!=obj);

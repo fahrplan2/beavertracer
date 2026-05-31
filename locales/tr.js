@@ -721,7 +721,7 @@ export default {
   "pcap.status.loading.pcap": "PCAP yükleniyor…",
   "pcap.status.rendering": "Oluşturuluyor…",
   "pcap.status.ready": "Hazır",
-  "pcap.status.active": "Etkin: {name} — {shown} paket (ofset {skip}, {matched} eşleşti)",
+  "pcap.status.active": "Etkin: {name} — {from}–{to} / {matched}",
   "pcap.status.active.nocapture": "Etkin: {name} (yakalama yüklenmedi)",
   "pcap.status.nosession": "Etkin oturum yok",
   "pcap.tabs.title": "İzler:",

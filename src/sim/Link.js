@@ -92,8 +92,8 @@ export class Link extends SimulatedObject {
       bAny.ospf.setP2P(portBKey, true);
     }
 
-    this.simcontrol.pcapController.addIf(this.A.id + ": "+this.link.portA.name);
-    this.simcontrol.pcapController.addIf(this.B.id + ": "+this.link.portB.name);
+    this.simcontrol.pcapController.addIf(this.A.id + ": " + this.link.portA.name, this.link.portA);
+    this.simcontrol.pcapController.addIf(this.B.id + ": " + this.link.portB.name, this.link.portB);
   }
 
   render() {
@@ -185,27 +185,14 @@ export class Link extends SimulatedObject {
     const b = this.link.BtoA ?? null;
     if (a) {
       this._startInFlight("AtoB", a);
-      this.simcontrol.pcapController.updateIf(this.A.id + ": "+this.link.portA.name, this.link.portA.loggedFrames);
     }
     if (b) {
       this._startInFlight("BtoA", b);
-      this.simcontrol.pcapController.updateIf(this.B.id + ": "+this.link.portB.name, this.link.portB.loggedFrames);
     }
   }
 
   step2() {
-    //Update Traces
-    const a = this.link.AtoB ?? null;
-    const b = this.link.BtoA ?? null;
-
     this.link.step2();
-
-    if (a) {
-      this.simcontrol.pcapController.updateIf(this.B.id + ": "+this.link.portB.name, this.link.portB.loggedFrames);
-    }
-    if (b) {
-      this.simcontrol.pcapController.updateIf(this.A.id + ": "+this.link.portA.name, this.link.portA.loggedFrames);
-    }
     for (const p of this._packets) p.el.remove();
     this._packets = [];
   }

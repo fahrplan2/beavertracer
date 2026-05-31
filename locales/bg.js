@@ -721,7 +721,7 @@ export default {
   "pcap.status.loading.pcap": "Зареждане на PCAP…",
   "pcap.status.rendering": "Рендериране…",
   "pcap.status.ready": "Готово",
-  "pcap.status.active": "Активно: {name} — {shown} пакети (отместване {skip}, {matched} съвпадения)",
+  "pcap.status.active": "Активно: {name} — {from}–{to} / {matched}",
   "pcap.status.active.nocapture": "Активно: {name} (няма заредена запис)",
   "pcap.status.nosession": "Няма активна сесия",
   "pcap.tabs.title": "Трасировки:",

@@ -220,6 +220,7 @@ export class SimControl {
         this.pcapViewer = new PCapViewer(null, {
             hideComputedTreeNodes: true,
             simControl: this,
+            onActiveTabChange: (name) => this.pcapController.setActive(name),
         });
         this.pcapController = new PCapController(this.pcapViewer);
         this.wifiMedium.setPcapController(this.pcapController);
@@ -236,8 +237,8 @@ export class SimControl {
         }
 
         document.addEventListener("show-pcap", (ev) => {
-            const { sessionName, frames } = /** @type {any} */ (ev).detail;
-            this.pcapController.updateIf(sessionName, frames);
+            const { sessionName, port } = /** @type {any} */ (ev).detail;
+            this.pcapController.addIf(sessionName, port);
             this.pcapViewer.switchTab(sessionName);
             if (this.mode === "edit") this._resetEditTools();
             this.mode = "trace";
@@ -344,7 +345,7 @@ export class SimControl {
         obj.simcontrol = this;
 
         if (/** @type {any} */ (obj)._wPort) {
-            this.pcapController.addIf(`${obj.id}: ${/** @type {any} */ (obj)._wPort.name}`);
+            this.pcapController.addIf(`${obj.id}: ${/** @type {any} */ (obj)._wPort.name}`, /** @type {any} */ (obj)._wPort);
         }
 
         this._syncSceneDOM();     // add just this node (and link)
@@ -2154,7 +2155,7 @@ export class SimControl {
         // 4) register wifi pcap interfaces (bypassed addObject, so do it here)
         for (const obj of this.simobjects) {
             if (/** @type {any} */ (obj)._wPort) {
-                this.pcapController.addIf(`${obj.id}: ${/** @type {any} */ (obj)._wPort.name}`);
+                this.pcapController.addIf(`${obj.id}: ${/** @type {any} */ (obj)._wPort.name}`, /** @type {any} */ (obj)._wPort);
             }
         }
 

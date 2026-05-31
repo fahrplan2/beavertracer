@@ -713,7 +713,7 @@ export default {
   "pcap.status.loading.pcap": "بارگذاری PCAP…",
   "pcap.status.rendering": "در حال رندر کردن…",
   "pcap.status.ready": "آماده",
-  "pcap.status.active": "فعال: {name} — {shown} بسته (افست {skip}, {matched} منطبق)",
+  "pcap.status.active": "فعال: {name} — {from}–{to} / {matched}",
   "pcap.status.active.nocapture": "فعال: {name} (بدون ضبط بارگذاری شده)",
   "pcap.status.nosession": "جلسه فعالی وجود ندارد",
   "pcap.tabs.title": "تریسها:",
