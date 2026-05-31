@@ -29,6 +29,30 @@ import { isTauri } from "./tauri.js";
  * @property {any} port
  */
 
+/** Maps place-tool id → constructor */
+const PLACE_TOOL_CTOR = /** @type {Record<string, new(...args: any[]) => SimulatedObject>} */ ({
+    "place-pc":         PC,
+    "place-laptop":     Laptop,
+    "place-switch":     Switch,
+    "place-router":     Router,
+    "place-homerouter": HomeRouter,
+    "place-ap":         AccessPoint,
+    "place-firewall":   Firewall,
+    "place-text":       TextBox,
+    "place-rect":       RectOverlay,
+});
+
+/** Maps place-tool id → i18n name key (undefined = no default name) */
+const PLACE_TOOL_NAME_KEY = /** @type {Record<string, string>} */ ({
+    "place-pc":         "pc.title",
+    "place-laptop":     "laptop.title",
+    "place-switch":     "switch.title",
+    "place-router":     "router.title",
+    "place-homerouter": "homerouter.title",
+    "place-ap":         "ap.title",
+    "place-firewall":   "firewall.title",
+});
+
 export class SimControl {
     /** @type {Array<SimulatedObject>} array of all simulation objects */
     simobjects = [];
@@ -283,7 +307,6 @@ export class SimControl {
 
 
         this._requestRedrawLinks();
-        this.endStep = !this.endStep;
         this.scheduleNextStep();
     }
 
@@ -373,10 +396,7 @@ export class SimControl {
             if (el) el.remove();
             this._objEls.delete(o.id);
 
-            // also remove packet elements if it was a Link
-            if (o instanceof Link) {
-                for (const p of o._packets) p.el?.remove?.();
-            }
+            if (o instanceof Link) this._clearLinkPackets(o);
 
             // panels now live in nodesLayer (outside obj.root) — remove explicitly
             if (!(o instanceof Link) && o instanceof SimulatedObject) {
@@ -482,8 +502,8 @@ export class SimControl {
         SimControl.portLabelsLayer = portLabelsLayer;
 
         // Bind pointer events on the outer nodesLayer
-        nodes.onpointerdown = (ev) => this._onPointerDown(ev);
-        nodes.onpointermove = (ev) => this._onPointerMove(ev);
+        nodes.addEventListener("pointerdown", (ev) => this._onPointerDown(ev));
+        nodes.addEventListener("pointermove", (ev) => this._onPointerMove(ev));
 
         // ── Mouse wheel: Ctrl/Cmd → zoom, plain → pan ─────────────────────
         nodes.addEventListener("wheel", (ev) => {
@@ -974,19 +994,7 @@ export class SimControl {
                     if (this.root) this.root.dataset.tool = this.tool;
 
                     if (this.tool !== "link") this._cancelLinking();
-                    if (
-                        !(
-                            this.tool === "place-pc" ||
-                            this.tool === "place-laptop" ||
-                            this.tool === "place-switch" ||
-                            this.tool === "place-router" ||
-                            this.tool === "place-homerouter" ||
-                            this.tool === "place-ap" ||
-                            this.tool === "place-firewall" ||
-                            this.tool === "place-text" ||
-                            this.tool === "place-rect"
-                        )
-                    ) {
+                    if (!this.tool.startsWith("place-")) {
                         this._removeGhostNode();
                     }
 
@@ -1532,10 +1540,7 @@ export class SimControl {
         this.closeAllPanels();
 
         for (const obj of this.simobjects) {
-            if (obj instanceof Link) {
-                for (const p of obj._packets) p.el?.remove?.();
-                obj._packets = [];
-            }
+            if (obj instanceof Link) this._clearLinkPackets(obj);
         }
 
         this._resetEditTools();
@@ -1553,6 +1558,12 @@ export class SimControl {
     // -------------
     // Pointer Logic
     // -------------
+
+    /** @param {import("./sim/Link.js").Link} link */
+    _clearLinkPackets(link) {
+        for (const p of link._packets) p.el?.remove?.();
+        link._packets = [];
+    }
 
     /** @param {PointerEvent} ev */
     _getLocalPoint(ev) {
@@ -1608,18 +1619,8 @@ export class SimControl {
 
         const p = this._getLocalPoint(ev);
 
-        if (
-            this.tool === "place-pc" ||
-            this.tool === "place-laptop" ||
-            this.tool === "place-router" ||
-            this.tool === "place-homerouter" ||
-            this.tool === "place-switch" ||
-            this.tool === "place-ap" ||
-            this.tool === "place-firewall" ||
-            this.tool === "place-text" ||
-            this.tool === "place-rect"
-        ) {
-            this._ensureGhostNode(this.tool);
+        if (this.tool.startsWith("place-")) {
+            this._ensureGhostNode(/** @type {any} */ (this.tool));
             this._moveGhostNode(p.x, p.y);
         } else {
             this._removeGhostNode();
@@ -1807,17 +1808,13 @@ export class SimControl {
 
             const p = this._getLocalPoint(ev);
 
+            const Ctor = PLACE_TOOL_CTOR[this.tool];
             /** @type {SimulatedObject|null} */
-            let newObj = null;
-            if (this.tool === "place-pc")          newObj = new PC(this._nextName(t("pc.title")));
-            if (this.tool === "place-laptop")       newObj = new Laptop(this._nextName(t("laptop.title")));
-            if (this.tool === "place-switch")       newObj = new Switch(this._nextName(t("switch.title")));
-            if (this.tool === "place-router")       newObj = new Router(this._nextName(t("router.title")));
-            if (this.tool === "place-homerouter")   newObj = new HomeRouter(this._nextName(t("homerouter.title")));
-            if (this.tool === "place-ap")           newObj = new AccessPoint(this._nextName(t("ap.title")));
-            if (this.tool === "place-firewall")     newObj = new Firewall(this._nextName(t("firewall.title")));
-            if (this.tool === "place-text")         newObj = new TextBox();
-            if (this.tool === "place-rect")         newObj = new RectOverlay();
+            const newObj = Ctor
+                ? (PLACE_TOOL_NAME_KEY[this.tool]
+                    ? new Ctor(this._nextName(t(PLACE_TOOL_NAME_KEY[this.tool])))
+                    : new Ctor())
+                : null;
             if (!newObj) return;
 
             const w = this._ghostNodeEl.offsetWidth || 0;
@@ -1855,17 +1852,9 @@ export class SimControl {
         if (!this._ghostNodeEl || this._ghostNodeType !== type) {
             this._removeGhostNode();
 
+            const GhostCtor = PLACE_TOOL_CTOR[type];
             /** @type {SimulatedObject|null} */
-            let tmp = null;
-            if (type === "place-pc")         tmp = new PC();
-            if (type === "place-laptop")     tmp = new Laptop();
-            if (type === "place-switch")     tmp = new Switch();
-            if (type === "place-router")     tmp = new Router();
-            if (type === "place-homerouter") tmp = new HomeRouter();
-            if (type === "place-ap")         tmp = new AccessPoint();
-            if (type === "place-firewall")   tmp = new Firewall();
-            if (type === "place-text")       tmp = new TextBox();
-            if (type === "place-rect")       tmp = new RectOverlay();
+            const tmp = GhostCtor ? new GhostCtor() : null;
             if (!tmp) return;
 
             const el = tmp.buildIcon();
@@ -2246,8 +2235,7 @@ export class SimControl {
         // 2) destroy links first (they may own packet DOM)
         for (const o of this.simobjects) {
             if (o instanceof Link) {
-                // remove packet dom if Link doesn't fully do it
-                for (const p of o._packets ?? []) p.el?.remove?.();
+                this._clearLinkPackets(o);
                 o.destroy?.();
             }
         }
@@ -2311,16 +2299,7 @@ export class SimControl {
         let maxY = layerH / zoom;
 
         if (nodeObjs.length > 0) {
-            minX = Infinity; minY = Infinity; maxX = -Infinity; maxY = -Infinity;
-            for (const obj of nodeObjs) {
-                const o = /** @type {any} */ (obj);
-                const w = (o.iconEl?.offsetWidth)  || 110;
-                const h = (o.iconEl?.offsetHeight) || 70;
-                minX = Math.min(minX, o.x);
-                minY = Math.min(minY, o.y);
-                maxX = Math.max(maxX, o.x + w);
-                maxY = Math.max(maxY, o.y + h);
-            }
+            ({ minX, minY, maxX, maxY } = this._calcBoundingBox(nodeObjs));
         }
 
         // Content edges in screen space:
@@ -2381,6 +2360,25 @@ export class SimControl {
         this._requestRedrawLinks();
     }
 
+    /**
+     * Returns the axis-aligned bounding box of an array of node objects.
+     * @param {SimulatedObject[]} nodeObjs
+     * @returns {{ minX: number, minY: number, maxX: number, maxY: number }}
+     */
+    _calcBoundingBox(nodeObjs) {
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (const obj of nodeObjs) {
+            const o = /** @type {any} */ (obj);
+            const w = o.iconEl?.offsetWidth  || 110;
+            const h = o.iconEl?.offsetHeight || 70;
+            minX = Math.min(minX, o.x);
+            minY = Math.min(minY, o.y);
+            maxX = Math.max(maxX, o.x + w);
+            maxY = Math.max(maxY, o.y + h);
+        }
+        return { minX, minY, maxX, maxY };
+    }
+
     /** Fit all placed nodes into the visible area.
      * @param {number} [maxZoom] upper zoom limit (default 4); pass 1 to only zoom out, never in */
     _fitToContent(maxZoom = 4) {
@@ -2392,16 +2390,7 @@ export class SimControl {
         );
         if (nodeObjs.length === 0) return;
 
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-        for (const obj of nodeObjs) {
-            const o = /** @type {any} */ (obj);
-            const w = o.iconEl.offsetWidth  || 110;
-            const h = o.iconEl.offsetHeight || 70;
-            minX = Math.min(minX, o.x);
-            minY = Math.min(minY, o.y);
-            maxX = Math.max(maxX, o.x + w);
-            maxY = Math.max(maxY, o.y + h);
-        }
+        const { minX, minY, maxX, maxY } = this._calcBoundingBox(nodeObjs);
 
         const PAD = 48;
         const contentW = maxX - minX + PAD * 2;
