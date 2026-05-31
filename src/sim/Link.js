@@ -43,6 +43,9 @@ export class Link extends SimulatedObject {
   /** @type {number} perpendicular offset in px for parallel links */
   _parallelOffset = 0;
 
+  /** Cached endpoint canvas-coordinates; updated by redrawLinks(), read by renderPacket(). */
+  _cx1 = 0; _cy1 = 0; _cx2 = 0; _cy2 = 0;
+
   /** @type {HTMLDivElement|null} */
   _labelA = null;
   /** @type {HTMLDivElement|null} */
@@ -233,12 +236,10 @@ export class Link extends SimulatedObject {
   }
 
   renderPacket() {
-    if (!SimControl.packetsLayer) return;
+    if (!SimControl.packetsLayer || this._packets.length === 0) return;
 
-    const x1 = this.A.getX();
-    const y1 = this.A.getY();
-    const x2 = this.B.getX();
-    const y2 = this.B.getY();
+    const x1 = this._cx1, y1 = this._cy1;
+    const x2 = this._cx2, y2 = this._cy2;
 
     const dx = x2 - x1;
     const dy = y2 - y1;
@@ -253,9 +254,7 @@ export class Link extends SimulatedObject {
       const x = x1 + dx * t + normX * off;
       const y = y1 + dy * t + normY * off;
 
-      p.el.style.left = `${x}px`;
-      p.el.style.top = `${y}px`;
-      p.el.style.transform = "translate(-50%, -50%)";
+      p.el.style.transform = `translate(${x - 27}px, ${y - 27}px)`;
       if (!p.positioned) {
         p.el.style.visibility = "";
         p.positioned = true;
@@ -271,6 +270,9 @@ export class Link extends SimulatedObject {
     const y1 = this.A.getY();
     const x2 = this.B.getX();
     const y2 = this.B.getY();
+
+    this._cx1 = x1; this._cy1 = y1;
+    this._cx2 = x2; this._cy2 = y2;
 
     const dx = x2 - x1;
     const dy = y2 - y1;

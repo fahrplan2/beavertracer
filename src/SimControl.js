@@ -57,6 +57,9 @@ export class SimControl {
     /** @type {Array<SimulatedObject>} array of all simulation objects */
     simobjects = [];
 
+    /** @type {Array<import("./sim/Link.js").Link>} fast-path subset for the RAF loop */
+    _links = [];
+
     /** @type {PCapController} linked pcapController */
     pcapController;
 
@@ -365,6 +368,7 @@ export class SimControl {
     addObject(obj) {
         if (this.simobjects.includes(obj)) return;
         this.simobjects.push(obj);
+        if (obj instanceof Link) this._links.push(obj);
         obj.simcontrol = this;
 
         if (/** @type {any} */ (obj)._wPort) {
@@ -389,6 +393,7 @@ export class SimControl {
 
         const toRemove = new Set([obj, ...attachedLinks]);
         this.simobjects = this.simobjects.filter((o) => !toRemove.has(o));
+        this._links = this._links.filter((l) => !toRemove.has(l));
 
         // remove DOM for deleted objects
         for (const o of toRemove) {
@@ -1518,13 +1523,9 @@ export class SimControl {
             }
 
             if (!this.isPaused) {
-                for (const obj of this.simobjects) {
-                    if (obj instanceof Link) obj.advance(dt);
-                }
+                for (const link of this._links) link.advance(dt);
             }
-            for (const obj of this.simobjects) {
-                if (obj instanceof Link) obj.renderPacket();
-            }
+            for (const link of this._links) link.renderPacket();
         };
 
         this._rafId = requestAnimationFrame(loop);
@@ -1539,9 +1540,7 @@ export class SimControl {
         this.isPaused = true;
         this.closeAllPanels();
 
-        for (const obj of this.simobjects) {
-            if (obj instanceof Link) this._clearLinkPackets(obj);
-        }
+        for (const link of this._links) this._clearLinkPackets(link);
 
         this._resetEditTools();
     }
@@ -2139,6 +2138,7 @@ export class SimControl {
             try {
                 const link = Link.fromJSON(l, byId, this);
                 this.simobjects.push(link);
+                this._links.push(link);
                 if (link.id > maxId) maxId = link.id;
             } catch (e) {
                 console.warn("Failed to recreate link:", e);
@@ -2252,6 +2252,7 @@ export class SimControl {
 
         // 4) clear arrays + maps
         this.simobjects = [];
+        this._links = [];
         this.focusedObject = null;
         this._linkStart = null;
         this._linkStartKey = null;

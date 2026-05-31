@@ -14,7 +14,7 @@
   },
   "name": "beavertracer",
   "description": "",
-  "version": "0.1.20-dev.103.e1d31c9",
+  "version": "0.1.20-dev.104.a4526b0",
   "main": "electron/main.cjs",
   "repository": {
     "type": "git",
