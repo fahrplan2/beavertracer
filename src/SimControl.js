@@ -1531,6 +1531,13 @@ export class SimControl {
         this.isPaused = true;
         this.closeAllPanels();
 
+        for (const obj of this.simobjects) {
+            if (obj instanceof Link) {
+                for (const p of obj._packets) p.el?.remove?.();
+                obj._packets = [];
+            }
+        }
+
         this._resetEditTools();
     }
 
