@@ -607,21 +607,21 @@ export class PCapViewer {
   // Wiregasm init + loading
   // ======================================================================
 
+  #makeWgPromise() {
+    const locateWasm = this.#opt.locateWasm ?? "/wiregasm/wiregasm.wasm";
+    const locateData = this.#opt.locateData ?? "/wiregasm/wiregasm.data";
+    return loadWiregasm({
+      locateFile: (/** @type {string} */ path, /** @type {string} */ prefix) => {
+        if (path.endsWith(".wasm")) return locateWasm;
+        if (path.endsWith(".data")) return locateData;
+        return prefix + path;
+      },
+    });
+  }
+
   async #initWiregasm() {
     if (this.#wg && this.#wgInited) return;
-
-    if (!this.#wgPromise) {
-      const locateWasm = this.#opt.locateWasm ?? "/wiregasm/wiregasm.wasm";
-      const locateData = this.#opt.locateData ?? "/wiregasm/wiregasm.data";
-
-      this.#wgPromise = loadWiregasm({
-        locateFile: (/** @type {string} */ path, /** @type {string} */ prefix) => {
-          if (path.endsWith(".wasm")) return locateWasm;
-          if (path.endsWith(".data")) return locateData;
-          return prefix + path;
-        },
-      });
-    }
+    if (!this.#wgPromise) this.#wgPromise = this.#makeWgPromise();
 
     this.#showWgOverlay(t("pcap.status.loading.wiregasm"));
     try {
@@ -633,6 +633,15 @@ export class PCapViewer {
     } finally {
       this.#hideWgOverlay();
     }
+  }
+
+  /** Start loading the Wiregasm WASM module in the background without blocking the UI.
+   *  Call this during idle time so the module is ready by the time the user opens the trace tab. */
+  preloadWiregasm() {
+    if (this.#wgPromise) return;
+    this.#wgPromise = this.#makeWgPromise();
+    // Clear on failure so the next real use can retry normally
+    this.#wgPromise.catch(() => { this.#wgPromise = null; });
   }
 
   /** @param {string} msg */
