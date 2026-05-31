@@ -761,7 +761,7 @@ export default {
   "pcap.status.loading.pcap": "加载 PCAP…",
   "pcap.status.rendering": "渲染中…",
   "pcap.status.ready": "就绪",
-  "pcap.status.active": "活跃: {name} — {shown} 个数据包 (偏移 {skip}, {matched} 匹配)",
+  "pcap.status.active": "活跃: {name} — {from}–{to} / {matched}",
   "pcap.status.active.nocapture": "活跃: {name} (未加载捕获)",
   "pcap.status.nosession": "无活跃会话",
   "pcap.tab.nocapture": "{name} (无捕获)",

@@ -721,7 +721,7 @@ export default {
   "pcap.status.loading.pcap": "Učitavanje PCAP…",
   "pcap.status.rendering": "Prikaz…",
   "pcap.status.ready": "Spremno",
-  "pcap.status.active": "Aktivno: {name} — {shown} paketa (pomak {skip}, {matched} pronađeno)",
+  "pcap.status.active": "Aktivno: {name} — {from}–{to} / {matched}",
   "pcap.status.active.nocapture": "Aktivno: {name} (bez učitane snimke)",
   "pcap.status.nosession": "Nema aktivne sesije",
   "pcap.tabs.title": "Tragovi:",

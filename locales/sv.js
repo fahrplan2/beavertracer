@@ -721,7 +721,7 @@ export default {
   "pcap.status.loading.pcap": "Laddar PCAP…",
   "pcap.status.rendering": "Renderar…",
   "pcap.status.ready": "Redo",
-  "pcap.status.active": "Aktiv: {name} — {shown} paket (offset {skip}, {matched} matchade)",
+  "pcap.status.active": "Aktiv: {name} — {from}–{to} / {matched}",
   "pcap.status.active.nocapture": "Aktiv: {name} (ingen inspelning inladdad)",
   "pcap.status.nosession": "Ingen aktiv session",
   "pcap.tabs.title": "Spårningar:",

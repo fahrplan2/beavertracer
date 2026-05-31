@@ -721,7 +721,7 @@ export default {
   "pcap.status.loading.pcap": "Kraunama PCAP…",
   "pcap.status.rendering": "Atvaizduojama…",
   "pcap.status.ready": "Paruošta",
-  "pcap.status.active": "Aktyvu: {name} — {shown} paketų (poslinkis {skip}, {matched} sutapę)",
+  "pcap.status.active": "Aktyvu: {name} — {from}–{to} / {matched}",
   "pcap.status.active.nocapture": "Aktyvu: {name} (nėra įkeltos įrašymo)",
   "pcap.status.nosession": "Nėra aktyvios sesijos",
   "pcap.tabs.title": "Sekos:",

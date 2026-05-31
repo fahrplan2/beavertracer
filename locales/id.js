@@ -721,7 +721,7 @@ export default {
   "pcap.status.loading.pcap": "Memuat PCAP…",
   "pcap.status.rendering": "Rendering…",
   "pcap.status.ready": "Siap",
-  "pcap.status.active": "Aktif: {name} — {shown} paket (offset {skip}, {matched} cocok)",
+  "pcap.status.active": "Aktif: {name} — {from}–{to} / {matched}",
   "pcap.status.active.nocapture": "Aktif: {name} (tidak ada capture yang dimuat)",
   "pcap.status.nosession": "Tidak ada sesi aktif",
   "pcap.tabs.title": "Traces:",

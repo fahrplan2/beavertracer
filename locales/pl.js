@@ -721,7 +721,7 @@ export default {
   "pcap.status.loading.pcap": "Ładowanie PCAP…",
   "pcap.status.rendering": "Renderowanie…",
   "pcap.status.ready": "Gotowy",
-  "pcap.status.active": "Aktywny: {name} — {shown} pakietów (przesunięcie {skip}, {matched} dopasowanych)",
+  "pcap.status.active": "Aktywny: {name} — {from}–{to} / {matched}",
   "pcap.status.active.nocapture": "Aktywny: {name} (brak załadowanego przechwycenia)",
   "pcap.status.nosession": "Brak aktywnej sesji",
   "pcap.tabs.title": "Ślady:",

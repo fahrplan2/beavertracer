@@ -726,7 +726,7 @@ export default {
   "pcap.status.loading.pcap": "A carregar PCAP…",
   "pcap.status.rendering": "A renderizar…",
   "pcap.status.ready": "Pronto",
-  "pcap.status.active": "Ativo: {name} — {shown} pacotes (offset {skip}, {matched} correspondidos)",
+  "pcap.status.active": "Ativo: {name} — {from}–{to} / {matched}",
   "pcap.status.active.nocapture": "Ativo: {name} (sem captura carregada)",
   "pcap.status.nosession": "Nenhuma sessão ativa",
   "pcap.tabs.title": "Rastreios:",

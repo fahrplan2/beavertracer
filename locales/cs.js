@@ -721,7 +721,7 @@ export default {
   "pcap.status.loading.pcap": "Načítání PCAP…",
   "pcap.status.rendering": "Vykreslování…",
   "pcap.status.ready": "Připraveno",
-  "pcap.status.active": "Aktivní: {name} — {shown} paketů (posun {skip}, {matched} odpovídajících)",
+  "pcap.status.active": "Aktivní: {name} — {from}–{to} / {matched}",
   "pcap.status.active.nocapture": "Aktivní: {name} (bez načteného záznamu)",
   "pcap.status.nosession": "Žádná aktivní relace",
   "pcap.tabs.title": "Záznamy:",

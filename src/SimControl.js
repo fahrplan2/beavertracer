@@ -29,9 +29,39 @@ import { isTauri } from "./tauri.js";
  * @property {any} port
  */
 
+/** Maps place-tool id → constructor */
+const PLACE_TOOL_CTOR = /** @type {Record<string, new(...args: any[]) => SimulatedObject>} */ ({
+    "place-pc":         PC,
+    "place-laptop":     Laptop,
+    "place-switch":     Switch,
+    "place-router":     Router,
+    "place-homerouter": HomeRouter,
+    "place-ap":         AccessPoint,
+    "place-firewall":   Firewall,
+    "place-text":       TextBox,
+    "place-rect":       RectOverlay,
+});
+
+/** Maps place-tool id → i18n name key (undefined = no default name) */
+const PLACE_TOOL_NAME_KEY = /** @type {Record<string, string>} */ ({
+    "place-pc":         "pc.title",
+    "place-laptop":     "laptop.title",
+    "place-switch":     "switch.title",
+    "place-router":     "router.title",
+    "place-homerouter": "homerouter.title",
+    "place-ap":         "ap.title",
+    "place-firewall":   "firewall.title",
+});
+
 export class SimControl {
+
+    // ── Fields ───────────────────────────────────────────────────────────────
+
     /** @type {Array<SimulatedObject>} array of all simulation objects */
     simobjects = [];
+
+    /** @type {Array<import("./sim/Link.js").Link>} fast-path subset for the RAF loop */
+    _links = [];
 
     /** @type {PCapController} linked pcapController */
     pcapController;
@@ -52,7 +82,7 @@ export class SimControl {
     _tracePreState = null;
 
     /** @type {HTMLElement|null} HTML-Element to render everything in*/
-    root; 
+    root;
 
     /** @type {HTMLDivElement|null} */
     nodesLayer = null;
@@ -205,6 +235,8 @@ export class SimControl {
     /** @type {boolean} */
     embedded = false;
 
+    // ── Constructor & lifecycle ───────────────────────────────────────────────
+
     /**
      * @param {HTMLElement|null} root
      * @param {{ embedded?: boolean }} [opts]
@@ -220,6 +252,7 @@ export class SimControl {
         this.pcapViewer = new PCapViewer(null, {
             hideComputedTreeNodes: true,
             simControl: this,
+            onActiveTabChange: (name) => this.pcapController.setActive(name),
         });
         this.pcapController = new PCapController(this.pcapViewer);
         this.wifiMedium.setPcapController(this.pcapController);
@@ -236,8 +269,8 @@ export class SimControl {
         }
 
         document.addEventListener("show-pcap", (ev) => {
-            const { sessionName, frames } = /** @type {any} */ (ev).detail;
-            this.pcapController.updateIf(sessionName, frames);
+            const { sessionName, port } = /** @type {any} */ (ev).detail;
+            this.pcapController.addIf(sessionName, port);
             this.pcapViewer.switchTab(sessionName);
             if (this.mode === "edit") this._resetEditTools();
             this.mode = "trace";
@@ -246,174 +279,9 @@ export class SimControl {
         });
     }
 
-    markDirty() {
-        this._isDirty = true;
-    }
-
     _onBeforeUnload = (/** @type {BeforeUnloadEvent} */ ev) => {
         if (this._isDirty) ev.preventDefault();
     };
-
-    scheduleNextStep() {
-        if (this.timeoutId !== null) window.clearTimeout(this.timeoutId);
-        if (this.isPaused) return;
-        this.timeoutId = window.setTimeout(() => this.step(), SimControl.tick);
-    }
-
-    step() {
-        // deliver in-flight packets first so simTimer.tick() sees them immediately
-        this.wifiMedium.step2(this.simobjects);
-        for (let i = 0; i < this.simobjects.length; i++) {
-            const x = this.simobjects[i];
-            if (x instanceof Link) {
-                x.step2();
-            }
-        }
-        simTimer.tick();
-        this.wifiMedium.step1(this.simobjects);
-        for (let i = 0; i < this.simobjects.length; i++) {
-            const x = this.simobjects[i];
-            if (x instanceof Link) {
-                x.step1();
-            }
-        }
-        this.tickId++;
-
-
-
-        this._requestRedrawLinks();
-        this.endStep = !this.endStep;
-        this.scheduleNextStep();
-    }
-
-    /** @param {number} ms */
-    setTick(ms) {
-        if (this.mode !== "run") return;
-
-        //Upper bound: 5000, lower bound: 16
-        SimControl.tick = Math.max(16, Math.min(5000, Math.round(ms)));
-
-        for(const o of this.simobjects) {
-            if(o instanceof Link) {
-                o.setStepMs(SimControl.tick);
-            }
-        }
-        this.isPaused = false;
-        this._invalidateUI();
-        this.scheduleNextStep();
-    }
-
-    pause() {
-        if (this.isPaused) return;
-        this.isPaused = true;
-        this._invalidateUI();
-        this.scheduleNextStep();
-    }
-
-    _enterTraceMode() {
-        this._tracePreState = { wasPaused: this.isPaused, tick: SimControl.tick };
-        this.isPaused = true;
-        this.mode = "trace";
-        this._invalidateUI();
-        this.pcapViewer.render();
-        this.scheduleNextStep();
-    }
-
-    _leaveTraceMode() {
-        const pre = this._tracePreState;
-        this._tracePreState = null;
-        this.mode = "run";
-        if (pre) {
-            SimControl.tick = pre.tick;
-            this.isPaused = pre.wasPaused;
-        } else {
-            this.isPaused = false;
-        }
-        this._invalidateUI();
-        this.scheduleNextStep();
-    }
-
-    // ---------------------------------------------------------------------------
-    // Public scene operations: do NOT full-render; update incrementally
-    // ---------------------------------------------------------------------------
-
-    /** @param {SimulatedObject} obj */
-    addObject(obj) {
-        if (this.simobjects.includes(obj)) return;
-        this.simobjects.push(obj);
-        obj.simcontrol = this;
-
-        if (/** @type {any} */ (obj)._wPort) {
-            this.pcapController.addIf(`${obj.id}: ${/** @type {any} */ (obj)._wPort.name}`);
-        }
-
-        this._syncSceneDOM();     // add just this node (and link)
-        this._requestRedrawLinks();
-        this.markDirty();
-    }
-
-    /** @param {SimulatedObject} obj */
-    deleteObject(obj) {
-        if (this._linkStart === obj) this._cancelLinking();
-
-        const attachedLinks = this.simobjects.filter(
-            (o) => o instanceof Link && (o.A === obj || o.B === obj)
-        );
-
-        for (const l of attachedLinks) l.destroy();
-        if (obj instanceof Link) obj.destroy();
-
-        const toRemove = new Set([obj, ...attachedLinks]);
-        this.simobjects = this.simobjects.filter((o) => !toRemove.has(o));
-
-        // remove DOM for deleted objects
-        for (const o of toRemove) {
-            const el = this._objEls.get(o.id);
-            if (el) el.remove();
-            this._objEls.delete(o.id);
-
-            // also remove packet elements if it was a Link
-            if (o instanceof Link) {
-                for (const p of o._packets) p.el?.remove?.();
-            }
-
-            // panels now live in nodesLayer (outside obj.root) — remove explicitly
-            if (!(o instanceof Link) && o instanceof SimulatedObject) {
-                o.panelEl?.remove();
-                /** @type {any} */ (o).panelEl = null;
-            }
-
-            if (/** @type {any} */ (o)._wPort) {
-                this.pcapController.removeIf(`${o.id}: ${/** @type {any} */ (o)._wPort.name}`);
-            }
-        }
-
-        this._requestRedrawLinks();
-        this._invalidateUI();
-        this.markDirty();
-    }
-
-    /** @param {SimulatedObject|null} obj */
-    setFocus(obj) {
-        if (this.focusedObject === obj) return;
-
-        // cheap: toggle class, no rebuild
-        const prev = this.focusedObject;
-        this.focusedObject = obj;
-
-        if (prev) {
-            const elPrev = this._objEls.get(prev.id);
-            elPrev?.classList?.remove("is-focused");
-        }
-        const elNow = this._objEls.get(obj.id);
-        elNow?.classList?.add("is-focused");
-
-        this._invalidateUI(); // if toolbar/panels depend on focus
-    }
-
-    // ---------------------------------------------------------------------------
-    // Mount once: build all “frame” DOM
-    // ---------------------------------------------------------------------------
 
     _mount() {
         if (this._mounted) return;
@@ -481,8 +349,8 @@ export class SimControl {
         SimControl.portLabelsLayer = portLabelsLayer;
 
         // Bind pointer events on the outer nodesLayer
-        nodes.onpointerdown = (ev) => this._onPointerDown(ev);
-        nodes.onpointermove = (ev) => this._onPointerMove(ev);
+        nodes.addEventListener("pointerdown", (ev) => this._onPointerDown(ev));
+        nodes.addEventListener("pointermove", (ev) => this._onPointerMove(ev));
 
         // ── Mouse wheel: Ctrl/Cmd → zoom, plain → pan ─────────────────────
         nodes.addEventListener("wheel", (ev) => {
@@ -626,7 +494,7 @@ export class SimControl {
 
         this.pcapViewer.setMount(tracerbody);
 
-        // Page tab 
+        // Page tab
         const pagebody = document.createElement("div");
         pagebody.className = "page tab-content";
         pagebody.id = "page";
@@ -660,6 +528,418 @@ export class SimControl {
         this._buildSidebar();
         this._setupTooltip();
     }
+
+    // ── Simulation loop ───────────────────────────────────────────────────────
+
+    step() {
+        // deliver in-flight packets first so simTimer.tick() sees them immediately
+        this.wifiMedium.step2(this.simobjects);
+        for (let i = 0; i < this.simobjects.length; i++) {
+            const x = this.simobjects[i];
+            if (x instanceof Link) {
+                x.step2();
+            }
+        }
+        simTimer.tick();
+        this.wifiMedium.step1(this.simobjects);
+        for (let i = 0; i < this.simobjects.length; i++) {
+            const x = this.simobjects[i];
+            if (x instanceof Link) {
+                x.step1();
+            }
+        }
+        this.tickId++;
+
+        this._requestRedrawLinks();
+        this.scheduleNextStep();
+    }
+
+    scheduleNextStep() {
+        if (this.timeoutId !== null) window.clearTimeout(this.timeoutId);
+        if (this.isPaused) return;
+        this.timeoutId = window.setTimeout(() => this.step(), SimControl.tick);
+    }
+
+    /** @param {number} ms */
+    setTick(ms) {
+        if (this.mode !== "run") return;
+
+        //Upper bound: 5000, lower bound: 16
+        SimControl.tick = Math.max(16, Math.min(5000, Math.round(ms)));
+
+        for(const o of this.simobjects) {
+            if(o instanceof Link) {
+                o.setStepMs(SimControl.tick);
+            }
+        }
+        this.isPaused = false;
+        this._invalidateUI();
+        this.scheduleNextStep();
+    }
+
+    pause() {
+        if (this.isPaused) return;
+        this.isPaused = true;
+        this._invalidateUI();
+        this.scheduleNextStep();
+    }
+
+    _startRafLoop() {
+        if (this._rafId != null) return;
+
+        this._rafLastTs = performance.now();
+
+        /** @param {number} ts */
+        const loop = (ts) => {
+            this._rafId = requestAnimationFrame(loop);
+            const dt = ts - this._rafLastTs;
+            this._rafLastTs = ts;
+
+            if (this.mode !== "run") {
+                return;
+            }
+
+            if (!this.isPaused) {
+                for (const link of this._links) link.advance(dt);
+            }
+            for (const link of this._links) link.renderPacket();
+        };
+
+        this._rafId = requestAnimationFrame(loop);
+    }
+
+    // ── Mode transitions ──────────────────────────────────────────────────────
+
+    _enterEditMode() {
+        this.mode = "edit";
+        this.isPaused = true;
+        this.closeAllPanels();
+
+        for (const link of this._links) this._clearLinkPackets(link);
+
+        this._resetEditTools();
+    }
+
+    _resetEditTools() {
+        this.tool = "select";
+        this.closeAllPanels();
+        this._cancelLinking();
+        this._removeGhostNode();
+        this._clearDeleteHover();
+        this._invalidateUI();
+    }
+
+    _enterTraceMode() {
+        this._tracePreState = { wasPaused: this.isPaused, tick: SimControl.tick };
+        this.isPaused = true;
+        this.mode = "trace";
+        this._invalidateUI();
+        this.pcapViewer.render();
+        this.scheduleNextStep();
+    }
+
+    _leaveTraceMode() {
+        const pre = this._tracePreState;
+        this._tracePreState = null;
+        this.mode = "run";
+        if (pre) {
+            SimControl.tick = pre.tick;
+            this.isPaused = pre.wasPaused;
+        } else {
+            this.isPaused = false;
+        }
+        this._invalidateUI();
+        this.scheduleNextStep();
+    }
+
+    /** @param {string} path */
+    navigateTo(path) {
+        this.pause();
+        this.mode = "page";
+        this._invalidateUI();
+        this._staticRouter?.navigate(path, { replace: true });
+    }
+
+    // ── Scene management ──────────────────────────────────────────────────────
+
+    /** @param {SimulatedObject} obj */
+    addObject(obj) {
+        if (this.simobjects.includes(obj)) return;
+        this.simobjects.push(obj);
+        if (obj instanceof Link) this._links.push(obj);
+        obj.simcontrol = this;
+
+        if (/** @type {any} */ (obj)._wPort) {
+            this.pcapController.addIf(`${obj.id}: ${/** @type {any} */ (obj)._wPort.name}`, /** @type {any} */ (obj)._wPort);
+        }
+
+        this._syncSceneDOM();     // add just this node (and link)
+        this._requestRedrawLinks();
+        this.markDirty();
+    }
+
+    /** @param {SimulatedObject} obj */
+    deleteObject(obj) {
+        if (this._linkStart === obj) this._cancelLinking();
+
+        const attachedLinks = this.simobjects.filter(
+            (o) => o instanceof Link && (o.A === obj || o.B === obj)
+        );
+
+        for (const l of attachedLinks) l.destroy();
+        if (obj instanceof Link) obj.destroy();
+
+        const toRemove = new Set([obj, ...attachedLinks]);
+        this.simobjects = this.simobjects.filter((o) => !toRemove.has(o));
+        this._links = this._links.filter((l) => !toRemove.has(l));
+
+        // remove DOM for deleted objects
+        for (const o of toRemove) {
+            const el = this._objEls.get(o.id);
+            if (el) el.remove();
+            this._objEls.delete(o.id);
+
+            if (o instanceof Link) this._clearLinkPackets(o);
+
+            // panels now live in nodesLayer (outside obj.root) — remove explicitly
+            if (!(o instanceof Link) && o instanceof SimulatedObject) {
+                o.panelEl?.remove();
+                /** @type {any} */ (o).panelEl = null;
+            }
+
+            if (/** @type {any} */ (o)._wPort) {
+                this.pcapController.removeIf(`${o.id}: ${/** @type {any} */ (o)._wPort.name}`);
+            }
+        }
+
+        this._requestRedrawLinks();
+        this._invalidateUI();
+        this.markDirty();
+    }
+
+    /** @param {SimulatedObject|null} obj */
+    setFocus(obj) {
+        if (this.focusedObject === obj) return;
+
+        // cheap: toggle class, no rebuild
+        const prev = this.focusedObject;
+        this.focusedObject = obj;
+
+        if (prev) {
+            const elPrev = this._objEls.get(prev.id);
+            elPrev?.classList?.remove("is-focused");
+        }
+        const elNow = this._objEls.get(obj.id);
+        elNow?.classList?.add("is-focused");
+
+        this._invalidateUI(); // if toolbar/panels depend on focus
+    }
+
+    closeAllPanels() {
+        for (const obj of this.simobjects) {
+            if (obj instanceof SimulatedObject) obj.setPanelOpen(false);
+        }
+    }
+
+    markDirty() {
+        this._isDirty = true;
+    }
+
+    _clearScene() {
+        // 1) stop simulation timers (optional but recommended)
+        if (this.timeoutId !== null) window.clearTimeout(this.timeoutId);
+        this.timeoutId = null;
+
+        // 2) destroy links first (they may own packet DOM)
+        for (const o of this.simobjects) {
+            if (o instanceof Link) {
+                this._clearLinkPackets(o);
+                o.destroy?.();
+            }
+        }
+
+        // 3) destroy remaining objects + unregister wifi pcap sessions
+        for (const o of this.simobjects) {
+            if (!(o instanceof Link)) {
+                if (/** @type {any} */ (o)._wPort) {
+                    this.pcapController.removeIf(`${o.id}: ${/** @type {any} */ (o)._wPort.name}`);
+                }
+                o.destroy?.();
+            }
+        }
+
+        // 4) clear arrays + maps
+        this.simobjects = [];
+        this._links = [];
+        this.focusedObject = null;
+        this._linkStart = null;
+        this._linkStartKey = null;
+
+        // 5) remove all known DOM nodes we mounted for objects/links
+        for (const el of this._objEls.values()) el.remove();
+        this._objEls.clear();
+
+        // 6) clear packets layer completely (safest)
+        SimControl.packetsLayer?.replaceChildren();
+
+        // 7) clear ghost/delete states
+        this._cancelLinking();
+        this._removeGhostNode();
+        this._clearDeleteHover();
+
+        // 8) redraw request reset
+        this._redrawReq = false;
+    }
+
+    // ── Serialization ─────────────────────────────────────────────────────────
+
+    toJSON() {
+        return {
+            version: 4,
+            tick: SimControl.tick,
+            objects: this.simobjects.map((o) => o.toJSON()),
+        };
+    }
+
+    /** @param {*} state */
+    restore(state) {
+        this._isDirty = false;
+        //@ts-ignore
+        const REGISTRY = new Map([
+            ["PC", PC],
+            ["Router", Router],
+            ["Switch", Switch],
+            ["TextBox", TextBox],
+            ["RectOverlay", RectOverlay],
+            ["AccessPoint", AccessPoint],
+            ["Laptop", Laptop],
+            ["HomeRouter", HomeRouter],
+            ["Firewall", Firewall],
+            // Link handled separately
+        ]);
+
+        if (!state || !Array.isArray(state.objects)) {
+            SimDialog.alert(t("sim.invalidfilewarning"));
+            return;
+        }
+
+        this._clearScene();
+
+        // restore tick
+        if (typeof state.tick === "number") SimControl.tick = state.tick;
+
+        /** @type {Map<number, SimulatedObject>} */
+        const byId = new Map();
+
+        let maxId = 0;
+
+        // 1) create nodes first
+        for (const n of state.objects) {
+            if (!n || n.kind === "Link") continue;
+
+            const node = REGISTRY.get(String(n.kind));
+            if (!node || typeof node.fromJSON !== "function") {
+                console.warn("Unknown kind", n.kind);
+                continue;
+            }
+
+            const obj = node.fromJSON(n);
+            byId.set(obj.id, obj);
+            this.simobjects.push(obj);
+            obj.simcontrol = this;
+            if (obj.id > maxId) maxId = obj.id;
+        }
+
+        // 2) create links
+        for (const l of state.objects) {
+            if (!l || l.kind !== "Link") continue;
+            try {
+                const link = Link.fromJSON(l, byId, this);
+                this.simobjects.push(link);
+                this._links.push(link);
+                if (link.id > maxId) maxId = link.id;
+            } catch (e) {
+                console.warn("Failed to recreate link:", e);
+            }
+        }
+
+        // 3) fix id generator
+        SimulatedObject.idnumber = maxId + 1;
+
+        // 4) register wifi pcap interfaces (bypassed addObject, so do it here)
+        for (const obj of this.simobjects) {
+            if (/** @type {any} */ (obj)._wPort) {
+                this.pcapController.addIf(`${obj.id}: ${/** @type {any} */ (obj)._wPort.name}`, /** @type {any} */ (obj)._wPort);
+            }
+        }
+
+        this._enterEditMode();
+        this._syncSceneDOM();
+        this.redrawLinks();
+        requestAnimationFrame(() => this._fitToContent(1));
+    }
+
+    new() {
+        this._clearScene();
+        SimulatedObject.idnumber = 0;
+        SimControl.tick = 100;
+        this.isPaused = true;
+
+        for (const el of this._objEls.values()) el.remove();
+        this._objEls.clear();
+
+        this._enterEditMode();
+        this._syncSceneDOM();
+        this._isDirty = false;
+    }
+
+    /**
+     * shows a open dialog and loads a state
+     */
+    open() {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = ".btsim,.json";
+
+        input.addEventListener("change", async () => {
+            const file = input.files[0];
+            if (!file) return;
+
+            try {
+                const text = await file.text();
+                const scene = JSON.parse(text);
+                this.restore(scene);
+            } catch (e) {
+                SimDialog.alert(t("sim.loadfailederror"));
+            }
+        });
+
+        input.click();
+    }
+
+    async download() {
+        const name = await SimDialog.prompt(t("sim.save.filename"), "simulation");
+        if (name === null) return;
+
+        const filename = name.trim() || "simulation";
+        const data = {
+            _info: "This file was created by BeaverTracer, a network simulation tool. Open it with the BeaverTracer app or at https://beavertracer.eu/",
+            ...this.toJSON(),
+        };
+        const json = JSON.stringify(data, null, 2);
+        const blob = new Blob([json], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename.endsWith(".btsim") ? filename : filename + ".btsim";
+        a.click();
+
+        URL.revokeObjectURL(url);
+        this._isDirty = false;
+    }
+
+    // ── DOM setup ─────────────────────────────────────────────────────────────
 
     _buildToolbar() {
         const toolbar = this._toolbar;
@@ -973,19 +1253,7 @@ export class SimControl {
                     if (this.root) this.root.dataset.tool = this.tool;
 
                     if (this.tool !== "link") this._cancelLinking();
-                    if (
-                        !(
-                            this.tool === "place-pc" ||
-                            this.tool === "place-laptop" ||
-                            this.tool === "place-switch" ||
-                            this.tool === "place-router" ||
-                            this.tool === "place-homerouter" ||
-                            this.tool === "place-ap" ||
-                            this.tool === "place-firewall" ||
-                            this.tool === "place-text" ||
-                            this.tool === "place-rect"
-                        )
-                    ) {
+                    if (!this.tool.startsWith("place-")) {
                         this._removeGhostNode();
                     }
 
@@ -1103,9 +1371,7 @@ export class SimControl {
         if (this._tooltipEl) this._tooltipEl.style.display = "none";
     }
 
-    // ---------------------------------------------------------------------------
-    // UI updates: cheap class toggles + active buttons
-    // ---------------------------------------------------------------------------
+    // ── UI updates ────────────────────────────────────────────────────────────
 
     _invalidateUI() {
         if (this._uiDirty) return;
@@ -1207,10 +1473,7 @@ export class SimControl {
 
     }
 
-
-    // ---------------------------------------------------------------------------
-    // Scene DOM sync: add/remove nodes incrementally, no full rebuild
-    // ---------------------------------------------------------------------------
+    // ── Scene DOM sync ────────────────────────────────────────────────────────
 
     _syncSceneDOM() {
         const nodes = this.nodesLayer;
@@ -1316,6 +1579,8 @@ export class SimControl {
             if (obj.A === node || obj.B === node) obj.setNodeHovered(node, entering);
         }
     }
+
+    // ── Language dialog ───────────────────────────────────────────────────────
 
     async _openLanguageDialog() {
         if (this._langPanel) {
@@ -1481,153 +1746,141 @@ export class SimControl {
         this._openLanguageDialog();
     }
 
-    /** @param {string} path */
-    navigateTo(path) {
-        this.pause();
-        this.mode = "page";
-        this._invalidateUI();
-        this._staticRouter?.navigate(path, { replace: true });
-    }
+    // ── Viewport: pan & zoom ──────────────────────────────────────────────────
 
-    // --------------------
-    // RAF loop for packets
-    // --------------------
-
-    _startRafLoop() {
-        if (this._rafId != null) return;
-
-        this._rafLastTs = performance.now();
-
-        /** @param {number} ts */
-        const loop = (ts) => {
-            this._rafId = requestAnimationFrame(loop);
-            const dt = ts - this._rafLastTs;
-            this._rafLastTs = ts;
-
-            if (this.mode !== "run") {
-                return;
-            }
-
-            if (!this.isPaused) {
-                for (const obj of this.simobjects) {
-                    if (obj instanceof Link) obj.advance(dt);
-                }
-            }
-            for (const obj of this.simobjects) {
-                if (obj instanceof Link) obj.renderPacket();
-            }
-        };
-
-        this._rafId = requestAnimationFrame(loop);
-    }
-
-    // ---------------------
-    // Edit mode transitions 
-    // ---------------------
-
-    _enterEditMode() {
-        this.mode = "edit";
-        this.isPaused = true;
-        this.closeAllPanels();
-
-        this._resetEditTools();
-    }
-
-    _resetEditTools() {
-        this.tool = "select";
-        this.closeAllPanels();
-        this._cancelLinking();
-        this._removeGhostNode();
-        this._clearDeleteHover();
-        this._invalidateUI();
-    }
-
-    // -------------
-    // Pointer Logic
-    // -------------
-
-    /** @param {PointerEvent} ev */
-    _getLocalPoint(ev) {
+    /**
+     * Clamp _panX/_panY so that the content bounding box never fully leaves
+     * the visible area. At least MARGIN pixels of content must remain on-screen.
+     */
+    _clampPan() {
         const layer = this.nodesLayer;
-        if (!layer) return { x: ev.clientX, y: ev.clientY };
+        if (!layer) return;
 
-        const r = layer.getBoundingClientRect();
+        const layerW = layer.clientWidth  || 0;
+        const layerH = layer.clientHeight || 0;
+        if (layerW < 2 || layerH < 2) return;
 
-        // Convert screen position to canvas-space coordinates (accounting for zoom and pan).
-        return {
-            x: (ev.clientX - r.left - this._panX) / this._zoom,
-            y: (ev.clientY - r.top  - this._panY) / this._zoom,
-        };
-    }
+        const zoom   = this._zoom;
+        const MARGIN = 80; // minimum visible content strip in px
 
-    /** @param {Event} ev */
-    _getObjFromEvent(ev) {
-        const t = /** @type {HTMLElement} */ (ev.target);
-        const icon = t.closest("[data-objid]");
-        if (!icon) return null;
-        const id = Number(icon.getAttribute("data-objid"));
-        if (!Number.isFinite(id)) return null;
-        return this.simobjects.find((o) => o.id === id) ?? null;
-    }
+        // Content bounding box in canvas coordinates
+        const nodeObjs = this.simobjects.filter(
+            o => !(o instanceof Link) && o instanceof SimulatedObject,
+        );
 
-    /** @param {PointerEvent} ev */
-    _isPanelTarget(ev) {
-        return ev.target instanceof Element && ev.target.closest(".sim-panel") !== null;
-    }
+        let minX = 0, minY = 0;
+        let maxX = layerW / zoom;   // default: virtual canvas = viewport
+        let maxY = layerH / zoom;
 
-    /** @param {Event} ev */
-    _getLinkFromEvent(ev) {
-        const t = /** @type {HTMLElement} */ (ev.target);
-        const el = t.closest(".sim-link");
-        if (!el) return null;
-        const objid = el.getAttribute("data-objid");
-        if (!objid) return null;
-        const id = Number(objid);
-        return this.simobjects.find((o) => o.id === id) ?? null;
-    }
+        if (nodeObjs.length > 0) {
+            ({ minX, minY, maxX, maxY } = this._calcBoundingBox(nodeObjs));
+        }
 
-    _cancelLinking() {
-        this._linkStart = null;
-        this._linkStartKey = null;
-        this._linkPaused = false;
-        if (this._ghostLink) this._ghostLink.remove();
-        this._ghostLink = null;
-    }
+        // Content edges in screen space:
+        //   right  = panX + maxX * zoom  ≥ MARGIN
+        //   left   = panX + minX * zoom  ≤ layerW − MARGIN
+        //   bottom = panY + maxY * zoom  ≥ MARGIN
+        //   top    = panY + minY * zoom  ≤ layerH − MARGIN
+        const minPanX = MARGIN - maxX * zoom;
+        const maxPanX = layerW - MARGIN - minX * zoom;
+        const minPanY = MARGIN - maxY * zoom;
+        const maxPanY = layerH - MARGIN - minY * zoom;
 
-    /** @param {PointerEvent} ev */
-    _onPointerMove(ev) {
-        if (this.mode !== "edit") return;
-
-        const p = this._getLocalPoint(ev);
-
-        if (
-            this.tool === "place-pc" ||
-            this.tool === "place-laptop" ||
-            this.tool === "place-router" ||
-            this.tool === "place-homerouter" ||
-            this.tool === "place-switch" ||
-            this.tool === "place-ap" ||
-            this.tool === "place-firewall" ||
-            this.tool === "place-text" ||
-            this.tool === "place-rect"
-        ) {
-            this._ensureGhostNode(this.tool);
-            this._moveGhostNode(p.x, p.y);
+        if (minPanX <= maxPanX) {
+            this._panX = Math.max(minPanX, Math.min(maxPanX, this._panX));
         } else {
-            this._removeGhostNode();
+            // Content is narrower than 2×MARGIN: centre it horizontally
+            this._panX = (layerW - (maxX - minX) * zoom) / 2 - minX * zoom;
         }
 
-        if (this.tool === "link" && this._linkStart && !this._linkPaused) {
-            this._ensureGhostLink();
-            this._updateGhost(p.x, p.y);
-        }
-
-        if (this.tool === "delete") {
-            this._setDeleteHover(this._getHoverTargetEl(ev));
+        if (minPanY <= maxPanY) {
+            this._panY = Math.max(minPanY, Math.min(maxPanY, this._panY));
         } else {
-            this._clearDeleteHover();
+            // Content is shorter than 2×MARGIN: centre it vertically
+            this._panY = (layerH - (maxY - minY) * zoom) / 2 - minY * zoom;
         }
     }
+
+    /** Apply the current pan+zoom state to the sim-canvas CSS transform. */
+    _applyCanvasTransform() {
+        if (!this._simCanvas) return;
+        this._clampPan();
+        this._simCanvas.style.transform =
+            `translate(${this._panX}px, ${this._panY}px) scale(${this._zoom})`;
+
+        // Keep the dot grid on nodesLayer aligned with the canvas content
+        const layer = this.nodesLayer;
+        if (layer) {
+            layer.style.setProperty("--sim-dot-size", `${24 * this._zoom}px`);
+            layer.style.setProperty("--sim-dot-x",    `${this._panX}px`);
+            layer.style.setProperty("--sim-dot-y",    `${this._panY}px`);
+        }
+    }
+
+    /**
+     * Zoom by `factor`, keeping the point (pivotX, pivotY) in nodesLayer-local
+     * screen coordinates stationary.
+     * @param {number} factor
+     * @param {number} pivotX  pixels from nodesLayer left edge
+     * @param {number} pivotY  pixels from nodesLayer top edge
+     */
+    _zoomAt(factor, pivotX, pivotY) {
+        const newZoom = Math.max(0.15, Math.min(4, this._zoom * factor));
+        const realFactor = newZoom / this._zoom;
+        this._panX = pivotX - (pivotX - this._panX) * realFactor;
+        this._panY = pivotY - (pivotY - this._panY) * realFactor;
+        this._zoom = newZoom;
+        this._applyCanvasTransform();
+        this._requestRedrawLinks();
+    }
+
+    /**
+     * Returns the axis-aligned bounding box of an array of node objects.
+     * @param {SimulatedObject[]} nodeObjs
+     * @returns {{ minX: number, minY: number, maxX: number, maxY: number }}
+     */
+    _calcBoundingBox(nodeObjs) {
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (const obj of nodeObjs) {
+            const o = /** @type {any} */ (obj);
+            const w = o.iconEl?.offsetWidth  || 110;
+            const h = o.iconEl?.offsetHeight || 70;
+            minX = Math.min(minX, o.x);
+            minY = Math.min(minY, o.y);
+            maxX = Math.max(maxX, o.x + w);
+            maxY = Math.max(maxY, o.y + h);
+        }
+        return { minX, minY, maxX, maxY };
+    }
+
+    /** Fit all placed nodes into the visible area.
+     * @param {number} [maxZoom] upper zoom limit (default 4); pass 1 to only zoom out, never in */
+    _fitToContent(maxZoom = 4) {
+        const layer = this.nodesLayer;
+        if (!layer) return;
+
+        const nodeObjs = this.simobjects.filter(
+            (o) => !(o instanceof Link) && o instanceof SimulatedObject && o.iconEl,
+        );
+        if (nodeObjs.length === 0) return;
+
+        const { minX, minY, maxX, maxY } = this._calcBoundingBox(nodeObjs);
+
+        const PAD = 48;
+        const contentW = maxX - minX + PAD * 2;
+        const contentH = maxY - minY + PAD * 2;
+        const layerW = layer.clientWidth  || 800;
+        const layerH = layer.clientHeight || 600;
+
+        const zoom = Math.max(0.15, Math.min(maxZoom, Math.min(layerW / contentW, layerH / contentH)));
+        this._zoom = zoom;
+        this._panX = (layerW - contentW * zoom) / 2 - (minX - PAD) * zoom;
+        this._panY = (layerH - contentH * zoom) / 2 - (minY - PAD) * zoom;
+        this._applyCanvasTransform();
+        this._requestRedrawLinks();
+    }
+
+    // ── Pointer & interaction ─────────────────────────────────────────────────
 
     /** @param {PointerEvent} ev */
     _startDragPan(ev) {
@@ -1799,17 +2052,13 @@ export class SimControl {
 
             const p = this._getLocalPoint(ev);
 
+            const Ctor = PLACE_TOOL_CTOR[this.tool];
             /** @type {SimulatedObject|null} */
-            let newObj = null;
-            if (this.tool === "place-pc")          newObj = new PC(this._nextName(t("pc.title")));
-            if (this.tool === "place-laptop")       newObj = new Laptop(this._nextName(t("laptop.title")));
-            if (this.tool === "place-switch")       newObj = new Switch(this._nextName(t("switch.title")));
-            if (this.tool === "place-router")       newObj = new Router(this._nextName(t("router.title")));
-            if (this.tool === "place-homerouter")   newObj = new HomeRouter(this._nextName(t("homerouter.title")));
-            if (this.tool === "place-ap")           newObj = new AccessPoint(this._nextName(t("ap.title")));
-            if (this.tool === "place-firewall")     newObj = new Firewall(this._nextName(t("firewall.title")));
-            if (this.tool === "place-text")         newObj = new TextBox();
-            if (this.tool === "place-rect")         newObj = new RectOverlay();
+            const newObj = Ctor
+                ? (PLACE_TOOL_NAME_KEY[this.tool]
+                    ? new Ctor(this._nextName(t(PLACE_TOOL_NAME_KEY[this.tool])))
+                    : new Ctor())
+                : null;
             if (!newObj) return;
 
             const w = this._ghostNodeEl.offsetWidth || 0;
@@ -1839,6 +2088,72 @@ export class SimControl {
         }
     }
 
+    /** @param {PointerEvent} ev */
+    _onPointerMove(ev) {
+        if (this.mode !== "edit") return;
+
+        const p = this._getLocalPoint(ev);
+
+        if (this.tool.startsWith("place-")) {
+            this._ensureGhostNode(/** @type {any} */ (this.tool));
+            this._moveGhostNode(p.x, p.y);
+        } else {
+            this._removeGhostNode();
+        }
+
+        if (this.tool === "link" && this._linkStart && !this._linkPaused) {
+            this._ensureGhostLink();
+            this._updateGhost(p.x, p.y);
+        }
+
+        if (this.tool === "delete") {
+            this._setDeleteHover(this._getHoverTargetEl(ev));
+        } else {
+            this._clearDeleteHover();
+        }
+    }
+
+    /** @param {PointerEvent} ev */
+    _getLocalPoint(ev) {
+        const layer = this.nodesLayer;
+        if (!layer) return { x: ev.clientX, y: ev.clientY };
+
+        const r = layer.getBoundingClientRect();
+
+        // Convert screen position to canvas-space coordinates (accounting for zoom and pan).
+        return {
+            x: (ev.clientX - r.left - this._panX) / this._zoom,
+            y: (ev.clientY - r.top  - this._panY) / this._zoom,
+        };
+    }
+
+    /** @param {Event} ev */
+    _getObjFromEvent(ev) {
+        const t = /** @type {HTMLElement} */ (ev.target);
+        const icon = t.closest("[data-objid]");
+        if (!icon) return null;
+        const id = Number(icon.getAttribute("data-objid"));
+        if (!Number.isFinite(id)) return null;
+        return this.simobjects.find((o) => o.id === id) ?? null;
+    }
+
+    /** @param {PointerEvent} ev */
+    _isPanelTarget(ev) {
+        return ev.target instanceof Element && ev.target.closest(".sim-panel") !== null;
+    }
+
+    /** @param {Event} ev */
+    _getLinkFromEvent(ev) {
+        const t = /** @type {HTMLElement} */ (ev.target);
+        const el = t.closest(".sim-link");
+        if (!el) return null;
+        const objid = el.getAttribute("data-objid");
+        if (!objid) return null;
+        const id = Number(objid);
+        return this.simobjects.find((o) => o.id === id) ?? null;
+    }
+
+    // ── Edit tools ────────────────────────────────────────────────────────────
 
     /** @param {"place-pc"|"place-laptop"|"place-switch"|"place-router"|"place-homerouter"|"place-ap"|"place-firewall"|"place-text"|"place-rect"} type */
     _ensureGhostNode(type) {
@@ -1847,17 +2162,9 @@ export class SimControl {
         if (!this._ghostNodeEl || this._ghostNodeType !== type) {
             this._removeGhostNode();
 
+            const GhostCtor = PLACE_TOOL_CTOR[type];
             /** @type {SimulatedObject|null} */
-            let tmp = null;
-            if (type === "place-pc")         tmp = new PC();
-            if (type === "place-laptop")     tmp = new Laptop();
-            if (type === "place-switch")     tmp = new Switch();
-            if (type === "place-router")     tmp = new Router();
-            if (type === "place-homerouter") tmp = new HomeRouter();
-            if (type === "place-ap")         tmp = new AccessPoint();
-            if (type === "place-firewall")   tmp = new Firewall();
-            if (type === "place-text")       tmp = new TextBox();
-            if (type === "place-rect")       tmp = new RectOverlay();
+            const tmp = GhostCtor ? new GhostCtor() : null;
             if (!tmp) return;
 
             const el = tmp.buildIcon();
@@ -1903,18 +2210,75 @@ export class SimControl {
         this._ghostReady = true;
     }
 
-    /** 
+    _ensureGhostLink() {
+        if (!this.nodesLayer) return;
+        if (this._ghostLink) return;
+
+        const g = document.createElement("div");
+        g.className = "sim-link sim-link-ghost";
+        g.style.pointerEvents = "none";
+        g.style.transformOrigin = "0 0";
+
+        const hit = document.createElement("div");
+        hit.className = "sim-link-hit";
+        hit.style.pointerEvents = "none";
+
+        const line = document.createElement("div");
+        line.className = "sim-link-line";
+        line.style.pointerEvents = "none";
+
+        g.appendChild(hit);
+        g.appendChild(line);
+
+        (this._simCanvas ?? this.nodesLayer).appendChild(g);
+        this._ghostLink = g;
+    }
+
+    /** @param {number} endX local @param {number} endY local */
+    _updateGhost(endX, endY) {
+        if (!this._ghostLink || !this._linkStart) return;
+        const x1 = this._linkStart.getX();
+        const y1 = this._linkStart.getY();
+
+        const dx = endX - x1;
+        const dy = endY - y1;
+        const length = Math.hypot(dx, dy);
+        const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+
+        this._ghostLink.style.width = `${length}px`;
+        this._ghostLink.style.left = `${x1}px`;
+        this._ghostLink.style.top = `${y1}px`;
+        this._ghostLink.style.transform = `rotate(${angle}deg)`;
+    }
+
+    _cancelLinking() {
+        this._linkStart = null;
+        this._linkStartKey = null;
+        this._linkPaused = false;
+        if (this._ghostLink) this._ghostLink.remove();
+        this._ghostLink = null;
+    }
+
+    /** @param {import("./sim/Link.js").Link} link */
+    _clearLinkPackets(link) {
+        for (const p of link._packets) p.el?.remove?.();
+        link._packets = [];
+    }
+
+    // ── Port & link helpers ───────────────────────────────────────────────────
+
+    /**
      * helper function to try to call listPorts() on an object
-     * @param {any} obj @returns {PortDescriptor[]} 
+     * @param {any} obj @returns {PortDescriptor[]}
      */
     _getPorts(obj) {
         if (typeof obj.listPorts === "function") return obj.listPorts();
         return [];
     }
 
-    /** 
+    /**
      * helper function to try to call isFree();
-     * @param {any} port 
+     * @param {any} port
      */
     _isPortFree(port) {
         if (typeof port.isFree === "function") return port.isFree();
@@ -2034,380 +2398,7 @@ export class SimControl {
         return null;
     }
 
-    _ensureGhostLink() {
-        if (!this.nodesLayer) return;
-        if (this._ghostLink) return;
-
-        const g = document.createElement("div");
-        g.className = "sim-link sim-link-ghost";
-        g.style.pointerEvents = "none";
-        g.style.transformOrigin = "0 0";
-
-        const hit = document.createElement("div");
-        hit.className = "sim-link-hit";
-        hit.style.pointerEvents = "none";
-
-        const line = document.createElement("div");
-        line.className = "sim-link-line";
-        line.style.pointerEvents = "none";
-
-        g.appendChild(hit);
-        g.appendChild(line);
-
-        (this._simCanvas ?? this.nodesLayer).appendChild(g);
-        this._ghostLink = g;
-    }
-
-    /** @param {number} endX local @param {number} endY local */
-    _updateGhost(endX, endY) {
-        if (!this._ghostLink || !this._linkStart) return;
-        const x1 = this._linkStart.getX();
-        const y1 = this._linkStart.getY();
-
-        const dx = endX - x1;
-        const dy = endY - y1;
-        const length = Math.hypot(dx, dy);
-        const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
-
-        this._ghostLink.style.width = `${length}px`;
-        this._ghostLink.style.left = `${x1}px`;
-        this._ghostLink.style.top = `${y1}px`;
-        this._ghostLink.style.transform = `rotate(${angle}deg)`;
-    }
-
-    // -----------
-    // Save / Load
-    // -----------
-
-    toJSON() {
-        return {
-            version: 4,
-            tick: SimControl.tick,
-            objects: this.simobjects.map((o) => o.toJSON()),
-        };
-    }
-
-    /** @param {*} state */
-    restore(state) {
-        this._isDirty = false;
-        //@ts-ignore
-        const REGISTRY = new Map([
-            ["PC", PC],
-            ["Router", Router],
-            ["Switch", Switch],
-            ["TextBox", TextBox],
-            ["RectOverlay", RectOverlay],
-            ["AccessPoint", AccessPoint],
-            ["Laptop", Laptop],
-            ["HomeRouter", HomeRouter],
-            ["Firewall", Firewall],
-            // Link handled separately
-        ]);
-
-        if (!state || !Array.isArray(state.objects)) {
-            SimDialog.alert(t("sim.invalidfilewarning"));
-            return;
-        }
-
-        this._clearScene();
-
-        // restore tick
-        if (typeof state.tick === "number") SimControl.tick = state.tick;
-
-        /** @type {Map<number, SimulatedObject>} */
-        const byId = new Map();
-
-        let maxId = 0;
-
-        // 1) create nodes first
-        for (const n of state.objects) {
-            if (!n || n.kind === "Link") continue;
-
-            const node = REGISTRY.get(String(n.kind));
-            if (!node || typeof node.fromJSON !== "function") {
-                console.warn("Unknown kind", n.kind);
-                continue;
-            }
-
-            const obj = node.fromJSON(n);
-            byId.set(obj.id, obj);
-            this.simobjects.push(obj);
-            obj.simcontrol = this;
-            if (obj.id > maxId) maxId = obj.id;
-        }
-
-        // 2) create links
-        for (const l of state.objects) {
-            if (!l || l.kind !== "Link") continue;
-            try {
-                const link = Link.fromJSON(l, byId, this);
-                this.simobjects.push(link);
-                if (link.id > maxId) maxId = link.id;
-            } catch (e) {
-                console.warn("Failed to recreate link:", e);
-            }
-        }
-
-        // 3) fix id generator
-        SimulatedObject.idnumber = maxId + 1;
-
-        // 4) register wifi pcap interfaces (bypassed addObject, so do it here)
-        for (const obj of this.simobjects) {
-            if (/** @type {any} */ (obj)._wPort) {
-                this.pcapController.addIf(`${obj.id}: ${/** @type {any} */ (obj)._wPort.name}`);
-            }
-        }
-
-        this._enterEditMode();
-        this._syncSceneDOM();
-        this.redrawLinks();
-        requestAnimationFrame(() => this._fitToContent(1));
-    }
-
-    new() {
-        this._clearScene();
-        SimulatedObject.idnumber = 0;
-        SimControl.tick = 100;
-        this.isPaused = true;
-
-        for (const el of this._objEls.values()) el.remove();
-        this._objEls.clear();
-
-        this._enterEditMode();
-        this._syncSceneDOM();
-        this._isDirty = false;
-    }
-
-    /**
-     * shows a open dialog and loads a state
-     */
-    open() {
-        const input = document.createElement("input");
-        input.type = "file";
-        input.accept = ".btsim,.json";
-
-        input.addEventListener("change", async () => {
-            const file = input.files[0];
-            if (!file) return;
-
-            try {
-                const text = await file.text();
-                const scene = JSON.parse(text);
-                this.restore(scene);
-            } catch (e) {
-                SimDialog.alert(t("sim.loadfailederror"));
-            }
-        });
-
-        input.click();
-    }
-
-    closeAllPanels() {
-        for (const obj of this.simobjects) {
-            if (obj instanceof SimulatedObject) obj.setPanelOpen(false);
-        }
-    }
-
-    async download() {
-        const name = await SimDialog.prompt(t("sim.save.filename"), "simulation");
-        if (name === null) return;
-
-        const filename = name.trim() || "simulation";
-        const data = {
-            _info: "This file was created by BeaverTracer, a network simulation tool. Open it with the BeaverTracer app or at https://beavertracer.eu/",
-            ...this.toJSON(),
-        };
-        const json = JSON.stringify(data, null, 2);
-        const blob = new Blob([json], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename.endsWith(".btsim") ? filename : filename + ".btsim";
-        a.click();
-
-        URL.revokeObjectURL(url);
-        this._isDirty = false;
-    }
-
-    _clearScene() {
-        // 1) stop simulation timers (optional but recommended)
-        if (this.timeoutId !== null) window.clearTimeout(this.timeoutId);
-        this.timeoutId = null;
-
-        // 2) destroy links first (they may own packet DOM)
-        for (const o of this.simobjects) {
-            if (o instanceof Link) {
-                // remove packet dom if Link doesn't fully do it
-                for (const p of o._packets ?? []) p.el?.remove?.();
-                o.destroy?.();
-            }
-        }
-
-        // 3) destroy remaining objects + unregister wifi pcap sessions
-        for (const o of this.simobjects) {
-            if (!(o instanceof Link)) {
-                if (/** @type {any} */ (o)._wPort) {
-                    this.pcapController.removeIf(`${o.id}: ${/** @type {any} */ (o)._wPort.name}`);
-                }
-                o.destroy?.();
-            }
-        }
-
-        // 4) clear arrays + maps
-        this.simobjects = [];
-        this.focusedObject = null;
-        this._linkStart = null;
-        this._linkStartKey = null;
-
-        // 5) remove all known DOM nodes we mounted for objects/links
-        for (const el of this._objEls.values()) el.remove();
-        this._objEls.clear();
-
-        // 6) clear packets layer completely (safest)
-        SimControl.packetsLayer?.replaceChildren();
-
-        // 7) clear ghost/delete states
-        this._cancelLinking();
-        this._removeGhostNode();
-        this._clearDeleteHover();
-
-        // 8) redraw request reset
-        this._redrawReq = false;
-    }
-
-    // ── Zoom / pan helpers ────────────────────────────────────────────────
-
-    /**
-     * Clamp _panX/_panY so that the content bounding box never fully leaves
-     * the visible area. At least MARGIN pixels of content must remain on-screen.
-     */
-    _clampPan() {
-        const layer = this.nodesLayer;
-        if (!layer) return;
-
-        const layerW = layer.clientWidth  || 0;
-        const layerH = layer.clientHeight || 0;
-        if (layerW < 2 || layerH < 2) return;
-
-        const zoom   = this._zoom;
-        const MARGIN = 80; // minimum visible content strip in px
-
-        // Content bounding box in canvas coordinates
-        const nodeObjs = this.simobjects.filter(
-            o => !(o instanceof Link) && o instanceof SimulatedObject,
-        );
-
-        let minX = 0, minY = 0;
-        let maxX = layerW / zoom;   // default: virtual canvas = viewport
-        let maxY = layerH / zoom;
-
-        if (nodeObjs.length > 0) {
-            minX = Infinity; minY = Infinity; maxX = -Infinity; maxY = -Infinity;
-            for (const obj of nodeObjs) {
-                const o = /** @type {any} */ (obj);
-                const w = (o.iconEl?.offsetWidth)  || 110;
-                const h = (o.iconEl?.offsetHeight) || 70;
-                minX = Math.min(minX, o.x);
-                minY = Math.min(minY, o.y);
-                maxX = Math.max(maxX, o.x + w);
-                maxY = Math.max(maxY, o.y + h);
-            }
-        }
-
-        // Content edges in screen space:
-        //   right  = panX + maxX * zoom  ≥ MARGIN
-        //   left   = panX + minX * zoom  ≤ layerW − MARGIN
-        //   bottom = panY + maxY * zoom  ≥ MARGIN
-        //   top    = panY + minY * zoom  ≤ layerH − MARGIN
-        const minPanX = MARGIN - maxX * zoom;
-        const maxPanX = layerW - MARGIN - minX * zoom;
-        const minPanY = MARGIN - maxY * zoom;
-        const maxPanY = layerH - MARGIN - minY * zoom;
-
-        if (minPanX <= maxPanX) {
-            this._panX = Math.max(minPanX, Math.min(maxPanX, this._panX));
-        } else {
-            // Content is narrower than 2×MARGIN: centre it horizontally
-            this._panX = (layerW - (maxX - minX) * zoom) / 2 - minX * zoom;
-        }
-
-        if (minPanY <= maxPanY) {
-            this._panY = Math.max(minPanY, Math.min(maxPanY, this._panY));
-        } else {
-            // Content is shorter than 2×MARGIN: centre it vertically
-            this._panY = (layerH - (maxY - minY) * zoom) / 2 - minY * zoom;
-        }
-    }
-
-    /** Apply the current pan+zoom state to the sim-canvas CSS transform. */
-    _applyCanvasTransform() {
-        if (!this._simCanvas) return;
-        this._clampPan();
-        this._simCanvas.style.transform =
-            `translate(${this._panX}px, ${this._panY}px) scale(${this._zoom})`;
-
-        // Keep the dot grid on nodesLayer aligned with the canvas content
-        const layer = this.nodesLayer;
-        if (layer) {
-            layer.style.setProperty("--sim-dot-size", `${24 * this._zoom}px`);
-            layer.style.setProperty("--sim-dot-x",    `${this._panX}px`);
-            layer.style.setProperty("--sim-dot-y",    `${this._panY}px`);
-        }
-    }
-
-    /**
-     * Zoom by `factor`, keeping the point (pivotX, pivotY) in nodesLayer-local
-     * screen coordinates stationary.
-     * @param {number} factor
-     * @param {number} pivotX  pixels from nodesLayer left edge
-     * @param {number} pivotY  pixels from nodesLayer top edge
-     */
-    _zoomAt(factor, pivotX, pivotY) {
-        const newZoom = Math.max(0.15, Math.min(4, this._zoom * factor));
-        const realFactor = newZoom / this._zoom;
-        this._panX = pivotX - (pivotX - this._panX) * realFactor;
-        this._panY = pivotY - (pivotY - this._panY) * realFactor;
-        this._zoom = newZoom;
-        this._applyCanvasTransform();
-        this._requestRedrawLinks();
-    }
-
-    /** Fit all placed nodes into the visible area.
-     * @param {number} [maxZoom] upper zoom limit (default 4); pass 1 to only zoom out, never in */
-    _fitToContent(maxZoom = 4) {
-        const layer = this.nodesLayer;
-        if (!layer) return;
-
-        const nodeObjs = this.simobjects.filter(
-            (o) => !(o instanceof Link) && o instanceof SimulatedObject && o.iconEl,
-        );
-        if (nodeObjs.length === 0) return;
-
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-        for (const obj of nodeObjs) {
-            const o = /** @type {any} */ (obj);
-            const w = o.iconEl.offsetWidth  || 110;
-            const h = o.iconEl.offsetHeight || 70;
-            minX = Math.min(minX, o.x);
-            minY = Math.min(minY, o.y);
-            maxX = Math.max(maxX, o.x + w);
-            maxY = Math.max(maxY, o.y + h);
-        }
-
-        const PAD = 48;
-        const contentW = maxX - minX + PAD * 2;
-        const contentH = maxY - minY + PAD * 2;
-        const layerW = layer.clientWidth  || 800;
-        const layerH = layer.clientHeight || 600;
-
-        const zoom = Math.max(0.15, Math.min(maxZoom, Math.min(layerW / contentW, layerH / contentH)));
-        this._zoom = zoom;
-        this._panX = (layerW - contentW * zoom) / 2 - (minX - PAD) * zoom;
-        this._panY = (layerH - contentH * zoom) / 2 - (minY - PAD) * zoom;
-        this._applyCanvasTransform();
-        this._requestRedrawLinks();
-    }
+    // ── Utilities ─────────────────────────────────────────────────────────────
 
     /** @param {string} prefix */
     _nextName(prefix) {

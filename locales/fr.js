@@ -728,7 +728,7 @@ export default {
   "pcap.status.loading.pcap": "Chargement de PCAP…",
   "pcap.status.rendering": "Rendu en cours…",
   "pcap.status.ready": "Prêt",
-  "pcap.status.active": "Actif : {name} — {shown} paquets (décalage {skip}, {matched} correspondant)",
+  "pcap.status.active": "Actif : {name} — {from}–{to} / {matched}",
   "pcap.status.active.nocapture": "Actif : {name} (aucune capture chargée)",
   "pcap.status.nosession": "Aucune session active",
   "pcap.tabs.title": "Traces :",

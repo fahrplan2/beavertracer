@@ -721,7 +721,7 @@ export default {
   "pcap.status.loading.pcap": "PCAP laden…",
   "pcap.status.rendering": "Weergeven…",
   "pcap.status.ready": "Gereed",
-  "pcap.status.active": "Actief: {name} — {shown} pakketten (offset {skip}, {matched} overeenkomstig)",
+  "pcap.status.active": "Actief: {name} — {from}–{to} / {matched}",
   "pcap.status.active.nocapture": "Actief: {name} (geen capture geladen)",
   "pcap.status.nosession": "Geen actieve sessie",
   "pcap.tabs.title": "Traces:",

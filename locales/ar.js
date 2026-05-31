@@ -713,7 +713,7 @@ export default {
   "pcap.status.loading.pcap": "جاري تحميل PCAP…",
   "pcap.status.rendering": "جاري التصيير…",
   "pcap.status.ready": "جاهز",
-  "pcap.status.active": "نشط: {name} — {shown} حزم (الإزاحة {skip}، {matched} متطابقة)",
+  "pcap.status.active": "نشط: {name} — {from}–{to} / {matched}",
   "pcap.status.active.nocapture": "نشط: {name} (لم يتم تحميل التقاط)",
   "pcap.status.nosession": "لا توجد جلسة نشطة",
   "pcap.tabs.title": "التتبعات:",

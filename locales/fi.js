@@ -721,7 +721,7 @@ export default {
   "pcap.status.loading.pcap": "Ladataan PCAP-tiedostoa…",
   "pcap.status.rendering": "Haetaan…",
   "pcap.status.ready": "Valmis",
-  "pcap.status.active": "Aktiivinen: {name} — {shown} pakettia (siirtymä {skip}, {matched} vastaavaa)",
+  "pcap.status.active": "Aktiivinen: {name} — {from}–{to} / {matched}",
   "pcap.status.active.nocapture": "Aktiivinen: {name} (ei kuvausta ladattu)",
   "pcap.status.nosession": "Ei aktiivista istuntoa",
   "pcap.tabs.title": "Jäljitykset:",

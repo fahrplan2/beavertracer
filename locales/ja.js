@@ -721,7 +721,7 @@ export default {
   "pcap.status.loading.pcap": "PCAPを読み込み中…",
   "pcap.status.rendering": "レンダリング中…",
   "pcap.status.ready": "準備完了",
-  "pcap.status.active": "アクティブ: {name} — {shown} パケット (オフセット {skip}、{matched} マッチ)",
+  "pcap.status.active": "アクティブ: {name} — {from}–{to} / {matched}",
   "pcap.status.active.nocapture": "アクティブ: {name} (キャプチャが読み込まれていません)",
   "pcap.status.nosession": "アクティブなセッションなし",
   "pcap.tabs.title": "トレース:",
