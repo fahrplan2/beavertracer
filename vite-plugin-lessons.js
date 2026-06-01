@@ -284,6 +284,11 @@ function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "") {
   src = src.replace(/:far-([a-z0-9-]+):/g, '<i class="fa-regular fa-$1"></i>');
   src = src.replace(/:fa-([a-z0-9-]+):/g, '<i class="fa-solid fa-$1"></i>');
 
+  // ── Pre-process custom sim icon shortcuts ─────────────────────
+  // :router:  :switch:
+  src = src.replace(/:router:/g, '<span class="my-icon-router lesson-icon" aria-label="Router"></span>');
+  src = src.replace(/:switch:/g, '<span class="my-icon-switch lesson-icon" aria-label="Switch"></span>');
+
   // ── Set up markdown-it with heading ID collection ──────────────
   /** @type {{level:number, text:string, id:string}[]} */
   const headings = [];
@@ -374,14 +379,7 @@ function generateLangRedirect(firstHref) {
  * @param {string} fallbackMsg
  */
 function generateLangStub(lang, rootTemplateHtml, info, fallbackMsg) {
-  const langName = info.name;
-  const msg = info.noLessons ?? fallbackMsg;
-  const body = `<h1>${langName} – Lektionen</h1>\n<p>${msg}</p>\n<p><a href="../">← Zurück</a></p>`;
-  return rootTemplateHtml
-    .replace(/\{\{body\}\}/g, body)
-    .replace(/href="\.\/(_style\.css)"/g, 'href="../$1"')
-    .replace(/href="\.\.\/"/g, 'href="../../"')
-    .replace(/src="\.\.\/beaver\.svg"/g, 'src="../../beaver.svg"');
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta http-equiv="refresh" content="0;url=../"><script>location.replace("../")<\/script></head><body></body></html>`;
 }
 
 /**

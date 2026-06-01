@@ -1161,7 +1161,8 @@ sim-toolbar-langbtn {
   color: var(--green);
 }
 
-.fa-laptop {
+.fa-laptop,
+.fa-tablet-screen-button {
   color: var(--blue);
 }
 

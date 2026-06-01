@@ -490,6 +490,39 @@ body {
 .lesson-nav a:hover { border-color: var(--primary); }
 .lesson-nav-next { margin-left: auto; text-align: right; }
 
+/* ── Custom sim icons (router.svg / switch.svg mask technique) ── */
+.lesson-icon {
+  display: inline-block;
+  width: 1.1em;
+  height: 1.1em;
+  vertical-align: middle;
+  background-color: var(--blue);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+.my-icon-router {
+  -webkit-mask-image: url('/router.svg');
+  mask-image: url('/router.svg');
+}
+.my-icon-switch {
+  -webkit-mask-image: url('/switch.svg');
+  mask-image: url('/switch.svg');
+}
+
+/* ── WIP banner ───────────────────────────────────────────────── */
+.wip-banner {
+  background: var(--warning-soft);
+  border-left: 4px solid var(--warning);
+  color: var(--text);
+  padding: 12px 20px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
 /* ── Footer ───────────────────────────────────────────────────── */
 .lesson-footer {
   text-align: center;
