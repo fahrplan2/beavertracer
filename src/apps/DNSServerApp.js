@@ -7,6 +7,7 @@ import { t } from "../i18n/index.js";
 import { DNSPacket } from "./../net/pdu/DNSPacket.js";
 import { IPAddress } from "../net/models/IPAddress.js";
 import { nowStamp } from "../lib/helpers.js";
+import { DNSResolver } from "./lib/DNSResolver.js";
 
 /** @param {*} name */
 function normalizeName(name) {
@@ -167,8 +168,8 @@ export class DNSServerApp extends LoggedProcess {
 
   configPath = "/etc/dnsd.conf";
 
-  /** @type {{a:any[], aaaa:any[], cname:any[], mx:any[], ns:any[]}} */
-  cfg = { a: [], aaaa: [], cname: [], mx: [], ns: [] };
+  /** @type {{a:any[], aaaa:any[], cname:any[], mx:any[], ns:any[], mode:string, forwarderIp:string}} */
+  cfg = { a: [], aaaa: [], cname: [], mx: [], ns: [], mode: "authoritative", forwarderIp: "" };
 
   /** @type {HTMLButtonElement|null} */
   startBtn = null;
@@ -188,6 +189,13 @@ export class DNSServerApp extends LoggedProcess {
   /** @type {{root:HTMLElement,getRows:()=>any[],setRows:(rows:any[])=>void}|null} */
   nsEditor = null;
 
+  /** @type {HTMLSelectElement|null} */
+  modeSelect = null;
+  /** @type {HTMLInputElement|null} */
+  forwarderInput = null;
+  /** @type {HTMLElement|null} */
+  rootDnsRow = null;
+
   /** @type {any} */
   saveTimer = null;
   icon = "fa-server";
@@ -204,12 +212,15 @@ export class DNSServerApp extends LoggedProcess {
       if (!txt?.trim()) return;
       const obj = JSON.parse(txt);
       if (obj.autostart !== true) return;
+      const mode = (obj.mode === "recursive") ? "recursive" : "authoritative";
       this.cfg = {
-        a:     Array.isArray(obj.a)     ? obj.a     : [],
-        aaaa:  Array.isArray(obj.aaaa)  ? obj.aaaa  : [],
-        cname: Array.isArray(obj.cname) ? obj.cname : [],
-        mx:    Array.isArray(obj.mx)    ? obj.mx    : [],
-        ns:    Array.isArray(obj.ns)    ? obj.ns    : [],
+        a:          Array.isArray(obj.a)     ? obj.a     : [],
+        aaaa:       Array.isArray(obj.aaaa)  ? obj.aaaa  : [],
+        cname:      Array.isArray(obj.cname) ? obj.cname : [],
+        mx:         Array.isArray(obj.mx)    ? obj.mx    : [],
+        ns:         Array.isArray(obj.ns)    ? obj.ns    : [],
+        mode,
+        forwarderIp: typeof obj.forwarderIp === "string" ? obj.forwarderIp : "",
       };
       this._start();
     } catch { }
@@ -304,13 +315,41 @@ export class DNSServerApp extends LoggedProcess {
 
     const logPane = UI.el("div", { children: [status, logBox] });
 
+    const modeSelect = UI.select([
+      { value: "authoritative", label: t("app.dnsd.label.mode.authoritative") },
+      { value: "recursive",     label: t("app.dnsd.label.mode.recursive")     },
+    ], {
+      value: this.cfg.mode ?? "authoritative",
+      onChange: (v) => {
+        if (this.rootDnsRow) this.rootDnsRow.style.display = v === "recursive" ? "" : "none";
+        this._scheduleSave();
+      },
+    });
+    this.modeSelect = modeSelect;
+
+    const forwarderInput = UI.input({ placeholder: "10.0.0.1" });
+    forwarderInput.addEventListener("input", () => this._scheduleSave());
+    this.forwarderInput = forwarderInput;
+
+    const rootDnsRow = UI.row(t("app.dnsd.label.rootDns"), forwarderInput);
+    rootDnsRow.style.display = (this.cfg.mode === "recursive") ? "" : "none";
+    this.rootDnsRow = rootDnsRow;
+
+    const settingsPane = UI.el("div", {
+      children: [
+        UI.row(t("app.dnsd.label.mode"), modeSelect),
+        rootDnsRow,
+      ],
+    });
+
     const { bar: tabBar } = UI.tabbedPane([
-      { id: "a",     label: "A",                    pane: this.aEditor.root     },
-      { id: "aaaa",  label: "AAAA",                 pane: this.aaaaEditor.root  },
-      { id: "cname", label: "CNAME",                pane: this.cnameEditor.root },
-      { id: "mx",    label: "MX",                   pane: this.mxEditor.root    },
-      { id: "ns",    label: "NS",                   pane: this.nsEditor.root    },
-      { id: "log",   label: t("app.dnsd.label.log"), pane: logPane              },
+      { id: "a",        label: "A",                         pane: this.aEditor.root     },
+      { id: "aaaa",     label: "AAAA",                      pane: this.aaaaEditor.root  },
+      { id: "cname",    label: "CNAME",                     pane: this.cnameEditor.root },
+      { id: "mx",       label: "MX",                        pane: this.mxEditor.root    },
+      { id: "ns",       label: "NS",                        pane: this.nsEditor.root    },
+      { id: "log",      label: t("app.dnsd.label.log"),      pane: logPane              },
+      { id: "settings", label: t("app.dnsd.label.settings"), pane: settingsPane         },
     ]);
 
     const panel = UI.panel([
@@ -322,6 +361,7 @@ export class DNSServerApp extends LoggedProcess {
       this.mxEditor.root,
       this.nsEditor.root,
       logPane,
+      settingsPane,
       UI.buttonRow([save]),
     ]);
 
@@ -332,10 +372,13 @@ export class DNSServerApp extends LoggedProcess {
     this._renderLog();
 
     this.disposer.interval(() => {
+      const isRecursive = this.cfg.mode === "recursive";
       status.value =
         `pid: ${this.pid}\n` +
         `running: ${this.running}\n` +
         `port: ${(this.socketPort ?? "-")}\n` +
+        `mode: ${this.cfg.mode ?? "authoritative"}\n` +
+        (isRecursive ? `root dns: ${this.cfg.forwarderIp || "-"}\n` : "") +
         `A/AAAA/CNAME/MX/NS: ${this.cfg.a.length}/${this.cfg.aaaa.length}/${this.cfg.cname.length}/${this.cfg.mx.length}/${this.cfg.ns.length}\n` +
         `log: ${this.log.length}`;
     }, 300);
@@ -352,6 +395,9 @@ export class DNSServerApp extends LoggedProcess {
     this.cnameEditor = null;
     this.mxEditor = null;
     this.nsEditor = null;
+    this.modeSelect = null;
+    this.forwarderInput = null;
+    this.rootDnsRow = null;
     if (this.saveTimer) clearTimeout(this.saveTimer);
     this.saveTimer = null;
     super.onUnmount();
@@ -374,12 +420,15 @@ export class DNSServerApp extends LoggedProcess {
       const s = (raw instanceof Uint8Array) ? new TextDecoder().decode(raw) : String(raw ?? "");
 
       const obj = JSON.parse(s);
+      const mode = (obj.mode === "recursive") ? "recursive" : "authoritative";
       this.cfg = {
-        a:     Array.isArray(obj.a)     ? obj.a     : [],
-        aaaa:  Array.isArray(obj.aaaa)  ? obj.aaaa  : [],
-        cname: Array.isArray(obj.cname) ? obj.cname : [],
-        mx:    Array.isArray(obj.mx)    ? obj.mx    : [],
-        ns:    Array.isArray(obj.ns)    ? obj.ns    : [],
+        a:          Array.isArray(obj.a)     ? obj.a     : [],
+        aaaa:       Array.isArray(obj.aaaa)  ? obj.aaaa  : [],
+        cname:      Array.isArray(obj.cname) ? obj.cname : [],
+        mx:         Array.isArray(obj.mx)    ? obj.mx    : [],
+        ns:         Array.isArray(obj.ns)    ? obj.ns    : [],
+        mode,
+        forwarderIp: typeof obj.forwarderIp === "string" ? obj.forwarderIp : "",
       };
 
       this.aEditor?.setRows(this.cfg.a);
@@ -387,6 +436,11 @@ export class DNSServerApp extends LoggedProcess {
       this.cnameEditor?.setRows(this.cfg.cname);
       this.mxEditor?.setRows(this.cfg.mx);
       this.nsEditor?.setRows(this.cfg.ns);
+      if (this.modeSelect) {
+        this.modeSelect.value = this.cfg.mode;
+        if (this.rootDnsRow) this.rootDnsRow.style.display = this.cfg.mode === "recursive" ? "" : "none";
+      }
+      if (this.forwarderInput) this.forwarderInput.value = this.cfg.forwarderIp;
 
       this._appendLog(`[${nowStamp()}] loaded config from ${this.configPath}`);
     } catch (e) {
@@ -458,7 +512,9 @@ export class DNSServerApp extends LoggedProcess {
       ns.push({ name, host, ttl: Number.isFinite(ttl) ? Math.max(0, ttl | 0) : 300 });
     }
 
-    this.cfg = { a, aaaa, cname, mx, ns };
+    const mode = (this.modeSelect?.value === "recursive") ? "recursive" : "authoritative";
+    const forwarderIp = this.forwarderInput?.value.trim() ?? "";
+    this.cfg = { a, aaaa, cname, mx, ns, mode, forwarderIp };
   }
 
   _scheduleSave() {
@@ -551,7 +607,7 @@ export class DNSServerApp extends LoggedProcess {
           ? pkt.payload
           : (pkt.data instanceof Uint8Array ? pkt.data : new Uint8Array());
 
-      this._handleDNSQuery(port, srcIp, srcPort, data);
+      await this._handleDNSQuery(port, srcIp, srcPort, data);
     }
 
     this._syncButtons();
@@ -635,7 +691,7 @@ export class DNSServerApp extends LoggedProcess {
   }
 
   /** @param {number} sockPort @param {IPAddress} srcIp @param {number} srcPort @param {Uint8Array} payload */
-  _handleDNSQuery(sockPort, srcIp, srcPort, payload) {
+  async _handleDNSQuery(sockPort, srcIp, srcPort, payload) {
     /** @type {DNSPacket|null} */
     let q = null;
 
@@ -652,6 +708,8 @@ export class DNSServerApp extends LoggedProcess {
     const questions = q.questions ?? [];
     if (questions.length === 0) return;
 
+    const isRecursive = this.cfg.mode === "recursive" && !!this.cfg.forwarderIp;
+
     const resp = new DNSPacket({
       id: q.id,
       qr: 1,
@@ -659,7 +717,7 @@ export class DNSServerApp extends LoggedProcess {
       aa: 1,
       tc: 0,
       rd: q.rd,
-      ra: 0,
+      ra: isRecursive ? 1 : 0,
       z: 0,
       rcode: 0,
       questions,
@@ -687,6 +745,30 @@ export class DNSServerApp extends LoggedProcess {
       for (const rr of answersForThis) resp.answers.push(rr);
 
       if (answersForThis.length > 0) anyAnswered = true;
+    }
+
+    if (!anyAnswered && isRecursive) {
+      try {
+        const resolver = new DNSResolver(this.os, this.cfg.forwarderIp);
+        for (const qu of questions) {
+          const qname = normalizeName(qu.name);
+          const qtype = qu.type & 0xffff;
+          const upstream = await resolver._query(qname, qtype);
+          if (upstream && (upstream.answers?.length ?? 0) > 0) {
+            for (const rr of upstream.answers) resp.answers.push(rr);
+            for (const rr of (upstream.authorities  ?? [])) resp.authorities.push(rr);
+            for (const rr of (upstream.additionals  ?? [])) resp.additionals.push(rr);
+            resp.rcode = upstream.rcode ?? 0;
+            anyAnswered = true;
+          } else if (upstream) {
+            resp.rcode = upstream.rcode ?? 3;
+          }
+        }
+      } catch (e) {
+        const reason = (e instanceof Error ? e.message : String(e));
+        this._appendLog(`[${nowStamp()}] recursive resolve error: ${reason}`);
+        resp.rcode = 2; // SERVFAIL
+      }
     }
 
     if (!anyAnswered) {

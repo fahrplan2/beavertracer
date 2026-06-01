@@ -330,7 +330,14 @@ export class NetworkInterface extends Observable {
 
             case 0x86DD:   // IPv6
                 try {
-                    this._handleIPv6(IPv6Packet.fromBytes(frame.payload));
+                    const ipv6 = IPv6Packet.fromBytes(frame.payload);
+                    // Passiv Neighbor-Cache befüllen: src-IP → src-MAC
+                    // (analog zu ARP-Learning bei IPv4; verhindert NDP-Roundtrip für Antworten)
+                    const srcB = ipv6.src.toUInt8();
+                    if (srcB[0] !== 0xff && !srcB.every(b => b === 0)) {
+                        this.neighborCache.set(this._ipKey(ipv6.src), frame.srcMac.slice());
+                    }
+                    this._handleIPv6(ipv6);
                 } catch (e) {
                     console.warn("IPv6 parse error:", e);
                 }
