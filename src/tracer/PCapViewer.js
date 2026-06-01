@@ -223,10 +223,10 @@ export class PCapViewer {
 
     this.#activeName = name;
 
-    this.render();
     this.#closeTabPicker();
     this.#renderTabs();
     this.#opt.onActiveTabChange?.(name);
+    this.render();
   }
 
   /** @param {string} name */
@@ -665,7 +665,12 @@ export class PCapViewer {
     this.#wg.FS.mkdirTree("/uploads");
     this.#wg.FS.writeFile(s.pcapPath, pcapBytes);
 
-    try { s.sess?.delete?.(); } catch { }
+    // Delete all DissectSessions before creating a new one — Wireshark's TCP
+    // analysis uses global conversation tables, so stale sessions from other
+    // tabs would contaminate the analysis of the new session.
+    for (const other of this.#sessions.values()) {
+      if (other.sess) { try { other.sess.delete(); } catch { } other.sess = null; }
+    }
     s.sess = new this.#wg.DissectSession(s.pcapPath);
 
     const ret = s.sess.load();
