@@ -1,27 +1,27 @@
 //@ts-check
 
 import { SimDialog } from './SimDialog.js';
-import { PC } from '../sim/PC.js';
+import { Computer } from '../sim/Computer.js';
 import { Switch } from '../sim/Switch.js';
 import { Link } from '../sim/Link.js';
 import { IPv4ConfigApp } from '../apps/IPv4ConfigApp.js';
 import { TerminalApp } from '../apps/TerminalApp.js';
 import { t } from '../i18n/index.js';
 
-const TOUR_SIM = /** @type {any} */ ({
+function getTourSim() { return /** @type {any} */ ({
     '_info': 'Beaver Tracer Tour',
-    'version': 4,
+    'version': 5,
     'tick': 40,
     'objects': [
         {
-            'kind': 'PC',
+            'kind': 'Computer',
             'id': 20,
-            'name': 'PC 2',
+            'name': `${t('computer.title')} 2`,
             'x': 460, 'y': 100,
             'px': 220, 'py': 120,
             'panelOpen': false,
             'net': {
-                'name': 'PC',
+                'name': t('computer.title'),
                 'forwarding': false,
                 'interfaces': [
                     { 'name': 'eth0', 'ip': '192.168.0.12', 'prefixLength': 24, 'ip6': null, 'prefixLength6': 0, 'ip6LL': 'fe80::c0a8:c' }
@@ -63,7 +63,7 @@ const TOUR_SIM = /** @type {any} */ ({
             'portB': 'sw0'
         }
     ]
-});
+}); }
 
 /**
  * @typedef {{
@@ -90,7 +90,7 @@ const TOUR_SIM = /** @type {any} */ ({
  */
 function buildSteps(sim) {
     /** @returns {any | undefined} */
-    const pc1 = () => sim.simobjects.find((/** @type {any} */ o) => o instanceof PC && o.id !== 20);
+    const pc1 = () => sim.simobjects.find((/** @type {any} */ o) => o instanceof Computer && o.id !== 20);
 
     return [
         // ── Step 0: Mode overview ──────────────────────────────────────────────
@@ -104,23 +104,23 @@ function buildSteps(sim) {
 
         // ── Step 1a: Select PC tool ────────────────────────────────────────────
         {
-            target: () => document.querySelector('[data-role="tool-place-pc"]'),
-            title: t('tour.step.add-pc-tool.title'),
-            text: t('tour.step.add-pc-tool.text'),
+            target: () => document.querySelector('[data-role="tool-place-computer"]'),
+            title: t('tour.step.add-computer-tool.title'),
+            text: t('tour.step.add-computer-tool.text'),
             action: 'observe-tool-active',
-            toolSelector: '[data-role="tool-place-pc"]',
-            fallback: () => { /** @type {HTMLElement|null} */ (document.querySelector('[data-role="tool-place-pc"]'))?.click(); },
+            toolSelector: '[data-role="tool-place-computer"]',
+            fallback: () => { /** @type {HTMLElement|null} */ (document.querySelector('[data-role="tool-place-computer"]'))?.click(); },
         },
 
         // ── Step 1b: Place PC on canvas ────────────────────────────────────────
         {
             target: () => document.querySelector('.sim-nodes'),
-            title: t('tour.step.place-pc.title'),
-            text: t('tour.step.place-pc.text'),
+            title: t('tour.step.place-computer.title'),
+            text: t('tour.step.place-computer.text'),
             action: 'observe-node',
             minNodes: 3,
             fallback: () => {
-                const pc = new PC('PC 1');
+                const pc = new Computer(`${t('computer.title')} 1`);
                 pc.x = 80; pc.y = 100;
                 sim.addObject(pc);
             },
@@ -219,8 +219,8 @@ function buildSteps(sim) {
                 if (!p) return null;
                 return document.querySelector(`.sim-node[data-objid="${p.id}"]`);
             },
-            title: t('tour.step.open-pc.title'),
-            text: t('tour.step.open-pc.text'),
+            title: t('tour.step.open-computer.title'),
+            text: t('tour.step.open-computer.text'),
             action: 'observe-panel',
             fallback: () => {
                 const p = pc1();
@@ -380,7 +380,7 @@ export class Tour {
     /** @param {import('../SimControl.js').SimControl} sim */
     static async start(sim) {
         if (sim._isDirty && !await SimDialog.confirm(t('tour.confirm.discard'))) return;
-        sim.restore(TOUR_SIM);
+        sim.restore(getTourSim());
         new Tour(sim)._init();
     }
 
@@ -640,7 +640,7 @@ export class Tour {
 
     /** @param {string} expectedIp @param {() => void} cb */
     _waitForInterfaceIP(expectedIp, cb) {
-        const p = /** @type {any} */ (this._sim.simobjects.find((/** @type {any} */ o) => o instanceof PC && o.id !== 20));
+        const p = /** @type {any} */ (this._sim.simobjects.find((/** @type {any} */ o) => o instanceof Computer && o.id !== 20));
         if (!p) return;
         const check = () => p.net?.interfaces?.[0]?.ip?.toString() === expectedIp;
         if (check()) { setTimeout(cb, 0); return; }
@@ -650,7 +650,7 @@ export class Tour {
 
     /** @param {string} selector @param {() => void} cb */
     _waitForApp(selector, cb) {
-        const p = this._sim.simobjects.find((/** @type {any} */ o) => o instanceof PC && o.id !== 20);
+        const p = this._sim.simobjects.find((/** @type {any} */ o) => o instanceof Computer && o.id !== 20);
         if (!p?.panelEl) { setTimeout(() => this._waitForApp(selector, cb), 50); return; }
         if (p.panelEl.querySelector(selector)) { setTimeout(cb, 0); return; }
         const obs = new MutationObserver(() => {
@@ -693,7 +693,7 @@ export class Tour {
     _waitForPanelOpen(cb) {
         // Poll briefly for the panel element (it may not exist immediately after addObject)
         const tryObserve = () => {
-            const p = this._sim.simobjects.find((/** @type {any} */ o) => o instanceof PC && o.id !== 20);
+            const p = this._sim.simobjects.find((/** @type {any} */ o) => o instanceof Computer && o.id !== 20);
             if (!p?.panelEl) { setTimeout(tryObserve, 50); return; }
 
             if (p.panelEl.style.display === 'block') { cb(); return; }

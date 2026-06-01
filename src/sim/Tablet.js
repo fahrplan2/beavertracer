@@ -7,9 +7,9 @@ import { WirelessPort } from "../net/WirelessPort.js";
 import { t } from "../i18n/index.js";
 import { IPv4ConfigApp } from "../apps/IPv4ConfigApp.js";
 
-export class Laptop extends SimulatedObject {
+export class Tablet extends SimulatedObject {
 
-    kind = "Laptop";
+    kind = "Tablet";
     icon = "fa-laptop";
 
     /** @type {OS} */
@@ -26,15 +26,15 @@ export class Laptop extends SimulatedObject {
     get dns() { return this.os.dns; }
 
     /** @param {string} name */
-    constructor(name = t("laptop.title")) {
+    constructor(name = t("tablet.title")) {
         super(name);
-        this.root.classList.add("laptop");
+        this.root.classList.add("tablet");
 
         const fs  = new VirtualFileSystem();
         const net = new IPStack(1, name);
 
         // Swap the EthernetPort on the first NIC for a WirelessPort.
-        this._wPort = Laptop._installWirelessPort(net);
+        this._wPort = Tablet._installWirelessPort(net);
 
         this.os = new OS(this, fs, net, { mandatoryOnly: true });
 
@@ -55,7 +55,7 @@ export class Laptop extends SimulatedObject {
      */
     static _installWirelessPort(net) {
         const nic = net.interfaces[0];
-        if (!nic) throw new Error("Laptop: IPStack has no interfaces");
+        if (!nic) throw new Error("Tablet: IPStack has no interfaces");
 
         nic.port.unsubscribe(nic);
         const wPort = new WirelessPort("wlan0");
@@ -65,7 +65,7 @@ export class Laptop extends SimulatedObject {
         return wPort;
     }
 
-    // --- Port API (no wired ports — Laptop cannot be cabled) ---
+    // --- Port API (no wired ports — Tablet cannot be cabled) ---
 
     /** @returns {never[]} */
     listPorts()      { return []; }
@@ -79,7 +79,7 @@ export class Laptop extends SimulatedObject {
         const installedApps = this.os.getInstalledAppIds();
         return {
             ...super.toJSON(),
-            kind: "Laptop",
+            kind: "Tablet",
             net:  this.net.toJSON(),
             fs:   this.fs.toJSON(),
             dns:  this.dns.serverIp?.toString() ?? null,
@@ -91,12 +91,12 @@ export class Laptop extends SimulatedObject {
 
     /** @param {any} n */
     static fromJSON(n) {
-        const obj = new Laptop(String(n.name ?? t("laptop.title")));
+        const obj = new Tablet(String(n.name ?? t("tablet.title")));
         obj._applyBaseJSON(n);
 
         if (n.net) {
             const net = IPStack.fromJSON(n.net);
-            obj._wPort = Laptop._installWirelessPort(net);
+            obj._wPort = Tablet._installWirelessPort(net);
             obj.os.net = net;
         }
         if (n.fs)  obj.os.fs = VirtualFileSystem.fromJSON(n.fs);

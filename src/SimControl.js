@@ -2,13 +2,13 @@
 import { SimulatedObject } from "./sim/SimulatedObject.js";
 import { Link } from "./sim/Link.js";
 import { PCapViewer } from "./tracer/PCapViewer.js";
-import { PC } from "./sim/PC.js";
+import { Computer } from "./sim/Computer.js";
 import { Switch } from "./sim/Switch.js";
 import { Router } from "./sim/Router.js";
 import { TextBox } from "./sim/TextBox.js";
 import { RectOverlay } from "./sim/RectOverlay.js";
 import { AccessPoint } from "./sim/AccessPoint.js";
-import { Laptop } from "./sim/Laptop.js";
+import { Tablet } from "./sim/Tablet.js";
 import { HomeRouter } from "./sim/HomeRouter.js";
 import { Firewall } from "./sim/Firewall.js";
 import { WifiMedium } from "./net/WifiMedium.js";
@@ -31,8 +31,8 @@ import { isTauri } from "./tauri.js";
 
 /** Maps place-tool id → constructor */
 const PLACE_TOOL_CTOR = /** @type {Record<string, new(...args: any[]) => SimulatedObject>} */ ({
-    "place-pc":         PC,
-    "place-laptop":     Laptop,
+    "place-computer":   Computer,
+    "place-tablet":     Tablet,
     "place-switch":     Switch,
     "place-router":     Router,
     "place-homerouter": HomeRouter,
@@ -44,8 +44,8 @@ const PLACE_TOOL_CTOR = /** @type {Record<string, new(...args: any[]) => Simulat
 
 /** Maps place-tool id → i18n name key (undefined = no default name) */
 const PLACE_TOOL_NAME_KEY = /** @type {Record<string, string>} */ ({
-    "place-pc":         "pc.title",
-    "place-laptop":     "laptop.title",
+    "place-computer":   "computer.title",
+    "place-tablet":     "tablet.title",
     "place-switch":     "switch.title",
     "place-router":     "router.title",
     "place-homerouter": "homerouter.title",
@@ -104,7 +104,7 @@ export class SimControl {
     /** @type {"edit"|"run"|"trace"|"page"} */
     mode = "edit";
 
-    /** @type {"select"|"place-pc"|"place-laptop"|"place-switch"|"place-router"|"place-homerouter"|"place-ap"|"place-firewall"|"place-text"|"place-rect"|"link"|"delete"} */
+    /** @type {"select"|"place-computer"|"place-tablet"|"place-switch"|"place-router"|"place-homerouter"|"place-ap"|"place-firewall"|"place-text"|"place-rect"|"link"|"delete"} */
     tool = "select";
 
     /** @type {SimulatedObject|null} */
@@ -119,7 +119,7 @@ export class SimControl {
     /** @type {HTMLDivElement|null} */
     _ghostNodeEl = null;
 
-    /** @type {"place-pc"|"place-laptop"|"place-switch"|"place-router"|"place-homerouter"|"place-ap"|"place-firewall"|"place-text"|"place-rect"|null} */
+    /** @type {"place-computer"|"place-tablet"|"place-switch"|"place-router"|"place-homerouter"|"place-ap"|"place-firewall"|"place-text"|"place-rect"|null} */
     _ghostNodeType = null;
 
     /** @type {boolean} */
@@ -795,7 +795,7 @@ export class SimControl {
 
     toJSON() {
         return {
-            version: 4,
+            version: 5,
             tick: SimControl.tick,
             objects: this.simobjects.map((o) => o.toJSON()),
         };
@@ -806,13 +806,13 @@ export class SimControl {
         this._isDirty = false;
         //@ts-ignore
         const REGISTRY = new Map([
-            ["PC", PC],
+            ["Computer", Computer],
             ["Router", Router],
             ["Switch", Switch],
             ["TextBox", TextBox],
             ["RectOverlay", RectOverlay],
             ["AccessPoint", AccessPoint],
-            ["Laptop", Laptop],
+            ["Tablet", Tablet],
             ["HomeRouter", HomeRouter],
             ["Firewall", Firewall],
             // Link handled separately
@@ -821,6 +821,18 @@ export class SimControl {
         if (!state || !Array.isArray(state.objects)) {
             SimDialog.alert(t("sim.invalidfilewarning"));
             return;
+        }
+
+        // v4 → v5: PC renamed to Computer, Laptop renamed to Tablet
+        if ((state.version ?? 0) <= 4) {
+            /** @type {Record<string, string>} */
+            const KIND_V4 = { "PC": "Computer", "Laptop": "Tablet" };
+            state = {
+                ...state,
+                objects: state.objects.map((/** @type {any} */ o) =>
+                    o && KIND_V4[o.kind] ? { ...o, kind: KIND_V4[o.kind] } : o
+                ),
+            };
         }
 
         this._clearScene();
@@ -1231,8 +1243,8 @@ export class SimControl {
         const tools = [
             ["select", t("sim.tool.select"), "fa-arrow-pointer"],
             ["link", t("sim.tool.link"), "fa-link"],
-            ["place-pc", t("sim.tool.pc"), "fa-desktop"],
-            ["place-laptop", t("sim.tool.laptop"), "fa-laptop"],
+            ["place-computer", t("sim.tool.computer"), "fa-desktop"],
+            ["place-tablet", t("sim.tool.tablet"), "fa-laptop"],
             ["place-switch", t("sim.tool.switch"), "my-icon-switch"],
             ["place-router", t("sim.tool.router"), "my-icon-router"],
             ["place-homerouter", t("sim.tool.homerouter"), "fa-house-signal"],
@@ -2155,7 +2167,7 @@ export class SimControl {
 
     // ── Edit tools ────────────────────────────────────────────────────────────
 
-    /** @param {"place-pc"|"place-laptop"|"place-switch"|"place-router"|"place-homerouter"|"place-ap"|"place-firewall"|"place-text"|"place-rect"} type */
+    /** @param {"place-computer"|"place-tablet"|"place-switch"|"place-router"|"place-homerouter"|"place-ap"|"place-firewall"|"place-text"|"place-rect"} type */
     _ensureGhostNode(type) {
         if (!this.nodesLayer) return;
 
