@@ -10,7 +10,7 @@ import { IPv4ConfigApp } from "../apps/IPv4ConfigApp.js";
 export class Tablet extends SimulatedObject {
 
     kind = "Tablet";
-    icon = "fa-laptop";
+    icon = "fa-tablet-screen-button";
 
     /** @type {OS} */
     os;

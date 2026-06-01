@@ -1244,7 +1244,7 @@ export class SimControl {
             ["select", t("sim.tool.select"), "fa-arrow-pointer"],
             ["link", t("sim.tool.link"), "fa-link"],
             ["place-computer", t("sim.tool.computer"), "fa-desktop"],
-            ["place-tablet", t("sim.tool.tablet"), "fa-laptop"],
+            ["place-tablet", t("sim.tool.tablet"), "fa-tablet-screen-button"],
             ["place-switch", t("sim.tool.switch"), "my-icon-switch"],
             ["place-router", t("sim.tool.router"), "my-icon-router"],
             ["place-homerouter", t("sim.tool.homerouter"), "fa-house-signal"],
