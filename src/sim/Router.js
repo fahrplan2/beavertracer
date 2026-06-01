@@ -15,6 +15,9 @@ import { UILib } from "../lib/UILib.js";
 import { t } from "../i18n/index.js";
 import { IPAddress } from "../net/models/IPAddress.js"; // <- ggf. Pfad anpassen
 import { SimDialog } from "../lib/SimDialog.js";
+import { DHCPv6Packet } from "../net/pdu/DHCPv6Packet.js";
+import { IPv6Packet } from "../net/pdu/IPv6Packet.js";
+import { EthernetFrame } from "../net/pdu/EthernetFrame.js";
 
 /**
  * @typedef {Object} PortDescriptor
@@ -56,6 +59,39 @@ function getInterfaceLinkStatus(iface) {
     const port = (iface instanceof VLANSubInterface ? iface._parentIface?.port : iface?.port);
     if (!port) return { text: t("router.unknown"), state: "unknown" };
     return port.linkref ? { text: t("router.stateup"), state: "up" } : { text: t("router.statedown"), state: "down" };
+}
+
+// ── DHCPv6-PD helpers ────────────────────────────────────────────────────────
+
+/** @param {Uint8Array} a @param {Uint8Array} b */
+function _pd6ArrEq(a, b) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+    return true;
+}
+
+/** @param {Uint8Array} bytes @param {number} prefixLen @returns {Uint8Array} */
+function _pd6MaskPrefix(bytes, prefixLen) {
+    const r = new Uint8Array(bytes);
+    for (let i = 0; i < 16; i++) {
+        const b = i * 8;
+        if (b >= prefixLen) r[i] = 0;
+        else if (b + 8 > prefixLen) r[i] &= 0xff << (8 - (prefixLen - b));
+    }
+    return r;
+}
+
+/** @param {Uint8Array} pool @param {number} poolLen @param {number} delegLen @param {number} index @returns {Uint8Array} */
+function _pd6BuildDelegatedPrefix(pool, poolLen, delegLen, index) {
+    const r = new Uint8Array(pool);
+    const bits = delegLen - poolLen;
+    for (let i = 0; i < bits; i++) {
+        const pos = poolLen + i;
+        const byte = pos >> 3, shift = 7 - (pos & 7);
+        if ((index >> (bits - 1 - i)) & 1) r[byte] |=  (1 << shift);
+        else                                r[byte] &= ~(1 << shift);
+    }
+    return r;
 }
 
 /* ------------------------------ Router ----------------------------- */
@@ -116,6 +152,31 @@ export class Router extends SimulatedObject {
   /** @type {HTMLTextAreaElement|null} */ _ospfLogEl = null;
   _ospfPollTimer = new PollTimer();
 
+  // ── DHCPv6-PD server ──────────────────────────────────────────────────────
+  _pd6Enabled = false;
+  /** @type {IPAddress|null} */ _pd6Pool = null;
+  _pd6PoolLength = 48;
+  _pd6DelegatedLength = 56;
+  _pd6LeaseTime = 3600;
+  /**
+   * @type {Map<string,{prefix16bytes:Uint8Array,prefixLen:number,index:number,expiresAt:number,ifIndex:number,clientLL:IPAddress|null}>}
+   */
+  _pd6Leases = new Map();
+  /** @type {Set<number>} */ _pd6Allocated = new Set();
+  _pd6NextIndex = 0;
+  /** @type {number|null} */ _pd6Socket = null;
+  _pd6Running = false;
+  /** @type {Uint8Array|null} */ _pd6DUID = null;
+
+  // ── DHCPv6-PD client (Requesting Router) ──────────────────────────────────
+  _pd6ClientEnabled = false;
+  _pd6ClientIfIndex = 0;
+  /** @type {{prefix16bytes:Uint8Array,prefixLen:number}|null} */ _pd6ClientDelegated = null;
+  /** @type {((pkt:DHCPv6Packet)=>void)|null} */ _pd6ClientCallback = null;
+  _pd6ClientTxId = new Uint8Array(3);
+  /** @type {number|null} */ _pd6ClientSocket = null;
+  _pd6ClientRunning = false;
+
     constructor(name = t("router.title")) {
         super((name = t("router.title")));
         this.net = new IPStack(2, name);
@@ -142,6 +203,15 @@ export class Router extends SimulatedObject {
             ripng: this.ripng.toJSON(),
             bgp:   this.bgp.toJSON(),
             ospf:  this.ospf.toJSON(),
+            pd6: {
+                enabled:         this._pd6Enabled,
+                pool:            this._pd6Pool?.toString() ?? "2001:db8:100::",
+                poolLength:      this._pd6PoolLength,
+                delegatedLength: this._pd6DelegatedLength,
+                leaseTime:       this._pd6LeaseTime,
+                clientEnabled:   this._pd6ClientEnabled,
+                clientIfIndex:   this._pd6ClientIfIndex,
+            },
         };
     }
 
@@ -158,6 +228,20 @@ export class Router extends SimulatedObject {
         if (n.bgp)   obj.bgp.applyJSON(n.bgp);
         obj.ospf  = new OSPFDaemon(obj.net);
         if (n.ospf)  obj.ospf.applyJSON(n.ospf);
+        if (n.pd6) {
+            obj._pd6Enabled         = !!n.pd6.enabled;
+            if (typeof n.pd6.pool === "string") {
+                try { obj._pd6Pool = IPAddress.fromString(n.pd6.pool); } catch {}
+            }
+            if (!obj._pd6Pool) try { obj._pd6Pool = IPAddress.fromString("2001:db8:100::"); } catch {}
+            if (Number.isInteger(n.pd6.poolLength))      obj._pd6PoolLength      = n.pd6.poolLength;
+            if (Number.isInteger(n.pd6.delegatedLength)) obj._pd6DelegatedLength = n.pd6.delegatedLength;
+            if (Number.isFinite(n.pd6.leaseTime))        obj._pd6LeaseTime       = Math.floor(n.pd6.leaseTime);
+            if (obj._pd6Enabled) void obj._pd6Start();
+            obj._pd6ClientEnabled = !!n.pd6.clientEnabled;
+            if (Number.isInteger(n.pd6.clientIfIndex)) obj._pd6ClientIfIndex = n.pd6.clientIfIndex;
+            if (obj._pd6ClientEnabled) void obj._pd6ClientStart();
+        }
         return obj;
     }
 
@@ -188,6 +272,7 @@ export class Router extends SimulatedObject {
             { id: "ospf",       label: t("router.ospf.tab")           },
             { id: "bgp",        label: t("router.bgp.tab")            },
             { id: "vpn",        label: t("router.vpn.tab")            },
+            { id: "pd6",        label: t("router.pd6.tab")            },
         ], (id) => {
             ifSection.classList.toggle("hidden",    id !== "interfaces");
             routeSection.classList.toggle("hidden", id !== "routes-v4" && id !== "routes-v6");
@@ -195,6 +280,7 @@ export class Router extends SimulatedObject {
             bgpSection.classList.toggle("hidden",   id !== "bgp");
             ospfSection.classList.toggle("hidden",  id !== "ospf");
             vpnSection.classList.toggle("hidden",   id !== "vpn");
+            pd6Section.classList.toggle("hidden",   id !== "pd6");
             if (id === "routes-v4") { routeTitle.textContent = t("router.routingtable.ipv4"); this._selectedRouteFamily = 4; this._renderRoutes(); }
             if (id === "routes-v6") { routeTitle.textContent = t("router.routingtable.ipv6"); this._selectedRouteFamily = 6; this._renderRoutes(); }
         });
@@ -306,7 +392,11 @@ export class Router extends SimulatedObject {
         const vpnSection = UILib.div("hidden");
         this._buildVPNSection(vpnSection);
 
-        outerContent.append(ifSection, routeSection, ripSection, bgpSection, ospfSection, vpnSection);
+        /* ============================= DHCPv6-PD ============================= */
+        const pd6Section = UILib.div("hidden");
+        this._buildDHCPv6PDSection(pd6Section);
+
+        outerContent.append(ifSection, routeSection, ripSection, bgpSection, ospfSection, vpnSection, pd6Section);
         setOuterActive("interfaces");
 
         /* ============================ Init ============================ */
@@ -2010,5 +2100,549 @@ export class Router extends SimulatedObject {
             UILib.div("hr-btn-row", [addBtn]),
             errEl,
         ]}));
+    }
+
+    // ── DHCPv6-PD UI ─────────────────────────────────────────────────────────
+
+    /** @param {HTMLElement} host */
+    /** @param {HTMLElement} host */
+    _buildDHCPv6PDSection(host) {
+        const serverPane = UILib.div("");
+        const clientPane = UILib.div("hidden");
+
+        const { bar: innerTabBar } = UILib.tabGroup([
+            { id: "server", label: t("router.pd6.server.tab") },
+            { id: "client", label: t("router.pd6.client.tab") },
+        ], (id) => {
+            serverPane.classList.toggle("hidden", id !== "server");
+            clientPane.classList.toggle("hidden", id !== "client");
+        });
+
+        host.appendChild(innerTabBar);
+        host.appendChild(serverPane);
+        host.appendChild(clientPane);
+
+        this._buildPD6ServerTab(serverPane);
+        this._buildPD6ClientTab(clientPane);
+    }
+
+    /** @param {HTMLElement} host */
+    _buildPD6ServerTab(host) {
+        const field = (/** @type {string} */ label, /** @type {HTMLElement} */ inp) => UILib.el("div", {
+            className: "hr-field",
+            children: [UILib.el("span", { text: label, className: "hr-label" }), inp],
+        });
+
+        const enabledCb  = UILib.input({ type: "checkbox" });
+        enabledCb.checked = this._pd6Enabled;
+        const poolIn     = UILib.input({ placeholder: "2001:db8:100::", value: this._pd6Pool?.toString() ?? "" });
+        const poolLenIn  = UILib.input({ placeholder: "48",   value: String(this._pd6PoolLength) });
+        const delegLenIn = UILib.input({ placeholder: "56",   value: String(this._pd6DelegatedLength) });
+        const leaseIn    = UILib.input({ placeholder: "3600", value: String(this._pd6LeaseTime) });
+        const errEl      = UILib.el("p", { className: "router-vpn-err" });
+
+        const tbody = UILib.el("tbody");
+        const renderLeases = () => {
+            this._pd6CleanupExpired();
+            tbody.innerHTML = "";
+            const now = Date.now();
+            if (this._pd6Leases.size === 0) {
+                const td = UILib.el("td", { text: t("router.pd6.leases.empty"), className: "router-muted-cell" });
+                td.setAttribute("colspan", "3");
+                tbody.appendChild(UILib.el("tr", { children: [td] }));
+            } else {
+                for (const [duid, lease] of this._pd6Leases) {
+                    const pfx = (IPAddress.fromUInt8(lease.prefix16bytes)?.toString() ?? "?") + "/" + lease.prefixLen;
+                    const sec = Math.max(0, Math.round((lease.expiresAt - now) / 1000));
+                    const exp = sec > 60 ? `${Math.floor(sec/60)}m ${sec%60}s` : `${sec}s`;
+                    tbody.appendChild(UILib.el("tr", { children: [
+                        UILib.el("td", { text: "…" + duid.slice(-12), attrs: { title: duid } }),
+                        UILib.el("td", { text: pfx }),
+                        UILib.el("td", { text: exp }),
+                    ]}));
+                }
+            }
+        };
+
+        const applyBtn = UILib.button(t("router.apply"));
+        applyBtn.addEventListener("click", () => {
+            errEl.textContent = "";
+            try {
+                let pool;
+                try { pool = IPAddress.fromString(poolIn.value.trim()); } catch { throw new Error(t("router.pd6.err.pool")); }
+                if (!pool.isV6()) throw new Error(t("router.pd6.err.pool"));
+                const pl = Number(poolLenIn.value.trim());
+                if (!Number.isInteger(pl) || pl < 1 || pl > 64) throw new Error(t("router.pd6.err.poolLen"));
+                const dl = Number(delegLenIn.value.trim());
+                if (!Number.isInteger(dl) || dl <= pl || dl > 128) throw new Error(t("router.pd6.err.delegLen"));
+                const lt = Number(leaseIn.value.trim());
+                if (!Number.isFinite(lt) || lt <= 0) throw new Error(t("router.pd6.err.leaseTime"));
+
+                this._pd6Pool            = pool;
+                this._pd6PoolLength      = pl;
+                this._pd6DelegatedLength = dl;
+                this._pd6LeaseTime       = Math.floor(lt);
+
+                const wasEnabled = this._pd6Enabled;
+                this._pd6Enabled = enabledCb.checked;
+                if (this._pd6Enabled && !wasEnabled) void this._pd6Start();
+                else if (!this._pd6Enabled && wasEnabled) this._pd6Stop();
+                renderLeases();
+            } catch (e) {
+                errEl.textContent = String(/** @type {any} */ (e)?.message ?? e);
+            }
+        });
+
+        host.appendChild(UILib.el("div", { className: "hr-section", children: [
+            UILib.div("hr-checkbox-row", [enabledCb, UILib.el("span", { text: t("router.pd6.enabled") })]),
+            UILib.div("hr-fields", [
+                field(t("router.pd6.pool"),            poolIn),
+                field(t("router.pd6.poolLength"),      poolLenIn),
+                field(t("router.pd6.delegatedLength"), delegLenIn),
+                field(t("router.pd6.leaseTime"),       leaseIn),
+            ]),
+            UILib.div("hr-btn-row", [applyBtn]),
+            errEl,
+        ]}));
+
+        const table = UILib.el("table", { className: "router-routes-table" });
+        const thead = UILib.el("thead");
+        thead.innerHTML = `<tr><th>DUID</th><th>${t("router.pd6.col.prefix")}</th><th>${t("router.pd6.col.expires")}</th></tr>`;
+        table.appendChild(thead);
+        table.appendChild(tbody);
+        renderLeases();
+
+        host.appendChild(UILib.el("div", { className: "hr-section", children: [
+            UILib.el("span", { text: t("router.pd6.leases"), className: "hr-section-title" }),
+            table,
+        ]}));
+
+        const tid = window.setInterval(() => {
+            if (!this._panelBody?.contains(host)) { window.clearInterval(tid); return; }
+            renderLeases();
+        }, 2000);
+    }
+
+    /** @param {HTMLElement} host */
+    _buildPD6ClientTab(host) {
+        const field = (/** @type {string} */ label, /** @type {HTMLElement} */ inp) => UILib.el("div", {
+            className: "hr-field",
+            children: [UILib.el("span", { text: label, className: "hr-label" }), inp],
+        });
+
+        const enabledCb = UILib.input({ type: "checkbox" });
+        enabledCb.checked = this._pd6ClientEnabled;
+
+        // Interface-Selektor
+        const ifSel = /** @type {HTMLSelectElement} */ (UILib.el("select"));
+        const rebuildIfSel = () => {
+            ifSel.innerHTML = "";
+            this.net.interfaces.forEach((iface, i) => {
+                const o = UILib.el("option", { text: iface.name, attrs: { value: String(i) } });
+                ifSel.appendChild(o);
+            });
+            ifSel.value = String(this._pd6ClientIfIndex);
+        };
+        rebuildIfSel();
+
+        const errEl = UILib.el("p", { className: "router-vpn-err" });
+
+        // Status-Anzeige
+        const statusEl = UILib.el("div", { className: "hr-info-row" });
+        const renderStatus = () => {
+            statusEl.innerHTML = "";
+            const pd = this._pd6ClientDelegated;
+            const text = pd
+                ? `${IPAddress.fromUInt8(pd.prefix16bytes)?.toString() ?? "?"}/${pd.prefixLen}`
+                : t("router.pd6.client.none");
+            statusEl.appendChild(UILib.el("span", { text: t("router.pd6.client.delegated"), className: "hr-info-label" }));
+            statusEl.appendChild(UILib.el("span", { text, className: "hr-info-value" }));
+        };
+        renderStatus();
+
+        const applyBtn = UILib.button(t("router.apply"));
+        applyBtn.addEventListener("click", () => {
+            errEl.textContent = "";
+            const ifIdx = parseInt(ifSel.value) | 0;
+            const wasEnabled = this._pd6ClientEnabled;
+            this._pd6ClientEnabled = enabledCb.checked;
+            this._pd6ClientIfIndex = ifIdx;
+
+            if (this._pd6ClientEnabled) {
+                void this._pd6ClientStart();
+            } else if (wasEnabled) {
+                this._pd6ClientStop();
+            }
+            renderStatus();
+        });
+
+        host.appendChild(UILib.el("div", { className: "hr-section", children: [
+            UILib.div("hr-checkbox-row", [enabledCb, UILib.el("span", { text: t("router.pd6.client.enabled") })]),
+            UILib.div("hr-fields", [field(t("router.pd6.client.interface"), ifSel)]),
+            statusEl,
+            UILib.div("hr-btn-row", [applyBtn]),
+            errEl,
+        ]}));
+
+        const tid = window.setInterval(() => {
+            if (!this._panelBody?.contains(host)) { window.clearInterval(tid); return; }
+            renderStatus();
+        }, 2000);
+    }
+
+    // ── DHCPv6-PD Logik ──────────────────────────────────────────────────────
+
+    /** @returns {Uint8Array} */
+    _pd6BuildDUID() {
+        const m = this.net.interfaces[0]?.mac;
+        if (m instanceof Uint8Array && m.length === 6) return DHCPv6Packet.buildDUID_LL(m);
+        return new Uint8Array([0, 2, 0, 0, 0, 9, 0, 0, 0, 0]);
+    }
+
+    async _pd6Start() {
+        if (this._pd6Running) return;
+        try {
+            const anyV6 = IPAddress.fromString("::");
+            if (!anyV6) return;
+            this._pd6Socket = this.net.openUDPSocket(anyV6, 547);
+            this._pd6DUID   = this._pd6BuildDUID();
+            this._pd6Running = true;
+            void this._pd6RecvLoop();
+        } catch {}
+    }
+
+    _pd6Stop() {
+        if (!this._pd6Running && this._pd6Socket == null) return;
+        this._pd6Running = false;
+        const sock = this._pd6Socket;
+        this._pd6Socket = null;
+        if (sock != null) try { this.net.closeUDPSocket(sock); } catch {}
+        // Alle Routen entfernen
+        for (const lease of this._pd6Leases.values()) this._pd6RemoveRoute(lease);
+        this._pd6Leases.clear();
+        this._pd6Allocated.clear();
+        this._pd6NextIndex = 0;
+    }
+
+    async _pd6RecvLoop() {
+        while (this._pd6Running && this._pd6Socket != null) {
+            const sock = this._pd6Socket;
+            /** @type {any} */ let pkt;
+            try { pkt = await this.net.recvUDPSocket(sock); } catch { continue; }
+            if (!this._pd6Running || this._pd6Socket == null) break;
+            if (pkt == null) break;
+            const srcIP = (pkt.src instanceof IPAddress) ? pkt.src : null;
+            if (!srcIP) continue;
+            const data = pkt.payload instanceof Uint8Array ? pkt.payload : new Uint8Array();
+            let dhcp6;
+            try { dhcp6 = DHCPv6Packet.fromBytes(data); } catch { continue; }
+            await this._pd6HandleMessage(sock, dhcp6, srcIP, typeof pkt.srcPort === "number" ? pkt.srcPort : 546, typeof pkt.recvIfIndex === "number" ? pkt.recvIfIndex : -1);
+        }
+    }
+
+    /**
+     * @param {number} sock
+     * @param {DHCPv6Packet} req
+     * @param {IPAddress} srcIP
+     * @param {number} srcPort
+     * @param {number} recvIfIndex
+     */
+    async _pd6HandleMessage(sock, req, srcIP, srcPort, recvIfIndex) {
+        if (!this._pd6Enabled || !this._pd6Pool) return;
+        const clientDUID = req.getOption(DHCPv6Packet.OPT_CLIENTID);
+        if (!clientDUID) return;
+        if (!req.getOption(DHCPv6Packet.OPT_IA_PD)) return;
+
+        this._pd6CleanupExpired();
+        const duidKey = DHCPv6Packet.duidToHex(clientDUID);
+
+        if (req.msgType === DHCPv6Packet.MT_SOLICIT) {
+            const lease = this._pd6AllocOrReuse(duidKey);
+            if (!lease) return;
+            const reply = this._pd6BuildReply(DHCPv6Packet.MT_ADVERTISE, req, clientDUID, lease);
+            try { this.net.sendUDPSocket(sock, srcIP, srcPort, reply.pack()); } catch {}
+
+        } else if (req.msgType === DHCPv6Packet.MT_REQUEST || req.msgType === DHCPv6Packet.MT_RENEW) {
+            if (req.msgType === DHCPv6Packet.MT_REQUEST) {
+                const sid = req.getOption(DHCPv6Packet.OPT_SERVERID);
+                if (!sid || !this._pd6DUID || !_pd6ArrEq(sid, this._pd6DUID)) return;
+            }
+            const lease = this._pd6CommitLease(duidKey, recvIfIndex, srcIP);
+            if (!lease) return;
+            const reply = this._pd6BuildReply(DHCPv6Packet.MT_REPLY, req, clientDUID, lease);
+            try { this.net.sendUDPSocket(sock, srcIP, srcPort, reply.pack()); } catch {}
+
+        } else if (req.msgType === DHCPv6Packet.MT_RELEASE) {
+            const lease = this._pd6Leases.get(duidKey);
+            if (lease) {
+                this._pd6RemoveRoute(lease);
+                this._pd6Allocated.delete(lease.index);
+                this._pd6Leases.delete(duidKey);
+            }
+            const reply = new DHCPv6Packet({ msgType: DHCPv6Packet.MT_REPLY, transactionId: req.transactionId });
+            if (this._pd6DUID) reply.setOption(DHCPv6Packet.OPT_SERVERID, this._pd6DUID);
+            reply.setOption(DHCPv6Packet.OPT_CLIENTID, clientDUID);
+            reply.setOption(DHCPv6Packet.OPT_STATUS_CODE, new Uint8Array([0, DHCPv6Packet.STATUS_SUCCESS]));
+            try { this.net.sendUDPSocket(sock, srcIP, srcPort, reply.pack()); } catch {}
+        }
+    }
+
+    /** @param {string} duidKey */
+    _pd6AllocOrReuse(duidKey) {
+        const ex = this._pd6Leases.get(duidKey);
+        if (ex && ex.expiresAt > Date.now()) return ex;
+        if (!this._pd6Pool) return null;
+        const poolBytes = _pd6MaskPrefix(this._pd6Pool.toUInt8(), this._pd6PoolLength);
+        const subnetBits = this._pd6DelegatedLength - this._pd6PoolLength;
+        if (subnetBits <= 0 || subnetBits > 24) return null;
+        const maxSlots = 1 << subnetBits;
+        for (let tries = 0; tries < maxSlots; tries++) {
+            const index = this._pd6NextIndex % maxSlots;
+            this._pd6NextIndex = (this._pd6NextIndex + 1) % maxSlots;
+            if (this._pd6Allocated.has(index)) continue;
+            const prefix16bytes = _pd6BuildDelegatedPrefix(poolBytes, this._pd6PoolLength, this._pd6DelegatedLength, index);
+            this._pd6Allocated.add(index);
+            const lease = { prefix16bytes, prefixLen: this._pd6DelegatedLength, index, expiresAt: Date.now() + 60_000, ifIndex: -1, clientLL: /** @type {IPAddress|null} */ (null) };
+            this._pd6Leases.set(duidKey, lease);
+            return lease;
+        }
+        return null;
+    }
+
+    /**
+     * @param {string} duidKey
+     * @param {number} ifIndex
+     * @param {IPAddress} clientLL
+     */
+    _pd6CommitLease(duidKey, ifIndex, clientLL) {
+        const prev = this._pd6Leases.get(duidKey);
+        if (prev) {
+            const oldIfIndex = prev.ifIndex, oldLL = prev.clientLL;
+            prev.expiresAt = Date.now() + this._pd6LeaseTime * 1000;
+            prev.ifIndex   = ifIndex;
+            prev.clientLL  = clientLL;
+            // Alte Route entfernen, neue installieren
+            if (oldIfIndex >= 0 && oldLL) {
+                const pfx = IPAddress.fromUInt8(prev.prefix16bytes);
+                if (pfx) try { this.net.delRoute(pfx, prev.prefixLen, oldIfIndex, oldLL); } catch {}
+            }
+            this._pd6InstallRoute(prev);
+            return prev;
+        }
+        const lease = this._pd6AllocOrReuse(duidKey);
+        if (!lease) return null;
+        lease.expiresAt = Date.now() + this._pd6LeaseTime * 1000;
+        lease.ifIndex   = ifIndex;
+        lease.clientLL  = clientLL;
+        this._pd6InstallRoute(lease);
+        return lease;
+    }
+
+    /** @param {{prefix16bytes:Uint8Array,prefixLen:number,ifIndex:number,clientLL:IPAddress|null}} lease */
+    _pd6InstallRoute(lease) {
+        if (lease.ifIndex < 0 || !lease.clientLL) return;
+        const pfx = IPAddress.fromUInt8(lease.prefix16bytes);
+        if (!pfx) return;
+        this.net.addRoute(pfx, lease.prefixLen, lease.ifIndex, lease.clientLL, "dhcp6pd");
+    }
+
+    /** @param {{prefix16bytes:Uint8Array,prefixLen:number,ifIndex:number,clientLL:IPAddress|null}} lease */
+    _pd6RemoveRoute(lease) {
+        if (lease.ifIndex < 0 || !lease.clientLL) return;
+        const pfx = IPAddress.fromUInt8(lease.prefix16bytes);
+        if (!pfx) return;
+        try { this.net.delRoute(pfx, lease.prefixLen, lease.ifIndex, lease.clientLL); } catch {}
+    }
+
+    _pd6CleanupExpired() {
+        const now = Date.now();
+        for (const [duid, lease] of this._pd6Leases) {
+            if (lease.expiresAt <= now) {
+                this._pd6RemoveRoute(lease);
+                this._pd6Allocated.delete(lease.index);
+                this._pd6Leases.delete(duid);
+            }
+        }
+    }
+
+    /**
+     * @param {number} msgType
+     * @param {DHCPv6Packet} req
+     * @param {Uint8Array} clientDUID
+     * @param {{prefix16bytes:Uint8Array,prefixLen:number}} lease
+     * @returns {DHCPv6Packet}
+     */
+    _pd6BuildReply(msgType, req, clientDUID, lease) {
+        const reply = new DHCPv6Packet({ msgType, transactionId: req.transactionId });
+        if (this._pd6DUID) reply.setOption(DHCPv6Packet.OPT_SERVERID, this._pd6DUID);
+        reply.setOption(DHCPv6Packet.OPT_CLIENTID, clientDUID);
+
+        const preferred = (this._pd6LeaseTime * 0.5) >>> 0;
+        const valid     = this._pd6LeaseTime >>> 0;
+        const t1        = preferred;
+        const t2        = (this._pd6LeaseTime * 0.8) >>> 0;
+
+        const reqIaPD = req.getOption(DHCPv6Packet.OPT_IA_PD);
+        const iaid = (reqIaPD && reqIaPD.length >= 4)
+            ? (((reqIaPD[0]<<24)|(reqIaPD[1]<<16)|(reqIaPD[2]<<8)|reqIaPD[3])>>>0) : 1;
+
+        const iaPrefixData   = DHCPv6Packet.buildIAPrefix(preferred, valid, lease.prefixLen, lease.prefix16bytes);
+        const iaPrefixOption = DHCPv6Packet.encodeOption(DHCPv6Packet.OPT_IAPREFIX, iaPrefixData);
+        reply.setOption(DHCPv6Packet.OPT_IA_PD, DHCPv6Packet.buildIA_PD(iaid, t1, t2, iaPrefixOption));
+        return reply;
+    }
+
+    // ── DHCPv6-PD Client-Logik ───────────────────────────────────────────────
+
+    async _pd6ClientStart() {
+        this._pd6ClientStop();
+        try {
+            const anyV6 = IPAddress.fromString("::");
+            if (!anyV6) return;
+            this._pd6ClientSocket  = this.net.openUDPSocket(anyV6, 546);
+            this._pd6ClientRunning = true;
+            void this._pd6ClientRecvLoop();
+            void this._pd6ClientRun();
+        } catch {}
+    }
+
+    _pd6ClientStop() {
+        this._pd6ClientRunning  = false;
+        this._pd6ClientCallback = null;
+        this._pd6ClientDelegated = null;
+        const sock = this._pd6ClientSocket;
+        this._pd6ClientSocket = null;
+        if (sock != null) try { this.net.closeUDPSocket(sock); } catch {}
+    }
+
+    async _pd6ClientRecvLoop() {
+        while (this._pd6ClientRunning && this._pd6ClientSocket != null) {
+            const sock = this._pd6ClientSocket;
+            /** @type {any} */ let pkt;
+            try { pkt = await this.net.recvUDPSocket(sock); } catch { continue; }
+            if (!this._pd6ClientRunning || this._pd6ClientSocket == null) break;
+            if (pkt == null) break;
+            const data = pkt.payload instanceof Uint8Array ? pkt.payload : new Uint8Array();
+            let dhcp6;
+            try { dhcp6 = DHCPv6Packet.fromBytes(data); } catch { continue; }
+            const tx = this._pd6ClientTxId;
+            if (dhcp6.transactionId[0] !== tx[0] ||
+                dhcp6.transactionId[1] !== tx[1] ||
+                dhcp6.transactionId[2] !== tx[2]) continue;
+            if (this._pd6ClientCallback) {
+                this._pd6ClientCallback(dhcp6);
+                this._pd6ClientCallback = null;
+            }
+        }
+    }
+
+    /** Run SOLICIT → ADVERTISE → REQUEST → REPLY, then schedule renewal. */
+    async _pd6ClientRun() {
+        if (!this._pd6ClientRunning) return;
+        this._pd6ClientDelegated = null;
+
+        crypto.getRandomValues(this._pd6ClientTxId);
+        const txId = this._pd6ClientTxId;
+        const iaid = 1;
+        const clientDUID = this._pd6BuildDUID();
+
+        // SOLICIT
+        const solicit = new DHCPv6Packet({ msgType: DHCPv6Packet.MT_SOLICIT, transactionId: txId });
+        solicit.setOption(DHCPv6Packet.OPT_CLIENTID, clientDUID);
+        solicit.setOption(DHCPv6Packet.OPT_IA_PD, DHCPv6Packet.buildIA_PD(iaid, 0, 0, new Uint8Array(0)));
+        this._pd6ClientSend(solicit);
+
+        // Wait for ADVERTISE
+        let advertise = /** @type {DHCPv6Packet|null} */ (null);
+        try {
+            advertise = await new Promise((resolve, reject) => {
+                const tid = simTimer.schedule(() => reject(new Error("timeout")), SimTimer.DHCP_OFFER_WAIT_MS);
+                this._pd6ClientCallback = (pkt) => { simTimer.cancel(tid); resolve(pkt); };
+            });
+        } catch { return; }
+        if (!advertise || advertise.msgType !== DHCPv6Packet.MT_ADVERTISE) return;
+
+        // Parse IAPREFIX from ADVERTISE
+        const iaPDAdv = advertise.getOption(DHCPv6Packet.OPT_IA_PD);
+        if (!iaPDAdv || iaPDAdv.length < 12) return;
+        const parsedIaPD = DHCPv6Packet.parseIA_PD(iaPDAdv);
+
+        let iaPrefixData = /** @type {Uint8Array|null} */ (null);
+        let off = 0;
+        while (off + 4 <= parsedIaPD.iaOptions.length) {
+            const code = (parsedIaPD.iaOptions[off] << 8) | parsedIaPD.iaOptions[off + 1];
+            const len  = (parsedIaPD.iaOptions[off + 2] << 8) | parsedIaPD.iaOptions[off + 3];
+            off += 4;
+            if (code === DHCPv6Packet.OPT_IAPREFIX && len >= 25) { iaPrefixData = parsedIaPD.iaOptions.slice(off, off + len); break; }
+            off += len;
+        }
+        if (!iaPrefixData) return;
+        const prefixInfo = DHCPv6Packet.parseIAPrefix(iaPrefixData);
+        const serverDUID = advertise.getOption(DHCPv6Packet.OPT_SERVERID);
+
+        // REQUEST
+        const preferred = prefixInfo.preferred || 1800;
+        const valid     = prefixInfo.valid     || 3600;
+        const request   = new DHCPv6Packet({ msgType: DHCPv6Packet.MT_REQUEST, transactionId: txId });
+        request.setOption(DHCPv6Packet.OPT_CLIENTID, clientDUID);
+        if (serverDUID) request.setOption(DHCPv6Packet.OPT_SERVERID, serverDUID);
+        const iaPrefixOpt = DHCPv6Packet.buildIAPrefix(preferred, valid, prefixInfo.prefixLength, prefixInfo.prefix16bytes);
+        const iaPrefixEnc = DHCPv6Packet.encodeOption(DHCPv6Packet.OPT_IAPREFIX, iaPrefixOpt);
+        request.setOption(DHCPv6Packet.OPT_IA_PD, DHCPv6Packet.buildIA_PD(iaid, (preferred / 2) >>> 0, (valid * 0.8) >>> 0, iaPrefixEnc));
+        this._pd6ClientSend(request);
+
+        // Wait for REPLY
+        let reply = /** @type {DHCPv6Packet|null} */ (null);
+        try {
+            reply = await new Promise((resolve, reject) => {
+                const tid = simTimer.schedule(() => reject(new Error("timeout")), SimTimer.DHCP_ACK_WAIT_MS);
+                this._pd6ClientCallback = (pkt) => { simTimer.cancel(tid); resolve(pkt); };
+            });
+        } catch { return; }
+        if (!reply || reply.msgType !== DHCPv6Packet.MT_REPLY) return;
+
+        this._pd6ClientDelegated = { prefix16bytes: prefixInfo.prefix16bytes, prefixLen: prefixInfo.prefixLength };
+
+        // T1 aus REPLY lesen, Renewal planen
+        const iaPDReply = reply.getOption(DHCPv6Packet.OPT_IA_PD);
+        const t1Sec = (iaPDReply && iaPDReply.length >= 8)
+            ? (((iaPDReply[4] << 24) | (iaPDReply[5] << 16) | (iaPDReply[6] << 8) | iaPDReply[7]) >>> 0)
+            : (preferred >>> 1) || 1800;
+        const t1SimMs = Math.max(SimTimer.DHCP_OFFER_WAIT_MS * 2, t1Sec * 1000);
+        simTimer.schedule(() => {
+            if (this._pd6ClientRunning && this._pd6ClientEnabled) void this._pd6ClientRun();
+        }, t1SimMs);
+    }
+
+    /**
+     * Sendet ein DHCPv6-Paket als SOLICIT/REQUEST (ff02::1:2, Port 547)
+     * direkt über das konfigurierte Interface.
+     * @param {DHCPv6Packet} pkt
+     */
+    _pd6ClientSend(pkt) {
+        const iface = this.net.interfaces[this._pd6ClientIfIndex];
+        if (!iface?.ip6LL || !iface.port) return;
+
+        const allDhcp = IPAddress.fromString("ff02::1:2");
+        if (!allDhcp) return;
+        const dstMac = new Uint8Array([0x33, 0x33, 0x00, 0x01, 0x00, 0x02]);
+
+        const payload = pkt.pack();
+        const udpLen  = 8 + payload.length;
+        const udpBytes = new Uint8Array(udpLen);
+        udpBytes[0] = 0x02; udpBytes[1] = 0x22; // srcPort 546
+        udpBytes[2] = 0x02; udpBytes[3] = 0x23; // dstPort 547
+        udpBytes[4] = (udpLen >> 8) & 0xff; udpBytes[5] = udpLen & 0xff;
+        udpBytes.set(payload, 8);
+
+        const ipv6  = new IPv6Packet({ src: iface.ip6LL, dst: allDhcp, nextHeader: 17, hopLimit: 1, payload: udpBytes });
+        const frame = new EthernetFrame({ dstMac, srcMac: iface.mac, etherType: 0x86DD, payload: ipv6.pack() });
+        iface.port.send(frame);
+    }
+
+    destroy() {
+        this._pd6Stop();
+        this._pd6ClientStop();
+        super.destroy();
     }
 }

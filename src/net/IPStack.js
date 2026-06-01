@@ -1445,7 +1445,7 @@ export class IPStack extends Observable {
      * @param {number} prefixLength
      * @param {Number} interf
      * @param {IPAddress} nexthop 0.0.0.0 for direct
-     * @param {"connected"|"static"|"ospf"|"rip"|"bgp"} [source]
+     * @param {"connected"|"static"|"ospf"|"rip"|"bgp"|"dhcp6pd"} [source]
      */
     addRoute(dst, prefixLength, interf, nexthop, source = "static") {
         const r = new Route();
@@ -1716,7 +1716,7 @@ export class Route {
 
     auto = true;
 
-    /** @type {"connected"|"static"|"ospf"|"rip"|"bgp"} */
+    /** @type {"connected"|"static"|"ospf"|"rip"|"bgp"|"dhcp6pd"} */
     source = "static";
 
     /** @type {TunnelConfig|null} set for GRE tunnel routes */

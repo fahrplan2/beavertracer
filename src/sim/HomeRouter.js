@@ -1083,6 +1083,18 @@ export class HomeRouter extends SimulatedObject {
         this._wanDhcpv6PdDelegated = { prefix16bytes: prefixInfo.prefix16bytes, prefixLen: prefixInfo.prefixLength };
         this._applyDelegatedPrefix(prefixInfo.prefix16bytes, prefixInfo.prefixLength);
         this._updateStatusPanel();
+
+        // T1 aus dem REPLY-IA_PD lesen und Renewal planen
+        const iaPDReply = reply.getOption(DHCPv6Packet.OPT_IA_PD);
+        const t1Sec = (iaPDReply && iaPDReply.length >= 8)
+            ? (((iaPDReply[4] << 24) | (iaPDReply[5] << 16) | (iaPDReply[6] << 8) | iaPDReply[7]) >>> 0)
+            : (prefixInfo.preferred >>> 1) || 1800;
+        const t1SimMs = Math.max(SimTimer.DHCP_OFFER_WAIT_MS * 2, t1Sec * 1000);
+        simTimer.schedule(() => {
+            if (this._wanIp6Enabled && this._wanDhcpv6PdDelegated) {
+                void this._runWanDhcpv6PdClient();
+            }
+        }, t1SimMs);
     }
 
     /** Send a DHCPv6 packet from WAN link-local to ff02::1:2 (all DHCP agents/servers). */
@@ -1279,14 +1291,7 @@ export class HomeRouter extends SimulatedObject {
         obj._ssid = String(n.ssid ?? "HomeNetwork");
         if (n.wanMac) try { obj._wanMac = strToMac(n.wanMac); } catch {}
         if (n.lanMac) try { obj._lanMac = strToMac(n.lanMac); } catch {}
-        if (n.pdDelegated?.prefix && Array.isArray(n.pdDelegated.prefix)) {
-            const bytes = new Uint8Array(n.pdDelegated.prefix);
-            if (bytes.length === 16) {
-                obj._wanIp6Enabled = true;
-                obj._wanDhcpv6PdDelegated = { prefix16bytes: bytes, prefixLen: Number(n.pdDelegated.prefixLen) };
-                obj._applyDelegatedPrefix(bytes, obj._wanDhcpv6PdDelegated.prefixLen);
-            }
-        }
+        // pdDelegated wird nicht restoriert — DHCPv6-PD wird beim Start immer neu verhandelt
         if (Array.isArray(n.portRules)) {
             obj._portRules = n.portRules.map(/** @param {any} r */ r => ({
                 proto:   Number(r.proto)   | 0,
@@ -1296,7 +1301,7 @@ export class HomeRouter extends SimulatedObject {
             })).filter(/** @param {{wanPort:number,lanIp:number,lanPort:number}} r */ r => r.wanPort > 0 && r.lanIp !== 0 && r.lanPort > 0);
         }
         if (obj._wanMode === "dhcp") void obj._runWanDhcpClient();
-        if (obj._wanIp6Enabled && !obj._wanDhcpv6PdDelegated) void obj._runWanDhcpv6PdClient();
+        if (obj._wanIp6Enabled) void obj._runWanDhcpv6PdClient();
         return obj;
     }
 
@@ -1466,22 +1471,14 @@ export class HomeRouter extends SimulatedObject {
                 this._wanIp = ip; this._wanPrefix = pf; this._wanGw = gw; this._upstreamDns = dns;
                 this._wanArpCache.clear(); this._nat.clear();
             }
-            // IPv6
-            const ip6Enabled    = ip6Cb.checked;
-            const wasIp6Enabled = this._wanIp6Enabled;
-            this._wanIp6Enabled = ip6Enabled;
-            if (ip6Enabled && !wasIp6Enabled) {
-                this._wanDhcpv6PdDelegated = null;
-                this._wanGw6 = null;
-                this._wanNdpCache.clear();
-                void this._runWanDhcpv6PdClient();
-            } else if (!ip6Enabled && wasIp6Enabled) {
-                this._wanDhcpv6PdDelegated = null;
-                this._lanIp6 = null; this._lanRaPrefix = null;
-                this._stopRaTimer();
-                this._wanGw6 = null;
-                this._wanNdpCache.clear(); this._lanNdpCache.clear();
-            }
+            // IPv6 — immer vollständig zurücksetzen, dann ggf. neu starten
+            this._wanIp6Enabled = ip6Cb.checked;
+            this._wanDhcpv6PdDelegated = null;
+            this._lanIp6 = null; this._lanRaPrefix = null;
+            this._stopRaTimer();
+            this._wanGw6 = null;
+            this._wanNdpCache.clear(); this._lanNdpCache.clear();
+            if (this._wanIp6Enabled) void this._runWanDhcpv6PdClient();
             this._mount(/** @type {HTMLElement} */ (this._panelBody));
         });
         host.appendChild(UILib.div("hr-btn-row", [applyBtn]));
