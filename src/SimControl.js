@@ -796,7 +796,7 @@ export class SimControl {
     toJSON() {
         return {
             version: 5,
-            appVersion: version,
+            appVersion: version(),
             savedAt: new Date().toISOString(),
             tick: SimControl.tick,
             objects: this.simobjects.map((o) => o.toJSON()),
