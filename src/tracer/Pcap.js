@@ -89,7 +89,12 @@ export class Pcap {
     }
 
     _writeData() {
-        const chunks = [Pcap.header(), ...this.#framelog.map(f => Pcap.record(f))];
+        let lastTs = 0; // keep timestamps monotonic (guards against out-of-order Date.now() across ticks)
+        const records = this.#framelog.map(f => {
+            lastTs = Math.max(lastTs, f.timestamp);
+            return Pcap.record({ ...f, timestamp: lastTs });
+        });
+        const chunks = [Pcap.header(), ...records];
         let total = 0;
         for (const c of chunks) total += c.length;
         const out = new Uint8Array(total);
