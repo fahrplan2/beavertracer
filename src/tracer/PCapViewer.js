@@ -45,6 +45,7 @@ import { t } from "../i18n/index.js";
  *   hidden: boolean;
  *   loadSeq: number;
  *   pcapBytes: Uint8Array|null;
+ *   startTime: number|null;
  * }} SessionState
  */
 
@@ -364,7 +365,7 @@ export class PCapViewer {
           <table class="pcapviewer-table">
             <colgroup>
               <col style="width:50px">
-              <col style="width:90px">
+              <col style="width:140px">
               <col style="width:130px">
               <col style="width:130px">
               <col style="width:80px">
@@ -669,6 +670,7 @@ export class PCapViewer {
 
     const ret = s.sess.load();
     if (ret?.code !== 0) throw new Error("sess.load() failed: " + JSON.stringify(ret));
+    s.startTime = ret?.summary?.start_time ?? null;
   }
 
   /**
@@ -729,17 +731,27 @@ export class PCapViewer {
     this.#setStatus(t("pcap.status.active", { name: this.#displayName(s.name), from, to, matched }));
   }
 
-  /** @param {any} rawRow */
-  #rowView(rawRow) {
+  /** @param {number} startTimeSec @param {string} relTimeStr @returns {string} */
+  static #formatAbsTime(startTimeSec, relTimeStr) {
+    const abs = startTimeSec + parseFloat(relTimeStr);
+    const d = new Date(abs * 1000);
+    const p = (/** @type {number} */ n, w = 2) => String(n).padStart(w, '0');
+    const frac = (abs % 1).toFixed(6).slice(1);
+    return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}${frac}`;
+  }
+
+  /** @param {any} rawRow @param {number|null} startTime */
+  #rowView(rawRow, startTime = null) {
     const cols = Array.isArray(rawRow?.columns)
       ? rawRow.columns
       : (Array.isArray(rawRow?._raw?.columns) ? rawRow._raw.columns : null);
 
     // columns: [No, Time, Source, Destination, Protocol, Length, Info]
     if (cols && cols.length >= 6) {
+      const relTime = cols[1] ?? "";
       return {
         no: Number(cols[0]) || (rawRow.no ?? rawRow.num ?? rawRow.number),
-        time: cols[1] ?? "",
+        time: (startTime != null && relTime !== "") ? PCapViewer.#formatAbsTime(startTime, relTime) : relTime,
         src: cols[2] ?? "",
         dst: cols[3] ?? "",
         proto: cols[4] ?? "",
@@ -767,7 +779,7 @@ export class PCapViewer {
     const s = this.#active();
 
     for (const r0 of frames) {
-      const r = this.#rowView(r0);
+      const r = this.#rowView(r0, s?.startTime ?? null);
       const tr = document.createElement("tr");
       tr.className = "pcapviewer-row";
 
