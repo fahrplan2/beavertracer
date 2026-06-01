@@ -136,6 +136,7 @@ export class IPv4ConfigApp extends GenericProcess {
       if (mode !== "dhcp") continue;
 
       void (async () => {
+        this._dropInterfaceForDhcp(i);
         const ok = await this._dhcpAcquireAndConfigure(i);
         if (!ok) this._applyApipa(i);
 
