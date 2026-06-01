@@ -43,8 +43,11 @@ export const ss = {
     const ipf = ctx.os.net;
     if (!ipf) return t("app.terminal.commands.ss.err.noNetworkDriver");
 
-    const showTCP = !args.includes("-u");
-    const showUDP = !args.includes("-t");
+    const hasT = args.some(a => a === "-t" || a === "-tu" || a === "-ut");
+    const hasU = args.some(a => a === "-u" || a === "-tu" || a === "-ut");
+    const noFilter = !hasT && !hasU;
+    const showTCP = hasT || noFilter;
+    const showUDP = hasU || noFilter;
 
     ctx.println(t("app.terminal.commands.ss.out.header"));
 
