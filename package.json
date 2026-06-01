@@ -2,7 +2,7 @@
   "scripts": {
     "dev": "vite",
     "predev": "node scripts/sync-version.mjs",
-    "prebuild": "node scripts/sync-version.mjs && mkdir -p public/wiregasm && find node_modules/@goodtools/wiregasm -maxdepth 10 \\( -name '*.wasm' -o -name '*.data' \\) -type f -exec cp -f {} public/wiregasm/ \\;",
+    "prebuild": "node scripts/sync-version.mjs && mkdir -p public/wiregasm && find node_modules/@goodtools/wiregasm -maxdepth 10 \\( -name '*.wasm' -o -name '*.wasm.gz' -o -name '*.data' -o -name '*.data.gz' \\) -type f -exec cp -f {} public/wiregasm/ \\;",
     "build": "vite build",
     "preview": "vite preview",
     "tauri": "tauri",
@@ -14,7 +14,7 @@
   },
   "name": "beavertracer",
   "description": "",
-  "version": "0.1.20-dev.99.2f29e74",
+  "version": "0.1.20-dev.106.c8ba772",
   "main": "electron/main.cjs",
   "repository": {
     "type": "git",

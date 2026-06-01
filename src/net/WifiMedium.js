@@ -38,7 +38,6 @@ export class WifiMedium {
             const data = obj._wPort.getNextOutgoingFrame();
             if (data) {
                 this._inFlight.push({ src: obj, data, ssid: obj._ssid });
-                this._pcap?.updateIf(this._ifName(obj), obj._wPort.loggedFrames);
             }
         }
     }
@@ -54,7 +53,6 @@ export class WifiMedium {
                 if (obj === src || !obj._wPort || obj._ssid !== ssid) continue;
                 obj._wPort.recieve(data);
                 delivered = true;
-                this._pcap?.updateIf(this._ifName(obj), obj._wPort.loggedFrames);
             }
             if (delivered) this._spawnRipple(src.getX(), src.getY());
         }

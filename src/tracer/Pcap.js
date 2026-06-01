@@ -23,6 +23,39 @@ export class Pcap {
         return this._writeData(); // Uint8Array
     }
 
+    /** @returns {Uint8Array} The 24-byte PCAP global header */
+    static header() {
+        return new Uint8Array([
+            0xD4, 0xC3, 0xB2, 0xA1, // magic
+            0x02, 0x00, 0x04, 0x00, // version 2.4
+            0x00, 0x00, 0x00, 0x00, // thiszone
+            0x00, 0x00, 0x00, 0x00, // sigfigs
+            0x00, 0x00, 0x04, 0x00, // snaplen
+            0x01, 0x00, 0x00, 0x50, // linktype
+        ]);
+    }
+
+    /**
+     * Serializes a single frame as a PCAP packet record (no global header).
+     * @param {LoggedFrame} frame
+     * @returns {Uint8Array}
+     */
+    static record(frame) {
+        const data = frame.data instanceof Uint8Array ? frame.data : Uint8Array.from(frame.data);
+        const caplen = data.length;
+        const tsSec  = Math.floor(frame.timestamp / 1000);
+        const tsUsec = (frame.timestamp % 1000) * 1000;
+
+        const out = new Uint8Array(16 + caplen);
+        const view = new DataView(out.buffer);
+        view.setUint32(0,  tsSec,   true);
+        view.setUint32(4,  tsUsec,  true);
+        view.setUint32(8,  caplen,  true);
+        view.setUint32(12, caplen,  true);
+        out.set(data, 16);
+        return out;
+    }
+
     downloadFile() {
         //Credit for this function: https://dev.to/nombrekeff/download-file-from-blob-21ho
          const blob = new Blob([this._writeData()], { type: "application/vnd.tcpdump.pcap" })
@@ -55,67 +88,13 @@ export class Pcap {
         URL.revokeObjectURL(blobUrl);
     }
 
-    /**
-     * converts a Timestamp to a PCAP Timestamp
-     * @param {*} timestamp 
-     * @returns 
-     */
-
-    _TimestampToPcapTimestamp(timestamp) {
-        const tsSec = Math.floor(timestamp / 1000);            // seconds since epoch
-        const tsUsec = (timestamp % 1000) * 1000;               // microseconds
-
-        const buffer = new ArrayBuffer(8);
-        const view = new DataView(buffer);
-
-        // PCAP uses LITTLE-ENDIAN
-        view.setUint32(0, tsSec, true);   // ts_sec
-        view.setUint32(4, tsUsec, true);  // ts_usec
-
-        return new Uint8Array(buffer);
-    }
-
-    /** @param {number} n */
-    _writeU32LE(n) {
-        const b = new ArrayBuffer(4);
-        new DataView(b).setUint32(0, n >>> 0, true);
-        return new Uint8Array(b);
-    }
-
     _writeData() {
-        /** @type {Uint8Array[]} */
-        const chunks = [];
-
-        // Global Header (alles little endian)
-        chunks.push(new Uint8Array([0xD4, 0xC3, 0xB2, 0xA1])); // magic
-        chunks.push(new Uint8Array([0x02, 0x00, 0x04, 0x00])); // version 2.4
-        chunks.push(new Uint8Array([0x00, 0x00, 0x00, 0x00])); // thiszone
-        chunks.push(new Uint8Array([0x00, 0x00, 0x00, 0x00])); // sigfigs
-        chunks.push(new Uint8Array([0x00, 0x00, 0x04, 0x00])); // snaplen (bei dir 0x00040000 = 262144) -> ok, falls gewollt
-        chunks.push(new Uint8Array([0x01, 0x00, 0x00, 0x50])); // network/linktype (das wirkt ungewöhnlich; aber lass es erstmal)
-
-        for (let i = 0; i < this.#framelog.length; i++) {
-            const bytes = this.#framelog[i].data; // vermutlich Uint8Array oder number[]
-            const caplen = bytes.length;
-
-            chunks.push(this._TimestampToPcapTimestamp(this.#framelog[i].timestamp));
-            chunks.push(this._writeU32LE(caplen)); // incl_len
-            chunks.push(this._writeU32LE(caplen)); // orig_len
-
-            // NICHT byteweise pushen:
-            chunks.push(bytes instanceof Uint8Array ? bytes : Uint8Array.from(bytes));
-        }
-
-        // zusammenkleben
+        const chunks = [Pcap.header(), ...this.#framelog.map(f => Pcap.record(f))];
         let total = 0;
         for (const c of chunks) total += c.length;
-
         const out = new Uint8Array(total);
         let off = 0;
-        for (const c of chunks) {
-            out.set(c, off);
-            off += c.length;
-        }
+        for (const c of chunks) { out.set(c, off); off += c.length; }
         return out;
     }
 }

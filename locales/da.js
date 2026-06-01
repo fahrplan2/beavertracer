@@ -721,7 +721,7 @@ export default {
   "pcap.status.loading.pcap": "Indlæser PCAP…",
   "pcap.status.rendering": "Render…",
   "pcap.status.ready": "Klar",
-  "pcap.status.active": "Aktiv: {name} — {shown} pakker (offset {skip}, {matched} matchet)",
+  "pcap.status.active": "Aktiv: {name} — {from}–{to} / {matched}",
   "pcap.status.active.nocapture": "Aktiv: {name} (ingen capture indlæst)",
   "pcap.status.nosession": "Ingen aktiv session",
   "pcap.tabs.title": "Spor:",

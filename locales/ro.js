@@ -721,7 +721,7 @@ export default {
   "pcap.status.loading.pcap": "Se încarcă PCAP…",
   "pcap.status.rendering": "Se randează…",
   "pcap.status.ready": "Gata",
-  "pcap.status.active": "Activ: {name} — {shown} pachete (offset {skip}, {matched} potrivite)",
+  "pcap.status.active": "Activ: {name} — {from}–{to} / {matched}",
   "pcap.status.active.nocapture": "Activ: {name} (fără captură încărcată)",
   "pcap.status.nosession": "Nicio sesiune activă",
   "pcap.tabs.title": "Urme:",

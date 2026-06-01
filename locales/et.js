@@ -721,7 +721,7 @@ export default {
   "pcap.status.loading.pcap": "PCAP-faili laadimine…",
   "pcap.status.rendering": "Renderdamine…",
   "pcap.status.ready": "Valmis",
-  "pcap.status.active": "Aktiivne: {name} — {shown} paketti (offset {skip}, {matched} sobitatud)",
+  "pcap.status.active": "Aktiivne: {name} — {from}–{to} / {matched}",
   "pcap.status.active.nocapture": "Aktiivne: {name} (salvestist pole laaditud)",
   "pcap.status.nosession": "Aktiivne seanss puudub",
   "pcap.tabs.title": "Jäljed:",

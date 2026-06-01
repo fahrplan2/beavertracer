@@ -18,7 +18,8 @@ import { t } from "../i18n/index.js";
  *   initialFilter?: string;
  *   autoSelectFirst?: boolean;
  *   onSessionClosed?: (name: string) => void;
- *   hideComputedTreeNodes?: boolean; 
+ *   onActiveTabChange?: (name: string | null) => void;
+ *   hideComputedTreeNodes?: boolean;
  *   simControl?: SimControl;
  * }} PCAPViewerOptions
  */
@@ -39,11 +40,11 @@ import { t } from "../i18n/index.js";
  *   selectedNo: number|null;
  *   selectedTreeEl: HTMLElement|null;
  *   hasCapture: boolean;
- *   needsRender: boolean;
  *   pendingAutoSelect: boolean;
  *   pcapPath: string;
  *   hidden: boolean;
  *   loadSeq: number;
+ *   pcapBytes: Uint8Array|null;
  * }} SessionState
  */
 
@@ -89,6 +90,8 @@ export class PCapViewer {
   /** @type {HTMLElement|null} */ #loadingOverlay = null;
   /** @type {HTMLElement|null} */ #treePane = null;
   /** @type {HTMLElement|null} */ #rawPane = null;
+  /** @type {HTMLButtonElement|null} */ #prevBtn = null;
+  /** @type {HTMLButtonElement|null} */ #nextBtn = null;
 
   // UI state
   /** @type {number} */ #filterTimer = 0;
@@ -174,11 +177,11 @@ export class PCapViewer {
       selectedNo: null,
       selectedTreeEl: null,
       hasCapture: false,
-      needsRender: false,
       pendingAutoSelect: this.#opt.autoSelectFirst ?? true,
       pcapPath: `/uploads/${safe}.pcap`,
       hidden: true,
       loadSeq: 0,
+      pcapBytes: null,
     });
 
     this.#sessions.set(name, s);
@@ -201,6 +204,7 @@ export class PCapViewer {
         .sort((a, b) => a.localeCompare(b))[0] ?? null;
 
       this.#activeName = nextVisible;
+      this.#opt.onActiveTabChange?.(nextVisible);
     }
 
     this.#closeTabPicker();
@@ -220,23 +224,8 @@ export class PCapViewer {
 
     this.render();
     this.#closeTabPicker();
-
-    const s = this.#active();
-    if (s?.sess && s.needsRender) {
-      s.needsRender = false;
-      this.#loadAndRenderFramesForActive();
-
-      if (s.pendingAutoSelect) {
-        const first = this.#getFirstVisibleFrameNo();
-        if (typeof first === "number") {
-          s.selectedNo = first;
-          this.#loadAndRenderFrameDetailsForActive(first);
-          this.#highlightSelectedRow(first);
-        }
-      }
-    }
-
     this.#renderTabs();
+    this.#opt.onActiveTabChange?.(name);
   }
 
   /** @param {string} name */
@@ -257,6 +246,7 @@ export class PCapViewer {
         .map(x => x.name)
         .sort((a, b) => a.localeCompare(b))[0] ?? null;
       this.#activeName = nextVisible;
+      this.#opt.onActiveTabChange?.(nextVisible);
     }
 
     this.#renderTabs();
@@ -303,13 +293,11 @@ export class PCapViewer {
     s.hasCapture = true;
 
     if (this.#activeName !== name) {
-      s.needsRender = true;
       this.#renderTabs();
       this.#setStatus(t("pcap.status.ready"));
       return;
     }
 
-    s.needsRender = false;
     this.#setStatus(t("pcap.status.rendering"));
     this.#loadAndRenderFramesForActive();
     if (!stillLatest()) return;
@@ -324,7 +312,6 @@ export class PCapViewer {
     }
 
     this.#renderTabs();
-    this.#setStatus(t("pcap.status.ready"));
   }
 
 
@@ -427,17 +414,17 @@ export class PCapViewer {
   #wireUI() {
     if (!this.#root) return;
 
-    const prevBtn = /** @type {HTMLButtonElement} */ (this.#root.querySelector(".pcapviewer-prev"));
-    const nextBtn = /** @type {HTMLButtonElement} */ (this.#root.querySelector(".pcapviewer-next"));
+    this.#prevBtn = /** @type {HTMLButtonElement} */ (this.#root.querySelector(".pcapviewer-prev"));
+    this.#nextBtn = /** @type {HTMLButtonElement} */ (this.#root.querySelector(".pcapviewer-next"));
 
-    prevBtn.addEventListener("click", () => {
+    this.#prevBtn.addEventListener("click", () => {
       const s = this.#active();
       if (!s) return;
       s.skip = Math.max(0, s.skip - this.#LIMIT);
       this.#loadAndRenderFramesForActive();
     });
 
-    nextBtn.addEventListener("click", () => {
+    this.#nextBtn.addEventListener("click", () => {
       const s = this.#active();
       if (!s) return;
       s.skip += this.#LIMIT;
@@ -533,13 +520,7 @@ export class PCapViewer {
         btn.title = s.hasCapture ? name : t("pcap.tab.nocapture", { name });
 
         const label = document.createElement("span");
-        if (this.#opt.simControl) {
-          //Getting the real name
-          const realname = this.#opt.simControl.simobjects.filter(e => e.id == parseInt(name))[0].name;
-          label.textContent = realname + ":" + name.split(":")[1] + (s.hasCapture ? "" : " •");
-        } else {
-          label.textContent = name + (s.hasCapture ? "" : " •");
-        }
+        label.textContent = this.#displayName(name) + (s.hasCapture ? "" : " •");
         btn.appendChild(label);
 
         btn.addEventListener("click", () => this.switchTab(name));
@@ -586,7 +567,7 @@ export class PCapViewer {
       this.#renderTable([], 0);
       if (this.#treePane) this.#treePane.textContent = s ? t("pcap.packet.nocapture") : t("pcap.packet.nosession");
       if (this.#rawPane) this.#rawPane.textContent = t("pcap.packet.select");
-      this.#setStatus(s ? t("pcap.status.active.nocapture", { name: s.name }) : t("pcap.status.nosession"));
+      this.#setStatus(s ? t("pcap.status.active.nocapture", { name: this.#displayName(s.name) }) : t("pcap.status.nosession"));
       return;
     }
 
@@ -626,21 +607,21 @@ export class PCapViewer {
   // Wiregasm init + loading
   // ======================================================================
 
+  #makeWgPromise() {
+    const locateWasm = this.#opt.locateWasm ?? "/wiregasm/wiregasm.wasm";
+    const locateData = this.#opt.locateData ?? "/wiregasm/wiregasm.data";
+    return loadWiregasm({
+      locateFile: (/** @type {string} */ path, /** @type {string} */ prefix) => {
+        if (path.endsWith(".wasm")) return locateWasm;
+        if (path.endsWith(".data")) return locateData;
+        return prefix + path;
+      },
+    });
+  }
+
   async #initWiregasm() {
     if (this.#wg && this.#wgInited) return;
-
-    if (!this.#wgPromise) {
-      const locateWasm = this.#opt.locateWasm ?? "/wiregasm/wiregasm.wasm";
-      const locateData = this.#opt.locateData ?? "/wiregasm/wiregasm.data";
-
-      this.#wgPromise = loadWiregasm({
-        locateFile: (/** @type {string} */ path, /** @type {string} */ prefix) => {
-          if (path.endsWith(".wasm")) return locateWasm;
-          if (path.endsWith(".data")) return locateData;
-          return prefix + path;
-        },
-      });
-    }
+    if (!this.#wgPromise) this.#wgPromise = this.#makeWgPromise();
 
     this.#showWgOverlay(t("pcap.status.loading.wiregasm"));
     try {
@@ -652,6 +633,15 @@ export class PCapViewer {
     } finally {
       this.#hideWgOverlay();
     }
+  }
+
+  /** Start loading the Wiregasm WASM module in the background without blocking the UI.
+   *  Call this during idle time so the module is ready by the time the user opens the trace tab. */
+  preloadWiregasm() {
+    if (this.#wgPromise) return;
+    this.#wgPromise = this.#makeWgPromise();
+    // Clear on failure so the next real use can retry normally
+    this.#wgPromise.catch(() => { this.#wgPromise = null; });
   }
 
   /** @param {string} msg */
@@ -670,6 +660,7 @@ export class PCapViewer {
   #loadPcapBytesIntoSession(s, pcapBytes) {
     if (!this.#wg) throw new Error("Wiregasm not initialized");
 
+    s.pcapBytes = pcapBytes;
     this.#wg.FS.mkdirTree("/uploads");
     this.#wg.FS.writeFile(s.pcapPath, pcapBytes);
 
@@ -678,6 +669,34 @@ export class PCapViewer {
 
     const ret = s.sess.load();
     if (ret?.code !== 0) throw new Error("sess.load() failed: " + JSON.stringify(ret));
+  }
+
+  /**
+   * Appends raw PCAP packet records (no global header) to an existing session and re-renders.
+   * Only works after loadBytes() has been called at least once for this session.
+   * @param {string} name
+   * @param {Uint8Array} recordBytes
+   */
+  appendRecords(name, recordBytes) {
+    const s = this.#sessions.get(name);
+    if (!s?.pcapBytes || !this.#wg || !this.#wgInited) return;
+
+    const combined = new Uint8Array(s.pcapBytes.length + recordBytes.length);
+    combined.set(s.pcapBytes);
+    combined.set(recordBytes, s.pcapBytes.length);
+
+    this.#loadPcapBytesIntoSession(s, combined);
+    s.hasCapture = true;
+
+    if (this.#activeName === name) {
+      this.#loadAndRenderFramesForActive();
+      if (typeof s.selectedNo === "number") {
+        this.#loadAndRenderFrameDetailsForActive(s.selectedNo);
+        this.#highlightSelectedRow(s.selectedNo);
+      }
+    }
+
+    this.#renderTabs();
   }
 
   // ======================================================================
@@ -700,8 +719,14 @@ export class PCapViewer {
     const { frames, matched } = this.#getFramesPlainForActive();
     this.#renderTable(frames, matched);
 
+    const hasSess = !!s?.sess;
+    if (this.#prevBtn) this.#prevBtn.disabled = !hasSess || s.skip === 0;
+    if (this.#nextBtn) this.#nextBtn.disabled = !hasSess || s.skip + frames.length >= matched;
+
     if (!s) return;
-    this.#setStatus(t("pcap.status.active", { name: s.name, shown: frames.length, skip: s.skip, matched }));
+    const from = frames.length > 0 ? s.skip + 1 : 0;
+    const to   = s.skip + frames.length;
+    this.#setStatus(t("pcap.status.active", { name: this.#displayName(s.name), from, to, matched }));
   }
 
   /** @param {any} rawRow */
@@ -1163,6 +1188,16 @@ export class PCapViewer {
     const g = (n >>> 8) & 0xFF;
     const b = n & 0xFF;
     return `rgb(${r}, ${g}, ${b})`;
+  }
+
+  /** @param {string} name */
+  #displayName(name) {
+    if (!this.#opt.simControl) return name;
+    const id = parseInt(name);
+    const obj = this.#opt.simControl.simobjects.find(e => e.id === id);
+    if (!obj) return name;
+    const port = name.split(":").slice(1).join(":").trim();
+    return port ? `${obj.name}: ${port}` : obj.name;
   }
 
   /** @param {string} txt */

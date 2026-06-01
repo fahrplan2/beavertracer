@@ -721,7 +721,7 @@ export default {
   "pcap.status.loading.pcap": "Ielādē PCAP…",
   "pcap.status.rendering": "Renderēšana…",
   "pcap.status.ready": "Gatavs",
-  "pcap.status.active": "Aktīvs: {name} — {shown} paketes (nobīde {skip}, {matched} atbilstošas)",
+  "pcap.status.active": "Aktīvs: {name} — {from}–{to} / {matched}",
   "pcap.status.active.nocapture": "Aktīvs: {name} (nav ielādēts uztveramais)",
   "pcap.status.nosession": "Nav aktīvas sesijas",
   "pcap.tabs.title": "Izsekošanas dati:",

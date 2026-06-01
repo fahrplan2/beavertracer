@@ -1003,7 +1003,7 @@ export default {
   "pcap.status.loading.pcap": "Loading PCAP…",
   "pcap.status.rendering": "Rendering…",
   "pcap.status.ready": "Ready",
-  "pcap.status.active": "Active: {name} — {shown} packets (offset {skip}, {matched} matched)",
+  "pcap.status.active": "Active: {name} — {from}–{to} / {matched}",
   "pcap.status.active.nocapture": "Active: {name} (no capture loaded)",
   "pcap.status.nosession": "No active session",
   "pcap.tab.nocapture": "{name} (no capture)",

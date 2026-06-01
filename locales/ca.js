@@ -839,7 +839,7 @@ export default {
   "pcap.status.loading.pcap": "Carregant PCAP…",
   "pcap.status.rendering": "Renderitzant…",
   "pcap.status.ready": "Preparat",
-  "pcap.status.active": "Actiu: {name} — {shown} paquets (desplaçament {skip}, {matched} coincidits)",
+  "pcap.status.active": "Actiu: {name} — {from}–{to} / {matched}",
   "pcap.status.active.nocapture": "Actiu: {name} (sense captura carregada)",
   "pcap.status.nosession": "Cap sessió activa",
   "pcap.tab.nocapture": "{name} (sense captura)",

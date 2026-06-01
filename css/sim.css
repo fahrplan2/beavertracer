@@ -726,7 +726,7 @@
   width: 54px;
   height: 54px;
 
-  transform: translate(-50%, -50%);
+  will-change: transform;
   pointer-events: auto; /* clickable */
   cursor: pointer;
 

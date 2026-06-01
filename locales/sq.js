@@ -839,7 +839,7 @@ export default {
   "pcap.status.loading.pcap": "Ngarkim i PCAP…",
   "pcap.status.rendering": "Në përpunim…",
   "pcap.status.ready": "Gati",
-  "pcap.status.active": "Aktiv: {name} — {shown} paketa (zhvendosje {skip}, {matched} të përputhuar)",
+  "pcap.status.active": "Aktiv: {name} — {from}–{to} / {matched}",
   "pcap.status.active.nocapture": "Aktiv: {name} (pa kapur të ngarkuar)",
   "pcap.status.nosession": "Nuk ka sesion aktiv",
   "pcap.tab.nocapture": "{name} (pa kapur)",

@@ -839,7 +839,7 @@ export default {
   "pcap.status.loading.pcap": "Laster inn PCAP…",
   "pcap.status.rendering": "Gjengir…",
   "pcap.status.ready": "Klar",
-  "pcap.status.active": "Aktiv: {name} — {shown} pakker (forskyvning {skip}, {matched} samsvart)",
+  "pcap.status.active": "Aktiv: {name} — {from}–{to} / {matched}",
   "pcap.status.active.nocapture": "Aktiv: {name} (ingen innspilling lastet)",
   "pcap.status.nosession": "Ingen aktiv økt",
   "pcap.tab.nocapture": "{name} (ingen innspilling)",

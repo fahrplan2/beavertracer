@@ -839,7 +839,7 @@ export default {
   "pcap.status.loading.pcap": "PCAP betöltése…",
   "pcap.status.rendering": "Renderelés…",
   "pcap.status.ready": "Kész",
-  "pcap.status.active": "Aktív: {name} — {shown} csomag (eltolás {skip}, {matched} egyezés)",
+  "pcap.status.active": "Aktív: {name} — {from}–{to} / {matched}",
   "pcap.status.active.nocapture": "Aktív: {name} (nincs betöltött rögzítés)",
   "pcap.status.nosession": "Nincs aktív munkamenet",
   "pcap.tab.nocapture": "{name} (nincs rögzítés)",
