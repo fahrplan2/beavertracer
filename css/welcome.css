@@ -132,8 +132,9 @@
 .welcome-body {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr;
   flex: 1;
-  min-height: 0;
+  height: 0;
   overflow: hidden;
 }
 
@@ -201,8 +202,14 @@
   display: flex;
   flex-direction: column;
   padding: var(--pad-xl) var(--pad-2xl) var(--pad-xl) var(--pad-lg);
-  overflow-y: auto;
+  overflow: hidden;
   min-height: 0;
+}
+
+.welcome-news-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .welcome-news-heading {

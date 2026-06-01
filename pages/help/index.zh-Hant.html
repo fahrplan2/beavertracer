@@ -8,11 +8,11 @@
   <ol>
     <li><a href="#modes">三種模式</a></li>
     <li><a href="#edit">編輯模式 — 建構網路</a></li>
-    <li><a href="#devices">設備</a></li>
-    <li><a href="#panels">設備面板</a></li>
+    <li><a href="#devices">裝置</a></li>
+    <li><a href="#panels">裝置面板</a></li>
     <li><a href="#run">執行模式 — 執行模擬</a></li>
     <li><a href="#trace">追蹤模式 — 分析封包</a></li>
-    <li><a href="#project">保存和加載</a></li>
+    <li><a href="#project">儲存與載入</a></li>
   </ol>
 </nav>
 
@@ -20,13 +20,13 @@
 
 <h3 id="modes">三種模式</h3>
 <p>
-  BeaverTracer 有三種模式。你可以使用頂部工具欄中的按鈕在它們之間切換。
+  Beaver Tracer 有三種模式。你可以使用頂部工具列中的按鈕在它們之間切換。
 </p>
 <table class="help-table">
   <tr>
     <td><i class="fas fa-pencil"></i></td>
     <td><strong>編輯</strong></td>
-    <td>設計你的網路——放置設備、連接它們、配置它們。</td>
+    <td>設計你的網路 — 放置裝置、連接它們、配置它們。</td>
   </tr>
   <tr>
     <td><i class="fas fa-play"></i></td>
@@ -36,113 +36,113 @@
   <tr>
     <td><i class="fas fa-magnifying-glass"></i></td>
     <td><strong>追蹤</strong></td>
-    <td>捕獲並檢查跨越你的網路傳輸的數據包。</td>
+    <td>擷取並檢查在你的網路上傳輸的封包。</td>
   </tr>
 </table>
 
 <hr>
 
-<h3 id="edit">編輯模式 — 構建網絡</h3>
+<h3 id="edit">編輯模式 — 建構網路</h3>
 <p>
-  在編輯模式中，螢幕左側會出現一個工具欄。
-  點擊選擇一個工具，然後在畫布上使用它。
+  在編輯模式中，螢幕左側會出現一個工具列。
+  點選一個工具，然後在畫布上使用它。
 </p>
 
 <h4>工具</h4>
 <table class="help-table">
   <tr>
     <td><i class="fas fa-arrow-pointer"></i></td>
-    <td><strong>選擇</strong></td>
-    <td>點擊一個設備來打開它的面板。拖動一個設備來移動它。</td>
+    <td><strong>選取</strong></td>
+    <td>點選一個裝置來開啟它的面板。拖曳一個裝置來移動它。</td>
   </tr>
   <tr>
     <td><i class="fas fa-link"></i></td>
     <td><strong>連結</strong></td>
-    <td>用網線連接兩個設備（見下文）。</td>
+    <td>用纜線連接兩個裝置（見下方）。</td>
   </tr>
   <tr>
     <td><i class="fas fa-font"></i></td>
     <td><strong>文字</strong></td>
-    <td>在畫布上放置一個文字標籤來標註你的圖表。</td>
+    <td>在畫布上放置文字標籤來註解你的圖表。</td>
   </tr>
   <tr>
     <td><i class="fas fa-square"></i></td>
     <td><strong>矩形</strong></td>
-    <td>在畫布上繪製一個矩形來直觀地分組設備。</td>
+    <td>在畫布上繪製矩形來視覺化地分組裝置。</td>
   </tr>
   <tr>
     <td><i class="fas fa-ban"></i></td>
     <td><strong>刪除</strong></td>
-    <td>點擊一個設備或網線來移除它。</td>
+    <td>點選一個裝置或纜線來移除它。</td>
   </tr>
 </table>
 
 <p>
-  <strong>提示：</strong>在畫布上的任何地方按右鍵來取消當前工具
-  並回到 <i class="fas fa-arrow-pointer"></i> 選擇。
+  <strong>提示：</strong> 在畫布上按右鍵可以取消目前工具
+  並回到 <i class="fas fa-arrow-pointer"></i> 選取。
 </p>
 
-<h4>放置設備</h4>
+<h4>放置裝置</h4>
 <ol>
-  <li>在左側工具欄中點擊一個設備按鈕（例如 <i class="fas fa-desktop"></i> PC）。</li>
-  <li>預覽會跟隨你的滑鼠游標。</li>
-  <li>在畫布上點擊來放置設備。</li>
+  <li>點選左工具列中的一個裝置按鈕（例如 <i class="fas fa-desktop"></i> 電腦）。</li>
+  <li>一個預覽會跟隨你的滑鼠游標。</li>
+  <li>在畫布上點選以放置裝置。</li>
 </ol>
 
-<h4>連接兩個設備</h4>
+<h4>連接兩個裝置</h4>
 <ol>
-  <li>點擊 <i class="fas fa-link"></i> <strong>連結</strong> 工具。</li>
-  <li>點擊第一個設備 — 會出現一個連接埠選擇器。選擇一個連接埠。</li>
-  <li>將滑鼠移到第二個設備並點擊它 — 也在那裡選擇一個連接埠。</li>
-  <li>網線會自動創建。</li>
+  <li>點選 <i class="fas fa-link"></i> <strong>連結</strong> 工具。</li>
+  <li>點選第一個裝置 — 一個連接埠選擇器會出現。選擇一個連接埠。</li>
+  <li>移動滑鼠到第二個裝置並點選它 — 也在那裡選擇一個連接埠。</li>
+  <li>纜線會自動建立。</li>
 </ol>
 <p>
-  已經在使用中的連接埠會顯示為禁用狀態，無法選擇。
+  已經在使用中的連接埠會顯示為停用狀態，無法選擇。
 </p>
 
-<h4>移動設備</h4>
+<h4>移動裝置</h4>
 <p>
-  在 <i class="fas fa-arrow-pointer"></i> 選擇模式中，點擊並拖動任何設備來在畫布上重新定位它。
+  在 <i class="fas fa-arrow-pointer"></i> 選取模式中，點選並拖曳任何裝置以在畫布上重新定位它。
 </p>
 
-<h4>刪除設備或網線</h4>
+<h4>刪除裝置或纜線</h4>
 <ol>
-  <li>點擊 <i class="fas fa-ban"></i> <strong>刪除</strong> 工具。</li>
-  <li>點擊你想要移除的設備或網線。</li>
+  <li>點選 <i class="fas fa-ban"></i> <strong>刪除</strong> 工具。</li>
+  <li>點選你想要移除的裝置或纜線。</li>
 </ol>
 <p>
-  當你刪除一個設備時，所有連接到它的網線都會自動移除。
+  當你刪除一個裝置時，所有連接到它的纜線都會自動移除。
 </p>
 
 <hr>
 
 <h3 id="devices">裝置</h3>
 <p>
-  這些裝置在編輯模式的左邊工具列中可用：
+  編輯模式下，這些裝置在左側工具列中可用：
 </p>
 
 <table class="help-table">
   <tr>
     <td><i class="fas fa-desktop"></i></td>
-    <td><strong>個人電腦</strong></td>
+    <td><strong>電腦</strong></td>
     <td>
-      一台具有有線網路介面的個人電腦。你可以在上面執行應用程式
+      具有有線網路介面的電腦。你可以在其上執行應用程式
       （例如網頁瀏覽器或 ping 工具）並設定其 IP 位址。
     </td>
   </tr>
   <tr>
-    <td><i class="fas fa-laptop"></i></td>
-    <td><strong>筆記型電腦</strong></td>
+    <td><i class="fas fa-tablet-screen-button"></i></td>
+    <td><strong>平板電腦</strong></td>
     <td>
-      與個人電腦類似，但透過 Wi-Fi 而不是網線連接。
-      將它與無線存取點或家用路由器一起使用。
+      類似電腦，但透過 Wi-Fi 而非纜線連接。
+      將其與存取點或家用路由器搭配使用。
     </td>
   </tr>
   <tr>
     <td>SW</td>
-    <td><strong>交換機</strong></td>
+    <td><strong>交換器</strong></td>
     <td>
-      連接同一網路區段中的多個裝置。
+      在同一網路區段中連接多個裝置。
       根據 MAC 位址轉發訊框。
       支援 VLAN 和生成樹協議 (STP)。
     </td>
@@ -151,7 +151,7 @@
     <td>RT</td>
     <td><strong>路由器</strong></td>
     <td>
-      連接不同的網路並在它們之間轉發封包。
+      連接不同的網路並在其間轉發封包。
       支援靜態路由、OSPF、BGP 和 IP 隧道 (VPN)。
     </td>
   </tr>
@@ -159,26 +159,26 @@
     <td><i class="fas fa-house-signal"></i></td>
     <td><strong>家用路由器</strong></td>
     <td>
-      一個結合路由器、DHCP 伺服器、NAT 閘道和 Wi-Fi 無線存取點的裝置 —
-      類似於典型的家庭網際網路路由器。
-      將它連接到路由器（作為 WAN）以及連接到個人電腦或筆記型電腦（作為 LAN/Wi-Fi）。
-      支援埠轉發規則。
+      組合的路由器、DHCP 伺服器、NAT 閘道和 Wi-Fi 存取點——
+      類似典型的家用網際網路路由器。
+      將其連接到路由器 (作為 WAN) 和電腦或平板電腦 (作為 LAN/Wi-Fi)。
+      支援連接埠轉發規則。
     </td>
   </tr>
   <tr>
     <td><i class="fas fa-wifi"></i></td>
-    <td><strong>無線存取點</strong></td>
+    <td><strong>存取點</strong></td>
     <td>
       使用 Wi-Fi 連接擴展有線網路。
-      將其有線埠連接到交換機或路由器，然後將筆記型電腦無線連接到它。
+      將其有線連接埠連接到交換器或路由器，然後無線連接平板電腦。
     </td>
   </tr>
   <tr>
     <td><i class="fas fa-shield-halved"></i></td>
     <td><strong>防火牆</strong></td>
     <td>
-      根據可設定的規則篩選網路區段之間的流量。
-      面板顯示規則集和相符封包的即時日誌。
+      根據可設定的規則在網路區段之間過濾流量。
+      面板顯示規則集和符合的封包的即時日誌。
     </td>
   </tr>
 </table>
@@ -187,81 +187,81 @@
 
 <h3 id="panels">裝置面板</h3>
 <p>
-  按一下畫布上的任何裝置來開啟它的<strong>面板</strong>——一個設定視窗會出現在螢幕的右側。
-  再按一次裝置（或按面板標題列中的<strong>×</strong>按鈕）來關閉它。
+  點擊畫布上的任何裝置以開啟其<strong>面板</strong>——一個出現在螢幕右側的設定視窗。
+  再次點擊該裝置（或面板標題中的<strong>×</strong>按鈕）以關閉它。
 </p>
 
 <h4>重新命名裝置</h4>
 <p>
-  按一下面板標題列中裝置名稱旁邊的<i class="fas fa-pen"></i>按鈕，為它取一個自訂名稱（例如「Office-PC」或「Core-Router」）。
+  點擊面板標題中裝置名稱旁邊的<i class="fas fa-pen"></i>按鈕，為它設定一個自訂名稱（例如「Office-PC」或「Core-Router」）。
 </p>
 
 <h4>路由器標籤</h4>
 <p>
-  路由器面板有以下標籤：
+  路由器面板具有下列標籤：
 </p>
 <ul>
   <li><strong>介面</strong>——在每個連接埠上設定 IP 位址</li>
-  <li><strong>路由表 IPv4</strong>——檢視及編輯 IPv4 路由（靜態及已學習的）</li>
-  <li><strong>路由表 IPv6</strong>——檢視及編輯 IPv6 路由</li>
-  <li><strong>OSPF</strong>——設定及監視 OSPF 動態路由</li>
-  <li><strong>BGP</strong>——設定 BGP 鄰居及檢視 BGP 表</li>
-  <li><strong>VPN</strong>——在路由器之間設定 IP 通道</li>
+  <li><strong>IPv4 路由表</strong>——檢視和編輯 IPv4 路由（靜態和學習的）</li>
+  <li><strong>IPv6 路由表</strong>——檢視和編輯 IPv6 路由</li>
+  <li><strong>OSPF</strong>——設定和監控 OSPF 動態路由</li>
+  <li><strong>BGP</strong>——設定 BGP 鄰居並檢視 BGP 表</li>
+  <li><strong>VPN</strong>——在路由器之間設定 IP 隧道</li>
 </ul>
 
 <h4>交換器標籤</h4>
 <p>
-  交換器面板有<strong>交換器位址表 (SAT)</strong>、<strong>VLAN</strong>
-  設定及<strong>生成樹協議 (STP)</strong> 設定的標籤。
+  交換器面板具有其<strong>交換器地址表 (SAT)</strong>、<strong>VLAN</strong>
+  設定和<strong>生成樹協定 (STP)</strong> 設定的標籤。
 </p>
 
 <h4>家用路由器標籤</h4>
 <p>
-  家用路由器面板有以下標籤：
+  家用路由器面板具有下列標籤：
 </p>
 <ul>
-  <li><strong>狀態</strong>——目前 WAN/LAN 狀態及已連接用戶端的概覽</li>
+  <li><strong>狀態</strong>——目前 WAN/LAN 狀態和已連線用戶端的概述</li>
   <li><strong>WAN</strong>——設定上行連結（靜態 IP 或 DHCP）</li>
-  <li><strong>LAN</strong>——設定 LAN 子網路及 IP 位址</li>
-  <li><strong>DHCP</strong>——檢視使用中的租約及設定 DHCP 集區</li>
-  <li><strong>WiFi</strong>——設定內建無線存取點（SSID、密碼）</li>
-  <li><strong>NAT</strong>——檢視使用中的 NAT 連線表</li>
-  <li><strong>連接埠轉發</strong>——定義規則以將傳入連接埠轉發至 LAN 主機</li>
+  <li><strong>LAN</strong>——設定 LAN 子網和 IP 位址</li>
+  <li><strong>DHCP</strong>——檢視有效租賃並設定 DHCP 集區</li>
+  <li><strong>WiFi</strong>——設定內建存取點（SSID、密碼）</li>
+  <li><strong>NAT</strong>——檢視有效的 NAT 連線表</li>
+  <li><strong>連接埠轉發</strong>——定義規則以將傳入連接埠轉發到 LAN 主機</li>
 </ul>
 
 <h4>防火牆標籤</h4>
 <p>
-  防火牆面板有<strong>規則</strong>標籤來管理過濾規則及
-  <strong>記錄</strong>標籤顯示哪些封包已被允許或丟棄。
+  防火牆面板具有用於管理篩選規則的<strong>規則</strong>標籤和顯示哪些封包已被允許或丟棄的
+  <strong>記錄</strong>標籤。
 </p>
 
-<h4>PC 及筆記型電腦</h4>
+<h4>電腦和平板</h4>
 <p>
-  PC 及筆記型電腦在其面板內有一個完整的模擬作業系統。
-  你可以從桌面開啟應用程式、設定網路設定，以及執行命令。
+  電腦和平板在其面板內具有完整的模擬作業系統。
+  你可以從桌面開啟應用程式、設定網路設定，以及執行指令。
 </p>
 
 <hr>
 
 <h3 id="run">執行模式 — 執行模擬</h3>
 <p>
-  切換到 <i class="fas fa-play"></i> <strong>執行</strong> 模式以啟動模擬。
-  網路變為實時：裝置交換封包、DHCP 租約被分配、
+  切換到 <i class="fas fa-play"></i> <strong>執行</strong>模式以開始模擬。
+  網路變成即時的：裝置交換封包、DHCP 租期被分配、
   路由表更新等等。
 </p>
 
 <h4>速度控制</h4>
 <p>
-  使用頂部工具欄中的速度按鈕來控制模擬執行的速度：
+  使用頂部工具列中的速度按鈕來控制模擬執行的速度：
 </p>
 <table class="help-table">
-  <tr><td><strong>0.5×</strong></td><td>緩慢 — 適合觀察各個步驟</td></tr>
+  <tr><td><strong>0.5×</strong></td><td>慢速 — 適合觀察個別步驟</td></tr>
   <tr><td><strong>1×</strong></td><td>正常速度</td></tr>
   <tr><td><strong>4×</strong></td><td>快速</td></tr>
   <tr><td><strong>8×</strong></td><td>非常快速</td></tr>
 </table>
 
-<h4>暫停和重設</h4>
+<h4>暫停和重置</h4>
 <table class="help-table">
   <tr>
     <td><i class="fas fa-pause"></i></td>
@@ -270,62 +270,62 @@
   </tr>
   <tr>
     <td><i class="fas fa-arrow-rotate-left"></i></td>
-    <td><strong>重設</strong></td>
-    <td>從頭重新啟動模擬（所有動態狀態已清除）。</td>
+    <td><strong>重置</strong></td>
+    <td>從頭開始重新啟動模擬（所有動態狀態都會被清除）。</td>
   </tr>
 </table>
 
 <p>
   <strong>注意：</strong>在執行模式中無法編輯網路拓撲。
-  請先切換回 <i class="fas fa-pencil"></i> 編輯模式。
+  請先切換回 <i class="fas fa-pencil"></i>編輯模式。
 </p>
 
 <hr>
 
-<h3 id="trace">追蹤模式 — 分析封包</h3>
+<h3 id="trace">Trace 模式 — 分析數據包</h3>
 <p>
-  切換到 <i class="fas fa-magnifying-glass"></i> <strong>追蹤</strong>模式以開啟內建的封包分析工具 — 類似於 Wireshark。
+  切換到 <i class="fas fa-magnifying-glass"></i> <strong>Trace</strong> 模式以開啟內建的數據包分析器 — 類似於 Wireshark。
 </p>
 <p>
-  在頂部，選擇你想要擷取封包的<strong>裝置</strong>和<strong>連接埠</strong>。
-  通過該連接埠的所有封包都會被記錄並顯示在列表中。
+  在頂部，選擇你想要擷取的<strong>設備</strong>和<strong>連接埠</strong>。
+  通過該連接埠的所有數據包都會被記錄並以列表形式顯示。
 </p>
 <p>
-  點擊列表中的任何封包以查看其完整詳細資訊：
-  協議層、標頭欄位和負載 — 就像專業網路工具顯示的一樣。
+  點擊列表中的任何數據包以查看其完整詳細資訊：
+  協議層、標頭欄位和負載 — 就像專業的網路工具顯示的一樣。
 </p>
 <p>
   當模擬運行時，擷取會自動進行。
-  你可以隨時在追蹤模式和執行模式之間切換，而不會遺失擷取的資料。
+  你可以隨時在 Trace 模式和 Run 模式之間切換，而不會遺失擷取的數據。
 </p>
 
 <hr>
 
-<h3 id="project">保存與載入</h3>
+<h3 id="project">儲存和載入</h3>
 <p>
-  你可以將網路設計保存為文件，之後再載入。
-  使用頂部工具欄中的按鈕（在編輯模式中可見）：
+  你的網路設計可以儲存為檔案，稍後再載入。
+  使用頂部工具列中的按鈕（在編輯模式中可見）：
 </p>
 <table class="help-table">
   <tr>
     <td><i class="fas fa-file"></i></td>
-    <td><strong>新建</strong></td>
-    <td>從空白畫布開始。任何未保存的更改都將丟失。</td>
+    <td><strong>新增</strong></td>
+    <td>以空白畫布開始。任何未儲存的變更都會遺失。</td>
   </tr>
   <tr>
     <td><i class="fas fa-file-arrow-up"></i></td>
     <td><strong>載入</strong></td>
-    <td>打開之前保存的模擬文件。</td>
+    <td>開啟先前儲存的模擬檔案。</td>
   </tr>
   <tr>
     <td><i class="fas fa-file-arrow-down"></i></td>
-    <td><strong>保存</strong></td>
-    <td>將當前模擬下載為文件到你的計算機。</td>
+    <td><strong>儲存</strong></td>
+    <td>將目前的模擬下載為檔案到你的電腦。</td>
   </tr>
 </table>
 
 <hr>
 
 <p class="footer">
-  有問題嗎？檢查一下你的網路是否正確連接，以及所有設備是否都已設定有效的IP位址。
+  遇到問題了嗎？請檢查你的網路是否正確連接，以及所有裝置是否都配置了有效的IP位址。
 </p>

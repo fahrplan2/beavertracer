@@ -12,7 +12,7 @@
     <li><a href="#panels">장치 패널</a></li>
     <li><a href="#run">실행 모드 — 시뮬레이션 실행</a></li>
     <li><a href="#trace">추적 모드 — 패킷 분석</a></li>
-    <li><a href="#project">저장 및 로드</a></li>
+    <li><a href="#project">저장 및 불러오기</a></li>
   </ol>
 </nav>
 
@@ -20,23 +20,23 @@
 
 <h3 id="modes">세 가지 모드</h3>
 <p>
-  Beaver Tracer는 세 가지 모드를 가지고 있습니다. 상단 도구 모음의 버튼을 사용하여 모드를 전환합니다.
+  BeaverTracer에는 세 가지 모드가 있다. 상단 도구 모음의 버튼을 사용하여 모드 간에 전환한다.
 </p>
 <table class="help-table">
   <tr>
     <td><i class="fas fa-pencil"></i></td>
     <td><strong>편집</strong></td>
-    <td>네트워크를 설계해 보세요 — 장치를 배치하고, 연결하고, 설정합니다.</td>
+    <td>네트워크를 설계한다 — 장치를 배치하고, 연결하고, 구성한다.</td>
   </tr>
   <tr>
     <td><i class="fas fa-play"></i></td>
     <td><strong>실행</strong></td>
-    <td>시뮬레이션을 시작하고 네트워크를 통해 트래픽이 흐르는 것을 관찰하세요.</td>
+    <td>시뮬레이션을 시작하고 네트워크를 통해 트래픽이 흐르는 것을 본다.</td>
   </tr>
   <tr>
     <td><i class="fas fa-magnifying-glass"></i></td>
     <td><strong>추적</strong></td>
-    <td>네트워크를 통해 이동하는 패킷을 캡처하고 검사합니다.</td>
+    <td>네트워크를 통해 이동하는 패킷을 캡처하고 검사한다.</td>
   </tr>
 </table>
 
@@ -44,8 +44,8 @@
 
 <h3 id="edit">편집 모드 — 네트워크 구축</h3>
 <p>
-  편집 모드에서는 화면의 왼쪽에 도구 모음이 나타납니다.
-  도구를 클릭하여 선택한 다음 캔버스에서 사용하세요.
+  편집 모드에서는 화면 왼쪽에 도구 모음이 나타납니다.
+  도구를 클릭하여 선택한 다음 캔버스에서 사용합니다.
 </p>
 
 <h4>도구</h4>
@@ -53,12 +53,12 @@
   <tr>
     <td><i class="fas fa-arrow-pointer"></i></td>
     <td><strong>선택</strong></td>
-    <td>기기를 클릭하여 패널을 열어요. 기기를 드래그하여 이동시켜요.</td>
+    <td>기기를 클릭하여 패널을 열어요. 기기를 드래그하여 이동할 수 있어요.</td>
   </tr>
   <tr>
     <td><i class="fas fa-link"></i></td>
     <td><strong>연결</strong></td>
-    <td>케이블로 두 기기를 연결해요 (아래 참고).</td>
+    <td>두 기기를 케이블로 연결해요(아래 참고).</td>
   </tr>
   <tr>
     <td><i class="fas fa-font"></i></td>
@@ -67,8 +67,8 @@
   </tr>
   <tr>
     <td><i class="fas fa-square"></i></td>
-    <td><strong>직사각형</strong></td>
-    <td>캔버스에 직사각형을 그려서 기기들을 시각적으로 그룹화해요.</td>
+    <td><strong>사각형</strong></td>
+    <td>캔버스에 사각형을 그려 기기를 시각적으로 그룹화해요.</td>
   </tr>
   <tr>
     <td><i class="fas fa-ban"></i></td>
@@ -78,13 +78,13 @@
 </table>
 
 <p>
-  <strong>팁:</strong> 캔버스의 아무 곳이나 오른쪽 클릭하면 현재 도구가 취소되고
-  <i class="fas fa-arrow-pointer"></i> 선택으로 돌아가요.
+  <strong>팁:</strong> 캔버스의 아무 곳이나 오른쪽 클릭하여 현재 도구를 취소하고
+  <i class="fas fa-arrow-pointer"></i> 선택으로 돌아갈 수 있어요.
 </p>
 
 <h4>기기 배치하기</h4>
 <ol>
-  <li>왼쪽 도구 모음의 기기 버튼을 클릭해요 (예: <i class="fas fa-desktop"></i> PC).</li>
+  <li>왼쪽 도구 모음에서 기기 버튼을 클릭해요(예: <i class="fas fa-desktop"></i> 컴퓨터).</li>
   <li>미리보기가 마우스 커서를 따라다녀요.</li>
   <li>캔버스를 클릭하여 기기를 배치해요.</li>
 </ol>
@@ -93,22 +93,22 @@
 <ol>
   <li><i class="fas fa-link"></i> <strong>연결</strong> 도구를 클릭해요.</li>
   <li>첫 번째 기기를 클릭하면 포트 선택기가 나타나요. 포트를 선택해요.</li>
-  <li>마우스를 두 번째 기기로 이동한 후 클릭해요 — 거기서도 포트를 선택해요.</li>
+  <li>마우스를 두 번째 기기로 이동한 후 클릭하고 여기서도 포트를 선택해요.</li>
   <li>케이블이 자동으로 생성돼요.</li>
 </ol>
 <p>
-  이미 사용 중인 포트는 비활성화되어 표시되고 선택할 수 없어요.
+  이미 사용 중인 포트는 비활성화되어 표시되며 선택할 수 없어요.
 </p>
 
 <h4>기기 이동하기</h4>
 <p>
-  <i class="fas fa-arrow-pointer"></i> 선택 모드에서 기기를 클릭하고 드래그하여 캔버스에서 위치를 변경해요.
+  <i class="fas fa-arrow-pointer"></i> 선택 모드에서 기기를 클릭하고 드래그하여 캔버스에서 위치를 바꿔요.
 </p>
 
-<h4>기기나 케이블 삭제하기</h4>
+<h4>기기 또는 케이블 삭제하기</h4>
 <ol>
   <li><i class="fas fa-ban"></i> <strong>삭제</strong> 도구를 클릭해요.</li>
-  <li>제거하려는 기기나 케이블을 클릭해요.</li>
+  <li>제거할 기기나 케이블을 클릭해요.</li>
 </ol>
 <p>
   기기를 삭제하면 연결된 모든 케이블이 자동으로 제거돼요.
@@ -116,117 +116,117 @@
 
 <hr>
 
-<h3 id="devices">장치</h3>
+<h3 id="devices">기기</h3>
 <p>
-  편집 모드 중에 왼쪽 도구 모음에서 이러한 장치들을 사용할 수 있습니다:
+  편집 모드에서 왼쪽 도구 모음에 이러한 기기들이 있어:
 </p>
 
 <table class="help-table">
   <tr>
     <td><i class="fas fa-desktop"></i></td>
-    <td><strong>PC</strong></td>
+    <td><strong>컴퓨터</strong></td>
     <td>
-      유선 네트워크 인터페이스가 있는 개인용 컴퓨터입니다. 앱을 실행할 수 있고
-      (예: 웹 브라우저 또는 핑 도구) IP 주소를 설정할 수 있습니다.
+      유선 네트워크 인터페이스가 있는 컴퓨터야. 앱을 실행하고
+      (예: 웹 브라우저나 ping 도구) IP 주소를 설정할 수 있어.
     </td>
   </tr>
   <tr>
-    <td><i class="fas fa-laptop"></i></td>
-    <td><strong>Laptop</strong></td>
+    <td><i class="fas fa-tablet-screen-button"></i></td>
+    <td><strong>태블릿</strong></td>
     <td>
-      PC와 같지만 케이블 대신 Wi-Fi를 통해 연결됩니다.
-      Access Point 또는 Home Router와 함께 사용합니다.
+      컴퓨터와 비슷하지만 케이블 대신 Wi-Fi로 연결돼.
+      액세스 포인트나 홈 라우터와 함께 사용해.
     </td>
   </tr>
   <tr>
     <td>SW</td>
-    <td><strong>Switch</strong></td>
+    <td><strong>스위치</strong></td>
     <td>
-      같은 네트워크 세그먼트의 여러 장치를 연결합니다.
-      MAC 주소 기반으로 프레임을 전달합니다.
-      VLAN과 스패닝 트리 프로토콜(STP)을 지원합니다.
+      같은 네트워크 세그먼트의 여러 기기를 연결해.
+      MAC 주소를 기반으로 프레임을 전달해.
+      VLAN과 스패닝 트리 프로토콜(STP)을 지원해.
     </td>
   </tr>
   <tr>
     <td>RT</td>
-    <td><strong>Router</strong></td>
+    <td><strong>라우터</strong></td>
     <td>
-      다양한 네트워크를 연결하고 패킷을 전달합니다.
-      정적 라우트, OSPF, BGP, IP 터널(VPN)을 지원합니다.
+      다른 네트워크를 연결하고 그 사이에서 패킷을 전달해.
+      정적 라우트, OSPF, BGP 및 IP 터널(VPN)을 지원해.
     </td>
   </tr>
   <tr>
     <td><i class="fas fa-house-signal"></i></td>
-    <td><strong>Home Router</strong></td>
+    <td><strong>홈 라우터</strong></td>
     <td>
-      라우터, DHCP 서버, NAT 게이트웨이, Wi-Fi 액세스 포인트가 결합된 장치입니다.
-      일반적인 가정용 인터넷 라우터와 비슷합니다.
-      Router에 연결하고(WAN으로) PC나 Laptop에도 연결합니다(LAN/Wi-Fi로).
-      포트 포워딩 규칙을 지원합니다.
+      라우터, DHCP 서버, NAT 게이트웨이 및 Wi-Fi 액세스 포인트가 결합된 기기야 —
+      일반적인 가정용 인터넷 라우터와 비슷해.
+      라우터에 연결하고(WAN으로) 컴퓨터나 태블릿에 연결해(LAN/Wi-Fi).
+      포트 포워딩 규칙을 지원해.
     </td>
   </tr>
   <tr>
     <td><i class="fas fa-wifi"></i></td>
-    <td><strong>Access Point</strong></td>
+    <td><strong>액세스 포인트</strong></td>
     <td>
-      유선 네트워크를 Wi-Fi 연결로 확장합니다.
-      유선 포트를 Switch나 Router에 연결한 후, Laptop을 무선으로 연결합니다.
+      유선 네트워크를 Wi-Fi 연결로 확장해.
+      유선 포트를 스위치나 라우터에 연결한 다음 태블릿을 무선으로 연결해.
     </td>
   </tr>
   <tr>
     <td><i class="fas fa-shield-halved"></i></td>
-    <td><strong>Firewall</strong></td>
+    <td><strong>방화벽</strong></td>
     <td>
-      설정 가능한 규칙에 따라 네트워크 세그먼트 간의 트래픽을 필터링합니다.
-      패널에서 규칙 집합과 일치하는 패킷의 실시간 로그를 보여줍니다.
+      설정 가능한 규칙에 따라 네트워크 세그먼트 간의 트래픽을 필터링해.
+      패널에 규칙 집합과 매칭된 패킷의 실시간 로그를 보여줘.
     </td>
   </tr>
 </table>
 
 <hr>
 
-<h3 id="panels">장치 패널</h3>
+<h3 id="panels">기기 패널</h3>
 <p>
-  캔버스의 장치를 클릭하면 화면 오른쪽에 나타나는 <strong>패널</strong> — 설정 창이 열린다.
-  해당 장치를 다시 클릭하거나 패널 헤더의 <strong>×</strong> 버튼을 클릭하면 닫을 수 있다.
+  캔버스에서 기기를 클릭하면 화면의 오른쪽에 나타나는 <strong>패널</strong> — 설정 창이 열린다.
+  기기를 다시 클릭하거나 (또는 패널 헤더의 <strong>×</strong> 버튼을 클릭하면) 닫을 수 있다.
 </p>
 
-<h4>장치 이름 바꾸기</h4>
+<h4>기기 이름 바꾸기</h4>
 <p>
-  패널 헤더의 장치 이름 옆에 있는 <i class="fas fa-pen"></i> 버튼을 클릭하면 커스텀 이름(예: "Office-PC" 또는 "Core-Router")을 지정할 수 있다.
+  패널 헤더의 기기 이름 옆에 있는 <i class="fas fa-pen"></i> 버튼을 클릭하면 사용자 지정 이름을 지정할 수 있다 (예: "Office-PC" 또는 "Core-Router").
 </p>
 
 <h4>라우터 탭</h4>
 <p>
-  라우터 패널에는 다음 탭들이 있다:
+  라우터 패널에는 다음의 탭이 있다:
 </p>
 <ul>
-  <li><strong>인터페이스</strong> — 각 포트의 IP 주소 설정</li>
-  <li><strong>라우팅 테이블 IPv4</strong> — IPv4 경로(정적 및 학습된 경로) 보기 및 편집</li>
+  <li><strong>인터페이스</strong> — 각 포트에서 IP 주소 설정</li>
+  <li><strong>라우팅 테이블 IPv4</strong> — IPv4 경로 보기 및 편집 (정적 및 학습된 경로)</li>
   <li><strong>라우팅 테이블 IPv6</strong> — IPv6 경로 보기 및 편집</li>
   <li><strong>OSPF</strong> — OSPF 동적 라우팅 설정 및 모니터링</li>
   <li><strong>BGP</strong> — BGP 이웃 설정 및 BGP 테이블 보기</li>
-  <li><strong>VPN</strong> — 라우터 간 IP 터널 설정</li>
+  <li><strong>VPN</strong> — 라우터 간에 IP 터널 설정</li>
 </ul>
 
 <h4>스위치 탭</h4>
 <p>
-  스위치 패널에는 <strong>스위치 주소 테이블(SAT)</strong>, <strong>VLAN</strong>
-  설정, <strong>스패닝 트리 프로토콜(STP)</strong> 설정을 위한 탭들이 있다.
+  스위치 패널에는 <strong>스위치 주소 테이블 (SAT)</strong>, <strong>VLAN</strong>
+  설정, 그리고 <strong>Spanning Tree Protocol (STP)</strong> 설정을 위한 탭이 있다.
 </p>
 
 <h4>홈 라우터 탭</h4>
 <p>
-  홈 라우터 패널에는 다음 탭들이 있다:
+  홈 라우터 패널에는 다음의 탭이 있다:
 </p>
 <ul>
   <li><strong>상태</strong> — 현재 WAN/LAN 상태 및 연결된 클라이언트 개요</li>
-  <li><strong>WAN</strong> — 업링크 설정(정적 IP 또는 DHCP)</li>
+  <li><strong>WAN</strong> — 업링크 설정 (정적 IP 또는 DHCP)</li>
   <li><strong>LAN</strong> — LAN 서브넷 및 IP 주소 설정</li>
   <li><strong>DHCP</strong> — 활성 임대 보기 및 DHCP 풀 설정</li>
-  <li><strong>WiFi</strong> — 내장 액세스 포인트 설정(SSID, 암호)</li>
+  <li><strong>WiFi</strong> — 기본 제공 액세스 포인트 설정 (SSID, 비밀번호)</li>
   <li><strong>NAT</strong> — 활성 NAT 연결 테이블 보기</li>
-  <li><strong>포트 포워딩</strong> — 수신 포트를 LAN 호스트로 전달하는 규칙 정의</li>
+  <li><strong>포트 포워딩</strong> — 들어오는 포트를 LAN 호스트로 전달하는 규칙 정의</li>
 </ul>
 
 <h4>방화벽 탭</h4>
@@ -235,83 +235,82 @@
   허용되거나 차단된 패킷을 보여주는 <strong>로그</strong> 탭이 있다.
 </p>
 
-<h4>PC 및 노트북</h4>
+<h4>컴퓨터 및 태블릿</h4>
 <p>
-  PC와 노트북은 패널 내에 완전히 시뮬레이션된 운영 체제를 가지고 있다.
-  데스크톱에서 앱을 열고, 네트워크 설정을 구성하고, 명령어를 실행할 수 있다.
+  컴퓨터와 태블릿에는 패널 내부에 완전한 시뮬레이션 운영 체제가 있다.
+  데스크톱에서 앱을 열고, 네트워크 설정을 구성하고, 명령을 실행할 수 있다.
 </p>
 
 <hr>
 
-<h3 id="run">실행 모드 — 시뮬레이션 실행</h3>
+<h3 id="run">실행 모드 — 시뮬레이션 실행하기</h3>
 <p>
-  <i class="fas fa-play"></i> <strong>실행</strong> 모드로 전환하여 시뮬레이션을 시작하세요.
-  네트워크가 활성화됩니다: 장치들이 패킷을 교환하고, DHCP 임대가 할당되며,
-  라우팅 테이블이 업데이트되는 식으로 말이에요.
+  <i class="fas fa-play"></i> <strong>실행</strong> 모드로 전환하여 시뮬레이션을 시작해보자.
+  네트워크가 활성화되면 기기들이 패킷을 교환하고, DHCP 임대가 할당되며,
+  라우팅 테이블이 업데이트되는 등의 작업이 진행된다.
 </p>
 
 <h4>속도 조절</h4>
 <p>
-  상단 도구 모음의 속도 버튼을 사용하여 시뮬레이션이 실행되는 속도를 조절하세요:
+  상단 도구 모음의 속도 버튼을 사용하여 시뮬레이션 실행 속도를 조절할 수 있다:
 </p>
 <table class="help-table">
-  <tr><td><strong>0.5×</strong></td><td>느림 — 개별 단계를 관찰하기 좋음</td></tr>
+  <tr><td><strong>0.5×</strong></td><td>느림 — 개별 단계를 관찰하기에 좋음</td></tr>
   <tr><td><strong>1×</strong></td><td>정상 속도</td></tr>
   <tr><td><strong>4×</strong></td><td>빠름</td></tr>
   <tr><td><strong>8×</strong></td><td>매우 빠름</td></tr>
 </table>
 
-<h4>일시 정지 및 재설정</h4>
+<h4>일시 중지 및 초기화</h4>
 <table class="help-table">
   <tr>
     <td><i class="fas fa-pause"></i></td>
-    <td><strong>일시 정지</strong></td>
-    <td>시뮬레이션을 현재 상태에서 멈춥니다.</td>
+    <td><strong>일시 중지</strong></td>
+    <td>시뮬레이션을 현재 상태에서 멈춘다.</td>
   </tr>
   <tr>
     <td><i class="fas fa-arrow-rotate-left"></i></td>
-    <td><strong>재설정</strong></td>
-    <td>시뮬레이션을 처음부터 다시 시작합니다 (모든 동적 상태가 초기화됩니다).</td>
+    <td><strong>초기화</strong></td>
+    <td>시뮬레이션을 처음부터 다시 시작한다(모든 동적 상태가 초기화됨).</td>
   </tr>
 </table>
 
 <p>
-  <strong>참고:</strong> 실행 모드에서는 네트워크 토폴로지를 편집할 수 없습니다.
-  먼저 <i class="fas fa-pencil"></i> 편집 모드로 전환하세요.
+  <strong>참고:</strong> 실행 모드에서는 네트워크 토폴로지를 편집할 수 없다.
+  먼저 <i class="fas fa-pencil"></i> 편집 모드로 전환하자.
 </p>
 
 <hr>
 
 <h3 id="trace">추적 모드 — 패킷 분석</h3>
 <p>
-  <i class="fas fa-magnifying-glass"></i> <strong>추적</strong> 모드로 전환하여 Wireshark와 유사한
-  내장 패킷 분석기를 열어보자.
+  <i class="fas fa-magnifying-glass"></i> <strong>추적</strong> 모드로 전환하여 Wireshark와 유사한 내장 패킷 분석기를 엽니다.
 </p>
 <p>
-  맨 위에서 캡처하려는 <strong>장치</strong>와 <strong>포트</strong>를 선택해.
-  그 포트를 통과하는 모든 패킷이 기록되고 목록으로 표시된다.
+  상단에서 캡처할 <strong>장치</strong>와 <strong>포트</strong>를 선택합니다.
+  해당 포트를 통과하는 모든 패킷이 기록되고 목록에 표시됩니다.
 </p>
 <p>
-  목록의 패킷을 클릭하면 완전한 세부 정보를 볼 수 있어:
-  프로토콜 계층, 헤더 필드, 페이로드 — 전문 네트워크 도구가 표시하는 것과 정확히 같다.
+  목록의 패킷을 클릭하여 전체 세부 정보를 확인합니다:
+  프로토콜 레이어, 헤더 필드 및 페이로드 — 전문 네트워크 도구가 표시하는 방식과 동일합니다.
 </p>
 <p>
-  캡처는 시뮬레이션이 실행 중일 때 자동으로 작동한다.
-  캡처된 데이터를 잃지 않고도 추적 모드와 실행 모드 사이를 언제든지 전환할 수 있어.
+  시뮬레이션이 실행되는 동안 캡처가 자동으로 실행됩니다.
+  캡처된 데이터를 잃지 않고 언제든지 추적 모드와 실행 모드 사이를 전환할 수 있습니다.
 </p>
 
 <hr>
 
 <h3 id="project">저장 및 로드</h3>
 <p>
-  네트워크 디자인을 파일로 저장했다가 나중에 다시 로드할 수 있어.
-  상단 툴바의 버튼들을 사용하면 돼 (편집 모드에서 보임):
+  네트워크 설계를 파일로 저장했다가 나중에 다시 로드할 수 있어.
+  상단 도구 모음의 버튼을 사용하면 돼 (편집 모드에서 표시됨):
 </p>
 <table class="help-table">
   <tr>
     <td><i class="fas fa-file"></i></td>
     <td><strong>새로 만들기</strong></td>
-    <td>빈 캔버스에서 시작해. 저장하지 않은 변경 사항은 모두 없어져.</td>
+    <td>빈 캔버스로 시작해. 저장하지 않은 변경 사항은 모두 손실돼.</td>
   </tr>
   <tr>
     <td><i class="fas fa-file-arrow-up"></i></td>
@@ -328,5 +327,5 @@
 <hr>
 
 <p class="footer">
-  문제가 있어? 네트워크가 제대로 연결되어 있는지, 그리고 모든 기기에 유효한 IP 주소가 설정되어 있는지 확인해봐.
+  문제가 있니? 네트워크가 올바르게 연결되어 있고 모든 장치에 유효한 IP 주소가 설정되어 있는지 확인해봐.
 </p>

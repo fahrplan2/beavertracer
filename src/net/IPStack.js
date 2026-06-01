@@ -1570,6 +1570,7 @@ export class IPStack extends Observable {
                 ip6: itf.ip6?.toString?.() ?? null,
                 prefixLength6: itf.prefixLength6 ?? 0,
                 ip6LL: itf.ip6LL?.toString?.() ?? null,
+                slaac: !!itf.slaac,
                 raEnabled: !!itf.raEnabled,
                 ...(itf instanceof VLANSubInterface
                     ? { vid: itf.vid, parentName: itf._parentIface.name }
@@ -1637,7 +1638,9 @@ export class IPStack extends Observable {
             const prefixLength = Number(row.prefixLength ?? (ip.isV4() ? 24 : 64));
             stack.configureInterface(i, { name: itf.name, ip, prefixLength });
 
-            if (row.ip6) {
+            if (row.slaac) {
+                stack.configureInterface(i, { slaac: true });
+            } else if (row.ip6) {
                 try {
                     const ip6 = IPAddress.fromString(String(row.ip6));
                     const prefixLength6 = Number(row.prefixLength6 ?? 64);

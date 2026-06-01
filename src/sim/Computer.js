@@ -16,9 +16,9 @@ import { IPv4ConfigApp } from "../apps/IPv4ConfigApp.js";
  */
 
 
-export class PC extends SimulatedObject {
+export class Computer extends SimulatedObject {
 
-    kind="PC";
+    kind="Computer";
     icon="fa-desktop";
 
     /** @type {IPStack} */
@@ -41,9 +41,9 @@ export class PC extends SimulatedObject {
      * @param {string} name
      */
 
-    constructor(name = t("pc.title")) {
+    constructor(name = t("computer.title")) {
         super(name);
-        this.root.classList.add("pc");
+        this.root.classList.add("computer");
 
         const fs = new VirtualFileSystem();
         const net = new IPStack(1, name);
@@ -62,7 +62,7 @@ export class PC extends SimulatedObject {
         const installedApps = this.os.getInstalledAppIds();
         return {
             ...super.toJSON(),
-            kind: "PC",
+            kind: "Computer",
             net: this.net.toJSON(),
             fs: this.fs.toJSON(),
             dns: this.dns.serverIp?.toString() ?? null,
@@ -73,7 +73,7 @@ export class PC extends SimulatedObject {
 
     /** @param {any} n */
     static fromJSON(n) {
-        const obj = new PC(n.name ?? "PC");
+        const obj = new Computer(n.name ?? t("computer.title"));
         obj._applyBaseJSON(n);
 
         if (n.net) obj.os.net = IPStack.fromJSON(n.net);

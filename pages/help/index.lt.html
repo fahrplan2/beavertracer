@@ -9,9 +9,9 @@
     <li><a href="#modes">Trys režimai</a></li>
     <li><a href="#edit">Redagavimo režimas — tinklo kūrimas</a></li>
     <li><a href="#devices">Įrenginiai</a></li>
-    <li><a href="#panels">Įrenginio skydeliai</a></li>
+    <li><a href="#panels">Įrenginio sritys</a></li>
     <li><a href="#run">Paleidimo režimas — simuliacijos paleidimas</a></li>
-    <li><a href="#trace">Sekimo režimas — paketų analizė</a></li>
+    <li><a href="#trace">Sekimo režimas — paketų analizavimas</a></li>
     <li><a href="#project">Išsaugojimas ir įkėlimas</a></li>
   </ol>
 </nav>
@@ -20,32 +20,32 @@
 
 <h3 id="modes">Trys režimai</h3>
 <p>
-  BeaverTracer turi tris režimus. Tu perjungi juos naudodamas mygtukus viršutinėje įrankių juostoje.
+  BeaverTracer turi tris režimus. Jų keičias naudodamas mygtukus viršutinėje įrankių juostoje.
 </p>
 <table class="help-table">
   <tr>
     <td><i class="fas fa-pencil"></i></td>
     <td><strong>Redagavimas</strong></td>
-    <td>Suprojektuok savo tinklą — išdėstyk įrenginius, sujungk juos, sukonfigūruok juos.</td>
+    <td>Suprojektuok savo tinklą — padėk įrenginius, sujungk juos, konfigūruok juos.</td>
   </tr>
   <tr>
     <td><i class="fas fa-play"></i></td>
-    <td><strong>Vykdymas</strong></td>
-    <td>Pradėk simuliaciją ir stebėk, kaip srautai teka per tavo tinklą.</td>
+    <td><strong>Paleisti</strong></td>
+    <td>Pradėk simuliaciją ir stebėk, kaip srautas teka per tavo tinklą.</td>
   </tr>
   <tr>
     <td><i class="fas fa-magnifying-glass"></i></td>
     <td><strong>Sekimas</strong></td>
-    <td>Užfiksuok ir peržiūrėk paketų kelionę per tavo tinklą.</td>
+    <td>Sugauk ir peržiūrėk paketus, keliaujančius per tavo tinklą.</td>
   </tr>
 </table>
 
 <hr>
 
-<h3 id="edit">Redagavimo režimas — Tinklo kūrimas</h3>
+<h3 id="edit">Redagavimo režimas — tinklo kūrimas</h3>
 <p>
-  Redagavimo režime kairėje ekrano pusėje pasirodo įrankių juosta.
-  Pasirink įrankį jį spustelėdamas, tada naudok jį drobėje.
+  Redagavimo režimu kairėje ekrano pusėje atsiranda įrankių juosta.
+  Pasirink įrankį jį paspaudęs, tada naudok jį drobėje.
 </p>
 
 <h4>Įrankiai</h4>
@@ -53,17 +53,17 @@
   <tr>
     <td><i class="fas fa-arrow-pointer"></i></td>
     <td><strong>Pasirinkti</strong></td>
-    <td>Spustelėk įrenginį, kad atidarytum jo skydelį. Nutempk įrenginį, kad jį perkeltum.</td>
+    <td>Spustelėk įrenginį, kad atidarytum jo skydelį. Vilkdamas įrenginį, jį perkelk.</td>
   </tr>
   <tr>
     <td><i class="fas fa-link"></i></td>
-    <td><strong>Sąsaja</strong></td>
-    <td>Sujunk du įrenginius kabeliu (žr. žemiau).</td>
+    <td><strong>Nuoroda</strong></td>
+    <td>Sujungk du įrenginius kabelu (žr. žemiau).</td>
   </tr>
   <tr>
     <td><i class="fas fa-font"></i></td>
     <td><strong>Tekstas</strong></td>
-    <td>Padėk tekstinį žymą drobėje, kad paaiškintum savo diagramą.</td>
+    <td>Padėk tekstinį žymą drobėje, kad pridėtum komentarą prie diagramos.</td>
   </tr>
   <tr>
     <td><i class="fas fa-square"></i></td>
@@ -72,28 +72,28 @@
   </tr>
   <tr>
     <td><i class="fas fa-ban"></i></td>
-    <td><strong>Trinti</strong></td>
+    <td><strong>Ištrinti</strong></td>
     <td>Spustelėk įrenginį arba kabelį, kad jį pašalintum.</td>
   </tr>
 </table>
 
 <p>
-  <strong>Patarimas:</strong> Dešiniu pelės mygtuku spustelėk bet kur drobėje, kad atšauktum esamą įrankį
+  <strong>Patarimas:</strong> Dešiniuoju pelės mygtuku spustelėk bet kur drobėje, kad atšauktum esamą įrankį
   ir grįžtum prie <i class="fas fa-arrow-pointer"></i> Pasirinkti.
 </p>
 
-<h4>Įrenginio dėjimas</h4>
+<h4>Įrenginio padėjimas</h4>
 <ol>
-  <li>Spustelėk įrenginio mygtuką kairėje įrankių juostoje (pvz. <i class="fas fa-desktop"></i> PC).</li>
-  <li>Peržiūra seka jūsų pelės žymeklį.</li>
+  <li>Spustelėk įrenginio mygtuką kairėje įrankių juostoje (pvz. <i class="fas fa-desktop"></i> Kompiuteris).</li>
+  <li>Peržiūra seka tavo pelės žymeklį.</li>
   <li>Spustelėk drobėje, kad padėtum įrenginį.</li>
 </ol>
 
 <h4>Dviejų įrenginių sujungimas</h4>
 <ol>
-  <li>Spustelėk <i class="fas fa-link"></i> <strong>Sąsaja</strong> įrankį.</li>
-  <li>Spustelėk pirmąjį įrenginį — pasirodo prievado parinkiklis. Pasirink prievadą.</li>
-  <li>Perkelk pelės žymeklį į antrąjį įrenginį ir spustelėk jį — pasirink prievadą ir ten.</li>
+  <li>Spustelėk <i class="fas fa-link"></i> <strong>Nuoroda</strong> įrankį.</li>
+  <li>Spustelėk pirmąjį įrenginį — atsiranda prievado parinkiklis. Pasirink prievadą.</li>
+  <li>Perkelk pelę prie antrojo įrenginio ir jį spustelėk — taip pat pasirink prievadą.</li>
   <li>Kabelis sukuriamas automatiškai.</li>
 </ol>
 <p>
@@ -102,40 +102,40 @@
 
 <h4>Įrenginio perkėlimas</h4>
 <p>
-  <i class="fas fa-arrow-pointer"></i> Pasirinkti režime spustelėk ir nutempk bet kurį įrenginį, kad jį perkeltum drobėje.
+  <i class="fas fa-arrow-pointer"></i> Pasirinkti režimu spustelėk ir vilkdamas bet kurį įrenginį, jį perkėlk drobėje.
 </p>
 
-<h4>Įrenginio arba kabelio trynimas</h4>
+<h4>Įrenginio ar kabelio ištrynimas</h4>
 <ol>
-  <li>Spustelėk <i class="fas fa-ban"></i> <strong>Trinti</strong> įrankį.</li>
-  <li>Spustelėk įrenginį arba kabelį, kurį nori pašalinti.</li>
+  <li>Spustelėk <i class="fas fa-ban"></i> <strong>Ištrinti</strong> įrankį.</li>
+  <li>Spustelėk įrenginį arba kabelį, kurį norite pašalinti.</li>
 </ol>
 <p>
-  Kai ištrinai įrenginį, visi su juo susieti kabeliai automatiškai pašalinami.
+  Kai ištrinai įrenginį, visi su juo sujungti kabeliai automatiškai pašalinami.
 </p>
 
 <hr>
 
 <h3 id="devices">Įrenginiai</h3>
 <p>
-  Šie įrenginiai yra prieinami kairėje įrankių juostoje redagavimo režimo metu:
+  Šie įrenginiai yra prieinami kairėje įrankių juostoje Redagavimo režimu:
 </p>
 
 <table class="help-table">
   <tr>
     <td><i class="fas fa-desktop"></i></td>
-    <td><strong>PC</strong></td>
+    <td><strong>Kompiuteris</strong></td>
     <td>
-      Asmeninis kompiuteris su laidine tinklo sąsaja. Tu galite paleisti jame programas
-      (pvz., žiniatinklio naršyklę arba ping įrankį) ir konfigūruoti jo IP adresą.
+      Kompiuteris su laidiniu tinklo sąsaja. Jame gali paleisti programas
+      (pvz., žiniatinklio naršyklę arba „ping" įrankį) ir konfigūruoti jo IP adresą.
     </td>
   </tr>
   <tr>
-    <td><i class="fas fa-laptop"></i></td>
-    <td><strong>Nešiojamasis kompiuteris</strong></td>
+    <td><i class="fas fa-tablet-screen-button"></i></td>
+    <td><strong>Planšetė</strong></td>
     <td>
-      Panašus į PC, bet jungiasi per Wi-Fi vietoje laido.
-      Naudok jį kartu su prieigos tašku arba namų maršrutizatoriumi.
+      Panašus į kompiuterį, bet jungiasi per „Wi-Fi" vietoj laido.
+      Naudok jį kartu su prieigos tašku arba namu maršrutizatoriumi.
     </td>
   </tr>
   <tr>
@@ -144,41 +144,41 @@
     <td>
       Sujungia kelis įrenginius tame pačiame tinklo segmente.
       Persiuntinėja kadrus pagal MAC adresus.
-      Palaiko VLAN ir Spanning Tree Protocol (STP).
+      Palaiko VLAN ir „Spanning Tree Protocol" (STP).
     </td>
   </tr>
   <tr>
     <td>RT</td>
     <td><strong>Maršrutizatorius</strong></td>
     <td>
-      Sujungia skirtingus tinklus ir persiuntinėja paketų jų tarpe.
-      Palaiko statinius maršrutus, OSPF, BGP ir IP tunelių (VPN).
+      Sujungia skirtingus tinklus ir persiuntinėja paketus tarp jų.
+      Palaiko statinius maršrutus, OSPF, BGP ir IP tunelius (VPN).
     </td>
   </tr>
   <tr>
     <td><i class="fas fa-house-signal"></i></td>
-    <td><strong>Namų maršrutizatorius</strong></td>
+    <td><strong>Namo maršrutizatorius</strong></td>
     <td>
-      Kombinuotas maršrutizatorius, DHCP serveris, NAT vartai ir Wi-Fi prieigos taškas —
-      panašus į tipinį namų interneto maršrutizatorių.
-      Jungk jį prie maršrutizatoriaus (kaip WAN) ir prie PC arba nešiojamųjų kompiuterių (kaip LAN/Wi-Fi).
-      Palaiko prievadų peradresavimo taisykles.
+      Kombinuotas maršrutizatorius, DHCP serveris, NAT šliuzas ir „Wi-Fi" prieigos taškas —
+      panašus į įprastą namo interneto maršrutizatorių.
+      Jį prijunk prie maršrutizatoriaus (kaip WAN) ir prie kompiuterių arba planšečių (kaip LAN/Wi-Fi).
+      Palaiko prievadų nukreipimo taisykles.
     </td>
   </tr>
   <tr>
     <td><i class="fas fa-wifi"></i></td>
     <td><strong>Prieigos taškas</strong></td>
     <td>
-      Išplečia laidinį tinklą Wi-Fi jungtimi.
-      Jungk jo laidinį prievadą prie jungiklio arba maršrutizatoriaus, tada nešiojamųjų kompiuterių susieti su juo belaidžiai.
+      Išplečia laidinį tinklą „Wi-Fi" ryšiu.
+      Jo laidinį prievadą prijunk prie jungiklio arba maršrutizatoriaus, tada belaidžiai prijunk planšetes.
     </td>
   </tr>
   <tr>
     <td><i class="fas fa-shield-halved"></i></td>
-    <td><strong>Ugnis siena</strong></td>
+    <td><strong>Kompiuterinis židiniu</strong></td>
     <td>
       Filtruoja srautą tarp tinklo segmentų pagal konfigūruojamas taisykles.
-      Skydelis rodo taisyklių rinkinį ir tiesioginį atitinkamų paketų žurnalą.
+      Skydelis rodo taisyklių rinkinį ir tiesiogiai atnaujinamas sugaudytų paketų žurnalą.
     </td>
   </tr>
 </table>
@@ -187,7 +187,7 @@
 
 <h3 id="panels">Įrenginio panelės</h3>
 <p>
-  Spustelėk bet kurį įrenginį drobėje, kad atidarytum jo <strong>panelę</strong> — konfigūracijos langą,
+  Spustelėk bet kurį įrenginį ant drobės, kad atidarytum jo <strong>panelę</strong> — konfigūracijos langą,
   kuris atsiranda dešinėje ekrano pusėje.
   Spustelėk įrenginį dar kartą (arba <strong>×</strong> mygtuką panelės antraštėje), kad jį uždarytum.
 </p>
@@ -203,7 +203,7 @@
   Maršrutizatoriaus panelė turi šiuos skirtukus:
 </p>
 <ul>
-  <li><strong>Sąsajos</strong> — konfigūruok IP adresus kiekviename prievade</li>
+  <li><strong>Sąsajos</strong> — konfigūruok IP adresus kiekvienameporte</li>
   <li><strong>Maršrutizavimo lentelė IPv4</strong> — peržiūrėk ir redaguok IPv4 maršrutus (statinius ir išmoktus)</li>
   <li><strong>Maršrutizavimo lentelė IPv6</strong> — peržiūrėk ir redaguok IPv6 maršrutus</li>
   <li><strong>OSPF</strong> — konfigūruok ir stebėk OSPF dinaminį maršrutizavimą</li>
@@ -223,112 +223,112 @@
 </p>
 <ul>
   <li><strong>Būsena</strong> — dabartinės WAN/LAN būsenos ir prijungtų klientų apžvalga</li>
-  <li><strong>WAN</strong> — konfigūruok nuorodą į aukštesnę lygį (statinis IP arba DHCP)</li>
-  <li><strong>LAN</strong> — konfigūruok LAN podsklaidą ir IP adresą</li>
-  <li><strong>DHCP</strong> — peržiūrėk aktyvias nuomos sutartis ir konfigūruok DHCP sritį</li>
+  <li><strong>WAN</strong> — konfigūruok nuorodą (statinis IP arba DHCP)</li>
+  <li><strong>LAN</strong> — konfigūruok LAN podsistemą ir IP adresą</li>
+  <li><strong>DHCP</strong> — peržiūrėk aktyvias nuomos sąskaitas ir konfigūruok DHCP baseiną</li>
   <li><strong>WiFi</strong> — konfigūruok įmontuotą prieigos tašką (SSID, slaptažodis)</li>
-  <li><strong>NAT</strong> — peržiūrėk aktyvią NAT ryšio lentelę</li>
-  <li><strong>Prievadų peradresavimas</strong> — apibrėžk taisykles, kaip peradresuoti gaunamus prievadus į LAN pagrindinius kompiuterius</li>
+  <li><strong>NAT</strong> — peržiūrėk aktyvią NAT ryšių lentelę</li>
+  <li><strong>Prievadų peradresavimas</strong> — apibrėžk taisykles, skirtas nukreipti gaunamus prievadus į LAN kompiuterius</li>
 </ul>
 
-<h4>Ugniasienės skirtukai</h4>
+<h4>Užkardos skirtukai</h4>
 <p>
-  Ugniasienės panelė turi <strong>taisyklių</strong> skirtuką filtro taisyklėms valdyti ir
-  <strong>žurnalo</strong> skirtuką, kuriame rodomi paketai, kurie buvo praleisti arba atmesti.
+  Užkardos panelė turi <strong>taisyklių</strong> skirtuką filtravimo taisyklėms valdyti ir
+  <strong>žurnalo</strong> skirtuką, kuriame parodyti leisti arba atmesti paketai.
 </p>
 
-<h4>Asmeninis kompiuteris ir nešiojamasis kompiuteris</h4>
+<h4>Kompiuteris ir planšetinis kompiuteris</h4>
 <p>
-  Asmeniniai kompiuteriai ir nešiojamieji kompiuteriai turi visiškai simuliuotą operacinę sistemą savo panelėje.
-  Gali atidaryti programas iš darbalaukio, konfigūruoti tinklo nustatymus ir vykdyti komandas.
+  Kompiuteriai ir planšetiniai kompiuteriai turi visą imituotą operacinę sistemą savo panelėje.
+  Tu gali atidaryti programas iš darbalaukio, konfigūruoti tinklo nustatymus ir paleisti komandas.
 </p>
 
 <hr>
 
-<h3 id="run">Paleisti režimas — Simuliacijos paleisti</h3>
+<h3 id="run">Paleidimo režimas — Simuliacijos paleidimas</h3>
 <p>
-  Perjunkis į <i class="fas fa-play"></i> <strong>Paleisti</strong> režimą, kad pradėtum simuliaciją.
-  Tinklas tampa aktyvus: įrenginiai keičiasi paketais, DHCP nuomos yra priskiriamos,
-  maršrutizavimo lentelės atsinaujina ir t. t.
+  Perjunk į <i class="fas fa-play"></i> <strong>Paleidimą</strong>, kad pradėtum simuliaciją.
+  Tinklas tampa aktyvus: įrenginiai keičiasi paketais, DHCP nuomos yra priskirtos,
+  maršrutizavimo lentelės atnaujinamos ir pan.
 </p>
 
-<h4>Greičio valdikliai</h4>
+<h4>Greičio valdymas</h4>
 <p>
-  Naudok greičio mygtukus viršutinėje įrankių juostoje, kad valdytum, kiek greitai veikia simuliacija:
+  Naudok greičio mygtukus viršutinėje įrankių juostoje, norėdamas valdyti simuliacijos greitį:
 </p>
 <table class="help-table">
-  <tr><td><strong>0.5×</strong></td><td>Lėta — gera atskiriems žingsniams stebėti</td></tr>
+  <tr><td><strong>0,5×</strong></td><td>Lėtas — puikus atskirų žingsnių stebėjimui</td></tr>
   <tr><td><strong>1×</strong></td><td>Normalus greitis</td></tr>
-  <tr><td><strong>4×</strong></td><td>Greita</td></tr>
-  <tr><td><strong>8×</strong></td><td>Labai greita</td></tr>
+  <tr><td><strong>4×</strong></td><td>Greitas</td></tr>
+  <tr><td><strong>8×</strong></td><td>Labai greitas</td></tr>
 </table>
 
-<h4>Pauzė ir iš naujo nustatyti</h4>
+<h4>Pauzavimas ir nustatymas iš naujo</h4>
 <table class="help-table">
   <tr>
     <td><i class="fas fa-pause"></i></td>
-    <td><strong>Pauzė</strong></td>
-    <td>Sustabdyk simuliaciją jos dabartinėje būsenoje.</td>
+    <td><strong>Pauzavimas</strong></td>
+    <td>Sulaikyti simuliaciją jos dabartinėje būsenoje.</td>
   </tr>
   <tr>
     <td><i class="fas fa-arrow-rotate-left"></i></td>
-    <td><strong>Iš naujo nustatyti</strong></td>
-    <td>Paleisk simuliaciją iš pradžios (visa dinaminė būsena yra išvalyta).</td>
+    <td><strong>Nustatyti iš naujo</strong></td>
+    <td>Iš naujo pradėti simuliaciją nuo pradžios (visa dinaminė būsena išvaloma).</td>
   </tr>
 </table>
 
 <p>
-  <strong>Pastaba:</strong> Tu negalima redaguoti tinklo topologijos, kai esi paleisti režime.
-  Pirmiausia perjunkis atgal į <i class="fas fa-pencil"></i> Redagavimo režimą.
+  <strong>Pastaba:</strong> Tu negali redaguoti tinklo topologijos paleidimo režime.
+  Pirmiausia perjunk atgal į <i class="fas fa-pencil"></i> redagavimo režimą.
 </p>
 
 <hr>
 
 <h3 id="trace">Trace režimas — paketų analizavimas</h3>
 <p>
-  Perjunk į <i class="fas fa-magnifying-glass"></i> <strong>Trace</strong> režimą, kad atidaryti
+  Perjunkite į <i class="fas fa-magnifying-glass"></i> <strong>Trace</strong> režimą, kad atvertumėte
   įmontuotą paketų analizatorių — panašų į Wireshark.
 </p>
 <p>
-  Viršuje pasirink <strong>įrenginį</strong> ir <strong>uostą</strong>, iš kurių nori užfiksuoti.
-  Visi paketai, einantys per tą uostą, yra įrašomi ir rodomi sąraše.
+  Viršuje pasirinkite <strong>įrenginį</strong> ir <strong>prievadą</strong>, iš kurio norite fiksuoti duomenis.
+  Visi paketai, praeinantys per tą prievadą, yra įrašomi ir rodomi sąraše.
 </p>
 <p>
-  Spustelėk bet kurį paketą sąraše, kad pamatytum jo išsamias detales:
-  protokolo sluoksnius, antraštės laukus ir naudingąją apkrovą — tiksliai taip, kaip parodytų profesionalus tinklo įrankis.
+  Spustelėkite bet kurį paketą sąraše, kad pamatytumėte jo pilną informaciją:
+  protokolo sluoksnius, antraščės laukus ir naudingąją apkrovą — lygiai taip, kaip profesionali tinklo priemonė.
 </p>
 <p>
-  Užfiksavimas vyksta automatiškai, kai modeliavimas veikia.
-  Tu gali persijungti tarp Trace režimo ir Run režimo bet kuriuo metu neprarasdamas užfiksuotų duomenų.
+  Fiksavimas vyksta automatiškai, kai modeliavimas vyksta.
+  Galite bet kuriuo metu perjungti tarp Trace režimo ir Run režimo, neprarasdami fiksuotų duomenų.
 </p>
 
 <hr>
 
 <h3 id="project">Išsaugojimas ir įkėlimas</h3>
 <p>
-  Tavo tinklo projektą galima išsaugoti kaip failą ir vėliau jį iš naujo įkėlti.
-  Naudok mygtukus viršutinėje įrankių juostoje (matomi Redagavimo režime):
+  Jūsų tinklo projektą galima išsaugoti kaip failą ir vėliau įkelti iš naujo.
+  Naudokite mygtukus viršutinėje įrankių juostoje (matomi redagavimo režime):
 </p>
 <table class="help-table">
   <tr>
     <td><i class="fas fa-file"></i></td>
     <td><strong>Naujas</strong></td>
-    <td>Pradėti su tuščiu drobės lapu. Bet kokie neišsaugoti pakeitimai bus ištrinti.</td>
+    <td>Pradėti su tuščiu drobės lapu. Visi neišsaugoti pakeitimai bus pratrinti.</td>
   </tr>
   <tr>
     <td><i class="fas fa-file-arrow-up"></i></td>
-    <td><strong>Įkėlti</strong></td>
-    <td>Atidaryti anksčiau išsaugotą modeliavimo failą.</td>
+    <td><strong>Įkelti</strong></td>
+    <td>Atidaryti anksčiau išsaugotą simuliacijos failą.</td>
   </tr>
   <tr>
     <td><i class="fas fa-file-arrow-down"></i></td>
     <td><strong>Išsaugoti</strong></td>
-    <td>Atsisiųsti dabartinį modeliavimą kaip failą į tavo kompiuterį.</td>
+    <td>Atsisiųsti esamą simuliaciją kaip failą į jūsų kompiuterį.</td>
   </tr>
 </table>
 
 <hr>
 
 <p class="footer">
-  Turi problemų? Patikrink, kad tavo tinklas yra teisingai prijungtas ir kad visi įrenginiai turi sukonfigūruotus galiojančius IP adresus.
+  Turite problemų? Patikrinkite, ar jūsų tinklas yra tinkamai prijungtas ir ar visi įrenginiai turi sukonfigūruotus galiojančius IP adresus.
 </p>

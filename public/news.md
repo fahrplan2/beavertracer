@@ -1,3 +1,12 @@
+## Version 0.1.24
+
+- renamed Laptop to Tablet and PC to Computer
+
+## Version 0.1.23
+
+- animation performance issues fixed
+- loading of tracing window should be faster now
+
 ## Version 0.1.22
 
 - Examples added.
