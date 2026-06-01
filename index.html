@@ -16,7 +16,19 @@
 -->
 <head>
     <meta charset="utf-8" />
-    <script>(function(){var t=new URLSearchParams(location.search).get("theme");if(t==="dark"||t==="light")document.documentElement.dataset.theme=t;})()</script>
+    <script>
+      (function () {
+        const p = new URLSearchParams(location.search);
+
+        const theme = p.get("theme");
+        if (theme === "dark" || theme === "light")
+          document.documentElement.dataset.theme = theme;
+
+        const hue = parseFloat(p.get("hue"));
+        if (!isNaN(hue))
+          document.documentElement.style.setProperty("--primary", `oklch(81.211% 0.05 ${hue})`);
+      })();
+    </script>
     <link rel="icon" href="/beaver-icon.svg" type="image/svg+xml">
     <title>Beaver Tracer — Browser-based Network Simulator</title>
 
