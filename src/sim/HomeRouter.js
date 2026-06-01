@@ -844,12 +844,15 @@ export class HomeRouter extends SimulatedObject {
 
         this._wanDhcpXid = (Math.random() * 0xFFFFFFFF) >>> 0;
 
+        const chaddr16 = new Uint8Array(16);
+        chaddr16.set(this._wanMac, 0);
+
         // DISCOVER
         const discover = new DHCPPacket({
             op: 1, htype: 1, hlen: 6, hops: 0, xid: this._wanDhcpXid,
             secs: 0, flags: 0x8000, ciaddr: IPNumberToUint8(0), yiaddr: IPNumberToUint8(0),
             siaddr: IPNumberToUint8(0), giaddr: IPNumberToUint8(0),
-            chaddr: this._wanMac, sname: new Uint8Array(64), file: new Uint8Array(128), options: [],
+            chaddr: chaddr16, sname: new Uint8Array(64), file: new Uint8Array(128), options: [],
         });
         discover.setMessageType(DHCPPacket.MT_DISCOVER);
         this._dhcpSendWan(discover);
@@ -879,7 +882,7 @@ export class HomeRouter extends SimulatedObject {
             op: 1, htype: 1, hlen: 6, hops: 0, xid: this._wanDhcpXid,
             secs: 0, flags: 0x8000, ciaddr: IPNumberToUint8(0), yiaddr: IPNumberToUint8(0),
             siaddr: IPNumberToUint8(serverIdNum), giaddr: IPNumberToUint8(0),
-            chaddr: this._wanMac, sname: new Uint8Array(64), file: new Uint8Array(128), options: [],
+            chaddr: chaddr16, sname: new Uint8Array(64), file: new Uint8Array(128), options: [],
         });
         request.setMessageType(DHCPPacket.MT_REQUEST);
         request.setOption(DHCPPacket.OPT_REQUESTED_IP, IPNumberToUint8(offeredIp));
@@ -1292,6 +1295,8 @@ export class HomeRouter extends SimulatedObject {
                 lanPort: Number(r.lanPort) | 0,
             })).filter(/** @param {{wanPort:number,lanIp:number,lanPort:number}} r */ r => r.wanPort > 0 && r.lanIp !== 0 && r.lanPort > 0);
         }
+        if (obj._wanMode === "dhcp") void obj._runWanDhcpClient();
+        if (obj._wanIp6Enabled && !obj._wanDhcpv6PdDelegated) void obj._runWanDhcpv6PdClient();
         return obj;
     }
 
