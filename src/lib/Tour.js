@@ -654,7 +654,7 @@ export class Tour {
         if (!p?.panelEl) { setTimeout(() => this._waitForApp(selector, cb), 50); return; }
         if (p.panelEl.querySelector(selector)) { setTimeout(cb, 0); return; }
         const obs = new MutationObserver(() => {
-            if (p.panelEl.querySelector(selector)) { obs.disconnect(); cb(); }
+            if (p.panelEl?.querySelector(selector)) { obs.disconnect(); cb(); }
         });
         obs.observe(p.panelEl, { childList: true, subtree: true });
         this._observers.push(obs);
@@ -699,7 +699,7 @@ export class Tour {
             if (p.panelEl.style.display === 'block') { cb(); return; }
 
             const obs = new MutationObserver(() => {
-                if (p.panelEl.style.display === 'block') { obs.disconnect(); cb(); }
+                if (p.panelEl?.style.display === 'block') { obs.disconnect(); cb(); }
             });
             obs.observe(p.panelEl, { attributes: true, attributeFilter: ['style'] });
             this._observers.push(obs);

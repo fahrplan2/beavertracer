@@ -14,7 +14,7 @@ function macBigIntToStr(macBig) {
     // macBig ist 48-bit, als hex ohne 0x
     let hex = macBig.toString(16).padStart(12, "0");
     // aa:bb:cc:dd:ee:ff
-    return hex.match(/.{2}/g).join(":");
+    return (hex.match(/.{2}/g) ?? []).join(":");
 }
 
 /**

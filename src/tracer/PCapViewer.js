@@ -576,7 +576,7 @@ export class PCapViewer {
       setPickerDevice: (d) => { this.#pickerDevice = d; },
       onPick: (name) => this.switchTab(name),
       onClose: () => this.#closeTabPicker(),
-      simControl: this.#opt.simControl,
+      simControl: /** @type {any} */ (this.#opt.simControl),
     });
   }
 
@@ -624,7 +624,8 @@ export class PCapViewer {
     if (this.#wgPromise) return;
     this.#wgPromise = this.#makeWgPromise();
     // Clear on failure so the next real use can retry normally
-    this.#wgPromise.catch(() => { this.#wgPromise = null; });
+    const _p = this.#wgPromise;
+    if (_p) _p.catch(() => { this.#wgPromise = null; });
   }
 
   /** @param {string} msg */

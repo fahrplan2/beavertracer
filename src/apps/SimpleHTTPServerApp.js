@@ -589,7 +589,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     }
 
     return {
-      send:  /** @type {(d:Uint8Array<ArrayBuffer>)=>Promise<void>} */ ((d) => tls.send(d)),
+      send:  /** @type {any} */ ((/** @type {any} */ d) => tls.send(d)),
       recv:  ()  => tls.recv(),
       close: ()  => { tls.close(); try { net.closeTCPConn(connKey); } catch { /* ignore */ } },
     };

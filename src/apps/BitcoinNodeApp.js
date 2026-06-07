@@ -899,6 +899,7 @@ export class BitcoinNodeApp extends LoggedProcess {
     }
     if (!tip) return [];
     const chain = [];
+    /** @type {typeof tip|null} */
     let cur = tip;
     while (cur) { chain.unshift(cur); cur = cur.prev ? (this.blockMap.get(cur.prev) ?? null) : null; }
     return chain;

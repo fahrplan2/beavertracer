@@ -729,8 +729,10 @@ export class SimControl {
             const elPrev = this._objEls.get(prev.id);
             elPrev?.classList?.remove("is-focused");
         }
-        const elNow = this._objEls.get(obj.id);
-        elNow?.classList?.add("is-focused");
+        if (obj) {
+            const elNow = this._objEls.get(obj.id);
+            elNow?.classList?.add("is-focused");
+        }
 
         this._invalidateUI(); // if toolbar/panels depend on focus
     }
@@ -916,7 +918,7 @@ export class SimControl {
         input.accept = ".btsim,.json";
 
         input.addEventListener("change", async () => {
-            const file = input.files[0];
+            const file = input.files?.[0];
             if (!file) return;
 
             try {
@@ -1246,7 +1248,7 @@ export class SimControl {
                 this.pause();
                 this.mode = "page";
                 this._invalidateUI();
-                this._staticRouter.navigate("/help", { replace: true });
+                this._staticRouter?.navigate("/help", { replace: true });
             },
         });
         helpBtn.dataset.role = "mode-help";
@@ -1259,7 +1261,7 @@ export class SimControl {
                 this.pause();
                 this.mode = "page";
                 this._invalidateUI();
-                this._staticRouter.navigate("/about", { replace: true });
+                this._staticRouter?.navigate("/about", { replace: true });
             },
         });
         aboutBtn.dataset.role = "mode-about";
@@ -1440,12 +1442,12 @@ export class SimControl {
 
         // tab visibility (mounted once; just toggle active)
         const isSim = (this.mode === "edit" || this.mode === "run");
-        this._simBody.classList.toggle("active", isSim);
-        this._tracerBody.classList.toggle("active", this.mode === "trace");
-        this._pageBody.classList.toggle("active", this.mode === "page");
+        this._simBody?.classList.toggle("active", isSim);
+        this._tracerBody?.classList.toggle("active", this.mode === "trace");
+        this._pageBody?.classList.toggle("active", this.mode === "page");
 
         // sidebar only in edit
-        this._sidebar.classList.toggle("hidden", this.mode !== "edit");
+        this._sidebar?.classList.toggle("hidden", this.mode !== "edit");
 
         // toolbar updates
         const toolbar = this._toolbar;
@@ -1614,7 +1616,7 @@ export class SimControl {
                 ? `${obj.A.id}-${obj.B.id}`
                 : `${obj.B.id}-${obj.A.id}`;
             if (!groups.has(key)) groups.set(key, []);
-            groups.get(key).push(obj);
+            groups.get(key)?.push(obj);
         }
 
         // Assign perpendicular offsets, centred around 0

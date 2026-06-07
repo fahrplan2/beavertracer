@@ -263,7 +263,7 @@ export class SimpleTCPClientApp extends LoggedProcess {
         this.connKey ? (() => {
           const info = parseTCPKey(this.connKey);
           return info.ok
-            ? `${info.remoteIP.toString()}:${info.remotePort}`
+            ? `${info.remoteIP?.toString()}:${info.remotePort}`
             : this.connKey;
         })() : "-";
 
@@ -379,7 +379,7 @@ export class SimpleTCPClientApp extends LoggedProcess {
       this._syncUI();
 
       const info = parseTCPKey(key);
-      const who = info.ok ? `${info.remoteIP.toString()}:${info.remotePort}` : key;
+      const who = info.ok ? `${info.remoteIP?.toString()}:${info.remotePort}` : key;
 
       this._appendLog(t("app.simpletcpclient.log.connected", { time: nowStamp(), who }));
       void this._recvLoop(key);
@@ -423,7 +423,7 @@ export class SimpleTCPClientApp extends LoggedProcess {
 
     const info = parseTCPKey(this.connKey);
     const who = info.ok
-      ? `${info.remoteIP.toString()}:${info.remotePort}`
+      ? `${info.remoteIP?.toString()}:${info.remotePort}`
       : this.connKey;
 
     try {
@@ -445,7 +445,7 @@ export class SimpleTCPClientApp extends LoggedProcess {
   async _recvLoop(key) {
     const info = parseTCPKey(key);
     const who = info.ok
-      ? `${info.remoteIP.toString()}:${info.remotePort}`
+      ? `${info.remoteIP?.toString()}:${info.remotePort}`
       : key;
 
     while (this.connected && this.connKey === key) {

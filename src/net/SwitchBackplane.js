@@ -243,7 +243,7 @@ export class SwitchBackplane extends Observable {
         // Cancel all per-port ForwardDelay timers
         for (let i = 0; i < this._stpPortTimers.length; i++) {
             if (this._stpPortTimers[i] != null) {
-                simTimer.cancel(this._stpPortTimers[i]);
+                simTimer.cancel(/** @type {number} */ (this._stpPortTimers[i]));
                 this._stpPortTimers[i] = null;
             }
         }
@@ -467,7 +467,7 @@ export class SwitchBackplane extends Observable {
         // Cancel any pending port timers
         for (let i = 0; i < this._stpPortTimers.length; i++) {
             if (this._stpPortTimers[i] != null) {
-                simTimer.cancel(this._stpPortTimers[i]);
+                simTimer.cancel(/** @type {number} */ (this._stpPortTimers[i]));
                 this._stpPortTimers[i] = null;
             }
         }
@@ -713,7 +713,7 @@ export class SwitchBackplane extends Observable {
 
         // Update messageAge from root port info (non-root bridges add ~1 s per hop)
         if (this.stpRootPort !== null && this.stpRxBest[this.stpRootPort]) {
-            this._stpRootPortMessageAge = this.stpRxBest[this.stpRootPort].messageAge;
+            this._stpRootPortMessageAge = /** @type {any} */ (this.stpRxBest[this.stpRootPort]).messageAge;
         } else {
             this._stpRootPortMessageAge = 0;
         }

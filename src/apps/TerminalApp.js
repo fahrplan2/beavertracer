@@ -92,10 +92,10 @@ export class TerminalApp extends GenericProcess {
     // Abort controll managment (CTRL+C)
     // ---------------------------
     /** @type {AbortSignal} */
-    signal;
+    signal = /** @type {any} */ (undefined);
 
     /** @type {(fn: () => void) => void} */
-    onInterrupt;
+    onInterrupt = /** @type {any} */ (undefined);
 
     /** @type {AbortController|null} */
     currentAbort = null;
