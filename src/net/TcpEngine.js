@@ -314,7 +314,7 @@ export class TcpEngine {
 
     const inFlight = seqDist(sndUna, sndNxt);
 
-    const wnd = (conn.sndWnd >>> 0);
+    const wnd = Math.min(conn.cwnd >>> 0, conn.sndWnd >>> 0);
     let canSend = 0;
     if (wnd > inFlight) canSend = (wnd - inFlight) >>> 0;
 
@@ -495,6 +495,7 @@ export class TcpEngine {
         // Respect peer's advertised MSS (RFC 1122 §4.2.2.6)
         const peerMss = TcpEngine._parseMssOption(tcp.options ?? new Uint8Array());
         if (peerMss != null) conn.mss = Math.min(peerMss, this.defaultMSS);
+        conn.cwnd = conn.mss;
 
         this.conns.set(key, conn);
 
@@ -568,6 +569,7 @@ export class TcpEngine {
         conn.state = "ESTABLISHED";
         const peerMss = TcpEngine._parseMssOption(tcp.options ?? new Uint8Array());
         if (peerMss != null) conn.mss = Math.min(peerMss, this.defaultMSS);
+        conn.cwnd = conn.mss;
 
         while (conn.connectWaiters.length) conn.connectWaiters.shift()?.(null);
 
@@ -725,13 +727,15 @@ export class TcpEngine {
   }
 
   /**
-   * Process an incoming ACK number: remove fully-acked segments from outQ.
+   * Process an incoming ACK: remove acked segments, update congestion window.
+   * Handles Slow Start, Congestion Avoidance, and Fast Retransmit/Recovery.
    * @param {TCPSocket} conn
    * @param {number} ackNo
    */
   _onAck(conn, ackNo) {
-    let removedAny = false;
+    const sndUnaBefore = (conn.outQ.length > 0) ? (conn.outQ[0].seq >>> 0) : (conn.myacc >>> 0);
 
+    let removedAny = false;
     while (conn.outQ.length > 0) {
       const seg = conn.outQ[0];
       if (seqLE(seg.end >>> 0, ackNo >>> 0)) {
@@ -740,7 +744,37 @@ export class TcpEngine {
       } else break;
     }
 
-    if (!removedAny) return;
+    if (!removedAny) {
+      // Duplicate ACK: ackNo didn't advance and there is outstanding data
+      if (conn.outQ.length > 0 && (ackNo >>> 0) === sndUnaBefore) {
+        conn.dupAckCount++;
+        if (conn.dupAckCount === 3) {
+          // Fast Retransmit: enter Fast Recovery
+          const mss = conn.mss | 0;
+          conn.ssthresh = Math.max(Math.floor(Math.min(conn.cwnd >>> 0, conn.sndWnd >>> 0) / 2), 2 * mss);
+          conn.cwnd = conn.ssthresh + 3 * mss;
+          this._retransmitOldest(conn);
+        } else if (conn.dupAckCount > 3) {
+          // Fast Recovery: inflate cwnd per additional dupACK
+          conn.cwnd = (conn.cwnd >>> 0) + (conn.mss | 0);
+          this._flushSend(conn);
+        }
+      }
+      return;
+    }
+
+    // New data acked
+    const bytesAcked = seqDist(sndUnaBefore, ackNo >>> 0);
+    conn.dupAckCount = 0;
+    const mss = conn.mss | 0;
+
+    if ((conn.cwnd >>> 0) < (conn.ssthresh >>> 0)) {
+      // Slow Start: cwnd grows by one MSS per ACK (doubles each RTT)
+      conn.cwnd = (conn.cwnd >>> 0) + Math.min(mss, bytesAcked);
+    } else {
+      // Congestion Avoidance: linear growth — one MSS per RTT
+      conn.cwnd = (conn.cwnd >>> 0) + Math.max(1, Math.floor((mss * mss) / (conn.cwnd >>> 0)));
+    }
 
     if (conn.outQ.length === 0) {
       this._cancelRto(conn);
@@ -750,6 +784,25 @@ export class TcpEngine {
     }
 
     this._flushSend(conn);
+  }
+
+  /**
+   * Retransmit the oldest unacked segment (used by Fast Retransmit).
+   * @param {TCPSocket} conn
+   */
+  _retransmitOldest(conn) {
+    if (conn.outQ.length === 0) return;
+    const seg = conn.outQ[0];
+    const tcpBytes = new TCPPacket({
+      srcPort: conn.port,
+      dstPort: conn.peerPort,
+      seq: seg.seq,
+      ack: conn.theiracc >>> 0,
+      flags: seg.flags | TCPPacket.FLAG_ACK,
+      window: this._calcRcvWnd(conn),
+      payload: seg.payload,
+    }).pack();
+    this._ipSend({ dst: conn.peerIP, src: conn.localIP, protocol: 6, payload: tcpBytes });
   }
 
   /**
@@ -780,6 +833,13 @@ export class TcpEngine {
 
     const seg = conn.outQ[0];
     seg.rexmit++;
+
+    // Congestion control: timeout → back to Slow Start
+    const mss = conn.mss | 0;
+    conn.ssthresh = Math.max(Math.floor(conn.cwnd / 2), 2 * mss);
+    conn.cwnd = mss;
+    conn.dupAckCount = 0;
+
     conn.rtoMs = Math.min(conn.rtoMs * 2, 60_000);
 
     const isBareSyn =
@@ -1055,6 +1115,19 @@ export class TCPSocket {
 
   /** set true once FIN has been received/consumed (EOF) */
   eof = false;
+
+  // ---------------------------------------------------------------------------
+  // Congestion control
+  // ---------------------------------------------------------------------------
+
+  /** congestion window in bytes (starts at 1 MSS) */
+  cwnd = 512;
+
+  /** slow start threshold in bytes */
+  ssthresh = 65535;
+
+  /** duplicate ACK counter for Fast Retransmit */
+  dupAckCount = 0;
 
   // ---------------------------------------------------------------------------
   // Sender flow control (respect peer window)
