@@ -1223,5 +1223,12 @@ export default {
   "app.dnsd.label.mode": "モード",
   "app.dnsd.label.mode.authoritative": "権威サーバー",
   "app.dnsd.label.mode.recursive": "再帰的リゾルバー",
-  "app.dnsd.label.rootDns": "ルートDNS"
+  "app.dnsd.label.rootDns": "ルートDNS",
+  "sim.tracing": "トレーシング",
+  "pcap.btn.follow": "TCPストリームをフォロー",
+  "pcap.stream.title": "TCPストリーム",
+  "pcap.stream.notcp": "選択されたパケットにはTCPセグメントが含まれていません。",
+  "pcap.stream.empty": "このストリームにはペイロードデータがありません。",
+  "pcap.stream.close": "閉じる",
+  "pcap.stream.bytes": "バイト"
 };

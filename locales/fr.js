@@ -1257,5 +1257,12 @@ export default {
   "app.dnsd.label.mode": "Mode",
   "app.dnsd.label.mode.authoritative": "Authoritative",
   "app.dnsd.label.mode.recursive": "Résolveur Récursif",
-  "app.dnsd.label.rootDns": "DNS Racine"
+  "app.dnsd.label.rootDns": "DNS Racine",
+  "sim.tracing": "Traçage",
+  "pcap.btn.follow": "Suivre le flux TCP",
+  "pcap.stream.title": "Flux TCP",
+  "pcap.stream.notcp": "Le paquet sélectionné ne contient pas de segment TCP.",
+  "pcap.stream.empty": "Aucune donnée de charge utile dans ce flux.",
+  "pcap.stream.close": "Fermer",
+  "pcap.stream.bytes": "octets"
 };

@@ -1223,5 +1223,12 @@ export default {
   "app.dnsd.label.mode": "Tilstand",
   "app.dnsd.label.mode.authoritative": "Autoritativ",
   "app.dnsd.label.mode.recursive": "Rekursiv resolver",
-  "app.dnsd.label.rootDns": "Root DNS"
+  "app.dnsd.label.rootDns": "Root DNS",
+  "sim.tracing": "Sporing",
+  "pcap.btn.follow": "Følg TCP-strøm",
+  "pcap.stream.title": "TCP-strøm",
+  "pcap.stream.notcp": "Det valgte paket indeholder ikke et TCP-segment.",
+  "pcap.stream.empty": "Ingen data i denne strøm.",
+  "pcap.stream.close": "Luk",
+  "pcap.stream.bytes": "bytes"
 };

@@ -534,6 +534,186 @@
   padding: 5px;
 }
 
+/* ── Tracing dropdown ───────────────────────────────────────────────────── */
+
+.pcapviewer-tracing-wrap {
+  flex-shrink: 0;
+  position: relative;
+}
+
+.pcapviewer-tracing-btn {
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+
+.pcapviewer-tracing-menu {
+  position: absolute;
+  z-index: 40;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  padding: 4px;
+  min-width: 200px;
+}
+
+.pcapviewer-tracing-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  width: 100%;
+  padding: 6px 10px;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--text);
+}
+
+.pcapviewer-tracing-item:not(:disabled):hover {
+  background: rgba(0,0,0,0.06);
+}
+
+.pcapviewer-tracing-item--disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.pcapviewer-tracing-icon {
+  font-size: 0.9rem;
+  width: 1.2em;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.pcapviewer-tracing-sep {
+  height: 1px;
+  background: #e0e0e0;
+  margin: 4px 0;
+}
+
+/* ── Follow TCP Stream ──────────────────────────────────────────────────── */
+
+.pcapviewer-stream-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px 16px;
+  overflow: auto;
+}
+
+.pcapviewer-stream-panel {
+  background: var(--bg);
+  color: var(--text);
+  border: 2px solid var(--ui-border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  width: min(900px, 100%);
+  max-height: calc(100vh - 80px);
+  overflow: hidden;
+}
+
+.pcapviewer-stream-hdr {
+  display: flex;
+  align-items: center;
+  gap: var(--pad-md);
+  height: 38px;
+  padding: 0 var(--pad-lg);
+  background: color-mix(in oklch, var(--surface-strong), var(--text) 6%);
+  border-bottom: 1px solid var(--ui-border);
+  flex-shrink: 0;
+}
+
+.pcapviewer-stream-hdr-title {
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.pcapviewer-stream-hdr-sub {
+  font-family: "Hack", monospace;
+  font-size: 0.78rem;
+  color: var(--text);
+  opacity: 0.7;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.pcapviewer-stream-close {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 1.375rem;
+  line-height: 22px;
+  padding: 0 4px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text);
+}
+.pcapviewer-stream-close:hover { opacity: 0.7; }
+
+.pcapviewer-stream-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 6px var(--pad-lg);
+  font-size: 0.78rem;
+  border-bottom: 1px solid var(--ui-border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+
+.pcapviewer-stream-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.pcapviewer-stream-dot--a { background: #cc0000; }
+.pcapviewer-stream-dot--b { background: #0055cc; }
+
+.pcapviewer-stream-totals {
+  margin-left: auto;
+  color: var(--text);
+  opacity: 0.7;
+}
+
+.pcapviewer-stream-content {
+  overflow: auto;
+  flex: 1;
+  margin: 0;
+  padding: var(--pad-md) var(--pad-lg);
+  font-family: "Hack", monospace;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: var(--text);
+}
+
+.pcapviewer-stream-a { color: #cc0000; }
+.pcapviewer-stream-b { color: #0055cc; }
+
+[data-theme=dark] .pcapviewer-stream-a { color: #ff4444; }
+[data-theme=dark] .pcapviewer-stream-b { color: #4488ff; }
+
+.pcapviewer-stream-msg {
+  padding: 24px var(--pad-lg);
+  color: var(--text);
+  font-size: 0.875rem;
+}
+
 
 .pcapviewer-picker-header {
   font-size: 0.75rem;

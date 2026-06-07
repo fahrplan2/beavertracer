@@ -1223,5 +1223,12 @@ export default {
   "app.dnsd.label.mode": "Režiim",
   "app.dnsd.label.mode.authoritative": "Autoriteetne",
   "app.dnsd.label.mode.recursive": "Rekursiivne lahendaja",
-  "app.dnsd.label.rootDns": "Juur-DNS"
+  "app.dnsd.label.rootDns": "Juur-DNS",
+  "sim.tracing": "Jälgimine",
+  "pcap.btn.follow": "Järgi TCP-voolu",
+  "pcap.stream.title": "TCP-voog",
+  "pcap.stream.notcp": "Valitud pakett ei sisalda TCP-segmenti.",
+  "pcap.stream.empty": "Selles voous puuduvad last-andmed.",
+  "pcap.stream.close": "Sule",
+  "pcap.stream.bytes": "baiti"
 };

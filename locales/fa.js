@@ -1223,5 +1223,12 @@ export default {
   "app.dnsd.label.mode": "حالت",
   "app.dnsd.label.mode.authoritative": "مرجع‌دار",
   "app.dnsd.label.mode.recursive": "حل‌کننده بازگشتی",
-  "app.dnsd.label.rootDns": "DNS ریشه"
+  "app.dnsd.label.rootDns": "DNS ریشه",
+  "sim.tracing": "ردیابی",
+  "pcap.btn.follow": "دنبال کردن جریان TCP",
+  "pcap.stream.title": "جریان TCP",
+  "pcap.stream.notcp": "بسته انتخاب شده حاوی قطعه TCP نیست.",
+  "pcap.stream.empty": "هیچ داده پیام‌رسانی در این جریان وجود ندارد.",
+  "pcap.stream.close": "بستن",
+  "pcap.stream.bytes": "بایت"
 };

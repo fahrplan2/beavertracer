@@ -1223,5 +1223,12 @@ export default {
   "app.dnsd.label.mode": "Mod",
   "app.dnsd.label.mode.authoritative": "Autorizativ",
   "app.dnsd.label.mode.recursive": "Resolver Recursiv",
-  "app.dnsd.label.rootDns": "DNS Rădăcină"
+  "app.dnsd.label.rootDns": "DNS Rădăcină",
+  "sim.tracing": "Trasare",
+  "pcap.btn.follow": "Urmărire flux TCP",
+  "pcap.stream.title": "Flux TCP",
+  "pcap.stream.notcp": "Pachetul selectat nu conține un segment TCP.",
+  "pcap.stream.empty": "Nu există date de sarcină utilă în acest flux.",
+  "pcap.stream.close": "Închidere",
+  "pcap.stream.bytes": "octeți"
 };

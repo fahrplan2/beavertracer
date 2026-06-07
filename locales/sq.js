@@ -1222,5 +1222,12 @@ export default {
   "app.dnsd.label.mode": "Modaliteti",
   "app.dnsd.label.mode.authoritative": "Autoritativ",
   "app.dnsd.label.mode.recursive": "Zgjidhës Rekursiv",
-  "app.dnsd.label.rootDns": "DNS Rrënjë"
+  "app.dnsd.label.rootDns": "DNS Rrënjë",
+  "sim.tracing": "Gjurmim",
+  "pcap.btn.follow": "Ndiq Rrjedhën TCP",
+  "pcap.stream.title": "Rrjedha TCP",
+  "pcap.stream.notcp": "Paketa e zgjedhur nuk përmban një segment TCP.",
+  "pcap.stream.empty": "Nuk ka të dhëna ngarkese në këtë rrjedhë.",
+  "pcap.stream.close": "Mbyll",
+  "pcap.stream.bytes": "bajt"
 };

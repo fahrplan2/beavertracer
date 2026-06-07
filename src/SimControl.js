@@ -1192,6 +1192,35 @@ export class SimControl {
         gZoom.appendChild(btnZoomIn);
 
 
+        //******** TRACING ***********/
+        addSeparator("sep-tracing");
+        const gTracing = UILib.buttongroup(t("sim.tracing"), toolbar);
+        gTracing.dataset.group = "tracing";
+
+        const btnTracePrev = UILib.iconbutton({
+            label: t("pcap.btn.prev"),
+            icon: "fa-chevron-left",
+            onClick: () => this.pcapViewer.prevPage(),
+        });
+        btnTracePrev.dataset.role = "tracing-prev";
+        gTracing.appendChild(btnTracePrev);
+
+        const btnTraceNext = UILib.iconbutton({
+            label: t("pcap.btn.next"),
+            icon: "fa-chevron-right",
+            onClick: () => this.pcapViewer.nextPage(),
+        });
+        btnTraceNext.dataset.role = "tracing-next";
+        gTracing.appendChild(btnTraceNext);
+
+        const btnTraceFollow = UILib.iconbutton({
+            label: t("pcap.btn.follow"),
+            icon: "fa-exchange-alt",
+            onClick: () => this.pcapViewer.followTcpStream(),
+        });
+        btnTraceFollow.dataset.role = "tracing-follow";
+        gTracing.appendChild(btnTraceFollow);
+
         //******** COMMON ***********/
         addSeparator("sep-common");
         const gCommon = UILib.buttongroup(t("sim.common"), toolbar);
@@ -1472,6 +1501,24 @@ export class SimControl {
             const sepZoom   = toolbar.querySelector(`[data-role="sep-zoom"]`);
             setHidden(zoomGroup, !showZoom);
             setHidden(sepZoom, !showZoom);
+
+            const showTracing = (this.mode === "trace");
+            const tracingInner = toolbar.querySelector(`[data-group="tracing"]`);
+            const tracingGroup = tracingInner?.closest(".sim-toolbar-group") ?? tracingInner;
+            const sepTracing   = toolbar.querySelector(`[data-role="sep-tracing"]`);
+            setHidden(tracingGroup, !showTracing);
+            setHidden(sepTracing, !showTracing);
+
+            if (showTracing) {
+                /** @param {string} role @param {boolean} disabled */
+                const setDisabled = (role, disabled) => {
+                    const el = /** @type {HTMLButtonElement|null} */ (toolbar.querySelector(`[data-role="${role}"]`));
+                    if (el) el.disabled = disabled;
+                };
+                setDisabled("tracing-prev",   !this.pcapViewer.canPrevPage());
+                setDisabled("tracing-next",   !this.pcapViewer.canNextPage());
+                setDisabled("tracing-follow", !this.pcapViewer.canFollowTcpStream());
+            }
 
         }
 

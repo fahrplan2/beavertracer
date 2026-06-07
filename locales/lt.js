@@ -1223,5 +1223,12 @@ export default {
   "app.dnsd.label.mode": "Režimas",
   "app.dnsd.label.mode.authoritative": "Autoritetas",
   "app.dnsd.label.mode.recursive": "Rekursyvus sprendimas",
-  "app.dnsd.label.rootDns": "Šakninis DNS"
+  "app.dnsd.label.rootDns": "Šakninis DNS",
+  "sim.tracing": "Sekimas",
+  "pcap.btn.follow": "Sekti TCP srautą",
+  "pcap.stream.title": "TCP srautas",
+  "pcap.stream.notcp": "Pasirinktas paketas neturi TCP segmento.",
+  "pcap.stream.empty": "Nėra naudingos apkrovos duomenų šiame sraute.",
+  "pcap.stream.close": "Uždaryti",
+  "pcap.stream.bytes": "baitai"
 };

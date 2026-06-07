@@ -1223,5 +1223,12 @@ export default {
   "app.dnsd.label.mode": "Mode",
   "app.dnsd.label.mode.authoritative": "Authoritative",
   "app.dnsd.label.mode.recursive": "Recursive Resolver",
-  "app.dnsd.label.rootDns": "Root DNS"
+  "app.dnsd.label.rootDns": "Root DNS",
+  "sim.tracing": "Pelacakan",
+  "pcap.btn.follow": "Ikuti Aliran TCP",
+  "pcap.stream.title": "Aliran TCP",
+  "pcap.stream.notcp": "Paket yang dipilih tidak mengandung segmen TCP.",
+  "pcap.stream.empty": "Tidak ada data muatan dalam aliran ini.",
+  "pcap.stream.close": "Tutup",
+  "pcap.stream.bytes": "byte"
 };

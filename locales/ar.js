@@ -1223,5 +1223,12 @@ export default {
   "app.dnsd.label.mode": "الوضع",
   "app.dnsd.label.mode.authoritative": "سلطة مصرحة",
   "app.dnsd.label.mode.recursive": "محلل تكراري",
-  "app.dnsd.label.rootDns": "خادم DNS الجذر"
+  "app.dnsd.label.rootDns": "خادم DNS الجذر",
+  "sim.tracing": "تتبع",
+  "pcap.btn.follow": "متابعة تدفق TCP",
+  "pcap.stream.title": "تدفق TCP",
+  "pcap.stream.notcp": "الحزمة المختارة لا تحتوي على قطعة TCP.",
+  "pcap.stream.empty": "لا توجد بيانات حمولة في هذا التدفق.",
+  "pcap.stream.close": "إغلاق",
+  "pcap.stream.bytes": "بايتات"
 };

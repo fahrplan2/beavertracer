@@ -1222,5 +1222,12 @@ export default {
   "app.dnsd.label.mode": "Mód",
   "app.dnsd.label.mode.authoritative": "Mérvadó",
   "app.dnsd.label.mode.recursive": "Rekurzív Resolver",
-  "app.dnsd.label.rootDns": "Root DNS"
+  "app.dnsd.label.rootDns": "Root DNS",
+  "sim.tracing": "Nyomkövetés",
+  "pcap.btn.follow": "TCP stream követése",
+  "pcap.stream.title": "TCP stream",
+  "pcap.stream.notcp": "A kiválasztott csomag nem tartalmaz TCP szegmenst.",
+  "pcap.stream.empty": "Nincs hasznos adat ebben a streamben.",
+  "pcap.stream.close": "Bezárás",
+  "pcap.stream.bytes": "bájtok"
 };
