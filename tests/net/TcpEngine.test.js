@@ -18,6 +18,11 @@ import { TCPPacket } from '../../src/net/pdu/TCPPacket.js';
 import { IPAddress } from '../../src/net/models/IPAddress.js';
 import { simTimer, SimTimer } from '../../src/lib/SimTimer.js';
 
+/** @param {TCPPacket} tcp */
+function parseTsOption(tcp) {
+  return TcpEngine._parseTsOption(tcp.options ?? new Uint8Array(0));
+}
+
 const CLIENT_IP = IPAddress.fromString('10.0.0.1');
 const SERVER_IP = IPAddress.fromString('10.0.0.2');
 const SERVER_PORT = 8080;
@@ -405,5 +410,161 @@ describe('zero-window flow control', () => {
     injectAck(65535);
     expect(dataSent.length).toBeGreaterThan(0); // data now sent
     expect(clientConn.sendQ.length).toBe(0);    // sendQ drained
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TCP Timestamps (RFC 7323)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('TCP Timestamps', () => {
+  it('SYN and SYN-ACK both carry a Timestamp option', async () => {
+    const { client, server, log } = makeLoopback();
+    await connect(client, server);
+
+    const syn    = log.find(e => e.from === 'client' && e.tcp.hasFlag(TCPPacket.FLAG_SYN) && !e.tcp.hasFlag(TCPPacket.FLAG_ACK));
+    const synAck = log.find(e => e.from === 'server' && e.tcp.hasFlag(TCPPacket.FLAG_SYN) &&  e.tcp.hasFlag(TCPPacket.FLAG_ACK));
+
+    expect(parseTsOption(syn.tcp)).not.toBeNull();
+    expect(parseTsOption(synAck.tcp)).not.toBeNull();
+  });
+
+  it('SYN-ACK echoes the SYN TSval as TSecr', async () => {
+    const { client, server, log } = makeLoopback();
+    await connect(client, server);
+
+    const syn    = log.find(e => e.from === 'client' && e.tcp.hasFlag(TCPPacket.FLAG_SYN) && !e.tcp.hasFlag(TCPPacket.FLAG_ACK));
+    const synAck = log.find(e => e.from === 'server' && e.tcp.hasFlag(TCPPacket.FLAG_SYN) &&  e.tcp.hasFlag(TCPPacket.FLAG_ACK));
+
+    const synTs    = parseTsOption(syn.tcp);
+    const synAckTs = parseTsOption(synAck.tcp);
+
+    expect(synAckTs.tsecr).toBe(synTs.tsval);
+  });
+
+  it('tsEnabled is true on both sides after handshake', async () => {
+    const { client, server } = makeLoopback();
+    const { clientConn, serverKey } = await connect(client, server);
+    const serverConn = server.conns.get(serverKey);
+
+    expect(clientConn.tsEnabled).toBe(true);
+    expect(serverConn.tsEnabled).toBe(true);
+  });
+
+  it('data segments carry a Timestamp option after handshake', async () => {
+    const { client, server, log } = makeLoopback();
+    const { clientKey } = await connect(client, server);
+
+    const before = log.length;
+    client.send(clientKey, new Uint8Array([1, 2, 3]));
+
+    const dataSeg = log.slice(before).find(e => e.from === 'client' && e.tcp.payload.length > 0);
+    expect(dataSeg).toBeDefined();
+    expect(parseTsOption(dataSeg.tcp)).not.toBeNull();
+  });
+
+  it('RTT measurement updates srtt and rtoMs after a delayed ACK', async () => {
+    const { client, server } = makeLoopback();
+    const { clientKey, clientConn, serverKey } = await connect(client, server);
+
+    // Intercept server ACKs so we can deliver them with a simulated delay.
+    let pendingAck = null;
+    const origServerSend = server._ipSend.bind(server);
+    // @ts-ignore
+    server._ipSend = (opts) => {
+      const tcp = TCPPacket.fromBytes(opts.payload);
+      if (tcp.hasFlag(TCPPacket.FLAG_ACK) && !tcp.hasFlag(TCPPacket.FLAG_SYN) && tcp.payload.length === 0) {
+        pendingAck = opts;
+      } else {
+        origServerSend(opts);
+      }
+    };
+
+    client.send(clientKey, new Uint8Array([1, 2, 3]));
+    expect(pendingAck).not.toBeNull();
+
+    // Simulate a 20-tick (100 ms simulated) round-trip delay.
+    const delay = 20;
+    for (let i = 0; i < delay; i++) simTimer.tick();
+
+    // Deliver the delayed ACK — this triggers RTT measurement.
+    client.handle({ src: SERVER_IP, dst: CLIENT_IP, payload: pendingAck.payload });
+
+    // srtt reflects the measured delay; rtoMs is clamped to TCP_MIN_RTO_MS (1 s per RFC 6298).
+    expect(clientConn.srtt).toBeGreaterThan(0);
+    expect(clientConn.rtoMs).toBeGreaterThanOrEqual(SimTimer.TCP_MIN_RTO_MS);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Congestion control
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('congestion control', () => {
+  it('cwnd starts at 1 MSS after handshake', async () => {
+    const { client, server } = makeLoopback();
+    const { clientConn, serverKey } = await connect(client, server);
+    const serverConn = server.conns.get(serverKey);
+
+    expect(clientConn.cwnd).toBe(clientConn.mss);
+    expect(serverConn.cwnd).toBe(serverConn.mss);
+  });
+
+  it('cwnd grows after a properly-timed ACK (Slow Start)', async () => {
+    const { client, server } = makeLoopback();
+    const { clientKey, clientConn } = await connect(client, server);
+
+    // Intercept server ACK and deliver it after send() returns so that
+    // myacc is already updated and okAck passes.
+    let pendingAck = null;
+    // @ts-ignore
+    server._ipSend = (opts) => {
+      const tcp = TCPPacket.fromBytes(opts.payload);
+      if (tcp.hasFlag(TCPPacket.FLAG_ACK) && !tcp.hasFlag(TCPPacket.FLAG_SYN) && tcp.payload.length === 0) {
+        pendingAck = opts;
+      }
+    };
+
+    const cwndBefore = clientConn.cwnd;
+    client.send(clientKey, new Uint8Array(clientConn.mss)); // exactly 1 MSS
+    expect(pendingAck).not.toBeNull();
+
+    // Deliver the ACK now that myacc has been updated.
+    client.handle({ src: SERVER_IP, dst: CLIENT_IP, payload: pendingAck.payload });
+
+    expect(clientConn.cwnd).toBeGreaterThan(cwndBefore);
+  });
+
+  it('Fast Retransmit: 3 duplicate ACKs trigger retransmit without waiting for RTO', async () => {
+    const { client, server } = makeLoopback();
+    const { clientKey, clientConn } = await connect(client, server);
+
+    const sent = [];
+    // @ts-ignore
+    client._ipSend = ({ payload }) => sent.push(TCPPacket.fromBytes(payload));
+
+    client.send(clientKey, new Uint8Array([1]));
+    const initialSent = sent.filter(t => t.payload.length > 0).length;
+    expect(initialSent).toBe(1);
+
+    // Build a duplicate ACK: ackNo = sndUna (doesn't advance the window).
+    const sndUna = clientConn.outQ[0]?.seq ?? clientConn.myacc;
+    const dupAckBytes = new TCPPacket({
+      srcPort: SERVER_PORT,
+      dstPort: clientConn.port,
+      seq: clientConn.theiracc,
+      ack: sndUna,
+      flags: TCPPacket.FLAG_ACK,
+      window: 65535,
+    }).pack();
+
+    client.handle({ src: SERVER_IP, dst: CLIENT_IP, payload: dupAckBytes });
+    client.handle({ src: SERVER_IP, dst: CLIENT_IP, payload: dupAckBytes });
+    client.handle({ src: SERVER_IP, dst: CLIENT_IP, payload: dupAckBytes }); // 3rd → Fast Retransmit
+
+    expect(sent.filter(t => t.payload.length > 0).length).toBeGreaterThan(initialSent);
+    // ssthresh and cwnd must have been updated
+    expect(clientConn.ssthresh).toBeLessThan(65535);
+    expect(clientConn.dupAckCount).toBe(3);
   });
 });
