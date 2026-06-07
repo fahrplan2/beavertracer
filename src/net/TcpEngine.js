@@ -75,10 +75,7 @@ export class TcpEngine {
     /** @type {number} */
     this.defaultMSS = 512;
 
-    /** @type {number} simulated time in "ms"; 1 master tick = 1 ms */
-    this.nowMs = 0;
-
-    /** @type {number} TIME-WAIT duration in ticks (ms) */
+    /** @type {number} TIME-WAIT duration in simulated ms */
     this.timeWaitMs = 2000;
   }
 
@@ -113,21 +110,6 @@ export class TcpEngine {
     return null;
   }
 
-  /**
-   * Advance TCP timers by one master tick.
-   * In this simulation, 1 tick == 1 simulated millisecond.
-   */
-  step() {
-    this.nowMs = (this.nowMs + 1) | 0;
-
-    for (const conn of this.conns.values()) {
-      this._checkRto(conn);
-
-      if (conn.state === "TIME-WAIT" && conn.timeWaitUntil && this.nowMs >= conn.timeWaitUntil) {
-        this._destroy(conn, "TIME-WAIT expired");
-      }
-    }
-  }
 
   /**
    * Compute advertised receive window (rwnd) from buffers.
@@ -615,7 +597,7 @@ export class TcpEngine {
       if (ack && (tcp.ack >>> 0) === (conn.myacc >>> 0)) {
         conn.state = conn.eof ? "TIME-WAIT" : "FIN-WAIT-2";
         if (conn.state === "TIME-WAIT") {
-          conn.timeWaitUntil = (this.nowMs + this.timeWaitMs) | 0;
+          this._scheduleTimeWait(conn);
         }
       }
     }
@@ -624,7 +606,7 @@ export class TcpEngine {
     if (conn.state === "CLOSING") {
       if (ack && (tcp.ack >>> 0) === (conn.myacc >>> 0)) {
         conn.state = "TIME-WAIT";
-        conn.timeWaitUntil = (this.nowMs + this.timeWaitMs) | 0;
+        this._scheduleTimeWait(conn);
       }
       return;
     }
@@ -712,16 +694,15 @@ export class TcpEngine {
     const rexmittable = len > 0; // do not queue pure ACKs
 
     if (rexmittable) {
+      const wasEmpty = conn.outQ.length === 0;
       conn.outQ.push({
         seq: seq >>> 0,
         end,
         flags,
         payload,
-        sentAt: this.nowMs | 0,
         rexmit: 0,
       });
-
-      if (!conn.rtoDeadline) conn.rtoDeadline = (this.nowMs + conn.rtoMs) | 0;
+      if (wasEmpty) this._scheduleRto(conn);
     }
 
     const tcpBytes = new TCPPacket({
@@ -762,29 +743,44 @@ export class TcpEngine {
     if (!removedAny) return;
 
     if (conn.outQ.length === 0) {
-      conn.rtoDeadline = 0;
+      this._cancelRto(conn);
       conn.rtoMs = 600;
     } else {
-      conn.rtoDeadline = (this.nowMs + conn.rtoMs) | 0;
+      this._scheduleRto(conn);
     }
 
     this._flushSend(conn);
   }
 
   /**
-   * RTO retransmit for the oldest outstanding segment (simple backoff).
+   * Schedule (or reschedule) the RTO timer for conn.
    * @param {TCPSocket} conn
    */
-  _checkRto(conn) {
+  _scheduleRto(conn) {
+    if (conn.rtoTimerId !== null) { simTimer.cancel(conn.rtoTimerId); conn.rtoTimerId = null; }
     if (conn.outQ.length === 0) return;
-    if (!conn.rtoDeadline) return;
-    if ((this.nowMs | 0) < (conn.rtoDeadline | 0)) return;
+    conn.rtoTimerId = simTimer.schedule(() => this._fireRto(conn), conn.rtoMs);
+  }
+
+  /**
+   * Cancel any pending RTO timer for conn.
+   * @param {TCPSocket} conn
+   */
+  _cancelRto(conn) {
+    if (conn.rtoTimerId !== null) { simTimer.cancel(conn.rtoTimerId); conn.rtoTimerId = null; }
+  }
+
+  /**
+   * RTO fired: retransmit oldest unacked segment, apply exponential backoff, reschedule.
+   * @param {TCPSocket} conn
+   */
+  _fireRto(conn) {
+    conn.rtoTimerId = null;
+    if (conn.outQ.length === 0 || conn.state === "CLOSED") return;
 
     const seg = conn.outQ[0];
     seg.rexmit++;
-
     conn.rtoMs = Math.min(conn.rtoMs * 2, 60_000);
-    conn.rtoDeadline = (this.nowMs + conn.rtoMs) | 0;
 
     const isBareSyn =
       (seg.flags & TCPPacket.FLAG_SYN) !== 0 &&
@@ -801,7 +797,7 @@ export class TcpEngine {
       ack: ackNo,
       flags,
       window: this._calcRcvWnd(conn),
-      payload: seg.payload
+      payload: seg.payload,
     }).pack();
 
     this._ipSend({
@@ -810,6 +806,17 @@ export class TcpEngine {
       protocol: 6,
       payload: tcpBytes,
     });
+
+    conn.rtoTimerId = simTimer.schedule(() => this._fireRto(conn), conn.rtoMs);
+  }
+
+  /**
+   * Start the TIME-WAIT timer; destroy the connection when it expires.
+   * @param {TCPSocket} conn
+   */
+  _scheduleTimeWait(conn) {
+    if (conn.timeWaitTimerId !== null) { simTimer.cancel(conn.timeWaitTimerId); conn.timeWaitTimerId = null; }
+    conn.timeWaitTimerId = simTimer.schedule(() => this._destroy(conn, "TIME-WAIT expired"), this.timeWaitMs);
   }
 
   /**
@@ -818,6 +825,9 @@ export class TcpEngine {
    * @param {string} reason
    */
   _destroy(conn, reason) {
+    this._cancelRto(conn);
+    if (conn.timeWaitTimerId !== null) { simTimer.cancel(conn.timeWaitTimerId); conn.timeWaitTimerId = null; }
+
     while (conn.waiters.length) conn.waiters.shift()?.(null);
     while (conn.connectWaiters.length) conn.connectWaiters.shift()?.(new Error(reason));
 
@@ -985,7 +995,7 @@ export class TcpEngine {
         conn.state = "CLOSING";
       } else if (conn.state === "FIN-WAIT-2") {
         conn.state = "TIME-WAIT";
-        conn.timeWaitUntil = (this.nowMs + this.timeWaitMs) | 0;
+        this._scheduleTimeWait(conn);
       }
     }
   }
@@ -1083,19 +1093,19 @@ export class TCPSocket {
   // Outgoing retransmission buffer + RTO timer state
   // ---------------------------------------------------------------------------
 
-  /** @type {Array<{seq:number, end:number, flags:number, payload:Uint8Array, sentAt:number, rexmit:number}>} */
+  /** @type {Array<{seq:number, end:number, flags:number, payload:Uint8Array, rexmit:number}>} */
   outQ = [];
 
-  /** @type {number} initial RTO in simulated ms (ticks) */
+  /** @type {number} current RTO in simulated ms */
   rtoMs = 600;
 
-  /** @type {number} absolute deadline in engine.nowMs when to retransmit */
-  rtoDeadline = 0;
+  /** @type {number|null} simTimer id for pending RTO retransmit */
+  rtoTimerId = null;
 
   // ---------------------------------------------------------------------------
   // TIME-WAIT
   // ---------------------------------------------------------------------------
 
-  /** @type {number} absolute time in engine.nowMs when TIME-WAIT ends */
-  timeWaitUntil = 0;
+  /** @type {number|null} simTimer id for TIME-WAIT expiry */
+  timeWaitTimerId = null;
 }

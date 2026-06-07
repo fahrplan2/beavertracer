@@ -16,6 +16,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { TcpEngine } from '../../src/net/TcpEngine.js';
 import { TCPPacket } from '../../src/net/pdu/TCPPacket.js';
 import { IPAddress } from '../../src/net/models/IPAddress.js';
+import { simTimer, SimTimer } from '../../src/lib/SimTimer.js';
 
 const CLIENT_IP = IPAddress.fromString('10.0.0.1');
 const SERVER_IP = IPAddress.fromString('10.0.0.2');
@@ -275,7 +276,8 @@ describe('RTO retransmission', () => {
     const txBeforeRto = sentAfterDrop.filter(t => t.payload.length > 0).length;
     expect(txBeforeRto).toBe(1);
 
-    for (let i = 0; i < 700; i++) client.step(); // advance past initial 600 ms RTO
+    // advance past initial 600 ms RTO (120 ticks at 5 ms/tick)
+    for (let i = 0; i < SimTimer.toTicks(600) + 1; i++) simTimer.tick();
 
     const txAfterRto = sentAfterDrop.filter(t => t.payload.length > 0).length;
     expect(txAfterRto).toBeGreaterThan(1);
@@ -291,10 +293,10 @@ describe('RTO retransmission', () => {
     client.send(clientKey, new Uint8Array([1]));
     const rtoInitial = clientConn.rtoMs; // 600
 
-    for (let i = 0; i < rtoInitial + 1; i++) client.step();
+    for (let i = 0; i < SimTimer.toTicks(rtoInitial) + 1; i++) simTimer.tick();
     expect(clientConn.rtoMs).toBe(rtoInitial * 2);
 
-    for (let i = 0; i < clientConn.rtoMs + 1; i++) client.step();
+    for (let i = 0; i < SimTimer.toTicks(clientConn.rtoMs) + 1; i++) simTimer.tick();
     expect(clientConn.rtoMs).toBe(rtoInitial * 4);
   });
 });
