@@ -88,7 +88,7 @@ BeaverTracer ist ein Netzwerksimulator für den Unterricht. Er modelliert eine b
 <tr>
   <td>TCP</td><td>RFC 793, RFC 3168</td>
   <td><span class="badge badge-partial">Teilweise</span></td>
-  <td>Alle Header-Felder: Ports, Sequence/Ack-Nummern, Data Offset, alle 8 Flags (inkl. ECE/CWR), Window, Prüfsumme, Urgent Pointer. Options-Feld wird mitgeführt, aber nicht ausgewertet — MSS, Window Scale, SACK und Timestamps werden nicht ausgehandelt. Keine Staukontrolle.</td>
+  <td>Alle Header-Felder: Ports, Sequence/Ack-Nummern, Data Offset, alle 8 Flags (inkl. ECE/CWR), Window, Prüfsumme, Urgent Pointer. MSS wird beim SYN-Handshake ausgehandelt (gesendet und geparst). Window Scale, SACK und Timestamps werden nicht ausgehandelt; Fenstergrößen sind fest. Keine Staukontrolle.</td>
 </tr>
 <tr>
   <td>UDP</td><td>RFC 768</td>
@@ -288,7 +288,7 @@ Einige Einschränkungen gelten simulatorweit, unabhängig vom Protokoll:
 
 - **Keine IPv4-Fragmentierung.** Pakete, die eine MTU überschreiten würden, werden ungeteilt gesendet; am Zielknoten findet keine Reassembly statt.
 - **Keine IPv6-Extension-Headers.** Hop-by-Hop-, Routing-, Fragment- und Destination-Options-Header werden weder erzeugt noch geparst.
-- **Keine TCP-Options.** MSS-Aushandlung, Window Scaling, SACK und TCP Timestamps sind nicht implementiert; Fenstergrößen sind fest.
+- **Eingeschränkte TCP-Options.** MSS wird beim SYN-Handshake ausgehandelt. Window Scaling, SACK und TCP Timestamps sind nicht implementiert; Fenstergrößen sind fest (kein Scaling).
 - **Kein Multicast-Management.** IGMP (IPv4) und MLD (IPv6) fehlen; Multicast-Weiterleitung basiert auf Flooding innerhalb der Simulation.
 - **Keine Routing-Protokoll-Authentifizierung.** MD5/SHA-Schlüsselketten für OSPF, BGP und RIPv2 sind strukturell vorhanden, werden aber nicht durchgesetzt.
 - **Keine echte Kryptographie außer bei TLS.** Bitcoin-Signaturen, DNSSEC-Records und ähnliche kryptographische Konstrukte werden gefälscht oder weggelassen.

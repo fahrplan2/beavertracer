@@ -14,7 +14,7 @@
   },
   "name": "beavertracer",
   "description": "",
-  "version": "0.1.20-dev.124.e7e6ac1",
+  "version": "0.1.20-dev.130.4fdcbfb",
   "main": "electron/main.cjs",
   "repository": {
     "type": "git",
@@ -23,13 +23,13 @@
   "author": "Christian Klein",
   "license": "GPLv2",
   "devDependencies": {
-    "@anthropic-ai/sdk": "^0.95.1",
-    "@babel/parser": "^7.28.5",
-    "@tauri-apps/cli": "^2.9.6",
-    "markdown-it": "^14.1.1",
-    "typescript": "^5.9.3",
-    "vite": "^8.0.12",
-    "vitest": "^4.1.6"
+    "@anthropic-ai/sdk": "^0.102.0",
+    "@babel/parser": "^7.29.7",
+    "@tauri-apps/cli": "^2.11.2",
+    "markdown-it": "^14.2.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16",
+    "vitest": "^4.1.8"
   },
   "build": {
     "appId": "eu.chklein.networksim",
@@ -40,7 +40,7 @@
     ]
   },
   "dependencies": {
-    "@fortawesome/fontawesome-free": "^7.1.0",
+    "@fortawesome/fontawesome-free": "^7.2.0",
     "@goodtools/wiregasm": "^1.9.1",
     "country-flag-emoji-polyfill": "^0.1.8",
     "hack-font": "^3.3.0",

@@ -478,7 +478,7 @@ export class Router extends SimulatedObject {
                     this._selectedIfaceName = `${name}.${vid}`;
                     if (this._panelBody) this.mount(this._panelBody);
                 } catch (e) {
-                    SimDialog.alert(String(e?.message ?? e));
+                    SimDialog.alert(e instanceof Error ? e.message : String(e));
                 }
             });
             actionsHost.appendChild(subBtn);
@@ -768,14 +768,14 @@ export class Router extends SimulatedObject {
 
             // --- Apply IPv4 ---
             if (v4Active) {
-                const ip = ipFromStr(this._ipInput.value);
+                const ip = ipFromStr(/** @type {HTMLInputElement} */ (this._ipInput).value);
                 if (!ip.isV4()) throw new Error("IPv4-Adresse erwartet.");
-                const cidrTxt = this._cidrInput.value.trim();
+                const cidrTxt = /** @type {HTMLInputElement} */ (this._cidrInput).value.trim();
                 let prefix = 0;
                 if (cidrTxt) {
                     prefix = assertPrefix(Number(cidrTxt));
                 } else {
-                    const p = netmaskStrToPrefix(this._maskInput.value);
+                    const p = netmaskStrToPrefix(/** @type {HTMLInputElement} */ (this._maskInput).value);
                     if (p == null) throw new Error("Ungültige Netmask (nicht zusammenhängend?)");
                     prefix = p;
                 }
@@ -804,7 +804,7 @@ export class Router extends SimulatedObject {
 
             this.ospf?.onInterfaceChange();
         } catch (e) {
-            SimDialog.alert(String(e?.message ?? e));
+            SimDialog.alert(e instanceof Error ? e.message : String(e));
         }
     }
 
@@ -1025,7 +1025,7 @@ export class Router extends SimulatedObject {
 
                     this._renderRoutes();
                 } catch (e) {
-                    SimDialog.alert(String(e?.message ?? e));
+                    SimDialog.alert(e instanceof Error ? e.message : String(e));
                 }
             });
 
@@ -1148,7 +1148,7 @@ export class Router extends SimulatedObject {
                     this.net.addRoute(dstIp, p, interfN, nhIp);
                     this._renderRoutes();
                 } catch (e) {
-                    SimDialog.alert(String(e?.message ?? e));
+                    SimDialog.alert(e instanceof Error ? e.message : String(e));
                 }
             });
 
@@ -1296,7 +1296,7 @@ export class Router extends SimulatedObject {
                     this.net.addRoute(newDst, p, newInterf, newNh);
                     this._renderRoutes();
                 } catch (e) {
-                    SimDialog.alert(String(e?.message ?? e));
+                    SimDialog.alert(e instanceof Error ? e.message : String(e));
                 }
             });
 
@@ -1409,7 +1409,7 @@ export class Router extends SimulatedObject {
                     this.net.addRoute(dstIp, p, interfN, nhIp);
                     this._renderRoutes();
                 } catch (e) {
-                    SimDialog.alert(String(e?.message ?? e));
+                    SimDialog.alert(e instanceof Error ? e.message : String(e));
                 }
             });
 
@@ -2078,7 +2078,7 @@ export class Router extends SimulatedObject {
                 renderList();
                 this._renderRoutes();
             } catch (e) {
-                errEl.textContent = String(e?.message ?? e);
+                errEl.textContent = e instanceof Error ? e.message : String(e);
             }
         });
 

@@ -75,10 +75,7 @@ export class TcpEngine {
     /** @type {number} */
     this.defaultMSS = 512;
 
-    /** @type {number} simulated time in "ms"; 1 master tick = 1 ms */
-    this.nowMs = 0;
-
-    /** @type {number} TIME-WAIT duration in ticks (ms) */
+    /** @type {number} TIME-WAIT duration in simulated ms */
     this.timeWaitMs = 2000;
   }
 
@@ -89,6 +86,36 @@ export class TcpEngine {
    */
   static _buildMssOption(mss) {
     return new Uint8Array([2, 4, (mss >> 8) & 0xff, mss & 0xff]);
+  }
+
+  /**
+   * Build a 10-byte TCP Timestamp option (Kind=8, Length=10).
+   * @param {number} tsval
+   * @param {number} tsecr
+   * @returns {Uint8Array}
+   */
+  static _buildTsOption(tsval, tsecr) {
+    const b = new Uint8Array(10);
+    b[0] = 8; b[1] = 10;
+    b[2] = (tsval >>> 24) & 0xff; b[3] = (tsval >>> 16) & 0xff;
+    b[4] = (tsval >>>  8) & 0xff; b[5] =  tsval         & 0xff;
+    b[6] = (tsecr >>> 24) & 0xff; b[7] = (tsecr >>> 16) & 0xff;
+    b[8] = (tsecr >>>  8) & 0xff; b[9] =  tsecr         & 0xff;
+    return b;
+  }
+
+  /**
+   * Build SYN/SYN-ACK options: MSS (4 bytes) + Timestamp (10 bytes) = 14 bytes.
+   * @param {number} mss
+   * @param {number} tsval
+   * @param {number} tsecr
+   * @returns {Uint8Array}
+   */
+  static _buildSynOptions(mss, tsval, tsecr) {
+    const buf = new Uint8Array(14);
+    buf.set(TcpEngine._buildMssOption(mss), 0);
+    buf.set(TcpEngine._buildTsOption(tsval, tsecr), 4);
+    return buf;
   }
 
   /**
@@ -114,20 +141,29 @@ export class TcpEngine {
   }
 
   /**
-   * Advance TCP timers by one master tick.
-   * In this simulation, 1 tick == 1 simulated millisecond.
+   * Parse Timestamp option from raw TCP options. Returns {tsval, tsecr} or null.
+   * @param {Uint8Array} options
+   * @returns {{tsval:number, tsecr:number}|null}
    */
-  step() {
-    this.nowMs = (this.nowMs + 1) | 0;
-
-    for (const conn of this.conns.values()) {
-      this._checkRto(conn);
-
-      if (conn.state === "TIME-WAIT" && conn.timeWaitUntil && this.nowMs >= conn.timeWaitUntil) {
-        this._destroy(conn, "TIME-WAIT expired");
+  static _parseTsOption(options) {
+    let i = 0;
+    while (i < options.length) {
+      if (options[i] === 0) break;
+      if (options[i] === 1) { i++; continue; }
+      const kind = options[i];
+      if (i + 1 >= options.length) break;
+      const len = options[i + 1];
+      if (len < 2) break;
+      if (kind === 8 && len === 10 && i + 10 <= options.length) {
+        const tsval = ((options[i+2]<<24)|(options[i+3]<<16)|(options[i+4]<<8)|options[i+5]) >>> 0;
+        const tsecr = ((options[i+6]<<24)|(options[i+7]<<16)|(options[i+8]<<8)|options[i+9]) >>> 0;
+        return { tsval, tsecr };
       }
+      i += len;
     }
+    return null;
   }
+
 
   /**
    * Compute advertised receive window (rwnd) from buffers.
@@ -261,7 +297,7 @@ export class TcpEngine {
       ack: 0,
       flags: TCPPacket.FLAG_SYN,
       window: this._calcRcvWnd(conn),
-      options: TcpEngine._buildMssOption(this.defaultMSS),
+      options: TcpEngine._buildSynOptions(this.defaultMSS, simTimer.currentTick >>> 0, 0),
       payload: new Uint8Array(),
     });
 
@@ -325,14 +361,17 @@ export class TcpEngine {
    */
   _flushSend(conn) {
     if (conn.state !== "ESTABLISHED" && conn.state !== "CLOSE-WAIT") return;
-    if (!conn.sendQ || conn.sendQ.length === 0) return;
+    if (!conn.sendQ || conn.sendQ.length === 0) {
+      if (conn.pendingClose) { conn.pendingClose = false; this._sendFin(conn); }
+      return;
+    }
 
     const sndUna = (conn.outQ.length > 0) ? (conn.outQ[0].seq >>> 0) : (conn.myacc >>> 0);
     const sndNxt = conn.myacc >>> 0;
 
     const inFlight = seqDist(sndUna, sndNxt);
 
-    const wnd = (conn.sndWnd >>> 0);
+    const wnd = Math.min(conn.cwnd >>> 0, conn.sndWnd >>> 0);
     let canSend = 0;
     if (wnd > inFlight) canSend = (wnd - inFlight) >>> 0;
 
@@ -366,10 +405,16 @@ export class TcpEngine {
 
       canSend = (canSend - n) >>> 0;
     }
+
+    if (conn.sendQ.length === 0 && conn.pendingClose) {
+      conn.pendingClose = false;
+      this._sendFin(conn);
+    }
   }
 
   /**
    * Initiate a TCP connection close (FIN).
+   * Defers the FIN if sendQ is non-empty — FIN must follow all outstanding data.
    * @param {string} key
    */
   close(key) {
@@ -377,16 +422,28 @@ export class TcpEngine {
     if (!conn) return;
 
     if (conn.state === "ESTABLISHED" || conn.state === "CLOSE-WAIT") {
-      this._sendSegment(conn, {
-        seq: conn.myacc,
-        ack: conn.theiracc,
-        flags: TCPPacket.FLAG_FIN | TCPPacket.FLAG_ACK,
-        window: this._calcRcvWnd(conn),
-        payload: new Uint8Array(),
-      });
-      conn.myacc = u32(conn.myacc + 1);
-      conn.state = conn.state === "ESTABLISHED" ? "FIN-WAIT-1" : "LAST-ACK";
+      if (conn.sendQBytes > 0) {
+        conn.pendingClose = true;
+        return;
+      }
+      this._sendFin(conn);
     }
+  }
+
+  /**
+   * Send a FIN+ACK and advance connection state.
+   * @param {TCPSocket} conn
+   */
+  _sendFin(conn) {
+    this._sendSegment(conn, {
+      seq: conn.myacc,
+      ack: conn.theiracc,
+      flags: TCPPacket.FLAG_FIN | TCPPacket.FLAG_ACK,
+      window: this._calcRcvWnd(conn),
+      payload: new Uint8Array(),
+    });
+    conn.myacc = u32(conn.myacc + 1);
+    conn.state = conn.state === "ESTABLISHED" ? "FIN-WAIT-1" : "LAST-ACK";
   }
 
   /**
@@ -490,6 +547,12 @@ export class TcpEngine {
     const key = this._tcpKey(localIP, localPort, remoteIP, remotePort);
     let conn = this.conns.get(key);
 
+    // Parse TS option and update tsRecent for established connections
+    const inTs = (conn?.tsEnabled)
+      ? TcpEngine._parseTsOption(tcp.options ?? new Uint8Array())
+      : null;
+    if (inTs && conn) conn.tsRecent = inTs.tsval >>> 0;
+
     // 0) No existing connection -> possibly a new inbound connection to LISTEN
     if (!conn) {
       const listen = this.sockets.get(localPort);
@@ -513,6 +576,13 @@ export class TcpEngine {
         // Respect peer's advertised MSS (RFC 1122 §4.2.2.6)
         const peerMss = TcpEngine._parseMssOption(tcp.options ?? new Uint8Array());
         if (peerMss != null) conn.mss = Math.min(peerMss, this.defaultMSS);
+        conn.cwnd = conn.mss;
+
+        // Timestamp negotiation: offer TS in SYN-ACK if client offered it
+        const synTs = TcpEngine._parseTsOption(tcp.options ?? new Uint8Array());
+        const synAckOpts = synTs
+          ? TcpEngine._buildSynOptions(this.defaultMSS, simTimer.currentTick >>> 0, synTs.tsval >>> 0)
+          : TcpEngine._buildMssOption(this.defaultMSS);
 
         this.conns.set(key, conn);
 
@@ -524,9 +594,15 @@ export class TcpEngine {
           ack: conn.theiracc,
           flags: TCPPacket.FLAG_SYN | TCPPacket.FLAG_ACK,
           window: this._calcRcvWnd(conn),
-          options: TcpEngine._buildMssOption(this.defaultMSS),
+          options: synAckOpts,
           payload: new Uint8Array(),
         });
+
+        // Enable TS after SYN-ACK is sent so _sendSegment doesn't auto-append TS yet
+        if (synTs) {
+          conn.tsEnabled = true;
+          conn.tsRecent = synTs.tsval >>> 0;
+        }
         return;
       }
 
@@ -558,7 +634,7 @@ export class TcpEngine {
 
       const okAck = seqGE(ackNo, sndUna) && seqLE(ackNo, sndNxt);
 
-      if (okAck) this._onAck(conn, ackNo);
+      if (okAck) this._onAck(conn, ackNo, inTs?.tsecr ?? null);
     }
 
     if (conn.sendQBytes > 0 && ((conn.sndWnd >>> 0) !== prevSndWnd || ack)) {
@@ -586,6 +662,17 @@ export class TcpEngine {
         conn.state = "ESTABLISHED";
         const peerMss = TcpEngine._parseMssOption(tcp.options ?? new Uint8Array());
         if (peerMss != null) conn.mss = Math.min(peerMss, this.defaultMSS);
+        conn.cwnd = conn.mss;
+
+        // Timestamp negotiation: enable if server echoed our TS offer
+        const synAckTs = TcpEngine._parseTsOption(tcp.options ?? new Uint8Array());
+        if (synAckTs) {
+          conn.tsEnabled = true;
+          conn.tsRecent = synAckTs.tsval >>> 0;
+          // Initial RTT from SYN round-trip (TSecr = TSval we sent in SYN)
+          const rttTicks = u32(simTimer.currentTick - synAckTs.tsecr);
+          if (rttTicks > 0 && rttTicks < 0x80000000) this._updateRtt(conn, rttTicks);
+        }
 
         while (conn.connectWaiters.length) conn.connectWaiters.shift()?.(null);
 
@@ -599,6 +686,7 @@ export class TcpEngine {
     if (conn.state === "SYN-RECEIVED") {
       if (ack && (tcp.ack >>> 0) === (conn.myacc >>> 0)) {
         conn.state = "ESTABLISHED";
+        conn.cwnd = conn.mss; // reset to 1 MSS; _onAck may have grown cwnd for the SYN-ACK seq
 
         const listen = this.sockets.get(conn.port);
         if (listen && listen.state === "LISTEN") {
@@ -615,7 +703,7 @@ export class TcpEngine {
       if (ack && (tcp.ack >>> 0) === (conn.myacc >>> 0)) {
         conn.state = conn.eof ? "TIME-WAIT" : "FIN-WAIT-2";
         if (conn.state === "TIME-WAIT") {
-          conn.timeWaitUntil = (this.nowMs + this.timeWaitMs) | 0;
+          this._scheduleTimeWait(conn);
         }
       }
     }
@@ -624,7 +712,7 @@ export class TcpEngine {
     if (conn.state === "CLOSING") {
       if (ack && (tcp.ack >>> 0) === (conn.myacc >>> 0)) {
         conn.state = "TIME-WAIT";
-        conn.timeWaitUntil = (this.nowMs + this.timeWaitMs) | 0;
+        this._scheduleTimeWait(conn);
       }
       return;
     }
@@ -691,6 +779,57 @@ export class TcpEngine {
   }
 
   /**
+   * Append TS option to baseOpts if timestamps are enabled for this connection.
+   * @param {TCPSocket} conn
+   * @param {Uint8Array|undefined} baseOpts
+   * @returns {Uint8Array}
+   */
+  _buildSegmentOptions(conn, baseOpts) {
+    if (!conn.tsEnabled) return baseOpts ?? new Uint8Array(0);
+    const ts = TcpEngine._buildTsOption(simTimer.currentTick >>> 0, conn.tsRecent >>> 0);
+    if (!baseOpts || baseOpts.length === 0) return ts;
+    const out = new Uint8Array(baseOpts.length + ts.length);
+    out.set(baseOpts); out.set(ts, baseOpts.length);
+    return out;
+  }
+
+  /**
+   * Build and transmit a TCP packet (no outQ involvement).
+   * Automatically appends TS option when conn.tsEnabled.
+   * @param {TCPSocket} conn
+   * @param {{seq:number, ack:number, flags:number, window?:number, options?:Uint8Array, payload:Uint8Array}} seg
+   */
+  _sendRaw(conn, { seq, ack, flags, window, options, payload }) {
+    const tcpBytes = new TCPPacket({
+      srcPort: conn.port,
+      dstPort: conn.peerPort,
+      seq, ack, flags,
+      window: (window ?? this._calcRcvWnd(conn)) | 0,
+      options: this._buildSegmentOptions(conn, options),
+      payload,
+    }).pack();
+    this._ipSend({ dst: conn.peerIP, src: conn.localIP, protocol: 6, payload: tcpBytes });
+  }
+
+  /**
+   * Update smoothed RTT and RTO using Jacobson/Karels algorithm (RFC 6298).
+   * @param {TCPSocket} conn
+   * @param {number} rttTicks  measured round-trip time in simulation ticks
+   */
+  _updateRtt(conn, rttTicks) {
+    const rttMs = rttTicks * SimTimer.SIM_MS_PER_TICK;
+    if (conn.srtt === 0) {
+      conn.srtt   = rttMs;
+      conn.rttvar = rttMs / 2;
+    } else {
+      const delta = Math.abs(conn.srtt - rttMs);
+      conn.rttvar = conn.rttvar * 0.75 + delta * 0.25;
+      conn.srtt   = conn.srtt  * 0.875 + rttMs * 0.125;
+    }
+    conn.rtoMs = Math.max(SimTimer.TCP_MIN_RTO_MS, Math.round(conn.srtt + 4 * conn.rttvar));
+  }
+
+  /**
    * Send a TCP segment via IP.
    * @param {TCPSocket} conn
    * @param {{
@@ -712,45 +851,31 @@ export class TcpEngine {
     const rexmittable = len > 0; // do not queue pure ACKs
 
     if (rexmittable) {
+      const wasEmpty = conn.outQ.length === 0;
       conn.outQ.push({
         seq: seq >>> 0,
         end,
         flags,
         payload,
-        sentAt: this.nowMs | 0,
         rexmit: 0,
       });
-
-      if (!conn.rtoDeadline) conn.rtoDeadline = (this.nowMs + conn.rtoMs) | 0;
+      if (wasEmpty) this._scheduleRto(conn);
     }
 
-    const tcpBytes = new TCPPacket({
-      srcPort: conn.port,
-      dstPort: conn.peerPort,
-      seq,
-      ack,
-      flags,
-      window: (window ?? this._calcRcvWnd(conn)) | 0,
-      options,
-      payload
-    }).pack();
-
-    this._ipSend({
-      dst: conn.peerIP,
-      src: conn.localIP,
-      protocol: 6,
-      payload: tcpBytes,
-    });
+    this._sendRaw(conn, { seq, ack, flags, window, options, payload });
   }
 
   /**
-   * Process an incoming ACK number: remove fully-acked segments from outQ.
+   * Process an incoming ACK: remove acked segments, update congestion window.
+   * Handles Slow Start, Congestion Avoidance, and Fast Retransmit/Recovery.
    * @param {TCPSocket} conn
    * @param {number} ackNo
+   * @param {number|null} [tsecr] TSecr from peer's Timestamp option for RTT measurement
    */
-  _onAck(conn, ackNo) {
-    let removedAny = false;
+  _onAck(conn, ackNo, tsecr = null) {
+    const sndUnaBefore = (conn.outQ.length > 0) ? (conn.outQ[0].seq >>> 0) : (conn.myacc >>> 0);
 
+    let removedAny = false;
     while (conn.outQ.length > 0) {
       const seg = conn.outQ[0];
       if (seqLE(seg.end >>> 0, ackNo >>> 0)) {
@@ -759,32 +884,106 @@ export class TcpEngine {
       } else break;
     }
 
-    if (!removedAny) return;
+    if (!removedAny) {
+      // Duplicate ACK: ackNo didn't advance and there is outstanding data
+      if (conn.outQ.length > 0 && (ackNo >>> 0) === sndUnaBefore) {
+        conn.dupAckCount++;
+        if (conn.dupAckCount === 3) {
+          // Fast Retransmit: enter Fast Recovery
+          const mss = conn.mss | 0;
+          conn.ssthresh = Math.max(Math.floor(Math.min(conn.cwnd >>> 0, conn.sndWnd >>> 0) / 2), 2 * mss);
+          conn.cwnd = conn.ssthresh + 3 * mss;
+          this._retransmitOldest(conn);
+        } else if (conn.dupAckCount > 3) {
+          // Fast Recovery: inflate cwnd per additional dupACK
+          conn.cwnd = (conn.cwnd >>> 0) + (conn.mss | 0);
+          this._flushSend(conn);
+        }
+      }
+      return;
+    }
+
+    // New data acked
+    const bytesAcked = seqDist(sndUnaBefore, ackNo >>> 0);
+    conn.dupAckCount = 0;
+
+    // RTT measurement via Timestamps (skip 0-tick samples from synchronous loopbacks)
+    if (conn.tsEnabled && tsecr !== null) {
+      const rttTicks = u32(simTimer.currentTick - tsecr);
+      if (rttTicks > 0 && rttTicks < 0x80000000) this._updateRtt(conn, rttTicks);
+    }
+
+    const mss = conn.mss | 0;
+
+    if ((conn.cwnd >>> 0) < (conn.ssthresh >>> 0)) {
+      // Slow Start: cwnd grows by one MSS per ACK (doubles each RTT)
+      conn.cwnd = (conn.cwnd >>> 0) + Math.min(mss, bytesAcked);
+    } else {
+      // Congestion Avoidance: linear growth — one MSS per RTT
+      conn.cwnd = (conn.cwnd >>> 0) + Math.max(1, Math.floor((mss * mss) / (conn.cwnd >>> 0)));
+    }
 
     if (conn.outQ.length === 0) {
-      conn.rtoDeadline = 0;
-      conn.rtoMs = 600;
+      this._cancelRto(conn);
+      if (conn.srtt === 0) conn.rtoMs = 600; // no measurement yet — keep initial value
     } else {
-      conn.rtoDeadline = (this.nowMs + conn.rtoMs) | 0;
+      this._scheduleRto(conn);
     }
 
     this._flushSend(conn);
   }
 
   /**
-   * RTO retransmit for the oldest outstanding segment (simple backoff).
+   * Retransmit the oldest unacked segment (used by Fast Retransmit).
    * @param {TCPSocket} conn
    */
-  _checkRto(conn) {
+  _retransmitOldest(conn) {
     if (conn.outQ.length === 0) return;
-    if (!conn.rtoDeadline) return;
-    if ((this.nowMs | 0) < (conn.rtoDeadline | 0)) return;
+    const seg = conn.outQ[0];
+    this._sendRaw(conn, {
+      seq: seg.seq,
+      ack: conn.theiracc >>> 0,
+      flags: seg.flags | TCPPacket.FLAG_ACK,
+      payload: seg.payload,
+    });
+  }
+
+  /**
+   * Schedule (or reschedule) the RTO timer for conn.
+   * @param {TCPSocket} conn
+   */
+  _scheduleRto(conn) {
+    if (conn.rtoTimerId !== null) { simTimer.cancel(conn.rtoTimerId); conn.rtoTimerId = null; }
+    if (conn.outQ.length === 0) return;
+    conn.rtoTimerId = simTimer.schedule(() => this._fireRto(conn), conn.rtoMs);
+  }
+
+  /**
+   * Cancel any pending RTO timer for conn.
+   * @param {TCPSocket} conn
+   */
+  _cancelRto(conn) {
+    if (conn.rtoTimerId !== null) { simTimer.cancel(conn.rtoTimerId); conn.rtoTimerId = null; }
+  }
+
+  /**
+   * RTO fired: retransmit oldest unacked segment, apply exponential backoff, reschedule.
+   * @param {TCPSocket} conn
+   */
+  _fireRto(conn) {
+    conn.rtoTimerId = null;
+    if (conn.outQ.length === 0 || conn.state === "CLOSED") return;
 
     const seg = conn.outQ[0];
     seg.rexmit++;
 
+    // Congestion control: timeout → back to Slow Start
+    const mss = conn.mss | 0;
+    conn.ssthresh = Math.max(Math.floor(conn.cwnd / 2), 2 * mss);
+    conn.cwnd = mss;
+    conn.dupAckCount = 0;
+
     conn.rtoMs = Math.min(conn.rtoMs * 2, 60_000);
-    conn.rtoDeadline = (this.nowMs + conn.rtoMs) | 0;
 
     const isBareSyn =
       (seg.flags & TCPPacket.FLAG_SYN) !== 0 &&
@@ -794,22 +993,29 @@ export class TcpEngine {
     const flags = isBareSyn ? seg.flags : (seg.flags | TCPPacket.FLAG_ACK);
     const ackNo = isBareSyn ? 0 : (conn.theiracc >>> 0);
 
-    const tcpBytes = new TCPPacket({
-      srcPort: conn.port,
-      dstPort: conn.peerPort,
+    // For SYN retransmits rebuild SYN options (MSS+TS); for data use _sendRaw auto-TS.
+    const retxOptions = isBareSyn
+      ? TcpEngine._buildSynOptions(conn.mss, simTimer.currentTick >>> 0, 0)
+      : undefined;
+
+    this._sendRaw(conn, {
       seq: seg.seq,
       ack: ackNo,
       flags,
-      window: this._calcRcvWnd(conn),
-      payload: seg.payload
-    }).pack();
-
-    this._ipSend({
-      dst: conn.peerIP,
-      src: conn.localIP,
-      protocol: 6,
-      payload: tcpBytes,
+      options: retxOptions,
+      payload: seg.payload,
     });
+
+    conn.rtoTimerId = simTimer.schedule(() => this._fireRto(conn), conn.rtoMs);
+  }
+
+  /**
+   * Start the TIME-WAIT timer; destroy the connection when it expires.
+   * @param {TCPSocket} conn
+   */
+  _scheduleTimeWait(conn) {
+    if (conn.timeWaitTimerId !== null) { simTimer.cancel(conn.timeWaitTimerId); conn.timeWaitTimerId = null; }
+    conn.timeWaitTimerId = simTimer.schedule(() => this._destroy(conn, "TIME-WAIT expired"), this.timeWaitMs);
   }
 
   /**
@@ -818,6 +1024,9 @@ export class TcpEngine {
    * @param {string} reason
    */
   _destroy(conn, reason) {
+    this._cancelRto(conn);
+    if (conn.timeWaitTimerId !== null) { simTimer.cancel(conn.timeWaitTimerId); conn.timeWaitTimerId = null; }
+
     while (conn.waiters.length) conn.waiters.shift()?.(null);
     while (conn.connectWaiters.length) conn.connectWaiters.shift()?.(new Error(reason));
 
@@ -985,7 +1194,7 @@ export class TcpEngine {
         conn.state = "CLOSING";
       } else if (conn.state === "FIN-WAIT-2") {
         conn.state = "TIME-WAIT";
-        conn.timeWaitUntil = (this.nowMs + this.timeWaitMs) | 0;
+        this._scheduleTimeWait(conn);
       }
     }
   }
@@ -1047,6 +1256,39 @@ export class TCPSocket {
   eof = false;
 
   // ---------------------------------------------------------------------------
+  // TCP Timestamps (RFC 7323)
+  // ---------------------------------------------------------------------------
+
+  /** true once both sides confirmed TS support during handshake */
+  tsEnabled = false;
+
+  /** last TSval received from peer — echoed as TSecr in outgoing segments */
+  tsRecent = 0;
+
+  // ---------------------------------------------------------------------------
+  // RTT estimation (Jacobson/Karels)
+  // ---------------------------------------------------------------------------
+
+  /** smoothed RTT in simulated ms (0 = no measurement yet) */
+  srtt = 0;
+
+  /** RTT variance in simulated ms */
+  rttvar = 0;
+
+  // ---------------------------------------------------------------------------
+  // Congestion control
+  // ---------------------------------------------------------------------------
+
+  /** congestion window in bytes (starts at 1 MSS) */
+  cwnd = 512;
+
+  /** slow start threshold in bytes */
+  ssthresh = 65535;
+
+  /** duplicate ACK counter for Fast Retransmit */
+  dupAckCount = 0;
+
+  // ---------------------------------------------------------------------------
   // Sender flow control (respect peer window)
   // ---------------------------------------------------------------------------
 
@@ -1059,6 +1301,9 @@ export class TCPSocket {
 
   /** total bytes currently queued in sendQ */
   sendQBytes = 0;
+
+  /** true when close() was called while sendQ was non-empty; FIN is sent after drain */
+  pendingClose = false;
 
   // ---------------------------------------------------------------------------
   // OOO receive queue (improved): sorted interval blocks
@@ -1083,19 +1328,19 @@ export class TCPSocket {
   // Outgoing retransmission buffer + RTO timer state
   // ---------------------------------------------------------------------------
 
-  /** @type {Array<{seq:number, end:number, flags:number, payload:Uint8Array, sentAt:number, rexmit:number}>} */
+  /** @type {Array<{seq:number, end:number, flags:number, payload:Uint8Array, rexmit:number}>} */
   outQ = [];
 
-  /** @type {number} initial RTO in simulated ms (ticks) */
+  /** @type {number} current RTO in simulated ms */
   rtoMs = 600;
 
-  /** @type {number} absolute deadline in engine.nowMs when to retransmit */
-  rtoDeadline = 0;
+  /** @type {number|null} simTimer id for pending RTO retransmit */
+  rtoTimerId = null;
 
   // ---------------------------------------------------------------------------
   // TIME-WAIT
   // ---------------------------------------------------------------------------
 
-  /** @type {number} absolute time in engine.nowMs when TIME-WAIT ends */
-  timeWaitUntil = 0;
+  /** @type {number|null} simTimer id for TIME-WAIT expiry */
+  timeWaitTimerId = null;
 }

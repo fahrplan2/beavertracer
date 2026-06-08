@@ -185,8 +185,8 @@ export class UILib {
         rows: (opts.rows ?? "5"),
         cols: (opts.cols ?? "20"),
         placeholder: (opts.placeholder ?? ""),
-        spellcheck: (opts.spellcheck),
-        readonly: opts.readonly,
+        spellcheck: /** @type {any} */ (opts.spellcheck),
+        readonly: /** @type {any} */ (opts.readonly),
       },
       init: (el) => {
         if (opts.value != null) el.value = opts.value;

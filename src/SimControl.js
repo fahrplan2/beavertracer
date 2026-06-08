@@ -729,8 +729,10 @@ export class SimControl {
             const elPrev = this._objEls.get(prev.id);
             elPrev?.classList?.remove("is-focused");
         }
-        const elNow = this._objEls.get(obj.id);
-        elNow?.classList?.add("is-focused");
+        if (obj) {
+            const elNow = this._objEls.get(obj.id);
+            elNow?.classList?.add("is-focused");
+        }
 
         this._invalidateUI(); // if toolbar/panels depend on focus
     }
@@ -916,7 +918,7 @@ export class SimControl {
         input.accept = ".btsim,.json";
 
         input.addEventListener("change", async () => {
-            const file = input.files[0];
+            const file = input.files?.[0];
             if (!file) return;
 
             try {
@@ -1192,6 +1194,35 @@ export class SimControl {
         gZoom.appendChild(btnZoomIn);
 
 
+        //******** TRACING ***********/
+        addSeparator("sep-tracing");
+        const gTracing = UILib.buttongroup(t("sim.tracing"), toolbar);
+        gTracing.dataset.group = "tracing";
+
+        const btnTracePrev = UILib.iconbutton({
+            label: t("pcap.btn.prev"),
+            icon: "fa-chevron-left",
+            onClick: () => this.pcapViewer.prevPage(),
+        });
+        btnTracePrev.dataset.role = "tracing-prev";
+        gTracing.appendChild(btnTracePrev);
+
+        const btnTraceNext = UILib.iconbutton({
+            label: t("pcap.btn.next"),
+            icon: "fa-chevron-right",
+            onClick: () => this.pcapViewer.nextPage(),
+        });
+        btnTraceNext.dataset.role = "tracing-next";
+        gTracing.appendChild(btnTraceNext);
+
+        const btnTraceFollow = UILib.iconbutton({
+            label: t("pcap.btn.follow"),
+            icon: "fa-exchange-alt",
+            onClick: () => this.pcapViewer.followTcpStream(),
+        });
+        btnTraceFollow.dataset.role = "tracing-follow";
+        gTracing.appendChild(btnTraceFollow);
+
         //******** COMMON ***********/
         addSeparator("sep-common");
         const gCommon = UILib.buttongroup(t("sim.common"), toolbar);
@@ -1217,7 +1248,7 @@ export class SimControl {
                 this.pause();
                 this.mode = "page";
                 this._invalidateUI();
-                this._staticRouter.navigate("/help", { replace: true });
+                this._staticRouter?.navigate("/help", { replace: true });
             },
         });
         helpBtn.dataset.role = "mode-help";
@@ -1230,7 +1261,7 @@ export class SimControl {
                 this.pause();
                 this.mode = "page";
                 this._invalidateUI();
-                this._staticRouter.navigate("/about", { replace: true });
+                this._staticRouter?.navigate("/about", { replace: true });
             },
         });
         aboutBtn.dataset.role = "mode-about";
@@ -1411,12 +1442,12 @@ export class SimControl {
 
         // tab visibility (mounted once; just toggle active)
         const isSim = (this.mode === "edit" || this.mode === "run");
-        this._simBody.classList.toggle("active", isSim);
-        this._tracerBody.classList.toggle("active", this.mode === "trace");
-        this._pageBody.classList.toggle("active", this.mode === "page");
+        this._simBody?.classList.toggle("active", isSim);
+        this._tracerBody?.classList.toggle("active", this.mode === "trace");
+        this._pageBody?.classList.toggle("active", this.mode === "page");
 
         // sidebar only in edit
-        this._sidebar.classList.toggle("hidden", this.mode !== "edit");
+        this._sidebar?.classList.toggle("hidden", this.mode !== "edit");
 
         // toolbar updates
         const toolbar = this._toolbar;
@@ -1472,6 +1503,24 @@ export class SimControl {
             const sepZoom   = toolbar.querySelector(`[data-role="sep-zoom"]`);
             setHidden(zoomGroup, !showZoom);
             setHidden(sepZoom, !showZoom);
+
+            const showTracing = (this.mode === "trace");
+            const tracingInner = toolbar.querySelector(`[data-group="tracing"]`);
+            const tracingGroup = tracingInner?.closest(".sim-toolbar-group") ?? tracingInner;
+            const sepTracing   = toolbar.querySelector(`[data-role="sep-tracing"]`);
+            setHidden(tracingGroup, !showTracing);
+            setHidden(sepTracing, !showTracing);
+
+            if (showTracing) {
+                /** @param {string} role @param {boolean} disabled */
+                const setDisabled = (role, disabled) => {
+                    const el = /** @type {HTMLButtonElement|null} */ (toolbar.querySelector(`[data-role="${role}"]`));
+                    if (el) el.disabled = disabled;
+                };
+                setDisabled("tracing-prev",   !this.pcapViewer.canPrevPage());
+                setDisabled("tracing-next",   !this.pcapViewer.canNextPage());
+                setDisabled("tracing-follow", !this.pcapViewer.canFollowTcpStream());
+            }
 
         }
 
@@ -1567,7 +1616,7 @@ export class SimControl {
                 ? `${obj.A.id}-${obj.B.id}`
                 : `${obj.B.id}-${obj.A.id}`;
             if (!groups.has(key)) groups.set(key, []);
-            groups.get(key).push(obj);
+            groups.get(key)?.push(obj);
         }
 
         // Assign perpendicular offsets, centred around 0

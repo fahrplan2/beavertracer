@@ -390,7 +390,8 @@ export class IPStack extends Observable {
 
         // 1) destroy ethernet link
         if (interf.port.linkref != null) {
-            interf.port.linkref.link.simcontrol.deleteObject(interf.port.linkref.link);
+            const _link = interf.port.linkref.link;
+            if (_link != null) _link.simcontrol.deleteObject(_link);
         }
 
         // 2) destroy all TCP-connections
@@ -862,7 +863,7 @@ export class IPStack extends Observable {
                 break;
             default:
                 if (this._rawProtoHandlers.has(packet.protocol)) {
-                    this._rawProtoHandlers.get(packet.protocol)(packet, recvIfIndex);
+                    this._rawProtoHandlers.get(packet.protocol)?.(packet, recvIfIndex);
                 } else {
                     this._sendICMPError(packet, 3, 2); // Protocol Unreachable
                 }

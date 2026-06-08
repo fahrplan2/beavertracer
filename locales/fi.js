@@ -1223,5 +1223,12 @@ export default {
   "app.dnsd.label.mode": "Tila",
   "app.dnsd.label.mode.authoritative": "Auktoritatiivinen",
   "app.dnsd.label.mode.recursive": "Rekursiivinen yhdyskäytävä",
-  "app.dnsd.label.rootDns": "Juuripalvelin (Root DNS)"
+  "app.dnsd.label.rootDns": "Juuripalvelin (Root DNS)",
+  "sim.tracing": "Jäljitys",
+  "pcap.btn.follow": "Seuraa TCP-virtaa",
+  "pcap.stream.title": "TCP-virta",
+  "pcap.stream.notcp": "Valittu paketti ei sisällä TCP-segmenttiä.",
+  "pcap.stream.empty": "Ei hyötykuormaa tässä virrassa.",
+  "pcap.stream.close": "Sulje",
+  "pcap.stream.bytes": "tavua"
 };

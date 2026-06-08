@@ -1223,5 +1223,12 @@ export default {
   "app.dnsd.label.mode": "Режим",
   "app.dnsd.label.mode.authoritative": "Авторитетний",
   "app.dnsd.label.mode.recursive": "Рекурсивний розв'язувач",
-  "app.dnsd.label.rootDns": "Root DNS"
+  "app.dnsd.label.rootDns": "Root DNS",
+  "sim.tracing": "Трасування",
+  "pcap.btn.follow": "Слідувати потоку TCP",
+  "pcap.stream.title": "Потік TCP",
+  "pcap.stream.notcp": "Вибраний пакет не містить сегмента TCP.",
+  "pcap.stream.empty": "Немає даних корисного навантаження в цьому потоці.",
+  "pcap.stream.close": "Закрити",
+  "pcap.stream.bytes": "байт"
 };

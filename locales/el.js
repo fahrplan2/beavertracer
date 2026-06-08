@@ -1223,5 +1223,12 @@ export default {
   "app.dnsd.label.mode": "Λειτουργία",
   "app.dnsd.label.mode.authoritative": "Εξουσιοδοτημένος",
   "app.dnsd.label.mode.recursive": "Αναδρομικός Επιλύτης",
-  "app.dnsd.label.rootDns": "Root DNS"
+  "app.dnsd.label.rootDns": "Root DNS",
+  "sim.tracing": "Ιχνηλασία",
+  "pcap.btn.follow": "Ακολούθηση TCP Stream",
+  "pcap.stream.title": "TCP Stream",
+  "pcap.stream.notcp": "Το επιλεγμένο πακέτο δεν περιέχει ένα TCP τμήμα.",
+  "pcap.stream.empty": "Δεν υπάρχουν δεδομένα φορτίου σε αυτή τη ροή.",
+  "pcap.stream.close": "Κλείσιμο",
+  "pcap.stream.bytes": "bytes"
 };

@@ -40,21 +40,21 @@ export class DNSResolver {
       if (typeof n === "number" && (n >>> 0) === 0) this.serverIp = null;
     }
 
-    this.port = Number.isFinite(opts.port) ? (opts.port | 0) : 53;
+    this.port = Number.isFinite(opts.port) ? (/** @type {number} */ (opts.port) | 0) : 53;
 
     this.timeoutMs = Number.isFinite(opts.timeoutMs)
-      ? (opts.timeoutMs | 0)
+      ? (/** @type {number} */ (opts.timeoutMs) | 0)
       : SimTimer.DNS_TIMEOUT_MS;
 
     this.tries = Number.isFinite(opts.tries)
-      ? Math.max(1, Math.min(10, opts.tries | 0))
+      ? Math.max(1, Math.min(10, /** @type {number} */ (opts.tries) | 0))
       : 2;
 
     this.cacheEnabled = (opts.cache ?? true) ? true : false;
-    this.maxDepth = Number.isFinite(opts.maxDepth) ? Math.max(1, opts.maxDepth | 0) : 7;
+    this.maxDepth = Number.isFinite(opts.maxDepth) ? Math.max(1, /** @type {number} */ (opts.maxDepth) | 0) : 7;
 
-    this.negativeCacheSec = Number.isFinite(opts.negativeCacheSec) ? Math.max(0, opts.negativeCacheSec | 0) : 5;
-    this.maxCacheSec = Number.isFinite(opts.maxCacheSec) ? Math.max(1, opts.maxCacheSec | 0) : 3600;
+    this.negativeCacheSec = Number.isFinite(opts.negativeCacheSec) ? Math.max(0, /** @type {number} */ (opts.negativeCacheSec) | 0) : 5;
+    this.maxCacheSec = Number.isFinite(opts.maxCacheSec) ? Math.max(1, /** @type {number} */ (opts.maxCacheSec) | 0) : 3600;
 
     /** @type {Map<string, {expiresAt:number, value:any}>} */
     this._cache = new Map();
@@ -497,7 +497,7 @@ export class DNSResolver {
 
   /** @param {*} resp */
   _pickCacheTTLSeconds(resp) {
-    const all = []
+    const /** @type {any[]} */ all = []
       .concat(resp.answers ?? [])
       .concat(resp.authorities ?? [])
       .concat(resp.additionals ?? []);

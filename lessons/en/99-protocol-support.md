@@ -88,7 +88,7 @@ BeaverTracer is an educational network simulator. It models a wide range of stan
 <tr>
   <td>TCP</td><td>RFC 793, RFC 3168</td>
   <td><span class="badge badge-partial">Partial</span></td>
-  <td>All header fields: ports, sequence/ack numbers, data offset, all 8 flags (incl. ECE/CWR), window, checksum, urgent pointer. Options field carried but not interpreted — MSS, Window Scale, SACK, and Timestamps are not negotiated. No congestion control.</td>
+  <td>All header fields: ports, sequence/ack numbers, data offset, all 8 flags (incl. ECE/CWR), window, checksum, urgent pointer. MSS is negotiated during the SYN handshake (sent and parsed). Window Scale, SACK, and Timestamps are not negotiated; window sizes are fixed. No congestion control.</td>
 </tr>
 <tr>
   <td>UDP</td><td>RFC 768</td>
@@ -288,7 +288,7 @@ Some constraints apply across the entire simulator regardless of protocol:
 
 - **No IPv4 fragmentation.** Packets that would exceed an MTU are sent as-is; there is no reassembly at the destination.
 - **No IPv6 extension headers.** Hop-by-Hop, Routing, Fragment, and Destination Options headers are not generated or parsed.
-- **No TCP options.** MSS negotiation, window scaling, SACK, and TCP Timestamps are not implemented; windows are fixed-size.
+- **Partial TCP options.** MSS is negotiated during the SYN handshake. Window scaling, SACK, and TCP Timestamps are not implemented; window sizes are fixed (no scaling).
 - **No multicast management.** IGMP (IPv4) and MLD (IPv6) are absent; multicast forwarding relies on flooding within the simulation.
 - **No routing protocol authentication.** MD5/SHA keychains for OSPF, BGP, and RIPv2 are structurally present but not enforced.
 - **No real cryptography beyond TLS.** Bitcoin signatures, DNSSEC records, and similar cryptographic constructs are faked or omitted.

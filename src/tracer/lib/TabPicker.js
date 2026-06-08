@@ -45,7 +45,7 @@ export class TabPicker {
       const { device, port } = split(s.name);
       const dev = device || t("pcap.picker.unknown");
       if (!devMap.has(dev)) devMap.set(dev, []);
-      devMap.get(dev).push({ port, name: s.name, hidden: !!s.hidden });
+      devMap.get(dev)?.push({ port, name: s.name, hidden: !!s.hidden });
     }
 
     /** @param {string} dev */

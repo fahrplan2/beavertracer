@@ -39,7 +39,7 @@ export class SimulatedObject {
     static idnumber = 0;
 
     /** @type {SimControl} */
-    simcontrol;
+    simcontrol = /** @type {any} */ (undefined);
 
     /** @type {HTMLElement} */
     root;

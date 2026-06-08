@@ -117,7 +117,7 @@ export class RectOverlay extends SimulatedObject {
         }
       });
 
-      this._ro.observe(this.iconEl);
+      if (this.iconEl) this._ro.observe(this.iconEl);
     }
 
 

@@ -3,6 +3,7 @@
 /**
  * @param {number} ms
  * @param {AbortSignal} signal
+ * @returns {Promise<void>}
  */
 export function sleepAbortable(ms, signal) {
   if (signal.aborted) return Promise.reject(new DOMException("Aborted", "AbortError"));

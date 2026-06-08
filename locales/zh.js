@@ -1223,5 +1223,12 @@ export default {
   "app.dnsd.label.mode": "模式",
   "app.dnsd.label.mode.authoritative": "权威",
   "app.dnsd.label.mode.recursive": "递归解析器",
-  "app.dnsd.label.rootDns": "根DNS"
+  "app.dnsd.label.rootDns": "根DNS",
+  "sim.tracing": "追踪",
+  "pcap.btn.follow": "跟踪 TCP 流",
+  "pcap.stream.title": "TCP 流",
+  "pcap.stream.notcp": "所选数据包不包含 TCP 段。",
+  "pcap.stream.empty": "此流中没有负载数据。",
+  "pcap.stream.close": "关闭",
+  "pcap.stream.bytes": "字节"
 };

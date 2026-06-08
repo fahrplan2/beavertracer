@@ -93,6 +93,7 @@ export class PCapViewer {
   /** @type {HTMLElement|null} */ #rawPane = null;
   /** @type {HTMLButtonElement|null} */ #prevBtn = null;
   /** @type {HTMLButtonElement|null} */ #nextBtn = null;
+  /** @type {HTMLButtonElement|null} */ #followBtn = null;
 
   // UI state
   /** @type {number} */ #filterTimer = 0;
@@ -351,8 +352,6 @@ export class PCapViewer {
 
       <div class="pcapviewer-toolbar">
         <input class="pcapviewer-filter" placeholder="${t("pcap.filter.placeholder")}" />
-        <button class="pcapviewer-prev" type="button" title="${t("pcap.btn.prev")}">◀</button>
-        <button class="pcapviewer-next" type="button" title="${t("pcap.btn.next")}">▶</button>
         <span class="pcapviewer-status"></span>
       </div>
 
@@ -414,23 +413,6 @@ export class PCapViewer {
 
   #wireUI() {
     if (!this.#root) return;
-
-    this.#prevBtn = /** @type {HTMLButtonElement} */ (this.#root.querySelector(".pcapviewer-prev"));
-    this.#nextBtn = /** @type {HTMLButtonElement} */ (this.#root.querySelector(".pcapviewer-next"));
-
-    this.#prevBtn.addEventListener("click", () => {
-      const s = this.#active();
-      if (!s) return;
-      s.skip = Math.max(0, s.skip - this.#LIMIT);
-      this.#loadAndRenderFramesForActive();
-    });
-
-    this.#nextBtn.addEventListener("click", () => {
-      const s = this.#active();
-      if (!s) return;
-      s.skip += this.#LIMIT;
-      this.#loadAndRenderFramesForActive();
-    });
 
     this.#filterEl?.addEventListener("input", () => {
       window.clearTimeout(this.#filterTimer);
@@ -594,7 +576,7 @@ export class PCapViewer {
       setPickerDevice: (d) => { this.#pickerDevice = d; },
       onPick: (name) => this.switchTab(name),
       onClose: () => this.#closeTabPicker(),
-      simControl: this.#opt.simControl,
+      simControl: /** @type {any} */ (this.#opt.simControl),
     });
   }
 
@@ -642,7 +624,8 @@ export class PCapViewer {
     if (this.#wgPromise) return;
     this.#wgPromise = this.#makeWgPromise();
     // Clear on failure so the next real use can retry normally
-    this.#wgPromise.catch(() => { this.#wgPromise = null; });
+    const _p = this.#wgPromise;
+    if (_p) _p.catch(() => { this.#wgPromise = null; });
   }
 
   /** @param {string} msg */
@@ -726,14 +709,11 @@ export class PCapViewer {
     const { frames, matched } = this.#getFramesPlainForActive();
     this.#renderTable(frames, matched);
 
-    const hasSess = !!s?.sess;
-    if (this.#prevBtn) this.#prevBtn.disabled = !hasSess || s.skip === 0;
-    if (this.#nextBtn) this.#nextBtn.disabled = !hasSess || s.skip + frames.length >= matched;
-
     if (!s) return;
     const from = frames.length > 0 ? s.skip + 1 : 0;
     const to   = s.skip + frames.length;
     this.#setStatus(t("pcap.status.active", { name: this.#displayName(s.name), from, to, matched }));
+    this.#notifySimControl();
   }
 
   /** @param {number} startTimeSec @param {string} relTimeStr @returns {string} */
@@ -813,6 +793,7 @@ export class PCapViewer {
         s2.selectedNo = Number(r.no);
         this.#highlightSelectedRow(s2.selectedNo);
         this.#loadAndRenderFrameDetailsForActive(s2.selectedNo);
+        this.#notifySimControl();
       });
 
       this.#tableBody.appendChild(tr);
@@ -1299,5 +1280,304 @@ export class PCapViewer {
     const start = Number(n?.start ?? 0);
     const length = Number(n?.length ?? 0);
     return start === 0 && length === 0;
+  }
+
+  // ======================================================================
+  // Public API for sim toolbar
+  // ======================================================================
+
+  prevPage() {
+    const s = this.#active(); if (!s) return;
+    s.skip = Math.max(0, s.skip - this.#LIMIT);
+    this.#loadAndRenderFramesForActive();
+  }
+
+  nextPage() {
+    const s = this.#active(); if (!s) return;
+    s.skip += this.#LIMIT;
+    this.#loadAndRenderFramesForActive();
+  }
+
+  canPrevPage() {
+    const s = this.#active();
+    return !!s?.sess && (s.skip ?? 0) > 0;
+  }
+
+  canNextPage() {
+    const s = this.#active();
+    if (!s?.sess) return false;
+    const { frames, matched } = this.#getFramesPlainForActive();
+    return s.skip + frames.length < matched;
+  }
+
+  canFollowTcpStream() {
+    const s = this.#active();
+    return !!s?.pcapBytes && typeof s.selectedNo === "number";
+  }
+
+  #notifySimControl() {
+    this.#opt.simControl?._invalidateUI?.();
+  }
+
+  // ======================================================================
+  // Follow TCP Stream
+  // ======================================================================
+
+  #updateFollowBtn() { /* state managed via sim toolbar */ }
+
+  followTcpStream() {
+    const s = this.#active();
+    if (!s?.pcapBytes || typeof s.selectedNo !== "number") return;
+
+    const frames = this.#parsePcapFrames(s.pcapBytes);
+    const sel = frames[s.selectedNo - 1]; // Wireshark is 1-based
+
+    if (!sel?.tcp) {
+      this.#openStreamDialog({ title: t("pcap.stream.notcp"), chunks: [], totalA: 0, totalB: 0 });
+      return;
+    }
+
+    const { srcIp, srcPort, dstIp, dstPort } = sel.tcp;
+    const labelA = `${srcIp}:${srcPort}`;
+    const labelB = `${dstIp}:${dstPort}`;
+
+    /** @type {Array<{ts:number, dir:"a"|"b", seq:number, payload:Uint8Array}>} */
+    const segs = [];
+    for (const f of frames) {
+      if (!f.tcp || f.tcp.payload.length === 0) continue;
+      const tc = f.tcp;
+      if (tc.srcIp === srcIp && tc.srcPort === srcPort && tc.dstIp === dstIp && tc.dstPort === dstPort) {
+        segs.push({ ts: f.ts, dir: "a", seq: tc.seq, payload: tc.payload });
+      } else if (tc.srcIp === dstIp && tc.srcPort === dstPort && tc.dstIp === srcIp && tc.dstPort === srcPort) {
+        segs.push({ ts: f.ts, dir: "b", seq: tc.seq, payload: tc.payload });
+      }
+    }
+
+    segs.sort((x, y) => x.ts !== y.ts ? (x.ts < y.ts ? -1 : 1) : ((x.seq - y.seq) | 0));
+
+    // Group consecutive same-direction segments into chunks
+    /** @type {Array<{dir:"a"|"b", bytes:Uint8Array}>} */
+    const chunks = [];
+    /** @type {{dir:"a"|"b", segs:typeof segs}|null} */
+    let cur = null;
+    for (const seg of segs) {
+      if (!cur || cur.dir !== seg.dir) {
+        if (cur) chunks.push({ dir: cur.dir, bytes: this.#reassembleTcp(cur.segs) });
+        cur = { dir: seg.dir, segs: [seg] };
+      } else {
+        cur.segs.push(seg);
+      }
+    }
+    if (cur) chunks.push({ dir: cur.dir, bytes: this.#reassembleTcp(cur.segs) });
+
+    const totalA = chunks.filter(c => c.dir === "a").reduce((s2, c) => s2 + c.bytes.length, 0);
+    const totalB = chunks.filter(c => c.dir === "b").reduce((s2, c) => s2 + c.bytes.length, 0);
+
+    this.#openStreamDialog({ title: `${labelA} ↔ ${labelB}`, labelA, labelB, chunks, totalA, totalB });
+  }
+
+  /**
+   * Parse all frames from a PCAP byte array.
+   * @param {Uint8Array} bytes
+   * @returns {Array<{ts:number, tcp:{srcIp:string,srcPort:number,dstIp:string,dstPort:number,seq:number,payload:Uint8Array}|null}>}
+   */
+  #parsePcapFrames(bytes) {
+    if (bytes.length < 24) return [];
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const magic = view.getUint32(0, true);
+    const le = magic === 0xA1B2C3D4 || magic === 0xA1B23C4D;
+
+    const frames = [];
+    let off = 24;
+    while (off + 16 <= bytes.length) {
+      const tsSec  = view.getUint32(off,     le);
+      const tsUsec = view.getUint32(off + 4, le);
+      const capLen = view.getUint32(off + 8, le);
+      off += 16;
+      if (off + capLen > bytes.length) break;
+      // Slice to the exact frame so payload subarray is naturally bounded.
+      const frame = bytes.subarray(off, off + capLen);
+      frames.push({ ts: tsSec * 1_000_000 + tsUsec, tcp: this.#parseTcpFromEthernet(frame, 0) });
+      off += capLen;
+    }
+    return frames;
+  }
+
+  /**
+   * @param {Uint8Array} b
+   * @param {number} frameOff  start of Ethernet frame within b
+   * @returns {{srcIp:string,srcPort:number,dstIp:string,dstPort:number,seq:number,payload:Uint8Array}|null}
+   */
+  #parseTcpFromEthernet(b, frameOff) {
+    let off = frameOff + 12; // skip dst+src MAC
+    while (off + 2 <= b.length) {
+      const et = (b[off] << 8) | b[off + 1];
+      off += 2;
+      if (et === 0x8100 || et === 0x88A8) { off += 2; continue; } // VLAN tag
+      if (et === 0x0800) return this.#parseTcpFromIPv4(b, off);
+      if (et === 0x86DD) return this.#parseTcpFromIPv6(b, off);
+      return null;
+    }
+    return null;
+  }
+
+  /** @param {Uint8Array} b @param {number} off */
+  #parseTcpFromIPv4(b, off) {
+    if (b.length < off + 20) return null;
+    const ihl = (b[off] & 0x0f) * 4;
+    if (b[off + 9] !== 6) return null;
+    const srcIp = `${b[off+12]}.${b[off+13]}.${b[off+14]}.${b[off+15]}`;
+    const dstIp = `${b[off+16]}.${b[off+17]}.${b[off+18]}.${b[off+19]}`;
+    return this.#parseTcpSegment(b, off + ihl, srcIp, dstIp);
+  }
+
+  /** @param {Uint8Array} b @param {number} ipOff */
+  #parseTcpFromIPv6(b, ipOff) {
+    if (b.length < ipOff + 40) return null;
+    let nh = b[ipOff + 6];
+    let hoff = ipOff + 40;
+    // Walk extension headers
+    while (nh !== 6) {
+      if (nh === 59 || hoff + 2 > b.length) return null;
+      if (nh === 0 || nh === 43 || nh === 60) { nh = b[hoff]; hoff += (b[hoff + 1] + 1) * 8; }
+      else if (nh === 44)                      { nh = b[hoff]; hoff += 8; }
+      else return null;
+      if (hoff > b.length) return null;
+    }
+    const g = (/** @type {number} */ base, /** @type {number} */ i) =>
+      ((b[base + i * 2] << 8) | b[base + i * 2 + 1]).toString(16);
+    const srcIp = [0,1,2,3,4,5,6,7].map(i => g(ipOff + 8,  i)).join(":");
+    const dstIp = [0,1,2,3,4,5,6,7].map(i => g(ipOff + 24, i)).join(":");
+    return this.#parseTcpSegment(b, hoff, srcIp, dstIp);
+  }
+
+  /** @param {Uint8Array} b @param {number} off @param {string} srcIp @param {string} dstIp */
+  #parseTcpSegment(b, off, srcIp, dstIp) {
+    if (b.length < off + 20) return null;
+    const srcPort = (b[off] << 8) | b[off + 1];
+    const dstPort = (b[off + 2] << 8) | b[off + 3];
+    const seq     = ((b[off+4] << 24) | (b[off+5] << 16) | (b[off+6] << 8) | b[off+7]) >>> 0;
+    const dataOff = ((b[off + 12] >> 4) & 0x0f) * 4;
+    if (b.length < off + dataOff) return null;
+    return { srcIp, srcPort, dstIp, dstPort, seq, payload: b.subarray(off + dataOff) };
+  }
+
+  /**
+   * Sort segments by seq and concatenate, handling retransmits and gaps.
+   * @param {Array<{seq:number, payload:Uint8Array}>} segs
+   */
+  #reassembleTcp(segs) {
+    if (segs.length === 0) return new Uint8Array(0);
+    segs.sort((a, b) => (a.seq - b.seq) | 0);
+
+    const parts = [];
+    let next = segs[0].seq;
+
+    for (const { seq, payload } of segs) {
+      const end = (seq + payload.length) >>> 0;
+      if (((seq - next) | 0) > 0) {
+        // Gap — include anyway (missing or filtered packets)
+        parts.push(payload); next = end;
+      } else if (((end - next) | 0) > 0) {
+        // Partial overlap — trim already-delivered prefix
+        const skip = (next - seq) >>> 0;
+        if (skip < payload.length) { parts.push(payload.subarray(skip)); next = end; }
+        // else fully within already-delivered range → skip retransmit
+      }
+    }
+
+    const total = parts.reduce((s, p) => s + p.length, 0);
+    const out = new Uint8Array(total);
+    let o = 0; for (const p of parts) { out.set(p, o); o += p.length; }
+    return out;
+  }
+
+  /**
+   * @param {{
+   *   title: string,
+   *   labelA?: string,
+   *   labelB?: string,
+   *   chunks: Array<{dir:"a"|"b", bytes:Uint8Array}>,
+   *   totalA: number,
+   *   totalB: number,
+   * }} opts
+   */
+  #openStreamDialog(opts) {
+    // Replace any existing dialog
+    this.#root?.querySelector(".pcapviewer-stream-overlay")?.remove();
+
+    const overlay = document.createElement("div");
+    overlay.className = "pcapviewer-stream-overlay";
+
+    const panel = document.createElement("div");
+    panel.className = "pcapviewer-stream-panel";
+
+    // Header
+    const hdr = document.createElement("div");
+    hdr.className = "pcapviewer-stream-hdr";
+    hdr.innerHTML = `
+      <span class="pcapviewer-stream-hdr-title">${this.#escapeHtml(t("pcap.stream.title"))}</span>
+      <span class="pcapviewer-stream-hdr-sub">${this.#escapeHtml(opts.title)}</span>
+      <button class="pcapviewer-stream-close" type="button"
+              aria-label="${this.#escapeHtml(t("pcap.stream.close"))}">×</button>
+    `;
+    panel.appendChild(hdr);
+
+    if (!opts.labelA) {
+      // Not a TCP frame
+      const msg = document.createElement("div");
+      msg.className = "pcapviewer-stream-msg";
+      msg.textContent = opts.title;
+      panel.appendChild(msg);
+    } else {
+      // Legend
+      const legend = document.createElement("div");
+      legend.className = "pcapviewer-stream-legend";
+      legend.innerHTML = `
+        <span class="pcapviewer-stream-dot pcapviewer-stream-dot--a"></span>
+        <span>${this.#escapeHtml(opts.labelA)}</span>
+        <span class="pcapviewer-stream-dot pcapviewer-stream-dot--b" style="margin-left:1.2em"></span>
+        <span>${this.#escapeHtml(opts.labelB ?? "")}</span>
+        <span class="pcapviewer-stream-totals">${opts.totalA} / ${opts.totalB} ${t("pcap.stream.bytes")}</span>
+      `;
+      panel.appendChild(legend);
+
+      // Content
+      const content = document.createElement("pre");
+      content.className = "pcapviewer-stream-content";
+      if (opts.chunks.length === 0) {
+        content.textContent = t("pcap.stream.empty");
+      } else {
+        for (const chunk of opts.chunks) {
+          const span = document.createElement("span");
+          span.className = chunk.dir === "a" ? "pcapviewer-stream-a" : "pcapviewer-stream-b";
+          span.textContent = this.#tcpBytesToAscii(chunk.bytes);
+          content.appendChild(span);
+        }
+      }
+      panel.appendChild(content);
+    }
+
+    overlay.appendChild(panel);
+    this.#root?.appendChild(overlay);
+
+    const close = () => { overlay.remove(); document.removeEventListener("keydown", onKey); };
+    hdr.querySelector(".pcapviewer-stream-close")?.addEventListener("click", close);
+    overlay.addEventListener("click", e => { if (e.target === overlay) close(); });
+    const onKey = (/** @type {KeyboardEvent} */ e) => { if (e.key === "Escape") close(); };
+    document.addEventListener("keydown", onKey);
+  }
+
+  /** @param {Uint8Array} bytes */
+  #tcpBytesToAscii(bytes) {
+    let s = "";
+    for (const b of bytes) {
+      if      (b === 10) s += "\n";
+      else if (b === 13) s += "\r";
+      else if (b === 9)  s += "\t";
+      else if (b >= 32 && b < 127) s += String.fromCharCode(b);
+      else s += "·";
+    }
+    return s;
   }
 }

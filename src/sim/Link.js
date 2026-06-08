@@ -221,7 +221,7 @@ export class Link extends SimulatedObject {
 
     // Bug 1: hide until renderPacket() sets correct position (avoids flash at 0,0)
     el.style.visibility = "hidden";
-    SimControl.packetsLayer.appendChild(el);
+    SimControl.packetsLayer?.appendChild(el);
     this._packets.push({ el, dir, data, progress: 0, positioned: false });
   }
 

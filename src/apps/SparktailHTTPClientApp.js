@@ -844,7 +844,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
 
     const parsed = parseHttpUrl(url);
     if (!parsed.ok) {
-      this._showInternalPage(t("app.sparktail.page.invalidUrl.title"), parsed.error);
+      this._showInternalPage(t("app.sparktail.page.invalidUrl.title"), parsed.error ?? "");
       this.loading = false;
       this._syncUI();
       this._setStatus(t("app.sparktail.status.invalidUrl", { error: parsed.error }));
@@ -865,7 +865,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
 
     try {
       dstIP = await withTimeout(
-        resolveHostToIP(host, dnsResolve),
+        resolveHostToIP(/** @type {string} */ (host), dnsResolve),
         SimTimer.DNS_TIMEOUT_MS,
         t("app.sparktail.label.dns")
       );
@@ -900,7 +900,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     let key = null;
 
     try {
-      const conn = await withTimeout(this.os.net.connectTCPConn(dstIP, port), SimTimer.TCP_CONNECT_TIMEOUT_MS, t("app.sparktail.label.connect"));
+      const conn = await withTimeout(this.os.net.connectTCPConn(dstIP, /** @type {number} */ (port)), SimTimer.TCP_CONNECT_TIMEOUT_MS, t("app.sparktail.label.connect"));
       key = conn?.key;
       if (typeof key !== "string" || !key) throw new Error(t("app.sparktail.err.noConnKey"));
       this.connKey = key;
@@ -919,7 +919,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     }
 
     // sendFn / recvFn — rebind to TLS for https
-    let sendFn = /** @type {(d:Uint8Array<ArrayBuffer>)=>void|Promise<void>} */
+    let sendFn = /** @type {(d:Uint8Array<ArrayBufferLike>)=>void|Promise<void>} */
       (data) => this.os.net.sendTCPConn(key, data);
     let recvFn = /** @type {()=>Promise<Uint8Array|null>} */
       () => this.os.net.recvTCPConn(key);
@@ -932,7 +932,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
         send:       sendFn,
         recv:       recvFn,
         isServer:   false,
-        trustStore: bypassCert ? null : (this.os.tls?.certStore ?? null),
+        trustStore: bypassCert ? undefined : (this.os.tls?.certStore ?? undefined),
         timeoutMs:  timeout,
         sleepFn:    (ms) => simTimer.sleep(ms),
       });
@@ -957,12 +957,12 @@ export class SparktailHTTPClientApp extends LoggedProcess {
         return;
       }
 
-      sendFn = (data) => tls.send(data);
+      sendFn = (data) => tls.send(/** @type {Uint8Array<ArrayBuffer>} */ (data));
       recvFn = () => tls.recv();
     }
 
     const defaultPort = scheme === "https" ? 443 : 80;
-    const hostHeader = host.includes(":")
+    const hostHeader = /** @type {string} */ (host).includes(":")
       ? `[${host}]${port !== defaultPort ? `:${port}` : ""}`
       : `${host}${port !== defaultPort ? `:${port}` : ""}`;
     const request =
@@ -1294,7 +1294,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     let dstIP;
     try {
       dstIP = await withTimeout(
-        resolveHostToIP(host, (n) => this.os.dns.resolveIP(n)),
+        resolveHostToIP(/** @type {string} */ (host), (n) => this.os.dns.resolveIP(n)),
         SimTimer.DNS_TIMEOUT_MS, "dns"
       );
     } catch { return null; }
@@ -1304,7 +1304,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     let key;
     try {
       const conn = await withTimeout(
-        this.os.net.connectTCPConn(dstIP, port),
+        this.os.net.connectTCPConn(dstIP, /** @type {number} */ (port)),
         SimTimer.TCP_CONNECT_TIMEOUT_MS, "connect"
       );
       key = conn?.key;
@@ -1331,13 +1331,13 @@ export class SparktailHTTPClientApp extends LoggedProcess {
         try { this.os.net.closeTCPConn(key); } catch {}
         return null;
       }
-      sendFn = (d) => tls.send(/** @type {any} */ (d));
-      recvFn = () => tls.recv();
+      sendFn = (d) => /** @type {any} */ (tls).send(/** @type {any} */ (d));
+      recvFn = () => /** @type {any} */ (tls).recv();
     }
 
     try {
       const defaultPort = scheme === "https" ? 443 : 80;
-      const hostHdr = host.includes(":") ? `[${host}]` : host;
+      const hostHdr = /** @type {string} */ (host).includes(":") ? `[${host}]` : host;
       const portSuffix = port !== defaultPort ? `:${port}` : "";
       const req = `GET ${path} HTTP/1.1\r\nHost: ${hostHdr}${portSuffix}\r\nUser-Agent: Sparktail/1.0\r\nConnection: close\r\n\r\n`;
       await sendFn(encodeUTF8(req));

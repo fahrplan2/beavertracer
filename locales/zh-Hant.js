@@ -1222,5 +1222,12 @@ export default {
   "app.dnsd.label.mode": "模式",
   "app.dnsd.label.mode.authoritative": "權威伺服器",
   "app.dnsd.label.mode.recursive": "遞迴解析器",
-  "app.dnsd.label.rootDns": "根DNS"
+  "app.dnsd.label.rootDns": "根DNS",
+  "sim.tracing": "追蹤",
+  "pcap.btn.follow": "跟蹤 TCP 串流",
+  "pcap.stream.title": "TCP 串流",
+  "pcap.stream.notcp": "選定的封包不包含 TCP 區段。",
+  "pcap.stream.empty": "此串流中沒有負載資料。",
+  "pcap.stream.close": "關閉",
+  "pcap.stream.bytes": "位元組"
 };

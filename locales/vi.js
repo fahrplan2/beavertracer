@@ -1223,5 +1223,12 @@ export default {
   "app.dnsd.label.mode": "Chế độ",
   "app.dnsd.label.mode.authoritative": "Chính thức",
   "app.dnsd.label.mode.recursive": "Trình phân giải đệ quy",
-  "app.dnsd.label.rootDns": "Root DNS"
+  "app.dnsd.label.rootDns": "Root DNS",
+  "sim.tracing": "Theo dõi",
+  "pcap.btn.follow": "Theo dõi Luồng TCP",
+  "pcap.stream.title": "Luồng TCP",
+  "pcap.stream.notcp": "Gói tin được chọn không chứa một đoạn TCP.",
+  "pcap.stream.empty": "Không có dữ liệu tải trọng trong luồng này.",
+  "pcap.stream.close": "Đóng",
+  "pcap.stream.bytes": "byte"
 };

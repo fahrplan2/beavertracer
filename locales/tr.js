@@ -1223,5 +1223,12 @@ export default {
   "app.dnsd.label.mode": "Mod",
   "app.dnsd.label.mode.authoritative": "Yetkili",
   "app.dnsd.label.mode.recursive": "Özyinelemeli Çözümleyici",
-  "app.dnsd.label.rootDns": "Kök DNS"
+  "app.dnsd.label.rootDns": "Kök DNS",
+  "sim.tracing": "İzleme",
+  "pcap.btn.follow": "TCP Akışını İzle",
+  "pcap.stream.title": "TCP Akışı",
+  "pcap.stream.notcp": "Seçilen paket bir TCP segmenti içermiyor.",
+  "pcap.stream.empty": "Bu akışta yük verisi yok.",
+  "pcap.stream.close": "Kapat",
+  "pcap.stream.bytes": "bayt"
 };

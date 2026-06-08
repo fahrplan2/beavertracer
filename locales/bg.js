@@ -1223,5 +1223,12 @@ export default {
   "app.dnsd.label.mode": "Режим",
   "app.dnsd.label.mode.authoritative": "Авторитативен",
   "app.dnsd.label.mode.recursive": "Рекурсивен резолвър",
-  "app.dnsd.label.rootDns": "Root DNS"
+  "app.dnsd.label.rootDns": "Root DNS",
+  "sim.tracing": "Проследяване",
+  "pcap.btn.follow": "Проследи TCP потока",
+  "pcap.stream.title": "TCP поток",
+  "pcap.stream.notcp": "Избраният пакет не съдържа TCP сегмент.",
+  "pcap.stream.empty": "Няма данни за полезния товар в този поток.",
+  "pcap.stream.close": "Затвори",
+  "pcap.stream.bytes": "байта"
 };

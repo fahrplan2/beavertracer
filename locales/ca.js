@@ -1222,5 +1222,12 @@ export default {
   "app.dnsd.label.mode": "Mode",
   "app.dnsd.label.mode.authoritative": "Autoritatiu",
   "app.dnsd.label.mode.recursive": "Resolutor Recursiu",
-  "app.dnsd.label.rootDns": "DNS Arrel"
+  "app.dnsd.label.rootDns": "DNS Arrel",
+  "sim.tracing": "Traçament",
+  "pcap.btn.follow": "Seguir flux TCP",
+  "pcap.stream.title": "Flux TCP",
+  "pcap.stream.notcp": "El paquet seleccionat no conté cap segment TCP.",
+  "pcap.stream.empty": "No hi ha dades de càrrega en aquest flux.",
+  "pcap.stream.close": "Tancar",
+  "pcap.stream.bytes": "bytes"
 };

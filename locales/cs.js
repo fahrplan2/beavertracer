@@ -1223,5 +1223,12 @@ export default {
   "app.dnsd.label.mode": "Režim",
   "app.dnsd.label.mode.authoritative": "Autoritativní",
   "app.dnsd.label.mode.recursive": "Rekurzivní Resolver",
-  "app.dnsd.label.rootDns": "Root DNS"
+  "app.dnsd.label.rootDns": "Root DNS",
+  "sim.tracing": "Trasování",
+  "pcap.btn.follow": "Sledovat TCP Stream",
+  "pcap.stream.title": "TCP Stream",
+  "pcap.stream.notcp": "Vybraný paket neobsahuje TCP segment.",
+  "pcap.stream.empty": "V tomto streamu nejsou žádná data užitečného zatížení.",
+  "pcap.stream.close": "Zavřít",
+  "pcap.stream.bytes": "bajtů"
 };

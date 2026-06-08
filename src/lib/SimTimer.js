@@ -69,6 +69,8 @@ export class SimTimer {
 
     /** TCP active-open (SYN sent, waiting for SYN-ACK) timeout. */
     static TCP_CONNECT_TIMEOUT_MS   =  400;  //  80 ticks
+    /** Minimum RTO after RTT measurement (RFC 6298 §2.4) */
+    static TCP_MIN_RTO_MS           = 1000;  // 200 ticks
     /** TCP connection / request timeout for HTTP server. */
     static HTTP_SERVER_TIMEOUT_MS   =  400;  //  80 ticks
     /** HTTP client request timeout. */

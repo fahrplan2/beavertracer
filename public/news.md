@@ -1,6 +1,7 @@
 ## Version 0.1.24
 
 - renamed Laptop to Tablet and PC to Computer
+- added "follow TCP stream" option to the tracer
 
 ## Version 0.1.23
 

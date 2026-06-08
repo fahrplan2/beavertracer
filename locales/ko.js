@@ -1223,5 +1223,12 @@ export default {
   "app.dnsd.label.mode": "모드",
   "app.dnsd.label.mode.authoritative": "권한 있는 (Authoritative)",
   "app.dnsd.label.mode.recursive": "재귀 확인자 (Recursive Resolver)",
-  "app.dnsd.label.rootDns": "루트 DNS"
+  "app.dnsd.label.rootDns": "루트 DNS",
+  "sim.tracing": "추적",
+  "pcap.btn.follow": "TCP 스트림 따라가기",
+  "pcap.stream.title": "TCP 스트림",
+  "pcap.stream.notcp": "선택한 패킷에 TCP 세그먼트가 없습니다.",
+  "pcap.stream.empty": "이 스트림에 페이로드 데이터가 없습니다.",
+  "pcap.stream.close": "닫기",
+  "pcap.stream.bytes": "바이트"
 };

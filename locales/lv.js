@@ -1223,5 +1223,12 @@ export default {
   "app.dnsd.label.mode": "Režīms",
   "app.dnsd.label.mode.authoritative": "Autoritatīvais",
   "app.dnsd.label.mode.recursive": "Rekursīvais risinātājs",
-  "app.dnsd.label.rootDns": "Root DNS"
+  "app.dnsd.label.rootDns": "Root DNS",
+  "sim.tracing": "Izsekošana",
+  "pcap.btn.follow": "Sekot TCP straumei",
+  "pcap.stream.title": "TCP straume",
+  "pcap.stream.notcp": "Izvēlētais pakets nesatur TCP segmentu.",
+  "pcap.stream.empty": "Šajā straumē nav derīgo datu.",
+  "pcap.stream.close": "Aizvērt",
+  "pcap.stream.bytes": "baiti"
 };

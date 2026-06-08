@@ -1223,5 +1223,12 @@ export default {
   "app.dnsd.label.mode": "Način",
   "app.dnsd.label.mode.authoritative": "Avtoritativni",
   "app.dnsd.label.mode.recursive": "Rekurzivni reševalec",
-  "app.dnsd.label.rootDns": "Korenski DNS"
+  "app.dnsd.label.rootDns": "Korenski DNS",
+  "sim.tracing": "Sledenje",
+  "pcap.btn.follow": "Sledi TCP pretoku",
+  "pcap.stream.title": "TCP pretok",
+  "pcap.stream.notcp": "Izbrani paket ne vsebuje TCP segmenta.",
+  "pcap.stream.empty": "V tem pretoku ni podatkov o obtežitvi.",
+  "pcap.stream.close": "Zapri",
+  "pcap.stream.bytes": "bajtov"
 };

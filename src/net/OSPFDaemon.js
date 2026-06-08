@@ -1233,7 +1233,9 @@ export class OSPFDaemon {
 
         while (queue.length > 0) {
             queue.sort((a, b) => a.cost - b.cost);
-            const { id: u, cost: uCost } = queue.shift();
+            const _item = queue.shift();
+            if (!_item) break;
+            const { id: u, cost: uCost } = _item;
             if (visited.has(u)) continue;
             visited.add(u);
 
@@ -1396,7 +1398,7 @@ export class OSPFDaemon {
                 const net32     = (entry.header.lsId & mask32) >>> 0;
                 const prefix    = mask32ToPrefix(mask32);
                 const k         = `${net32}-${prefix}`;
-                if (!best.has(k) || totalCost < best.get(k).cost) {
+                if (!best.has(k) || totalCost < /** @type {any} */ (best.get(k)).cost) {
                     best.set(k, { dst: n2ip(net32), prefix, ifIndex: abrInfo.ifIndex, nexthop: abrInfo.nexthop, cost: totalCost });
                 }
             }
@@ -1430,7 +1432,7 @@ export class OSPFDaemon {
                         for (const tgt of myAreas) {
                             if (tgt === srcAreaId) continue;
                             const k = `${tgt}-${net32}-${mask32}`;
-                            if (!newSummaries.has(k) || newSummaries.get(k).metric > metric)
+                            if (!newSummaries.has(k) || /** @type {any} */ (newSummaries.get(k)).metric > metric)
                                 newSummaries.set(k, { targetAreaId: tgt, lsId: net32, mask32, metric });
                         }
                     }
@@ -1445,7 +1447,7 @@ export class OSPFDaemon {
                     for (const tgt of myAreas) {
                         if (tgt === srcAreaId) continue;
                         const k = `${tgt}-${net32}-${mask32}`;
-                        if (!newSummaries.has(k) || newSummaries.get(k).metric > metric)
+                        if (!newSummaries.has(k) || /** @type {any} */ (newSummaries.get(k)).metric > metric)
                             newSummaries.set(k, { targetAreaId: tgt, lsId: net32, mask32, metric });
                     }
                 }
@@ -1461,7 +1463,7 @@ export class OSPFDaemon {
                     for (const tgt of myAreas) {
                         if (tgt === 0) continue; // only into non-backbone areas
                         const k = `${tgt}-${net32}-${mask32}`;
-                        if (!newSummaries.has(k) || newSummaries.get(k).metric > metric)
+                        if (!newSummaries.has(k) || /** @type {any} */ (newSummaries.get(k)).metric > metric)
                             newSummaries.set(k, { targetAreaId: tgt, lsId: net32, mask32, metric });
                     }
                 }
