@@ -88,6 +88,11 @@ export class NetworkInterface extends Observable {
     /** @type {number|null} */
     mtuOverride = null;
 
+    /** @returns {boolean} */
+    get up() {
+        return this.port.linkref !== null;
+    }
+
     /** @returns {number} */
     getMtu() {
         if (this.mtuOverride !== null) return this.mtuOverride;
