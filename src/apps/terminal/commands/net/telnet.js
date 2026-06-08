@@ -45,6 +45,14 @@ async function readLine(net, ck, st) {
 /** @type {import("../types.js").Command} */
 export const telnet = {
   name: "telnet",
+  category: "net",
+  tldr: {
+    descKey: "app.terminal.commands.telnet.tldr.desc",
+    examples: [
+      { labelKey: "app.terminal.commands.telnet.tldr.ex.connect", cmd: "telnet 192.168.1.1 23" },
+      { labelKey: "app.terminal.commands.telnet.tldr.ex.http",    cmd: "telnet 192.168.1.1 80" },
+    ],
+  },
   run: async (ctx, args) => {
     if (args.length < 2) return t("app.terminal.commands.telnet.usage");
 

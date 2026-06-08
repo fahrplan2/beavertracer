@@ -10,6 +10,15 @@ import { IPAddress } from "../../../../net/models/IPAddress.js";
 /** @type {import("../types.js").Command} */
 export const dig = {
   name: "dig",
+  category: "net",
+  tldr: {
+    descKey: "app.terminal.commands.dig.tldr.desc",
+    examples: [
+      { labelKey: "app.terminal.commands.dig.tldr.ex.basic", cmd: "dig example.com" },
+      { labelKey: "app.terminal.commands.dig.tldr.ex.short", cmd: "dig +short example.com" },
+      { labelKey: "app.terminal.commands.dig.tldr.ex.mx",    cmd: "dig -t MX example.com" },
+    ],
+  },
   run: async (ctx, args) => {
     const argv = [...args];
 

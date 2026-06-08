@@ -46,6 +46,15 @@ function resolvedToIp(resolved) {
 /** @type {import("../types.js").Command} */
 export const ping = {
   name: "ping",
+  category: "net",
+  tldr: {
+    descKey: "app.terminal.commands.ping.tldr.desc",
+    examples: [
+      { labelKey: "app.terminal.commands.ping.tldr.ex.basic", cmd: "ping 192.168.1.1" },
+      { labelKey: "app.terminal.commands.ping.tldr.ex.count", cmd: "ping -c 3 192.168.1.1" },
+      { labelKey: "app.terminal.commands.ping.tldr.ex.mtu",   cmd: "ping -s 1400 -D 192.168.1.1" },
+    ],
+  },
   run: async (ctx, args) => {
     // parse args (same semantics you had)
     const argv = [...args];

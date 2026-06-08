@@ -1369,7 +1369,7 @@ export default {
   "app.bitcoin.log.reorg":            "[{time}] Chain reorg: switched to fork at height {height}",
   "app.bitcoin.log.txrcv":            "[{time}] TX {id}: {amount} BTC  {from} -> {to}",
 
-  "welcome.subtitle":   "Browser-based Network Simulator",
+  "welcome.subtitle":   "Browser-based network simulator for education",
   "welcome.new":        "New Simulation",
   "welcome.new.desc":   "Start with an empty canvas",
   "welcome.open":       "Open Simulation",
@@ -1427,5 +1427,135 @@ export default {
   "tour.step.trace-packets.title":  "Packets in the Tracer",
   "tour.step.trace-packets.text":   "You can see the recorded packets! Click on a frame to view all details.",
   "tour.step.finish.title":         "Tour Complete!",
-  "tour.step.finish.text":          "You have successfully completed the tour and built, configured, and analysed your first network.\n\nHave fun experimenting!"
+  "tour.step.finish.text":          "You have successfully completed the tour and built, configured, and analysed your first network.\n\nHave fun experimenting!",
+
+  "app.terminal.commands.man.usage":    "usage: man <command>",
+  "app.terminal.commands.man.notFound": "man: no entry for '{name}'",
+  "app.terminal.commands.man.noEntry":  "man: no help available for '{name}'",
+
+  "app.terminal.commands.help.cat.net":  "Network",
+  "app.terminal.commands.help.cat.fs":   "Filesystem",
+  "app.terminal.commands.help.cat.misc": "System",
+  "app.terminal.commands.help.hint":     "For help on a specific command: man <command>",
+
+  "app.terminal.commands.arp.tldr.desc":        "Display the ARP table",
+  "app.terminal.commands.arp.tldr.ex.all":       "Show ARP table for all interfaces",
+  "app.terminal.commands.arp.tldr.ex.iface":     "Show ARP table for a specific interface",
+
+  "app.terminal.commands.curl.tldr.desc":        "Send HTTP requests",
+  "app.terminal.commands.curl.tldr.ex.get":      "Send an HTTP GET request",
+  "app.terminal.commands.curl.tldr.ex.head":     "Fetch HTTP headers only",
+  "app.terminal.commands.curl.tldr.ex.verbose":  "Show request and response headers",
+
+  "app.terminal.commands.dig.tldr.desc":         "Query DNS records",
+  "app.terminal.commands.dig.tldr.ex.basic":     "Query DNS for a domain",
+  "app.terminal.commands.dig.tldr.ex.short":     "Show only the IP address",
+  "app.terminal.commands.dig.tldr.ex.mx":        "Query MX records",
+
+  "app.terminal.commands.ip.tldr.desc":          "Manage network interfaces",
+  "app.terminal.commands.ip.tldr.ex.addr":       "Show all IP addresses",
+  "app.terminal.commands.ip.tldr.ex.set":        "Set the IP address of an interface",
+  "app.terminal.commands.ip.tldr.ex.link":       "Show link information",
+  "app.terminal.commands.ip.tldr.ex.mtu":        "Change the MTU of an interface",
+
+  "app.terminal.commands.nc.tldr.desc":          "Open network connections or listen on ports",
+  "app.terminal.commands.nc.tldr.ex.connect":    "Connect to a host and port",
+  "app.terminal.commands.nc.tldr.ex.listen":     "Listen on a TCP port",
+  "app.terminal.commands.nc.tldr.ex.udp":        "Use a UDP connection",
+
+  "app.terminal.commands.netstat.tldr.desc":     "Display network connections",
+  "app.terminal.commands.netstat.tldr.ex.all":   "Show all connections",
+  "app.terminal.commands.netstat.tldr.ex.tcp":   "Show only TCP connections",
+
+  "app.terminal.commands.nmap.tldr.desc":        "Scan networks and ports",
+  "app.terminal.commands.nmap.tldr.ex.host":     "Scan a single host",
+  "app.terminal.commands.nmap.tldr.ex.subnet":   "Scan an entire subnet",
+  "app.terminal.commands.nmap.tldr.ex.ports":    "Scan specific ports",
+  "app.terminal.commands.nmap.tldr.ex.open":     "Show only open ports",
+
+  "app.terminal.commands.ping.tldr.desc":        "Send ICMP echo requests",
+  "app.terminal.commands.ping.tldr.ex.basic":    "Ping a host",
+  "app.terminal.commands.ping.tldr.ex.count":    "Limit the number of packets",
+  "app.terminal.commands.ping.tldr.ex.mtu":      "Test path MTU (large packet, DF bit)",
+
+  "app.terminal.commands.route.tldr.desc":       "Manage the routing table",
+  "app.terminal.commands.route.tldr.ex.show":    "Show the routing table",
+  "app.terminal.commands.route.tldr.ex.add":     "Add a route",
+  "app.terminal.commands.route.tldr.ex.del":     "Delete a route",
+
+  "app.terminal.commands.ss.tldr.desc":          "Display socket connections",
+  "app.terminal.commands.ss.tldr.ex.all":        "Show all connections",
+  "app.terminal.commands.ss.tldr.ex.tcp":        "Show only TCP connections",
+  "app.terminal.commands.ss.tldr.ex.udp":        "Show only UDP connections",
+
+  "app.terminal.commands.telnet.tldr.desc":      "Open TCP connections",
+  "app.terminal.commands.telnet.tldr.ex.connect":"Connect to a host and port",
+  "app.terminal.commands.telnet.tldr.ex.http":   "Manually test an HTTP server",
+
+  "app.terminal.commands.traceroute.tldr.desc":        "Trace the route to a host",
+  "app.terminal.commands.traceroute.tldr.ex.basic":    "Show the route to a host",
+  "app.terminal.commands.traceroute.tldr.ex.maxhops":  "Limit the maximum number of hops",
+
+  "app.terminal.commands.ls.tldr.desc":           "List directory contents",
+  "app.terminal.commands.ls.tldr.ex.basic":        "List contents of the current directory",
+  "app.terminal.commands.ls.tldr.ex.hidden":       "Show hidden files",
+  "app.terminal.commands.ls.tldr.ex.long":         "Show detailed listing of a directory",
+
+  "app.terminal.commands.cat.tldr.desc":           "Print file contents",
+  "app.terminal.commands.cat.tldr.ex.basic":       "Show the contents of a file",
+
+  "app.terminal.commands.touch.tldr.desc":         "Create empty files",
+  "app.terminal.commands.touch.tldr.ex.basic":     "Create a single empty file",
+  "app.terminal.commands.touch.tldr.ex.multi":     "Create multiple empty files at once",
+
+  "app.terminal.commands.mkdir.tldr.desc":         "Create directories",
+  "app.terminal.commands.mkdir.tldr.ex.basic":     "Create a directory",
+  "app.terminal.commands.mkdir.tldr.ex.recursive": "Create a nested directory structure",
+
+  "app.terminal.commands.rm.tldr.desc":            "Remove files or directories",
+  "app.terminal.commands.rm.tldr.ex.file":         "Remove a file",
+  "app.terminal.commands.rm.tldr.ex.recursive":    "Remove a directory recursively",
+
+  "app.terminal.commands.rmdir.tldr.desc":         "Remove empty directories",
+  "app.terminal.commands.rmdir.tldr.ex.basic":     "Remove an empty directory",
+
+  "app.terminal.commands.cp.tldr.desc":            "Copy files or directories",
+  "app.terminal.commands.cp.tldr.ex.file":         "Copy a file",
+  "app.terminal.commands.cp.tldr.ex.recursive":    "Copy a directory recursively",
+
+  "app.terminal.commands.mv.tldr.desc":            "Move or rename files",
+  "app.terminal.commands.mv.tldr.ex.rename":       "Rename a file",
+  "app.terminal.commands.mv.tldr.ex.move":         "Move a file into a directory",
+
+  "app.terminal.commands.cd.tldr.desc":            "Change the current directory",
+  "app.terminal.commands.cd.tldr.ex.dir":          "Change to a specific directory",
+  "app.terminal.commands.cd.tldr.ex.home":         "Go to the home directory",
+
+  "app.terminal.commands.pwd.tldr.desc":           "Print the current directory",
+  "app.terminal.commands.pwd.tldr.ex.basic":       "Show the current working directory path",
+
+  "app.terminal.commands.clear.tldr.desc":         "Clear the terminal",
+  "app.terminal.commands.clear.tldr.ex.basic":     "Clear all output from the terminal",
+
+  "app.terminal.commands.date.tldr.desc":          "Show the current date and time",
+  "app.terminal.commands.date.tldr.ex.basic":      "Print the current date and time",
+
+  "app.terminal.commands.echo.tldr.desc":          "Print text",
+  "app.terminal.commands.echo.tldr.ex.basic":      "Write text to the terminal",
+
+  "app.terminal.commands.exit.tldr.desc":          "Close the terminal",
+  "app.terminal.commands.exit.tldr.ex.basic":      "Close the terminal window",
+
+  "app.terminal.commands.uname.tldr.desc":         "Show system information",
+  "app.terminal.commands.uname.tldr.ex.basic":     "Show the operating system name",
+  "app.terminal.commands.uname.tldr.ex.all":       "Show all system information",
+
+  "app.terminal.commands.whoami.tldr.desc":        "Show the current user",
+  "app.terminal.commands.whoami.tldr.ex.basic":    "Print the current username",
+
+  "app.terminal.commands.help.tldr.desc":          "Show all available commands",
+  "app.terminal.commands.help.tldr.ex.basic":      "Open the command overview",
+
+  "app.terminal.commands.man.tldr.desc":           "Show a quick reference for a command",
+  "app.terminal.commands.man.tldr.ex.basic":       "Look up help for a command"
 };

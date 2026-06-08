@@ -129,6 +129,15 @@ class BufReader {
 /** @type {import("../types.js").Command} */
 export const curl = {
     name: "curl",
+    category: "net",
+    tldr: {
+        descKey: "app.terminal.commands.curl.tldr.desc",
+        examples: [
+            { labelKey: "app.terminal.commands.curl.tldr.ex.get",     cmd: "curl http://192.168.1.1" },
+            { labelKey: "app.terminal.commands.curl.tldr.ex.head",    cmd: "curl -I http://192.168.1.1" },
+            { labelKey: "app.terminal.commands.curl.tldr.ex.verbose", cmd: "curl -v http://192.168.1.1" },
+        ],
+    },
     run: async (ctx, args) => {
         // ── parse flags ────────────────────────────────────────────────────
         let headOnly = false, verbose = false;

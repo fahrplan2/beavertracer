@@ -5,6 +5,14 @@ import { t } from "../../../../i18n/index.js";
 /** @type {import("../types.js").Command} */
 export const cp = {
   name: "cp",
+  category: /** @type {"fs"} */ ("fs"),
+  tldr: {
+    descKey: "app.terminal.commands.cp.tldr.desc",
+    examples: [
+      { labelKey: "app.terminal.commands.cp.tldr.ex.file",      cmd: "cp quelle.txt ziel.txt" },
+      { labelKey: "app.terminal.commands.cp.tldr.ex.recursive", cmd: "cp -r ordner /backup" },
+    ],
+  },
   run: (ctx, args) => {
     const fs = ctx.os.fs;
     if (!fs) return t("app.terminal.commands.cp.err.noFilesystem");

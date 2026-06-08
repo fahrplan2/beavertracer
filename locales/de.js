@@ -1215,7 +1215,7 @@ export default {
   "router.ospf.tab.lsdb": "LSDB",
   "router.ospf.tab.log": "Protokoll",
 
-  "welcome.subtitle":   "Browser-basierter Netzwerksimulator",
+  "welcome.subtitle":   "Browser-basierter Netzwerksimulator für den Unterricht",
   "welcome.new":        "Neue Simulation",
   "welcome.new.desc":   "Mit leerem Arbeitsbereich starten",
   "welcome.open":       "Simulation öffnen",
@@ -1273,5 +1273,135 @@ export default {
   "tour.step.trace-packets.title":  "Pakete im Tracer",
   "tour.step.trace-packets.text":   "Du siehst die aufgezeichneten Pakete! Klicke auf einen Frame, um alle Details zu sehen.",
   "tour.step.finish.title":         "Tour abgeschlossen!",
-  "tour.step.finish.text":          "Du hast die Tour erfolgreich abgeschlossen und dein erstes Netzwerk aufgebaut, konfiguriert und analysiert.\n\nViel Spaß beim Experimentieren!"
+  "tour.step.finish.text":          "Du hast die Tour erfolgreich abgeschlossen und dein erstes Netzwerk aufgebaut, konfiguriert und analysiert.\n\nViel Spaß beim Experimentieren!",
+
+  "app.terminal.commands.man.usage":    "Verwendung: man <befehl>",
+  "app.terminal.commands.man.notFound": "man: kein Eintrag für '{name}'",
+  "app.terminal.commands.man.noEntry":  "man: keine Hilfe verfügbar für '{name}'",
+
+  "app.terminal.commands.help.cat.net":  "Netzwerk",
+  "app.terminal.commands.help.cat.fs":   "Dateisystem",
+  "app.terminal.commands.help.cat.misc": "System",
+  "app.terminal.commands.help.hint":     "Für Hilfe zu einem bestimmten Befehl: man <befehl>",
+
+  "app.terminal.commands.arp.tldr.desc":        "ARP-Tabelle anzeigen",
+  "app.terminal.commands.arp.tldr.ex.all":       "ARP-Tabelle aller Schnittstellen anzeigen",
+  "app.terminal.commands.arp.tldr.ex.iface":     "ARP-Tabelle einer bestimmten Schnittstelle anzeigen",
+
+  "app.terminal.commands.curl.tldr.desc":        "HTTP-Anfragen senden",
+  "app.terminal.commands.curl.tldr.ex.get":      "HTTP-GET-Anfrage senden",
+  "app.terminal.commands.curl.tldr.ex.head":     "Nur HTTP-Header abrufen",
+  "app.terminal.commands.curl.tldr.ex.verbose":  "Anfrage mit Header-Details anzeigen",
+
+  "app.terminal.commands.dig.tldr.desc":         "DNS-Einträge abfragen",
+  "app.terminal.commands.dig.tldr.ex.basic":     "DNS-Abfrage für eine Domain",
+  "app.terminal.commands.dig.tldr.ex.short":     "Nur IP-Adresse ausgeben",
+  "app.terminal.commands.dig.tldr.ex.mx":        "MX-Einträge abfragen",
+
+  "app.terminal.commands.ip.tldr.desc":          "Netzwerkschnittstellen verwalten",
+  "app.terminal.commands.ip.tldr.ex.addr":       "Alle IP-Adressen anzeigen",
+  "app.terminal.commands.ip.tldr.ex.set":        "IP-Adresse einer Schnittstelle setzen",
+  "app.terminal.commands.ip.tldr.ex.link":       "Link-Informationen anzeigen",
+  "app.terminal.commands.ip.tldr.ex.mtu":        "MTU einer Schnittstelle ändern",
+
+  "app.terminal.commands.nc.tldr.desc":          "Netzwerkverbindungen herstellen oder abhören",
+  "app.terminal.commands.nc.tldr.ex.connect":    "Verbindung zu Host und Port herstellen",
+  "app.terminal.commands.nc.tldr.ex.listen":     "TCP-Port abhören",
+  "app.terminal.commands.nc.tldr.ex.udp":        "UDP-Verbindung verwenden",
+
+  "app.terminal.commands.netstat.tldr.desc":     "Netzwerkverbindungen anzeigen",
+  "app.terminal.commands.netstat.tldr.ex.all":   "Alle Verbindungen anzeigen",
+  "app.terminal.commands.netstat.tldr.ex.tcp":   "Nur TCP-Verbindungen anzeigen",
+
+  "app.terminal.commands.nmap.tldr.desc":        "Netzwerk und Ports scannen",
+  "app.terminal.commands.nmap.tldr.ex.host":     "Einzelnen Host scannen",
+  "app.terminal.commands.nmap.tldr.ex.subnet":   "Ganzes Subnetz scannen",
+  "app.terminal.commands.nmap.tldr.ex.ports":    "Bestimmte Ports scannen",
+  "app.terminal.commands.nmap.tldr.ex.open":     "Nur offene Ports anzeigen",
+
+  "app.terminal.commands.ping.tldr.desc":        "ICMP Echo-Anfragen senden",
+  "app.terminal.commands.ping.tldr.ex.basic":    "Host anpingen",
+  "app.terminal.commands.ping.tldr.ex.count":    "Anzahl Pakete begrenzen",
+  "app.terminal.commands.ping.tldr.ex.mtu":      "MTU-Pfad testen (großes Paket, DF-Bit)",
+
+  "app.terminal.commands.route.tldr.desc":       "Routing-Tabelle verwalten",
+  "app.terminal.commands.route.tldr.ex.show":    "Routing-Tabelle anzeigen",
+  "app.terminal.commands.route.tldr.ex.add":     "Route hinzufügen",
+  "app.terminal.commands.route.tldr.ex.del":     "Route löschen",
+
+  "app.terminal.commands.ss.tldr.desc":          "Socket-Verbindungen anzeigen",
+  "app.terminal.commands.ss.tldr.ex.all":        "Alle Verbindungen anzeigen",
+  "app.terminal.commands.ss.tldr.ex.tcp":        "Nur TCP-Verbindungen anzeigen",
+  "app.terminal.commands.ss.tldr.ex.udp":        "Nur UDP-Verbindungen anzeigen",
+
+  "app.terminal.commands.telnet.tldr.desc":      "TCP-Verbindungen herstellen",
+  "app.terminal.commands.telnet.tldr.ex.connect":"Verbindung zu Host und Port herstellen",
+  "app.terminal.commands.telnet.tldr.ex.http":   "HTTP-Server manuell testen",
+
+  "app.terminal.commands.traceroute.tldr.desc":        "Route zu einem Host verfolgen",
+  "app.terminal.commands.traceroute.tldr.ex.basic":    "Route zu einem Host anzeigen",
+  "app.terminal.commands.traceroute.tldr.ex.maxhops":  "Maximale Anzahl Hops begrenzen",
+
+  "app.terminal.commands.ls.tldr.desc":           "Verzeichnisinhalt anzeigen",
+  "app.terminal.commands.ls.tldr.ex.basic":        "Inhalt des aktuellen Verzeichnisses anzeigen",
+  "app.terminal.commands.ls.tldr.ex.hidden":       "Versteckte Dateien anzeigen",
+  "app.terminal.commands.ls.tldr.ex.long":         "Detaillierte Ansicht eines Verzeichnisses",
+
+  "app.terminal.commands.cat.tldr.desc":           "Dateiinhalt ausgeben",
+  "app.terminal.commands.cat.tldr.ex.basic":       "Inhalt einer Datei anzeigen",
+
+  "app.terminal.commands.touch.tldr.desc":         "Leere Dateien erstellen",
+  "app.terminal.commands.touch.tldr.ex.basic":     "Eine leere Datei erstellen",
+  "app.terminal.commands.touch.tldr.ex.multi":     "Mehrere leere Dateien auf einmal erstellen",
+
+  "app.terminal.commands.mkdir.tldr.desc":         "Verzeichnisse erstellen",
+  "app.terminal.commands.mkdir.tldr.ex.basic":     "Ein Verzeichnis erstellen",
+  "app.terminal.commands.mkdir.tldr.ex.recursive": "Verschachtelte Verzeichnisstruktur erstellen",
+
+  "app.terminal.commands.rm.tldr.desc":            "Dateien oder Verzeichnisse löschen",
+  "app.terminal.commands.rm.tldr.ex.file":         "Eine Datei löschen",
+  "app.terminal.commands.rm.tldr.ex.recursive":    "Ein Verzeichnis rekursiv löschen",
+
+  "app.terminal.commands.rmdir.tldr.desc":         "Leere Verzeichnisse löschen",
+  "app.terminal.commands.rmdir.tldr.ex.basic":     "Ein leeres Verzeichnis löschen",
+
+  "app.terminal.commands.cp.tldr.desc":            "Dateien oder Verzeichnisse kopieren",
+  "app.terminal.commands.cp.tldr.ex.file":         "Eine Datei kopieren",
+  "app.terminal.commands.cp.tldr.ex.recursive":    "Ein Verzeichnis rekursiv kopieren",
+
+  "app.terminal.commands.mv.tldr.desc":            "Dateien verschieben oder umbenennen",
+  "app.terminal.commands.mv.tldr.ex.rename":       "Eine Datei umbenennen",
+  "app.terminal.commands.mv.tldr.ex.move":         "Eine Datei in ein Verzeichnis verschieben",
+
+  "app.terminal.commands.cd.tldr.desc":            "Aktuelles Verzeichnis wechseln",
+  "app.terminal.commands.cd.tldr.ex.dir":          "In ein bestimmtes Verzeichnis wechseln",
+  "app.terminal.commands.cd.tldr.ex.home":         "In das Home-Verzeichnis wechseln",
+
+  "app.terminal.commands.pwd.tldr.desc":           "Aktuelles Verzeichnis anzeigen",
+  "app.terminal.commands.pwd.tldr.ex.basic":       "Aktuellen Verzeichnispfad ausgeben",
+
+  "app.terminal.commands.clear.tldr.desc":         "Terminal leeren",
+  "app.terminal.commands.clear.tldr.ex.basic":     "Alle Ausgaben im Terminal löschen",
+
+  "app.terminal.commands.date.tldr.desc":          "Aktuelles Datum und Uhrzeit anzeigen",
+  "app.terminal.commands.date.tldr.ex.basic":      "Datum und Uhrzeit ausgeben",
+
+  "app.terminal.commands.echo.tldr.desc":          "Text ausgeben",
+  "app.terminal.commands.echo.tldr.ex.basic":      "Einen Text ins Terminal schreiben",
+
+  "app.terminal.commands.exit.tldr.desc":          "Terminal schließen",
+  "app.terminal.commands.exit.tldr.ex.basic":      "Das Terminal-Fenster schließen",
+
+  "app.terminal.commands.uname.tldr.desc":         "Systeminformationen anzeigen",
+  "app.terminal.commands.uname.tldr.ex.basic":     "Betriebssystemname anzeigen",
+  "app.terminal.commands.uname.tldr.ex.all":       "Alle Systeminformationen anzeigen",
+
+  "app.terminal.commands.whoami.tldr.desc":        "Aktuellen Benutzer anzeigen",
+  "app.terminal.commands.whoami.tldr.ex.basic":    "Eigenen Benutzernamen ausgeben",
+
+  "app.terminal.commands.help.tldr.desc":          "Alle verfügbaren Befehle anzeigen",
+  "app.terminal.commands.help.tldr.ex.basic":      "Befehlsübersicht öffnen",
+
+  "app.terminal.commands.man.tldr.desc":           "Kurzhilfe zu einem Befehl anzeigen",
+  "app.terminal.commands.man.tldr.ex.basic":       "Hilfe zu einem Befehl aufrufen"
 };

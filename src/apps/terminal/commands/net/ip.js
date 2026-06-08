@@ -87,6 +87,16 @@ function readIfaceAddr(itf) {
 /** @type {import("../types.js").Command} */
 export const ip = {
   name: "ip",
+  category: "net",
+  tldr: {
+    descKey: "app.terminal.commands.ip.tldr.desc",
+    examples: [
+      { labelKey: "app.terminal.commands.ip.tldr.ex.addr", cmd: "ip addr" },
+      { labelKey: "app.terminal.commands.ip.tldr.ex.set",  cmd: "ip set eth0 192.168.1.10/24" },
+      { labelKey: "app.terminal.commands.ip.tldr.ex.link", cmd: "ip link show" },
+      { labelKey: "app.terminal.commands.ip.tldr.ex.mtu",  cmd: "ip link set eth0 mtu 576" },
+    ],
+  },
   run: (ctx, args) => {
     const ipf = ctx.os.net;
     if (!ipf) return t("app.terminal.commands.ip.err.noNetDriver");

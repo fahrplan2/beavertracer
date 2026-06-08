@@ -5,6 +5,15 @@ import { t } from "../../../../i18n/index.js";
 /** @type {import("../types.js").Command} */
 export const ls = {
   name: "ls",
+  category: /** @type {"fs"} */ ("fs"),
+  tldr: {
+    descKey: "app.terminal.commands.ls.tldr.desc",
+    examples: [
+      { labelKey: "app.terminal.commands.ls.tldr.ex.basic",  cmd: "ls" },
+      { labelKey: "app.terminal.commands.ls.tldr.ex.hidden", cmd: "ls -a" },
+      { labelKey: "app.terminal.commands.ls.tldr.ex.long",   cmd: "ls -l /etc" },
+    ],
+  },
   run: (ctx, args) => {
     const fs = ctx.os.fs;
     if (!fs) return t("app.terminal.commands.ls.err.noFilesystem");
