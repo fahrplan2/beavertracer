@@ -50,7 +50,7 @@ BeaverTracer is an educational network simulator. It models a wide range of stan
 <tr>
   <td>IPv4</td><td>RFC 791</td>
   <td><span class="badge badge-partial">Partial</span></td>
-  <td>All header fields including DSCP/ECN, flags (DF/MF), fragment offset, TTL, checksum. Options field carried but not interpreted. No fragmentation reassembly.</td>
+  <td>All header fields including DSCP/ECN, flags (DF/MF), fragment offset, TTL, checksum. Fragmentation (DF/MF, ICMP Fragmentation Needed) and reassembly implemented. Options field carried but not interpreted.</td>
 </tr>
 <tr>
   <td>IPv6</td><td>RFC 2460</td>
@@ -286,7 +286,6 @@ In-browser analysis is powered by **Wiregasm** — a WebAssembly build of Wiresh
 
 Some constraints apply across the entire simulator regardless of protocol:
 
-- **No IPv4 fragmentation.** Packets that would exceed an MTU are sent as-is; there is no reassembly at the destination.
 - **No IPv6 extension headers.** Hop-by-Hop, Routing, Fragment, and Destination Options headers are not generated or parsed.
 - **Partial TCP options.** MSS is negotiated during the SYN handshake. Window scaling, SACK, and TCP Timestamps are not implemented; window sizes are fixed (no scaling).
 - **No multicast management.** IGMP (IPv4) and MLD (IPv6) are absent; multicast forwarding relies on flooding within the simulation.
