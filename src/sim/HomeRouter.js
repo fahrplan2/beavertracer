@@ -459,39 +459,6 @@ export class HomeRouter extends SimulatedObject {
         else this._lanFlood(/** @type {any} */ (null), frame);
     }
 
-    /**
-     * Send an IPv4 packet to a LAN host, fragmenting if the packet exceeds MTU.
-     * @param {Uint8Array} dstMac
-     * @param {any} srcPort
-     * @param {IPv4Packet} ipPkt
-     */
-    _sendLanIpv4(dstMac, srcPort, ipPkt) {
-        const MTU = 1500;
-        const packed = ipPkt.pack();
-        if (packed.length <= MTU) {
-            srcPort.send(new EthernetFrame({ dstMac, srcMac: this._lanMac, etherType: 0x0800, payload: packed }));
-            return;
-        }
-        const headerLen = ipPkt.ihl * 4;
-        const maxPayload = Math.floor((MTU - headerLen) / 8) * 8;
-        if (maxPayload <= 0) return;
-        const payload = ipPkt.payload;
-        let bytePos = 0;
-        while (bytePos < payload.length) {
-            const chunk = payload.slice(bytePos, bytePos + maxPayload);
-            const isLast = (bytePos + maxPayload) >= payload.length;
-            const frag = new IPv4Packet({
-                dst: ipPkt.dst, src: ipPkt.src, protocol: ipPkt.protocol, ttl: ipPkt.ttl,
-                identification: ipPkt.identification,
-                flags: isLast ? ipPkt.flags : (ipPkt.flags | 0x01),
-                fragmentOffset: Math.floor(bytePos / 8),
-                payload: chunk,
-            });
-            srcPort.send(new EthernetFrame({ dstMac, srcMac: this._lanMac, etherType: 0x0800, payload: frag.pack() }));
-            bytePos += maxPayload;
-        }
-    }
-
     // ── LAN IPv6 processing ───────────────────────────────────────────────
 
     /**
