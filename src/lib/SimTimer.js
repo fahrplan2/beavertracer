@@ -57,6 +57,9 @@ export class SimTimer {
     /** Interval between periodic unsolicited Router Advertisements. */
     static RA_INTERVAL_MS           =  400;  //  80 ticks
 
+    /** IPv4 fragment reassembly timeout: how long to hold incomplete datagrams. */
+    static REASSEMBLY_TIMEOUT_MS      = 30000;  // 6000 ticks
+
     /** DNS query timeout. */
     static DNS_TIMEOUT_MS           =  400;  //  80 ticks
 

@@ -84,6 +84,16 @@ export class NetworkInterface extends Observable {
     /** Whether to send periodic Router Advertisements and respond to RS on this interface */
     raEnabled = false;
 
+    /** Override MTU for this interface. null = inherit from connected EthernetLink (default 1500). */
+    /** @type {number|null} */
+    mtuOverride = null;
+
+    /** @returns {number} */
+    getMtu() {
+        if (this.mtuOverride !== null) return this.mtuOverride;
+        return this.port.linkref?.mtu ?? 1500;
+    }
+
     /**
      * @param {Object} [opts]
      * @param {IPAddress} [opts.ip]

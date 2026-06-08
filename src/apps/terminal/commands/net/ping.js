@@ -52,6 +52,8 @@ export const ping = {
     let count = 4;
     let intervalMs = 1000; // real ms between packets (independent of sim speed)
     let timeoutMs = SimTimer.PING_TIMEOUT_MS;
+    let payloadSize = 56; // bytes of ICMP data (default matches real ping)
+    let dontFragment = false;
     let host = "";
 
     const usage = () => t("app.terminal.commands.ping.usage");
@@ -84,6 +86,20 @@ export const ping = {
         continue;
       }
 
+      if (a === "-s") {
+        argv.shift();
+        const v = Number(take());
+        if (!Number.isFinite(v) || v < 0 || v > 65507) return t("app.terminal.commands.ping.err.invalidSize");
+        payloadSize = Math.floor(v);
+        continue;
+      }
+
+      if (a === "-D") {
+        argv.shift();
+        dontFragment = true;
+        continue;
+      }
+
       host = String(take() ?? "");
       break;
     }
@@ -109,8 +125,10 @@ export const ping = {
 
     const dstStr = dstIp.toString();
     const identifier = (Math.random() * 0xffff) | 0;
+    // dataBytes = payload; totalBytes = payload + 8 ICMP header + 20 IP header
+    const totalBytes = payloadSize + 28;
 
-    ctx.println(t("app.terminal.commands.ping.out.banner", { host, dst: dstStr }));
+    ctx.println(t("app.terminal.commands.ping.out.banner", { host, dst: dstStr, dataBytes: payloadSize, totalBytes }));
 
     let transmitted = 0;
     let received = 0;
@@ -126,7 +144,7 @@ export const ping = {
       transmitted++;
 
       try {
-        const payload = new Uint8Array(56);
+        const payload = new Uint8Array(payloadSize);
 
         const echoFn = dstIp.isV4() ? ipf.icmpEcho.bind(ipf) : ipf.icmpv6Echo?.bind(ipf);
         if (!echoFn) throw new Error("IPv6 not supported");
@@ -136,6 +154,7 @@ export const ping = {
           identifier,
           sequence: seq & 0xffff,
           payload,
+          flags: dontFragment ? 0x02 : 0,
         });
 
         if (ctx.signal.aborted) throw new DOMException("Aborted", "AbortError");

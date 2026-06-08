@@ -607,9 +607,12 @@ export default {
   "app.terminal.commands.ip.err.noInterfaces": "ip: no interfaces",
   "app.terminal.commands.ip.err.unknownInterface": "ip: unknown interface: {iface}",
   "app.terminal.commands.ip.err.invalidCidr": "ip: invalid cidr (expected A.B.C.D/len)",
+  "app.terminal.commands.ip.err.invalidMtu": "ip: invalid MTU (68–65535)",
 
   "app.terminal.commands.ip.usage.set": "usage: ip set <ifaceIndex|ifaceName> <ip>/<prefix>",
-  "app.terminal.commands.ip.usage.main": "usage: ip [a|addr|show] | ip set <iface> <ip>/<prefix>",
+  "app.terminal.commands.ip.usage.link": "usage: ip link [show] | ip link set <iface> mtu <value>",
+  "app.terminal.commands.ip.usage.linkSet": "usage: ip link set <iface> mtu <value>",
+  "app.terminal.commands.ip.usage.main": "usage: ip [a|addr|show] | ip set <iface> <ip>/<prefix> | ip link set <iface> mtu <value>",
 
   "app.terminal.commands.ip.state.up": "UP",
   "app.terminal.commands.ip.state.down": "DOWN",
@@ -620,17 +623,20 @@ export default {
   "app.terminal.commands.ip.out.ifaceLine": "{idx}: {name}  {state}",
   "app.terminal.commands.ip.out.inetLine": "    {inetLabel} {ip}  {netmaskLabel} {netmask}",
   "app.terminal.commands.ip.out.inet6Line": "    inet6 {ip}  scope {scope}",
+  "app.terminal.commands.ip.out.linkLine": "{idx}: {name}: <{state}> mtu {mtu}",
   "app.terminal.commands.ip.out.okSet": "ok: {iface} = {ip}/{prefix}",
+  "app.terminal.commands.ip.out.okMtu": "ok: {iface} mtu = {mtu}",
 
-  "app.terminal.commands.ping.usage": "usage: ping [-c count] [-i interval] [-W timeout] <host>",
+  "app.terminal.commands.ping.usage": "usage: ping [-c count] [-i interval] [-W timeout] [-s packetsize] [-D] <host>",
 
   "app.terminal.commands.ping.err.invalidCount": "ping: invalid count",
   "app.terminal.commands.ping.err.invalidInterval": "ping: invalid interval",
   "app.terminal.commands.ping.err.invalidTimeout": "ping: invalid timeout",
+  "app.terminal.commands.ping.err.invalidSize": "ping: invalid packet size (0–65507)",
   "app.terminal.commands.ping.err.noNetworkDriver": "ping: no network driver",
   "app.terminal.commands.ping.err.cannotResolve": "ping: cannot resolve {host}",
 
-  "app.terminal.commands.ping.out.banner": "PING {host} ({dst}) 56(84) bytes of data.",
+  "app.terminal.commands.ping.out.banner": "PING {host} ({dst}) {dataBytes}({totalBytes}) bytes of data.",
   "app.terminal.commands.ping.out.reply": "{bytes} bytes from {dst}: icmp_seq={seq} ttl={ttl} time={timeMs} ms",
   "app.terminal.commands.ping.out.timeout": "Request timeout for icmp_seq {seq}",
 

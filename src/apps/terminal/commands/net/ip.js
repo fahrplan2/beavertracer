@@ -138,6 +138,49 @@ export const ip = {
       return;
     }
 
+    // ip link show | ip link set <iface> mtu <value>
+    if (sub === "link") {
+      const linkSub = args[1] ?? "show";
+
+      if (linkSub === "show" || linkSub === "ls") {
+        if (ifaces.length === 0) return t("app.terminal.commands.ip.err.noInterfaces");
+        for (let i = 0; i < ifaces.length; i++) {
+          const itf = ifaces[i];
+          const name = ifaceLabel(itf, i);
+          const mtu = typeof itf?.getMtu === "function" ? itf.getMtu() : 1500;
+          const state = (typeof itf?.up === "boolean")
+            ? (itf.up ? t("app.terminal.commands.ip.state.up") : t("app.terminal.commands.ip.state.down"))
+            : t("app.terminal.commands.ip.state.unknown");
+          ctx.println(t("app.terminal.commands.ip.out.linkLine", { idx: i, name, state, mtu }));
+        }
+        return;
+      }
+
+      if (linkSub === "set") {
+        // ip link set <iface> mtu <value>
+        const sel   = args[2];
+        const prop  = args[3];
+        const value = args[4];
+        if (!sel || prop !== "mtu" || !value) return t("app.terminal.commands.ip.usage.linkSet");
+
+        const hit = findIface(ifaces, sel);
+        if (!hit) return t("app.terminal.commands.ip.err.unknownInterface", { iface: sel });
+
+        const mtu = Number(value);
+        if (!Number.isInteger(mtu) || mtu < 68 || mtu > 65535)
+          return t("app.terminal.commands.ip.err.invalidMtu");
+
+        hit.itf.mtuOverride = mtu;
+        ctx.println(t("app.terminal.commands.ip.out.okMtu", {
+          iface: ifaceLabel(hit.itf, hit.idx),
+          mtu,
+        }));
+        return;
+      }
+
+      return t("app.terminal.commands.ip.usage.link");
+    }
+
     // Set: ip set <iface> <ip>/<prefix>
     // IMPORTANT: go through ipf.configureInterface() to update auto routes
     if (sub === "set") {

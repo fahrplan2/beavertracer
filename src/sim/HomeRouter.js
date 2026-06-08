@@ -145,6 +145,10 @@ export class HomeRouter extends SimulatedObject {
     /** @type {Map<string,Uint8Array>} LAN NDP cache: hex-key → MAC */
     _lanNdpCache = new Map();
 
+    // ── LAN fragment reassembly ───────────────────────────────────────────
+    /** @type {Map<string,{fragments:{offset:number,data:Uint8Array}[],totalLength:number|null,timerId:any,firstHeader:IPv4Packet|null,srcMac:Uint8Array|null,srcPort:any}>} */
+    _lanReassemblyBuffer = new Map();
+
     // ── Panel ─────────────────────────────────────────────────────────────
     /** @type {HTMLElement|null} */ _panelBody = null;
     _pollTimer = new PollTimer();
@@ -379,6 +383,15 @@ export class HomeRouter extends SimulatedObject {
                       (this._lanIp && dstNum === ((this._lanIp | ~prefixToNetmask(this._lanPrefix)) >>> 0));
 
         if (forUs) {
+            // Reassemble fragments before processing
+            if ((pkt.flags & 0x01) || pkt.fragmentOffset !== 0) {
+                const result = this._handleLanFragment(pkt, srcMac, srcPort);
+                if (!result) return;
+                pkt = result.packet;
+                srcMac = result.srcMac;
+                srcPort = result.srcPort;
+            }
+
             const proto = pkt.protocol;
             if (proto === 1) {
                 this._handleIcmpForRouter(pkt, srcMac, srcPort);
@@ -400,12 +413,66 @@ export class HomeRouter extends SimulatedObject {
         }
     }
 
+    /**
+     * Buffer an incoming LAN fragment and return the reassembled packet once complete.
+     * Returns null while reassembly is pending.
+     * @param {IPv4Packet} pkt
+     * @param {Uint8Array} srcMac
+     * @param {any} srcPort
+     * @returns {{packet:IPv4Packet,srcMac:Uint8Array,srcPort:any}|null}
+     */
+    _handleLanFragment(pkt, srcMac, srcPort) {
+        const key = `${pkt.src}|${pkt.dst}|${pkt.protocol}|${pkt.identification}`;
+
+        if (!this._lanReassemblyBuffer.has(key)) {
+            const timerId = simTimer.schedule(() => {
+                this._lanReassemblyBuffer.delete(key);
+            }, SimTimer.REASSEMBLY_TIMEOUT_MS);
+            this._lanReassemblyBuffer.set(key, { fragments: [], totalLength: null, timerId, firstHeader: null, srcMac: null, srcPort: null });
+        }
+
+        const entry = /** @type {NonNullable<ReturnType<typeof this._lanReassemblyBuffer.get>>} */ (this._lanReassemblyBuffer.get(key));
+        const byteOffset = pkt.fragmentOffset * 8;
+        const MF = (pkt.flags & 0x01) !== 0;
+
+        if (byteOffset === 0) { entry.firstHeader = pkt; entry.srcMac = srcMac; entry.srcPort = srcPort; }
+        entry.fragments.push({ offset: byteOffset, data: pkt.payload });
+        if (!MF) entry.totalLength = byteOffset + pkt.payload.length;
+
+        if (entry.totalLength === null) return null;
+
+        const sorted = [...entry.fragments].sort((a, b) => a.offset - b.offset);
+        let covered = 0;
+        for (const frag of sorted) {
+            if (frag.offset > covered) return null;
+            covered = Math.max(covered, frag.offset + frag.data.length);
+        }
+        if (covered < entry.totalLength) return null;
+
+        simTimer.cancel(entry.timerId);
+        this._lanReassemblyBuffer.delete(key);
+
+        const fullPayload = new Uint8Array(entry.totalLength);
+        for (const frag of sorted) fullPayload.set(frag.data, frag.offset);
+
+        const hdr = entry.firstHeader ?? pkt;
+        return {
+            packet: new IPv4Packet({
+                dst: hdr.dst, src: hdr.src, protocol: hdr.protocol, ttl: hdr.ttl,
+                identification: hdr.identification, flags: hdr.flags & ~0x01, fragmentOffset: 0,
+                payload: fullPayload,
+            }),
+            srcMac: entry.srcMac ?? srcMac,
+            srcPort: entry.srcPort ?? srcPort,
+        };
+    }
+
     // ── ICMP echo reply ───────────────────────────────────────────────────
 
     /**
      * @param {IPv4Packet} pkt
      * @param {Uint8Array} srcMac
-     * @param {EthernetPort} srcPort
+     * @param {any} srcPort
      */
     _handleIcmpForRouter(pkt, srcMac, srcPort) {
         try {
@@ -414,9 +481,41 @@ export class HomeRouter extends SimulatedObject {
 
             const reply = new ICMPPacket({ type: 0, code: 0, identifier: icmp.identifier, sequence: icmp.sequence, payload: icmp.payload });
             const ip = new IPv4Packet({ src: numToIp(this._lanIp), dst: pkt.src, protocol: 1, ttl: 64, payload: reply.pack() });
-            const frame = new EthernetFrame({ dstMac: srcMac, srcMac: this._lanMac, etherType: 0x0800, payload: ip.pack() });
-            srcPort.send(frame);
+            this._sendLanIpv4(srcMac, srcPort, ip);
         } catch {}
+    }
+
+    /**
+     * Send an IPv4 packet to a LAN host, fragmenting if the packet exceeds MTU.
+     * @param {Uint8Array} dstMac
+     * @param {any} srcPort
+     * @param {IPv4Packet} ipPkt
+     */
+    _sendLanIpv4(dstMac, srcPort, ipPkt) {
+        const MTU = 1500;
+        const packed = ipPkt.pack();
+        if (packed.length <= MTU) {
+            srcPort.send(new EthernetFrame({ dstMac, srcMac: this._lanMac, etherType: 0x0800, payload: packed }));
+            return;
+        }
+        const headerLen = ipPkt.ihl * 4;
+        const maxPayload = Math.floor((MTU - headerLen) / 8) * 8;
+        if (maxPayload <= 0) return;
+        const payload = ipPkt.payload;
+        let bytePos = 0;
+        while (bytePos < payload.length) {
+            const chunk = payload.slice(bytePos, bytePos + maxPayload);
+            const isLast = (bytePos + maxPayload) >= payload.length;
+            const frag = new IPv4Packet({
+                dst: ipPkt.dst, src: ipPkt.src, protocol: ipPkt.protocol, ttl: ipPkt.ttl,
+                identification: ipPkt.identification,
+                flags: isLast ? ipPkt.flags : (ipPkt.flags | 0x01),
+                fragmentOffset: Math.floor(bytePos / 8),
+                payload: chunk,
+            });
+            srcPort.send(new EthernetFrame({ dstMac, srcMac: this._lanMac, etherType: 0x0800, payload: frag.pack() }));
+            bytePos += maxPayload;
+        }
     }
 
     // ── LAN IPv6 processing ───────────────────────────────────────────────
