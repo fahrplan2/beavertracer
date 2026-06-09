@@ -84,25 +84,45 @@ export class NetworkInterface extends Observable {
     /** Whether to send periodic Router Advertisements and respond to RS on this interface */
     raEnabled = false;
 
+    /** Override MTU for this interface. null = inherit from connected EthernetLink (default 1500). */
+    /** @type {number|null} */
+    mtuOverride = null;
+
+    /** @returns {boolean} */
+    get up() {
+        return this.port.linkref !== null;
+    }
+
+    /** @returns {number} */
+    getMtu() {
+        if (this.mtuOverride !== null) return this.mtuOverride;
+        return this.port.linkref?.mtu ?? 1500;
+    }
+
     /**
      * @param {Object} [opts]
      * @param {IPAddress} [opts.ip]
      * @param {number} [opts.prefixLength]
      * @param {String} [opts.name]
+     * @param {EthernetPort} [opts.port]
+     * @param {Uint8Array|number[]} [opts.mac]
      */
     constructor(opts = {}) {
         super();
 
-        // Generate a random MAC-Address for this interface
-        this.mac = new Uint8Array(6);
-        this.mac[0] = 0xAA; // private use MAC; does not collide with "real" ones
-        for (let i = 1; i < 6; i++) {
-            this.mac[i] = Math.floor(Math.random() * 256);
+        if (opts.mac) {
+            this.mac = opts.mac instanceof Uint8Array ? new Uint8Array(opts.mac) : new Uint8Array(opts.mac);
+        } else {
+            this.mac = new Uint8Array(6);
+            this.mac[0] = 0xAA; // private use MAC; does not collide with "real" ones
+            for (let i = 1; i < 6; i++) {
+                this.mac[i] = Math.floor(Math.random() * 256);
+            }
         }
 
         // @ts-ignore // KleC: aktuell wird toHex() nicht als gültige Funktion erkannt. Im Firefox geht es.
         this.name = (opts.name ?? 'enx' + this.mac.toHex());
-        this.port = new EthernetPort(this.name);
+        this.port = opts.port ?? new EthernetPort(this.name);
         this.port.subscribe(this);
 
         this._assignLinkLocal();

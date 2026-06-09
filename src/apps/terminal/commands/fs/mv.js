@@ -5,6 +5,14 @@ import { t } from "../../../../i18n/index.js";
 /** @type {import("../types.js").Command} */
 export const mv = {
   name: "mv",
+  category: /** @type {"fs"} */ ("fs"),
+  tldr: {
+    descKey: "app.terminal.commands.mv.tldr.desc",
+    examples: [
+      { labelKey: "app.terminal.commands.mv.tldr.ex.rename", cmd: "mv alt.txt neu.txt" },
+      { labelKey: "app.terminal.commands.mv.tldr.ex.move",   cmd: "mv datei.txt /etc/" },
+    ],
+  },
   run: (ctx, args) => {
     const fs = ctx.os.fs;
     if (!fs) return t("app.terminal.commands.mv.err.noFilesystem");

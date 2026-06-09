@@ -17,6 +17,8 @@ import { ICMPv6Packet } from "../net/pdu/ICMPv6Packet.js";
 import { DNSPacket } from "../net/pdu/DNSPacket.js";
 import { IPAddress } from "../net/models/IPAddress.js";
 import { NatEngine } from "../net/NatEngine.js";
+import { IPStack } from "../net/IPStack.js";
+import { NetworkInterface } from "../net/NetworkInterface.js";
 import { simTimer, SimTimer } from "../lib/SimTimer.js";
 import { UILib } from "../lib/UILib.js";
 import { t } from "../i18n/index.js";
@@ -104,8 +106,6 @@ export class HomeRouter extends SimulatedObject {
     // ── ARP caches ────────────────────────────────────────────────────────
     /** @type {Map<number,Uint8Array>} ip→mac */
     _lanArpCache = new Map();
-    /** @type {Map<number,Uint8Array>} ip→mac */
-    _wanArpCache = new Map();
 
     // ── NAT ───────────────────────────────────────────────────────────────
     /** @type {NatEngine} */ _nat = new NatEngine();
@@ -145,6 +145,14 @@ export class HomeRouter extends SimulatedObject {
     /** @type {Map<string,Uint8Array>} LAN NDP cache: hex-key → MAC */
     _lanNdpCache = new Map();
 
+    // ── WAN IPStack engine ────────────────────────────────────────────────
+    /** @type {IPStack} */ _wanStack;
+    /** Internal bridge port: IPStack egress → wan0 @type {EthernetPort} */ _wanBridgePort;
+
+    // ── LAN IPStack engine ────────────────────────────────────────────────
+    /** @type {IPStack} */ _lanStack;
+    /** Internal bridge port: IPStack egress → physical LAN ports @type {EthernetPort} */ _lanBridgePort;
+
     // ── Panel ─────────────────────────────────────────────────────────────
     /** @type {HTMLElement|null} */ _panelBody = null;
     _pollTimer = new PollTimer();
@@ -168,6 +176,26 @@ export class HomeRouter extends SimulatedObject {
         this._wPort = new WirelessPort("wlan0");
 
         for (const p of this._allPorts()) p.subscribe(/** @type {any} */ (this));
+
+        // WAN IPStack: handles ARP resolution, TTL decrement, fragmentation for LAN→WAN routing
+        this._wanBridgePort = new EthernetPort("wan-bridge");
+        this._wanStack = new IPStack(0, "wan");
+        const _wanIf = new NetworkInterface({ port: this._wanBridgePort, name: "wan0", mac: this._wanMac });
+        this._wanStack.interfaces.push(_wanIf);
+        _wanIf.subscribe(this._wanStack);
+        this._wanStack.forwarding = true;
+        this._wanBridgePort.subscribe(/** @type {any} */ (this));
+
+        // LAN IPStack: handles ICMP echo, fragment reassembly, DHCP and DNS relay for router-destined LAN packets
+        this._lanBridgePort = new EthernetPort("lan-bridge");
+        this._lanStack = new IPStack(0, "lan");
+        const _lanIf = new NetworkInterface({ port: this._lanBridgePort, name: "lan0", mac: this._lanMac });
+        this._lanStack.interfaces.push(_lanIf);
+        _lanIf.subscribe(this._lanStack);
+        this._lanStack.configureInterface(0, { ip: numToIp(this._lanIp), prefixLength: this._lanPrefix });
+
+        // DHCP server + DNS relay: registered as protocol handler so IPStack's accept() dispatches to them
+        this._lanBridgePort.subscribe(/** @type {any} */ (this));
 
         this.onPanelCreated = (/** @type {HTMLElement} */ body) => {
             this._panelBody = body;
@@ -207,16 +235,26 @@ export class HomeRouter extends SimulatedObject {
     // ── Observable update() ───────────────────────────────────────────────
 
     update() {
-        // WAN
+        // WAN ingress
         let f;
         while ((f = this.wan0.getNextIncomingFrame()) != null) {
             try { this._handleWanFrame(f); } catch {}
+        }
+        // Bridge WAN stack egress (ARP requests, routed IP packets) to the physical WAN port
+        while ((f = this._wanBridgePort.outBuffer.shift()) != null) {
+            this.wan0.send(f);
         }
         // LAN bridge
         for (const p of this._lanPorts()) {
             while ((f = /** @type {EthernetPort} */ (p).getNextIncomingFrame()) != null) {
                 try { this._handleLanFrame(/** @type {EthernetPort} */ (p), f); } catch {}
             }
+        }
+        // Bridge LAN stack egress (ICMP replies, DHCP responses) to physical LAN ports
+        this._lanStack.update();
+        let ef;
+        while ((ef = this._lanBridgePort.outBuffer.shift()) != null) {
+            this._forwardEgressFrame(ef);
         }
     }
 
@@ -234,7 +272,11 @@ export class HomeRouter extends SimulatedObject {
         if (frame.etherType === 0x0806) {
             const arp = ArpPacket.fromBytes(frame.payload);
             const spaNum = IPUInt8ToNumber(arp.spa);
-            if (spaNum) this._wanArpCache.set(spaNum, arp.sha.slice());
+            if (spaNum) {
+                // Keep WAN stack's neighbor cache in sync so resolveNeighbor() finds the MAC
+                const wanIf = this._wanStack.interfaces[0];
+                if (wanIf) wanIf.neighborCache.set(new IPAddress(4, spaNum >>> 0).toString(), arp.sha.slice());
+            }
 
             if (arp.oper === 1 && this._wanIp && IPUInt8ToNumber(arp.tpa) === this._wanIp) {
                 this._sendArpReply(this.wan0, this._wanMac, this._wanIp, arp);
@@ -344,6 +386,9 @@ export class HomeRouter extends SimulatedObject {
             if (spa) {
                 this._lanArpCache.set(spa, arp.sha.slice());
                 this._lanMacTable.set(macToBig(arp.sha), srcPort);
+                // Keep LAN stack's neighbor cache in sync so it can reply without ARP roundtrips
+                const lanIf = this._lanStack?.interfaces[0];
+                if (lanIf) lanIf.neighborCache.set(new IPAddress(4, spa >>> 0).toString(), arp.sha.slice());
             }
             if (arp.oper === 1 && IPUInt8ToNumber(arp.tpa) === this._lanIp) {
                 this._sendArpReply(srcPort, this._lanMac, this._lanIp, arp);
@@ -354,6 +399,8 @@ export class HomeRouter extends SimulatedObject {
             if (srcIpN) {
                 this._lanArpCache.set(srcIpN, frame.srcMac.slice());
                 this._lanMacTable.set(macToBig(frame.srcMac), srcPort);
+                const lanIf = this._lanStack?.interfaces[0];
+                if (lanIf) lanIf.neighborCache.set(pkt.src.toString(), frame.srcMac.slice());
             }
             this._handleLanIpv4(pkt, frame.srcMac, srcPort);
         } else if (frame.etherType === 0x86DD) {
@@ -379,10 +426,12 @@ export class HomeRouter extends SimulatedObject {
                       (this._lanIp && dstNum === ((this._lanIp | ~prefixToNetmask(this._lanPrefix)) >>> 0));
 
         if (forUs) {
-            const proto = pkt.protocol;
-            if (proto === 1) {
-                this._handleIcmpForRouter(pkt, srcMac, srcPort);
-            } else if (proto === 17) {
+            if (pkt.protocol === 1) {
+                // ICMP: stack handles fragment reassembly + echo replies
+                this._lanStack.route(pkt, false, 0).catch(() => {});
+            } else if (pkt.protocol === 17) {
+                // UDP: accept() dispatches proto 17 to UdpEngine, bypassing _rawProtoHandlers.
+                // Handle DHCP/DNS explicitly; fragmented DHCP/DNS is not realistic.
                 try {
                     const udp = UDPPacket.fromBytes(pkt.payload);
                     if (this._dhcpEnabled && udp.dstPort === 67) {
@@ -393,30 +442,21 @@ export class HomeRouter extends SimulatedObject {
                 } catch {}
             }
         } else {
-            // Route to WAN
             if (this._wanIp && pkt.ttl > 1) {
                 void this._routeLanToWan(pkt);
             }
         }
     }
 
-    // ── ICMP echo reply ───────────────────────────────────────────────────
-
     /**
-     * @param {IPv4Packet} pkt
-     * @param {Uint8Array} srcMac
-     * @param {EthernetPort} srcPort
+     * Forward a frame generated by _lanStack to the correct LAN port.
+     * @param {EthernetFrame} frame
      */
-    _handleIcmpForRouter(pkt, srcMac, srcPort) {
-        try {
-            const icmp = ICMPPacket.fromBytes(pkt.payload);
-            if (icmp.type !== 8) return;
-
-            const reply = new ICMPPacket({ type: 0, code: 0, identifier: icmp.identifier, sequence: icmp.sequence, payload: icmp.payload });
-            const ip = new IPv4Packet({ src: numToIp(this._lanIp), dst: pkt.src, protocol: 1, ttl: 64, payload: reply.pack() });
-            const frame = new EthernetFrame({ dstMac: srcMac, srcMac: this._lanMac, etherType: 0x0800, payload: ip.pack() });
-            srcPort.send(frame);
-        } catch {}
+    _forwardEgressFrame(frame) {
+        const key = macToBig(frame.dstMac);
+        const port = this._lanMacTable.get(key);
+        if (port) port.send(frame);
+        else this._lanFlood(/** @type {any} */ (null), frame);
     }
 
     // ── LAN IPv6 processing ───────────────────────────────────────────────
@@ -474,23 +514,43 @@ export class HomeRouter extends SimulatedObject {
     /** @param {IPv4Packet} pkt */
     async _routeLanToWan(pkt) {
         if (!this._wanIp) return;
-        pkt.ttl--;
-        pkt.headerChecksum = 0;
-
         const ok = this._nat.natOutbound(this._wanIp, pkt);
         if (!ok) return;
+        // IPStack handles TTL decrement, ARP resolution, fragmentation, and sending
+        await this._wanStack.route(pkt, false, 0);
+    }
 
-        const dstNum = ipNum(pkt.dst);
-        // If dst is in WAN subnet → direct, else use gateway
-        const wanNet = (this._wanIp & prefixToNetmask(this._wanPrefix)) >>> 0;
-        const dstNet = (dstNum & prefixToNetmask(this._wanPrefix)) >>> 0;
-        const nextHop = (this._wanGw && wanNet !== dstNet) ? this._wanGw : dstNum;
+    // ── WAN stack configuration ───────────────────────────────────────────
 
-        const mac = await this._resolveArpWan(nextHop);
-        if (!mac) return;
+    /** Sync WAN IP/prefix/gateway into _wanStack after any WAN config change. */
+    _applyLanConfig() {
+        this._lanStack.configureInterface(0, { ip: numToIp(this._lanIp), prefixLength: this._lanPrefix });
+    }
 
-        const frame = new EthernetFrame({ dstMac: mac, srcMac: this._wanMac, etherType: 0x0800, payload: pkt.pack() });
-        this.wan0.send(frame);
+    _applyWanConfig() {
+        const wanIf = this._wanStack.interfaces[0];
+        if (!wanIf) return;
+
+        if (this._wanIp) {
+            this._wanStack.configureInterface(0, {
+                ip: numToIp(this._wanIp),
+                prefixLength: this._wanPrefix,
+            });
+            // Replace default route with current gateway
+            this._wanStack.routingTable = this._wanStack.routingTable.filter(r => r.auto);
+            if (this._wanGw) {
+                this._wanStack.addRoute(
+                    IPAddress.fromString("0.0.0.0"), 0, 0,
+                    numToIp(this._wanGw), "static"
+                );
+            }
+        } else {
+            this._wanStack.configureInterface(0, {
+                ip: IPAddress.fromString("0.0.0.0"),
+                prefixLength: 24,
+            });
+            this._wanStack.routingTable = this._wanStack.routingTable.filter(r => r.auto);
+        }
     }
 
     // ── Routing: WAN → LAN ───────────────────────────────────────────────
@@ -549,22 +609,7 @@ export class HomeRouter extends SimulatedObject {
         return null;
     }
 
-    /** @param {number} ipNum @returns {Promise<Uint8Array|null>} */
-    async _resolveArpWan(ipNum) {
-        const cached = this._wanArpCache.get(ipNum);
-        if (cached) return cached;
-
-        this._sendArpRequest(ipNum, this._wanIp, this._wanMac, "wan");
-
-        for (let i = 0; i < SimTimer.ARP_WAIT_RETRIES; i++) {
-            await simTimer.sleep(SimTimer.ARP_RETRY_DELAY_MS);
-            const m = this._wanArpCache.get(ipNum);
-            if (m) return m;
-        }
-        return null;
-    }
-
-    /**
+/**
      * @param {number} targetIp
      * @param {number} senderIp
      * @param {Uint8Array} senderMac
@@ -912,8 +957,8 @@ export class HomeRouter extends SimulatedObject {
         }
         if (opt3?.length >= 4) this._wanGw = IPUInt8ToNumber(opt3.slice(0,4));
         if (opt6?.length >= 4) this._upstreamDns = IPUInt8ToNumber(opt6.slice(0,4));
-        this._wanArpCache.clear();
         this._nat.clear();
+        this._applyWanConfig();
         this._updateStatusPanel();
     }
 
@@ -1188,19 +1233,12 @@ export class HomeRouter extends SimulatedObject {
     }
 
     /** @param {Uint8Array} dnsBytes @param {number} relayId */
-    async _sendDnsToUpstream(dnsBytes, relayId) {
-        const wanNet = (this._wanIp & prefixToNetmask(this._wanPrefix)) >>> 0;
-        const dnsNet = (this._upstreamDns & prefixToNetmask(this._wanPrefix)) >>> 0;
-        const nextHop = (this._wanGw && wanNet !== dnsNet) ? this._wanGw : this._upstreamDns;
-        const mac = await this._resolveArpWan(nextHop);
-        if (!mac) return;
-
+    _sendDnsToUpstream(dnsBytes, relayId) {
+        if (!this._wanIp || !this._upstreamDns) return;
         const srcIp = numToIp(this._wanIp);
         const dstIp = numToIp(this._upstreamDns);
         const udp = new UDPPacket({ srcPort: 5353, dstPort: 53, payload: dnsBytes });
-        const ip = new IPv4Packet({ src: srcIp, dst: dstIp, protocol: 17, ttl: 64, payload: udp.pack({ srcIp, dstIp }) });
-        const frame = new EthernetFrame({ dstMac: mac, srcMac: this._wanMac, etherType: 0x0800, payload: ip.pack() });
-        this.wan0.send(frame);
+        this._wanStack.send({ dst: dstIp, src: srcIp, protocol: 17, payload: udp.pack({ srcIp, dstIp }) });
     }
 
     /**
@@ -1289,7 +1327,15 @@ export class HomeRouter extends SimulatedObject {
         obj._dhcpRangeEnd = strToNum(n.dhcpRangeEnd ?? "192.168.1.200");
         obj._dhcpLeaseTime = Number(n.dhcpLeaseTime ?? 3600);
         obj._ssid = String(n.ssid ?? "HomeNetwork");
-        if (n.wanMac) try { obj._wanMac = strToMac(n.wanMac); } catch {}
+        if (n.wanMac) try {
+            obj._wanMac = strToMac(n.wanMac);
+            // Restore MAC into the WAN NetworkInterface so ARP uses the correct MAC
+            const wanIf = obj._wanStack.interfaces[0];
+            if (wanIf) {
+                wanIf.mac = new Uint8Array(obj._wanMac);
+                wanIf.neighborCache = new Map();
+            }
+        } catch {}
         if (n.lanMac) try { obj._lanMac = strToMac(n.lanMac); } catch {}
         // pdDelegated wird nicht restoriert — DHCPv6-PD wird beim Start immer neu verhandelt
         if (Array.isArray(n.portRules)) {
@@ -1300,6 +1346,8 @@ export class HomeRouter extends SimulatedObject {
                 lanPort: Number(r.lanPort) | 0,
             })).filter(/** @param {{wanPort:number,lanIp:number,lanPort:number}} r */ r => r.wanPort > 0 && r.lanIp !== 0 && r.lanPort > 0);
         }
+        obj._applyWanConfig();
+        obj._applyLanConfig();
         if (obj._wanMode === "dhcp") void obj._runWanDhcpClient();
         if (obj._wanIp6Enabled) void obj._runWanDhcpv6PdClient();
         return obj;
@@ -1460,6 +1508,7 @@ export class HomeRouter extends SimulatedObject {
                 this._wanMode = "dhcp";
                 this._wanIp = 0; this._wanGw = 0; this._upstreamDns = 0;
                 this._nat.clear();
+                this._applyWanConfig();
                 void this._runWanDhcpClient();
             } else {
                 const ip  = strToNum(ipIn.value);
@@ -1469,7 +1518,8 @@ export class HomeRouter extends SimulatedObject {
                 if (!ip || pf < 1 || pf > 32) { SimDialog.alert(t("homerouter.wan.invalid")); return; }
                 this._wanMode = "static";
                 this._wanIp = ip; this._wanPrefix = pf; this._wanGw = gw; this._upstreamDns = dns;
-                this._wanArpCache.clear(); this._nat.clear();
+                this._nat.clear();
+                this._applyWanConfig();
             }
             // IPv6 — immer vollständig zurücksetzen, dann ggf. neu starten
             this._wanIp6Enabled = ip6Cb.checked;
@@ -1509,6 +1559,7 @@ export class HomeRouter extends SimulatedObject {
             if (!ip || pf < 1 || pf > 32) { SimDialog.alert(t("homerouter.lan.invalid")); return; }
             this._lanIp = ip; this._lanPrefix = pf;
             this._lanArpCache.clear(); this._lanMacTable.clear();
+            this._applyLanConfig();
             this._mount(/** @type {HTMLElement} */ (this._panelBody));
         });
         host.appendChild(UILib.div("hr-btn-row", [applyBtn]));

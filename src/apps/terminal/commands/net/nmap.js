@@ -191,6 +191,16 @@ function printHostReport(results, ctx) {
 /** @type {import("../types.js").Command} */
 export const nmap = {
     name: "nmap",
+    category: "net",
+    tldr: {
+        descKey: "app.terminal.commands.nmap.tldr.desc",
+        examples: [
+            { labelKey: "app.terminal.commands.nmap.tldr.ex.host",   cmd: "nmap 192.168.1.1" },
+            { labelKey: "app.terminal.commands.nmap.tldr.ex.subnet", cmd: "nmap 192.168.1.0/24" },
+            { labelKey: "app.terminal.commands.nmap.tldr.ex.ports",  cmd: "nmap -p 80,443 192.168.1.1" },
+            { labelKey: "app.terminal.commands.nmap.tldr.ex.open",   cmd: "nmap --open 192.168.1.0/24" },
+        ],
+    },
     run: async (ctx, args) => {
         const argv = [...args];
         let portSpec = /** @type {string|null} */ (null);

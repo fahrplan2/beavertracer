@@ -79,6 +79,12 @@ export class IPStack extends Observable {
     /** @type {Map<number, (pkt: IPv4Packet, ifIndex: number) => void>} */
     _rawProtoHandlers = new Map();
 
+    /**
+     * Reassembly buffer: key = "src|dst|proto|id"
+     * @type {Map<string, {fragments: Array<{offset:number, data:Uint8Array}>, totalLength:number|null, timerId:number, firstHeader:IPv4Packet|null}>}
+     */
+    _reassemblyBuffer = new Map();
+
     name = '';
 
     /**
@@ -562,7 +568,17 @@ export class IPStack extends Observable {
             return;
         }
 
-        interf.sendFrame(mac, 0x0800, packet.pack());
+        const mtu = interf.getMtu();
+        const packedBytes = packet.pack();
+        if (packedBytes.length > mtu) {
+            if (packet.flags & 0x02) { // DF bit set
+                this._sendICMPFragNeeded(packet, mtu);
+                return;
+            }
+            this._sendFragments(packet, interf, mac, mtu);
+            return;
+        }
+        interf.sendFrame(mac, 0x0800, packedBytes);
     }
 
     /****************************************************** TCP **********************************/
@@ -601,7 +617,7 @@ export class IPStack extends Observable {
 
     /**
      * @param {IPAddress} dstIp
-     * @param {{timeoutMs?: number, payload?: Uint8Array, identifier?: number, sequence?: number, ttl?: number}} [opt]
+     * @param {{timeoutMs?: number, payload?: Uint8Array, identifier?: number, sequence?: number, ttl?: number, flags?: number}} [opt]
      * @returns {Promise<{bytes:number, ttl:number, timeMs:number, identifier:number, sequence:number}>}
      */
     async icmpEcho(dstIp, opt = {}) {
@@ -638,6 +654,7 @@ export class IPStack extends Observable {
                 protocol: 1,
                 payload: icmp,
                 ttl: opt.ttl,
+                flags: opt.flags ?? 0,
             });
         }).then((r) => {
             const t1 = (typeof performance !== "undefined" ? performance.now() : Date.now());
@@ -713,6 +730,130 @@ export class IPStack extends Observable {
         icmp[3] = cs & 0xff;
 
         this.send({ dst: original.src, protocol: 1, payload: icmp });
+    }
+
+    /**
+     * Send ICMP Destination Unreachable / Fragmentation Needed (Type 3 Code 4, RFC 792 + RFC 1191).
+     * @param {IPv4Packet} original
+     * @param {number} mtu  next-hop MTU to advertise
+     */
+    _sendICMPFragNeeded(original, mtu) {
+        if (!(original instanceof IPv4Packet)) return;
+        if (this._isZero(original.src)) return;
+        if (original.protocol === 1) {
+            const icmpType = original.payload?.[0];
+            if (icmpType !== 8) return;
+        }
+        if (this._isLimitedBroadcast(original.dst)) return;
+        if (this._findDirectedBroadcastInterface(original.dst) !== -1) return;
+
+        const quotedLen = Math.min(original.payload.length, 8);
+        const origHdr = original.pack().slice(0, original.ihl * 4);
+        // Layout: type(1) code(1) checksum(2) unused(2) next-hop-mtu(2) + orig-header + 8b data
+        const icmp = new Uint8Array(8 + origHdr.length + quotedLen);
+        icmp[0] = 3;
+        icmp[1] = 4;
+        icmp[6] = (mtu >> 8) & 0xff;
+        icmp[7] = mtu & 0xff;
+        icmp.set(origHdr, 8);
+        icmp.set(original.payload.slice(0, quotedLen), 8 + origHdr.length);
+        const cs = ICMPPacket.computeChecksum(icmp);
+        icmp[2] = (cs >> 8) & 0xff;
+        icmp[3] = cs & 0xff;
+
+        this.send({ dst: original.src, protocol: 1, payload: icmp });
+    }
+
+    /**
+     * Fragment an IPv4 packet and send each fragment via interf.
+     * Called when packet.length > mtu and DF bit is clear.
+     * @param {IPv4Packet} packet
+     * @param {import('./NetworkInterface.js').NetworkInterface} interf
+     * @param {Uint8Array} mac
+     * @param {number} mtu
+     */
+    _sendFragments(packet, interf, mac, mtu) {
+        const headerLen = packet.ihl * 4;
+        // payload per fragment must be a multiple of 8 bytes
+        const maxPayload = Math.floor((mtu - headerLen) / 8) * 8;
+        if (maxPayload <= 0) return; // MTU too small for even one byte — drop
+
+        const payload = packet.payload;
+        let bytePos = 0;
+
+        while (bytePos < payload.length) {
+            const chunk = payload.slice(bytePos, bytePos + maxPayload);
+            const isLast = (bytePos + maxPayload) >= payload.length;
+            const frag = new IPv4Packet({
+                dst: packet.dst,
+                src: packet.src,
+                protocol: packet.protocol,
+                ttl: packet.ttl,
+                identification: packet.identification,
+                flags: isLast ? packet.flags : (packet.flags | 0x01),
+                fragmentOffset: packet.fragmentOffset + Math.floor(bytePos / 8),
+                payload: chunk,
+            });
+            interf.sendFrame(mac, 0x0800, frag.pack());
+            bytePos += maxPayload;
+        }
+    }
+
+    /**
+     * Buffer an incoming IPv4 fragment and return the reassembled packet once complete.
+     * Returns null if reassembly is still pending.
+     * @param {IPv4Packet} packet
+     * @returns {IPv4Packet|null}
+     */
+    _handleFragment(packet) {
+        const key = `${packet.src}|${packet.dst}|${packet.protocol}|${packet.identification}`;
+
+        if (!this._reassemblyBuffer.has(key)) {
+            const timerId = simTimer.schedule(() => {
+                this._reassemblyBuffer.delete(key);
+            }, SimTimer.REASSEMBLY_TIMEOUT_MS);
+            this._reassemblyBuffer.set(key, { fragments: [], totalLength: null, timerId, firstHeader: null });
+        }
+
+        const entry = /** @type {NonNullable<ReturnType<typeof this._reassemblyBuffer.get>>} */ (this._reassemblyBuffer.get(key));
+        const byteOffset = packet.fragmentOffset * 8;
+        const MF = (packet.flags & 0x01) !== 0;
+
+        if (byteOffset === 0) entry.firstHeader = packet;
+        entry.fragments.push({ offset: byteOffset, data: packet.payload });
+        if (!MF) entry.totalLength = byteOffset + packet.payload.length;
+
+        if (entry.totalLength === null) return null;
+
+        const sorted = [...entry.fragments].sort((a, b) => a.offset - b.offset);
+
+        // Verify no gaps in coverage
+        let covered = 0;
+        for (const frag of sorted) {
+            if (frag.offset > covered) return null; // gap — still waiting
+            covered = Math.max(covered, frag.offset + frag.data.length);
+        }
+        if (covered < entry.totalLength) return null;
+
+        simTimer.cancel(entry.timerId);
+        this._reassemblyBuffer.delete(key);
+
+        const fullPayload = new Uint8Array(entry.totalLength);
+        for (const frag of sorted) {
+            fullPayload.set(frag.data, frag.offset);
+        }
+
+        const hdr = entry.firstHeader ?? packet;
+        return new IPv4Packet({
+            dst: hdr.dst,
+            src: hdr.src,
+            protocol: hdr.protocol,
+            ttl: hdr.ttl,
+            identification: hdr.identification,
+            flags: hdr.flags & ~0x01, // clear MF
+            fragmentOffset: 0,
+            payload: fullPayload,
+        });
     }
 
     /**
@@ -848,6 +989,13 @@ export class IPStack extends Observable {
      */
     /** @param {IPv4Packet} packet @param {number} [recvIfIndex] */
     accept(packet, recvIfIndex = -1) {
+        // Fragment reassembly: hold fragments until datagram is complete
+        if ((packet.flags & 0x01) || packet.fragmentOffset !== 0) {
+            const reassembled = this._handleFragment(packet);
+            if (!reassembled) return;
+            packet = reassembled;
+        }
+
         switch (packet.protocol) {
             case 1:
                 this._handleICMP(packet);
@@ -922,6 +1070,7 @@ export class IPStack extends Observable {
      * @param {IPAddress} [opts.src]
      * @param {Number} [opts.protocol]
      * @param {Number} [opts.ttl]
+     * @param {Number} [opts.flags]
      * @param {Uint8Array} [opts.payload]
      */
     async send(opts = {}) {
@@ -933,13 +1082,15 @@ export class IPStack extends Observable {
         const protocol = (opts.protocol ?? 0);
         const ttl = (opts.ttl ?? 64);
         const payload = (opts.payload ?? new Uint8Array());
+        const flags = (opts.flags ?? 0);
 
         const packet = new IPv4Packet({
             dst,
             src,
             protocol,
             payload,
-            ttl
+            ttl,
+            flags,
         });
 
         this.route(packet, true).catch(console.error);

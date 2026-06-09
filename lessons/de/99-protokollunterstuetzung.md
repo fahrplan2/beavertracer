@@ -50,7 +50,7 @@ BeaverTracer ist ein Netzwerksimulator für den Unterricht. Er modelliert eine b
 <tr>
   <td>IPv4</td><td>RFC 791</td>
   <td><span class="badge badge-partial">Teilweise</span></td>
-  <td>Alle Header-Felder inkl. DSCP/ECN, Flags (DF/MF), Fragment-Offset, TTL, Prüfsumme. Options-Feld wird mitgeführt, aber nicht ausgewertet. Keine Fragmentierungs-Reassembly.</td>
+  <td>Alle Header-Felder inkl. DSCP/ECN, Flags (DF/MF), Fragment-Offset, TTL, Prüfsumme. Fragmentierung (DF/MF, ICMP Fragmentation Needed) und Reassembly implementiert. Options-Feld wird mitgeführt, aber nicht ausgewertet.</td>
 </tr>
 <tr>
   <td>IPv6</td><td>RFC 2460</td>
@@ -286,7 +286,6 @@ Die Analyse wird von **Wiregasm** übernommen — einem WebAssembly-Build von Wi
 
 Einige Einschränkungen gelten simulatorweit, unabhängig vom Protokoll:
 
-- **Keine IPv4-Fragmentierung.** Pakete, die eine MTU überschreiten würden, werden ungeteilt gesendet; am Zielknoten findet keine Reassembly statt.
 - **Keine IPv6-Extension-Headers.** Hop-by-Hop-, Routing-, Fragment- und Destination-Options-Header werden weder erzeugt noch geparst.
 - **Eingeschränkte TCP-Options.** MSS wird beim SYN-Handshake ausgehandelt. Window Scaling, SACK und TCP Timestamps sind nicht implementiert; Fenstergrößen sind fest (kein Scaling).
 - **Kein Multicast-Management.** IGMP (IPv4) und MLD (IPv6) fehlen; Multicast-Weiterleitung basiert auf Flooding innerhalb der Simulation.

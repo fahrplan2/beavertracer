@@ -67,6 +67,14 @@ function ipv4ToU32OrNull(s) {
 /** @type {import("../types.js").Command} */
 export const arp = {
   name: "arp",
+  category: "net",
+  tldr: {
+    descKey: "app.terminal.commands.arp.tldr.desc",
+    examples: [
+      { labelKey: "app.terminal.commands.arp.tldr.ex.all",   cmd: "arp" },
+      { labelKey: "app.terminal.commands.arp.tldr.ex.iface", cmd: "arp eth0" },
+    ],
+  },
   run: (ctx, args) => {
     const net = ctx.os.net;
     if (!net) return t("app.terminal.commands.arp.err.noNetDriver");

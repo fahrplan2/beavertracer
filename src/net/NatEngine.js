@@ -19,6 +19,8 @@ export class NatEngine {
     _icmpOut = new Map();
     /** @type {Map<number, {srcIpNum:number, origId:number}>} natId → orig */
     _icmpIn = new Map();
+    /** @type {Map<number, number>} IPv4 identification → LAN IP for inbound non-first fragments */
+    _fragIn = new Map();
 
     _nextPort = 10000;
     _nextIcmpId = 0xF000;
@@ -33,6 +35,13 @@ export class NatEngine {
     natOutbound(wanIpNum, packet) {
         const proto = packet.protocol;
         const srcNum = this._ipNum(packet.src);
+
+        // Non-first fragment: no transport header present, just rewrite source IP
+        if (packet.fragmentOffset !== 0) {
+            packet.src = new IPAddress(4, wanIpNum);
+            packet.headerChecksum = 0;
+            return true;
+        }
 
         if (proto === 1) return this._outIcmp(wanIpNum, srcNum, packet);
 
@@ -130,7 +139,23 @@ export class NatEngine {
      */
     natInbound(packet) {
         const proto = packet.protocol;
-        if (proto === 1) return this._inIcmp(packet);
+
+        // Non-first fragment: no transport header, look up LAN host by identification
+        if (packet.fragmentOffset !== 0) {
+            const lanIpNum = this._fragIn.get(packet.identification);
+            if (lanIpNum === undefined) return null;
+            packet.dst = new IPAddress(4, lanIpNum);
+            packet.headerChecksum = 0;
+            if ((packet.flags & 0x01) === 0) this._fragIn.delete(packet.identification);
+            return lanIpNum;
+        }
+
+        if (proto === 1) {
+            const result = this._inIcmp(packet);
+            if (result !== null && (packet.flags & 0x01) !== 0)
+                this._fragIn.set(packet.identification, result);
+            return result;
+        }
         if (proto !== 6 && proto !== 17) return null;
 
         const isUdp = proto === 17;
@@ -157,6 +182,9 @@ export class NatEngine {
                 packet.payload = t.pack({ srcIp: packet.src, dstIp: packet.dst });
             }
         } catch { return null; }
+
+        if ((packet.flags & 0x01) !== 0)
+            this._fragIn.set(packet.identification, mapping.srcIpNum);
 
         return mapping.srcIpNum;
     }
@@ -232,5 +260,6 @@ export class NatEngine {
     clear() {
         this._out.clear(); this._in.clear();
         this._icmpOut.clear(); this._icmpIn.clear();
+        this._fragIn.clear();
     }
 }

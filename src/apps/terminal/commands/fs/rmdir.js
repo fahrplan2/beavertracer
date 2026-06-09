@@ -5,6 +5,13 @@ import { t } from "../../../../i18n/index.js";
 /** @type {import("../types.js").Command} */
 export const rmdir = {
   name: "rmdir",
+  category: /** @type {"fs"} */ ("fs"),
+  tldr: {
+    descKey: "app.terminal.commands.rmdir.tldr.desc",
+    examples: [
+      { labelKey: "app.terminal.commands.rmdir.tldr.ex.basic", cmd: "rmdir leerer_ordner" },
+    ],
+  },
   run: (ctx, args) => {
     const fs = ctx.os.fs;
     if (!fs) return t("app.terminal.commands.rmdir.err.noFilesystem");

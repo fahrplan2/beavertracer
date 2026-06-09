@@ -54,6 +54,14 @@ async function resolveHostToIp(ctx, host) {
 /** @type {import("../types.js").Command} */
 export const traceroute = {
   name: "traceroute",
+  category: "net",
+  tldr: {
+    descKey: "app.terminal.commands.traceroute.tldr.desc",
+    examples: [
+      { labelKey: "app.terminal.commands.traceroute.tldr.ex.basic",   cmd: "traceroute 8.8.8.8" },
+      { labelKey: "app.terminal.commands.traceroute.tldr.ex.maxhops", cmd: "traceroute -m 10 192.168.1.1" },
+    ],
+  },
   run: async (ctx, args) => {
     const argv = [...args];
 

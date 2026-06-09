@@ -130,6 +130,15 @@ function parseV4IpAddress(s) {
 /** @type {import("../types.js").Command} */
 export const route = {
   name: "route",
+  category: "net",
+  tldr: {
+    descKey: "app.terminal.commands.route.tldr.desc",
+    examples: [
+      { labelKey: "app.terminal.commands.route.tldr.ex.show", cmd: "route show" },
+      { labelKey: "app.terminal.commands.route.tldr.ex.add",  cmd: "route add 10.0.0.0/8 via 192.168.1.1" },
+      { labelKey: "app.terminal.commands.route.tldr.ex.del",  cmd: "route del 10.0.0.0/8" },
+    ],
+  },
   run: (ctx, args) => {
     const ipf = ctx.os.net;
     if (!ipf) return t("app.terminal.commands.route.err.noNetworkDriver");

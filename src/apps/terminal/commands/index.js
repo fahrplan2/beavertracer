@@ -1,6 +1,7 @@
 //@ts-check
 
 import { help } from "./misc/help.js";
+import { man } from "./misc/man.js";
 import { echo } from "./misc/echo.js";
 import { clear } from "./misc/clear.js";
 import { date } from "./misc/date.js";
@@ -41,6 +42,7 @@ import { beaver } from "./misc/beaver.js";
 export function registerBuiltins(app) {
     const list = [
         help,
+        man,
         echo,
         clear,
         exit,

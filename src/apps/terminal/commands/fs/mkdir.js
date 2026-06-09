@@ -5,6 +5,14 @@ import { t } from "../../../../i18n/index.js";
 /** @type {import("../types.js").Command} */
 export const mkdir = {
   name: "mkdir",
+  category: /** @type {"fs"} */ ("fs"),
+  tldr: {
+    descKey: "app.terminal.commands.mkdir.tldr.desc",
+    examples: [
+      { labelKey: "app.terminal.commands.mkdir.tldr.ex.basic",     cmd: "mkdir logs" },
+      { labelKey: "app.terminal.commands.mkdir.tldr.ex.recursive", cmd: "mkdir -p /var/log/app" },
+    ],
+  },
   run: (ctx, args) => {
     const fs = ctx.os.fs;
     if (!fs) return t("app.terminal.commands.mkdir.err.noFilesystem");

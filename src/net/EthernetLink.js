@@ -14,6 +14,9 @@ export class EthernetLink {
     /** @type {Link | undefined} */
     link;
 
+    /** Maximum Transmission Unit in bytes (Ethernet default: 1500) */
+    mtu = 1500;
+
     /** @type {*} */
     AtoB;
 

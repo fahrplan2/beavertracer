@@ -267,6 +267,15 @@ async function ncUdpListen(ctx, port) {
 /** @type {import("../types.js").Command} */
 export const nc = {
     name: "nc",
+    category: "net",
+    tldr: {
+        descKey: "app.terminal.commands.nc.tldr.desc",
+        examples: [
+            { labelKey: "app.terminal.commands.nc.tldr.ex.connect", cmd: "nc 192.168.1.1 80" },
+            { labelKey: "app.terminal.commands.nc.tldr.ex.listen",  cmd: "nc -l 4444" },
+            { labelKey: "app.terminal.commands.nc.tldr.ex.udp",     cmd: "nc -u 192.168.1.1 53" },
+        ],
+    },
     run: async (ctx, args) => {
         let listen = false, udp = false;
         const positional = /** @type {string[]} */ ([]);

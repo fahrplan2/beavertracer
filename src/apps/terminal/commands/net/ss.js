@@ -39,6 +39,15 @@ function fmtIP(ip) {
 /** @type {import("../types.js").Command} */
 export const ss = {
   name: "ss",
+  category: "net",
+  tldr: {
+    descKey: "app.terminal.commands.ss.tldr.desc",
+    examples: [
+      { labelKey: "app.terminal.commands.ss.tldr.ex.all", cmd: "ss" },
+      { labelKey: "app.terminal.commands.ss.tldr.ex.tcp", cmd: "ss -t" },
+      { labelKey: "app.terminal.commands.ss.tldr.ex.udp", cmd: "ss -u" },
+    ],
+  },
   run: (ctx, args) => {
     const ipf = ctx.os.net;
     if (!ipf) return t("app.terminal.commands.ss.err.noNetworkDriver");
