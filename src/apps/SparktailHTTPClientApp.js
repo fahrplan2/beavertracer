@@ -866,7 +866,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     try {
       dstIP = await withTimeout(
         resolveHostToIP(/** @type {string} */ (host), dnsResolve),
-        SimTimer.DNS_TIMEOUT_MS,
+        SimTimer.DNS_RESOLVE_TIMEOUT_MS,
         t("app.sparktail.label.dns")
       );
     } catch (e) {
@@ -1295,7 +1295,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     try {
       dstIP = await withTimeout(
         resolveHostToIP(/** @type {string} */ (host), (n) => this.os.dns.resolveIP(n)),
-        SimTimer.DNS_TIMEOUT_MS, "dns"
+        SimTimer.DNS_RESOLVE_TIMEOUT_MS, "dns"
       );
     } catch { return null; }
     if (!dstIP || isCancelled()) return null;
