@@ -1092,7 +1092,9 @@ export class SimControl {
                 if (!await SimDialog.confirm(t("sim.resetwarning"))) return;
                 this.restore(this.toJSON());
                 this.mode = "run";
+                this.isPaused = false;
                 this._invalidateUI();
+                this.scheduleNextStep();
             },
         });
         resetBtn.dataset.role = "reset";

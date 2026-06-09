@@ -168,6 +168,9 @@ export class DNSServerApp extends LoggedProcess {
 
   configPath = "/etc/dnsd.conf";
 
+  /** @type {DNSResolver|null} */
+  _resolver = null;
+
   /** @type {{a:any[], aaaa:any[], cname:any[], mx:any[], ns:any[], mode:string, forwarderIp:string}} */
   cfg = { a: [], aaaa: [], cname: [], mx: [], ns: [], mode: "authoritative", forwarderIp: "" };
 
@@ -528,7 +531,12 @@ export class DNSServerApp extends LoggedProcess {
   _saveConfigNow() {
     try {
       this._rebuildConfigFromUI();
-      const json = JSON.stringify(this.cfg, null, 2);
+      let autostart = false;
+      try {
+        const existing = this.os.fs.readFile(this.configPath);
+        if (existing?.trim()) autostart = JSON.parse(existing).autostart === true;
+      } catch { }
+      const json = JSON.stringify({ ...this.cfg, autostart }, null, 2);
       this.os.fs.writeFile(this.configPath, json);
     } catch (e) {
       const reason = (e instanceof Error ? e.message : String(e));
@@ -543,6 +551,8 @@ export class DNSServerApp extends LoggedProcess {
       const port = this.os.net.openUDPSocket(new IPAddress(4, 0), this.port);
       this.socketPort = port;
       this.running = true;
+      if (this.cfg.mode === "recursive" && this.cfg.forwarderIp)
+        this._resolver = new DNSResolver(this.os, this.cfg.forwarderIp);
       this._writeAutostart(true);
       this._appendLog(`[${nowStamp()}] DNS listening on UDP/${this.port}`);
       this._syncButtons();
@@ -563,6 +573,7 @@ export class DNSServerApp extends LoggedProcess {
     const port = this.socketPort;
     this.running = false;
     this.socketPort = null;
+    this._resolver = null;
 
     if (port != null) {
       try {
@@ -749,7 +760,7 @@ export class DNSServerApp extends LoggedProcess {
 
     if (!anyAnswered && isRecursive) {
       try {
-        const resolver = new DNSResolver(this.os, this.cfg.forwarderIp);
+        const resolver = this._resolver ?? new DNSResolver(this.os, this.cfg.forwarderIp);
         for (const qu of questions) {
           const qname = normalizeName(qu.name);
           const qtype = qu.type & 0xffff;
@@ -772,11 +783,47 @@ export class DNSServerApp extends LoggedProcess {
     }
 
     if (!anyAnswered) {
-      resp.rcode = anyNameExists ? 0 : 3;
-      // NODATA: add SOA to authority section so clients can cache the negative (RFC 2308)
-      if (anyNameExists && questions.length > 0) {
-        const soa = this._buildSOAForZone(normalizeName(questions[0].name));
-        if (soa) resp.authorities.push(soa);
+      // Check for NS delegation (referral): walk up the name hierarchy to find a
+      // parent zone for which we hold NS records. This is needed so that e.g. a
+      // root DNS with only a "com" NS entry correctly refers queries for
+      // "www.example.com" instead of returning NXDOMAIN.
+      let foundDelegation = false;
+      for (const qu of questions) {
+        const qn = normalizeName(qu.name);
+        let zone = qn;
+        while (true) {
+          const dot = zone.indexOf(".");
+          if (dot === -1) break;
+          zone = zone.slice(dot + 1);
+          if (!zone) break;
+          const delegNS = this.cfg.ns.filter(r => normalizeName(r.name) === zone);
+          if (delegNS.length > 0) {
+            resp.aa = 0;
+            for (const r of delegNS) {
+              const host = normalizeName(r.host);
+              if (!host) continue;
+              resp.authorities.push({
+                name: zone,
+                type: DNSPacket.TYPE_NS,
+                cls: DNSPacket.CLASS_IN,
+                ttl: r.ttl ?? 300,
+                data: host,
+              });
+            }
+            foundDelegation = true;
+            break;
+          }
+        }
+        if (foundDelegation) break;
+      }
+
+      if (!foundDelegation) {
+        resp.rcode = anyNameExists ? 0 : 3;
+        // NODATA: add SOA to authority section so clients can cache the negative (RFC 2308)
+        if (anyNameExists && questions.length > 0) {
+          const soa = this._buildSOAForZone(normalizeName(questions[0].name));
+          if (soa) resp.authorities.push(soa);
+        }
       }
     }
 

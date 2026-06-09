@@ -1,31 +1,33 @@
 {
   "_info": "This file was created by BeaverTracer, a network simulation tool. Open it with the BeaverTracer app or at https://beavertracer.eu/",
-  "version": 4,
-  "tick": 100,
+  "version": 5,
+  "appVersion": "0.1.20-dev.141.54597b9",
+  "savedAt": "2026-06-09T21:47:31.311Z",
+  "tick": 40,
   "objects": [
     {
       "kind": "TextBox",
       "id": 1,
       "name": "",
-      "x": 20,
-      "y": 760,
+      "x": -137.65412058794058,
+      "y": 696.4381785356558,
       "px": 230.5,
       "py": 171.5,
       "panelOpen": false,
-      "text": "# Internet-Demo — Ein vereinfachtes simuliertes Inernet\n\n## Features\n**Backbone:** Router BB1–BB5 — eBGP-Mesh (AS65100–65104)\n**ISPs:** ISP-Alpha (AS65001), ISP-Beta (AS65002), ISP-Gamma (AS65003) — sind mit BGP ans Backbone angebunden\n**Heimnetze:** 4 Heimrouter mit DHCP, WiFi-SSIDs und NAT — Laptops verbinden sich per WLAN\n**Rechenzentren:** DC-Alpha (www.example.com), DC-Beta (www.betanet.de + E-Mail), DC-Gamma (DNS ns1/ns2)\n\n## Ausprobieren\nSimulation starten und warten, bis die automatischen Routingprotokolle konvergiert sind (ca. 10 Sekunden)\n**Ping:** Terminal auf einem Heim-PC → ping www.example.com\n**Webseite:** Webseite öffnen: www.example.com oder www.betanet.de  ",
+      "text": "# Internet-Demo — Ein vereinfachtes simuliertes Internet\n\n  ## Features\n  **Backbone:** Router BB1–BB5 — eBGP-Mesh (AS65100–65104)\n  **ISPs:** ISP-Alpha (AS65001), ISP-Beta (AS65002), ISP-Gamma (AS65003) — per BGP ans Backbone angebunden\n  **Heimnetze:** 4 Heimrouter mit DHCP, WiFi-SSIDs und NAT — Laptops verbinden sich per WLAN\n  **Rechenzentren:** DC-Alpha (www.example.com), DC-Beta (www.betanet.de + E-Mail), DC-Gamma (DNS ns1/ns2)\n  **Dual Stack:** Backbone, ISPs und Server sind vollständig IPv4/IPv6-fähig — Heimrouter beziehen\n  ein IPv6-Präfix per DHCPv6-PD; Heimgeräte konfigurieren sich automatisch per SLAAC\n\n  ## Ausprobieren\n  Simulation starten und warten, bis die automatischen Routingprotokolle konvergiert sind (ca. 10 Sekunden)\n  **Ping:** Terminal auf einem Heim-PC → ping www.example.com\n  **Webseite:** Webseite öffnen: www.example.com\n",
       "showTitle": false
     },
     {
       "kind": "RectOverlay",
       "id": 2,
       "name": "Backbone — BGP-Mesh (AS65100–65104)",
-      "x": -144.1736447777665,
-      "y": -17.622390652537682,
+      "x": -145.1540069580078,
+      "y": -84.9693227403839,
       "px": 200,
       "py": 200,
       "panelOpen": false,
-      "w": 1781,
-      "h": 239,
+      "w": 1911,
+      "h": 307,
       "color": "#555555",
       "opacity": 0.08
     },
@@ -33,13 +35,13 @@
       "kind": "RectOverlay",
       "id": 3,
       "name": "ISP-Alpha (AS65001) — Multi-homed",
-      "x": -144.1083916083916,
-      "y": 235.5174825174825,
+      "x": -142.15088885214655,
+      "y": 223.77379987875236,
       "px": 200,
       "py": 200,
       "panelOpen": false,
-      "w": 740,
-      "h": 493,
+      "w": 746,
+      "h": 484,
       "color": "#22aa44",
       "opacity": 0.07
     },
@@ -47,13 +49,13 @@
       "kind": "RectOverlay",
       "id": 4,
       "name": "ISP-Beta (AS65002)",
-      "x": 603.3916083916084,
-      "y": 236.26923076923077,
+      "x": 604.4716091458051,
+      "y": 222.3547750081771,
       "px": 200,
       "py": 200,
       "panelOpen": false,
-      "w": 512,
-      "h": 489,
+      "w": 743,
+      "h": 483,
       "color": "#2244cc",
       "opacity": 0.07
     },
@@ -61,13 +63,13 @@
       "kind": "RectOverlay",
       "id": 5,
       "name": "ISP-Gamma (AS65003) — Multi-homed",
-      "x": 1120.7830622746394,
-      "y": 236.26958204149366,
+      "x": 1348.779201771356,
+      "y": 224.57215526256684,
       "px": 200,
       "py": 200,
       "panelOpen": false,
-      "w": 518,
-      "h": 487,
+      "w": 418,
+      "h": 480,
       "color": "#aa44aa",
       "opacity": 0.07
     },
@@ -103,8 +105,8 @@
       "kind": "RectOverlay",
       "id": 8,
       "name": "Zuhause 3",
-      "x": 612.89501953125,
-      "y": 472.13949179482626,
+      "x": 619.7516497930544,
+      "y": 468.22100830078125,
       "px": 200,
       "py": 200,
       "panelOpen": false,
@@ -117,8 +119,8 @@
       "kind": "RectOverlay",
       "id": 9,
       "name": "Zuhause 4",
-      "x": 1148.087428806545,
-      "y": 464.622532130955,
+      "x": 1370.4372075155775,
+      "y": 468.54134648754615,
       "px": 200,
       "py": 200,
       "panelOpen": false,
@@ -131,13 +133,13 @@
       "kind": "RectOverlay",
       "id": 10,
       "name": "DC-Alpha",
-      "x": 252.91970889218203,
-      "y": 248.11906080979566,
+      "x": 267.5989961842744,
+      "y": 230.50420567750353,
       "px": 200,
       "py": 200,
       "panelOpen": false,
       "w": 326,
-      "h": 185,
+      "h": 223,
       "color": "#7722cc",
       "opacity": 0.09
     },
@@ -145,8 +147,8 @@
       "kind": "RectOverlay",
       "id": 11,
       "name": "DC-Beta",
-      "x": 798.3145568420837,
-      "y": 246.61574666483418,
+      "x": 1032.421477974526,
+      "y": 229.96403188894783,
       "px": 200,
       "py": 200,
       "panelOpen": false,
@@ -156,27 +158,13 @@
       "opacity": 0.09
     },
     {
-      "kind": "RectOverlay",
-      "id": 12,
-      "name": "DC-Gamma",
-      "x": 1296.2096357012128,
-      "y": 242.85683201076267,
-      "px": 200,
-      "py": 200,
-      "panelOpen": false,
-      "w": 299,
-      "h": 214,
-      "color": "#7722cc",
-      "opacity": 0.09
-    },
-    {
       "kind": "Router",
       "id": 100,
       "name": "BB1",
-      "x": -124.00349650349648,
-      "y": 23.61888111888112,
-      "px": 270,
-      "py": 150,
+      "x": -124.98254491251916,
+      "y": -3.807783799373773,
+      "px": 424.91668701171875,
+      "py": 292.0833435058594,
       "panelOpen": false,
       "net": {
         "name": "BB1",
@@ -184,29 +172,42 @@
         "interfaces": [
           {
             "name": "eth0",
-            "ip": "10.0.12.1",
+            "ip": "198.51.100.1",
             "prefixLength": 30,
-            "ip6": "2001:db8:ff:12::1",
+            "ip6": "2001:db8:bb:1::1",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a8d3:5dff:feec:f854",
+            "ip6LL": "fe80::a803:d8ff:fe33:bdc2",
+            "slaac": false,
             "raEnabled": false
           },
           {
             "name": "eth1",
-            "ip": "10.0.13.1",
+            "ip": "198.51.100.5",
             "prefixLength": 30,
-            "ip6": "2001:db8:ff:13::1",
+            "ip6": "2001:db8:bb:2::1",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a8ec:91ff:fe22:d5ae",
+            "ip6LL": "fe80::a8e4:bfff:fee3:53e5",
+            "slaac": false,
             "raEnabled": false
           },
           {
             "name": "eth2",
-            "ip": "10.1.1.1",
+            "ip": "203.0.113.1",
             "prefixLength": 30,
+            "ip6": "2001:db8:bb:10::1",
+            "prefixLength6": 64,
+            "ip6LL": "fe80::a888:71ff:febf:f831",
+            "slaac": false,
+            "raEnabled": false
+          },
+          {
+            "name": "eth3",
+            "ip": "198.41.0.1",
+            "prefixLength": 24,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a8fa:a1ff:fe11:f0d1",
+            "ip6LL": "fe80::a825:b5ff:fef3:7f5c",
+            "slaac": false,
             "raEnabled": false
           }
         ],
@@ -224,22 +225,22 @@
       "bgp": {
         "enabled": true,
         "localAS": 65100,
-        "routerId": "10.0.12.1",
+        "routerId": "198.51.100.1",
         "peers": [
           {
-            "ip": "10.0.12.2",
+            "ip": "198.51.100.2",
             "remoteAS": 65101,
             "description": "BB2",
             "passive": false
           },
           {
-            "ip": "10.0.13.2",
+            "ip": "198.51.100.6",
             "remoteAS": 65102,
             "description": "BB3",
             "passive": false
           },
           {
-            "ip": "10.1.1.2",
+            "ip": "203.0.113.2",
             "remoteAS": 65001,
             "description": "ISP-Alpha",
             "passive": true
@@ -251,14 +252,23 @@
         "passive": [],
         "routerIdOverride": null,
         "interfaceAreas": {}
+      },
+      "pd6": {
+        "enabled": false,
+        "pool": "2001:db8:100::",
+        "poolLength": 48,
+        "delegatedLength": 56,
+        "leaseTime": 3600,
+        "clientEnabled": false,
+        "clientIfIndex": 0
       }
     },
     {
       "kind": "Router",
       "id": 101,
       "name": "BB2",
-      "x": 346.4781725958709,
-      "y": 26.693760643507183,
+      "x": 416.0243025481239,
+      "y": -61.46343385487705,
       "px": 570,
       "py": 150,
       "panelOpen": false,
@@ -268,38 +278,42 @@
         "interfaces": [
           {
             "name": "eth0",
-            "ip": "10.0.12.2",
+            "ip": "198.51.100.2",
             "prefixLength": 30,
-            "ip6": "2001:db8:ff:12::2",
+            "ip6": "2001:db8:bb:1::2",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a86a:1bff:fe81:6b03",
+            "ip6LL": "fe80::a8f2:a7ff:fe4d:595a",
+            "slaac": false,
             "raEnabled": false
           },
           {
             "name": "eth1",
-            "ip": "10.0.23.1",
+            "ip": "198.51.100.9",
             "prefixLength": 30,
-            "ip6": "2001:db8:ff:23::1",
+            "ip6": "2001:db8:bb:3::1",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a874:4cff:fe05:1036",
+            "ip6LL": "fe80::a893:5fff:fe3b:ea4d",
+            "slaac": false,
             "raEnabled": false
           },
           {
             "name": "eth2",
-            "ip": "10.0.24.1",
+            "ip": "198.51.100.13",
             "prefixLength": 30,
-            "ip6": "2001:db8:ff:24::1",
+            "ip6": "2001:db8:bb:4::1",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a867:3dff:fece:f7e2",
+            "ip6LL": "fe80::a800:40ff:fe42:b79a",
+            "slaac": false,
             "raEnabled": false
           },
           {
             "name": "eth3",
-            "ip": "10.1.2.1",
+            "ip": "203.0.113.5",
             "prefixLength": 30,
-            "ip6": null,
-            "prefixLength6": 0,
-            "ip6LL": "fe80::a80c:72ff:fe48:e70f",
+            "ip6": "2001:db8:bb:11::1",
+            "prefixLength6": 64,
+            "ip6LL": "fe80::a8d2:8eff:fe8c:339e",
+            "slaac": false,
             "raEnabled": false
           }
         ],
@@ -317,28 +331,28 @@
       "bgp": {
         "enabled": true,
         "localAS": 65101,
-        "routerId": "10.0.12.2",
+        "routerId": "198.51.100.2",
         "peers": [
           {
-            "ip": "10.0.12.1",
+            "ip": "198.51.100.1",
             "remoteAS": 65100,
             "description": "BB1",
             "passive": true
           },
           {
-            "ip": "10.0.23.2",
+            "ip": "198.51.100.10",
             "remoteAS": 65102,
             "description": "BB3",
             "passive": false
           },
           {
-            "ip": "10.0.24.2",
+            "ip": "198.51.100.14",
             "remoteAS": 65103,
             "description": "BB4",
             "passive": false
           },
           {
-            "ip": "10.1.2.2",
+            "ip": "203.0.113.6",
             "remoteAS": 65001,
             "description": "ISP-Alpha",
             "passive": true
@@ -350,14 +364,23 @@
         "passive": [],
         "routerIdOverride": null,
         "interfaceAreas": {}
+      },
+      "pd6": {
+        "enabled": false,
+        "pool": "2001:db8:100::",
+        "poolLength": 48,
+        "delegatedLength": 56,
+        "leaseTime": 3600,
+        "clientEnabled": false,
+        "clientIfIndex": 0
       }
     },
     {
       "kind": "Router",
       "id": 102,
       "name": "BB3",
-      "x": 630.1047499773875,
-      "y": 119.66252729934587,
+      "x": 836.8425082241471,
+      "y": 54.074317262437816,
       "px": 870,
       "py": 150,
       "panelOpen": false,
@@ -367,47 +390,52 @@
         "interfaces": [
           {
             "name": "eth0",
-            "ip": "10.0.13.2",
+            "ip": "198.51.100.6",
             "prefixLength": 30,
-            "ip6": "2001:db8:ff:13::2",
+            "ip6": "2001:db8:bb:2::2",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a883:e9ff:fe16:7107",
+            "ip6LL": "fe80::a8a8:95ff:fe7e:26b2",
+            "slaac": false,
             "raEnabled": false
           },
           {
             "name": "eth1",
-            "ip": "10.0.23.2",
+            "ip": "198.51.100.10",
             "prefixLength": 30,
-            "ip6": "2001:db8:ff:23::2",
+            "ip6": "2001:db8:bb:3::2",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a812:1dff:fedb:fb48",
+            "ip6LL": "fe80::a8c2:2ff:fe11:9e9c",
+            "slaac": false,
             "raEnabled": false
           },
           {
             "name": "eth2",
-            "ip": "10.0.34.1",
+            "ip": "198.51.100.17",
             "prefixLength": 30,
-            "ip6": "2001:db8:ff:34::1",
+            "ip6": "2001:db8:bb:5::1",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a833:50ff:fef7:da91",
+            "ip6LL": "fe80::a817:5aff:fed0:c5fb",
+            "slaac": false,
             "raEnabled": false
           },
           {
             "name": "eth3",
-            "ip": "10.0.35.1",
+            "ip": "198.51.100.21",
             "prefixLength": 30,
-            "ip6": "2001:db8:ff:35::1",
+            "ip6": "2001:db8:bb:6::1",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a8a0:84ff:fea0:bf4",
+            "ip6LL": "fe80::a855:dcff:feab:a4fb",
+            "slaac": false,
             "raEnabled": false
           },
           {
             "name": "eth4",
-            "ip": "10.2.1.1",
+            "ip": "203.0.113.9",
             "prefixLength": 30,
-            "ip6": null,
-            "prefixLength6": 0,
-            "ip6LL": "fe80::a89a:55ff:feea:cc88",
+            "ip6": "2001:db8:bb:20::1",
+            "prefixLength6": 64,
+            "ip6LL": "fe80::a877:b5ff:fe8b:b281",
+            "slaac": false,
             "raEnabled": false
           }
         ],
@@ -425,34 +453,34 @@
       "bgp": {
         "enabled": true,
         "localAS": 65102,
-        "routerId": "10.0.13.2",
+        "routerId": "198.51.100.6",
         "peers": [
           {
-            "ip": "10.0.13.1",
+            "ip": "198.51.100.5",
             "remoteAS": 65100,
             "description": "BB1",
             "passive": true
           },
           {
-            "ip": "10.0.23.1",
+            "ip": "198.51.100.9",
             "remoteAS": 65101,
             "description": "BB2",
             "passive": true
           },
           {
-            "ip": "10.0.34.2",
+            "ip": "198.51.100.18",
             "remoteAS": 65103,
             "description": "BB4",
             "passive": false
           },
           {
-            "ip": "10.0.35.2",
+            "ip": "198.51.100.22",
             "remoteAS": 65104,
             "description": "BB5",
             "passive": false
           },
           {
-            "ip": "10.2.1.2",
+            "ip": "203.0.113.10",
             "remoteAS": 65002,
             "description": "ISP-Beta",
             "passive": true
@@ -464,14 +492,23 @@
         "passive": [],
         "routerIdOverride": null,
         "interfaceAreas": {}
+      },
+      "pd6": {
+        "enabled": false,
+        "pool": "2001:db8:100::",
+        "poolLength": 48,
+        "delegatedLength": 56,
+        "leaseTime": 3600,
+        "clientEnabled": false,
+        "clientIfIndex": 0
       }
     },
     {
       "kind": "Router",
       "id": 103,
       "name": "BB4",
-      "x": 1084.207082468313,
-      "y": 23.618226644876117,
+      "x": 1094.0080216212032,
+      "y": -58.66186994231088,
       "px": 1170,
       "py": 150,
       "panelOpen": false,
@@ -481,38 +518,42 @@
         "interfaces": [
           {
             "name": "eth0",
-            "ip": "10.0.24.2",
+            "ip": "198.51.100.14",
             "prefixLength": 30,
-            "ip6": "2001:db8:ff:24::2",
+            "ip6": "2001:db8:bb:4::2",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a8dc:3dff:fe3c:a03a",
+            "ip6LL": "fe80::a812:7ff:fedb:120",
+            "slaac": false,
             "raEnabled": false
           },
           {
             "name": "eth1",
-            "ip": "10.0.34.2",
+            "ip": "198.51.100.18",
             "prefixLength": 30,
-            "ip6": "2001:db8:ff:34::2",
+            "ip6": "2001:db8:bb:5::2",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a824:64ff:fe88:89cb",
+            "ip6LL": "fe80::a8c9:ceff:fe8b:41a9",
+            "slaac": false,
             "raEnabled": false
           },
           {
             "name": "eth2",
-            "ip": "10.0.45.1",
+            "ip": "198.51.100.25",
             "prefixLength": 30,
-            "ip6": "2001:db8:ff:45::1",
+            "ip6": "2001:db8:bb:7::1",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a871:64ff:fe2d:2d89",
+            "ip6LL": "fe80::a8c0:67ff:fe0c:8598",
+            "slaac": false,
             "raEnabled": false
           },
           {
             "name": "eth3",
-            "ip": "10.3.1.1",
+            "ip": "203.0.113.13",
             "prefixLength": 30,
-            "ip6": null,
-            "prefixLength6": 0,
-            "ip6LL": "fe80::a88b:24ff:fe55:30b1",
+            "ip6": "2001:db8:bb:30::1",
+            "prefixLength6": 64,
+            "ip6LL": "fe80::a875:d2ff:fe1a:9340",
+            "slaac": false,
             "raEnabled": false
           }
         ],
@@ -530,28 +571,28 @@
       "bgp": {
         "enabled": true,
         "localAS": 65103,
-        "routerId": "10.0.24.2",
+        "routerId": "198.51.100.14",
         "peers": [
           {
-            "ip": "10.0.24.1",
+            "ip": "198.51.100.13",
             "remoteAS": 65101,
             "description": "BB2",
             "passive": true
           },
           {
-            "ip": "10.0.34.1",
+            "ip": "198.51.100.17",
             "remoteAS": 65102,
             "description": "BB3",
             "passive": true
           },
           {
-            "ip": "10.0.45.2",
+            "ip": "198.51.100.26",
             "remoteAS": 65104,
             "description": "BB5",
             "passive": false
           },
           {
-            "ip": "10.3.1.2",
+            "ip": "203.0.113.14",
             "remoteAS": 65003,
             "description": "ISP-Gamma",
             "passive": true
@@ -563,14 +604,23 @@
         "passive": [],
         "routerIdOverride": null,
         "interfaceAreas": {}
+      },
+      "pd6": {
+        "enabled": false,
+        "pool": "2001:db8:100::",
+        "poolLength": 48,
+        "delegatedLength": 56,
+        "leaseTime": 3600,
+        "clientEnabled": false,
+        "clientIfIndex": 0
       }
     },
     {
       "kind": "Router",
       "id": 104,
       "name": "BB5",
-      "x": 1384.962018206403,
-      "y": 31.888153529667353,
+      "x": 1598.4940741189243,
+      "y": 5.440993295488659,
       "px": 1470,
       "py": 150,
       "panelOpen": false,
@@ -580,29 +630,32 @@
         "interfaces": [
           {
             "name": "eth0",
-            "ip": "10.0.35.2",
+            "ip": "198.51.100.22",
             "prefixLength": 30,
-            "ip6": "2001:db8:ff:35::2",
+            "ip6": "2001:db8:bb:6::2",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a841:42ff:fecd:ee5a",
+            "ip6LL": "fe80::a8c2:63ff:feb8:6e51",
+            "slaac": false,
             "raEnabled": false
           },
           {
             "name": "eth1",
-            "ip": "10.0.45.2",
+            "ip": "198.51.100.26",
             "prefixLength": 30,
-            "ip6": "2001:db8:ff:45::2",
+            "ip6": "2001:db8:bb:7::2",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a872:46ff:fe16:c3eb",
+            "ip6LL": "fe80::a8d9:dcff:fe20:2e36",
+            "slaac": false,
             "raEnabled": false
           },
           {
             "name": "eth2",
-            "ip": "10.3.2.1",
+            "ip": "203.0.113.17",
             "prefixLength": 30,
-            "ip6": null,
-            "prefixLength6": 0,
-            "ip6LL": "fe80::a8c4:99ff:fe03:5cec",
+            "ip6": "2001:db8:bb:31::1",
+            "prefixLength6": 64,
+            "ip6LL": "fe80::a819:13ff:fe47:ac70",
+            "slaac": false,
             "raEnabled": false
           }
         ],
@@ -620,22 +673,22 @@
       "bgp": {
         "enabled": true,
         "localAS": 65104,
-        "routerId": "10.0.35.2",
+        "routerId": "198.51.100.22",
         "peers": [
           {
-            "ip": "10.0.35.1",
+            "ip": "198.51.100.21",
             "remoteAS": 65102,
             "description": "BB3",
             "passive": true
           },
           {
-            "ip": "10.0.45.1",
+            "ip": "198.51.100.25",
             "remoteAS": 65103,
             "description": "BB4",
             "passive": true
           },
           {
-            "ip": "10.3.2.2",
+            "ip": "203.0.113.18",
             "remoteAS": 65003,
             "description": "ISP-Gamma",
             "passive": true
@@ -647,16 +700,25 @@
         "passive": [],
         "routerIdOverride": null,
         "interfaceAreas": {}
+      },
+      "pd6": {
+        "enabled": false,
+        "pool": "2001:db8:100::",
+        "poolLength": 48,
+        "delegatedLength": 56,
+        "leaseTime": 3600,
+        "clientEnabled": false,
+        "clientIfIndex": 0
       }
     },
     {
       "kind": "Router",
       "id": 200,
       "name": "ISP-Alpha",
-      "x": 11.713119613540755,
-      "y": 289.31775329163025,
-      "px": 420,
-      "py": 330,
+      "x": 102.89625957164888,
+      "y": 186.32278981724417,
+      "px": 597.8333740234375,
+      "py": 377.6666564941406,
       "panelOpen": false,
       "net": {
         "name": "ISP-Alpha",
@@ -664,39 +726,33 @@
         "interfaces": [
           {
             "name": "eth0",
-            "ip": "10.1.1.2",
+            "ip": "203.0.113.2",
             "prefixLength": 30,
-            "ip6": null,
-            "prefixLength6": 0,
-            "ip6LL": "fe80::a886:79ff:fefa:530e",
+            "ip6": "2001:db8:bb:10::2",
+            "prefixLength6": 64,
+            "ip6LL": "fe80::a8ba:33ff:fe36:91bd",
+            "slaac": false,
             "raEnabled": false
           },
           {
             "name": "eth1",
-            "ip": "10.1.2.2",
+            "ip": "203.0.113.6",
             "prefixLength": 30,
-            "ip6": null,
-            "prefixLength6": 0,
-            "ip6LL": "fe80::a813:d5ff:fee4:521a",
+            "ip6": "2001:db8:bb:11::2",
+            "prefixLength6": 64,
+            "ip6LL": "fe80::a8fc:ff:fe77:2df8",
+            "slaac": false,
             "raEnabled": false
           },
           {
             "name": "eth2",
-            "ip": "185.1.0.1",
-            "prefixLength": 30,
-            "ip6": null,
-            "prefixLength6": 0,
-            "ip6LL": "fe80::a8c2:18ff:fec7:4960",
-            "raEnabled": false
-          },
-          {
-            "name": "eth3",
-            "ip": "185.1.0.5",
-            "prefixLength": 30,
-            "ip6": null,
-            "prefixLength6": 0,
-            "ip6LL": "fe80::a862:59ff:fe81:8950",
-            "raEnabled": false
+            "ip": "192.0.2.1",
+            "prefixLength": 24,
+            "ip6": "2001:db8:1:ff::1",
+            "prefixLength6": 64,
+            "ip6LL": "fe80::a841:f7ff:fe76:4ff3",
+            "slaac": false,
+            "raEnabled": true
           },
           {
             "name": "eth4",
@@ -704,7 +760,8 @@
             "prefixLength": 24,
             "ip6": "2001:db8:1:1::1",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a84b:2bff:fec7:581c",
+            "ip6LL": "fe80::a896:d1ff:fe2e:47e0",
+            "slaac": false,
             "raEnabled": true
           }
         ],
@@ -722,16 +779,16 @@
       "bgp": {
         "enabled": true,
         "localAS": 65001,
-        "routerId": "10.1.1.2",
+        "routerId": "203.0.113.2",
         "peers": [
           {
-            "ip": "10.1.1.1",
+            "ip": "203.0.113.1",
             "remoteAS": 65100,
             "description": "BB1",
             "passive": false
           },
           {
-            "ip": "10.1.2.1",
+            "ip": "203.0.113.5",
             "remoteAS": 65101,
             "description": "BB2",
             "passive": false
@@ -743,14 +800,23 @@
         "passive": [],
         "routerIdOverride": null,
         "interfaceAreas": {}
+      },
+      "pd6": {
+        "enabled": true,
+        "pool": "2001:db8:100::1",
+        "poolLength": 48,
+        "delegatedLength": 56,
+        "leaseTime": 3600,
+        "clientEnabled": false,
+        "clientIfIndex": 0
       }
     },
     {
       "kind": "Router",
       "id": 201,
       "name": "ISP-Beta",
-      "x": 630.8565400663789,
-      "y": 299.0905147098995,
+      "x": 836.7281763807309,
+      "y": 190.9711623128433,
       "px": 870,
       "py": 330,
       "panelOpen": false,
@@ -760,21 +826,23 @@
         "interfaces": [
           {
             "name": "eth0",
-            "ip": "10.2.1.2",
+            "ip": "203.0.113.10",
             "prefixLength": 30,
-            "ip6": null,
-            "prefixLength6": 0,
-            "ip6LL": "fe80::a807:39ff:fe5a:dde0",
+            "ip6": "2001:db8:bb:20::2",
+            "prefixLength6": 64,
+            "ip6LL": "fe80::a8c3:71ff:fe22:ecbd",
+            "slaac": false,
             "raEnabled": false
           },
           {
             "name": "eth1",
             "ip": "185.2.0.1",
-            "prefixLength": 30,
-            "ip6": null,
-            "prefixLength6": 0,
-            "ip6LL": "fe80::a884:50ff:fe58:530a",
-            "raEnabled": false
+            "prefixLength": 24,
+            "ip6": "2001:db8:2:ff::1",
+            "prefixLength6": 64,
+            "ip6LL": "fe80::a81c:48ff:fefa:e7b4",
+            "slaac": false,
+            "raEnabled": true
           },
           {
             "name": "eth2",
@@ -782,7 +850,8 @@
             "prefixLength": 24,
             "ip6": "2001:db8:2:1::1",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a894:d3ff:fe57:2e9",
+            "ip6LL": "fe80::a80a:f1ff:fe3e:ba2b",
+            "slaac": false,
             "raEnabled": true
           }
         ],
@@ -800,10 +869,10 @@
       "bgp": {
         "enabled": true,
         "localAS": 65002,
-        "routerId": "10.2.1.2",
+        "routerId": "203.0.113.10",
         "peers": [
           {
-            "ip": "10.2.1.1",
+            "ip": "203.0.113.9",
             "remoteAS": 65102,
             "description": "BB3",
             "passive": false
@@ -815,14 +884,23 @@
         "passive": [],
         "routerIdOverride": null,
         "interfaceAreas": {}
+      },
+      "pd6": {
+        "enabled": true,
+        "pool": "2001:db8:200::",
+        "poolLength": 48,
+        "delegatedLength": 56,
+        "leaseTime": 3600,
+        "clientEnabled": false,
+        "clientIfIndex": 0
       }
     },
     {
       "kind": "Router",
       "id": 202,
       "name": "ISP-Gamma",
-      "x": 1156.5168482640406,
-      "y": 301.3461754005272,
+      "x": 1599.3727287034587,
+      "y": 182.80494874192038,
       "px": 1325,
       "py": 330,
       "panelOpen": false,
@@ -832,30 +910,33 @@
         "interfaces": [
           {
             "name": "eth0",
-            "ip": "10.3.1.2",
+            "ip": "203.0.113.14",
             "prefixLength": 30,
-            "ip6": null,
-            "prefixLength6": 0,
-            "ip6LL": "fe80::a80d:c6ff:fe1f:703c",
+            "ip6": "2001:db8:bb:30::2",
+            "prefixLength6": 64,
+            "ip6LL": "fe80::a8ee:5dff:fed5:a4ad",
+            "slaac": false,
             "raEnabled": false
           },
           {
             "name": "eth1",
-            "ip": "10.3.2.2",
+            "ip": "203.0.113.18",
             "prefixLength": 30,
-            "ip6": null,
-            "prefixLength6": 0,
-            "ip6LL": "fe80::a8ec:26ff:fe98:88a3",
+            "ip6": "2001:db8:bb:31::2",
+            "prefixLength6": 64,
+            "ip6LL": "fe80::a8b1:aeff:fe7d:cb50",
+            "slaac": false,
             "raEnabled": false
           },
           {
             "name": "eth2",
             "ip": "185.3.0.1",
-            "prefixLength": 30,
-            "ip6": null,
-            "prefixLength6": 0,
-            "ip6LL": "fe80::a86e:bbff:fe6d:b4a2",
-            "raEnabled": false
+            "prefixLength": 24,
+            "ip6": "2001:db8:3:ff::1",
+            "prefixLength6": 64,
+            "ip6LL": "fe80::a8db:e0ff:fe5e:efab",
+            "slaac": false,
+            "raEnabled": true
           },
           {
             "name": "eth3",
@@ -863,7 +944,8 @@
             "prefixLength": 24,
             "ip6": "2001:db8:3:1::1",
             "prefixLength6": 64,
-            "ip6LL": "fe80::a836:3aff:fe44:8a2c",
+            "ip6LL": "fe80::a85a:11ff:fecd:d183",
+            "slaac": false,
             "raEnabled": true
           }
         ],
@@ -881,16 +963,16 @@
       "bgp": {
         "enabled": true,
         "localAS": 65003,
-        "routerId": "10.3.1.2",
+        "routerId": "203.0.113.14",
         "peers": [
           {
-            "ip": "10.3.1.1",
+            "ip": "203.0.113.13",
             "remoteAS": 65103,
             "description": "BB4",
             "passive": false
           },
           {
-            "ip": "10.3.2.1",
+            "ip": "203.0.113.17",
             "remoteAS": 65104,
             "description": "BB5",
             "passive": false
@@ -902,6 +984,15 @@
         "passive": [],
         "routerIdOverride": null,
         "interfaceAreas": {}
+      },
+      "pd6": {
+        "enabled": true,
+        "pool": "2001:db8:300::",
+        "poolLength": 48,
+        "delegatedLength": 56,
+        "leaseTime": 3600,
+        "clientEnabled": false,
+        "clientIfIndex": 0
       }
     },
     {
@@ -910,15 +1001,15 @@
       "name": "HR-Zuhause1",
       "x": -112.1922412152057,
       "y": 487.8848894025896,
-      "px": 148,
-      "py": 500,
+      "px": 776.8333129882812,
+      "py": 513.7496948242188,
       "panelOpen": false,
-      "wanMode": "static",
-      "wanIp6Enabled": false,
-      "wanIp": "185.1.0.2",
-      "wanPrefix": 30,
-      "wanGw": "185.1.0.1",
-      "upstreamDns": "185.3.1.10",
+      "wanMode": "dhcp",
+      "wanIp6Enabled": true,
+      "wanIp": "192.0.2.201",
+      "wanPrefix": 24,
+      "wanGw": "192.0.2.1",
+      "upstreamDns": "192.0.2.3",
       "lanIp": "192.168.1.1",
       "lanPrefix": 24,
       "dhcpEnabled": true,
@@ -928,24 +1019,44 @@
       "ssid": "Home-1-WiFi",
       "wanMac": "02:01:01:00:00:01",
       "lanMac": "02:01:01:00:00:02",
-      "pdDelegated": null,
+      "pdDelegated": {
+        "prefix": [
+          32,
+          1,
+          13,
+          184,
+          1,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "prefixLen": 56
+      },
       "portRules": []
     },
     {
       "kind": "HomeRouter",
       "id": 301,
       "name": "HR-Zuhause2",
-      "x": 168.3147517917873,
-      "y": 481.1184139651852,
+      "x": 168.31500244140625,
+      "y": 489.92541028380685,
       "px": 318,
       "py": 500,
       "panelOpen": false,
-      "wanMode": "static",
-      "wanIp6Enabled": false,
-      "wanIp": "185.1.0.6",
-      "wanPrefix": 30,
-      "wanGw": "185.1.0.5",
-      "upstreamDns": "185.3.1.10",
+      "wanMode": "dhcp",
+      "wanIp6Enabled": true,
+      "wanIp": "192.0.2.200",
+      "wanPrefix": 24,
+      "wanGw": "192.0.2.1",
+      "upstreamDns": "192.0.2.3",
       "lanIp": "192.168.2.1",
       "lanPrefix": 24,
       "dhcpEnabled": true,
@@ -955,24 +1066,44 @@
       "ssid": "Home-2-WiFi",
       "wanMac": "02:01:02:00:00:01",
       "lanMac": "02:01:02:00:00:02",
-      "pdDelegated": null,
+      "pdDelegated": {
+        "prefix": [
+          32,
+          1,
+          13,
+          184,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "prefixLen": 56
+      },
       "portRules": []
     },
     {
       "kind": "HomeRouter",
       "id": 302,
       "name": "HR-Zuhause3",
-      "x": 627.7902097902098,
-      "y": 478.1118881118881,
+      "x": 629.9496473401584,
+      "y": 491.0671062544207,
       "px": 788,
       "py": 500,
       "panelOpen": false,
-      "wanMode": "static",
-      "wanIp6Enabled": false,
-      "wanIp": "185.2.0.2",
-      "wanPrefix": 30,
+      "wanMode": "dhcp",
+      "wanIp6Enabled": true,
+      "wanIp": "185.2.0.200",
+      "wanPrefix": 24,
       "wanGw": "185.2.0.1",
-      "upstreamDns": "185.3.1.10",
+      "upstreamDns": "185.2.0.3",
       "lanIp": "192.168.3.1",
       "lanPrefix": 24,
       "dhcpEnabled": true,
@@ -982,24 +1113,44 @@
       "ssid": "Home-3-WiFi",
       "wanMac": "02:02:01:00:00:01",
       "lanMac": "02:02:01:00:00:02",
-      "pdDelegated": null,
+      "pdDelegated": {
+        "prefix": [
+          32,
+          1,
+          13,
+          184,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "prefixLen": 56
+      },
       "portRules": []
     },
     {
       "kind": "HomeRouter",
       "id": 303,
       "name": "HR-Zuhause4",
-      "x": 1161.2307854499018,
-      "y": 475.8563774482354,
+      "x": 1384.6693142115669,
+      "y": 491.749919395955,
       "px": 1238,
       "py": 500,
       "panelOpen": false,
-      "wanMode": "static",
-      "wanIp6Enabled": false,
-      "wanIp": "185.3.0.2",
-      "wanPrefix": 30,
+      "wanMode": "dhcp",
+      "wanIp6Enabled": true,
+      "wanIp": "185.3.0.200",
+      "wanPrefix": 24,
       "wanGw": "185.3.0.1",
-      "upstreamDns": "185.3.1.10",
+      "upstreamDns": "185.3.0.3",
       "lanIp": "192.168.4.1",
       "lanPrefix": 24,
       "dhcpEnabled": true,
@@ -1009,17 +1160,37 @@
       "ssid": "Home-4-WiFi",
       "wanMac": "02:03:01:00:00:01",
       "lanMac": "02:03:01:00:00:02",
-      "pdDelegated": null,
+      "pdDelegated": {
+        "prefix": [
+          32,
+          1,
+          13,
+          184,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "prefixLen": 56
+      },
       "portRules": []
     },
     {
-      "kind": "PC",
+      "kind": "Computer",
       "id": 400,
       "name": "PC-Zuhause1",
       "x": -112.6050033569336,
       "y": 605.0349569253988,
-      "px": 362.5,
-      "py": 158.5,
+      "px": 1102.2493896484375,
+      "py": 262.1669921875,
       "panelOpen": false,
       "net": {
         "name": "PC-Zuhause1",
@@ -1027,11 +1198,12 @@
         "interfaces": [
           {
             "name": "eth0",
-            "ip": "192.168.1.100",
+            "ip": "192.168.1.101",
             "prefixLength": 24,
-            "ip6": null,
-            "prefixLength6": 0,
-            "ip6LL": "fe80::a809:a6ff:fe30:3b20",
+            "ip6": "2001:db8:100:100:a805:6bff:fe76:cfd2",
+            "prefixLength6": 64,
+            "ip6LL": "fe80::a805:6bff:fe76:cfd2",
+            "slaac": true,
             "raEnabled": false
           }
         ],
@@ -1049,7 +1221,7 @@
         "type": "dir",
         "name": "/",
         "ctime": 0,
-        "mtime": 0,
+        "mtime": 1780330322355,
         "children": [
           {
             "type": "dir",
@@ -1057,22 +1229,78 @@
             "ctime": 0,
             "mtime": 0,
             "children": []
+          },
+          {
+            "type": "dir",
+            "name": "etc",
+            "ctime": 1780330322355,
+            "mtime": 1780330322365,
+            "children": [
+              {
+                "type": "file",
+                "name": "mail.conf",
+                "data": "{\n  \"mailDomain\": \"example.local\",\n  \"ports\": {\n    \"smtp\": 25,\n    \"pop3\": 110,\n    \"imap\": 143\n  },\n  \"users\": []\n}",
+                "binary": false,
+                "ctime": 1780330322355,
+                "mtime": 1780330322355
+              },
+              {
+                "type": "file",
+                "name": "bitcoin.conf",
+                "data": "{\n  \"walletAddr\": \"1ZtocNaodrodZymCsUe6R4gwDo\",\n  \"seedAddr\": \"\"\n}",
+                "binary": false,
+                "ctime": 1780330322365,
+                "mtime": 1780330322365
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "var",
+            "ctime": 1780330322355,
+            "mtime": 1780330322355,
+            "children": [
+              {
+                "type": "dir",
+                "name": "mail",
+                "ctime": 1780330322355,
+                "mtime": 1780330322355,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "queue",
+                    "ctime": 1780330322355,
+                    "mtime": 1780330322355,
+                    "children": []
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
-      "dns": "185.3.1.10",
+      "dns": "192.168.1.1",
       "dhcpMode": {
         "0": "dhcp"
-      }
+      },
+      "installedApps": [
+        "IPv4ConfigApp",
+        "TerminalApp",
+        "ExplorerApp",
+        "TextEditorApp",
+        "SparktailHTTPClientApp",
+        "MailClientApp",
+        "SimpleIRCClientApp"
+      ]
     },
     {
-      "kind": "Laptop",
+      "kind": "Tablet",
       "id": 401,
-      "name": "Laptop-Zuhause1",
+      "name": "Smartphone 1",
       "x": 10.699254536128544,
       "y": 605.7861733603311,
-      "px": 252.5,
-      "py": 57,
+      "px": 865.7500610351562,
+      "py": 13,
       "panelOpen": false,
       "net": {
         "name": "Laptop-Zuhause1",
@@ -1080,11 +1308,12 @@
         "interfaces": [
           {
             "name": "wlan0",
-            "ip": "192.168.1.101",
+            "ip": "192.168.1.100",
             "prefixLength": 24,
-            "ip6": null,
-            "prefixLength6": 0,
-            "ip6LL": "fe80::a8b9:55ff:fe96:e01e",
+            "ip6": "2001:db8:100:100:a8f7:8aff:fe97:4202",
+            "prefixLength6": 64,
+            "ip6LL": "fe80::a8f7:8aff:fe97:4202",
+            "slaac": true,
             "raEnabled": false
           }
         ],
@@ -1102,7 +1331,7 @@
         "type": "dir",
         "name": "/",
         "ctime": 0,
-        "mtime": 0,
+        "mtime": 1780330322405,
         "children": [
           {
             "type": "dir",
@@ -1110,17 +1339,73 @@
             "ctime": 0,
             "mtime": 0,
             "children": []
+          },
+          {
+            "type": "dir",
+            "name": "etc",
+            "ctime": 1780330322405,
+            "mtime": 1780330322413,
+            "children": [
+              {
+                "type": "file",
+                "name": "mail.conf",
+                "data": "{\n  \"mailDomain\": \"example.local\",\n  \"ports\": {\n    \"smtp\": 25,\n    \"pop3\": 110,\n    \"imap\": 143\n  },\n  \"users\": []\n}",
+                "binary": false,
+                "ctime": 1780330322405,
+                "mtime": 1780330322405
+              },
+              {
+                "type": "file",
+                "name": "bitcoin.conf",
+                "data": "{\n  \"walletAddr\": \"1KH2NmvfaVsJ6HJrkKKpBpc2K2\",\n  \"seedAddr\": \"\"\n}",
+                "binary": false,
+                "ctime": 1780330322413,
+                "mtime": 1780330322413
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "var",
+            "ctime": 1780330322405,
+            "mtime": 1780330322405,
+            "children": [
+              {
+                "type": "dir",
+                "name": "mail",
+                "ctime": 1780330322405,
+                "mtime": 1780330322405,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "queue",
+                    "ctime": 1780330322405,
+                    "mtime": 1780330322405,
+                    "children": []
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
-      "dns": "185.3.1.10",
+      "dns": "192.168.1.1",
       "ssid": "Home-1-WiFi",
       "dhcpMode": {
         "0": "dhcp"
-      }
+      },
+      "installedApps": [
+        "IPv4ConfigApp",
+        "TerminalApp",
+        "ExplorerApp",
+        "TextEditorApp",
+        "SparktailHTTPClientApp",
+        "MailClientApp",
+        "SimpleIRCClientApp"
+      ]
     },
     {
-      "kind": "PC",
+      "kind": "Computer",
       "id": 402,
       "name": "PC-Zuhause2",
       "x": 168.32899475097656,
@@ -1134,11 +1419,12 @@
         "interfaces": [
           {
             "name": "eth0",
-            "ip": "192.168.2.100",
+            "ip": "192.168.2.101",
             "prefixLength": 24,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a890:6fff:fe65:13ce",
+            "ip6LL": "fe80::a8e2:edff:feef:941",
+            "slaac": false,
             "raEnabled": false
           }
         ],
@@ -1156,7 +1442,7 @@
         "type": "dir",
         "name": "/",
         "ctime": 0,
-        "mtime": 0,
+        "mtime": 1780330322428,
         "children": [
           {
             "type": "dir",
@@ -1164,18 +1450,74 @@
             "ctime": 0,
             "mtime": 0,
             "children": []
+          },
+          {
+            "type": "dir",
+            "name": "etc",
+            "ctime": 1780330322428,
+            "mtime": 1780330322431,
+            "children": [
+              {
+                "type": "file",
+                "name": "mail.conf",
+                "data": "{\n  \"mailDomain\": \"example.local\",\n  \"ports\": {\n    \"smtp\": 25,\n    \"pop3\": 110,\n    \"imap\": 143\n  },\n  \"users\": []\n}",
+                "binary": false,
+                "ctime": 1780330322428,
+                "mtime": 1780330322428
+              },
+              {
+                "type": "file",
+                "name": "bitcoin.conf",
+                "data": "{\n  \"walletAddr\": \"13RFaEmXoVhoZo5pvQd9A1E1sT\",\n  \"seedAddr\": \"\"\n}",
+                "binary": false,
+                "ctime": 1780330322431,
+                "mtime": 1780330322431
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "var",
+            "ctime": 1780330322428,
+            "mtime": 1780330322428,
+            "children": [
+              {
+                "type": "dir",
+                "name": "mail",
+                "ctime": 1780330322428,
+                "mtime": 1780330322428,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "queue",
+                    "ctime": 1780330322428,
+                    "mtime": 1780330322428,
+                    "children": []
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
-      "dns": "185.3.1.10",
+      "dns": "192.168.2.1",
       "dhcpMode": {
         "0": "dhcp"
-      }
+      },
+      "installedApps": [
+        "IPv4ConfigApp",
+        "TerminalApp",
+        "ExplorerApp",
+        "TextEditorApp",
+        "SparktailHTTPClientApp",
+        "MailClientApp",
+        "SimpleIRCClientApp"
+      ]
     },
     {
-      "kind": "Laptop",
+      "kind": "Tablet",
       "id": 403,
-      "name": "Laptop-Zuhause2",
+      "name": "Smartphone 2",
       "x": 287.1227504490139,
       "y": 606.5387876283872,
       "px": 396.5,
@@ -1187,11 +1529,12 @@
         "interfaces": [
           {
             "name": "wlan0",
-            "ip": "192.168.2.101",
+            "ip": "192.168.2.100",
             "prefixLength": 24,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a8b1:2fff:fed4:2460",
+            "ip6LL": "fe80::a8e7:11ff:fef6:38f3",
+            "slaac": false,
             "raEnabled": false
           }
         ],
@@ -1209,7 +1552,7 @@
         "type": "dir",
         "name": "/",
         "ctime": 0,
-        "mtime": 0,
+        "mtime": 1780330322441,
         "children": [
           {
             "type": "dir",
@@ -1217,23 +1560,79 @@
             "ctime": 0,
             "mtime": 0,
             "children": []
+          },
+          {
+            "type": "dir",
+            "name": "etc",
+            "ctime": 1780330322441,
+            "mtime": 1780330322445,
+            "children": [
+              {
+                "type": "file",
+                "name": "mail.conf",
+                "data": "{\n  \"mailDomain\": \"example.local\",\n  \"ports\": {\n    \"smtp\": 25,\n    \"pop3\": 110,\n    \"imap\": 143\n  },\n  \"users\": []\n}",
+                "binary": false,
+                "ctime": 1780330322441,
+                "mtime": 1780330322441
+              },
+              {
+                "type": "file",
+                "name": "bitcoin.conf",
+                "data": "{\n  \"walletAddr\": \"1FxpuvV1wCyNRjjD1UEkzx9P7f\",\n  \"seedAddr\": \"\"\n}",
+                "binary": false,
+                "ctime": 1780330322445,
+                "mtime": 1780330322445
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "var",
+            "ctime": 1780330322441,
+            "mtime": 1780330322441,
+            "children": [
+              {
+                "type": "dir",
+                "name": "mail",
+                "ctime": 1780330322441,
+                "mtime": 1780330322441,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "queue",
+                    "ctime": 1780330322441,
+                    "mtime": 1780330322441,
+                    "children": []
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
-      "dns": "185.3.1.10",
+      "dns": "192.168.2.1",
       "ssid": "Home-2-WiFi",
       "dhcpMode": {
         "0": "dhcp"
-      }
+      },
+      "installedApps": [
+        "IPv4ConfigApp",
+        "TerminalApp",
+        "ExplorerApp",
+        "TextEditorApp",
+        "SparktailHTTPClientApp",
+        "MailClientApp",
+        "SimpleIRCClientApp"
+      ]
     },
     {
-      "kind": "PC",
+      "kind": "Computer",
       "id": 404,
       "name": "PC-Zuhause3",
       "x": 628.1573426573426,
       "y": 607.2902097902098,
-      "px": 511,
-      "py": 59.5,
+      "px": 698.9166870117188,
+      "py": 349.1666717529297,
       "panelOpen": false,
       "net": {
         "name": "PC-Zuhause3",
@@ -1241,11 +1640,12 @@
         "interfaces": [
           {
             "name": "eth0",
-            "ip": "192.168.3.100",
+            "ip": "192.168.3.101",
             "prefixLength": 24,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a843:18ff:fe40:7219",
+            "ip6LL": "fe80::a8be:54ff:febd:f161",
+            "slaac": false,
             "raEnabled": false
           }
         ],
@@ -1263,7 +1663,7 @@
         "type": "dir",
         "name": "/",
         "ctime": 0,
-        "mtime": 0,
+        "mtime": 1780330322456,
         "children": [
           {
             "type": "dir",
@@ -1271,18 +1671,74 @@
             "ctime": 0,
             "mtime": 0,
             "children": []
+          },
+          {
+            "type": "dir",
+            "name": "etc",
+            "ctime": 1780330322456,
+            "mtime": 1780330322458,
+            "children": [
+              {
+                "type": "file",
+                "name": "mail.conf",
+                "data": "{\n  \"mailDomain\": \"example.local\",\n  \"ports\": {\n    \"smtp\": 25,\n    \"pop3\": 110,\n    \"imap\": 143\n  },\n  \"users\": []\n}",
+                "binary": false,
+                "ctime": 1780330322456,
+                "mtime": 1780330322456
+              },
+              {
+                "type": "file",
+                "name": "bitcoin.conf",
+                "data": "{\n  \"walletAddr\": \"1RMUKEwgXLn9nQTgn25rWQwf2C\",\n  \"seedAddr\": \"\"\n}",
+                "binary": false,
+                "ctime": 1780330322458,
+                "mtime": 1780330322458
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "var",
+            "ctime": 1780330322456,
+            "mtime": 1780330322456,
+            "children": [
+              {
+                "type": "dir",
+                "name": "mail",
+                "ctime": 1780330322456,
+                "mtime": 1780330322456,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "queue",
+                    "ctime": 1780330322456,
+                    "mtime": 1780330322456,
+                    "children": []
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
-      "dns": "185.3.1.10",
+      "dns": "192.168.3.1",
       "dhcpMode": {
         "0": "dhcp"
-      }
+      },
+      "installedApps": [
+        "IPv4ConfigApp",
+        "TerminalApp",
+        "ExplorerApp",
+        "TextEditorApp",
+        "SparktailHTTPClientApp",
+        "MailClientApp",
+        "SimpleIRCClientApp"
+      ]
     },
     {
-      "kind": "Laptop",
+      "kind": "Tablet",
       "id": 405,
-      "name": "Laptop-Zuhause3",
+      "name": "Smartphone 3",
       "x": 751.4615384615385,
       "y": 606.5384615384615,
       "px": 637,
@@ -1294,11 +1750,12 @@
         "interfaces": [
           {
             "name": "wlan0",
-            "ip": "192.168.3.101",
+            "ip": "192.168.3.100",
             "prefixLength": 24,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a8c2:6dff:fecd:3b35",
+            "ip6LL": "fe80::a84d:22ff:fe04:d065",
+            "slaac": false,
             "raEnabled": false
           }
         ],
@@ -1316,7 +1773,7 @@
         "type": "dir",
         "name": "/",
         "ctime": 0,
-        "mtime": 0,
+        "mtime": 1780330322465,
         "children": [
           {
             "type": "dir",
@@ -1324,21 +1781,77 @@
             "ctime": 0,
             "mtime": 0,
             "children": []
+          },
+          {
+            "type": "dir",
+            "name": "etc",
+            "ctime": 1780330322465,
+            "mtime": 1780330322466,
+            "children": [
+              {
+                "type": "file",
+                "name": "mail.conf",
+                "data": "{\n  \"mailDomain\": \"example.local\",\n  \"ports\": {\n    \"smtp\": 25,\n    \"pop3\": 110,\n    \"imap\": 143\n  },\n  \"users\": []\n}",
+                "binary": false,
+                "ctime": 1780330322465,
+                "mtime": 1780330322465
+              },
+              {
+                "type": "file",
+                "name": "bitcoin.conf",
+                "data": "{\n  \"walletAddr\": \"1hoBgZnCQvyQZBNZemmLacNMyd\",\n  \"seedAddr\": \"\"\n}",
+                "binary": false,
+                "ctime": 1780330322466,
+                "mtime": 1780330322466
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "var",
+            "ctime": 1780330322465,
+            "mtime": 1780330322465,
+            "children": [
+              {
+                "type": "dir",
+                "name": "mail",
+                "ctime": 1780330322465,
+                "mtime": 1780330322465,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "queue",
+                    "ctime": 1780330322465,
+                    "mtime": 1780330322465,
+                    "children": []
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
-      "dns": "185.3.1.10",
+      "dns": "192.168.3.1",
       "ssid": "Home-3-WiFi",
       "dhcpMode": {
         "0": "dhcp"
-      }
+      },
+      "installedApps": [
+        "IPv4ConfigApp",
+        "TerminalApp",
+        "ExplorerApp",
+        "TextEditorApp",
+        "SparktailHTTPClientApp",
+        "MailClientApp",
+        "SimpleIRCClientApp"
+      ]
     },
     {
-      "kind": "PC",
+      "kind": "Computer",
       "id": 406,
       "name": "PC-Zuhause4",
-      "x": 1159.584550337358,
-      "y": 610.2968425617352,
+      "x": 1384.8722770120662,
+      "y": 612.255953596486,
       "px": 610,
       "py": 31.5,
       "panelOpen": false,
@@ -1348,11 +1861,12 @@
         "interfaces": [
           {
             "name": "eth0",
-            "ip": "192.168.4.100",
+            "ip": "192.168.4.101",
             "prefixLength": 24,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a897:2dff:fef2:3b26",
+            "ip6LL": "fe80::a8fc:72ff:fe4f:329c",
+            "slaac": false,
             "raEnabled": false
           }
         ],
@@ -1370,7 +1884,7 @@
         "type": "dir",
         "name": "/",
         "ctime": 0,
-        "mtime": 0,
+        "mtime": 1780330322473,
         "children": [
           {
             "type": "dir",
@@ -1378,20 +1892,76 @@
             "ctime": 0,
             "mtime": 0,
             "children": []
+          },
+          {
+            "type": "dir",
+            "name": "etc",
+            "ctime": 1780330322473,
+            "mtime": 1780330322475,
+            "children": [
+              {
+                "type": "file",
+                "name": "mail.conf",
+                "data": "{\n  \"mailDomain\": \"example.local\",\n  \"ports\": {\n    \"smtp\": 25,\n    \"pop3\": 110,\n    \"imap\": 143\n  },\n  \"users\": []\n}",
+                "binary": false,
+                "ctime": 1780330322473,
+                "mtime": 1780330322473
+              },
+              {
+                "type": "file",
+                "name": "bitcoin.conf",
+                "data": "{\n  \"walletAddr\": \"1ydBFoxCghqtpjwXKTFaaBcnmM\",\n  \"seedAddr\": \"\"\n}",
+                "binary": false,
+                "ctime": 1780330322475,
+                "mtime": 1780330322475
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "var",
+            "ctime": 1780330322473,
+            "mtime": 1780330322473,
+            "children": [
+              {
+                "type": "dir",
+                "name": "mail",
+                "ctime": 1780330322473,
+                "mtime": 1780330322473,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "queue",
+                    "ctime": 1780330322473,
+                    "mtime": 1780330322473,
+                    "children": []
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
-      "dns": "185.3.1.10",
+      "dns": "192.168.4.1",
       "dhcpMode": {
         "0": "dhcp"
-      }
+      },
+      "installedApps": [
+        "IPv4ConfigApp",
+        "TerminalApp",
+        "ExplorerApp",
+        "TextEditorApp",
+        "SparktailHTTPClientApp",
+        "MailClientApp",
+        "SimpleIRCClientApp"
+      ]
     },
     {
-      "kind": "Laptop",
+      "kind": "Tablet",
       "id": 407,
-      "name": "Laptop-Zuhause4",
-      "x": 1290.4070336401878,
-      "y": 609.5457977081512,
+      "name": "Smartphone 4",
+      "x": 1518.644284687738,
+      "y": 611.5053674168223,
       "px": 709,
       "py": 63.5,
       "panelOpen": false,
@@ -1401,11 +1971,12 @@
         "interfaces": [
           {
             "name": "wlan0",
-            "ip": "192.168.4.101",
+            "ip": "192.168.4.100",
             "prefixLength": 24,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a83f:e5ff:feaa:e96e",
+            "ip6LL": "fe80::a82b:7bff:fe69:a07f",
+            "slaac": false,
             "raEnabled": false
           }
         ],
@@ -1423,7 +1994,7 @@
         "type": "dir",
         "name": "/",
         "ctime": 0,
-        "mtime": 0,
+        "mtime": 1780330322481,
         "children": [
           {
             "type": "dir",
@@ -1431,21 +2002,77 @@
             "ctime": 0,
             "mtime": 0,
             "children": []
+          },
+          {
+            "type": "dir",
+            "name": "etc",
+            "ctime": 1780330322481,
+            "mtime": 1780330322483,
+            "children": [
+              {
+                "type": "file",
+                "name": "mail.conf",
+                "data": "{\n  \"mailDomain\": \"example.local\",\n  \"ports\": {\n    \"smtp\": 25,\n    \"pop3\": 110,\n    \"imap\": 143\n  },\n  \"users\": []\n}",
+                "binary": false,
+                "ctime": 1780330322481,
+                "mtime": 1780330322481
+              },
+              {
+                "type": "file",
+                "name": "bitcoin.conf",
+                "data": "{\n  \"walletAddr\": \"1dNuzTGBen97H2iZKqMU4uSSxS\",\n  \"seedAddr\": \"\"\n}",
+                "binary": false,
+                "ctime": 1780330322483,
+                "mtime": 1780330322483
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "var",
+            "ctime": 1780330322481,
+            "mtime": 1780330322481,
+            "children": [
+              {
+                "type": "dir",
+                "name": "mail",
+                "ctime": 1780330322481,
+                "mtime": 1780330322481,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "queue",
+                    "ctime": 1780330322481,
+                    "mtime": 1780330322481,
+                    "children": []
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
-      "dns": "185.3.1.10",
+      "dns": "192.168.4.1",
       "ssid": "Home-4-WiFi",
       "dhcpMode": {
         "0": "dhcp"
-      }
+      },
+      "installedApps": [
+        "IPv4ConfigApp",
+        "TerminalApp",
+        "ExplorerApp",
+        "TextEditorApp",
+        "SparktailHTTPClientApp",
+        "MailClientApp",
+        "SimpleIRCClientApp"
+      ]
     },
     {
       "kind": "Switch",
       "id": 500,
       "name": "SW-DC-Alpha",
-      "x": 261.1994615034624,
-      "y": 290.1747524021389,
+      "x": 308.17220884721837,
+      "y": 241.24517523967108,
       "px": 568,
       "py": 500,
       "panelOpen": false,
@@ -1515,8 +2142,8 @@
       "kind": "Switch",
       "id": 501,
       "name": "SW-DC-Beta",
-      "x": 811.0543174208262,
-      "y": 299.2640693288099,
+      "x": 1046.1399729863779,
+      "y": 236.57442993894884,
       "px": 1025,
       "py": 500,
       "panelOpen": false,
@@ -1583,13 +2210,767 @@
       ]
     },
     {
+      "kind": "Computer",
+      "id": 600,
+      "name": "www.example.com",
+      "x": 477.94009646787003,
+      "y": 318.565975027899,
+      "px": 508,
+      "py": 254.5,
+      "panelOpen": false,
+      "net": {
+        "name": "www.example.com",
+        "forwarding": false,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "185.1.1.10",
+            "prefixLength": 24,
+            "ip6": "2001:db8:1:1::10",
+            "prefixLength6": 64,
+            "ip6LL": "fe80::a802:b7ff:fed2:7e1",
+            "slaac": false,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": [
+          {
+            "dst": "0.0.0.0",
+            "prefixLength": 0,
+            "interf": 0,
+            "nexthop": "185.1.1.1"
+          },
+          {
+            "dst": "::",
+            "prefixLength": 0,
+            "interf": 0,
+            "nexthop": "2001:db8:1:1::1"
+          }
+        ]
+      },
+      "fs": {
+        "type": "dir",
+        "name": "/",
+        "ctime": 0,
+        "mtime": 0,
+        "children": [
+          {
+            "type": "dir",
+            "name": "etc",
+            "ctime": 0,
+            "mtime": 1781041212924,
+            "children": [
+              {
+                "type": "file",
+                "name": "httpd.conf",
+                "data": "{\n  \"port\": 80,\n  \"docRoot\": \"/var/www/\",\n  \"httpsEnabled\": false,\n  \"httpsPort\": 443,\n  \"certPath\": \"\",\n  \"autostart\": true\n}\n",
+                "binary": false,
+                "ctime": 0,
+                "mtime": 1781041212924
+              },
+              {
+                "type": "file",
+                "name": "mail.conf",
+                "data": "{\n  \"mailDomain\": \"example.local\",\n  \"ports\": {\n    \"smtp\": 25,\n    \"pop3\": 110,\n    \"imap\": 143\n  },\n  \"users\": []\n}",
+                "binary": false,
+                "ctime": 1780330322489,
+                "mtime": 1780330322489
+              },
+              {
+                "type": "file",
+                "name": "bitcoin.conf",
+                "data": "{\n  \"walletAddr\": \"1fbSr4eqAeg7p6FS8V9baFvZfd\",\n  \"seedAddr\": \"\"\n}",
+                "binary": false,
+                "ctime": 1780330322490,
+                "mtime": 1780330322490
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "var",
+            "ctime": 0,
+            "mtime": 1780330322489,
+            "children": [
+              {
+                "type": "dir",
+                "name": "www",
+                "ctime": 0,
+                "mtime": 1781041638775,
+                "children": [
+                  {
+                    "type": "file",
+                    "name": "index.html",
+                    "data": "<!DOCTYPE html>\n  <html lang=\"de\">\n  <head>\n    <meta charset=\"utf-8\">\n    <title>Example Corp</title>\n    <style>\n      *{margin:0;padding:0;box-sizing:border-box}\n      body{font-family:Arial,sans-serif;color:#333;font-size:14px}\n      header{background:#1a3a5c;color:#fff;padding:12px 16px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}\n      header h1{font-size:1.3em}\n      header p{opacity:.75;font-size:.82em}\n      .hero{background:linear-gradient(135deg,#1a3a5c,#2a5298);color:#fff;padding:24px 16px;text-align:center}\n      .hero h2{font-size:1.3em;margin-bottom:8px}\n      .features{display:flex;flex-direction:column;gap:10px;padding:16px;background:#f5f7fa}\n      .card{background:#fff;border-radius:8px;padding:14px;box-shadow:0 2px 6px rgba(0,0,0,.1)}\n      .card h3{color:#2a5298;margin-bottom:5px;font-size:.92em}\n      .card p{font-size:.85em;line-height:1.5}\n      .info{background:#e8f0fe;padding:9px 16px;font-size:.76em;color:#555;border-top:3px solid #2a5298}\n      footer{background:#1a3a5c;color:#aaa;padding:9px 16px;font-size:.75em}\n    </style>\n  </head>\n  <body>\n    <header>\n      <h1>Example Corp</h1>\n      <p>Cloud &amp; Hosting seit 2026</p>\n    </header>\n    <div class=\"hero\">\n      <h2>Willkommen bei Example Corp - <br> Ihr zuverlässiger Hosting-Partner</h2>\n    </div>\n    <div class=\"features\">\n      <div class=\"card\">\n        <h3>Rechenzentrum DC-Alpha</h3>\n        <p>DC-Alpha im Backbone (AS65001) &mdash; weltweit über BGP erreichbar.</p>\n      </div>\n    </div>\n    <div class=\"info\">IPv4: 185.1.1.10 &nbsp;|&nbsp; IPv6: 2001:db8:1:1::10 &nbsp;|&nbsp; AS65001</div>\n    <footer>&copy; 2026 Example Corp</footer>\n  </body>\n  </html>\n",
+                    "binary": false,
+                    "ctime": 0,
+                    "mtime": 1781041638775
+                  }
+                ]
+              },
+              {
+                "type": "dir",
+                "name": "mail",
+                "ctime": 1780330322489,
+                "mtime": 1780330322489,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "queue",
+                    "ctime": 1780330322489,
+                    "mtime": 1780330322489,
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "home",
+            "ctime": 0,
+            "mtime": 0,
+            "children": []
+          }
+        ]
+      },
+      "dns": null,
+      "dhcpMode": {},
+      "installedApps": [
+        "IPv4ConfigApp",
+        "TerminalApp",
+        "ExplorerApp",
+        "TextEditorApp",
+        "SimpleHTTPServerApp"
+      ]
+    },
+    {
+      "kind": "Computer",
+      "id": 601,
+      "name": "srv.example.com",
+      "x": 477.9659853200166,
+      "y": 236.34017929953728,
+      "px": 625,
+      "py": 254.5,
+      "panelOpen": false,
+      "net": {
+        "name": "srv.example.com",
+        "forwarding": false,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "185.1.1.20",
+            "prefixLength": 24,
+            "ip6": "2001:db8:1:1::20",
+            "prefixLength6": 64,
+            "ip6LL": "fe80::a8c0:54ff:fe96:a273",
+            "slaac": false,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": [
+          {
+            "dst": "0.0.0.0",
+            "prefixLength": 0,
+            "interf": 0,
+            "nexthop": "185.1.1.1"
+          },
+          {
+            "dst": "::",
+            "prefixLength": 0,
+            "interf": 0,
+            "nexthop": "2001:db8:1:1::1"
+          }
+        ]
+      },
+      "fs": {
+        "type": "dir",
+        "name": "/",
+        "ctime": 0,
+        "mtime": 1780330322495,
+        "children": [
+          {
+            "type": "dir",
+            "name": "home",
+            "ctime": 0,
+            "mtime": 0,
+            "children": []
+          },
+          {
+            "type": "dir",
+            "name": "etc",
+            "ctime": 0,
+            "mtime": 1780330322496,
+            "children": [
+              {
+                "type": "file",
+                "name": "mail.conf",
+                "data": "{\n  \"mailDomain\": \"example.local\",\n  \"ports\": {\n    \"smtp\": 25,\n    \"pop3\": 110,\n    \"imap\": 143\n  },\n  \"users\": []\n}",
+                "binary": false,
+                "ctime": 1780330322495,
+                "mtime": 1780330322495
+              },
+              {
+                "type": "file",
+                "name": "bitcoin.conf",
+                "data": "{\n  \"walletAddr\": \"19ckQxk4LN4kwdAtX89aGheLqr\",\n  \"seedAddr\": \"\"\n}",
+                "binary": false,
+                "ctime": 1780330322496,
+                "mtime": 1780330322496
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "var",
+            "ctime": 1780330322495,
+            "mtime": 1780330322495,
+            "children": [
+              {
+                "type": "dir",
+                "name": "mail",
+                "ctime": 1780330322495,
+                "mtime": 1780330322495,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "queue",
+                    "ctime": 1780330322495,
+                    "mtime": 1780330322495,
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "dns": null,
+      "dhcpMode": {},
+      "installedApps": [
+        "IPv4ConfigApp",
+        "TerminalApp",
+        "ExplorerApp",
+        "TextEditorApp",
+        "SimpleMailServerApp"
+      ]
+    },
+    {
+      "kind": "Computer",
+      "id": 602,
+      "name": "www.betanet.de",
+      "x": 1217.2383858301516,
+      "y": 358.14973827531924,
+      "px": 801,
+      "py": 254.5,
+      "panelOpen": false,
+      "net": {
+        "name": "www.betanet.de",
+        "forwarding": false,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "185.2.1.10",
+            "prefixLength": 24,
+            "ip6": "2001:db8:2:1::10",
+            "prefixLength6": 64,
+            "ip6LL": "fe80::a865:c7ff:fe95:24c8",
+            "slaac": false,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": [
+          {
+            "dst": "0.0.0.0",
+            "prefixLength": 0,
+            "interf": 0,
+            "nexthop": "185.2.1.1"
+          },
+          {
+            "dst": "::",
+            "prefixLength": 0,
+            "interf": 0,
+            "nexthop": "2001:db8:2:1::1"
+          }
+        ]
+      },
+      "fs": {
+        "type": "dir",
+        "name": "/",
+        "ctime": 0,
+        "mtime": 0,
+        "children": [
+          {
+            "type": "dir",
+            "name": "etc",
+            "ctime": 0,
+            "mtime": 1781041212924,
+            "children": [
+              {
+                "type": "file",
+                "name": "httpd.conf",
+                "data": "{\n  \"port\": 80,\n  \"docRoot\": \"/var/www/\",\n  \"httpsEnabled\": false,\n  \"httpsPort\": 443,\n  \"certPath\": \"\",\n  \"autostart\": true\n}\n",
+                "binary": false,
+                "ctime": 0,
+                "mtime": 1781041212924
+              },
+              {
+                "type": "file",
+                "name": "mail.conf",
+                "data": "{\n  \"mailDomain\": \"example.local\",\n  \"ports\": {\n    \"smtp\": 25,\n    \"pop3\": 110,\n    \"imap\": 143\n  },\n  \"tls\": {\n    \"enabled\": false,\n    \"smtps\": 465,\n    \"pop3s\": 995,\n    \"imaps\": 993,\n    \"certPath\": \"\"\n  },\n  \"users\": [],\n  \"autostart\": false\n}\n",
+                "binary": false,
+                "ctime": 1779654752733,
+                "mtime": 1779654755716
+              },
+              {
+                "type": "file",
+                "name": "bitcoin.conf",
+                "data": "{\n  \"walletAddr\": \"19SMvZbUTsJ4DFWaDJ6n8i6RKq\",\n  \"seedAddr\": \"\"\n}",
+                "binary": false,
+                "ctime": 1780330322503,
+                "mtime": 1780330322503
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "var",
+            "ctime": 0,
+            "mtime": 1779654752733,
+            "children": [
+              {
+                "type": "dir",
+                "name": "www",
+                "ctime": 0,
+                "mtime": 0,
+                "children": [
+                  {
+                    "type": "file",
+                    "name": "index.html",
+                    "data": "<!DOCTYPE html>\n<html lang=\"de\">\n<head>\n  <meta charset=\"utf-8\">\n  <title>BetaNet GmbH</title>\n  <style>\n    *{margin:0;padding:0;box-sizing:border-box}\n    body{font-family:Arial,sans-serif;color:#222;font-size:14px}\n    header{background:#0a5c2f;color:#fff;padding:12px 16px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}\n    header h1{font-size:1.3em}\n    header p{opacity:.75;font-size:.82em}\n    nav{background:#0e8a46;white-space:nowrap;overflow-x:auto}\n    nav a{display:inline-block;color:#fff;padding:8px 12px;text-decoration:none;font-size:.85em}\n    nav a:hover{background:#0a5c2f}\n    .hero{background:linear-gradient(135deg,#0a5c2f,#0e8a46);color:#fff;padding:24px 16px}\n    .hero h2{font-size:1.3em;margin-bottom:8px}\n    .hero p{opacity:.85;font-size:.88em}\n    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px;background:#f0faf4}\n    .card{background:#fff;border-radius:8px;padding:12px;box-shadow:0 2px 6px rgba(0,0,0,.08);border-left:4px solid #0e8a46}\n    .card h3{color:#0a5c2f;margin-bottom:5px;font-size:.88em}\n    .card p{font-size:.82em;line-height:1.5}\n    .info{background:#d4edda;padding:9px 16px;font-size:.76em;color:#444;border-top:3px solid #0e8a46}\n    footer{background:#0a5c2f;color:#aaa;padding:9px 16px;font-size:.75em}\n  </style>\n</head>\n<body>\n  <header>\n    <h1>BetaNet GmbH</h1>\n    <p>Internet-Provider &middot; AS65002</p>\n  </header>\n  <nav>\n    <a href=\"/\">Start</a>\n    <a href=\"#\">Privatkunden</a>\n    <a href=\"#\">Business</a>\n    <a href=\"#\">Netzwerk</a>\n    <a href=\"#\">Support</a>\n  </nav>\n  <div class=\"hero\">\n    <h2>Schnelles Internet für alle</h2>\n    <p>BetaNet betreibt ein eigenes AS (AS65002) und ist über den BGP-Backbone verbunden.</p>\n  </div>\n  <div class=\"grid\">\n    <div class=\"card\">\n      <h3>Breitband-Anschlüsse</h3>\n      <p>Für Privat- und Geschäftskunden &mdash; IPv4 und IPv6 inklusive.</p>\n    </div>\n    <div class=\"card\">\n      <h3>E-Mail-Dienste</h3>\n      <p>alice, bob, admin &nbsp;|&nbsp; <a href=\"mailto:support@betanet.de\">support@betanet.de</a></p>\n    </div>\n    <div class=\"card\">\n      <h3>Rechenzentrum DC-Beta</h3>\n      <p>Server im eigenen DC, direkt im AS65002 geroutet.</p>\n    </div>\n    <div class=\"card\">\n      <h3>BGP-Netz</h3>\n      <p>Backbone-Router BB3 &mdash; global erreichbar über AS65002.</p>\n    </div>\n  </div>\n  <div class=\"info\">IPv4: 185.2.1.10 &nbsp;|&nbsp; IPv6: 2001:db8:2:1::10 &nbsp;|&nbsp; AS65002</div>\n  <footer>&copy; 2026 BetaNet GmbH &nbsp;&middot;&nbsp; Alle Rechte vorbehalten</footer>\n</body>\n</html>",
+                    "binary": false,
+                    "ctime": 0,
+                    "mtime": 0
+                  }
+                ]
+              },
+              {
+                "type": "dir",
+                "name": "mail",
+                "ctime": 1779654752733,
+                "mtime": 1779654752733,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "queue",
+                    "ctime": 1779654752733,
+                    "mtime": 1779654752733,
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "home",
+            "ctime": 0,
+            "mtime": 0,
+            "children": []
+          }
+        ]
+      },
+      "dns": null,
+      "dhcpMode": {},
+      "installedApps": [
+        "IPv4ConfigApp",
+        "TerminalApp",
+        "ExplorerApp",
+        "TextEditorApp",
+        "SimpleHTTPServerApp"
+      ]
+    },
+    {
+      "kind": "Computer",
+      "id": 603,
+      "name": "mail.betanet.de",
+      "x": 1219.195573536869,
+      "y": 235.76806535368573,
+      "px": 801,
+      "py": 254.5,
+      "panelOpen": false,
+      "net": {
+        "name": "mail.betanet.de",
+        "forwarding": false,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "185.2.1.20",
+            "prefixLength": 24,
+            "ip6": "2001:db8:2:1::20",
+            "prefixLength6": 64,
+            "ip6LL": "fe80::a89a:b7ff:fea3:c412",
+            "slaac": false,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": [
+          {
+            "dst": "0.0.0.0",
+            "prefixLength": 0,
+            "interf": 0,
+            "nexthop": "185.2.1.1"
+          },
+          {
+            "dst": "::",
+            "prefixLength": 0,
+            "interf": 0,
+            "nexthop": "2001:db8:2:1::1"
+          }
+        ]
+      },
+      "fs": {
+        "type": "dir",
+        "name": "/",
+        "ctime": 0,
+        "mtime": 0,
+        "children": [
+          {
+            "type": "dir",
+            "name": "etc",
+            "ctime": 0,
+            "mtime": 1781041212924,
+            "children": [
+              {
+                "type": "file",
+                "name": "mail.conf",
+                "data": "{\n  \"mailDomain\": \"example.local\",\n  \"ports\": {\n    \"smtp\": 25,\n    \"pop3\": 110,\n    \"imap\": 143\n  },\n  \"tls\": {\n    \"enabled\": false,\n    \"smtps\": 465,\n    \"pop3s\": 995,\n    \"imaps\": 993,\n    \"certPath\": \"\"\n  },\n  \"users\": [],\n  \"autostart\": true\n}\n",
+                "binary": false,
+                "ctime": 0,
+                "mtime": 1781041212924
+              },
+              {
+                "type": "file",
+                "name": "bitcoin.conf",
+                "data": "{\n  \"walletAddr\": \"1Kas3NaDbbS3acxGqWP15fHDKK\",\n  \"seedAddr\": \"\"\n}",
+                "binary": false,
+                "ctime": 1780330322511,
+                "mtime": 1780330322511
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "home",
+            "ctime": 0,
+            "mtime": 0,
+            "children": []
+          },
+          {
+            "type": "dir",
+            "name": "var",
+            "ctime": 0,
+            "mtime": 0,
+            "children": [
+              {
+                "type": "dir",
+                "name": "mail",
+                "ctime": 0,
+                "mtime": 1779654739048,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "queue",
+                    "ctime": 1779654739048,
+                    "mtime": 1779654739048,
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "dns": null,
+      "dhcpMode": {},
+      "installedApps": [
+        "IPv4ConfigApp",
+        "TerminalApp",
+        "ExplorerApp",
+        "TextEditorApp",
+        "SimpleMailServerApp"
+      ]
+    },
+    {
+      "kind": "TextBox",
+      "id": 732,
+      "name": "Textfeld",
+      "x": -131.48693863481677,
+      "y": 210.2931201270721,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "text": "# Provider A",
+      "showTitle": false
+    },
+    {
+      "kind": "TextBox",
+      "id": 734,
+      "name": "Textfeld",
+      "x": 615.8029960253359,
+      "y": 212.48946628822512,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "text": "# Provider B",
+      "showTitle": false
+    },
+    {
+      "kind": "TextBox",
+      "id": 736,
+      "name": "Textfeld",
+      "x": 1361.8590303951646,
+      "y": 212.90064743459857,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "text": "# Provider C",
+      "showTitle": false
+    },
+    {
+      "kind": "TextBox",
+      "id": 738,
+      "name": "Textfeld",
+      "x": 50.11827839457166,
+      "y": 458.1080572135555,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "text": "## Home 1",
+      "showTitle": false
+    },
+    {
+      "kind": "TextBox",
+      "id": 740,
+      "name": "Textfeld",
+      "x": 317.12623433994366,
+      "y": 457.59522848056866,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "text": "## Home 2",
+      "showTitle": false
+    },
+    {
+      "kind": "TextBox",
+      "id": 742,
+      "name": "Textfeld",
+      "x": 790.4896475623192,
+      "y": 460.3844105780941,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "text": "## Home 3",
+      "showTitle": false
+    },
+    {
+      "kind": "TextBox",
+      "id": 744,
+      "name": "Textfeld",
+      "x": 1566.5481077116228,
+      "y": 461.6067450422837,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "text": "## Home 4",
+      "showTitle": false
+    },
+    {
+      "kind": "TextBox",
+      "id": 746,
+      "name": "Textfeld",
+      "x": 1037.1640806622781,
+      "y": 391.82163439256385,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "text": "## Datacenter 2",
+      "showTitle": false
+    },
+    {
+      "kind": "TextBox",
+      "id": 748,
+      "name": "Textfeld",
+      "x": 276.7680835994524,
+      "y": 410.2290187027372,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "text": "## Datacenter 1",
+      "showTitle": false
+    },
+    {
+      "kind": "TextBox",
+      "id": 755,
+      "name": "Textfeld",
+      "x": -132.05161640216144,
+      "y": -92.82866830898212,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "text": "# Internet Backbone",
+      "showTitle": false
+    },
+    {
+      "kind": "Computer",
+      "id": 757,
+      "name": "DHCP-Server ISP A",
+      "x": -125.73279686770458,
+      "y": 288.33822738525197,
+      "px": 1075.2499389648438,
+      "py": 214.4163055419922,
+      "panelOpen": false,
+      "net": {
+        "name": "Computer 1",
+        "forwarding": false,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "192.0.2.2",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a84c:c8ff:fe4f:bebb",
+            "slaac": false,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": [
+          {
+            "dst": "0.0.0.0",
+            "prefixLength": 0,
+            "interf": 0,
+            "nexthop": "192.0.2.1"
+          }
+        ]
+      },
+      "fs": {
+        "type": "dir",
+        "name": "",
+        "ctime": 1780330671825,
+        "mtime": 1780330671825,
+        "children": [
+          {
+            "type": "dir",
+            "name": "etc",
+            "ctime": 1780330671825,
+            "mtime": 1781041212924,
+            "children": [
+              {
+                "type": "dir",
+                "name": "certs",
+                "ctime": 1780330671825,
+                "mtime": 1780330671825,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "trusted",
+                    "ctime": 1780330671825,
+                    "mtime": 1780330671825,
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "type": "file",
+                "name": "dhcpd.conf",
+                "data": "{\n  \"rangeStart\": \"192.0.2.200\",\n  \"rangeEnd\": \"192.0.2.254\",\n  \"dns\": [\n    \"192.0.2.3\"\n  ],\n  \"gateway\": \"192.0.2.1\",\n  \"leaseTime\": 3600,\n  \"subnetMask\": \"255.255.255.0\",\n  \"serverId\": \"192.0.2.1\",\n  \"autostart\": true\n}\n",
+                "binary": false,
+                "ctime": 1780330956711,
+                "mtime": 1781041212924
+              },
+              {
+                "type": "file",
+                "name": "dhcp6d.conf",
+                "data": "{\n  \"prefix\": \"2001:db8:1:1::\",\n  \"prefixLength\": 64,\n  \"dns\": [\n    \"2001:4860:4860::8888\"\n  ],\n  \"leaseTime\": 3600,\n  \"autostart\": false,\n  \"pdEnabled\": true,\n  \"pdPool\": \"2001:db8:100::\",\n  \"pdPoolLength\": 48,\n  \"pdDelegatedLength\": 56,\n  \"pdLeaseTime\": 3600\n}\n",
+                "binary": false,
+                "ctime": 1780332790586,
+                "mtime": 1780343449487
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "home",
+            "ctime": 1780330671825,
+            "mtime": 1780330671825,
+            "children": [
+              {
+                "type": "file",
+                "name": "notes.txt",
+                "data": "hello vfs\n",
+                "binary": false,
+                "ctime": 1780330671825,
+                "mtime": 1780330671825
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "bin",
+            "ctime": 1780330671825,
+            "mtime": 1780330671825,
+            "children": []
+          },
+          {
+            "type": "dir",
+            "name": "var",
+            "ctime": 1780330671825,
+            "mtime": 1780330671825,
+            "children": [
+              {
+                "type": "dir",
+                "name": "www",
+                "ctime": 1780330671825,
+                "mtime": 1780330671825,
+                "children": [
+                  {
+                    "type": "file",
+                    "name": "index.html",
+                    "data": "<!doctype html>\n<html>\n    <head>\n      <meta charset=\"utf-8\" />\n      <title>Hello from SimpleHTTPServer</title>\n    </head>\n    <body>\n      <h1>It works!</h1>\n    <p>Served from /var/www/index.html</p>\n    </body>\n</html>\n",
+                    "binary": false,
+                    "ctime": 1780330671825,
+                    "mtime": 1780330671825
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "dns": null,
+      "dhcpMode": {},
+      "installedApps": [
+        "IPv4ConfigApp",
+        "TerminalApp",
+        "ExplorerApp",
+        "TextEditorApp",
+        "DHCPServerApp"
+      ]
+    },
+    {
       "kind": "Switch",
-      "id": 502,
-      "name": "SW-DC-Gamma",
-      "x": 1309.7506180343094,
-      "y": 300.6993006993007,
-      "px": 1488,
-      "py": 500,
+      "id": 760,
+      "name": "Switch 1",
+      "x": 101.30176642662565,
+      "y": 363.69158843239825,
+      "px": 220,
+      "py": 120,
       "panelOpen": false,
       "vlanEnabled": false,
       "stpEnabled": false,
@@ -1654,25 +3035,286 @@
       ]
     },
     {
-      "kind": "PC",
-      "id": 600,
-      "name": "www.example.com",
-      "x": 461.3041958041958,
-      "y": 357.7097902097902,
-      "px": 508,
-      "py": 254.5,
+      "kind": "Computer",
+      "id": 767,
+      "name": "DNS ISP A",
+      "x": -126.71278274658397,
+      "y": 362.713214965626,
+      "px": 615.0833435058594,
+      "py": 225.4166717529297,
       "panelOpen": false,
       "net": {
-        "name": "www.example.com",
+        "name": "Computer 1",
         "forwarding": false,
         "interfaces": [
           {
             "name": "eth0",
-            "ip": "185.1.1.10",
+            "ip": "192.0.2.3",
             "prefixLength": 24,
-            "ip6": "2001:db8:1:1::10",
-            "prefixLength6": 64,
-            "ip6LL": "fe80::a8df:72ff:fef8:35e0",
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a800:e8ff:fee7:db5c",
+            "slaac": false,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": [
+          {
+            "dst": "0.0.0.0",
+            "prefixLength": 0,
+            "interf": 0,
+            "nexthop": "192.0.2.1"
+          }
+        ]
+      },
+      "fs": {
+        "type": "dir",
+        "name": "",
+        "ctime": 1780343466471,
+        "mtime": 1780343466471,
+        "children": [
+          {
+            "type": "dir",
+            "name": "etc",
+            "ctime": 1780343466471,
+            "mtime": 1781041212924,
+            "children": [
+              {
+                "type": "dir",
+                "name": "certs",
+                "ctime": 1780343466471,
+                "mtime": 1780343466471,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "trusted",
+                    "ctime": 1780343466471,
+                    "mtime": 1780343466471,
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "type": "file",
+                "name": "dnsd.conf",
+                "data": "{\n  \"a\": [],\n  \"aaaa\": [],\n  \"cname\": [],\n  \"mx\": [],\n  \"ns\": [],\n  \"mode\": \"recursive\",\n  \"forwarderIp\": \"198.41.0.4\",\n  \"autostart\": true\n}\n",
+                "binary": false,
+                "ctime": 1781031590938,
+                "mtime": 1781041212924
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "home",
+            "ctime": 1780343466471,
+            "mtime": 1780343466471,
+            "children": [
+              {
+                "type": "file",
+                "name": "notes.txt",
+                "data": "hello vfs\n",
+                "binary": false,
+                "ctime": 1780343466471,
+                "mtime": 1780343466471
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "bin",
+            "ctime": 1780343466471,
+            "mtime": 1780343466471,
+            "children": []
+          },
+          {
+            "type": "dir",
+            "name": "var",
+            "ctime": 1780343466471,
+            "mtime": 1780343466471,
+            "children": [
+              {
+                "type": "dir",
+                "name": "www",
+                "ctime": 1780343466471,
+                "mtime": 1780343466471,
+                "children": [
+                  {
+                    "type": "file",
+                    "name": "index.html",
+                    "data": "<!doctype html>\n<html>\n    <head>\n      <meta charset=\"utf-8\" />\n      <title>Hello from SimpleHTTPServer</title>\n    </head>\n    <body>\n      <h1>It works!</h1>\n    <p>Served from /var/www/index.html</p>\n    </body>\n</html>\n",
+                    "binary": false,
+                    "ctime": 1780343466471,
+                    "mtime": 1780343466471
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "dns": null,
+      "dhcpMode": {},
+      "installedApps": [
+        "IPv4ConfigApp",
+        "TerminalApp",
+        "ExplorerApp",
+        "TextEditorApp",
+        "DNSServerApp"
+      ]
+    },
+    {
+      "kind": "Computer",
+      "id": 771,
+      "name": "Root-DNS",
+      "x": -126.71219440371456,
+      "y": 139.59266230168134,
+      "px": 993.666259765625,
+      "py": 262.9996795654297,
+      "panelOpen": false,
+      "net": {
+        "name": "Computer 1",
+        "forwarding": false,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "198.41.0.4",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a8d7:c2ff:fe58:ba4",
+            "slaac": false,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": [
+          {
+            "dst": "0.0.0.0",
+            "prefixLength": 0,
+            "interf": 0,
+            "nexthop": "198.41.0.1"
+          }
+        ]
+      },
+      "fs": {
+        "type": "dir",
+        "name": "",
+        "ctime": 1781031622094,
+        "mtime": 1781031622094,
+        "children": [
+          {
+            "type": "dir",
+            "name": "etc",
+            "ctime": 1781031622094,
+            "mtime": 1781041212924,
+            "children": [
+              {
+                "type": "dir",
+                "name": "certs",
+                "ctime": 1781031622094,
+                "mtime": 1781031622094,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "trusted",
+                    "ctime": 1781031622094,
+                    "mtime": 1781031622094,
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "type": "file",
+                "name": "dnsd.conf",
+                "data": "{\n  \"a\": [\n    {\n      \"name\": \"ns1.com\",\n      \"ip\": \"185.1.1.30\",\n      \"ttl\": 300\n    },\n    {\n      \"name\": \"ns1.de\",\n      \"ip\": \"185.1.1.30\",\n      \"ttl\": 300\n    }\n  ],\n  \"aaaa\": [],\n  \"cname\": [],\n  \"mx\": [],\n  \"ns\": [\n    {\n      \"name\": \"com\",\n      \"host\": \"ns1.com\",\n      \"ttl\": 300\n    },\n    {\n      \"name\": \"de\",\n      \"host\": \"ns1.de\",\n      \"ttl\": 300\n    }\n  ],\n  \"mode\": \"authoritative\",\n  \"forwarderIp\": \"\",\n  \"autostart\": true\n}\n",
+                "binary": false,
+                "ctime": 1781031896318,
+                "mtime": 1781041212924
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "home",
+            "ctime": 1781031622094,
+            "mtime": 1781031622094,
+            "children": [
+              {
+                "type": "file",
+                "name": "notes.txt",
+                "data": "hello vfs\n",
+                "binary": false,
+                "ctime": 1781031622094,
+                "mtime": 1781031622094
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "bin",
+            "ctime": 1781031622094,
+            "mtime": 1781031622094,
+            "children": []
+          },
+          {
+            "type": "dir",
+            "name": "var",
+            "ctime": 1781031622094,
+            "mtime": 1781031622094,
+            "children": [
+              {
+                "type": "dir",
+                "name": "www",
+                "ctime": 1781031622094,
+                "mtime": 1781031622094,
+                "children": [
+                  {
+                    "type": "file",
+                    "name": "index.html",
+                    "data": "<!doctype html>\n<html>\n    <head>\n      <meta charset=\"utf-8\" />\n      <title>Hello from SimpleHTTPServer</title>\n    </head>\n    <body>\n      <h1>It works!</h1>\n    <p>Served from /var/www/index.html</p>\n    </body>\n</html>\n",
+                    "binary": false,
+                    "ctime": 1781031622094,
+                    "mtime": 1781031622094
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "dns": null,
+      "dhcpMode": {},
+      "installedApps": [
+        "IPv4ConfigApp",
+        "TerminalApp",
+        "ExplorerApp",
+        "TextEditorApp",
+        "DNSServerApp"
+      ]
+    },
+    {
+      "kind": "Computer",
+      "id": 775,
+      "name": "DNS COM",
+      "x": 308.2309215324337,
+      "y": 322.5908592790856,
+      "px": 913,
+      "py": 335.4166717529297,
+      "panelOpen": false,
+      "net": {
+        "name": "Computer 1",
+        "forwarding": false,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "185.1.1.30",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a8e2:48ff:fe3f:c9b6",
+            "slaac": false,
             "raEnabled": false
           }
         ],
@@ -1683,271 +3325,268 @@
             "prefixLength": 0,
             "interf": 0,
             "nexthop": "185.1.1.1"
-          },
-          {
-            "dst": "::",
-            "prefixLength": 0,
-            "interf": 0,
-            "nexthop": "2001:db8:1:1::1"
           }
         ]
       },
       "fs": {
         "type": "dir",
-        "name": "/",
-        "ctime": 0,
-        "mtime": 0,
+        "name": "",
+        "ctime": 1781031786005,
+        "mtime": 1781031786005,
         "children": [
           {
             "type": "dir",
             "name": "etc",
-            "ctime": 0,
-            "mtime": 1779660092198,
-            "children": [
-              {
-                "type": "file",
-                "name": "httpd.conf",
-                "data": "{\n  \"port\": 80,\n  \"docRoot\": \"/var/www/\",\n  \"httpsEnabled\": false,\n  \"httpsPort\": 443,\n  \"certPath\": \"\",\n  \"autostart\": true\n}\n",
-                "binary": false,
-                "ctime": 0,
-                "mtime": 1779660092198
-              }
-            ]
-          },
-          {
-            "type": "dir",
-            "name": "var",
-            "ctime": 0,
-            "mtime": 0,
+            "ctime": 1781031786005,
+            "mtime": 1781041212924,
             "children": [
               {
                 "type": "dir",
-                "name": "www",
-                "ctime": 0,
-                "mtime": 0,
+                "name": "certs",
+                "ctime": 1781031786005,
+                "mtime": 1781031786005,
                 "children": [
                   {
-                    "type": "file",
-                    "name": "index.html",
-                    "data": "<!DOCTYPE html>\n<html lang=\"de\">\n<head><meta charset=\"utf-8\"><title>Example Corp</title></head>\n<body>\n<h1>Willkommen bei Example Corp</h1>\n<p>Ihr Cloud- und Hosting-Partner. Dieser Server laeuft im Rechenzentrum DC-Alpha und ist ueber den BGP-Backbone weltweit erreichbar.</p>\n<p>IPv4: 185.1.1.10 &nbsp;|&nbsp; IPv6: 2001:db8:1:1::10</p>\n<p>Kontakt: <a href=\"mailto:info@example.com\">info@example.com</a></p>\n</body>\n</html>",
-                    "binary": false,
-                    "ctime": 0,
-                    "mtime": 0
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "type": "dir",
-            "name": "home",
-            "ctime": 0,
-            "mtime": 0,
-            "children": []
-          }
-        ]
-      },
-      "dns": null,
-      "dhcpMode": {}
-    },
-    {
-      "kind": "PC",
-      "id": 601,
-      "name": "srv.example.com",
-      "x": 463.286923495206,
-      "y": 263.7414258410047,
-      "px": 625,
-      "py": 254.5,
-      "panelOpen": false,
-      "net": {
-        "name": "srv.example.com",
-        "forwarding": false,
-        "interfaces": [
-          {
-            "name": "eth0",
-            "ip": "185.1.1.20",
-            "prefixLength": 24,
-            "ip6": null,
-            "prefixLength6": 0,
-            "ip6LL": "fe80::a86c:f7ff:fe89:6904",
-            "raEnabled": false
-          }
-        ],
-        "tunnels": [],
-        "routes": [
-          {
-            "dst": "0.0.0.0",
-            "prefixLength": 0,
-            "interf": 0,
-            "nexthop": "185.1.1.1"
-          }
-        ]
-      },
-      "fs": {
-        "type": "dir",
-        "name": "/",
-        "ctime": 0,
-        "mtime": 0,
-        "children": [
-          {
-            "type": "dir",
-            "name": "home",
-            "ctime": 0,
-            "mtime": 0,
-            "children": []
-          },
-          {
-            "type": "dir",
-            "name": "etc",
-            "ctime": 0,
-            "mtime": 0,
-            "children": []
-          }
-        ]
-      },
-      "dns": null,
-      "dhcpMode": {}
-    },
-    {
-      "kind": "PC",
-      "id": 602,
-      "name": "www.betanet.de",
-      "x": 985.0911928093213,
-      "y": 349.3340148925781,
-      "px": 801,
-      "py": 254.5,
-      "panelOpen": false,
-      "net": {
-        "name": "www.betanet.de",
-        "forwarding": false,
-        "interfaces": [
-          {
-            "name": "eth0",
-            "ip": "185.2.1.10",
-            "prefixLength": 24,
-            "ip6": "2001:db8:2:1::10",
-            "prefixLength6": 64,
-            "ip6LL": "fe80::a847:f8ff:fe3a:da9d",
-            "raEnabled": false
-          }
-        ],
-        "tunnels": [],
-        "routes": [
-          {
-            "dst": "0.0.0.0",
-            "prefixLength": 0,
-            "interf": 0,
-            "nexthop": "185.2.1.1"
-          },
-          {
-            "dst": "::",
-            "prefixLength": 0,
-            "interf": 0,
-            "nexthop": "2001:db8:2:1::1"
-          }
-        ]
-      },
-      "fs": {
-        "type": "dir",
-        "name": "/",
-        "ctime": 0,
-        "mtime": 0,
-        "children": [
-          {
-            "type": "dir",
-            "name": "etc",
-            "ctime": 0,
-            "mtime": 1779660092198,
-            "children": [
-              {
-                "type": "file",
-                "name": "httpd.conf",
-                "data": "{\n  \"port\": 80,\n  \"docRoot\": \"/var/www/\",\n  \"httpsEnabled\": false,\n  \"httpsPort\": 443,\n  \"certPath\": \"\",\n  \"autostart\": true\n}\n",
-                "binary": false,
-                "ctime": 0,
-                "mtime": 1779660092198
-              },
-              {
-                "type": "file",
-                "name": "mail.conf",
-                "data": "{\n  \"mailDomain\": \"example.local\",\n  \"ports\": {\n    \"smtp\": 25,\n    \"pop3\": 110,\n    \"imap\": 143\n  },\n  \"tls\": {\n    \"enabled\": false,\n    \"smtps\": 465,\n    \"pop3s\": 995,\n    \"imaps\": 993,\n    \"certPath\": \"\"\n  },\n  \"users\": [],\n  \"autostart\": false\n}\n",
-                "binary": false,
-                "ctime": 1779654752733,
-                "mtime": 1779654755716
-              }
-            ]
-          },
-          {
-            "type": "dir",
-            "name": "var",
-            "ctime": 0,
-            "mtime": 1779654752733,
-            "children": [
-              {
-                "type": "dir",
-                "name": "www",
-                "ctime": 0,
-                "mtime": 0,
-                "children": [
-                  {
-                    "type": "file",
-                    "name": "index.html",
-                    "data": "<!DOCTYPE html>\n<html lang=\"de\">\n<head><meta charset=\"utf-8\"><title>BetaNet GmbH</title></head>\n<body>\n<h1>BetaNet GmbH &ndash; Ihr Internet-Provider</h1>\n<p>Willkommen auf der Website von BetaNet. Als ISP-Beta betreiben wir ein eigenes AS (AS65002) und sind ueber den Backbone mit dem Internet verbunden.</p>\n<p>IPv4: 185.2.1.10 &nbsp;|&nbsp; IPv6: 2001:db8:2:1::10</p>\n<p>E-Mail: <a href=\"mailto:support@betanet.de\">support@betanet.de</a> &nbsp;|&nbsp; Postfaecher: alice, bob, admin</p>\n</body>\n</html>",
-                    "binary": false,
-                    "ctime": 0,
-                    "mtime": 0
+                    "type": "dir",
+                    "name": "trusted",
+                    "ctime": 1781031786005,
+                    "mtime": 1781031786005,
+                    "children": []
                   }
                 ]
               },
               {
-                "type": "dir",
-                "name": "mail",
-                "ctime": 1779654752733,
-                "mtime": 1779654752733,
-                "children": [
-                  {
-                    "type": "dir",
-                    "name": "queue",
-                    "ctime": 1779654752733,
-                    "mtime": 1779654752733,
-                    "children": []
-                  }
-                ]
+                "type": "file",
+                "name": "dnsd.conf",
+                "data": "{\n  \"a\": [\n    {\n      \"name\": \"www.example.com\",\n      \"ip\": \"185.1.1.10\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"example.com\",\n      \"ip\": \"185.1.1.10\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"www.betanet.de\",\n      \"ip\": \"185.2.1.10\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"betanet.de\",\n      \"ip\": \"185.2.1.10\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"mail.betanet.de\",\n      \"ip\": \"185.2.1.20\",\n      \"ttl\": 60\n    }\n  ],\n  \"aaaa\": [\n    {\n      \"name\": \"www.example.com\",\n      \"ip\": \"2001:db8:1:1::10\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"example.com\",\n      \"ip\": \"2001:db8:1:1::10\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"www.betanet.de\",\n      \"ip\": \"2001:db8:2:1::10\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"betanet.de\",\n      \"ip\": \"2001:db8:2:1::10\",\n      \"ttl\": 60\n    }\n  ],\n  \"cname\": [],\n  \"mx\": [],\n  \"ns\": [],\n  \"mode\": \"authoritative\",\n  \"forwarderIp\": \"\",\n  \"autostart\": true\n}\n",
+                "binary": false,
+                "ctime": 1781031874493,
+                "mtime": 1781041212924
               }
             ]
           },
           {
             "type": "dir",
             "name": "home",
-            "ctime": 0,
-            "mtime": 0,
+            "ctime": 1781031786005,
+            "mtime": 1781031786005,
+            "children": [
+              {
+                "type": "file",
+                "name": "notes.txt",
+                "data": "hello vfs\n",
+                "binary": false,
+                "ctime": 1781031786005,
+                "mtime": 1781031786005
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "bin",
+            "ctime": 1781031786005,
+            "mtime": 1781031786005,
             "children": []
+          },
+          {
+            "type": "dir",
+            "name": "var",
+            "ctime": 1781031786005,
+            "mtime": 1781031786005,
+            "children": [
+              {
+                "type": "dir",
+                "name": "www",
+                "ctime": 1781031786005,
+                "mtime": 1781031786005,
+                "children": [
+                  {
+                    "type": "file",
+                    "name": "index.html",
+                    "data": "<!doctype html>\n<html>\n    <head>\n      <meta charset=\"utf-8\" />\n      <title>Hello from SimpleHTTPServer</title>\n    </head>\n    <body>\n      <h1>It works!</h1>\n    <p>Served from /var/www/index.html</p>\n    </body>\n</html>\n",
+                    "binary": false,
+                    "ctime": 1781031786005,
+                    "mtime": 1781031786005
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
       "dns": null,
-      "dhcpMode": {}
+      "dhcpMode": {},
+      "installedApps": [
+        "IPv4ConfigApp",
+        "TerminalApp",
+        "ExplorerApp",
+        "TextEditorApp",
+        "DNSServerApp"
+      ]
     },
     {
-      "kind": "PC",
-      "id": 603,
-      "name": "mail.betanet.de",
-      "x": 983.1297043005618,
-      "y": 252.42028760240797,
-      "px": 801,
-      "py": 254.5,
+      "kind": "Switch",
+      "id": 780,
+      "name": "SW-ISP-Beta",
+      "x": 833.2153320810938,
+      "y": 354.6347088303946,
+      "px": 870,
+      "py": 390,
+      "panelOpen": false,
+      "vlanEnabled": false,
+      "stpEnabled": false,
+      "stpBridgePriority": 32768,
+      "vlanPorts": [
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "Switch",
+      "id": 781,
+      "name": "SW-ISP-Gamma",
+      "x": 1598.4223536445454,
+      "y": 361.49119553828945,
+      "px": 1325,
+      "py": 390,
+      "panelOpen": false,
+      "vlanEnabled": false,
+      "stpEnabled": false,
+      "stpBridgePriority": 32768,
+      "vlanPorts": [
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "Computer",
+      "id": 782,
+      "name": "DHCP-Server ISP B",
+      "x": 617.8075059950042,
+      "y": 286.6958512480089,
+      "px": 1075,
+      "py": 214,
       "panelOpen": false,
       "net": {
-        "name": "mail.betanet.de",
+        "name": "DHCP-Server ISP B",
         "forwarding": false,
         "interfaces": [
           {
             "name": "eth0",
-            "ip": "185.2.1.20",
+            "ip": "185.2.0.2",
             "prefixLength": 24,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a851:b8ff:fe48:b171",
+            "ip6LL": "fe80::a86c:60ff:fe7f:1e2f",
+            "slaac": false,
             "raEnabled": false
           }
         ],
@@ -1957,13 +3596,13 @@
             "dst": "0.0.0.0",
             "prefixLength": 0,
             "interf": 0,
-            "nexthop": "185.2.1.1"
+            "nexthop": "185.2.0.1"
           }
         ]
       },
       "fs": {
         "type": "dir",
-        "name": "/",
+        "name": "",
         "ctime": 0,
         "mtime": 0,
         "children": [
@@ -1971,15 +3610,15 @@
             "type": "dir",
             "name": "etc",
             "ctime": 0,
-            "mtime": 1779660092198,
+            "mtime": 1781041212924,
             "children": [
               {
                 "type": "file",
-                "name": "mail.conf",
-                "data": "{\n  \"mailDomain\": \"example.local\",\n  \"ports\": {\n    \"smtp\": 25,\n    \"pop3\": 110,\n    \"imap\": 143\n  },\n  \"tls\": {\n    \"enabled\": false,\n    \"smtps\": 465,\n    \"pop3s\": 995,\n    \"imaps\": 993,\n    \"certPath\": \"\"\n  },\n  \"users\": [],\n  \"autostart\": true\n}\n",
+                "name": "dhcpd.conf",
+                "data": "{\n  \"rangeStart\": \"185.2.0.200\",\n  \"rangeEnd\": \"185.2.0.254\",\n  \"dns\": [\n    \"185.2.0.3\"\n  ],\n  \"gateway\": \"185.2.0.1\",\n  \"leaseTime\": 3600,\n  \"subnetMask\": \"255.255.255.0\",\n  \"serverId\": \"185.2.0.1\",\n  \"autostart\": true\n}\n",
                 "binary": false,
                 "ctime": 0,
-                "mtime": 1779660092198
+                "mtime": 1781041212924
               }
             ]
           },
@@ -1995,49 +3634,41 @@
             "name": "var",
             "ctime": 0,
             "mtime": 0,
-            "children": [
-              {
-                "type": "dir",
-                "name": "mail",
-                "ctime": 0,
-                "mtime": 1779654739048,
-                "children": [
-                  {
-                    "type": "dir",
-                    "name": "queue",
-                    "ctime": 1779654739048,
-                    "mtime": 1779654739048,
-                    "children": []
-                  }
-                ]
-              }
-            ]
+            "children": []
           }
         ]
       },
       "dns": null,
-      "dhcpMode": {}
+      "dhcpMode": {},
+      "installedApps": [
+        "IPv4ConfigApp",
+        "TerminalApp",
+        "ExplorerApp",
+        "TextEditorApp",
+        "DHCPServerApp"
+      ]
     },
     {
-      "kind": "PC",
-      "id": 604,
-      "name": "ns1 (DNS)",
-      "x": 1459.7870385230005,
-      "y": 361.4685485413024,
-      "px": 380.5,
-      "py": 73,
+      "kind": "Computer",
+      "id": 783,
+      "name": "DHCP-Server ISP C",
+      "x": 1361.4714597187738,
+      "y": 280.8194646700004,
+      "px": 1075,
+      "py": 214,
       "panelOpen": false,
       "net": {
-        "name": "ns1",
+        "name": "DHCP-Server ISP C",
         "forwarding": false,
         "interfaces": [
           {
             "name": "eth0",
-            "ip": "185.3.1.10",
+            "ip": "185.3.0.2",
             "prefixLength": 24,
-            "ip6": "2001:db8:3:1::10",
-            "prefixLength6": 64,
-            "ip6LL": "fe80::a875:f2ff:fe61:8a0a",
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a8cf:a8ff:fe97:7225",
+            "slaac": false,
             "raEnabled": false
           }
         ],
@@ -2047,19 +3678,13 @@
             "dst": "0.0.0.0",
             "prefixLength": 0,
             "interf": 0,
-            "nexthop": "185.3.1.1"
-          },
-          {
-            "dst": "::",
-            "prefixLength": 0,
-            "interf": 0,
-            "nexthop": "2001:db8:3:1::1"
+            "nexthop": "185.3.0.1"
           }
         ]
       },
       "fs": {
         "type": "dir",
-        "name": "/",
+        "name": "",
         "ctime": 0,
         "mtime": 0,
         "children": [
@@ -2067,15 +3692,97 @@
             "type": "dir",
             "name": "etc",
             "ctime": 0,
-            "mtime": 1779660092198,
+            "mtime": 1781041212925,
+            "children": [
+              {
+                "type": "file",
+                "name": "dhcpd.conf",
+                "data": "{\n  \"rangeStart\": \"185.3.0.200\",\n  \"rangeEnd\": \"185.3.0.254\",\n  \"dns\": [\n    \"185.3.0.3\"\n  ],\n  \"gateway\": \"185.3.0.1\",\n  \"leaseTime\": 3600,\n  \"subnetMask\": \"255.255.255.0\",\n  \"serverId\": \"185.3.0.1\",\n  \"autostart\": true\n}\n",
+                "binary": false,
+                "ctime": 0,
+                "mtime": 1781041212925
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "home",
+            "ctime": 0,
+            "mtime": 0,
+            "children": []
+          },
+          {
+            "type": "dir",
+            "name": "var",
+            "ctime": 0,
+            "mtime": 0,
+            "children": []
+          }
+        ]
+      },
+      "dns": null,
+      "dhcpMode": {},
+      "installedApps": [
+        "IPv4ConfigApp",
+        "TerminalApp",
+        "ExplorerApp",
+        "TextEditorApp",
+        "DHCPServerApp"
+      ]
+    },
+    {
+      "kind": "Computer",
+      "id": 784,
+      "name": "DNS ISP B",
+      "x": 618.6992954065595,
+      "y": 359.18112754420594,
+      "px": 615,
+      "py": 225,
+      "panelOpen": false,
+      "net": {
+        "name": "DNS ISP B",
+        "forwarding": false,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "185.2.0.3",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a8c7:2cff:feab:e729",
+            "slaac": false,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": [
+          {
+            "dst": "0.0.0.0",
+            "prefixLength": 0,
+            "interf": 0,
+            "nexthop": "185.2.0.1"
+          }
+        ]
+      },
+      "fs": {
+        "type": "dir",
+        "name": "",
+        "ctime": 0,
+        "mtime": 0,
+        "children": [
+          {
+            "type": "dir",
+            "name": "etc",
+            "ctime": 0,
+            "mtime": 1781041212925,
             "children": [
               {
                 "type": "file",
                 "name": "dnsd.conf",
-                "data": "{\n  \"a\": [\n    {\n      \"name\": \"www.example.com\",\n      \"ip\": \"185.1.1.10\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"example.com\",\n      \"ip\": \"185.1.1.10\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"srv.example.com\",\n      \"ip\": \"185.1.1.20\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"ftp.example.com\",\n      \"ip\": \"185.1.1.20\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"www.betanet.de\",\n      \"ip\": \"185.2.1.10\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"betanet.de\",\n      \"ip\": \"185.2.1.10\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"mail.betanet.de\",\n      \"ip\": \"185.2.1.20\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"ns1.example.com\",\n      \"ip\": \"185.3.1.10\",\n      \"ttl\": 300\n    },\n    {\n      \"name\": \"ns1.betanet.de\",\n      \"ip\": \"185.3.1.10\",\n      \"ttl\": 300\n    },\n    {\n      \"name\": \"ns2.betanet.de\",\n      \"ip\": \"185.3.1.20\",\n      \"ttl\": 300\n    },\n    {\n      \"name\": \"ns1\",\n      \"ip\": \"185.3.1.10\",\n      \"ttl\": 60\n    }\n  ],\n  \"aaaa\": [\n    {\n      \"name\": \"www.example.com\",\n      \"ip\": \"2001:db8:1:1::10\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"example.com\",\n      \"ip\": \"2001:db8:1:1::10\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"www.betanet.de\",\n      \"ip\": \"2001:db8:2:1::10\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"ns1\",\n      \"ip\": \"2001:db8:3:1::10\",\n      \"ttl\": 60\n    }\n  ],\n  \"cname\": [\n    {\n      \"name\": \"ftp.example.com\",\n      \"target\": \"srv.example.com\",\n      \"ttl\": 60\n    }\n  ],\n  \"mx\": [\n    {\n      \"name\": \"example.com\",\n      \"preference\": 10,\n      \"exchange\": \"mail.betanet.de\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"betanet.de\",\n      \"preference\": 10,\n      \"exchange\": \"mail.betanet.de\",\n      \"ttl\": 60\n    }\n  ],\n  \"ns\": [\n    {\n      \"name\": \"example.com\",\n      \"host\": \"ns1.example.com\",\n      \"ttl\": 300\n    },\n    {\n      \"name\": \"betanet.de\",\n      \"host\": \"ns1.betanet.de\",\n      \"ttl\": 300\n    }\n  ],\n  \"autostart\": true\n}\n",
+                "data": "{\n  \"a\": [],\n  \"aaaa\": [],\n  \"cname\": [],\n  \"mx\": [],\n  \"ns\": [],\n  \"mode\": \"recursive\",\n  \"forwarderIp\": \"198.41.0.4\",\n  \"autostart\": true\n}\n",
                 "binary": false,
                 "ctime": 0,
-                "mtime": 1779660092198
+                "mtime": 1781041212925
               }
             ]
           },
@@ -2085,32 +3792,47 @@
             "ctime": 0,
             "mtime": 0,
             "children": []
+          },
+          {
+            "type": "dir",
+            "name": "var",
+            "ctime": 0,
+            "mtime": 0,
+            "children": []
           }
         ]
       },
       "dns": null,
-      "dhcpMode": {}
+      "dhcpMode": {},
+      "installedApps": [
+        "IPv4ConfigApp",
+        "TerminalApp",
+        "ExplorerApp",
+        "TextEditorApp",
+        "DNSServerApp"
+      ]
     },
     {
-      "kind": "PC",
-      "id": 605,
-      "name": "ns2 (DNS)",
-      "x": 1462.528931517701,
-      "y": 244.19606114100742,
-      "px": 801,
-      "py": 254.5,
+      "kind": "Computer",
+      "id": 785,
+      "name": "DNS ISP C",
+      "x": 1362.3573311471816,
+      "y": 357.2218848348171,
+      "px": 1325,
+      "py": 225,
       "panelOpen": false,
       "net": {
-        "name": "ns2",
+        "name": "DNS ISP C",
         "forwarding": false,
         "interfaces": [
           {
             "name": "eth0",
-            "ip": "185.3.1.20",
+            "ip": "185.3.0.3",
             "prefixLength": 24,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a8f8:13ff:fed7:5a7d",
+            "ip6LL": "fe80::a829:86ff:febe:3fa5",
+            "slaac": false,
             "raEnabled": false
           }
         ],
@@ -2120,16 +3842,32 @@
             "dst": "0.0.0.0",
             "prefixLength": 0,
             "interf": 0,
-            "nexthop": "185.3.1.1"
+            "nexthop": "185.3.0.1"
           }
         ]
       },
       "fs": {
         "type": "dir",
-        "name": "/",
+        "name": "",
         "ctime": 0,
         "mtime": 0,
         "children": [
+          {
+            "type": "dir",
+            "name": "etc",
+            "ctime": 0,
+            "mtime": 1781041212925,
+            "children": [
+              {
+                "type": "file",
+                "name": "dnsd.conf",
+                "data": "{\n  \"a\": [],\n  \"aaaa\": [],\n  \"cname\": [],\n  \"mx\": [],\n  \"ns\": [],\n  \"mode\": \"recursive\",\n  \"forwarderIp\": \"198.41.0.4\",\n  \"autostart\": true\n}\n",
+                "binary": false,
+                "ctime": 0,
+                "mtime": 1781041212925
+              }
+            ]
+          },
           {
             "type": "dir",
             "name": "home",
@@ -2139,7 +3877,7 @@
           },
           {
             "type": "dir",
-            "name": "etc",
+            "name": "var",
             "ctime": 0,
             "mtime": 0,
             "children": []
@@ -2147,138 +3885,25 @@
         ]
       },
       "dns": null,
-      "dhcpMode": {}
+      "dhcpMode": {},
+      "installedApps": [
+        "IPv4ConfigApp",
+        "TerminalApp",
+        "ExplorerApp",
+        "TextEditorApp",
+        "DNSServerApp"
+      ]
     },
     {
       "kind": "TextBox",
-      "id": 732,
+      "id": 799,
       "name": "Textfeld",
-      "x": -125.6169467440817,
-      "y": 238.6856490997086,
+      "x": 713.2766696751519,
+      "y": 699.347175117687,
       "px": 220,
       "py": 120,
       "panelOpen": false,
-      "text": "# Provider A",
-      "showTitle": false
-    },
-    {
-      "kind": "TextBox",
-      "id": 734,
-      "name": "Textfeld",
-      "x": 617.7620247615113,
-      "y": 234.0391342623484,
-      "px": 220,
-      "py": 120,
-      "panelOpen": false,
-      "text": "# Provider B",
-      "showTitle": false
-    },
-    {
-      "kind": "TextBox",
-      "id": 736,
-      "name": "Textfeld",
-      "x": 1136.5725237879813,
-      "y": 232.49076613212094,
-      "px": 220,
-      "py": 120,
-      "panelOpen": false,
-      "text": "# Provider C",
-      "showTitle": false
-    },
-    {
-      "kind": "TextBox",
-      "id": 738,
-      "name": "Textfeld",
-      "x": 54.03267057151035,
-      "y": 467.89409312449186,
-      "px": 220,
-      "py": 120,
-      "panelOpen": false,
-      "text": "## Home 1",
-      "showTitle": false
-    },
-    {
-      "kind": "TextBox",
-      "id": 740,
-      "name": "Textfeld",
-      "x": 325.05593799540884,
-      "y": 470.9919920645283,
-      "px": 220,
-      "py": 120,
-      "panelOpen": false,
-      "text": "## Home 2",
-      "showTitle": false
-    },
-    {
-      "kind": "TextBox",
-      "id": 742,
-      "name": "Textfeld",
-      "x": 786.5709221262682,
-      "y": 474.08897692780954,
-      "px": 220,
-      "py": 120,
-      "panelOpen": false,
-      "text": "## Home 3",
-      "showTitle": false
-    },
-    {
-      "kind": "TextBox",
-      "id": 744,
-      "name": "Textfeld",
-      "x": 1336.3625478610659,
-      "y": 469.442919073609,
-      "px": 220,
-      "py": 120,
-      "panelOpen": false,
-      "text": "## Home 4",
-      "showTitle": false
-    },
-    {
-      "kind": "TextBox",
-      "id": 746,
-      "name": "Textfeld",
-      "x": 816.7706296410478,
-      "y": 407.4939839271084,
-      "px": 220,
-      "py": 120,
-      "panelOpen": false,
-      "text": "## Datacenter 2",
-      "showTitle": false
-    },
-    {
-      "kind": "TextBox",
-      "id": 748,
-      "name": "Textfeld",
-      "x": 266.9802728309988,
-      "y": 393.5564592118846,
-      "px": 220,
-      "py": 120,
-      "panelOpen": false,
-      "text": "## Datacenter 1",
-      "showTitle": false
-    },
-    {
-      "kind": "TextBox",
-      "id": 750,
-      "name": "Textfeld",
-      "x": 1316.2257538117885,
-      "y": 410.59219988939947,
-      "px": 220,
-      "py": 120,
-      "panelOpen": false,
-      "text": "## Datacenter 3",
-      "showTitle": false
-    },
-    {
-      "kind": "TextBox",
-      "id": 755,
-      "name": "Textfeld",
-      "x": -120.1968250542353,
-      "y": -20.72283939562297,
-      "px": 220,
-      "py": 120,
-      "panelOpen": false,
-      "text": "# Internet Backbone",
+      "text": "# Internet Demo — A Simplified Simulated Internet\n\n  ## Features\n  **Backbone:** Routers BB1–BB5 — eBGP mesh (AS65100–65104)\n  **ISPs:** ISP-Alpha (AS65001), ISP-Beta (AS65002), ISP-Gamma (AS65003) — BGP-peered with the backbone\n  **Home networks:** 4 home routers with DHCP, Wi-Fi SSIDs, and NAT — laptops connect wirelessly\n  **Data centers:** DC-Alpha (www.example.com), DC-Beta (www.betanet.de + e-mail), DC-Gamma (DNS ns1/ns2)\n  **Dual stack:** Backbone, ISPs, and servers are fully IPv4/IPv6 dual-stack — home routers obtain\n  an IPv6 prefix via DHCPv6-PD; home clients configure themselves via SLAAC\n\n  ## Try it out\n  Start the simulation and wait for the routing protocols to converge (~10 seconds)\n  **Ping:** Open a terminal on a home PC → ping www.example.com\n  **Website:** Open a website: www.example.com\n",
       "showTitle": false
     },
     {
@@ -2379,22 +4004,6 @@
     },
     {
       "kind": "Link",
-      "id": 712,
-      "a": 200,
-      "b": 300,
-      "portA": "eth2",
-      "portB": "wan0"
-    },
-    {
-      "kind": "Link",
-      "id": 713,
-      "a": 200,
-      "b": 301,
-      "portA": "eth3",
-      "portB": "wan0"
-    },
-    {
-      "kind": "Link",
       "id": 714,
       "a": 200,
       "b": 500,
@@ -2403,34 +4012,10 @@
     },
     {
       "kind": "Link",
-      "id": 715,
-      "a": 201,
-      "b": 302,
-      "portA": "eth1",
-      "portB": "wan0"
-    },
-    {
-      "kind": "Link",
       "id": 716,
       "a": 201,
       "b": 501,
       "portA": "eth2",
-      "portB": "sw0"
-    },
-    {
-      "kind": "Link",
-      "id": 717,
-      "a": 202,
-      "b": 303,
-      "portA": "eth2",
-      "portB": "wan0"
-    },
-    {
-      "kind": "Link",
-      "id": 718,
-      "a": 202,
-      "b": 502,
-      "portA": "eth3",
       "portB": "sw0"
     },
     {
@@ -2499,19 +4084,123 @@
     },
     {
       "kind": "Link",
-      "id": 727,
-      "a": 502,
-      "b": 604,
+      "id": 762,
+      "a": 757,
+      "b": 760,
+      "portA": "eth0",
+      "portB": "sw0"
+    },
+    {
+      "kind": "Link",
+      "id": 763,
+      "a": 760,
+      "b": 200,
+      "portA": "sw1",
+      "portB": "eth2"
+    },
+    {
+      "kind": "Link",
+      "id": 764,
+      "a": 760,
+      "b": 301,
+      "portA": "sw2",
+      "portB": "wan0"
+    },
+    {
+      "kind": "Link",
+      "id": 765,
+      "a": 300,
+      "b": 760,
+      "portA": "wan0",
+      "portB": "sw3"
+    },
+    {
+      "kind": "Link",
+      "id": 769,
+      "a": 767,
+      "b": 760,
+      "portA": "eth0",
+      "portB": "sw4"
+    },
+    {
+      "kind": "Link",
+      "id": 773,
+      "a": 100,
+      "b": 771,
+      "portA": "eth3",
+      "portB": "eth0"
+    },
+    {
+      "kind": "Link",
+      "id": 777,
+      "a": 775,
+      "b": 500,
+      "portA": "eth0",
+      "portB": "sw3"
+    },
+    {
+      "kind": "Link",
+      "id": 790,
+      "a": 201,
+      "b": 780,
+      "portA": "eth1",
+      "portB": "sw0"
+    },
+    {
+      "kind": "Link",
+      "id": 791,
+      "a": 780,
+      "b": 782,
       "portA": "sw1",
       "portB": "eth0"
     },
     {
       "kind": "Link",
-      "id": 728,
-      "a": 502,
-      "b": 605,
+      "id": 792,
+      "a": 780,
+      "b": 784,
       "portA": "sw2",
       "portB": "eth0"
+    },
+    {
+      "kind": "Link",
+      "id": 793,
+      "a": 780,
+      "b": 302,
+      "portA": "sw3",
+      "portB": "wan0"
+    },
+    {
+      "kind": "Link",
+      "id": 794,
+      "a": 202,
+      "b": 781,
+      "portA": "eth2",
+      "portB": "sw0"
+    },
+    {
+      "kind": "Link",
+      "id": 795,
+      "a": 781,
+      "b": 783,
+      "portA": "sw1",
+      "portB": "eth0"
+    },
+    {
+      "kind": "Link",
+      "id": 796,
+      "a": 781,
+      "b": 785,
+      "portA": "sw2",
+      "portB": "eth0"
+    },
+    {
+      "kind": "Link",
+      "id": 797,
+      "a": 781,
+      "b": 303,
+      "portA": "sw3",
+      "portB": "wan0"
     }
   ]
 }
