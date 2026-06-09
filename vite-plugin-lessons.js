@@ -10,6 +10,135 @@ import markdownItContainer from "markdown-it-container";
 const SRC_DIR = "lessons";
 const OUT_DIR = "public/lessons";
 
+// ── Quiz pre-processing ────────────────────────────────────────
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function safeAttr(jsonStr) {
+  return jsonStr.replace(/'/g, "&#39;");
+}
+
+function renderQuizShort(id, content) {
+  const lines = content.split("\n");
+  const questionLines = [], answers = [];
+  for (const line of lines) {
+    if (line.startsWith("= ")) answers.push(line.slice(2).trim().toLowerCase());
+    else if (line.trim()) questionLines.push(line);
+  }
+  const answersAttr = safeAttr(JSON.stringify(answers));
+  return [
+    `<div class="quiz-block quiz-short" data-quiz-id="${id}" data-type="short" data-answers='${answersAttr}'>`,
+    `<p class="quiz-question">${escHtml(questionLines.join(" ").trim())}</p>`,
+    `<div class="quiz-input-row">`,
+    `<input type="text" class="quiz-input" placeholder="Antwort …" autocomplete="off" spellcheck="false">`,
+    `<span class="quiz-feedback" aria-hidden="true"></span>`,
+    `</div></div>`,
+  ].join("\n");
+}
+
+function renderQuizMC(id, content) {
+  const lines = content.split("\n");
+  const questionLines = [], options = [];
+  for (const line of lines) {
+    const mC = line.match(/^-\s+\[x\]\s+(.*)/i);
+    const mW = line.match(/^-\s+\[ \]\s+(.*)/);
+    if (mC) options.push({ text: mC[1].trim(), correct: true });
+    else if (mW) options.push({ text: mW[1].trim(), correct: false });
+    else if (line.trim()) questionLines.push(line);
+  }
+  const optHtml = options
+    .map(o => `<li><button class="quiz-option" data-correct="${o.correct}">${escHtml(o.text)}</button></li>`)
+    .join("\n");
+  return [
+    `<div class="quiz-block quiz-mc" data-quiz-id="${id}" data-type="mc">`,
+    `<p class="quiz-question">${escHtml(questionLines.join(" ").trim())}</p>`,
+    `<ul class="quiz-options">${optHtml}</ul>`,
+    `</div>`,
+  ].join("\n");
+}
+
+function renderQuizFill(id, content) {
+  const parts = content.split(/(\{[^}]+\})/g);
+  let fillHtml = "";
+  for (const part of parts) {
+    if (part.startsWith("{") && part.endsWith("}")) {
+      const variants = part.slice(1, -1).split("|").map(v => v.trim().toLowerCase());
+      const answersAttr = safeAttr(JSON.stringify(variants));
+      const size = Math.max(...variants.map(v => v.length), 4) + 2;
+      fillHtml += `<span class="quiz-gap"><input type="text" class="quiz-gap-input" data-answers='${answersAttr}' placeholder="…" size="${size}" autocomplete="off" spellcheck="false"><span class="quiz-feedback" aria-hidden="true"></span></span>`;
+    } else {
+      fillHtml += escHtml(part).replace(/\n/g, " ");
+    }
+  }
+  return [
+    `<div class="quiz-block quiz-fill" data-quiz-id="${id}" data-type="fill">`,
+    `<p class="quiz-fill-text">${fillHtml}</p>`,
+    `</div>`,
+  ].join("\n");
+}
+
+function renderQuizMatch(id, content) {
+  const pairs = [];
+  for (const line of content.split("\n")) {
+    const m = line.match(/^(.+?)\s*->\s*(.+)$/);
+    if (m) pairs.push({ term: m[1].trim(), explanation: m[2].trim() });
+  }
+  const explanationsAttr = safeAttr(JSON.stringify(pairs.map(p => p.explanation)));
+  const termRows = pairs
+    .map((p, i) =>
+      `<div class="quiz-match-row"><span class="quiz-match-term">${escHtml(p.term)}</span><div class="quiz-match-dropzone" data-correct-idx="${i}"></div></div>`
+    )
+    .join("\n");
+  return [
+    `<div class="quiz-block quiz-match" data-quiz-id="${id}" data-type="match" data-explanations='${explanationsAttr}'>`,
+    `<div class="quiz-match-layout">`,
+    `<div class="quiz-match-terms">${termRows}</div>`,
+    `<div class="quiz-match-pool"></div>`,
+    `</div></div>`,
+  ].join("\n");
+}
+
+function renderEvaluateButton(ids, label) {
+  return [
+    `<div class="quiz-evaluate-wrap">`,
+    `<button class="quiz-evaluate-btn" data-quiz-ids="${ids.join(",")}">${escHtml(label)}</button>`,
+    `<span class="quiz-evaluate-summary"></span>`,
+    `</div>`,
+  ].join("\n");
+}
+
+function processQuizBlocks(src) {
+  let counter = 0;
+  const pending = [];
+  return src.replace(
+    /:::quiz\s+(\w+)\s*\n([\s\S]*?):::|:::evaluate\s*\n([\s\S]*?):::/gm,
+    (match, subtype, quizContent, evalContent) => {
+      if (subtype !== undefined) {
+        const id = `q${++counter}`;
+        pending.push(id);
+        const content = (quizContent || "").trim();
+        switch (subtype) {
+          case "short": return renderQuizShort(id, content);
+          case "mc":    return renderQuizMC(id, content);
+          case "fill":  return renderQuizFill(id, content);
+          case "match": return renderQuizMatch(id, content);
+          default:      return match;
+        }
+      } else {
+        const ids = pending.splice(0);
+        const label = (evalContent || "").trim() || "Antworten prüfen";
+        return renderEvaluateButton(ids, label);
+      }
+    }
+  );
+}
+
 /**
  * Read display name and lessons.noLessons message from all locale files.
  * Returns a map of locale code → { name, noLessons }.
@@ -252,6 +381,9 @@ function renderChildrenSection(node) {
 function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "") {
   let src = fs.readFileSync(srcFile, "utf8");
 
+  // ── Pre-process :::quiz / :::evaluate blocks ──────────────────
+  src = processQuizBlocks(src);
+
   // ── Pre-process :::sim blocks ──────────────────────────────────
   // Syntax:
   //   :::sim
@@ -449,6 +581,8 @@ function buildLessons(root) {
   const fallbackMsg = localeInfo["en"]?.noLessons ?? "No lessons available yet. 😔";
   fs.mkdirSync(outDir, { recursive: true });
   if (fs.existsSync(cssPath)) fs.copyFileSync(cssPath, path.join(outDir, "_style.css"));
+  const quizJsPath = path.join(srcDir, "_quiz.js");
+  if (fs.existsSync(quizJsPath)) fs.copyFileSync(quizJsPath, path.join(outDir, "_quiz.js"));
 
   const builtLangs = [];
 
