@@ -1668,6 +1668,17 @@ export class IPStack extends Observable {
                 r6c.auto = true;
                 r6c.source = "connected";
                 this.routingTable.push(r6c);
+
+                if (itf.slaac && itf._slaacRouter instanceof IPAddress) {
+                    const r6d = new Route();
+                    r6d.dst = IPAddress.fromString("::");
+                    r6d.prefixLength = 0;
+                    r6d.interf = i;
+                    r6d.nexthop = itf._slaacRouter;
+                    r6d.auto = true;
+                    r6d.source = "slaac";
+                    this.routingTable.push(r6d);
+                }
             }
 
 
