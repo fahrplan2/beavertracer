@@ -1333,5 +1333,6 @@ export default {
   "app.terminal.commands.help.tldr.desc": "Показване на всички налични команди",
   "app.terminal.commands.help.tldr.ex.basic": "Отваряне на общ преглед на командите",
   "app.terminal.commands.man.tldr.desc": "Показване на бърза справка за команда",
-  "app.terminal.commands.man.tldr.ex.basic": "Търсене на помощ за команда"
+  "app.terminal.commands.man.tldr.ex.basic": "Търсене на помощ за команда",
+  "app.terminal.commands.help.hint": "За помощ по определена команда: man <command>"
 };

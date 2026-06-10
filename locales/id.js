@@ -1333,5 +1333,6 @@ export default {
   "app.terminal.commands.help.tldr.desc": "Tampilkan semua perintah yang tersedia",
   "app.terminal.commands.help.tldr.ex.basic": "Buka ringkasan perintah",
   "app.terminal.commands.man.tldr.desc": "Tampilkan referensi cepat untuk sebuah perintah",
-  "app.terminal.commands.man.tldr.ex.basic": "Cari bantuan untuk sebuah perintah"
+  "app.terminal.commands.man.tldr.ex.basic": "Cari bantuan untuk sebuah perintah",
+  "app.terminal.commands.help.hint": "Untuk bantuan tentang perintah spesifik: man <command>"
 };
