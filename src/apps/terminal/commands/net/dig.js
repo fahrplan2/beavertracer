@@ -30,7 +30,7 @@ export const dig = {
     let qtypeStr = "";        // A, MX, NS...
     let short = false;
 
-    let timeoutMs = SimTimer.DNS_TIMEOUT_MS;
+    let timeoutMs = SimTimer.DNS_RESOLVE_TIMEOUT_MS;
     let tries = 1;
     let port = 53;
 

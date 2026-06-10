@@ -992,12 +992,6 @@ export class HomeRouter extends SimulatedObject {
      * @param {EthernetFrame} frame
      */
     _handleWanIpv6(ipv6, frame) {
-        // Learn WAN IPv6 default gateway from first link-local source seen
-        const srcBytes = ipv6.src.toUInt8();
-        if (!this._wanGw6 && srcBytes[0] === 0xfe && srcBytes[1] === 0x80) {
-            this._wanGw6 = srcBytes.slice();
-        }
-
         const myLl = this._wanLinkLocalBytes();
         const dstB = ipv6.dst.toUInt8();
 
@@ -1013,7 +1007,13 @@ export class HomeRouter extends SimulatedObject {
         if (ipv6.nextHeader === 58) {
             try {
                 const icmp = ICMPv6Packet.fromBytes(ipv6.payload);
-                if (icmp.type === 135) {
+                if (icmp.type === 134) {
+                    // RA: learn WAN default gateway from the router's link-local source address
+                    const srcB = ipv6.src.toUInt8();
+                    if (!this._wanGw6 && srcB[0] === 0xfe && srcB[1] === 0x80) {
+                        this._wanGw6 = srcB.slice();
+                    }
+                } else if (icmp.type === 135) {
                     // NS for our WAN link-local → reply with NA
                     const target = icmp.ndpTarget;
                     if (target && target.toUInt8().every((b, i) => b === myLl[i])) {
@@ -1140,6 +1140,17 @@ export class HomeRouter extends SimulatedObject {
                 void this._runWanDhcpv6PdClient();
             }
         }, t1SimMs);
+    }
+
+    /** Send RS (type 133) from WAN link-local to ff02::2 to solicit an RA from the upstream router. */
+    _sendWanRouterSolicitation() {
+        const wanLl       = IPAddress.fromUInt8(this._wanLinkLocalBytes());
+        const allRouters  = IPAddress.fromString("ff02::2");
+        if (!allRouters) return;
+        const allRtrsMac  = new Uint8Array([0x33, 0x33, 0x00, 0x00, 0x00, 0x02]);
+        const rs = ICMPv6Packet.buildRS(this._wanMac);
+        const ipv6 = new IPv6Packet({ src: wanLl, dst: allRouters, nextHeader: 58, hopLimit: 255, payload: rs.pack(wanLl, allRouters) });
+        this.wan0.send(new EthernetFrame({ dstMac: allRtrsMac, srcMac: this._wanMac, etherType: 0x86DD, payload: ipv6.pack() }));
     }
 
     /** Send a DHCPv6 packet from WAN link-local to ff02::1:2 (all DHCP agents/servers). */
@@ -1349,7 +1360,7 @@ export class HomeRouter extends SimulatedObject {
         obj._applyWanConfig();
         obj._applyLanConfig();
         if (obj._wanMode === "dhcp") void obj._runWanDhcpClient();
-        if (obj._wanIp6Enabled) void obj._runWanDhcpv6PdClient();
+        if (obj._wanIp6Enabled) { obj._sendWanRouterSolicitation(); void obj._runWanDhcpv6PdClient(); }
         return obj;
     }
 
@@ -1528,7 +1539,7 @@ export class HomeRouter extends SimulatedObject {
             this._stopRaTimer();
             this._wanGw6 = null;
             this._wanNdpCache.clear(); this._lanNdpCache.clear();
-            if (this._wanIp6Enabled) void this._runWanDhcpv6PdClient();
+            if (this._wanIp6Enabled) { this._sendWanRouterSolicitation(); void this._runWanDhcpv6PdClient(); }
             this._mount(/** @type {HTMLElement} */ (this._panelBody));
         });
         host.appendChild(UILib.div("hr-btn-row", [applyBtn]));

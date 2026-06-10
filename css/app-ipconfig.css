@@ -69,9 +69,9 @@
 }
 
 .ipcfg-status {
+  font-family: "Hack", monospace;
   font-size: 0.8125rem;
-  color: var(--muted);
-  font-style: italic;
+  color: var(--text);
 }
 
 .ipcfg-mac-row {

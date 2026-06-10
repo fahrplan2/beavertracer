@@ -81,6 +81,10 @@ export class NetworkInterface extends Observable {
     /** Whether SLAAC auto-configuration is active on this interface */
     slaac = false;
 
+    /** Link-local address of the last RA sender; used as SLAAC default gateway. */
+    /** @type {IPAddress|null} */
+    _slaacRouter = null;
+
     /** Whether to send periodic Router Advertisements and respond to RS on this interface */
     raEnabled = false;
 
@@ -181,6 +185,7 @@ export class NetworkInterface extends Observable {
         this.ip6 = null;
         this._tentativeIp6 = null;
         this.slaac = false;
+        this._slaacRouter = null;
         this._dadPending.clear();
         this._dadConflicts.clear();
 
@@ -466,7 +471,7 @@ export class NetworkInterface extends Observable {
                 if (mac) this.neighborCache.set(key, mac);
             }
         } else if (icmp6.type === 134) { // Router Advertisement
-            if (this.slaac) this._handleRA(icmp6);
+            if (this.slaac) this._handleRA(icmp6, ipv6.src);
         }
     }
 
@@ -476,9 +481,11 @@ export class NetworkInterface extends Observable {
      * constructs global address = RA prefix[0..7] + EUI-64 from ip6LL[8..15],
      * then runs DAD before activating.
      * @param {ICMPv6Packet} icmp6
+     * @param {IPAddress} [routerSrc]
      */
-    _handleRA(icmp6) {
+    _handleRA(icmp6, routerSrc) {
         if (!this.ip6LL || this.ip6 != null) return;
+        if (routerSrc instanceof IPAddress) this._slaacRouter = routerSrc;
         const iid = this.ip6LL.toUInt8().slice(8, 16); // EUI-64 interface ID
 
         for (const pi of icmp6.getPrefixInfoOptions()) {

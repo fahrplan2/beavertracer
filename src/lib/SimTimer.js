@@ -60,8 +60,10 @@ export class SimTimer {
     /** IPv4 fragment reassembly timeout: how long to hold incomplete datagrams. */
     static REASSEMBLY_TIMEOUT_MS      = 30000;  // 6000 ticks
 
-    /** DNS query timeout. */
+    /** DNS query timeout (per single UDP attempt). */
     static DNS_TIMEOUT_MS           =  400;  //  80 ticks
+    /** DNS resolve timeout (total, including recursive hops). */
+    static DNS_RESOLVE_TIMEOUT_MS   = 5000;  // 1000 ticks
 
     /** Time to wait for a DHCP OFFER after DISCOVER. */
     static DHCP_OFFER_WAIT_MS       =  400;  //  80 ticks

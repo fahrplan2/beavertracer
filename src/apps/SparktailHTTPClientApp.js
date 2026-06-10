@@ -866,7 +866,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     try {
       dstIP = await withTimeout(
         resolveHostToIP(/** @type {string} */ (host), dnsResolve),
-        SimTimer.DNS_TIMEOUT_MS,
+        SimTimer.DNS_RESOLVE_TIMEOUT_MS,
         t("app.sparktail.label.dns")
       );
     } catch (e) {
@@ -1133,6 +1133,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
         const isCancelled = () => !this.loading || this.requestSeq !== seq;
         const inlined = await this._inlineResources(bodyText, url, isCancelled);
         if (isCancelled()) return;
+        this._setIframePolicy(true); // allow our injected nav script to run
         this.previewFrame.srcdoc = inlined;
       } else {
         this.previewFrame.srcdoc = internalErrorPage(
@@ -1295,7 +1296,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     try {
       dstIP = await withTimeout(
         resolveHostToIP(/** @type {string} */ (host), (n) => this.os.dns.resolveIP(n)),
-        SimTimer.DNS_TIMEOUT_MS, "dns"
+        SimTimer.DNS_RESOLVE_TIMEOUT_MS, "dns"
       );
     } catch { return null; }
     if (!dstIP || isCancelled()) return null;
@@ -1439,6 +1440,33 @@ export class SparktailHTTPClientApp extends LoggedProcess {
       placeholder.textContent = `[${el.tagName.toLowerCase()} blocked]`;
       el.replaceWith(placeholder);
     }
+
+    // Strip page scripts and inline handlers, then inject Sparktail's own
+    // link interceptor so clicks route through _navigate instead of navigating
+    // the iframe directly (which would break srcdoc and lose the page content).
+    for (const s of doc.querySelectorAll("script")) s.remove();
+    for (const el of doc.querySelectorAll("*")) {
+      for (const attr of [...el.attributes]) {
+        if (attr.name.startsWith("on")) el.removeAttribute(attr.name);
+      }
+    }
+    const nav = doc.createElement("script");
+    nav.textContent = `(function(){
+      document.addEventListener('click',function(e){
+        var a=e.target.closest('a[href]');
+        if(!a)return;
+        var h=a.getAttribute('href');
+        if(!h||h.startsWith('javascript:'))return;
+        if(h==='#'||h[0]==='#'){
+          e.preventDefault();
+          if(h.length>1){var t=document.getElementById(h.slice(1))||document.querySelector('[name="'+h.slice(1)+'"]');if(t)t.scrollIntoView();}
+          return;
+        }
+        e.preventDefault();
+        parent.postMessage({__sparktail:true,type:'navigate',url:h},'*');
+      },true);
+    })();`;
+    (doc.head ?? doc.body ?? doc.documentElement).prepend(nav);
 
     if (isCancelled()) return html;
     return "<!doctype html>\n" + doc.documentElement.outerHTML;
