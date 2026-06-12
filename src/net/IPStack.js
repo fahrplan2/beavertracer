@@ -1461,6 +1461,8 @@ export class IPStack extends Observable {
      * @returns {IPAddress}
      */
     _pickSrcIpV6(dstIp) {
+        if (this._isLoopback(dstIp)) return IPAddress.fromString("::1");
+
         const dstBytes = dstIp.toUInt8();
         const isLL = (dstBytes[0] === 0xfe && (dstBytes[1] & 0xc0) === 0x80);
 
