@@ -1367,5 +1367,6 @@ export default {
   "app.terminal.commands.help.tldr.desc": "Afficher toutes les commandes disponibles",
   "app.terminal.commands.help.tldr.ex.basic": "Ouvrir l'aperçu des commandes",
   "app.terminal.commands.man.tldr.desc": "Afficher une référence rapide pour une commande",
-  "app.terminal.commands.man.tldr.ex.basic": "Consulter l'aide pour une commande"
+  "app.terminal.commands.man.tldr.ex.basic": "Consulter l'aide pour une commande",
+  "app.terminal.commands.help.hint": "Pour obtenir de l'aide sur une commande spécifique : man <command>"
 };

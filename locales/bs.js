@@ -1333,5 +1333,6 @@ export default {
   "app.terminal.commands.help.tldr.desc": "Prikaži sve dostupne naredbe",
   "app.terminal.commands.help.tldr.ex.basic": "Otvori pregled naredbi",
   "app.terminal.commands.man.tldr.desc": "Prikaži brzi pregled naredbe",
-  "app.terminal.commands.man.tldr.ex.basic": "Potraži pomoć za naredbu"
+  "app.terminal.commands.man.tldr.ex.basic": "Potraži pomoć za naredbu",
+  "app.terminal.commands.help.hint": "Za pomoć za određenu naredbu: man <command>"
 };

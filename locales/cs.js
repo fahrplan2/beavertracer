@@ -1333,5 +1333,6 @@ export default {
   "app.terminal.commands.help.tldr.desc": "Zobrazit všechny dostupné příkazy",
   "app.terminal.commands.help.tldr.ex.basic": "Otevřít přehled příkazů",
   "app.terminal.commands.man.tldr.desc": "Zobrazit stručný přehled pro příkaz",
-  "app.terminal.commands.man.tldr.ex.basic": "Vyhledat nápovědu pro příkaz"
+  "app.terminal.commands.man.tldr.ex.basic": "Vyhledat nápovědu pro příkaz",
+  "app.terminal.commands.help.hint": "Pro nápovědu ke konkrétnímu příkazu: man <command>"
 };

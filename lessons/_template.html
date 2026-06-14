@@ -15,7 +15,7 @@
   })();
   </script>
 </head>
-<body>
+<body data-quiz-result-one="{{quiz.result.one}}" data-quiz-result-other="{{quiz.result.other}}">
   <header class="lesson-header">
     <div class="lesson-header-inner">
       <a href="../../" class="lesson-header-logo" target="_blank">
@@ -44,6 +44,7 @@
   <footer class="lesson-footer">
     BeaverTracer – Netzwerksimulation für den Unterricht
   </footer>
+  <script src="../_quiz.js"></script>
   <script>
   (function(){
     var btn = document.getElementById('themeToggle');
