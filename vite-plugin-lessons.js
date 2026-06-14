@@ -36,7 +36,7 @@ function renderQuizShort(id, content) {
     `<div class="quiz-block quiz-short" data-quiz-id="${id}" data-type="short" data-answers='${answersAttr}'>`,
     `<p class="quiz-question">${escHtml(questionLines.join(" ").trim())}</p>`,
     `<div class="quiz-input-row">`,
-    `<input type="text" class="quiz-input" placeholder="Antwort …" autocomplete="off" spellcheck="false">`,
+    `<input type="text" class="quiz-input" placeholder="{{quiz.placeholder}}" autocomplete="off" spellcheck="false">`,
     `<span class="quiz-feedback" aria-hidden="true"></span>`,
     `</div></div>`,
   ].join("\n");
@@ -132,7 +132,7 @@ function processQuizBlocks(src) {
         }
       } else {
         const ids = pending.splice(0);
-        const label = (evalContent || "").trim() || "Antworten prüfen";
+        const label = (evalContent || "").trim() || "{{quiz.evaluate}}";
         return renderEvaluateButton(ids, label);
       }
     }
@@ -141,14 +141,21 @@ function processQuizBlocks(src) {
 
 /**
  * Read display name and lessons.noLessons message from all locale files.
- * Returns a map of locale code → { name, noLessons }.
+ * Returns a map of locale code → { name, noLessons, quiz }.
  * @param {string} localesDir
- * @returns {Record<string, { name: string, noLessons: string | null }>}
+ * @returns {Record<string, { name: string, noLessons: string | null, quiz: { placeholder: string, evaluate: string, resultOne: string, resultOther: string } }>}
  */
 function loadLocaleInfo(localesDir) {
-  /** @type {Record<string, { name: string, noLessons: string | null }>} */
+  /** @type {Record<string, { name: string, noLessons: string | null, quiz: { placeholder: string, evaluate: string, resultOne: string, resultOther: string } }>} */
   const info = {};
   if (!fs.existsSync(localesDir)) return info;
+
+  /** @param {string} src @param {string} key @returns {string | null} */
+  function extractKey(src, key) {
+    const escaped = key.replace(/\./g, "\\.").replace(/"/g, '\\"');
+    const mat = src.match(new RegExp(`"${escaped}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`));
+    return mat ? mat[1].replace(/\\n/g, "\n").replace(/\\"/g, '"').replace(/\\\\/g, "\\") : null;
+  }
 
   for (const file of fs.readdirSync(localesDir)) {
     if (!file.endsWith(".js")) continue;
@@ -160,14 +167,24 @@ function loadLocaleInfo(localesDir) {
       const rawName = nameMat ? nameMat[1] : code;
       const name = rawName.replace(/\s*\(translated by AI\)\s*/i, "").trim();
 
-      const msgMat = src.match(/"lessons\.noLessons"\s*:\s*"((?:[^"\\]|\\.)*)"/);
-      const noLessons = msgMat
-        ? msgMat[1].replace(/\\n/g, "\n").replace(/\\"/g, '"').replace(/\\\\/g, "\\")
-        : null;
+      const noLessons = extractKey(src, "lessons.noLessons");
 
-      info[code] = { name, noLessons };
+      info[code] = {
+        name,
+        noLessons,
+        quiz: {
+          placeholder: extractKey(src, "lessons.quiz.placeholder") ?? "…",
+          evaluate:    extractKey(src, "lessons.quiz.evaluate")    ?? "Check answers",
+          resultOne:   extractKey(src, "lessons.quiz.result.one")  ?? "{correct}/{total}",
+          resultOther: extractKey(src, "lessons.quiz.result.other") ?? "{correct}/{total}",
+        },
+      };
     } catch {
-      info[code] = { name: code.toUpperCase(), noLessons: null };
+      info[code] = {
+        name: code.toUpperCase(),
+        noLessons: null,
+        quiz: { placeholder: "…", evaluate: "Check answers", resultOne: "{correct}/{total}", resultOther: "{correct}/{total}" },
+      };
     }
   }
   return info;
@@ -377,8 +394,9 @@ function renderChildrenSection(node) {
  * @param {LessonNode} node
  * @param {{ prev?: {href:string,title:string}, next?: {href:string,title:string} }} nav
  * @param {string} sidebar
+ * @param {{ placeholder: string, evaluate: string, resultOne: string, resultOther: string }} quizI18n
  */
-function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "") {
+function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI18n = { placeholder: "…", evaluate: "Check answers", resultOne: "{correct}/{total}", resultOther: "{correct}/{total}" }) {
   let src = fs.readFileSync(srcFile, "utf8");
 
   // ── Pre-process :::quiz / :::evaluate blocks ──────────────────
@@ -484,7 +502,11 @@ function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "") {
   return templateHtml
     .replace(/\{\{title\}\}/g, title)
     .replace(/\{\{body\}\}/g, body)
-    .replace(/\{\{sidebar\}\}/g, sidebar);
+    .replace(/\{\{sidebar\}\}/g, sidebar)
+    .replace(/\{\{quiz\.placeholder\}\}/g, escHtml(quizI18n.placeholder))
+    .replace(/\{\{quiz\.evaluate\}\}/g, escHtml(quizI18n.evaluate))
+    .replace(/\{\{quiz\.result\.one\}\}/g, escHtml(quizI18n.resultOne))
+    .replace(/\{\{quiz\.result\.other\}\}/g, escHtml(quizI18n.resultOther));
 }
 
 /**
@@ -635,7 +657,7 @@ function buildLessons(root) {
       try {
         fs.writeFileSync(
           outFile,
-          renderLesson(path.join(langDir, node.file), templateHtml, node, nav, sidebar),
+          renderLesson(path.join(langDir, node.file), templateHtml, node, nav, sidebar, (localeInfo[lang] ?? localeInfo["en"])?.quiz),
           "utf8"
         );
         console.log(`[lessons] ✓ ${lang}/${node.file}`);

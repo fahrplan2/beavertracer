@@ -871,6 +871,11 @@ export default {
   "router.ospf.spf.run":        "SPF: {n} routes installed",
 
   "sim.lessons": "Lessons",
+
+  "lessons.quiz.placeholder":   "Answer …",
+  "lessons.quiz.evaluate":      "Check answers",
+  "lessons.quiz.result.one":    "{correct} of {total} point scored",
+  "lessons.quiz.result.other":  "{correct} of {total} points scored",
   "sim.common": "Common",
   "sim.new": "New",
   "sim.load": "Load",
