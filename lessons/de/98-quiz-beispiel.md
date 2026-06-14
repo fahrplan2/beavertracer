@@ -1,8 +1,87 @@
-# Quiz-Beispiele (Testseite)
+# Spielwiese — Markdown & Quiz (Testseite)
 
 [[toc]]
 
-Diese Seite dient zum Testen der interaktiven Fragetypen. Die Inhalte stammen aus Kapitel 4 (Layer 3 — Vermittlungsschicht).
+Diese Seite dient zum Testen von Markdown-Syntax und interaktiven Fragetypen.
+
+---
+
+## Markdown-Syntax
+
+### Textformatierung
+
+**Fett**, *kursiv*, ~~durchgestrichen~~, `Inline-Code`, und **_kombiniert_**.
+
+Normaler Absatz mit einem [Link auf eine andere Seite](01-einfuehrung.html) und einem [externen Link](https://www.beavertracer.eu).
+
+### Überschriften
+
+Die Ebenen H2–H4 erscheinen automatisch im Inhaltsverzeichnis (TOC).
+
+#### Das ist H4 — taucht nicht im TOC auf
+
+### Listen
+
+Ungeordnet:
+
+- Ethernet
+- IP
+- TCP
+  - HTTP
+  - SMTP
+
+Geordnet:
+
+1. Edit-Modus: Topologie aufbauen
+2. Run-Modus: Simulation starten
+3. Trace-Modus: Pakete analysieren
+
+### Tabelle
+
+| Protokoll | Schicht | Port |
+|-----------|---------|------|
+| HTTP      | 7       | 80   |
+| HTTPS     | 7       | 443  |
+| DNS       | 7       | 53   |
+| TCP       | 4       | —    |
+
+### Code
+
+Inline: `ping 192.168.0.1`
+
+Block:
+
+```
+$ ping 192.168.0.2
+PING 192.168.0.2: 56 data bytes
+64 bytes from 192.168.0.2: icmp_seq=0 ttl=64 time=0.4 ms
+```
+
+### Callouts
+
+:::note
+Das ist ein **note**-Callout — für neutrale Hinweise und ergänzende Informationen.
+:::
+
+:::tip
+Das ist ein **tip**-Callout — für nützliche Tipps und Empfehlungen.
+:::
+
+:::warning
+Das ist ein **warning**-Callout — für Warnungen, die Aufmerksamkeit erfordern.
+:::
+
+:::danger
+Das ist ein **danger**-Callout — für kritische Fehlerquellen.
+:::
+
+### Icons
+
+Font Awesome Solid: :fa-play: :fa-stop: :fa-desktop: :fa-shield-halved: :fa-wifi:
+
+Font Awesome Regular: :far-file: :far-circle:
+
+Gerätesymbole: :router: :switch:
 
 ---
 
