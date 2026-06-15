@@ -65,7 +65,7 @@ BeaverTracer ist ein Netzwerksimulator für den Unterricht. Er modelliert eine b
 <tr>
   <td>ARP</td><td>RFC 826</td>
   <td><span class="badge badge-full">Vollständig</span></td>
-  <td>HTYPE, PTYPE, SHA/SPA/THA/TPA, Request und Reply. Kein Gratuitous ARP, keine Probe/Announcement (RFC 5227).</td>
+  <td>HTYPE, PTYPE, SHA/SPA/THA/TPA, Request und Reply. Gratuitous ARP wird intern von VRRP beim Masterwechsel gesendet. Keine Probe/Announcement (RFC 5227).</td>
 </tr>
 <tr>
   <td>ICMPv4</td><td>RFC 792</td>
@@ -261,6 +261,11 @@ Dynamische Routing-Daemons laufen innerhalb von Router- und HomeRouter-Knoten.
   <td>BGPv4</td><td>RFC 4271, RFC 4760, RFC 5492</td>
   <td><span class="badge badge-partial">Teilweise</span></td>
   <td>OPEN, UPDATE, NOTIFICATION, KEEPALIVE. Pfadattribute: ORIGIN, AS_PATH, NEXT_HOP, MED, LOCAL_PREF, MP_REACH_NLRI, MP_UNREACH_NLRI. Multiprotokoll-Erweiterungen für IPv6 (AFI 2). Keine Routing-Policies, keine Community-Attribute, keine MD5-Authentifizierung, kein Route Reflection, vereinfachte FSM.</td>
+</tr>
+<tr>
+  <td>VRRP</td><td>RFC 3768 (v2)</td>
+  <td><span class="badge badge-partial">Teilweise</span></td>
+  <td>Vollständige Zustandsmaschine (INITIALIZE → MASTER / BACKUP) pro Gruppe. VRRPv2-Advertisement-PDU: Version, Typ, VRID, Priorität, Count IP, Auth Type (0), Advertisement Interval, Checksum, Virtual IP(s). Virtuelle MAC-Adresse (<code>00:00:5e:00:01:&lt;VRID&gt;</code>), Gratuitous ARP beim Masterwechsel, Master-Down-Timer (3 × Interval + Skew). Preemption konfigurierbar. Multicast auf 224.0.0.18, IP-Protokoll 112. Kein VRRPv3 (RFC 5798), keine IPv6-Unterstützung, keine Authentifizierung (Auth-Felder vorhanden, aber ignoriert), kein prioritätsbasiertes Tracking (Interface-Down senkt Priorität nicht automatisch).</td>
 </tr>
 </tbody>
 </table>
