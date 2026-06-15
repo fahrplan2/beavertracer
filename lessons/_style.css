@@ -76,7 +76,7 @@
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: "Trebuchet MS", "Gill Sans", Candara, "Segoe UI", sans-serif;
   font-size: 16px;
   line-height: 1.7;
 }
@@ -216,26 +216,27 @@ body {
 }
 
 /* ── Collapsible chapter groups ───────────────────────────────── */
-.lesson-sidebar-tree details {
+.lesson-sidebar-tree details,
+.lesson-sidebar-subtree details {
   /* no extra margin – li already provides spacing */
 }
 
-.lesson-sidebar-tree details > summary {
-  /* suppress the default browser triangle */
+.lesson-sidebar-tree details > summary,
+.lesson-sidebar-subtree details > summary {
   list-style: none;
   display: flex;
   align-items: center;
   gap: 0;
   cursor: pointer;
-  /* remove default marker in Safari/WebKit */
   -webkit-appearance: none;
 }
-.lesson-sidebar-tree details > summary::-webkit-details-marker {
+.lesson-sidebar-tree details > summary::-webkit-details-marker,
+.lesson-sidebar-subtree details > summary::-webkit-details-marker {
   display: none;
 }
 
-/* The toggle arrow sits before the link via ::before on summary */
-.lesson-sidebar-tree details > summary::before {
+.lesson-sidebar-tree details > summary::before,
+.lesson-sidebar-subtree details > summary::before {
   content: "›";
   display: inline-block;
   width: 16px;
@@ -245,31 +246,21 @@ body {
   line-height: 1;
   color: var(--muted);
   transition: transform 150ms ease;
-  /* vertically align with the link text */
   align-self: flex-start;
   padding-top: 4px;
 }
-.lesson-sidebar-tree details[open] > summary::before {
+.lesson-sidebar-tree details[open] > summary::before,
+.lesson-sidebar-subtree details[open] > summary::before {
   transform: rotate(90deg);
 }
 
-/* The <a> inside summary should fill the rest of the row */
-.lesson-sidebar-tree details > summary > a {
+.lesson-sidebar-tree details > summary > a,
+.lesson-sidebar-subtree details > summary > a {
   flex: 1;
   font-weight: 600;
   font-size: 0.85rem;
   color: var(--muted);
   padding: 4px 8px 4px 2px;
-}
-
-/* ── Children section ─────────────────────────────────────────── */
-.lesson-children {
-  margin-top: 40px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border);
-}
-.lesson-children h2 {
-  margin-bottom: 12px;
 }
 
 /* ── Chapter number in H1 ────────────────────────────────────── */
@@ -291,37 +282,19 @@ body {
 .lesson-article a { color: var(--primary); text-decoration: underline; text-underline-offset: 2px; }
 .lesson-article a:hover { opacity: 0.8; }
 
+.lesson-article a[href^="http"]::after {
+  content: "\f08e";
+  font-family: "Font Awesome 7 Free", "Font Awesome 5 Free", "FontAwesome";
+  font-weight: 900;
+  font-size: 0.7em;
+  margin-left: 0.3em;
+  vertical-align: 0.1em;
+}
+
 .lesson-article ul,
 .lesson-article ol { padding-left: 1.5em; margin-bottom: 16px; }
 .lesson-article li { margin-bottom: 4px; }
 
-/* ── Index list (language / lesson picker) ────────────────────── */
-.lesson-index-list {
-  list-style: none;
-  padding: 0;
-  margin-top: 16px;
-}
-.lesson-index-list li { margin-bottom: 0; }
-.lesson-index-list a {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  margin-bottom: 8px;
-  color: var(--text);
-  text-decoration: none;
-  background: var(--surface);
-  font-size: 0.95rem;
-  transition: border-color 120ms, background 120ms;
-}
-.lesson-index-list a::before { content: "→"; color: var(--muted); }
-.lesson-index-list a:hover {
-  border-color: var(--primary);
-  background: var(--bg);
-  color: var(--primary);
-}
 
 /* ── TOC ──────────────────────────────────────────────────────── */
 .lesson-toc {
@@ -424,10 +397,25 @@ body {
 
 /* ── Callout boxes (:::note / :::tip / :::warning / :::danger) ── */
 .callout {
+  position: relative;
+  overflow: hidden;
   padding: 12px 16px;
   margin: 16px 0;
   border-left: 4px solid;
   border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.callout::after {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 3.5rem;
+  line-height: 1;
+  font-family: "Font Awesome 7 Free", "Font Awesome 5 Free", "FontAwesome";
+  font-weight: 900;
+  opacity: 0.1;
+  pointer-events: none;
 }
 
 .callout-note {
@@ -435,24 +423,28 @@ body {
   background: #eff6ff;
   color: #1e3a5f;
 }
+.callout-note::after    { content: "\f05a"; color: #2563eb; }
 
 .callout-tip {
   border-color: #16a34a;
   background: #f0fdf4;
   color: #14532d;
 }
+.callout-tip::after     { content: "\f0eb"; color: #16a34a; }
 
 .callout-warning {
   border-color: #d97706;
   background: #fffbeb;
   color: #78350f;
 }
+.callout-warning::after { content: "\f071"; color: #d97706; }
 
 .callout-danger {
   border-color: #dc2626;
   background: #fef2f2;
   color: #7f1d1d;
 }
+.callout-danger::after  { content: "\f057"; color: #dc2626; }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .callout-note    { background: #1e3a5f; color: #bfdbfe; }
@@ -516,7 +508,8 @@ body {
   background: var(--warning-soft);
   border-left: 4px solid var(--warning);
   color: var(--text);
-  padding: 12px 20px;
+  padding: 14px 20px;
+  margin-bottom: 28px;
   font-size: 0.9rem;
   line-height: 1.5;
 }
