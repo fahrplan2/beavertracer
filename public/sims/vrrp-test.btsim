@@ -1,0 +1,585 @@
+{
+  "_info": "This file was created by BeaverTracer, a network simulation tool. Open it with the BeaverTracer app or at https://beavertracer.eu/",
+  "version": 5,
+  "appVersion": "0.1.25-dev.20.d13371f",
+  "savedAt": "2026-06-15T19:23:40.649Z",
+  "tick": 0,
+  "objects": [
+    {
+      "kind": "TextBox",
+      "id": 1,
+      "name": "",
+      "x": -139.5,
+      "y": -43.5,
+      "px": 200,
+      "py": 200,
+      "panelOpen": false,
+      "text": "**VRRP-Test – Redundante Router**\n\nTopologie:\n  PC-Test (192.168.1.100/24, GW=192.168.1.254)\n      |\n  [SW-LAN] (192.168.1.0/24)\n   /        \\\nR1 (.1)    R2 (.2)   ← VRRP VRID=1, VIP=192.168.1.254\n   \\        /          R1 Prio 150 → MASTER\n  [SW-WAN] (10.0.0.0/24)\n      |\n  PC-Receiver (10.0.0.100/24, GW=10.0.0.254)\n                         ← VRRP VRID=2, VIP=10.0.0.254\n                           R1 Prio 150 → MASTER\n\n**Test-Szenario:**\n1. Simulation starten → R1 wird MASTER auf beiden Segmenten\n2. PC-Test: ping 10.0.0.100 (läuft über R1)\n3. Link R1↔SW-LAN oder R1↔SW-WAN trennen\n4. R2 übernimmt nach Master-Down-Timer (~1,5 s)\n5. PC-Test: ping 10.0.0.100 (läuft jetzt über R2)\n\nVRRP Log: Router VRRP-Tab → Log",
+      "showTitle": false
+    },
+    {
+      "kind": "Computer",
+      "id": 10,
+      "name": "PC-Test",
+      "x": 490,
+      "y": -42,
+      "px": 10,
+      "py": 390,
+      "panelOpen": false,
+      "net": {
+        "name": "PC-Test",
+        "forwarding": false,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "192.168.1.100",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a888:1cff:fe66:272e",
+            "slaac": false,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": [
+          {
+            "dst": "0.0.0.0",
+            "prefixLength": 0,
+            "interf": 0,
+            "nexthop": "192.168.1.254"
+          }
+        ]
+      },
+      "fs": {
+        "type": "dir",
+        "name": "/",
+        "ctime": 0,
+        "mtime": 1781551397167,
+        "children": [
+          {
+            "type": "dir",
+            "name": "home",
+            "ctime": 0,
+            "mtime": 0,
+            "children": []
+          },
+          {
+            "type": "dir",
+            "name": "etc",
+            "ctime": 1781551397167,
+            "mtime": 1781551397168,
+            "children": [
+              {
+                "type": "file",
+                "name": "mail.conf",
+                "data": "{\n  \"mailDomain\": \"example.local\",\n  \"ports\": {\n    \"smtp\": 25,\n    \"pop3\": 110,\n    \"imap\": 143\n  },\n  \"users\": []\n}",
+                "binary": false,
+                "ctime": 1781551397167,
+                "mtime": 1781551397167
+              },
+              {
+                "type": "file",
+                "name": "bitcoin.conf",
+                "data": "{\n  \"walletAddr\": \"1hKqNXU6T6cMFzYWY5HCQVvUjJ\",\n  \"seedAddr\": \"\"\n}",
+                "binary": false,
+                "ctime": 1781551397168,
+                "mtime": 1781551397168
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "var",
+            "ctime": 1781551397167,
+            "mtime": 1781551397167,
+            "children": [
+              {
+                "type": "dir",
+                "name": "mail",
+                "ctime": 1781551397167,
+                "mtime": 1781551397167,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "queue",
+                    "ctime": 1781551397167,
+                    "mtime": 1781551397167,
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "dns": null,
+      "dhcpMode": {}
+    },
+    {
+      "kind": "Switch",
+      "id": 20,
+      "name": "SW-LAN",
+      "x": 493,
+      "y": 112.5,
+      "px": 210,
+      "py": 390,
+      "panelOpen": false,
+      "vlanEnabled": false,
+      "stpMode": "off",
+      "stpEnabled": false,
+      "stpBridgePriority": 32768,
+      "vlanPorts": [
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "Router",
+      "id": 30,
+      "name": "R1",
+      "x": 352.5,
+      "y": 257,
+      "px": 310,
+      "py": 530,
+      "panelOpen": false,
+      "net": {
+        "name": "R1",
+        "forwarding": true,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "192.168.1.1",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a876:beff:fe31:586b",
+            "slaac": false,
+            "raEnabled": false
+          },
+          {
+            "name": "eth1",
+            "ip": "10.0.0.1",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a8d3:3bff:fece:2175",
+            "slaac": false,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": []
+      },
+      "rip": {
+        "enabled": false,
+        "passive": []
+      },
+      "ripng": {
+        "enabled": false,
+        "passive": []
+      },
+      "bgp": {
+        "enabled": false,
+        "localAS": 0,
+        "routerId": "",
+        "peers": []
+      },
+      "ospf": {
+        "enabled": false,
+        "passive": [],
+        "routerIdOverride": null,
+        "interfaceAreas": {}
+      },
+      "vrrp": {
+        "groups": [
+          {
+            "ifIndex": 0,
+            "vrid": 1,
+            "virtualIP": "192.168.1.254",
+            "priority": 150,
+            "advIntervalMs": 500,
+            "preempt": true
+          },
+          {
+            "ifIndex": 1,
+            "vrid": 2,
+            "virtualIP": "10.0.0.254",
+            "priority": 150,
+            "advIntervalMs": 500,
+            "preempt": true
+          }
+        ]
+      },
+      "pd6": {
+        "enabled": false,
+        "pool": "2001:db8:100::",
+        "poolLength": 48,
+        "delegatedLength": 56,
+        "leaseTime": 3600,
+        "clientEnabled": false,
+        "clientIfIndex": 0
+      }
+    },
+    {
+      "kind": "Router",
+      "id": 31,
+      "name": "R2",
+      "x": 640.5,
+      "y": 258.5,
+      "px": 450,
+      "py": 530,
+      "panelOpen": false,
+      "net": {
+        "name": "R2",
+        "forwarding": true,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "192.168.1.2",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a8cb:31ff:fed7:ae7",
+            "slaac": false,
+            "raEnabled": false
+          },
+          {
+            "name": "eth1",
+            "ip": "10.0.0.2",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a8f1:4fff:fe18:7a2b",
+            "slaac": false,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": []
+      },
+      "rip": {
+        "enabled": false,
+        "passive": []
+      },
+      "ripng": {
+        "enabled": false,
+        "passive": []
+      },
+      "bgp": {
+        "enabled": false,
+        "localAS": 0,
+        "routerId": "",
+        "peers": []
+      },
+      "ospf": {
+        "enabled": false,
+        "passive": [],
+        "routerIdOverride": null,
+        "interfaceAreas": {}
+      },
+      "vrrp": {
+        "groups": [
+          {
+            "ifIndex": 0,
+            "vrid": 1,
+            "virtualIP": "192.168.1.254",
+            "priority": 100,
+            "advIntervalMs": 500,
+            "preempt": true
+          },
+          {
+            "ifIndex": 1,
+            "vrid": 2,
+            "virtualIP": "10.0.0.254",
+            "priority": 100,
+            "advIntervalMs": 500,
+            "preempt": true
+          }
+        ]
+      },
+      "pd6": {
+        "enabled": false,
+        "pool": "2001:db8:100::",
+        "poolLength": 48,
+        "delegatedLength": 56,
+        "leaseTime": 3600,
+        "clientEnabled": false,
+        "clientIfIndex": 0
+      }
+    },
+    {
+      "kind": "Switch",
+      "id": 40,
+      "name": "SW-WAN",
+      "x": 496.5,
+      "y": 399,
+      "px": 550,
+      "py": 390,
+      "panelOpen": false,
+      "vlanEnabled": false,
+      "stpMode": "off",
+      "stpEnabled": false,
+      "stpBridgePriority": 32768,
+      "vlanPorts": [
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "Computer",
+      "id": 50,
+      "name": "PC-Receiver",
+      "x": 498.5,
+      "y": 545.5,
+      "px": 750,
+      "py": 390,
+      "panelOpen": false,
+      "net": {
+        "name": "PC-Receiver",
+        "forwarding": false,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "10.0.0.100",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a806:75ff:fe26:345a",
+            "slaac": false,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": [
+          {
+            "dst": "0.0.0.0",
+            "prefixLength": 0,
+            "interf": 0,
+            "nexthop": "10.0.0.254"
+          }
+        ]
+      },
+      "fs": {
+        "type": "dir",
+        "name": "/",
+        "ctime": 0,
+        "mtime": 1781551397172,
+        "children": [
+          {
+            "type": "dir",
+            "name": "home",
+            "ctime": 0,
+            "mtime": 0,
+            "children": []
+          },
+          {
+            "type": "dir",
+            "name": "etc",
+            "ctime": 1781551397172,
+            "mtime": 1781551397173,
+            "children": [
+              {
+                "type": "file",
+                "name": "mail.conf",
+                "data": "{\n  \"mailDomain\": \"example.local\",\n  \"ports\": {\n    \"smtp\": 25,\n    \"pop3\": 110,\n    \"imap\": 143\n  },\n  \"users\": []\n}",
+                "binary": false,
+                "ctime": 1781551397172,
+                "mtime": 1781551397172
+              },
+              {
+                "type": "file",
+                "name": "bitcoin.conf",
+                "data": "{\n  \"walletAddr\": \"17NfzvkqCkN5X4LkrRRzMKA3j7\",\n  \"seedAddr\": \"\"\n}",
+                "binary": false,
+                "ctime": 1781551397173,
+                "mtime": 1781551397173
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "var",
+            "ctime": 1781551397172,
+            "mtime": 1781551397172,
+            "children": [
+              {
+                "type": "dir",
+                "name": "mail",
+                "ctime": 1781551397172,
+                "mtime": 1781551397172,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "queue",
+                    "ctime": 1781551397172,
+                    "mtime": 1781551397172,
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "dns": null,
+      "dhcpMode": {}
+    },
+    {
+      "kind": "Link",
+      "id": 60,
+      "a": 10,
+      "b": 20,
+      "portA": "eth0",
+      "portB": "sw0"
+    },
+    {
+      "kind": "Link",
+      "id": 61,
+      "a": 20,
+      "b": 30,
+      "portA": "sw1",
+      "portB": "eth0"
+    },
+    {
+      "kind": "Link",
+      "id": 62,
+      "a": 20,
+      "b": 31,
+      "portA": "sw2",
+      "portB": "eth0"
+    },
+    {
+      "kind": "Link",
+      "id": 63,
+      "a": 30,
+      "b": 40,
+      "portA": "eth1",
+      "portB": "sw0"
+    },
+    {
+      "kind": "Link",
+      "id": 64,
+      "a": 31,
+      "b": 40,
+      "portA": "eth1",
+      "portB": "sw1"
+    },
+    {
+      "kind": "Link",
+      "id": 65,
+      "a": 40,
+      "b": 50,
+      "portA": "sw2",
+      "portB": "eth0"
+    }
+  ]
+}

@@ -465,6 +465,11 @@ export class IPStack extends Observable {
                 this.accept(packet, recvIfIndex);
                 return;
             }
+            // Accept traffic destined to a VRRP virtual IP we currently own
+            if (itf.virtualIPs.has(dst.toString())) {
+                this.accept(packet, recvIfIndex);
+                return;
+            }
         }
 
         // --- Broadcast handling ---

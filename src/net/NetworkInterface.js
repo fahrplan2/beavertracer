@@ -51,6 +51,14 @@ export class NetworkInterface extends Observable {
      */
     neighborCache = new Map();
 
+    /**
+     * Virtual IPs managed by VRRP (or similar): ipKey -> virtualMAC.
+     * When this router is VRRP Master, ARP requests for these IPs are
+     * answered with the corresponding virtual MAC.
+     * @type {Map<string, Uint8Array>}
+     */
+    virtualIPs = new Map();
+
     /** @type {String} */
     name = '';
 
@@ -389,8 +397,16 @@ export class NetworkInterface extends Observable {
 
         // ARP request
         if (packet.oper === 1) {
+            const tpaKey = this._ipKey(tpa);
+            // Reply for virtual IPs (e.g. VRRP) with their virtual MAC
+            const vMac = this.virtualIPs.get(tpaKey);
+            if (vMac) {
+                this.neighborCache.set(spaKey, packet.sha);
+                this._doArpResponseVirtual(spa, packet.sha, tpa, vMac);
+                return;
+            }
             // If we are the target: learn sender and respond
-            if (this.ip.isV4() && this._ipKey(tpa) === this._ipKey(this.ip)) {
+            if (this.ip.isV4() && tpaKey === this._ipKey(this.ip)) {
                 this.neighborCache.set(spaKey, packet.sha);
                 this._doArpResponse(spa);
             }
@@ -768,6 +784,30 @@ export class NetworkInterface extends Observable {
             payload: packet.pack()
         });
 
+        this.port.send(frame);
+    }
+
+    /**
+     * ARP response using a virtual MAC/IP (for VRRP virtual addresses).
+     * @param {IPAddress} requesterIP sender IP to respond to
+     * @param {Uint8Array} requesterMAC sender MAC
+     * @param {IPAddress} virtualIP the virtual IP being queried
+     * @param {Uint8Array} virtualMac the virtual MAC to announce
+     */
+    _doArpResponseVirtual(requesterIP, requesterMAC, virtualIP, virtualMac) {
+        const packet = new ArpPacket({
+            htype: 1, ptype: 0x0800, hlen: 6, plen: 4, oper: 2,
+            sha: virtualMac,
+            spa: virtualIP.toUInt8(),
+            tha: requesterMAC,
+            tpa: requesterIP.toUInt8(),
+        });
+        const frame = new EthernetFrame({
+            dstMac: requesterMAC,
+            srcMac: virtualMac,
+            etherType: 0x0806,
+            payload: packet.pack(),
+        });
         this.port.send(frame);
     }
 

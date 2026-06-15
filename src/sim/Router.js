@@ -6,6 +6,7 @@ import { VLANSubInterface } from "../net/NetworkInterface.js";
 import { RIPDaemon } from "../net/RIPDaemon.js";
 import { BGPDaemon } from "../net/BGPDaemon.js";
 import { OSPFDaemon } from "../net/OSPFDaemon.js";
+import { VRRPDaemon } from "../net/VRRPDaemon.js";
 import { SimulatedObject } from "./SimulatedObject.js";
 import { PollTimer } from "../lib/PollTimer.js";
 import { simTimer, SimTimer } from "../lib/SimTimer.js";
@@ -152,6 +153,13 @@ export class Router extends SimulatedObject {
   /** @type {HTMLTextAreaElement|null} */ _ospfLogEl = null;
   _ospfPollTimer = new PollTimer();
 
+  /** @type {VRRPDaemon} */
+  vrrp;
+  /** @type {HTMLTextAreaElement|null} */ _vrrpLogEl = null;
+  /** @type {HTMLElement|null} */ _vrrpGroupsHost = null;
+  /** @type {HTMLElement|null} */ _vrrpStatusHost = null;
+  _vrrpPollTimer = new PollTimer();
+
   // ── DHCPv6-PD server ──────────────────────────────────────────────────────
   _pd6Enabled = false;
   /** @type {IPAddress|null} */ _pd6Pool = null;
@@ -186,6 +194,7 @@ export class Router extends SimulatedObject {
         this.ripng = new RIPDaemon(this.net, 6);
         this.bgp   = new BGPDaemon(this.net);
         this.ospf  = new OSPFDaemon(this.net);
+        this.vrrp  = new VRRPDaemon(this.net);
 
         /** @param {HTMLElement} body */
         this.onPanelCreated = (body) => {
@@ -203,6 +212,7 @@ export class Router extends SimulatedObject {
             ripng: this.ripng.toJSON(),
             bgp:   this.bgp.toJSON(),
             ospf:  this.ospf.toJSON(),
+            vrrp:  this.vrrp.toJSON(),
             pd6: {
                 enabled:         this._pd6Enabled,
                 pool:            this._pd6Pool?.toString() ?? "2001:db8:100::",
@@ -228,6 +238,8 @@ export class Router extends SimulatedObject {
         if (n.bgp)   obj.bgp.applyJSON(n.bgp);
         obj.ospf  = new OSPFDaemon(obj.net);
         if (n.ospf)  obj.ospf.applyJSON(n.ospf);
+        obj.vrrp  = new VRRPDaemon(obj.net);
+        if (n.vrrp)  obj.vrrp.applyJSON(n.vrrp);
         if (n.pd6) {
             obj._pd6Enabled         = !!n.pd6.enabled;
             if (typeof n.pd6.pool === "string") {
@@ -273,6 +285,7 @@ export class Router extends SimulatedObject {
             { id: "bgp",        label: t("router.bgp.tab")            },
             { id: "vpn",        label: t("router.vpn.tab")            },
             { id: "pd6",        label: t("router.pd6.tab")            },
+            { id: "vrrp",       label: "VRRP"                          },
         ], (id) => {
             ifSection.classList.toggle("hidden",    id !== "interfaces");
             routeSection.classList.toggle("hidden", id !== "routes-v4" && id !== "routes-v6");
@@ -281,6 +294,7 @@ export class Router extends SimulatedObject {
             ospfSection.classList.toggle("hidden",  id !== "ospf");
             vpnSection.classList.toggle("hidden",   id !== "vpn");
             pd6Section.classList.toggle("hidden",   id !== "pd6");
+            vrrpSection.classList.toggle("hidden",  id !== "vrrp");
             if (id === "routes-v4") { routeTitle.textContent = t("router.routingtable.ipv4"); this._selectedRouteFamily = 4; this._renderRoutes(); }
             if (id === "routes-v6") { routeTitle.textContent = t("router.routingtable.ipv6"); this._selectedRouteFamily = 6; this._renderRoutes(); }
         });
@@ -396,7 +410,11 @@ export class Router extends SimulatedObject {
         const pd6Section = UILib.div("hidden");
         this._buildDHCPv6PDSection(pd6Section);
 
-        outerContent.append(ifSection, routeSection, ripSection, bgpSection, ospfSection, vpnSection, pd6Section);
+        /* ================================ VRRP ================================ */
+        const vrrpSection = UILib.div("hidden");
+        this._buildVRRPSection(vrrpSection);
+
+        outerContent.append(ifSection, routeSection, ripSection, bgpSection, ospfSection, vpnSection, pd6Section, vrrpSection);
         setOuterActive("interfaces");
 
         /* ============================ Init ============================ */
@@ -2640,9 +2658,222 @@ export class Router extends SimulatedObject {
         iface.port.send(frame);
     }
 
+    /* ------------------------------ VRRP tab ------------------------------ */
+
+    /** @param {HTMLElement} host */
+    _buildVRRPSection(host) {
+        const { bar: innerBar, setActive: setInnerActive } = UILib.tabGroup([
+            { id: "config", label: t("router.vrrp.tab.config") },
+            { id: "status", label: t("router.vrrp.tab.status") },
+            { id: "log",    label: t("router.vrrp.tab.log")    },
+        ], (id) => {
+            configSection.classList.toggle("hidden", id !== "config");
+            statusSection.classList.toggle("hidden", id !== "status");
+            logSection.classList.toggle("hidden",    id !== "log");
+            if (id === "status") this._renderVRRPStatus();
+            if (id === "log")    this._renderVRRPLog();
+        });
+        host.appendChild(innerBar);
+
+        // ── Config ────────────────────────────────────────────────────────────
+        const configSection = UILib.div("");
+
+        const groupsHost = UILib.div("router-routes");
+        this._vrrpGroupsHost = groupsHost;
+
+        const addBtn = UILib.button(`+ ${t("router.vrrp.add")}`, null, { className: "router-if-save" });
+        const formHost = UILib.div("hidden");
+
+        // Inline form
+        const ifaceItems = this.net.interfaces.map((iface, idx) => ({ value: String(idx), label: iface.name }));
+        const ifSel     = UILib.select(ifaceItems);
+        const vridIn    = UILib.input({ value: "1", placeholder: "1-255" });
+        const vipIn     = UILib.input({ placeholder: "192.168.1.254" });
+        const prioIn    = UILib.input({ value: "100", placeholder: "1-254" });
+        const intIn     = UILib.input({ value: "1000", placeholder: "ms" });
+        const preemptCb = UILib.input({ type: "checkbox" });
+        preemptCb.checked = true;
+
+        const cancelBtn = UILib.button(t("router.vrrp.cancel"), () => {
+            formHost.classList.add("hidden");
+            addBtn.classList.remove("hidden");
+        });
+        const okBtn = UILib.button(t("router.vrrp.ok"), () => {
+            try {
+                const ifIndex = Number(ifSel.value);
+                const vrid    = Math.max(1, Math.min(255, parseInt(vridIn.value, 10)));
+                const vip     = vipIn.value.trim();
+                const prio    = Math.max(1, Math.min(254, parseInt(prioIn.value, 10)));
+                const intMs   = Math.max(100, parseInt(intIn.value, 10));
+                if (!vip || isNaN(vrid) || isNaN(prio) || isNaN(intMs)) return;
+                this.vrrp.addGroup({ ifIndex, vrid, virtualIP: vip, priority: prio, advIntervalMs: intMs, preempt: preemptCb.checked });
+                this.vrrp.start();
+                this._renderVRRPGroups();
+                formHost.classList.add("hidden");
+                addBtn.classList.remove("hidden");
+            } catch (e) { console.error("VRRP addGroup:", e); }
+        });
+
+        const mkRow = (/** @type {string} */ lbl, /** @type {HTMLElement} */ inp) =>
+            UILib.div("router-if-field router-if-ip", [
+                UILib.el("span", { text: lbl, className: "router-if-field-label" }),
+                inp,
+            ]);
+
+        const preemptRow = UILib.div("hr-checkbox-row", [
+            preemptCb,
+            UILib.el("span", { text: t("router.vrrp.preempt") }),
+        ]);
+
+        formHost.append(
+            UILib.div("hr-panel-content", [
+                UILib.div("router-if-fields", [
+                    mkRow(t("router.vrrp.col.iface"),    ifSel),
+                    mkRow(t("router.vrrp.col.vrid"),     vridIn),
+                    mkRow(t("router.vrrp.col.virtualip"),vipIn),
+                    mkRow(t("router.vrrp.col.priority"), prioIn),
+                    mkRow(t("router.vrrp.col.interval"), intIn),
+                ]),
+                preemptRow,
+                UILib.div("btn-row", [cancelBtn, okBtn]),
+            ])
+        );
+
+        addBtn.addEventListener("click", () => {
+            formHost.classList.remove("hidden");
+            addBtn.classList.add("hidden");
+        });
+
+        configSection.append(addBtn, groupsHost, formHost);
+        this._renderVRRPGroups();
+
+        // ── Status ────────────────────────────────────────────────────────────
+        const statusSection = UILib.div("hidden");
+        const statusHost = UILib.div("router-routes");
+        this._vrrpStatusHost = statusHost;
+        statusSection.appendChild(statusHost);
+
+        // ── Log ───────────────────────────────────────────────────────────────
+        const logSection = UILib.div("hidden");
+        const logEl = /** @type {HTMLTextAreaElement} */ (UILib.el("textarea", {
+            className: "log router-log-md",
+            attrs: { readonly: "true", spellcheck: "false" },
+        }));
+        logSection.appendChild(logEl);
+        this._vrrpLogEl = logEl;
+
+        host.append(configSection, statusSection, logSection);
+        setInnerActive("config");
+
+        this.vrrp.onLogUpdate = () => this._renderVRRPLog();
+    }
+
+    _renderVRRPGroups() {
+        const host = this._vrrpGroupsHost;
+        if (!host) return;
+        UILib.clear(host);
+        if (this.vrrp.groups.length === 0) {
+            host.appendChild(UILib.el("p", { text: t("router.vrrp.empty"), className: "router-hint" }));
+            return;
+        }
+        const table = document.createElement("table");
+        table.className = "router-routes";
+        const thead = document.createElement("thead");
+        const htr = document.createElement("tr");
+        for (const col of [
+            t("router.vrrp.col.iface"), t("router.vrrp.col.vrid"),
+            t("router.vrrp.col.virtualip"), t("router.vrrp.col.priority"),
+            t("router.vrrp.col.interval"), "",
+        ]) {
+            const th = document.createElement("th");
+            th.textContent = col;
+            htr.appendChild(th);
+        }
+        thead.appendChild(htr);
+        const tbody = document.createElement("tbody");
+        for (const g of this.vrrp.groups) {
+            const tr = document.createElement("tr");
+            const ifName = this.net.interfaces[g.ifIndex]?.name ?? `if${g.ifIndex}`;
+            for (const val of [ifName, String(g.vrid), g.virtualIP.toString(), String(g.priority), `${g.advIntervalMs} ms`]) {
+                const td = document.createElement("td");
+                td.textContent = val;
+                tr.appendChild(td);
+            }
+            const delBtn = UILib.button("✕", () => {
+                this.vrrp.removeGroup(g.ifIndex, g.vrid);
+                if (this.vrrp.groups.length === 0) this.vrrp.stop();
+                this._renderVRRPGroups();
+            }, { className: "sim-btn-danger" });
+            const tdDel = document.createElement("td");
+            tdDel.appendChild(delBtn);
+            tr.appendChild(tdDel);
+            tbody.appendChild(tr);
+        }
+        table.append(thead, tbody);
+        host.appendChild(table);
+    }
+
+    _renderVRRPStatus() {
+        const host = this._vrrpStatusHost;
+        if (!host) return;
+        UILib.clear(host);
+        if (this.vrrp.groups.length === 0) {
+            host.appendChild(UILib.el("p", { text: t("router.vrrp.empty"), className: "router-hint" }));
+            this._vrrpPollTimer.stop();
+            return;
+        }
+        const table = document.createElement("table");
+        table.className = "router-routes";
+        const thead = document.createElement("thead");
+        const htr = document.createElement("tr");
+        for (const col of [
+            t("router.vrrp.col.iface"), t("router.vrrp.col.vrid"),
+            t("router.vrrp.col.virtualip"), t("router.vrrp.col.priority"),
+            t("router.vrrp.col.state"), t("router.vrrp.col.vmac"),
+        ]) {
+            const th = document.createElement("th");
+            th.textContent = col;
+            htr.appendChild(th);
+        }
+        thead.appendChild(htr);
+        const tbody = document.createElement("tbody");
+        for (const g of this.vrrp.groups) {
+            const tr = document.createElement("tr");
+            const ifName = this.net.interfaces[g.ifIndex]?.name ?? `if${g.ifIndex}`;
+            const stateLabel = g.state === 'master'
+                ? t("router.vrrp.state.master")
+                : g.state === 'backup'
+                    ? t("router.vrrp.state.backup")
+                    : t("router.vrrp.state.init");
+            const vmacStr = Array.from(g.virtualMAC).map(b => b.toString(16).padStart(2, '0')).join(':');
+            for (const val of [ifName, String(g.vrid), g.virtualIP.toString(), String(g.priority), stateLabel, vmacStr]) {
+                const td = document.createElement("td");
+                td.textContent = val;
+                if (val === stateLabel) {
+                    td.style.fontWeight = g.state === 'master' ? 'bold' : 'normal';
+                    td.style.color = g.state === 'master' ? 'var(--color-ok, #2a9)' : '';
+                }
+                tr.appendChild(td);
+            }
+            tbody.appendChild(tr);
+        }
+        table.append(thead, tbody);
+        host.appendChild(table);
+        this._vrrpPollTimer.stop();
+        this._vrrpPollTimer.start(() => this._renderVRRPStatus(), 500);
+    }
+
+    _renderVRRPLog() {
+        if (!this._vrrpLogEl) return;
+        this._vrrpLogEl.value = this.vrrp.log.join("\n");
+        this._vrrpLogEl.scrollTop = this._vrrpLogEl.scrollHeight;
+    }
+
     destroy() {
         this._pd6Stop();
         this._pd6ClientStop();
+        this.vrrp.stop();
+        this._vrrpPollTimer.stop();
         super.destroy();
     }
 }
