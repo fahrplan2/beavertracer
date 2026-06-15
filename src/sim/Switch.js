@@ -237,7 +237,7 @@ export class Switch extends SimulatedObject {
     /** @param {HTMLElement} host */
     _buildStpTab(host) {
         const modeSelect = UILib.select([
-            { value: "off",  label: "Off" },
+            { value: "off",  label: t("switch.stp.off") ?? "Off" },
             { value: "stp",  label: "STP (802.1D)" },
             { value: "rstp", label: "RSTP (802.1w)" },
         ], {
@@ -253,7 +253,7 @@ export class Switch extends SimulatedObject {
 
         const priorityItems = [];
         for (let p = 0; p <= 61440; p += 4096) {
-            priorityItems.push({ value: String(p), label: p === 32768 ? `${p} (default)` : String(p) });
+            priorityItems.push({ value: String(p), label: p === 32768 ? `${p} (${t("switch.stp.priority.default") ?? "default"})` : String(p) });
         }
         const prioritySelect = UILib.select(priorityItems, {
             value: String(this.backplane._stpBridgePriority ?? 32768),
