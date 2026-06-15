@@ -1224,49 +1224,50 @@ export class SimControl {
         btnTraceFollow.dataset.role = "tracing-follow";
         gTracing.appendChild(btnTraceFollow);
 
-        //******** COMMON ***********/
-        addSeparator("sep-common");
-        const gCommon = UILib.buttongroup(t("sim.common"), toolbar);
-        gCommon.dataset.group = "common";
+        if (!this.embedded) {
+            //******** COMMON ***********/
+            addSeparator("sep-common");
+            const gCommon = UILib.buttongroup(t("sim.common"), toolbar);
+            gCommon.dataset.group = "common";
 
+            const langBtn = UILib.iconbutton({
+                label: t("sim.language"),
+                icon: "fa-language",
+                onClick: (/** @type {MouseEvent} */ ev) => {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    this._openLanguageDialog();
+                },
+            });
+            langBtn.dataset.role = "lang";
+            gCommon.appendChild(langBtn);
 
-        const langBtn = UILib.iconbutton({
-            label: t("sim.language"),
-            icon: "fa-language",
-            onClick: (/** @type {MouseEvent} */ ev) => {
-                ev.preventDefault();
-                ev.stopPropagation();
-                this._openLanguageDialog();
-            },
-        });
-        langBtn.dataset.role = "lang";
-        gCommon.appendChild(langBtn);
+            const helpBtn = UILib.iconbutton({
+                label: t("sim.help"),
+                icon: "fa-circle-question",
+                onClick: () => {
+                    this.pause();
+                    this.mode = "page";
+                    this._invalidateUI();
+                    this._staticRouter?.navigate("/help", { replace: true });
+                },
+            });
+            helpBtn.dataset.role = "mode-help";
+            gCommon.appendChild(helpBtn);
 
-        const helpBtn = UILib.iconbutton({
-            label: t("sim.help"),
-            icon: "fa-circle-question",
-            onClick: () => {
-                this.pause();
-                this.mode = "page";
-                this._invalidateUI();
-                this._staticRouter?.navigate("/help", { replace: true });
-            },
-        });
-        helpBtn.dataset.role = "mode-help";
-        gCommon.appendChild(helpBtn);
-
-        const aboutBtn = UILib.iconbutton({
-            label: t("sim.about"),
-            icon: "fa-circle-info",
-            onClick: () => {
-                this.pause();
-                this.mode = "page";
-                this._invalidateUI();
-                this._staticRouter?.navigate("/about", { replace: true });
-            },
-        });
-        aboutBtn.dataset.role = "mode-about";
-        gCommon.appendChild(aboutBtn);
+            const aboutBtn = UILib.iconbutton({
+                label: t("sim.about"),
+                icon: "fa-circle-info",
+                onClick: () => {
+                    this.pause();
+                    this.mode = "page";
+                    this._invalidateUI();
+                    this._staticRouter?.navigate("/about", { replace: true });
+                },
+            });
+            aboutBtn.dataset.role = "mode-about";
+            gCommon.appendChild(aboutBtn);
+        }
 
         if (this.embedded) {
             addSeparator("sep-embed-open");
