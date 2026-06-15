@@ -9,6 +9,7 @@ import { UDPPacket } from "../net/pdu/UDPPacket.js";
 import { IPAddress } from "../net/models/IPAddress.js";
 import { SimulatedObject } from "./SimulatedObject.js";
 import { UILib } from "../lib/UILib.js";
+import { nowStamp } from "../lib/helpers.js";
 import { t } from "../i18n/index.js";
 
 // ── helpers ────────────────────────────────────────────────────────────────
@@ -535,8 +536,7 @@ export class Firewall extends SimulatedObject {
 
     /** @param {string} line */
     _appendLog(line) {
-        const now = new Date().toLocaleTimeString();
-        this._fwLog.push(`[${now}] ${line}`);
+        this._fwLog.push(`[${nowStamp()}] ${line}`);
         if (this._fwLog.length > 500) this._fwLog.splice(0, this._fwLog.length - 500);
         this._renderLog();
     }

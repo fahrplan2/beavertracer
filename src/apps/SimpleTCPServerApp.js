@@ -140,7 +140,7 @@ export class SimpleTCPServerApp extends LoggedProcess {
       UI.row(t("app.simpletcpserver.label.listenPort"), portInput),
     ]});
 
-    const logPane = UI.el("div", { children: [
+    const logPane = UI.el("div", { className: "log-pane", children: [
       UI.buttonRow([clear]),
       logBox,
     ]});

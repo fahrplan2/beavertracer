@@ -5,11 +5,36 @@
   overflow-y: auto;
 }
 
+/* Apps with a log pane use fixed-height layout so the log fills available space */
+.app:has(.log-pane) {
+  overflow: hidden;
+}
+
+.panel:has(.log-pane) {
+  height: 100%;
+  overflow: hidden;
+}
+
+.log-pane {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.log-pane > .msg:last-child,
+.log-pane > textarea.log:last-child {
+  flex: 1;
+  max-height: none;
+  min-height: 0;
+}
+
 .app-toolbar {
   display: flex;
   align-items: center;
   gap: var(--pad-md);
-  padding: var(--pad-md) 10px;
+  padding: 0 10px var(--pad-md);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
@@ -19,33 +44,15 @@
   gap: var(--pad-sm);
 }
 
-textarea.log {
-  font-family: "Hack", monospace;
-  font-size: 0.78125rem;
-  line-height: 1.4;
-
-  border: 1px solid #2a2f3a;
-  border-radius: 6px;
-
-  padding: var(--pad-md) 10px;
-  margin: 4px 0;
-
-  white-space: pre;
-  overflow-y: auto;
-  overflow-x: auto;
-
-  min-width: 600px;
-  min-height: 200px;
-}
-
+textarea.log,
 .msg {
   font-family: "Hack", monospace;
-  font-size: 0.78125rem;
+  font-size: 0.8125rem;
   line-height: 1.4;
   user-select: text;
 
-  border: 1px solid #2a2f3a;
-  border-radius: 6px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-sm);
 
   padding: var(--pad-md) 10px;
   margin: 4px 0;
@@ -54,16 +61,17 @@ textarea.log {
   overflow-y: auto;
   overflow-x: auto;
 
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 120px;
   max-height: 240px;
+
+  background: var(--bg-strong);
+  color: var(--text);
 }
 
-@media (max-width: 600px) {
-  textarea.log,
-  .msg {
-    min-width: unset;
-    width: 100%;
-    box-sizing: border-box;
-  }
+textarea.log {
+  resize: none;
 }
 
 .info-value {
@@ -115,3 +123,72 @@ textarea.log {
 }
 
 .input-narrow { width: 90px; }
+
+/* ── Shared panel / form / button components (UILib.panel / .row / .buttonRow / .button) ── */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pad-md);
+  padding: var(--pad-lg);
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: var(--pad-md);
+}
+
+.form-label {
+  font-size: 0.8125rem;
+  color: var(--text);
+}
+
+.form-control {
+  display: flex;
+  align-items: center;
+}
+
+.form-control > .input {
+  width: 100%;
+}
+
+.btn-row {
+  display: flex;
+  gap: var(--pad-sm);
+  flex-wrap: wrap;
+}
+
+.btn-primary {
+  background: color-mix(in oklch, var(--primary), white 60%);
+  border-color: var(--primary-strong);
+  font-weight: 600;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: color-mix(in oklch, var(--primary), white 40%);
+}
+
+[data-theme="dark"] .btn-primary {
+  background: color-mix(in oklch, var(--primary), var(--bg2) 60%);
+  border-color: var(--primary);
+}
+
+[data-theme="dark"] .btn-primary:hover:not(:disabled) {
+  background: color-mix(in oklch, var(--primary), var(--bg2) 40%);
+}
+
+.input {
+  border: 1px solid color-mix(in oklch, var(--border), var(--text) 8%);
+  border-radius: var(--radius-sm);
+  padding: var(--pad-sm) var(--pad-md);
+  background: var(--bg-strong);
+  color: var(--text);
+  font-size: 0.875rem;
+  font-family: "Hack", monospace;
+}
+
+.input.is-invalid {
+  border-color: var(--danger);
+}

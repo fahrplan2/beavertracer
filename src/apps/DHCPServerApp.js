@@ -242,7 +242,7 @@ export class DHCPServerApp extends LoggedProcess {
       UI.row(t("app.dhcpserver.label.leaseTime"), leaseTime),
       UI.buttonRow([saveBtn]),
     ]});
-    const logPane = UI.el("div", { children: [
+    const logPane = UI.el("div", { className: "log-pane", children: [
       UI.buttonRow([clear]),
       logBox,
     ]});

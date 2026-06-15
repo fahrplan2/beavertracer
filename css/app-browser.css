@@ -6,6 +6,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  overflow: hidden;
 }
 
 /* Chrome / Address bar */
@@ -60,10 +61,14 @@
 .app-sparktail-http .panel {
   position: relative; /* anchor for cert popup */
   flex: 1;
+  height: 100%;
   min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   background: transparent;
+  padding: 0;
+  gap: 0;
 }
 
 .app-sparktail-http .sparktail-content {

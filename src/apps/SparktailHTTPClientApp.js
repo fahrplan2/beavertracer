@@ -540,7 +540,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     const throbber = UI.el("div", { className: "sparktail-throbber" });
     this.throbberEl = throbber;
 
-    const status = UI.el("div", { className: "msg sparktail-status" });
+    const status = UI.el("div", { className: "sparktail-status" });
     this.statusEl = status;
 
     // Tabs (devtools-ish)
