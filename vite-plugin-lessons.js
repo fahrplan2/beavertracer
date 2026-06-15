@@ -325,7 +325,7 @@ function flatOrder(tree) {
 function numLabel(num) {
   if (!num || num.length === 0) return "";
   const s = num.join(".");
-  return num.length === 1 ? s + "." : s;
+  return s;
 }
 
 /**
@@ -372,19 +372,6 @@ function renderSidebar(tree, currentHref) {
     return `<ul${classAttr}>\n${items}\n</ul>`;
   }
   return renderItems(tree, true);
-}
-
-/**
- * Render the "Unterseiten" section for a node that has children.
- * @param {LessonNode} node
- * @returns {string}
- */
-function renderChildrenSection(node) {
-  if (!node.children.length) return "";
-  const items = node.children
-    .map((child) => `<li><a href="${child.href}">${child.title}</a></li>`)
-    .join("\n");
-  return `\n<section class="lesson-children">\n<h2>Unterseiten</h2>\n<ul class="lesson-index-list">\n${items}\n</ul>\n</section>`;
 }
 
 /**
@@ -485,13 +472,16 @@ function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI
     body = body.replace(/(<h1[^>]*>)/, `$1<span class="lesson-num">${prefix}</span> `);
   }
 
-  // ── Children section ───────────────────────────────────────────
-  body += renderChildrenSection(node);
-
   // ── Prev / Next navigation ─────────────────────────────────────
   const navParts = [];
-  if (nav.prev) navParts.push(`<a href="${nav.prev.href}" class="lesson-nav-prev">← ${nav.prev.title}</a>`);
-  if (nav.next) navParts.push(`<a href="${nav.next.href}" class="lesson-nav-next">${nav.next.title} →</a>`);
+  if (nav.prev) {
+    const prevNum = nav.prev.num ? `${numLabel(nav.prev.num)} ` : "";
+    navParts.push(`<a href="${nav.prev.href}" class="lesson-nav-prev">← ${prevNum}${nav.prev.title}</a>`);
+  }
+  if (nav.next) {
+    const nextNum = nav.next.num ? `${numLabel(nav.next.num)} ` : "";
+    navParts.push(`<a href="${nav.next.href}" class="lesson-nav-next">${nextNum}${nav.next.title} →</a>`);
+  }
   if (navParts.length) {
     body += `\n<nav class="lesson-nav" aria-label="Seitennavigation">${navParts.join("")}</nav>`;
   }
@@ -554,7 +544,7 @@ function generateRootIndex(langs, rootTemplateHtml, localeInfo) {
     })
     .join("\n");
 
-  const body = `<h1>Lektionen</h1>\n<p>Wähle eine Sprache:</p>\n<ul class="lesson-index-list">\n  ${items}\n</ul>`;
+  const body = `<h1>Lektionen</h1>\n\n<ul class="lesson-index-list">\n  ${items}\n</ul>`;
   return rootTemplateHtml.replace(/\{\{body\}\}/g, body);
 }
 
@@ -649,8 +639,8 @@ function buildLessons(root) {
     for (let i = 0; i < ordered.length; i++) {
       const node = ordered[i];
       const nav = {
-        prev: i > 0 ? { href: ordered[i - 1].href, title: ordered[i - 1].title } : undefined,
-        next: i < ordered.length - 1 ? { href: ordered[i + 1].href, title: ordered[i + 1].title } : undefined,
+        prev: i > 0 ? { href: ordered[i - 1].href, title: ordered[i - 1].title, num: ordered[i - 1].num } : undefined,
+        next: i < ordered.length - 1 ? { href: ordered[i + 1].href, title: ordered[i + 1].title, num: ordered[i + 1].num } : undefined,
       };
       const sidebar = renderSidebar(tree, node.href);
       const outFile = path.join(langOut, node.href);
