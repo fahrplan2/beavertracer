@@ -4,16 +4,17 @@ import { isEqualUint8, MACToNumber } from "../lib/helpers.js";
 import { EthernetPort } from "./EthernetPort.js";
 import { Observable } from "../lib/Observeable.js";
 import { EthernetFrame } from "../net/pdu/EthernetFrame.js";
-import { STPBPDU } from "../net/pdu/STPBPDU.js";
+import { STPBPDU, RSTP_FLAG_TC, RSTP_FLAG_PROPOSAL, RSTP_FLAG_LEARNING, RSTP_FLAG_FORWARDING, RSTP_FLAG_AGREEMENT, RSTP_PORT_ROLE } from "../net/pdu/STPBPDU.js";
 import { simTimer, SimTimer } from "../lib/SimTimer.js";
 
-/** IEEE 802.1D port states. */
+/** IEEE 802.1D / 802.1w port states. */
 export const STP_STATE = Object.freeze({
-    DISABLED:   "disabled",
-    BLOCKING:   "blocking",
-    LISTENING:  "listening",
-    LEARNING:   "learning",
-    FORWARDING: "forwarding",
+    DISABLED:    "disabled",
+    BLOCKING:    "blocking",
+    LISTENING:   "listening",
+    LEARNING:    "learning",
+    FORWARDING:  "forwarding",
+    DISCARDING:  "discarding", // RSTP (802.1w): replaces Blocking+Listening
 });
 
 /**
@@ -25,7 +26,7 @@ export const STP_STATE = Object.freeze({
 const STP_DEST_MAC = new Uint8Array([0x01, 0x80, 0xc2, 0x00, 0x00, 0x00]);
 const STP_LLC = new Uint8Array([0x42, 0x42, 0x03]); // DSAP/SSAP/UI
 
-/** IEEE 802.1D flags byte bits */
+/** IEEE 802.1D flags byte bits (classic STP Config BPDU) */
 const STP_FLAG_TC  = 0x80; // Topology Change
 const STP_FLAG_TCA = 0x01; // Topology Change Acknowledgment
 
@@ -73,7 +74,18 @@ export class SwitchBackplane extends Observable {
 
     // -------------------- Feature flags --------------------
     vlanEnabled = false;
-    stpEnabled = false;
+
+    /**
+     * STP/RSTP operating mode.
+     * 'off'  – no spanning tree
+     * 'stp'  – IEEE 802.1D classic STP
+     * 'rstp' – IEEE 802.1w Rapid STP
+     * @type {'off'|'stp'|'rstp'}
+     */
+    stpMode = 'off';
+
+    /** True whenever any spanning-tree mode is active. */
+    get stpEnabled() { return this.stpMode !== 'off'; }
 
     /**
      * VLAN disabled:
@@ -167,6 +179,13 @@ export class SwitchBackplane extends Observable {
     /** Per-port: include TCA bit in the next Config BPDU (after receiving a TCN). @type {Array<boolean>} */
     _stpTcaOnPort = [];
 
+    // -------------------- RSTP per-port state --------------------
+    /** Count of consecutive Hello intervals without a received BPDU (fast aging). @type {Array<number>} */
+    _rstpMissedHellos = [];
+
+    /** True while this Designated port is sending Proposal and awaiting Agreement. @type {Array<boolean>} */
+    _rstpProposing = [];
+
     /**
      * Backward-compat getter: true when port is in FORWARDING state.
      * @returns {Array<boolean>}
@@ -196,12 +215,14 @@ export class SwitchBackplane extends Observable {
         }
 
         // Default: STP disabled => all forwarding, all designated
-        this.stpPortState   = this.ports.map(() => STP_STATE.FORWARDING);
-        this.stpPortRole    = this.ports.map(() => "designated");
-        this._stpPortTimers = this.ports.map(/** @returns {null} */ () => null);
-        this._stpRxBestTick = this.ports.map(() => 0);
-        this.stpRxBest      = this.ports.map(/** @returns {null} */ () => null);
-        this._stpTcaOnPort  = this.ports.map(() => false);
+        this.stpPortState      = this.ports.map(() => STP_STATE.FORWARDING);
+        this.stpPortRole       = this.ports.map(() => "designated");
+        this._stpPortTimers    = this.ports.map(/** @returns {null} */ () => null);
+        this._stpRxBestTick    = this.ports.map(() => 0);
+        this.stpRxBest         = this.ports.map(/** @returns {null} */ () => null);
+        this._stpTcaOnPort     = this.ports.map(() => false);
+        this._rstpMissedHellos = this.ports.map(() => 0);
+        this._rstpProposing    = this.ports.map(() => false);
         this.stpPortLinkedLast = this.ports.map(p => p.isLinked());
     }
 
@@ -220,22 +241,34 @@ export class SwitchBackplane extends Observable {
     }
 
     enableSTPFeature() {
-        this.stpEnabled = true;
+        this.stpMode = 'stp';
         this._stpStartHello();
 
         this._initStpArrays();
         this._resetStpToSelfRoot();
 
-        // Initialize link-state memory so link-up/down detection works
         this.stpPortLinkedLast = this.ports.map(p => p.isLinked());
 
-        // "first thing": emit hello on all *currently linked* ports
         this._stpForceEmit = true;
-        this._recomputeStpAndMaybeEmit(); // will emit because forceEmit
+        this._recomputeStpAndMaybeEmit();
+    }
+
+    enableRSTPFeature() {
+        this.stpMode = 'rstp';
+        this._stpStartHello();
+
+        this._initStpArrays();
+        this._initRstpArrays();
+        this._resetStpToSelfRoot();
+
+        this.stpPortLinkedLast = this.ports.map(p => p.isLinked());
+
+        this._stpForceEmit = true;
+        this._recomputeRstpAndMaybeEmit();
     }
 
     disableSTPFeature() {
-        this.stpEnabled = false;
+        this.stpMode = 'off';
         this._stpStopHello();
         this._stpStopTc();
         this._stpStopTcn();
@@ -248,10 +281,12 @@ export class SwitchBackplane extends Observable {
             }
         }
 
-        this.stpRxBest    = this.ports.map(/** @returns {null} */ () => null);
-        this.stpPortState = this.ports.map(() => STP_STATE.FORWARDING);
-        this.stpPortRole  = this.ports.map(() => "designated");
-        this._stpTcaOnPort = this.ports.map(() => false);
+        this.stpRxBest         = this.ports.map(/** @returns {null} */ () => null);
+        this.stpPortState      = this.ports.map(() => STP_STATE.FORWARDING);
+        this.stpPortRole       = this.ports.map(() => "designated");
+        this._stpTcaOnPort     = this.ports.map(() => false);
+        this._rstpMissedHellos = this.ports.map(() => 0);
+        this._rstpProposing    = this.ports.map(() => false);
 
         // root resets to self
         this.stpRootId   = this.stpBridgeIdVal;
@@ -277,13 +312,7 @@ export class SwitchBackplane extends Observable {
         this.stpBridgeIdBytes = this._makeBridgeId(this._stpBridgePriority);
         this.stpBridgeIdVal = this._bridgeIdBytesToBigInt(this.stpBridgeIdBytes);
 
-        if (this.stpEnabled) {
-            this._resetStpToSelfRoot();
-            this._stpForceEmit = true;
-            this._recomputeStpAndMaybeEmit();
-        } else {
-            this.stpRootId = this.stpBridgeIdVal;
-        }
+        this._recomputeAfterIdentityChange();
     }
 
     /**
@@ -301,7 +330,15 @@ export class SwitchBackplane extends Observable {
         this.stpBridgeIdBytes = this._makeBridgeId(p);
         this.stpBridgeIdVal = this._bridgeIdBytesToBigInt(this.stpBridgeIdBytes);
 
-        if (this.stpEnabled) {
+        this._recomputeAfterIdentityChange();
+    }
+
+    _recomputeAfterIdentityChange() {
+        if (this.stpMode === 'rstp') {
+            this._resetStpToSelfRoot();
+            this._stpForceEmit = true;
+            this._recomputeRstpAndMaybeEmit();
+        } else if (this.stpMode === 'stp') {
             this._resetStpToSelfRoot();
             this._stpForceEmit = true;
             this._recomputeStpAndMaybeEmit();
@@ -321,13 +358,15 @@ export class SwitchBackplane extends Observable {
         this.ports.push(port);
         port.subscribe(this);
 
-        // keep STP arrays in sync
+        // keep STP/RSTP arrays in sync
         this.stpRxBest.push(null);
-        this.stpPortState.push(this.stpEnabled ? STP_STATE.BLOCKING : STP_STATE.FORWARDING);
-        this.stpPortRole.push(this.stpEnabled ? "nondesignated" : "designated");
+        this.stpPortState.push(this.stpEnabled ? (this.stpMode === 'rstp' ? STP_STATE.DISCARDING : STP_STATE.BLOCKING) : STP_STATE.FORWARDING);
+        this.stpPortRole.push(this.stpEnabled ? (this.stpMode === 'rstp' ? "alternate" : "nondesignated") : "designated");
         this._stpPortTimers.push(null);
         this._stpRxBestTick.push(0);
         this._stpTcaOnPort.push(false);
+        this._rstpMissedHellos.push(0);
+        this._rstpProposing.push(false);
         this.stpPortLinkedLast.push(port.isLinked());
     }
 
@@ -454,6 +493,13 @@ export class SwitchBackplane extends Observable {
         this._stpPortTimers = this.ports.map(/** @returns {null} */ () => null);
         this._stpRxBestTick = this.ports.map(() => 0);
         this._stpTcaOnPort  = this.ports.map(() => false);
+    }
+
+    _initRstpArrays() {
+        this.stpPortState      = this.ports.map(() => STP_STATE.DISCARDING);
+        this.stpPortRole       = this.ports.map(() => "alternate");
+        this._rstpMissedHellos = this.ports.map(() => 0);
+        this._rstpProposing    = this.ports.map(() => false);
     }
 
     _resetStpToSelfRoot() {
@@ -638,14 +684,20 @@ export class SwitchBackplane extends Observable {
 
     /**
      * Start or restart the periodic Hello BPDU timer.
+     * Dispatches to STP or RSTP emit/aging based on current stpMode.
      */
     _stpStartHello() {
         if (this._stpHelloTimer != null) simTimer.cancel(this._stpHelloTimer);
         this._stpHelloTimer = simTimer.schedule(() => {
             this._stpHelloTimer = null;
             if (!this.stpEnabled) return;
-            this._stpCheckAging();
-            this._emitBPDUs();
+            if (this.stpMode === 'rstp') {
+                this._rstpCheckFastAging();
+                this._emitRstBpdus();
+            } else {
+                this._stpCheckAging();
+                this._emitBPDUs();
+            }
             this._stpStartHello();
         }, SimTimer.STP_HELLO_MS);
     }
@@ -824,6 +876,369 @@ export class SwitchBackplane extends Observable {
     }
 
     // ---------------------------------------------------------------------------
+    // RSTP (IEEE 802.1w)
+    // ---------------------------------------------------------------------------
+
+    /**
+     * Build and send one RST BPDU (protocolVersion=2, bpduType=0x02) on a port.
+     * @param {number} portIdx
+     * @param {number} flags  full 8-bit RSTP flags byte
+     * @param {Uint8Array} [rootIdBytes]
+     * @param {number} [rootCost]
+     */
+    _sendRstBpdu(portIdx, flags, rootIdBytes, rootCost) {
+        const srcMac = bigintToMac(this.bridgeId);
+        const ourBridgeIdBytes = this.stpBridgeIdBytes;
+
+        const ri = rootIdBytes ?? (
+            (this.stpRootId === this.stpBridgeIdVal)
+                ? ourBridgeIdBytes
+                : this._bigIntTo8Bytes(this.stpRootId)
+        );
+        const cost = rootCost ?? this.stpRootCost;
+        const messageAge = this.stpRootPort === null
+            ? 0
+            : Math.min(this._stpRootPortMessageAge + 256, 20 * 256 - 256);
+
+        const bpdu = new STPBPDU({
+            protocolId: 0x0000,
+            protocolVersion: 2,
+            bpduType: 0x02,
+            flags: flags & 0xff,
+            rootId: ri,
+            rootPathCost: cost >>> 0,
+            bridgeId: ourBridgeIdBytes,
+            portId: this._makePortId(portIdx),
+            messageAge,
+            maxAge: 20 * 256,
+            helloTime: 2 * 256,
+            forwardDelay: 15 * 256,
+        });
+
+        const bpduBytes = bpdu.pack();
+        const payload = new Uint8Array(STP_LLC.length + bpduBytes.length);
+        payload.set(STP_LLC, 0);
+        payload.set(bpduBytes, STP_LLC.length);
+
+        const f = new EthernetFrame({ dstMac: STP_DEST_MAC, srcMac, etherType: 0, payload });
+        f.vlan = null;
+        f.useLengthField = true;
+        f.length = payload.length;
+        this.ports[portIdx].send(f);
+    }
+
+    /**
+     * Emit RST BPDUs on all designated ports and on the root port (for Proposal/Agreement).
+     * In RSTP every designated port actively proposes while it is in Discarding state.
+     */
+    _emitRstBpdus() {
+        const rootIdBytes = (this.stpRootId === this.stpBridgeIdVal)
+            ? this.stpBridgeIdBytes
+            : this._bigIntTo8Bytes(this.stpRootId);
+
+        for (let i = 0; i < this.ports.length; i++) {
+            if (!this.ports[i].isLinked()) continue;
+
+            const role = this.stpPortRole[i];
+            const state = this.stpPortState[i];
+
+            if (role === 'designated') {
+                const isProposing = this._rstpProposing[i];
+                const isFwd = state === STP_STATE.FORWARDING;
+                const isLrn = isFwd || state === STP_STATE.LEARNING;
+                const flags =
+                    (this._stpTcActive ? RSTP_FLAG_TC : 0) |
+                    (isProposing ? RSTP_FLAG_PROPOSAL : 0) |
+                    (RSTP_PORT_ROLE.DESIGNATED << 2) |
+                    (isLrn ? RSTP_FLAG_LEARNING : 0) |
+                    (isFwd ? RSTP_FLAG_FORWARDING : 0);
+                this._sendRstBpdu(i, flags, rootIdBytes, this.stpRootCost);
+            }
+        }
+    }
+
+    /**
+     * Recompute RSTP root / roles / states.  Similar to STP but with
+     * Alternate/Backup roles and Proposal/Agreement rapid-transition logic.
+     */
+    _recomputeRstpAndMaybeEmit() {
+        // Root election (identical to STP)
+        let best = { rootId: this.stpBridgeIdVal, cost: 0, bridgeId: this.stpBridgeIdVal, portId: 0 };
+        let bestPort = null;
+
+        for (let i = 0; i < this.ports.length; i++) {
+            if (!this.ports[i].isLinked()) continue;
+            const rx = this.stpRxBest[i];
+            if (!rx) continue;
+            const cand = { rootId: rx.rootId, cost: rx.cost + 1, bridgeId: rx.bridgeId, portId: rx.portId };
+            if (compareTuple(cand, best) < 0) { best = cand; bestPort = i; }
+        }
+
+        this.stpRootId   = best.rootId;
+        this.stpRootCost = bestPort == null ? 0 : best.cost;
+        this.stpRootPort = bestPort;
+
+        if (this.stpRootPort !== null && this.stpRxBest[this.stpRootPort]) {
+            this._stpRootPortMessageAge = /** @type {any} */ (this.stpRxBest[this.stpRootPort]).messageAge;
+        } else {
+            this._stpRootPortMessageAge = 0;
+        }
+
+        const ourAdvBase = { rootId: this.stpRootId, cost: this.stpRootCost, bridgeId: this.stpBridgeIdVal };
+
+        for (let i = 0; i < this.ports.length; i++) {
+            if (!this.ports[i].isLinked()) {
+                this.stpPortRole[i] = "alternate";
+                this._rstpSetDiscarding(i);
+                continue;
+            }
+
+            if (this.stpRootPort === i) {
+                const wasRoot = this.stpPortRole[i] === "root";
+                this.stpPortRole[i] = "root";
+                this._rstpProposing[i] = false;
+                if (!wasRoot) {
+                    // Newly elected root port: start timer-based forwarding
+                    // (P/A agreement from upstream will accelerate this)
+                    this._rstpStartFwd(i);
+                }
+                continue;
+            }
+
+            const rx = this.stpRxBest[i];
+            if (!rx) {
+                // No neighbor — designated, start proposing
+                const wasDesignated = this.stpPortRole[i] === "designated";
+                this.stpPortRole[i] = "designated";
+                if (!wasDesignated && this.stpPortState[i] !== STP_STATE.FORWARDING) {
+                    this._rstpSetDiscarding(i);
+                    this._rstpProposing[i] = true;
+                    this._rstpStartFwd(i); // fallback timer; Agreement short-circuits this
+                } else if (!wasDesignated) {
+                    this._rstpProposing[i] = true;
+                }
+                continue;
+            }
+
+            const ourTuple = { ...ourAdvBase, portId: this._makePortId(i) };
+
+            if (compareTuple(ourTuple, rx) < 0) {
+                // We have the better path — Designated Port
+                const wasDesignated = this.stpPortRole[i] === "designated";
+                this.stpPortRole[i] = "designated";
+                if (!wasDesignated && this.stpPortState[i] !== STP_STATE.FORWARDING) {
+                    this._rstpSetDiscarding(i);
+                    this._rstpProposing[i] = true;
+                    this._rstpStartFwd(i); // fallback timer; Agreement short-circuits this
+                } else if (!wasDesignated) {
+                    this._rstpProposing[i] = true;
+                }
+            } else {
+                // Neighbor is better — Alternate or Backup
+                // Backup: receiving a BPDU from ourselves (two ports on same shared segment)
+                this.stpPortRole[i] = (rx.bridgeId === this.stpBridgeIdVal) ? "backup" : "alternate";
+                this._rstpSetDiscarding(i);
+            }
+        }
+
+        const snap = this._stpSnapshot();
+        if (this._stpForceEmit || snap !== this._stpLastSnapshot) {
+            this._stpForceEmit = false;
+            this._stpLastSnapshot = snap;
+            this._emitRstBpdus();
+        }
+    }
+
+    /**
+     * Immediately set port to Discarding (RSTP equivalent of blocking).
+     * Cancels any pending forwarding timer.
+     * @param {number} portIdx
+     */
+    _rstpSetDiscarding(portIdx) {
+        const cur = this.stpPortState[portIdx];
+        if (this._stpPortTimers[portIdx] != null) {
+            simTimer.cancel(/** @type {number} */ (this._stpPortTimers[portIdx]));
+            this._stpPortTimers[portIdx] = null;
+        }
+        if (cur === STP_STATE.FORWARDING || cur === STP_STATE.LEARNING) {
+            this._rstpTriggerTc();
+        }
+        this.stpPortState[portIdx] = STP_STATE.DISCARDING;
+        this._rstpProposing[portIdx] = false;
+    }
+
+    /**
+     * Start timer-based Discarding→Learning→Forwarding transition (RSTP fallback).
+     * Skips Listening state.  P/A Agreement will short-circuit this via _rstpImmedFwd().
+     * @param {number} portIdx
+     */
+    _rstpStartFwd(portIdx) {
+        const cur = this.stpPortState[portIdx];
+        if (cur === STP_STATE.FORWARDING || cur === STP_STATE.LEARNING) return;
+
+        this.stpPortState[portIdx] = STP_STATE.LEARNING;
+        if (this._stpPortTimers[portIdx] != null) {
+            simTimer.cancel(/** @type {number} */ (this._stpPortTimers[portIdx]));
+        }
+        this._stpPortTimers[portIdx] = simTimer.schedule(() => {
+            this._stpPortTimers[portIdx] = null;
+            if (this.stpPortState[portIdx] !== STP_STATE.LEARNING) return;
+            this._rstpImmedFwd(portIdx);
+        }, SimTimer.STP_FORWARD_DELAY_MS);
+    }
+
+    /**
+     * Immediately transition port to Forwarding (P/A agreement completed, or timer expired).
+     * @param {number} portIdx
+     */
+    _rstpImmedFwd(portIdx) {
+        if (this._stpPortTimers[portIdx] != null) {
+            simTimer.cancel(/** @type {number} */ (this._stpPortTimers[portIdx]));
+            this._stpPortTimers[portIdx] = null;
+        }
+        const cur = this.stpPortState[portIdx];
+        if (cur !== STP_STATE.FORWARDING) {
+            this.stpPortState[portIdx] = STP_STATE.FORWARDING;
+            this._rstpTriggerTc();
+        }
+    }
+
+    /**
+     * Process a received RST BPDU on port i.
+     * @param {number} portIdx
+     * @param {STPBPDU} bpdu
+     */
+    _handleRstBpdu(portIdx, bpdu) {
+        // TC: flush MAC table on all ports except the receiving port
+        if (bpdu.isTc) {
+            this._rstpHandleTcReceived(portIdx);
+        }
+
+        // Agreement received on a port we were proposing (= our Designated Port)
+        if (bpdu.isAgreement && this.stpPortRole[portIdx] === "designated" && this._rstpProposing[portIdx]) {
+            this._rstpProposing[portIdx] = false;
+            this._rstpImmedFwd(portIdx);
+        }
+
+        // Update root info
+        const rx = {
+            rootId:     this._bridgeIdBytesToBigInt(bpdu.rootId),
+            cost:       bpdu.rootPathCost >>> 0,
+            bridgeId:   this._bridgeIdBytesToBigInt(bpdu.bridgeId),
+            portId:     bpdu.portId & 0xffff,
+            messageAge: bpdu.messageAge,
+        };
+
+        const prev = this.stpRxBest[portIdx];
+        if (!prev || compareTuple(rx, prev) < 0) {
+            this.stpRxBest[portIdx] = rx;
+            this._stpRxBestTick[portIdx] = simTimer.currentTick;
+            this._rstpMissedHellos[portIdx] = 0;
+
+            this._recomputeRstpAndMaybeEmit();
+
+            // Proposal: if this port is now our root port and upstream is proposing, do P/A sync
+            if (bpdu.isProposal && this.stpRootPort === portIdx) {
+                this._rstpHandleProposal(portIdx);
+            }
+        } else if (prev && compareTuple(rx, prev) === 0) {
+            this._stpRxBestTick[portIdx] = simTimer.currentTick;
+            this._rstpMissedHellos[portIdx] = 0;
+
+            // Still proposing from upstream — re-send Agreement if we already synced
+            if (bpdu.isProposal && this.stpRootPort === portIdx) {
+                this._rstpSendAgreement(portIdx);
+            }
+        }
+    }
+
+    /**
+     * Handle upstream Proposal: sync all non-root ports to Discarding, send Agreement.
+     * @param {number} rootPortIdx
+     */
+    _rstpHandleProposal(rootPortIdx) {
+        // Sync: set all non-root, non-edge designated ports to Discarding and re-propose
+        for (let i = 0; i < this.ports.length; i++) {
+            if (i === rootPortIdx) continue;
+            const role = this.stpPortRole[i];
+            if (role === "designated") {
+                if (this.stpPortState[i] === STP_STATE.FORWARDING || this.stpPortState[i] === STP_STATE.LEARNING) {
+                    this._rstpSetDiscarding(i);
+                    this._rstpProposing[i] = true;
+                    this._rstpStartFwd(i); // fallback if downstream never sends Agreement
+                }
+            }
+            // Alternate/Backup ports are already Discarding — nothing to do
+        }
+        // Send Agreement back upstream, then immediately go to Forwarding (P/A complete)
+        this._rstpSendAgreement(rootPortIdx);
+        this._rstpImmedFwd(rootPortIdx);
+    }
+
+    /**
+     * Send an RST BPDU with Agreement bit set on portIdx (root port → upstream).
+     * @param {number} portIdx
+     */
+    _rstpSendAgreement(portIdx) {
+        const isFwd = this.stpPortState[portIdx] === STP_STATE.FORWARDING;
+        const isLrn = isFwd || this.stpPortState[portIdx] === STP_STATE.LEARNING;
+        const flags =
+            (this._stpTcActive ? RSTP_FLAG_TC : 0) |
+            (RSTP_PORT_ROLE.ROOT << 2) |          // Port Role = Root
+            (isLrn ? RSTP_FLAG_LEARNING : 0) |
+            (isFwd ? RSTP_FLAG_FORWARDING : 0) |
+            RSTP_FLAG_AGREEMENT;
+        this._sendRstBpdu(portIdx, flags);
+    }
+
+    /**
+     * RSTP topology change: set TC active and flush MAC table (no TCN BPDUs needed).
+     */
+    _rstpTriggerTc() {
+        this.sat.clear();
+        this._stpTcActive = true;
+        if (this._stpTcTimer != null) simTimer.cancel(this._stpTcTimer);
+        // tcWhile = Hello Time + 1 s ≈ 3 Hello periods
+        this._stpTcTimer = simTimer.schedule(() => {
+            this._stpTcActive = false;
+            this._stpTcTimer = null;
+        }, SimTimer.STP_HELLO_MS * 3);
+    }
+
+    /**
+     * Handle TC bit received from a neighbor: flush MAC table on all ports except fromPort.
+     * @param {number} fromPort
+     */
+    _rstpHandleTcReceived(fromPort) {
+        this.sat.clear();
+        // Also propagate TC via our RST BPDUs for tcWhile
+        this._stpTcActive = true;
+        if (this._stpTcTimer != null) simTimer.cancel(this._stpTcTimer);
+        this._stpTcTimer = simTimer.schedule(() => {
+            this._stpTcActive = false;
+            this._stpTcTimer = null;
+        }, SimTimer.STP_HELLO_MS * 3);
+    }
+
+    /**
+     * Fast aging: expire BPDU info on ports that have missed 3 consecutive Hello intervals.
+     * Called at each Hello tick in RSTP mode instead of _stpCheckAging().
+     */
+    _rstpCheckFastAging() {
+        let changed = false;
+        for (let i = 0; i < this.ports.length; i++) {
+            if (this.stpRxBest[i] == null) continue;
+            this._rstpMissedHellos[i]++;
+            if (this._rstpMissedHellos[i] >= 3) {
+                this.stpRxBest[i] = null;
+                this._rstpMissedHellos[i] = 0;
+                changed = true;
+            }
+        }
+        if (changed) this._recomputeRstpAndMaybeEmit();
+    }
+
+    // ---------------------------------------------------------------------------
     // TC / TCN
     // ---------------------------------------------------------------------------
 
@@ -936,8 +1351,12 @@ export class SwitchBackplane extends Observable {
         }
 
         if (changed) {
-            this._stpForceEmit = true; // hello on topology changes (incl. link-up)
-            this._recomputeStpAndMaybeEmit();
+            this._stpForceEmit = true;
+            if (this.stpMode === 'rstp') {
+                this._recomputeRstpAndMaybeEmit();
+            } else {
+                this._recomputeStpAndMaybeEmit();
+            }
         }
     }
 
@@ -979,8 +1398,14 @@ export class SwitchBackplane extends Observable {
                         continue;
                     }
 
-                    // Config BPDU
-                    if (bpdu && bpdu.bpduType === 0x00) {
+                    // RST BPDU (IEEE 802.1w, protocolVersion 2)
+                    if (bpdu && bpdu.bpduType === 0x02 && this.stpMode === 'rstp') {
+                        this._handleRstBpdu(i, bpdu);
+                        continue;
+                    }
+
+                    // Config BPDU (classic STP only)
+                    if (bpdu && bpdu.bpduType === 0x00 && this.stpMode === 'stp') {
                         // TC bit: flush MAC table to avoid stale forwarding during reconvergence
                         if (bpdu.flags & STP_FLAG_TC) {
                             this.sat.clear();
@@ -1018,7 +1443,7 @@ export class SwitchBackplane extends Observable {
                 // LEARNING ports participate in MAC learning but do not forward.
                 if (this.stpEnabled) {
                     const ps = this.stpPortState[i];
-                    if (ps === STP_STATE.BLOCKING || ps === STP_STATE.LISTENING) continue;
+                    if (ps === STP_STATE.BLOCKING || ps === STP_STATE.LISTENING || ps === STP_STATE.DISCARDING) continue;
                 }
 
                 // ---------------- Data forwarding ----------------

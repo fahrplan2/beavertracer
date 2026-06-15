@@ -4,13 +4,37 @@ import { assertLenU8 } from "../../lib/helpers.js";
 import { read16BE, read32BE, write16BE, write32BE } from "../util/byteUtils.js";
 
 /**
- * IEEE 802.1D Spanning Tree Protocol BPDU (Configuration BPDU)
- *
- * This is the *BPDU payload* (no Ethernet/LLC header included).
+ * RSTP flags byte bits (IEEE 802.1w / 802.1D-2004, bpduType 0x02, protocolVersion 2).
+ * Bit 0  – TC (Topology Change)
+ * Bit 1  – Proposal
+ * Bits 2-3 – Port Role: 00=Unknown 01=Alt/Backup 10=Root 11=Designated
+ * Bit 4  – Learning
+ * Bit 5  – Forwarding
+ * Bit 6  – Agreement
+ * Bit 7  – TCA (legacy STP compat, unused in pure RSTP)
+ */
+export const RSTP_FLAG_TC        = 0x01;
+export const RSTP_FLAG_PROPOSAL  = 0x02;
+export const RSTP_FLAG_LEARNING  = 0x10;
+export const RSTP_FLAG_FORWARDING = 0x20;
+export const RSTP_FLAG_AGREEMENT = 0x40;
+export const RSTP_FLAG_TCA       = 0x80;
+
+/** Port-role encoding for bits 2-3 of RSTP flags byte. */
+export const RSTP_PORT_ROLE = Object.freeze({
+    UNKNOWN:     0, // 00
+    ALT_BACKUP:  1, // 01
+    ROOT:        2, // 10
+    DESIGNATED:  3, // 11
+});
+
+/**
+ * IEEE 802.1D / 802.1w Spanning Tree BPDU (BPDU payload, no Ethernet/LLC header).
  *
  * Common BPDU types:
- *  - 0x00 Configuration BPDU (classic STP)
- *  - 0x80 TCN BPDU (Topology Change Notification)
+ *  - 0x00  Configuration BPDU (classic STP, protocolVersion 0)
+ *  - 0x80  TCN BPDU (Topology Change Notification, classic STP)
+ *  - 0x02  RST BPDU (Rapid Spanning Tree, protocolVersion 2)
  *
  * Time fields are in 1/256 seconds (as in 802.1D).
  */
@@ -168,6 +192,16 @@ export class STPBPDU {
 
     return out;
   }
+
+  // ---- RSTP decoded flag accessors ----
+  get isTc()         { return !!(this.flags & RSTP_FLAG_TC); }
+  get isProposal()   { return !!(this.flags & RSTP_FLAG_PROPOSAL); }
+  get isLearning()   { return !!(this.flags & RSTP_FLAG_LEARNING); }
+  get isForwarding() { return !!(this.flags & RSTP_FLAG_FORWARDING); }
+  get isAgreement()  { return !!(this.flags & RSTP_FLAG_AGREEMENT); }
+  get isTca()        { return !!(this.flags & RSTP_FLAG_TCA); }
+  /** Port role code (0–3), see RSTP_PORT_ROLE. */
+  get portRoleCode() { return (this.flags >> 2) & 0x03; }
 
   _validate() {
     if (!Number.isInteger(this.protocolId) || this.protocolId < 0 || this.protocolId > 0xffff) {

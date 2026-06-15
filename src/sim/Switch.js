@@ -53,8 +53,8 @@ export class Switch extends SimulatedObject {
     /** @type {HTMLDivElement|null} */
     _vlanSection = null;
 
-    /** @type {HTMLInputElement|null} */
-    _stpEnabledCheckbox = null;
+    /** @type {HTMLSelectElement|null} */
+    _stpModeSelect = null;
 
     /** @type {HTMLDivElement|null} */
     _stpSection = null;
@@ -82,7 +82,8 @@ export class Switch extends SimulatedObject {
 
             // feature flags
             vlanEnabled: !!this.backplane.vlanEnabled,
-            stpEnabled: !!this.backplane.stpEnabled,
+            stpMode: this.backplane.stpMode,
+            stpEnabled: this.backplane.stpMode !== 'off', // backward compat
             stpBridgePriority: this.backplane._stpBridgePriority,
 
             // per-port vlan config
@@ -136,9 +137,11 @@ export class Switch extends SimulatedObject {
             obj.backplane.setBridgePriority(n.stpBridgePriority);
         }
 
-        // --- STP flag last (enables HELLO emission / state recompute) ---
-        if (n.stpEnabled) obj.backplane.enableSTPFeature();
-        else obj.backplane.disableSTPFeature();
+        // --- STP/RSTP mode last (enables HELLO emission / state recompute) ---
+        const mode = n.stpMode ?? (n.stpEnabled ? 'stp' : 'off');
+        if (mode === 'rstp')       obj.backplane.enableRSTPFeature();
+        else if (mode === 'stp')   obj.backplane.enableSTPFeature();
+        else                       obj.backplane.disableSTPFeature();
 
         return obj;
     }
@@ -186,7 +189,7 @@ export class Switch extends SimulatedObject {
             this._satHost = null;
             this._vlanEnabledCheckbox = null;
             this._vlanSection = null;
-            this._stpEnabledCheckbox = null;
+            this._stpModeSelect = null;
             this._stpSection = null;
             UILib.clear(content);
             if (id === "sat")  this._buildMacTab(content);
@@ -233,24 +236,38 @@ export class Switch extends SimulatedObject {
 
     /** @param {HTMLElement} host */
     _buildStpTab(host) {
-        const cb = /** @type {HTMLInputElement} */ (UILib.input({ type: "checkbox" }));
-        cb.checked = !!this.backplane.stpEnabled;
-        this._stpEnabledCheckbox = cb;
-        host.appendChild(UILib.div("hr-checkbox-row", [cb, UILib.el("span", { text: t("switch.stp.enable") })]));
-
-        const prioritySelect = document.createElement("select");
-        for (let p = 0; p <= 61440; p += 4096) {
-            const opt = document.createElement("option");
-            opt.value = String(p);
-            opt.textContent = p === 32768 ? `${p} (default)` : String(p);
-            if (p === (this.backplane._stpBridgePriority ?? 32768)) opt.selected = true;
-            prioritySelect.appendChild(opt);
-        }
-        prioritySelect.addEventListener("change", () => {
-            this.backplane.setBridgePriority(Number(prioritySelect.value));
-            this._renderSTPSection();
+        const modeSelect = UILib.select([
+            { value: "off",  label: "Off" },
+            { value: "stp",  label: "STP (802.1D)" },
+            { value: "rstp", label: "RSTP (802.1w)" },
+        ], {
+            value: this.backplane.stpMode,
+            onChange: (mode) => {
+                if (mode === 'rstp')      this.backplane.enableRSTPFeature();
+                else if (mode === 'stp')  this.backplane.enableSTPFeature();
+                else                      this.backplane.disableSTPFeature();
+                this._renderSTPSection();
+            },
         });
+        this._stpModeSelect = modeSelect;
+
+        const priorityItems = [];
+        for (let p = 0; p <= 61440; p += 4096) {
+            priorityItems.push({ value: String(p), label: p === 32768 ? `${p} (default)` : String(p) });
+        }
+        const prioritySelect = UILib.select(priorityItems, {
+            value: String(this.backplane._stpBridgePriority ?? 32768),
+            onChange: (v) => {
+                this.backplane.setBridgePriority(Number(v));
+                this._renderSTPSection();
+            },
+        });
+
         host.appendChild(UILib.div("hr-fields", [
+            UILib.el("div", { className: "hr-field", children: [
+                UILib.el("span", { text: t("switch.stp.enable") ?? "Spanning Tree", className: "hr-label" }),
+                modeSelect,
+            ]}),
             UILib.el("div", { className: "hr-field", children: [
                 UILib.el("span", { text: t("switch.stp.priority") ?? "Bridge Priority", className: "hr-label" }),
                 prioritySelect,
@@ -260,12 +277,6 @@ export class Switch extends SimulatedObject {
         const section = UILib.div("switch-stp-section");
         this._stpSection = section;
         host.appendChild(section);
-
-        cb.addEventListener("change", () => {
-            if (cb.checked) this.backplane.enableSTPFeature();
-            else this.backplane.disableSTPFeature();
-            this._renderSTPSection();
-        });
 
         this._renderSTPSection();
     }
@@ -454,15 +465,15 @@ export class Switch extends SimulatedObject {
     }
 
     _renderSTPSection() {
-        if (!this._stpSection || !this._stpEnabledCheckbox) return;
+        if (!this._stpSection || !this._stpModeSelect) return;
 
         this._stpSection.innerHTML = "";
 
-        const enabled = this._stpEnabledCheckbox.checked;
+        const mode = this.backplane.stpMode;
 
-        if (!enabled) {
+        if (mode === 'off') {
             this._stpSection.appendChild(UILib.el("p", {
-                text: t("switch.stp.disabled") ?? "STP ist deaktiviert.",
+                text: t("switch.stp.disabled") ?? "Spanning Tree ist deaktiviert.",
                 className: "router-empty-p",
             }));
             return;
@@ -477,7 +488,7 @@ export class Switch extends SimulatedObject {
         const prio = this.backplane._stpBridgePriority ?? 32768;
 
         this._stpSection.appendChild(UILib.el("div", { className: "hr-section", children: [
-            UILib.el("span", { text: t("switch.stp.status") ?? "STP Status", className: "hr-section-title" }),
+            infoRow(t("switch.stp.status") ?? "Status", mode === 'rstp' ? "RSTP (802.1w)" : "STP (802.1D)"),
             infoRow("Bridge ID", `0x${this.backplane.stpBridgeIdVal.toString(16)} (Priority ${prio})${isRoot ? " — Root" : ""}`),
             infoRow("Root ID",   `0x${this.backplane.stpRootId.toString(16)}`),
             infoRow("Root Cost", String(this.backplane.stpRootCost)),
@@ -496,8 +507,13 @@ export class Switch extends SimulatedObject {
             const state = this.backplane.stpPortState?.[i] ?? (this.backplane.stpForwarding[i] ? "forwarding" : "blocking");
             const role = !linked ? "—" : (this.backplane.stpPortRole?.[i] ?? "—");
 
-            const statusClass = { forwarding: "status-up", blocking: "status-down",
-                listening: "status-warning", learning: "status-warning" }[state] ?? "status-unknown";
+            const statusClass = {
+                forwarding: "status-up",
+                blocking:   "status-down",
+                discarding: "status-down",
+                listening:  "status-warning",
+                learning:   "status-warning",
+            }[state] ?? "status-unknown";
             const stateTd = document.createElement("td");
             const badge = document.createElement("span");
             badge.textContent = state;
