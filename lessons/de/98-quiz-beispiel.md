@@ -83,6 +83,12 @@ Font Awesome Regular: :far-file: :far-circle:
 
 Gerätesymbole: :router: :switch:
 
+### Eingebettete Simulation
+
+:::sim
+url=/sims/demo.btsim
+:::
+
 ---
 
 ## Abschnitt 1: Grundbegriffe
