@@ -1358,5 +1358,19 @@ export default {
   "router.vrrp.col.vmac": "Virtuaalinen MAC",
   "router.vrrp.state.master": "MASTER",
   "router.vrrp.state.backup": "BACKUP",
-  "router.vrrp.state.init": "INIT"
+  "router.vrrp.state.init": "INIT",
+  "switch.stp.lag.rep.title": "Tämä portti on LAG-edustaja — STP lasketaan ryhmätasolla.",
+  "switch.stp.lag.inherited.title": "STP-tila peritty LAG-edustajalta.",
+  "switch.stp.lag.footnote": "↑ = STP-tila peritty LAG-edustajalta.",
+  "switch.tab.lag": "LAG",
+  "switch.lag.title": "Linkkien yhdistäminen (LAG)",
+  "switch.lag.addGroup": "+ Lisää ryhmä",
+  "switch.lag.mode": "Tila",
+  "switch.lag.mode.static": "Staattinen",
+  "switch.lag.mode.lacp": "LACP (802.3ad)",
+  "switch.lag.delete": "Poista",
+  "switch.lag.status.active": "aktiivinen",
+  "switch.lag.status.inactive": "passiivinen",
+  "switch.lag.empty": "Ei määritettyjä LAG-ryhmiä.",
+  "router.vrrp.col.ipversion": "IP-versio"
 };

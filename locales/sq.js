@@ -1357,5 +1357,19 @@ export default {
   "router.vrrp.col.vmac": "MAC Virtuale",
   "router.vrrp.state.master": "MASTER",
   "router.vrrp.state.backup": "BACKUP",
-  "router.vrrp.state.init": "INIT"
+  "router.vrrp.state.init": "INIT",
+  "switch.stp.lag.rep.title": "Ky port është përfaqësues i LAG — STP llogaritet në nivelin e grupit.",
+  "switch.stp.lag.inherited.title": "Gjendje STP e trashëguar nga përfaqësusi i LAG.",
+  "switch.stp.lag.footnote": "↑ = Gjendje STP e trashëguar nga përfaqësusi i LAG.",
+  "switch.tab.lag": "LAG",
+  "switch.lag.title": "Agregimi i Lidhjeve (LAG)",
+  "switch.lag.addGroup": "+ Shto Grup",
+  "switch.lag.mode": "Modalitet",
+  "switch.lag.mode.static": "Statik",
+  "switch.lag.mode.lacp": "LACP (802.3ad)",
+  "switch.lag.delete": "Fshij",
+  "switch.lag.status.active": "aktiv",
+  "switch.lag.status.inactive": "joaktiv",
+  "switch.lag.empty": "Nuk ka grupe LAG të konfiguruar.",
+  "router.vrrp.col.ipversion": "Versioni IP"
 };

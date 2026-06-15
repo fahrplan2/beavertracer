@@ -1358,5 +1358,19 @@ export default {
   "router.vrrp.col.vmac": "Sanal MAC",
   "router.vrrp.state.master": "MASTER",
   "router.vrrp.state.backup": "BACKUP",
-  "router.vrrp.state.init": "INIT"
+  "router.vrrp.state.init": "INIT",
+  "switch.stp.lag.rep.title": "Bu port LAG temsilcisidir — STP grup düzeyinde hesaplanır.",
+  "switch.stp.lag.inherited.title": "STP durumu LAG temsilcisinden devralınmıştır.",
+  "switch.stp.lag.footnote": "↑ = STP durumu LAG temsilcisinden devralınmıştır.",
+  "switch.tab.lag": "LAG",
+  "switch.lag.title": "Bağlantı Toplandırması (LAG)",
+  "switch.lag.addGroup": "+ Grup Ekle",
+  "switch.lag.mode": "Mod",
+  "switch.lag.mode.static": "Statik",
+  "switch.lag.mode.lacp": "LACP (802.3ad)",
+  "switch.lag.delete": "Sil",
+  "switch.lag.status.active": "aktif",
+  "switch.lag.status.inactive": "inaktif",
+  "switch.lag.empty": "Yapılandırılmış LAG grubu yok.",
+  "router.vrrp.col.ipversion": "IP Sürümü"
 };

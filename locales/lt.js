@@ -1358,5 +1358,19 @@ export default {
   "router.vrrp.col.vmac": "Virtualus MAC",
   "router.vrrp.state.master": "ŠEIMININKAS",
   "router.vrrp.state.backup": "ATSARGINĖ",
-  "router.vrrp.state.init": "INIT"
+  "router.vrrp.state.init": "INIT",
+  "switch.stp.lag.rep.title": "Šis prievadas yra LAG atstovas — STP apskaičiuojamas grupės lygiu.",
+  "switch.stp.lag.inherited.title": "STP būsena paveldėta iš LAG atstovo.",
+  "switch.stp.lag.footnote": "↑ = STP būsena paveldėta iš LAG atstovo.",
+  "switch.tab.lag": "LAG",
+  "switch.lag.title": "Nuorodų agregavimas (LAG)",
+  "switch.lag.addGroup": "+ Pridėti grupę",
+  "switch.lag.mode": "Režimas",
+  "switch.lag.mode.static": "Statinis",
+  "switch.lag.mode.lacp": "LACP (802.3ad)",
+  "switch.lag.delete": "Ištrinti",
+  "switch.lag.status.active": "aktyvus",
+  "switch.lag.status.inactive": "neaktyvus",
+  "switch.lag.empty": "Nėra sukonfigūruotų LAG grupių.",
+  "router.vrrp.col.ipversion": "IP versija"
 };

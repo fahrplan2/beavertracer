@@ -1358,5 +1358,19 @@ export default {
   "router.vrrp.col.vmac": "MAC مجازی",
   "router.vrrp.state.master": "MASTER",
   "router.vrrp.state.backup": "BACKUP",
-  "router.vrrp.state.init": "INIT"
+  "router.vrrp.state.init": "INIT",
+  "switch.stp.lag.rep.title": "این درگاه نماینده LAG است — STP در سطح گروه محاسبه می‌شود.",
+  "switch.stp.lag.inherited.title": "وضعیت STP به‌ارث‌برده‌شده از نماینده LAG.",
+  "switch.stp.lag.footnote": "↑ = وضعیت STP به‌ارث‌برده‌شده از نماینده LAG.",
+  "switch.tab.lag": "LAG",
+  "switch.lag.title": "تجمیع پیوند (LAG)",
+  "switch.lag.addGroup": "+ افزودن گروه",
+  "switch.lag.mode": "حالت",
+  "switch.lag.mode.static": "ایستا",
+  "switch.lag.mode.lacp": "LACP (802.3ad)",
+  "switch.lag.delete": "حذف",
+  "switch.lag.status.active": "فعال",
+  "switch.lag.status.inactive": "غیرفعال",
+  "switch.lag.empty": "هیچ گروه LAG پیکربندی‌نشده است.",
+  "router.vrrp.col.ipversion": "نسخه IP"
 };

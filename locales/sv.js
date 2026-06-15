@@ -1358,5 +1358,19 @@ export default {
   "router.vrrp.col.vmac": "Virtuell MAC",
   "router.vrrp.state.master": "MASTER",
   "router.vrrp.state.backup": "BACKUP",
-  "router.vrrp.state.init": "INIT"
+  "router.vrrp.state.init": "INIT",
+  "switch.stp.lag.rep.title": "Den här porten är LAG-representanten — STP beräknas på gruppnivå.",
+  "switch.stp.lag.inherited.title": "STP-tillstånd ärvt från LAG-representanten.",
+  "switch.stp.lag.footnote": "↑ = STP-tillstånd ärvt från LAG-representanten.",
+  "switch.tab.lag": "LAG",
+  "switch.lag.title": "Link Aggregation (LAG)",
+  "switch.lag.addGroup": "+ Lägg till grupp",
+  "switch.lag.mode": "Läge",
+  "switch.lag.mode.static": "Statisk",
+  "switch.lag.mode.lacp": "LACP (802.3ad)",
+  "switch.lag.delete": "Ta bort",
+  "switch.lag.status.active": "aktiv",
+  "switch.lag.status.inactive": "inaktiv",
+  "switch.lag.empty": "Inga LAG-grupper konfigurerade.",
+  "router.vrrp.col.ipversion": "IP-version"
 };

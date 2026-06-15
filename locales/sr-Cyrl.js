@@ -1357,5 +1357,19 @@ export default {
   "router.vrrp.col.vmac": "Виртуелна MAC",
   "router.vrrp.state.master": "MASTER",
   "router.vrrp.state.backup": "BACKUP",
-  "router.vrrp.state.init": "INIT"
+  "router.vrrp.state.init": "INIT",
+  "switch.stp.lag.rep.title": "Овај порт је представник ЛАГ-а — СТП се израчунава на нивоу групе.",
+  "switch.stp.lag.inherited.title": "СТП стање наслеђено од представника ЛАГ-а.",
+  "switch.stp.lag.footnote": "↑ = СТП стање наслеђено од представника ЛАГ-а.",
+  "switch.tab.lag": "ЛАГ",
+  "switch.lag.title": "Агрегација веза (ЛАГ)",
+  "switch.lag.addGroup": "+ Додај групу",
+  "switch.lag.mode": "Режим",
+  "switch.lag.mode.static": "Статички",
+  "switch.lag.mode.lacp": "LACP (802.3ad)",
+  "switch.lag.delete": "Избриши",
+  "switch.lag.status.active": "активна",
+  "switch.lag.status.inactive": "неактивна",
+  "switch.lag.empty": "Ниједна ЛАГ група није конфигурисана.",
+  "router.vrrp.col.ipversion": "IP верзија"
 };

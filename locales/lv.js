@@ -1358,5 +1358,19 @@ export default {
   "router.vrrp.col.vmac": "Virtuālais MAC",
   "router.vrrp.state.master": "MASTER",
   "router.vrrp.state.backup": "BACKUP",
-  "router.vrrp.state.init": "INIT"
+  "router.vrrp.state.init": "INIT",
+  "switch.stp.lag.rep.title": "Šis ports ir LAG pārstāvis — STP tiek aprēķināts grupas līmenī.",
+  "switch.stp.lag.inherited.title": "STP stāvoklis pārmantots no LAG pārstāvja.",
+  "switch.stp.lag.footnote": "↑ = STP stāvoklis pārmantots no LAG pārstāvja.",
+  "switch.tab.lag": "LAG",
+  "switch.lag.title": "Saites sasaistīšana (LAG)",
+  "switch.lag.addGroup": "+ Pievienot grupu",
+  "switch.lag.mode": "Režīms",
+  "switch.lag.mode.static": "Statisks",
+  "switch.lag.mode.lacp": "LACP (802.3ad)",
+  "switch.lag.delete": "Dzēst",
+  "switch.lag.status.active": "aktīvs",
+  "switch.lag.status.inactive": "neaktīvs",
+  "switch.lag.empty": "Nav konfigurētas LAG grupas.",
+  "router.vrrp.col.ipversion": "IP versija"
 };

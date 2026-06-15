@@ -1358,5 +1358,19 @@ export default {
   "router.vrrp.col.vmac": "Віртуальна MAC",
   "router.vrrp.state.master": "MASTER",
   "router.vrrp.state.backup": "BACKUP",
-  "router.vrrp.state.init": "INIT"
+  "router.vrrp.state.init": "INIT",
+  "switch.stp.lag.rep.title": "Цей порт є представником LAG — STP обчислюється на рівні групи.",
+  "switch.stp.lag.inherited.title": "Стан STP успадкований від представника LAG.",
+  "switch.stp.lag.footnote": "↑ = Стан STP успадкований від представника LAG.",
+  "switch.tab.lag": "LAG",
+  "switch.lag.title": "Агрегація каналів (LAG)",
+  "switch.lag.addGroup": "+ Додати групу",
+  "switch.lag.mode": "Режим",
+  "switch.lag.mode.static": "Статичний",
+  "switch.lag.mode.lacp": "LACP (802.3ad)",
+  "switch.lag.delete": "Видалити",
+  "switch.lag.status.active": "активна",
+  "switch.lag.status.inactive": "неактивна",
+  "switch.lag.empty": "Групи LAG не налаштовані.",
+  "router.vrrp.col.ipversion": "Версія IP"
 };

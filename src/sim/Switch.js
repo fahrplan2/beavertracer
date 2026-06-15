@@ -59,6 +59,9 @@ export class Switch extends SimulatedObject {
     /** @type {HTMLDivElement|null} */
     _stpSection = null;
 
+    /** @type {HTMLDivElement|null} */
+    _lagSection = null;
+
     /**
      * @param {String} name
      */
@@ -92,6 +95,12 @@ export class Switch extends SimulatedObject {
                 pvid: p.pvid,                                 // number
                 allowedVlans: [...(p.allowedVlans ?? [])],     // number[]
             })),
+
+            // lag groups
+            lagGroups: this.backplane.lagGroups.map(g => ({
+                id: g.id, name: g.name, mode: g.mode, members: [...g.members],
+            })),
+            lagNextId: this.backplane._nextLagId,
         };
 
     }
@@ -143,6 +152,25 @@ export class Switch extends SimulatedObject {
         else if (mode === 'stp')   obj.backplane.enableSTPFeature();
         else                       obj.backplane.disableSTPFeature();
 
+        // --- LAG groups ---
+        if (Array.isArray(n.lagGroups)) {
+            for (const g of n.lagGroups) {
+                const group = { id: g.id, name: g.name ?? `bond${g.id}`, mode: g.mode ?? 'static', members: /** @type {number[]} */ ([]) };
+                obj.backplane.lagGroups.push(group);
+                if (Array.isArray(g.members)) {
+                    for (const portIdx of g.members) {
+                        if (portIdx >= 0 && portIdx < obj.backplane.ports.length) {
+                            group.members.push(portIdx);
+                            obj.backplane.portLagId[portIdx] = group.id;
+                        }
+                    }
+                }
+            }
+            obj.backplane._nextLagId = typeof n.lagNextId === 'number'
+                ? n.lagNextId
+                : obj.backplane.lagGroups.reduce((m, g) => Math.max(m, g.id + 1), 0);
+        }
+
         return obj;
     }
 
@@ -184,6 +212,7 @@ export class Switch extends SimulatedObject {
             { id: "sat",  label: t("switch.tab.sat")  },
             { id: "vlan", label: t("switch.tab.vlan") },
             { id: "stp",  label: t("switch.tab.stp")  },
+            { id: "lag",  label: t("switch.tab.lag")  },
         ], (id) => {
             this._activeTab = id;
             this._satHost = null;
@@ -191,10 +220,12 @@ export class Switch extends SimulatedObject {
             this._vlanSection = null;
             this._stpModeSelect = null;
             this._stpSection = null;
+            this._lagSection = null;
             UILib.clear(content);
             if (id === "sat")  this._buildMacTab(content);
             else if (id === "vlan") this._buildVlanTab(content);
             else if (id === "stp")  this._buildStpTab(content);
+            else if (id === "lag")  this._buildLagTab(content);
         });
         card.appendChild(tabBar);
         card.appendChild(content);
@@ -202,6 +233,7 @@ export class Switch extends SimulatedObject {
         if (this._activeTab === "sat")  this._buildMacTab(content);
         else if (this._activeTab === "vlan") this._buildVlanTab(content);
         else if (this._activeTab === "stp")  this._buildStpTab(content);
+        else if (this._activeTab === "lag")  this._buildLagTab(content);
         selectTab(this._activeTab);
         this._startSatPolling();
     }
@@ -285,6 +317,7 @@ export class Switch extends SimulatedObject {
         this._pollTimer.start(() => {
             if (this._activeTab === "sat") this._renderSAT();
             else if (this._activeTab === "stp") this._renderSTPSection();
+            else if (this._activeTab === "lag") this._renderLagSection();
         }, 500);
     }
 
@@ -464,6 +497,103 @@ export class Switch extends SimulatedObject {
         this._vlanSection.appendChild(card);
     }
 
+    /** @param {HTMLElement} host */
+    _buildLagTab(host) {
+        const header = UILib.div("switch-lag-header");
+        header.appendChild(UILib.el("span", { text: t("switch.lag.title"), className: "switch-lag-title" }));
+        header.appendChild(UILib.button(t("switch.lag.addGroup"), () => {
+            this.backplane.createLagGroup('static');
+            this._renderLagSection();
+        }));
+        host.appendChild(header);
+
+        const section = UILib.div("switch-lag-section");
+        this._lagSection = section;
+        host.appendChild(section);
+        this._renderLagSection();
+    }
+
+    _renderLagSection() {
+        if (!this._lagSection) return;
+        UILib.clear(this._lagSection);
+
+        const groups = this.backplane.lagGroups;
+        const ports  = this.backplane.ports;
+
+        if (!groups.length) {
+            this._lagSection.appendChild(UILib.el("p", {
+                text: t("switch.lag.empty"),
+                className: "router-empty-p",
+            }));
+            return;
+        }
+
+        for (const group of groups) {
+            const card = UILib.div("switch-lag-card");
+
+            // ── card header ──────────────────────────────────────────
+            const cardHeader = UILib.div("switch-lag-card-header");
+
+            cardHeader.appendChild(UILib.el("span", { text: group.name, className: "switch-lag-name" }));
+
+            cardHeader.appendChild(UILib.el("span", { text: t("switch.lag.mode") + ":", className: "hr-label" }));
+            cardHeader.appendChild(UILib.select([
+                { value: "static", label: t("switch.lag.mode.static") },
+                { value: "lacp",   label: t("switch.lag.mode.lacp")   },
+            ], {
+                value: group.mode,
+                onChange: (v) => { group.mode = /** @type {'static'|'lacp'} */ (v); },
+            }));
+
+            const delBtn = UILib.button(t("switch.lag.delete"), () => {
+                this.backplane.deleteLagGroup(group.id);
+                this._renderLagSection();
+            }, { className: "btn btn-danger" });
+            cardHeader.appendChild(delBtn);
+            card.appendChild(cardHeader);
+
+            // ── port checkboxes ──────────────────────────────────────
+            const portsRow = UILib.div("switch-lag-ports");
+
+            for (let idx = 0; idx < ports.length; idx++) {
+                const currentGid    = this.backplane.portLagId[idx] ?? -1;
+                const isInThisGroup = currentGid === group.id;
+                const isInOther     = currentGid >= 0 && currentGid !== group.id;
+                const isLinked      = ports[idx].isLinked();
+
+                const cb = /** @type {HTMLInputElement} */ (UILib.input({ type: "checkbox" }));
+                cb.checked  = isInThisGroup;
+                cb.disabled = isInOther;
+
+                if (!isInOther) {
+                    cb.addEventListener("change", () => {
+                        if (cb.checked) this.backplane.addPortToLag(idx, group.id);
+                        else            this.backplane.removePortFromLag(idx);
+                        this._renderLagSection();
+                    });
+                }
+
+                const statusEl = isInThisGroup
+                    ? UILib.el("span", {
+                        text: isLinked
+                            ? ("● " + t("switch.lag.status.active"))
+                            : ("○ " + t("switch.lag.status.inactive")),
+                        className: isLinked ? "switch-lag-status-active" : "switch-lag-status-inactive",
+                    })
+                    : null;
+
+                const entry = UILib.div(
+                    "switch-lag-port-entry" + (isInOther ? " switch-lag-port-disabled" : ""),
+                    [cb, UILib.el("span", { text: `port ${idx + 1}`, className: "switch-lag-port-label" }), statusEl],
+                );
+                portsRow.appendChild(entry);
+            }
+
+            card.appendChild(portsRow);
+            this._lagSection.appendChild(card);
+        }
+    }
+
     _renderSTPSection() {
         if (!this._stpSection || !this._stpModeSelect) return;
 
@@ -501,6 +631,8 @@ export class Switch extends SimulatedObject {
         const tbody = document.createElement("tbody");
 
         const ports = this.backplane?.ports ?? [];
+        let hasLagInheritance = false;
+
         for (let i = 0; i < ports.length; i++) {
             const tr = document.createElement("tr");
             const linked = ports[i].isLinked();
@@ -520,7 +652,25 @@ export class Switch extends SimulatedObject {
             badge.className = `ui-tab-badge ${statusClass}`;
             stateTd.appendChild(badge);
 
-            const portTd = document.createElement("td"); portTd.textContent = `port ${i + 1}`;
+            // LAG hint in port cell
+            const portTd = document.createElement("td");
+            portTd.textContent = `port ${i + 1}`;
+            const gid = this.backplane.portLagId[i] ?? -1;
+            if (gid >= 0) {
+                const group = this.backplane.lagGroups.find(g => g.id === gid);
+                if (group) {
+                    const isRep = this.backplane._lagRepresentative(i) === i;
+                    if (!isRep) hasLagInheritance = true;
+                    const lagTag = document.createElement("span");
+                    lagTag.className = "ui-tab-badge switch-stp-lag-tag" + (isRep ? " status-unknown" : " switch-stp-lag-inherited");
+                    lagTag.textContent = isRep ? group.name : `↑ ${group.name}`;
+                    lagTag.title = isRep
+                        ? t("switch.stp.lag.rep.title")
+                        : t("switch.stp.lag.inherited.title");
+                    portTd.appendChild(lagTag);
+                }
+            }
+
             const linkedTd = document.createElement("td"); linkedTd.textContent = linked ? "yes" : "no";
             const roleTd = document.createElement("td"); roleTd.textContent = role;
 
@@ -532,5 +682,12 @@ export class Switch extends SimulatedObject {
         const scroll = UILib.div("sim-table-scroll");
         scroll.appendChild(table);
         this._stpSection.appendChild(UILib.wrapWithScrollHints(scroll));
+
+        if (hasLagInheritance) {
+            this._stpSection.appendChild(UILib.el("p", {
+                text: t("switch.stp.lag.footnote"),
+                className: "sim-hint switch-stp-lag-footnote",
+            }));
+        }
     }
 }

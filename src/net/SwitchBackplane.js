@@ -87,6 +87,17 @@ export class SwitchBackplane extends Observable {
     /** True whenever any spanning-tree mode is active. */
     get stpEnabled() { return this.stpMode !== 'off'; }
 
+    // -------------------- LAG --------------------
+    /**
+     * @type {Array<{id: number, name: string, mode: 'static'|'lacp', members: number[]}>}
+     */
+    lagGroups = [];
+
+    /** portIdx → lag group id, -1 if none. @type {number[]} */
+    portLagId = [];
+
+    _nextLagId = 0;
+
     /**
      * VLAN disabled:
      *   Map<bigint, number>
@@ -358,6 +369,8 @@ export class SwitchBackplane extends Observable {
         this.ports.push(port);
         port.subscribe(this);
 
+        this.portLagId.push(-1);
+
         // keep STP/RSTP arrays in sync
         this.stpRxBest.push(null);
         this.stpPortState.push(this.stpEnabled ? (this.stpMode === 'rstp' ? STP_STATE.DISCARDING : STP_STATE.BLOCKING) : STP_STATE.FORWARDING);
@@ -386,6 +399,138 @@ export class SwitchBackplane extends Observable {
             if (this.ports[i].linkref == null) return this.ports[i];
         }
         return null;
+    }
+
+    // ---------------------------------------------------------------------------
+    // LAG helpers
+    // ---------------------------------------------------------------------------
+
+    /** @param {'static'|'lacp'} [mode] */
+    createLagGroup(mode = 'static') {
+        const id = this._nextLagId++;
+        const group = { id, name: `bond${id}`, mode, members: [] };
+        this.lagGroups.push(group);
+        return group;
+    }
+
+    /** @param {number} id */
+    deleteLagGroup(id) {
+        const idx = this.lagGroups.findIndex(g => g.id === id);
+        if (idx < 0) return;
+        for (const m of this.lagGroups[idx].members) this.portLagId[m] = -1;
+        this.lagGroups.splice(idx, 1);
+        this.sat.clear();
+    }
+
+    /** @param {number} portIdx @param {number} groupId */
+    addPortToLag(portIdx, groupId) {
+        this.removePortFromLag(portIdx);
+        const group = this.lagGroups.find(g => g.id === groupId);
+        if (!group) return;
+        group.members.push(portIdx);
+        group.members.sort((a, b) => a - b);
+        this.portLagId[portIdx] = groupId;
+        this.sat.clear();
+    }
+
+    /** @param {number} portIdx */
+    removePortFromLag(portIdx) {
+        const gid = this.portLagId[portIdx];
+        if (gid < 0) return;
+        const g = this.lagGroups.find(g => g.id === gid);
+        if (g) g.members = g.members.filter(m => m !== portIdx);
+        this.portLagId[portIdx] = -1;
+        this.sat.clear();
+    }
+
+    /** @param {number} portIdx */
+    _lagRepresentative(portIdx) {
+        const gid = this.portLagId[portIdx] ?? -1;
+        if (gid < 0) return portIdx;
+        const g = this.lagGroups.find(g => g.id === gid);
+        return (g && g.members.length) ? g.members[0] : portIdx;
+    }
+
+    /** @param {number} groupId @param {EthernetFrame} frame */
+    _lagEgressMember(groupId, frame) {
+        const g = this.lagGroups.find(g => g.id === groupId);
+        if (!g) return null;
+        const active = g.members.filter(idx => this.ports[idx]?.isLinked());
+        if (!active.length) return null;
+        const hash = (frame.srcMac[4] ^ frame.srcMac[5] ^ frame.dstMac[4] ^ frame.dstMac[5]) & 0xff;
+        return active[hash % active.length];
+    }
+
+    /**
+     * Returns true if this port should be used as an egress port for a frame
+     * that arrived on ingressPortIdx. For LAG members, only one member per group
+     * is elected per frame.
+     * @param {number} portIdx
+     * @param {number} ingressPortIdx
+     * @param {EthernetFrame} frame
+     */
+    _lagShouldEgress(portIdx, ingressPortIdx, frame) {
+        const gid = this.portLagId[portIdx] ?? -1;
+        if (gid < 0) return true;
+        if ((this.portLagId[ingressPortIdx] ?? -1) === gid) return false;
+        return this._lagEgressMember(gid, frame) === portIdx;
+    }
+
+    /**
+     * Resolves actual egress port: if portIdx is a LAG representative, picks
+     * an active member for this frame; otherwise returns portIdx unchanged.
+     * @param {number} portIdx
+     * @param {EthernetFrame} frame
+     */
+    _lagResolveEgress(portIdx, frame) {
+        const gid = this.portLagId[portIdx] ?? -1;
+        if (gid < 0) return portIdx;
+        return this._lagEgressMember(gid, frame) ?? portIdx;
+    }
+
+    // ---------------------------------------------------------------------------
+    // STP + LAG integration helpers
+    // ---------------------------------------------------------------------------
+
+    /**
+     * True if this port is a "logical STP port": not in a LAG, or the LAG representative.
+     * Non-representative LAG members are invisible to STP; they inherit the rep's state.
+     * @param {number} i
+     */
+    _stpIsLogicalPort(i) {
+        const gid = this.portLagId[i] ?? -1;
+        return gid < 0 || this._lagRepresentative(i) === i;
+    }
+
+    /**
+     * True if the logical port (or its LAG group) has at least one linked physical port.
+     * @param {number} i  logical port index (representative or non-LAG)
+     */
+    _stpIsLinked(i) {
+        const gid = this.portLagId[i] ?? -1;
+        if (gid < 0) return this.ports[i].isLinked();
+        const g = this.lagGroups.find(g => g.id === gid);
+        return g ? g.members.some(m => this.ports[m]?.isLinked()) : this.ports[i].isLinked();
+    }
+
+    /**
+     * Copy the STP state and role of each LAG representative to its non-representative members.
+     * Cancels any stale timers on members so they don't override the synced state.
+     */
+    _lagSyncStpStates() {
+        for (const group of this.lagGroups) {
+            if (group.members.length < 2) continue;
+            const rep = group.members[0];
+            for (let mi = 1; mi < group.members.length; mi++) {
+                const m = group.members[mi];
+                if (this._stpPortTimers[m] != null) {
+                    simTimer.cancel(/** @type {number} */ (this._stpPortTimers[m]));
+                    this._stpPortTimers[m] = null;
+                }
+                this.stpPortState[m] = this.stpPortState[rep];
+                this.stpPortRole[m]  = this.stpPortRole[rep];
+            }
+        }
     }
 
     // ---------------------------------------------------------------------------
@@ -739,9 +884,10 @@ export class SwitchBackplane extends Observable {
         let best = { rootId: this.stpBridgeIdVal, cost: 0, bridgeId: this.stpBridgeIdVal, portId: 0 };
         let bestPort = null;
 
-        // pick root port by best received info
+        // pick root port — only look at logical STP ports (LAG representatives + non-LAG)
         for (let i = 0; i < this.ports.length; i++) {
-            if (!this.ports[i].isLinked()) continue;
+            if (!this._stpIsLogicalPort(i)) continue;
+            if (!this._stpIsLinked(i)) continue;
 
             const rx = this.stpRxBest[i];
             if (!rx) continue;
@@ -770,13 +916,13 @@ export class SwitchBackplane extends Observable {
             this._stpRootPortMessageAge = 0;
         }
 
-        // designated-port election per segment:
-        // our advertised tuple on that port vs neighbor's advertised tuple on that port
+        // designated-port election per segment (logical ports only)
         const ourAdvBase = { rootId: this.stpRootId, cost: this.stpRootCost, bridgeId: this.stpBridgeIdVal };
 
         for (let i = 0; i < this.ports.length; i++) {
-            if (!this.ports[i].isLinked()) {
-                // Unlinked ports are non-designated and stay blocking
+            if (!this._stpIsLogicalPort(i)) continue;
+
+            if (!this._stpIsLinked(i)) {
                 this.stpPortRole[i] = "nondesignated";
                 this._setPortTargetState(i, false);
                 continue;
@@ -797,13 +943,14 @@ export class SwitchBackplane extends Observable {
             }
 
             const ourTuple = { ...ourAdvBase, portId: this._makePortId(i) };
-            const neighTuple = rx;
 
-            // If our tuple is better, we are designated => forward, else block
-            const isDesignated = compareTuple(ourTuple, neighTuple) < 0;
+            const isDesignated = compareTuple(ourTuple, rx) < 0;
             this.stpPortRole[i] = isDesignated ? "designated" : "nondesignated";
             this._setPortTargetState(i, isDesignated);
         }
+
+        // Propagate logical port state to all non-representative LAG members
+        this._lagSyncStpStates();
 
         const snap = this._stpSnapshot();
         if (this._stpForceEmit || snap !== this._stpLastSnapshot) {
@@ -841,11 +988,9 @@ export class SwitchBackplane extends Observable {
             : Math.min(this._stpRootPortMessageAge + 256, 20 * 256 - 256);
 
         for (let i = 0; i < this.ports.length; i++) {
-            // Only designated ports send Config BPDUs (IEEE 802.1D §8.5.3)
+            // Only designated logical ports send Config BPDUs (IEEE 802.1D §8.5.3)
             if (this.stpPortRole[i] !== "designated") continue;
-
-            const p = this.ports[i];
-            if (!p.isLinked()) continue;
+            if (!this._stpIsLogicalPort(i)) continue;
 
             const flags = (this._stpTcActive     ? STP_FLAG_TC  : 0) |
                           (this._stpTcaOnPort[i] ? STP_FLAG_TCA : 0);
@@ -863,15 +1008,21 @@ export class SwitchBackplane extends Observable {
             const f = new EthernetFrame({
                 dstMac: STP_DEST_MAC,
                 srcMac: srcMac,
-                etherType: 0, // not used for 802.3 length frames
-                payload: payload, // includes LLC+BPDU
+                etherType: 0,
+                payload: payload,
             });
-
             f.vlan = null;
             f.useLengthField = true;
             f.length = payload.length;
 
-            p.send(f);
+            // For LAG: send on every linked physical member of this logical port
+            const gid = this.portLagId[i] ?? -1;
+            if (gid >= 0) {
+                const g = this.lagGroups.find(g => g.id === gid);
+                if (g) for (const m of g.members) { if (this.ports[m]?.isLinked()) this.ports[m].send(f); }
+            } else {
+                if (this.ports[i].isLinked()) this.ports[i].send(f);
+            }
         }
     }
 
@@ -881,12 +1032,13 @@ export class SwitchBackplane extends Observable {
 
     /**
      * Build and send one RST BPDU (protocolVersion=2, bpduType=0x02) on a port.
-     * @param {number} portIdx
-     * @param {number} flags  full 8-bit RSTP flags byte
+     * @param {number} portIdx        physical port to send on
+     * @param {number} flags          full 8-bit RSTP flags byte
      * @param {Uint8Array} [rootIdBytes]
      * @param {number} [rootCost]
+     * @param {number} [logicalPortIdx]  logical port for port-ID field (defaults to portIdx)
      */
-    _sendRstBpdu(portIdx, flags, rootIdBytes, rootCost) {
+    _sendRstBpdu(portIdx, flags, rootIdBytes, rootCost, logicalPortIdx = portIdx) {
         const srcMac = bigintToMac(this.bridgeId);
         const ourBridgeIdBytes = this.stpBridgeIdBytes;
 
@@ -908,7 +1060,7 @@ export class SwitchBackplane extends Observable {
             rootId: ri,
             rootPathCost: cost >>> 0,
             bridgeId: ourBridgeIdBytes,
-            portId: this._makePortId(portIdx),
+            portId: this._makePortId(logicalPortIdx),
             messageAge,
             maxAge: 20 * 256,
             helloTime: 2 * 256,
@@ -937,7 +1089,8 @@ export class SwitchBackplane extends Observable {
             : this._bigIntTo8Bytes(this.stpRootId);
 
         for (let i = 0; i < this.ports.length; i++) {
-            if (!this.ports[i].isLinked()) continue;
+            if (!this._stpIsLogicalPort(i)) continue;
+            if (!this._stpIsLinked(i)) continue;
 
             const role = this.stpPortRole[i];
             const state = this.stpPortState[i];
@@ -952,7 +1105,17 @@ export class SwitchBackplane extends Observable {
                     (RSTP_PORT_ROLE.DESIGNATED << 2) |
                     (isLrn ? RSTP_FLAG_LEARNING : 0) |
                     (isFwd ? RSTP_FLAG_FORWARDING : 0);
-                this._sendRstBpdu(i, flags, rootIdBytes, this.stpRootCost);
+
+                // For LAG: send on every linked physical member, using logical port for BPDU port-ID
+                const gid = this.portLagId[i] ?? -1;
+                if (gid >= 0) {
+                    const g = this.lagGroups.find(g => g.id === gid);
+                    if (g) for (const m of g.members) {
+                        if (this.ports[m]?.isLinked()) this._sendRstBpdu(m, flags, rootIdBytes, this.stpRootCost, i);
+                    }
+                } else {
+                    this._sendRstBpdu(i, flags, rootIdBytes, this.stpRootCost);
+                }
             }
         }
     }
@@ -966,8 +1129,10 @@ export class SwitchBackplane extends Observable {
         let best = { rootId: this.stpBridgeIdVal, cost: 0, bridgeId: this.stpBridgeIdVal, portId: 0 };
         let bestPort = null;
 
+        // Root election — logical ports only
         for (let i = 0; i < this.ports.length; i++) {
-            if (!this.ports[i].isLinked()) continue;
+            if (!this._stpIsLogicalPort(i)) continue;
+            if (!this._stpIsLinked(i)) continue;
             const rx = this.stpRxBest[i];
             if (!rx) continue;
             const cand = { rootId: rx.rootId, cost: rx.cost + 1, bridgeId: rx.bridgeId, portId: rx.portId };
@@ -986,8 +1151,11 @@ export class SwitchBackplane extends Observable {
 
         const ourAdvBase = { rootId: this.stpRootId, cost: this.stpRootCost, bridgeId: this.stpBridgeIdVal };
 
+        // Role assignment — logical ports only
         for (let i = 0; i < this.ports.length; i++) {
-            if (!this.ports[i].isLinked()) {
+            if (!this._stpIsLogicalPort(i)) continue;
+
+            if (!this._stpIsLinked(i)) {
                 this.stpPortRole[i] = "alternate";
                 this._rstpSetDiscarding(i);
                 continue;
@@ -998,8 +1166,6 @@ export class SwitchBackplane extends Observable {
                 this.stpPortRole[i] = "root";
                 this._rstpProposing[i] = false;
                 if (!wasRoot) {
-                    // Newly elected root port: start timer-based forwarding
-                    // (P/A agreement from upstream will accelerate this)
                     this._rstpStartFwd(i);
                 }
                 continue;
@@ -1007,13 +1173,12 @@ export class SwitchBackplane extends Observable {
 
             const rx = this.stpRxBest[i];
             if (!rx) {
-                // No neighbor — designated, start proposing
                 const wasDesignated = this.stpPortRole[i] === "designated";
                 this.stpPortRole[i] = "designated";
                 if (!wasDesignated && this.stpPortState[i] !== STP_STATE.FORWARDING) {
                     this._rstpSetDiscarding(i);
                     this._rstpProposing[i] = true;
-                    this._rstpStartFwd(i); // fallback timer; Agreement short-circuits this
+                    this._rstpStartFwd(i);
                 } else if (!wasDesignated) {
                     this._rstpProposing[i] = true;
                 }
@@ -1023,23 +1188,23 @@ export class SwitchBackplane extends Observable {
             const ourTuple = { ...ourAdvBase, portId: this._makePortId(i) };
 
             if (compareTuple(ourTuple, rx) < 0) {
-                // We have the better path — Designated Port
                 const wasDesignated = this.stpPortRole[i] === "designated";
                 this.stpPortRole[i] = "designated";
                 if (!wasDesignated && this.stpPortState[i] !== STP_STATE.FORWARDING) {
                     this._rstpSetDiscarding(i);
                     this._rstpProposing[i] = true;
-                    this._rstpStartFwd(i); // fallback timer; Agreement short-circuits this
+                    this._rstpStartFwd(i);
                 } else if (!wasDesignated) {
                     this._rstpProposing[i] = true;
                 }
             } else {
-                // Neighbor is better — Alternate or Backup
-                // Backup: receiving a BPDU from ourselves (two ports on same shared segment)
                 this.stpPortRole[i] = (rx.bridgeId === this.stpBridgeIdVal) ? "backup" : "alternate";
                 this._rstpSetDiscarding(i);
             }
         }
+
+        // Propagate logical port state to all non-representative LAG members
+        this._lagSyncStpStates();
 
         const snap = this._stpSnapshot();
         if (this._stpForceEmit || snap !== this._stpLastSnapshot) {
@@ -1100,6 +1265,7 @@ export class SwitchBackplane extends Observable {
         if (cur !== STP_STATE.FORWARDING) {
             this.stpPortState[portIdx] = STP_STATE.FORWARDING;
             this._rstpTriggerTc();
+            this._lagSyncStpStates();
         }
     }
 
@@ -1339,14 +1505,15 @@ export class SwitchBackplane extends Observable {
             const linkedNow = this.ports[i].isLinked();
             const linkedBefore = this.stpPortLinkedLast[i];
 
-            if (linkedNow !== linkedBefore) {
-                this.stpPortLinkedLast[i] = linkedNow;
-                changed = true;
+            if (linkedNow === linkedBefore) continue;
+            this.stpPortLinkedLast[i] = linkedNow;
+            changed = true;
 
-                // if link went down, forget neighbor BPDU learned on it
-                if (!linkedNow) {
-                    this.stpRxBest[i] = null;
-                }
+            // Forget neighbor BPDU on the logical port (representative) when the
+            // whole LAG group goes down; for non-LAG ports, clear immediately.
+            const rep = this._lagRepresentative(i);
+            if (!this._stpIsLinked(rep)) {
+                this.stpRxBest[rep] = null;
             }
         }
 
@@ -1380,17 +1547,16 @@ export class SwitchBackplane extends Observable {
                 // ---------------- STP BPDU receive ----------------
                 if (this.stpEnabled && this._isBpdu(frame)) {
                     const bpdu = this._unpackBpdu(frame.payload);
+                    // All STP state is on the logical port (LAG representative).
+                    const stpPort = this._lagRepresentative(i);
 
                     // TCN BPDU: received on a designated port, relay toward root
                     if (bpdu && bpdu.bpduType === 0x80) {
-                        if (this.stpPortRole[i] === "designated") {
-                            // Acknowledge with TCA in next Config BPDU on this port
-                            this._stpTcaOnPort[i] = true;
+                        if (this.stpPortRole[stpPort] === "designated") {
+                            this._stpTcaOnPort[stpPort] = true;
                             if (this.stpRootPort === null) {
-                                // We are root — activate TC period
                                 this._stpTriggerTc();
                             } else {
-                                // Relay TCN upstream
                                 this._stpStartTcn();
                                 this.sat.clear();
                             }
@@ -1400,19 +1566,17 @@ export class SwitchBackplane extends Observable {
 
                     // RST BPDU (IEEE 802.1w, protocolVersion 2)
                     if (bpdu && bpdu.bpduType === 0x02 && this.stpMode === 'rstp') {
-                        this._handleRstBpdu(i, bpdu);
+                        this._handleRstBpdu(stpPort, bpdu);
                         continue;
                     }
 
                     // Config BPDU (classic STP only)
                     if (bpdu && bpdu.bpduType === 0x00 && this.stpMode === 'stp') {
-                        // TC bit: flush MAC table to avoid stale forwarding during reconvergence
                         if (bpdu.flags & STP_FLAG_TC) {
                             this.sat.clear();
                         }
 
-                        // TCA bit on root port: the designated bridge ack'd our TCN
-                        if (i === this.stpRootPort && (bpdu.flags & STP_FLAG_TCA)) {
+                        if (stpPort === this.stpRootPort && (bpdu.flags & STP_FLAG_TCA)) {
                             this._stpStopTcn();
                         }
 
@@ -1424,14 +1588,13 @@ export class SwitchBackplane extends Observable {
                             messageAge: bpdu.messageAge,
                         };
 
-                        const prev = this.stpRxBest[i];
+                        const prev = this.stpRxBest[stpPort];
                         if (!prev || compareTuple(rx, prev) < 0) {
-                            this.stpRxBest[i] = rx;
-                            this._stpRxBestTick[i] = simTimer.currentTick;
+                            this.stpRxBest[stpPort] = rx;
+                            this._stpRxBestTick[stpPort] = simTimer.currentTick;
                             this._recomputeStpAndMaybeEmit();
                         } else if (prev && compareTuple(rx, prev) === 0) {
-                            // Same info refreshed — update timestamp to prevent aging
-                            this._stpRxBestTick[i] = simTimer.currentTick;
+                            this._stpRxBestTick[stpPort] = simTimer.currentTick;
                         }
                     }
 
@@ -1439,17 +1602,14 @@ export class SwitchBackplane extends Observable {
                 }
 
                 // After BPDU handling, enforce STP on ingress for DATA frames.
-                // BLOCKING and LISTENING ports drop all data frames.
-                // LEARNING ports participate in MAC learning but do not forward.
+                // For LAG members, look up the representative's state.
                 if (this.stpEnabled) {
-                    const ps = this.stpPortState[i];
+                    const ps = this.stpPortState[this._lagRepresentative(i)];
                     if (ps === STP_STATE.BLOCKING || ps === STP_STATE.LISTENING || ps === STP_STATE.DISCARDING) continue;
                 }
 
                 // ---------------- Data forwarding ----------------
-                // When STP enabled: never forward OUT of non-FORWARDING ports.
-                // LEARNING ports may update the CAM but must not send frames out.
-                const stpLearningOnly = this.stpEnabled && this.stpPortState[i] === STP_STATE.LEARNING;
+                const stpLearningOnly = this.stpEnabled && this.stpPortState[this._lagRepresentative(i)] === STP_STATE.LEARNING;
 
                 // Bridge Group Address (01:80:c2:00:00:00–0f): terminate at bridge, never forward
                 if (this._isBridgeGroupAddress(frame)) continue;
@@ -1457,9 +1617,10 @@ export class SwitchBackplane extends Observable {
                 // VLAN DISABLED
                 if (!this.vlanEnabled) {
                     // Learn source MAC globally (IEEE 802.1D §7.8: never learn multicast source MACs)
+                    // For LAG members, learn on the group representative so all members share one SAT slot.
                     if (!(frame.srcMac[0] & 0x01)) {
                         const srcKey = MACToNumber(frame.srcMac);
-                        this.sat.set(srcKey, i);
+                        this.sat.set(srcKey, this._lagRepresentative(i));
                     }
 
                     if (stpLearningOnly) continue;
@@ -1468,7 +1629,8 @@ export class SwitchBackplane extends Observable {
                     if (isBroadcast) {
                         for (let j = 0; j < this.ports.length; j++) {
                             if (j === i) continue;
-                            if (this.stpEnabled && this.stpPortState[j] !== STP_STATE.FORWARDING) continue;
+                            if (!this._lagShouldEgress(j, i, frame)) continue;
+                            if (this.stpEnabled && this.stpPortState[this._lagRepresentative(j)] !== STP_STATE.FORWARDING) continue;
                             this.ports[j].send(frame);
                         }
                         continue;
@@ -1481,14 +1643,16 @@ export class SwitchBackplane extends Observable {
                         // Unknown unicast -> flood
                         for (let j = 0; j < this.ports.length; j++) {
                             if (j === i) continue;
-                            if (this.stpEnabled && this.stpPortState[j] !== STP_STATE.FORWARDING) continue;
+                            if (!this._lagShouldEgress(j, i, frame)) continue;
+                            if (this.stpEnabled && this.stpPortState[this._lagRepresentative(j)] !== STP_STATE.FORWARDING) continue;
                             this.ports[j].send(frame);
                         }
                     } else {
-                        // Known unicast -> forward (but don't loop back to ingress)
-                        if (outIndex === i) continue;
-                        if (this.stpEnabled && this.stpPortState[outIndex] !== STP_STATE.FORWARDING) continue;
-                        this.ports[outIndex].send(frame);
+                        // Known unicast -> forward; resolve LAG member if needed
+                        const actualOut = this._lagResolveEgress(outIndex, frame);
+                        if (actualOut === i) continue;
+                        if (this.stpEnabled && this.stpPortState[this._lagRepresentative(actualOut)] !== STP_STATE.FORWARDING) continue;
+                        this.ports[actualOut].send(frame);
                     }
 
                     continue;
@@ -1506,7 +1670,7 @@ export class SwitchBackplane extends Observable {
                         vlanMap = new Map();
                         this.sat.set(vid, vlanMap);
                     }
-                    vlanMap.set(srcKey, i);
+                    vlanMap.set(srcKey, this._lagRepresentative(i));
                 }
 
                 if (stpLearningOnly) continue;
@@ -1519,18 +1683,20 @@ export class SwitchBackplane extends Observable {
                     // Flood within VLAN
                     for (let j = 0; j < this.ports.length; j++) {
                         if (j === i) continue;
-                        if (this.stpEnabled && this.stpPortState[j] !== STP_STATE.FORWARDING) continue;
+                        if (!this._lagShouldEgress(j, i, frame)) continue;
+                        if (this.stpEnabled && this.stpPortState[this._lagRepresentative(j)] !== STP_STATE.FORWARDING) continue;
 
                         const outPort = this.ports[j];
                         if (!this.portAllowsVid(outPort, vid)) continue;
                         this.sendOut(vid, outPort, frame);
                     }
                 } else {
-                    // Known unicast
-                    if (outIndex === i) continue;
-                    if (this.stpEnabled && this.stpPortState[outIndex] !== STP_STATE.FORWARDING) continue;
+                    // Known unicast; resolve LAG member if needed
+                    const actualOut = this._lagResolveEgress(outIndex, frame);
+                    if (actualOut === i) continue;
+                    if (this.stpEnabled && this.stpPortState[this._lagRepresentative(actualOut)] !== STP_STATE.FORWARDING) continue;
 
-                    const outPort = this.ports[outIndex];
+                    const outPort = this.ports[actualOut];
                     if (!this.portAllowsVid(outPort, vid)) continue;
                     this.sendOut(vid, outPort, frame);
                 }

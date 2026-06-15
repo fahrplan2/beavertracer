@@ -1358,5 +1358,19 @@ export default {
   "router.vrrp.col.vmac": "MAC Virtual",
   "router.vrrp.state.master": "MASTER",
   "router.vrrp.state.backup": "BACKUP",
-  "router.vrrp.state.init": "INIT"
+  "router.vrrp.state.init": "INIT",
+  "switch.stp.lag.rep.title": "Port ini adalah perwakilan LAG — STP dihitung pada tingkat grup.",
+  "switch.stp.lag.inherited.title": "Status STP diwarisi dari perwakilan LAG.",
+  "switch.stp.lag.footnote": "↑ = Status STP diwarisi dari perwakilan LAG.",
+  "switch.tab.lag": "LAG",
+  "switch.lag.title": "Link Aggregation (LAG)",
+  "switch.lag.addGroup": "+ Tambah Grup",
+  "switch.lag.mode": "Mode",
+  "switch.lag.mode.static": "Static",
+  "switch.lag.mode.lacp": "LACP (802.3ad)",
+  "switch.lag.delete": "Hapus",
+  "switch.lag.status.active": "aktif",
+  "switch.lag.status.inactive": "tidak aktif",
+  "switch.lag.empty": "Tidak ada grup LAG yang dikonfigurasi.",
+  "router.vrrp.col.ipversion": "Versi IP"
 };

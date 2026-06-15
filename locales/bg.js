@@ -1358,5 +1358,19 @@ export default {
   "router.vrrp.col.vmac": "Виртуален MAC",
   "router.vrrp.state.master": "MASTER",
   "router.vrrp.state.backup": "BACKUP",
-  "router.vrrp.state.init": "INIT"
+  "router.vrrp.state.init": "INIT",
+  "switch.stp.lag.rep.title": "Този порт е представител на LAG — STP се изчислява на ниво група.",
+  "switch.stp.lag.inherited.title": "STP състояние наследено от представителя на LAG.",
+  "switch.stp.lag.footnote": "↑ = STP състояние наследено от представителя на LAG.",
+  "switch.tab.lag": "LAG",
+  "switch.lag.title": "Агрегиране на връзки (LAG)",
+  "switch.lag.addGroup": "+ Добавяне на група",
+  "switch.lag.mode": "Режим",
+  "switch.lag.mode.static": "Статичен",
+  "switch.lag.mode.lacp": "LACP (802.3ad)",
+  "switch.lag.delete": "Изтриване",
+  "switch.lag.status.active": "активен",
+  "switch.lag.status.inactive": "неактивен",
+  "switch.lag.empty": "Няма конфигурирани LAG групи.",
+  "router.vrrp.col.ipversion": "IP версия"
 };

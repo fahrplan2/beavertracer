@@ -1358,5 +1358,19 @@ export default {
   "router.vrrp.col.vmac": "Virtuaalne MAC",
   "router.vrrp.state.master": "MASTER",
   "router.vrrp.state.backup": "BACKUP",
-  "router.vrrp.state.init": "INIT"
+  "router.vrrp.state.init": "INIT",
+  "switch.stp.lag.rep.title": "See port on LAG esindaja — STP arvutatakse grupi tasandil.",
+  "switch.stp.lag.inherited.title": "STP olek päritakse LAG esindajalt.",
+  "switch.stp.lag.footnote": "↑ = STP olek päritakse LAG esindajalt.",
+  "switch.tab.lag": "LAG",
+  "switch.lag.title": "Link Aggregation (LAG)",
+  "switch.lag.addGroup": "+ Lisa grupp",
+  "switch.lag.mode": "Režiim",
+  "switch.lag.mode.static": "Staatiline",
+  "switch.lag.mode.lacp": "LACP (802.3ad)",
+  "switch.lag.delete": "Kustuta",
+  "switch.lag.status.active": "aktiivne",
+  "switch.lag.status.inactive": "mitteaktiivne",
+  "switch.lag.empty": "LAG rühmi pole konfigureeritud.",
+  "router.vrrp.col.ipversion": "IP versioon"
 };

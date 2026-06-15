@@ -1357,5 +1357,19 @@ export default {
   "router.vrrp.col.vmac": "Virtuális MAC",
   "router.vrrp.state.master": "MASTER",
   "router.vrrp.state.backup": "BACKUP",
-  "router.vrrp.state.init": "INIT"
+  "router.vrrp.state.init": "INIT",
+  "switch.stp.lag.rep.title": "Ez a port a LAG képviselő — az STP a csoport szintjén kerül kiszámításra.",
+  "switch.stp.lag.inherited.title": "STP-állapot öröklődik a LAG képviselőtől.",
+  "switch.stp.lag.footnote": "↑ = STP-állapot öröklődik a LAG képviselőtől.",
+  "switch.tab.lag": "LAG",
+  "switch.lag.title": "Link Aggregation (LAG)",
+  "switch.lag.addGroup": "+ Csoport hozzáadása",
+  "switch.lag.mode": "Mód",
+  "switch.lag.mode.static": "Statikus",
+  "switch.lag.mode.lacp": "LACP (802.3ad)",
+  "switch.lag.delete": "Törlés",
+  "switch.lag.status.active": "aktív",
+  "switch.lag.status.inactive": "inaktív",
+  "switch.lag.empty": "Nincsenek LAG-csoportok konfigurálva.",
+  "router.vrrp.col.ipversion": "IP-verzió"
 };

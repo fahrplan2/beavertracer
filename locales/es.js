@@ -1365,5 +1365,19 @@ export default {
   "router.vrrp.col.vmac": "MAC Virtual",
   "router.vrrp.state.master": "MASTER",
   "router.vrrp.state.backup": "BACKUP",
-  "router.vrrp.state.init": "INIT"
+  "router.vrrp.state.init": "INIT",
+  "switch.stp.lag.rep.title": "Este puerto es el representante del LAG — STP se calcula a nivel de grupo.",
+  "switch.stp.lag.inherited.title": "Estado de STP heredado del representante del LAG.",
+  "switch.stp.lag.footnote": "↑ = Estado de STP heredado del representante del LAG.",
+  "switch.tab.lag": "LAG",
+  "switch.lag.title": "Agregación de Enlaces (LAG)",
+  "switch.lag.addGroup": "+ Agregar Grupo",
+  "switch.lag.mode": "Modo",
+  "switch.lag.mode.static": "Estático",
+  "switch.lag.mode.lacp": "LACP (802.3ad)",
+  "switch.lag.delete": "Eliminar",
+  "switch.lag.status.active": "activo",
+  "switch.lag.status.inactive": "inactivo",
+  "switch.lag.empty": "No hay grupos LAG configurados.",
+  "router.vrrp.col.ipversion": "Versión de IP"
 };

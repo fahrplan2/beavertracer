@@ -1384,7 +1384,7 @@ export class IPStack extends Observable {
             case 6:   this.tcp.handle(packet);    break;
             default:
                 if (this._rawProtoHandlers.has(packet.nextHeader)) {
-                    this._rawProtoHandlers.get(packet.nextHeader)?.(packet, recvIfIndex);
+                    this._rawProtoHandlers.get(packet.nextHeader)?.(/** @type {any} */ (packet), recvIfIndex);
                 } else {
                     // RFC 4443 §3.4: Type 4 Code 1 – unrecognized Next Header; pointer = offset 6
                     this._sendICMPv6Error(packet, 4, 1, 6);

@@ -1358,5 +1358,19 @@ export default {
   "router.vrrp.col.vmac": "仮想 MAC",
   "router.vrrp.state.master": "MASTER",
   "router.vrrp.state.backup": "BACKUP",
-  "router.vrrp.state.init": "INIT"
+  "router.vrrp.state.init": "INIT",
+  "switch.stp.lag.rep.title": "このポートはLAG代表ポートです — STPはグループレベルで計算されます。",
+  "switch.stp.lag.inherited.title": "LAG代表ポートから継承されたSTP状態。",
+  "switch.stp.lag.footnote": "↑ = LAG代表ポートから継承されたSTP状態。",
+  "switch.tab.lag": "LAG",
+  "switch.lag.title": "リンク集約 (LAG)",
+  "switch.lag.addGroup": "+ グループを追加",
+  "switch.lag.mode": "モード",
+  "switch.lag.mode.static": "静的",
+  "switch.lag.mode.lacp": "LACP (802.3ad)",
+  "switch.lag.delete": "削除",
+  "switch.lag.status.active": "アクティブ",
+  "switch.lag.status.inactive": "非アクティブ",
+  "switch.lag.empty": "LAGグループが設定されていません。",
+  "router.vrrp.col.ipversion": "IPバージョン"
 };

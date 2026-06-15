@@ -1358,5 +1358,19 @@ export default {
   "router.vrrp.col.vmac": "Virtueel MAC",
   "router.vrrp.state.master": "MASTER",
   "router.vrrp.state.backup": "BACKUP",
-  "router.vrrp.state.init": "INIT"
+  "router.vrrp.state.init": "INIT",
+  "switch.stp.lag.rep.title": "Deze poort is de LAG-vertegenwoordiger — STP wordt op groepsniveau berekend.",
+  "switch.stp.lag.inherited.title": "STP-status overgenomen van de LAG-vertegenwoordiger.",
+  "switch.stp.lag.footnote": "↑ = STP-status overgenomen van de LAG-vertegenwoordiger.",
+  "switch.tab.lag": "LAG",
+  "switch.lag.title": "Link Aggregation (LAG)",
+  "switch.lag.addGroup": "+ Groep toevoegen",
+  "switch.lag.mode": "Modus",
+  "switch.lag.mode.static": "Statisch",
+  "switch.lag.mode.lacp": "LACP (802.3ad)",
+  "switch.lag.delete": "Verwijderen",
+  "switch.lag.status.active": "actief",
+  "switch.lag.status.inactive": "inactief",
+  "switch.lag.empty": "Geen LAG-groepen geconfigureerd.",
+  "router.vrrp.col.ipversion": "IP-versie"
 };

@@ -1358,5 +1358,19 @@ export default {
   "router.vrrp.col.vmac": "Εικονικό MAC",
   "router.vrrp.state.master": "MASTER",
   "router.vrrp.state.backup": "BACKUP",
-  "router.vrrp.state.init": "INIT"
+  "router.vrrp.state.init": "INIT",
+  "switch.stp.lag.rep.title": "Αυτή η θύρα είναι ο εκπρόσωπος LAG — το STP υπολογίζεται σε επίπεδο ομάδας.",
+  "switch.stp.lag.inherited.title": "Κατάσταση STP κληρονομημένη από τον εκπρόσωπο LAG.",
+  "switch.stp.lag.footnote": "↑ = Κατάσταση STP κληρονομημένη από τον εκπρόσωπο LAG.",
+  "switch.tab.lag": "LAG",
+  "switch.lag.title": "Συγκέντρωση Ζεύξης (LAG)",
+  "switch.lag.addGroup": "+ Προσθήκη Ομάδας",
+  "switch.lag.mode": "Λειτουργία",
+  "switch.lag.mode.static": "Στατική",
+  "switch.lag.mode.lacp": "LACP (802.3ad)",
+  "switch.lag.delete": "Διαγραφή",
+  "switch.lag.status.active": "ενεργή",
+  "switch.lag.status.inactive": "ανενεργή",
+  "switch.lag.empty": "Δεν υπάρχουν διαμορφωμένες ομάδες LAG.",
+  "router.vrrp.col.ipversion": "Έκδοση IP"
 };

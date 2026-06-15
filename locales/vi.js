@@ -1358,5 +1358,19 @@ export default {
   "router.vrrp.col.vmac": "MAC ảo",
   "router.vrrp.state.master": "MASTER",
   "router.vrrp.state.backup": "BACKUP",
-  "router.vrrp.state.init": "INIT"
+  "router.vrrp.state.init": "INIT",
+  "switch.stp.lag.rep.title": "Cổng này là đại diện LAG — STP được tính toán ở mức nhóm.",
+  "switch.stp.lag.inherited.title": "Trạng thái STP được kế thừa từ đại diện LAG.",
+  "switch.stp.lag.footnote": "↑ = Trạng thái STP được kế thừa từ đại diện LAG.",
+  "switch.tab.lag": "LAG",
+  "switch.lag.title": "Link Aggregation (LAG)",
+  "switch.lag.addGroup": "+ Thêm Nhóm",
+  "switch.lag.mode": "Chế độ",
+  "switch.lag.mode.static": "Tĩnh",
+  "switch.lag.mode.lacp": "LACP (802.3ad)",
+  "switch.lag.delete": "Xóa",
+  "switch.lag.status.active": "hoạt động",
+  "switch.lag.status.inactive": "không hoạt động",
+  "switch.lag.empty": "Không có nhóm LAG nào được cấu hình.",
+  "router.vrrp.col.ipversion": "Phiên bản IP"
 };

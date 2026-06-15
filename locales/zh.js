@@ -1358,5 +1358,19 @@ export default {
   "router.vrrp.col.vmac": "虚拟 MAC",
   "router.vrrp.state.master": "MASTER",
   "router.vrrp.state.backup": "BACKUP",
-  "router.vrrp.state.init": "INIT"
+  "router.vrrp.state.init": "INIT",
+  "switch.stp.lag.rep.title": "此端口是LAG代表 — STP在组级别计算。",
+  "switch.stp.lag.inherited.title": "从LAG代表继承的STP状态。",
+  "switch.stp.lag.footnote": "↑ = 从LAG代表继承的STP状态。",
+  "switch.tab.lag": "LAG",
+  "switch.lag.title": "链接聚合 (LAG)",
+  "switch.lag.addGroup": "+ 添加组",
+  "switch.lag.mode": "模式",
+  "switch.lag.mode.static": "静态",
+  "switch.lag.mode.lacp": "LACP (802.3ad)",
+  "switch.lag.delete": "删除",
+  "switch.lag.status.active": "活跃",
+  "switch.lag.status.inactive": "不活跃",
+  "switch.lag.empty": "未配置LAG组。",
+  "router.vrrp.col.ipversion": "IP版本"
 };

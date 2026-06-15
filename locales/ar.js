@@ -1358,5 +1358,19 @@ export default {
   "router.vrrp.col.vmac": "عنوان MAC الافتراضي",
   "router.vrrp.state.master": "MASTER",
   "router.vrrp.state.backup": "BACKUP",
-  "router.vrrp.state.init": "INIT"
+  "router.vrrp.state.init": "INIT",
+  "switch.stp.lag.rep.title": "هذا المنفذ هو ممثل LAG — يتم حساب STP على مستوى المجموعة.",
+  "switch.stp.lag.inherited.title": "حالة STP موروثة من ممثل LAG.",
+  "switch.stp.lag.footnote": "↑ = حالة STP موروثة من ممثل LAG.",
+  "switch.tab.lag": "LAG",
+  "switch.lag.title": "تجميع الروابط (LAG)",
+  "switch.lag.addGroup": "+ إضافة مجموعة",
+  "switch.lag.mode": "الوضع",
+  "switch.lag.mode.static": "ثابت",
+  "switch.lag.mode.lacp": "LACP (802.3ad)",
+  "switch.lag.delete": "حذف",
+  "switch.lag.status.active": "نشط",
+  "switch.lag.status.inactive": "غير نشط",
+  "switch.lag.empty": "لم يتم تكوين مجموعات LAG.",
+  "router.vrrp.col.ipversion": "إصدار IP"
 };

@@ -1358,5 +1358,19 @@ export default {
   "router.vrrp.col.vmac": "가상 MAC",
   "router.vrrp.state.master": "마스터",
   "router.vrrp.state.backup": "백업",
-  "router.vrrp.state.init": "초기화"
+  "router.vrrp.state.init": "초기화",
+  "switch.stp.lag.rep.title": "이 포트는 LAG 대표입니다 — STP는 그룹 레벨에서 계산됩니다.",
+  "switch.stp.lag.inherited.title": "LAG 대표에서 상속된 STP 상태입니다.",
+  "switch.stp.lag.footnote": "↑ = LAG 대표에서 상속된 STP 상태입니다.",
+  "switch.tab.lag": "LAG",
+  "switch.lag.title": "링크 집계 (LAG)",
+  "switch.lag.addGroup": "+ 그룹 추가",
+  "switch.lag.mode": "모드",
+  "switch.lag.mode.static": "정적",
+  "switch.lag.mode.lacp": "LACP (802.3ad)",
+  "switch.lag.delete": "삭제",
+  "switch.lag.status.active": "활성",
+  "switch.lag.status.inactive": "비활성",
+  "switch.lag.empty": "구성된 LAG 그룹이 없습니다.",
+  "router.vrrp.col.ipversion": "IP 버전"
 };

@@ -1358,5 +1358,19 @@ export default {
   "router.vrrp.col.vmac": "Virtuální MAC",
   "router.vrrp.state.master": "MASTER",
   "router.vrrp.state.backup": "BACKUP",
-  "router.vrrp.state.init": "INIT"
+  "router.vrrp.state.init": "INIT",
+  "switch.stp.lag.rep.title": "Tento port je zástupce LAG — STP se počítá na úrovni skupiny.",
+  "switch.stp.lag.inherited.title": "Stav STP zděděný od zástupce LAG.",
+  "switch.stp.lag.footnote": "↑ = Stav STP zděděný od zástupce LAG.",
+  "switch.tab.lag": "LAG",
+  "switch.lag.title": "Link Aggregation (LAG)",
+  "switch.lag.addGroup": "+ Přidat skupinu",
+  "switch.lag.mode": "Režim",
+  "switch.lag.mode.static": "Statický",
+  "switch.lag.mode.lacp": "LACP (802.3ad)",
+  "switch.lag.delete": "Odstranit",
+  "switch.lag.status.active": "aktivní",
+  "switch.lag.status.inactive": "neaktivní",
+  "switch.lag.empty": "Nejsou nakonfigurované žádné skupiny LAG.",
+  "router.vrrp.col.ipversion": "Verze IP"
 };

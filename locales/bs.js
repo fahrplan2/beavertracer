@@ -1358,5 +1358,19 @@ export default {
   "router.vrrp.col.vmac": "Virtualna MAC",
   "router.vrrp.state.master": "MASTER",
   "router.vrrp.state.backup": "BACKUP",
-  "router.vrrp.state.init": "INIT"
+  "router.vrrp.state.init": "INIT",
+  "switch.stp.lag.rep.title": "Ovaj port je LAG predstavnik — STP se računa na nivou grupe.",
+  "switch.stp.lag.inherited.title": "STP stanje naslijeđeno od LAG predstavnika.",
+  "switch.stp.lag.footnote": "↑ = STP stanje naslijeđeno od LAG predstavnika.",
+  "switch.tab.lag": "LAG",
+  "switch.lag.title": "Agregacija veza (LAG)",
+  "switch.lag.addGroup": "+ Dodaj grupu",
+  "switch.lag.mode": "Način",
+  "switch.lag.mode.static": "Statički",
+  "switch.lag.mode.lacp": "LACP (802.3ad)",
+  "switch.lag.delete": "Obriši",
+  "switch.lag.status.active": "aktivna",
+  "switch.lag.status.inactive": "neaktivna",
+  "switch.lag.empty": "Nema konfiguriranih LAG grupa.",
+  "router.vrrp.col.ipversion": "IP verzija"
 };
