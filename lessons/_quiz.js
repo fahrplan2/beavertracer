@@ -87,7 +87,10 @@
     }
     const summary = btn.nextElementSibling;
     if (summary && total > 0) {
-      summary.textContent = `${correct} von ${total} ${total === 1 ? "Punkt" : "Punkten"} erreicht`;
+      const tpl = total === 1
+        ? (document.body.dataset.quizResultOne || "{correct}/{total}")
+        : (document.body.dataset.quizResultOther || "{correct}/{total}");
+      summary.textContent = tpl.replace("{correct}", correct).replace("{total}", total);
       summary.className = "quiz-evaluate-summary " + (correct === total ? "quiz-summary-ok" : "quiz-summary-err");
     }
     btn.disabled = true;

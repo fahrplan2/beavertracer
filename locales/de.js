@@ -642,6 +642,11 @@ export default {
   "router.bgp.routes.col.peer": "Peer",
   "router.bgp.log": "Protokoll",
   "sim.lessons": "Lektionen",
+
+  "lessons.quiz.placeholder":   "Antwort …",
+  "lessons.quiz.evaluate":      "Antworten prüfen",
+  "lessons.quiz.result.one":    "{correct} von {total} Punkt erreicht",
+  "lessons.quiz.result.other":  "{correct} von {total} Punkten erreicht",
   "sim.common": "Allgemein",
   "sim.new": "Neu",
   "sim.load": "Laden",
