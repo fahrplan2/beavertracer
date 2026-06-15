@@ -889,7 +889,13 @@ export class SimControl {
             }
         }
 
-        this._enterEditMode();
+        if (this.embedded) {
+            this.isPaused = false;
+            this.mode = "run";
+            this._invalidateUI();
+        } else {
+            this._enterEditMode();
+        }
         this._syncSceneDOM();
         this.redrawLinks();
         requestAnimationFrame(() => this._fitToContent(1));
@@ -904,7 +910,13 @@ export class SimControl {
         for (const el of this._objEls.values()) el.remove();
         this._objEls.clear();
 
-        this._enterEditMode();
+        if (this.embedded) {
+            this.isPaused = false;
+            this.mode = "run";
+            this._invalidateUI();
+        } else {
+            this._enterEditMode();
+        }
         this._syncSceneDOM();
         this._isDirty = false;
     }
@@ -976,7 +988,7 @@ export class SimControl {
         brandingGroup.className = "sim-toolbar-group sim-toolbar-branding-group";
         brandingGroup.style.cursor = "pointer";
         brandingGroup.title = t("sim.welcome");
-        brandingGroup.addEventListener("click", () => WelcomeDialog.show(this));
+        brandingGroup.addEventListener("click", () => { if (!this.embedded) WelcomeDialog.show(this); });
         toolbar.appendChild(brandingGroup);
 
         const brandingText = document.createElement("div");
@@ -1100,60 +1112,47 @@ export class SimControl {
         resetBtn.dataset.role = "reset";
         gSpeeds.appendChild(resetBtn);
 
-        if (this.embedded) {
-            const btnOpen = UILib.iconbutton({
-                label: t("sim.embed.open"),
-                icon: "fa-up-right-from-square",
-                onClick: () => {
-                    const url = new URL(window.location.href);
-                    url.searchParams.delete("embed");
-                    window.open(url.toString(), "_blank");
+        if (!this.embedded) {
+            //******** PROJECT ***********/
+            addSeparator("sep-project");
+            const gProject = UILib.buttongroup(t("sim.project"), toolbar);
+            gProject.dataset.group = "project";
+
+            // New
+            const btnNew = UILib.iconbutton({
+                label: t("sim.new"),
+                icon: "fa-file",
+                onClick: async () => {
+                    if (this._isDirty && !await SimDialog.confirm(t("sim.discardandnewwarning"))) return;
+                    this.new();
                 },
             });
-            btnOpen.dataset.role = "embed-open";
-            toolbar.appendChild(btnOpen);
-            return;
+            btnNew.dataset.role = "project-new";
+            gProject.appendChild(btnNew);
+
+            // Load
+            const btnLoad = UILib.iconbutton({
+                label: t("sim.load"),
+                icon: "fa-file-arrow-up",
+                onClick: async () => {
+                    if (this._isDirty && !await SimDialog.confirm(t("sim.discardandloadwarning"))) return;
+                    this.open();
+                },
+            });
+            btnLoad.dataset.role = "project-load";
+            gProject.appendChild(btnLoad);
+
+            // Save
+            const btnSave = UILib.iconbutton({
+                label: t("sim.save"),
+                icon: "fa-file-arrow-down",
+                onClick: () => {
+                    this.download();
+                },
+            });
+            btnSave.dataset.role = "project-save";
+            gProject.appendChild(btnSave);
         }
-
-        //******** PROJECT ***********/
-        addSeparator("sep-project");
-        const gProject = UILib.buttongroup(t("sim.project"), toolbar);
-        gProject.dataset.group = "project";
-
-        // New
-        const btnNew = UILib.iconbutton({
-            label: t("sim.new"),
-            icon: "fa-file",
-            onClick: async () => {
-                if (this._isDirty && !await SimDialog.confirm(t("sim.discardandnewwarning"))) return;
-                this.new();
-            },
-        });
-        btnNew.dataset.role = "project-new";
-        gProject.appendChild(btnNew);
-
-        // Load
-        const btnLoad = UILib.iconbutton({
-            label: t("sim.load"),
-            icon: "fa-file-arrow-up",
-            onClick: async () => {
-                if (this._isDirty && !await SimDialog.confirm(t("sim.discardandloadwarning"))) return;
-                this.open();
-            },
-        });
-        btnLoad.dataset.role = "project-load";
-        gProject.appendChild(btnLoad);
-
-        // Save
-        const btnSave = UILib.iconbutton({
-            label: t("sim.save"),
-            icon: "fa-file-arrow-down",
-            onClick: () => {
-                this.download();
-            },
-        });
-        btnSave.dataset.role = "project-save";
-        gProject.appendChild(btnSave);
 
         //******** ZOOM ***********/
         addSeparator("sep-zoom");
@@ -1268,6 +1267,21 @@ export class SimControl {
         });
         aboutBtn.dataset.role = "mode-about";
         gCommon.appendChild(aboutBtn);
+
+        if (this.embedded) {
+            addSeparator("sep-embed-open");
+            const btnOpen = UILib.iconbutton({
+                label: t("sim.embed.open"),
+                icon: "fa-up-right-from-square",
+                onClick: () => {
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete("embed");
+                    window.open(url.toString(), "_blank");
+                },
+            });
+            btnOpen.dataset.role = "embed-open";
+            toolbar.appendChild(btnOpen);
+        }
     }
 
     _buildSidebar() {
