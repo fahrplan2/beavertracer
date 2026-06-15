@@ -7,7 +7,7 @@
 /* Selected iface label (under tabs) */
 .router-selected-iface {
   margin: 6px 0 10px 0;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--muted);
 }
 
@@ -71,7 +71,7 @@
 }
 
 .router-if-field-label {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--muted);
 }
 
@@ -285,8 +285,8 @@
 }
 
 .router-vpn-form-label {
-  font-size: 0.75rem;
-  color: var(--muted);
+  font-size: 0.8125rem;
+  color: var(--text);
   width: 10ch;
   flex-shrink: 0;
 }

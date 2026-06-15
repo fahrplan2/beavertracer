@@ -4,6 +4,8 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  padding: 0;
+  gap: 0;
 }
 
 .app-certmanager .cm-split {
@@ -83,7 +85,7 @@
   font-size: 0.78125rem;
 }
 .app-certmanager .cm-detail-row:last-child { border-bottom: none; }
-.app-certmanager .cm-detail-label { color: var(--muted); flex: 0 0 112px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app-certmanager .cm-detail-label { color: var(--text); flex: 0 0 112px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .app-certmanager .cm-detail-value { font-family: "Hack", monospace; font-size: 0.71875rem; word-break: break-all; }
 
 .app-certmanager .cm-preview {

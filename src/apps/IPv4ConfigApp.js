@@ -161,7 +161,7 @@ export class IPv4ConfigApp extends GenericProcess {
     const net = this.os.net;
     const ifs = net?.interfaces ?? [];
 
-    const msg = UILib.el("div", { className: "msg" });
+    const msg = UILib.el("div", { className: "ipcfg-msg" });
     this.msgEl = msg;
 
     // Helper: stacked label + control

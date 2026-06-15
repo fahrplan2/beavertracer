@@ -302,7 +302,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     const logBox = UI.el("div", { className: "msg" });
     this.logEl = logBox;
 
-    const logPane = UI.el("div", { children: [
+    const logPane = UI.el("div", { className: "log-pane", children: [
       UI.buttonRow([UI.button(t("app.simplehttpserver.button.clearLog"), () => { this.log = []; this._renderLog(); }, {})]),
       logBox,
     ]});

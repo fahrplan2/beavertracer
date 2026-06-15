@@ -609,6 +609,8 @@
 }
 
 .pcapviewer-stream-panel {
+  font-family: "Hack", monospace;
+  user-select: text;
   background: var(--bg);
   color: var(--text);
   border: 2px solid var(--ui-border-strong);

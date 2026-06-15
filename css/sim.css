@@ -628,6 +628,105 @@
   border-top: 1px solid color-mix(in oklch, var(--border), var(--text) 6%);
 }
 
+/* ── Switch LAG ─────────────────────────────────────────────── */
+.switch-lag-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.switch-lag-title {
+  font-weight: 600;
+}
+
+.switch-lag-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.switch-lag-card {
+  border: 1px solid color-mix(in oklch, var(--border), var(--text) 8%);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.switch-lag-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: var(--pad-sm);
+  background: var(--surface);
+  border-bottom: 1px solid color-mix(in oklch, var(--border), var(--text) 14%);
+  flex-wrap: wrap;
+}
+
+.switch-lag-name {
+  font-weight: 600;
+  margin-right: auto;
+}
+
+.switch-lag-ports {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: var(--pad-sm);
+}
+
+.switch-lag-port-entry {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 56px;
+}
+
+.switch-lag-port-disabled {
+  opacity: 0.4;
+}
+
+.switch-lag-port-label {
+  font-size: 0.8125rem;
+}
+
+.switch-lag-status-active {
+  font-size: 0.75rem;
+  color: var(--ok-strong);
+}
+
+.switch-lag-status-inactive {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.switch-stp-lag-tag {
+  margin-left: 5px;
+  vertical-align: middle;
+  cursor: default;
+  color: var(--muted);
+}
+
+.switch-stp-lag-inherited {
+  color: var(--primary-strong);
+  border-color: color-mix(in oklch, var(--primary-strong), transparent 50%);
+  background: color-mix(in oklch, var(--primary-strong), transparent 88%);
+}
+
+.switch-stp-lag-footnote {
+  margin-top: 6px;
+}
+
+.btn-danger {
+  border-color: var(--danger-strong);
+  color: var(--danger-strong);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: var(--danger-tint);
+  border-color: var(--danger-strong);
+}
+
 /* ── Firewall panel ─────────────────────────────────────────── */
 .fw-stats {
   font-size: 0.6875rem;
@@ -1819,4 +1918,23 @@ sim-toolbar-langbtn {
     overflow: auto;
     -webkit-overflow-scrolling: touch;
   }
+}
+
+/* ── Companion Bridge ──────────────────────────────────────────────────────── */
+.companion-bridge-status {
+  font-size: 0.85em;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.companion-bridge-status--connected    { color: #1a7f37; background: #d3f8d3; }
+.companion-bridge-status--connecting   { color: #7a5800; background: #fff3cd; }
+.companion-bridge-status--disconnected { color: #666;    background: #eee; }
+.companion-bridge-status--error        { color: #a4262c; background: #fde7e9; }
+
+.companion-bridge-hint {
+  font-size: 0.75em;
+  color: #888;
+  margin: 8px 8px 0;
+  font-family: monospace;
 }

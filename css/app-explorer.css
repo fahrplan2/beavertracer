@@ -5,6 +5,7 @@
   flex-direction: column;
   overflow: hidden;
   padding: 0;
+  gap: 0;
   height: 100%;
 }
 

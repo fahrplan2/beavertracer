@@ -1,0 +1,12 @@
+[package]
+name = "networksim-companion"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+tokio-tungstenite = "0.23"
+tungstenite = "0.23"
+futures-util = "0.3"
+socket2 = { version = "0.5", features = ["all"] }
+rand = "0.8"

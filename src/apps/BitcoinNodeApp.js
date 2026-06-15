@@ -475,7 +475,7 @@ export class BitcoinNodeApp extends LoggedProcess {
     const logEl   = UI.el("div", { className: "msg" });
     this.logEl    = logEl;
     const clearBtn = UI.button(t("app.bitcoin.btn.clearlog"), () => { this.log = []; this._renderLog(); }, {});
-    const logPane  = UI.el("div", { children: [UI.buttonRow([clearBtn]), logEl] });
+    const logPane  = UI.el("div", { className: "log-pane", children: [UI.buttonRow([clearBtn]), logEl] });
 
     const { bar: tabBar } = UI.tabbedPane([
       { id: "config",  label: t("app.bitcoin.tab.config"),  pane: configPane },

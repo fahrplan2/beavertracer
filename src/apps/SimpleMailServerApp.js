@@ -996,7 +996,7 @@ export class SimpleMailServerApp extends LoggedProcess {
       certInfo,
     ]});
 
-    const logPane = UI.el("div", { children: [
+    const logPane = UI.el("div", { className: "log-pane", children: [
       status,
       logBox,
     ]});

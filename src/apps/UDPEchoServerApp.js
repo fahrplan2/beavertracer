@@ -94,7 +94,7 @@ export class UDPEchoServerApp extends LoggedProcess {
     const serverPane = UI.el("div", { children: [
       UI.row(t("app.udpechoserver.label.listenPort"), portInput),
     ]});
-    const logPane = UI.el("div", { children: [
+    const logPane = UI.el("div", { className: "log-pane", children: [
       UI.buttonRow([clear]),
       logBox,
     ]});

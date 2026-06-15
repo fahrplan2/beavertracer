@@ -35,9 +35,14 @@ BeaverTracer ist ein Netzwerksimulator für den Unterricht. Er modelliert eine b
   <td>PCP (3 Bit), DEI, VID (12 Bit), innerer EtherType. Nur ein einziger Tag — kein QinQ (802.1ad)-Stacking.</td>
 </tr>
 <tr>
-  <td>Spanning Tree (STP)</td><td>IEEE 802.1D-2004</td>
+  <td>Spanning Tree (STP)</td><td>IEEE 802.1D</td>
   <td><span class="badge badge-partial">Teilweise</span></td>
-  <td>Config-BPDU und TCN-BPDU mit Bridge-ID, Port-ID, Pfadkosten, Timern. Kein RSTP (802.1w), kein MSTP, kein BPDU Guard.</td>
+  <td>Config-BPDU (Typ 0x00) und TCN-BPDU (Typ 0x80) mit Bridge-ID (Priorität + MAC), Port-ID, Pfadkosten (fest 1), MessageAge, MaxAge, Hello Time, ForwardDelay. Root-Bridge-Wahl über niedrigste Bridge-ID; Bridge-Priorität je Switch konfigurierbar (Vielfache von 4096, Standard 32768). Port-Rollen: Root, Designated, Non-Designated. Port-Zustände: Blocking → Listening → Learning → Forwarding (je ein ForwardDelay pro Übergang). TCN/TCA-Mechanismus: Nicht-Root-Bridges senden TCN-BPDUs upstream, Root-Bridge setzt TC-Bit für MaxAge + ForwardDelay. MaxAge-basiertes BPDU-Aging. Moduswahl je Switch: Off / STP / RSTP. Kein MSTP, kein BPDU Guard, keine Portkosten-Konfiguration.</td>
+</tr>
+<tr>
+  <td>Rapid Spanning Tree (RSTP)</td><td>IEEE 802.1w / 802.1D-2004</td>
+  <td><span class="badge badge-partial">Teilweise</span></td>
+  <td>RST-BPDU (protocolVersion 2, Typ 0x02, gleiche 35-Byte-Struktur wie Config-BPDU) mit allen 8 Flag-Bits: TC, Proposal, Port Role (Bits 2–3), Learning, Forwarding, Agreement, TCA. Port-Rollen: Root, Designated, Alternate (ersetzt Non-Designated), Backup (BPDU vom eigenen Bridge empfangen). Port-Zustände: Discarding, Learning, Forwarding (kein Listening). <strong>Proposal/Agreement-Handshake:</strong> Designated-Port sendet Proposal; Root-Port der Gegenstelle setzt alle eigenen Designated-Ports auf Discarding (Sync), sendet Agreement und geht sofort in Forwarding — ohne ForwardDelay-Wartezeit. Fallback-Timer (ein ForwardDelay) greift, wenn kein Agreement zurückkommt (z. B. Verbindung zu Endgerät oder Alternate-Port). <strong>Fast Aging:</strong> Neighbor-Info verfällt nach 3 aufeinanderfolgenden verpassten Hello-Intervallen statt MaxAge. <strong>TC-Propagierung:</strong> TC-Bit im RST-BPDU (kein separates TCN), MAC-Tabelle wird sofort geflusht; TC-Active-Fenster = 3 × Hello (tcWhile). Bridge-Priorität je Switch konfigurierbar (Vielfache von 4096). Kein Edge-Port/PortFast, kein MSTP, keine portweise Migration zu klassischem STP.</td>
 </tr>
 </tbody>
 </table>
@@ -60,7 +65,7 @@ BeaverTracer ist ein Netzwerksimulator für den Unterricht. Er modelliert eine b
 <tr>
   <td>ARP</td><td>RFC 826</td>
   <td><span class="badge badge-full">Vollständig</span></td>
-  <td>HTYPE, PTYPE, SHA/SPA/THA/TPA, Request und Reply. Kein Gratuitous ARP, keine Probe/Announcement (RFC 5227).</td>
+  <td>HTYPE, PTYPE, SHA/SPA/THA/TPA, Request und Reply. Gratuitous ARP wird intern von VRRP beim Masterwechsel gesendet. Keine Probe/Announcement (RFC 5227).</td>
 </tr>
 <tr>
   <td>ICMPv4</td><td>RFC 792</td>
@@ -256,6 +261,11 @@ Dynamische Routing-Daemons laufen innerhalb von Router- und HomeRouter-Knoten.
   <td>BGPv4</td><td>RFC 4271, RFC 4760, RFC 5492</td>
   <td><span class="badge badge-partial">Teilweise</span></td>
   <td>OPEN, UPDATE, NOTIFICATION, KEEPALIVE. Pfadattribute: ORIGIN, AS_PATH, NEXT_HOP, MED, LOCAL_PREF, MP_REACH_NLRI, MP_UNREACH_NLRI. Multiprotokoll-Erweiterungen für IPv6 (AFI 2). Keine Routing-Policies, keine Community-Attribute, keine MD5-Authentifizierung, kein Route Reflection, vereinfachte FSM.</td>
+</tr>
+<tr>
+  <td>VRRP</td><td>RFC 3768 (v2) / RFC 5798 (v3)</td>
+  <td><span class="badge badge-partial">Teilweise</span></td>
+  <td>Vollständige Zustandsmaschine (INITIALIZE → MASTER / BACKUP) pro Gruppe, konfigurierbar für IPv4 (VRRPv2) und IPv6 (VRRPv3). <strong>VRRPv2 (IPv4):</strong> PDU mit Auth Type 0, Advertisement Interval in Sekunden, Checksum ohne Pseudo-Header. Virtuelle MAC <code>00:00:5e:00:01:&lt;VRID&gt;</code>, Multicast 224.0.0.18. Gratuitous ARP beim Masterwechsel. <strong>VRRPv3 (IPv6):</strong> PDU mit Max Adver Int in Centisekunden, Checksum über IPv6-Pseudo-Header. Virtuelle MAC <code>00:00:5e:00:02:&lt;VRID&gt;</code>, Multicast FF02::12. Unsolicited Neighbor Advertisement (NDP) beim Masterwechsel. Beide Versionen: Master-Down-Timer (3 × Interval + Skew), Preemption konfigurierbar, IP-Protokoll 112. Keine Authentifizierung (Felder vorhanden, aber ignoriert), kein prioritätsbasiertes Interface-Down-Tracking.</td>
 </tr>
 </tbody>
 </table>

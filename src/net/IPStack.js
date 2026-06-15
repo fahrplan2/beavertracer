@@ -465,6 +465,11 @@ export class IPStack extends Observable {
                 this.accept(packet, recvIfIndex);
                 return;
             }
+            // Accept traffic destined to a VRRP virtual IP we currently own
+            if (itf.virtualIPs.has(dst.toString())) {
+                this.accept(packet, recvIfIndex);
+                return;
+            }
         }
 
         // --- Broadcast handling ---
@@ -1033,6 +1038,32 @@ export class IPStack extends Observable {
     }
 
     /**
+     * Send a raw IPv6 packet directly out one interface, bypassing routing.
+     * Multicast destinations get the standard 33:33 MAC; unicast resolved via NDP.
+     * @param {number} ifIndex
+     * @param {IPAddress} dst
+     * @param {number} nextHeader
+     * @param {Uint8Array} payload
+     * @param {IPAddress|null} [src]
+     */
+    async sendOnInterfaceV6(ifIndex, dst, nextHeader, payload, src = null) {
+        const iface = this.interfaces[ifIndex];
+        if (!iface) return;
+        const srcIp = src ?? iface.ip6LL ?? iface.ip6;
+        if (!srcIp) return;
+        const pkt = new IPv6Packet({ dst, src: srcIp, nextHeader, payload, hopLimit: 255 });
+        const dstBytes = dst.toUInt8();
+        let dstMac;
+        if (dstBytes[0] === 0xff) {
+            dstMac = new Uint8Array([0x33, 0x33, dstBytes[12], dstBytes[13], dstBytes[14], dstBytes[15]]);
+        } else {
+            dstMac = await iface.resolveNeighbor(dst);
+            if (!dstMac) return;
+        }
+        iface.sendFrame(dstMac, 0x86DD, pkt.pack());
+    }
+
+    /**
      * Send a raw IPv4 packet directly out one interface, bypassing routing.
      * Multicast destinations get the standard 01:00:5e multicast MAC;
      * unicast destinations are resolved via ARP.
@@ -1260,11 +1291,12 @@ export class IPStack extends Observable {
     async routeV6(packet, internal = false, recvIfIndex = -1) {
         const dst = packet.dst;
 
-        // Is it for one of our IPv6 interfaces (global or link-local)?
+        // Is it for one of our IPv6 interfaces (global, link-local, or virtual)?
         for (let i = 0; i < this.interfaces.length; i++) {
             const itf = this.interfaces[i];
             if ((itf.ip6   && itf.ip6.toString()   === dst.toString()) ||
-                (itf.ip6LL && itf.ip6LL.toString() === dst.toString())) {
+                (itf.ip6LL && itf.ip6LL.toString() === dst.toString()) ||
+                itf.virtualIPs.has(dst.toString())) {
                 this.acceptV6(packet, i);
                 return;
             }
@@ -1351,8 +1383,12 @@ export class IPStack extends Observable {
             case 17:  this._handleUDP(packet, recvIfIndex); break;
             case 6:   this.tcp.handle(packet);    break;
             default:
-                // RFC 4443 §3.4: Type 4 Code 1 – unrecognized Next Header; pointer = offset 6
-                this._sendICMPv6Error(packet, 4, 1, 6);
+                if (this._rawProtoHandlers.has(packet.nextHeader)) {
+                    this._rawProtoHandlers.get(packet.nextHeader)?.(/** @type {any} */ (packet), recvIfIndex);
+                } else {
+                    // RFC 4443 §3.4: Type 4 Code 1 – unrecognized Next Header; pointer = offset 6
+                    this._sendICMPv6Error(packet, 4, 1, 6);
+                }
         }
     }
 

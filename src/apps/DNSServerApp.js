@@ -245,14 +245,6 @@ export class DNSServerApp extends LoggedProcess {
     super.onMount(root);
     this.disposer.dispose();
 
-    const status = UI.textarea({
-      className: "msg",
-      rows: "5",
-      onInput: undefined,
-      onChange: undefined,
-    });
-    status.readOnly = true;
-
     const onEdit = () => this._scheduleSave();
 
     this.aEditor = createTableEditor(
@@ -316,7 +308,7 @@ export class DNSServerApp extends LoggedProcess {
     const logBox = UI.el("div", { className: "msg" });
     this.logEl = logBox;
 
-    const logPane = UI.el("div", { children: [status, logBox] });
+    const logPane = UI.el("div", { className: "log-pane", children: [logBox] });
 
     const modeSelect = UI.select([
       { value: "authoritative", label: t("app.dnsd.label.mode.authoritative") },
@@ -374,17 +366,6 @@ export class DNSServerApp extends LoggedProcess {
     this._syncButtons();
     this._renderLog();
 
-    this.disposer.interval(() => {
-      const isRecursive = this.cfg.mode === "recursive";
-      status.value =
-        `pid: ${this.pid}\n` +
-        `running: ${this.running}\n` +
-        `port: ${(this.socketPort ?? "-")}\n` +
-        `mode: ${this.cfg.mode ?? "authoritative"}\n` +
-        (isRecursive ? `root dns: ${this.cfg.forwarderIp || "-"}\n` : "") +
-        `A/AAAA/CNAME/MX/NS: ${this.cfg.a.length}/${this.cfg.aaaa.length}/${this.cfg.cname.length}/${this.cfg.mx.length}/${this.cfg.ns.length}\n` +
-        `log: ${this.log.length}`;
-    }, 300);
   }
 
   onUnmount() {

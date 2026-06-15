@@ -216,7 +216,7 @@ export class DHCPv6ServerApp extends LoggedProcess {
       UI.buttonRow([loadBtn, saveBtn]),
     ]});
 
-    const logPane = UI.el("div", { children: [
+    const logPane = UI.el("div", { className: "log-pane", children: [
       UI.buttonRow([clear]),
       logBox,
     ]});

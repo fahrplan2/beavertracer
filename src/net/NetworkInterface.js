@@ -51,6 +51,14 @@ export class NetworkInterface extends Observable {
      */
     neighborCache = new Map();
 
+    /**
+     * Virtual IPs managed by VRRP (or similar): ipKey -> virtualMAC.
+     * When this router is VRRP Master, ARP requests for these IPs are
+     * answered with the corresponding virtual MAC.
+     * @type {Map<string, Uint8Array>}
+     */
+    virtualIPs = new Map();
+
     /** @type {String} */
     name = '';
 
@@ -389,8 +397,16 @@ export class NetworkInterface extends Observable {
 
         // ARP request
         if (packet.oper === 1) {
+            const tpaKey = this._ipKey(tpa);
+            // Reply for virtual IPs (e.g. VRRP) with their virtual MAC
+            const vMac = this.virtualIPs.get(tpaKey);
+            if (vMac) {
+                this.neighborCache.set(spaKey, packet.sha);
+                this._doArpResponseVirtual(spa, packet.sha, tpa, vMac);
+                return;
+            }
             // If we are the target: learn sender and respond
-            if (this.ip.isV4() && this._ipKey(tpa) === this._ipKey(this.ip)) {
+            if (this.ip.isV4() && tpaKey === this._ipKey(this.ip)) {
                 this.neighborCache.set(spaKey, packet.sha);
                 this._doArpResponse(spa);
             }
@@ -452,11 +468,17 @@ export class NetworkInterface extends Observable {
 
             const shouldRespond =
                 (this.ip6LL && key === this._ipKey(this.ip6LL)) ||
-                (this.ip6   && key === this._ipKey(this.ip6));
+                (this.ip6   && key === this._ipKey(this.ip6))   ||
+                this.virtualIPs.has(key);
             if (shouldRespond) {
                 const srcMac = icmp6.getLinkLayerAddress();
                 if (srcMac) this.neighborCache.set(this._ipKey(ipv6.src), srcMac);
-                this._doNDPNeighborAdvertisement(ipv6.src, srcMac, target);
+                const virtualMac = this.virtualIPs.get(key);
+                if (virtualMac) {
+                    this._doNDPNeighborAdvertisementVirtual(ipv6.src, srcMac, target, virtualMac);
+                } else {
+                    this._doNDPNeighborAdvertisement(ipv6.src, srcMac, target);
+                }
             }
         } else if (icmp6.type === 136) { // Neighbor Advertisement
             const target = icmp6.ndpTarget;
@@ -709,6 +731,34 @@ export class NetworkInterface extends Observable {
     }
 
     /**
+     * Reply to an NDP NS for a VRRP virtual IPv6 address — sends NA with the virtual MAC.
+     * @param {IPAddress} dstIp
+     * @param {Uint8Array|null} dstMac
+     * @param {IPAddress} target
+     * @param {Uint8Array} virtualMac
+     */
+    _doNDPNeighborAdvertisementVirtual(dstIp, dstMac, target, virtualMac) {
+        const srcIp = this.ip6LL ?? this.ip6;
+        if (!srcIp) return;
+        const na = ICMPv6Packet.buildNA(target, virtualMac, true);
+        const ipv6 = new IPv6Packet({
+            src: srcIp,
+            dst: dstIp,
+            nextHeader: 58,
+            hopLimit: 255,
+            payload: na.pack(srcIp, dstIp),
+        });
+        const dstMacBytes = dstMac ?? new Uint8Array([0x33, 0x33, 0, 0, 0, 1]);
+        const frame = new EthernetFrame({
+            dstMac: dstMacBytes,
+            srcMac: virtualMac,
+            etherType: 0x86DD,
+            payload: ipv6.pack(),
+        });
+        this.port.send(frame);
+    }
+
+    /**
      * generates an ARP request (IPv4 only)
      * @param {IPAddress} ip
      */
@@ -768,6 +818,30 @@ export class NetworkInterface extends Observable {
             payload: packet.pack()
         });
 
+        this.port.send(frame);
+    }
+
+    /**
+     * ARP response using a virtual MAC/IP (for VRRP virtual addresses).
+     * @param {IPAddress} requesterIP sender IP to respond to
+     * @param {Uint8Array} requesterMAC sender MAC
+     * @param {IPAddress} virtualIP the virtual IP being queried
+     * @param {Uint8Array} virtualMac the virtual MAC to announce
+     */
+    _doArpResponseVirtual(requesterIP, requesterMAC, virtualIP, virtualMac) {
+        const packet = new ArpPacket({
+            htype: 1, ptype: 0x0800, hlen: 6, plen: 4, oper: 2,
+            sha: virtualMac,
+            spa: virtualIP.toUInt8(),
+            tha: requesterMAC,
+            tpa: requesterIP.toUInt8(),
+        });
+        const frame = new EthernetFrame({
+            dstMac: requesterMAC,
+            srcMac: virtualMac,
+            etherType: 0x0806,
+            payload: packet.pack(),
+        });
         this.port.send(frame);
     }
 

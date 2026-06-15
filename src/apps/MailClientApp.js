@@ -7,10 +7,7 @@ import { t } from "../i18n/index.js";
 import { IPAddress } from "../net/models/IPAddress.js";
 import { simTimer } from "../lib/SimTimer.js";
 import { TlsSession } from "../net/TlsSession.js";
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-function nowStamp() { return new Date().toLocaleTimeString(); }
+import { nowStamp } from "../lib/helpers.js";
 
 /** @param {string} s */
 function enc(s) { return new TextEncoder().encode(s); }

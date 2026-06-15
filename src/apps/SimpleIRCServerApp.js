@@ -139,7 +139,7 @@ export class SimpleIRCServerApp extends LoggedProcess {
       UI.row(t("app.ircserver.row.motd"), motdInput),
       statusEl,
     ]});
-    const logPane = UI.el("div", { children: [
+    const logPane = UI.el("div", { className: "log-pane", children: [
       UI.buttonRow([UI.button(t("app.ircserver.btn.clearlog"), () => { this.log = []; this._renderLog(); }, {})]),
       logBox,
     ]});
