@@ -2687,12 +2687,16 @@ export class Router extends SimulatedObject {
         // Inline form
         const ifaceItems = this.net.interfaces.map((iface, idx) => ({ value: String(idx), label: iface.name }));
         const ifSel     = UILib.select(ifaceItems);
+        const ipVerSel  = UILib.select([{ value: "4", label: "IPv4" }, { value: "6", label: "IPv6" }]);
         const vridIn    = UILib.input({ value: "1", placeholder: "1-255" });
         const vipIn     = UILib.input({ placeholder: "192.168.1.254" });
         const prioIn    = UILib.input({ value: "100", placeholder: "1-254" });
         const intIn     = UILib.input({ value: "1000", placeholder: "ms" });
         const preemptCb = UILib.input({ type: "checkbox" });
         preemptCb.checked = true;
+        ipVerSel.addEventListener("change", () => {
+            vipIn.placeholder = ipVerSel.value === "6" ? "fe80::1" : "192.168.1.254";
+        });
 
         const cancelBtn = UILib.button(t("router.vrrp.cancel"), () => {
             formHost.classList.add("hidden");
@@ -2700,13 +2704,14 @@ export class Router extends SimulatedObject {
         });
         const okBtn = UILib.button(t("router.vrrp.ok"), () => {
             try {
-                const ifIndex = Number(ifSel.value);
-                const vrid    = Math.max(1, Math.min(255, parseInt(vridIn.value, 10)));
-                const vip     = vipIn.value.trim();
-                const prio    = Math.max(1, Math.min(254, parseInt(prioIn.value, 10)));
-                const intMs   = Math.max(100, parseInt(intIn.value, 10));
+                const ifIndex   = Number(ifSel.value);
+                const ipVersion = Number(ipVerSel.value);
+                const vrid      = Math.max(1, Math.min(255, parseInt(vridIn.value, 10)));
+                const vip       = vipIn.value.trim();
+                const prio      = Math.max(1, Math.min(254, parseInt(prioIn.value, 10)));
+                const intMs     = Math.max(100, parseInt(intIn.value, 10));
                 if (!vip || isNaN(vrid) || isNaN(prio) || isNaN(intMs)) return;
-                this.vrrp.addGroup({ ifIndex, vrid, virtualIP: vip, priority: prio, advIntervalMs: intMs, preempt: preemptCb.checked });
+                this.vrrp.addGroup({ ifIndex, vrid, virtualIP: vip, priority: prio, advIntervalMs: intMs, preempt: preemptCb.checked, ipVersion });
                 this.vrrp.start();
                 this._renderVRRPGroups();
                 formHost.classList.add("hidden");
@@ -2729,6 +2734,7 @@ export class Router extends SimulatedObject {
             UILib.div("hr-panel-content", [
                 UILib.div("router-if-fields", [
                     mkRow(t("router.vrrp.col.iface"),    ifSel),
+                    mkRow(t("router.vrrp.col.ipversion"), ipVerSel),
                     mkRow(t("router.vrrp.col.vrid"),     vridIn),
                     mkRow(t("router.vrrp.col.virtualip"),vipIn),
                     mkRow(t("router.vrrp.col.priority"), prioIn),
@@ -2777,7 +2783,7 @@ export class Router extends SimulatedObject {
             return;
         }
         const table = document.createElement("table");
-        table.className = "router-routes";
+        table.className = "router-routes-table";
         const thead = document.createElement("thead");
         const htr = document.createElement("tr");
         for (const col of [
@@ -2810,7 +2816,9 @@ export class Router extends SimulatedObject {
             tbody.appendChild(tr);
         }
         table.append(thead, tbody);
-        host.appendChild(table);
+        const scroll = UILib.div("sim-table-scroll");
+        scroll.appendChild(table);
+        host.appendChild(UILib.wrapWithScrollHints(scroll));
     }
 
     _renderVRRPStatus() {
@@ -2823,7 +2831,7 @@ export class Router extends SimulatedObject {
             return;
         }
         const table = document.createElement("table");
-        table.className = "router-routes";
+        table.className = "router-routes-table";
         const thead = document.createElement("thead");
         const htr = document.createElement("tr");
         for (const col of [
@@ -2858,7 +2866,9 @@ export class Router extends SimulatedObject {
             tbody.appendChild(tr);
         }
         table.append(thead, tbody);
-        host.appendChild(table);
+        const scroll = UILib.div("sim-table-scroll");
+        scroll.appendChild(table);
+        host.appendChild(UILib.wrapWithScrollHints(scroll));
         this._vrrpPollTimer.stop();
         this._vrrpPollTimer.start(() => this._renderVRRPStatus(), 500);
     }

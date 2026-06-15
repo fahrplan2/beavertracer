@@ -468,11 +468,17 @@ export class NetworkInterface extends Observable {
 
             const shouldRespond =
                 (this.ip6LL && key === this._ipKey(this.ip6LL)) ||
-                (this.ip6   && key === this._ipKey(this.ip6));
+                (this.ip6   && key === this._ipKey(this.ip6))   ||
+                this.virtualIPs.has(key);
             if (shouldRespond) {
                 const srcMac = icmp6.getLinkLayerAddress();
                 if (srcMac) this.neighborCache.set(this._ipKey(ipv6.src), srcMac);
-                this._doNDPNeighborAdvertisement(ipv6.src, srcMac, target);
+                const virtualMac = this.virtualIPs.get(key);
+                if (virtualMac) {
+                    this._doNDPNeighborAdvertisementVirtual(ipv6.src, srcMac, target, virtualMac);
+                } else {
+                    this._doNDPNeighborAdvertisement(ipv6.src, srcMac, target);
+                }
             }
         } else if (icmp6.type === 136) { // Neighbor Advertisement
             const target = icmp6.ndpTarget;
@@ -721,6 +727,34 @@ export class NetworkInterface extends Observable {
             payload: ipv6.pack(),
         });
 
+        this.port.send(frame);
+    }
+
+    /**
+     * Reply to an NDP NS for a VRRP virtual IPv6 address — sends NA with the virtual MAC.
+     * @param {IPAddress} dstIp
+     * @param {Uint8Array|null} dstMac
+     * @param {IPAddress} target
+     * @param {Uint8Array} virtualMac
+     */
+    _doNDPNeighborAdvertisementVirtual(dstIp, dstMac, target, virtualMac) {
+        const srcIp = this.ip6LL ?? this.ip6;
+        if (!srcIp) return;
+        const na = ICMPv6Packet.buildNA(target, virtualMac, true);
+        const ipv6 = new IPv6Packet({
+            src: srcIp,
+            dst: dstIp,
+            nextHeader: 58,
+            hopLimit: 255,
+            payload: na.pack(srcIp, dstIp),
+        });
+        const dstMacBytes = dstMac ?? new Uint8Array([0x33, 0x33, 0, 0, 0, 1]);
+        const frame = new EthernetFrame({
+            dstMac: dstMacBytes,
+            srcMac: virtualMac,
+            etherType: 0x86DD,
+            payload: ipv6.pack(),
+        });
         this.port.send(frame);
     }
 

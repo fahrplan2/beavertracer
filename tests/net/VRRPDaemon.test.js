@@ -108,11 +108,22 @@ describe('VRRPPacket – pack / fromBytes', () => {
         expect(VRRPPacket.fromBytes(new Uint8Array(4))).toBeNull();
     });
 
-    it('fromBytes returns null for wrong version', () => {
+    it('fromBytes returns null for unsupported version (e.g. 1)', () => {
         const pkt = new VRRPPacket({ vrid: 1, priority: 100, advInterval: 1, virtualIPs: [IPAddress.fromString('10.0.0.1')] });
         const bytes = pkt.pack();
-        bytes[0] = (3 << 4) | 1; // version 3
+        bytes[0] = (1 << 4) | 1; // version 1 — not supported
         expect(VRRPPacket.fromBytes(bytes)).toBeNull();
+    });
+
+    it('v3 IPv6 round-trips with correct VIP length', () => {
+        const vip = IPAddress.fromString('fe80::1');
+        const pkt = new VRRPPacket({ version: 3, vrid: 5, priority: 150, advInterval: 5, virtualIPs: [vip], ipVersion: 6 });
+        const parsed = VRRPPacket.fromBytes(pkt.pack(), 6);
+        expect(parsed).not.toBeNull();
+        expect(parsed.version).toBe(3);
+        expect(parsed.vrid).toBe(5);
+        expect(parsed.priority).toBe(150);
+        expect(parsed.virtualIPs[0].toString()).toBe('fe80::1');
     });
 
     it('round-trips two virtual IPs', () => {

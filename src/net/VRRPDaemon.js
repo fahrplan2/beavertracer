@@ -1,19 +1,27 @@
 //@ts-check
 import { IPAddress } from "./models/IPAddress.js";
-import { simTimer, SimTimer } from "../lib/SimTimer.js";
+import { simTimer } from "../lib/SimTimer.js";
+import { nowStamp } from "../lib/helpers.js";
 import { VRRPPacket } from "./pdu/VRRPPacket.js";
 import { ArpPacket } from "./pdu/ArpPacket.js";
 import { EthernetFrame } from "./pdu/EthernetFrame.js";
+import { ICMPv6Packet } from "./pdu/ICMPv6Packet.js";
+import { IPv6Packet } from "./pdu/IPv6Packet.js";
 
 const VRRP_PROTO = 112;
-const VRRP_MCAST_STR = "224.0.0.18";
+const VRRP_MCAST_V4_STR = "224.0.0.18";
+const VRRP_MCAST_V6_STR = "ff02::12";
 
 /** VRRP advertisement interval (simulation ms, ≈ 1s real) */
 const VRRP_ADV_MS = 500;
 
-/** @param {number} vrid @returns {Uint8Array} */
-function makeVirtualMAC(vrid) {
-    return new Uint8Array([0x00, 0x00, 0x5e, 0x00, 0x01, vrid & 0xff]);
+/**
+ * @param {number} vrid
+ * @param {number} [ipVersion]  4 → 00:00:5e:00:01:XX  /  6 → 00:00:5e:00:02:XX
+ * @returns {Uint8Array}
+ */
+function makeVirtualMAC(vrid, ipVersion = 4) {
+    return new Uint8Array([0x00, 0x00, 0x5e, 0x00, ipVersion === 6 ? 0x02 : 0x01, vrid & 0xff]);
 }
 
 class VRRPGroup {
@@ -24,19 +32,21 @@ class VRRPGroup {
      *   virtualIP: IPAddress,
      *   priority?: number,
      *   advIntervalMs?: number,
-     *   preempt?: boolean
+     *   preempt?: boolean,
+     *   ipVersion?: number
      * }} opts
      */
-    constructor({ ifIndex, vrid, virtualIP, priority = 100, advIntervalMs = VRRP_ADV_MS, preempt = true }) {
+    constructor({ ifIndex, vrid, virtualIP, priority = 100, advIntervalMs = VRRP_ADV_MS, preempt = true, ipVersion = 4 }) {
         this.ifIndex = ifIndex;
         this.vrid = vrid;
         this.virtualIP = virtualIP;
         this.priority = priority;
         this.advIntervalMs = advIntervalMs;
         this.preempt = preempt;
+        this.ipVersion = ipVersion;
         /** @type {'initialize'|'backup'|'master'} */
         this.state = 'initialize';
-        this.virtualMAC = makeVirtualMAC(vrid);
+        this.virtualMAC = makeVirtualMAC(vrid, ipVersion);
         /** @type {number|null} */
         this._advTimer = null;
         /** @type {number|null} */
@@ -60,7 +70,8 @@ export class VRRPDaemon {
         /** @type {(() => void) | null} */
         this.onLogUpdate = null;
         this._running = false;
-        this._vrrpMcast = IPAddress.fromString(VRRP_MCAST_STR);
+        this._vrrpMcast4 = IPAddress.fromString(VRRP_MCAST_V4_STR);
+        this._vrrpMcast6 = IPAddress.fromString(VRRP_MCAST_V6_STR);
     }
 
     start() {
@@ -84,7 +95,8 @@ export class VRRPDaemon {
      *   virtualIP: IPAddress|string,
      *   priority?: number,
      *   advIntervalMs?: number,
-     *   preempt?: boolean
+     *   preempt?: boolean,
+     *   ipVersion?: number
      * }} opts
      */
     addGroup(opts) {
@@ -92,7 +104,8 @@ export class VRRPDaemon {
         const vip = opts.virtualIP instanceof IPAddress
             ? opts.virtualIP
             : IPAddress.fromString(String(opts.virtualIP));
-        const g = new VRRPGroup({ ...opts, virtualIP: vip });
+        const ipVersion = opts.ipVersion ?? (vip.isV6() ? 6 : 4);
+        const g = new VRRPGroup({ ...opts, virtualIP: vip, ipVersion });
         this.groups.push(g);
         if (this._running) this._startGroup(g);
     }
@@ -115,6 +128,7 @@ export class VRRPDaemon {
                 priority: g.priority,
                 advIntervalMs: g.advIntervalMs,
                 preempt: g.preempt,
+                ipVersion: g.ipVersion,
             })),
         };
     }
@@ -131,6 +145,7 @@ export class VRRPDaemon {
                     priority: raw.priority ?? 100,
                     advIntervalMs: raw.advIntervalMs ?? VRRP_ADV_MS,
                     preempt: raw.preempt ?? true,
+                    ipVersion: raw.ipVersion ?? undefined,
                 });
             } catch { /* invalid config, skip */ }
         }
@@ -139,16 +154,9 @@ export class VRRPDaemon {
 
     // ── Private ──────────────────────────────────────────────────────────────
 
-    _ts() {
-        const ms = simTimer.currentTick * SimTimer.SIM_MS_PER_TICK;
-        const s = Math.floor(ms / 1000).toString().padStart(2, '0');
-        const m = (ms % 1000).toString().padStart(3, '0');
-        return `[${s}.${m}]`;
-    }
-
     /** @param {string} msg */
     _log(msg) {
-        this.log.push(`${this._ts()} ${msg}`);
+        this.log.push(`[${nowStamp()}] ${msg}`);
         if (this.log.length > 500) this.log.splice(0, this.log.length - 500);
         this.onLogUpdate?.();
     }
@@ -181,8 +189,12 @@ export class VRRPDaemon {
         g.state = 'master';
         this._log(`${this._ifName(g)} VRID=${g.vrid}  ${fromState} → MASTER`);
         this._setVirtualIP(g);
-        this._sendGratuitousARP(g);
-        this._sendAdv(g);      // immediate advertisement so peers know right away
+        if (g.ipVersion === 6) {
+            this._sendUnsolicitedNA(g);
+        } else {
+            this._sendGratuitousARP(g);
+        }
+        this._sendAdv(g);
         this._scheduleAdv(g);
     }
 
@@ -215,14 +227,25 @@ export class VRRPDaemon {
 
     /** @param {VRRPGroup} g */
     _sendAdv(g) {
-        const advSec = Math.max(1, Math.round(g.advIntervalMs / 1000));
-        const pkt = new VRRPPacket({
-            vrid: g.vrid,
-            priority: g.priority,
-            advInterval: advSec,
-            virtualIPs: [g.virtualIP],
-        });
-        this._net.sendOnInterface(g.ifIndex, this._vrrpMcast, VRRP_PROTO, pkt.pack()).catch(() => {});
+        if (g.ipVersion === 6) {
+            const advCenti = Math.max(1, Math.round(g.advIntervalMs / 100));
+            const iface = this._net.interfaces[g.ifIndex];
+            const srcIp = iface?.ip6LL ?? iface?.ip6 ?? null;
+            const dstIp = this._vrrpMcast6;
+            const pkt = new VRRPPacket({
+                version: 3, vrid: g.vrid, priority: g.priority,
+                advInterval: advCenti, virtualIPs: [g.virtualIP], ipVersion: 6,
+            });
+            const payload = srcIp ? pkt.pack(srcIp, dstIp) : pkt.pack();
+            this._net.sendOnInterfaceV6(g.ifIndex, dstIp, VRRP_PROTO, payload).catch(() => {});
+        } else {
+            const advSec = Math.max(1, Math.round(g.advIntervalMs / 1000));
+            const pkt = new VRRPPacket({
+                vrid: g.vrid, priority: g.priority,
+                advInterval: advSec, virtualIPs: [g.virtualIP],
+            });
+            this._net.sendOnInterface(g.ifIndex, this._vrrpMcast4, VRRP_PROTO, pkt.pack()).catch(() => {});
+        }
         this._log(`${this._ifName(g)} VRID=${g.vrid}  Advertisement gesendet (prio=${g.priority})`);
     }
 
@@ -249,7 +272,6 @@ export class VRRPDaemon {
         const iface = this._net.interfaces[g.ifIndex];
         if (!iface?.port) return;
         this._log(`${this._ifName(g)} VRID=${g.vrid}  Gratuitous ARP für ${g.virtualIP}`);
-        // Broadcast ARP request: SHA=virtualMAC, SPA=VIP, THA=0, TPA=VIP
         try {
             const arp = new ArpPacket({
                 htype: 1, ptype: 0x0800, hlen: 6, plen: 4, oper: 1,
@@ -268,13 +290,41 @@ export class VRRPDaemon {
         } catch { /* port not connected, skip */ }
     }
 
+    /** @param {VRRPGroup} g */
+    _sendUnsolicitedNA(g) {
+        const iface = this._net.interfaces[g.ifIndex];
+        if (!iface?.port) return;
+        const srcIp = iface.ip6LL ?? iface.ip6;
+        if (!srcIp) return;
+        this._log(`${this._ifName(g)} VRID=${g.vrid}  Unsolicited NA für ${g.virtualIP}`);
+        try {
+            const allNodes = IPAddress.fromString('ff02::1');
+            const na = ICMPv6Packet.buildNA(g.virtualIP, g.virtualMAC, false); // unsolicited → S=0
+            const ipv6 = new IPv6Packet({
+                src: srcIp,
+                dst: allNodes,
+                nextHeader: 58,
+                hopLimit: 255,
+                payload: na.pack(srcIp, allNodes),
+            });
+            const frame = new EthernetFrame({
+                dstMac: new Uint8Array([0x33, 0x33, 0x00, 0x00, 0x00, 0x01]),
+                srcMac: g.virtualMAC,
+                etherType: 0x86DD,
+                payload: ipv6.pack(),
+            });
+            iface.port.send(frame);
+        } catch { /* port not connected, skip */ }
+    }
+
     /**
      * @param {import("./pdu/IPv4Packet.js").IPv4Packet} pkt
      * @param {number} ifIdx
      */
     _onReceive(pkt, ifIdx) {
+        const ipVersion = pkt.src?.isV6() ? 6 : 4;
         let vrrp;
-        try { vrrp = VRRPPacket.fromBytes(pkt.payload); } catch { return; }
+        try { vrrp = VRRPPacket.fromBytes(pkt.payload, ipVersion); } catch { return; }
         if (!vrrp) return;
 
         const g = this.groups.find(gr => gr.vrid === vrrp.vrid && gr.ifIndex === ifIdx);
