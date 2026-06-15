@@ -1338,8 +1338,9 @@ export class PCapViewer {
     }
 
     const { srcIp, srcPort, dstIp, dstPort } = sel.tcp;
-    const labelA = `${srcIp}:${srcPort}`;
-    const labelB = `${dstIp}:${dstPort}`;
+    const fmtAddr = (/** @type {string} */ ip) => ip.includes(":") ? `[${ip}]` : ip;
+    const labelA = `${fmtAddr(srcIp)}:${srcPort}`;
+    const labelB = `${fmtAddr(dstIp)}:${dstPort}`;
 
     /** @type {Array<{ts:number, dir:"a"|"b", seq:number, payload:Uint8Array}>} */
     const segs = [];

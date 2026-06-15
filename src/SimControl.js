@@ -21,6 +21,7 @@ import { SimDialog } from "./lib/SimDialog.js";
 import { WelcomeDialog } from "./lib/WelcomeDialog.js";
 import { version } from "./lib/version.js";
 import { isTauri } from "./tauri.js";
+import { CompanionBridge } from "./sim/CompanionBridge.js";
 
 /**
  * @typedef {Object} PortDescriptor
@@ -31,15 +32,16 @@ import { isTauri } from "./tauri.js";
 
 /** Maps place-tool id → constructor */
 const PLACE_TOOL_CTOR = /** @type {Record<string, new(...args: any[]) => SimulatedObject>} */ ({
-    "place-computer":   Computer,
-    "place-tablet":     Tablet,
-    "place-switch":     Switch,
-    "place-router":     Router,
-    "place-homerouter": HomeRouter,
-    "place-ap":         AccessPoint,
-    "place-firewall":   Firewall,
-    "place-text":       TextBox,
-    "place-rect":       RectOverlay,
+    "place-computer":          Computer,
+    "place-tablet":            Tablet,
+    "place-switch":            Switch,
+    "place-router":            Router,
+    "place-homerouter":        HomeRouter,
+    "place-ap":                AccessPoint,
+    "place-firewall":          Firewall,
+    "place-text":              TextBox,
+    "place-rect":              RectOverlay,
+    "place-companion-bridge":  CompanionBridge,
 });
 
 /** Maps place-tool id → i18n name key (undefined = no default name) */
@@ -237,13 +239,17 @@ export class SimControl {
 
     // ── Constructor & lifecycle ───────────────────────────────────────────────
 
+    /** @type {boolean} */
+    debug = false;
+
     /**
      * @param {HTMLElement|null} root
-     * @param {{ embedded?: boolean }} [opts]
+     * @param {{ embedded?: boolean, debug?: boolean }} [opts]
      */
     constructor(root, opts = {}) {
         this.root = root;
         this.embedded = opts.embedded ?? false;
+        this.debug = opts.debug ?? false;
 
         if (this.embedded) {
             this.mode = "run";
@@ -819,6 +825,7 @@ export class SimControl {
             ["Tablet", Tablet],
             ["HomeRouter", HomeRouter],
             ["Firewall", Firewall],
+            ["CompanionBridge", CompanionBridge],
             // Link handled separately
         ]);
 
@@ -1302,6 +1309,7 @@ export class SimControl {
             ["place-firewall", t("sim.tool.firewall"), "fa-shield-halved"],
             ["place-text", t("sim.tool.textbox"), "fa-font"],
             ["place-rect", t("sim.tool.rectangle"), "fa-square"],
+            ...(this.debug ? [["place-companion-bridge", "Companion Bridge", "fa-network-wired"]] : []),
             ["delete", t("sim.tool.delete"), "fa-ban"],
         ];
 
