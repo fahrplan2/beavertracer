@@ -317,7 +317,7 @@ export class Switch extends SimulatedObject {
         this._pollTimer.start(() => {
             if (this._activeTab === "sat") this._renderSAT();
             else if (this._activeTab === "stp") this._renderSTPSection();
-            else if (this._activeTab === "lag") this._renderLagSection();
+            else if (this._activeTab === "lag") this._updateLagLinkStatus();
         }, 500);
     }
 
@@ -416,6 +416,7 @@ export class Switch extends SimulatedObject {
         this._vlanSection.classList.remove("hidden");
 
         const ports = this.backplane?.ports ?? [];
+        const lagGroups = this.backplane?.lagGroups ?? [];
         const card = UILib.div("switch-card");
 
         const header = UILib.div("switch-vlan-port-row switch-vlan-header");
@@ -425,34 +426,33 @@ export class Switch extends SimulatedObject {
         }
         card.appendChild(header);
 
-        for (let i = 0; i < ports.length; i++) {
-            const p = ports[i];
-
+        /**
+         * @param {string} labelText
+         * @param {import("../net/EthernetPort.js").EthernetPort} refPort
+         * @param {(modeVal: string, newPvid: number, allowedVal: string) => void} onApply
+         */
+        const addRow = (labelText, refPort, onApply) => {
             const row = UILib.div("switch-vlan-port-row");
 
             const label = UILib.div("");
-            label.textContent = `port ${i + 1}`;
+            label.textContent = labelText;
 
-            // Mode select: tagged/untagged
             const mode = /** @type {HTMLSelectElement} */ (document.createElement("select"));
             mode.innerHTML = `
       <option value="untagged">untagged</option>
       <option value="tagged">tagged</option>
     `;
-            mode.value = p.vlanMode;
+            mode.value = refPort.vlanMode;
 
-            // PVID
-            const pvid = /** @type {HTMLInputElement} */ (UILib.input({ type: "number", value: String(p.pvid) }));
+            const pvid = /** @type {HTMLInputElement} */ (UILib.input({ type: "number", value: String(refPort.pvid) }));
             pvid.min = "1";
             pvid.max = "4094";
             pvid.step = "1";
 
-            // Allowed VLANs (only relevant for tagged)
-            const allowed = /** @type {HTMLInputElement} */ (UILib.input({ value: [...(p.allowedVlans ?? new Set([p.pvid]))].sort((a, b) => a - b).join(",") }));
+            const allowed = /** @type {HTMLInputElement} */ (UILib.input({ value: [...(refPort.allowedVlans ?? new Set([refPort.pvid]))].sort((a, b) => a - b).join(",") }));
             allowed.placeholder = "e.g. 1,10,20";
             allowed.style.width = "100%";
 
-            // Apply button
             const apply = UILib.button(t("switch.apply") ?? "Apply", null);
 
             const updateEnabledFields = () => {
@@ -461,37 +461,57 @@ export class Switch extends SimulatedObject {
                 allowed.style.opacity = isTagged ? "1" : "0.5";
             };
             updateEnabledFields();
+            mode.addEventListener("change", updateEnabledFields);
 
             apply.addEventListener("click", () => {
                 const newPvid = Number(pvid.value);
                 if (!Number.isInteger(newPvid) || newPvid < 1 || newPvid > 4094) return;
-
-                if (mode.value === "untagged") {
-                    p.setUntagged(newPvid);
-                } else {
-                    // parse allowed list
-                    const parsed = allowed.value
-                        .split(",")
-                        .map(s => Number(s.trim()))
-                        .filter(n => Number.isInteger(n) && n >= 1 && n <= 4094);
-
-                    const uniq = [...new Set(parsed)];
-                    // Ensure pvid is always allowed on tagged ports (nice UX)
-                    if (!uniq.includes(newPvid)) uniq.unshift(newPvid);
-
-                    p.setTagged(uniq, newPvid);
-                }
-
-                // SAT may change over time; refresh now
+                onApply(mode.value, newPvid, allowed.value);
                 this._renderSAT();
-                // Keep UI in sync (in case parsing changed)
                 this._renderVLANSection();
             });
 
-            mode.addEventListener("change", updateEnabledFields);
-
             row.append(label, mode, pvid, allowed, apply);
             card.appendChild(row);
+        };
+
+        /** @param {string} modeVal @param {number} newPvid @param {string} allowedVal @param {import("../net/EthernetPort.js").EthernetPort} p */
+        const applyToPort = (modeVal, newPvid, allowedVal, p) => {
+            if (modeVal === "untagged") {
+                p.setUntagged(newPvid);
+            } else {
+                const parsed = allowedVal
+                    .split(",")
+                    .map(s => Number(s.trim()))
+                    .filter(n => Number.isInteger(n) && n >= 1 && n <= 4094);
+                const uniq = [...new Set(parsed)];
+                if (!uniq.includes(newPvid)) uniq.unshift(newPvid);
+                p.setTagged(uniq, newPvid);
+            }
+        };
+
+        // LAG bonds appear as one logical row each; config is applied to all members
+        const lagMemberPorts = new Set();
+        for (const group of lagGroups) {
+            if (group.members.length === 0) continue;
+            for (const m of group.members) lagMemberPorts.add(m);
+            const repPort = ports[group.members[0]];
+            if (!repPort) continue;
+            addRow(group.name, repPort, (modeVal, newPvid, allowedVal) => {
+                for (const m of group.members) {
+                    const mp = ports[m];
+                    if (mp) applyToPort(modeVal, newPvid, allowedVal, mp);
+                }
+            });
+        }
+
+        // Non-LAG ports appear individually
+        for (let i = 0; i < ports.length; i++) {
+            if (lagMemberPorts.has(i)) continue;
+            const p = ports[i];
+            addRow(`port ${i + 1}`, p, (modeVal, newPvid, allowedVal) => {
+                applyToPort(modeVal, newPvid, allowedVal, p);
+            });
         }
 
         this._vlanSection.appendChild(card);
@@ -548,7 +568,7 @@ export class Switch extends SimulatedObject {
             const delBtn = UILib.button(t("switch.lag.delete"), () => {
                 this.backplane.deleteLagGroup(group.id);
                 this._renderLagSection();
-            }, { className: "btn btn-danger" });
+            }, { className: "btn" });
             cardHeader.appendChild(delBtn);
             card.appendChild(cardHeader);
 
@@ -586,12 +606,28 @@ export class Switch extends SimulatedObject {
                     "switch-lag-port-entry" + (isInOther ? " switch-lag-port-disabled" : ""),
                     [cb, UILib.el("span", { text: `port ${idx + 1}`, className: "switch-lag-port-label" }), statusEl],
                 );
+                entry.dataset.lagPort = String(idx);
                 portsRow.appendChild(entry);
             }
 
             card.appendChild(portsRow);
             this._lagSection.appendChild(card);
         }
+    }
+
+    _updateLagLinkStatus() {
+        if (!this._lagSection) return;
+        const ports = this.backplane.ports;
+        this._lagSection.querySelectorAll("[data-lag-port]").forEach(entry => {
+            const idx = Number(/** @type {HTMLElement} */ (entry).dataset.lagPort);
+            const statusEl = entry.querySelector(".switch-lag-status-active, .switch-lag-status-inactive");
+            if (!statusEl) return;
+            const isLinked = ports[idx]?.isLinked();
+            statusEl.textContent = isLinked
+                ? ("● " + t("switch.lag.status.active"))
+                : ("○ " + t("switch.lag.status.inactive"));
+            statusEl.className = isLinked ? "switch-lag-status-active" : "switch-lag-status-inactive";
+        });
     }
 
     _renderSTPSection() {
