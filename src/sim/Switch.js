@@ -62,6 +62,12 @@ export class Switch extends SimulatedObject {
     /** @type {HTMLDivElement|null} */
     _lagSection = null;
 
+    /** @type {HTMLInputElement|null} */
+    _igmpEnabledCheckbox = null;
+
+    /** @type {HTMLDivElement|null} */
+    _igmpSection = null;
+
     /**
      * @param {String} name
      */
@@ -101,6 +107,8 @@ export class Switch extends SimulatedObject {
                 id: g.id, name: g.name, mode: g.mode, members: [...g.members],
             })),
             lagNextId: this.backplane._nextLagId,
+
+            igmpSnoopingEnabled: !!this.backplane.igmpSnoopingEnabled,
         };
 
     }
@@ -171,6 +179,9 @@ export class Switch extends SimulatedObject {
                 : obj.backplane.lagGroups.reduce((m, g) => Math.max(m, g.id + 1), 0);
         }
 
+        // --- IGMP Snooping ---
+        if (n.igmpSnoopingEnabled) obj.backplane.enableIGMPSnooping();
+
         return obj;
     }
 
@@ -213,6 +224,7 @@ export class Switch extends SimulatedObject {
             { id: "vlan", label: t("switch.tab.vlan") },
             { id: "stp",  label: t("switch.tab.stp")  },
             { id: "lag",  label: t("switch.tab.lag")  },
+            { id: "igmp", label: t("switch.tab.igmp") },
         ], (id) => {
             this._activeTab = id;
             this._satHost = null;
@@ -221,11 +233,14 @@ export class Switch extends SimulatedObject {
             this._stpModeSelect = null;
             this._stpSection = null;
             this._lagSection = null;
+            this._igmpEnabledCheckbox = null;
+            this._igmpSection = null;
             UILib.clear(content);
             if (id === "sat")  this._buildMacTab(content);
             else if (id === "vlan") this._buildVlanTab(content);
             else if (id === "stp")  this._buildStpTab(content);
             else if (id === "lag")  this._buildLagTab(content);
+            else if (id === "igmp") this._buildIGMPTab(content);
         });
         card.appendChild(tabBar);
         card.appendChild(content);
@@ -234,6 +249,7 @@ export class Switch extends SimulatedObject {
         else if (this._activeTab === "vlan") this._buildVlanTab(content);
         else if (this._activeTab === "stp")  this._buildStpTab(content);
         else if (this._activeTab === "lag")  this._buildLagTab(content);
+        else if (this._activeTab === "igmp") this._buildIGMPTab(content);
         selectTab(this._activeTab);
         this._startSatPolling();
     }
@@ -318,6 +334,7 @@ export class Switch extends SimulatedObject {
             if (this._activeTab === "sat") this._renderSAT();
             else if (this._activeTab === "stp") this._renderSTPSection();
             else if (this._activeTab === "lag") this._updateLagLinkStatus();
+            else if (this._activeTab === "igmp") this._renderIGMPSection();
         }, 500);
     }
 
@@ -613,6 +630,75 @@ export class Switch extends SimulatedObject {
             card.appendChild(portsRow);
             this._lagSection.appendChild(card);
         }
+    }
+
+    /** @param {HTMLElement} host */
+    _buildIGMPTab(host) {
+        const cb = /** @type {HTMLInputElement} */ (UILib.input({ type: "checkbox" }));
+        cb.checked = !!this.backplane.igmpSnoopingEnabled;
+        this._igmpEnabledCheckbox = cb;
+        host.appendChild(UILib.div("hr-checkbox-row", [cb, UILib.el("span", { text: t("switch.igmp.enable") })]));
+
+        cb.addEventListener("change", () => {
+            if (cb.checked) this.backplane.enableIGMPSnooping();
+            else this.backplane.disableIGMPSnooping();
+            this._renderIGMPSection();
+        });
+
+        const section = UILib.div("switch-igmp-section");
+        this._igmpSection = section;
+        host.appendChild(section);
+        this._renderIGMPSection();
+    }
+
+    _renderIGMPSection() {
+        if (!this._igmpSection) return;
+        this._igmpSection.innerHTML = "";
+
+        if (!this.backplane.igmpSnoopingEnabled) {
+            this._igmpSection.classList.add("hidden");
+            return;
+        }
+        this._igmpSection.classList.remove("hidden");
+
+        if (this.backplane.mcastTable.size === 0) {
+            this._igmpSection.appendChild(UILib.el("p", {
+                text: t("switch.igmp.empty"),
+                className: "router-empty-p",
+            }));
+            return;
+        }
+
+        const table = document.createElement("table");
+        table.className = "switch-igmp-table";
+
+        const thead = document.createElement("thead");
+        const htr = document.createElement("tr");
+        for (const key of ["switch.igmp.col.group", "switch.igmp.col.ports"]) {
+            const th = document.createElement("th");
+            th.textContent = t(key);
+            htr.appendChild(th);
+        }
+        thead.appendChild(htr);
+        table.appendChild(thead);
+
+        const tbody = document.createElement("tbody");
+        for (const entry of this.backplane.mcastTable.values()) {
+            const tr = document.createElement("tr");
+            const groupTd = document.createElement("td");
+            groupTd.textContent = entry.ip;
+            const portNames = [...entry.ports].sort((a, b) => a - b).map(p => `port ${p + 1}`).join(", ");
+            const portsTd = document.createElement("td");
+            portsTd.textContent = portNames;
+            tr.appendChild(groupTd);
+            tr.appendChild(portsTd);
+            tbody.appendChild(tr);
+        }
+        table.appendChild(tbody);
+
+        const scroll = UILib.div("sim-table-scroll");
+        scroll.appendChild(table);
+        this._igmpSection.appendChild(UILib.wrapWithScrollHints(scroll));
     }
 
     _updateLagLinkStatus() {

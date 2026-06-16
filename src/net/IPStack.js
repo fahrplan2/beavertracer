@@ -477,6 +477,24 @@ export class IPStack extends Observable {
         const bIf = this._findDirectedBroadcastInterface(dst);
 
         if (internal) {
+            // Locally generated multicast: send on first configured IPv4 interface
+            if ((this._v4n(dst) >>> 28) === 0xe) {
+                const dstNum = this._v4n(dst);
+                const mcastMac = new Uint8Array([
+                    0x01, 0x00, 0x5e,
+                    (dstNum >>> 16) & 0x7f,
+                    (dstNum >>>  8) & 0xff,
+                     dstNum         & 0xff,
+                ]);
+                for (const itf of this.interfaces) {
+                    if (!itf.ip.isV4() || this._isZero(itf.ip)) continue;
+                    if (this._isZero(src)) packet.src = itf.ip;
+                    itf.sendFrame(mcastMac, 0x0800, packet.pack());
+                    break;
+                }
+                return;
+            }
+
             if (isLimited) {
                 const bmac = new Uint8Array([255, 255, 255, 255, 255, 255]);
 
@@ -1005,6 +1023,9 @@ export class IPStack extends Observable {
             case 1:
                 this._handleICMP(packet);
                 break;
+            case 2:
+                // IGMP — handled by the switch (snooping); silently ignore on the host
+                break;
             case 6:
                 this.tcp.handle(packet);
                 break;
@@ -1092,6 +1113,23 @@ export class IPStack extends Observable {
             if (!dstMac) return;
         }
         iface.sendFrame(dstMac, 0x0800, pkt.pack());
+    }
+
+    /**
+     * Send an IGMPv2 Membership Report (0x16) or Leave Group (0x17) on the
+     * first configured IPv4 interface. No-op when no interface is configured.
+     * @param {IPAddress} groupIp
+     * @param {0x16|0x17} igmpType
+     */
+    sendIGMP(groupIp, igmpType) {
+        const ifIdx = this.interfaces.findIndex(i => i.ip.isV4() && !this._isZero(i.ip));
+        if (ifIdx < 0) return;
+        const g = groupIp.toUInt8();
+        const payload = new Uint8Array(8);
+        payload[0] = igmpType;
+        // bytes 1-3: max-resp / checksum — left 0 (simulator doesn't validate checksums)
+        payload[4] = g[0]; payload[5] = g[1]; payload[6] = g[2]; payload[7] = g[3];
+        this.sendOnInterface(ifIdx, groupIp, 2, payload);
     }
 
     /**

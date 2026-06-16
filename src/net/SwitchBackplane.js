@@ -75,6 +75,16 @@ export class SwitchBackplane extends Observable {
     // -------------------- Feature flags --------------------
     vlanEnabled = false;
 
+    // -------------------- IGMP Snooping --------------------
+    igmpSnoopingEnabled = false;
+
+    /**
+     * Multicast membership table built by IGMP snooping.
+     * Key: MACToNumber of the multicast MAC, Value: { ip, ports }
+     * @type {Map<number, {ip: string, ports: Set<number>}>}
+     */
+    mcastTable = new Map();
+
     /**
      * STP/RSTP operating mode.
      * 'off'  – no spanning tree
@@ -249,6 +259,15 @@ export class SwitchBackplane extends Observable {
     disableVLANFeature() {
         this.vlanEnabled = false;
         this.sat.clear();
+    }
+
+    enableIGMPSnooping() {
+        this.igmpSnoopingEnabled = true;
+    }
+
+    disableIGMPSnooping() {
+        this.igmpSnoopingEnabled = false;
+        this.mcastTable.clear();
     }
 
     enableSTPFeature() {
@@ -610,6 +629,49 @@ export class SwitchBackplane extends Observable {
         const f = this.cloneFrame(inFrame);
         f.vlan = { vid }; // ensure tagged
         outPort.send(f);
+    }
+
+    // ---------------------------------------------------------------------------
+    // IGMP Snooping helpers
+    // ---------------------------------------------------------------------------
+
+    /** @param {Uint8Array} mac */
+    _isIPv4MulticastMac(mac) {
+        return mac[0] === 0x01 && mac[1] === 0x00 && mac[2] === 0x5e;
+    }
+
+    /**
+     * Parse IGMP from frame payload. Updates mcastTable on Report/Leave.
+     * Returns the IGMP type byte (0x11/0x16/0x17), or -1 if not an IGMP frame.
+     * @param {number} portIdx
+     * @param {EthernetFrame} frame
+     * @returns {number}
+     */
+    _processIGMP(portIdx, frame) {
+        if (frame.etherType !== 0x0800) return -1;
+        const ip = frame.payload;
+        if (!ip || ip.length < 24) return -1;
+        const ihl = (ip[0] & 0x0f) * 4;
+        if (ip[9] !== 2) return -1; // IP protocol ≠ IGMP
+        if (ip.length < ihl + 8) return -1;
+
+        const igmpType = ip[ihl];
+        const g = ip.slice(ihl + 4, ihl + 8); // group address bytes
+        const groupMac = new Uint8Array([0x01, 0x00, 0x5e, g[1] & 0x7f, g[2], g[3]]);
+        const groupKey = MACToNumber(groupMac);
+        const groupIp = `${g[0]}.${g[1]}.${g[2]}.${g[3]}`;
+
+        if (igmpType === 0x16) { // Membership Report v2
+            if (!this.mcastTable.has(groupKey)) this.mcastTable.set(groupKey, { ip: groupIp, ports: new Set() });
+            /** @type {{ip:string,ports:Set<number>}} */ (this.mcastTable.get(groupKey)).ports.add(portIdx);
+        } else if (igmpType === 0x17) { // Leave Group
+            const entry = this.mcastTable.get(groupKey);
+            if (entry) {
+                entry.ports.delete(portIdx);
+                if (entry.ports.size === 0) this.mcastTable.delete(groupKey);
+            }
+        }
+        return igmpType;
     }
 
     // ---------------------------------------------------------------------------
@@ -1636,6 +1698,25 @@ export class SwitchBackplane extends Observable {
                         continue;
                     }
 
+                    // IGMP snooping (non-broadcast multicast only)
+                    if (this.igmpSnoopingEnabled && this._isIPv4MulticastMac(frame.dstMac)) {
+                        const igmpType = this._processIGMP(i, frame);
+                        if (igmpType === -1) {
+                            // Non-IGMP multicast data: forward only to registered ports
+                            const entry = this.mcastTable.get(MACToNumber(frame.dstMac));
+                            if (entry && entry.ports.size > 0) {
+                                for (const j of entry.ports) {
+                                    if (j === i) continue;
+                                    if (!this._lagShouldEgress(j, i, frame)) continue;
+                                    if (this.stpEnabled && this.stpPortState[this._lagRepresentative(j)] !== STP_STATE.FORWARDING) continue;
+                                    this.ports[j].send(frame);
+                                }
+                                continue;
+                            }
+                        }
+                        // IGMP control (query/report/leave) or unknown group → flood below
+                    }
+
                     const dstKey = MACToNumber(frame.dstMac);
                     const outIndex = this.sat.get(dstKey);
 
@@ -1678,6 +1759,27 @@ export class SwitchBackplane extends Observable {
                 const isBroadcast = isEqualUint8(frame.dstMac, new Uint8Array([255, 255, 255, 255, 255, 255]));
                 const dstKey = MACToNumber(frame.dstMac);
                 const outIndex = isBroadcast ? null : (this.sat.get(vid)?.get(dstKey) ?? null);
+
+                // IGMP snooping (non-broadcast multicast only)
+                if (!isBroadcast && this.igmpSnoopingEnabled && this._isIPv4MulticastMac(frame.dstMac)) {
+                    const igmpType = this._processIGMP(i, frame);
+                    if (igmpType === -1) {
+                        // Non-IGMP multicast data: forward only to registered ports (still VLAN-filtered)
+                        const entry = this.mcastTable.get(dstKey);
+                        if (entry && entry.ports.size > 0) {
+                            for (const j of entry.ports) {
+                                if (j === i) continue;
+                                if (!this._lagShouldEgress(j, i, frame)) continue;
+                                if (this.stpEnabled && this.stpPortState[this._lagRepresentative(j)] !== STP_STATE.FORWARDING) continue;
+                                const outPort = this.ports[j];
+                                if (!this.portAllowsVid(outPort, vid)) continue;
+                                this.sendOut(vid, outPort, frame);
+                            }
+                            continue;
+                        }
+                    }
+                    // IGMP control or unknown group → flood within VLAN below
+                }
 
                 if (isBroadcast || outIndex == null) {
                     // Flood within VLAN
