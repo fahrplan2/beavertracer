@@ -81,7 +81,7 @@ export class SwitchBackplane extends Observable {
     /**
      * Multicast membership table built by IGMP snooping.
      * Key: MACToNumber of the multicast MAC, Value: { ip, ports }
-     * @type {Map<number, {ip: string, ports: Set<number>}>}
+     * @type {Map<bigint, {ip: string, ports: Set<number>}>}
      */
     mcastTable = new Map();
 
