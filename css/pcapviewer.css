@@ -2,7 +2,6 @@
 .pcapviewer-root {
   display: grid;
   grid-template-rows: auto auto 1fr;
-  font-family: system-ui, sans-serif;
   box-sizing: border-box;
 
   width: 100%;
