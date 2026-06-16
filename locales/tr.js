@@ -1373,8 +1373,8 @@ export default {
   "switch.lag.status.inactive": "inaktif",
   "switch.lag.empty": "Yapılandırılmış LAG grubu yok.",
   "router.vrrp.col.ipversion": "IP Sürümü",
-  "switch.tab.igmp": "IGMP",
-  "switch.igmp.enable": "IGMP Snooping'i Etkinleştir",
+  "switch.tab.igmp": "Multicast",
+  "switch.igmp.enable": "Multicast Snooping'i Etkinleştir (IGMP + MLD)",
   "switch.igmp.empty": "Bilinen çok yayınlı grup yok.",
   "switch.igmp.col.group": "Grup (IP)",
   "switch.igmp.col.ports": "Portlar",
@@ -1392,5 +1392,6 @@ export default {
   "app.multicastchat.log.joined": "{group} grubuna katıldı.",
   "app.multicastchat.log.left": "{group} grubundan ayrıldı.",
   "app.multicastchat.log.peerJoined": "{nick} gruba katıldı.",
-  "app.multicastchat.log.peerLeft": "{nick} gruptan ayrıldı."
+  "app.multicastchat.log.peerLeft": "{nick} gruptan ayrıldı.",
+  "switch.igmp.col.proto": "Protokol"
 };

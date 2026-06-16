@@ -1373,8 +1373,8 @@ export default {
   "switch.lag.status.inactive": "غير نشط",
   "switch.lag.empty": "لم يتم تكوين مجموعات LAG.",
   "router.vrrp.col.ipversion": "إصدار IP",
-  "switch.tab.igmp": "IGMP",
-  "switch.igmp.enable": "تفعيل IGMP Snooping",
+  "switch.tab.igmp": "البث المتعدد",
+  "switch.igmp.enable": "تفعيل مراقبة البث المتعدد (IGMP + MLD)",
   "switch.igmp.empty": "لا توجد مجموعات متعددة الوجهات معروفة.",
   "switch.igmp.col.group": "المجموعة (IP)",
   "switch.igmp.col.ports": "المنافذ",
@@ -1392,5 +1392,6 @@ export default {
   "app.multicastchat.log.joined": "تم الانضمام إلى المجموعة {group}.",
   "app.multicastchat.log.left": "غادرت المجموعة {group}.",
   "app.multicastchat.log.peerJoined": "انضم {nick} إلى المجموعة.",
-  "app.multicastchat.log.peerLeft": "غادر {nick} المجموعة."
+  "app.multicastchat.log.peerLeft": "غادر {nick} المجموعة.",
+  "switch.igmp.col.proto": "البروتوكول"
 };

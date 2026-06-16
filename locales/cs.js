@@ -1373,8 +1373,8 @@ export default {
   "switch.lag.status.inactive": "neaktivní",
   "switch.lag.empty": "Nejsou nakonfigurované žádné skupiny LAG.",
   "router.vrrp.col.ipversion": "Verze IP",
-  "switch.tab.igmp": "IGMP",
-  "switch.igmp.enable": "Povolit IGMP Snooping",
+  "switch.tab.igmp": "Multicast",
+  "switch.igmp.enable": "Povolit Multicast Snooping (IGMP + MLD)",
   "switch.igmp.empty": "Nejsou známy žádné multicastové skupiny.",
   "switch.igmp.col.group": "Skupina (IP)",
   "switch.igmp.col.ports": "Porty",
@@ -1392,5 +1392,6 @@ export default {
   "app.multicastchat.log.joined": "Připojeno do skupiny {group}.",
   "app.multicastchat.log.left": "Opuštěna skupina {group}.",
   "app.multicastchat.log.peerJoined": "{nick} se připojil do skupiny.",
-  "app.multicastchat.log.peerLeft": "{nick} opustil skupinu."
+  "app.multicastchat.log.peerLeft": "{nick} opustil skupinu.",
+  "switch.igmp.col.proto": "Protokol"
 };

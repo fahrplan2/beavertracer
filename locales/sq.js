@@ -1372,8 +1372,8 @@ export default {
   "switch.lag.status.inactive": "joaktiv",
   "switch.lag.empty": "Nuk ka grupe LAG të konfiguruar.",
   "router.vrrp.col.ipversion": "Versioni IP",
-  "switch.tab.igmp": "IGMP",
-  "switch.igmp.enable": "Aktivizo IGMP Snooping",
+  "switch.tab.igmp": "Multicast",
+  "switch.igmp.enable": "Aktivizo Multicast Snooping (IGMP + MLD)",
   "switch.igmp.empty": "Nuk ka grupe multicast të njohura.",
   "switch.igmp.col.group": "Grupi (IP)",
   "switch.igmp.col.ports": "Portat",
@@ -1391,5 +1391,6 @@ export default {
   "app.multicastchat.log.joined": "U bashkua në grupin {group}.",
   "app.multicastchat.log.left": "U largua nga grupi {group}.",
   "app.multicastchat.log.peerJoined": "{nick} u bashkua në grup.",
-  "app.multicastchat.log.peerLeft": "{nick} u largua nga grupi."
+  "app.multicastchat.log.peerLeft": "{nick} u largua nga grupi.",
+  "switch.igmp.col.proto": "Protokolli"
 };

@@ -1373,8 +1373,8 @@ export default {
   "switch.lag.status.inactive": "неактивна",
   "switch.lag.empty": "Группы LAG не настроены.",
   "router.vrrp.col.ipversion": "Версия IP",
-  "switch.tab.igmp": "IGMP",
-  "switch.igmp.enable": "Включить IGMP Snooping",
+  "switch.tab.igmp": "Многоадресная передача",
+  "switch.igmp.enable": "Включить Multicast Snooping (IGMP + MLD)",
   "switch.igmp.empty": "Нет известных групп многоадресной рассылки.",
   "switch.igmp.col.group": "Группа (IP)",
   "switch.igmp.col.ports": "Порты",
@@ -1392,5 +1392,6 @@ export default {
   "app.multicastchat.log.joined": "Присоединились к группе {group}.",
   "app.multicastchat.log.left": "Вышли из группы {group}.",
   "app.multicastchat.log.peerJoined": "{nick} присоединился к группе.",
-  "app.multicastchat.log.peerLeft": "{nick} вышел из группы."
+  "app.multicastchat.log.peerLeft": "{nick} вышел из группы.",
+  "switch.igmp.col.proto": "Протокол"
 };

@@ -1373,8 +1373,8 @@ export default {
   "switch.lag.status.inactive": "passiivinen",
   "switch.lag.empty": "Ei määritettyjä LAG-ryhmiä.",
   "router.vrrp.col.ipversion": "IP-versio",
-  "switch.tab.igmp": "IGMP",
-  "switch.igmp.enable": "Ota IGMP Snooping käyttöön",
+  "switch.tab.igmp": "Multicast",
+  "switch.igmp.enable": "Ota multicast-kuuntelu käyttöön (IGMP + MLD)",
   "switch.igmp.empty": "Tunnettuja multicast-ryhmiä ei ole.",
   "switch.igmp.col.group": "Ryhmä (IP)",
   "switch.igmp.col.ports": "Portit",
@@ -1392,5 +1392,6 @@ export default {
   "app.multicastchat.log.joined": "Liitytty ryhmään {group}.",
   "app.multicastchat.log.left": "Poistuttu ryhmästä {group}.",
   "app.multicastchat.log.peerJoined": "{nick} liittyi ryhmään.",
-  "app.multicastchat.log.peerLeft": "{nick} poistui ryhmästä."
+  "app.multicastchat.log.peerLeft": "{nick} poistui ryhmästä.",
+  "switch.igmp.col.proto": "Protokolla"
 };

@@ -1372,8 +1372,8 @@ export default {
   "switch.lag.status.inactive": "inactiu",
   "switch.lag.empty": "No hi ha grups LAG configurats.",
   "router.vrrp.col.ipversion": "Versió d'IP",
-  "switch.tab.igmp": "IGMP",
-  "switch.igmp.enable": "Activar IGMP Snooping",
+  "switch.tab.igmp": "Multicast",
+  "switch.igmp.enable": "Activa l'Espionatge Multicast (IGMP + MLD)",
   "switch.igmp.empty": "Cap grup multicast conegut.",
   "switch.igmp.col.group": "Grup (IP)",
   "switch.igmp.col.ports": "Ports",
@@ -1391,5 +1391,6 @@ export default {
   "app.multicastchat.log.joined": "S'ha unit al grup {group}.",
   "app.multicastchat.log.left": "Ha sortit del grup {group}.",
   "app.multicastchat.log.peerJoined": "{nick} s'ha unit al grup.",
-  "app.multicastchat.log.peerLeft": "{nick} ha sortit del grup."
+  "app.multicastchat.log.peerLeft": "{nick} ha sortit del grup.",
+  "switch.igmp.col.proto": "Protocol"
 };

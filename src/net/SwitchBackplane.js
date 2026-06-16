@@ -1,6 +1,7 @@
 //@ts-check
 
 import { isEqualUint8, MACToNumber } from "../lib/helpers.js";
+import { IPAddress } from "./models/IPAddress.js";
 import { EthernetPort } from "./EthernetPort.js";
 import { Observable } from "../lib/Observeable.js";
 import { EthernetFrame } from "../net/pdu/EthernetFrame.js";
@@ -640,6 +641,11 @@ export class SwitchBackplane extends Observable {
         return mac[0] === 0x01 && mac[1] === 0x00 && mac[2] === 0x5e;
     }
 
+    /** @param {Uint8Array} mac */
+    _isIPv6MulticastMac(mac) {
+        return mac[0] === 0x33 && mac[1] === 0x33;
+    }
+
     /**
      * Parse IGMP from frame payload. Updates mcastTable on Report/Leave.
      * Returns the IGMP type byte (0x11/0x16/0x17), or -1 if not an IGMP frame.
@@ -672,6 +678,39 @@ export class SwitchBackplane extends Observable {
             }
         }
         return igmpType;
+    }
+
+    /**
+     * Parse MLD from frame payload (ICMPv6 types 130/131/132). Updates mcastTable on Report/Done.
+     * Returns the MLD type byte (0x82/0x83/0x84), or -1 if not an MLD frame.
+     * @param {number} portIdx
+     * @param {EthernetFrame} frame
+     * @returns {number}
+     */
+    _processMLD(portIdx, frame) {
+        if (frame.etherType !== 0x86DD) return -1;
+        const ip6 = frame.payload;
+        if (!ip6 || ip6.length < 64) return -1; // 40-byte IPv6 hdr + 24-byte MLD
+        if (ip6[6] !== 58) return -1; // nextHeader ≠ ICMPv6
+        const mldType = ip6[40]; // ICMPv6 type
+        if (mldType !== 0x82 && mldType !== 0x83 && mldType !== 0x84) return -1;
+
+        const g = ip6.slice(48, 64); // multicast group address (16 bytes, at ICMPv6 byte 8)
+        const groupMac = new Uint8Array([0x33, 0x33, g[12], g[13], g[14], g[15]]);
+        const groupKey = MACToNumber(groupMac);
+        const groupIp = IPAddress.fromUInt8(g).toString();
+
+        if (mldType === 0x83) { // Multicast Listener Report (join)
+            if (!this.mcastTable.has(groupKey)) this.mcastTable.set(groupKey, { ip: groupIp, ports: new Set() });
+            /** @type {{ip:string,ports:Set<number>}} */ (this.mcastTable.get(groupKey)).ports.add(portIdx);
+        } else if (mldType === 0x84) { // Multicast Listener Done (leave)
+            const entry = this.mcastTable.get(groupKey);
+            if (entry) {
+                entry.ports.delete(portIdx);
+                if (entry.ports.size === 0) this.mcastTable.delete(groupKey);
+            }
+        }
+        return mldType;
     }
 
     // ---------------------------------------------------------------------------
@@ -1717,6 +1756,25 @@ export class SwitchBackplane extends Observable {
                         // IGMP control (query/report/leave) or unknown group → flood below
                     }
 
+                    // MLD snooping (non-broadcast IPv6 multicast only)
+                    if (this.igmpSnoopingEnabled && this._isIPv6MulticastMac(frame.dstMac)) {
+                        const mldType = this._processMLD(i, frame);
+                        if (mldType === -1) {
+                            // Non-MLD IPv6 multicast data: forward only to registered ports
+                            const entry = this.mcastTable.get(MACToNumber(frame.dstMac));
+                            if (entry && entry.ports.size > 0) {
+                                for (const j of entry.ports) {
+                                    if (j === i) continue;
+                                    if (!this._lagShouldEgress(j, i, frame)) continue;
+                                    if (this.stpEnabled && this.stpPortState[this._lagRepresentative(j)] !== STP_STATE.FORWARDING) continue;
+                                    this.ports[j].send(frame);
+                                }
+                                continue;
+                            }
+                        }
+                        // MLD control (130/131/132) or unknown group → flood below
+                    }
+
                     const dstKey = MACToNumber(frame.dstMac);
                     const outIndex = this.sat.get(dstKey);
 
@@ -1779,6 +1837,27 @@ export class SwitchBackplane extends Observable {
                         }
                     }
                     // IGMP control or unknown group → flood within VLAN below
+                }
+
+                // MLD snooping (non-broadcast IPv6 multicast only)
+                if (!isBroadcast && this.igmpSnoopingEnabled && this._isIPv6MulticastMac(frame.dstMac)) {
+                    const mldType = this._processMLD(i, frame);
+                    if (mldType === -1) {
+                        // Non-MLD IPv6 multicast data: forward only to registered ports (VLAN-filtered)
+                        const entry = this.mcastTable.get(dstKey);
+                        if (entry && entry.ports.size > 0) {
+                            for (const j of entry.ports) {
+                                if (j === i) continue;
+                                if (!this._lagShouldEgress(j, i, frame)) continue;
+                                if (this.stpEnabled && this.stpPortState[this._lagRepresentative(j)] !== STP_STATE.FORWARDING) continue;
+                                const outPort = this.ports[j];
+                                if (!this.portAllowsVid(outPort, vid)) continue;
+                                this.sendOut(vid, outPort, frame);
+                            }
+                            continue;
+                        }
+                    }
+                    // MLD control (130/131/132) or unknown group → flood within VLAN below
                 }
 
                 if (isBroadcast || outIndex == null) {

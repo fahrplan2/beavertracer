@@ -1372,8 +1372,8 @@ export default {
   "switch.lag.status.inactive": "未啟用",
   "switch.lag.empty": "未設定任何 LAG 群組。",
   "router.vrrp.col.ipversion": "IP 版本",
-  "switch.tab.igmp": "IGMP",
-  "switch.igmp.enable": "啟用 IGMP 監聽",
+  "switch.tab.igmp": "多播",
+  "switch.igmp.enable": "啟用多播監聽 (IGMP + MLD)",
   "switch.igmp.empty": "未知的多播群組。",
   "switch.igmp.col.group": "群組 (IP)",
   "switch.igmp.col.ports": "連接埠",
@@ -1391,5 +1391,6 @@ export default {
   "app.multicastchat.log.joined": "已加入群組 {group}。",
   "app.multicastchat.log.left": "已離開群組 {group}。",
   "app.multicastchat.log.peerJoined": "{nick} 加入了群組。",
-  "app.multicastchat.log.peerLeft": "{nick} 離開了群組。"
+  "app.multicastchat.log.peerLeft": "{nick} 離開了群組。",
+  "switch.igmp.col.proto": "協議"
 };

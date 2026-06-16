@@ -1373,8 +1373,8 @@ export default {
   "switch.lag.status.inactive": "inactief",
   "switch.lag.empty": "Geen LAG-groepen geconfigureerd.",
   "router.vrrp.col.ipversion": "IP-versie",
-  "switch.tab.igmp": "IGMP",
-  "switch.igmp.enable": "IGMP Snooping inschakelen",
+  "switch.tab.igmp": "Multicast",
+  "switch.igmp.enable": "Multicast Snooping inschakelen (IGMP + MLD)",
   "switch.igmp.empty": "Geen multicast-groepen bekend.",
   "switch.igmp.col.group": "Groep (IP)",
   "switch.igmp.col.ports": "Poorten",
@@ -1392,5 +1392,6 @@ export default {
   "app.multicastchat.log.joined": "Groep {group} is toegetreden.",
   "app.multicastchat.log.left": "Groep {group} is verlaten.",
   "app.multicastchat.log.peerJoined": "{nick} is toegetreden tot de groep.",
-  "app.multicastchat.log.peerLeft": "{nick} heeft de groep verlaten."
+  "app.multicastchat.log.peerLeft": "{nick} heeft de groep verlaten.",
+  "switch.igmp.col.proto": "Protocol"
 };

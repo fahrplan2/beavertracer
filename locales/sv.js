@@ -1373,8 +1373,8 @@ export default {
   "switch.lag.status.inactive": "inaktiv",
   "switch.lag.empty": "Inga LAG-grupper konfigurerade.",
   "router.vrrp.col.ipversion": "IP-version",
-  "switch.tab.igmp": "IGMP",
-  "switch.igmp.enable": "Aktivera IGMP Snooping",
+  "switch.tab.igmp": "Multicast",
+  "switch.igmp.enable": "Aktivera Multicast Snooping (IGMP + MLD)",
   "switch.igmp.empty": "Inga multicast-grupper kända.",
   "switch.igmp.col.group": "Grupp (IP)",
   "switch.igmp.col.ports": "Portar",
@@ -1392,5 +1392,6 @@ export default {
   "app.multicastchat.log.joined": "Anslöt till grupp {group}.",
   "app.multicastchat.log.left": "Lämnade grupp {group}.",
   "app.multicastchat.log.peerJoined": "{nick} anslöt till gruppen.",
-  "app.multicastchat.log.peerLeft": "{nick} lämnade gruppen."
+  "app.multicastchat.log.peerLeft": "{nick} lämnade gruppen.",
+  "switch.igmp.col.proto": "Protokoll"
 };

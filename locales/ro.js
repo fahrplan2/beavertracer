@@ -1373,8 +1373,8 @@ export default {
   "switch.lag.status.inactive": "inactiv",
   "switch.lag.empty": "Nu sunt configurate grupuri LAG.",
   "router.vrrp.col.ipversion": "Versiune IP",
-  "switch.tab.igmp": "IGMP",
-  "switch.igmp.enable": "Activați IGMP Snooping",
+  "switch.tab.igmp": "Multicast",
+  "switch.igmp.enable": "Activați Monitorizarea Multicast (IGMP + MLD)",
   "switch.igmp.empty": "Nicio grupă multicast cunoscutelor.",
   "switch.igmp.col.group": "Grup (IP)",
   "switch.igmp.col.ports": "Porturi",
@@ -1392,5 +1392,6 @@ export default {
   "app.multicastchat.log.joined": "Alăturat(ă) grupului {group}.",
   "app.multicastchat.log.left": "Plecat(ă) din grupul {group}.",
   "app.multicastchat.log.peerJoined": "{nick} s-a alăturat grupului.",
-  "app.multicastchat.log.peerLeft": "{nick} a plecat din grup."
+  "app.multicastchat.log.peerLeft": "{nick} a plecat din grup.",
+  "switch.igmp.col.proto": "Protocol"
 };

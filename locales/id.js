@@ -1373,8 +1373,8 @@ export default {
   "switch.lag.status.inactive": "tidak aktif",
   "switch.lag.empty": "Tidak ada grup LAG yang dikonfigurasi.",
   "router.vrrp.col.ipversion": "Versi IP",
-  "switch.tab.igmp": "IGMP",
-  "switch.igmp.enable": "Aktifkan IGMP Snooping",
+  "switch.tab.igmp": "Multicast",
+  "switch.igmp.enable": "Aktifkan Multicast Snooping (IGMP + MLD)",
   "switch.igmp.empty": "Tidak ada grup multicast yang diketahui.",
   "switch.igmp.col.group": "Grup (IP)",
   "switch.igmp.col.ports": "Port",
@@ -1392,5 +1392,6 @@ export default {
   "app.multicastchat.log.joined": "Bergabung dengan grup {group}.",
   "app.multicastchat.log.left": "Keluar dari grup {group}.",
   "app.multicastchat.log.peerJoined": "{nick} bergabung dengan grup.",
-  "app.multicastchat.log.peerLeft": "{nick} keluar dari grup."
+  "app.multicastchat.log.peerLeft": "{nick} keluar dari grup.",
+  "switch.igmp.col.proto": "Protokol"
 };

@@ -1373,8 +1373,8 @@ export default {
   "switch.lag.status.inactive": "neaktyvus",
   "switch.lag.empty": "Nėra sukonfigūruotų LAG grupių.",
   "router.vrrp.col.ipversion": "IP versija",
-  "switch.tab.igmp": "IGMP",
-  "switch.igmp.enable": "Įjungti IGMP Snooping",
+  "switch.tab.igmp": "Transliacija",
+  "switch.igmp.enable": "Įjungti daugiaadresės peržiūros funkcionalumą (IGMP + MLD)",
   "switch.igmp.empty": "Nėra žinomų daugialyčių grupių.",
   "switch.igmp.col.group": "Grupė (IP)",
   "switch.igmp.col.ports": "Portai",
@@ -1392,5 +1392,6 @@ export default {
   "app.multicastchat.log.joined": "Prisijungta prie grupės {group}.",
   "app.multicastchat.log.left": "Išėjote iš grupės {group}.",
   "app.multicastchat.log.peerJoined": "{nick} prisijungė prie grupės.",
-  "app.multicastchat.log.peerLeft": "{nick} išėjo iš grupės."
+  "app.multicastchat.log.peerLeft": "{nick} išėjo iš grupės.",
+  "switch.igmp.col.proto": "Protokolas"
 };

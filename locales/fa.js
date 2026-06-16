@@ -1373,8 +1373,8 @@ export default {
   "switch.lag.status.inactive": "غیرفعال",
   "switch.lag.empty": "هیچ گروه LAG پیکربندی‌نشده است.",
   "router.vrrp.col.ipversion": "نسخه IP",
-  "switch.tab.igmp": "IGMP",
-  "switch.igmp.enable": "فعال‌سازی IGMP Snooping",
+  "switch.tab.igmp": "مولتی‌کست",
+  "switch.igmp.enable": "فعال‌سازی Multicast Snooping (IGMP + MLD)",
   "switch.igmp.empty": "هیچ گروه چند‌پخشی شناخته‌شده‌ای نیست.",
   "switch.igmp.col.group": "گروه (IP)",
   "switch.igmp.col.ports": "درگاه‌ها",
@@ -1392,5 +1392,6 @@ export default {
   "app.multicastchat.log.joined": "به گروه {group} پیوستید.",
   "app.multicastchat.log.left": "از گروه {group} خارج شدید.",
   "app.multicastchat.log.peerJoined": "{nick} به گروه پیوست.",
-  "app.multicastchat.log.peerLeft": "{nick} از گروه خارج شد."
+  "app.multicastchat.log.peerLeft": "{nick} از گروه خارج شد.",
+  "switch.igmp.col.proto": "پروتکل"
 };

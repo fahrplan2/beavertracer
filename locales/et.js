@@ -1373,8 +1373,8 @@ export default {
   "switch.lag.status.inactive": "mitteaktiivne",
   "switch.lag.empty": "LAG rühmi pole konfigureeritud.",
   "router.vrrp.col.ipversion": "IP versioon",
-  "switch.tab.igmp": "IGMP",
-  "switch.igmp.enable": "Luba IGMP Snooping",
+  "switch.tab.igmp": "Multisaade",
+  "switch.igmp.enable": "Luba multisaate jälgimine (IGMP + MLD)",
   "switch.igmp.empty": "Ühtegi multicast-rühma pole teada.",
   "switch.igmp.col.group": "Rühm (IP)",
   "switch.igmp.col.ports": "Pordid",
@@ -1392,5 +1392,6 @@ export default {
   "app.multicastchat.log.joined": "Liitusite grupiga {group}.",
   "app.multicastchat.log.left": "Lahkusite grupist {group}.",
   "app.multicastchat.log.peerJoined": "{nick} liitus grupiga.",
-  "app.multicastchat.log.peerLeft": "{nick} lahkus grupist."
+  "app.multicastchat.log.peerLeft": "{nick} lahkus grupist.",
+  "switch.igmp.col.proto": "Protokoll"
 };

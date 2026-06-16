@@ -1133,6 +1133,24 @@ export class IPStack extends Observable {
     }
 
     /**
+     * Send an MLDv1 message (RFC 2710) for the given IPv6 multicast group.
+     * Uses the interface's link-local address as source (RFC 2710 §3).
+     * @param {IPAddress} groupIpv6
+     * @param {number} mldType  0x83 = Report, 0x84 = Done
+     */
+    sendMLD(groupIpv6, mldType) {
+        const ifIdx = this.interfaces.findIndex(i => i.ip6LL && !this._isZero(i.ip6LL));
+        if (ifIdx < 0) return;
+        const g = groupIpv6.toUInt8(); // 16 bytes
+        const payload = new Uint8Array(24);
+        payload[0] = mldType;
+        // bytes 2-3: checksum — left 0 (simulator doesn't validate checksums)
+        // bytes 4-7: max response delay + reserved = 0
+        payload.set(g, 8); // group address at MLD byte 8
+        this.sendOnInterfaceV6(ifIdx, groupIpv6, 58, payload, this.interfaces[ifIdx].ip6LL);
+    }
+
+    /**
      * Create and send a locally generated IPv4 packet.
      * @param {Object} [opts]
      * @param {IPAddress} [opts.dst]
@@ -1501,6 +1519,7 @@ export class IPStack extends Observable {
                 pending.reject(err);
                 break;
             }
+            case 130: case 131: case 132: break; // MLD — handled by switch snooping
             default:
         }
     }

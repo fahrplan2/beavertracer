@@ -1373,8 +1373,8 @@ export default {
   "switch.lag.status.inactive": "ανενεργή",
   "switch.lag.empty": "Δεν υπάρχουν διαμορφωμένες ομάδες LAG.",
   "router.vrrp.col.ipversion": "Έκδοση IP",
-  "switch.tab.igmp": "IGMP",
-  "switch.igmp.enable": "Ενεργοποίηση IGMP Snooping",
+  "switch.tab.igmp": "Multicast",
+  "switch.igmp.enable": "Ενεργοποίηση Multicast Snooping (IGMP + MLD)",
   "switch.igmp.empty": "Δεν υπάρχουν γνωστές ομάδες multicast.",
   "switch.igmp.col.group": "Ομάδα (IP)",
   "switch.igmp.col.ports": "Θύρες",
@@ -1392,5 +1392,6 @@ export default {
   "app.multicastchat.log.joined": "Συνδέθηκατε στην ομάδα {group}.",
   "app.multicastchat.log.left": "Αποχωρήσατε από την ομάδα {group}.",
   "app.multicastchat.log.peerJoined": "Ο/Η {nick} συνδέθηκε στην ομάδα.",
-  "app.multicastchat.log.peerLeft": "Ο/Η {nick} αποχώρησε από την ομάδα."
+  "app.multicastchat.log.peerLeft": "Ο/Η {nick} αποχώρησε από την ομάδα.",
+  "switch.igmp.col.proto": "Πρωτόκολλο"
 };

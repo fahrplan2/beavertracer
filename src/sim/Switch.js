@@ -674,7 +674,7 @@ export class Switch extends SimulatedObject {
 
         const thead = document.createElement("thead");
         const htr = document.createElement("tr");
-        for (const key of ["switch.igmp.col.group", "switch.igmp.col.ports"]) {
+        for (const key of ["switch.igmp.col.proto", "switch.igmp.col.group", "switch.igmp.col.ports"]) {
             const th = document.createElement("th");
             th.textContent = t(key);
             htr.appendChild(th);
@@ -685,11 +685,17 @@ export class Switch extends SimulatedObject {
         const tbody = document.createElement("tbody");
         for (const entry of this.backplane.mcastTable.values()) {
             const tr = document.createElement("tr");
+            const isV6 = entry.ip.includes(":");
+            const protoTd = document.createElement("td");
+            protoTd.textContent = isV6 ? "MLD" : "IGMP";
+            protoTd.style.opacity = "0.7";
+            protoTd.style.fontSize = "0.78rem";
             const groupTd = document.createElement("td");
             groupTd.textContent = entry.ip;
             const portNames = [...entry.ports].sort((a, b) => a - b).map(p => `port ${p + 1}`).join(", ");
             const portsTd = document.createElement("td");
             portsTd.textContent = portNames;
+            tr.appendChild(protoTd);
             tr.appendChild(groupTd);
             tr.appendChild(portsTd);
             tbody.appendChild(tr);

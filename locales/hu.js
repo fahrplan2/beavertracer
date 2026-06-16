@@ -1372,8 +1372,8 @@ export default {
   "switch.lag.status.inactive": "inaktív",
   "switch.lag.empty": "Nincsenek LAG-csoportok konfigurálva.",
   "router.vrrp.col.ipversion": "IP-verzió",
-  "switch.tab.igmp": "IGMP",
-  "switch.igmp.enable": "IGMP Snooping engedélyezése",
+  "switch.tab.igmp": "Multicast",
+  "switch.igmp.enable": "Multicast Snooping engedélyezése (IGMP + MLD)",
   "switch.igmp.empty": "Nincsenek ismert multicast csoportok.",
   "switch.igmp.col.group": "Csoport (IP)",
   "switch.igmp.col.ports": "Portok",
@@ -1391,5 +1391,6 @@ export default {
   "app.multicastchat.log.joined": "{group} csoport csatlakozva.",
   "app.multicastchat.log.left": "{group} csoport elhagyva.",
   "app.multicastchat.log.peerJoined": "{nick} csatlakozott a csoporthoz.",
-  "app.multicastchat.log.peerLeft": "{nick} elhagyta a csoportot."
+  "app.multicastchat.log.peerLeft": "{nick} elhagyta a csoportot.",
+  "switch.igmp.col.proto": "Protokoll"
 };

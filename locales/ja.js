@@ -1373,8 +1373,8 @@ export default {
   "switch.lag.status.inactive": "非アクティブ",
   "switch.lag.empty": "LAGグループが設定されていません。",
   "router.vrrp.col.ipversion": "IPバージョン",
-  "switch.tab.igmp": "IGMP",
-  "switch.igmp.enable": "IGMP スヌーピングを有効にする",
+  "switch.tab.igmp": "マルチキャスト",
+  "switch.igmp.enable": "マルチキャスト スヌーピング (IGMP + MLD) を有効にする",
   "switch.igmp.empty": "マルチキャストグループが見つかりません。",
   "switch.igmp.col.group": "グループ (IP)",
   "switch.igmp.col.ports": "ポート",
@@ -1392,5 +1392,6 @@ export default {
   "app.multicastchat.log.joined": "グループ {group} に参加しました。",
   "app.multicastchat.log.left": "グループ {group} から退出しました。",
   "app.multicastchat.log.peerJoined": "{nick} がグループに参加しました。",
-  "app.multicastchat.log.peerLeft": "{nick} がグループから退出しました。"
+  "app.multicastchat.log.peerLeft": "{nick} がグループから退出しました。",
+  "switch.igmp.col.proto": "プロトコル"
 };

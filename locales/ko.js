@@ -1373,8 +1373,8 @@ export default {
   "switch.lag.status.inactive": "비활성",
   "switch.lag.empty": "구성된 LAG 그룹이 없습니다.",
   "router.vrrp.col.ipversion": "IP 버전",
-  "switch.tab.igmp": "IGMP",
-  "switch.igmp.enable": "IGMP Snooping 활성화",
+  "switch.tab.igmp": "멀티캐스트",
+  "switch.igmp.enable": "멀티캐스트 스누핑 활성화 (IGMP + MLD)",
   "switch.igmp.empty": "알려진 멀티캐스트 그룹이 없습니다.",
   "switch.igmp.col.group": "그룹 (IP)",
   "switch.igmp.col.ports": "포트",
@@ -1392,5 +1392,6 @@ export default {
   "app.multicastchat.log.joined": "{group} 그룹에 참여했습니다.",
   "app.multicastchat.log.left": "{group} 그룹에서 나갔습니다.",
   "app.multicastchat.log.peerJoined": "{nick}이(가) 그룹에 참여했습니다.",
-  "app.multicastchat.log.peerLeft": "{nick}이(가) 그룹에서 나갔습니다."
+  "app.multicastchat.log.peerLeft": "{nick}이(가) 그룹에서 나갔습니다.",
+  "switch.igmp.col.proto": "프로토콜"
 };

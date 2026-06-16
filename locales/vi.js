@@ -1373,8 +1373,8 @@ export default {
   "switch.lag.status.inactive": "không hoạt động",
   "switch.lag.empty": "Không có nhóm LAG nào được cấu hình.",
   "router.vrrp.col.ipversion": "Phiên bản IP",
-  "switch.tab.igmp": "IGMP",
-  "switch.igmp.enable": "Bật IGMP Snooping",
+  "switch.tab.igmp": "Multicast",
+  "switch.igmp.enable": "Bật Multicast Snooping (IGMP + MLD)",
   "switch.igmp.empty": "Không có nhóm multicast nào được biết đến.",
   "switch.igmp.col.group": "Nhóm (IP)",
   "switch.igmp.col.ports": "Cổng",
@@ -1392,5 +1392,6 @@ export default {
   "app.multicastchat.log.joined": "Đã tham gia nhóm {group}.",
   "app.multicastchat.log.left": "Đã rời nhóm {group}.",
   "app.multicastchat.log.peerJoined": "{nick} đã tham gia nhóm.",
-  "app.multicastchat.log.peerLeft": "{nick} đã rời nhóm."
+  "app.multicastchat.log.peerLeft": "{nick} đã rời nhóm.",
+  "switch.igmp.col.proto": "Giao thức"
 };
