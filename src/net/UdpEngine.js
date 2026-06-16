@@ -126,8 +126,13 @@ export class UdpEngine {
         const socket = this.sockets.get(datagram.dstPort);
 
         if (!socket) {
-            // RFC-ish: ICMP Destination Unreachable / Port Unreachable (Type 3 Code 3)
-            if (this._sendIcmpError) this._sendIcmpError(packet, 3, 3);
+            // RFC 1122 §3.2.2.1: no ICMP Port Unreachable for multicast or broadcast destinations
+            const dstNum = (packet.dst?.getNumber?.() ?? 0) >>> 0;
+            const isMulticast = (dstNum >>> 28) === 0xe;
+            const isBroadcast = dstNum === 0xffffffff;
+            if (!isMulticast && !isBroadcast && this._sendIcmpError) {
+                this._sendIcmpError(packet, 3, 3);
+            }
             return;
         }
 

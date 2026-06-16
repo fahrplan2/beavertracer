@@ -23,6 +23,7 @@ import { SimpleMailServerApp } from "./SimpleMailServerApp.js";
 import { MailClientApp } from "./MailClientApp.js";
 import { SimpleIRCServerApp } from "./SimpleIRCServerApp.js";
 import { SimpleIRCClientApp } from "./SimpleIRCClientApp.js";
+import { MulticastChatApp } from "./MulticastChatApp.js";
 import { BitcoinNodeApp } from "./BitcoinNodeApp.js";
 import { UILib } from "../lib/UILib.js";
 import { ExplorerApp } from "./ExplorerApp.js";
@@ -38,7 +39,8 @@ const APP_REGISTRY = [
     { id: "CertManagerApp",         Class: CertManagerApp,         mandatory: false,  category: "system", icon: "fa-shield-halved", labelKey: "app.certmanager.title" },
     { id: "SparktailHTTPClientApp", Class: SparktailHTTPClientApp, mandatory: false, category: "client", icon: "fa-globe",         labelKey: "app.sparktail.title" },
     { id: "MailClientApp",          Class: MailClientApp,          mandatory: false, category: "client", icon: "fa-envelope-open", labelKey: "app.mailclient.title" },
-    { id: "SimpleIRCClientApp",     Class: SimpleIRCClientApp,     mandatory: false, category: "client", icon: "fa-comments",      labelKey: "app.ircclient.title" },
+    { id: "SimpleIRCClientApp",     Class: SimpleIRCClientApp,     mandatory: false, category: "client", icon: "fa-comments",          labelKey: "app.ircclient.title" },
+    { id: "MulticastChatApp",       Class: MulticastChatApp,       mandatory: false, category: "client", icon: "fa-tower-broadcast",    labelKey: "app.multicastchat.title" },
     { id: "SimpleTCPClientApp",     Class: SimpleTCPClientApp,     mandatory: false, category: "client", icon: "fa-message",       labelKey: "app.simpletcpclient.title" },
     { id: "SimpleTCPServerApp",     Class: SimpleTCPServerApp,     mandatory: false, category: "server", icon: "fa-server",        labelKey: "app.simpletcpserver.title" },
     { id: "SimpleHTTPServerApp",    Class: SimpleHTTPServerApp,    mandatory: false, category: "server", icon: "fa-server",        labelKey: "app.simplehttpserver.title" },
