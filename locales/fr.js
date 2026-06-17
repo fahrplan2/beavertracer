@@ -1447,5 +1447,12 @@ export default {
   "switch.lag.lacp.col.state": "État LACP",
   "switch.lag.lacp.synced": "Synchronisé",
   "switch.lag.lacp.partial": "Partiel",
-  "switch.lag.lacp.no_partner": "Aucun Partenaire"
+  "switch.lag.lacp.no_partner": "Aucun Partenaire",
+  "link.fault.hint": "Cliquer sur le câble",
+  "link.fault.title": "Connexion",
+  "link.fault.status.up": "Connecté",
+  "link.fault.status.down": "Défaut",
+  "link.fault.action.break": "Simuler une panne",
+  "link.fault.action.restore": "Restaurer la connexion",
+  "link.fault.close": "Fermer"
 };

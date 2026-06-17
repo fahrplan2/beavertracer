@@ -1413,5 +1413,12 @@ export default {
   "switch.lag.lacp.col.state": "LACP-status",
   "switch.lag.lacp.synced": "Gesynchroniseerd",
   "switch.lag.lacp.partial": "Gedeeltelijk",
-  "switch.lag.lacp.no_partner": "Geen partner"
+  "switch.lag.lacp.no_partner": "Geen partner",
+  "link.fault.hint": "Kabel aanklikken",
+  "link.fault.title": "Verbinding",
+  "link.fault.status.up": "Verbonden",
+  "link.fault.status.down": "Storing",
+  "link.fault.action.break": "Fout simuleren",
+  "link.fault.action.restore": "Verbinding herstellen",
+  "link.fault.close": "Sluiten"
 };

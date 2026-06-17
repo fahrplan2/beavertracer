@@ -1412,5 +1412,12 @@ export default {
   "switch.lag.lacp.col.state": "Estat LACP",
   "switch.lag.lacp.synced": "Sincronitzat",
   "switch.lag.lacp.partial": "Parcial",
-  "switch.lag.lacp.no_partner": "Sense Associat"
+  "switch.lag.lacp.no_partner": "Sense Associat",
+  "link.fault.hint": "Feu clic al cable",
+  "link.fault.title": "Connexió",
+  "link.fault.status.up": "Connectat",
+  "link.fault.status.down": "Falla",
+  "link.fault.action.break": "Simular fallida",
+  "link.fault.action.restore": "Restaurar connexió",
+  "link.fault.close": "Tancar"
 };

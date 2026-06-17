@@ -1412,5 +1412,12 @@ export default {
   "switch.lag.lacp.col.state": "Stav LACP",
   "switch.lag.lacp.synced": "Synchronizovaný",
   "switch.lag.lacp.partial": "Čiastočný",
-  "switch.lag.lacp.no_partner": "Bez partnera"
+  "switch.lag.lacp.no_partner": "Bez partnera",
+  "link.fault.hint": "Kliknite na kábel",
+  "link.fault.title": "Pripojenie",
+  "link.fault.status.up": "Pripojené",
+  "link.fault.status.down": "Porucha",
+  "link.fault.action.break": "Simulovať poruchu",
+  "link.fault.action.restore": "Obnoviť pripojenie",
+  "link.fault.close": "Zatvoriť"
 };

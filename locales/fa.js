@@ -1413,5 +1413,12 @@ export default {
   "switch.lag.lacp.col.state": "وضعیت LACP",
   "switch.lag.lacp.synced": "همزمان‌شده",
   "switch.lag.lacp.partial": "جزئی",
-  "switch.lag.lacp.no_partner": "بدون همتایی"
+  "switch.lag.lacp.no_partner": "بدون همتایی",
+  "link.fault.hint": "روی کابل کلیک کنید",
+  "link.fault.title": "اتصال",
+  "link.fault.status.up": "متصل",
+  "link.fault.status.down": "خرابی",
+  "link.fault.action.break": "شبیه‌سازی خرابی",
+  "link.fault.action.restore": "بازیابی اتصال",
+  "link.fault.close": "بستن"
 };

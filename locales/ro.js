@@ -1413,5 +1413,12 @@ export default {
   "switch.lag.lacp.col.state": "Stare LACP",
   "switch.lag.lacp.synced": "Sincronizat",
   "switch.lag.lacp.partial": "Parțial",
-  "switch.lag.lacp.no_partner": "Fără partener"
+  "switch.lag.lacp.no_partner": "Fără partener",
+  "link.fault.hint": "Faceți clic pe cablu",
+  "link.fault.title": "Conexiune",
+  "link.fault.status.up": "Conectat",
+  "link.fault.status.down": "Defecțiune",
+  "link.fault.action.break": "Simulați defecțiune",
+  "link.fault.action.restore": "Restaurați conexiunea",
+  "link.fault.close": "Închideți"
 };

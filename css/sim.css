@@ -496,6 +496,52 @@
   pointer-events: none;
 }
 
+.sim-link.is-faulted .sim-link-line {
+  background: transparent;
+  border-top: 2px dashed var(--danger);
+}
+
+
+.sim-link.is-faulted .sim-link-hit {
+  cursor: pointer;
+}
+
+/* ── Link fault popover ──────────────────────────────────────── */
+.sim-link-fault-panel {
+  position: fixed;
+  z-index: 9500;
+  min-width: 260px;
+  min-height: unset;
+  max-width: 340px;
+}
+
+.sim-link-fault-body {
+  padding: 12px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sim-link-fault-endpoints {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.sim-link-fault-status {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.sim-link-fault-status.is-up   { color: var(--ok-strong); }
+.sim-link-fault-status.is-down { color: var(--danger); }
+
+.sim-link-fault-action {
+  margin-top: 2px;
+}
+
 .sim-packets-layer {
   position: absolute;
   inset: 0;

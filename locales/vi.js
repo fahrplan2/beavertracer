@@ -1413,5 +1413,12 @@ export default {
   "switch.lag.lacp.col.state": "Trạng thái LACP",
   "switch.lag.lacp.synced": "Đã đồng bộ hóa",
   "switch.lag.lacp.partial": "Một phần",
-  "switch.lag.lacp.no_partner": "Không có đối tác"
+  "switch.lag.lacp.no_partner": "Không có đối tác",
+  "link.fault.hint": "Nhấp vào cáp",
+  "link.fault.title": "Kết nối",
+  "link.fault.status.up": "Đã kết nối",
+  "link.fault.status.down": "Lỗi",
+  "link.fault.action.break": "Mô phỏng lỗi",
+  "link.fault.action.restore": "Khôi phục kết nối",
+  "link.fault.close": "Đóng"
 };

@@ -1413,5 +1413,12 @@ export default {
   "switch.lag.lacp.col.state": "LACP 状态",
   "switch.lag.lacp.synced": "已同步",
   "switch.lag.lacp.partial": "部分",
-  "switch.lag.lacp.no_partner": "无伙伴"
+  "switch.lag.lacp.no_partner": "无伙伴",
+  "link.fault.hint": "点击网线",
+  "link.fault.title": "连接",
+  "link.fault.status.up": "已连接",
+  "link.fault.status.down": "故障",
+  "link.fault.action.break": "模拟故障",
+  "link.fault.action.restore": "恢复连接",
+  "link.fault.close": "关闭"
 };

@@ -1412,5 +1412,12 @@ export default {
   "switch.lag.lacp.col.state": "Gjendja LACP",
   "switch.lag.lacp.synced": "Sinkronizuar",
   "switch.lag.lacp.partial": "Pjesërisht",
-  "switch.lag.lacp.no_partner": "Nuk ka Partner"
+  "switch.lag.lacp.no_partner": "Nuk ka Partner",
+  "link.fault.hint": "Kliko kabelin",
+  "link.fault.title": "Lidhja",
+  "link.fault.status.up": "I lidhur",
+  "link.fault.status.down": "E dëmtuar",
+  "link.fault.action.break": "Simuloni dështim",
+  "link.fault.action.restore": "Riktheni lidhjen",
+  "link.fault.close": "Mbyll"
 };

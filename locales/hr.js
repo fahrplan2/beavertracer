@@ -1413,5 +1413,12 @@ export default {
   "switch.lag.lacp.col.state": "LACP stanje",
   "switch.lag.lacp.synced": "Sinkronizirano",
   "switch.lag.lacp.partial": "Djelomično",
-  "switch.lag.lacp.no_partner": "Nema partnera"
+  "switch.lag.lacp.no_partner": "Nema partnera",
+  "link.fault.hint": "Kliknite kabel",
+  "link.fault.title": "Veza",
+  "link.fault.status.up": "Spojeno",
+  "link.fault.status.down": "Greška",
+  "link.fault.action.break": "Simuliraj kvar",
+  "link.fault.action.restore": "Vrati vezu",
+  "link.fault.close": "Zatvori"
 };

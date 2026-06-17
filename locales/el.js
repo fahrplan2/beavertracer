@@ -1413,5 +1413,12 @@ export default {
   "switch.lag.lacp.col.state": "Κατάσταση LACP",
   "switch.lag.lacp.synced": "Συγχρονισμένο",
   "switch.lag.lacp.partial": "Μερικό",
-  "switch.lag.lacp.no_partner": "Χωρίς Εταίρο"
+  "switch.lag.lacp.no_partner": "Χωρίς Εταίρο",
+  "link.fault.hint": "Κάντε κλικ στο καλώδιο",
+  "link.fault.title": "Σύνδεση",
+  "link.fault.status.up": "Συνδεδεμένο",
+  "link.fault.status.down": "Βλάβη",
+  "link.fault.action.break": "Προσομοίωση βλάβης",
+  "link.fault.action.restore": "Επαναφορά σύνδεσης",
+  "link.fault.close": "Κλείσιμο"
 };

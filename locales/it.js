@@ -1418,5 +1418,12 @@ export default {
   "switch.lag.lacp.col.state": "Stato LACP",
   "switch.lag.lacp.synced": "Sincronizzato",
   "switch.lag.lacp.partial": "Parziale",
-  "switch.lag.lacp.no_partner": "Nessun Partner"
+  "switch.lag.lacp.no_partner": "Nessun Partner",
+  "link.fault.hint": "Clicca il cavo",
+  "link.fault.title": "Connessione",
+  "link.fault.status.up": "Connesso",
+  "link.fault.status.down": "Errore",
+  "link.fault.action.break": "Simula guasto",
+  "link.fault.action.restore": "Ripristina connessione",
+  "link.fault.close": "Chiudi"
 };

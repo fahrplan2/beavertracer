@@ -1413,5 +1413,12 @@ export default {
   "switch.lag.lacp.col.state": "حالة LACP",
   "switch.lag.lacp.synced": "متزامن",
   "switch.lag.lacp.partial": "جزئي",
-  "switch.lag.lacp.no_partner": "لا يوجد شريك"
+  "switch.lag.lacp.no_partner": "لا يوجد شريك",
+  "link.fault.hint": "انقر على الكابل",
+  "link.fault.title": "الاتصال",
+  "link.fault.status.up": "متصل",
+  "link.fault.status.down": "خلل",
+  "link.fault.action.break": "محاكاة عطل",
+  "link.fault.action.restore": "استعادة الاتصال",
+  "link.fault.close": "إغلاق"
 };

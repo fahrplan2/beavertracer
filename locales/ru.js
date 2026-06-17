@@ -1413,5 +1413,12 @@ export default {
   "switch.lag.lacp.col.state": "Состояние LACP",
   "switch.lag.lacp.synced": "Синхронизировано",
   "switch.lag.lacp.partial": "Частично",
-  "switch.lag.lacp.no_partner": "Нет партнера"
+  "switch.lag.lacp.no_partner": "Нет партнера",
+  "link.fault.hint": "Щелкните кабель",
+  "link.fault.title": "Соединение",
+  "link.fault.status.up": "Подключено",
+  "link.fault.status.down": "Неисправность",
+  "link.fault.action.break": "Имитировать сбой",
+  "link.fault.action.restore": "Восстановить соединение",
+  "link.fault.close": "Закрыть"
 };

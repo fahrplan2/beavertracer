@@ -1483,5 +1483,13 @@ export default {
   "app.terminal.commands.help.tldr.ex.basic":      "Befehlsübersicht öffnen",
 
   "app.terminal.commands.man.tldr.desc":           "Kurzhilfe zu einem Befehl anzeigen",
-  "app.terminal.commands.man.tldr.ex.basic":       "Hilfe zu einem Befehl aufrufen"
+  "app.terminal.commands.man.tldr.ex.basic":       "Hilfe zu einem Befehl aufrufen",
+
+  "link.fault.hint":            "Kabel anklicken",
+  "link.fault.title":           "Verbindung",
+  "link.fault.status.up":       "Verbunden",
+  "link.fault.status.down":     "Defekt",
+  "link.fault.action.break":    "Ausfall simulieren",
+  "link.fault.action.restore":  "Verbindung wiederherstellen",
+  "link.fault.close":           "Schließen"
 };

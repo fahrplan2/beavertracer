@@ -1637,5 +1637,13 @@ export default {
   "app.terminal.commands.help.tldr.ex.basic":      "Open the command overview",
 
   "app.terminal.commands.man.tldr.desc":           "Show a quick reference for a command",
-  "app.terminal.commands.man.tldr.ex.basic":       "Look up help for a command"
+  "app.terminal.commands.man.tldr.ex.basic":       "Look up help for a command",
+
+  "link.fault.hint":            "Click cable",
+  "link.fault.title":           "Connection",
+  "link.fault.status.up":       "Connected",
+  "link.fault.status.down":     "Fault",
+  "link.fault.action.break":    "Simulate failure",
+  "link.fault.action.restore":  "Restore connection",
+  "link.fault.close":           "Close"
 };

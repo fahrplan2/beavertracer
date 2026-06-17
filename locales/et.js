@@ -1413,5 +1413,12 @@ export default {
   "switch.lag.lacp.col.state": "LACP olek",
   "switch.lag.lacp.synced": "Sünkroniseeritud",
   "switch.lag.lacp.partial": "Osaline",
-  "switch.lag.lacp.no_partner": "Partnerit pole"
+  "switch.lag.lacp.no_partner": "Partnerit pole",
+  "link.fault.hint": "Klõpsake kaablil",
+  "link.fault.title": "Ühendus",
+  "link.fault.status.up": "Ühendatud",
+  "link.fault.status.down": "Viga",
+  "link.fault.action.break": "Simuleeri rike",
+  "link.fault.action.restore": "Taasta ühendus",
+  "link.fault.close": "Sulge"
 };

@@ -1413,5 +1413,12 @@ export default {
   "switch.lag.lacp.col.state": "LACP 상태",
   "switch.lag.lacp.synced": "동기화됨",
   "switch.lag.lacp.partial": "부분",
-  "switch.lag.lacp.no_partner": "파트너 없음"
+  "switch.lag.lacp.no_partner": "파트너 없음",
+  "link.fault.hint": "케이블을 클릭하세요",
+  "link.fault.title": "연결",
+  "link.fault.status.up": "연결됨",
+  "link.fault.status.down": "장애",
+  "link.fault.action.break": "장애 시뮬레이션",
+  "link.fault.action.restore": "연결 복구",
+  "link.fault.close": "닫기"
 };

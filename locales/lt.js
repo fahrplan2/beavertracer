@@ -1413,5 +1413,12 @@ export default {
   "switch.lag.lacp.col.state": "LACP Būsena",
   "switch.lag.lacp.synced": "Sinchronizuota",
   "switch.lag.lacp.partial": "Dalinė",
-  "switch.lag.lacp.no_partner": "Nėra Partnerio"
+  "switch.lag.lacp.no_partner": "Nėra Partnerio",
+  "link.fault.hint": "Spustelėkite kabelį",
+  "link.fault.title": "Ryšys",
+  "link.fault.status.up": "Prijungta",
+  "link.fault.status.down": "Gedimas",
+  "link.fault.action.break": "Imituoti gedimą",
+  "link.fault.action.restore": "Atkurti ryšį",
+  "link.fault.close": "Uždaryti"
 };

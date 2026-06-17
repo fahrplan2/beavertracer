@@ -1412,5 +1412,12 @@ export default {
   "switch.lag.lacp.col.state": "LACP-status",
   "switch.lag.lacp.synced": "Synkronisert",
   "switch.lag.lacp.partial": "Delvis",
-  "switch.lag.lacp.no_partner": "Ingen partner"
+  "switch.lag.lacp.no_partner": "Ingen partner",
+  "link.fault.hint": "Klikk på kabel",
+  "link.fault.title": "Forbindelse",
+  "link.fault.status.up": "Tilkoblet",
+  "link.fault.status.down": "Feil",
+  "link.fault.action.break": "Simuler feil",
+  "link.fault.action.restore": "Gjenopprette forbindelse",
+  "link.fault.close": "Lukk"
 };

@@ -1413,5 +1413,12 @@ export default {
   "switch.lag.lacp.col.state": "LACP状態",
   "switch.lag.lacp.synced": "同期済み",
   "switch.lag.lacp.partial": "部分的",
-  "switch.lag.lacp.no_partner": "パートナーなし"
+  "switch.lag.lacp.no_partner": "パートナーなし",
+  "link.fault.hint": "ケーブルをクリック",
+  "link.fault.title": "接続",
+  "link.fault.status.up": "接続中",
+  "link.fault.status.down": "障害",
+  "link.fault.action.break": "障害をシミュレート",
+  "link.fault.action.restore": "接続を復元",
+  "link.fault.close": "閉じる"
 };

@@ -17,6 +17,9 @@ export class EthernetLink {
     /** Maximum Transmission Unit in bytes (Ethernet default: 1500) */
     mtu = 1500;
 
+    /** When true, no frames are transferred — simulates a broken cable. */
+    broken = false;
+
     /** @type {*} */
     AtoB;
 
@@ -51,6 +54,7 @@ export class EthernetLink {
     }
 
     _startTransfer() {
+        if (this.broken) return;
         this.AtoB = this.portA.getNextOutgoingFrame();
         this.BtoA = this.portB.getNextOutgoingFrame();
     }

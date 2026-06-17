@@ -1413,5 +1413,12 @@ export default {
   "switch.lag.lacp.col.state": "LACP-tila",
   "switch.lag.lacp.synced": "Synkronoitu",
   "switch.lag.lacp.partial": "Osittainen",
-  "switch.lag.lacp.no_partner": "Ei kumppania"
+  "switch.lag.lacp.no_partner": "Ei kumppania",
+  "link.fault.hint": "Napsauta kaapelia",
+  "link.fault.title": "Yhteys",
+  "link.fault.status.up": "Yhdistetty",
+  "link.fault.status.down": "Vika",
+  "link.fault.action.break": "Simuloi vika",
+  "link.fault.action.restore": "Palauta yhteys",
+  "link.fault.close": "Sulje"
 };
