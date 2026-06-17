@@ -348,15 +348,18 @@ export class TlsTrustStore {
    * Trusted if cert itself is in the store, or if its issuer is trusted (recursively).
    * @param {TlsCertificate} cert
    * @param {TlsCertificate[]} [extraChain]
+   * @param {Set<string>} [_visited]
    * @returns {boolean}
    */
-  isTrusted(cert, extraChain = []) {
+  isTrusted(cert, extraChain = [], _visited = new Set()) {
+    if (_visited.has(cert.subject)) return false;
+    _visited.add(cert.subject);
     if (this.trustedCAs.some(ca => ca.subject === cert.subject)) return true;
     if (cert.selfSigned) return false;
     const pool = [...cert.chain, ...extraChain];
     const issuer = pool.find(c => c.subject === cert.issuer && c.subject !== cert.subject);
     if (!issuer) return false;
-    return this.isTrusted(issuer, pool);
+    return this.isTrusted(issuer, pool, _visited);
   }
 
   /** @param {TlsCertificate} cert */

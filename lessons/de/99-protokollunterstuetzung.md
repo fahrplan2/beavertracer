@@ -107,6 +107,11 @@ BeaverTracer ist ein Netzwerksimulator für den Unterricht. Er modelliert eine b
   <td><span class="badge badge-partial">Teilweise</span></td>
   <td>Minimaler 4-Byte-Fixed-Header mit Protocol Type. Optionale Checksum/Key/Sequence-Felder werden beim Einlesen dekodiert, aber nicht erzeugt. Keine RFC-2890-Erweiterungen.</td>
 </tr>
+<tr>
+  <td>NAT / PAT</td><td>RFC 3022</td>
+  <td><span class="badge badge-partial">Teilweise</span></td>
+  <td>Zustandsbehaftetes SNAT (LAN → WAN) für TCP, UDP und ICMP Echo: Quell-IP und Port/Identifier werden auf die WAN-IP umgeschrieben, Portbereich 10000–60000. Stateless DNAT (Port Forwarding) für TCP und UDP: eingehende Verbindungen auf konfigurierbare LAN-Ziele weitergeleitet; Rückpfad wird automatisch in der SNAT-Tabelle vorinstalliert. Fragmentierte Pakete werden per IPv4-Identification-Feld verfolgt. Nur IPv4 — kein NAT64, kein NPTv6.</td>
+</tr>
 </tbody>
 </table>
 
