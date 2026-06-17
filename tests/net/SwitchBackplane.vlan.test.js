@@ -103,6 +103,18 @@ describe('VLAN – port config', () => {
         expect(p.allowedVlans.has(20)).toBe(true);
         expect(p.allowedVlans.has(99)).toBe(false);
     });
+
+    it('setHybrid sets mode, pvid and allowedVlans (pvid not in allowedVlans)', () => {
+        const bp = makeBP();
+        const p = bp.ports[0];
+        p.setHybrid(10, [20, 30]);
+        expect(p.vlanMode).toBe('hybrid');
+        expect(p.pvid).toBe(10);
+        expect(p.allowedVlans.has(20)).toBe(true);
+        expect(p.allowedVlans.has(30)).toBe(true);
+        expect(p.allowedVlans.has(10)).toBe(false); // pvid is separate from tagged list
+        expect(p.allowedVlans.has(99)).toBe(false);
+    });
 });
 
 // ── Ingress VLAN policy ───────────────────────────────────────────────────────
@@ -147,6 +159,38 @@ describe('VLAN – ingress policy (getIngressVid)', () => {
         const vid = bp.getIngressVid(p, taggedFrame(mac([0xaa, 0, 0, 0, 0, 1]), 99));
         expect(vid).toBeNull();
     });
+
+    it('hybrid port: untagged frame gets pvid', () => {
+        const bp = makeBP();
+        const p = bp.ports[0];
+        p.setHybrid(10, [20, 30]);
+        const vid = bp.getIngressVid(p, frame(mac([0xaa, 0, 0, 0, 0, 1])));
+        expect(vid).toBe(10);
+    });
+
+    it('hybrid port: tagged frame with pvid is accepted', () => {
+        const bp = makeBP();
+        const p = bp.ports[0];
+        p.setHybrid(10, [20, 30]);
+        const vid = bp.getIngressVid(p, taggedFrame(mac([0xaa, 0, 0, 0, 0, 1]), 10));
+        expect(vid).toBe(10);
+    });
+
+    it('hybrid port: tagged frame with allowed VID passes', () => {
+        const bp = makeBP();
+        const p = bp.ports[0];
+        p.setHybrid(10, [20, 30]);
+        const vid = bp.getIngressVid(p, taggedFrame(mac([0xaa, 0, 0, 0, 0, 1]), 20));
+        expect(vid).toBe(20);
+    });
+
+    it('hybrid port: tagged frame with disallowed VID is dropped', () => {
+        const bp = makeBP();
+        const p = bp.ports[0];
+        p.setHybrid(10, [20, 30]);
+        const vid = bp.getIngressVid(p, taggedFrame(mac([0xaa, 0, 0, 0, 0, 1]), 99));
+        expect(vid).toBeNull();
+    });
 });
 
 // ── Egress VLAN policy ────────────────────────────────────────────────────────
@@ -166,6 +210,28 @@ describe('VLAN – egress policy (portAllowsVid)', () => {
         p.setTagged([10, 20, 30], 10);
         expect(bp.portAllowsVid(p, 10)).toBe(true);
         expect(bp.portAllowsVid(p, 20)).toBe(true);
+        expect(bp.portAllowsVid(p, 99)).toBe(false);
+    });
+
+    it('hybrid port: allows pvid', () => {
+        const bp = makeBP();
+        const p = bp.ports[0];
+        p.setHybrid(10, [20, 30]);
+        expect(bp.portAllowsVid(p, 10)).toBe(true);
+    });
+
+    it('hybrid port: allows VIDs in allowedVlans', () => {
+        const bp = makeBP();
+        const p = bp.ports[0];
+        p.setHybrid(10, [20, 30]);
+        expect(bp.portAllowsVid(p, 20)).toBe(true);
+        expect(bp.portAllowsVid(p, 30)).toBe(true);
+    });
+
+    it('hybrid port: rejects VIDs not in pvid or allowedVlans', () => {
+        const bp = makeBP();
+        const p = bp.ports[0];
+        p.setHybrid(10, [20, 30]);
         expect(bp.portAllowsVid(p, 99)).toBe(false);
     });
 });
@@ -216,6 +282,37 @@ describe('VLAN – sendOut tagging', () => {
         bp.sendOut(99, p, f);
         expect(drainCount(bp, 0)).toBe(0);
     });
+
+    it('hybrid port: pvid frame egresses untagged', () => {
+        const bp = makeBP();
+        const p = bp.ports[0];
+        p.setHybrid(10, [20, 30]);
+        linkPort(bp, 0);
+        bp.sendOut(10, p, frame(mac([0xaa, 0, 0, 0, 0, 1])));
+        const out = drainOne(bp, 0);
+        expect(out).not.toBeNull();
+        expect(out?.vlan).toBeNull();
+    });
+
+    it('hybrid port: allowed tagged VID egresses with tag', () => {
+        const bp = makeBP();
+        const p = bp.ports[0];
+        p.setHybrid(10, [20, 30]);
+        linkPort(bp, 0);
+        bp.sendOut(20, p, frame(mac([0xaa, 0, 0, 0, 0, 1])));
+        const out = drainOne(bp, 0);
+        expect(out).not.toBeNull();
+        expect(out?.vlan?.vid).toBe(20);
+    });
+
+    it('hybrid port: disallowed VID is not sent', () => {
+        const bp = makeBP();
+        const p = bp.ports[0];
+        p.setHybrid(10, [20, 30]);
+        linkPort(bp, 0);
+        bp.sendOut(99, p, frame(mac([0xaa, 0, 0, 0, 0, 1])));
+        expect(drainCount(bp, 0)).toBe(0);
+    });
 });
 
 // ── VLAN isolation (broadcast flood) ─────────────────────────────────────────
@@ -259,6 +356,66 @@ describe('VLAN – broadcast isolation', () => {
         expect(drainCount(bp, 1)).toBe(1);
         expect(drainCount(bp, 2)).toBe(1);
         expect(drainCount(bp, 3)).toBe(0);
+    });
+
+    it('hybrid port receives pvid traffic untagged from a trunk', () => {
+        // port 0: tagged trunk (VIDs 10, 20)
+        // port 1: hybrid pvid=10, tagged=[20]
+        const bp = makeBP(4);
+        bp.ports[0].setTagged([10, 20], 10);
+        bp.ports[1].setHybrid(10, [20]);
+        linkPort(bp, 0);
+        linkPort(bp, 1);
+
+        inject(bp, 0, taggedFrame(mac([0xaa, 0, 0, 0, 0, 1]), 10));
+
+        const out = drainOne(bp, 1);
+        expect(out).not.toBeNull();
+        expect(out?.vlan).toBeNull(); // pvid → untagged on egress
+    });
+
+    it('hybrid port receives tagged-vlan traffic with tag preserved', () => {
+        const bp = makeBP(4);
+        bp.ports[0].setTagged([10, 20], 10);
+        bp.ports[1].setHybrid(10, [20]);
+        linkPort(bp, 0);
+        linkPort(bp, 1);
+
+        inject(bp, 0, taggedFrame(mac([0xaa, 0, 0, 0, 0, 1]), 20));
+
+        const out = drainOne(bp, 1);
+        expect(out).not.toBeNull();
+        expect(out?.vlan?.vid).toBe(20); // tagged VLAN → stays tagged
+    });
+
+    it('hybrid port does not receive traffic from a foreign VLAN', () => {
+        const bp = makeBP(4);
+        bp.ports[0].setUntagged(30); // ingress VLAN 30
+        bp.ports[1].setHybrid(10, [20]);
+        linkPort(bp, 0);
+        linkPort(bp, 1);
+
+        inject(bp, 0, frame(mac([0xaa, 0, 0, 0, 0, 1])));
+
+        expect(drainCount(bp, 1)).toBe(0);
+    });
+
+    it('untagged ingress on hybrid port enters pvid VLAN and floods correctly', () => {
+        // port 0: hybrid pvid=10, tagged=[20] (ingress, untagged frame)
+        // port 1: untagged VLAN 10  → should receive
+        // port 2: untagged VLAN 20  → must NOT receive (different VLAN)
+        const bp = makeBP(4);
+        bp.ports[0].setHybrid(10, [20]);
+        bp.ports[1].setUntagged(10);
+        bp.ports[2].setUntagged(20);
+        linkPort(bp, 0);
+        linkPort(bp, 1);
+        linkPort(bp, 2);
+
+        inject(bp, 0, frame(mac([0xaa, 0, 0, 0, 0, 1]))); // untagged → PVID 10
+
+        expect(drainCount(bp, 1)).toBe(1);
+        expect(drainCount(bp, 2)).toBe(0);
     });
 
     it('broadcast does not loop back to the ingress port', () => {
@@ -433,6 +590,8 @@ function vlanRestore(bp, json) {
             const cfg = json.vlanPorts[i];
             if (cfg.vlanMode === 'tagged') {
                 bp.ports[i].setTagged(cfg.allowedVlans ?? [cfg.pvid], cfg.pvid);
+            } else if (cfg.vlanMode === 'hybrid') {
+                bp.ports[i].setHybrid(cfg.pvid ?? 1, cfg.allowedVlans ?? []);
             } else {
                 bp.ports[i].setUntagged(cfg.pvid ?? 1);
             }
@@ -468,6 +627,17 @@ describe('VLAN – serialization roundtrip', () => {
         expect(bp2.ports[1].vlanMode).toBe('tagged');
         expect(bp2.ports[1].pvid).toBe(10);
         expect([...bp2.ports[1].allowedVlans].sort((a, b) => a - b)).toEqual([10, 20, 30]);
+    });
+
+    it('preserves hybrid port config', () => {
+        const bp = makeBP();
+        bp.ports[2].setHybrid(10, [20, 30]);
+        const json = vlanSerialize(bp);
+        const bp2 = new SwitchBackplane(4);
+        vlanRestore(bp2, json);
+        expect(bp2.ports[2].vlanMode).toBe('hybrid');
+        expect(bp2.ports[2].pvid).toBe(10);
+        expect([...bp2.ports[2].allowedVlans].sort((a, b) => a - b)).toEqual([20, 30]);
     });
 
     it('disabledVLAN flag survives roundtrip', () => {
