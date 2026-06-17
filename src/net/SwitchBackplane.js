@@ -593,6 +593,13 @@ export class SwitchBackplane extends Observable {
             return port.pvid;
         }
 
+        if (port.vlanMode === "hybrid") {
+            if (frame.vlan == null) return port.pvid;
+            const vid = frame.vlan.vid;
+            if (vid === port.pvid || port.allowedVlans.has(vid)) return vid;
+            return null;
+        }
+
         // tagged port
         if (frame.vlan == null) return port.pvid;
 
@@ -608,6 +615,7 @@ export class SwitchBackplane extends Observable {
      */
     portAllowsVid(port, vid) {
         if (port.vlanMode === "untagged") return vid === port.pvid;
+        if (port.vlanMode === "hybrid") return vid === port.pvid || port.allowedVlans.has(vid);
         return port.allowedVlans.has(vid);
     }
 
@@ -622,6 +630,14 @@ export class SwitchBackplane extends Observable {
             if (vid !== outPort.pvid) return;
             const f = this.cloneFrame(inFrame);
             f.vlan = null; // strip
+            outPort.send(f);
+            return;
+        }
+
+        if (outPort.vlanMode === "hybrid") {
+            if (vid !== outPort.pvid && !outPort.allowedVlans.has(vid)) return;
+            const f = this.cloneFrame(inFrame);
+            f.vlan = vid === outPort.pvid ? null : { vid };
             outPort.send(f);
             return;
         }

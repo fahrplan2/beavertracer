@@ -32,7 +32,7 @@ export class EthernetPort extends Observable {
 
     name;
 
-    /** @type {"tagged"|"untagged"} */
+    /** @type {"tagged"|"untagged"|"hybrid"} */
     vlanMode = "untagged";
 
     /** Port VLAN ID for untagged ingress / untagged membership */
@@ -61,6 +61,17 @@ export class EthernetPort extends Observable {
         this.vlanMode = "untagged";
         this.pvid = pvid;
         // allowedVlans not used
+    }
+
+    /**
+     * Hybrid: pvid exits untagged, allowedVlans are forwarded tagged.
+     * @param {number} pvid
+     * @param {number[]} allowed
+     */
+    setHybrid(pvid = 1, allowed = []) {
+        this.vlanMode = "hybrid";
+        this.pvid = pvid;
+        this.allowedVlans = new Set(allowed);
     }
 
     /**

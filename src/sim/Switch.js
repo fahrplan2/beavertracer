@@ -130,10 +130,17 @@ export class Switch extends SimulatedObject {
                 const p = ports[i];
 
                 const pvid = Number(cfg.pvid ?? p.pvid ?? 1) || 1;
-                const mode = (cfg.vlanMode === "tagged" || cfg.vlanMode === "untagged") ? cfg.vlanMode : p.vlanMode;
+                const mode = (cfg.vlanMode === "tagged" || cfg.vlanMode === "untagged" || cfg.vlanMode === "hybrid") ? cfg.vlanMode : p.vlanMode;
 
                 if (mode === "untagged") {
                     p.setUntagged(pvid);
+                } else if (mode === "hybrid") {
+                    const allowed = Array.isArray(cfg.allowedVlans)
+                        ? cfg.allowedVlans
+                            .map((/** @type {*} */ x) => Number(x))
+                            .filter((/** @type {number} */ v) => Number.isInteger(v) && v >= 1 && v <= 4094)
+                        : [...(p.allowedVlans ?? new Set())];
+                    p.setHybrid(pvid, allowed);
                 } else {
                     const allowed = Array.isArray(cfg.allowedVlans)
                         ? cfg.allowedVlans
@@ -457,6 +464,7 @@ export class Switch extends SimulatedObject {
             const mode = /** @type {HTMLSelectElement} */ (document.createElement("select"));
             mode.innerHTML = `
       <option value="untagged">untagged</option>
+      <option value="hybrid">hybrid</option>
       <option value="tagged">tagged</option>
     `;
             mode.value = refPort.vlanMode;
@@ -473,9 +481,12 @@ export class Switch extends SimulatedObject {
             const apply = UILib.button(t("switch.apply") ?? "Apply", null);
 
             const updateEnabledFields = () => {
-                const isTagged = mode.value === "tagged";
-                allowed.disabled = !isTagged;
-                allowed.style.opacity = isTagged ? "1" : "0.5";
+                const isTaggedOrHybrid = mode.value !== "untagged";
+                allowed.disabled = !isTaggedOrHybrid;
+                allowed.style.opacity = isTaggedOrHybrid ? "1" : "0.5";
+                allowed.placeholder = mode.value === "hybrid"
+                    ? "e.g. 10,20 (tagged, PVID exits untagged)"
+                    : "e.g. 1,10,20";
             };
             updateEnabledFields();
             mode.addEventListener("change", updateEnabledFields);
@@ -496,6 +507,13 @@ export class Switch extends SimulatedObject {
         const applyToPort = (modeVal, newPvid, allowedVal, p) => {
             if (modeVal === "untagged") {
                 p.setUntagged(newPvid);
+            } else if (modeVal === "hybrid") {
+                const parsed = allowedVal
+                    .split(",")
+                    .map(s => Number(s.trim()))
+                    .filter(n => Number.isInteger(n) && n >= 1 && n <= 4094);
+                const uniq = [...new Set(parsed)];
+                p.setHybrid(newPvid, uniq);
             } else {
                 const parsed = allowedVal
                     .split(",")

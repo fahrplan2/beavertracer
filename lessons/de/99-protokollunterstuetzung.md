@@ -32,7 +32,7 @@ BeaverTracer ist ein Netzwerksimulator für den Unterricht. Er modelliert eine b
 <tr>
   <td>802.1Q VLAN</td><td>IEEE 802.1Q</td>
   <td><span class="badge badge-partial">Teilweise</span></td>
-  <td>PCP (3 Bit), DEI, VID (12 Bit), innerer EtherType. Nur ein einziger Tag — kein QinQ (802.1ad)-Stacking.</td>
+  <td>PCP (3 Bit), DEI, VID (12 Bit), innerer EtherType. <strong>Port-Modi:</strong> Access (untagged, nur PVID), Trunk (alle VLANs getaggt, PVID = native VLAN auf Ingress), Hybrid (PVID verlässt den Port untagged, weitere VLANs bleiben getaggt). Nur ein einziger Tag — kein QinQ (802.1ad)-Stacking.</td>
 </tr>
 <tr>
   <td>Link Aggregation (LAG)</td><td>IEEE 802.3ad / 802.1AX</td>
@@ -326,5 +326,5 @@ Einige Einschränkungen gelten simulatorweit, unabhängig vom Protokoll:
 - **Kein IPv6-Multicast-Management via MLDv2.** MLDv1 (RFC 2710) ist implementiert; MLDv2 und MLD-Querier fehlen. IPv6-Multicast ohne registrierte Gruppe wird geflutet.
 - **Keine Routing-Protokoll-Authentifizierung.** MD5/SHA-Schlüsselketten für OSPF, BGP und RIPv2 sind strukturell vorhanden, werden aber nicht durchgesetzt.
 - **Keine echte Kryptographie außer bei TLS.** Bitcoin-Signaturen, DNSSEC-Records und ähnliche kryptographische Konstrukte werden gefälscht oder weggelassen.
-- **Nur ein VLAN-Tag.** Double-Tagged (QinQ) Frames werden nicht unterstützt.
+- **Nur ein VLAN-Tag.** Double-Tagged (QinQ / 802.1ad) Frames werden nicht unterstützt. Switch-Ports unterstützen die Modi Access, Trunk und Hybrid.
 - **Vereinfachte Timer.** Protokoll-Timer (OSPF Hello, BGP Hold Time, DHCP-Lease-Ablauf) laufen auf einer simulierten Tick-Uhr, die standardmäßig schneller als die Echtzeit läuft.
