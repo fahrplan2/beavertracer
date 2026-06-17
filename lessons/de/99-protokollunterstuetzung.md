@@ -184,7 +184,7 @@ BeaverTracer ist ein Netzwerksimulator für den Unterricht. Er modelliert eine b
 <tr>
   <td>TLS 1.2</td><td>RFC 5246</td>
   <td><span class="badge badge-partial">Teilweise</span></td>
-  <td><strong>Vollständiger Handshake simuliert:</strong> ClientHello → ServerHello → Certificate → ServerKeyExchange → ServerHelloDone → ClientKeyExchange → ChangeCipherSpec → Finished. <strong>Cipher Suite:</strong> TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 (0xC02B). <strong>Schlüsselaustausch:</strong> ECDHE mit secp256r1, Server signiert mit ECDSA. <strong>Zertifikate:</strong> Selbstsignierte und CA-signierte X.509-Zertifikate; Trust-Store-Validierung mit Überbrückungsoption. Kein Session-Resumption, keine Client-Zertifikatsauthentifizierung, keine SNI-Durchsetzung serverseitig, kein OCSP/CRL, kein TLS 1.3.</td>
+  <td><strong>Vollständiger Handshake simuliert:</strong> ClientHello → ServerHello → Certificate → ServerKeyExchange → ServerHelloDone → ClientKeyExchange → ChangeCipherSpec → Finished. <strong>Cipher Suite:</strong> TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 (0xC02B). <strong>Schlüsselaustausch:</strong> ECDHE mit secp256r1, Server signiert mit ECDSA. <strong>Schlüsselableitung:</strong> RFC-5246-PRF (P_SHA256) → master_secret (48 Byte) → key_block; AES-GCM-Records mit explizitem 8-Byte-Nonce und AAD (RFC 5288). <strong>Finished:</strong> PRF(master_secret, label, SHA-256(Handshake-Transcript), 12) — beide Seiten verifizieren gegenseitig. <strong>Zertifikate:</strong> Selbstsignierte und CA-signierte X.509-Zertifikate; Trust-Store-Validierung. Kein Session-Resumption, keine Client-Zertifikatsauthentifizierung, keine SNI-Durchsetzung serverseitig, kein OCSP/CRL, kein TLS 1.3.</td>
 </tr>
 </tbody>
 </table>

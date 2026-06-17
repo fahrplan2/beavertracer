@@ -58,57 +58,81 @@ function concat(...parts) {
 }
 
 /**
- * XOR two Uint8Arrays of equal length into a new array.
- * @param {Uint8Array} a @param {Uint8Array} b
+ * TLS 1.2 PRF — P_SHA256 expansion (RFC 5246 §5).
+ * @param {Uint8Array} secret
+ * @param {Uint8Array} seed  — already label-prepended
+ * @param {number} length
+ * @returns {Promise<Uint8Array>}
  */
-function xorBytes(a, b) {
-  const out = new Uint8Array(a.length);
-  for (let i = 0; i < a.length; i++) out[i] = a[i] ^ b[i];
+async function p_sha256(secret, seed, length) {
+  const key = await crypto.subtle.importKey(
+    "raw", /** @type {Uint8Array<ArrayBuffer>} */ (secret),
+    { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
+  );
+  const out = new Uint8Array(length);
+  // A(1) = HMAC(secret, seed); A(i) = HMAC(secret, A(i-1))
+  let a = new Uint8Array(await crypto.subtle.sign("HMAC", key, /** @type {Uint8Array<ArrayBuffer>} */ (seed)));
+  let offset = 0;
+  while (offset < length) {
+    const block = new Uint8Array(await crypto.subtle.sign("HMAC", key, /** @type {Uint8Array<ArrayBuffer>} */ (concat(a, seed))));
+    const take = Math.min(block.length, length - offset);
+    out.set(block.slice(0, take), offset);
+    offset += take;
+    a = new Uint8Array(await crypto.subtle.sign("HMAC", key, /** @type {Uint8Array<ArrayBuffer>} */ (a)));
+  }
   return out;
 }
 
 /**
- * Derive a per-record nonce: IV XOR (seq as 12-byte big-endian).
- * @param {Uint8Array} baseIV - 12 bytes
+ * PRF(secret, label, seed, length) — RFC 5246 §5.
+ * @param {Uint8Array} secret
+ * @param {string} label
+ * @param {Uint8Array} seed
+ * @param {number} length
+ */
+async function prf(secret, label, seed, length) {
+  return p_sha256(secret, concat(encodeUTF8(label), seed), length);
+}
+
+/**
+ * Sequence number as 8-byte big-endian Uint8Array.
  * @param {number} seq
  */
-function gcmNonce(baseIV, seq) {
-  const seqBytes = new Uint8Array(12);
+function seqToBytes8(seq) {
+  const buf = new Uint8Array(8);
   let s = seq >>> 0;
-  for (let i = 11; i >= 4; i--) { seqBytes[i] = s & 0xff; s = (s / 256) | 0; }
-  return xorBytes(baseIV, seqBytes);
+  for (let i = 7; i >= 4; i--) { buf[i] = s & 0xff; s = (s / 256) | 0; }
+  return buf;
 }
 
 /**
- * Derive an AES-GCM CryptoKey from an HKDF base key.
- * @param {CryptoKey} hkdfKey
- * @param {Uint8Array<ArrayBuffer>} salt
- * @param {string} label
- * @param {"encrypt"|"decrypt"} usage
+ * Build the 13-byte AAD for TLS 1.2 AES-GCM (RFC 5288 §3).
+ * seq_num(8) || content_type(1) || version(2) || plaintext_length(2)
+ * @param {number} seq
+ * @param {number} contentType
+ * @param {number} plaintextLen
  */
-async function deriveAesKey(hkdfKey, salt, label, usage) {
-  return crypto.subtle.deriveKey(
-    { name: "HKDF", hash: "SHA-256", salt, info: encodeUTF8(label) },
-    hkdfKey,
-    { name: "AES-GCM", length: 128 },
-    false,
-    [usage],
-  );
+function buildAAD(seq, contentType, plaintextLen) {
+  const aad = new Uint8Array(13);
+  aad.set(seqToBytes8(seq), 0);
+  aad[8]  = contentType;
+  aad[9]  = 0x03;
+  aad[10] = 0x03;
+  aad[11] = (plaintextLen >> 8) & 0xff;
+  aad[12] =  plaintextLen       & 0xff;
+  return aad;
 }
 
 /**
- * Derive 12 raw IV bytes from an HKDF base key.
- * @param {CryptoKey} hkdfKey
- * @param {Uint8Array<ArrayBuffer>} salt
- * @param {string} label
+ * Parse a peer ECDH public key (65-byte uncompressed point) from raw bytes.
+ * @param {Uint8Array<ArrayBuffer>} raw
  */
-async function deriveIV(hkdfKey, salt, label) {
-  const bits = await crypto.subtle.deriveBits(
-    { name: "HKDF", hash: "SHA-256", salt, info: encodeUTF8(label) },
-    hkdfKey,
-    96, // 12 bytes
+async function importEcdhPubKey(raw) {
+  return crypto.subtle.importKey(
+    "raw", raw,
+    { name: "ECDH", namedCurve: "P-256" },
+    false, [],
   );
-  return new Uint8Array(bits);
 }
 
 // ── DER utilities (for cert parsing) ──────────────────────────────────────
@@ -156,18 +180,6 @@ function extractCertSig(certDer) {
   // P1363 P-256 signatures are exactly 64 bytes; zero placeholder is 71 bytes
   if (sigBytes.length !== 64) return null;
   return sigBytes;
-}
-
-/**
- * Parse a peer ECDH public key (65-byte uncompressed point) from raw bytes.
- * @param {Uint8Array<ArrayBuffer>} raw
- */
-async function importEcdhPubKey(raw) {
-  return crypto.subtle.importKey(
-    "raw", raw,
-    { name: "ECDH", namedCurve: "P-256" },
-    false, [],
-  );
 }
 
 // ── TlsSession ─────────────────────────────────────────────────────────────
@@ -224,10 +236,14 @@ export class TlsSession {
     // Session keys (set after key derivation)
     /** @type {CryptoKey|null} */ this._encryptKey = null;
     /** @type {CryptoKey|null} */ this._decryptKey = null;
-    /** @type {Uint8Array|null} */ this._encryptIV = null;
-    /** @type {Uint8Array|null} */ this._decryptIV = null;
+    /** @type {Uint8Array|null} */ this._encryptFixedIV = null;  // 4 bytes (RFC 5288)
+    /** @type {Uint8Array|null} */ this._decryptFixedIV = null;  // 4 bytes
+    /** @type {Uint8Array|null} */ this._masterSecret = null;    // 48 bytes
     this._sendSeq = 0;
     this._recvSeq = 0;
+
+    // Handshake transcript (accumulated HS message bytes, without record framing)
+    /** @type {Uint8Array} */ this._transcript = new Uint8Array(0);
   }
 
   // ── public API ────────────────────────────────────────────────────────────
@@ -252,18 +268,26 @@ export class TlsSession {
   }
 
   /**
-   * Encrypt and send plaintext as a TLS ApplicationData record.
+   * Encrypt and send plaintext as a TLS 1.2 ApplicationData record (RFC 5288).
+   * Record payload = explicit_nonce(8) || AES-GCM-ciphertext+tag
    * @param {Uint8Array<ArrayBuffer>} plaintext
    */
   async send(plaintext) {
     if (this._state !== "ESTABLISHED") throw new Error("TLS session not established");
-    const nonce = gcmNonce(/** @type {Uint8Array} */ (this._encryptIV), this._sendSeq++);
+    const seq = this._sendSeq++;
+    // explicit nonce = seq as 8-byte big-endian (deterministic, avoids reuse)
+    const explicitNonce = seqToBytes8(seq);
+    const nonce = concat(/** @type {Uint8Array} */ (this._encryptFixedIV), explicitNonce);
+    const aad = buildAAD(seq, TLS_CT.APP_DATA, plaintext.length);
     const cipher = await crypto.subtle.encrypt(
-      { name: "AES-GCM", iv: nonce },
+      { name: "AES-GCM", iv: nonce, additionalData: aad },
       /** @type {CryptoKey} */ (this._encryptKey),
       plaintext,
     );
-    this._sendRaw(TlsRecord.buildApplicationData(new Uint8Array(cipher)));
+    // prepend explicit nonce so the peer can reconstruct the full nonce
+    this._sendRaw(TlsRecord.buildApplicationData(
+      concat(explicitNonce, new Uint8Array(cipher)),
+    ));
   }
 
   /**
@@ -278,11 +302,17 @@ export class TlsSession {
       if (record === null) { this._state = "CLOSED"; return null; }
 
       if (record.contentType === TLS_CT.APP_DATA) {
-        const nonce = gcmNonce(/** @type {Uint8Array} */ (this._decryptIV), this._recvSeq++);
+        // first 8 bytes are the explicit nonce
+        const explicitNonce = record.payload.slice(0, 8);
+        const ciphertext    = record.payload.slice(8);
+        const seq = this._recvSeq++;
+        const nonce = concat(/** @type {Uint8Array} */ (this._decryptFixedIV), explicitNonce);
+        const plaintextLen = ciphertext.length - 16; // minus 16-byte GCM tag
+        const aad = buildAAD(seq, TLS_CT.APP_DATA, plaintextLen);
         const plain = await crypto.subtle.decrypt(
-          { name: "AES-GCM", iv: nonce },
+          { name: "AES-GCM", iv: nonce, additionalData: aad },
           /** @type {CryptoKey} */ (this._decryptKey),
-          record.payload,
+          ciphertext,
         );
         return new Uint8Array(plain);
       }
@@ -304,14 +334,18 @@ export class TlsSession {
   // ── handshake – client side ───────────────────────────────────────────────
 
   async _clientHandshake() {
+    this._transcript = new Uint8Array(0);
+
     // 1. Generate client random + ECDH keypair
     this._clientRandom = crypto.getRandomValues(new Uint8Array(32));
     this._ecdhKeyPair = await crypto.subtle.generateKey(
       { name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"],
     );
 
-    // 2. Send ClientHello
-    this._sendRaw(TlsRecord.buildClientHello(this._clientRandom));
+    // 2. Send ClientHello, append HS bytes to transcript
+    const chRecord = TlsRecord.buildClientHello(this._clientRandom);
+    this._sendRaw(chRecord);
+    this._appendTranscript(chRecord.slice(5));
 
     // 3. Read ServerHello, Certificate, ServerKeyExchange, ServerHelloDone
     let skeBody = null;
@@ -321,6 +355,8 @@ export class TlsSession {
       const record = await this._readRecordTimeout();
       if (record === null) throw new TlsHandshakeError("Connection closed during handshake");
       if (record.contentType !== TLS_CT.HANDSHAKE) continue;
+      // append entire HANDSHAKE record payload (= concatenated HS message bytes)
+      this._appendTranscript(record.payload);
 
       const msgs = this._parseHandshakeMessages(record.payload);
       for (const msg of msgs) {
@@ -339,8 +375,6 @@ export class TlsSession {
           }
         } else if (msg.type === TLS_HT.SERVER_KEY_EXCHANGE) {
           skeBody = msg.body;
-        } else if (msg.type === TLS_HT.SERVER_HELLO_DONE) {
-          break;
         }
       }
 
@@ -353,7 +387,6 @@ export class TlsSession {
     const { ecdhPubKeyBytes, ecParams, signature } = TlsRecord.parseServerKeyExchange(skeBody);
 
     if (signature && peerCert?.publicKey) {
-      // toSign = clientRandom || serverRandom || ecParams (curve+keylen+keybytes)
       const toSign = concat(
         /** @type {Uint8Array} */ (this._clientRandom),
         /** @type {Uint8Array} */ (this._serverRandom),
@@ -368,20 +401,33 @@ export class TlsSession {
       if (!valid) throw new TlsSignatureError();
     }
 
-    // 5. Send ClientKeyExchange + ChangeCipherSpec + Finished
+    // 5. Send ClientKeyExchange, append HS bytes to transcript
     this._peerEcdhPubKey = await importEcdhPubKey(/** @type {Uint8Array<ArrayBuffer>} */ (ecdhPubKeyBytes));
     const ownPubKeyRaw = new Uint8Array(await crypto.subtle.exportKey(
       "raw", /** @type {CryptoKeyPair} */ (this._ecdhKeyPair).publicKey,
     ));
+    const ckeRecord = TlsRecord.buildClientKeyExchange(ownPubKeyRaw);
+    this._sendRaw(ckeRecord);
+    this._appendTranscript(ckeRecord.slice(5));
 
-    this._sendRaw(TlsRecord.buildClientKeyExchange(ownPubKeyRaw));
+    // 6. Derive session keys
     await this._deriveKeys();
-    this._sendRaw(TlsRecord.buildChangeCipherSpec());
-    this._sendRaw(TlsRecord.buildFinished(await this._makeVerifyData("client")));
 
-    // 6. Read server ChangeCipherSpec + Finished
+    // 7. Compute client verify_data from transcript so far, send ChangeCipherSpec + Finished
+    const clientVerifyData = await this._makeVerifyData("client");
+    const clientFinishedRecord = TlsRecord.buildFinished(clientVerifyData);
+    this._sendRaw(TlsRecord.buildChangeCipherSpec());
+    this._sendRaw(clientFinishedRecord);
+    // append client Finished to transcript so server Finished can be verified
+    this._appendTranscript(clientFinishedRecord.slice(5));
+
+    // 8. Read server ChangeCipherSpec
     await this._readExpectedRecord(TLS_CT.CHANGE_CIPHER_SPEC);
-    await this._readExpectedHandshake(TLS_HT.FINISHED);
+
+    // 9. Read and verify server Finished
+    const serverFinishedMsg = await this._readExpectedHandshake(TLS_HT.FINISHED);
+    const expectedServerVerifyData = await this._makeVerifyData("server");
+    this._verifyFinished(serverFinishedMsg.body, expectedServerVerifyData);
   }
 
   // ── handshake – server side ───────────────────────────────────────────────
@@ -390,11 +436,14 @@ export class TlsSession {
     if (!this._cert) throw new TlsHandshakeError("Server cert required");
     if (!this._cert.privateKey) throw new TlsHandshakeError("Server cert has no private key");
 
-    // 1. Read ClientHello
+    this._transcript = new Uint8Array(0);
+
+    // 1. Read ClientHello, append to transcript
     const chRecord = await this._readRecordTimeout();
     if (chRecord === null || chRecord.contentType !== TLS_CT.HANDSHAKE) {
       throw new TlsHandshakeError("Expected ClientHello");
     }
+    this._appendTranscript(chRecord.payload);
     const chMsgs = this._parseHandshakeMessages(chRecord.payload);
     const ch = chMsgs.find(m => m.type === TLS_HT.CLIENT_HELLO);
     if (!ch) throw new TlsHandshakeError("Expected ClientHello");
@@ -410,7 +459,6 @@ export class TlsSession {
     ));
 
     // 3. Sign ServerKeyExchange params with cert private key
-    // ecParams layout matches parseServerKeyExchange: [named_curve:3][key_len:1][key_bytes:65]
     const ecParams = new Uint8Array(4 + serverPubRaw.length);
     ecParams[0] = 0x03; ecParams[1] = 0x00; ecParams[2] = 0x17;
     ecParams[3] = serverPubRaw.length;
@@ -428,19 +476,26 @@ export class TlsSession {
     );
     const signature = new Uint8Array(sigBuf);
 
-    // 4. Send ServerHello + Certificate + ServerKeyExchange + ServerHelloDone
+    // 4. Send ServerHello, Certificate, ServerKeyExchange, ServerHelloDone
+    //    Append each HS message to transcript
     const sessionId = crypto.getRandomValues(new Uint8Array(4));
-    this._sendRaw(TlsRecord.buildServerHello(this._serverRandom, sessionId));
-    const chainDers = this._cert.chain.map(c => c.toDer());
-    this._sendRaw(TlsRecord.buildCertificate([this._cert.toDer(), ...chainDers]));
-    this._sendRaw(TlsRecord.buildServerKeyExchange(serverPubRaw, signature));
-    this._sendRaw(TlsRecord.buildServerHelloDone());
+    const shRecord   = TlsRecord.buildServerHello(this._serverRandom, sessionId);
+    const chainDers  = this._cert.chain.map(c => c.toDer());
+    const certRecord = TlsRecord.buildCertificate([this._cert.toDer(), ...chainDers]);
+    const skeRecord  = TlsRecord.buildServerKeyExchange(serverPubRaw, signature);
+    const shdRecord  = TlsRecord.buildServerHelloDone();
 
-    // 5. Read ClientKeyExchange
+    this._sendRaw(shRecord);   this._appendTranscript(shRecord.slice(5));
+    this._sendRaw(certRecord); this._appendTranscript(certRecord.slice(5));
+    this._sendRaw(skeRecord);  this._appendTranscript(skeRecord.slice(5));
+    this._sendRaw(shdRecord);  this._appendTranscript(shdRecord.slice(5));
+
+    // 5. Read ClientKeyExchange, append to transcript
     const ckeRecord = await this._readRecordTimeout();
     if (ckeRecord === null || ckeRecord.contentType !== TLS_CT.HANDSHAKE) {
       throw new TlsHandshakeError("Expected ClientKeyExchange");
     }
+    this._appendTranscript(ckeRecord.payload);
     const ckeMsgs = this._parseHandshakeMessages(ckeRecord.payload);
     const cke = ckeMsgs.find(m => m.type === TLS_HT.CLIENT_KEY_EXCHANGE);
     if (!cke) throw new TlsHandshakeError("Expected ClientKeyExchange");
@@ -449,51 +504,83 @@ export class TlsSession {
     const peerEcdhRaw = cke.body.slice(1, 1 + peerKeyLen);
     this._peerEcdhPubKey = await importEcdhPubKey(peerEcdhRaw);
 
-    // 6. Derive keys
+    // 6. Derive session keys
     await this._deriveKeys();
 
-    // 7. Read client ChangeCipherSpec + Finished
+    // 7. Read client ChangeCipherSpec
     await this._readExpectedRecord(TLS_CT.CHANGE_CIPHER_SPEC);
-    await this._readExpectedHandshake(TLS_HT.FINISHED);
 
-    // 8. Send ChangeCipherSpec + Finished
+    // 8. Read and verify client Finished
+    const clientFinishedMsg = await this._readExpectedHandshake(TLS_HT.FINISHED);
+    const expectedClientVerifyData = await this._makeVerifyData("client");
+    this._verifyFinished(clientFinishedMsg.body, expectedClientVerifyData);
+    // append client Finished to transcript so our own Finished is computed correctly
+    this._appendTranscript(this._buildHsBytes(TLS_HT.FINISHED, clientFinishedMsg.body));
+
+    // 9. Send ChangeCipherSpec + Finished
+    const serverVerifyData = await this._makeVerifyData("server");
     this._sendRaw(TlsRecord.buildChangeCipherSpec());
-    this._sendRaw(TlsRecord.buildFinished(await this._makeVerifyData("server")));
+    this._sendRaw(TlsRecord.buildFinished(serverVerifyData));
   }
 
   // ── key derivation ────────────────────────────────────────────────────────
 
   async _deriveKeys() {
+    // pre_master_secret = ECDH shared secret
     const sharedBits = await crypto.subtle.deriveBits(
       { name: "ECDH", public: /** @type {CryptoKey} */ (this._peerEcdhPubKey) },
       /** @type {CryptoKeyPair} */ (this._ecdhKeyPair).privateKey,
       256,
     );
+    const preMasterSecret = new Uint8Array(sharedBits);
 
-    const hkdfKey = await crypto.subtle.importKey(
-      "raw", sharedBits, "HKDF", false, ["deriveKey", "deriveBits"],
+    // master_secret = PRF(pre_master_secret, "master secret", ClientRandom || ServerRandom, 48)
+    const masterSecret = await prf(
+      preMasterSecret, "master secret",
+      concat(
+        /** @type {Uint8Array} */ (this._clientRandom),
+        /** @type {Uint8Array} */ (this._serverRandom),
+      ),
+      48,
+    );
+    this._masterSecret = masterSecret;
+
+    // key_block = PRF(master_secret, "key expansion", ServerRandom || ClientRandom, 40)
+    // Layout (RFC 5246 §6.3 + RFC 5288):
+    //   client_write_key[16] | server_write_key[16] | client_write_IV[4] | server_write_IV[4]
+    const keyBlock = await prf(
+      masterSecret, "key expansion",
+      concat(
+        /** @type {Uint8Array} */ (this._serverRandom),
+        /** @type {Uint8Array} */ (this._clientRandom),
+      ),
+      40,
     );
 
-    const seed = concat(
-      /** @type {Uint8Array} */ (this._clientRandom),
-      /** @type {Uint8Array} */ (this._serverRandom),
-    );
+    const clientWriteKeyBytes = keyBlock.slice(0, 16);
+    const serverWriteKeyBytes = keyBlock.slice(16, 32);
+    const clientFixedIV       = keyBlock.slice(32, 36);
+    const serverFixedIV       = keyBlock.slice(36, 40);
 
-    const clientWriteKey = await deriveAesKey(hkdfKey, seed, "client write key", this._isServer ? "decrypt" : "encrypt");
-    const serverWriteKey = await deriveAesKey(hkdfKey, seed, "server write key", this._isServer ? "encrypt" : "decrypt");
-    const clientIV = await deriveIV(hkdfKey, seed, "client write iv");
-    const serverIV = await deriveIV(hkdfKey, seed, "server write iv");
+    const clientWriteKey = await crypto.subtle.importKey(
+      "raw", clientWriteKeyBytes, { name: "AES-GCM" }, false,
+      [this._isServer ? "decrypt" : "encrypt"],
+    );
+    const serverWriteKey = await crypto.subtle.importKey(
+      "raw", serverWriteKeyBytes, { name: "AES-GCM" }, false,
+      [this._isServer ? "encrypt" : "decrypt"],
+    );
 
     if (this._isServer) {
-      this._encryptKey = serverWriteKey;
-      this._decryptKey = clientWriteKey;
-      this._encryptIV  = serverIV;
-      this._decryptIV  = clientIV;
+      this._encryptKey     = serverWriteKey;
+      this._decryptKey     = clientWriteKey;
+      this._encryptFixedIV = serverFixedIV;
+      this._decryptFixedIV = clientFixedIV;
     } else {
-      this._encryptKey = clientWriteKey;
-      this._decryptKey = serverWriteKey;
-      this._encryptIV  = clientIV;
-      this._decryptIV  = serverIV;
+      this._encryptKey     = clientWriteKey;
+      this._decryptKey     = serverWriteKey;
+      this._encryptFixedIV = clientFixedIV;
+      this._decryptFixedIV = serverFixedIV;
     }
   }
 
@@ -550,6 +637,7 @@ export class TlsSession {
   /**
    * Read records until one matching contentType is found.
    * @param {number} contentType
+   * @returns {Promise<TlsRecord>}
    */
   async _readExpectedRecord(contentType) {
     while (true) {
@@ -562,6 +650,7 @@ export class TlsSession {
   /**
    * Read records until a Handshake message of given type is found.
    * @param {number} hsType
+   * @returns {Promise<{ type: number, body: Uint8Array<ArrayBuffer> }>}
    */
   async _readExpectedHandshake(hsType) {
     while (true) {
@@ -591,6 +680,62 @@ export class TlsSession {
     }
     return msgs;
   }
+
+  // ── transcript helpers ────────────────────────────────────────────────────
+
+  /** Append raw handshake message bytes to transcript. @param {Uint8Array} hsBytes */
+  _appendTranscript(hsBytes) {
+    this._transcript = concat(this._transcript, hsBytes);
+  }
+
+  /**
+   * Reconstruct handshake message bytes [type:1][len:3][body] from parsed components.
+   * Used to append received messages when only type+body are available.
+   * @param {number} type
+   * @param {Uint8Array} body
+   */
+  _buildHsBytes(type, body) {
+    const msg = new Uint8Array(4 + body.length);
+    msg[0] = type;
+    msg[1] = (body.length >> 16) & 0xff;
+    msg[2] = (body.length >> 8)  & 0xff;
+    msg[3] =  body.length        & 0xff;
+    msg.set(body, 4);
+    return msg;
+  }
+
+  // ── verify_data ────────────────────────────────────────────────────────────
+
+  /**
+   * Compute 12-byte verify_data per RFC 5246 §7.4.9:
+   * PRF(master_secret, finished_label, SHA-256(handshake_transcript), 12)
+   * @param {"client"|"server"} role
+   */
+  async _makeVerifyData(role) {
+    const transcriptHash = new Uint8Array(
+      await crypto.subtle.digest("SHA-256", /** @type {Uint8Array<ArrayBuffer>} */ (this._transcript)),
+    );
+    const label = role === "client" ? "client finished" : "server finished";
+    return prf(/** @type {Uint8Array} */ (this._masterSecret), label, transcriptHash, 12);
+  }
+
+  /**
+   * Compare received verify_data against expected; throw on mismatch.
+   * @param {Uint8Array} received
+   * @param {Uint8Array} expected
+   */
+  _verifyFinished(received, expected) {
+    if (received.length !== expected.length) {
+      throw new TlsHandshakeError("Finished verify_data length mismatch");
+    }
+    for (let i = 0; i < received.length; i++) {
+      if (received[i] !== expected[i]) {
+        throw new TlsHandshakeError("Finished verify_data mismatch — handshake integrity check failed");
+      }
+    }
+  }
+
+  // ── certificate parsing ───────────────────────────────────────────────────
 
   /**
    * Extract a TlsCertificate stub from a raw Certificate handshake body.
@@ -700,24 +845,5 @@ export class TlsSession {
     }
 
     return stub;
-  }
-
-  /**
-   * Compute a 12-byte verify_data via HMAC-SHA256 (simplified — not RFC 5246 PRF).
-   * @param {"client"|"server"} role
-   */
-  async _makeVerifyData(role) {
-    const key = await crypto.subtle.importKey(
-      "raw",
-      concat(
-        /** @type {Uint8Array} */ (this._clientRandom),
-        /** @type {Uint8Array} */ (this._serverRandom),
-      ),
-      { name: "HMAC", hash: "SHA-256" },
-      false,
-      ["sign"],
-    );
-    const sig = await crypto.subtle.sign("HMAC", key, encodeUTF8(`tls12 finished ${role}`));
-    return new Uint8Array(sig).slice(0, 12);
   }
 }
