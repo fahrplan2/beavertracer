@@ -96,6 +96,10 @@ export class NetworkInterface extends Observable {
     /** Whether to send periodic Router Advertisements and respond to RS on this interface */
     raEnabled = false;
 
+    /** Called when an LLDP frame (EtherType 0x88CC) is received; set by Router. */
+    /** @type {((frame: import("./pdu/EthernetFrame.js").EthernetFrame) => void)|null} */
+    _lldpHandler = null;
+
     /** Override MTU for this interface. null = inherit from connected EthernetLink (default 1500). */
     /** @type {number|null} */
     mtuOverride = null;
@@ -374,6 +378,10 @@ export class NetworkInterface extends Observable {
                 } catch (e) {
                     console.warn("IPv6 parse error:", e);
                 }
+                break;
+
+            case 0x88CC:  // LLDP
+                this._lldpHandler?.(frame);
                 break;
 
             default:

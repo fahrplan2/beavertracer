@@ -1393,5 +1393,19 @@ export default {
   "app.multicastchat.log.left": "Išėjote iš grupės {group}.",
   "app.multicastchat.log.peerJoined": "{nick} prisijungė prie grupės.",
   "app.multicastchat.log.peerLeft": "{nick} išėjo iš grupės.",
-  "switch.igmp.col.proto": "Protokolas"
+  "switch.igmp.col.proto": "Protokolas",
+  "switch.tab.lldp": "LLDP",
+  "switch.lldp.enable": "Įjungti LLDP",
+  "switch.lldp.empty": "LLDP kaimynai nerasti.",
+  "switch.lldp.col.port": "Prievadas",
+  "switch.lldp.col.system": "Sistema",
+  "switch.lldp.col.chassis": "Šasio ID",
+  "switch.lldp.col.portid": "Prievado ID",
+  "router.lldp.tab": "LLDP",
+  "router.lldp.enable": "Įjungti LLDP",
+  "router.lldp.empty": "LLDP kaimynai nerasti.",
+  "router.lldp.col.iface": "Sąsaja",
+  "router.lldp.col.system": "Sistema",
+  "router.lldp.col.chassis": "Šasio ID",
+  "router.lldp.col.portid": "Prievado ID"
 };

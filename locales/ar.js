@@ -1393,5 +1393,19 @@ export default {
   "app.multicastchat.log.left": "غادرت المجموعة {group}.",
   "app.multicastchat.log.peerJoined": "انضم {nick} إلى المجموعة.",
   "app.multicastchat.log.peerLeft": "غادر {nick} المجموعة.",
-  "switch.igmp.col.proto": "البروتوكول"
+  "switch.igmp.col.proto": "البروتوكول",
+  "switch.tab.lldp": "LLDP",
+  "switch.lldp.enable": "تفعيل LLDP",
+  "switch.lldp.empty": "لم يتم اكتشاف أي جيران LLDP.",
+  "switch.lldp.col.port": "المنفذ",
+  "switch.lldp.col.system": "النظام",
+  "switch.lldp.col.chassis": "معرف الهيكل",
+  "switch.lldp.col.portid": "معرف المنفذ",
+  "router.lldp.tab": "LLDP",
+  "router.lldp.enable": "تفعيل LLDP",
+  "router.lldp.empty": "لم يتم اكتشاف أي جيران LLDP.",
+  "router.lldp.col.iface": "الواجهة",
+  "router.lldp.col.system": "النظام",
+  "router.lldp.col.chassis": "معرف الهيكل",
+  "router.lldp.col.portid": "معرف المنفذ"
 };

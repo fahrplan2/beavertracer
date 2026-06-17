@@ -1393,5 +1393,19 @@ export default {
   "app.multicastchat.log.left": "از گروه {group} خارج شدید.",
   "app.multicastchat.log.peerJoined": "{nick} به گروه پیوست.",
   "app.multicastchat.log.peerLeft": "{nick} از گروه خارج شد.",
-  "switch.igmp.col.proto": "پروتکل"
+  "switch.igmp.col.proto": "پروتکل",
+  "switch.tab.lldp": "LLDP",
+  "switch.lldp.enable": "فعال‌سازی LLDP",
+  "switch.lldp.empty": "هیچ همسایه LLDP کشف نشده است.",
+  "switch.lldp.col.port": "پورت",
+  "switch.lldp.col.system": "سیستم",
+  "switch.lldp.col.chassis": "شناسه شاسی",
+  "switch.lldp.col.portid": "شناسه پورت",
+  "router.lldp.tab": "LLDP",
+  "router.lldp.enable": "فعال‌سازی LLDP",
+  "router.lldp.empty": "هیچ همسایه LLDP کشف نشده است.",
+  "router.lldp.col.iface": "رابط",
+  "router.lldp.col.system": "سیستم",
+  "router.lldp.col.chassis": "شناسه شاسی",
+  "router.lldp.col.portid": "شناسه پورت"
 };

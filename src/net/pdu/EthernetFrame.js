@@ -16,10 +16,17 @@ export class EthernetFrame {
   payload;
 
   /**
-   * Optional 802.1Q tag.
+   * Optional 802.1Q C-Tag (TPID 0x8100).
    * @type {{ vid: number, pcp?: number, dei?: number } | null}
    */
   vlan = null;
+
+  /**
+   * Optional 802.1ad outer S-Tag (TPID 0x88a8). When set together with vlan,
+   * the frame is double-tagged: [0x88a8][outerTCI][0x8100][innerTCI][etherType][payload].
+   * @type {{ vid: number, pcp?: number, dei?: number } | null}
+   */
+  svlan = null;
 
   /**
    * If true, bytes 12-13 (or inner field after VLAN tag) are treated as LENGTH (802.3),
@@ -56,58 +63,43 @@ export class EthernetFrame {
    * @returns {Uint8Array}
    */
   pack() {
-    // Real payload length (must not include padding if using 802.3 length field)
     const realPayloadLen = this.payload.length;
 
-    // Prepare padded payload for minimum Ethernet payload size (46 bytes)
     let paddedPayload = this.payload;
     if (paddedPayload.length < 46) {
       const tmp = new Uint8Array(46);
       tmp.set(paddedPayload);
-      // remaining bytes already 0
       paddedPayload = tmp;
     }
 
-    const vlan = this.vlan;
-    const headerLen = vlan != null ? 18 : 14;
+    const svlan = this.svlan;
+    const vlan  = this.vlan;
+
+    // 12 (MACs) + 4 per tag + 2 (etherType/length)
+    const headerLen = 12 + (svlan != null ? 4 : 0) + (vlan != null ? 4 : 0) + 2;
     const out = new Uint8Array(headerLen + paddedPayload.length);
 
     out.set(this.dstMac, 0);
     out.set(this.srcMac, 6);
 
-    if (vlan == null) {
-      if (this.useLengthField) {
-        // 802.3 length (<= 1500)
-        write16BE(out, 12, realPayloadLen & 0xffff);
-      } else {
-        // Ethernet II EtherType
-        write16BE(out, 12, this.etherType);
-      }
+    let offset = 12;
 
-      out.set(paddedPayload, 14);
-      return out;
+    if (svlan != null) {
+      write16BE(out, offset, 0x88a8); offset += 2;
+      const tci = (((svlan.pcp ?? 0) & 0x07) << 13) | (((svlan.dei ?? 0) & 0x01) << 12) | (svlan.vid & 0x0fff);
+      write16BE(out, offset, tci);    offset += 2;
     }
 
-    // VLAN tagged header
-    out[12] = 0x81;
-    out[13] = 0x00;
-
-    const vid = vlan.vid & 0x0fff;
-    const pcp = (vlan.pcp ?? 0) & 0x07;
-    const dei = (vlan.dei ?? 0) & 0x01;
-    const tci = (pcp << 13) | (dei << 12) | vid;
-
-    write16BE(out, 14, tci);
-
-    if (this.useLengthField) {
-      // Inner field is LENGTH (802.3), not EtherType
-      write16BE(out, 16, realPayloadLen & 0xffff);
-    } else {
-      // Inner field is EtherType
-      write16BE(out, 16, this.etherType);
+    if (vlan != null) {
+      write16BE(out, offset, 0x8100); offset += 2;
+      const tci = (((vlan.pcp ?? 0) & 0x07) << 13) | (((vlan.dei ?? 0) & 0x01) << 12) | (vlan.vid & 0x0fff);
+      write16BE(out, offset, tci);    offset += 2;
     }
 
-    out.set(paddedPayload, 18);
+    write16BE(out, offset, this.useLengthField ? (realPayloadLen & 0xffff) : this.etherType);
+    offset += 2;
+
+    out.set(paddedPayload, offset);
     return out;
   }
 
@@ -120,49 +112,33 @@ export class EthernetFrame {
 
     const dstMac = bytes.subarray(0, 6);
     const srcMac = bytes.subarray(6, 12);
-    const typeOrTpid = read16BE(bytes, 12);
 
-    // VLAN tagged?
-    if (typeOrTpid === 0x8100) {
-      const tci = read16BE(bytes, 14);
-      const pcp = (tci >> 13) & 0x07;
-      const dei = (tci >> 12) & 0x01;
-      const vid = tci & 0x0fff;
+    const f = new EthernetFrame({ dstMac, srcMac });
+    let offset = 12;
 
-      const innerTypeOrLen = read16BE(bytes, 16);
-           const payload = bytes.subarray(18);
-
-      const f = new EthernetFrame({ dstMac, srcMac, etherType: 0, payload });
-      f.vlan = { vid, pcp, dei };
-
-      if (innerTypeOrLen <= 1500) {
-        // 802.3 length
-        f.useLengthField = true;
-        f.length = innerTypeOrLen;
-        f.etherType = 0;
-      } else {
-        // Ethernet II EtherType
-        f.useLengthField = false;
-        f.length = 0;
-        f.etherType = innerTypeOrLen;
-      }
-
-      return f;
+    // Outer S-Tag (TPID 0x88a8)?
+    if (read16BE(bytes, offset) === 0x88a8) {
+      const tci = read16BE(bytes, offset + 2);
+      f.svlan = { pcp: (tci >> 13) & 0x07, dei: (tci >> 12) & 0x01, vid: tci & 0x0fff };
+      offset += 4;
     }
 
-    // Untagged
-    const typeOrLen = typeOrTpid;
-    const payload = bytes.subarray(14);
+    // Inner C-Tag (TPID 0x8100)?
+    if (read16BE(bytes, offset) === 0x8100) {
+      const tci = read16BE(bytes, offset + 2);
+      f.vlan = { pcp: (tci >> 13) & 0x07, dei: (tci >> 12) & 0x01, vid: tci & 0x0fff };
+      offset += 4;
+    }
 
-    const f = new EthernetFrame({ dstMac, srcMac, etherType: 0, payload });
+    const typeOrLen = read16BE(bytes, offset);
+    offset += 2;
+    f.payload = bytes.subarray(offset);
 
     if (typeOrLen <= 1500) {
-      // 802.3 length
       f.useLengthField = true;
       f.length = typeOrLen;
       f.etherType = 0;
     } else {
-      // Ethernet II EtherType
       f.useLengthField = false;
       f.length = 0;
       f.etherType = typeOrLen;

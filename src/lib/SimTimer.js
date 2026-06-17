@@ -110,6 +110,11 @@ export class SimTimer {
     /** Age increment period: LSA age field increases by 1 per this interval (~RFC 1 s real). */
     static OSPF_AGE_INTERVAL_MS     =     50;  //   10 ticks  (~1 s real)
 
+    /** LLDP TX interval (~IEEE 802.1AB default 30 s real). */
+    static LLDP_TX_MS               =  1_500;  // 300 ticks  → 30 s @ 1×
+    /** LLDP neighbor TTL — 3× TX interval; entry removed if no refresh. */
+    static LLDP_TTL_MS              =  4_500;  // 900 ticks  → 90 s @ 1×
+
     // -------------------------------------------------------------------------
     // Internal state
     // -------------------------------------------------------------------------

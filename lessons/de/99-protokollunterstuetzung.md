@@ -32,7 +32,17 @@ BeaverTracer ist ein Netzwerksimulator für den Unterricht. Er modelliert eine b
 <tr>
   <td>802.1Q VLAN</td><td>IEEE 802.1Q</td>
   <td><span class="badge badge-partial">Teilweise</span></td>
-  <td>PCP (3 Bit), DEI, VID (12 Bit), innerer EtherType. Nur ein einziger Tag — kein QinQ (802.1ad)-Stacking.</td>
+  <td>PCP (3 Bit), DEI, VID (12 Bit), innerer EtherType. <strong>Port-Modi:</strong> Access (untagged, nur PVID), Trunk (alle VLANs getaggt, PVID = native VLAN auf Ingress), Hybrid (PVID verlässt den Port untagged, weitere VLANs bleiben getaggt).</td>
+</tr>
+<tr>
+  <td>QinQ (Double Tagging)</td><td>IEEE 802.1ad</td>
+  <td><span class="badge badge-partial">Teilweise</span></td>
+  <td>Port-basiertes S-Tag-Push/-Pop (TPID 0x88a8). Jeder Switch-Port kann mit einer Outer-S-VID konfiguriert werden (QinQ-Tab im Switch-UI): Ingress pusht den S-Tag, Egress poppt ihn. Trunk-Ports (tagged, S-VID in allowedVlans) transportieren doppelt getaggte Frames als NNI-Ports. Kein VLAN-Translation, kein symmetrisches QinQ, kein 0x9100-TPID.</td>
+</tr>
+<tr>
+  <td>LLDP</td><td>IEEE 802.1AB</td>
+  <td><span class="badge badge-partial">Teilweise</span></td>
+  <td>Chassis-ID (Subtyp 4, MAC), Port-ID (Subtyp 5, Interface-Name), System Name und TTL (120 s) werden kodiert, gesendet und dekodiert. TX-Intervall entspricht 30 simulierten Sekunden. Nachbarn verfallen nach 90 simulierten Sekunden ohne Frame. Switch terminiert LLDP-Frames (Ziel-MAC 01:80:C2:00:00:0E liegt im Bridge-Group-Adressbereich) und leitet sie nicht weiter. Kein System Description, keine Management Address, keine Organization-Specific TLVs (Typ 127).</td>
 </tr>
 <tr>
   <td>Link Aggregation (LAG)</td><td>IEEE 802.3ad / 802.1AX</td>
@@ -101,6 +111,11 @@ BeaverTracer ist ein Netzwerksimulator für den Unterricht. Er modelliert eine b
   <td>GRE</td><td>RFC 2784</td>
   <td><span class="badge badge-partial">Teilweise</span></td>
   <td>Minimaler 4-Byte-Fixed-Header mit Protocol Type. Optionale Checksum/Key/Sequence-Felder werden beim Einlesen dekodiert, aber nicht erzeugt. Keine RFC-2890-Erweiterungen.</td>
+</tr>
+<tr>
+  <td>NAT / PAT</td><td>RFC 3022</td>
+  <td><span class="badge badge-partial">Teilweise</span></td>
+  <td>Zustandsbehaftetes SNAT (LAN → WAN) für TCP, UDP und ICMP Echo: Quell-IP und Port/Identifier werden auf die WAN-IP umgeschrieben, Portbereich 10000–60000. Stateless DNAT (Port Forwarding) für TCP und UDP: eingehende Verbindungen auf konfigurierbare LAN-Ziele weitergeleitet; Rückpfad wird automatisch in der SNAT-Tabelle vorinstalliert. Fragmentierte Pakete werden per IPv4-Identification-Feld verfolgt. Nur IPv4 — kein NAT64, kein NPTv6.</td>
 </tr>
 </tbody>
 </table>
@@ -179,7 +194,7 @@ BeaverTracer ist ein Netzwerksimulator für den Unterricht. Er modelliert eine b
 <tr>
   <td>TLS 1.2</td><td>RFC 5246</td>
   <td><span class="badge badge-partial">Teilweise</span></td>
-  <td><strong>Vollständiger Handshake simuliert:</strong> ClientHello → ServerHello → Certificate → ServerKeyExchange → ServerHelloDone → ClientKeyExchange → ChangeCipherSpec → Finished. <strong>Cipher Suite:</strong> TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 (0xC02B). <strong>Schlüsselaustausch:</strong> ECDHE mit secp256r1, Server signiert mit ECDSA. <strong>Zertifikate:</strong> Selbstsignierte und CA-signierte X.509-Zertifikate; Trust-Store-Validierung mit Überbrückungsoption. Kein Session-Resumption, keine Client-Zertifikatsauthentifizierung, keine SNI-Durchsetzung serverseitig, kein OCSP/CRL, kein TLS 1.3.</td>
+  <td><strong>Vollständiger Handshake simuliert:</strong> ClientHello → ServerHello → Certificate → ServerKeyExchange → ServerHelloDone → ClientKeyExchange → ChangeCipherSpec → Finished. <strong>Cipher Suite:</strong> TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 (0xC02B). <strong>Schlüsselaustausch:</strong> ECDHE mit secp256r1, Server signiert mit ECDSA. <strong>Schlüsselableitung:</strong> RFC-5246-PRF (P_SHA256) → master_secret (48 Byte) → key_block; AES-GCM-Records mit explizitem 8-Byte-Nonce und AAD (RFC 5288). <strong>Finished:</strong> PRF(master_secret, label, SHA-256(Handshake-Transcript), 12) — beide Seiten verifizieren gegenseitig. <strong>Zertifikate:</strong> Selbstsignierte und CA-signierte X.509-Zertifikate; Trust-Store-Validierung. Kein Session-Resumption, keine Client-Zertifikatsauthentifizierung, keine SNI-Durchsetzung serverseitig, kein OCSP/CRL, kein TLS 1.3.</td>
 </tr>
 </tbody>
 </table>
@@ -326,5 +341,4 @@ Einige Einschränkungen gelten simulatorweit, unabhängig vom Protokoll:
 - **Kein IPv6-Multicast-Management via MLDv2.** MLDv1 (RFC 2710) ist implementiert; MLDv2 und MLD-Querier fehlen. IPv6-Multicast ohne registrierte Gruppe wird geflutet.
 - **Keine Routing-Protokoll-Authentifizierung.** MD5/SHA-Schlüsselketten für OSPF, BGP und RIPv2 sind strukturell vorhanden, werden aber nicht durchgesetzt.
 - **Keine echte Kryptographie außer bei TLS.** Bitcoin-Signaturen, DNSSEC-Records und ähnliche kryptographische Konstrukte werden gefälscht oder weggelassen.
-- **Nur ein VLAN-Tag.** Double-Tagged (QinQ) Frames werden nicht unterstützt.
 - **Vereinfachte Timer.** Protokoll-Timer (OSPF Hello, BGP Hold Time, DHCP-Lease-Ablauf) laufen auf einer simulierten Tick-Uhr, die standardmäßig schneller als die Echtzeit läuft.

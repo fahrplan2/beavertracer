@@ -1393,5 +1393,19 @@ export default {
   "app.multicastchat.log.left": "Poistuttu ryhmästä {group}.",
   "app.multicastchat.log.peerJoined": "{nick} liittyi ryhmään.",
   "app.multicastchat.log.peerLeft": "{nick} poistui ryhmästä.",
-  "switch.igmp.col.proto": "Protokolla"
+  "switch.igmp.col.proto": "Protokolla",
+  "switch.tab.lldp": "LLDP",
+  "switch.lldp.enable": "Ota LLDP käyttöön",
+  "switch.lldp.empty": "LLDP-naapureita ei löytynyt.",
+  "switch.lldp.col.port": "Portti",
+  "switch.lldp.col.system": "Järjestelmä",
+  "switch.lldp.col.chassis": "Chassis-tunnus",
+  "switch.lldp.col.portid": "Portin tunnus",
+  "router.lldp.tab": "LLDP",
+  "router.lldp.enable": "Ota LLDP käyttöön",
+  "router.lldp.empty": "LLDP-naapureita ei löytynyt.",
+  "router.lldp.col.iface": "Liitäntä",
+  "router.lldp.col.system": "Järjestelmä",
+  "router.lldp.col.chassis": "Chassis-tunnus",
+  "router.lldp.col.portid": "Portin tunnus"
 };

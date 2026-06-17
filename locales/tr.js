@@ -1393,5 +1393,19 @@ export default {
   "app.multicastchat.log.left": "{group} grubundan ayrıldı.",
   "app.multicastchat.log.peerJoined": "{nick} gruba katıldı.",
   "app.multicastchat.log.peerLeft": "{nick} gruptan ayrıldı.",
-  "switch.igmp.col.proto": "Protokol"
+  "switch.igmp.col.proto": "Protokol",
+  "switch.tab.lldp": "LLDP",
+  "switch.lldp.enable": "LLDP'yi Etkinleştir",
+  "switch.lldp.empty": "LLDP komşusu keşfedilmedi.",
+  "switch.lldp.col.port": "Port",
+  "switch.lldp.col.system": "Sistem",
+  "switch.lldp.col.chassis": "Şasi Kimliği",
+  "switch.lldp.col.portid": "Port Kimliği",
+  "router.lldp.tab": "LLDP",
+  "router.lldp.enable": "LLDP'yi Etkinleştir",
+  "router.lldp.empty": "LLDP komşusu keşfedilmedi.",
+  "router.lldp.col.iface": "Arayüz",
+  "router.lldp.col.system": "Sistem",
+  "router.lldp.col.chassis": "Şasi Kimliği",
+  "router.lldp.col.portid": "Port Kimliği"
 };

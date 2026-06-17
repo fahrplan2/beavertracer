@@ -1392,5 +1392,19 @@ export default {
   "app.multicastchat.log.left": "已離開群組 {group}。",
   "app.multicastchat.log.peerJoined": "{nick} 加入了群組。",
   "app.multicastchat.log.peerLeft": "{nick} 離開了群組。",
-  "switch.igmp.col.proto": "協議"
+  "switch.igmp.col.proto": "協議",
+  "switch.tab.lldp": "LLDP",
+  "switch.lldp.enable": "啟用 LLDP",
+  "switch.lldp.empty": "未發現 LLDP 鄰居。",
+  "switch.lldp.col.port": "連接埠",
+  "switch.lldp.col.system": "系統",
+  "switch.lldp.col.chassis": "機箱 ID",
+  "switch.lldp.col.portid": "連接埠 ID",
+  "router.lldp.tab": "LLDP",
+  "router.lldp.enable": "啟用 LLDP",
+  "router.lldp.empty": "未發現 LLDP 鄰居。",
+  "router.lldp.col.iface": "介面",
+  "router.lldp.col.system": "系統",
+  "router.lldp.col.chassis": "機箱 ID",
+  "router.lldp.col.portid": "連接埠 ID"
 };

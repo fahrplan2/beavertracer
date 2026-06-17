@@ -1392,5 +1392,19 @@ export default {
   "app.multicastchat.log.left": "Odpojená od skupiny {group}.",
   "app.multicastchat.log.peerJoined": "{nick} sa pripojil/a do skupiny.",
   "app.multicastchat.log.peerLeft": "{nick} sa odpojil/a zo skupiny.",
-  "switch.igmp.col.proto": "Protokol"
+  "switch.igmp.col.proto": "Protokol",
+  "switch.tab.lldp": "LLDP",
+  "switch.lldp.enable": "Povoliť LLDP",
+  "switch.lldp.empty": "Neboli objavení žiadni susedia LLDP.",
+  "switch.lldp.col.port": "Port",
+  "switch.lldp.col.system": "Systém",
+  "switch.lldp.col.chassis": "Chassis ID",
+  "switch.lldp.col.portid": "Port ID",
+  "router.lldp.tab": "LLDP",
+  "router.lldp.enable": "Povoliť LLDP",
+  "router.lldp.empty": "Neboli objavení žiadni susedia LLDP.",
+  "router.lldp.col.iface": "Rozhranie",
+  "router.lldp.col.system": "Systém",
+  "router.lldp.col.chassis": "Chassis ID",
+  "router.lldp.col.portid": "Port ID"
 };

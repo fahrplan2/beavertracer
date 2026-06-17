@@ -1392,5 +1392,19 @@ export default {
   "app.multicastchat.log.left": "Напустили су групу {group}.",
   "app.multicastchat.log.peerJoined": "{nick} се придружио групи.",
   "app.multicastchat.log.peerLeft": "{nick} је напустио групу.",
-  "switch.igmp.col.proto": "Протокол"
+  "switch.igmp.col.proto": "Протокол",
+  "switch.tab.lldp": "LLDP",
+  "switch.lldp.enable": "Омогући LLDP",
+  "switch.lldp.empty": "Нису откривени LLDP суседи.",
+  "switch.lldp.col.port": "Порт",
+  "switch.lldp.col.system": "Систем",
+  "switch.lldp.col.chassis": "Chassis ID",
+  "switch.lldp.col.portid": "Port ID",
+  "router.lldp.tab": "LLDP",
+  "router.lldp.enable": "Омогући LLDP",
+  "router.lldp.empty": "Нису откривени LLDP суседи.",
+  "router.lldp.col.iface": "Интерфејс",
+  "router.lldp.col.system": "Систем",
+  "router.lldp.col.chassis": "Chassis ID",
+  "router.lldp.col.portid": "Port ID"
 };

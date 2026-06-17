@@ -1393,5 +1393,19 @@ export default {
   "app.multicastchat.log.left": "Plecat(ă) din grupul {group}.",
   "app.multicastchat.log.peerJoined": "{nick} s-a alăturat grupului.",
   "app.multicastchat.log.peerLeft": "{nick} a plecat din grup.",
-  "switch.igmp.col.proto": "Protocol"
+  "switch.igmp.col.proto": "Protocol",
+  "switch.tab.lldp": "LLDP",
+  "switch.lldp.enable": "Activați LLDP",
+  "switch.lldp.empty": "Nu s-au descoperit vecini LLDP.",
+  "switch.lldp.col.port": "Port",
+  "switch.lldp.col.system": "Sistem",
+  "switch.lldp.col.chassis": "ID Șasiu",
+  "switch.lldp.col.portid": "ID Port",
+  "router.lldp.tab": "LLDP",
+  "router.lldp.enable": "Activați LLDP",
+  "router.lldp.empty": "Nu s-au descoperit vecini LLDP.",
+  "router.lldp.col.iface": "Interfață",
+  "router.lldp.col.system": "Sistem",
+  "router.lldp.col.chassis": "ID Șasiu",
+  "router.lldp.col.portid": "ID Port"
 };

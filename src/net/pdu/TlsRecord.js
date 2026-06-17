@@ -19,13 +19,9 @@ export const TLS_HT = {
   FINISHED:           0x14,
 };
 
-// Outer record version: TLS 1.2 (0x0303)
+// TLS 1.2 version (0x0303) used in record headers and Hello messages
 const VER_MAJOR = 0x03;
 const VER_MINOR = 0x03;
-
-// ClientHello legacy_version: TLS 1.0 compat (0x0301) for max interop
-const HELLO_VER_MAJOR = 0x03;
-const HELLO_VER_MINOR = 0x03;
 
 // TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
 const CIPHER_HI = 0xC0;
@@ -144,8 +140,8 @@ export class TlsRecord {
     write16BE(extLenBuf, 0, extensions.length);
 
     const body = concat(
-      new Uint8Array([HELLO_VER_MAJOR, HELLO_VER_MINOR]), // client_version
-      clientRandom,                                         // random (32 bytes)
+      new Uint8Array([VER_MAJOR, VER_MINOR]), // client_version
+      clientRandom,                            // random (32 bytes)
       new Uint8Array([0x00]),                               // session_id length = 0
       new Uint8Array([0x00, 0x02, CIPHER_HI, CIPHER_LO]),  // cipher_suites
       new Uint8Array([0x01, 0x00]),                         // compression_methods: [null]
@@ -164,7 +160,7 @@ export class TlsRecord {
   static buildServerHello(serverRandom, sessionId) {
     const sid = sessionId.length > 0 ? sessionId : new Uint8Array(0);
     const body = concat(
-      new Uint8Array([HELLO_VER_MAJOR, HELLO_VER_MINOR]),
+      new Uint8Array([VER_MAJOR, VER_MINOR]),
       serverRandom,
       new Uint8Array([sid.length]),
       sid,

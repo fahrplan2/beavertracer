@@ -7,6 +7,7 @@ import { Observable } from "../lib/Observeable.js";
 import { EthernetFrame } from "../net/pdu/EthernetFrame.js";
 import { STPBPDU, RSTP_FLAG_TC, RSTP_FLAG_PROPOSAL, RSTP_FLAG_LEARNING, RSTP_FLAG_FORWARDING, RSTP_FLAG_AGREEMENT, RSTP_PORT_ROLE } from "../net/pdu/STPBPDU.js";
 import { simTimer, SimTimer } from "../lib/SimTimer.js";
+import { LLDPDaemon } from "./LLDPDaemon.js";
 
 /** IEEE 802.1D / 802.1w port states. */
 export const STP_STATE = Object.freeze({
@@ -75,6 +76,23 @@ export class SwitchBackplane extends Observable {
 
     // -------------------- Feature flags --------------------
     vlanEnabled = false;
+
+    // -------------------- LLDP --------------------
+    lldpEnabled = false;
+
+    /**
+     * Neighbor table built by LLDP.
+     * portIdx → { chassisId, portId, systemName, expiresAtTick }
+     * @type {Map<number, {chassisId:string, portId:string, systemName:string, expiresAtTick:number}>}
+     */
+    lldpNeighbors = new Map();
+
+    /** @type {number|null} */
+    _lldpTimer = null;
+
+    /** System name sent in LLDP frames; set by Switch after construction. */
+    /** @type {string} */
+    _lldpSystemName = "Switch";
 
     // -------------------- IGMP Snooping --------------------
     igmpSnoopingEnabled = false;
@@ -269,6 +287,65 @@ export class SwitchBackplane extends Observable {
     disableIGMPSnooping() {
         this.igmpSnoopingEnabled = false;
         this.mcastTable.clear();
+    }
+
+    enableLLDP() {
+        this.lldpEnabled = true;
+        this._emitLLDP();
+        this._lldpScheduleTx();
+    }
+
+    disableLLDP() {
+        this.lldpEnabled = false;
+        if (this._lldpTimer != null) { simTimer.cancel(this._lldpTimer); this._lldpTimer = null; }
+        this.lldpNeighbors.clear();
+    }
+
+    _lldpScheduleTx() {
+        if (this._lldpTimer != null) simTimer.cancel(this._lldpTimer);
+        this._lldpTimer = simTimer.schedule(() => {
+            this._lldpTimer = null;
+            if (!this.lldpEnabled) return;
+            this._emitLLDP();
+            this._lldpScheduleTx();
+        }, SimTimer.LLDP_TX_MS);
+    }
+
+    _emitLLDP() {
+        const srcMac = bigintToMac(this.bridgeId);
+        for (let i = 0; i < this.ports.length; i++) {
+            if (!this.ports[i].isLinked()) continue;
+            const portLabel = `port ${i + 1}`;
+            const payload = LLDPDaemon.encode(srcMac, portLabel, this._lldpSystemName ?? "Switch");
+            const frame = new EthernetFrame({
+                dstMac: LLDPDaemon.DEST_MAC,
+                srcMac,
+                etherType: LLDPDaemon.ETHERTYPE,
+                payload,
+            });
+            this.ports[i].send(frame);
+        }
+    }
+
+    /**
+     * @param {number} portIdx
+     * @param {EthernetFrame} frame
+     */
+    _handleLLDPFrame(portIdx, frame) {
+        const info = LLDPDaemon.decode(frame.payload);
+        if (!info) return;
+        const ttlTicks = Math.round((info.ttl * 1000) / SimTimer.SIM_MS_PER_TICK);
+        this.lldpNeighbors.set(portIdx, {
+            chassisId:    info.chassisId,
+            portId:       info.portId,
+            systemName:   info.systemName,
+            expiresAtTick: simTimer.currentTick + ttlTicks,
+        });
+    }
+
+    /** @param {EthernetFrame} frame */
+    _isLLDPFrame(frame) {
+        return !frame.useLengthField && frame.etherType === LLDPDaemon.ETHERTYPE;
     }
 
     enableSTPFeature() {
@@ -569,7 +646,8 @@ export class SwitchBackplane extends Observable {
             etherType: frame.etherType,
             payload: frame.payload.slice(),
         });
-        f.vlan = frame.vlan ? { ...frame.vlan } : null;
+        f.vlan  = frame.vlan  ? { ...frame.vlan  } : null;
+        f.svlan = frame.svlan ? { ...frame.svlan } : null;
 
         // Preserve 802.3 vs Ethernet-II format
         f.useLengthField = !!frame.useLengthField;
@@ -588,9 +666,21 @@ export class SwitchBackplane extends Observable {
      * @returns {number|null} VLAN ID, or null to drop
      */
     getIngressVid(port, frame) {
+        // QinQ port: outer S-VID determines the VLAN; C-tag (frame.vlan) is opaque
+        if (port.svid !== null) {
+            return port.svid;
+        }
+
         if (port.vlanMode === "untagged") {
             if (frame.vlan != null) return null; // drop
             return port.pvid;
+        }
+
+        if (port.vlanMode === "hybrid") {
+            if (frame.vlan == null) return port.pvid;
+            const vid = frame.vlan.vid;
+            if (vid === port.pvid || port.allowedVlans.has(vid)) return vid;
+            return null;
         }
 
         // tagged port
@@ -607,7 +697,9 @@ export class SwitchBackplane extends Observable {
      * @returns {boolean}
      */
     portAllowsVid(port, vid) {
+        if (port.svid !== null) return vid === port.svid;
         if (port.vlanMode === "untagged") return vid === port.pvid;
+        if (port.vlanMode === "hybrid") return vid === port.pvid || port.allowedVlans.has(vid);
         return port.allowedVlans.has(vid);
     }
 
@@ -618,10 +710,27 @@ export class SwitchBackplane extends Observable {
      * @param {EthernetFrame} inFrame
      */
     sendOut(vid, outPort, inFrame) {
+        // QinQ egress: pop outer S-tag, deliver with C-tag (or untagged) intact
+        if (outPort.svid !== null) {
+            if (vid !== outPort.svid) return;
+            const f = this.cloneFrame(inFrame);
+            f.svlan = null;
+            outPort.send(f);
+            return;
+        }
+
         if (outPort.vlanMode === "untagged") {
             if (vid !== outPort.pvid) return;
             const f = this.cloneFrame(inFrame);
             f.vlan = null; // strip
+            outPort.send(f);
+            return;
+        }
+
+        if (outPort.vlanMode === "hybrid") {
+            if (vid !== outPort.pvid && !outPort.allowedVlans.has(vid)) return;
+            const f = this.cloneFrame(inFrame);
+            f.vlan = vid === outPort.pvid ? null : { vid };
             outPort.send(f);
             return;
         }
@@ -1642,7 +1751,7 @@ export class SwitchBackplane extends Observable {
             const inPort = this.ports[i];
 
             while (true) {
-                const frame = inPort.getNextIncomingFrame();
+                let frame = inPort.getNextIncomingFrame();
                 if (frame == null) break;
 
                 // ---------------- STP BPDU receive ----------------
@@ -1711,6 +1820,12 @@ export class SwitchBackplane extends Observable {
 
                 // ---------------- Data forwarding ----------------
                 const stpLearningOnly = this.stpEnabled && this.stpPortState[this._lagRepresentative(i)] === STP_STATE.LEARNING;
+
+                // LLDP: intercept before Bridge Group Address drop (01:80:C2:00:00:0E is in that range)
+                if (this.lldpEnabled && this._isLLDPFrame(frame)) {
+                    this._handleLLDPFrame(i, frame);
+                    continue;
+                }
 
                 // Bridge Group Address (01:80:c2:00:00:00–0f): terminate at bridge, never forward
                 if (this._isBridgeGroupAddress(frame)) continue;
@@ -1800,6 +1915,12 @@ export class SwitchBackplane extends Observable {
                 // VLAN ENABLED
                 const vid = this.getIngressVid(inPort, frame);
                 if (vid == null) continue; // dropped by VLAN ingress rules
+
+                // QinQ ingress: push outer S-tag so forwarded frames carry it
+                if (inPort.svid !== null) {
+                    frame = this.cloneFrame(frame);
+                    frame.svlan = { vid: inPort.svid };
+                }
 
                 // Learn source MAC per VLAN (IEEE 802.1D §7.8: never learn multicast source MACs)
                 if (!(frame.srcMac[0] & 0x01)) {

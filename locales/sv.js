@@ -1393,5 +1393,19 @@ export default {
   "app.multicastchat.log.left": "Lämnade grupp {group}.",
   "app.multicastchat.log.peerJoined": "{nick} anslöt till gruppen.",
   "app.multicastchat.log.peerLeft": "{nick} lämnade gruppen.",
-  "switch.igmp.col.proto": "Protokoll"
+  "switch.igmp.col.proto": "Protokoll",
+  "switch.tab.lldp": "LLDP",
+  "switch.lldp.enable": "Aktivera LLDP",
+  "switch.lldp.empty": "Ingen LLDP-grannar upptäcktes.",
+  "switch.lldp.col.port": "Port",
+  "switch.lldp.col.system": "System",
+  "switch.lldp.col.chassis": "Chassis-ID",
+  "switch.lldp.col.portid": "Port-ID",
+  "router.lldp.tab": "LLDP",
+  "router.lldp.enable": "Aktivera LLDP",
+  "router.lldp.empty": "Ingen LLDP-grannar upptäcktes.",
+  "router.lldp.col.iface": "Gränssnitt",
+  "router.lldp.col.system": "System",
+  "router.lldp.col.chassis": "Chassis-ID",
+  "router.lldp.col.portid": "Port-ID"
 };
