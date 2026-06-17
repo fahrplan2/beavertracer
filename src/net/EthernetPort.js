@@ -41,6 +41,9 @@ export class EthernetPort extends Observable {
     /** @type {Set<number>} */
     allowedVlans = new Set([1]);
 
+    /** Outer S-VID for QinQ (IEEE 802.1ad). null = no QinQ. @type {number|null} */
+    svid = null;
+
     /**
      * 
      * @param {string} name 
