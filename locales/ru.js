@@ -1407,5 +1407,18 @@ export default {
   "router.lldp.col.iface": "Интерфейс",
   "router.lldp.col.system": "Система",
   "router.lldp.col.chassis": "Chassis ID",
-  "router.lldp.col.portid": "Port ID"
+  "router.lldp.col.portid": "Port ID",
+  "switch.lag.lacp.col.port": "Порт",
+  "switch.lag.lacp.col.partner": "Система партнера",
+  "switch.lag.lacp.col.state": "Состояние LACP",
+  "switch.lag.lacp.synced": "Синхронизировано",
+  "switch.lag.lacp.partial": "Частично",
+  "switch.lag.lacp.no_partner": "Нет партнера",
+  "link.fault.hint": "Щелкните кабель",
+  "link.fault.title": "Соединение",
+  "link.fault.status.up": "Подключено",
+  "link.fault.status.down": "Неисправность",
+  "link.fault.action.break": "Имитировать сбой",
+  "link.fault.action.restore": "Восстановить соединение",
+  "link.fault.close": "Закрыть"
 };

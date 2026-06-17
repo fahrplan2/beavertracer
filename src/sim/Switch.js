@@ -209,6 +209,13 @@ export class Switch extends SimulatedObject {
         // --- IGMP Snooping ---
         if (n.igmpSnoopingEnabled) obj.backplane.enableIGMPSnooping();
 
+        // --- LACP: start timers for groups that were saved with mode=lacp ---
+        for (const group of obj.backplane.lagGroups) {
+            if (group.mode === "lacp") {
+                for (const m of group.members) obj.backplane._lacpStartPort(m, group.id);
+            }
+        }
+
         // --- LLDP ---
         if (n.lldpEnabled) obj.backplane.enableLLDP();
 
@@ -631,7 +638,7 @@ export class Switch extends SimulatedObject {
                 { value: "lacp",   label: t("switch.lag.mode.lacp")   },
             ], {
                 value: group.mode,
-                onChange: (v) => { group.mode = /** @type {'static'|'lacp'} */ (v); },
+                onChange: (v) => { this.backplane.setLagMode(group.id, /** @type {'static'|'lacp'} */ (v)); },
             }));
 
             const delBtn = UILib.button(t("switch.lag.delete"), () => {
@@ -680,8 +687,63 @@ export class Switch extends SimulatedObject {
             }
 
             card.appendChild(portsRow);
+
+            // LACP partner info
+            if (group.mode === "lacp") {
+                const lacpDiv = UILib.div("switch-lag-lacp-section");
+                lacpDiv.dataset.lacpSection = String(group.id);
+                this._renderLacpPartnerTable(lacpDiv, group);
+                card.appendChild(lacpDiv);
+            }
+
             this._lagSection.appendChild(card);
         }
+    }
+
+    /**
+     * Render (or re-render) LACP partner info for one group into host.
+     * @param {HTMLElement} host
+     * @param {{id:number, members:number[]}} group
+     */
+    _renderLacpPartnerTable(host, group) {
+        host.innerHTML = "";
+        if (!group.members.length) return;
+
+        const now = simTimer.currentTick;
+        const table = document.createElement("table");
+        table.className = "switch-stp-table switch-lag-lacp-table";
+
+        const htr = document.createElement("tr");
+        for (const text of [t("switch.lag.lacp.col.port"), t("switch.lag.lacp.col.partner"), t("switch.lag.lacp.col.state")]) {
+            const th = document.createElement("th"); th.textContent = text; htr.appendChild(th);
+        }
+        table.appendChild(document.createElement("thead")).appendChild(htr);
+        const tbody = document.createElement("tbody");
+
+        for (const m of group.members) {
+            const partner = this.backplane.lacpPartners.get(m);
+            const valid   = partner && partner.expiresAtTick > now;
+            const tr      = document.createElement("tr");
+
+            const portTd = document.createElement("td"); portTd.textContent = `port ${m + 1}`;
+            const sysTd  = document.createElement("td"); sysTd.textContent  = valid ? partner.sysId : "–";
+            const stTd   = document.createElement("td");
+
+            if (valid) {
+                const synced = !!(partner.state & 0x08); // Synchronization bit
+                stTd.textContent = synced ? ("● " + t("switch.lag.lacp.synced")) : ("◐ " + t("switch.lag.lacp.partial"));
+                stTd.className   = synced ? "switch-lag-status-active" : "switch-lag-status-inactive";
+            } else {
+                stTd.textContent = "○ " + t("switch.lag.lacp.no_partner");
+                stTd.className   = "switch-lag-status-inactive";
+                sysTd.style.opacity = "0.4";
+            }
+
+            tr.append(portTd, sysTd, stTd);
+            tbody.appendChild(tr);
+        }
+        table.appendChild(tbody);
+        host.appendChild(table);
     }
 
     /** @param {HTMLElement} host */
@@ -886,6 +948,13 @@ export class Switch extends SimulatedObject {
                 : ("○ " + t("switch.lag.status.inactive"));
             statusEl.className = isLinked ? "switch-lag-status-active" : "switch-lag-status-inactive";
         });
+
+        // Update LACP partner tables
+        this._lagSection.querySelectorAll("[data-lacp-section]").forEach(el => {
+            const gid   = Number(/** @type {HTMLElement} */ (el).dataset.lacpSection);
+            const group = this.backplane.lagGroups.find(g => g.id === gid);
+            if (group) this._renderLacpPartnerTable(/** @type {HTMLElement} */ (el), group);
+        });
     }
 
     _renderSTPSection() {
@@ -1019,8 +1088,15 @@ export class Switch extends SimulatedObject {
         }
         this._lldpSection.classList.remove("hidden");
 
-        const ports = this.backplane?.ports ?? [];
-        const now = simTimer.currentTick;
+        const ports     = this.backplane?.ports ?? [];
+        const lagGroups = this.backplane?.lagGroups ?? [];
+        const now       = simTimer.currentTick;
+
+        // Non-representative LAG members are folded into their group row
+        const lagNonRep = new Set();
+        for (const g of lagGroups) {
+            for (let j = 1; j < g.members.length; j++) lagNonRep.add(g.members[j]);
+        }
 
         const table = document.createElement("table");
         table.className = "switch-stp-table";
@@ -1037,11 +1113,24 @@ export class Switch extends SimulatedObject {
 
         const tbody = document.createElement("tbody");
         for (let i = 0; i < ports.length; i++) {
-            const neighbor = this.backplane.lldpNeighbors.get(i);
-            const valid = neighbor && neighbor.expiresAtTick > now;
-            const tr = document.createElement("tr");
+            if (lagNonRep.has(i)) continue;
 
-            const portTd = document.createElement("td"); portTd.textContent = `port ${i + 1}`;
+            const gid   = this.backplane.portLagId[i] ?? -1;
+            const group = gid >= 0 ? lagGroups.find(g => g.id === gid) : null;
+
+            const neighbor = this.backplane.lldpNeighbors.get(i);
+            const valid    = !!neighbor && neighbor.expiresAtTick > now;
+            const tr       = document.createElement("tr");
+
+            let portLabel;
+            if (group && group.members.length > 1) {
+                const labels = group.members.map(m => `port ${m + 1}`).join(", ");
+                portLabel = `${group.name} (${labels})`;
+            } else {
+                portLabel = `port ${i + 1}`;
+            }
+
+            const portTd = document.createElement("td"); portTd.textContent = portLabel;
             const sysTd  = document.createElement("td"); sysTd.textContent  = valid ? neighbor.systemName : "–";
             const chTd   = document.createElement("td"); chTd.textContent   = valid ? neighbor.chassisId  : "–";
             const pidTd  = document.createElement("td"); pidTd.textContent  = valid ? neighbor.portId     : "–";

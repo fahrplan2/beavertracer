@@ -1406,5 +1406,18 @@ export default {
   "router.lldp.col.iface": "Rozhranie",
   "router.lldp.col.system": "Systém",
   "router.lldp.col.chassis": "Chassis ID",
-  "router.lldp.col.portid": "Port ID"
+  "router.lldp.col.portid": "Port ID",
+  "switch.lag.lacp.col.port": "Port",
+  "switch.lag.lacp.col.partner": "Partnerský systém",
+  "switch.lag.lacp.col.state": "Stav LACP",
+  "switch.lag.lacp.synced": "Synchronizovaný",
+  "switch.lag.lacp.partial": "Čiastočný",
+  "switch.lag.lacp.no_partner": "Bez partnera",
+  "link.fault.hint": "Kliknite na kábel",
+  "link.fault.title": "Pripojenie",
+  "link.fault.status.up": "Pripojené",
+  "link.fault.status.down": "Porucha",
+  "link.fault.action.break": "Simulovať poruchu",
+  "link.fault.action.restore": "Obnoviť pripojenie",
+  "link.fault.close": "Zatvoriť"
 };

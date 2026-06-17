@@ -1407,5 +1407,18 @@ export default {
   "router.lldp.col.iface": "Gränssnitt",
   "router.lldp.col.system": "System",
   "router.lldp.col.chassis": "Chassis-ID",
-  "router.lldp.col.portid": "Port-ID"
+  "router.lldp.col.portid": "Port-ID",
+  "switch.lag.lacp.col.port": "Port",
+  "switch.lag.lacp.col.partner": "Partnersystem",
+  "switch.lag.lacp.col.state": "LACP-tillstånd",
+  "switch.lag.lacp.synced": "Synkroniserad",
+  "switch.lag.lacp.partial": "Partiell",
+  "switch.lag.lacp.no_partner": "Ingen partner",
+  "link.fault.hint": "Klicka på kabel",
+  "link.fault.title": "Anslutning",
+  "link.fault.status.up": "Ansluten",
+  "link.fault.status.down": "Fel",
+  "link.fault.action.break": "Simulera fel",
+  "link.fault.action.restore": "Återställ anslutning",
+  "link.fault.close": "Stäng"
 };

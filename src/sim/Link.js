@@ -3,6 +3,7 @@
 import { EthernetLink } from "../net/EthernetLink.js";
 import { SimControl } from "../SimControl.js";
 import { SimulatedObject } from "./SimulatedObject.js";
+import { t } from "../i18n/index.js";
 
 
 /** @typedef {import("../net/EthernetPort.js").EthernetPort} EthernetPort */
@@ -45,6 +46,12 @@ export class Link extends SimulatedObject {
 
   /** Cached endpoint canvas-coordinates; updated by redrawLinks(), read by renderPacket(). */
   _cx1 = 0; _cy1 = 0; _cx2 = 0; _cy2 = 0;
+
+  /** True when this cable is simulated as broken. */
+  _fault = false;
+
+  /** @type {HTMLDivElement|null} */
+  _faultPanel = null;
 
   /** @type {HTMLDivElement|null} */
   _labelA = null;
@@ -111,8 +118,22 @@ export class Link extends SimulatedObject {
     const hit = document.createElement("div");
     hit.className = "sim-link-hit";
 
+
     const line = document.createElement("div");
     line.className = "sim-link-line";
+
+    hit.addEventListener("mouseenter", () => {
+      this._labelA?.classList.add("is-visible");
+      this._labelB?.classList.add("is-visible");
+    });
+    hit.addEventListener("mouseleave", () => {
+      this._labelA?.classList.remove("is-visible");
+      this._labelB?.classList.remove("is-visible");
+    });
+    hit.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      this._toggleFaultPanel(ev.clientX, ev.clientY);
+    });
 
     // hit catches clicks, line is only visual
     this.root.appendChild(hit);
@@ -154,7 +175,122 @@ export class Link extends SimulatedObject {
     else if (node === this.B) this._labelB?.classList.toggle("is-visible", hovered);
   }
 
+  /**
+   * Set or clear the cable fault state.
+   * @param {boolean} fault
+   */
+  setFault(fault) {
+    this._fault = fault;
+    this.link.broken = fault;
+    this.root?.classList.toggle("is-faulted", fault);
+    // Flush any in-flight packets so they don't visually cross a broken link
+    if (fault) {
+      for (const p of this._packets) p.el.remove();
+      this._packets = [];
+    }
+  }
+
+  /** @param {number} clientX @param {number} clientY */
+  _toggleFaultPanel(clientX, clientY) {
+    if (this._faultPanel) {
+      this._closeFaultPanel();
+      return;
+    }
+
+    const labelA = this._portLabel(this.A, this.portAKey);
+    const labelB = this._portLabel(this.B, this.portBKey);
+
+    // ── header ───────────────────────────────────────────────────
+    const titleEl = document.createElement("div");
+    titleEl.className = "sim-panel-title";
+    titleEl.textContent = t("link.fault.title");
+
+    const titleGroup = document.createElement("div");
+    titleGroup.className = "sim-panel-title-group";
+    titleGroup.appendChild(titleEl);
+
+    const icon = document.createElement("i");
+    icon.className = "fas fa-ethernet sim-panel-icon";
+
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "sim-panel-close";
+    closeBtn.type = "button";
+    closeBtn.textContent = "×";
+    closeBtn.title = t("link.fault.close");
+    closeBtn.addEventListener("click", () => this._closeFaultPanel());
+
+    const header = document.createElement("div");
+    header.className = "sim-panel-header";
+    header.style.cursor = "default";
+    header.append(icon, titleGroup, closeBtn);
+
+    // ── body ─────────────────────────────────────────────────────
+    const endpoints = document.createElement("div");
+    endpoints.className = "sim-link-fault-endpoints";
+
+    const ep = (node = /** @type {any} */ ({}), label = "") => {
+      const s = document.createElement("span");
+      s.textContent = `${node.name ?? node.id} › ${label}`;
+      return s;
+    };
+    endpoints.append(ep(this.A, labelA), ep(this.B, labelB));
+
+    const statusRow = document.createElement("div");
+
+    const actionBtn = document.createElement("button");
+    actionBtn.className = "btn sim-link-fault-action";
+    actionBtn.type = "button";
+
+    const refresh = () => {
+      statusRow.textContent = this._fault
+        ? ("✕ " + t("link.fault.status.down"))
+        : ("● " + t("link.fault.status.up"));
+      statusRow.className = "sim-link-fault-status " + (this._fault ? "is-down" : "is-up");
+      actionBtn.textContent = this._fault
+        ? t("link.fault.action.restore")
+        : t("link.fault.action.break");
+    };
+    refresh();
+
+    actionBtn.addEventListener("click", () => { this.setFault(!this._fault); refresh(); });
+
+    const body = document.createElement("div");
+    body.className = "sim-link-fault-body";
+    body.append(endpoints, statusRow, actionBtn);
+
+    // ── assemble panel ───────────────────────────────────────────
+    const panel = document.createElement("div");
+    panel.className = "sim-panel sim-link-fault-panel";
+    panel.append(header, body);
+    document.body.appendChild(panel);
+    this._faultPanel = panel;
+
+    // Position near click, keep within viewport
+    requestAnimationFrame(() => {
+      const pw = panel.offsetWidth  || 270;
+      const ph = panel.offsetHeight || 160;
+      const vw = window.innerWidth, vh = window.innerHeight;
+      panel.style.left = `${Math.min(clientX + 8, vw - pw - 8)}px`;
+      panel.style.top  = `${Math.min(clientY + 8, vh - ph - 8)}px`;
+    });
+
+    // Dismiss on outside click
+    const onOutside = (/** @type {MouseEvent} */ e) => {
+      if (!panel.contains(/** @type {Node} */ (e.target))) {
+        this._closeFaultPanel();
+        document.removeEventListener("mousedown", onOutside, true);
+      }
+    };
+    setTimeout(() => document.addEventListener("mousedown", onOutside, true), 0);
+  }
+
+  _closeFaultPanel() {
+    this._faultPanel?.remove();
+    this._faultPanel = null;
+  }
+
   destroy() {
+    this._closeFaultPanel();
     for (const p of this._packets) p.el.remove();
     this._packets = [];
     this._labelA?.remove();
@@ -332,6 +468,7 @@ export class Link extends SimulatedObject {
       b: this.B.id,
       portA: this.portAKey,
       portB: this.portBKey,
+      ...(this._fault ? { fault: true } : {}),
     };
   }
 
@@ -363,6 +500,7 @@ export class Link extends SimulatedObject {
 
     const obj = new Link(A, portA, portAKey, B, portB, portBKey, simcontrol);
     obj.id = Number(n.id);
+    if (n.fault) obj.setFault(true);
     return obj;
   }
 }

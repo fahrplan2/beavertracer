@@ -1407,5 +1407,18 @@ export default {
   "router.lldp.col.iface": "Interface",
   "router.lldp.col.system": "System",
   "router.lldp.col.chassis": "Chassis-id",
-  "router.lldp.col.portid": "Port-id"
+  "router.lldp.col.portid": "Port-id",
+  "switch.lag.lacp.col.port": "Port",
+  "switch.lag.lacp.col.partner": "Partnersystem",
+  "switch.lag.lacp.col.state": "LACP-tilstand",
+  "switch.lag.lacp.synced": "Synkroniseret",
+  "switch.lag.lacp.partial": "Delvis",
+  "switch.lag.lacp.no_partner": "Ingen partner",
+  "link.fault.hint": "Klik på kabel",
+  "link.fault.title": "Forbindelse",
+  "link.fault.status.up": "Forbundet",
+  "link.fault.status.down": "Fejl",
+  "link.fault.action.break": "Simuler fejl",
+  "link.fault.action.restore": "Gendan forbindelse",
+  "link.fault.close": "Luk"
 };

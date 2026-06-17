@@ -115,6 +115,11 @@ export class SimTimer {
     /** LLDP neighbor TTL — 3× TX interval; entry removed if no refresh. */
     static LLDP_TTL_MS              =  4_500;  // 900 ticks  → 90 s @ 1×
 
+    /** LACP TX interval (short timeout = 1 s real / ~10 s @ 1×). */
+    static LACP_TX_MS               =    500;  // 100 ticks  → 10 s @ 1×
+    /** LACP partner TTL — 3× TX (short timeout); port considered lost if silent. */
+    static LACP_PARTNER_TTL_MS      =  1_500;  // 300 ticks  → 30 s @ 1×
+
     // -------------------------------------------------------------------------
     // Internal state
     // -------------------------------------------------------------------------

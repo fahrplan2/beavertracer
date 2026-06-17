@@ -106,7 +106,7 @@ export class NetworkInterface extends Observable {
 
     /** @returns {boolean} */
     get up() {
-        return this.port.linkref !== null;
+        return this.port.isLinked();
     }
 
     /** @returns {number} */

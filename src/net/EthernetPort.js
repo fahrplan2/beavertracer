@@ -154,6 +154,6 @@ export class EthernetPort extends Observable {
 
     /** @returns {boolean} */
     isLinked() {
-        return this.linkref != null;
+        return this.linkref != null && !this.linkref.broken;
     }
 }

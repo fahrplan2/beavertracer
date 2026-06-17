@@ -1406,5 +1406,18 @@ export default {
   "router.lldp.col.iface": "Interfész",
   "router.lldp.col.system": "Rendszer",
   "router.lldp.col.chassis": "Chassis ID",
-  "router.lldp.col.portid": "Port ID"
+  "router.lldp.col.portid": "Port ID",
+  "switch.lag.lacp.col.port": "Port",
+  "switch.lag.lacp.col.partner": "Partner System",
+  "switch.lag.lacp.col.state": "LACP State",
+  "switch.lag.lacp.synced": "Szinkronizált",
+  "switch.lag.lacp.partial": "Részleges",
+  "switch.lag.lacp.no_partner": "Nincs Partner",
+  "link.fault.hint": "Kattintson a kábelen",
+  "link.fault.title": "Kapcsolat",
+  "link.fault.status.up": "Csatlakoztatva",
+  "link.fault.status.down": "Hiba",
+  "link.fault.action.break": "Hiba szimulálása",
+  "link.fault.action.restore": "Kapcsolat visszaállítása",
+  "link.fault.close": "Bezárás"
 };

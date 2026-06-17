@@ -1406,5 +1406,18 @@ export default {
   "router.lldp.col.iface": "Interfície",
   "router.lldp.col.system": "Sistema",
   "router.lldp.col.chassis": "ID de xassís",
-  "router.lldp.col.portid": "ID de port"
+  "router.lldp.col.portid": "ID de port",
+  "switch.lag.lacp.col.port": "Port",
+  "switch.lag.lacp.col.partner": "Sistema Associat",
+  "switch.lag.lacp.col.state": "Estat LACP",
+  "switch.lag.lacp.synced": "Sincronitzat",
+  "switch.lag.lacp.partial": "Parcial",
+  "switch.lag.lacp.no_partner": "Sense Associat",
+  "link.fault.hint": "Feu clic al cable",
+  "link.fault.title": "Connexió",
+  "link.fault.status.up": "Connectat",
+  "link.fault.status.down": "Falla",
+  "link.fault.action.break": "Simular fallida",
+  "link.fault.action.restore": "Restaurar connexió",
+  "link.fault.close": "Tancar"
 };

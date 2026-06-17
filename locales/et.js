@@ -1407,5 +1407,18 @@ export default {
   "router.lldp.col.iface": "Liides",
   "router.lldp.col.system": "Süsteem",
   "router.lldp.col.chassis": "Chassis ID",
-  "router.lldp.col.portid": "Port ID"
+  "router.lldp.col.portid": "Port ID",
+  "switch.lag.lacp.col.port": "Port",
+  "switch.lag.lacp.col.partner": "Partneri süsteem",
+  "switch.lag.lacp.col.state": "LACP olek",
+  "switch.lag.lacp.synced": "Sünkroniseeritud",
+  "switch.lag.lacp.partial": "Osaline",
+  "switch.lag.lacp.no_partner": "Partnerit pole",
+  "link.fault.hint": "Klõpsake kaablil",
+  "link.fault.title": "Ühendus",
+  "link.fault.status.up": "Ühendatud",
+  "link.fault.status.down": "Viga",
+  "link.fault.action.break": "Simuleeri rike",
+  "link.fault.action.restore": "Taasta ühendus",
+  "link.fault.close": "Sulge"
 };

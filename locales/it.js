@@ -1412,5 +1412,18 @@ export default {
   "router.lldp.col.iface": "Interfaccia",
   "router.lldp.col.system": "Sistema",
   "router.lldp.col.chassis": "ID Chassis",
-  "router.lldp.col.portid": "ID Porta"
+  "router.lldp.col.portid": "ID Porta",
+  "switch.lag.lacp.col.port": "Porta",
+  "switch.lag.lacp.col.partner": "Sistema Partner",
+  "switch.lag.lacp.col.state": "Stato LACP",
+  "switch.lag.lacp.synced": "Sincronizzato",
+  "switch.lag.lacp.partial": "Parziale",
+  "switch.lag.lacp.no_partner": "Nessun Partner",
+  "link.fault.hint": "Clicca il cavo",
+  "link.fault.title": "Connessione",
+  "link.fault.status.up": "Connesso",
+  "link.fault.status.down": "Errore",
+  "link.fault.action.break": "Simula guasto",
+  "link.fault.action.restore": "Ripristina connessione",
+  "link.fault.close": "Chiudi"
 };

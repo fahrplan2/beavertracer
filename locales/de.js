@@ -962,6 +962,12 @@ export default {
   "switch.lag.status.active": "aktiv",
   "switch.lag.status.inactive": "inaktiv",
   "switch.lag.empty": "Keine LAG-Gruppen konfiguriert.",
+  "switch.lag.lacp.col.port": "Port",
+  "switch.lag.lacp.col.partner": "Partner-System",
+  "switch.lag.lacp.col.state": "LACP-Status",
+  "switch.lag.lacp.synced": "Synchronisiert",
+  "switch.lag.lacp.partial": "Teilweise",
+  "switch.lag.lacp.no_partner": "Kein Partner",
   "switch.tab.igmp": "Multicast",
   "switch.igmp.enable": "Multicast Snooping aktivieren (IGMP + MLD)",
   "switch.igmp.empty": "Keine Multicast-Gruppen bekannt.",
@@ -1477,5 +1483,13 @@ export default {
   "app.terminal.commands.help.tldr.ex.basic":      "Befehlsübersicht öffnen",
 
   "app.terminal.commands.man.tldr.desc":           "Kurzhilfe zu einem Befehl anzeigen",
-  "app.terminal.commands.man.tldr.ex.basic":       "Hilfe zu einem Befehl aufrufen"
+  "app.terminal.commands.man.tldr.ex.basic":       "Hilfe zu einem Befehl aufrufen",
+
+  "link.fault.hint":            "Kabel anklicken",
+  "link.fault.title":           "Verbindung",
+  "link.fault.status.up":       "Verbunden",
+  "link.fault.status.down":     "Defekt",
+  "link.fault.action.break":    "Ausfall simulieren",
+  "link.fault.action.restore":  "Verbindung wiederherstellen",
+  "link.fault.close":           "Schließen"
 };

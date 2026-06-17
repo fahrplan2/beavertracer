@@ -1407,5 +1407,18 @@ export default {
   "router.lldp.col.iface": "Interfeiss",
   "router.lldp.col.system": "Sistēma",
   "router.lldp.col.chassis": "Šasijas ID",
-  "router.lldp.col.portid": "Porta ID"
+  "router.lldp.col.portid": "Porta ID",
+  "switch.lag.lacp.col.port": "Ports",
+  "switch.lag.lacp.col.partner": "Partnerssistēma",
+  "switch.lag.lacp.col.state": "LACP stāvoklis",
+  "switch.lag.lacp.synced": "Sinhronizēts",
+  "switch.lag.lacp.partial": "Daļējs",
+  "switch.lag.lacp.no_partner": "Nav partnera",
+  "link.fault.hint": "Noklikšķiniet uz kabeli",
+  "link.fault.title": "Savienojums",
+  "link.fault.status.up": "Savienots",
+  "link.fault.status.down": "Kļūme",
+  "link.fault.action.break": "Simulēt kļūmi",
+  "link.fault.action.restore": "Atjaunot savienojumu",
+  "link.fault.close": "Aizvērt"
 };

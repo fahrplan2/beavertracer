@@ -1407,5 +1407,18 @@ export default {
   "router.lldp.col.iface": "Διεπαφή",
   "router.lldp.col.system": "Σύστημα",
   "router.lldp.col.chassis": "Chassis ID",
-  "router.lldp.col.portid": "Port ID"
+  "router.lldp.col.portid": "Port ID",
+  "switch.lag.lacp.col.port": "Θύρα",
+  "switch.lag.lacp.col.partner": "Σύστημα Εταίρου",
+  "switch.lag.lacp.col.state": "Κατάσταση LACP",
+  "switch.lag.lacp.synced": "Συγχρονισμένο",
+  "switch.lag.lacp.partial": "Μερικό",
+  "switch.lag.lacp.no_partner": "Χωρίς Εταίρο",
+  "link.fault.hint": "Κάντε κλικ στο καλώδιο",
+  "link.fault.title": "Σύνδεση",
+  "link.fault.status.up": "Συνδεδεμένο",
+  "link.fault.status.down": "Βλάβη",
+  "link.fault.action.break": "Προσομοίωση βλάβης",
+  "link.fault.action.restore": "Επαναφορά σύνδεσης",
+  "link.fault.close": "Κλείσιμο"
 };

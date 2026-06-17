@@ -127,6 +127,17 @@ export class SwitchBackplane extends Observable {
 
     _nextLagId = 0;
 
+    // -------------------- LACP --------------------
+    /**
+     * LACP partner info per physical port.
+     * portIdx → { sysPriority, sysId, key, portPriority, port, state, expiresAtTick }
+     * @type {Map<number, {sysPriority:number, sysId:string, key:number, portPriority:number, port:number, state:number, expiresAtTick:number}>}
+     */
+    lacpPartners = new Map();
+
+    /** Per-port LACP TX timer IDs. @type {Map<number, number>} */
+    _lacpTimers = new Map();
+
     /**
      * VLAN disabled:
      *   Map<bigint, number>
@@ -514,9 +525,28 @@ export class SwitchBackplane extends Observable {
     deleteLagGroup(id) {
         const idx = this.lagGroups.findIndex(g => g.id === id);
         if (idx < 0) return;
-        for (const m of this.lagGroups[idx].members) this.portLagId[m] = -1;
+        for (const m of this.lagGroups[idx].members) {
+            this._lacpStopPort(m);
+            this.portLagId[m] = -1;
+        }
         this.lagGroups.splice(idx, 1);
         this.sat.clear();
+    }
+
+    /**
+     * Change the operating mode of a LAG group, starting or stopping LACP as needed.
+     * @param {number} groupId
+     * @param {'static'|'lacp'} mode
+     */
+    setLagMode(groupId, mode) {
+        const group = this.lagGroups.find(g => g.id === groupId);
+        if (!group || group.mode === mode) return;
+        group.mode = mode;
+        if (mode === "lacp") {
+            for (const m of group.members) this._lacpStartPort(m, groupId);
+        } else {
+            for (const m of group.members) this._lacpStopPort(m);
+        }
     }
 
     /** @param {number} portIdx @param {number} groupId */
@@ -524,16 +554,36 @@ export class SwitchBackplane extends Observable {
         this.removePortFromLag(portIdx);
         const group = this.lagGroups.find(g => g.id === groupId);
         if (!group) return;
+
+        // Sync VLAN config from the current representative to the joining port
+        if (group.members.length > 0) {
+            const rep = this.ports[group.members[0]];
+            const dst = this.ports[portIdx];
+            if (rep && dst) {
+                if (rep.vlanMode === "untagged") {
+                    dst.setUntagged(rep.pvid);
+                } else if (rep.vlanMode === "hybrid") {
+                    dst.setHybrid(rep.pvid, [...rep.allowedVlans]);
+                } else {
+                    dst.setTagged([...rep.allowedVlans], rep.pvid);
+                }
+                dst.svid = rep.svid;
+            }
+        }
+
         group.members.push(portIdx);
         group.members.sort((a, b) => a - b);
         this.portLagId[portIdx] = groupId;
         this.sat.clear();
+
+        if (group.mode === "lacp") this._lacpStartPort(portIdx, groupId);
     }
 
     /** @param {number} portIdx */
     removePortFromLag(portIdx) {
         const gid = this.portLagId[portIdx];
         if (gid < 0) return;
+        this._lacpStopPort(portIdx);
         const g = this.lagGroups.find(g => g.id === gid);
         if (g) g.members = g.members.filter(m => m !== portIdx);
         this.portLagId[portIdx] = -1;
@@ -583,6 +633,142 @@ export class SwitchBackplane extends Observable {
         const gid = this.portLagId[portIdx] ?? -1;
         if (gid < 0) return portIdx;
         return this._lagEgressMember(gid, frame) ?? portIdx;
+    }
+
+    // ---------------------------------------------------------------------------
+    // LACP (IEEE 802.3ad) stub
+    // ---------------------------------------------------------------------------
+
+    static LACP_DEST_MAC = new Uint8Array([0x01, 0x80, 0xC2, 0x00, 0x00, 0x02]);
+    static LACP_ETHERTYPE = 0x8809;
+    static LACP_SUBTYPE   = 0x01;
+
+    /** @param {number} portIdx @param {number} groupId */
+    _lacpStartPort(portIdx, groupId) {
+        this._lacpStopPort(portIdx);
+        const emit = () => {
+            if ((this.portLagId[portIdx] ?? -1) !== groupId) return;
+            this._lacpEmitOnPort(portIdx, groupId);
+            const id = simTimer.schedule(emit, SimTimer.LACP_TX_MS);
+            this._lacpTimers.set(portIdx, id);
+        };
+        const id = simTimer.schedule(emit, SimTimer.LACP_TX_MS);
+        this._lacpTimers.set(portIdx, id);
+        // Send immediately so partner learns us right away
+        this._lacpEmitOnPort(portIdx, groupId);
+    }
+
+    /** @param {number} portIdx */
+    _lacpStopPort(portIdx) {
+        const tid = this._lacpTimers.get(portIdx);
+        if (tid != null) simTimer.cancel(tid);
+        this._lacpTimers.delete(portIdx);
+        this.lacpPartners.delete(portIdx);
+    }
+
+    /**
+     * Encode and send one LACPDU out of portIdx.
+     * @param {number} portIdx
+     * @param {number} groupId
+     */
+    _lacpEmitOnPort(portIdx, groupId) {
+        if (!this.ports[portIdx]?.isLinked()) return;
+        const srcMac = bigintToMac(this.bridgeId);
+        const partner = this.lacpPartners.get(portIdx);
+        const payload = this._encodeLACPDU(srcMac, groupId, portIdx, partner ?? null);
+        const frame = new EthernetFrame({
+            dstMac: SwitchBackplane.LACP_DEST_MAC,
+            srcMac,
+            etherType: SwitchBackplane.LACP_ETHERTYPE,
+            payload,
+        });
+        this.ports[portIdx].send(frame);
+    }
+
+    /**
+     * Build a 110-byte LACPDU payload.
+     * @param {Uint8Array} actorMac
+     * @param {number} groupId
+     * @param {number} portIdx
+     * @param {{sysPriority:number, sysId:string, key:number, portPriority:number, port:number, state:number}|null} partner
+     * @returns {Uint8Array}
+     */
+    _encodeLACPDU(actorMac, groupId, portIdx, partner) {
+        const buf = new Uint8Array(110);
+        buf[0] = SwitchBackplane.LACP_SUBTYPE; // Subtype = LACP
+        buf[1] = 0x01;                          // Version
+
+        // Actor TLV (type=1, len=20)
+        buf[2] = 0x01; buf[3] = 0x14;
+        buf[4] = 0x80; buf[5] = 0x00;          // system priority 32768
+        buf.set(actorMac, 6);                   // system ID
+        buf[12] = (groupId >> 8) & 0xFF; buf[13] = groupId & 0xFF; // key
+        buf[14] = 0x80; buf[15] = 0x00;        // port priority 32768
+        buf[16] = ((portIdx + 1) >> 8) & 0xFF; buf[17] = (portIdx + 1) & 0xFF; // port
+        buf[18] = 0x3D; // state: Activity|Timeout|Aggregation|Sync|Collecting|Distributing (no Defaulted/Expired)
+        // [19-21] reserved
+
+        // Partner TLV (type=2, len=20)
+        buf[22] = 0x02; buf[23] = 0x14;
+        if (partner) {
+            buf[24] = (partner.sysPriority >> 8) & 0xFF; buf[25] = partner.sysPriority & 0xFF;
+            // decode partner sysId string "aa:bb:cc:dd:ee:ff" → bytes
+            const parts = partner.sysId.split(":").map(h => parseInt(h, 16));
+            buf.set(parts.slice(0, 6), 26);
+            buf[32] = (partner.key >> 8) & 0xFF; buf[33] = partner.key & 0xFF;
+            buf[34] = (partner.portPriority >> 8) & 0xFF; buf[35] = partner.portPriority & 0xFF;
+            buf[36] = (partner.port >> 8) & 0xFF; buf[37] = partner.port & 0xFF;
+            buf[38] = partner.state;
+        }
+        // [39-41] reserved; partner zeros if unknown
+
+        // Collector TLV (type=3, len=16)
+        buf[44] = 0x03; buf[45] = 0x10;
+        // max delay = 0, rest reserved — all zero
+
+        // Terminator TLV (type=0, len=0)
+        buf[62] = 0x00; buf[63] = 0x00;
+
+        // [64-109] padding — already zero
+        return buf;
+    }
+
+    /**
+     * Parse an incoming LACPDU payload.
+     * @param {Uint8Array} payload
+     * @returns {{sysPriority:number, sysId:string, key:number, portPriority:number, port:number, state:number}|null}
+     */
+    _decodeLACPDU(payload) {
+        if (!payload || payload.length < 44) return null;
+        if (payload[0] !== SwitchBackplane.LACP_SUBTYPE) return null;
+        // Actor TLV starts at offset 2
+        if (payload[2] !== 0x01) return null;
+        const sysPriority   = (payload[4] << 8) | payload[5];
+        const sysIdBytes    = payload.slice(6, 12);
+        const sysId         = Array.from(sysIdBytes).map(b => b.toString(16).padStart(2, "0")).join(":");
+        const key           = (payload[12] << 8) | payload[13];
+        const portPriority  = (payload[14] << 8) | payload[15];
+        const port          = (payload[16] << 8) | payload[17];
+        const state         = payload[18];
+        return { sysPriority, sysId, key, portPriority, port, state };
+    }
+
+    /**
+     * @param {number} portIdx
+     * @param {EthernetFrame} frame
+     */
+    _handleLACPFrame(portIdx, frame) {
+        const info = this._decodeLACPDU(frame.payload);
+        if (!info) return;
+        const ttlTicks = Math.round(SimTimer.LACP_PARTNER_TTL_MS / SimTimer.SIM_MS_PER_TICK);
+        this.lacpPartners.set(portIdx, { ...info, expiresAtTick: simTimer.currentTick + ttlTicks });
+    }
+
+    /** @param {EthernetFrame} frame */
+    _isLACPFrame(frame) {
+        return !frame.useLengthField
+            && frame.etherType === SwitchBackplane.LACP_ETHERTYPE
+            && frame.payload?.[0] === SwitchBackplane.LACP_SUBTYPE;
     }
 
     // ---------------------------------------------------------------------------
@@ -1824,6 +2010,12 @@ export class SwitchBackplane extends Observable {
                 // LLDP: intercept before Bridge Group Address drop (01:80:C2:00:00:0E is in that range)
                 if (this.lldpEnabled && this._isLLDPFrame(frame)) {
                     this._handleLLDPFrame(i, frame);
+                    continue;
+                }
+
+                // LACP: Slow Protocols MAC 01:80:C2:00:00:02 is also in Bridge Group range
+                if (this._isLACPFrame(frame)) {
+                    this._handleLACPFrame(i, frame);
                     continue;
                 }
 
