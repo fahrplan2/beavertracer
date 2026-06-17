@@ -1407,5 +1407,11 @@ export default {
   "router.lldp.col.iface": "Arayüz",
   "router.lldp.col.system": "Sistem",
   "router.lldp.col.chassis": "Şasi Kimliği",
-  "router.lldp.col.portid": "Port Kimliği"
+  "router.lldp.col.portid": "Port Kimliği",
+  "switch.lag.lacp.col.port": "Port",
+  "switch.lag.lacp.col.partner": "Partner Sistemi",
+  "switch.lag.lacp.col.state": "LACP Durumu",
+  "switch.lag.lacp.synced": "Senkronize",
+  "switch.lag.lacp.partial": "Kısmi",
+  "switch.lag.lacp.no_partner": "Partner Yok"
 };

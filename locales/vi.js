@@ -1407,5 +1407,11 @@ export default {
   "router.lldp.col.iface": "Giao diện",
   "router.lldp.col.system": "Hệ thống",
   "router.lldp.col.chassis": "ID Khung",
-  "router.lldp.col.portid": "ID Cổng"
+  "router.lldp.col.portid": "ID Cổng",
+  "switch.lag.lacp.col.port": "Cổng",
+  "switch.lag.lacp.col.partner": "Hệ thống Đối tác",
+  "switch.lag.lacp.col.state": "Trạng thái LACP",
+  "switch.lag.lacp.synced": "Đã đồng bộ hóa",
+  "switch.lag.lacp.partial": "Một phần",
+  "switch.lag.lacp.no_partner": "Không có đối tác"
 };

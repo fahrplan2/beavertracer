@@ -1406,5 +1406,11 @@ export default {
   "router.lldp.col.iface": "Interfície",
   "router.lldp.col.system": "Sistema",
   "router.lldp.col.chassis": "ID de xassís",
-  "router.lldp.col.portid": "ID de port"
+  "router.lldp.col.portid": "ID de port",
+  "switch.lag.lacp.col.port": "Port",
+  "switch.lag.lacp.col.partner": "Sistema Associat",
+  "switch.lag.lacp.col.state": "Estat LACP",
+  "switch.lag.lacp.synced": "Sincronitzat",
+  "switch.lag.lacp.partial": "Parcial",
+  "switch.lag.lacp.no_partner": "Sense Associat"
 };

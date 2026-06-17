@@ -1406,5 +1406,11 @@ export default {
   "router.lldp.col.iface": "Ndërfaqja",
   "router.lldp.col.system": "Sistemi",
   "router.lldp.col.chassis": "ID Chassis",
-  "router.lldp.col.portid": "ID Porte"
+  "router.lldp.col.portid": "ID Porte",
+  "switch.lag.lacp.col.port": "Porta",
+  "switch.lag.lacp.col.partner": "Sistemi i Partnerit",
+  "switch.lag.lacp.col.state": "Gjendja LACP",
+  "switch.lag.lacp.synced": "Sinkronizuar",
+  "switch.lag.lacp.partial": "Pjesërisht",
+  "switch.lag.lacp.no_partner": "Nuk ka Partner"
 };

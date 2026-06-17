@@ -1407,5 +1407,11 @@ export default {
   "router.lldp.col.iface": "رابط",
   "router.lldp.col.system": "سیستم",
   "router.lldp.col.chassis": "شناسه شاسی",
-  "router.lldp.col.portid": "شناسه پورت"
+  "router.lldp.col.portid": "شناسه پورت",
+  "switch.lag.lacp.col.port": "درگاه",
+  "switch.lag.lacp.col.partner": "سیستم همتایی",
+  "switch.lag.lacp.col.state": "وضعیت LACP",
+  "switch.lag.lacp.synced": "همزمان‌شده",
+  "switch.lag.lacp.partial": "جزئی",
+  "switch.lag.lacp.no_partner": "بدون همتایی"
 };

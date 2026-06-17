@@ -47,7 +47,7 @@ BeaverTracer ist ein Netzwerksimulator für den Unterricht. Er modelliert eine b
 <tr>
   <td>Link Aggregation (LAG)</td><td>IEEE 802.3ad / 802.1AX</td>
   <td><span class="badge badge-partial">Teilweise</span></td>
-  <td>Konfigurierbare Bond-Gruppen mit beliebig vielen Ports. LACP wird nicht simuliert — Aggregation ist statisch konfiguriert. Kein Load-Balancing über Mitgliedsports; aktiver Ausgangsport ist immer das erste Mitglied des Bonds.</td>
+  <td>Konfigurierbare Bond-Gruppen mit beliebig vielen Ports. LACP wird nicht simuliert — Aggregation ist statisch konfiguriert. <strong>Load-Balancing:</strong> Egress-Port wird per XOR-Hash über Bytes 4–5 von Quell- und Ziel-MAC gewählt; pro Flow deterministisch, über alle aktiven Mitglieder verteilt.</td>
 </tr>
 <tr>
   <td>IGMP Snooping</td><td>RFC 4541</td>

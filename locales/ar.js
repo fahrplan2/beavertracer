@@ -1407,5 +1407,11 @@ export default {
   "router.lldp.col.iface": "الواجهة",
   "router.lldp.col.system": "النظام",
   "router.lldp.col.chassis": "معرف الهيكل",
-  "router.lldp.col.portid": "معرف المنفذ"
+  "router.lldp.col.portid": "معرف المنفذ",
+  "switch.lag.lacp.col.port": "المنفذ",
+  "switch.lag.lacp.col.partner": "نظام الشريك",
+  "switch.lag.lacp.col.state": "حالة LACP",
+  "switch.lag.lacp.synced": "متزامن",
+  "switch.lag.lacp.partial": "جزئي",
+  "switch.lag.lacp.no_partner": "لا يوجد شريك"
 };

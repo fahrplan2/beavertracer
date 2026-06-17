@@ -1407,5 +1407,11 @@ export default {
   "router.lldp.col.iface": "インターフェース",
   "router.lldp.col.system": "システム",
   "router.lldp.col.chassis": "シャシーID",
-  "router.lldp.col.portid": "ポートID"
+  "router.lldp.col.portid": "ポートID",
+  "switch.lag.lacp.col.port": "ポート",
+  "switch.lag.lacp.col.partner": "パートナーシステム",
+  "switch.lag.lacp.col.state": "LACP状態",
+  "switch.lag.lacp.synced": "同期済み",
+  "switch.lag.lacp.partial": "部分的",
+  "switch.lag.lacp.no_partner": "パートナーなし"
 };

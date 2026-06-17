@@ -1407,5 +1407,11 @@ export default {
   "router.lldp.col.iface": "Interfață",
   "router.lldp.col.system": "Sistem",
   "router.lldp.col.chassis": "ID Șasiu",
-  "router.lldp.col.portid": "ID Port"
+  "router.lldp.col.portid": "ID Port",
+  "switch.lag.lacp.col.port": "Port",
+  "switch.lag.lacp.col.partner": "Sistem partener",
+  "switch.lag.lacp.col.state": "Stare LACP",
+  "switch.lag.lacp.synced": "Sincronizat",
+  "switch.lag.lacp.partial": "Parțial",
+  "switch.lag.lacp.no_partner": "Fără partener"
 };

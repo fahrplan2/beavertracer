@@ -1407,5 +1407,11 @@ export default {
   "router.lldp.col.iface": "Rozhraní",
   "router.lldp.col.system": "Systém",
   "router.lldp.col.chassis": "Chassis ID",
-  "router.lldp.col.portid": "Port ID"
+  "router.lldp.col.portid": "Port ID",
+  "switch.lag.lacp.col.port": "Port",
+  "switch.lag.lacp.col.partner": "Partnerský systém",
+  "switch.lag.lacp.col.state": "Stav LACP",
+  "switch.lag.lacp.synced": "Synchronizováno",
+  "switch.lag.lacp.partial": "Částečné",
+  "switch.lag.lacp.no_partner": "Bez partnera"
 };

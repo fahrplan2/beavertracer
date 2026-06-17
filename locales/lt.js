@@ -1407,5 +1407,11 @@ export default {
   "router.lldp.col.iface": "Sąsaja",
   "router.lldp.col.system": "Sistema",
   "router.lldp.col.chassis": "Šasio ID",
-  "router.lldp.col.portid": "Prievado ID"
+  "router.lldp.col.portid": "Prievado ID",
+  "switch.lag.lacp.col.port": "Prievadas",
+  "switch.lag.lacp.col.partner": "Partnerio Sistema",
+  "switch.lag.lacp.col.state": "LACP Būsena",
+  "switch.lag.lacp.synced": "Sinchronizuota",
+  "switch.lag.lacp.partial": "Dalinė",
+  "switch.lag.lacp.no_partner": "Nėra Partnerio"
 };

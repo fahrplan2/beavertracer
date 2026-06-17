@@ -1407,5 +1407,11 @@ export default {
   "router.lldp.col.iface": "Интерфейс",
   "router.lldp.col.system": "Система",
   "router.lldp.col.chassis": "Chassis ID",
-  "router.lldp.col.portid": "Port ID"
+  "router.lldp.col.portid": "Port ID",
+  "switch.lag.lacp.col.port": "Порт",
+  "switch.lag.lacp.col.partner": "Партньорска система",
+  "switch.lag.lacp.col.state": "Състояние на LACP",
+  "switch.lag.lacp.synced": "Синхронизирано",
+  "switch.lag.lacp.partial": "Частично",
+  "switch.lag.lacp.no_partner": "Няма партньор"
 };

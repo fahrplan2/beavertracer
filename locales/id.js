@@ -1407,5 +1407,11 @@ export default {
   "router.lldp.col.iface": "Antarmuka",
   "router.lldp.col.system": "Sistem",
   "router.lldp.col.chassis": "ID Chassis",
-  "router.lldp.col.portid": "ID Port"
+  "router.lldp.col.portid": "ID Port",
+  "switch.lag.lacp.col.port": "Port",
+  "switch.lag.lacp.col.partner": "Sistem Partner",
+  "switch.lag.lacp.col.state": "Status LACP",
+  "switch.lag.lacp.synced": "Tersinkronisasi",
+  "switch.lag.lacp.partial": "Parsial",
+  "switch.lag.lacp.no_partner": "Tidak Ada Partner"
 };

@@ -1407,5 +1407,11 @@ export default {
   "router.lldp.col.iface": "Vmesnik",
   "router.lldp.col.system": "Sistem",
   "router.lldp.col.chassis": "ID Šasije",
-  "router.lldp.col.portid": "ID Vrat"
+  "router.lldp.col.portid": "ID Vrat",
+  "switch.lag.lacp.col.port": "Vrata",
+  "switch.lag.lacp.col.partner": "Partnerski sistem",
+  "switch.lag.lacp.col.state": "Stanje LACP",
+  "switch.lag.lacp.synced": "Usklajeno",
+  "switch.lag.lacp.partial": "Delno",
+  "switch.lag.lacp.no_partner": "Brez partnerja"
 };

@@ -1441,5 +1441,11 @@ export default {
   "router.lldp.col.iface": "Interface",
   "router.lldp.col.system": "Système",
   "router.lldp.col.chassis": "ID de châssis",
-  "router.lldp.col.portid": "ID de port"
+  "router.lldp.col.portid": "ID de port",
+  "switch.lag.lacp.col.port": "Port",
+  "switch.lag.lacp.col.partner": "Système Partenaire",
+  "switch.lag.lacp.col.state": "État LACP",
+  "switch.lag.lacp.synced": "Synchronisé",
+  "switch.lag.lacp.partial": "Partiel",
+  "switch.lag.lacp.no_partner": "Aucun Partenaire"
 };

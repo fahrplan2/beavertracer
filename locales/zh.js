@@ -1407,5 +1407,11 @@ export default {
   "router.lldp.col.iface": "接口",
   "router.lldp.col.system": "系统",
   "router.lldp.col.chassis": "机箱 ID",
-  "router.lldp.col.portid": "端口 ID"
+  "router.lldp.col.portid": "端口 ID",
+  "switch.lag.lacp.col.port": "端口",
+  "switch.lag.lacp.col.partner": "伙伴系统",
+  "switch.lag.lacp.col.state": "LACP 状态",
+  "switch.lag.lacp.synced": "已同步",
+  "switch.lag.lacp.partial": "部分",
+  "switch.lag.lacp.no_partner": "无伙伴"
 };

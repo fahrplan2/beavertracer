@@ -1407,5 +1407,11 @@ export default {
   "router.lldp.col.iface": "Liitäntä",
   "router.lldp.col.system": "Järjestelmä",
   "router.lldp.col.chassis": "Chassis-tunnus",
-  "router.lldp.col.portid": "Portin tunnus"
+  "router.lldp.col.portid": "Portin tunnus",
+  "switch.lag.lacp.col.port": "Portti",
+  "switch.lag.lacp.col.partner": "Kumppanijärjestelmä",
+  "switch.lag.lacp.col.state": "LACP-tila",
+  "switch.lag.lacp.synced": "Synkronoitu",
+  "switch.lag.lacp.partial": "Osittainen",
+  "switch.lag.lacp.no_partner": "Ei kumppania"
 };
