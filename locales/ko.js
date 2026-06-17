@@ -1393,5 +1393,19 @@ export default {
   "app.multicastchat.log.left": "{group} 그룹에서 나갔습니다.",
   "app.multicastchat.log.peerJoined": "{nick}이(가) 그룹에 참여했습니다.",
   "app.multicastchat.log.peerLeft": "{nick}이(가) 그룹에서 나갔습니다.",
-  "switch.igmp.col.proto": "프로토콜"
+  "switch.igmp.col.proto": "프로토콜",
+  "switch.tab.lldp": "LLDP",
+  "switch.lldp.enable": "LLDP 활성화",
+  "switch.lldp.empty": "발견된 LLDP 이웃이 없습니다.",
+  "switch.lldp.col.port": "포트",
+  "switch.lldp.col.system": "시스템",
+  "switch.lldp.col.chassis": "섀시 ID",
+  "switch.lldp.col.portid": "포트 ID",
+  "router.lldp.tab": "LLDP",
+  "router.lldp.enable": "LLDP 활성화",
+  "router.lldp.empty": "발견된 LLDP 이웃이 없습니다.",
+  "router.lldp.col.iface": "인터페이스",
+  "router.lldp.col.system": "시스템",
+  "router.lldp.col.chassis": "섀시 ID",
+  "router.lldp.col.portid": "포트 ID"
 };

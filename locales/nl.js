@@ -1393,5 +1393,19 @@ export default {
   "app.multicastchat.log.left": "Groep {group} is verlaten.",
   "app.multicastchat.log.peerJoined": "{nick} is toegetreden tot de groep.",
   "app.multicastchat.log.peerLeft": "{nick} heeft de groep verlaten.",
-  "switch.igmp.col.proto": "Protocol"
+  "switch.igmp.col.proto": "Protocol",
+  "switch.tab.lldp": "LLDP",
+  "switch.lldp.enable": "LLDP inschakelen",
+  "switch.lldp.empty": "Geen LLDP-buren ontdekt.",
+  "switch.lldp.col.port": "Poort",
+  "switch.lldp.col.system": "Systeem",
+  "switch.lldp.col.chassis": "Chassis-ID",
+  "switch.lldp.col.portid": "Poort-ID",
+  "router.lldp.tab": "LLDP",
+  "router.lldp.enable": "LLDP inschakelen",
+  "router.lldp.empty": "Geen LLDP-buren ontdekt.",
+  "router.lldp.col.iface": "Interface",
+  "router.lldp.col.system": "Systeem",
+  "router.lldp.col.chassis": "Chassis-ID",
+  "router.lldp.col.portid": "Poort-ID"
 };

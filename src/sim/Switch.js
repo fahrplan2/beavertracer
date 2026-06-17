@@ -5,6 +5,7 @@ import { SimulatedObject } from "./SimulatedObject.js";
 import { PollTimer } from "../lib/PollTimer.js";
 import { UILib } from "../lib/UILib.js";
 import { t } from "../i18n/index.js";
+import { simTimer } from "../lib/SimTimer.js";
 
 /**
  * Kleine Helper fürs SAT-Rendering
@@ -74,12 +75,19 @@ export class Switch extends SimulatedObject {
     /** @type {HTMLDivElement|null} */
     _qinqSection = null;
 
+    /** @type {HTMLInputElement|null} */
+    _lldpEnabledCheckbox = null;
+
+    /** @type {HTMLDivElement|null} */
+    _lldpSection = null;
+
     /**
      * @param {String} name
      */
     constructor(name = t("switch.title")) {
         super(name);
         this.backplane = new SwitchBackplane(8);
+        this.backplane._lldpSystemName = name;
 
         /** @param {HTMLElement} body */
         this.onPanelCreated = (body) => {
@@ -116,6 +124,7 @@ export class Switch extends SimulatedObject {
             lagNextId: this.backplane._nextLagId,
 
             igmpSnoopingEnabled: !!this.backplane.igmpSnoopingEnabled,
+            lldpEnabled: !!this.backplane.lldpEnabled,
         };
 
     }
@@ -200,6 +209,9 @@ export class Switch extends SimulatedObject {
         // --- IGMP Snooping ---
         if (n.igmpSnoopingEnabled) obj.backplane.enableIGMPSnooping();
 
+        // --- LLDP ---
+        if (n.lldpEnabled) obj.backplane.enableLLDP();
+
         return obj;
     }
 
@@ -244,6 +256,7 @@ export class Switch extends SimulatedObject {
             { id: "lag",  label: t("switch.tab.lag")  },
             { id: "igmp", label: t("switch.tab.igmp") },
             { id: "qinq", label: "QinQ" },
+            { id: "lldp", label: t("switch.tab.lldp") },
         ], (id) => {
             this._activeTab = id;
             this._satHost = null;
@@ -256,6 +269,8 @@ export class Switch extends SimulatedObject {
             this._igmpSection = null;
             this._qinqEnabledCheckbox = null;
             this._qinqSection = null;
+            this._lldpEnabledCheckbox = null;
+            this._lldpSection = null;
             UILib.clear(content);
             if (id === "sat")  this._buildMacTab(content);
             else if (id === "vlan") this._buildVlanTab(content);
@@ -263,6 +278,7 @@ export class Switch extends SimulatedObject {
             else if (id === "stp")  this._buildStpTab(content);
             else if (id === "lag")  this._buildLagTab(content);
             else if (id === "igmp") this._buildIGMPTab(content);
+            else if (id === "lldp") this._buildLLDPTab(content);
         });
         card.appendChild(tabBar);
         card.appendChild(content);
@@ -273,6 +289,7 @@ export class Switch extends SimulatedObject {
         else if (this._activeTab === "stp")  this._buildStpTab(content);
         else if (this._activeTab === "lag")  this._buildLagTab(content);
         else if (this._activeTab === "igmp") this._buildIGMPTab(content);
+        else if (this._activeTab === "lldp") this._buildLLDPTab(content);
         selectTab(this._activeTab);
         this._startSatPolling();
     }
@@ -358,6 +375,7 @@ export class Switch extends SimulatedObject {
             else if (this._activeTab === "stp") this._renderSTPSection();
             else if (this._activeTab === "lag") this._updateLagLinkStatus();
             else if (this._activeTab === "igmp") this._renderIGMPSection();
+            else if (this._activeTab === "lldp") this._renderLLDPSection();
         }, 500);
     }
 
@@ -965,5 +983,80 @@ export class Switch extends SimulatedObject {
                 className: "sim-hint switch-stp-lag-footnote",
             }));
         }
+    }
+
+    /** @param {HTMLElement} host */
+    _buildLLDPTab(host) {
+        const cb = /** @type {HTMLInputElement} */ (UILib.input({ type: "checkbox" }));
+        cb.checked = !!this.backplane.lldpEnabled;
+        this._lldpEnabledCheckbox = cb;
+        host.appendChild(UILib.div("hr-checkbox-row", [cb, UILib.el("span", { text: t("switch.lldp.enable") })]));
+
+        const section = UILib.div("switch-lldp-section");
+        this._lldpSection = section;
+        host.appendChild(section);
+
+        cb.addEventListener("change", () => {
+            if (cb.checked) {
+                this.backplane._lldpSystemName = this.name;
+                this.backplane.enableLLDP();
+            } else {
+                this.backplane.disableLLDP();
+            }
+            this._renderLLDPSection();
+        });
+
+        this._renderLLDPSection();
+    }
+
+    _renderLLDPSection() {
+        if (!this._lldpSection || !this._lldpEnabledCheckbox) return;
+        this._lldpSection.innerHTML = "";
+
+        if (!this._lldpEnabledCheckbox.checked) {
+            this._lldpSection.classList.add("hidden");
+            return;
+        }
+        this._lldpSection.classList.remove("hidden");
+
+        const ports = this.backplane?.ports ?? [];
+        const now = simTimer.currentTick;
+
+        const table = document.createElement("table");
+        table.className = "switch-stp-table";
+
+        const thead = document.createElement("thead");
+        const htr = document.createElement("tr");
+        for (const key of ["switch.lldp.col.port", "switch.lldp.col.system", "switch.lldp.col.chassis", "switch.lldp.col.portid"]) {
+            const th = document.createElement("th");
+            th.textContent = t(key);
+            htr.appendChild(th);
+        }
+        thead.appendChild(htr);
+        table.appendChild(thead);
+
+        const tbody = document.createElement("tbody");
+        for (let i = 0; i < ports.length; i++) {
+            const neighbor = this.backplane.lldpNeighbors.get(i);
+            const valid = neighbor && neighbor.expiresAtTick > now;
+            const tr = document.createElement("tr");
+
+            const portTd = document.createElement("td"); portTd.textContent = `port ${i + 1}`;
+            const sysTd  = document.createElement("td"); sysTd.textContent  = valid ? neighbor.systemName : "–";
+            const chTd   = document.createElement("td"); chTd.textContent   = valid ? neighbor.chassisId  : "–";
+            const pidTd  = document.createElement("td"); pidTd.textContent  = valid ? neighbor.portId     : "–";
+
+            if (!valid) {
+                for (const td of [sysTd, chTd, pidTd]) td.style.opacity = "0.4";
+            }
+
+            tr.append(portTd, sysTd, chTd, pidTd);
+            tbody.appendChild(tr);
+        }
+        table.appendChild(tbody);
+
+        const scroll = UILib.div("sim-table-scroll");
+        scroll.appendChild(table);
+        this._lldpSection.appendChild(UILib.wrapWithScrollHints(scroll));
     }
 }

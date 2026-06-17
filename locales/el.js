@@ -1393,5 +1393,19 @@ export default {
   "app.multicastchat.log.left": "Αποχωρήσατε από την ομάδα {group}.",
   "app.multicastchat.log.peerJoined": "Ο/Η {nick} συνδέθηκε στην ομάδα.",
   "app.multicastchat.log.peerLeft": "Ο/Η {nick} αποχώρησε από την ομάδα.",
-  "switch.igmp.col.proto": "Πρωτόκολλο"
+  "switch.igmp.col.proto": "Πρωτόκολλο",
+  "switch.tab.lldp": "LLDP",
+  "switch.lldp.enable": "Ενεργοποίηση LLDP",
+  "switch.lldp.empty": "Δεν ανακαλύφθησαν γείτονες LLDP.",
+  "switch.lldp.col.port": "Θύρα",
+  "switch.lldp.col.system": "Σύστημα",
+  "switch.lldp.col.chassis": "Chassis ID",
+  "switch.lldp.col.portid": "Port ID",
+  "router.lldp.tab": "LLDP",
+  "router.lldp.enable": "Ενεργοποίηση LLDP",
+  "router.lldp.empty": "Δεν ανακαλύφθησαν γείτονες LLDP.",
+  "router.lldp.col.iface": "Διεπαφή",
+  "router.lldp.col.system": "Σύστημα",
+  "router.lldp.col.chassis": "Chassis ID",
+  "router.lldp.col.portid": "Port ID"
 };

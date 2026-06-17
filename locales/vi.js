@@ -1393,5 +1393,19 @@ export default {
   "app.multicastchat.log.left": "Đã rời nhóm {group}.",
   "app.multicastchat.log.peerJoined": "{nick} đã tham gia nhóm.",
   "app.multicastchat.log.peerLeft": "{nick} đã rời nhóm.",
-  "switch.igmp.col.proto": "Giao thức"
+  "switch.igmp.col.proto": "Giao thức",
+  "switch.tab.lldp": "LLDP",
+  "switch.lldp.enable": "Bật LLDP",
+  "switch.lldp.empty": "Không phát hiện các hàng xóm LLDP.",
+  "switch.lldp.col.port": "Cổng",
+  "switch.lldp.col.system": "Hệ thống",
+  "switch.lldp.col.chassis": "ID Khung",
+  "switch.lldp.col.portid": "ID Cổng",
+  "router.lldp.tab": "LLDP",
+  "router.lldp.enable": "Bật LLDP",
+  "router.lldp.empty": "Không phát hiện các hàng xóm LLDP.",
+  "router.lldp.col.iface": "Giao diện",
+  "router.lldp.col.system": "Hệ thống",
+  "router.lldp.col.chassis": "ID Khung",
+  "router.lldp.col.portid": "ID Cổng"
 };

@@ -1393,5 +1393,19 @@ export default {
   "app.multicastchat.log.left": "グループ {group} から退出しました。",
   "app.multicastchat.log.peerJoined": "{nick} がグループに参加しました。",
   "app.multicastchat.log.peerLeft": "{nick} がグループから退出しました。",
-  "switch.igmp.col.proto": "プロトコル"
+  "switch.igmp.col.proto": "プロトコル",
+  "switch.tab.lldp": "LLDP",
+  "switch.lldp.enable": "LLDPを有効にする",
+  "switch.lldp.empty": "LLDP隣接デバイスが見つかりません。",
+  "switch.lldp.col.port": "ポート",
+  "switch.lldp.col.system": "システム",
+  "switch.lldp.col.chassis": "シャシーID",
+  "switch.lldp.col.portid": "ポートID",
+  "router.lldp.tab": "LLDP",
+  "router.lldp.enable": "LLDPを有効にする",
+  "router.lldp.empty": "LLDP隣接デバイスが見つかりません。",
+  "router.lldp.col.iface": "インターフェース",
+  "router.lldp.col.system": "システム",
+  "router.lldp.col.chassis": "シャシーID",
+  "router.lldp.col.portid": "ポートID"
 };

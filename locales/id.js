@@ -1393,5 +1393,19 @@ export default {
   "app.multicastchat.log.left": "Keluar dari grup {group}.",
   "app.multicastchat.log.peerJoined": "{nick} bergabung dengan grup.",
   "app.multicastchat.log.peerLeft": "{nick} keluar dari grup.",
-  "switch.igmp.col.proto": "Protokol"
+  "switch.igmp.col.proto": "Protokol",
+  "switch.tab.lldp": "LLDP",
+  "switch.lldp.enable": "Aktifkan LLDP",
+  "switch.lldp.empty": "Tidak ada tetangga LLDP yang ditemukan.",
+  "switch.lldp.col.port": "Port",
+  "switch.lldp.col.system": "Sistem",
+  "switch.lldp.col.chassis": "ID Chassis",
+  "switch.lldp.col.portid": "ID Port",
+  "router.lldp.tab": "LLDP",
+  "router.lldp.enable": "Aktifkan LLDP",
+  "router.lldp.empty": "Tidak ada tetangga LLDP yang ditemukan.",
+  "router.lldp.col.iface": "Antarmuka",
+  "router.lldp.col.system": "Sistem",
+  "router.lldp.col.chassis": "ID Chassis",
+  "router.lldp.col.portid": "ID Port"
 };

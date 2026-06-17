@@ -1427,5 +1427,19 @@ export default {
   "app.multicastchat.log.left": "Groupe {group} quitté.",
   "app.multicastchat.log.peerJoined": "{nick} a rejoint le groupe.",
   "app.multicastchat.log.peerLeft": "{nick} a quitté le groupe.",
-  "switch.igmp.col.proto": "Protocole"
+  "switch.igmp.col.proto": "Protocole",
+  "switch.tab.lldp": "LLDP",
+  "switch.lldp.enable": "Activer LLDP",
+  "switch.lldp.empty": "Aucun voisin LLDP découvert.",
+  "switch.lldp.col.port": "Port",
+  "switch.lldp.col.system": "Système",
+  "switch.lldp.col.chassis": "ID de châssis",
+  "switch.lldp.col.portid": "ID de port",
+  "router.lldp.tab": "LLDP",
+  "router.lldp.enable": "Activer LLDP",
+  "router.lldp.empty": "Aucun voisin LLDP découvert.",
+  "router.lldp.col.iface": "Interface",
+  "router.lldp.col.system": "Système",
+  "router.lldp.col.chassis": "ID de châssis",
+  "router.lldp.col.portid": "ID de port"
 };

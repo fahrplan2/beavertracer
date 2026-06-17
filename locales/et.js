@@ -1393,5 +1393,19 @@ export default {
   "app.multicastchat.log.left": "Lahkusite grupist {group}.",
   "app.multicastchat.log.peerJoined": "{nick} liitus grupiga.",
   "app.multicastchat.log.peerLeft": "{nick} lahkus grupist.",
-  "switch.igmp.col.proto": "Protokoll"
+  "switch.igmp.col.proto": "Protokoll",
+  "switch.tab.lldp": "LLDP",
+  "switch.lldp.enable": "Luba LLDP",
+  "switch.lldp.empty": "LLDP naabreid ei leitud.",
+  "switch.lldp.col.port": "Port",
+  "switch.lldp.col.system": "Süsteem",
+  "switch.lldp.col.chassis": "Chassis ID",
+  "switch.lldp.col.portid": "Port ID",
+  "router.lldp.tab": "LLDP",
+  "router.lldp.enable": "Luba LLDP",
+  "router.lldp.empty": "LLDP naabreid ei leitud.",
+  "router.lldp.col.iface": "Liides",
+  "router.lldp.col.system": "Süsteem",
+  "router.lldp.col.chassis": "Chassis ID",
+  "router.lldp.col.portid": "Port ID"
 };

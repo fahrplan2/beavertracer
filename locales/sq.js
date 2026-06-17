@@ -1392,5 +1392,19 @@ export default {
   "app.multicastchat.log.left": "U largua nga grupi {group}.",
   "app.multicastchat.log.peerJoined": "{nick} u bashkua në grup.",
   "app.multicastchat.log.peerLeft": "{nick} u largua nga grupi.",
-  "switch.igmp.col.proto": "Protokolli"
+  "switch.igmp.col.proto": "Protokolli",
+  "switch.tab.lldp": "LLDP",
+  "switch.lldp.enable": "Aktivizo LLDP",
+  "switch.lldp.empty": "Asnjë fqinj LLDP i zbuluar.",
+  "switch.lldp.col.port": "Porta",
+  "switch.lldp.col.system": "Sistemi",
+  "switch.lldp.col.chassis": "ID Chassis",
+  "switch.lldp.col.portid": "ID Porte",
+  "router.lldp.tab": "LLDP",
+  "router.lldp.enable": "Aktivizo LLDP",
+  "router.lldp.empty": "Asnjë fqinj LLDP i zbuluar.",
+  "router.lldp.col.iface": "Ndërfaqja",
+  "router.lldp.col.system": "Sistemi",
+  "router.lldp.col.chassis": "ID Chassis",
+  "router.lldp.col.portid": "ID Porte"
 };

@@ -1392,5 +1392,19 @@ export default {
   "app.multicastchat.log.left": "{group} csoport elhagyva.",
   "app.multicastchat.log.peerJoined": "{nick} csatlakozott a csoporthoz.",
   "app.multicastchat.log.peerLeft": "{nick} elhagyta a csoportot.",
-  "switch.igmp.col.proto": "Protokoll"
+  "switch.igmp.col.proto": "Protokoll",
+  "switch.tab.lldp": "LLDP",
+  "switch.lldp.enable": "LLDP engedélyezése",
+  "switch.lldp.empty": "Nem találhatók LLDP szomszédok.",
+  "switch.lldp.col.port": "Port",
+  "switch.lldp.col.system": "Rendszer",
+  "switch.lldp.col.chassis": "Chassis ID",
+  "switch.lldp.col.portid": "Port ID",
+  "router.lldp.tab": "LLDP",
+  "router.lldp.enable": "LLDP engedélyezése",
+  "router.lldp.empty": "Nem találhatók LLDP szomszédok.",
+  "router.lldp.col.iface": "Interfész",
+  "router.lldp.col.system": "Rendszer",
+  "router.lldp.col.chassis": "Chassis ID",
+  "router.lldp.col.portid": "Port ID"
 };

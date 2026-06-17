@@ -15,6 +15,7 @@ import { netmaskStrToPrefix, prefixToNetmaskStr, normalizeMaskInput } from "../l
 import { UILib } from "../lib/UILib.js";
 import { t } from "../i18n/index.js";
 import { IPAddress } from "../net/models/IPAddress.js"; // <- ggf. Pfad anpassen
+import { LLDPDaemon } from "../net/LLDPDaemon.js";
 import { SimDialog } from "../lib/SimDialog.js";
 import { DHCPv6Packet } from "../net/pdu/DHCPv6Packet.js";
 import { IPv6Packet } from "../net/pdu/IPv6Packet.js";
@@ -176,6 +177,17 @@ export class Router extends SimulatedObject {
   _pd6Running = false;
   /** @type {Uint8Array|null} */ _pd6DUID = null;
 
+  // ── LLDP ──────────────────────────────────────────────────────────────────
+  _lldpEnabled = false;
+  /**
+   * ifaceName → { chassisId, portId, systemName, expiresAtTick }
+   * @type {Map<string, {chassisId:string, portId:string, systemName:string, expiresAtTick:number}>}
+   */
+  _lldpNeighbors = new Map();
+  /** @type {number|null} */ _lldpTimer = null;
+  /** @type {HTMLInputElement|null} */ _lldpEnabledCb = null;
+  /** @type {HTMLDivElement|null} */ _lldpTableHost = null;
+
   // ── DHCPv6-PD client (Requesting Router) ──────────────────────────────────
   _pd6ClientEnabled = false;
   _pd6ClientIfIndex = 0;
@@ -222,6 +234,7 @@ export class Router extends SimulatedObject {
                 clientEnabled:   this._pd6ClientEnabled,
                 clientIfIndex:   this._pd6ClientIfIndex,
             },
+            lldpEnabled: !!this._lldpEnabled,
         };
     }
 
@@ -254,6 +267,7 @@ export class Router extends SimulatedObject {
             if (Number.isInteger(n.pd6.clientIfIndex)) obj._pd6ClientIfIndex = n.pd6.clientIfIndex;
             if (obj._pd6ClientEnabled) void obj._pd6ClientStart();
         }
+        if (n.lldpEnabled) obj._lldpEnabled = true;
         return obj;
     }
 
@@ -286,6 +300,7 @@ export class Router extends SimulatedObject {
             { id: "vpn",        label: t("router.vpn.tab")            },
             { id: "pd6",        label: t("router.pd6.tab")            },
             { id: "vrrp",       label: "VRRP"                          },
+            { id: "lldp",       label: t("router.lldp.tab")           },
         ], (id) => {
             ifSection.classList.toggle("hidden",    id !== "interfaces");
             routeSection.classList.toggle("hidden", id !== "routes-v4" && id !== "routes-v6");
@@ -295,6 +310,7 @@ export class Router extends SimulatedObject {
             vpnSection.classList.toggle("hidden",   id !== "vpn");
             pd6Section.classList.toggle("hidden",   id !== "pd6");
             vrrpSection.classList.toggle("hidden",  id !== "vrrp");
+            lldpSection.classList.toggle("hidden",  id !== "lldp");
             if (id === "routes-v4") { routeTitle.textContent = t("router.routingtable.ipv4"); this._selectedRouteFamily = 4; this._renderRoutes(); }
             if (id === "routes-v6") { routeTitle.textContent = t("router.routingtable.ipv6"); this._selectedRouteFamily = 6; this._renderRoutes(); }
         });
@@ -414,7 +430,11 @@ export class Router extends SimulatedObject {
         const vrrpSection = UILib.div("hidden");
         this._buildVRRPSection(vrrpSection);
 
-        outerContent.append(ifSection, routeSection, ripSection, bgpSection, ospfSection, vpnSection, pd6Section, vrrpSection);
+        /* ================================ LLDP ================================ */
+        const lldpSection = UILib.div("hidden");
+        this._buildLLDPSection(lldpSection);
+
+        outerContent.append(ifSection, routeSection, ripSection, bgpSection, ospfSection, vpnSection, pd6Section, vrrpSection, lldpSection);
         setOuterActive("interfaces");
 
         /* ============================ Init ============================ */
@@ -594,6 +614,7 @@ export class Router extends SimulatedObject {
         this._pollTimer.start(() => {
             this._updateAllTabStatuses();
             this._pollRefreshRoutes();
+            if (this._lldpTableHost && this._lldpEnabled) this._renderLLDPSection();
         }, 1000);
     }
 
@@ -2884,6 +2905,140 @@ export class Router extends SimulatedObject {
         this._pd6ClientStop();
         this.vrrp.stop();
         this._vrrpPollTimer.stop();
+        this._lldpStop();
         super.destroy();
+    }
+
+    /* ============================== LLDP ================================= */
+
+    /** @param {HTMLElement} host */
+    _buildLLDPSection(host) {
+        this._lldpEnabledCb = null;
+        this._lldpTableHost = null;
+
+        const cb = /** @type {HTMLInputElement} */ (UILib.input({ type: "checkbox" }));
+        cb.checked = !!this._lldpEnabled;
+        this._lldpEnabledCb = cb;
+        host.appendChild(UILib.div("hr-checkbox-row", [cb, UILib.el("span", { text: t("router.lldp.enable") })]));
+
+        const tableHost = UILib.div("");
+        this._lldpTableHost = tableHost;
+        host.appendChild(tableHost);
+
+        cb.addEventListener("change", () => {
+            if (cb.checked) {
+                this._lldpEnabled = true;
+                this._lldpStart();
+            } else {
+                this._lldpStop();
+            }
+            this._renderLLDPSection();
+        });
+
+        if (this._lldpEnabled) this._lldpStart();
+        this._renderLLDPSection();
+    }
+
+    _lldpStart() {
+        this._lldpEnabled = true;
+        this._lldpWireInterfaces();
+        this._lldpEmit();
+        this._lldpScheduleTx();
+    }
+
+    _lldpStop() {
+        this._lldpEnabled = false;
+        for (const iface of this.net.interfaces) iface._lldpHandler = null;
+        if (this._lldpTimer != null) { simTimer.cancel(this._lldpTimer); this._lldpTimer = null; }
+        this._lldpNeighbors.clear();
+    }
+
+    _lldpWireInterfaces() {
+        for (const iface of this.net.interfaces) {
+            const ifName = iface.name;
+            iface._lldpHandler = (frame) => {
+                const info = LLDPDaemon.decode(frame.payload);
+                if (!info) return;
+                const ttlTicks = Math.round((info.ttl * 1000) / SimTimer.SIM_MS_PER_TICK);
+                this._lldpNeighbors.set(ifName, {
+                    chassisId:     info.chassisId,
+                    portId:        info.portId,
+                    systemName:    info.systemName,
+                    expiresAtTick: simTimer.currentTick + ttlTicks,
+                });
+            };
+        }
+    }
+
+    _lldpScheduleTx() {
+        if (this._lldpTimer != null) simTimer.cancel(this._lldpTimer);
+        this._lldpTimer = simTimer.schedule(() => {
+            this._lldpTimer = null;
+            if (!this._lldpEnabled) return;
+            this._lldpEmit();
+            this._lldpScheduleTx();
+        }, SimTimer.LLDP_TX_MS);
+    }
+
+    _lldpEmit() {
+        for (const iface of this.net.interfaces) {
+            if (!iface.port?.isLinked?.()) continue;
+            if (!iface.mac) continue;
+            const payload = LLDPDaemon.encode(iface.mac, iface.name, this.name);
+            iface.sendFrame(LLDPDaemon.DEST_MAC, LLDPDaemon.ETHERTYPE, payload);
+        }
+    }
+
+    _renderLLDPSection() {
+        const host = this._lldpTableHost;
+        if (!host) return;
+        UILib.clear(host);
+
+        if (!this._lldpEnabled) return;
+
+        const ifaces = this.net.interfaces;
+        const now = simTimer.currentTick;
+
+        if (!ifaces.length) {
+            host.appendChild(UILib.el("p", { text: t("router.lldp.empty"), className: "router-empty-p" }));
+            return;
+        }
+
+        const table = document.createElement("table");
+        table.className = "router-routes-table";
+
+        const thead = document.createElement("thead");
+        const htr = document.createElement("tr");
+        for (const key of ["router.lldp.col.iface", "router.lldp.col.system", "router.lldp.col.chassis", "router.lldp.col.portid"]) {
+            const th = document.createElement("th");
+            th.textContent = t(key);
+            htr.appendChild(th);
+        }
+        thead.appendChild(htr);
+        table.appendChild(thead);
+
+        const tbody = document.createElement("tbody");
+        for (const iface of ifaces) {
+            const neighbor = this._lldpNeighbors.get(iface.name);
+            const valid = neighbor && neighbor.expiresAtTick > now;
+            const tr = document.createElement("tr");
+
+            const ifTd  = document.createElement("td"); ifTd.textContent  = iface.name;
+            const sysTd = document.createElement("td"); sysTd.textContent = valid ? neighbor.systemName : "–";
+            const chTd  = document.createElement("td"); chTd.textContent  = valid ? neighbor.chassisId  : "–";
+            const pidTd = document.createElement("td"); pidTd.textContent = valid ? neighbor.portId     : "–";
+
+            if (!valid) {
+                for (const td of [sysTd, chTd, pidTd]) td.style.opacity = "0.4";
+            }
+
+            tr.append(ifTd, sysTd, chTd, pidTd);
+            tbody.appendChild(tr);
+        }
+        table.appendChild(tbody);
+
+        const scroll = UILib.div("sim-table-scroll");
+        scroll.appendChild(table);
+        host.appendChild(UILib.wrapWithScrollHints(scroll));
     }
 }

@@ -40,6 +40,11 @@ BeaverTracer ist ein Netzwerksimulator für den Unterricht. Er modelliert eine b
   <td>Port-basiertes S-Tag-Push/-Pop (TPID 0x88a8). Jeder Switch-Port kann mit einer Outer-S-VID konfiguriert werden (QinQ-Tab im Switch-UI): Ingress pusht den S-Tag, Egress poppt ihn. Trunk-Ports (tagged, S-VID in allowedVlans) transportieren doppelt getaggte Frames als NNI-Ports. Kein VLAN-Translation, kein symmetrisches QinQ, kein 0x9100-TPID.</td>
 </tr>
 <tr>
+  <td>LLDP</td><td>IEEE 802.1AB</td>
+  <td><span class="badge badge-partial">Teilweise</span></td>
+  <td>Chassis-ID (Subtyp 4, MAC), Port-ID (Subtyp 5, Interface-Name), System Name und TTL (120 s) werden kodiert, gesendet und dekodiert. TX-Intervall entspricht 30 simulierten Sekunden. Nachbarn verfallen nach 90 simulierten Sekunden ohne Frame. Switch terminiert LLDP-Frames (Ziel-MAC 01:80:C2:00:00:0E liegt im Bridge-Group-Adressbereich) und leitet sie nicht weiter. Kein System Description, keine Management Address, keine Organization-Specific TLVs (Typ 127).</td>
+</tr>
+<tr>
   <td>Link Aggregation (LAG)</td><td>IEEE 802.3ad / 802.1AX</td>
   <td><span class="badge badge-partial">Teilweise</span></td>
   <td>Konfigurierbare Bond-Gruppen mit beliebig vielen Ports. LACP wird nicht simuliert — Aggregation ist statisch konfiguriert. Kein Load-Balancing über Mitgliedsports; aktiver Ausgangsport ist immer das erste Mitglied des Bonds.</td>
