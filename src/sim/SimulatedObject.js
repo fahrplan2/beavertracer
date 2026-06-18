@@ -67,6 +67,9 @@ export class SimulatedObject {
     /** @type {import('../lib/dragabble.js').DraggableController|null} */
     _panelDraggable = null;
 
+    /** @type {(() => void)|null} */
+    _panelResizeCleanup = null;
+
     /** @type {number} icon position */
     x = 50;
     /** @type {number} icon position */
@@ -268,6 +271,10 @@ export class SimulatedObject {
                 this.ph = h;
             }
         });
+
+        const onResize = () => { if (this.panelOpen) this._clampPanelToViewport(); };
+        window.addEventListener("resize", onResize);
+        this._panelResizeCleanup = () => window.removeEventListener("resize", onResize);
     }
 
     _isMobile() {
@@ -391,6 +398,8 @@ export class SimulatedObject {
         this._iconDraggable = null;
         this._panelDraggable?.destroy();
         this._panelDraggable = null;
+        this._panelResizeCleanup?.();
+        this._panelResizeCleanup = null;
         // Panel lives outside this.root (in panelRoot / simRoot on mobile)
         this.panelEl?.remove();
         this.panelEl = null;

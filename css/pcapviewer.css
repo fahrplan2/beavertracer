@@ -600,11 +600,6 @@
   inset: 0;
   z-index: 30;
   background: rgba(0, 0, 0, 0.45);
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 24px 16px;
-  overflow: auto;
 }
 
 .pcapviewer-stream-panel {
@@ -617,9 +612,13 @@
   box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
-  width: min(900px, 100%);
-  max-height: calc(100vh - 80px);
+  width: min(900px, 90%);
+  max-height: calc(100% - 80px);
   overflow: hidden;
+  position: absolute;
+  left: 50%;
+  top: 40px;
+  transform: translateX(-50%);
 }
 
 .pcapviewer-stream-hdr {
@@ -631,7 +630,10 @@
   background: color-mix(in oklch, var(--surface-strong), var(--text) 6%);
   border-bottom: 1px solid var(--ui-border);
   flex-shrink: 0;
+  cursor: grab;
 }
+.pcapviewer-stream-hdr:active { cursor: grabbing; }
+.pcapviewer-stream-close { cursor: pointer; }
 
 .pcapviewer-stream-hdr-title {
   font-weight: 600;
