@@ -1,5 +1,6 @@
 import { t } from "../i18n/index.js";
-import { OS } from "./OS.js";
+
+/** @typedef {import('./OS.js').OS} OS */
 
 export class GenericProcess {
   get title() {

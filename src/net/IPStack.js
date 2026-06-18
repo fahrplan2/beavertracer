@@ -1288,17 +1288,35 @@ export class IPStack extends Observable {
                 ? opts.ip
                 : IPAddress.fromString(String(opts.ip ?? "0.0.0.0"));
             const prefixLength = (opts.prefixLength ?? (ip.isV4() ? 24 : 64)) | 0;
+            const oldIp = this.interfaces[i].ip;
             this.interfaces[i].configure({
                 name: opts.name ?? this.interfaces[i].name,
                 ip,
                 prefixLength,
             });
+            // Close TCP connections that used the old IP as local address — they are
+            // now unreachable because incoming packets for the old IP are dropped.
+            if (oldIp && !this._isZero(oldIp) && oldIp.toString() !== ip.toString()) {
+                const oldStr = oldIp.toString();
+                for (const conn of Array.from(this.tcp.conns.values())) {
+                    if (conn.localIP?.toString() === oldStr) this.tcp.close(conn.key);
+                }
+            }
         } else if (opts.name !== undefined) {
             this.interfaces[i].name = String(opts.name);
         }
 
         if ('ip6' in opts || 'slaac' in opts) {
+            const oldIp6 = this.interfaces[i].ip6;
             this.interfaces[i].configure6({ ip6: opts.ip6, prefixLength6: opts.prefixLength6, slaac: opts.slaac });
+            // Same cleanup for IPv6
+            const newIp6 = this.interfaces[i].ip6;
+            if (oldIp6 && oldIp6.toString() !== (newIp6?.toString() ?? "")) {
+                const oldStr = oldIp6.toString();
+                for (const conn of Array.from(this.tcp.conns.values())) {
+                    if (conn.localIP?.toString() === oldStr) this.tcp.close(conn.key);
+                }
+            }
         }
 
         if ('raEnabled' in opts) {
