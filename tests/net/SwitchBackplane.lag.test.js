@@ -560,3 +560,402 @@ describe('LAG – serialization roundtrip', () => {
         expect(bp2.portLagId[0]).toBe(0);
     });
 });
+
+// ── LACP – frame encoding ─────────────────────────────────────────────────────
+
+describe('LACP – frame encoding', () => {
+    const ACTOR_MAC = new Uint8Array([0x02, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE]);
+    const GROUP_ID = 1;
+    const PORT_IDX = 0;
+
+    it('returns exactly 110 bytes', () => {
+        const bp = makeBP();
+        const buf = bp._encodeLACPDU(ACTOR_MAC, GROUP_ID, PORT_IDX, null);
+        expect(buf).toBeInstanceOf(Uint8Array);
+        expect(buf.length).toBe(110);
+    });
+
+    it('sets LACP subtype and version', () => {
+        const bp = makeBP();
+        const buf = bp._encodeLACPDU(ACTOR_MAC, GROUP_ID, PORT_IDX, null);
+        expect(buf[0]).toBe(0x01); // subtype
+        expect(buf[1]).toBe(0x01); // version
+    });
+
+    it('encodes actor TLV with correct type, length, MAC, key, port and state', () => {
+        const bp = makeBP();
+        const buf = bp._encodeLACPDU(ACTOR_MAC, 5, 3, null);
+        expect(buf[2]).toBe(0x01); // TLV type = actor
+        expect(buf[3]).toBe(0x14); // TLV length = 20
+        expect(buf[4]).toBe(0x80); expect(buf[5]).toBe(0x00); // system priority 32768
+        expect(Array.from(buf.slice(6, 12))).toEqual(Array.from(ACTOR_MAC));
+        expect((buf[12] << 8) | buf[13]).toBe(5);   // key = groupId
+        expect(buf[14]).toBe(0x80); expect(buf[15]).toBe(0x00); // port priority 32768
+        expect((buf[16] << 8) | buf[17]).toBe(4);   // port = portIdx + 1
+        expect(buf[18]).toBe(0x3D);                 // state flags
+    });
+
+    it('encodes partner TLV as zeroes when partner is null', () => {
+        const bp = makeBP();
+        const buf = bp._encodeLACPDU(ACTOR_MAC, GROUP_ID, PORT_IDX, null);
+        expect(buf[22]).toBe(0x02); // TLV type = partner
+        expect(buf[23]).toBe(0x14); // TLV length = 20
+        for (let i = 24; i < 42; i++) expect(buf[i]).toBe(0);
+    });
+
+    it('encodes partner TLV fields when partner is provided', () => {
+        const bp = makeBP();
+        const partner = {
+            sysPriority: 32768,
+            sysId: '02:bb:cc:dd:ee:ff',
+            key: 2,
+            portPriority: 32768,
+            port: 1,
+            state: 0x3D,
+        };
+        const buf = bp._encodeLACPDU(ACTOR_MAC, GROUP_ID, PORT_IDX, partner);
+        expect((buf[24] << 8) | buf[25]).toBe(32768);
+        expect(Array.from(buf.slice(26, 32))).toEqual([0x02, 0xbb, 0xcc, 0xdd, 0xee, 0xff]);
+        expect((buf[32] << 8) | buf[33]).toBe(2);
+        expect((buf[34] << 8) | buf[35]).toBe(32768);
+        expect((buf[36] << 8) | buf[37]).toBe(1);
+        expect(buf[38]).toBe(0x3D);
+    });
+
+    it('encodes collector and terminator TLVs', () => {
+        const bp = makeBP();
+        const buf = bp._encodeLACPDU(ACTOR_MAC, GROUP_ID, PORT_IDX, null);
+        expect(buf[44]).toBe(0x03); // collector TLV type
+        expect(buf[45]).toBe(0x10); // collector TLV length = 16
+        expect(buf[62]).toBe(0x00); // terminator type
+        expect(buf[63]).toBe(0x00); // terminator length
+    });
+});
+
+// ── LACP – frame decoding ─────────────────────────────────────────────────────
+
+describe('LACP – frame decoding', () => {
+    const ACTOR_MAC = new Uint8Array([0x02, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE]);
+
+    it('returns null for missing or too-short payload', () => {
+        const bp = makeBP();
+        expect(bp._decodeLACPDU(null)).toBeNull();
+        expect(bp._decodeLACPDU(new Uint8Array(0))).toBeNull();
+        expect(bp._decodeLACPDU(new Uint8Array(43))).toBeNull();
+    });
+
+    it('returns null for wrong subtype', () => {
+        const bp = makeBP();
+        const buf = bp._encodeLACPDU(ACTOR_MAC, 1, 0, null);
+        buf[0] = 0x02;
+        expect(bp._decodeLACPDU(buf)).toBeNull();
+    });
+
+    it('returns null for wrong actor TLV type', () => {
+        const bp = makeBP();
+        const buf = bp._encodeLACPDU(ACTOR_MAC, 1, 0, null);
+        buf[2] = 0x03;
+        expect(bp._decodeLACPDU(buf)).toBeNull();
+    });
+
+    it('roundtrip: encode then decode returns actor fields', () => {
+        const bp = makeBP();
+        const buf = bp._encodeLACPDU(ACTOR_MAC, 5, 3, null);
+        const info = bp._decodeLACPDU(buf);
+        expect(info).not.toBeNull();
+        expect(info.sysPriority).toBe(32768);
+        expect(info.sysId).toBe('02:aa:bb:cc:dd:ee');
+        expect(info.key).toBe(5);
+        expect(info.portPriority).toBe(32768);
+        expect(info.port).toBe(4); // portIdx + 1
+        expect(info.state).toBe(0x3D);
+    });
+});
+
+// ── LACP – isLACPFrame ────────────────────────────────────────────────────────
+
+describe('LACP – isLACPFrame', () => {
+    function lacpFrame(opts = {}) {
+        const payload = new Uint8Array(110);
+        payload[0] = SwitchBackplane.LACP_SUBTYPE;
+        const f = new EthernetFrame({
+            dstMac: SwitchBackplane.LACP_DEST_MAC,
+            srcMac: mac([0x02, 0, 0, 0, 0, 1]),
+            etherType: SwitchBackplane.LACP_ETHERTYPE,
+            payload,
+        });
+        if (opts.etherType != null) f.etherType = opts.etherType;
+        if (opts.subtype != null)   f.payload[0] = opts.subtype;
+        if (opts.useLengthField)    f.useLengthField = true;
+        return f;
+    }
+
+    it('returns true for a valid LACP frame', () => {
+        const bp = makeBP();
+        expect(bp._isLACPFrame(lacpFrame())).toBe(true);
+    });
+
+    it('returns false when etherType does not match', () => {
+        const bp = makeBP();
+        expect(bp._isLACPFrame(lacpFrame({ etherType: 0x0800 }))).toBe(false);
+    });
+
+    it('returns false when payload subtype does not match', () => {
+        const bp = makeBP();
+        expect(bp._isLACPFrame(lacpFrame({ subtype: 0x02 }))).toBe(false);
+    });
+
+    it('returns false when frame uses the length field', () => {
+        const bp = makeBP();
+        expect(bp._isLACPFrame(lacpFrame({ useLengthField: true }))).toBe(false);
+    });
+});
+
+// ── LACP – handleLACPFrame ────────────────────────────────────────────────────
+
+describe('LACP – handleLACPFrame', () => {
+    function makeLacpFrame(bp, actorMac, groupId, portIdx) {
+        const payload = bp._encodeLACPDU(actorMac, groupId, portIdx, null);
+        return new EthernetFrame({
+            dstMac: SwitchBackplane.LACP_DEST_MAC,
+            srcMac: actorMac,
+            etherType: SwitchBackplane.LACP_ETHERTYPE,
+            payload,
+        });
+    }
+
+    it('stores partner info on the correct port', () => {
+        const bp = makeBP();
+        const actorMac = new Uint8Array([0x02, 0x11, 0x22, 0x33, 0x44, 0x55]);
+        bp._handleLACPFrame(0, makeLacpFrame(bp, actorMac, 3, 1));
+        const partner = bp.lacpPartners.get(0);
+        expect(partner).toBeDefined();
+        expect(partner.sysId).toBe('02:11:22:33:44:55');
+        expect(partner.key).toBe(3);
+        expect(partner.port).toBe(2); // portIdx + 1
+    });
+
+    it('sets expiresAtTick to currentTick + LACP_PARTNER_TTL ticks', () => {
+        const bp = makeBP();
+        const actorMac = new Uint8Array([0x02, 0, 0, 0, 0, 1]);
+        const before = simTimer.currentTick;
+        bp._handleLACPFrame(0, makeLacpFrame(bp, actorMac, 1, 0));
+        const ttl = Math.round(SimTimer.LACP_PARTNER_TTL_MS / SimTimer.SIM_MS_PER_TICK);
+        expect(bp.lacpPartners.get(0).expiresAtTick).toBe(before + ttl);
+    });
+
+    it('ignores a frame with an invalid LACPDU payload', () => {
+        const bp = makeBP();
+        const payload = new Uint8Array(110); // all zeros → subtype = 0x00 → decode returns null
+        const f = new EthernetFrame({
+            dstMac: SwitchBackplane.LACP_DEST_MAC,
+            srcMac: mac([0x02, 0, 0, 0, 0, 1]),
+            etherType: SwitchBackplane.LACP_ETHERTYPE,
+            payload,
+        });
+        bp._handleLACPFrame(0, f);
+        expect(bp.lacpPartners.has(0)).toBe(false);
+    });
+});
+
+// ── LACP – TX timer ───────────────────────────────────────────────────────────
+
+describe('LACP – TX timer', () => {
+    const LACP_TX_TICKS = SimTimer.toTicks(SimTimer.LACP_TX_MS);
+
+    it('_lacpStartPort emits nothing immediately when port is unlinked', () => {
+        const bp = makeBP();
+        const g = bp.createLagGroup('lacp');
+        bp.addPortToLag(0, g.id);
+        // addPortToLag already calls _lacpStartPort; port is not linked
+        expect(bp.ports[0].outBuffer.length).toBe(0);
+    });
+
+    it('_lacpStartPort sends a LACP frame immediately when port is linked', () => {
+        const bp = makeBP();
+        const g = bp.createLagGroup('lacp');
+        bp.addPortToLag(0, g.id);
+        linkPort(bp, 0);
+        bp._lacpStartPort(0, g.id);
+        expect(bp.ports[0].outBuffer.length).toBe(1);
+        expect(bp._isLACPFrame(bp.ports[0].outBuffer[0])).toBe(true);
+    });
+
+    it('_lacpStartPort re-transmits after LACP_TX_MS', () => {
+        const bp = makeBP();
+        const g = bp.createLagGroup('lacp');
+        bp.addPortToLag(0, g.id);
+        linkPort(bp, 0);
+        bp._lacpStartPort(0, g.id);
+        const countAfterImmediate = bp.ports[0].outBuffer.length;
+        for (let i = 0; i < LACP_TX_TICKS; i++) simTimer.tick();
+        expect(bp.ports[0].outBuffer.length).toBe(countAfterImmediate + 1);
+    });
+
+    it('_lacpStopPort cancels the TX timer and clears the partner entry', () => {
+        const bp = makeBP();
+        const g = bp.createLagGroup('lacp');
+        bp.addPortToLag(0, g.id);
+        linkPort(bp, 0);
+        bp._lacpStartPort(0, g.id);
+
+        // Simulate receiving a partner PDU so lacpPartners gets an entry
+        const peerMac = new Uint8Array([0x02, 0, 0, 0, 0, 2]);
+        bp._handleLACPFrame(0, new EthernetFrame({
+            dstMac: SwitchBackplane.LACP_DEST_MAC,
+            srcMac: peerMac,
+            etherType: SwitchBackplane.LACP_ETHERTYPE,
+            payload: bp._encodeLACPDU(peerMac, 1, 0, null),
+        }));
+        expect(bp.lacpPartners.has(0)).toBe(true);
+
+        bp._lacpStopPort(0);
+        expect(bp.lacpPartners.has(0)).toBe(false);
+
+        // No further frames should be queued after stop
+        const countBefore = bp.ports[0].outBuffer.length;
+        for (let i = 0; i < LACP_TX_TICKS; i++) simTimer.tick();
+        expect(bp.ports[0].outBuffer.length).toBe(countBefore);
+    });
+});
+
+// ── LACP – two-switch integration with link failover ─────────────────────────
+
+describe('LACP – two-switch failover integration', () => {
+    // Build a wire that shares a `broken` flag so both port's isLinked()
+    // reflects the cable state (EthernetLink is mocked in this file).
+    function wireBreakable(portA, portB) {
+        const link = { broken: false };
+        portA.link(link);
+        portB.link(link);
+        return {
+            transfer() {
+                if (link.broken) return;
+                let pkt;
+                while ((pkt = portA.getNextOutgoingFrame()) != null) portB.recieve(pkt);
+                while ((pkt = portB.getNextOutgoingFrame()) != null) portA.recieve(pkt);
+            },
+            break()  { link.broken = true;  },
+            repair() { link.broken = false; },
+            destroy() { portA.unlink(); portB.unlink(); },
+        };
+    }
+
+    /**
+     * Topology:
+     *   hostA → sw1.port[2]    sw1.port[0] ↔ sw2.port[0]  (breakable link0)
+     *                          sw1.port[1] ↔ sw2.port[1]  (always-up   link1)
+     *                          sw2.port[2] → hostB
+     */
+    function buildTopo() {
+        const sw1 = makeBP(4);
+        const sw2 = makeBP(4);
+
+        const g1 = sw1.createLagGroup('lacp');
+        sw1.addPortToLag(0, g1.id);
+        sw1.addPortToLag(1, g1.id);
+
+        const g2 = sw2.createLagGroup('lacp');
+        sw2.addPortToLag(0, g2.id);
+        sw2.addPortToLag(1, g2.id);
+
+        const link0 = wireBreakable(sw1.ports[0], sw2.ports[0]);
+        const link1 = wireBreakable(sw1.ports[1], sw2.ports[1]);
+
+        sw1.ports[2].link(SENTINEL);
+        sw2.ports[2].link(SENTINEL);
+
+        return { sw1, sw2, g1, g2, link0, link1 };
+    }
+
+    const LACP_TX_TICKS = SimTimer.toTicks(SimTimer.LACP_TX_MS);
+
+    function runTicks(n, sw1, sw2, link0, link1) {
+        for (let i = 0; i < n; i++) {
+            simTimer.tick();
+            link0.transfer();
+            link1.transfer();
+            sw1.update();
+            sw2.update();
+        }
+    }
+
+    it('both switches learn each other as LACP partners after TX interval', () => {
+        const { sw1, sw2, link0, link1 } = buildTopo();
+        runTicks(LACP_TX_TICKS + 2, sw1, sw2, link0, link1);
+        expect(sw1.lacpPartners.has(0)).toBe(true);
+        expect(sw1.lacpPartners.has(1)).toBe(true);
+        expect(sw2.lacpPartners.has(0)).toBe(true);
+        expect(sw2.lacpPartners.has(1)).toBe(true);
+    });
+
+    it('partner info contains the correct peer system ID', () => {
+        const { sw1, sw2, link0, link1 } = buildTopo();
+        runTicks(LACP_TX_TICKS + 2, sw1, sw2, link0, link1);
+        // sw1.lacpPartners[0] should reflect sw2's bridge MAC
+        const sw2ActorMac = Array.from(sw2.ports[0].outBuffer[0]?.srcMac ?? []);
+        const partner0 = sw1.lacpPartners.get(0);
+        expect(partner0).toBeDefined();
+        // key should equal sw2's LAG group id
+        expect(partner0.key).toBe(sw2.lagGroups[0].id);
+    });
+
+    it('broadcast from sw1 reaches sw2 host port with both links up', () => {
+        const { sw1, sw2, link0, link1 } = buildTopo();
+        runTicks(LACP_TX_TICKS + 2, sw1, sw2, link0, link1);
+
+        const hostAMac = mac([0x02, 0, 0, 0, 0, 0xA]);
+        inject(sw1, 2, frame(hostAMac, BCAST));
+        link0.transfer();
+        link1.transfer();
+        sw2.update();
+
+        expect(sw2.ports[2].outBuffer.length).toBeGreaterThan(0);
+    });
+
+    it('unicast traffic fails over to the remaining link when link0 is broken', () => {
+        const { sw1, sw2, link0, link1 } = buildTopo();
+        runTicks(LACP_TX_TICKS + 2, sw1, sw2, link0, link1);
+
+        link0.break();
+        expect(sw1.ports[0].isLinked()).toBe(false);
+        expect(sw2.ports[0].isLinked()).toBe(false);
+
+        // Let sw1 learn hostB MAC via link1
+        const hostBMac = mac([0x02, 0, 0, 0, 0, 0xB]);
+        inject(sw2, 2, frame(hostBMac, BCAST));
+        link0.transfer(); // no-op (broken)
+        link1.transfer();
+        sw1.update();
+
+        // Drain any extra frames from ports before the unicast test
+        while (sw2.ports[2].outBuffer.length) sw2.ports[2].outBuffer.shift();
+
+        // Send unicast from sw1 toward hostB
+        const hostAMac = mac([0x02, 0, 0, 0, 0, 0xA]);
+        inject(sw1, 2, frame(hostAMac, hostBMac));
+        link0.transfer(); // no-op
+        link1.transfer();
+        sw2.update();
+
+        // Must arrive at sw2 host port
+        expect(sw2.ports[2].outBuffer.length).toBeGreaterThan(0);
+        // Must NOT have gone through the broken link
+        expect(sw2.ports[0].inBuffer.length).toBe(0);
+    });
+
+    it('both ports are active again after the broken link is repaired', () => {
+        const { sw1, sw2, link0, link1 } = buildTopo();
+        runTicks(LACP_TX_TICKS + 2, sw1, sw2, link0, link1);
+
+        link0.break();
+        runTicks(2, sw1, sw2, link0, link1);
+
+        link0.repair();
+        expect(sw1.ports[0].isLinked()).toBe(true);
+        expect(sw2.ports[0].isLinked()).toBe(true);
+
+        const active = sw1.lagGroups[0].members.filter(i => sw1.ports[i].isLinked());
+        expect(active.length).toBe(2);
+    });
+});
