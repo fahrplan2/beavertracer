@@ -1,3 +1,7 @@
+## Version 0.1.25
+
+* added ability to deactivate EthernetLinks
+
 ## Version 0.1.24
 
 - renamed Laptop to Tablet and PC to Computer

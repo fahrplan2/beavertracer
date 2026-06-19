@@ -127,15 +127,74 @@
   background: var(--danger-soft);
 }
 
-/* ---- Body (two columns) ---- */
+/* ---- Body (tabbed pages) ---- */
 
 .welcome-body {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr;
+  display: flex;
+  flex-direction: column;
   flex: 1;
   height: 0;
   overflow: hidden;
+}
+
+/* Tabs */
+
+.welcome-tabs {
+  display: flex;
+  gap: 0;
+  padding: 0 var(--pad-2xl);
+  border-bottom: 1px solid var(--ui-border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+
+.welcome-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pad-sm);
+  padding: var(--pad-md) var(--pad-lg);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  margin-bottom: -1px;
+  transition: color 0.1s, border-color 0.1s;
+}
+
+.welcome-tab:hover {
+  color: var(--text);
+}
+
+.welcome-tab--active {
+  color: var(--text);
+  border-bottom-color: var(--text);
+  font-weight: 600;
+}
+
+.welcome-tab:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+/* Pages */
+
+.welcome-pages {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+.welcome-page {
+  display: none;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.welcome-page--active {
+  display: block;
 }
 
 /* Actions */
@@ -144,10 +203,11 @@
   display: flex;
   flex-direction: column;
   gap: var(--pad-md);
-  padding: var(--pad-xl) var(--pad-lg) var(--pad-xl) var(--pad-2xl);
-  border-right: 1px solid var(--ui-border);
+  padding: var(--pad-xl) var(--pad-2xl);
   overflow-y: auto;
   min-height: 0;
+  height: 100%;
+  box-sizing: border-box;
 }
 
 .welcome-action-btn {
@@ -199,29 +259,13 @@
 /* News */
 
 .welcome-news {
-  display: flex;
-  flex-direction: column;
-  padding: var(--pad-xl) var(--pad-2xl) var(--pad-xl) var(--pad-lg);
-  overflow: hidden;
-  min-height: 0;
+  padding: var(--pad-xl) var(--pad-2xl);
+  height: 100%;
+  box-sizing: border-box;
 }
 
 .welcome-news-content {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-}
-
-.welcome-news-heading {
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--text);
-  margin: 0 0 var(--pad-lg);
-  display: flex;
-  align-items: center;
-  gap: var(--pad-sm);
+  height: 100%;
 }
 
 .welcome-news-content .minimarkdown-h2 {
@@ -424,19 +468,16 @@
     height: 40px;
   }
 
-  .welcome-body {
-    grid-template-columns: 1fr;
+  .welcome-tabs {
+    padding: 0 var(--pad-lg);
   }
 
   .welcome-actions {
-    border-right: none;
-    border-bottom: 1px solid var(--ui-border);
     padding: var(--pad-lg);
   }
 
   .welcome-news {
     padding: var(--pad-lg);
-    max-height: 180px;
   }
 
   .welcome-footer {

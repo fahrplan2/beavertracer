@@ -117,9 +117,38 @@ export class WelcomeDialog {
         const body = document.createElement("div");
         body.className = "welcome-body";
 
+        // Tab bar
+        const tabs = document.createElement("div");
+        tabs.className = "welcome-tabs";
+        tabs.setAttribute("role", "tablist");
+
+        const tabStart = document.createElement("button");
+        tabStart.type = "button";
+        tabStart.className = "welcome-tab welcome-tab--active";
+        tabStart.setAttribute("role", "tab");
+        tabStart.setAttribute("aria-selected", "true");
+        tabStart.innerHTML = `<i class="fa-solid fa-house" aria-hidden="true"></i> ${t("sim.welcome")}`;
+
+        const tabNews = document.createElement("button");
+        tabNews.type = "button";
+        tabNews.className = "welcome-tab";
+        tabNews.setAttribute("role", "tab");
+        tabNews.setAttribute("aria-selected", "false");
+        tabNews.innerHTML = `<i class="fa-solid fa-newspaper" aria-hidden="true"></i> ${t("welcome.news")}`;
+
+        tabs.appendChild(tabStart);
+        tabs.appendChild(tabNews);
+
+        // Pages
+        const pages = document.createElement("div");
+        pages.className = "welcome-pages";
+
+        const pageStart = document.createElement("div");
+        pageStart.className = "welcome-page welcome-page--active";
+        pageStart.setAttribute("role", "tabpanel");
+
         const actions = document.createElement("div");
         actions.className = "welcome-actions";
-
         actions.appendChild(WelcomeDialog._actionBtn(
             "fa-file", t("welcome.new"), t("welcome.new.desc"),
             async () => {
@@ -141,27 +170,47 @@ export class WelcomeDialog {
         );
         tourBtn.classList.add("welcome-action-btn--tour");
         actions.appendChild(tourBtn);
+        pageStart.appendChild(actions);
+
+        const pageNews = document.createElement("div");
+        pageNews.className = "welcome-page";
+        pageNews.setAttribute("role", "tabpanel");
 
         const news = document.createElement("div");
         news.className = "welcome-news";
-
-        const newsHeading = document.createElement("p");
-        newsHeading.className = "welcome-news-heading";
-        newsHeading.innerHTML = `<i class="fa-solid fa-newspaper" aria-hidden="true"></i> ${t("welcome.news")}`;
-        news.appendChild(newsHeading);
-
         const newsContent = document.createElement("div");
         newsContent.className = "welcome-news-content minimarkdown";
         newsContent.textContent = "…";
         news.appendChild(newsContent);
-
         fetch("/news.md")
             .then((r) => (r.ok ? r.text() : ""))
             .then((md) => { newsContent.innerHTML = md ? MiniMarkdown.render(md) : "—"; })
             .catch(() => { newsContent.textContent = "—"; });
+        pageNews.appendChild(news);
 
-        body.appendChild(actions);
-        body.appendChild(news);
+        // Tab switching
+        tabStart.addEventListener("click", () => {
+            tabStart.classList.add("welcome-tab--active");
+            tabStart.setAttribute("aria-selected", "true");
+            tabNews.classList.remove("welcome-tab--active");
+            tabNews.setAttribute("aria-selected", "false");
+            pageStart.classList.add("welcome-page--active");
+            pageNews.classList.remove("welcome-page--active");
+        });
+        tabNews.addEventListener("click", () => {
+            tabNews.classList.add("welcome-tab--active");
+            tabNews.setAttribute("aria-selected", "true");
+            tabStart.classList.remove("welcome-tab--active");
+            tabStart.setAttribute("aria-selected", "false");
+            pageNews.classList.add("welcome-page--active");
+            pageStart.classList.remove("welcome-page--active");
+        });
+
+        pages.appendChild(pageStart);
+        pages.appendChild(pageNews);
+
+        body.appendChild(tabs);
+        body.appendChild(pages);
         return body;
     }
 
