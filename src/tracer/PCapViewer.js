@@ -5,6 +5,7 @@ import { TabPicker } from "./lib/TabPicker.js";
 import { SplitGrid } from "./lib/SplitGrid.js";
 import { SimControl } from "../SimControl.js";
 import { t } from "../i18n/index.js";
+import { makeDraggable } from "../lib/dragabble.js";
 
 /** @typedef {any} WiregasmModule */
 /** @typedef {any} DissectSession */
@@ -1561,6 +1562,12 @@ export class PCapViewer {
 
     overlay.appendChild(panel);
     this.#root?.appendChild(overlay);
+
+    makeDraggable(panel, {
+      handle: hdr,
+      boundary: overlay,
+      cancelSelector: "button",
+    });
 
     const close = () => { overlay.remove(); document.removeEventListener("keydown", onKey); };
     hdr.querySelector(".pcapviewer-stream-close")?.addEventListener("click", close);

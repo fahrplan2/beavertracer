@@ -107,6 +107,12 @@ GPLv2
 
 ## Credits
 
-see "About" tab inside the app.
+- **Wiregasm** by Good-Tools — powers the packet capture engine
+- **Font Awesome Free** — icons (CC BY 4.0, © Fonticons, Inc.)
+- **Hack** font — © 2018 Source Foundry Authors (MIT)
+- **Noto Emoji** by Google — beaver app icon (Apache 2.0)
+- **country-flag-emoji-polyfill** by TalkJS (MIT)
+
+Full credits and license texts are available in the "About" section inside the app.
 
 ---

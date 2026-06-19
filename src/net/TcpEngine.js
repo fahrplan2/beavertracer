@@ -77,6 +77,9 @@ export class TcpEngine {
 
     /** @type {number} TIME-WAIT duration in simulated ms */
     this.timeWaitMs = 2000;
+
+    /** @type {number} round-robin pointer for ephemeral port allocation */
+    this._nextEphemeralPort = 49152;
   }
 
   /**
@@ -200,9 +203,15 @@ export class TcpEngine {
    * @throws if no free port is available
    */
   _allocEphemeralPort() {
-    for (let p = 49152; p < 65535; p++) {
-      if (!this.sockets.has(p)) return p;
-    }
+    const start = this._nextEphemeralPort;
+    let p = start;
+    do {
+      if (!this.sockets.has(p)) {
+        this._nextEphemeralPort = (p >= 65534) ? 49152 : p + 1;
+        return p;
+      }
+      p = (p >= 65534) ? 49152 : p + 1;
+    } while (p !== start);
     throw new Error("No free TCP ports");
   }
 
