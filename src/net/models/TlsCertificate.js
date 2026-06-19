@@ -356,7 +356,7 @@ export class TlsTrustStore {
    * @param {TlsCertificate} cert
    * @param {TlsCertificate[]} [extraChain]
    * @param {Set<string>} [_visited]
-   * @returns {boolean}
+   * @returns {Promise<boolean>}
    */
   async isTrusted(cert, extraChain = [], _visited = new Set()) {
     if (_visited.has(cert.subject)) return false;
@@ -367,11 +367,14 @@ export class TlsTrustStore {
     const issuer = pool.find(c => c.subject === cert.issuer && c.subject !== cert.subject);
     if (!issuer) return false;
     if (!cert.certSignature || !issuer.publicKey) return false;
-    const tbsBytes = cert._tbsDer ?? cert._buildTbsBytes();
+    const tbsRaw = cert._tbsDer ?? cert._buildTbsBytes();
+    const tbsBytes = /** @type {ArrayBuffer} */ (tbsRaw.buffer.slice(tbsRaw.byteOffset, tbsRaw.byteOffset + tbsRaw.byteLength));
+    const sig = cert.certSignature;
+    const sigBytes = /** @type {ArrayBuffer} */ (sig.buffer.slice(sig.byteOffset, sig.byteOffset + sig.byteLength));
     const valid = await crypto.subtle.verify(
       { name: 'ECDSA', hash: 'SHA-256' },
       issuer.publicKey,
-      cert.certSignature,
+      sigBytes,
       tbsBytes,
     );
     if (!valid) return false;
