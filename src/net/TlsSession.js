@@ -369,7 +369,7 @@ export class TlsSession {
             if (peerCert.notAfter < Date.now()) {
               throw new TlsCertExpiredError(peerCert.subject);
             }
-            if (!this._trustStore.isTrusted(peerCert, peerCert.chain)) {
+            if (!await this._trustStore.isTrusted(peerCert, peerCert.chain)) {
               throw new TlsCertUntrustedError(peerCert.subject);
             }
           }
@@ -821,7 +821,7 @@ export class TlsSession {
     // A P-256 uncompressed key is always 65 bytes → BIT STRING content = 66 bytes (0x42).
     for (let i = 0; i + 67 <= der.length; i++) {
       if (der[i] === 0x03 && der[i + 1] === 0x42 && der[i + 2] === 0x00 && der[i + 3] === 0x04) {
-        const rawPubKey = der.slice(i + 2, i + 2 + 65); // 0x04 || x || y
+        const rawPubKey = der.slice(i + 3, i + 3 + 65); // 0x04 || x || y (skip 0x00 unused-bits byte)
         try {
           stub.publicKey = await crypto.subtle.importKey(
             "raw", rawPubKey,
@@ -843,6 +843,9 @@ export class TlsSession {
       stub.publicKeyId = Array.from(new Uint8Array(hashBuf))
         .map(b => b.toString(16).padStart(2, "0")).join("");
     }
+
+    stub.certSignature = extractCertSig(der);
+    stub._tbsDer = extractTbsDer(der);
 
     return stub;
   }

@@ -81,6 +81,13 @@ export class TlsCertificate {
   /** @type {boolean} – private key is present (false for imported/re-signed certs) */
   hasPrivateKey = false;
 
+  /**
+   * Raw DER-encoded TBSCertificate bytes for wire-parsed certs.
+   * Null for locally generated certs (where _buildTbsBytes() is authoritative).
+   * @type {Uint8Array|null}
+   */
+  _tbsDer = null;
+
   /** @type {TlsCertificate[]} – signing chain (CA cert + its ancestors), leaf-exclusive */
   chain = [];
 
@@ -351,7 +358,7 @@ export class TlsTrustStore {
    * @param {Set<string>} [_visited]
    * @returns {boolean}
    */
-  isTrusted(cert, extraChain = [], _visited = new Set()) {
+  async isTrusted(cert, extraChain = [], _visited = new Set()) {
     if (_visited.has(cert.subject)) return false;
     _visited.add(cert.subject);
     if (this.trustedCAs.some(ca => ca.subject === cert.subject)) return true;
@@ -359,6 +366,15 @@ export class TlsTrustStore {
     const pool = [...cert.chain, ...extraChain];
     const issuer = pool.find(c => c.subject === cert.issuer && c.subject !== cert.subject);
     if (!issuer) return false;
+    if (!cert.certSignature || !issuer.publicKey) return false;
+    const tbsBytes = cert._tbsDer ?? cert._buildTbsBytes();
+    const valid = await crypto.subtle.verify(
+      { name: 'ECDSA', hash: 'SHA-256' },
+      issuer.publicKey,
+      cert.certSignature,
+      tbsBytes,
+    );
+    if (!valid) return false;
     return this.isTrusted(issuer, pool, _visited);
   }
 
