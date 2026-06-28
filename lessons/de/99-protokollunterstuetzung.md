@@ -97,12 +97,12 @@ BeaverTracer ist ein Netzwerksimulator für den Unterricht. Er modelliert eine b
 <tr>
   <td>IGMPv2</td><td>RFC 2236</td>
   <td><span class="badge badge-partial">Teilweise</span></td>
-  <td>Membership Report (0x16) und Leave Group (0x17) werden von Hosts gesendet und vom Switch per IGMP Snooping ausgewertet. Query (0x11) wird geflutet, aber nicht beantwortet. RFC 1122 §3.2.2.1: kein ICMP Port/Protocol Unreachable für Multicast-Ziele. Kein IGMPv3.</td>
+  <td>Membership Report (0x16) und Leave Group (0x17) werden von Hosts gesendet und vom Switch per IGMP Snooping ausgewertet. Query (0x11) wird geflutet; Hosts antworten mit Membership Reports für alle beigetretenen Gruppen. RFC 1122 §3.2.2.1: kein ICMP Port/Protocol Unreachable für Multicast-Ziele. Kein IGMPv3.</td>
 </tr>
 <tr>
   <td>MLDv1</td><td>RFC 2710</td>
   <td><span class="badge badge-partial">Teilweise</span></td>
-  <td>Multicast Listener Report (0x83) und Done (0x84) werden von Hosts gesendet und vom Switch per MLD Snooping ausgewertet. Query (0x82) wird geflutet, aber nicht beantwortet. Quelladresse ist die Link-Local-Adresse (fe80::, RFC-konform). NDP-Frames (33:33:ff:…) bleiben unberührt. Kein MLDv2.</td>
+  <td>Multicast Listener Report (0x83) und Done (0x84) werden von Hosts gesendet und vom Switch per MLD Snooping ausgewertet. Query (0x82) wird geflutet; Hosts antworten mit Listener Reports für alle beigetretenen Gruppen. Quelladresse ist die Link-Local-Adresse (fe80::, RFC-konform). NDP-Frames (33:33:ff:…) bleiben unberührt. Kein MLDv2.</td>
 </tr>
 <tr>
   <td>ICMPv6 &amp; NDP</td><td>RFC 4443, RFC 4861</td>
@@ -272,7 +272,7 @@ Der Mailserver bedient alle drei Protokolle in einem Prozess. Der Mailclient unt
 <tr>
   <td>Multicast-Chat (MCHAT)</td><td>—</td>
   <td><span class="badge badge-partial">Teilweise</span></td>
-  <td>Eigenes UDP-Multicast-Chatprotokoll. Payload: <code>MCHAT|sessionId|nick|body</code>, Multicast-Gruppe 239.x.x.x (konfigurierbar), Port 5000. Manueller IGMP-Join/Leave (IGMPv2). JOIN/MSG/LEAVE-Nachrichtentypen. Nur IPv4-Multicast, kein persistenter Chatverlauf.</td>
+  <td>Eigenes UDP-Multicast-Chatprotokoll. Payload: <code>MCHAT|sessionId|nick|body</code>, Multicast-Gruppe konfigurierbar (IPv4: 239.x.x.x mit IGMPv2-Join/Leave; IPv6: ff…::… mit MLDv1-Report/Done), Port 5000. JOIN/MSG/LEAVE-Nachrichtentypen. Kein persistenter Chatverlauf.</td>
 </tr>
 </tbody>
 </table>
@@ -350,7 +350,7 @@ Einige Einschränkungen gelten simulatorweit, unabhängig vom Protokoll:
 
 - **Keine IPv6-Extension-Headers.** Hop-by-Hop-, Routing-, Fragment- und Destination-Options-Header werden weder erzeugt noch geparst.
 - **Eingeschränkte TCP-Options.** MSS wird beim SYN-Handshake ausgehandelt. Window Scaling, SACK und TCP Timestamps sind nicht implementiert; Fenstergrößen sind fest (kein Scaling).
-- **Kein IPv6-Multicast-Management via MLDv2.** MLDv1 (RFC 2710) ist implementiert; MLDv2 und MLD-Querier fehlen. IPv6-Multicast ohne registrierte Gruppe wird geflutet.
+- **Kein IPv6-Multicast-Management via MLDv2.** MLDv1 (RFC 2710) und ein MLD-Querier (Switch sendet periodisch General Queries, Hosts antworten und erneuern ihre Einträge) sind implementiert; MLDv2 fehlt. IPv6-Multicast ohne registrierte Gruppe wird geflutet.
 - **Keine Routing-Protokoll-Authentifizierung.** MD5/SHA-Schlüsselketten für OSPF, BGP und RIPv2 sind strukturell vorhanden, werden aber nicht durchgesetzt.
 - **Keine echte Kryptographie außer bei TLS.** Bitcoin-Signaturen, DNSSEC-Records und ähnliche kryptographische Konstrukte werden gefälscht oder weggelassen.
 - **Vereinfachte Timer.** Protokoll-Timer (OSPF Hello, BGP Hold Time, DHCP-Lease-Ablauf) laufen auf einer simulierten Tick-Uhr, die standardmäßig schneller als die Echtzeit läuft.
