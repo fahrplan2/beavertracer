@@ -1378,7 +1378,7 @@ export class HomeRouter extends SimulatedObject {
         const card = UILib.div("router-card");
         host.appendChild(card);
 
-        const content = UILib.div("sim-panel-content hr-panel-content");
+        const content = UILib.div("sim-panel-content panel");
 
         const { bar: tabBar, setActive: selectTab } = UILib.tabGroup([
             { id: "status", label: t("homerouter.tab.status") },
@@ -1415,15 +1415,15 @@ export class HomeRouter extends SimulatedObject {
 
     /** @param {HTMLElement} host */
     _buildStatusTab(host) {
-        const infoRow = (/** @type {string} */ label, /** @type {string} */ value) => UILib.div("hr-info-row", [
+        const infoRow = (/** @type {string} */ label, /** @type {string} */ value) => UILib.div("cfg-info-row", [
             UILib.el("span", { text: label, className: "hr-info-label" }),
-            UILib.el("span", { text: value, className: "hr-info-value" }),
+            UILib.el("span", { text: value, className: "cfg-info-value" }),
         ]);
 
         const wanLinked = this.wan0.isLinked();
         const wanChildren = [
             UILib.el("span", { text: "WAN", className: "hr-section-title" }),
-            UILib.div("hr-info-row", [
+            UILib.div("cfg-info-row", [
                 UILib.el("span", { text: t("homerouter.wan.status"), className: "hr-info-label" }),
                 UILib.el("span", {
                     text: wanLinked ? t("homerouter.wan.status.up") : t("homerouter.wan.status.down"),
@@ -1439,16 +1439,16 @@ export class HomeRouter extends SimulatedObject {
             wanChildren.push(infoRow(t("homerouter.wan.pd.delegated"), `${IPAddress.fromUInt8(pd.prefix16bytes)?.toString() ?? "?"}/${pd.prefixLen}`));
             if (this._lanIp6) wanChildren.push(infoRow("LAN IPv6", `${IPAddress.fromUInt8(this._lanIp6)?.toString() ?? "?"}/64`));
         }
-        host.appendChild(UILib.el("div", { className: "hr-section", children: wanChildren }));
+        host.appendChild(UILib.el("div", { className: "cfg-section", children: wanChildren }));
 
-        host.appendChild(UILib.el("div", { className: "hr-section", children: [
+        host.appendChild(UILib.el("div", { className: "cfg-section", children: [
             UILib.el("span", { text: "LAN", className: "hr-section-title" }),
             infoRow("IP", `${ipToString(this._lanIp)}/${this._lanPrefix}`),
             infoRow("MAC", macToStr(this._lanMac)),
         ]}));
 
         this._dhcpCleanup();
-        host.appendChild(UILib.el("div", { className: "hr-section", children: [
+        host.appendChild(UILib.el("div", { className: "cfg-section", children: [
             UILib.el("span", { text: t("homerouter.tab.dhcp"), className: "hr-section-title" }),
             infoRow(t("homerouter.dhcp.leases"), String(this._dhcpLeases.size)),
         ]}));
@@ -1459,8 +1459,8 @@ export class HomeRouter extends SimulatedObject {
     /** @param {HTMLElement} host */
     _buildWanTab(host) {
         const field = (/** @type {string} */ cls, /** @type {string} */ label, /** @type {HTMLElement} */ inp) => UILib.el("div", {
-            className: ["hr-field", cls].filter(Boolean).join(" "),
-            children: [UILib.el("span", { text: label, className: "hr-label" }), inp],
+            className: ["cfg-field hr-field", cls].filter(Boolean).join(" "),
+            children: [UILib.el("span", { text: label, className: "cfg-label" }), inp],
         });
 
         // ── IPv4 ─────────────────────────────────────────────────────────
@@ -1475,22 +1475,22 @@ export class HomeRouter extends SimulatedObject {
         const gwIn   = UILib.input({ value: this._wanGw ? ipToString(this._wanGw) : "", placeholder: "192.168.0.254" });
         const dnsIn  = UILib.input({ value: this._upstreamDns ? ipToString(this._upstreamDns) : "", placeholder: "1.1.1.1" });
 
-        const staticSection = UILib.el("div", { className: "hr-section", children: [
-            UILib.div("hr-fields", [
+        const staticSection = UILib.el("div", { className: "cfg-section", children: [
+            UILib.div("cfg-fields", [
                 field("", t("homerouter.wan.ip"), ipIn),
                 field("hr-field-sm", t("homerouter.wan.mask"), maskIn),
             ]),
-            UILib.div("hr-fields", [field("hr-field-wide", t("homerouter.wan.gw"), gwIn)]),
-            UILib.div("hr-fields", [field("hr-field-wide", t("homerouter.wan.dns"), dnsIn)]),
+            UILib.div("cfg-fields", [field("hr-field-wide", t("homerouter.wan.gw"), gwIn)]),
+            UILib.div("cfg-fields", [field("hr-field-wide", t("homerouter.wan.dns"), dnsIn)]),
         ]});
 
         const showStatic = (/** @type {boolean} */ show) => { staticSection.classList.toggle("hidden", !show); };
         showStatic(this._wanMode === "static");
         modeSel.addEventListener("change", () => showStatic(modeSel.value === "static"));
 
-        host.appendChild(UILib.el("div", { className: "hr-section", children: [
+        host.appendChild(UILib.el("div", { className: "cfg-section", children: [
             UILib.el("span", { text: "IPv4", className: "hr-section-title" }),
-            UILib.div("hr-fields", [field("hr-field-wide", t("homerouter.wan.mode"), modeSel)]),
+            UILib.div("cfg-fields", [field("hr-field-wide", t("homerouter.wan.mode"), modeSel)]),
         ]}));
         host.appendChild(staticSection);
 
@@ -1505,12 +1505,12 @@ export class HomeRouter extends SimulatedObject {
         if (this._wanDhcpv6PdDelegated) {
             const pd = this._wanDhcpv6PdDelegated;
             const pdStr = `${IPAddress.fromUInt8(pd.prefix16bytes)?.toString() ?? "?"}/${pd.prefixLen}`;
-            ip6Children.push(UILib.div("hr-info-row", [
+            ip6Children.push(UILib.div("cfg-info-row", [
                 UILib.el("span", { text: t("homerouter.wan.pd.delegated"), className: "hr-info-label" }),
-                UILib.el("span", { text: pdStr, className: "hr-info-value" }),
+                UILib.el("span", { text: pdStr, className: "cfg-info-value" }),
             ]));
         }
-        host.appendChild(UILib.el("div", { className: "hr-section", children: ip6Children }));
+        host.appendChild(UILib.el("div", { className: "cfg-section", children: ip6Children }));
 
         const applyBtn = UILib.button(t("router.apply"));
         applyBtn.addEventListener("click", () => {
@@ -1542,22 +1542,22 @@ export class HomeRouter extends SimulatedObject {
             if (this._wanIp6Enabled) { this._sendWanRouterSolicitation(); void this._runWanDhcpv6PdClient(); }
             this._mount(/** @type {HTMLElement} */ (this._panelBody));
         });
-        host.appendChild(UILib.div("hr-btn-row", [applyBtn]));
+        host.appendChild(UILib.div("cfg-btn-row", [applyBtn]));
     }
 
     /** @param {HTMLElement} host */
     _buildLanTab(host) {
         const field = (/** @type {string} */ cls, /** @type {string} */ label, /** @type {HTMLElement} */ inp) => UILib.el("div", {
-            className: ["hr-field", cls].filter(Boolean).join(" "),
-            children: [UILib.el("span", { text: label, className: "hr-label" }), inp],
+            className: ["cfg-field hr-field", cls].filter(Boolean).join(" "),
+            children: [UILib.el("span", { text: label, className: "cfg-label" }), inp],
         });
 
         const ipIn   = UILib.input({ value: ipToString(this._lanIp), placeholder: "192.168.1.1" });
         const maskIn = UILib.input({ value: String(this._lanPrefix), placeholder: "24" });
 
-        host.appendChild(UILib.el("div", { className: "hr-section", children: [
+        host.appendChild(UILib.el("div", { className: "cfg-section", children: [
             UILib.el("span", { text: "IPv4", className: "hr-section-title" }),
-            UILib.div("hr-fields", [
+            UILib.div("cfg-fields", [
                 field("", t("homerouter.lan.ip"), ipIn),
                 field("hr-field-sm", t("homerouter.lan.mask"), maskIn),
             ]),
@@ -1573,7 +1573,7 @@ export class HomeRouter extends SimulatedObject {
             this._applyLanConfig();
             this._mount(/** @type {HTMLElement} */ (this._panelBody));
         });
-        host.appendChild(UILib.div("hr-btn-row", [applyBtn]));
+        host.appendChild(UILib.div("cfg-btn-row", [applyBtn]));
 
         // ── IPv6 (read-only, derived from DHCPv6-PD) ────────────────────
         const ip6Str = this._lanIp6
@@ -1581,13 +1581,13 @@ export class HomeRouter extends SimulatedObject {
             : "–";
         const raActive = !!this._lanIp6;
         const raLabel  = raActive ? t("homerouter.lan.ipv6.ra.active") : t("homerouter.lan.ipv6.ra.inactive");
-        host.appendChild(UILib.el("div", { className: "hr-section", children: [
+        host.appendChild(UILib.el("div", { className: "cfg-section", children: [
             UILib.el("span", { text: t("homerouter.lan.ipv6"), className: "hr-section-title" }),
-            UILib.div("hr-info-row", [
+            UILib.div("cfg-info-row", [
                 UILib.el("span", { text: t("homerouter.lan.ipv6.addr"), className: "hr-info-label" }),
-                UILib.el("span", { text: ip6Str, className: "hr-info-value" }),
+                UILib.el("span", { text: ip6Str, className: "cfg-info-value" }),
             ]),
-            UILib.div("hr-info-row", [
+            UILib.div("cfg-info-row", [
                 UILib.el("span", { text: t("homerouter.lan.ipv6.ra"), className: "hr-info-label" }),
                 UILib.el("span", {
                     text: raLabel,
@@ -1600,8 +1600,8 @@ export class HomeRouter extends SimulatedObject {
     /** @param {HTMLElement} host */
     _buildDhcpTab(host) {
         const field = (/** @type {string} */ cls, /** @type {string} */ label, /** @type {HTMLElement} */ inp) => UILib.el("div", {
-            className: ["hr-field", cls].filter(Boolean).join(" "),
-            children: [UILib.el("span", { text: label, className: "hr-label" }), inp],
+            className: ["cfg-field hr-field", cls].filter(Boolean).join(" "),
+            children: [UILib.el("span", { text: label, className: "cfg-label" }), inp],
         });
 
         const enableCb = UILib.input({ type: "checkbox" });
@@ -1611,10 +1611,10 @@ export class HomeRouter extends SimulatedObject {
         const reIn    = UILib.input({ value: ipToString(this._dhcpRangeEnd),   placeholder: "192.168.1.200" });
         const leaseIn = UILib.input({ value: String(this._dhcpLeaseTime),      placeholder: "3600" });
 
-        host.appendChild(UILib.el("div", { className: "hr-section", children: [
+        host.appendChild(UILib.el("div", { className: "cfg-section", children: [
             UILib.el("span", { text: t("homerouter.tab.dhcp"), className: "hr-section-title" }),
             UILib.div("hr-checkbox-row", [enableCb, UILib.el("span", { text: t("homerouter.dhcp.enabled") })]),
-            UILib.div("hr-fields", [
+            UILib.div("cfg-fields", [
                 field("", t("homerouter.dhcp.range.start"), rsIn),
                 field("", t("homerouter.dhcp.range.end"), reIn),
                 field("hr-field-sm", t("homerouter.dhcp.lease"), leaseIn),
@@ -1632,7 +1632,7 @@ export class HomeRouter extends SimulatedObject {
             this._dhcpLeaseTime = Math.max(60, Math.min(86400, lt));
             this._mount(/** @type {HTMLElement} */ (this._panelBody));
         });
-        host.appendChild(UILib.div("hr-btn-row", [applyBtn]));
+        host.appendChild(UILib.div("cfg-btn-row", [applyBtn]));
 
         this._dhcpCleanup();
         if (this._dhcpLeases.size > 0) {
@@ -1646,7 +1646,7 @@ export class HomeRouter extends SimulatedObject {
                 ]}));
             }
             table.appendChild(tbody);
-            host.appendChild(UILib.el("div", { className: "hr-section", children: [
+            host.appendChild(UILib.el("div", { className: "cfg-section", children: [
                 UILib.el("span", { text: t("homerouter.dhcp.leases"), className: "hr-section-title" }),
                 table,
             ]}));
@@ -1656,15 +1656,15 @@ export class HomeRouter extends SimulatedObject {
     /** @param {HTMLElement} host */
     _buildWifiTab(host) {
         const field = (/** @type {string} */ cls, /** @type {string} */ label, /** @type {HTMLElement} */ inp) => UILib.el("div", {
-            className: ["hr-field", cls].filter(Boolean).join(" "),
-            children: [UILib.el("span", { text: label, className: "hr-label" }), inp],
+            className: ["cfg-field hr-field", cls].filter(Boolean).join(" "),
+            children: [UILib.el("span", { text: label, className: "cfg-label" }), inp],
         });
 
         const ssidIn = UILib.input({ value: this._ssid, placeholder: "HomeNetwork" });
 
-        host.appendChild(UILib.el("div", { className: "hr-section", children: [
+        host.appendChild(UILib.el("div", { className: "cfg-section", children: [
             UILib.el("span", { text: "Wi-Fi", className: "hr-section-title" }),
-            UILib.div("hr-fields", [field("hr-field-wide", "SSID", ssidIn)]),
+            UILib.div("cfg-fields", [field("hr-field-wide", "SSID", ssidIn)]),
         ]}));
 
         const applyBtn = UILib.button(t("router.apply"));
@@ -1673,14 +1673,14 @@ export class HomeRouter extends SimulatedObject {
             if (v) this._ssid = v;
             this._mount(/** @type {HTMLElement} */ (this._panelBody));
         });
-        host.appendChild(UILib.div("hr-btn-row", [applyBtn]));
+        host.appendChild(UILib.div("cfg-btn-row", [applyBtn]));
     }
 
     /** @param {HTMLElement} host */
     _buildPortForwardTab(host) {
         const field = (/** @type {string} */ cls, /** @type {string} */ label, /** @type {HTMLElement} */ inp) => UILib.el("div", {
-            className: ["hr-field", cls].filter(Boolean).join(" "),
-            children: [UILib.el("span", { text: label, className: "hr-label" }), inp],
+            className: ["cfg-field hr-field", cls].filter(Boolean).join(" "),
+            children: [UILib.el("span", { text: label, className: "cfg-label" }), inp],
         });
 
         // ── existing rules table ──
@@ -1729,7 +1729,7 @@ export class HomeRouter extends SimulatedObject {
         };
         renderRows();
 
-        host.appendChild(UILib.el("div", { className: "hr-section", children: [
+        host.appendChild(UILib.el("div", { className: "cfg-section", children: [
             UILib.el("span", { text: t("homerouter.pf.title"), className: "hr-section-title" }),
             table,
         ]}));
@@ -1761,14 +1761,14 @@ export class HomeRouter extends SimulatedObject {
             renderRows();
         });
 
-        host.appendChild(UILib.el("div", { className: "hr-section", children: [
-            UILib.div("hr-fields", [
+        host.appendChild(UILib.el("div", { className: "cfg-section", children: [
+            UILib.div("cfg-fields", [
                 field("hr-field-sm", t("homerouter.pf.col.proto"), protoSel),
                 field("hr-field-sm", t("homerouter.pf.col.wanport"), wanPortIn),
                 field("", t("homerouter.pf.col.lanip"), lanIpIn),
                 field("hr-field-sm", t("homerouter.pf.col.lanport"), lanPortIn),
             ]),
-            UILib.div("hr-btn-row", [addBtn]),
+            UILib.div("cfg-btn-row", [addBtn]),
         ]}));
     }
 
@@ -1776,11 +1776,11 @@ export class HomeRouter extends SimulatedObject {
     _buildNatTab(host) {
         const wanStr = this._wanIp ? ipToString(this._wanIp) : "–";
 
-        host.appendChild(UILib.el("div", { className: "hr-section", children: [
+        host.appendChild(UILib.el("div", { className: "cfg-section", children: [
             UILib.el("span", { text: t("homerouter.tab.nat"), className: "hr-section-title" }),
-            UILib.div("hr-info-row", [
+            UILib.div("cfg-info-row", [
                 UILib.el("span", { text: t("homerouter.nat.wanip"), className: "hr-info-label" }),
-                UILib.el("span", { text: wanStr, className: "hr-info-value" }),
+                UILib.el("span", { text: wanStr, className: "cfg-info-value" }),
             ]),
         ]}));
 

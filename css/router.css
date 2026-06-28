@@ -1,9 +1,3 @@
-.router-name-row {
-  display: flex;
-  gap: var(--pad-md);
-  align-items: center;
-}
-
 /* Selected iface label (under tabs) */
 .router-selected-iface {
   margin: 6px 0 10px 0;
@@ -57,18 +51,7 @@
   font-size: 0.8125rem;
 }
 
-.router-if-fields {
-  display: flex;
-  gap: var(--pad-md);
-  flex-wrap: wrap;
-  padding-left: 22px;
-}
-
-.router-if-field {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
+.router-if-fields { padding-left: 22px; }
 
 .router-if-field-label {
   font-size: 0.8125rem;
@@ -110,7 +93,7 @@
 }
 
 .router-if-mac-value {
-  font-family: "Hack", monospace;
+  font-family: var(--font-mono);
   font-size: 0.8125rem;
   color: var(--muted);
 }
@@ -268,28 +251,8 @@
 }
 
 .router-vpn-name   { font-weight: 600; }
-.router-vpn-remote { color: var(--muted); font-family: "Hack", monospace; }
-.router-vpn-net    { color: var(--muted); font-family: "Hack", monospace; }
-
-.router-vpn-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--pad-sm);
-  margin-top: 8px;
-}
-
-.router-vpn-form-row {
-  display: flex;
-  align-items: center;
-  gap: var(--pad-md);
-}
-
-.router-vpn-form-label {
-  font-size: 0.8125rem;
-  color: var(--text);
-  width: 10ch;
-  flex-shrink: 0;
-}
+.router-vpn-remote { color: var(--muted); font-family: var(--font-mono); }
+.router-vpn-net    { color: var(--muted); font-family: var(--font-mono); }
 
 .router-vpn-err {
   color: var(--danger-strong);
@@ -325,12 +288,6 @@
   /* Interface grid: drop fixed 3rd column, let it wrap */
   .router-if-grid {
     grid-template-columns: 1fr 1fr;
-  }
-
-  /* Panel table: horizontal scroll on narrow screens */
-  .sim-table-scroll {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
   }
 
   /* NAT / VLAN grids: single column */

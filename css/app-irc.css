@@ -113,7 +113,7 @@
   min-height: 0;
   overflow-y: auto;
   padding: var(--pad-sm) 10px;
-  font-family: "Hack", monospace;
+  font-family: var(--font-mono);
   font-size: 0.78125rem;
   line-height: 1.55;
 }

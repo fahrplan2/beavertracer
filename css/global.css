@@ -12,6 +12,8 @@
   --radius-md: 8px;
   --radius-lg: 12px;
 
+  --font-mono: "Hack", monospace;
+
   --pad-xs: 4px;
   --pad-sm: 6px;
   --pad-md: 8px;
@@ -179,7 +181,7 @@ textarea {
   padding: var(--pad-sm);
   background: var(--bg-strong);
   color: var(--text);
-  font-family: "Hack", monospace;
+  font-family: var(--font-mono);
 
   /* feste Größe */
   width: 100%;

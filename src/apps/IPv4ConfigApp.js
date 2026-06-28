@@ -165,8 +165,8 @@ export class IPv4ConfigApp extends GenericProcess {
     this.msgEl = msg;
 
     // Helper: stacked label + control
-    const field = (/** @type {string} */ cls, /** @type {string} */ label, /** @type {HTMLElement} */ inp) => UILib.el("div", { className: "ipcfg-field " + cls, children: [
-      UILib.el("span", { text: label, className: "ipcfg-label" }),
+    const field = (/** @type {string} */ cls, /** @type {string} */ label, /** @type {HTMLElement} */ inp) => UILib.el("div", { className: "cfg-field " + cls, children: [
+      UILib.el("span", { text: label, className: "cfg-label" }),
       inp,
     ]});
 
@@ -193,31 +193,31 @@ export class IPv4ConfigApp extends GenericProcess {
     this.dnsEl = dnsEl;
     this.releaseBtn = releaseBtn;
 
-    const ipv4StaticFields = UILib.el("div", { className: "ipcfg-subsection", children: [
-      UILib.div("ipcfg-fields", [
+    const ipv4StaticFields = UILib.el("div", { className: "cfg-section", children: [
+      UILib.div("cfg-fields", [
         field("ipcfg-f-ip",     t("app.ipv4config.label.ip"),          ipEl),
         field("ipcfg-f-prefix", t("app.ipv4config.label.prefixLength"), prefixEl),
       ]),
-      UILib.div("ipcfg-fields", [field("ipcfg-f-mask", t("app.ipv4config.label.subnetMask"), maskEl)]),
-      UILib.div("ipcfg-fields", [field("ipcfg-f-wide", t("app.ipv4config.label.gateway"),   gwEl)]),
-      UILib.div("ipcfg-fields", [field("ipcfg-f-wide", t("app.ipv4config.label.dnsServer"), dnsEl)]),
+      UILib.div("cfg-fields", [field("ipcfg-f-mask", t("app.ipv4config.label.subnetMask"), maskEl)]),
+      UILib.div("cfg-fields", [field("ipcfg-f-wide", t("app.ipv4config.label.gateway"),   gwEl)]),
+      UILib.div("cfg-fields", [field("ipcfg-f-wide", t("app.ipv4config.label.dnsServer"), dnsEl)]),
     ]});
     this._ipv4StaticFields = ipv4StaticFields;
 
-    const dhcpIpEl  = UILib.el("span", { className: "ipcfg-info-value" });
-    const dhcpMaskEl = UILib.el("span", { className: "ipcfg-info-value" });
-    const dhcpGwEl  = UILib.el("span", { className: "ipcfg-info-value" });
-    const dhcpDnsEl = UILib.el("span", { className: "ipcfg-info-value" });
+    const dhcpIpEl  = UILib.el("span", { className: "cfg-info-value" });
+    const dhcpMaskEl = UILib.el("span", { className: "cfg-info-value" });
+    const dhcpGwEl  = UILib.el("span", { className: "cfg-info-value" });
+    const dhcpDnsEl = UILib.el("span", { className: "cfg-info-value" });
     this._dhcpIpEl   = dhcpIpEl;
     this._dhcpMaskEl = dhcpMaskEl;
     this._dhcpGwEl   = dhcpGwEl;
     this._dhcpDnsEl  = dhcpDnsEl;
 
-    const infoRow = (/** @type {string} */ label, /** @type {HTMLElement} */ el) => UILib.div("ipcfg-info-row", [
+    const infoRow = (/** @type {string} */ label, /** @type {HTMLElement} */ el) => UILib.div("cfg-info-row", [
       UILib.el("span", { text: label, className: "ipcfg-info-label" }),
       el,
     ]);
-    const ipv4DhcpInfo = UILib.el("div", { className: "ipcfg-subsection", children: [
+    const ipv4DhcpInfo = UILib.el("div", { className: "cfg-section", children: [
       infoRow(t("app.ipv4config.label.ip"),         dhcpIpEl),
       infoRow(t("app.ipv4config.label.subnetMask"), dhcpMaskEl),
       infoRow(t("app.ipv4config.label.gateway"),    dhcpGwEl),
@@ -225,16 +225,16 @@ export class IPv4ConfigApp extends GenericProcess {
     ]});
     this._ipv4DhcpInfo = ipv4DhcpInfo;
 
-    const ipv4Section = UILib.el("div", { className: "ipcfg-section", children: [
-      UILib.div("ipcfg-fields", [field("ipcfg-f-mode", t("app.ipv4config.label.mode"), modeSel)]),
+    const ipv4Section = UILib.el("div", { className: "cfg-section", children: [
+      UILib.div("cfg-fields", [field("ipcfg-f-mode", t("app.ipv4config.label.mode"), modeSel)]),
       ipv4StaticFields,
       ipv4DhcpInfo,
-      UILib.div("ipcfg-btn-row", [applyBtn, releaseBtn]),
+      UILib.div("cfg-btn-row", [applyBtn, releaseBtn]),
     ]});
     this._ipv4Section = ipv4Section;
 
     // --- IPv6 content ---
-    const ip6LLEl = UILib.el("span", { className: "ipcfg-info-value" });
+    const ip6LLEl = UILib.el("span", { className: "cfg-info-value" });
     const ip6ModeSel = /** @type {HTMLSelectElement} */ (UILib.select(
       [
         { value: "disabled", label: t("app.ipv4config.ipv6.mode.disabled") },
@@ -260,40 +260,40 @@ export class IPv4ConfigApp extends GenericProcess {
     this._dhcp6StatusEl  = dhcp6StatusEl;
     this._dhcp6ReleaseBtn = dhcp6ReleaseBtn;
 
-    const staticFields = UILib.el("div", { className: "ipcfg-subsection", children: [
-      UILib.div("ipcfg-fields", [
+    const staticFields = UILib.el("div", { className: "cfg-section", children: [
+      UILib.div("cfg-fields", [
         field("ipcfg-f-ip6",    t("app.ipv4config.ipv6.address"), ip6El),
         field("ipcfg-f-prefix", t("app.ipv4config.ipv6.prefix"),  prefix6El),
       ]),
-      UILib.div("ipcfg-fields", [field("ipcfg-f-wide", t("app.ipv4config.ipv6.gateway"), gw6El)]),
+      UILib.div("cfg-fields", [field("ipcfg-f-wide", t("app.ipv4config.ipv6.gateway"), gw6El)]),
     ]});
     this._ip6StaticFields = staticFields;
 
-    const ip6GwInfoEl = UILib.el("span", { className: "ipcfg-info-value" });
-    const ip6GwInfoRow = UILib.div("ipcfg-info-row", [
+    const ip6GwInfoEl = UILib.el("span", { className: "cfg-info-value" });
+    const ip6GwInfoRow = UILib.div("cfg-info-row", [
       UILib.el("span", { text: t("app.ipv4config.ipv6.gateway"), className: "ipcfg-info-label" }),
       ip6GwInfoEl,
     ]);
     this._ip6GwInfoEl  = ip6GwInfoEl;
     this._ip6GwInfoRow = ip6GwInfoRow;
 
-    const ipv6Section = UILib.el("div", { className: "ipcfg-section", children: [
-      UILib.div("ipcfg-info-row", [
+    const ipv6Section = UILib.el("div", { className: "cfg-section", children: [
+      UILib.div("cfg-info-row", [
         UILib.el("span", { text: t("app.ipv4config.ipv6.linklocal"), className: "ipcfg-info-label" }),
         ip6LLEl,
       ]),
-      UILib.div("ipcfg-fields", [field("ipcfg-f-mode", t("app.ipv4config.ipv6.mode"), ip6ModeSel)]),
+      UILib.div("cfg-fields", [field("ipcfg-f-mode", t("app.ipv4config.ipv6.mode"), ip6ModeSel)]),
       staticFields,
-      UILib.div("ipcfg-info-row", [
+      UILib.div("cfg-info-row", [
         UILib.el("span", { text: t("app.ipv4config.ipv6.status"), className: "ipcfg-info-label" }),
         ip6SlaacStatusEl,
       ]),
-      UILib.div("ipcfg-info-row", [
+      UILib.div("cfg-info-row", [
         UILib.el("span", { text: t("app.ipv4config.ipv6.dhcp6.status"), className: "ipcfg-info-label" }),
         dhcp6StatusEl,
       ]),
       ip6GwInfoRow,
-      UILib.div("ipcfg-btn-row", [applyBtn6, dhcp6ReleaseBtn]),
+      UILib.div("cfg-btn-row", [applyBtn6, dhcp6ReleaseBtn]),
     ]});
     this._ipv6Section = ipv6Section;
 
@@ -309,9 +309,9 @@ export class IPv4ConfigApp extends GenericProcess {
           this._setMsg(t("wifi.ssid.applied"));
         }
       }, { primary: true });
-      wifiSection = UILib.el("div", { className: "ipcfg-section", children: [
-        UILib.div("ipcfg-fields", [field("ipcfg-f-wide", t("wifi.ssid"), ssidInput)]),
-        UILib.div("ipcfg-btn-row", [applyWifiBtn]),
+      wifiSection = UILib.el("div", { className: "cfg-section", children: [
+        UILib.div("cfg-fields", [field("ipcfg-f-wide", t("wifi.ssid"), ssidInput)]),
+        UILib.div("cfg-btn-row", [applyWifiBtn]),
       ]});
       this._wifiSection = wifiSection;
     }
@@ -328,7 +328,7 @@ export class IPv4ConfigApp extends GenericProcess {
     this._setFamilyActive = setFamilyActive;
 
     // --- Build panel ---
-    const macEl = UILib.el("span", { className: "ipcfg-info-value" });
+    const macEl = UILib.el("span", { className: "cfg-info-value" });
     this._macEl = macEl;
 
     const panelChildren = [

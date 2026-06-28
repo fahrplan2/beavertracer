@@ -30,8 +30,8 @@
 .minimarkdown-h2 code,
 .minimarkdown-h3 code,
 .minimarkdown-ul code {
-  font-family: "Hack", monospace;
-  background: rgba(0, 0, 0, 0.06);
+  font-family: var(--font-mono);
+  background: color-mix(in oklch, var(--text), transparent 94%);
   padding: 0.1em 0.3em;
   border-radius: 4px;
   font-size: 0.9375rem;
@@ -58,7 +58,7 @@
 
 .minimarkdown-table th,
 .minimarkdown-table td {
-  border: 1px solid rgba(0, 0, 0, 0.15);
+  border: 1px solid color-mix(in oklch, var(--text), transparent 85%);
   padding: 0.3em 0.5em;
   vertical-align: top;
   text-align: center;
@@ -66,9 +66,9 @@
 
 .minimarkdown-table th {
   font-weight: 650;
-  background: rgba(0, 0, 0, 0.05);
+  background: color-mix(in oklch, var(--text), transparent 95%);
 }
 
 .minimarkdown-table tr:nth-child(even) td {
-  background: rgba(0, 0, 0, 0.02);
+  background: color-mix(in oklch, var(--text), transparent 98%);
 }
