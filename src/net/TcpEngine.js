@@ -986,6 +986,11 @@ export class TcpEngine {
     const seg = conn.outQ[0];
     seg.rexmit++;
 
+    if (seg.rexmit > SimTimer.TCP_MAX_REXMIT) {
+      this._destroy(conn, "connection timed out");
+      return;
+    }
+
     // Congestion control: timeout → back to Slow Start
     const mss = conn.mss | 0;
     conn.ssthresh = Math.max(Math.floor(conn.cwnd / 2), 2 * mss);

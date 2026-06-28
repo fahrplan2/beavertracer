@@ -204,63 +204,6 @@ export class UDPEchoServerApp extends LoggedProcess {
     this._syncButtons();
   }
 
-  // ---------------- IPv6-ready helpers ----------------
-
-  /**
-   * Normalize incoming "src/dst" into an IPAddress if possible.
-   * Accepts: IPAddress | number(v4) | string | Uint8Array(4/16)
-   *
-   * @param {any} v
-   * @returns {IPAddress|null}
-   */
-  _asIPAddress(v) {
-    try {
-      if (v instanceof IPAddress) return v;
-
-      if (typeof v === "number" && Number.isFinite(v)) {
-        // legacy v4 uint32 -> string -> IPAddress
-        const x = (v >>> 0);
-        const s = `${(x >>> 24) & 255}.${(x >>> 16) & 255}.${(x >>> 8) & 255}.${x & 255}`;
-        return IPAddress.fromString(s);
-      }
-
-      if (typeof v === "string" && v.trim()) {
-        return IPAddress.fromString(v.trim());
-      }
-
-      if (v instanceof Uint8Array) {
-        // you should have IPAddress.fromUInt8(bytes) – if not, add it.
-        if (typeof IPAddress.fromUInt8 === "function") {
-          return IPAddress.fromUInt8(v);
-        }
-        // fallback: handle v4 only
-        if (v.length === 4) {
-          const s = `${v[0]}.${v[1]}.${v[2]}.${v[3]}`;
-          return IPAddress.fromString(s);
-        }
-      }
-    } catch {
-      // ignore
-    }
-    return null;
-  }
-
-  /**
-   * Convert an IPAddress to whatever your current IPStack UDP API needs.
-   * Today: number (IPv4 only) for dstip/srcip.
-   * Later: you can change this to pass IPAddress through directly.
-   *
-   * @param {IPAddress|null} ip
-   * @returns {number|null} v4 uint32 or null if not representable (e.g., IPv6)
-   */
-  _ipToLegacyV4Number(ip) {
-    if (!ip) return null;
-    if (!ip.isV4()) return null;
-    const n = ip.getNumber();
-    // ensure number
-    return (typeof n === "number" && Number.isFinite(n)) ? (n >>> 0) : null;
-  }
-
   /** @param {IPAddress|null} ip */
   _ipToString(ip) {
     return ip ? ip.toString() : "*";
@@ -286,9 +229,8 @@ export class UDPEchoServerApp extends LoggedProcess {
       if (!this.running || this.socketPort == null) break;
       if (pkt == null) break;
 
-      // expected shape today: {src:number, srcPort:number, payload:Uint8Array}
-      // but accept future shapes.
-      const srcIp = this._asIPAddress(pkt.src ?? pkt.srcIp ?? pkt.remote ?? null);
+      /** @type {IPAddress|null} */
+      const srcIp = pkt.src instanceof IPAddress ? pkt.src : null;
       const srcPort = typeof pkt.srcPort === "number"
         ? (pkt.srcPort | 0)
         : (typeof pkt.remotePort === "number" ? (pkt.remotePort | 0) : 0);
@@ -308,20 +250,9 @@ export class UDPEchoServerApp extends LoggedProcess {
 
       // echo back
       try {
-        // TODAY: your IPStack expects dstip as IPv4 number.
-        // If src is IPv6, we cannot answer yet -> log a nice "not supported yet".
-        const dstV4 = this._ipToLegacyV4Number(srcIp);
-        if (dstV4 == null) {
-          this._appendLog(
-            t("app.udpechoserver.log.sendError", {
-              time: nowStamp(),
-              reason: "IPv6 peer address not supported by current stack yet",
-            })
-          );
-          continue;
-        }
+        if (!srcIp) continue;
 
-        this.os.net.sendUDPSocket(sock, new IPAddress(4, dstV4), srcPort, data);
+        this.os.net.sendUDPSocket(sock, srcIp, srcPort, data);
 
         this._appendLog(t("app.udpechoserver.log.txEcho", {
           time: nowStamp(),

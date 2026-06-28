@@ -54,7 +54,7 @@ BeaverTracer ist ein Netzwerksimulator für den Unterricht. Er modelliert eine b
 <tr>
   <td>IGMP Snooping</td><td>RFC 4541</td>
   <td><span class="badge badge-partial">Teilweise</span></td>
-  <td>IGMPv2 Membership Reports (0x16) und Leave Group (0x17) werden vom Switch erkannt und in eine Multicast-Mitgliedschaftstabelle eingetragen. Datenpakete werden nur an registrierte Ports weitergeleitet. IGMP-Kontrollframes werden stets geflutet. Propagierung über mehrere Switches funktioniert durch Flooding der Kontrollframes. Kein Querier-Mechanismus — Einträge verfallen nur durch explizites Leave.</td>
+  <td>IGMPv2 Membership Reports (0x16) und Leave Group (0x17) werden vom Switch erkannt und in eine Multicast-Mitgliedschaftstabelle eingetragen. Datenpakete werden nur an registrierte Ports weitergeleitet. IGMP-Kontrollframes werden stets geflutet. Propagierung über mehrere Switches funktioniert durch Flooding der Kontrollframes. <strong>Querier:</strong> Wenn IGMP Snooping aktiviert ist, sendet der Switch periodisch IGMPv2 General Queries (Intervall ~50 s sim, Max Resp Time 10 s); Hosts antworten mit Membership Reports, die den Eintrag erneuern. Einträge verfallen nach 3× dem Query-Intervall ohne Re-Report (~150 s sim). Ports, die ihren Link verlieren, werden beim nächsten Query-Zyklus sofort entfernt. Kein Querier-Election (der Switch ist immer Querier).</td>
 </tr>
 <tr>
   <td>Spanning Tree (STP)</td><td>IEEE 802.1D</td>
@@ -130,7 +130,7 @@ BeaverTracer ist ein Netzwerksimulator für den Unterricht. Er modelliert eine b
 <tr>
   <td>TCP</td><td>RFC 793, RFC 3168</td>
   <td><span class="badge badge-mostly">Größtenteils</span></td>
-  <td>Alle Header-Felder: Ports, Sequence/Ack-Nummern, Data Offset, alle 8 Flags (inkl. ECE/CWR), Window, Prüfsumme, Urgent Pointer. MSS wird beim SYN-Handshake ausgehandelt (gesendet und geparst). Window Scale, SACK und Timestamps werden nicht ausgehandelt; Fenstergrößen sind fest. Keine Staukontrolle.</td>
+  <td>Alle Header-Felder: Ports, Sequence/Ack-Nummern, Data Offset, alle 8 Flags (inkl. ECE/CWR), Window, Prüfsumme, Urgent Pointer. MSS wird beim SYN-Handshake ausgehandelt (gesendet und geparst). Verbindungen brechen nach 8 Wiederholungsversuchen (exponentielles Backoff bis 60 s) ab. Window Scale, SACK und Timestamps werden nicht ausgehandelt; Fenstergrößen sind fest. Keine Staukontrolle.</td>
 </tr>
 <tr>
   <td>UDP</td><td>RFC 768</td>
@@ -251,8 +251,8 @@ Der Mailserver bedient alle drei Protokolle in einem Prozess. Der Mailclient unt
 </tr>
 <tr>
   <td>UDP-Echo-Server</td><td>RFC 862</td>
-  <td><span class="badge badge-partial">Teilweise</span></td>
-  <td>Spiegelt UDP-Datagramme auf konfigurierbarem Port (Standard 7). Nur IPv4 — IPv6-Quelladressen werden aufgrund von API-Einschränkungen nicht korrekt zurückgesendet.</td>
+  <td><span class="badge badge-full">Vollständig</span></td>
+  <td>Spiegelt UDP-Datagramme auf konfigurierbarem Port (Standard 7). Dual-Stack: IPv4- und IPv6-Quelladressen werden korrekt zurückgesendet.</td>
 </tr>
 <tr>
   <td>Raw-TCP-Client</td><td>—</td>
