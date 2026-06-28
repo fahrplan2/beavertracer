@@ -120,6 +120,14 @@ export class SimTimer {
     /** LACP partner TTL — 3× TX (short timeout); port considered lost if silent. */
     static LACP_PARTNER_TTL_MS      =  1_500;  // 300 ticks  → 30 s @ 1×
 
+    /** IGMP/MLD General Query interval (~IGMPv2 125 s real, simulation-scaled). */
+    static IGMP_QUERY_MS            =  2_500;  // 500 ticks  → 50 s @ 1×
+    /** IGMP/MLD member entry lifetime — 3× query interval (no re-report → expire). */
+    static IGMP_MEMBER_TTL_MS       =  7_500;  // 1500 ticks → 150 s @ 1×
+
+    /** Maximum TCP retransmit attempts before aborting the connection (RFC 793). */
+    static TCP_MAX_REXMIT           = 8;
+
     // -------------------------------------------------------------------------
     // Internal state
     // -------------------------------------------------------------------------

@@ -84,7 +84,7 @@ export class MulticastChatApp extends GenericProcess {
 
     _buildUI() {
         this._nickEl  = UI.input({ value: this.nick,    placeholder: t("app.multicastchat.placeholder.nick") });
-        this._groupEl = UI.input({ value: this.groupIp, placeholder: "239.x.x.x" });
+        this._groupEl = UI.input({ value: this.groupIp, placeholder: "239.x.x.x / ff3e::…" });
         this._joinBtn  = UI.button(t("app.multicastchat.btn.join"),  () => this._join(),  { primary: true, icon: "fa-right-to-bracket" });
         this._leaveBtn = UI.button(t("app.multicastchat.btn.leave"), () => this._leave(), { icon: "fa-right-from-bracket" });
         this._msgEl   = UI.input({ placeholder: t("app.multicastchat.placeholder.msg") });
@@ -129,15 +129,21 @@ export class MulticastChatApp extends GenericProcess {
         let groupIp;
         try {
             groupIp = IPAddress.fromString(groupStr);
-            const n = /** @type {number} */ (groupIp.getNumber()) >>> 0;
-            if ((n >>> 28) !== 0xe) throw new Error("not multicast");
+            if (groupIp.isV4()) {
+                const n = /** @type {number} */ (groupIp.getNumber()) >>> 0;
+                if ((n >>> 28) !== 0xe) throw new Error("not multicast");
+            } else {
+                const bytes = /** @type {Uint8Array} */ (groupIp.getNumber());
+                if (bytes[0] !== 0xff) throw new Error("not multicast");
+            }
         } catch {
             this._appendLog(t("app.multicastchat.err.badGroup"), "err");
             return;
         }
 
         try {
-            const sock = this.os.net.openUDPSocket(new IPAddress(4, 0), MCHAT_PORT);
+            const bindAddr = groupIp.isV4() ? new IPAddress(4, 0) : IPAddress.fromString("::");
+            const sock = this.os.net.openUDPSocket(bindAddr, MCHAT_PORT);
             this.socketPort = sock;
         } catch (e) {
             this._appendLog(`${t("app.multicastchat.err.socket")}: ${e instanceof Error ? e.message : e}`, "err");
@@ -149,8 +155,12 @@ export class MulticastChatApp extends GenericProcess {
         this.joined  = true;
         this._syncButtons();
 
-        // send IGMP Membership Report so the switch learns us
-        this.os.net.sendIGMP(groupIp, 0x16);
+        // send membership report so the switch learns us
+        if (groupIp.isV4()) {
+            this.os.net.sendIGMP(groupIp, 0x16);
+        } else {
+            this.os.net.sendMLD(groupIp, 0x83);
+        }
 
         // announce presence
         this._sendPacket("JOIN");
@@ -165,7 +175,11 @@ export class MulticastChatApp extends GenericProcess {
         this._sendPacket("LEAVE");
 
         const groupIp = IPAddress.fromString(this.groupIp);
-        this.os.net.sendIGMP(groupIp, 0x17);
+        if (groupIp.isV4()) {
+            this.os.net.sendIGMP(groupIp, 0x17);
+        } else {
+            this.os.net.sendMLD(groupIp, 0x84);
+        }
 
         const sock = this.socketPort;
         this.joined     = false;

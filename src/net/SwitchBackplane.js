@@ -105,6 +105,17 @@ export class SwitchBackplane extends Observable {
     mcastTable = new Map();
 
     /**
+     * Per-port expiry ticks for each mcast group (set when a Report is received,
+     * refreshed on each re-report triggered by a General Query).
+     * Key: groupKey (same as mcastTable), Value: Map<portIdx, expiresAtTick>
+     * @type {Map<bigint, Map<number, number>>}
+     */
+    _mcastExpiry = new Map();
+
+    /** @type {number|null} simTimer id for the IGMP/MLD querier loop. */
+    _igmpQuerierTimer = null;
+
+    /**
      * STP/RSTP operating mode.
      * 'off'  – no spanning tree
      * 'stp'  – IEEE 802.1D classic STP
@@ -293,11 +304,14 @@ export class SwitchBackplane extends Observable {
 
     enableIGMPSnooping() {
         this.igmpSnoopingEnabled = true;
+        this._igmpScheduleQuery();
     }
 
     disableIGMPSnooping() {
         this.igmpSnoopingEnabled = false;
+        if (this._igmpQuerierTimer != null) { simTimer.cancel(this._igmpQuerierTimer); this._igmpQuerierTimer = null; }
         this.mcastTable.clear();
+        this._mcastExpiry.clear();
     }
 
     enableLLDP() {
@@ -965,11 +979,15 @@ export class SwitchBackplane extends Observable {
         if (igmpType === 0x16) { // Membership Report v2
             if (!this.mcastTable.has(groupKey)) this.mcastTable.set(groupKey, { ip: groupIp, ports: new Set() });
             /** @type {{ip:string,ports:Set<number>}} */ (this.mcastTable.get(groupKey)).ports.add(portIdx);
+            if (!this._mcastExpiry.has(groupKey)) this._mcastExpiry.set(groupKey, new Map());
+            /** @type {Map<number,number>} */ (this._mcastExpiry.get(groupKey)).set(
+                portIdx, simTimer.currentTick + SimTimer.toTicks(SimTimer.IGMP_MEMBER_TTL_MS));
         } else if (igmpType === 0x17) { // Leave Group
             const entry = this.mcastTable.get(groupKey);
             if (entry) {
                 entry.ports.delete(portIdx);
-                if (entry.ports.size === 0) this.mcastTable.delete(groupKey);
+                this._mcastExpiry.get(groupKey)?.delete(portIdx);
+                if (entry.ports.size === 0) { this.mcastTable.delete(groupKey); this._mcastExpiry.delete(groupKey); }
             }
         }
         return igmpType;
@@ -998,14 +1016,160 @@ export class SwitchBackplane extends Observable {
         if (mldType === 0x83) { // Multicast Listener Report (join)
             if (!this.mcastTable.has(groupKey)) this.mcastTable.set(groupKey, { ip: groupIp, ports: new Set() });
             /** @type {{ip:string,ports:Set<number>}} */ (this.mcastTable.get(groupKey)).ports.add(portIdx);
+            if (!this._mcastExpiry.has(groupKey)) this._mcastExpiry.set(groupKey, new Map());
+            /** @type {Map<number,number>} */ (this._mcastExpiry.get(groupKey)).set(
+                portIdx, simTimer.currentTick + SimTimer.toTicks(SimTimer.IGMP_MEMBER_TTL_MS));
         } else if (mldType === 0x84) { // Multicast Listener Done (leave)
             const entry = this.mcastTable.get(groupKey);
             if (entry) {
                 entry.ports.delete(portIdx);
-                if (entry.ports.size === 0) this.mcastTable.delete(groupKey);
+                this._mcastExpiry.get(groupKey)?.delete(portIdx);
+                if (entry.ports.size === 0) { this.mcastTable.delete(groupKey); this._mcastExpiry.delete(groupKey); }
             }
         }
         return mldType;
+    }
+
+    // ---------------------------------------------------------------------------
+    // IGMP/MLD Querier
+    // ---------------------------------------------------------------------------
+
+    /**
+     * Expire mcast entries for ports that are down or have exceeded their TTL.
+     * Called periodically by the querier timer.
+     */
+    _expireMcastEntries() {
+        const now = simTimer.currentTick;
+        for (const [groupKey, entry] of this.mcastTable) {
+            const expiry = this._mcastExpiry.get(groupKey);
+            for (const portIdx of [...entry.ports]) {
+                if (!this._stpIsLinked(portIdx)) {
+                    // Port is down → remove immediately
+                    entry.ports.delete(portIdx);
+                    expiry?.delete(portIdx);
+                    continue;
+                }
+                const expiresAt = expiry?.get(portIdx);
+                if (expiresAt != null && now > expiresAt) {
+                    entry.ports.delete(portIdx);
+                    expiry?.delete(portIdx);
+                }
+            }
+            if (entry.ports.size === 0) {
+                this.mcastTable.delete(groupKey);
+                this._mcastExpiry.delete(groupKey);
+            }
+        }
+    }
+
+    /** Build an IGMPv2 General Query Ethernet frame (src IP = 0.0.0.0, dst = 224.0.0.1). */
+    _buildIGMPQueryFrame() {
+        const igmp = new Uint8Array(8);
+        igmp[0] = 0x11; // Membership Query
+        igmp[1] = 100;  // Max Resp Time = 10.0 s (in units of 0.1 s)
+        // checksum over [0x11, 0x64, 0, 0, 0, 0, 0, 0]
+        let cs = 0;
+        for (let i = 0; i < 8; i += 2) cs += (igmp[i] << 8) | igmp[i + 1];
+        while (cs >> 16) cs = (cs & 0xffff) + (cs >> 16);
+        cs = (~cs) & 0xffff;
+        igmp[2] = (cs >> 8) & 0xff; igmp[3] = cs & 0xff;
+
+        // Minimal IPv4 header (20 bytes): src=0.0.0.0, dst=224.0.0.1, proto=IGMP, TTL=1
+        const ip = new Uint8Array(28);
+        ip[0] = 0x45; ip[3] = 28; ip[8] = 1; ip[9] = 2;
+        ip[16] = 224; ip[17] = 0; ip[18] = 0; ip[19] = 1;
+        ip.set(igmp, 20);
+
+        const srcMac = bigintToMac(this.bridgeId);
+        return new EthernetFrame({
+            dstMac: new Uint8Array([0x01, 0x00, 0x5e, 0x00, 0x00, 0x01]),
+            srcMac,
+            etherType: 0x0800,
+            payload: ip,
+        });
+    }
+
+    /**
+     * Compute ICMPv6 checksum over the IPv6 pseudo-header (RFC 2460 §8.1).
+     * @param {Uint8Array} src16 @param {Uint8Array} dst16 @param {Uint8Array} icmpBytes
+     * @returns {number}
+     */
+    _icmpv6Checksum(src16, dst16, icmpBytes) {
+        let sum = 0;
+        for (let i = 0; i < 16; i += 2) sum += (src16[i] << 8) | src16[i + 1];
+        for (let i = 0; i < 16; i += 2) sum += (dst16[i] << 8) | dst16[i + 1];
+        const len = icmpBytes.length;
+        sum += (len >> 16) & 0xffff;
+        sum += len & 0xffff;
+        sum += 58; // next header = ICMPv6
+        for (let i = 0; i < icmpBytes.length; i += 2) {
+            sum += (icmpBytes[i] << 8) | (i + 1 < icmpBytes.length ? icmpBytes[i + 1] : 0);
+        }
+        while (sum >> 16) sum = (sum & 0xffff) + (sum >> 16);
+        return (~sum) & 0xffff;
+    }
+
+    /** Build an MLDv1 General Query Ethernet frame (src = switch EUI-64 LL, dst = ff02::1). */
+    _buildMLDQueryFrame() {
+        const mac = bigintToMac(this.bridgeId);
+
+        // EUI-64 link-local from bridge MAC
+        const src16 = new Uint8Array(16);
+        src16[0] = 0xfe; src16[1] = 0x80;
+        src16[8]  = mac[0] ^ 0x02;
+        src16[9]  = mac[1]; src16[10] = mac[2];
+        src16[11] = 0xff;   src16[12] = 0xfe;
+        src16[13] = mac[3]; src16[14] = mac[4]; src16[15] = mac[5];
+
+        const dst16 = new Uint8Array([0xff, 0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x01]);
+
+        // ICMPv6 MLD General Query (24 bytes): 4-byte header + 20-byte MLD body
+        const icmp = new Uint8Array(24);
+        icmp[0] = 0x82;             // type: MLD Query
+        icmp[4] = 0x27; icmp[5] = 0x10; // max resp delay = 10000 ms
+        // group address = :: (16 zero bytes, General Query)
+        const cs = this._icmpv6Checksum(src16, dst16, icmp);
+        icmp[2] = (cs >> 8) & 0xff; icmp[3] = cs & 0xff;
+
+        // IPv6 header (40 bytes)
+        const ip6 = new Uint8Array(40 + 24);
+        ip6[0] = 0x60;                // version=6
+        ip6[4] = 0; ip6[5] = 24;      // payload length
+        ip6[6] = 58;                  // next header = ICMPv6
+        ip6[7] = 1;                   // hop limit
+        ip6.set(src16, 8);
+        ip6.set(dst16, 24);
+        ip6.set(icmp, 40);
+
+        return new EthernetFrame({
+            dstMac: new Uint8Array([0x33, 0x33, 0x00, 0x00, 0x00, 0x01]),
+            srcMac: mac,
+            etherType: 0x86DD,
+            payload: ip6,
+        });
+    }
+
+    /** Send IGMP and MLD General Queries on all forwarding ports. */
+    _sendGeneralQueries() {
+        const igmpFrame = this._buildIGMPQueryFrame();
+        const mldFrame  = this._buildMLDQueryFrame();
+        for (let i = 0; i < this.ports.length; i++) {
+            if (!this.ports[i].isLinked()) continue;
+            if (this.stpEnabled && this.stpPortState[this._lagRepresentative(i)] !== STP_STATE.FORWARDING) continue;
+            this.ports[i].send(igmpFrame);
+            this.ports[i].send(mldFrame);
+        }
+    }
+
+    _igmpScheduleQuery() {
+        if (this._igmpQuerierTimer != null) simTimer.cancel(this._igmpQuerierTimer);
+        this._igmpQuerierTimer = simTimer.schedule(() => {
+            this._igmpQuerierTimer = null;
+            if (!this.igmpSnoopingEnabled) return;
+            this._sendGeneralQueries();
+            this._expireMcastEntries();
+            this._igmpScheduleQuery();
+        }, SimTimer.IGMP_QUERY_MS);
     }
 
     // ---------------------------------------------------------------------------

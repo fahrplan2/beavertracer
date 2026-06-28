@@ -12,6 +12,8 @@
   --radius-md: 8px;
   --radius-lg: 12px;
 
+  --font-mono: "Hack", monospace;
+
   --pad-xs: 4px;
   --pad-sm: 6px;
   --pad-md: 8px;
@@ -109,6 +111,38 @@
   --blue: oklch(68% 0.18 250);
 }
 
+[data-theme="green"] {
+  --primary: oklch(75% 0.22 145);
+
+  --bg:             #000000;
+  --bg1:            oklch(8%  0.025 145);
+  --bg2:            oklch(12% 0.030 145);
+  --bg-strong:      oklch(10% 0.020 145);
+
+  --surface:        oklch(16% 0.040 145);
+  --surface-strong: oklch(14% 0.035 145);
+
+  --text:   oklch(82% 0.18 145);
+  --border: oklch(28% 0.060 145);
+  --grey:   oklch(20% 0.020 145);
+
+  --shadow:      0 10px 24px rgba(0, 0, 0, 0.70);
+  --shadow-soft: 0 6px 14px rgba(0, 0, 0, 0.50);
+
+  --primary-soft:  color-mix(in oklch, var(--primary), #000 78%);
+  --primary-tint:  color-mix(in oklch, var(--primary), #000 88%);
+  --ok-tint:       color-mix(in oklch, var(--ok),      #000 88%);
+  --warning-soft:  color-mix(in oklch, var(--warning),  #000 78%);
+  --danger-tint:   color-mix(in oklch, var(--danger),   #000 88%);
+
+  --ui-active:        oklch(14% 0.040 145);
+  --ui-active-border: var(--primary);
+  --ui-card:          oklch(12% 0.035 145);
+  --ui-card-hover:    oklch(18% 0.045 145);
+
+  --blue: oklch(68% 0.18 145);
+}
+
 html { font-size: 100%; }
 html, body { height: 100%; margin: 0; }
 *, *::before, *::after { box-sizing: border-box; }
@@ -179,7 +213,7 @@ textarea {
   padding: var(--pad-sm);
   background: var(--bg-strong);
   color: var(--text);
-  font-family: "Hack", monospace;
+  font-family: var(--font-mono);
 
   /* feste Größe */
   width: 100%;

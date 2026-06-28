@@ -9,7 +9,7 @@
 
 .app-terminal .term {
   flex: 1;
-  font-family: "Hack", monospace;
+  font-family: var(--font-mono);
   font-size: 1rem;
   line-height: 21px;
   white-space: pre;

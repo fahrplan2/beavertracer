@@ -316,7 +316,7 @@ export class Router extends SimulatedObject {
         });
         card.appendChild(outerTabBar);
 
-        const outerContent = UILib.div("sim-panel-content hr-panel-content");
+        const outerContent = UILib.div("sim-panel-content panel");
         card.appendChild(outerContent);
 
         /* ============================ Interfaces ============================ */
@@ -337,11 +337,11 @@ export class Router extends SimulatedObject {
         const ipIn   = UILib.input({ placeholder: "192.168.1.1" });
         const maskIn = UILib.input({ placeholder: "255.255.255.0" });
         const cidrIn = UILib.input({ placeholder: "24" });
-        const ifField = (/** @type {string} */ cls, /** @type {string} */ label, /** @type {HTMLElement} */ inp) => UILib.div("router-if-field " + cls, [
+        const ifField = (/** @type {string} */ cls, /** @type {string} */ label, /** @type {HTMLElement} */ inp) => UILib.div("cfg-field " + cls, [
             UILib.el("span", { text: label, className: "router-if-field-label" }),
             inp,
         ]);
-        const v4Fields = UILib.div("router-if-fields", [
+        const v4Fields = UILib.div("cfg-fields router-if-fields", [
             ifField("router-if-ip",   t("router.if.address"), ipIn),
             ifField("router-if-mask", t("router.if.netmask"), maskIn),
             ifField("router-if-cidr", t("router.if.prefix"),  cidrIn),
@@ -359,13 +359,13 @@ export class Router extends SimulatedObject {
         const raCb    = UILib.input({ type: "checkbox" });
         const raLabel = UILib.el("label", { className: "router-if-ra-label" });
         raLabel.append(raCb, " " + t("router.ra.enabled"));
-        const v6Fields = UILib.div("router-if-fields", [
+        const v6Fields = UILib.div("cfg-fields router-if-fields", [
             ifField("router-if-ip6",     t("router.if.address"), ip6In),
             ifField("router-if-prefix6", t("router.if.prefix"),  prefix6In),
         ]);
         const v6Body = UILib.div("router-if-v6-body", [
             v6Fields,
-            UILib.div("router-if-fields", [raLabel]),
+            UILib.div("cfg-fields router-if-fields", [raLabel]),
         ]);
         const v6Section = UILib.div("router-if-section", [v6Header, v6Body]);
 
@@ -1495,7 +1495,7 @@ export class Router extends SimulatedObject {
         ripngCb.checked = this.ripng.enabled;
         ripngCb.addEventListener("change", () => { this.ripng.setEnabled(ripngCb.checked); this._renderRIPCombinedLog(); });
 
-        configSection.appendChild(UILib.div("hr-fields", [
+        configSection.appendChild(UILib.div("cfg-fields", [
             UILib.div("hr-checkbox-row", [ripCb,   UILib.el("span", { text: t("router.rip.enabled")   })]),
             UILib.div("hr-checkbox-row", [ripngCb, UILib.el("span", { text: t("router.ripng.enabled") })]),
         ]));
@@ -1608,13 +1608,13 @@ export class Router extends SimulatedObject {
         });
 
         configSection.appendChild(UILib.el("div", { className: "hr-section", children: [
-            UILib.div("hr-fields", [
-                UILib.el("div", { className: "hr-field hr-field-sm", children: [
-                    UILib.el("span", { text: t("router.bgp.localas"), className: "hr-label" }),
+            UILib.div("cfg-fields", [
+                UILib.el("div", { className: "cfg-field hr-field-sm", children: [
+                    UILib.el("span", { text: t("router.bgp.localas"), className: "router-if-field-label" }),
                     asIn,
                 ]}),
-                UILib.el("div", { className: "hr-field", children: [
-                    UILib.el("span", { text: t("router.bgp.routerid"), className: "hr-label" }),
+                UILib.el("div", { className: "cfg-field", children: [
+                    UILib.el("span", { text: t("router.bgp.routerid"), className: "router-if-field-label" }),
                     ridIn,
                 ]}),
             ]),
@@ -1724,17 +1724,17 @@ export class Router extends SimulatedObject {
         });
 
         host.appendChild(UILib.el("div", { className: "hr-section", children: [
-            UILib.div("hr-fields", [
-                UILib.el("div", { className: "hr-field", children: [
-                    UILib.el("span", { text: t("router.bgp.peers.col.ip"), className: "hr-label" }),
+            UILib.div("cfg-fields", [
+                UILib.el("div", { className: "cfg-field", children: [
+                    UILib.el("span", { text: t("router.bgp.peers.col.ip"), className: "router-if-field-label" }),
                     ipIn,
                 ]}),
-                UILib.el("div", { className: "hr-field hr-field-sm", children: [
-                    UILib.el("span", { text: "AS", className: "hr-label" }),
+                UILib.el("div", { className: "cfg-field hr-field-sm", children: [
+                    UILib.el("span", { text: "AS", className: "router-if-field-label" }),
                     asIn,
                 ]}),
-                UILib.el("div", { className: "hr-field", children: [
-                    UILib.el("span", { text: t("router.bgp.peers.col.desc"), className: "hr-label" }),
+                UILib.el("div", { className: "cfg-field", children: [
+                    UILib.el("span", { text: t("router.bgp.peers.col.desc"), className: "router-if-field-label" }),
                     descIn,
                 ]}),
             ]),
@@ -1844,9 +1844,9 @@ export class Router extends SimulatedObject {
                 } catch { /* ignore */ }
             }
         });
-        configSection.appendChild(UILib.div("hr-fields", [
-            UILib.el("div", { className: "hr-field", children: [
-                UILib.el("span", { text: t("router.ospf.routerid"), className: "hr-label" }),
+        configSection.appendChild(UILib.div("cfg-fields", [
+            UILib.el("div", { className: "cfg-field", children: [
+                UILib.el("span", { text: t("router.ospf.routerid"), className: "router-if-field-label" }),
                 ridInput,
             ]}),
         ]));
@@ -2122,17 +2122,17 @@ export class Router extends SimulatedObject {
         });
 
         host.appendChild(UILib.el("div", { className: "hr-section", children: [
-            UILib.div("hr-fields", [
-                UILib.el("div", { className: "hr-field hr-field-sm", children: [
-                    UILib.el("span", { text: t("router.vpn.name"), className: "hr-label" }),
+            UILib.div("cfg-fields", [
+                UILib.el("div", { className: "cfg-field hr-field-sm", children: [
+                    UILib.el("span", { text: t("router.vpn.name"), className: "router-if-field-label" }),
                     nameIn,
                 ]}),
-                UILib.el("div", { className: "hr-field", children: [
-                    UILib.el("span", { text: t("router.vpn.remote"), className: "hr-label" }),
+                UILib.el("div", { className: "cfg-field", children: [
+                    UILib.el("span", { text: t("router.vpn.remote"), className: "router-if-field-label" }),
                     remoteIn,
                 ]}),
-                UILib.el("div", { className: "hr-field", children: [
-                    UILib.el("span", { text: t("router.vpn.network"), className: "hr-label" }),
+                UILib.el("div", { className: "cfg-field", children: [
+                    UILib.el("span", { text: t("router.vpn.network"), className: "router-if-field-label" }),
                     netIn,
                 ]}),
             ]),
@@ -2168,8 +2168,8 @@ export class Router extends SimulatedObject {
     /** @param {HTMLElement} host */
     _buildPD6ServerTab(host) {
         const field = (/** @type {string} */ label, /** @type {HTMLElement} */ inp) => UILib.el("div", {
-            className: "hr-field",
-            children: [UILib.el("span", { text: label, className: "hr-label" }), inp],
+            className: "cfg-field",
+            children: [UILib.el("span", { text: label, className: "router-if-field-label" }), inp],
         });
 
         const enabledCb  = UILib.input({ type: "checkbox" });
@@ -2234,7 +2234,7 @@ export class Router extends SimulatedObject {
 
         host.appendChild(UILib.el("div", { className: "hr-section", children: [
             UILib.div("hr-checkbox-row", [enabledCb, UILib.el("span", { text: t("router.pd6.enabled") })]),
-            UILib.div("hr-fields", [
+            UILib.div("cfg-fields", [
                 field(t("router.pd6.pool"),            poolIn),
                 field(t("router.pd6.poolLength"),      poolLenIn),
                 field(t("router.pd6.delegatedLength"), delegLenIn),
@@ -2265,8 +2265,8 @@ export class Router extends SimulatedObject {
     /** @param {HTMLElement} host */
     _buildPD6ClientTab(host) {
         const field = (/** @type {string} */ label, /** @type {HTMLElement} */ inp) => UILib.el("div", {
-            className: "hr-field",
-            children: [UILib.el("span", { text: label, className: "hr-label" }), inp],
+            className: "cfg-field",
+            children: [UILib.el("span", { text: label, className: "router-if-field-label" }), inp],
         });
 
         const enabledCb = UILib.input({ type: "checkbox" });
@@ -2317,7 +2317,7 @@ export class Router extends SimulatedObject {
 
         host.appendChild(UILib.el("div", { className: "hr-section", children: [
             UILib.div("hr-checkbox-row", [enabledCb, UILib.el("span", { text: t("router.pd6.client.enabled") })]),
-            UILib.div("hr-fields", [field(t("router.pd6.client.interface"), ifSel)]),
+            UILib.div("cfg-fields", [field(t("router.pd6.client.interface"), ifSel)]),
             statusEl,
             UILib.div("hr-btn-row", [applyBtn]),
             errEl,
@@ -2741,7 +2741,7 @@ export class Router extends SimulatedObject {
         });
 
         const mkRow = (/** @type {string} */ lbl, /** @type {HTMLElement} */ inp) =>
-            UILib.div("router-if-field router-if-ip", [
+            UILib.div("cfg-field router-if-ip", [
                 UILib.el("span", { text: lbl, className: "router-if-field-label" }),
                 inp,
             ]);
@@ -2752,8 +2752,8 @@ export class Router extends SimulatedObject {
         ]);
 
         formHost.append(
-            UILib.div("hr-panel-content", [
-                UILib.div("router-if-fields", [
+            UILib.div("panel", [
+                UILib.div("cfg-fields router-if-fields", [
                     mkRow(t("router.vrrp.col.iface"),    ifSel),
                     mkRow(t("router.vrrp.col.ipversion"), ipVerSel),
                     mkRow(t("router.vrrp.col.vrid"),     vridIn),

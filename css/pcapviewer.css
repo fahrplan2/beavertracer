@@ -62,7 +62,7 @@
 
 .pcapviewer-wg-msg {
   font-size: 0.875rem;
-  color: var(--text-muted, #888);
+  color: var(--muted);
   text-align: center;
   max-width: 220px;
 }
@@ -97,7 +97,7 @@
   transform: translate(-50%, -50%);
   width: 24px;
   height: 5px;
-  background-image: radial-gradient(circle, var(--text-muted, #aaa) 1.5px, transparent 1.5px);
+  background-image: radial-gradient(circle, var(--muted) 1.5px, transparent 1.5px);
   background-size: 8px 5px;
   background-repeat: repeat-x;
   opacity: 0.6;
@@ -137,7 +137,7 @@
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
-  font-family: "Hack", monospace;
+  font-family: var(--font-mono);
   font-size: 0.75rem;
 }
 
@@ -188,7 +188,7 @@
 /* Tree + raw share monospace like table */
 .pcapviewer-pane--tree,
 .pcapviewer-pane--raw {
-  font-family: "Hack", monospace;
+  font-family: var(--font-mono);
   font-size: 0.75rem;
 }
 
@@ -199,7 +199,7 @@
 .pcapviewer-rawpane {
   margin: 0;
   padding: 8px 10px;
-  font-family: "Hack", monospace;
+  font-family: var(--font-mono);
   font-size: 0.75rem;
   line-height: 1.7;
   color: var(--text);
@@ -242,7 +242,7 @@
 }
 
 .hex-ascii {
-  color: var(--text-muted, #888);
+  color: var(--muted);
   user-select: none;
   white-space: pre;
   border-left: 1px solid var(--border, #ddd);
@@ -338,9 +338,6 @@
   overflow-y: hidden;
   white-space: nowrap;
   /* keep content on one line */
-  -webkit-overflow-scrolling: touch;
-  /* smooth on iOS */
-
   background-color: var(--surface-strong);
 
 }
@@ -350,7 +347,7 @@
   appearance: none;
   border: 1px solid var(--border);
   border-bottom: none;
-  background: #e5e5e5;
+  background: var(--surface-strong);
   border-radius: 10px 10px 0 0;
 
   padding: 0.4em 1em;
@@ -376,7 +373,7 @@
 
 /* Hover */
 .pcapviewer-tab:hover {
-  background: #ddd;
+  background: var(--bg2);
 }
 
 /* Active tab */
@@ -442,7 +439,7 @@
   transform: translate(-50%, -50%);
   width: 5px;
   height: 24px;
-  background-image: radial-gradient(circle, var(--text-muted, #aaa) 1.5px, transparent 1.5px);
+  background-image: radial-gradient(circle, var(--muted) 1.5px, transparent 1.5px);
   background-size: 5px 8px;
   background-repeat: repeat-y;
   opacity: 0.6;
@@ -548,10 +545,10 @@
 .pcapviewer-tracing-menu {
   position: absolute;
   z-index: 40;
-  background: #fff;
-  border: 1px solid #ccc;
+  background: var(--bg-strong);
+  border: 1px solid var(--border);
   border-radius: 6px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  box-shadow: var(--shadow-soft);
   padding: 4px;
   min-width: 200px;
 }
@@ -603,7 +600,7 @@
 }
 
 .pcapviewer-stream-panel {
-  font-family: "Hack", monospace;
+  font-family: var(--font-mono);
   user-select: text;
   background: var(--bg);
   color: var(--text);
@@ -642,7 +639,7 @@
 }
 
 .pcapviewer-stream-hdr-sub {
-  font-family: "Hack", monospace;
+  font-family: var(--font-mono);
   font-size: 0.78rem;
   color: var(--text);
   opacity: 0.7;
@@ -697,7 +694,7 @@
   flex: 1;
   margin: 0;
   padding: var(--pad-md) var(--pad-lg);
-  font-family: "Hack", monospace;
+  font-family: var(--font-mono);
   font-size: 0.78rem;
   line-height: 1.6;
   white-space: pre-wrap;

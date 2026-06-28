@@ -79,6 +79,11 @@ export class IPStack extends Observable {
     /** @type {Map<number, (pkt: IPv4Packet, ifIndex: number) => void>} */
     _rawProtoHandlers = new Map();
 
+    /** IPv4 multicast groups this host has joined (string keys). @type {Set<string>} */
+    _igmpGroups = new Set();
+    /** IPv6 multicast groups this host has joined (string keys). @type {Set<string>} */
+    _mldGroups = new Set();
+
     /**
      * Reassembly buffer: key = "src|dst|proto|id"
      * @type {Map<string, {fragments: Array<{offset:number, data:Uint8Array}>, totalLength:number|null, timerId:number, firstHeader:IPv4Packet|null}>}
@@ -1023,9 +1028,17 @@ export class IPStack extends Observable {
             case 1:
                 this._handleICMP(packet);
                 break;
-            case 2:
-                // IGMP — handled by the switch (snooping); silently ignore on the host
+            case 2: {
+                // IGMPv2 General Query (0x11) → re-report all joined groups so the switch
+                // can refresh its membership table (querier mechanism, RFC 2236 §3).
+                const igmpType = packet.payload?.[0];
+                if (igmpType === 0x11 && this._igmpGroups.size > 0) {
+                    for (const groupStr of this._igmpGroups) {
+                        try { this.sendIGMP(IPAddress.fromString(groupStr), 0x16); } catch { /* ignore */ }
+                    }
+                }
                 break;
+            }
             case 6:
                 this.tcp.handle(packet);
                 break;
@@ -1122,6 +1135,10 @@ export class IPStack extends Observable {
      * @param {0x16|0x17} igmpType
      */
     sendIGMP(groupIp, igmpType) {
+        const key = groupIp.toString();
+        if (igmpType === 0x16) this._igmpGroups.add(key);
+        else if (igmpType === 0x17) this._igmpGroups.delete(key);
+
         const ifIdx = this.interfaces.findIndex(i => i.ip.isV4() && !this._isZero(i.ip));
         if (ifIdx < 0) return;
         const g = groupIp.toUInt8();
@@ -1139,6 +1156,10 @@ export class IPStack extends Observable {
      * @param {number} mldType  0x83 = Report, 0x84 = Done
      */
     sendMLD(groupIpv6, mldType) {
+        const key = groupIpv6.toString();
+        if (mldType === 0x83) this._mldGroups.add(key);
+        else if (mldType === 0x84) this._mldGroups.delete(key);
+
         const ifIdx = this.interfaces.findIndex(i => i.ip6LL && !this._isZero(i.ip6LL));
         if (ifIdx < 0) return;
         const g = groupIpv6.toUInt8(); // 16 bytes
@@ -1537,7 +1558,14 @@ export class IPStack extends Observable {
                 pending.reject(err);
                 break;
             }
-            case 130: case 131: case 132: break; // MLD — handled by switch snooping
+            case 130: // MLD Query → re-report all joined IPv6 groups (RFC 2710 §5)
+                if (this._mldGroups.size > 0) {
+                    for (const groupStr of this._mldGroups) {
+                        try { this.sendMLD(IPAddress.fromString(groupStr), 0x83); } catch { /* ignore */ }
+                    }
+                }
+                break;
+            case 131: case 132: break; // MLD Report/Done — handled by switch snooping
             default:
         }
     }

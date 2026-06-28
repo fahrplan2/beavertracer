@@ -620,8 +620,7 @@
 .ui-tab-badge.status-warning { background: var(--warning-tint); border-color: var(--warning-strong); }
 
 /* ── Shared panel-host layout ────────────────────────────────── */
-.router-ui,
-.switch-ui {
+.router-ui {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -1022,7 +1021,7 @@
 }
 
 .sim-root.edit-mode .sim-nodes {
-  background-image: radial-gradient(circle, #b0b8c4 1px, transparent 1px);
+  background-image: radial-gradient(circle, var(--ui-border) 1px, transparent 1px);
   background-size: var(--sim-dot-size, 24px) var(--sim-dot-size, 24px);
   background-position: var(--sim-dot-x, 0px) var(--sim-dot-y, 0px);
 }
@@ -1284,7 +1283,7 @@ sim-toolbar-langbtn {
 .sim-langdialog-note {
   margin: 0;
   font-size: 0.75rem;
-  color: var(--text-muted, var(--text));
+  color: var(--text);
   opacity: 0.5;
 }
 
@@ -1602,7 +1601,7 @@ sim-toolbar-langbtn {
 }
 
 .sim-node-tooltip-row {
-  font-family: "Hack", monospace;
+  font-family: var(--font-mono);
   font-size: 0.6875rem;
   opacity: 0.9;
 }

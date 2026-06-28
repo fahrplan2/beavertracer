@@ -46,7 +46,7 @@
 
 textarea.log,
 .msg {
-  font-family: "Hack", monospace;
+  font-family: var(--font-mono);
   font-size: 0.8125rem;
   line-height: 1.4;
   user-select: text;
@@ -75,7 +75,7 @@ textarea.log {
 }
 
 .info-value {
-  font-family: "Hack", monospace;
+  font-family: var(--font-mono);
   font-size: 0.78125rem;
   user-select: text;
 }
@@ -91,20 +91,20 @@ textarea.log {
 .ledger-table {
   width: 100%;
   border-collapse: collapse;
-  font-family: "Hack", monospace;
+  font-family: var(--font-mono);
   font-size: 0.78125rem;
 }
 
 .ledger-table th {
   text-align: left;
   padding: 2px 8px 4px 2px;
-  border-bottom: 1px solid #3a4050;
-  color: #8a9ab5;
+  border-bottom: 1px solid var(--ui-border);
+  color: var(--muted);
 }
 
 .ledger-table td {
   padding: 2px 8px 2px 2px;
-  border-bottom: 1px solid #1e2330;
+  border-bottom: 1px solid var(--border);
 }
 
 .ledger-table td.ledger-amount {
@@ -114,12 +114,12 @@ textarea.log {
 
 .ledger-table td.ledger-own {
   font-weight: bold;
-  color: #7ec8a0;
+  color: var(--ok);
 }
 
 .table-empty {
   text-align: center;
-  color: var(--text-muted, #888);
+  color: var(--muted);
 }
 
 .input-narrow { width: 90px; }
@@ -186,9 +186,19 @@ textarea.log {
   background: var(--bg-strong);
   color: var(--text);
   font-size: 0.875rem;
-  font-family: "Hack", monospace;
+  font-family: var(--font-mono);
 }
 
 .input.is-invalid {
   border-color: var(--danger);
 }
+
+/* ── Config form panel utilities (used by ipconfig, homerouter, router, accesspoint, firewall) ── */
+.router-name-row { display: flex; gap: var(--pad-md); align-items: center; }
+.cfg-section    { display: flex; flex-direction: column; gap: var(--pad-sm); }
+.cfg-fields     { display: flex; gap: var(--pad-md); flex-wrap: wrap; }
+.cfg-field      { display: flex; flex-direction: column; gap: 3px; }
+.cfg-label      { font-size: 0.8125rem; color: var(--text); }
+.cfg-info-row   { display: flex; align-items: baseline; gap: var(--pad-md); }
+.cfg-info-value { font-family: var(--font-mono); font-size: 0.8125rem; user-select: text; }
+.cfg-btn-row    { display: flex; gap: var(--pad-md); flex-wrap: wrap; margin-top: 4px; }

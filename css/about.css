@@ -20,7 +20,7 @@
 .about-container hr {
     margin: 2rem 0;
     border: none;
-    border-top: 1px solid #ddd;
+    border-top: 1px solid var(--border);
 }
 
 .about-container ul {
@@ -32,20 +32,20 @@
 }
 
 .about-container .subtitle {
-    color: #666;
+    color: var(--muted);
     margin-top: -0.5rem;
 }
 
 .about-container .version {
     margin-top: 1rem;
     font-size: 0.9375rem;
-    color: #444;
+    color: var(--muted);
 }
 
 .about-container .license-text {
     font-size: 0.875rem;
-    color: #444;
-    font-family: "Hack", monospace;
+    color: var(--text);
+    font-family: var(--font-mono);
 }
 
 .about-container .thanks {
@@ -56,11 +56,11 @@
 .about-container .footer {
     text-align: center;
     font-size: 0.875rem;
-    color: #777;
+    color: var(--muted);
 }
 
 .about-container a {
-    color: #2c6ed5;
+    color: var(--blue);
     text-decoration: none;
 }
 
@@ -69,8 +69,8 @@
 }
 
 .about-container .help-toc {
-    background: #f7f7f7;
-    border: 1px solid #e0e0e0;
+    background: var(--bg1);
+    border: 1px solid var(--border);
     border-radius: 6px;
     padding: 1rem 1.4rem;
     display: inline-block;
@@ -99,5 +99,5 @@
 .about-container .help-table td:first-child {
     width: 2rem;
     text-align: center;
-    color: #555;
+    color: var(--muted);
 }

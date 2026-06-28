@@ -1,17 +1,4 @@
-/* HomeRouter Panel — scoped to .hr-panel-content */
-
-.hr-panel-content {
-  display: flex;
-  flex-direction: column;
-  gap: var(--pad-md);
-  padding: var(--pad-lg);
-}
-
-.hr-section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--pad-sm);
-}
+/* HomeRouter / Switch Panel */
 
 .hr-section-title {
   font-size: 0.8125rem;
@@ -23,31 +10,30 @@
   border-bottom: 1px solid var(--ui-border);
 }
 
-.hr-fields {
-  display: flex;
-  gap: var(--pad-md);
-  flex-wrap: wrap;
+/* Section grouping — gives vertical breathing room between form blocks */
+.hr-section {
+  margin-top: var(--pad-sm);
+  margin-bottom: var(--pad-lg);
 }
 
-.hr-field {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  flex: 1 1 auto;
-}
-
+/* Sizing variants for fields inside cfg-fields containers */
+.hr-field      { flex: 1 1 auto; }
 .hr-field-wide { flex: 1 1 100%; }
 .hr-field-sm   { flex: 0 0 80px; }
 
-.hr-label {
-  font-size: 0.8125rem;
-  color: var(--text);
+/* Button row below form fields */
+.hr-btn-row {
+  display: flex;
+  gap: var(--pad-sm);
+  margin-top: var(--pad-sm);
 }
 
+/* Info display row (label + value pair) */
 .hr-info-row {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--pad-md);
+  padding: var(--pad-sm) 0;
 }
 
 .hr-info-label {
@@ -57,9 +43,9 @@
 }
 
 .hr-info-value {
-  font-family: "Hack", monospace;
+  font-family: var(--font-mono);
   font-size: 0.8125rem;
-  user-select: text;
+  color: var(--muted);
 }
 
 .hr-checkbox-row {
@@ -67,11 +53,5 @@
   align-items: center;
   gap: var(--pad-sm);
   font-size: 0.875rem;
-}
-
-.hr-btn-row {
-  display: flex;
-  gap: var(--pad-md);
-  flex-wrap: wrap;
-  margin-top: 4px;
+  margin-bottom: var(--pad-sm);
 }

@@ -1,40 +1,4 @@
-/* IP Configuration App — scoped to .app-ipv4 */
-
-.app-ipv4 .panel {
-  display: flex;
-  flex-direction: column;
-  gap: var(--pad-md);
-  padding: var(--pad-lg);
-}
-
-.ipcfg-section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--pad-sm);
-}
-
-.ipcfg-subsection {
-  display: flex;
-  flex-direction: column;
-  gap: var(--pad-sm);
-}
-
-.ipcfg-fields {
-  display: flex;
-  gap: var(--pad-md);
-  flex-wrap: wrap;
-}
-
-.ipcfg-field {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.ipcfg-label {
-  font-size: 0.8125rem;
-  color: var(--text);
-}
+/* IP Configuration App */
 
 .ipcfg-f-mode   { flex: 1 1 auto; }
 .ipcfg-f-ip     { flex: 2 1 120px; }
@@ -43,33 +7,14 @@
 .ipcfg-f-mask   { flex: 1 1 110px; }
 .ipcfg-f-wide   { flex: 1 1 100%; }
 
-.ipcfg-btn-row {
-  display: flex;
-  gap: var(--pad-md);
-  flex-wrap: wrap;
-  margin-top: 4px;
-}
-
-.ipcfg-info-row {
-  display: flex;
-  align-items: baseline;
-  gap: var(--pad-md);
-}
-
 .ipcfg-info-label {
   font-size: 0.8125rem;
   color: var(--text);
   flex: 0 0 80px;
 }
 
-.ipcfg-info-value {
-  font-family: "Hack", monospace;
-  font-size: 0.8125rem;
-  user-select: text;
-}
-
 .ipcfg-status {
-  font-family: "Hack", monospace;
+  font-family: var(--font-mono);
   font-size: 0.8125rem;
   color: var(--text);
 }

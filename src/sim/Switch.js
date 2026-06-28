@@ -247,14 +247,14 @@ export class Switch extends SimulatedObject {
         this._stopSatPolling();
         panelBody.innerHTML = "";
 
-        const host = UILib.div("switch-ui");
+        const host = UILib.div("router-ui");
         panelBody.appendChild(host);
         this._host = host;
 
         const card = UILib.div("router-card");
         host.appendChild(card);
 
-        const content = UILib.div("sim-panel-content hr-panel-content");
+        const content = UILib.div("sim-panel-content panel");
 
         const { bar: tabBar, setActive: selectTab } = UILib.tabGroup([
             { id: "sat",  label: t("switch.tab.sat")  },
@@ -358,13 +358,13 @@ export class Switch extends SimulatedObject {
             },
         });
 
-        host.appendChild(UILib.div("hr-fields", [
-            UILib.el("div", { className: "hr-field", children: [
-                UILib.el("span", { text: t("switch.stp.enable") ?? "Spanning Tree", className: "hr-label" }),
+        host.appendChild(UILib.div("cfg-fields", [
+            UILib.el("div", { className: "cfg-field hr-field", children: [
+                UILib.el("span", { text: t("switch.stp.enable") ?? "Spanning Tree", className: "cfg-label" }),
                 modeSelect,
             ]}),
-            UILib.el("div", { className: "hr-field", children: [
-                UILib.el("span", { text: t("switch.stp.priority") ?? "Bridge Priority", className: "hr-label" }),
+            UILib.el("div", { className: "cfg-field hr-field", children: [
+                UILib.el("span", { text: t("switch.stp.priority") ?? "Bridge Priority", className: "cfg-label" }),
                 prioritySelect,
             ]}),
         ]));
@@ -632,7 +632,7 @@ export class Switch extends SimulatedObject {
 
             cardHeader.appendChild(UILib.el("span", { text: group.name, className: "switch-lag-name" }));
 
-            cardHeader.appendChild(UILib.el("span", { text: t("switch.lag.mode") + ":", className: "hr-label" }));
+            cardHeader.appendChild(UILib.el("span", { text: t("switch.lag.mode") + ":", className: "cfg-label" }));
             cardHeader.appendChild(UILib.select([
                 { value: "static", label: t("switch.lag.mode.static") },
                 { value: "lacp",   label: t("switch.lag.mode.lacp")   },
@@ -972,15 +972,15 @@ export class Switch extends SimulatedObject {
             return;
         }
 
-        const infoRow = (/** @type {string} */ label, /** @type {string} */ value) => UILib.div("hr-info-row", [
+        const infoRow = (/** @type {string} */ label, /** @type {string} */ value) => UILib.div("cfg-info-row", [
             UILib.el("span", { text: label, className: "hr-info-label" }),
-            UILib.el("span", { text: value, className: "hr-info-value" }),
+            UILib.el("span", { text: value, className: "cfg-info-value" }),
         ]);
 
         const isRoot = this.backplane.stpRootId === this.backplane.stpBridgeIdVal;
         const prio = this.backplane._stpBridgePriority ?? 32768;
 
-        this._stpSection.appendChild(UILib.el("div", { className: "hr-section", children: [
+        this._stpSection.appendChild(UILib.el("div", { className: "cfg-section", children: [
             infoRow(t("switch.stp.status") ?? "Status", mode === 'rstp' ? "RSTP (802.1w)" : "STP (802.1D)"),
             infoRow("Bridge ID", `0x${this.backplane.stpBridgeIdVal.toString(16)} (Priority ${prio})${isRoot ? " — Root" : ""}`),
             infoRow("Root ID",   `0x${this.backplane.stpRootId.toString(16)}`),
