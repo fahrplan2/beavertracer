@@ -10,9 +10,31 @@
   border-bottom: 1px solid var(--ui-border);
 }
 
+/* Section grouping — gives vertical breathing room between form blocks */
+.hr-section {
+  margin-top: var(--pad-sm);
+  margin-bottom: var(--pad-lg);
+}
+
+/* Sizing variants for fields inside cfg-fields containers */
 .hr-field      { flex: 1 1 auto; }
 .hr-field-wide { flex: 1 1 100%; }
 .hr-field-sm   { flex: 0 0 80px; }
+
+/* Button row below form fields */
+.hr-btn-row {
+  display: flex;
+  gap: var(--pad-sm);
+  margin-top: var(--pad-sm);
+}
+
+/* Info display row (label + value pair) */
+.hr-info-row {
+  display: flex;
+  align-items: center;
+  gap: var(--pad-md);
+  padding: var(--pad-sm) 0;
+}
 
 .hr-info-label {
   font-size: 0.8125rem;
@@ -20,9 +42,16 @@
   flex: 0 0 90px;
 }
 
+.hr-info-value {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
 .hr-checkbox-row {
   display: flex;
   align-items: center;
   gap: var(--pad-sm);
   font-size: 0.875rem;
+  margin-bottom: var(--pad-sm);
 }
