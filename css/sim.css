@@ -1021,7 +1021,7 @@
 }
 
 .sim-root.edit-mode .sim-nodes {
-  background-image: radial-gradient(circle, #b0b8c4 1px, transparent 1px);
+  background-image: radial-gradient(circle, var(--ui-border) 1px, transparent 1px);
   background-size: var(--sim-dot-size, 24px) var(--sim-dot-size, 24px);
   background-position: var(--sim-dot-x, 0px) var(--sim-dot-y, 0px);
 }
