@@ -563,12 +563,12 @@ export class IPStack extends Observable {
                 console.warn("Packet forwarding is disabled on this host");
                 return;
             }
-            packet.ttl = packet.ttl - 1;
-            packet.headerChecksum = 0; // force recalc in pack() after TTL change
-            if (packet.ttl <= 0) {
+            if (packet.ttl <= 1) {
                 this._sendICMPError(packet, 11, 0);
                 return;
             }
+            packet.ttl -= 1;
+            packet.headerChecksum = 0; // force recalc in pack() after TTL change
 
             // RFC 1122 §3.3.1.2: send ICMP Redirect when outgoing == incoming interface
             if (recvIfIndex >= 0 && out.interfIndex === recvIfIndex) {
@@ -1427,8 +1427,8 @@ export class IPStack extends Observable {
             if (ifIdx >= 0) {
                 if (!internal && !this.forwarding) return;
                 if (!internal) {
-                    packet.hopLimit = (packet.hopLimit - 1) & 0xff;
-                    if (packet.hopLimit === 0) { this._sendICMPv6Error(packet, 3, 0); return; }
+                    if (packet.hopLimit <= 1) { this._sendICMPv6Error(packet, 3, 0); return; }
+                    packet.hopLimit -= 1;
                 }
                 const mac = await this.interfaces[ifIdx].resolveNeighbor(dst);
                 if (mac == null) return;
@@ -1452,11 +1452,11 @@ export class IPStack extends Observable {
         if (!internal && !this.forwarding) return;
 
         if (!internal) {
-            packet.hopLimit = (packet.hopLimit - 1) & 0xff;
-            if (packet.hopLimit === 0) {
+            if (packet.hopLimit <= 1) {
                 this._sendICMPv6Error(packet, 3, 0);
                 return;
             }
+            packet.hopLimit -= 1;
         }
 
         const interf = this.interfaces[out.interfIndex];

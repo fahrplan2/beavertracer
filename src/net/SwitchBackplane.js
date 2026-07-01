@@ -937,7 +937,13 @@ export class SwitchBackplane extends Observable {
 
         if (!outPort.allowedVlans.has(vid)) return;
         const f = this.cloneFrame(inFrame);
-        f.vlan = { vid }; // ensure tagged
+        if (f.svlan) {
+            // QinQ NNI trunk: vid is the outer S-VID: carry it as the S-tag,
+            // leave the customer's C-tag (f.vlan, already cloned) untouched
+            f.svlan = { vid };
+        } else {
+            f.vlan = { vid }; // ensure tagged
+        }
         outPort.send(f);
     }
 

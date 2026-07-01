@@ -539,8 +539,9 @@ export class BGPDaemon {
     }
 
     /**
-     * Returns the best (shortest AS-PATH) route for a prefix key from adjRibIn,
-     * or null if none exists.
+     * Returns the best route for a prefix key from adjRibIn, or null if none exists.
+     * RFC 4271 §9.1.2.2 decision order (simplified): highest LOCAL_PREF, then
+     * shortest AS_PATH, then lowest MED as the final tiebreak.
      * @param {string} key  "dst/prefLen"
      */
     _bestForPrefix(key) {
@@ -548,9 +549,20 @@ export class BGPDaemon {
         let best = null;
         for (const [ribKey, entry] of this._adjRibIn) {
             if (!ribKey.startsWith(prefix)) continue;
-            if (!best || entry.asPath.length < best.asPath.length) best = entry;
+            if (!best || this._isBetterRoute(entry, best)) best = entry;
         }
         return best;
+    }
+
+    /**
+     * @param {{localPref: number, asPath: number[], med: number}} a
+     * @param {{localPref: number, asPath: number[], med: number}} b
+     * @returns {boolean} true if `a` should be preferred over `b`
+     */
+    _isBetterRoute(a, b) {
+        if (a.localPref !== b.localPref) return a.localPref > b.localPref;
+        if (a.asPath.length !== b.asPath.length) return a.asPath.length < b.asPath.length;
+        return a.med < b.med;
     }
 
     /**

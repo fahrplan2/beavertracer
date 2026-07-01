@@ -306,6 +306,28 @@ describe('BGPDaemon – _bestForPrefix', () => {
         expect(daemon._bestForPrefix('192.168.0.0/24')?.fromPeer).toBe('10.0.0.3');
     });
 
+    it('prefers higher LOCAL_PREF over a shorter AS_PATH', () => {
+        const daemon = new BGPDaemon(makeStack([]));
+        const dst = IPAddress.fromString('192.168.0.0');
+        const nh1 = IPAddress.fromString('10.0.0.2');
+        const nh2 = IPAddress.fromString('10.0.0.3');
+        // Peer A: preferred uplink, longer AS_PATH but higher LOCAL_PREF
+        daemon._adjRibIn.set('192.168.0.0/24|10.0.0.2', { dst, prefLen: 24, nexthop: nh1, asPath: [65001, 65002, 65003], localPref: 200, med: 0, fromPeer: '10.0.0.2', ifIndex: 0 });
+        // Peer B: shorter AS_PATH but lower LOCAL_PREF
+        daemon._adjRibIn.set('192.168.0.0/24|10.0.0.3', { dst, prefLen: 24, nexthop: nh2, asPath: [65002], localPref: 100, med: 0, fromPeer: '10.0.0.3', ifIndex: 0 });
+        expect(daemon._bestForPrefix('192.168.0.0/24')?.fromPeer).toBe('10.0.0.2');
+    });
+
+    it('uses MED as the final tiebreak when LOCAL_PREF and AS_PATH length are equal', () => {
+        const daemon = new BGPDaemon(makeStack([]));
+        const dst = IPAddress.fromString('192.168.0.0');
+        const nh1 = IPAddress.fromString('10.0.0.2');
+        const nh2 = IPAddress.fromString('10.0.0.3');
+        daemon._adjRibIn.set('192.168.0.0/24|10.0.0.2', { dst, prefLen: 24, nexthop: nh1, asPath: [65002], localPref: 100, med: 50, fromPeer: '10.0.0.2', ifIndex: 0 });
+        daemon._adjRibIn.set('192.168.0.0/24|10.0.0.3', { dst, prefLen: 24, nexthop: nh2, asPath: [65003], localPref: 100, med: 10, fromPeer: '10.0.0.3', ifIndex: 0 });
+        expect(daemon._bestForPrefix('192.168.0.0/24')?.fromPeer).toBe('10.0.0.3');
+    });
+
     it('returns null when no routes exist for the prefix', () => {
         expect(new BGPDaemon(makeStack([])).  _bestForPrefix('10.0.0.0/8')).toBeNull();
     });

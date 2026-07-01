@@ -61,7 +61,9 @@ export class NatEngine {
         const outKey = `${srcNum}:${srcPort}:${proto}`;
         let natPort = this._out.get(outKey);
         if (!natPort) {
-            natPort = this._allocPort(proto);
+            const allocated = this._allocPort(proto);
+            if (allocated == null) return false; // port pool exhausted, drop
+            natPort = allocated;
             this._out.set(outKey, natPort);
             this._in.set(`${natPort}:${proto}`, { srcIpNum: srcNum, srcPort });
         }
@@ -229,12 +231,18 @@ export class NatEngine {
         return mapping.srcIpNum;
     }
 
-    /** @param {number} proto */
+    /** @param {number} proto @returns {number|null} null if the port pool is exhausted */
     _allocPort(proto) {
-        while (this._in.has(`${this._nextPort}:${proto}`)) {
-            if (++this._nextPort > 60000) this._nextPort = 10000;
-        }
-        return this._nextPort++;
+        const start = this._nextPort;
+        let p = start;
+        do {
+            if (!this._in.has(`${p}:${proto}`)) {
+                this._nextPort = (p >= 60000) ? 10000 : p + 1;
+                return p;
+            }
+            p = (p >= 60000) ? 10000 : p + 1;
+        } while (p !== start);
+        return null;
     }
 
     /**
