@@ -11,6 +11,11 @@ import { SimulatedObject } from "./SimulatedObject.js";
 import { UILib } from "../lib/UILib.js";
 import { nowStamp } from "../lib/helpers.js";
 import { t } from "../i18n/index.js";
+import { simTimer, SimTimer } from "../lib/SimTimer.js";
+import { PollTimer } from "../lib/PollTimer.js";
+
+/** How long an idle tracked connection stays in the state table (~30s @ 1×, same convention as SimTimer's other *_MS constants). */
+export const STATE_IDLE_TIMEOUT_MS = 1500;
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -61,6 +66,14 @@ function parsePacketInfo(frame) {
         }
     } catch { /* malformed packet */ }
     return null; // non-IP (ARP, etc.) — always pass through
+}
+
+/** Direction-independent key for a tracked connection (so return traffic finds the same entry). @param {PacketInfo} info */
+function connKey(info) {
+    const a = `${info.srcIp}:${info.srcPort ?? ""}`;
+    const b = `${info.dstIp}:${info.dstPort ?? ""}`;
+    const [x, y] = a <= b ? [a, b] : [b, a];
+    return `${info.proto}|${x}|${y}`;
 }
 
 /** @param {number} n32 @param {number} prefix @returns {number} */
@@ -193,10 +206,32 @@ export class Firewall extends SimulatedObject {
     /** @type {"allow"|"deny"} */
     defaultPolicy = "allow";
 
+    /** Global stateful mode: allowed connections are tracked so return traffic passes without a matching rule. */
+    statefulMode = false;
+
+    /**
+     * @typedef {{
+     *   proto: number, version: 4|6,
+     *   srcIp: string, srcPort: number|null,
+     *   dstIp: string, dstPort: number|null,
+     *   direction: "AtoB"|"BtoA",
+     *   timerId: number,
+     *   expiresAtTick: number,
+     * }} StateEntry
+     */
+
+    /** @type {Map<string, StateEntry>} */
+    _stateTable = new Map();
+
     _stats = { passed: 0, dropped: 0 };
 
     /** @type {string[]} */
     _fwLog = [];
+
+    /** @type {string} */
+    _activeTab = "rules";
+
+    _pollTimer = new PollTimer();
 
     /** @type {HTMLElement|null} */
     _panelBody = null;
@@ -206,6 +241,8 @@ export class Firewall extends SimulatedObject {
     _statsEl = null;
     /** @type {HTMLElement|null} */
     _rulesHost = null;
+    /** @type {HTMLElement|null} */
+    _stateHost = null;
 
     constructor(name = t("firewall.title")) {
         super(name);
@@ -245,11 +282,30 @@ export class Firewall extends SimulatedObject {
         if (!toPort.linkref) return; // nowhere to forward
 
         let frame;
+        let stateChanged = false;
         while ((frame = fromPort.getNextIncomingFrame()) != null) {
             const info = parsePacketInfo(frame);
             const dir  = /** @type {"AtoB"|"BtoA"} */ (fromIndex === 0 ? "AtoB" : "BtoA");
 
-            if (info === null || this._shouldAllow(info, dir)) {
+            if (info === null) {
+                this._stats.passed++;
+                toPort.send(frame);
+                continue;
+            }
+
+            let allow;
+            if (this.statefulMode && this._isTrackable(info.proto) && this._touchState(info)) {
+                allow = true;
+                stateChanged = true;
+            } else {
+                allow = this._shouldAllow(info, dir);
+                if (allow && this.statefulMode && this._isTrackable(info.proto)) {
+                    this._createState(info, dir);
+                    stateChanged = true;
+                }
+            }
+
+            if (allow) {
                 this._stats.passed++;
                 toPort.send(frame);
             } else {
@@ -263,6 +319,48 @@ export class Firewall extends SimulatedObject {
         }
 
         this._renderStats();
+        if (stateChanged) this._renderStateTable();
+    }
+
+    /** @param {number} proto */
+    _isTrackable(proto) {
+        return proto === 6 || proto === 17 || proto === 1 || proto === 58;
+    }
+
+    /** Refreshes an existing state entry's timeout. @param {PacketInfo} info @returns {boolean} true if a matching entry existed */
+    _touchState(info) {
+        const key = connKey(info);
+        const entry = this._stateTable.get(key);
+        if (!entry) return false;
+        simTimer.cancel(entry.timerId);
+        entry.timerId = simTimer.schedule(() => this._expireState(key), STATE_IDLE_TIMEOUT_MS);
+        entry.expiresAtTick = simTimer.currentTick + simTimer.toTicks(STATE_IDLE_TIMEOUT_MS);
+        return true;
+    }
+
+    /** @param {PacketInfo} info @param {"AtoB"|"BtoA"} direction */
+    _createState(info, direction) {
+        const key = connKey(info);
+        if (this._touchState(info)) return;
+        const timerId = simTimer.schedule(() => this._expireState(key), STATE_IDLE_TIMEOUT_MS);
+        this._stateTable.set(key, {
+            proto: info.proto, version: info.version,
+            srcIp: info.srcIp, srcPort: info.srcPort,
+            dstIp: info.dstIp, dstPort: info.dstPort,
+            direction, timerId,
+            expiresAtTick: simTimer.currentTick + simTimer.toTicks(STATE_IDLE_TIMEOUT_MS),
+        });
+    }
+
+    /** @param {string} key */
+    _expireState(key) {
+        this._stateTable.delete(key);
+        this._renderStateTable();
+    }
+
+    _clearStateTable() {
+        for (const entry of this._stateTable.values()) simTimer.cancel(entry.timerId);
+        this._stateTable.clear();
     }
 
     /**
@@ -316,6 +414,7 @@ export class Firewall extends SimulatedObject {
 
     /** @param {HTMLElement} body */
     _mountPanel(body) {
+        this._stopPoll();
         body.innerHTML = "";
 
         const statsEl = UILib.div("fw-stats");
@@ -337,6 +436,18 @@ export class Firewall extends SimulatedObject {
         });
         policyRow.append(policyLabel, policySel);
 
+        // mode: stateless / stateful
+        const modeLabel = UILib.label(t("firewall.mode"));
+        const modeSel = this._select([
+            ["stateless", t("firewall.mode.stateless")],
+            ["stateful",  t("firewall.mode.stateful")],
+        ], this.statefulMode ? "stateful" : "stateless", v => {
+            this.statefulMode = v === "stateful";
+            if (!this.statefulMode) this._clearStateTable();
+            this._renderStateTable();
+        });
+        policyRow.append(modeLabel, modeSel);
+
         // rules host
         const rulesHost = UILib.div("fw-rules-host");
         this._rulesHost = rulesHost;
@@ -346,6 +457,13 @@ export class Firewall extends SimulatedObject {
             this.rules.push(defaultRule());
             this._renderRules();
         });
+
+        // state tab
+        const stateHost = UILib.div("fw-state-host");
+        this._stateHost = stateHost;
+
+        const clearStateBtn = UILib.button(t("firewall.state.clear"), null, {});
+        clearStateBtn.addEventListener("click", () => { this._clearStateTable(); this._renderStateTable(); });
 
         // log tab
         const logEl = /** @type {HTMLTextAreaElement} */ (UILib.el("textarea", {
@@ -359,24 +477,91 @@ export class Firewall extends SimulatedObject {
 
         const { bar: tabBar, setActive: setTab } = UILib.tabGroup([
             { id: "rules", label: t("firewall.tab.rules") },
+            { id: "state", label: t("firewall.tab.state") },
             { id: "log",   label: t("firewall.tab.log")   },
         ], (id) => {
+            this._activeTab = id;
             rulesPane.classList.toggle("hidden", id !== "rules");
+            statePane.classList.toggle("hidden", id !== "state");
             logPane.classList.toggle("hidden",   id !== "log");
         });
 
         const rulesPane = UILib.div("");
         rulesPane.append(policyRow, statsEl, rulesHost, addBtn);
 
+        const statePane = UILib.div("hidden");
+        statePane.append(UILib.div("fw-state-controls", [clearStateBtn]), stateHost);
+
         const logPane = UILib.div("hidden");
         logPane.append(UILib.div("fw-log-controls", [clearBtn]), logEl);
 
-        body.append(tabBar, rulesPane, logPane);
-        setTab("rules");
+        body.append(tabBar, rulesPane, statePane, logPane);
+        setTab(this._activeTab);
 
         this._renderRules();
         this._renderStats();
         this._renderLog();
+        this._renderStateTable();
+        this._startPoll();
+    }
+
+    _startPoll() {
+        this._pollTimer.start(() => this._renderStateTable(), 1000);
+    }
+
+    _stopPoll() {
+        this._pollTimer.stop();
+    }
+
+    _renderStateTable() {
+        const host = this._stateHost;
+        if (!host || !this._panelBody?.contains(host)) return;
+        host.innerHTML = "";
+
+        if (!this.statefulMode) {
+            host.appendChild(UILib.el("p", { text: t("firewall.state.disabled"), className: "router-empty-p" }));
+            return;
+        }
+        if (this._stateTable.size === 0) {
+            host.appendChild(UILib.el("p", { text: t("firewall.state.empty"), className: "router-empty-p" }));
+            return;
+        }
+
+        const table = document.createElement("table");
+        table.className = "fw-state-table";
+
+        const thead = document.createElement("thead");
+        const htr = document.createElement("tr");
+        for (const key of ["firewall.col.protocol", "firewall.state.col.source", "firewall.state.col.dest",
+                            "firewall.col.direction", "firewall.state.col.timeout"]) {
+            const th = document.createElement("th");
+            th.textContent = t(key);
+            htr.appendChild(th);
+        }
+        thead.appendChild(htr);
+        table.appendChild(thead);
+
+        const protoNames = /** @type {Record<number, string>} */ ({ 6: "TCP", 17: "UDP", 1: "ICMP", 58: "ICMPv6" });
+        const tbody = document.createElement("tbody");
+        for (const entry of this._stateTable.values()) {
+            const tr = document.createElement("tr");
+            const src = `${entry.srcIp}${entry.srcPort != null ? `:${entry.srcPort}` : ""}`;
+            const dst = `${entry.dstIp}${entry.dstPort != null ? `:${entry.dstPort}` : ""}`;
+            const remainingTicks = Math.max(0, entry.expiresAtTick - simTimer.currentTick);
+            const remainingSec = Math.ceil(remainingTicks * SimTimer.SIM_MS_PER_TICK / 1000);
+            const dirLabel = entry.direction === "AtoB" ? t("firewall.dir.atob") : t("firewall.dir.btoa");
+            for (const text of [protoNames[entry.proto] ?? String(entry.proto), src, dst, dirLabel, `${remainingSec}s`]) {
+                const td = document.createElement("td");
+                td.textContent = text;
+                tr.appendChild(td);
+            }
+            tbody.appendChild(tr);
+        }
+        table.appendChild(tbody);
+
+        const scrollWrap = UILib.div("sim-table-scroll");
+        scrollWrap.appendChild(table);
+        host.appendChild(UILib.wrapWithScrollHints(scrollWrap));
     }
 
     _renderRules() {
@@ -556,6 +741,7 @@ export class Firewall extends SimulatedObject {
             ...super.toJSON(),
             kind: "Firewall",
             defaultPolicy: this.defaultPolicy,
+            statefulMode: this.statefulMode,
             rules: this.rules.map(r => ({ ...r })),
         };
     }
@@ -565,9 +751,16 @@ export class Firewall extends SimulatedObject {
         const obj = new Firewall(n.name ?? t("firewall.title"));
         obj._applyBaseJSON(n);
         obj.defaultPolicy = n.defaultPolicy === "deny" ? "deny" : "allow";
+        obj.statefulMode = n.statefulMode === true;
         if (Array.isArray(n.rules)) {
             obj.rules = n.rules.map(/** @param {any} r */ r => ({ ...defaultRule(), ...r, id: _ruleIdCtr++ }));
         }
         return obj;
+    }
+
+    destroy() {
+        this._stopPoll();
+        this._clearStateTable();
+        super.destroy();
     }
 }

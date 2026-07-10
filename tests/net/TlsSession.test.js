@@ -250,6 +250,17 @@ describe('TlsSession', () => {
     expect(client['_state']).toBe('ESTABLISHED');
   });
 
+  it('rejects a forged self-signed certificate that reuses a trusted CA\'s subject string', async () => {
+    const ca = await TlsCertificate.generate('Test CA', null, { isCA: true });
+    const trustStore = new TlsTrustStore();
+    trustStore.add(ca);
+
+    // Attacker's own self-signed cert, same subject as the trusted CA but a different key pair
+    const forged = await TlsCertificate.generate('Test CA', null, {});
+
+    await expect(runHandshake(forged, trustStore)).rejects.toBeInstanceOf(TlsCertUntrustedError);
+  });
+
   it('client and server derive identical master_secret', async () => {
     const cert = await TlsCertificate.generate('server.local');
     const { client, server } = await runHandshake(cert);

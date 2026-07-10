@@ -256,13 +256,16 @@ export class Switch extends SimulatedObject {
 
         const content = UILib.div("sim-panel-content panel");
 
+        const debug = !!this.simcontrol?.debug;
+        if (this._activeTab === "qinq" && !debug) this._activeTab = "sat";
+
         const { bar: tabBar, setActive: selectTab } = UILib.tabGroup([
             { id: "sat",  label: t("switch.tab.sat")  },
             { id: "vlan", label: t("switch.tab.vlan") },
             { id: "stp",  label: t("switch.tab.stp")  },
             { id: "lag",  label: t("switch.tab.lag")  },
             { id: "igmp", label: t("switch.tab.igmp") },
-            { id: "qinq", label: "QinQ" },
+            ...(debug ? [{ id: "qinq", label: "QinQ" }] : []),
             { id: "lldp", label: t("switch.tab.lldp") },
         ], (id) => {
             this._activeTab = id;

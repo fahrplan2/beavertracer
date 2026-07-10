@@ -359,9 +359,9 @@ export class TlsTrustStore {
    * @returns {Promise<boolean>}
    */
   async isTrusted(cert, extraChain = [], _visited = new Set()) {
-    if (_visited.has(cert.subject)) return false;
-    _visited.add(cert.subject);
-    if (this.trustedCAs.some(ca => ca.subject === cert.subject)) return true;
+    if (_visited.has(cert.publicKeyId)) return false;
+    _visited.add(cert.publicKeyId);
+    if (this.trustedCAs.some(ca => ca.publicKeyId === cert.publicKeyId)) return true;
     if (cert.selfSigned) return false;
     const pool = [...cert.chain, ...extraChain];
     const issuer = pool.find(c => c.subject === cert.issuer && c.subject !== cert.subject);

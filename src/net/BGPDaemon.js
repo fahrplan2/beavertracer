@@ -539,8 +539,9 @@ export class BGPDaemon {
     }
 
     /**
-     * Returns the best (shortest AS-PATH) route for a prefix key from adjRibIn,
-     * or null if none exists.
+     * Returns the best route for a prefix key from adjRibIn, or null if none exists.
+     * RFC 4271 §9.1.2.2 decision order (simplified): highest LOCAL_PREF, then
+     * shortest AS_PATH, then lowest MED as the final tiebreak.
      * @param {string} key  "dst/prefLen"
      */
     _bestForPrefix(key) {
@@ -548,9 +549,20 @@ export class BGPDaemon {
         let best = null;
         for (const [ribKey, entry] of this._adjRibIn) {
             if (!ribKey.startsWith(prefix)) continue;
-            if (!best || entry.asPath.length < best.asPath.length) best = entry;
+            if (!best || this._isBetterRoute(entry, best)) best = entry;
         }
         return best;
+    }
+
+    /**
+     * @param {{localPref: number, asPath: number[], med: number}} a
+     * @param {{localPref: number, asPath: number[], med: number}} b
+     * @returns {boolean} true if `a` should be preferred over `b`
+     */
+    _isBetterRoute(a, b) {
+        if (a.localPref !== b.localPref) return a.localPref > b.localPref;
+        if (a.asPath.length !== b.asPath.length) return a.asPath.length < b.asPath.length;
+        return a.med < b.med;
     }
 
     /**
@@ -576,10 +588,15 @@ export class BGPDaemon {
             return;
         }
 
+        // eBGP routes get a much better administrative distance than iBGP
+        // routes (20 vs 200) — mirrors real-world router behavior.
+        const learnedFromPeer = this.peers.find(p => p.ip === newBest.fromPeer);
+        const source = (learnedFromPeer && learnedFromPeer.remoteAS === this.localAS) ? "bgp-int" : "bgp-ext";
+
         if (!oldBest) {
             // Completely new prefix
             this._learned.set(key, newBest);
-            try { this._net.addRoute(dst, prefLen, newBest.ifIndex, newBest.nexthop, "bgp"); } catch {}
+            try { this._net.addRoute(dst, prefLen, newBest.ifIndex, newBest.nexthop, source); } catch {}
             this._log(`[BGP] gelernt ${key} via ${newBest.nexthop} AS-Pfad [${newBest.asPath.join(" ")}]`);
             this._propagateLearnedRoute(newBest, newBest.fromPeer);
             return;
@@ -589,7 +606,7 @@ export class BGPDaemon {
             // Failover: best path switched to a different peer
             try { this._net.delRoute(oldBest.dst, oldBest.prefLen, oldBest.ifIndex, oldBest.nexthop); } catch {}
             this._learned.set(key, newBest);
-            try { this._net.addRoute(dst, prefLen, newBest.ifIndex, newBest.nexthop, "bgp"); } catch {}
+            try { this._net.addRoute(dst, prefLen, newBest.ifIndex, newBest.nexthop, source); } catch {}
             this._log(`[BGP] Pfadwechsel ${key} → via ${newBest.nexthop} [${newBest.asPath.join(" ")}]`);
             this._propagateLearnedRoute(newBest, newBest.fromPeer);
             return;

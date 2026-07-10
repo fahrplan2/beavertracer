@@ -8,7 +8,9 @@ const HELP_TEXT = `
 Usage: node scripts/check-i18n.mjs [options]
 
 Scans source files for t("key") calls and checks them against the source locale.
-Reports missing keys (used in code but not in locale) and unused keys (in locale but not in code).
+Reports missing keys (used in code but not in locale), keys that are only referenced
+indirectly (spelled out as a string literal but not passed straight into t(), e.g. via
+an array/object consumed generically), and truly unused keys (no reference found at all).
 
 Options:
   --src <dir>      Directory to scan for source files (default: ./)
@@ -56,6 +58,8 @@ function isObject(v) {
 /**
  * Generic AST walker (dependency-free)
  */
+const KEY_BEARING_TYPES = new Set(["ObjectProperty", "ObjectMethod", "ClassProperty", "ClassMethod"]);
+
 function walk(node, visit) {
   if (!isObject(node)) return;
   visit(node);
@@ -66,6 +70,12 @@ function walk(node, visit) {
   }
 
   for (const key of Object.keys(node)) {
+    // Skip the `key` field of a non-computed property/method definition. A
+    // quoted property name like `"a.b": "..."` (as in the locale dictionaries
+    // themselves) *defines* key "a.b" — it is not a reference/usage of it, and
+    // must not be picked up by the indirect-string-literal scan below.
+    if (key === "key" && !node.computed && KEY_BEARING_TYPES.has(node.type)) continue;
+
     const val = node[key];
     if (Array.isArray(val)) {
       for (const item of val) walk(item, visit);
@@ -134,46 +144,55 @@ function extractLocaleKeys(localeFile) {
 }
 
 /**
- * Extract used keys from t("...") calls (static strings only)
+ * Extract key references from a source file:
+ *  - `direct`: static string/template literal passed straight into a t(...) call
+ *  - `indirect`: any string literal elsewhere in the file that happens to spell
+ *    out a known dict key. Covers indirection the direct scan can't trace, e.g.
+ *    keys collected into an array/object and passed to t() via a variable:
+ *      for (const key of ["a.b", "a.c"]) { ...t(key)... }
+ *      { descKey: "app.foo.desc" }   // consumed generically as t(entry.descKey)
+ * @param {string} code
+ * @param {string} filePath
+ * @param {Set<string>} dictKeys
  */
-function extractUsedKeysFromSource(code, filePath) {
+function extractKeyReferencesFromSource(code, filePath, dictKeys) {
   const ast = parseFileToAst(code, filePath);
-  const used = new Set();
+  const direct = new Set();
+  const indirect = new Set();
 
   walk(ast, (node) => {
-    if (node.type !== "CallExpression") return;
+    if (node.type === "CallExpression") {
+      // Match callee: t(...)
+      const callee = node.callee;
+      const isT =
+        (callee?.type === "Identifier" && callee.name === "t") ||
+        // Optional: support this.t("key")
+        (callee?.type === "MemberExpression" &&
+          !callee.computed &&
+          callee.property?.type === "Identifier" &&
+          callee.property.name === "t");
 
-    // Match callee: t(...)
-    const callee = node.callee;
-    const isT =
-      (callee?.type === "Identifier" && callee.name === "t") ||
-      // Optional: support this.t("key")
-      (callee?.type === "MemberExpression" &&
-        !callee.computed &&
-        callee.property?.type === "Identifier" &&
-        callee.property.name === "t");
-
-    if (!isT) return;
-
-    const arg0 = node.arguments?.[0];
-    if (!arg0) return;
-
-    if (arg0.type === "StringLiteral") {
-      used.add(arg0.value);
-      return;
+      if (isT) {
+        const arg0 = node.arguments?.[0];
+        if (arg0) {
+          if (arg0.type === "StringLiteral") {
+            direct.add(arg0.value);
+          } else if (arg0.type === "TemplateLiteral" && arg0.expressions.length === 0) {
+            // Template literal with no expressions: t(`menu.start`)
+            const cooked = arg0.quasis?.[0]?.value?.cooked;
+            if (typeof cooked === "string") direct.add(cooked);
+          }
+          // Dynamic keys like t(`menu.${x}`) or t(someVar) are intentionally not resolved here.
+        }
+      }
     }
 
-    // Template literal with no expressions: t(`menu.start`)
-    if (arg0.type === "TemplateLiteral" && arg0.expressions.length === 0) {
-      const cooked = arg0.quasis?.[0]?.value?.cooked;
-      if (typeof cooked === "string") used.add(cooked);
-      return;
+    if (node.type === "StringLiteral" && dictKeys.has(node.value)) {
+      indirect.add(node.value);
     }
-
-    // Dynamic keys like t(`menu.${x}`) are intentionally ignored
   });
 
-  return used;
+  return { direct, indirect };
 }
 
 function listFilesRecursive(dir) {
@@ -211,7 +230,8 @@ function main() {
   const dictKeys = extractLocaleKeys(LOCALE_FILE);
 
   const files = listFilesRecursive(SRC_DIR);
-  const usedKeys = new Set();
+  const directKeys = new Set();
+  const indirectKeys = new Set();
 
   const parseErrors = [];
 
@@ -225,21 +245,23 @@ function main() {
     }
 
     try {
-      const keys = extractUsedKeysFromSource(code, filePath);
-      for (const k of keys) usedKeys.add(k);
+      const { direct, indirect } = extractKeyReferencesFromSource(code, filePath, dictKeys);
+      for (const k of direct) directKeys.add(k);
+      for (const k of indirect) indirectKeys.add(k);
     } catch (e) {
       // With errorRecovery this should be rare, but still track it
       parseErrors.push({ filePath, error: String(e) });
     }
   }
 
-  const missing = [...usedKeys].filter((k) => !dictKeys.has(k)).sort();
-  const unused = [...dictKeys].filter((k) => !usedKeys.has(k)).sort();
+  const missing = [...directKeys].filter((k) => !dictKeys.has(k)).sort();
+  const indirectOnly = [...indirectKeys].filter((k) => !directKeys.has(k)).sort();
+  const unused = [...dictKeys].filter((k) => !directKeys.has(k) && !indirectKeys.has(k)).sort();
 
   console.log(`\nLocale: ${LOCALE_FILE}`);
   console.log(`Source: ${SRC_DIR}`);
   console.log(`Files scanned: ${files.length}`);
-  console.log(`Used keys (static): ${usedKeys.size}`);
+  console.log(`Used keys (direct t() calls): ${directKeys.size}`);
   console.log(`Dict keys: ${dictKeys.size}`);
 
   if (parseErrors.length) {
@@ -257,7 +279,16 @@ function main() {
     console.log("(none)");
   }
 
-  console.log(`\n=== Unused keys (in en.js, not used in code): ${unused.length} ===`);
+  console.log(
+    `\n=== Indirectly referenced keys (spelled out as a string literal, but not a direct t() call — e.g. via an array/object consumed generically): ${indirectOnly.length} ===`
+  );
+  if (indirectOnly.length) {
+    for (const k of indirectOnly) console.log(k);
+  } else {
+    console.log("(none)");
+  }
+
+  console.log(`\n=== Unused keys (in en.js, no reference found anywhere in source): ${unused.length} ===`);
   if (unused.length) {
     for (const k of unused) console.log(k);
   } else {

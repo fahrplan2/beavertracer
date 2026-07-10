@@ -639,6 +639,30 @@ describe('QinQ – end-to-end push/pop', () => {
         expect(uniOut).not.toBeNull();
         expect(uniOut?.svlan).toBeNull();
     });
+
+    it('customer C-tag survives the S-tagged trunk hop unmodified', () => {
+        // port 0: QinQ UNI svid=100, port 2: trunk (tagged, allows S-VID 100), port 3: QinQ UNI svid=100
+        const bp = makeBP(4);
+        bp.ports[0].svid = 100;
+        bp.ports[2].setTagged([100], 100); // NNI trunk
+        bp.ports[3].svid = 100;
+        linkPort(bp, 0);
+        linkPort(bp, 2);
+        linkPort(bp, 3);
+
+        // Customer sends a C-tagged frame (VID 42) into the QinQ UNI
+        inject(bp, 0, taggedFrame(mac([0xaa, 0, 0, 0, 0, 1]), 42));
+
+        // Trunk port must carry S-tag=100 while leaving the C-tag untouched
+        const trunkOut = drainOne(bp, 2);
+        expect(trunkOut?.svlan?.vid).toBe(100);
+        expect(trunkOut?.vlan?.vid).toBe(42);
+
+        // Opposite QinQ UNI must deliver with S-tag popped and C-tag intact
+        const uniOut = drainOne(bp, 3);
+        expect(uniOut?.svlan).toBeNull();
+        expect(uniOut?.vlan?.vid).toBe(42);
+    });
 });
 
 describe('QinQ – EthernetFrame double-tag pack/fromBytes', () => {
