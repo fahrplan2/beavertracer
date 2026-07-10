@@ -1357,5 +1357,17 @@ export default {
   "link.fault.action.restore": "Obnovite povezavo",
   "link.fault.close": "Zapri",
   "app.ipv4config.msg.staticModeHint": "Statični način: vnesite naslov IP in predpono, nato kliknite Uporabi.",
-  "sim.close": "Zapri"
+  "sim.close": "Zapri",
+  "router.routingtable.source.bgpext": "eBGP",
+  "router.routingtable.source.bgpint": "iBGP",
+  "firewall.tab.state": "Stanja",
+  "firewall.mode": "Način",
+  "firewall.mode.stateless": "Brez stanja",
+  "firewall.mode.stateful": "S stanjem",
+  "firewall.state.clear": "Počisti tabelo",
+  "firewall.state.empty": "Ni aktivnih povezav.",
+  "firewall.state.disabled": "Način s stanjem je onemogočen.",
+  "firewall.state.col.source": "Vir",
+  "firewall.state.col.dest": "Cilj",
+  "firewall.state.col.timeout": "Časovna omejitev"
 };

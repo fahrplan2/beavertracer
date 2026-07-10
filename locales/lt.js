@@ -1357,5 +1357,17 @@ export default {
   "link.fault.action.restore": "Atkurti ryšį",
   "link.fault.close": "Uždaryti",
   "app.ipv4config.msg.staticModeHint": "Statinis režimas: įveskite IP adresą ir prefiksą, tada spustelėkite Taikyti.",
-  "sim.close": "Užverti"
+  "sim.close": "Užverti",
+  "router.routingtable.source.bgpext": "eBGP",
+  "router.routingtable.source.bgpint": "iBGP",
+  "firewall.tab.state": "Būsenos",
+  "firewall.mode": "Režimas",
+  "firewall.mode.stateless": "Bestavy",
+  "firewall.mode.stateful": "Stavy",
+  "firewall.state.clear": "Išvalyti lentelę",
+  "firewall.state.empty": "Nėra aktyvių ryšių.",
+  "firewall.state.disabled": "Stavy režimas yra išjungtas.",
+  "firewall.state.col.source": "Šaltinis",
+  "firewall.state.col.dest": "Paskirties vieta",
+  "firewall.state.col.timeout": "Timeout"
 };

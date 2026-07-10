@@ -1357,5 +1357,17 @@ export default {
   "link.fault.action.restore": "Khôi phục kết nối",
   "link.fault.close": "Đóng",
   "app.ipv4config.msg.staticModeHint": "Chế độ tĩnh: nhập địa chỉ IP và tiền tố, sau đó nhấp vào Áp dụng.",
-  "sim.close": "Đóng"
+  "sim.close": "Đóng",
+  "router.routingtable.source.bgpext": "eBGP",
+  "router.routingtable.source.bgpint": "iBGP",
+  "firewall.tab.state": "Trạng thái",
+  "firewall.mode": "Chế độ",
+  "firewall.mode.stateless": "Không có trạng thái",
+  "firewall.mode.stateful": "Có trạng thái",
+  "firewall.state.clear": "Xóa bảng",
+  "firewall.state.empty": "Không có kết nối hoạt động.",
+  "firewall.state.disabled": "Chế độ có trạng thái đã bị tắt.",
+  "firewall.state.col.source": "Nguồn",
+  "firewall.state.col.dest": "Đích đến",
+  "firewall.state.col.timeout": "Hết thời gian"
 };

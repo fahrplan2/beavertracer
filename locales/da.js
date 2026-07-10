@@ -1357,5 +1357,17 @@ export default {
   "link.fault.action.restore": "Gendan forbindelse",
   "link.fault.close": "Luk",
   "app.ipv4config.msg.staticModeHint": "Statisk tilstand: angiv en IP-adresse og præfiks, og klik derefter på Anvend.",
-  "sim.close": "Luk"
+  "sim.close": "Luk",
+  "router.routingtable.source.bgpext": "eBGP",
+  "router.routingtable.source.bgpint": "iBGP",
+  "firewall.tab.state": "Tilstande",
+  "firewall.mode": "Tilstand",
+  "firewall.mode.stateless": "Uden tilstand",
+  "firewall.mode.stateful": "Med tilstand",
+  "firewall.state.clear": "Ryd tabel",
+  "firewall.state.empty": "Ingen aktive forbindelser.",
+  "firewall.state.disabled": "Tilstand med tilstand er deaktiveret.",
+  "firewall.state.col.source": "Kilde",
+  "firewall.state.col.dest": "Destination",
+  "firewall.state.col.timeout": "Timeout"
 };

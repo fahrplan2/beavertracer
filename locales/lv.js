@@ -1357,5 +1357,17 @@ export default {
   "link.fault.action.restore": "Atjaunot savienojumu",
   "link.fault.close": "Aizvērt",
   "app.ipv4config.msg.staticModeHint": "Statiskais režīms: ievadiet IP adresi un prefiksu, pēc tam noklikšķiniet uz Lietot.",
-  "sim.close": "Aizvērt"
+  "sim.close": "Aizvērt",
+  "router.routingtable.source.bgpext": "eBGP",
+  "router.routingtable.source.bgpint": "iBGP",
+  "firewall.tab.state": "Stāvokļi",
+  "firewall.mode": "Režīms",
+  "firewall.mode.stateless": "Bezstāvokļa",
+  "firewall.mode.stateful": "Ar stāvokļa sekošanu",
+  "firewall.state.clear": "Notīrīt tabulu",
+  "firewall.state.empty": "Nav aktīvu savienojumu.",
+  "firewall.state.disabled": "Stāvokļa sekošanas režīms ir atspējots.",
+  "firewall.state.col.source": "Avots",
+  "firewall.state.col.dest": "Galamērķis",
+  "firewall.state.col.timeout": "Noildze"
 };

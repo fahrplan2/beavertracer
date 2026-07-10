@@ -1357,5 +1357,17 @@ export default {
   "link.fault.action.restore": "Återställ anslutning",
   "link.fault.close": "Stäng",
   "app.ipv4config.msg.staticModeHint": "Statiskt läge: ange en IP-adress och prefix och klicka sedan på Använd.",
-  "sim.close": "Stäng"
+  "sim.close": "Stäng",
+  "router.routingtable.source.bgpext": "eBGP",
+  "router.routingtable.source.bgpint": "iBGP",
+  "firewall.tab.state": "Tillstånd",
+  "firewall.mode": "Läge",
+  "firewall.mode.stateless": "Tillståndslös",
+  "firewall.mode.stateful": "Tillståndskänslig",
+  "firewall.state.clear": "Rensa tabell",
+  "firewall.state.empty": "Inga aktiva anslutningar.",
+  "firewall.state.disabled": "Tillståndskänsligt läge är inaktiverat.",
+  "firewall.state.col.source": "Källa",
+  "firewall.state.col.dest": "Destination",
+  "firewall.state.col.timeout": "Tidsgräns"
 };

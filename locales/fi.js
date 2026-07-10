@@ -1357,5 +1357,17 @@ export default {
   "link.fault.action.restore": "Palauta yhteys",
   "link.fault.close": "Sulje",
   "app.ipv4config.msg.staticModeHint": "Staattinen tila: syötä IP-osoite ja etuliite, valitse sitten Käytä.",
-  "sim.close": "Sulje"
+  "sim.close": "Sulje",
+  "router.routingtable.source.bgpext": "eBGP",
+  "router.routingtable.source.bgpint": "iBGP",
+  "firewall.tab.state": "Tilat",
+  "firewall.mode": "Tila",
+  "firewall.mode.stateless": "Tilaton",
+  "firewall.mode.stateful": "Tilavaraistunut",
+  "firewall.state.clear": "Tyhjennä taulukko",
+  "firewall.state.empty": "Ei aktiivisia yhteyksiä.",
+  "firewall.state.disabled": "Tilavaraistunut tila on poistettu käytöstä.",
+  "firewall.state.col.source": "Lähde",
+  "firewall.state.col.dest": "Määränpää",
+  "firewall.state.col.timeout": "Aikakatkaisu"
 };

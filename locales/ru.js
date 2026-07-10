@@ -1357,5 +1357,17 @@ export default {
   "link.fault.action.restore": "Восстановить соединение",
   "link.fault.close": "Закрыть",
   "app.ipv4config.msg.staticModeHint": "Статический режим: введите IP-адрес и префикс, затем нажмите кнопку \"Применить\".",
-  "sim.close": "Закрыть"
+  "sim.close": "Закрыть",
+  "router.routingtable.source.bgpext": "eBGP",
+  "router.routingtable.source.bgpint": "iBGP",
+  "firewall.tab.state": "Состояния",
+  "firewall.mode": "Режим",
+  "firewall.mode.stateless": "Без состояния",
+  "firewall.mode.stateful": "С отслеживанием состояния",
+  "firewall.state.clear": "Очистить таблицу",
+  "firewall.state.empty": "Нет активных соединений.",
+  "firewall.state.disabled": "Режим отслеживания состояния отключен.",
+  "firewall.state.col.source": "Источник",
+  "firewall.state.col.dest": "Назначение",
+  "firewall.state.col.timeout": "Время ожидания"
 };

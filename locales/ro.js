@@ -1357,5 +1357,17 @@ export default {
   "link.fault.action.restore": "Restaurați conexiunea",
   "link.fault.close": "Închideți",
   "app.ipv4config.msg.staticModeHint": "Mod static: introduceți o adresă IP și prefix, apoi faceți clic pe Aplicare.",
-  "sim.close": "Închide"
+  "sim.close": "Închide",
+  "router.routingtable.source.bgpext": "eBGP",
+  "router.routingtable.source.bgpint": "iBGP",
+  "firewall.tab.state": "Stări",
+  "firewall.mode": "Mod",
+  "firewall.mode.stateless": "Fără stare",
+  "firewall.mode.stateful": "Cu stare",
+  "firewall.state.clear": "Golire tabel",
+  "firewall.state.empty": "Nu există conexiuni active.",
+  "firewall.state.disabled": "Modul cu stare este dezactivat.",
+  "firewall.state.col.source": "Sursă",
+  "firewall.state.col.dest": "Destinație",
+  "firewall.state.col.timeout": "Expirare"
 };

@@ -1357,5 +1357,17 @@ export default {
   "link.fault.action.restore": "بازیابی اتصال",
   "link.fault.close": "بستن",
   "app.ipv4config.msg.staticModeHint": "حالت ثابت: یک آدرس IP و پیشوند را وارد کنید، سپس روی اعمال کلیک کنید.",
-  "sim.close": "بستن"
+  "sim.close": "بستن",
+  "router.routingtable.source.bgpext": "eBGP",
+  "router.routingtable.source.bgpint": "iBGP",
+  "firewall.tab.state": "وضعیت‌ها",
+  "firewall.mode": "حالت",
+  "firewall.mode.stateless": "بدون وضعیت",
+  "firewall.mode.stateful": "با وضعیت",
+  "firewall.state.clear": "پاک‌کردن جدول",
+  "firewall.state.empty": "هیچ اتصالی فعال نیست.",
+  "firewall.state.disabled": "حالت با وضعیت غیرفعال است.",
+  "firewall.state.col.source": "منبع",
+  "firewall.state.col.dest": "مقصد",
+  "firewall.state.col.timeout": "زمان انتظار"
 };

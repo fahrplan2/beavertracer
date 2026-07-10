@@ -1357,5 +1357,17 @@ export default {
   "link.fault.action.restore": "Відновити з'єднання",
   "link.fault.close": "Закрити",
   "app.ipv4config.msg.staticModeHint": "Статичний режим: введіть IP-адресу та префікс, потім натисніть \"Застосувати\".",
-  "sim.close": "Закрити"
+  "sim.close": "Закрити",
+  "router.routingtable.source.bgpext": "eBGP",
+  "router.routingtable.source.bgpint": "iBGP",
+  "firewall.tab.state": "Стани",
+  "firewall.mode": "Режим",
+  "firewall.mode.stateless": "Без стану",
+  "firewall.mode.stateful": "Зі станом",
+  "firewall.state.clear": "Очистити таблицю",
+  "firewall.state.empty": "Немає активних з'єднань.",
+  "firewall.state.disabled": "Режим зі станом вимкнено.",
+  "firewall.state.col.source": "Джерело",
+  "firewall.state.col.dest": "Призначення",
+  "firewall.state.col.timeout": "Час очікування"
 };

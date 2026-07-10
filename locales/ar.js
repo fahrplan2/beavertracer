@@ -1357,5 +1357,17 @@ export default {
   "link.fault.action.restore": "استعادة الاتصال",
   "link.fault.close": "إغلاق",
   "app.ipv4config.msg.staticModeHint": "الوضع الثابت: أدخل عنوان IP والبادئة، ثم انقر فوق تطبيق.",
-  "sim.close": "إغلاق"
+  "sim.close": "إغلاق",
+  "router.routingtable.source.bgpext": "eBGP",
+  "router.routingtable.source.bgpint": "iBGP",
+  "firewall.tab.state": "الحالات",
+  "firewall.mode": "الوضع",
+  "firewall.mode.stateless": "بدون حالة",
+  "firewall.mode.stateful": "مع الحالة",
+  "firewall.state.clear": "مسح الجدول",
+  "firewall.state.empty": "لا توجد اتصالات نشطة.",
+  "firewall.state.disabled": "وضع الحالة معطّل.",
+  "firewall.state.col.source": "المصدر",
+  "firewall.state.col.dest": "الوجهة",
+  "firewall.state.col.timeout": "انتهاء الصلاحية"
 };

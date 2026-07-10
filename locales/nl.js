@@ -1357,5 +1357,17 @@ export default {
   "link.fault.action.restore": "Verbinding herstellen",
   "link.fault.close": "Sluiten",
   "app.ipv4config.msg.staticModeHint": "Statische modus: voer een IP-adres en voorvoegsel in en klik vervolgens op Toepassen.",
-  "sim.close": "Sluiten"
+  "sim.close": "Sluiten",
+  "router.routingtable.source.bgpext": "eBGP",
+  "router.routingtable.source.bgpint": "iBGP",
+  "firewall.tab.state": "Toestanden",
+  "firewall.mode": "Modus",
+  "firewall.mode.stateless": "Stateless",
+  "firewall.mode.stateful": "Stateful",
+  "firewall.state.clear": "Tabel wissen",
+  "firewall.state.empty": "Geen actieve verbindingen.",
+  "firewall.state.disabled": "Stateful-modus is uitgeschakeld.",
+  "firewall.state.col.source": "Bron",
+  "firewall.state.col.dest": "Bestemming",
+  "firewall.state.col.timeout": "Time-out"
 };

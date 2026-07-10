@@ -1357,5 +1357,17 @@ export default {
   "link.fault.action.restore": "연결 복구",
   "link.fault.close": "닫기",
   "app.ipv4config.msg.staticModeHint": "정적 모드: IP 주소와 접두사를 입력한 후 적용을 클릭하세요.",
-  "sim.close": "닫기"
+  "sim.close": "닫기",
+  "router.routingtable.source.bgpext": "eBGP",
+  "router.routingtable.source.bgpint": "iBGP",
+  "firewall.tab.state": "상태",
+  "firewall.mode": "모드",
+  "firewall.mode.stateless": "비상태 추적",
+  "firewall.mode.stateful": "상태 추적",
+  "firewall.state.clear": "테이블 초기화",
+  "firewall.state.empty": "활성 연결 없음.",
+  "firewall.state.disabled": "상태 추적 모드가 비활성화됨.",
+  "firewall.state.col.source": "출처",
+  "firewall.state.col.dest": "대상",
+  "firewall.state.col.timeout": "시간 초과"
 };

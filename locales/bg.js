@@ -1357,5 +1357,17 @@ export default {
   "link.fault.action.restore": "Възстановете връзката",
   "link.fault.close": "Затворете",
   "app.ipv4config.msg.staticModeHint": "Статичен режим: въведете IP адрес и префикс, след което щракнете Приложи.",
-  "sim.close": "Затвори"
+  "sim.close": "Затвори",
+  "router.routingtable.source.bgpext": "eBGP",
+  "router.routingtable.source.bgpint": "iBGP",
+  "firewall.tab.state": "Състояния",
+  "firewall.mode": "Режим",
+  "firewall.mode.stateless": "Без състояние",
+  "firewall.mode.stateful": "Със състояние",
+  "firewall.state.clear": "Изчистване на таблицата",
+  "firewall.state.empty": "Няма активни връзки.",
+  "firewall.state.disabled": "Режимът със състояние е деактивиран.",
+  "firewall.state.col.source": "Източник",
+  "firewall.state.col.dest": "Местоназначение",
+  "firewall.state.col.timeout": "Време на изтичане"
 };

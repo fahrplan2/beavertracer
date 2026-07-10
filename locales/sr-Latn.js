@@ -1356,5 +1356,17 @@ export default {
   "link.fault.action.restore": "Obnovi konekciju",
   "link.fault.close": "Zatvori",
   "app.ipv4config.msg.staticModeHint": "Statički režim: unesite IP adresu i prefiks, zatim kliknite Primeni.",
-  "sim.close": "Zatvori"
+  "sim.close": "Zatvori",
+  "router.routingtable.source.bgpext": "eBGP",
+  "router.routingtable.source.bgpint": "iBGP",
+  "firewall.tab.state": "Stanja",
+  "firewall.mode": "Režim",
+  "firewall.mode.stateless": "Bezstanjski",
+  "firewall.mode.stateful": "Stanjski",
+  "firewall.state.clear": "Očisti tabelu",
+  "firewall.state.empty": "Nema aktivnih konekcija.",
+  "firewall.state.disabled": "Stanjski režim je onemogućen.",
+  "firewall.state.col.source": "Izvor",
+  "firewall.state.col.dest": "Odredište",
+  "firewall.state.col.timeout": "Isteka"
 };
