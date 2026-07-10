@@ -1364,5 +1364,17 @@ export default {
   "link.fault.action.restore": "Restaurar conexión",
   "link.fault.close": "Cerrar",
   "app.ipv4config.msg.staticModeHint": "Modo estático: ingrese una dirección IP y prefijo, luego haga clic en Aplicar.",
-  "sim.close": "Cerrar"
+  "sim.close": "Cerrar",
+  "router.routingtable.source.bgpext": "eBGP",
+  "router.routingtable.source.bgpint": "iBGP",
+  "firewall.tab.state": "Estados",
+  "firewall.mode": "Modo",
+  "firewall.mode.stateless": "Sin estado",
+  "firewall.mode.stateful": "Con estado",
+  "firewall.state.clear": "Limpiar tabla",
+  "firewall.state.empty": "No hay conexiones activas.",
+  "firewall.state.disabled": "El modo con estado está deshabilitado.",
+  "firewall.state.col.source": "Origen",
+  "firewall.state.col.dest": "Destino",
+  "firewall.state.col.timeout": "Tiempo de espera"
 };

@@ -362,6 +362,7 @@
    EDIT SIDEBAR
    ========================================================= */
 .sim-sidebar {
+  flex-shrink: 0;
   padding: var(--pad-lg);
   overflow: auto;
 

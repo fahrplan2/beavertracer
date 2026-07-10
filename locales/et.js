@@ -1357,5 +1357,17 @@ export default {
   "link.fault.action.restore": "Taasta ühendus",
   "link.fault.close": "Sulge",
   "app.ipv4config.msg.staticModeHint": "Staatiline režiim: sisestage IP-aadress ja eesliide, seejärel klõpsake Rakenda.",
-  "sim.close": "Sulge"
+  "sim.close": "Sulge",
+  "router.routingtable.source.bgpext": "eBGP",
+  "router.routingtable.source.bgpint": "iBGP",
+  "firewall.tab.state": "Olekud",
+  "firewall.mode": "Režiim",
+  "firewall.mode.stateless": "Olekuta",
+  "firewall.mode.stateful": "Olek-tundlik",
+  "firewall.state.clear": "Puhasta tabel",
+  "firewall.state.empty": "Aktiivseid ühendusi pole.",
+  "firewall.state.disabled": "Olek-tundlik režiim on keelatud.",
+  "firewall.state.col.source": "Allikas",
+  "firewall.state.col.dest": "Sihtkoht",
+  "firewall.state.col.timeout": "Aegumine"
 };

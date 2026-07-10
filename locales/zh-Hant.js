@@ -1356,5 +1356,17 @@ export default {
   "link.fault.action.restore": "恢復連接",
   "link.fault.close": "關閉",
   "app.ipv4config.msg.staticModeHint": "靜態模式：輸入 IP 位址和前綴，然後按一下「套用」。",
-  "sim.close": "關閉"
+  "sim.close": "關閉",
+  "router.routingtable.source.bgpext": "eBGP",
+  "router.routingtable.source.bgpint": "iBGP",
+  "firewall.tab.state": "狀態",
+  "firewall.mode": "模式",
+  "firewall.mode.stateless": "無狀態",
+  "firewall.mode.stateful": "有狀態",
+  "firewall.state.clear": "清除表格",
+  "firewall.state.empty": "沒有活動連線。",
+  "firewall.state.disabled": "有狀態模式已停用。",
+  "firewall.state.col.source": "來源",
+  "firewall.state.col.dest": "目的地",
+  "firewall.state.col.timeout": "逾時"
 };

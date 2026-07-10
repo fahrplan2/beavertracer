@@ -1356,5 +1356,17 @@ export default {
   "link.fault.action.restore": "Gjenopprette forbindelse",
   "link.fault.close": "Lukk",
   "app.ipv4config.msg.staticModeHint": "Statisk modus: oppgi en IP-adresse og prefiks, og klikk deretter Bruk.",
-  "sim.close": "Lukk"
+  "sim.close": "Lukk",
+  "router.routingtable.source.bgpext": "eBGP",
+  "router.routingtable.source.bgpint": "iBGP",
+  "firewall.tab.state": "Tilstander",
+  "firewall.mode": "Modus",
+  "firewall.mode.stateless": "Uten tilstand",
+  "firewall.mode.stateful": "Med tilstand",
+  "firewall.state.clear": "Tøm tabell",
+  "firewall.state.empty": "Ingen aktive tilkoblinger.",
+  "firewall.state.disabled": "Modus med tilstand er deaktivert.",
+  "firewall.state.col.source": "Kilde",
+  "firewall.state.col.dest": "Destinasjon",
+  "firewall.state.col.timeout": "Tidsavbrudd"
 };

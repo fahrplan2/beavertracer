@@ -1357,5 +1357,17 @@ export default {
   "link.fault.action.restore": "Przywróć połączenie",
   "link.fault.close": "Zamknij",
   "app.ipv4config.msg.staticModeHint": "Tryb statyczny: wpisz adres IP i prefiks, a następnie kliknij Zastosuj.",
-  "sim.close": "Zamknij"
+  "sim.close": "Zamknij",
+  "router.routingtable.source.bgpext": "eBGP",
+  "router.routingtable.source.bgpint": "iBGP",
+  "firewall.tab.state": "Stany",
+  "firewall.mode": "Tryb",
+  "firewall.mode.stateless": "Bezstanowy",
+  "firewall.mode.stateful": "Stanowy",
+  "firewall.state.clear": "Wyczyść tabelę",
+  "firewall.state.empty": "Brak aktywnych połączeń.",
+  "firewall.state.disabled": "Tryb stanowy jest wyłączony.",
+  "firewall.state.col.source": "Źródło",
+  "firewall.state.col.dest": "Miejsce przeznaczenia",
+  "firewall.state.col.timeout": "Limit czasu"
 };

@@ -1357,5 +1357,17 @@ export default {
   "link.fault.action.restore": "Obnovit připojení",
   "link.fault.close": "Zavřít",
   "app.ipv4config.msg.staticModeHint": "Statický režim: zadejte IP adresu a předponu, poté klikněte na Použít.",
-  "sim.close": "Zavřít"
+  "sim.close": "Zavřít",
+  "router.routingtable.source.bgpext": "eBGP",
+  "router.routingtable.source.bgpint": "iBGP",
+  "firewall.tab.state": "Stavy",
+  "firewall.mode": "Režim",
+  "firewall.mode.stateless": "Bezstavový",
+  "firewall.mode.stateful": "Stavový",
+  "firewall.state.clear": "Vymazat tabulku",
+  "firewall.state.empty": "Žádná aktivní připojení.",
+  "firewall.state.disabled": "Stavový režim je zakázán.",
+  "firewall.state.col.source": "Zdroj",
+  "firewall.state.col.dest": "Cíl",
+  "firewall.state.col.timeout": "Časový limit"
 };

@@ -1356,5 +1356,17 @@ export default {
   "link.fault.action.restore": "Kapcsolat visszaállítása",
   "link.fault.close": "Bezárás",
   "app.ipv4config.msg.staticModeHint": "Statikus mód: adjon meg egy IP-címet és előtagot, majd kattintson az Alkalmaz gombra.",
-  "sim.close": "Bezárás"
+  "sim.close": "Bezárás",
+  "router.routingtable.source.bgpext": "eBGP",
+  "router.routingtable.source.bgpint": "iBGP",
+  "firewall.tab.state": "Állapotok",
+  "firewall.mode": "Mód",
+  "firewall.mode.stateless": "Állapotmentes",
+  "firewall.mode.stateful": "Állapotfüggő",
+  "firewall.state.clear": "Tábla törlése",
+  "firewall.state.empty": "Nincsenek aktív kapcsolatok.",
+  "firewall.state.disabled": "Az állapotfüggő mód le van tiltva.",
+  "firewall.state.col.source": "Forrás",
+  "firewall.state.col.dest": "Cél",
+  "firewall.state.col.timeout": "Időtúllépés"
 };

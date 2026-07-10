@@ -1357,5 +1357,17 @@ export default {
   "link.fault.action.restore": "Επαναφορά σύνδεσης",
   "link.fault.close": "Κλείσιμο",
   "app.ipv4config.msg.staticModeHint": "Στατική λειτουργία: εισαγάγετε μια διεύθυνση IP και πρόθεμα, στη συνέχεια κάντε κλικ στο Εφarmosé.",
-  "sim.close": "Κλείσιμο"
+  "sim.close": "Κλείσιμο",
+  "router.routingtable.source.bgpext": "eBGP",
+  "router.routingtable.source.bgpint": "iBGP",
+  "firewall.tab.state": "Καταστάσεις",
+  "firewall.mode": "Λειτουργία",
+  "firewall.mode.stateless": "Χωρίς κατάσταση",
+  "firewall.mode.stateful": "Με κατάσταση",
+  "firewall.state.clear": "Εκκαθάριση πίνακα",
+  "firewall.state.empty": "Δεν υπάρχουν ενεργές συνδέσεις.",
+  "firewall.state.disabled": "Η λειτουργία με κατάσταση είναι απενεργοποιημένη.",
+  "firewall.state.col.source": "Πηγή",
+  "firewall.state.col.dest": "Προορισμός",
+  "firewall.state.col.timeout": "Χρόνος λήξης"
 };

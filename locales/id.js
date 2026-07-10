@@ -1357,5 +1357,17 @@ export default {
   "link.fault.action.restore": "Pulihkan koneksi",
   "link.fault.close": "Tutup",
   "app.ipv4config.msg.staticModeHint": "Mode statis: masukkan alamat IP dan prefix, kemudian klik Terapkan.",
-  "sim.close": "Tutup"
+  "sim.close": "Tutup",
+  "router.routingtable.source.bgpext": "eBGP",
+  "router.routingtable.source.bgpint": "iBGP",
+  "firewall.tab.state": "Status",
+  "firewall.mode": "Mode",
+  "firewall.mode.stateless": "Tanpa Status",
+  "firewall.mode.stateful": "Berstateful",
+  "firewall.state.clear": "Hapus tabel",
+  "firewall.state.empty": "Tidak ada koneksi aktif.",
+  "firewall.state.disabled": "Mode berstateful dinonaktifkan.",
+  "firewall.state.col.source": "Sumber",
+  "firewall.state.col.dest": "Tujuan",
+  "firewall.state.col.timeout": "Waktu Habis"
 };

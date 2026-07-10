@@ -1356,5 +1356,17 @@ export default {
   "link.fault.action.restore": "Restaurar connexió",
   "link.fault.close": "Tancar",
   "app.ipv4config.msg.staticModeHint": "Mode estàtic: introduïu una adreça IP i un prefix, després feu clic a Aplicar.",
-  "sim.close": "Tancar"
+  "sim.close": "Tancar",
+  "router.routingtable.source.bgpext": "eBGP",
+  "router.routingtable.source.bgpint": "iBGP",
+  "firewall.tab.state": "Estats",
+  "firewall.mode": "Mode",
+  "firewall.mode.stateless": "Sense estat",
+  "firewall.mode.stateful": "Amb estat",
+  "firewall.state.clear": "Netejar taula",
+  "firewall.state.empty": "Cap connexió activa.",
+  "firewall.state.disabled": "El mode amb estat està desactivat.",
+  "firewall.state.col.source": "Origen",
+  "firewall.state.col.dest": "Destinació",
+  "firewall.state.col.timeout": "Temps límit"
 };

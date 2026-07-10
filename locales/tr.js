@@ -1357,5 +1357,17 @@ export default {
   "link.fault.action.restore": "Bağlantıyı geri yükle",
   "link.fault.close": "Kapat",
   "app.ipv4config.msg.staticModeHint": "Statik mod: bir IP adresi ve ön eki girin, ardından Uygula'ya tıklayın.",
-  "sim.close": "Kapat"
+  "sim.close": "Kapat",
+  "router.routingtable.source.bgpext": "eBGP",
+  "router.routingtable.source.bgpint": "iBGP",
+  "firewall.tab.state": "Durumlar",
+  "firewall.mode": "Mod",
+  "firewall.mode.stateless": "Durumsuz",
+  "firewall.mode.stateful": "Durum İzlemeli",
+  "firewall.state.clear": "Tabloyu Temizle",
+  "firewall.state.empty": "Aktif bağlantı yok.",
+  "firewall.state.disabled": "Durum İzlemeli mod devre dışıdır.",
+  "firewall.state.col.source": "Kaynak",
+  "firewall.state.col.dest": "Hedef",
+  "firewall.state.col.timeout": "Zaman Aşımı"
 };

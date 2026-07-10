@@ -1356,5 +1356,17 @@ export default {
   "link.fault.action.restore": "Riktheni lidhjen",
   "link.fault.close": "Mbyll",
   "app.ipv4config.msg.staticModeHint": "Modaliteti statik: futni një adresë IP dhe prefiks, pastaj klikoni Zbatoje.",
-  "sim.close": "Mbyll"
+  "sim.close": "Mbyll",
+  "router.routingtable.source.bgpext": "eBGP",
+  "router.routingtable.source.bgpint": "iBGP",
+  "firewall.tab.state": "Gjendjet",
+  "firewall.mode": "Modi",
+  "firewall.mode.stateless": "Pa gjendje",
+  "firewall.mode.stateful": "Me gjendje",
+  "firewall.state.clear": "Pastro tabelën",
+  "firewall.state.empty": "Nuk ka lidhje aktive.",
+  "firewall.state.disabled": "Modi me gjendje është i çaktivizuar.",
+  "firewall.state.col.source": "Burimi",
+  "firewall.state.col.dest": "Destinacioni",
+  "firewall.state.col.timeout": "Kohëzgjatja e pritjes"
 };

@@ -1357,5 +1357,17 @@ export default {
   "link.fault.action.restore": "恢复连接",
   "link.fault.close": "关闭",
   "app.ipv4config.msg.staticModeHint": "静态模式：输入 IP 地址和前缀，然后点击应用。",
-  "sim.close": "关闭"
+  "sim.close": "关闭",
+  "router.routingtable.source.bgpext": "eBGP",
+  "router.routingtable.source.bgpint": "iBGP",
+  "firewall.tab.state": "状态",
+  "firewall.mode": "模式",
+  "firewall.mode.stateless": "无状态",
+  "firewall.mode.stateful": "有状态",
+  "firewall.state.clear": "清除表",
+  "firewall.state.empty": "无活动连接。",
+  "firewall.state.disabled": "有状态模式已禁用。",
+  "firewall.state.col.source": "源",
+  "firewall.state.col.dest": "目标",
+  "firewall.state.col.timeout": "超时"
 };

@@ -1357,5 +1357,17 @@ export default {
   "link.fault.action.restore": "接続を復元",
   "link.fault.close": "閉じる",
   "app.ipv4config.msg.staticModeHint": "静的モード: IPアドレスとプレフィックスを入力して、「適用」をクリックしてください。",
-  "sim.close": "閉じる"
+  "sim.close": "閉じる",
+  "router.routingtable.source.bgpext": "eBGP",
+  "router.routingtable.source.bgpint": "iBGP",
+  "firewall.tab.state": "状態",
+  "firewall.mode": "モード",
+  "firewall.mode.stateless": "ステートレス",
+  "firewall.mode.stateful": "ステートフル",
+  "firewall.state.clear": "テーブルをクリア",
+  "firewall.state.empty": "アクティブな接続はありません。",
+  "firewall.state.disabled": "ステートフルモードは無効です。",
+  "firewall.state.col.source": "送信元",
+  "firewall.state.col.dest": "宛先",
+  "firewall.state.col.timeout": "タイムアウト"
 };

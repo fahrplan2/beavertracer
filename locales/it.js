@@ -1362,5 +1362,17 @@ export default {
   "link.fault.action.restore": "Ripristina connessione",
   "link.fault.close": "Chiudi",
   "app.ipv4config.msg.staticModeHint": "Modalità statica: inserisci un indirizzo IP e un prefisso, quindi fai clic su Applica.",
-  "sim.close": "Chiudi"
+  "sim.close": "Chiudi",
+  "router.routingtable.source.bgpext": "eBGP",
+  "router.routingtable.source.bgpint": "iBGP",
+  "firewall.tab.state": "Stati",
+  "firewall.mode": "Modalità",
+  "firewall.mode.stateless": "Stateless",
+  "firewall.mode.stateful": "Stateful",
+  "firewall.state.clear": "Cancella tabella",
+  "firewall.state.empty": "Nessuna connessione attiva.",
+  "firewall.state.disabled": "La modalità stateful è disabilitata.",
+  "firewall.state.col.source": "Origine",
+  "firewall.state.col.dest": "Destinazione",
+  "firewall.state.col.timeout": "Timeout"
 };
