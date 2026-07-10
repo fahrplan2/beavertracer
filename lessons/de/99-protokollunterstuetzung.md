@@ -312,6 +312,26 @@ Dynamische Routing-Daemons laufen innerhalb von Router- und HomeRouter-Knoten.
 </tbody>
 </table>
 
+### Routenauswahl: Administrative Distance
+
+Bietet mehr als eine Quelle (verbunden, statisch, oder eines der obigen Protokolle) eine Route zum *exakt gleichen* Ziel-Präfix an, entscheidet zunächst weiterhin Longest-Prefix-Match. Bei gleicher Präfixlänge greift die **administrative Distance (AD)**: Die Route mit dem niedrigeren Wert gewinnt.
+
+AD ist kein IETF-Standard, sondern eine herstellerspezifische Konvention — Cisco und MikroTik verwenden nahezu identische Werte. BeaverTracer übernimmt diese De-facto-Werte:
+
+<table class="pt">
+<thead><tr><th>Quelle</th><th>Admin. Distance</th><th>Anmerkung</th></tr></thead>
+<tbody>
+<tr><td>Directly Connected</td><td>0</td><td>Interface-Netz; kann nicht überschrieben werden</td></tr>
+<tr><td>Static</td><td>1</td><td>Manuell konfigurierte Route (auch DHCPv6-PD- und SLAAC-Default-Routen)</td></tr>
+<tr><td>eBGP</td><td>20</td><td>Von einem Peer in einem anderen AS gelernt</td></tr>
+<tr><td>OSPF</td><td>110</td><td></td></tr>
+<tr><td>RIP / RIPng</td><td>120</td><td></td></tr>
+<tr><td>iBGP</td><td>200</td><td>Von einem Peer im gleichen AS gelernt</td></tr>
+</tbody>
+</table>
+
+Erst innerhalb derselben Quelle entscheidet die protokolleigene Metrik (OSPF-Kostensumme, RIP-Hopcount, BGPs Best-Path-Algorithmus). Die Routingtabellen-Ansicht im Router-Fenster zeigt Routen bereits nach AD sortiert an (verbunden vor statisch vor dynamisch gelernten Routen), ohne den konkreten Zahlenwert einzublenden.
+
 ## Paketaufzeichnung & Analyse
 
 BeaverTracer zeichnet den gesamten simulierten Datenverkehr intern im standardmäßigen **libpcap-Format** auf (Magic `0xa1b2c3d4`, Link Type 1 = Ethernet). Die Aufzeichnung steht direkt im Browser zur Analyse bereit; ein Download der `.pcap`-Datei ist derzeit nicht vorgesehen.

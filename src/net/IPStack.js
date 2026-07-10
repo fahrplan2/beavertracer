@@ -23,6 +23,31 @@ class TunnelConfig {
 }
 
 /**
+ * Administrative distance per route source — not an IETF standard, just the
+ * de-facto industry convention (Cisco/MikroTik use the same numbers). Used as
+ * a tiebreaker when two routes match a destination with the same prefix length.
+ * @type {Record<string, number>}
+ */
+export const ADMIN_DISTANCE = {
+    connected: 0,
+    static: 1,
+    dhcp6pd: 1,
+    slaac: 1,
+    "bgp-ext": 20,
+    ospf: 110,
+    rip: 120,
+    "bgp-int": 200,
+};
+
+/**
+ * @param {string} source
+ * @returns {number}
+ */
+export function adminDistanceOf(source) {
+    return ADMIN_DISTANCE[source] ?? 255;
+}
+
+/**
  * Returns true if addr matches network/prefixLength.
  * Works for both IPv4 (4 bytes) and IPv6 (16 bytes).
  * @param {IPAddress} addr
@@ -280,6 +305,7 @@ export class IPStack extends Observable {
         /** @type {Route|null} */
         let best = null;
         let bestBits = -1;
+        let bestAD = Infinity;
 
         for (const r of this.routingTable) {
             if (!r) continue;
@@ -288,9 +314,18 @@ export class IPStack extends Observable {
             if (!_matchesPrefix(dstIp, r.dst, r.prefixLength)) continue;
 
             const bits = r.prefixLength | 0;
+            // Longest prefix match wins first; among equal-length matches,
+            // lowest administrative distance wins (see ADMIN_DISTANCE above).
             if (bits > bestBits) {
                 bestBits = bits;
+                bestAD = adminDistanceOf(r.source);
                 best = r;
+            } else if (bits === bestBits) {
+                const ad = adminDistanceOf(r.source);
+                if (ad < bestAD) {
+                    bestAD = ad;
+                    best = r;
+                }
             }
         }
 
@@ -1738,7 +1773,7 @@ export class IPStack extends Observable {
      * @param {number} prefixLength
      * @param {Number} interf
      * @param {IPAddress} nexthop 0.0.0.0 for direct
-     * @param {"connected"|"static"|"ospf"|"rip"|"bgp"|"dhcp6pd"|"slaac"} [source]
+     * @param {"connected"|"static"|"ospf"|"rip"|"bgp-ext"|"bgp-int"|"dhcp6pd"|"slaac"} [source]
      */
     addRoute(dst, prefixLength, interf, nexthop, source = "static") {
         const r = new Route();
@@ -2020,7 +2055,7 @@ export class Route {
 
     auto = true;
 
-    /** @type {"connected"|"static"|"ospf"|"rip"|"bgp"|"dhcp6pd"|"slaac"} */
+    /** @type {"connected"|"static"|"ospf"|"rip"|"bgp-ext"|"bgp-int"|"dhcp6pd"|"slaac"} */
     source = "static";
 
     /** @type {TunnelConfig|null} set for GRE tunnel routes */

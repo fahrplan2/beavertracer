@@ -1,7 +1,7 @@
 //@ts-check
 
 import { VirtualFileSystem } from "../apps/lib/VirtualFileSystem.js";
-import { IPStack } from "../net/IPStack.js";
+import { IPStack, adminDistanceOf } from "../net/IPStack.js";
 import { VLANSubInterface } from "../net/NetworkInterface.js";
 import { RIPDaemon } from "../net/RIPDaemon.js";
 import { BGPDaemon } from "../net/BGPDaemon.js";
@@ -48,11 +48,31 @@ function assertPrefix(p) {
 }
 
 
-/** @param {"connected"|"static"|"ospf"|"rip"|"bgp"|string} source */
+/** @param {"connected"|"static"|"ospf"|"rip"|"bgp-ext"|"bgp-int"|string} source */
 function routeSourceLabel(source) {
     if (source === "connected") return t("router.routingtable.source.connected");
     if (source === "static") return t("router.routingtable.source.static");
+    if (source === "bgp-ext") return t("router.routingtable.source.bgpext");
+    if (source === "bgp-int") return t("router.routingtable.source.bgpint");
     return source.toUpperCase();
+}
+
+/**
+ * Sort routes by administrative distance (lowest = most preferred first),
+ * then by prefix length (more specific first), preserving each route's
+ * original index into this.net.routingTable for save/delete handlers.
+ * @param {any[]} routes
+ * @returns {Array<{r: any, idx: number}>}
+ */
+function sortRoutesByAdminDistance(routes) {
+    return routes
+        .map((r, idx) => ({ r, idx }))
+        .sort((a, b) => {
+            const adA = adminDistanceOf(a.r.source ?? "static");
+            const adB = adminDistanceOf(b.r.source ?? "static");
+            if (adA !== adB) return adA - adB;
+            return (b.r.prefixLength ?? 0) - (a.r.prefixLength ?? 0);
+        });
 }
 
 /** deterministic via EthernetPort.linkref @param {*} iface */
@@ -880,10 +900,9 @@ export class Router extends SimulatedObject {
 
         const tbody = document.createElement("tbody");
         const routes = this.net.routingTable ?? [];
+        const rows = sortRoutesByAdminDistance(routes).filter(({ r }) => !r.dst?.isV6?.());
 
-        routes.forEach((r, idx) => {
-            if (r.dst?.isV6?.()) return; // skip IPv6 routes in IPv4 tab
-
+        rows.forEach(({ r, idx }) => {
             const source = r.source ?? "static";
             const editable = source === "static";
 
@@ -1231,10 +1250,9 @@ export class Router extends SimulatedObject {
 
         const tbody = document.createElement("tbody");
         const routes = this.net.routingTable ?? [];
+        const rows = sortRoutesByAdminDistance(routes).filter(({ r }) => !!r.dst?.isV6?.());
 
-        routes.forEach((r, idx) => {
-            if (!r.dst?.isV6?.()) return; // only IPv6
-
+        rows.forEach(({ r, idx }) => {
             const source = r.source ?? "static";
             const editable = source === "static";
 

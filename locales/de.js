@@ -563,6 +563,8 @@ export default {
   "router.routingtable.source": "Quelle",
   "router.routingtable.source.connected": "Direkt",
   "router.routingtable.source.static": "Statisch",
+  "router.routingtable.source.bgpext": "eBGP",
+  "router.routingtable.source.bgpint": "iBGP",
   "router.routingtable.dst": "Ziel",
   "router.routingtable.interface": "Iface",
   "router.routingtable.netmask": "Netzmaske",

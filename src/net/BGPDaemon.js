@@ -588,10 +588,15 @@ export class BGPDaemon {
             return;
         }
 
+        // eBGP routes get a much better administrative distance than iBGP
+        // routes (20 vs 200) — mirrors real-world router behavior.
+        const learnedFromPeer = this.peers.find(p => p.ip === newBest.fromPeer);
+        const source = (learnedFromPeer && learnedFromPeer.remoteAS === this.localAS) ? "bgp-int" : "bgp-ext";
+
         if (!oldBest) {
             // Completely new prefix
             this._learned.set(key, newBest);
-            try { this._net.addRoute(dst, prefLen, newBest.ifIndex, newBest.nexthop, "bgp"); } catch {}
+            try { this._net.addRoute(dst, prefLen, newBest.ifIndex, newBest.nexthop, source); } catch {}
             this._log(`[BGP] gelernt ${key} via ${newBest.nexthop} AS-Pfad [${newBest.asPath.join(" ")}]`);
             this._propagateLearnedRoute(newBest, newBest.fromPeer);
             return;
@@ -601,7 +606,7 @@ export class BGPDaemon {
             // Failover: best path switched to a different peer
             try { this._net.delRoute(oldBest.dst, oldBest.prefLen, oldBest.ifIndex, oldBest.nexthop); } catch {}
             this._learned.set(key, newBest);
-            try { this._net.addRoute(dst, prefLen, newBest.ifIndex, newBest.nexthop, "bgp"); } catch {}
+            try { this._net.addRoute(dst, prefLen, newBest.ifIndex, newBest.nexthop, source); } catch {}
             this._log(`[BGP] Pfadwechsel ${key} → via ${newBest.nexthop} [${newBest.asPath.join(" ")}]`);
             this._propagateLearnedRoute(newBest, newBest.fromPeer);
             return;
