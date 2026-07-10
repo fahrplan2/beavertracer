@@ -1419,5 +1419,6 @@ export default {
   "link.fault.status.down": "Falla",
   "link.fault.action.break": "Simular fallida",
   "link.fault.action.restore": "Restaurar connexió",
-  "link.fault.close": "Tancar"
+  "link.fault.close": "Tancar",
+  "app.ipv4config.msg.staticModeHint": "Mode estàtic: introduïu una adreça IP i un prefix, després feu clic a Aplicar."
 };

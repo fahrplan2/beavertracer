@@ -1420,5 +1420,6 @@ export default {
   "link.fault.status.down": "장애",
   "link.fault.action.break": "장애 시뮬레이션",
   "link.fault.action.restore": "연결 복구",
-  "link.fault.close": "닫기"
+  "link.fault.close": "닫기",
+  "app.ipv4config.msg.staticModeHint": "정적 모드: IP 주소와 접두사를 입력한 후 적용을 클릭하세요."
 };

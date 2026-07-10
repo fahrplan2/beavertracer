@@ -1454,5 +1454,6 @@ export default {
   "link.fault.status.down": "Défaut",
   "link.fault.action.break": "Simuler une panne",
   "link.fault.action.restore": "Restaurer la connexion",
-  "link.fault.close": "Fermer"
+  "link.fault.close": "Fermer",
+  "app.ipv4config.msg.staticModeHint": "Mode statique : entrez une adresse IP et un préfixe, puis cliquez sur Appliquer."
 };

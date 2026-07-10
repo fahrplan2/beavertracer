@@ -1420,5 +1420,6 @@ export default {
   "link.fault.status.down": "Greška",
   "link.fault.action.break": "Simuliraj grešku",
   "link.fault.action.restore": "Obnovi vezu",
-  "link.fault.close": "Zatvori"
+  "link.fault.close": "Zatvori",
+  "app.ipv4config.msg.staticModeHint": "Statički način: unesite IP adresu i prefiks, zatim kliknite Primeni."
 };

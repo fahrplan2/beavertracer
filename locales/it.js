@@ -1425,5 +1425,6 @@ export default {
   "link.fault.status.down": "Errore",
   "link.fault.action.break": "Simula guasto",
   "link.fault.action.restore": "Ripristina connessione",
-  "link.fault.close": "Chiudi"
+  "link.fault.close": "Chiudi",
+  "app.ipv4config.msg.staticModeHint": "Modalità statica: inserisci un indirizzo IP e un prefisso, quindi fai clic su Applica."
 };

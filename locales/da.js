@@ -1420,5 +1420,6 @@ export default {
   "link.fault.status.down": "Fejl",
   "link.fault.action.break": "Simuler fejl",
   "link.fault.action.restore": "Gendan forbindelse",
-  "link.fault.close": "Luk"
+  "link.fault.close": "Luk",
+  "app.ipv4config.msg.staticModeHint": "Statisk tilstand: angiv en IP-adresse og præfiks, og klik derefter på Anvend."
 };

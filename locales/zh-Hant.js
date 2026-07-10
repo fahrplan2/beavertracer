@@ -1419,5 +1419,6 @@ export default {
   "link.fault.status.down": "故障",
   "link.fault.action.break": "模擬故障",
   "link.fault.action.restore": "恢復連接",
-  "link.fault.close": "關閉"
+  "link.fault.close": "關閉",
+  "app.ipv4config.msg.staticModeHint": "靜態模式：輸入 IP 位址和前綴，然後按一下「套用」。"
 };

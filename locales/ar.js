@@ -1420,5 +1420,6 @@ export default {
   "link.fault.status.down": "خلل",
   "link.fault.action.break": "محاكاة عطل",
   "link.fault.action.restore": "استعادة الاتصال",
-  "link.fault.close": "إغلاق"
+  "link.fault.close": "إغلاق",
+  "app.ipv4config.msg.staticModeHint": "الوضع الثابت: أدخل عنوان IP والبادئة، ثم انقر فوق تطبيق."
 };

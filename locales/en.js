@@ -126,6 +126,7 @@ export default {
   "app.ipv4config.mode.dhcp": "DHCP",
 
   "app.ipv4config.msg.dhcpModeHint": "DHCP mode: click Apply to obtain an address automatically.",
+  "app.ipv4config.msg.staticModeHint": "Static mode: enter an IP address and prefix, then click Apply.",
   "app.ipv4config.msg.dhcpStarting": "Starting DHCP on interface {i}…",
   "app.ipv4config.msg.dhcpAttempt": "DHCP attempt {attempt}…",
   "app.ipv4config.msg.dhcpSuccess": "DHCP success on {i}: IP {ip}, Netmask {netmask}, Gateway {gw}, DNS {dns}",
@@ -890,6 +891,7 @@ export default {
   "sim.downloads": "Downloads",
   "sim.help": "Help",
   "sim.welcome": "Welcome",
+  "sim.close": "Close",
   "sim.trace": "Trace",
   "sim.reset": "Reset",
   "sim.resetwarning": "Reset simulation?\n\nAll caches and dynamic state will be reset (ARP, SAT, routing, TCP connections, DNS, etc.).",

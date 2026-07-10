@@ -1420,5 +1420,6 @@ export default {
   "link.fault.status.down": "Gangguan",
   "link.fault.action.break": "Simulasikan kegagalan",
   "link.fault.action.restore": "Pulihkan koneksi",
-  "link.fault.close": "Tutup"
+  "link.fault.close": "Tutup",
+  "app.ipv4config.msg.staticModeHint": "Mode statis: masukkan alamat IP dan prefix, kemudian klik Terapkan."
 };

@@ -1420,5 +1420,6 @@ export default {
   "link.fault.status.down": "Storing",
   "link.fault.action.break": "Fout simuleren",
   "link.fault.action.restore": "Verbinding herstellen",
-  "link.fault.close": "Sluiten"
+  "link.fault.close": "Sluiten",
+  "app.ipv4config.msg.staticModeHint": "Statische modus: voer een IP-adres en voorvoegsel in en klik vervolgens op Toepassen."
 };

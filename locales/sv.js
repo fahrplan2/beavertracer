@@ -1420,5 +1420,6 @@ export default {
   "link.fault.status.down": "Fel",
   "link.fault.action.break": "Simulera fel",
   "link.fault.action.restore": "Återställ anslutning",
-  "link.fault.close": "Stäng"
+  "link.fault.close": "Stäng",
+  "app.ipv4config.msg.staticModeHint": "Statiskt läge: ange en IP-adress och prefix och klicka sedan på Använd."
 };

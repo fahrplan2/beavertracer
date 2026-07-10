@@ -1420,5 +1420,6 @@ export default {
   "link.fault.status.down": "Viga",
   "link.fault.action.break": "Simuleeri rike",
   "link.fault.action.restore": "Taasta ühendus",
-  "link.fault.close": "Sulge"
+  "link.fault.close": "Sulge",
+  "app.ipv4config.msg.staticModeHint": "Staatiline režiim: sisestage IP-aadress ja eesliide, seejärel klõpsake Rakenda."
 };

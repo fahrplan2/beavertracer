@@ -387,6 +387,9 @@ export class IPv4ConfigApp extends GenericProcess {
       if (prev === "static" && now === "dhcp") {
         this._dropInterfaceForDhcp(this._idx());
       }
+      if (prev === "dhcp" && now === "static") {
+        this._setMsg(t("app.ipv4config.msg.staticModeHint"));
+      }
       this._syncModeUI();
     });
 

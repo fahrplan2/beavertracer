@@ -1420,5 +1420,6 @@ export default {
   "link.fault.status.down": "Gedimas",
   "link.fault.action.break": "Imituoti gedimą",
   "link.fault.action.restore": "Atkurti ryšį",
-  "link.fault.close": "Uždaryti"
+  "link.fault.close": "Uždaryti",
+  "app.ipv4config.msg.staticModeHint": "Statinis režimas: įveskite IP adresą ir prefiksą, tada spustelėkite Taikyti."
 };

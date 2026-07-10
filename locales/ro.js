@@ -1420,5 +1420,6 @@ export default {
   "link.fault.status.down": "Defecțiune",
   "link.fault.action.break": "Simulați defecțiune",
   "link.fault.action.restore": "Restaurați conexiunea",
-  "link.fault.close": "Închideți"
+  "link.fault.close": "Închideți",
+  "app.ipv4config.msg.staticModeHint": "Mod static: introduceți o adresă IP și prefix, apoi faceți clic pe Aplicare."
 };

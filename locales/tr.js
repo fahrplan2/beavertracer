@@ -1420,5 +1420,6 @@ export default {
   "link.fault.status.down": "Hata",
   "link.fault.action.break": "Arızayı simüle et",
   "link.fault.action.restore": "Bağlantıyı geri yükle",
-  "link.fault.close": "Kapat"
+  "link.fault.close": "Kapat",
+  "app.ipv4config.msg.staticModeHint": "Statik mod: bir IP adresi ve ön eki girin, ardından Uygula'ya tıklayın."
 };

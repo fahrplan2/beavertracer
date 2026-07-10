@@ -1420,5 +1420,6 @@ export default {
   "link.fault.status.down": "Βλάβη",
   "link.fault.action.break": "Προσομοίωση βλάβης",
   "link.fault.action.restore": "Επαναφορά σύνδεσης",
-  "link.fault.close": "Κλείσιμο"
+  "link.fault.close": "Κλείσιμο",
+  "app.ipv4config.msg.staticModeHint": "Στατική λειτουργία: εισαγάγετε μια διεύθυνση IP και πρόθεμα, στη συνέχεια κάντε κλικ στο Εφarmosé."
 };

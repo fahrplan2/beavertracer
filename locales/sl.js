@@ -1420,5 +1420,6 @@ export default {
   "link.fault.status.down": "Napaka",
   "link.fault.action.break": "Simuliraj napako",
   "link.fault.action.restore": "Obnovite povezavo",
-  "link.fault.close": "Zapri"
+  "link.fault.close": "Zapri",
+  "app.ipv4config.msg.staticModeHint": "Statični način: vnesite naslov IP in predpono, nato kliknite Uporabi."
 };

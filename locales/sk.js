@@ -1419,5 +1419,6 @@ export default {
   "link.fault.status.down": "Porucha",
   "link.fault.action.break": "Simulovať poruchu",
   "link.fault.action.restore": "Obnoviť pripojenie",
-  "link.fault.close": "Zatvoriť"
+  "link.fault.close": "Zatvoriť",
+  "app.ipv4config.msg.staticModeHint": "Statický režim: zadajte IP adresu a predponu, potom kliknite na Použiť."
 };

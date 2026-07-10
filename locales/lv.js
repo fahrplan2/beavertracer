@@ -1420,5 +1420,6 @@ export default {
   "link.fault.status.down": "Kļūme",
   "link.fault.action.break": "Simulēt kļūmi",
   "link.fault.action.restore": "Atjaunot savienojumu",
-  "link.fault.close": "Aizvērt"
+  "link.fault.close": "Aizvērt",
+  "app.ipv4config.msg.staticModeHint": "Statiskais režīms: ievadiet IP adresi un prefiksu, pēc tam noklikšķiniet uz Lietot."
 };

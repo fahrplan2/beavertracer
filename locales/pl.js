@@ -1420,5 +1420,6 @@ export default {
   "link.fault.status.down": "Błąd",
   "link.fault.action.break": "Symuluj awarię",
   "link.fault.action.restore": "Przywróć połączenie",
-  "link.fault.close": "Zamknij"
+  "link.fault.close": "Zamknij",
+  "app.ipv4config.msg.staticModeHint": "Tryb statyczny: wpisz adres IP i prefiks, a następnie kliknij Zastosuj."
 };

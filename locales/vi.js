@@ -1420,5 +1420,6 @@ export default {
   "link.fault.status.down": "Lỗi",
   "link.fault.action.break": "Mô phỏng lỗi",
   "link.fault.action.restore": "Khôi phục kết nối",
-  "link.fault.close": "Đóng"
+  "link.fault.close": "Đóng",
+  "app.ipv4config.msg.staticModeHint": "Chế độ tĩnh: nhập địa chỉ IP và tiền tố, sau đó nhấp vào Áp dụng."
 };

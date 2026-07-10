@@ -1420,5 +1420,6 @@ export default {
   "link.fault.status.down": "障害",
   "link.fault.action.break": "障害をシミュレート",
   "link.fault.action.restore": "接続を復元",
-  "link.fault.close": "閉じる"
+  "link.fault.close": "閉じる",
+  "app.ipv4config.msg.staticModeHint": "静的モード: IPアドレスとプレフィックスを入力して、「適用」をクリックしてください。"
 };

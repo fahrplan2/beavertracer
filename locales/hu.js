@@ -1419,5 +1419,6 @@ export default {
   "link.fault.status.down": "Hiba",
   "link.fault.action.break": "Hiba szimulálása",
   "link.fault.action.restore": "Kapcsolat visszaállítása",
-  "link.fault.close": "Bezárás"
+  "link.fault.close": "Bezárás",
+  "app.ipv4config.msg.staticModeHint": "Statikus mód: adjon meg egy IP-címet és előtagot, majd kattintson az Alkalmaz gombra."
 };

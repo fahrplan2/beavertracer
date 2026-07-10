@@ -1419,5 +1419,6 @@ export default {
   "link.fault.status.down": "E dëmtuar",
   "link.fault.action.break": "Simuloni dështim",
   "link.fault.action.restore": "Riktheni lidhjen",
-  "link.fault.close": "Mbyll"
+  "link.fault.close": "Mbyll",
+  "app.ipv4config.msg.staticModeHint": "Modaliteti statik: futni një adresë IP dhe prefiks, pastaj klikoni Zbatoje."
 };

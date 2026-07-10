@@ -1420,5 +1420,6 @@ export default {
   "link.fault.status.down": "خرابی",
   "link.fault.action.break": "شبیه‌سازی خرابی",
   "link.fault.action.restore": "بازیابی اتصال",
-  "link.fault.close": "بستن"
+  "link.fault.close": "بستن",
+  "app.ipv4config.msg.staticModeHint": "حالت ثابت: یک آدرس IP و پیشوند را وارد کنید، سپس روی اعمال کلیک کنید."
 };

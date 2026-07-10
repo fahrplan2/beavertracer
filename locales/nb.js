@@ -1419,5 +1419,6 @@ export default {
   "link.fault.status.down": "Feil",
   "link.fault.action.break": "Simuler feil",
   "link.fault.action.restore": "Gjenopprette forbindelse",
-  "link.fault.close": "Lukk"
+  "link.fault.close": "Lukk",
+  "app.ipv4config.msg.staticModeHint": "Statisk modus: oppgi en IP-adresse og prefiks, og klikk deretter Bruk."
 };

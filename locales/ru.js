@@ -1420,5 +1420,6 @@ export default {
   "link.fault.status.down": "Неисправность",
   "link.fault.action.break": "Имитировать сбой",
   "link.fault.action.restore": "Восстановить соединение",
-  "link.fault.close": "Закрыть"
+  "link.fault.close": "Закрыть",
+  "app.ipv4config.msg.staticModeHint": "Статический режим: введите IP-адрес и префикс, затем нажмите кнопку \"Применить\"."
 };

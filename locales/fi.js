@@ -1420,5 +1420,6 @@ export default {
   "link.fault.status.down": "Vika",
   "link.fault.action.break": "Simuloi vika",
   "link.fault.action.restore": "Palauta yhteys",
-  "link.fault.close": "Sulje"
+  "link.fault.close": "Sulje",
+  "app.ipv4config.msg.staticModeHint": "Staattinen tila: syötä IP-osoite ja etuliite, valitse sitten Käytä."
 };
