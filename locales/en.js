@@ -3,29 +3,23 @@ export const meta = { name: "🇬🇧 English", order: 10 };
 
 export default {
   "app.generic.title": "Gernic App",
-
   "app.dhcpserver.title": "DHCP Server",
-
   "app.dhcpserver.label.config": "Configuration",
   "app.dhcpserver.label.rangeStart": "Range start",
   "app.dhcpserver.label.rangeEnd": "Range end",
   "app.dhcpserver.label.dns": "DNS servers",
   "app.dhcpserver.label.gateway": "Gateway",
   "app.dhcpserver.label.leaseTime": "Lease time (seconds)",
-
   "app.dhcpserver.button.save": "Save",
   "app.dhcpserver.button.start": "Start",
   "app.dhcpserver.button.stop": "Stop",
   "app.dhcpserver.button.clearLog": "Clear log",
-
   "app.dhcpserver.label.log":    "Log",
   "app.dhcpserver.label.leases": "Leases",
-
   "app.dhcpserver.leases.col.mac":     "MAC Address",
   "app.dhcpserver.leases.col.address": "IP Address",
   "app.dhcpserver.leases.col.expires": "Expires",
   "app.dhcpserver.leases.empty":       "No active leases",
-
   "app.dhcpserver.log.createdDefaultConfig": "Config file missing/empty; wrote default config to",
   "app.dhcpserver.log.configLoaded": "Loaded config from",
   "app.dhcpserver.log.configLoadFailed": "Failed to load config:",
@@ -38,13 +32,10 @@ export default {
   "app.dhcpserver.log.stopError": "Error while stopping:",
   "app.dhcpserver.log.recvError": "UDP receive error:",
   "app.dhcpserver.log.parseError": "DHCP parse error:",
-
   "app.dhcpv6server.title": "DHCPv6 Server",
-
   "app.dhcpv6server.label.config":      "Configuration",
   "app.dhcpv6server.label.log":         "Log",
   "app.dhcpv6server.label.leases":      "Leases",
-
   "app.dhcpv6server.leases.col.duid":    "DUID",
   "app.dhcpv6server.leases.col.address": "IPv6 Address",
   "app.dhcpv6server.leases.col.expires": "Expires",
@@ -53,13 +44,11 @@ export default {
   "app.dhcpv6server.label.prefixLength": "Prefix length",
   "app.dhcpv6server.label.dns":         "DNS servers",
   "app.dhcpv6server.label.leaseTime":   "Lease time (seconds)",
-
   "app.dhcpv6server.button.load":     "Load",
   "app.dhcpv6server.button.save":     "Save",
   "app.dhcpv6server.button.start":    "Start",
   "app.dhcpv6server.button.stop":     "Stop",
   "app.dhcpv6server.button.clearLog": "Clear log",
-
   "app.dhcpv6server.log.createdDefaultConfig": "Config file missing/empty; wrote default config to",
   "app.dhcpv6server.log.configLoaded":         "Loaded config from",
   "app.dhcpv6server.log.configLoadFailed":     "Failed to load config:",
@@ -72,19 +61,6 @@ export default {
   "app.dhcpv6server.log.stopError":            "Error while stopping:",
   "app.dhcpv6server.log.recvError":            "UDP receive error:",
   "app.dhcpv6server.log.parseError":           "DHCPv6 parse error:",
-
-  "app.dhcpv6server.label.pd":           "PD Server",
-  "app.dhcpv6server.pd.enabled":         "Enable PD server",
-  "app.dhcpv6server.pd.pool":            "Pool prefix",
-  "app.dhcpv6server.pd.poolLength":      "Pool prefix length",
-  "app.dhcpv6server.pd.delegatedLength": "Delegated prefix length",
-  "app.dhcpv6server.pd.leaseTime":       "Lease time (seconds)",
-  "app.dhcpv6server.pd.save":            "Save PD config",
-  "app.dhcpv6server.pd.leases.col.duid":    "DUID",
-  "app.dhcpv6server.pd.leases.col.prefix":  "Delegated Prefix",
-  "app.dhcpv6server.pd.leases.col.expires": "Expires",
-  "app.dhcpv6server.pd.leases.empty":       "No active PD leases",
-
   "app.dnsd.button.save": "Save",
   "app.dnsd.button.start": "Start",
   "app.dnsd.button.stop": "Stop",
@@ -95,8 +71,6 @@ export default {
   "app.dnsd.label.mode.recursive": "Recursive Resolver",
   "app.dnsd.label.rootDns": "Root DNS",
   "app.dnsd.title": "DNS-Server",
-
-
   "app.ipv4config.title": "IP Settings",
   "app.ipv4config.button.apply": "Apply",
   "app.ipv4config.label.ip": "IP",
@@ -116,45 +90,39 @@ export default {
   "app.ipv4config.label.subnetMask": "Subnet Mask",
   "app.ipv4config.label.dnsServer": "DNS server",
   "app.ipv4config.err.invalidDnsServer": "Invalid DNS server address",
+
   "app.ipv4config.msg.appliedWithGwDns":
     "Applied interface {i}: IP {ip}, netmask {netmask}, gateway {gw}, DNS {dns}",
+
   "app.ipv4config.msg.appliedGwClearedDns":
     "Applied interface {i}: IP {ip}, netmask {netmask}, gateway cleared, DNS {dns}",
 
   "app.ipv4config.label.mode": "Mode",
   "app.ipv4config.mode.static": "Static",
   "app.ipv4config.mode.dhcp": "DHCP",
-
   "app.ipv4config.msg.dhcpModeHint": "DHCP mode: click Apply to obtain an address automatically.",
   "app.ipv4config.msg.staticModeHint": "Static mode: enter an IP address and prefix, then click Apply.",
   "app.ipv4config.msg.dhcpStarting": "Starting DHCP on interface {i}…",
   "app.ipv4config.msg.dhcpAttempt": "DHCP attempt {attempt}…",
   "app.ipv4config.msg.dhcpSuccess": "DHCP success on {i}: IP {ip}, Netmask {netmask}, Gateway {gw}, DNS {dns}",
-
   "app.ipv4config.msg.dhcpLeaseApplied": "DHCP lease applied on interface {i}.",
   "app.ipv4config.msg.dhcpFailedApipa": "DHCP failed on {i}. Falling back to APIPA…",
   "app.ipv4config.msg.apipaApplied": "APIPA applied on {i}: IP {ip}, Netmask {netmask}",
-
   "app.ipv4config.err.persistLoadFailed": "Failed to load /etc/ip.config: {reason}",
   "app.ipv4config.err.persistSaveFailed": "Failed to save /etc/ip.config: {reason}",
-
-
   "app.ipv4config.button.release": "Release",
   "app.ipv4config.msg.released": "DHCP release sent on {i} (IP {ip}, server {server}).",
   "app.ipv4config.msg.releaseNothingToDo": "No address to release on interface {i}.",
   "app.ipv4config.err.releaseSocketFailed": "Failed to open UDP socket for release: {reason}",
   "app.ipv4config.err.releaseFailed": "DHCP release failed: {reason}",
-
   "app.ipv4config.tab.ipv4": "IPv4",
   "app.ipv4config.tab.ipv6": "IPv6",
-  "app.ipv4config.ipv6.sectionTitle": "IPv6 Configuration",
   "app.ipv4config.ipv6.linklocal": "Link-local",
   "app.ipv4config.ipv6.mode": "Mode",
   "app.ipv4config.ipv6.mode.disabled": "Disabled",
   "app.ipv4config.ipv6.mode.static": "Static",
   "app.ipv4config.ipv6.mode.slaac": "SLAAC (auto)",
   "app.ipv4config.ipv6.mode.dhcp6": "DHCPv6",
-
   "app.ipv4config.ipv6.dhcp6.status":      "DHCPv6 address",
   "app.ipv4config.ipv6.dhcp6.release":     "Release",
   "app.ipv4config.ipv6.dhcp6.starting":    "Starting DHCPv6 on interface {i}…",
@@ -176,39 +144,18 @@ export default {
   "app.ipv4config.ipv6.err.invalidAddress": "Invalid IPv6 address.",
   "app.ipv4config.ipv6.err.invalidPrefix": "Invalid IPv6 prefix length (0–128).",
   "app.ipv4config.ipv6.err.invalidGateway": "Invalid IPv6 gateway.",
-
-  "app.packetsniffer.nointerface": "No interface",
-  "app.packetsniffer.title": "Packet Sniffer",
-  "app.packetsniffer.unnamed": "Unnamed",
-  "app.packetsniffer.button.show": "{show} – {name}{port}",
-  "app.packetsniffer.button.download": "{download} – {name}{port}",
-
   "app.simplehttpserver.title": "HTTP-Server",
   "app.simpletcpclient.title": "Simple TCP Client",
   "app.simpletcpserver.title": "TCP Echo-Server",
-
-
   "app.simplehttpserver.placeholder.port": "Port (1..65535)",
   "app.simplehttpserver.placeholder.docRoot": "Document Root",
-
   "app.simplehttpserver.button.start": "Start",
   "app.simplehttpserver.button.stop": "Stop",
   "app.simplehttpserver.button.clearLog": "Clear Log",
-
   "app.simplehttpserver.label.port": "Port",
   "app.simplehttpserver.label.docRoot": "Document Root",
   "app.simplehttpserver.label.log": "Log:",
-  "app.simplehttpserver.label.server": "Server",
-
-  "app.simplehttpserver.status.pid": "PID: {pid}",
-  "app.simplehttpserver.status.running": "Running: {running}",
-  "app.simplehttpserver.status.port": "Port: {port}",
-  "app.simplehttpserver.status.docRoot": "DocRoot: {docRoot}",
-  "app.simplehttpserver.status.serverRef": "ServerRef: {serverRef}",
-  "app.simplehttpserver.status.logEntries": "Log entries: {n}",
-
   "app.simplehttpserver.err.timeout": "{label} timeout ({ms}ms)",
-
   "app.simplehttpserver.log.invalidPort": "[{time}] ERROR invalid port: \"{portStr}\"",
   "app.simplehttpserver.log.stopError": "[{time}] ERROR stop: {reason}",
   "app.simplehttpserver.log.stopped": "[{time}] STOPPED",
@@ -219,18 +166,13 @@ export default {
   "app.simplehttpserver.log.methodNotAllowed": "[{time}] 405 {method} {target}",
   "app.simplehttpserver.log.notFound": "[{time}] 404 {method} {norm}",
   "app.simplehttpserver.log.ok": "[{time}] 200 {method} {norm} ({bytes} bytes)",
-
   "app.simplehttpserver.http.400.title": "400 Bad Request",
   "app.simplehttpserver.http.400.details": "Header end not found or header > 64KiB.",
   "app.simplehttpserver.http.400.invalidRequestLine": "Invalid request line:\n{reqLine}",
-
   "app.simplehttpserver.http.405.title": "405 Method Not Allowed",
   "app.simplehttpserver.http.405.details": "Only GET/HEAD are supported.\nYou sent: {method}",
-
   "app.simplehttpserver.http.404.title": "404 Not Found",
   "app.simplehttpserver.http.404.details": "File not found:\n{norm}\n\nFS path:\n{fsPath}",
-
-  "app.simplehttpsserver.title":               "HTTPS Server",
   "app.simplehttpsserver.label.cert":          "Certificate",
   "app.simplehttpsserver.button.use":          "Use",
   "app.simplehttpsserver.cert.noEntries":      "No certificates found in /etc/certs",
@@ -242,14 +184,12 @@ export default {
   "app.simplehttpsserver.log.noCert":          "[{time}] ERROR: No certificate selected.",
   "app.simplehttpsserver.log.tlsOk":           "[{time}] TLS OK from {peer}",
   "app.simplehttpsserver.log.tlsFailed":       "[{time}] TLS failed: {reason}",
-
   "app.simplehttpserver.label.httpsEnabled":   "Enable HTTPS",
   "app.simplehttpserver.label.httpsPort":      "HTTPS Port",
   "app.simplehttpserver.log.httpsListen":      "[{time}] HTTPS LISTEN :{port}",
   "app.simplehttpserver.log.httpsStopped":     "[{time}] HTTPS STOPPED",
   "app.simplehttpserver.log.httpsStopError":   "[{time}] ERROR stop HTTPS: {reason}",
   "app.simplehttpserver.log.httpsOpenSocketError": "[{time}] ERROR openTCPServerSocket (HTTPS): {reason}",
-
   "app.mailclient.title": "Mail",
   "app.mailclient.button.compose": "Compose",
   "app.mailclient.button.config": "Settings",
@@ -259,7 +199,6 @@ export default {
   "app.mailclient.tab.config": "Settings",
   "app.mailclient.sent.empty": "(no sent messages)",
   "app.mailclient.compose.title": "New Message",
-  "app.mailclient.config.title": "Settings",
   "app.mailclient.config.incoming": "Incoming",
   "app.mailclient.config.outgoing": "Outgoing (SMTP)",
   "app.mailclient.config.protocol": "Protocol",
@@ -293,13 +232,10 @@ export default {
   "app.mailclient.err.invalidPort": "Invalid port",
   "app.mailclient.err.noUser": "No username",
   "app.mailclient.err.noRecipient": "No recipient specified",
-
   "app.simplemailserver.title": "Simple Mail Server",
-
   "app.simplemailserver.placeholder.domain": "maildomain (e.g. example.local)",
   "app.simplemailserver.placeholder.user": "user",
   "app.simplemailserver.placeholder.password": "password",
-
   "app.simplemailserver.label.server": "Server",
   "app.simplemailserver.label.domain": "Maildomain",
   "app.simplemailserver.label.smtpPort": "SMTP port",
@@ -309,7 +245,6 @@ export default {
   "app.simplemailserver.label.user": "User",
   "app.simplemailserver.label.password": "Password",
   "app.simplemailserver.label.log": "Log",
-
   "app.simplemailserver.button.start": "Start",
   "app.simplemailserver.button.stop": "Stop",
   "app.simplemailserver.button.saveConfig": "Save config",
@@ -317,51 +252,41 @@ export default {
   "app.simplemailserver.button.delete": "Delete",
   "app.simplemailserver.button.clearQueue": "Clear queue",
   "app.simplemailserver.button.seedDefault": "Seed test mail",
-
   "app.simplemailserver.users.none": "(none)",
   "app.simplemailserver.users.passwordHint": "password set",
   "app.simplemailserver.users.seed": "Seed test mail",
   "app.simplemailserver.users.delete": "Delete",
-
   "app.simplemailserver.status.running": "running",
   "app.simplemailserver.status.domain": "maildomain",
   "app.simplemailserver.status.ports": "ports",
   "app.simplemailserver.status.users": "users",
-
   "app.simplemailserver.log.wroteDefaultConfig": "wrote default config",
   "app.simplemailserver.log.cannotWriteConfig": "cannot write config",
   "app.simplemailserver.log.loadedConfig": "loaded config",
   "app.simplemailserver.log.invalidConfig": "invalid config",
   "app.simplemailserver.log.savedConfig": "saved config",
   "app.simplemailserver.log.saveFailed": "save config failed",
-
   "app.simplemailserver.log.userMissing": "user missing",
   "app.simplemailserver.log.passwordMissing": "password missing",
   "app.simplemailserver.log.userUpdated": "updated user",
   "app.simplemailserver.log.userAdded": "added user",
   "app.simplemailserver.log.userDeleted": "deleted user",
   "app.simplemailserver.log.userNotFound": "user not found",
-
   "app.simplemailserver.log.queueCleared": "cleared queue",
   "app.simplemailserver.log.clearQueueFailed": "clear queue failed",
-
   "app.simplemailserver.log.seedNeedUser": "seed: enter a user or use the per-user Seed button",
   "app.simplemailserver.log.seedNoSuchUser": "seed: no such user",
   "app.simplemailserver.log.seeded": "seeded test mail",
-
   "app.simplemailserver.log.invalidDomain": "invalid maildomain",
   "app.simplemailserver.log.invalidPorts": "invalid ports",
-
   "app.simplemailserver.log.stopped": "stopped",
   "app.simplemailserver.log.listening": "listening",
   "app.simplemailserver.log.bounceDelivered": "bounce delivered to",
   "app.simplemailserver.log.bounceRelayFailed": "bounce relay failed for",
-
   "app.simplemailserver.bounce.subject": "Undelivered Mail Returned to Sender",
   "app.simplemailserver.bounce.intro": "This is the mail system at {domain}.",
   "app.simplemailserver.bounce.failedRecipients": "Your message could not be delivered to the following recipient(s):",
   "app.simplemailserver.bounce.origHeaders": "--- Original message headers ---",
-
   "app.simplemailserver.tls.title": "TLS (Implicit)",
   "app.simplemailserver.tls.enabled": "TLS enabled",
   "app.simplemailserver.tls.smtpsPort": "SMTPS port",
@@ -374,26 +299,20 @@ export default {
   "app.simplemailserver.log.tlsNoCert": "TLS is enabled but no certificate is loaded — select and apply a certificate first",
   "app.simplemailserver.log.starttlsOk": "STARTTLS upgraded",
   "app.simplemailserver.log.starttlsFailed": "STARTTLS failed",
-
-
   "app.simpletcpclient.placeholder.host": "Host / Address",
   "app.simpletcpclient.placeholder.port": "Port (1..65535)",
   "app.simpletcpclient.placeholder.message": "Type a message…",
-
   "app.simpletcpclient.button.connect": "Connect",
   "app.simpletcpclient.button.disconnect": "Disconnect",
   "app.simpletcpclient.button.send": "Send",
   "app.simpletcpclient.button.clearChat": "Clear Chat",
-
   "app.simpletcpclient.label.host": "Host",
   "app.simpletcpclient.label.port": "Port",
   "app.simpletcpclient.label.chat": "Chat:",
   "app.simpletcpclient.label.message": "Message",
   "app.simpletcpclient.label.connection": "Connection",
-
   "app.simpletcpclient.status.connected": "Connected: {connected}",
   "app.simpletcpclient.status.peer": "Peer: {peer}",
-
   "app.simpletcpclient.log.hostEmpty": "[{time}] ERROR host is empty",
   "app.simpletcpclient.log.invalidPort": "[{time}] ERROR invalid port: \"{portStr}\"",
   "app.simpletcpclient.log.resolveError": "[{time}] ERROR resolve host \"{host}\": {reason}",
@@ -408,21 +327,13 @@ export default {
   "app.simpletcpclient.log.received": "[{time}] {who} -> ME: \"{text}\"",
   "app.simpletcpclient.log.disconnected": "[{time}] DISCONNECTED",
   "app.simpletcpclient.err.noConnKey": "connectTCPConn did not return a connection key",
-
-
   "app.simpletcpserver.placeholder.port": "Port (1..65535)",
   "app.simpletcpserver.button.start": "Start",
   "app.simpletcpserver.button.stop": "Stop",
   "app.simpletcpserver.button.clearLog": "Clear Log",
-
   "app.simpletcpserver.label.listenPort": "Server-Port",
   "app.simpletcpserver.label.log": "Log:",
   "app.simpletcpserver.label.server": "Server",
-
-  "app.simpletcpserver.status.running": "Running: {running}",
-  "app.simpletcpserver.status.port": "Port: {port}",
-  "app.simpletcpserver.status.connections": "Connections: {n}",
-
   "app.simpletcpserver.log.invalidPort": "[{time}] ERROR invalid port: \"{portStr}\"",
   "app.simpletcpserver.log.listening": "[{time}] Listening (TCP) on 0.0.0.0:{port}",
   "app.simpletcpserver.log.startFailed": "[{time}] ERROR start failed: {reason}",
@@ -436,21 +347,16 @@ export default {
   "app.simpletcpserver.log.txEcho": "[{time}] TX echo {who} len={len}",
   "app.simpletcpserver.log.sendError": "[{time}] ERROR send {who}: {reason}",
   "app.simpletcpserver.log.disconnect": "[{time}] DISCONNECT {who}",
-
-
   "app.sparktail.title": "Browser",
   "app.sparktail.placeholder.url": "about:start or http://host[:port]/path",
-
   "app.sparktail.button.back": "←",
   "app.sparktail.button.forward": "→",
   "app.sparktail.button.reload": "⟳",
   "app.sparktail.button.go": "Go",
   "app.sparktail.button.stop": "Stop",
-
   "app.sparktail.tab.preview": "Preview",
   "app.sparktail.tab.source": "Source",
   "app.sparktail.tab.headers": "Headers",
-
   "app.sparktail.status.ready": "Ready.",
   "app.sparktail.status.loading": "Loading: {url}",
   "app.sparktail.status.startPage": "Start page.",
@@ -463,16 +369,12 @@ export default {
   "app.sparktail.status.errorUrlEmpty": "Error: URL is empty.",
   "app.sparktail.status.tlsHandshaking": "TLS handshake…",
   "app.sparktail.status.tlsFailed": "TLS failed",
-
   "app.sparktail.throbber.loading": "⏳",
-
   "app.sparktail.value.unknown": "(unknown)",
-
   "app.sparktail.label.recv": "Recv",
   "app.sparktail.label.dns": "DNS",
   "app.sparktail.label.connect": "Connect",
   "app.sparktail.label.tlsHandshake": "TLS handshake",
-
   "app.sparktail.err.onlyHttp": "URL must start with http:// or https://",
   "app.sparktail.err.missingHostInUrl": "Host is missing in the URL.",
   "app.sparktail.err.hostEmpty": "Host is empty.",
@@ -489,36 +391,24 @@ export default {
   "app.sparktail.err.invalidContentLength": "Invalid Content-Length",
   "app.sparktail.err.cannotResolveHost": "Cannot resolve host",
   "app.sparktail.err.invalidIpv6Bracket": "Invalid IPv6 bracket",
-
-
   "app.sparktail.page.invalidUrl.title": "Invalid Address",
   "app.sparktail.page.tlsError.title": "Secure Connection Failed",
-
   "app.sparktail.page.dnsError.title": "Server Not Found",
   "app.sparktail.page.dnsError.body": "The address \"{host}\" could not be found.\n\n{msg}",
-
   "app.sparktail.page.socketError.title": "Unable to Connect",
   "app.sparktail.page.socketError.body": "Could not connect to {host}:{port}.\n\n{msg}",
-
   "app.sparktail.page.sendError.title": "Connection Interrupted",
-
   "app.sparktail.page.recvError.title": "Connection Interrupted",
-
   "app.sparktail.page.bodyTooLarge.title": "Response Too Large",
   "app.sparktail.page.bodyTooLarge.body": "The response body ({bytes} bytes) exceeds the limit of {bodyLimit} bytes.",
-
   "app.sparktail.page.notSupported.title": "Page Not Available",
   "app.sparktail.page.notSupported.body": "The server returned HTTP {statusCode} {reason}.\n\nCheck the Source or Headers tab for details.",
-
   "app.sparktail.page.nonHtml.title": "HTTP {statusCode}",
   "app.sparktail.page.nonHtml.body": "Content-Type: {ct}\n\nThis content type cannot be previewed.\nThe raw response is available in the Source tab.",
-
   "app.sparktail.headers.aboutStart": "about:start (internal)\r\n",
-
   "app.sparktail.log.urlEmpty": "[{time}] ERROR URL is empty",
   "app.sparktail.log.aboutStart": "[{time}] about:start",
   "app.sparktail.log.stop": "[{time}] STOP",
-
   "app.sparktail.log.dnsError": "[{time}] ERROR DNS \"{host}\": {msg}",
   "app.sparktail.log.connectError": "[{time}] ERROR connect {ip}:{port}: {msg}",
   "app.sparktail.log.tlsHandshaking": "[{time}] TLS handshake with {host}…",
@@ -529,7 +419,6 @@ export default {
   "app.sparktail.log.recvError": "[{time}] ERROR recv: {msg}",
   "app.sparktail.log.httpNotRendered": "[{time}] HTTP {statusCode} {reason} (not rendered)",
   "app.sparktail.log.httpOk": "[{time}] HTTP {statusCode} {reason} (body={bytes} bytes)",
-
   "app.sparktail.tls.certError.title":      "Your Connection is Not Secure",
   "app.sparktail.tls.certError.detail":     "The certificate presented by {subject} is not trusted. An attacker may be intercepting your connection.",
   "app.sparktail.tls.certPopup.title":      "Certificate Information",
@@ -541,7 +430,6 @@ export default {
   "app.sparktail.tls.certPopup.trusted":    "✓ Verified by trust store",
   "app.sparktail.tls.certPopup.notVerified":"⚠ Not verified — connection may be intercepted",
   "app.sparktail.tls.proceedAnyway":        "Proceed anyway (unsafe)",
-
   "app.terminal.title": "Terminal",
   "app.terminal.welcome": "BeaverOS - Welcome to {host}",
   "app.terminal.hintHelp": "Use the command \"{cmd}\" to get a list of known commands.",
@@ -550,7 +438,6 @@ export default {
   "app.terminal.interrupt": "^C",
   "app.terminal.copy": "Copy",
   "app.terminal.paste": "Paste",
-
   "app.terminal.commands.cat.err.noFilesystem": "cat: no filesystem",
   "app.terminal.commands.cat.usage": "usage: {cmd} <file>",
   "app.terminal.commands.cp.usage": "usage: cp [-r] <src>... <dst>",
@@ -584,41 +471,31 @@ export default {
   "app.terminal.commands.cd.err.noFilesystem": "cd: no filesystem",
   "app.terminal.commands.cd.err.notDirectory": "cd: not a directory: {path}",
   "app.terminal.commands.help.header": "Built-in commands:",
-  "app.terminal.commands.help.list": "  {commands}",
-
   "app.terminal.commands.arp.err.noNetDriver": "arp: no net driver",
   "app.terminal.commands.arp.err.noInterfaces": "arp: no interfaces",
   "app.terminal.commands.arp.err.unknownInterface": "arp: unknown interface: {iface}",
-
   "app.terminal.commands.arp.msg.noArpTable": "{iface}: (no arp table)",
   "app.terminal.commands.arp.msg.header": "{iface}:",
   "app.terminal.commands.arp.msg.empty": "  (empty)",
-
-
   "app.terminal.commands.dig.usage": "usage: dig [@server] name [type] [+short] [-t TYPE] [+time=N] [+tries=N] [-p PORT]",
-
   "app.terminal.commands.dig.err.noUdp": "UDP networking not available",
   "app.terminal.commands.dig.err.invalidPort": "Invalid port number",
   "app.terminal.commands.dig.err.invalidTime": "Invalid timeout value",
   "app.terminal.commands.dig.err.invalidTries": "Invalid number of tries",
   "app.terminal.commands.dig.err.cannotResolveServer": "Cannot resolve DNS server {host}",
   "app.terminal.commands.dig.out.timeout": ";; connection timed out; no servers could be reached (server {server}#{port})",
-
   "app.terminal.commands.ip.err.noNetDriver": "ip: no net driver",
   "app.terminal.commands.ip.err.noInterfaces": "ip: no interfaces",
   "app.terminal.commands.ip.err.unknownInterface": "ip: unknown interface: {iface}",
   "app.terminal.commands.ip.err.invalidCidr": "ip: invalid cidr (expected A.B.C.D/len)",
   "app.terminal.commands.ip.err.invalidMtu": "ip: invalid MTU (68–65535)",
-
   "app.terminal.commands.ip.usage.set": "usage: ip set <ifaceIndex|ifaceName> <ip>/<prefix>",
   "app.terminal.commands.ip.usage.link": "usage: ip link [show] | ip link set <iface> mtu <value>",
   "app.terminal.commands.ip.usage.linkSet": "usage: ip link set <iface> mtu <value>",
   "app.terminal.commands.ip.usage.main": "usage: ip [a|addr|show] | ip set <iface> <ip>/<prefix> | ip link set <iface> mtu <value>",
-
   "app.terminal.commands.ip.state.up": "UP",
   "app.terminal.commands.ip.state.down": "DOWN",
   "app.terminal.commands.ip.state.unknown": "UNKNOWN",
-
   "app.terminal.commands.ip.out.inetLabel": "inet",
   "app.terminal.commands.ip.out.netmaskLabel": "netmask",
   "app.terminal.commands.ip.out.ifaceLine": "{idx}: {name}  {state}",
@@ -627,60 +504,44 @@ export default {
   "app.terminal.commands.ip.out.linkLine": "{idx}: {name}: <{state}> mtu {mtu}",
   "app.terminal.commands.ip.out.okSet": "ok: {iface} = {ip}/{prefix}",
   "app.terminal.commands.ip.out.okMtu": "ok: {iface} mtu = {mtu}",
-
   "app.terminal.commands.ping.usage": "usage: ping [-c count] [-i interval] [-W timeout] [-s packetsize] [-D] <host>",
-
   "app.terminal.commands.ping.err.invalidCount": "ping: invalid count",
   "app.terminal.commands.ping.err.invalidInterval": "ping: invalid interval",
   "app.terminal.commands.ping.err.invalidTimeout": "ping: invalid timeout",
   "app.terminal.commands.ping.err.invalidSize": "ping: invalid packet size (0–65507)",
   "app.terminal.commands.ping.err.noNetworkDriver": "ping: no network driver",
   "app.terminal.commands.ping.err.cannotResolve": "ping: cannot resolve {host}",
-
   "app.terminal.commands.ping.out.banner": "PING {host} ({dst}) {dataBytes}({totalBytes}) bytes of data.",
   "app.terminal.commands.ping.out.reply": "{bytes} bytes from {dst}: icmp_seq={seq} ttl={ttl} time={timeMs} ms",
   "app.terminal.commands.ping.out.timeout": "Request timeout for icmp_seq {seq}",
-
   "app.terminal.commands.ping.out.statsHeader": "--- {host} ping statistics ---",
   "app.terminal.commands.ping.out.statsLine": "{transmitted} packets transmitted, {received} received, {lossPct}% packet loss, time {elapsedMs}ms",
   "app.terminal.commands.ping.out.rttLine": "rtt min/avg/max = {minMs}/{avgMs}/{maxMs} ms",
-
   "app.terminal.commands.route.err.noNetworkDriver": "route: no network driver",
   "app.terminal.commands.route.err.emptyTable": "route: routing table empty",
   "app.terminal.commands.route.err.invalidDestinationCidr": "route: invalid destination cidr",
   "app.terminal.commands.route.err.invalidGatewayIp": "route: invalid gateway ip",
   "app.terminal.commands.route.err.invalidInterface": "route: invalid interface: {iface}",
-
   "app.terminal.commands.route.usage.add": "usage: route add <dst>/<prefix> via <gateway> dev <ifIndex|ifName|lo>",
   "app.terminal.commands.route.usage.del": "usage: route del <dst>/<prefix>",
   "app.terminal.commands.route.usage.main": "usage: route [show] | route add ... | route del ...",
-
   "app.terminal.commands.route.out.tableHeader": "Destination        Netmask            Gateway            Iface  Auto",
   "app.terminal.commands.route.out.autoYes": "yes",
   "app.terminal.commands.route.out.autoNo": "no",
   "app.terminal.commands.route.out.okAdded": "ok: route added",
   "app.terminal.commands.route.out.okRemoved": "ok: removed {count}",
   "app.terminal.commands.ss.err.noNetworkDriver": "ss: no network driver",
-
   "app.terminal.commands.ss.out.header": "Netid  State         Local Address:Port          Peer Address:Port           Info",
-
   "app.terminal.commands.ss.out.udpLine": "udp    UNCONN        {local} {peer} rxq={rxq}",
-
   "app.terminal.commands.ss.out.tcpListenLine": "tcp    {state} {local} {peer} rxq={rxq} aq={aq}",
-
   "app.terminal.commands.ss.out.tcpConnLine": "tcp    {state} {local} {peer} rxq={rxq}",
-
   "app.terminal.commands.traceroute.usage": "usage: traceroute [-m max_ttl] [-q probes] [-w timeout] <host>",
-
   "app.terminal.commands.traceroute.err.invalidMaxTtl": "traceroute: invalid max_ttl",
   "app.terminal.commands.traceroute.err.invalidProbes": "traceroute: invalid probes",
   "app.terminal.commands.traceroute.err.invalidTimeout": "traceroute: invalid timeout",
   "app.terminal.commands.traceroute.err.noNetworkDriver": "traceroute: no network driver",
   "app.terminal.commands.traceroute.err.cannotResolve": "traceroute: cannot resolve {host}",
-
   "app.terminal.commands.traceroute.out.banner": "traceroute to {host} ({dst}), {maxTtl} hops max, {probes} probes",
-
-
   "app.explorer.title":               "File Explorer",
   "app.explorer.button.upload":       "Upload",
   "app.explorer.button.newFolder":    "New Folder",
@@ -694,7 +555,6 @@ export default {
   "app.explorer.error.upload":        "Upload failed: {msg}",
   "app.explorer.error.delete":        "Delete failed: {msg}",
   "app.explorer.error.mkdir":         "Cannot create folder: {msg}",
-
   "app.texteditor.title": "Editor",
   "app.texteditor.noFilesystem": "No filesystem available.",
   "app.texteditor.status.newFile": "(new file)",
@@ -714,19 +574,14 @@ export default {
   "app.texteditor.picker.button.open": "Open",
   "app.texteditor.picker.button.save": "Save",
   "app.texteditor.picker.button.cancel": "Cancel",
-
-
   "app.udpechoserver.title": "UDP Echo-Server",
   "app.udpechoserver.placeholder.port": "Port (1..65535)",
-
   "app.udpechoserver.button.start": "Start",
   "app.udpechoserver.button.stop": "Stop",
   "app.udpechoserver.button.clearLog": "Clear Log",
-
   "app.udpechoserver.label.listenPort": "Listen Port",
   "app.udpechoserver.label.log": "Log:",
   "app.udpechoserver.label.server": "Server",
-
   "app.udpechoserver.log.invalidPort": "[{time}] ERROR invalid port: \"{portStr}\"",
   "app.udpechoserver.log.listening": "[{time}] Listening on 0.0.0.0:{port}",
   "app.udpechoserver.log.startFailed": "[{time}] ERROR start failed: {reason}",
@@ -736,7 +591,6 @@ export default {
   "app.udpechoserver.log.rx": "[{time}] RX from {ip}:{srcPort} len={len} hex={hex}",
   "app.udpechoserver.log.txEcho": "[{time}] TX echo to {ip}:{srcPort} len={len}",
   "app.udpechoserver.log.sendError": "[{time}] ERROR send: {reason}",
-
   "os.back": "Back",
   "os.notitle": "No Title",
   "os.untitled": "Untitled",
@@ -750,17 +604,13 @@ export default {
   "os.apps.category.system": "System",
   "os.apps.category.client": "Client Software",
   "os.apps.category.server": "Server Software",
-
   "panel.close": "Close",
   "panel.rename": "Rename",
   "panel.rename.prompt": "New name:",
-
   "computer.title": "Computer",
-
   "rect.title": "Rectangle",
   "rect.color": "Colour",
   "rect.opacity": "Opacity",
-
   "router.title": "Router",
   "router.apply": "Apply",
   "router.interfaces": "Interfaces",
@@ -772,15 +622,12 @@ export default {
   "router.routingtable.ipv6": "Routing table IPv6",
   "router.unknown": "unknown",
   "router.addinterface": "Add interface",
-
   "router.deleteinterface": "Delete interface",
   "router.confirminterfacedelete": "Are you sure you want to delete interface ${name}?",
-
   "router.stateup": "up",
   "router.statedown": "down",
   "router.ra.enabled": "Send Router Advertisements (SLAAC)",
   "router.routingtable.actions": "Actions",
-  "router.routingtable.auto": "Auto",
   "router.routingtable.source": "Source",
   "router.routingtable.source.connected": "Connected",
   "router.routingtable.source.static": "Static",
@@ -788,28 +635,17 @@ export default {
   "router.routingtable.interface": "Iface",
   "router.routingtable.netmask": "Netmask",
   "router.routingtable.nexthop": "Next Hop",
-
   "router.routingtable.add": "add",
   "router.routingtable.delete": "delete",
   "router.routingtable.save": "save",
-  "router.routingtable.no": "no",
-  "router.routingtable.yes": "yes",
   "router.routingtable.missing": "missing",
   "router.routingtable.prefix": "Prefix",
-
-  "router.rip.tab": "RIP",
   "router.rip.enabled": "RIP enabled",
   "router.rip.col.interface": "Interface",
-  "router.rip.col.passive": "Passive",
   "router.rip.passive.hint": "Passive — interface receives updates but sends none",
-  "router.rip.log": "Log",
   "router.rip.tab.config": "Configuration",
   "router.rip.tab.log": "Log",
-  "router.ripng.tab": "RIPng",
   "router.ripng.enabled": "RIPng enabled",
-  "router.ripng.col.interface": "Interface",
-  "router.ripng.col.passive": "Passive",
-  "router.ripng.log": "Log",
   "router.bgp.tab": "BGP",
   "router.bgp.tab.config": "Configuration",
   "router.bgp.tab.routes": "Routes",
@@ -818,7 +654,6 @@ export default {
   "router.bgp.enabled": "BGP enabled",
   "router.bgp.localas": "AS Number",
   "router.bgp.routerid": "Router ID",
-  "router.bgp.peers.title": "Peers",
   "router.bgp.peers.col.ip": "IP Address",
   "router.bgp.peers.col.remoteas": "Remote AS",
   "router.bgp.peers.col.desc": "Description",
@@ -834,8 +669,6 @@ export default {
   "router.bgp.routes.col.lp": "LP",
   "router.bgp.routes.col.med": "MED",
   "router.bgp.routes.col.peer": "Peer",
-  "router.bgp.log": "Log",
-
   "router.ospf.tab":            "OSPF",
   "router.ospf.tab.config":    "Config",
   "router.ospf.tab.status":    "Status",
@@ -861,18 +694,7 @@ export default {
   "router.ospf.col.age":        "Age",
   "router.ospf.col.seqnum":     "Seq#",
   "router.ospf.ifstatus":       "Interface Status",
-  "router.ospf.lsdb":           "Link State Database",
-  "router.ospf.log":            "Log",
-  "router.ospf.started":        "OSPF started (Router-ID: {id})",
-  "router.ospf.stopped":        "OSPF stopped",
-  "router.ospf.neighbor.up":    "Neighbor {ip} -> Full",
-  "router.ospf.neighbor.down":  "Neighbor {ip} -> Down",
-  "router.ospf.elected.dr":     "Elected as DR on {iface}",
-  "router.ospf.elected.bdr":    "Elected as BDR on {iface}",
-  "router.ospf.spf.run":        "SPF: {n} routes installed",
-
   "sim.lessons": "Lessons",
-
   "lessons.quiz.placeholder":   "Answer …",
   "lessons.quiz.evaluate":      "Check answers",
   "lessons.quiz.result.one":    "{correct} of {total} point scored",
@@ -895,17 +717,12 @@ export default {
   "sim.trace": "Trace",
   "sim.reset": "Reset",
   "sim.resetwarning": "Reset simulation?\n\nAll caches and dynamic state will be reset (ARP, SAT, routing, TCP connections, DNS, etc.).",
-
   "sim.invalidfilewarning": "Invalid file format or unsupported save file format.",
   "sim.loadfailederror": "Load operation failed.",
-
   "sim.discardandnewwarning": "Discard current simulation and start a new one?",
   "sim.discardandloadwarning": "Discard current simulation and load another one?",
-
   "sim.langswitch.confirmdiscard": "Discard current simulation and switch languages?",
-
   "sim.language": "Language",
-
   "sim.tool.link": "Link",
   "sim.tool.computer": "Computer",
   "sim.tool.rectangle": "Rectangle",
@@ -914,25 +731,19 @@ export default {
   "sim.tool.switch": "Switch",
   "sim.tool.textbox": "TextBox",
   "sim.tool.delete": "Delete",
-
   "sim.link.error": "Error creating link.",
   "sim.link.error.noFreePort": "No free port available.",
   "sim.link.error.portInUse": "Port is already in use.",
-  
   "switch.title": "Switch",
   "switch.apply": "Apply",
-  "switch.sat": "Switch Adress Table (SAT)",
   "switch.sat.mac": "MAC",
   "switch.sat.port": "Port",
-
-
   "switch.stp.disabled": "STP is disabled",
   "switch.stp.enable": "enable Spanning Tree Protocol (STP)",
   "switch.stp.off": "Off",
   "switch.stp.priority": "Bridge Priority:",
   "switch.stp.priority.default": "default",
   "switch.stp.status": "STP status",
-  "switch.vlan.config": "VLAN configuration",
   "switch.vlan.enable": "enable VLAN",
   "switch.vlan.col.port": "Port",
   "switch.vlan.col.mode": "Mode",
@@ -965,7 +776,6 @@ export default {
   "switch.igmp.col.proto": "Protocol",
   "switch.tab.lldp":         "LLDP",
   "switch.lldp.enable":      "Enable LLDP",
-  "switch.lldp.empty":       "No LLDP neighbors discovered.",
   "switch.lldp.col.port":    "Port",
   "switch.lldp.col.system":  "System",
   "switch.lldp.col.chassis": "Chassis ID",
@@ -977,13 +787,10 @@ export default {
   "router.lldp.col.system":  "System",
   "router.lldp.col.chassis": "Chassis ID",
   "router.lldp.col.portid":  "Port ID",
-
   "switch.sat.empty": "The SAT is still empty.",
   "switch.tab.sat": "SAT",
   "switch.tab.vlan": "VLAN",
   "switch.tab.stp": "STP",
-  "switch.stp.settings": "Spanning Tree Protocol Settings",
-
   "textbox.text": "Text",
   "textbox.title": "Textbox",
   "textbox.hint": "supports Mini-Markdown like **bold**, *italic* etc.",
@@ -1020,7 +827,6 @@ export default {
   "homerouter.wan.mode": "Mode",
   "homerouter.wan.mode.static": "Static",
   "homerouter.wan.mode.dhcp": "DHCP",
-  "homerouter.wan.mode.dhcpv6pd": "DHCPv6-PD (WAN prefix delegation)",
   "homerouter.wan.ipv6": "IPv6",
   "homerouter.wan.ipv6.dhcpv6pd": "Enable DHCPv6-PD",
   "homerouter.wan.pd.delegated": "Delegated prefix",
@@ -1046,7 +852,6 @@ export default {
   "homerouter.dhcp.lease": "Lease time (s)",
   "homerouter.dhcp.leases": "Active leases",
   "homerouter.dhcp.invalid": "Invalid DHCP configuration",
-
   "pcap.filter.placeholder": "Display filter (e.g. ip.addr==1.2.3.4)",
   "pcap.btn.prev": "Previous page",
   "pcap.btn.next": "Next page",
@@ -1087,13 +892,10 @@ export default {
   "ui.cancel": "Cancel",
   "sim.save.filename": "Filename",
   "sim.embed.open": "Open in BeaverTracer",
-
   "sim.zoom":       "Zoom",
   "sim.zoom.in":    "Zoom in",
   "sim.zoom.out":   "Zoom out",
-  "sim.zoom.reset": "Reset zoom (click)",
   "sim.zoom.fit":   "Fit",
-
   "app.ircserver.title": "IRC Server",
   "app.ircserver.btn.start": "Start",
   "app.ircserver.btn.stop": "Stop",
@@ -1115,7 +917,6 @@ export default {
   "app.ircserver.log.parted": "{nick} ← {channel}",
   "app.ircserver.log.disconnect": "- {nick} ({reason})",
   "app.ircserver.log.privmsg": "<{nick}>{target}: {text}",
-
   "app.ircclient.title": "IRC",
   "app.ircclient.btn.connect": "Connect",
   "app.ircclient.btn.disconnect": "Disconnect",
@@ -1177,14 +978,12 @@ export default {
   "app.multicastchat.log.left": "Left group {group}.",
   "app.multicastchat.log.peerJoined": "{nick} joined the group.",
   "app.multicastchat.log.peerLeft": "{nick} left the group.",
-
   "app.terminal.commands.curl.usage": "Usage: curl [-v] [-I] [-X method] [-d data] [-H header] <url>",
   "app.terminal.commands.curl.err.onlyHttp": "curl: only http:// URLs are supported",
   "app.terminal.commands.curl.err.noHost": "curl: no host in URL",
   "app.terminal.commands.curl.err.resolve": "curl: could not resolve '{host}'",
   "app.terminal.commands.curl.err.connect": "curl: connect failed: {reason}",
   "app.terminal.commands.curl.err.send": "curl: send failed: {reason}",
-
   "app.terminal.commands.nc.usage": "Usage: nc [-l] [-u] [host] <port>",
   "app.terminal.commands.nc.err.invalidPort": "nc: invalid port",
   "app.terminal.commands.nc.err.resolve": "nc: could not resolve '{host}'",
@@ -1199,14 +998,12 @@ export default {
   "app.terminal.commands.nc.udp.ready": "UDP → {host}:{port}  (type to send, Ctrl+C to quit)",
   "app.terminal.commands.nc.udp.listening": "UDP listening on *:{port} …",
   "app.terminal.commands.nc.udp.from": "< {ip}:{port}",
-
   "app.terminal.commands.telnet.usage": "Usage: telnet <host> <port>",
   "app.terminal.commands.telnet.err.invalidPort": "telnet: invalid port",
   "app.terminal.commands.telnet.err.resolve": "telnet: cannot resolve '{host}'",
   "app.terminal.commands.telnet.err.connect": "telnet: connect: {reason}",
   "app.terminal.commands.telnet.connected": "Connected to {host}:{port}. Press Ctrl+C to close.",
   "app.terminal.commands.telnet.closed": "Connection closed.",
-
   "firewall.title": "Firewall",
   "firewall.tab.rules": "Rules",
   "firewall.tab.log": "Log",
@@ -1237,22 +1034,17 @@ export default {
   "firewall.col.dstip":     "Dst IP",
   "firewall.col.dstport":   "Dst Port",
   "firewall.col.action":    "Action",
-
   "sim.tool.firewall": "Firewall",
 
   // ── CertManagerApp ──────────────────────────────────────────────────────────
   "app.certmanager.title":               "Certificate Manager",
+
   "app.certmanager.tab.certs":           "My Certs",
   "app.certmanager.tab.gen":             "Generate",
   "app.certmanager.tab.trusted":         "Trusted CAs",
   "app.certmanager.tab.sign":            "Sign",
-  "app.certmanager.empty":               "No certificates in /etc/certs",
-  "app.certmanager.emptyHint":           "Go to the Generate tab to create your first certificate.",
-  "app.certmanager.emptyAction":         "Generate certificate",
-
   "app.certmanager.item.selfSigned":     "self-signed",
   "app.certmanager.item.issuer":         "Issuer: {issuer}",
-
   "app.certmanager.detail.subject":      "Subject",
   "app.certmanager.detail.issuer":       "Issuer",
   "app.certmanager.detail.fingerprint":  "Fingerprint",
@@ -1260,7 +1052,6 @@ export default {
   "app.certmanager.detail.isCA":         "CA Certificate",
   "app.certmanager.detail.privateKey":   "Private Key",
   "app.certmanager.detail.path":         "File",
-
   "app.certmanager.clipboard.copy":        "Copy",
   "app.certmanager.clipboard.copyWithKey": "Copy + Key",
   "app.certmanager.clipboard.paste":       "Paste: {cn}",
@@ -1276,7 +1067,6 @@ export default {
   "app.certmanager.detail.export":       "Export…",
   "app.certmanager.detail.exportTitle":  "Export Certificate",
   "app.certmanager.detail.trust":        "Add to Trusted CAs",
-
   "app.certmanager.gen.cn":              "Common Name",
   "app.certmanager.gen.cnPlaceholder":   "e.g. server.local",
   "app.certmanager.gen.type":            "Type",
@@ -1299,14 +1089,10 @@ export default {
   "app.certmanager.gen.errExists":       "File already exists: {name}",
   "app.certmanager.gen.errLoadCA":       "Failed to load CA certificate.",
   "app.certmanager.gen.errWrite":        "Failed to write certificate.",
-
-  "app.certmanager.trusted.empty":       "No trusted CA certificates",
-  "app.certmanager.trusted.emptyHint":   "Import a CA certificate or add one from My Certs.",
   "app.certmanager.trusted.import":      "Import…",
   "app.certmanager.trusted.importTitle": "Import CA Certificate",
   "app.certmanager.trusted.remove":      "Remove from Trusted",
   "app.certmanager.trusted.confirmRemove":`Remove "{name}" from trusted CAs?`,
-
   "app.certmanager.sign.cert":           "Certificate to sign",
   "app.certmanager.sign.ca":             "Signing CA",
   "app.certmanager.sign.chain":          "Resulting chain",
@@ -1317,7 +1103,6 @@ export default {
   "app.certmanager.sign.errSelect":      "Please select a certificate and a CA.",
   "app.certmanager.sign.errExists":      "File already exists: {name}",
   "app.certmanager.sign.errFailed":      "Signing failed.",
-
   "router.vpn.tab":           "VPN",
   "router.vpn.add":           "Add Tunnel",
   "router.vpn.name":          "Name",
@@ -1328,7 +1113,6 @@ export default {
   "router.vpn.err.name":      "Name required",
   "router.vpn.err.remote":    "Invalid remote IP",
   "router.vpn.err.network":   "Invalid network (CIDR, e.g. 10.0.0.0/24)",
-  "router.vpn.err.duplicate": "Tunnel name already exists",
   "router.vrrp.tab.config":       "Config",
   "router.vrrp.tab.status":       "Status",
   "router.vrrp.tab.log":          "Log",
@@ -1368,8 +1152,8 @@ export default {
   "router.pd6.err.poolLen": "Pool length must be 1..64",
   "router.pd6.err.delegLen": "Delegated length must be > pool length and ≤ 128",
   "router.pd6.err.leaseTime": "Lease time must be > 0",
-
   "app.terminal.commands.nmap.usage": "usage: nmap [-p <ports>] [--open] <target> [<target>...]",
+
   "app.terminal.commands.nmap.help":
     "nmap — network port scanner\n" +
     "\n" +
@@ -1395,6 +1179,7 @@ export default {
     "Tip: use Wiregasm filters to analyse the scan traffic:\n" +
     "  tcp.flags.syn==1 && tcp.flags.ack==0   show probes\n" +
     "  tcp.flags.syn==1 && tcp.flags.ack==1   show open ports",
+
   "app.terminal.commands.nmap.err.missingPortSpec":   "nmap: -p requires a port specification",
   "app.terminal.commands.nmap.err.invalidPortSpec":   "nmap: invalid port specification: {spec}",
   "app.terminal.commands.nmap.err.tooManyPorts":      "nmap: port range exceeds limit of {max} ports",
@@ -1408,13 +1193,11 @@ export default {
   "app.terminal.commands.nmap.out.tableHeader":       "PORT       STATE     SERVICE",
   "app.terminal.commands.nmap.out.allClosed":         "All scanned ports are closed or filtered.",
   "app.terminal.commands.nmap.out.done":              "Scan complete: {hosts} host(s) scanned.",
-
   "app.bitcoin.title":                "Bitcoin Node",
   "app.bitcoin.label.wallet":         "Wallet",
   "app.bitcoin.label.balance":        "Balance (confirmed)",
   "app.bitcoin.label.unconfirmed":    "Unconfirmed",
   "app.bitcoin.label.seed":           "Seed node",
-  "app.bitcoin.label.interval":       "Mine every (s)",
   "app.bitcoin.label.to":             "Recipient",
   "app.bitcoin.label.amount":         "Amount (BTC)",
   "app.bitcoin.placeholder.seed":     "IP or hostname of seed node",
@@ -1450,7 +1233,6 @@ export default {
   "app.bitcoin.log.blockrcv":         "[{time}] Block {id} height={height} miner={miner}",
   "app.bitcoin.log.reorg":            "[{time}] Chain reorg: switched to fork at height {height}",
   "app.bitcoin.log.txrcv":            "[{time}] TX {id}: {amount} BTC  {from} -> {to}",
-
   "welcome.subtitle":   "Browser-based network simulator for education",
   "welcome.new":        "New Simulation",
   "welcome.new.desc":   "Start with an empty canvas",
@@ -1463,7 +1245,6 @@ export default {
   "welcome.example.complex": "Complex Example",
   "welcome.example.complex.desc": "Large network with routing protocols",
   "welcome.news":       "What's New",
-
   "tour.counter":                   "Step {n} of {total}",
   "tour.btn.skip":                  "End tour",
   "tour.btn.next":                  "Next",
@@ -1471,7 +1252,6 @@ export default {
   "tour.confirm.discard":           "Discard unsaved changes and start the tour?",
   "tour.welcome.title":             "Tour",
   "tour.welcome.desc":              "Step-by-step introduction",
-
   "tour.step.modes.title":          "The Three Modes",
   "tour.step.modes.text":           "Beaver Tracer has three modes: Edit (build your network), Run (start the simulation), and Trace (analyse packets).\n\nClick \"Edit\" to get started.",
   "tour.step.add-computer-tool.title":    "Add a Computer",
@@ -1510,138 +1290,104 @@ export default {
   "tour.step.trace-packets.text":   "You can see the recorded packets! Click on a frame to view all details.",
   "tour.step.finish.title":         "Tour Complete!",
   "tour.step.finish.text":          "You have successfully completed the tour and built, configured, and analysed your first network.\n\nHave fun experimenting!",
-
   "app.terminal.commands.man.usage":    "usage: man <command>",
   "app.terminal.commands.man.notFound": "man: no entry for '{name}'",
   "app.terminal.commands.man.noEntry":  "man: no help available for '{name}'",
-
   "app.terminal.commands.help.cat.net":  "Network",
   "app.terminal.commands.help.cat.fs":   "Filesystem",
   "app.terminal.commands.help.cat.misc": "System",
   "app.terminal.commands.help.hint":     "For help on a specific command: man <command>",
-
   "app.terminal.commands.arp.tldr.desc":        "Display the ARP table",
   "app.terminal.commands.arp.tldr.ex.all":       "Show ARP table for all interfaces",
   "app.terminal.commands.arp.tldr.ex.iface":     "Show ARP table for a specific interface",
-
   "app.terminal.commands.curl.tldr.desc":        "Send HTTP requests",
   "app.terminal.commands.curl.tldr.ex.get":      "Send an HTTP GET request",
   "app.terminal.commands.curl.tldr.ex.head":     "Fetch HTTP headers only",
   "app.terminal.commands.curl.tldr.ex.verbose":  "Show request and response headers",
-
   "app.terminal.commands.dig.tldr.desc":         "Query DNS records",
   "app.terminal.commands.dig.tldr.ex.basic":     "Query DNS for a domain",
   "app.terminal.commands.dig.tldr.ex.short":     "Show only the IP address",
   "app.terminal.commands.dig.tldr.ex.mx":        "Query MX records",
-
   "app.terminal.commands.ip.tldr.desc":          "Manage network interfaces",
   "app.terminal.commands.ip.tldr.ex.addr":       "Show all IP addresses",
   "app.terminal.commands.ip.tldr.ex.set":        "Set the IP address of an interface",
   "app.terminal.commands.ip.tldr.ex.link":       "Show link information",
   "app.terminal.commands.ip.tldr.ex.mtu":        "Change the MTU of an interface",
-
   "app.terminal.commands.nc.tldr.desc":          "Open network connections or listen on ports",
   "app.terminal.commands.nc.tldr.ex.connect":    "Connect to a host and port",
   "app.terminal.commands.nc.tldr.ex.listen":     "Listen on a TCP port",
   "app.terminal.commands.nc.tldr.ex.udp":        "Use a UDP connection",
-
   "app.terminal.commands.netstat.tldr.desc":     "Display network connections",
   "app.terminal.commands.netstat.tldr.ex.all":   "Show all connections",
   "app.terminal.commands.netstat.tldr.ex.tcp":   "Show only TCP connections",
-
   "app.terminal.commands.nmap.tldr.desc":        "Scan networks and ports",
   "app.terminal.commands.nmap.tldr.ex.host":     "Scan a single host",
   "app.terminal.commands.nmap.tldr.ex.subnet":   "Scan an entire subnet",
   "app.terminal.commands.nmap.tldr.ex.ports":    "Scan specific ports",
   "app.terminal.commands.nmap.tldr.ex.open":     "Show only open ports",
-
   "app.terminal.commands.ping.tldr.desc":        "Send ICMP echo requests",
   "app.terminal.commands.ping.tldr.ex.basic":    "Ping a host",
   "app.terminal.commands.ping.tldr.ex.count":    "Limit the number of packets",
   "app.terminal.commands.ping.tldr.ex.mtu":      "Test path MTU (large packet, DF bit)",
-
   "app.terminal.commands.route.tldr.desc":       "Manage the routing table",
   "app.terminal.commands.route.tldr.ex.show":    "Show the routing table",
   "app.terminal.commands.route.tldr.ex.add":     "Add a route",
   "app.terminal.commands.route.tldr.ex.del":     "Delete a route",
-
   "app.terminal.commands.ss.tldr.desc":          "Display socket connections",
   "app.terminal.commands.ss.tldr.ex.all":        "Show all connections",
   "app.terminal.commands.ss.tldr.ex.tcp":        "Show only TCP connections",
   "app.terminal.commands.ss.tldr.ex.udp":        "Show only UDP connections",
-
   "app.terminal.commands.telnet.tldr.desc":      "Open TCP connections",
   "app.terminal.commands.telnet.tldr.ex.connect":"Connect to a host and port",
   "app.terminal.commands.telnet.tldr.ex.http":   "Manually test an HTTP server",
-
   "app.terminal.commands.traceroute.tldr.desc":        "Trace the route to a host",
   "app.terminal.commands.traceroute.tldr.ex.basic":    "Show the route to a host",
   "app.terminal.commands.traceroute.tldr.ex.maxhops":  "Limit the maximum number of hops",
-
   "app.terminal.commands.ls.tldr.desc":           "List directory contents",
   "app.terminal.commands.ls.tldr.ex.basic":        "List contents of the current directory",
   "app.terminal.commands.ls.tldr.ex.hidden":       "Show hidden files",
   "app.terminal.commands.ls.tldr.ex.long":         "Show detailed listing of a directory",
-
   "app.terminal.commands.cat.tldr.desc":           "Print file contents",
   "app.terminal.commands.cat.tldr.ex.basic":       "Show the contents of a file",
-
   "app.terminal.commands.touch.tldr.desc":         "Create empty files",
   "app.terminal.commands.touch.tldr.ex.basic":     "Create a single empty file",
   "app.terminal.commands.touch.tldr.ex.multi":     "Create multiple empty files at once",
-
   "app.terminal.commands.mkdir.tldr.desc":         "Create directories",
   "app.terminal.commands.mkdir.tldr.ex.basic":     "Create a directory",
   "app.terminal.commands.mkdir.tldr.ex.recursive": "Create a nested directory structure",
-
   "app.terminal.commands.rm.tldr.desc":            "Remove files or directories",
   "app.terminal.commands.rm.tldr.ex.file":         "Remove a file",
   "app.terminal.commands.rm.tldr.ex.recursive":    "Remove a directory recursively",
-
   "app.terminal.commands.rmdir.tldr.desc":         "Remove empty directories",
   "app.terminal.commands.rmdir.tldr.ex.basic":     "Remove an empty directory",
-
   "app.terminal.commands.cp.tldr.desc":            "Copy files or directories",
   "app.terminal.commands.cp.tldr.ex.file":         "Copy a file",
   "app.terminal.commands.cp.tldr.ex.recursive":    "Copy a directory recursively",
-
   "app.terminal.commands.mv.tldr.desc":            "Move or rename files",
   "app.terminal.commands.mv.tldr.ex.rename":       "Rename a file",
   "app.terminal.commands.mv.tldr.ex.move":         "Move a file into a directory",
-
   "app.terminal.commands.cd.tldr.desc":            "Change the current directory",
   "app.terminal.commands.cd.tldr.ex.dir":          "Change to a specific directory",
   "app.terminal.commands.cd.tldr.ex.home":         "Go to the home directory",
-
   "app.terminal.commands.pwd.tldr.desc":           "Print the current directory",
   "app.terminal.commands.pwd.tldr.ex.basic":       "Show the current working directory path",
-
   "app.terminal.commands.clear.tldr.desc":         "Clear the terminal",
   "app.terminal.commands.clear.tldr.ex.basic":     "Clear all output from the terminal",
-
   "app.terminal.commands.date.tldr.desc":          "Show the current date and time",
   "app.terminal.commands.date.tldr.ex.basic":      "Print the current date and time",
-
   "app.terminal.commands.echo.tldr.desc":          "Print text",
   "app.terminal.commands.echo.tldr.ex.basic":      "Write text to the terminal",
-
   "app.terminal.commands.exit.tldr.desc":          "Close the terminal",
   "app.terminal.commands.exit.tldr.ex.basic":      "Close the terminal window",
-
   "app.terminal.commands.uname.tldr.desc":         "Show system information",
   "app.terminal.commands.uname.tldr.ex.basic":     "Show the operating system name",
   "app.terminal.commands.uname.tldr.ex.all":       "Show all system information",
-
   "app.terminal.commands.whoami.tldr.desc":        "Show the current user",
   "app.terminal.commands.whoami.tldr.ex.basic":    "Print the current username",
-
   "app.terminal.commands.help.tldr.desc":          "Show all available commands",
   "app.terminal.commands.help.tldr.ex.basic":      "Open the command overview",
-
   "app.terminal.commands.man.tldr.desc":           "Show a quick reference for a command",
   "app.terminal.commands.man.tldr.ex.basic":       "Look up help for a command",
-
-  "link.fault.hint":            "Click cable",
   "link.fault.title":           "Connection",
   "link.fault.status.up":       "Connected",
   "link.fault.status.down":     "Fault",
