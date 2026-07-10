@@ -358,6 +358,54 @@ describe('BGPDaemon – _learnPrefixes', () => {
     });
 });
 
+// ── BGPDaemon – route source reflects eBGP vs iBGP (administrative distance) ──
+
+describe('BGPDaemon – route source reflects eBGP vs iBGP', () => {
+    it('installs the route with source "bgp-ext" when the peer is in a different AS', () => {
+        const stack  = makeStack([{ ip: '10.0.0.1', prefix: 24 }]);
+        const daemon = new BGPDaemon(stack);
+        daemon.localAS = 65001;
+        daemon.addPeer({ ip: '10.0.0.2', remoteAS: 65002 });
+
+        const dst = IPAddress.fromString('172.16.0.0');
+        const nh  = IPAddress.fromString('10.0.0.2');
+        daemon._learnPrefixes([{ dst, prefLen: 16 }], { asPath: [65002], nextHop: nh, localPref: 100, med: 0 }, '10.0.0.2', 0);
+
+        const route = stack._routes.find(r => r.dst === '172.16.0.0' && r.prefix === 16);
+        expect(route?.source).toBe('bgp-ext');
+    });
+
+    it('installs the route with source "bgp-int" when the peer is in the same AS', () => {
+        const stack  = makeStack([{ ip: '10.0.0.1', prefix: 24 }]);
+        const daemon = new BGPDaemon(stack);
+        daemon.localAS = 65001;
+        daemon.addPeer({ ip: '10.0.0.2', remoteAS: 65001 }); // iBGP peer
+
+        const dst = IPAddress.fromString('172.16.0.0');
+        const nh  = IPAddress.fromString('10.0.0.2');
+        daemon._learnPrefixes([{ dst, prefLen: 16 }], { asPath: [], nextHop: nh, localPref: 100, med: 0 }, '10.0.0.2', 0);
+
+        const route = stack._routes.find(r => r.dst === '172.16.0.0' && r.prefix === 16);
+        expect(route?.source).toBe('bgp-int');
+    });
+
+    it('re-labels the source on failover from an eBGP peer to an iBGP peer', () => {
+        const stack  = makeStack([{ ip: '10.0.0.1', prefix: 24 }]);
+        const daemon = new BGPDaemon(stack);
+        daemon.localAS = 65001;
+        daemon.addPeer({ ip: '10.0.0.2', remoteAS: 65002 }); // eBGP
+        daemon.addPeer({ ip: '10.0.0.3', remoteAS: 65001 }); // iBGP backup
+
+        const dst = IPAddress.fromString('192.168.0.0');
+        daemon._learnPrefixes([{ dst, prefLen: 24 }], { asPath: [65002], nextHop: IPAddress.fromString('10.0.0.2'), localPref: 100, med: 0 }, '10.0.0.2', 0);
+        expect(stack._routes.find(r => r.dst === '192.168.0.0')?.source).toBe('bgp-ext');
+
+        daemon._withdrawFromPeer('10.0.0.2');
+        daemon._learnPrefixes([{ dst, prefLen: 24 }], { asPath: [], nextHop: IPAddress.fromString('10.0.0.3'), localPref: 100, med: 0 }, '10.0.0.3', 0);
+        expect(stack._routes.find(r => r.dst === '192.168.0.0')?.source).toBe('bgp-int');
+    });
+});
+
 // ── BGPDaemon – _withdrawPrefixes ─────────────────────────────────────────────
 
 describe('BGPDaemon – _withdrawPrefixes', () => {
