@@ -1,6 +1,10 @@
+## Version 0.1.26
+
+- added statefull firewall behavior
+
 ## Version 0.1.25
 
-* added ability to deactivate EthernetLinks
+- added ability to deactivate EthernetLinks
 
 ## Version 0.1.24
 
