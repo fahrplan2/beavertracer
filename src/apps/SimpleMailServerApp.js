@@ -93,7 +93,6 @@ function parseEmailAddressLoose(s) {
  */
 function b64decodeToString(s) {
   try {
-    // @ts-ignore
     if (typeof atob === "function") return atob(s);
   } catch { /* ignore */ }
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -118,7 +117,6 @@ function b64decodeToString(s) {
  */
 function b64encodeFromString(s) {
   try {
-    // @ts-ignore
     if (typeof btoa === "function") return btoa(s);
   } catch { /* ignore */ }
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";

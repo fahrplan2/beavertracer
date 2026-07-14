@@ -136,7 +136,6 @@ export class NetworkInterface extends Observable {
             }
         }
 
-        // @ts-ignore // KleC: aktuell wird toHex() nicht als gültige Funktion erkannt. Im Firefox geht es.
         this.name = (opts.name ?? 'enx' + this.mac.toHex());
         this.port = opts.port ?? new EthernetPort(this.name);
         this.port.subscribe(this);

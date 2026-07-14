@@ -399,9 +399,7 @@ export class DNSServerApp extends LoggedProcess {
 
   _loadConfigIntoUI() {
     try {
-      const raw = this.os.fs.readFile(this.configPath);
-      // @ts-ignore
-      const s = (raw instanceof Uint8Array) ? new TextDecoder().decode(raw) : String(raw ?? "");
+      const s = String(this.os.fs.readFile(this.configPath) ?? "");
 
       const obj = JSON.parse(s);
       const mode = (obj.mode === "recursive") ? "recursive" : "authoritative";
