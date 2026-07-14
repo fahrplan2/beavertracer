@@ -488,3 +488,50 @@
     display: none;
   }
 }
+
+/* ---- Mobile landscape (short height, e.g. phone rotated) ---- */
+
+@media (max-height: 500px) and (max-width: 950px) {
+  .welcome-backdrop {
+    padding: var(--pad-md);
+  }
+
+  .welcome-header {
+    padding: var(--pad-sm) var(--pad-xl);
+    gap: var(--pad-md);
+  }
+
+  .welcome-logo {
+    width: 30px;
+    height: 30px;
+  }
+
+  .welcome-subtitle {
+    display: none;
+  }
+
+  .welcome-tabs {
+    padding: 0 var(--pad-xl);
+  }
+
+  .welcome-tab {
+    padding: var(--pad-xs) var(--pad-lg);
+  }
+
+  .welcome-actions {
+    gap: var(--pad-sm);
+    padding: var(--pad-md) var(--pad-xl);
+  }
+
+  .welcome-action-btn {
+    padding: var(--pad-sm) var(--pad-lg);
+  }
+
+  .welcome-action-btn--tour {
+    display: none;
+  }
+
+  .welcome-footer {
+    padding: var(--pad-xs) var(--pad-xl);
+  }
+}
