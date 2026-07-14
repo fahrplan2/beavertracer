@@ -1381,5 +1381,11 @@ export default {
   "firewall.state.disabled": "La modalità stateful è disabilitata.",
   "firewall.state.col.source": "Origine",
   "firewall.state.col.dest": "Destinazione",
-  "firewall.state.col.timeout": "Timeout"
+  "firewall.state.col.timeout": "Timeout",
+  "lessons.toc": "Indice dei contenuti",
+  "lessons.themeToggle": "Attiva/disattiva modalità chiara/scura",
+  "lessons.footer": "BeaverTracer – Simulazione di rete per la classe",
+  "lessons.wip.title": "🚧 Lezioni in corso",
+  "lessons.wip.text": "Queste pagine non sono ancora complete. Il contenuto potrebbe essere incompleto, non definitivo o non ancora revisionato.",
+  "lessons.pageNav": "Navigazione della pagina"
 };

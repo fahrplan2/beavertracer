@@ -1376,5 +1376,11 @@ export default {
   "firewall.state.disabled": "Olek-tundlik režiim on keelatud.",
   "firewall.state.col.source": "Allikas",
   "firewall.state.col.dest": "Sihtkoht",
-  "firewall.state.col.timeout": "Aegumine"
+  "firewall.state.col.timeout": "Aegumine",
+  "lessons.toc": "Sisukord",
+  "lessons.themeToggle": "Lülita hele/tume režiim",
+  "lessons.footer": "BeaverTracer – Võrgusimuleerimine klassitubades",
+  "lessons.wip.title": "🚧 Pooleli olevad õppetunnid",
+  "lessons.wip.text": "Need lehed pole veel valmis. Sisu võib olla puudu, mittetäielik või pole veel korrektuuri läbinud.",
+  "lessons.pageNav": "Lehekülje navigeerimine"
 };

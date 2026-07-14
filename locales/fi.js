@@ -1376,5 +1376,11 @@ export default {
   "firewall.state.disabled": "Tilavaraistunut tila on poistettu käytöstä.",
   "firewall.state.col.source": "Lähde",
   "firewall.state.col.dest": "Määränpää",
-  "firewall.state.col.timeout": "Aikakatkaisu"
+  "firewall.state.col.timeout": "Aikakatkaisu",
+  "lessons.toc": "Sisällysluettelo",
+  "lessons.themeToggle": "Vaihda vaal/tumma-tilaa",
+  "lessons.footer": "BeaverTracer – Verkon simulointi luokkahuoneeseen",
+  "lessons.wip.title": "🚧 Oppitunnit työn alla",
+  "lessons.wip.text": "Nämä sivut eivät ole vielä valmiit. Sisältö saattaa puuttua, olla epätäydellinen tai sitä ei ole vielä tarkistettu.",
+  "lessons.pageNav": "Sivun navigointi"
 };

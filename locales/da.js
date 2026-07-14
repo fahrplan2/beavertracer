@@ -1376,5 +1376,11 @@ export default {
   "firewall.state.disabled": "Tilstand med tilstand er deaktiveret.",
   "firewall.state.col.source": "Kilde",
   "firewall.state.col.dest": "Destination",
-  "firewall.state.col.timeout": "Timeout"
+  "firewall.state.col.timeout": "Timeout",
+  "lessons.toc": "Indholdsfortegnelse",
+  "lessons.themeToggle": "Skift lys/mørkt tilstand",
+  "lessons.footer": "BeaverTracer – Netværkssimulation til klasseværelset",
+  "lessons.wip.title": "🚧 Lektioner under udvikling",
+  "lessons.wip.text": "Disse sider er endnu ikke færdige. Indhold kan mangle, være ufuldstændigt eller endnu ikke være korrekturlæst.",
+  "lessons.pageNav": "Sidenavigation"
 };

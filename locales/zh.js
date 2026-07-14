@@ -1376,5 +1376,11 @@ export default {
   "firewall.state.disabled": "有状态模式已禁用。",
   "firewall.state.col.source": "源",
   "firewall.state.col.dest": "目标",
-  "firewall.state.col.timeout": "超时"
+  "firewall.state.col.timeout": "超时",
+  "lessons.toc": "目录",
+  "lessons.themeToggle": "切换亮色/暗色模式",
+  "lessons.footer": "BeaverTracer – 课堂网络仿真工具",
+  "lessons.wip.title": "🚧 课程进行中",
+  "lessons.wip.text": "这些页面尚未完成。内容可能缺失、不完整或尚未校对。",
+  "lessons.pageNav": "页面导航"
 };

@@ -1376,5 +1376,11 @@ export default {
   "firewall.state.disabled": "Stavový režim je zakázán.",
   "firewall.state.col.source": "Zdroj",
   "firewall.state.col.dest": "Cíl",
-  "firewall.state.col.timeout": "Časový limit"
+  "firewall.state.col.timeout": "Časový limit",
+  "lessons.toc": "Obsah",
+  "lessons.themeToggle": "Přepnout světlý/tmavý režim",
+  "lessons.footer": "BeaverTracer – Simulace sítě pro třídu",
+  "lessons.wip.title": "🚧 Lekce probíhající zpracování",
+  "lessons.wip.text": "Tyto stránky nejsou zatím kompletní. Obsah může být neúplný nebo ještě nezkontrolovaný.",
+  "lessons.pageNav": "Navigace stránky"
 };

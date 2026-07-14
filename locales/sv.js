@@ -1376,5 +1376,11 @@ export default {
   "firewall.state.disabled": "Tillståndskänsligt läge är inaktiverat.",
   "firewall.state.col.source": "Källa",
   "firewall.state.col.dest": "Destination",
-  "firewall.state.col.timeout": "Tidsgräns"
+  "firewall.state.col.timeout": "Tidsgräns",
+  "lessons.toc": "Innehållsförteckning",
+  "lessons.themeToggle": "Växla mellan ljust/mörkt läge",
+  "lessons.footer": "BeaverTracer – Nätverkssimulering för klassrummet",
+  "lessons.wip.title": "🚧 Lektioner under utveckling",
+  "lessons.wip.text": "Dessa sidor är inte helt klara än. Innehållet kan vara ofullständigt eller inte ännu granskad.",
+  "lessons.pageNav": "Sidnavigering"
 };

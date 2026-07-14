@@ -1375,5 +1375,11 @@ export default {
   "firewall.state.disabled": "Stanjski režim je onemogućen.",
   "firewall.state.col.source": "Izvor",
   "firewall.state.col.dest": "Odredište",
-  "firewall.state.col.timeout": "Isteka"
+  "firewall.state.col.timeout": "Isteka",
+  "lessons.toc": "Sadržaj",
+  "lessons.themeToggle": "Prebacivanje svetlog/tamnog moda",
+  "lessons.footer": "BeaverTracer – Simulacija mreže za učionicu",
+  "lessons.wip.title": "🚧 Lekcije u toku",
+  "lessons.wip.text": "Ove stranice još nisu završene. Sadržaj može biti nepotpun ili nije još pregledan.",
+  "lessons.pageNav": "Navigacija po stranici"
 };

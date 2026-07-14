@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de" data-theme="light">
+<html lang="{{lang}}" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -22,19 +22,19 @@
         <img src="../../beaver.svg" alt="BeaverTracer" width="28" height="28">
         BeaverTracer
       </a>
-<button class="theme-toggle" id="themeToggle" aria-label="Hell/Dunkel" title="Hell/Dunkel wechseln"><span class="theme-icon"></span></button>
+<button class="theme-toggle" id="themeToggle" aria-label="{{lessons.themeToggle}}" title="{{lessons.themeToggle}}"><span class="theme-icon"></span></button>
     </div>
   </header>
   <div class="lesson-layout">
     <details class="lesson-sidebar-details" open>
-      <summary>Inhaltsverzeichnis</summary>
+      <summary>{{lessons.toc}}</summary>
       <nav class="lesson-sidebar" aria-label="Lektionen">
         {{sidebar}}
       </nav>
     </details>
     <main class="lesson-main">
       <div class="wip-banner" role="alert">
-        <strong>🚧 Lektionen in Bearbeitung</strong> — Diese Seiten sind noch nicht vollständig. Inhalte können fehlen, unvollständig oder noch nicht korrekturgelesen sein.
+        <strong>{{lessons.wip.title}}</strong> — {{lessons.wip.text}}
       </div>
       <article class="lesson-article">
         {{body}}
@@ -42,7 +42,7 @@
     </main>
   </div>
   <footer class="lesson-footer">
-    BeaverTracer – Netzwerksimulation für den Unterricht
+    {{lessons.footer}}
   </footer>
   <script src="../_quiz.js"></script>
   <script>
