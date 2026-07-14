@@ -8,7 +8,9 @@
     "noImplicitAny": true,
     //"noEmit": true,
     "declaration": true,
-    "emitDeclarationOnly": true
+    "emitDeclarationOnly": true,
+    "outDir": "types",
+    "rootDir": "src"
   },
   "include": ["src/**/*.js"],
   "exclude": ["src/defaultsim.js"]

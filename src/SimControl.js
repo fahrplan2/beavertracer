@@ -833,8 +833,8 @@ export class SimControl {
     /** @param {*} state */
     restore(state) {
         this._isDirty = false;
-        //@ts-ignore
-        const REGISTRY = new Map([
+        /** @type {[string, (new (...args: any[]) => SimulatedObject) & { fromJSON(n: any): SimulatedObject }][]} */
+        const registryEntries = [
             ["Computer", Computer],
             ["Router", Router],
             ["Switch", Switch],
@@ -846,7 +846,8 @@ export class SimControl {
             ["Firewall", Firewall],
             ["CompanionBridge", CompanionBridge],
             // Link handled separately
-        ]);
+        ];
+        const REGISTRY = new Map(registryEntries);
 
         if (!state || !Array.isArray(state.objects)) {
             SimDialog.alert(t("sim.invalidfilewarning"));
