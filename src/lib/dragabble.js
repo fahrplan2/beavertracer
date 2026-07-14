@@ -55,8 +55,7 @@ let suppressNextClick = false;
  * @returns {ListenerTarget}
  */
 function asListenerTarget(t) {
-  //@ts-ignore
-  return t;
+  return /** @type {ListenerTarget} */ (/** @type {unknown} */ (t));
 }
 
 /**
@@ -410,7 +409,6 @@ export function makeDraggable(el, options = {}) {
     clearLongPressTimer();
 
     if (!dragAllowed) {
-      //@ts-ignore
       longPressTimer = window.setTimeout(() => {
         dragAllowed = true;
       }, longPressDelay);

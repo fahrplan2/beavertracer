@@ -29,8 +29,9 @@ export class StaticPageRouter {
    * Keys look like "/pages/about/index.html"
    * @type {Record<string, () => Promise<string>>}
    */
-  // @ts-ignore
-  static #modules = import.meta.glob("/pages/**/*.html", { query: "?raw", import: "default" });
+  static #modules = /** @type {Record<string, () => Promise<string>>} */ (
+    import.meta.glob("/pages/**/*.html", { query: "?raw", import: "default" })
+  );
 
   /** @type {Map<string, string[]>} route -> baseUrl keys (module keys for index.html) */
   #routeToBaseUrls = new Map();
@@ -215,11 +216,9 @@ export class StaticPageRouter {
    * @param {string} [route]
    */
   #replaceTags(html, route) {
-    // @ts-ignore
     const downloadBase = import.meta.env.VITE_DOWNLOAD_BASE ?? "https://www.beavertracer.eu/releases";
     const v = String(version());
     // VITE_LAST_RELEASE = the actual last git tag (e.g. "0.1.11" when dev version is "0.1.12-dev.x")
-    // @ts-ignore
     const vBase = String(import.meta.env.VITE_LAST_RELEASE || v);
     const vDisplay = route === "/downloads" ? vBase : v;
     return String(html)
