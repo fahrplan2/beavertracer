@@ -8,23 +8,24 @@
   overflow: hidden;
   user-select: none;
 
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas:
+    "logo    toolbar"
+    "sidebar nodes";
 
   border: 1px solid var(--ui-border-strong);
   background: var(--bg);
   color: var(--text);
 }
 
-.sim-body {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  overflow: hidden;
-}
+/* .sim-body has no box of its own (display: contents, see global.css) — it
+   only groups .sim-sidebar and .sim-nodes for tab show/hide. Both are placed
+   directly into the sim-root grid via their own grid-area. */
 
 .sim-nodes {
-  flex: 1 1 auto;
+  grid-area: nodes;
   min-width: 0;
   min-height: 0;
   position: relative;
@@ -215,8 +216,8 @@
    TOP TOOLBAR
    ========================================================= */
 .sim-toolbar {
+  grid-area: toolbar;
   display: flex;
-  flex: 0 0 auto;
   flex-wrap: nowrap;
   overflow-x: auto;
   overflow-y: hidden;
@@ -276,18 +277,21 @@
 }
 
 
-.sim-toolbar-branding-group {
+.sim-logo-cell {
+  grid-area: logo;
   position: relative;
   display: flex;
   flex-direction: row;
   align-items: center;
+  justify-content: center;
   gap: var(--pad-md);
+  cursor: pointer;
   border: none;
-  border-radius: var(--radius-md);
   padding: 0 var(--pad-lg);
+  background-color: var(--surface);
 }
 
-.sim-toolbar-branding-group:active {
+.sim-logo-cell:active {
   transform: translateY(1px);
 }
 
@@ -331,7 +335,7 @@
   user-select: none;
 }
 
-.sim-toolbar-branding-group::after {
+.sim-logo-cell::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -348,12 +352,12 @@
   transition: opacity 0.2s, filter 0.2s;
 }
 
-.sim-toolbar-branding-group:hover::after {
+.sim-logo-cell:hover::after {
   opacity: 0.85;
   filter: drop-shadow(0 0 6px var(--primary)) drop-shadow(0 0 12px color-mix(in oklch, var(--primary), transparent 50%));
 }
 
-.sim-toolbar-branding-group:active::after {
+.sim-logo-cell:active::after {
   opacity: 1;
   filter: drop-shadow(0 0 4px var(--primary));
 }
@@ -362,7 +366,7 @@
    EDIT SIDEBAR
    ========================================================= */
 .sim-sidebar {
-  flex-shrink: 0;
+  grid-area: sidebar;
   padding: var(--pad-lg);
   overflow: auto;
 
@@ -1724,7 +1728,7 @@ sim-toolbar-langbtn {
   }
   .sim-toolbar-group-label { display: none; }
   .sim-toolbar-group { padding: 4px; }
-  .sim-toolbar-branding-group { flex-direction: column; padding: 2px 4px; gap: 0; min-width: 36px; }
+  .sim-logo-cell { flex-direction: column; padding: 2px 4px; gap: 0; min-width: 36px; }
   .sim-toolbar-branding { font-size: 0.6875rem; }
   .sim-toolbar-branding-alpha { font-size: 0.5rem; padding: 1px 3px; letter-spacing: 0.4px; }
   .sim-toolbar-group { justify-content: center; }

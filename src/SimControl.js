@@ -300,6 +300,25 @@ export class SimControl {
         root.classList.add("sim-root");
         if (this.embedded) root.classList.add("is-embedded");
 
+        // Logo (shares its grid column with the sidebar and its grid row with
+        // the toolbar, so it is always exactly as wide as the sidebar and as
+        // tall as the toolbar, at any viewport size or zoom level).
+        const logoCell = document.createElement("div");
+        logoCell.className = "sim-logo-cell";
+        logoCell.title = t("sim.welcome");
+        logoCell.addEventListener("click", () => { if (!this.embedded) WelcomeDialog.show(this); });
+        root.appendChild(logoCell);
+        this._logoCell = logoCell;
+
+        const brandingText = document.createElement("div");
+        brandingText.className = "sim-toolbar-branding-text";
+        logoCell.appendChild(brandingText);
+
+        const branding = document.createElement("div");
+        branding.className = "sim-toolbar-branding";
+        branding.textContent = "Beaver Tracer";
+        brandingText.appendChild(branding);
+
         // Toolbar
         const toolbar = document.createElement("div");
         toolbar.className = "sim-toolbar";
@@ -989,24 +1008,6 @@ export class SimControl {
             toolbar.appendChild(sep);
             return sep;
         };
-
-        // Branding group
-        const brandingGroup = document.createElement("div");
-        brandingGroup.className = "sim-toolbar-group sim-toolbar-branding-group";
-        brandingGroup.style.cursor = "pointer";
-        brandingGroup.title = t("sim.welcome");
-        brandingGroup.addEventListener("click", () => { if (!this.embedded) WelcomeDialog.show(this); });
-        toolbar.appendChild(brandingGroup);
-
-        const brandingText = document.createElement("div");
-        brandingText.className = "sim-toolbar-branding-text";
-        brandingGroup.appendChild(brandingText);
-
-        const branding = document.createElement("div");
-        branding.className = "sim-toolbar-branding";
-        branding.textContent = "Beaver Tracer";
-        brandingText.appendChild(branding);
-
 
         //********** MODES  *********/
         addSeparator("sep-mode");

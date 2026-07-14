@@ -145,8 +145,18 @@ function processQuizBlocks(src) {
  * @param {string} localesDir
  * @returns {Record<string, { name: string, noLessons: string | null, quiz: { placeholder: string, evaluate: string, resultOne: string, resultOther: string } }>}
  */
+const OSI_LAYER_KEYS = [
+  "lessons.osi.l1", "lessons.osi.l2", "lessons.osi.l3", "lessons.osi.l4",
+  "lessons.osi.l5", "lessons.osi.l6", "lessons.osi.l7",
+];
+const OSI_LAYER_FALLBACK = {
+  "lessons.osi.l1": "Physical", "lessons.osi.l2": "Data Link", "lessons.osi.l3": "Network",
+  "lessons.osi.l4": "Transport", "lessons.osi.l5": "Session", "lessons.osi.l6": "Presentation",
+  "lessons.osi.l7": "Application",
+};
+
 function loadLocaleInfo(localesDir) {
-  /** @type {Record<string, { name: string, noLessons: string | null, quiz: { placeholder: string, evaluate: string, resultOne: string, resultOther: string } }>} */
+  /** @type {Record<string, { name: string, noLessons: string | null, quiz: { placeholder: string, evaluate: string, resultOne: string, resultOther: string }, osiLabels: string[] }>} */
   const info = {};
   if (!fs.existsSync(localesDir)) return info;
 
@@ -178,12 +188,14 @@ function loadLocaleInfo(localesDir) {
           resultOne:   extractKey(src, "lessons.quiz.result.one")  ?? "{correct}/{total}",
           resultOther: extractKey(src, "lessons.quiz.result.other") ?? "{correct}/{total}",
         },
+        osiLabels: OSI_LAYER_KEYS.map((key) => extractKey(src, key) ?? OSI_LAYER_FALLBACK[key]),
       };
     } catch {
       info[code] = {
         name: code.toUpperCase(),
         noLessons: null,
         quiz: { placeholder: "…", evaluate: "Check answers", resultOne: "{correct}/{total}", resultOther: "{correct}/{total}" },
+        osiLabels: OSI_LAYER_KEYS.map((key) => OSI_LAYER_FALLBACK[key]),
       };
     }
   }
@@ -382,8 +394,9 @@ function renderSidebar(tree, currentHref) {
  * @param {{ prev?: {href:string,title:string}, next?: {href:string,title:string} }} nav
  * @param {string} sidebar
  * @param {{ placeholder: string, evaluate: string, resultOne: string, resultOther: string }} quizI18n
+ * @param {string[]} osiLabels
  */
-function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI18n = { placeholder: "…", evaluate: "Check answers", resultOne: "{correct}/{total}", resultOther: "{correct}/{total}" }) {
+function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI18n = { placeholder: "…", evaluate: "Check answers", resultOne: "{correct}/{total}", resultOther: "{correct}/{total}" }, osiLabels = OSI_LAYER_KEYS.map((key) => OSI_LAYER_FALLBACK[key])) {
   let src = fs.readFileSync(srcFile, "utf8");
 
   // ── Pre-process :::quiz / :::evaluate blocks ──────────────────
@@ -440,6 +453,23 @@ function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI
       },
     });
   }
+
+  // ── :::osi N — 7er-Ampel des ISO/OSI-Modells, Layer N farbig ───
+  // Layer-Namen kommen aus locales/{lang}.js (lessons.osi.l1 … l7), siehe osiLabels-Param.
+  md.use(markdownItContainer, "osi", {
+    render(tokens, idx) {
+      if (tokens[idx].nesting !== 1) return "";
+      const m = tokens[idx].info.trim().match(/^osi\s+(\d)/);
+      const active = m ? parseInt(m[1], 10) : 0;
+      let html = `<div class="osi-ampel">\n`;
+      for (let l = 7; l >= 1; l--) {
+        const cls = l === active ? `osi-ampel-box osi-l${l} active` : `osi-ampel-box`;
+        html += `<div class="${cls}"><span class="osi-ampel-num">${l}</span><span class="osi-ampel-label">${escHtml(osiLabels[l - 1])}</span></div>\n`;
+      }
+      html += `</div>\n`;
+      return html;
+    },
+  });
 
   md.renderer.rules.heading_open = (tokens, idx) => {
     const tag = tokens[idx].tag;
@@ -647,7 +677,15 @@ function buildLessons(root) {
       try {
         fs.writeFileSync(
           outFile,
-          renderLesson(path.join(langDir, node.file), templateHtml, node, nav, sidebar, (localeInfo[lang] ?? localeInfo["en"])?.quiz),
+          renderLesson(
+            path.join(langDir, node.file),
+            templateHtml,
+            node,
+            nav,
+            sidebar,
+            (localeInfo[lang] ?? localeInfo["en"])?.quiz,
+            (localeInfo[lang] ?? localeInfo["en"])?.osiLabels
+          ),
           "utf8"
         );
         console.log(`[lessons] ✓ ${lang}/${node.file}`);

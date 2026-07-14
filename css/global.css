@@ -252,19 +252,23 @@ textarea:focus {
   min-width: 0;
 }
 
-/* Flex for simbody */
+/* sim-body has no box of its own — its children (.sim-sidebar, .sim-nodes)
+   become direct items of the .sim-root grid, each keeping its own grid-area. */
 .sim-body.tab-content {
   display: none;
 }
 
 .sim-body.tab-content.active {
-  display: flex;
+  display: contents;
 }
 
-/* ABOUT + TRACER: normal document flow */
+/* ABOUT + TRACER: normal document flow, spanning the full width below the
+   toolbar (both grid columns of the sim-root grid). */
 .page.tab-content.active,
 .analyzer.tab-content.active {
   display: block;
+  grid-column: 1 / -1;
+  grid-row: 2;
 }
 
 

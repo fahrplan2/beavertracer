@@ -362,6 +362,83 @@ body {
 .lesson-article td { padding: 9px 14px; border-bottom: 1px solid var(--border); }
 .lesson-article tr:last-child td { border-bottom: none; }
 
+/* ── OSI layer rainbow (shared by osi-table + osi-ampel) ────────
+   Fixed, theme-independent hues — layer 1 = red … layer 7 = violet. */
+:root {
+  --osi-l1: oklch(72% 0.19 25);
+  --osi-l2: oklch(75% 0.17 55);
+  --osi-l3: oklch(87% 0.17 98);
+  --osi-l4: oklch(78% 0.17 145);
+  --osi-l5: oklch(75% 0.12 220);
+  --osi-l6: oklch(68% 0.15 270);
+  --osi-l7: oklch(72% 0.18 320);
+  --osi-text: #14181f;
+}
+
+/* ── OSI table (table.osi-table, tr.osi-l1 … tr.osi-l7) ─────────
+   Colors just the layer-number cell so the row text stays readable. */
+.lesson-article table.osi-table tr[class^="osi-l"] td:first-child,
+.lesson-article table.osi-table tr[class^="osi-l"] th:first-child {
+  color: var(--osi-text);
+  font-weight: 700;
+  text-align: center;
+  border-bottom-color: transparent;
+}
+.lesson-article table.osi-table tr.osi-l1 td:first-child { background: var(--osi-l1); }
+.lesson-article table.osi-table tr.osi-l2 td:first-child { background: var(--osi-l2); }
+.lesson-article table.osi-table tr.osi-l3 td:first-child { background: var(--osi-l3); }
+.lesson-article table.osi-table tr.osi-l4 td:first-child { background: var(--osi-l4); }
+.lesson-article table.osi-table tr.osi-l5 td:first-child { background: var(--osi-l5); }
+.lesson-article table.osi-table tr.osi-l6 td:first-child { background: var(--osi-l6); }
+.lesson-article table.osi-table tr.osi-l7 td:first-child { background: var(--osi-l7); }
+
+/* ── OSI "Ampel" (:::osi N — 7 gestapelte Layer-Boxen) ───────────
+   Floats beside the following paragraph(s) for text wrap. */
+.osi-ampel {
+  float: right;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 176px;
+  margin: 4px 0 16px 20px;
+}
+.osi-ampel-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: var(--surface);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+.osi-ampel-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(127, 127, 127, 0.25);
+  font-size: 0.72rem;
+}
+.osi-ampel-box.active {
+  color: var(--osi-text);
+  border-color: transparent;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+.osi-ampel-box.active .osi-ampel-num { background: rgba(0, 0, 0, 0.12); }
+.osi-ampel-box.osi-l1.active { background: var(--osi-l1); }
+.osi-ampel-box.osi-l2.active { background: var(--osi-l2); }
+.osi-ampel-box.osi-l3.active { background: var(--osi-l3); }
+.osi-ampel-box.osi-l4.active { background: var(--osi-l4); }
+.osi-ampel-box.osi-l5.active { background: var(--osi-l5); }
+.osi-ampel-box.osi-l6.active { background: var(--osi-l6); }
+.osi-ampel-box.osi-l7.active { background: var(--osi-l7); }
+
 /* ── BeaverTracer Embed ───────────────────────────────────────── */
 .lesson-sim {
   margin: 28px 0;
@@ -563,6 +640,15 @@ body {
   .lesson-main {
     padding: 24px 16px 60px;
   }
+
+  .osi-ampel {
+    float: none;
+    flex-direction: row;
+    flex-wrap: wrap;
+    width: auto;
+    margin: 0 0 16px;
+  }
+  .osi-ampel-box { flex: 1 1 calc(50% - 3px); }
 }
 
 /* ── Quiz blocks ──────────────────────────────────────────────── */

@@ -91,6 +91,40 @@ url=/sims/demo.btsim
 
 ---
 
+## OSI-Referenzmodell: Farbschema
+
+Beispiel für eine regenbogenfarbig hervorgehobene Tabelle (Schicht 1 unten, wie im Stapel) sowie eine "Ampel" am Seitenrand mit Textumlauf.
+
+### Farbige Tabelle
+
+<table class="osi-table">
+<thead>
+<tr><th>Schicht</th><th>Name</th><th>Beispielprotokolle</th></tr>
+</thead>
+<tbody>
+<tr class="osi-l7"><td>7</td><td>Anwendung</td><td>HTTP, DNS, SMTP</td></tr>
+<tr class="osi-l6"><td>6</td><td>Darstellung</td><td>TLS, JPEG, ASCII</td></tr>
+<tr class="osi-l5"><td>5</td><td>Sitzung</td><td>RPC, NetBIOS</td></tr>
+<tr class="osi-l4"><td>4</td><td>Transport</td><td>TCP, UDP</td></tr>
+<tr class="osi-l3"><td>3</td><td>Vermittlung</td><td>IP, ICMP</td></tr>
+<tr class="osi-l2"><td>2</td><td>Sicherung</td><td>Ethernet, ARP</td></tr>
+<tr class="osi-l1"><td>1</td><td>Bitübertragung</td><td>Kupfer, Glasfaser, WLAN</td></tr>
+</tbody>
+</table>
+
+### Ampel mit Textumlauf
+
+Die Ampel wird über `:::osi N` erzeugt, wobei `N` die hervorzuhebende Schicht ist (hier Schicht 3). Sie schwebt am Rand, der nachfolgende Text fließt automatisch daran vorbei.
+
+:::osi 3
+:::
+
+Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
+
+Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum, wodurch dieser Abschnitt inhaltlich der Vermittlungsschicht (Layer 3) zugeordnet ist — deshalb ist genau diese Box in der Ampel farbig, alle anderen bleiben grau.
+
+---
+
 ## Abschnitt 1: Grundbegriffe
 
 :::quiz short
