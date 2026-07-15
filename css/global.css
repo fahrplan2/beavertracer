@@ -78,6 +78,17 @@
   --ui-line: color-mix(in oklch, var(--text), transparent 55%);
 
   --bg-strong: #ffffff;
+
+  /* OSI layer rainbow (fixed across themes) — L1 = red … L7 = violet.
+     Shared visual language with lessons/_style.css. */
+  --osi-l1: oklch(72% 0.19 25);
+  --osi-l2: oklch(75% 0.17 55);
+  --osi-l3: oklch(87% 0.17 98);
+  --osi-l4: oklch(78% 0.17 145);
+  --osi-l5: oklch(75% 0.12 220);
+  --osi-l6: oklch(68% 0.15 270);
+  --osi-l7: oklch(72% 0.18 320);
+  --osi-text: #14181f;
 }
 
 [data-theme="dark"] {

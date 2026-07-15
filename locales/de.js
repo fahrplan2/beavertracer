@@ -756,6 +756,7 @@ export default {
   "pcap.packet.nosession": "Keine aktive Sitzung.",
   "pcap.tree.title": "Paketdetails (Frame {no})",
   "pcap.tree.node": "(Knoten)",
+  "pcap.tree.osiLayer": "OSI-Schicht {n} — {name}",
   "pcap.picker.device": "Gerät",
   "pcap.picker.port": "Port",
   "pcap.picker.noport": "(kein Port)",

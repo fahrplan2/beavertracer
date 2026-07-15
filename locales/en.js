@@ -893,6 +893,7 @@ export default {
   "pcap.packet.nosession": "No active session.",
   "pcap.tree.title": "Packet Details (Frame {no})",
   "pcap.tree.node": "(node)",
+  "pcap.tree.osiLayer": "OSI layer {n} — {name}",
   "pcap.picker.device": "Device",
   "pcap.picker.port": "Port",
   "pcap.picker.noport": "(no port)",
