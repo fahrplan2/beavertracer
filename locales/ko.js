@@ -1376,5 +1376,11 @@ export default {
   "firewall.state.disabled": "상태 추적 모드가 비활성화됨.",
   "firewall.state.col.source": "출처",
   "firewall.state.col.dest": "대상",
-  "firewall.state.col.timeout": "시간 초과"
+  "firewall.state.col.timeout": "시간 초과",
+  "lessons.toc": "목차",
+  "lessons.themeToggle": "라이트/다크 모드 전환",
+  "lessons.footer": "BeaverTracer – 교실용 네트워크 시뮬레이션",
+  "lessons.wip.title": "🚧 진행 중인 강의",
+  "lessons.wip.text": "이 페이지는 아직 완성되지 않았습니다. 내용이 누락되었거나 불완전하거나 아직 검수되지 않았을 수 있습니다.",
+  "lessons.pageNav": "페이지 네비게이션"
 };

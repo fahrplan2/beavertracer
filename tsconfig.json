@@ -6,10 +6,13 @@
     "allowJs": true,
     "checkJs": true,
     "noImplicitAny": true,
+    "types": ["vite/client"],
     //"noEmit": true,
     "declaration": true,
-    "emitDeclarationOnly": true
+    "emitDeclarationOnly": true,
+    "outDir": "types",
+    "rootDir": "src"
   },
-  "include": ["src/**/*.js"],
+  "include": ["src/**/*.js", "src/global.d.ts"],
   "exclude": ["src/defaultsim.js"]
 }

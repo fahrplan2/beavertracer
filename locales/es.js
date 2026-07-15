@@ -1383,5 +1383,11 @@ export default {
   "firewall.state.disabled": "El modo con estado está deshabilitado.",
   "firewall.state.col.source": "Origen",
   "firewall.state.col.dest": "Destino",
-  "firewall.state.col.timeout": "Tiempo de espera"
+  "firewall.state.col.timeout": "Tiempo de espera",
+  "lessons.toc": "Tabla de contenidos",
+  "lessons.themeToggle": "Alternar modo claro/oscuro",
+  "lessons.footer": "BeaverTracer – Simulación de redes para la clase",
+  "lessons.wip.title": "🚧 Lecciones en progreso",
+  "lessons.wip.text": "Estas páginas aún no están completas. El contenido puede estar incompleto, no finalizado o aún no revisado.",
+  "lessons.pageNav": "Navegación de página"
 };

@@ -1376,5 +1376,11 @@ export default {
   "firewall.state.disabled": "Stavy režimas yra išjungtas.",
   "firewall.state.col.source": "Šaltinis",
   "firewall.state.col.dest": "Paskirties vieta",
-  "firewall.state.col.timeout": "Timeout"
+  "firewall.state.col.timeout": "Timeout",
+  "lessons.toc": "Turinys",
+  "lessons.themeToggle": "Perjungti šviesų/tamsų režimą",
+  "lessons.footer": "BeaverTracer – Tinklo simuliacija klasėje",
+  "lessons.wip.title": "🚧 Pamokos vykdomos",
+  "lessons.wip.text": "Šie puslapiai dar nėra baigti. Gali trūkti turinio, jis gali būti nebaigtas arba dar neperžiūrėtas.",
+  "lessons.pageNav": "Puslapio navigacija"
 };

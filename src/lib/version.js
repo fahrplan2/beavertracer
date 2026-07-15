@@ -7,7 +7,6 @@
  * @returns {string}
  */
 export function version(short = false) {
-  // @ts-ignore
   const v = import.meta.env.VITE_APP_VERSION || "development";
 
   if (!short) return v;

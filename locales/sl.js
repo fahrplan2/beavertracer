@@ -1376,5 +1376,11 @@ export default {
   "firewall.state.disabled": "Način s stanjem je onemogočen.",
   "firewall.state.col.source": "Vir",
   "firewall.state.col.dest": "Cilj",
-  "firewall.state.col.timeout": "Časovna omejitev"
+  "firewall.state.col.timeout": "Časovna omejitev",
+  "lessons.toc": "Kazalo vsebine",
+  "lessons.themeToggle": "Preklopi svetli/temni način",
+  "lessons.footer": "BeaverTracer – Simulacija omrežja za učilnico",
+  "lessons.wip.title": "🚧 Lekcije v teku",
+  "lessons.wip.text": "Te strani še niso popolne. Vsebina je lahko nepopolna ali še ni pregledana.",
+  "lessons.pageNav": "Navigacija po straneh"
 };

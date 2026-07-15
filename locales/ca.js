@@ -1375,5 +1375,11 @@ export default {
   "firewall.state.disabled": "El mode amb estat està desactivat.",
   "firewall.state.col.source": "Origen",
   "firewall.state.col.dest": "Destinació",
-  "firewall.state.col.timeout": "Temps límit"
+  "firewall.state.col.timeout": "Temps límit",
+  "lessons.toc": "Taula de continguts",
+  "lessons.themeToggle": "Canviar mode clar/fosc",
+  "lessons.footer": "BeaverTracer – Simulació de xarxa per a l'aula",
+  "lessons.wip.title": "🚧 Lliçons en desenvolupament",
+  "lessons.wip.text": "Aquestes pàgines encara no estan completes. Pot faltar contingut, estar incomplet o no estar revisat.",
+  "lessons.pageNav": "Navegació de pàgina"
 };

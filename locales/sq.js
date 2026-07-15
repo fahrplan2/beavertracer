@@ -1375,5 +1375,11 @@ export default {
   "firewall.state.disabled": "Modi me gjendje është i çaktivizuar.",
   "firewall.state.col.source": "Burimi",
   "firewall.state.col.dest": "Destinacioni",
-  "firewall.state.col.timeout": "Kohëzgjatja e pritjes"
+  "firewall.state.col.timeout": "Kohëzgjatja e pritjes",
+  "lessons.toc": "Tabela e përmbajtjes",
+  "lessons.themeToggle": "Ndërro modalitetin e dritës/errësirës",
+  "lessons.footer": "BeaverTracer – Simulim rrjetash për klasën",
+  "lessons.wip.title": "🚧 Mësimet në progres",
+  "lessons.wip.text": "Këto faqe nuk janë ende të plota. Përmbajtja mund të jetë e paplote, jo e plotë, ose ende pa u rishikuar.",
+  "lessons.pageNav": "Navigimi në faqe"
 };

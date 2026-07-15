@@ -1410,5 +1410,11 @@ export default {
   "firewall.state.disabled": "Le mode avec état est désactivé.",
   "firewall.state.col.source": "Source",
   "firewall.state.col.dest": "Destination",
-  "firewall.state.col.timeout": "Délai d'expiration"
+  "firewall.state.col.timeout": "Délai d'expiration",
+  "lessons.toc": "Table des matières",
+  "lessons.themeToggle": "Basculer le mode clair/sombre",
+  "lessons.footer": "BeaverTracer – Simulation réseau pour la classe",
+  "lessons.wip.title": "🚧 Leçons en cours de développement",
+  "lessons.wip.text": "Ces pages ne sont pas encore complètes. Le contenu peut être manquant, incomplet ou non encore relecture.",
+  "lessons.pageNav": "Navigation de page"
 };

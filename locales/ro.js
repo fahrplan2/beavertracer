@@ -1376,5 +1376,11 @@ export default {
   "firewall.state.disabled": "Modul cu stare este dezactivat.",
   "firewall.state.col.source": "Sursă",
   "firewall.state.col.dest": "Destinație",
-  "firewall.state.col.timeout": "Expirare"
+  "firewall.state.col.timeout": "Expirare",
+  "lessons.toc": "Cuprins",
+  "lessons.themeToggle": "Comutare mod luminos/întunecat",
+  "lessons.footer": "BeaverTracer – Simulare de rețea pentru sala de clasă",
+  "lessons.wip.title": "🚧 Lecții în curs de elaborare",
+  "lessons.wip.text": "Aceste pagini nu sunt încă complete. Conținutul poate să lipsească, să fie incomplet sau să nu fi fost încă corectat.",
+  "lessons.pageNav": "Navigare prin pagini"
 };

@@ -5,9 +5,7 @@ import { UILib as UI } from "./lib/UILib.js";
 import { Disposer } from "../lib/Disposer.js";
 import { SimTimer, simTimer } from "../lib/SimTimer.js";
 
-//@ts-ignore Import ist raw für vite
 import startPage from "./assets/about-start.html?raw";
-//@ts-ignore Import ist raw für vite
 import beaverPage from "./assets/about-beaver.html?raw";
 import { t } from "../i18n/index.js";
 import { IPAddress } from "../net/models/IPAddress.js";
@@ -555,8 +553,8 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     // Content areas
     const iframe = /** @type {HTMLIFrameElement} */ (UI.el("iframe", {
       className: "sparktail-preview",
-      //@ts-ignore
-      sandbox: "allow-forms allow-pointer-lock allow-popups-to-escape-sandbox", // external default: no scripts
+      // external default: no scripts
+      attrs: { sandbox: "allow-forms allow-pointer-lock allow-popups-to-escape-sandbox" },
     }));
     this.previewFrame = iframe;
 

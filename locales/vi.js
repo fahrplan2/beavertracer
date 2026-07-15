@@ -1376,5 +1376,11 @@ export default {
   "firewall.state.disabled": "Chế độ có trạng thái đã bị tắt.",
   "firewall.state.col.source": "Nguồn",
   "firewall.state.col.dest": "Đích đến",
-  "firewall.state.col.timeout": "Hết thời gian"
+  "firewall.state.col.timeout": "Hết thời gian",
+  "lessons.toc": "Mục lục",
+  "lessons.themeToggle": "Bật/tắt chế độ sáng/tối",
+  "lessons.footer": "BeaverTracer – Mô phỏng mạng cho lớp học",
+  "lessons.wip.title": "🚧 Bài học đang phát triển",
+  "lessons.wip.text": "Các trang này chưa hoàn thành. Nội dung có thể còn thiếu, chưa đầy đủ hoặc chưa được kiểm tra lại.",
+  "lessons.pageNav": "Điều hướng trang"
 };

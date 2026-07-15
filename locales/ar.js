@@ -1376,5 +1376,11 @@ export default {
   "firewall.state.disabled": "وضع الحالة معطّل.",
   "firewall.state.col.source": "المصدر",
   "firewall.state.col.dest": "الوجهة",
-  "firewall.state.col.timeout": "انتهاء الصلاحية"
+  "firewall.state.col.timeout": "انتهاء الصلاحية",
+  "lessons.toc": "جدول المحتويات",
+  "lessons.themeToggle": "تبديل وضع الإضاءة/الظلام",
+  "lessons.footer": "BeaverTracer – محاكاة الشبكة للفصل الدراسي",
+  "lessons.wip.title": "🚧 دروس قيد الإنجاز",
+  "lessons.wip.text": "هذه الصفحات غير مكتملة بعد. قد يكون المحتوى غائباً أو غير مكتمل أو لم يتم مراجعته بعد.",
+  "lessons.pageNav": "ملاحة الصفحة"
 };

@@ -1376,5 +1376,11 @@ export default {
   "firewall.state.disabled": "Stateful-modus is uitgeschakeld.",
   "firewall.state.col.source": "Bron",
   "firewall.state.col.dest": "Bestemming",
-  "firewall.state.col.timeout": "Time-out"
+  "firewall.state.col.timeout": "Time-out",
+  "lessons.toc": "Inhoudsopgave",
+  "lessons.themeToggle": "Schakel licht-/donkere modus in of uit",
+  "lessons.footer": "BeaverTracer – Netwerksimulatie voor het klaslokaal",
+  "lessons.wip.title": "🚧 Lessen in voorbereiding",
+  "lessons.wip.text": "Deze pagina's zijn nog niet volledig. Inhoud kan ontbreken, onvolledig zijn of nog niet zijn nagekeken.",
+  "lessons.pageNav": "Paginanavigatie"
 };

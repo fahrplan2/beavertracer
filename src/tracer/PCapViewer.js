@@ -1,5 +1,4 @@
 // @ts-check
-// @ts-ignore
 import loadWiregasm from "@goodtools/wiregasm/dist/wiregasm";
 import { TabPicker } from "./lib/TabPicker.js";
 import { SplitGrid } from "./lib/SplitGrid.js";
@@ -191,10 +190,10 @@ export class PCapViewer {
       this.#wireUI();
 
       // wire splitters (safe even if missing)
-      //@ts-ignore
-      this.#splitGrid.wire(this.#root, this.#makeHSplitConfig());
-      //@ts-ignore
-      this.#vSplitGrid.wire(this.#root, this.#makeVSplitConfig());
+      if (this.#root) {
+        this.#splitGrid.wire(this.#root, this.#makeHSplitConfig());
+        this.#vSplitGrid.wire(this.#root, this.#makeVSplitConfig());
+      }
     }
 
     this.#renderTabs();
@@ -1080,6 +1079,7 @@ export class PCapViewer {
   }
 
   #makeVSplitConfig() {
+    /** @type {SplitConfig} */
     return {
       containerSel: ".pcapviewer-bottom",
       splitterSel: ".pcapviewer-vsplitter",
@@ -1173,8 +1173,7 @@ export class PCapViewer {
         } catch { }
       }
 
-      // @ts-ignore
-      if (ArrayBuffer.isView(x) && !(x instanceof DataView)) return Array.from(x);
+      if (ArrayBuffer.isView(x) && !(x instanceof DataView)) return Array.from(/** @type {ArrayLike<any>} */ (/** @type {unknown} */ (x)));
       if (Array.isArray(x)) {
         const out = new Array(x.length);
         seen.set(x, out);

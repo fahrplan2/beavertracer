@@ -1376,5 +1376,11 @@ export default {
   "firewall.state.disabled": "Mode berstateful dinonaktifkan.",
   "firewall.state.col.source": "Sumber",
   "firewall.state.col.dest": "Tujuan",
-  "firewall.state.col.timeout": "Waktu Habis"
+  "firewall.state.col.timeout": "Waktu Habis",
+  "lessons.toc": "Daftar isi",
+  "lessons.themeToggle": "Alihkan mode terang/gelap",
+  "lessons.footer": "BeaverTracer – Simulasi jaringan untuk kelas",
+  "lessons.wip.title": "🚧 Pelajaran sedang dikerjakan",
+  "lessons.wip.text": "Halaman ini belum lengkap. Konten mungkin hilang, tidak lengkap, atau belum diperiksa ulang.",
+  "lessons.pageNav": "Navigasi halaman"
 };

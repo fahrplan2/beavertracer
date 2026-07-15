@@ -17,8 +17,9 @@ const dicts = {};
  * @type {Record<string, () => Promise<{ default: TranslationDict }>>}
  */
 
-//@ts-ignore
-const dictModules = import.meta.glob("../../locales/*.js");
+const dictModules = /** @type {Record<string, () => Promise<{ default: TranslationDict }>>} */ (
+  import.meta.glob("../../locales/*.js")
+);
 
 /**
  * Lazy meta-only modules: imports ONLY the named export `meta`
@@ -26,7 +27,6 @@ const dictModules = import.meta.glob("../../locales/*.js");
  * @type {Record<string, () => Promise<LocaleMeta>>}
  */
 
-//@ts-ignore
 const metaModules = import.meta.glob("../../locales/*.js", { import: "meta" });
 
 /** @type {string} */

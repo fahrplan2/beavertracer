@@ -1376,5 +1376,11 @@ export default {
   "firewall.state.disabled": "Tryb stanowy jest wyłączony.",
   "firewall.state.col.source": "Źródło",
   "firewall.state.col.dest": "Miejsce przeznaczenia",
-  "firewall.state.col.timeout": "Limit czasu"
+  "firewall.state.col.timeout": "Limit czasu",
+  "lessons.toc": "Spis treści",
+  "lessons.themeToggle": "Przełącz tryb jasny/ciemny",
+  "lessons.footer": "BeaverTracer – Symulator sieci dla sal lekcyjnych",
+  "lessons.wip.title": "🚧 Lekcje w trakcie opracowania",
+  "lessons.wip.text": "Te strony nie są jeszcze kompletne. Zawartość może być niekompletna, niedokończona lub nie została jeszcze sprawdzona.",
+  "lessons.pageNav": "Nawigacja po stronie"
 };

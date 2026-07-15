@@ -155,6 +155,16 @@ const OSI_LAYER_FALLBACK = {
   "lessons.osi.l7": "Application",
 };
 
+/** Static template chrome strings (sidebar, theme toggle, footer, WIP banner, ...), keyed like the locale files. */
+const CHROME_KEYS = {
+  "lessons.toc": "Table of contents",
+  "lessons.themeToggle": "Toggle light/dark mode",
+  "lessons.footer": "BeaverTracer – Network simulation for the classroom",
+  "lessons.wip.title": "🚧 Lessons in progress",
+  "lessons.wip.text": "These pages are not yet complete. Content may be missing, incomplete, or not yet proofread.",
+  "lessons.pageNav": "Page navigation",
+};
+
 function loadLocaleInfo(localesDir) {
   /** @type {Record<string, { name: string, noLessons: string | null, quiz: { placeholder: string, evaluate: string, resultOne: string, resultOther: string }, osiLabels: string[] }>} */
   const info = {};
@@ -189,6 +199,9 @@ function loadLocaleInfo(localesDir) {
           resultOther: extractKey(src, "lessons.quiz.result.other") ?? "{correct}/{total}",
         },
         osiLabels: OSI_LAYER_KEYS.map((key) => extractKey(src, key) ?? OSI_LAYER_FALLBACK[key]),
+        chrome: Object.fromEntries(
+          Object.entries(CHROME_KEYS).map(([key, fallback]) => [key, extractKey(src, key) ?? fallback])
+        ),
       };
     } catch {
       info[code] = {
@@ -196,6 +209,7 @@ function loadLocaleInfo(localesDir) {
         noLessons: null,
         quiz: { placeholder: "…", evaluate: "Check answers", resultOne: "{correct}/{total}", resultOther: "{correct}/{total}" },
         osiLabels: OSI_LAYER_KEYS.map((key) => OSI_LAYER_FALLBACK[key]),
+        chrome: { ...CHROME_KEYS },
       };
     }
   }
@@ -395,8 +409,10 @@ function renderSidebar(tree, currentHref) {
  * @param {string} sidebar
  * @param {{ placeholder: string, evaluate: string, resultOne: string, resultOther: string }} quizI18n
  * @param {string[]} osiLabels
+ * @param {string} lang
+ * @param {Record<string, string>} chrome
  */
-function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI18n = { placeholder: "…", evaluate: "Check answers", resultOne: "{correct}/{total}", resultOther: "{correct}/{total}" }, osiLabels = OSI_LAYER_KEYS.map((key) => OSI_LAYER_FALLBACK[key])) {
+function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI18n = { placeholder: "…", evaluate: "Check answers", resultOne: "{correct}/{total}", resultOther: "{correct}/{total}" }, osiLabels = OSI_LAYER_KEYS.map((key) => OSI_LAYER_FALLBACK[key]), lang = "en", chrome = CHROME_KEYS) {
   let src = fs.readFileSync(srcFile, "utf8");
 
   // ── Pre-process :::quiz / :::evaluate blocks ──────────────────
@@ -488,7 +504,7 @@ function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI
     const items = tocHeadings
       .map((h) => `${"  ".repeat(h.level - minLevel)}<li><a href="#${h.id}">${h.text}</a></li>`)
       .join("\n");
-    const tocHtml = `<nav class="lesson-toc" aria-label="Inhaltsverzeichnis">\n<ul>\n${items}\n</ul>\n</nav>`;
+    const tocHtml = `<nav class="lesson-toc" aria-label="${escHtml(chrome["lessons.toc"])}">\n<ul>\n${items}\n</ul>\n</nav>`;
     body = body.replace(/\[\[toc\]\]/gi, tocHtml);
     body = body.replace(/<p>(\s*<nav class="lesson-toc"[\s\S]*?<\/nav>\s*)<\/p>/g, "$1");
   } else {
@@ -513,7 +529,7 @@ function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI
     navParts.push(`<a href="${nav.next.href}" class="lesson-nav-next">${nextNum}${nav.next.title} →</a>`);
   }
   if (navParts.length) {
-    body += `\n<nav class="lesson-nav" aria-label="Seitennavigation">${navParts.join("")}</nav>`;
+    body += `\n<nav class="lesson-nav" aria-label="${escHtml(chrome["lessons.pageNav"])}">${navParts.join("")}</nav>`;
   }
 
   const rawTitle = headings.find((h) => h.level === 1)?.text ?? path.basename(srcFile, ".md");
@@ -523,10 +539,17 @@ function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI
     .replace(/\{\{title\}\}/g, title)
     .replace(/\{\{body\}\}/g, body)
     .replace(/\{\{sidebar\}\}/g, sidebar)
+    .replace(/\{\{lang\}\}/g, lang)
     .replace(/\{\{quiz\.placeholder\}\}/g, escHtml(quizI18n.placeholder))
     .replace(/\{\{quiz\.evaluate\}\}/g, escHtml(quizI18n.evaluate))
     .replace(/\{\{quiz\.result\.one\}\}/g, escHtml(quizI18n.resultOne))
-    .replace(/\{\{quiz\.result\.other\}\}/g, escHtml(quizI18n.resultOther));
+    .replace(/\{\{quiz\.result\.other\}\}/g, escHtml(quizI18n.resultOther))
+    .replace(/\{\{lessons\.toc\}\}/g, escHtml(chrome["lessons.toc"]))
+    .replace(/\{\{lessons\.themeToggle\}\}/g, escHtml(chrome["lessons.themeToggle"]))
+    .replace(/\{\{lessons\.footer\}\}/g, escHtml(chrome["lessons.footer"]))
+    .replace(/\{\{lessons\.wip\.title\}\}/g, escHtml(chrome["lessons.wip.title"]))
+    .replace(/\{\{lessons\.wip\.text\}\}/g, escHtml(chrome["lessons.wip.text"]))
+    .replace(/\{\{lessons\.pageNav\}\}/g, escHtml(chrome["lessons.pageNav"]));
 }
 
 /**
@@ -684,7 +707,9 @@ function buildLessons(root) {
             nav,
             sidebar,
             (localeInfo[lang] ?? localeInfo["en"])?.quiz,
-            (localeInfo[lang] ?? localeInfo["en"])?.osiLabels
+            (localeInfo[lang] ?? localeInfo["en"])?.osiLabels,
+            lang,
+            (localeInfo[lang] ?? localeInfo["en"])?.chrome
           ),
           "utf8"
         );
