@@ -86,7 +86,18 @@ export class VirtualFileSystem {
     this.mkdir("/etc/certs/trusted", { recursive: true });
     this.mkdir("/home", { recursive: true });
     this.mkdir("/bin", { recursive: true });
-    this.writeFile("/home/notes.txt", "hello vfs\n");
+    this.writeFile("/home/notes.txt",
+      `Welcome to BeaverOS!
+
+This file lives in your home directory - feel free to edit or delete it.
+It's also a handy scratch pad for trying out the terminal, e.g.:
+
+  cat notes.txt | grep BeaverOS
+  cat notes.txt | wc -l
+  cat notes.txt | tail -n 3
+
+Have fun exploring the network!
+`);
 
     this.mkdir("/var/www", { recursive: true });
     if (!this.exists("/var/www/index.html")) {
