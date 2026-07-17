@@ -59,6 +59,7 @@ import { makeDraggable } from "../lib/dragabble.js";
  *   minB: number;
  *   axis: "x" | "y";
  *   cursor: "col-resize" | "row-resize";
+ *   defaultRatio?: number;
  *   storageKey: string;
  *   getRatio: () => number|null;
  *   setRatio: (v: number|null) => void;
@@ -1058,8 +1059,8 @@ export class PCapViewer {
   // Splitters (generic)
   // ======================================================================
 
+  /** @returns {SplitConfig} */
   #makeHSplitConfig() {
-    /** @type {SplitConfig} */
     return {
       containerSel: ".pcapviewer-layout",
       splitterSel: ".pcapviewer-splitter",
@@ -1072,14 +1073,14 @@ export class PCapViewer {
       cursor: "row-resize",
       storageKey: "pcapviewer.splitRatio.v1",
       getRatio: () => this.#hSplitRatio,
-      setRatio: (/** @type {number} */ v) => { this.#hSplitRatio = v; },
+      setRatio: (/** @type {number|null} */ v) => { this.#hSplitRatio = v; },
       getAbort: () => this.#hSplitAbort,
       setAbort: (/** @type {*} */ ac) => { this.#hSplitAbort = ac; },
     };
   }
 
+  /** @returns {SplitConfig} */
   #makeVSplitConfig() {
-    /** @type {SplitConfig} */
     return {
       containerSel: ".pcapviewer-bottom",
       splitterSel: ".pcapviewer-vsplitter",
@@ -1092,7 +1093,7 @@ export class PCapViewer {
       cursor: "col-resize",
       storageKey: "pcapviewer.vSplitRatio.v1",
       getRatio: () => this.#vSplitRatio,
-      setRatio: (/** @type {number} */ v) => { this.#vSplitRatio = v; },
+      setRatio: (/** @type {number|null} */ v) => { this.#vSplitRatio = v; },
       getAbort: () => this.#vSplitAbort,
       setAbort: (/** @type {*} */ ac) => { this.#vSplitAbort = ac; },
     };

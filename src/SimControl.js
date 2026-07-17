@@ -237,6 +237,10 @@ export class SimControl {
     /** @type {boolean} */
     embedded = false;
 
+    /** Allows entering edit mode (and saving) while embedded. No effect unless `embedded` is set. */
+    /** @type {boolean} */
+    editable = false;
+
     // ── Constructor & lifecycle ───────────────────────────────────────────────
 
     /** @type {boolean} */
@@ -244,14 +248,15 @@ export class SimControl {
 
     /**
      * @param {HTMLElement|null} root
-     * @param {{ embedded?: boolean, debug?: boolean }} [opts]
+     * @param {{ embedded?: boolean, editable?: boolean, debug?: boolean }} [opts]
      */
     constructor(root, opts = {}) {
         this.root = root;
         this.embedded = opts.embedded ?? false;
+        this.editable = opts.editable ?? false;
         this.debug = opts.debug ?? false;
 
-        if (this.embedded) {
+        if (this.embedded && !this.editable) {
             this.mode = "run";
         }
 
@@ -270,7 +275,7 @@ export class SimControl {
         this.scheduleNextStep();
         this._startRafLoop();
 
-        if (!this.embedded && !isTauri()) {
+        if ((!this.embedded || this.editable) && !isTauri()) {
             window.addEventListener("beforeunload", this._onBeforeUnload);
         }
 
@@ -916,7 +921,7 @@ export class SimControl {
             }
         }
 
-        if (this.embedded) {
+        if (this.embedded && !this.editable) {
             this.isPaused = false;
             this.mode = "run";
             this._invalidateUI();
@@ -937,7 +942,7 @@ export class SimControl {
         for (const el of this._objEls.values()) el.remove();
         this._objEls.clear();
 
-        if (this.embedded) {
+        if (this.embedded && !this.editable) {
             this.isPaused = false;
             this.mode = "run";
             this._invalidateUI();
@@ -1015,12 +1020,12 @@ export class SimControl {
         const gMode = UILib.buttongroup(t("sim.mode"), toolbar);
         gMode.dataset.group = "mode";
 
-        if (!this.embedded) {
+        if (!this.embedded || this.editable) {
             const btnEdit = UILib.iconbutton({
                 label: t("sim.edit"),
                 icon: "fa-pencil",
                 onClick: () => {
-                    if (window.location.pathname !== "/") {
+                    if (!this.embedded && window.location.pathname !== "/") {
                         history.pushState({}, "", "/");
                     }
                     this._enterEditMode();
@@ -1037,7 +1042,7 @@ export class SimControl {
                 if (!this.embedded && window.location.pathname !== "/") {
                     history.pushState({}, "", "/");
                 }
-                if (!this.embedded && this.mode === "edit") this._resetEditTools();
+                if (this.mode === "edit") this._resetEditTools();
                 if (this.mode === "trace") {
                     this._leaveTraceMode();
                     return;
@@ -1066,7 +1071,7 @@ export class SimControl {
                 if (!this.embedded && window.location.pathname !== "/") {
                     history.pushState({}, "", "/");
                 }
-                if (!this.embedded && this.mode === "edit") this._resetEditTools();
+                if (this.mode === "edit") this._resetEditTools();
                 this._enterTraceMode();
             },
         });
@@ -1121,35 +1126,37 @@ export class SimControl {
         resetBtn.dataset.role = "reset";
         gSpeeds.appendChild(resetBtn);
 
-        if (!this.embedded) {
+        if (!this.embedded || this.editable) {
             //******** PROJECT ***********/
             addSeparator("sep-project");
             const gProject = UILib.buttongroup(t("sim.project"), toolbar);
             gProject.dataset.group = "project";
 
-            // New
-            const btnNew = UILib.iconbutton({
-                label: t("sim.new"),
-                icon: "fa-file",
-                onClick: async () => {
-                    if (this._isDirty && !await SimDialog.confirm(t("sim.discardandnewwarning"))) return;
-                    this.new();
-                },
-            });
-            btnNew.dataset.role = "project-new";
-            gProject.appendChild(btnNew);
+            if (!this.embedded) {
+                // New
+                const btnNew = UILib.iconbutton({
+                    label: t("sim.new"),
+                    icon: "fa-file",
+                    onClick: async () => {
+                        if (this._isDirty && !await SimDialog.confirm(t("sim.discardandnewwarning"))) return;
+                        this.new();
+                    },
+                });
+                btnNew.dataset.role = "project-new";
+                gProject.appendChild(btnNew);
 
-            // Load
-            const btnLoad = UILib.iconbutton({
-                label: t("sim.load"),
-                icon: "fa-file-arrow-up",
-                onClick: async () => {
-                    if (this._isDirty && !await SimDialog.confirm(t("sim.discardandloadwarning"))) return;
-                    this.open();
-                },
-            });
-            btnLoad.dataset.role = "project-load";
-            gProject.appendChild(btnLoad);
+                // Load
+                const btnLoad = UILib.iconbutton({
+                    label: t("sim.load"),
+                    icon: "fa-file-arrow-up",
+                    onClick: async () => {
+                        if (this._isDirty && !await SimDialog.confirm(t("sim.discardandloadwarning"))) return;
+                        this.open();
+                    },
+                });
+                btnLoad.dataset.role = "project-load";
+                gProject.appendChild(btnLoad);
+            }
 
             // Save
             const btnSave = UILib.iconbutton({
@@ -1286,6 +1293,7 @@ export class SimControl {
                 onClick: () => {
                     const url = new URL(window.location.href);
                     url.searchParams.delete("embed");
+                    url.searchParams.delete("editable");
                     window.open(url.toString(), "_blank");
                 },
             });

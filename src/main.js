@@ -36,8 +36,9 @@ initLocale().then(async () => {
     const simRoot = /** @type {HTMLElement} */ (document.getElementById("simcontrol"));
     const params = new URLSearchParams(window.location.search);
     const embedded = params.get("embed") === "1";
+    const editable = params.get("editable") === "1";
     const debug = params.get("debug") === "1";
-    const sim = new SimControl(simRoot, { embedded, debug });
+    const sim = new SimControl(simRoot, { embedded, editable, debug });
 
     if (_simParam) {
         const scene = await resolveStartupSim();
