@@ -36,6 +36,16 @@ import { nc } from "./net/nc.js";
 import { nmap } from "./net/nmap.js";
 import { beaver } from "./misc/beaver.js";
 
+import { grep } from "./text/grep.js";
+import { head } from "./text/head.js";
+import { tail } from "./text/tail.js";
+import { wc } from "./text/wc.js";
+import { sort } from "./text/sort.js";
+import { uniq } from "./text/uniq.js";
+import { cut } from "./text/cut.js";
+import { tr } from "./text/tr.js";
+import { tee } from "./text/tee.js";
+
 /**
  * @param {import("../../TerminalApp.js").TerminalApp} app
  */
@@ -74,6 +84,16 @@ export function registerBuiltins(app) {
         nc,
         nmap,
         beaver,
+
+        grep,
+        head,
+        tail,
+        wc,
+        sort,
+        uniq,
+        cut,
+        tr,
+        tee,
     ];
 
     for (const c of list) app.commands.set(c.name, c);

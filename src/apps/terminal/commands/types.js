@@ -6,6 +6,20 @@
 
 /**
  * @typedef {{
+ *   print: (text?: string) => void,
+ *   println: (text?: string) => void,
+ * }} Writer
+ */
+
+/**
+ * @typedef {{
+ *   readLine: () => Promise<string|null>,
+ *   readAll: () => Promise<string>,
+ * }} Reader
+ */
+
+/**
+ * @typedef {{
  *   app: TerminalApp,
  *   os: any,
  *   pid: number,
@@ -13,6 +27,9 @@
  *   cwd: string,
  *   setCwd: (cwd: string) => void,
  *   println: (text?: string) => void,
+ *   stdout: Writer,
+ *   stderr: Writer,
+ *   stdin: Reader | null,
  *   clear: () => void,
  *   terminate: () => void,
  *   signal: AbortSignal,
@@ -24,7 +41,7 @@
  * @typedef {{
  *   name: string,
  *   hidden?: boolean,
- *   category?: "net" | "fs" | "misc",
+ *   category?: "net" | "fs" | "misc" | "text",
  *   tldr?: {
  *     descKey: string,
  *     examples: Array<{ labelKey: string, cmd: string }>,

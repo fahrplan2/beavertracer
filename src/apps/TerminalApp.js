@@ -4,6 +4,8 @@ import { GenericProcess } from "./GenericProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
 import { Disposer } from "../lib/Disposer.js";
 import { registerBuiltins } from "./terminal/commands/index.js";
+import { parsePipeline } from "./terminal/Parser.js";
+import { runPipeline } from "./terminal/Pipeline.js";
 import { t } from "../i18n/index.js";
 
 
@@ -63,6 +65,12 @@ export class TerminalApp extends GenericProcess {
 
     /** @type {string[]} */
     scrollback = [];
+
+    /** @type {string[]} per-cell color tags parallel to `screen` ("0"=normal, "1"=stderr) */
+    screenColor = [];
+
+    /** @type {string[]} per-cell color tags parallel to `scrollback` */
+    scrollbackColor = [];
 
     /** Output cursor (where the next output character would go) */
     /** @type {number} */
@@ -284,24 +292,34 @@ export class TerminalApp extends GenericProcess {
 
     _resetScreen() {
         this.scrollback = [];
+        this.scrollbackColor = [];
         this.screen = Array.from({ length: this.rows }, () => " ".repeat(this.cols));
+        this.screenColor = Array.from({ length: this.rows }, () => "0".repeat(this.cols));
         this.outX = 0;
         this.outY = 0;
     }
 
-    /** @param {string} line */
-    _pushScrollback(line) {
+    /**
+     * @param {string} line
+     * @param {string} color
+     */
+    _pushScrollback(line, color) {
         this.scrollback.push(line);
+        this.scrollbackColor.push(color);
         if (this.scrollback.length > this.scrollbackLimit) {
-            this.scrollback.splice(0, this.scrollback.length - this.scrollbackLimit);
+            const excess = this.scrollback.length - this.scrollbackLimit;
+            this.scrollback.splice(0, excess);
+            this.scrollbackColor.splice(0, excess);
         }
     }
 
     /** Scroll visible screen up by 1 line. Top line goes to scrollback. */
     _scrollUp() {
-        this._pushScrollback(this.screen[0]);
+        this._pushScrollback(this.screen[0], this.screenColor[0]);
         this.screen.shift();
+        this.screenColor.shift();
         this.screen.push(" ".repeat(this.cols));
+        this.screenColor.push("0".repeat(this.cols));
         if (this.outY > 0) this.outY--;
     }
 
@@ -312,14 +330,15 @@ export class TerminalApp extends GenericProcess {
     /**
      * Write text (no implicit newline). Supports \n and \r. Wraps at word boundaries.
      * @param {string} text
+     * @param {"0"|"1"} color "0" = normal (stdout), "1" = stderr
      */
-    print(text = "") {
+    print(text = "", color = "0") {
         let pos = 0;
         while (pos < text.length) {
             const ch = text[pos];
             if (ch === "\n") { this._newline(); pos++; continue; }
             if (ch === "\r") { this.outX = 0;   pos++; continue; }
-            if (ch === " ")  { this._putChar(" "); pos++; continue; }
+            if (ch === " ")  { this._putChar(" ", color); pos++; continue; }
 
             // find end of word
             let end = pos;
@@ -329,7 +348,7 @@ export class TerminalApp extends GenericProcess {
             const wordLen = end - pos;
             if (this.outX > 0 && this.outX + wordLen > this.cols) this._newline();
 
-            for (let i = pos; i < end; i++) this._putChar(text[i]);
+            for (let i = pos; i < end; i++) this._putChar(text[i], color);
             pos = end;
         }
         this._renderScreen();
@@ -338,9 +357,10 @@ export class TerminalApp extends GenericProcess {
     /**
      * Print line with newline.
      * @param {string} text
+     * @param {"0"|"1"} color "0" = normal (stdout), "1" = stderr
      */
-    println(text = "") {
-        this.print(text + "\n");
+    println(text = "", color = "0") {
+        this.print(text + "\n", color);
     }
 
     _newline() {
@@ -352,8 +372,11 @@ export class TerminalApp extends GenericProcess {
         }
     }
 
-    /** @param {string} ch */
-    _putChar(ch) {
+    /**
+     * @param {string} ch
+     * @param {"0"|"1"} color
+     */
+    _putChar(ch, color = "0") {
         // soft wrap
         if (this.outX >= this.cols) {
             this._newline();
@@ -366,6 +389,9 @@ export class TerminalApp extends GenericProcess {
 
         const row = this.screen[this.outY];
         this.screen[this.outY] = row.slice(0, this.outX) + ch + row.slice(this.outX + 1);
+
+        const colorRow = this.screenColor[this.outY];
+        this.screenColor[this.outY] = colorRow.slice(0, this.outX) + color + colorRow.slice(this.outX + 1);
 
         this.outX++;
         // next char will wrap if needed
@@ -599,10 +625,12 @@ export class TerminalApp extends GenericProcess {
         // Clone base screen
         /** @type {string[]} */
         const tmp = this.screen.slice();
+        /** @type {string[]} */
+        const tmpColor = this.screenColor.slice();
 
         // If busy and not in raw mode: just show output buffer (no overlay cursor)
         if (this.busy && !this.rawInputHandler) {
-            this.outEl.textContent = tmp.join("\n");
+            this._paintRows(tmp, tmpColor);
             return;
         }
 
@@ -616,7 +644,9 @@ export class TerminalApp extends GenericProcess {
 
         const visScrollUp = () => {
             tmp.shift();
+            tmpColor.shift();
             tmp.push(" ".repeat(this.cols));
+            tmpColor.push("0".repeat(this.cols));
             y = Math.max(0, y - 1);
         };
 
@@ -637,7 +667,7 @@ export class TerminalApp extends GenericProcess {
             }
         };
 
-        // Render all chars
+        // Render all chars (prompt + input line always render as normal color)
         for (let i = 0; i < full.length; i++) {
             // If cursor is *before* this character, it sits at current x/y
             if (i === cursorPos) {
@@ -649,6 +679,7 @@ export class TerminalApp extends GenericProcess {
 
             const ch = full[i];
             tmp[y] = tmp[y].slice(0, x) + ch + tmp[y].slice(x + 1);
+            tmpColor[y] = tmpColor[y].slice(0, x) + "0" + tmpColor[y].slice(x + 1);
             x++;
         }
 
@@ -679,9 +710,52 @@ export class TerminalApp extends GenericProcess {
         }
         if (this.cursorVisible) {
             tmp[cursorY] = tmp[cursorY].slice(0, cursorX) + "▉" + tmp[cursorY].slice(cursorX + 1);
+            tmpColor[cursorY] = tmpColor[cursorY].slice(0, cursorX) + "0" + tmpColor[cursorY].slice(cursorX + 1);
         }
 
-        this.outEl.textContent = tmp.join("\n");
+        this._paintRows(tmp, tmpColor);
+    }
+
+    /**
+     * Renders text/color row grids into `outEl` as DOM nodes, grouping
+     * consecutive same-color runs into spans so stderr (color "1") can be
+     * styled without touching the plain-text (color "0") fast path.
+     * Uses only createTextNode/createElement (no innerHTML) - no escaping
+     * concerns, and copy/paste via getSelection() keeps working as before.
+     * @param {string[]} rows
+     * @param {string[]} colorRows
+     */
+    _paintRows(rows, colorRows) {
+        if (!this.outEl) return;
+        const frag = document.createDocumentFragment();
+
+        for (let y = 0; y < rows.length; y++) {
+            if (y > 0) frag.appendChild(document.createTextNode("\n"));
+
+            const row = rows[y];
+            const colorRow = colorRows[y] ?? "0".repeat(row.length);
+
+            let runStart = 0;
+            while (runStart < row.length) {
+                const c = colorRow[runStart];
+                let runEnd = runStart + 1;
+                while (runEnd < row.length && colorRow[runEnd] === c) runEnd++;
+
+                const text = row.slice(runStart, runEnd);
+                if (c === "1") {
+                    const span = document.createElement("span");
+                    span.className = "term-stderr";
+                    span.textContent = text;
+                    frag.appendChild(span);
+                } else {
+                    frag.appendChild(document.createTextNode(text));
+                }
+
+                runStart = runEnd;
+            }
+        }
+
+        this.outEl.replaceChildren(frag);
     }
 
 
@@ -696,80 +770,32 @@ export class TerminalApp extends GenericProcess {
         const trimmed = line.trim();
         if (trimmed.length === 0) return;
 
-        const { cmd, args } = this._parse(trimmed);
+        const stages = parsePipeline(trimmed);
+        await runPipeline(this, stages, (overrides) => this._buildShellContext(overrides));
+    }
 
-        const ctx = /** @type {ShellContext} */ ({
+    /**
+     * Builds the base ShellContext shared by every stage of a pipeline.
+     * `overrides` supplies the per-stage stdout/stderr/stdin/println wiring.
+     * @param {Partial<ShellContext>} overrides
+     * @returns {ShellContext}
+     */
+    _buildShellContext(overrides) {
+        return /** @type {ShellContext} */ ({
             app: this,
             os: this.os,
             pid: this.pid,
             env: this.env,
             cwd: this.cwd,
             setCwd: (cwd) => { this.cwd = cwd; },
-            println: (t2) => this.println(t2 ?? ""),
             clear: () => this._clear(),
             terminate: () => this.terminate(),
 
             signal: this.currentAbort?.signal ?? new AbortController().signal,
             onInterrupt: (fn) => { this.interruptHandlers.push(fn); },
+
+            ...overrides,
         });
-
-        const entry = this.commands.get(cmd);
-        if (!entry) {
-            ctx.println(t("app.terminal.err.commandNotFound", { cmd }));
-            return;
-        }
-
-        try {
-            const res = await entry.run(ctx, args);
-            if (typeof res === "string" && res.length) ctx.println(res);
-        } catch (e) {
-            // Ignore abort “errors”
-            if (ctx.signal.aborted) return;
-
-            ctx.println(t("app.terminal.err.errorPrefix", { msg: (e instanceof Error ? e.message : String(e)) }));
-        }
-
-    }
-
-    /**
-     * Very small parser: supports quotes "like this" and 'like this'. No escapes.
-     * @param {string} line
-     */
-    _parse(line) {
-        /** @type {string[]} */
-        const tokens = [];
-        let cur = "";
-        let quote = /** @type {null | "'" | '"'} */ (null);
-
-        for (let i = 0; i < line.length; i++) {
-            const ch = line[i];
-
-            if (quote) {
-                if (ch === quote) quote = null;
-                else cur += ch;
-                continue;
-            }
-
-            if (ch === "'" || ch === '"') {
-                quote = ch;
-                continue;
-            }
-
-            if (/\s/.test(ch)) {
-                if (cur.length) {
-                    tokens.push(cur);
-                    cur = "";
-                }
-            } else {
-                cur += ch;
-            }
-        }
-
-        if (cur.length) tokens.push(cur);
-
-        const cmd = tokens[0] ?? "";
-        const args = tokens.slice(1);
-        return { cmd, args };
     }
 
     // ---------------------------

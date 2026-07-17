@@ -14,7 +14,7 @@
   },
   "name": "beavertracer",
   "description": "",
-  "version": "0.1.25-dev.74.9055b2a",
+  "version": "0.1.25-dev.75.5a07861",
   "main": "electron/main.cjs",
   "repository": {
     "type": "git",
@@ -46,5 +46,8 @@
     "hack-font": "^3.3.0",
     "markdown-it-container": "^4.0.0",
     "recast": "^0.23.11"
+  },
+  "allowScripts": {
+    "fsevents@2.3.3": true
   }
 }
