@@ -1375,5 +1375,11 @@ export default {
   "firewall.state.disabled": "有狀態模式已停用。",
   "firewall.state.col.source": "來源",
   "firewall.state.col.dest": "目的地",
-  "firewall.state.col.timeout": "逾時"
+  "firewall.state.col.timeout": "逾時",
+  "lessons.toc": "目錄",
+  "lessons.themeToggle": "切換淺色/深色模式",
+  "lessons.footer": "BeaverTracer – 課堂網路模擬",
+  "lessons.wip.title": "🚧 課程進行中",
+  "lessons.wip.text": "這些頁面尚未完成。內容可能不完整、未完成或尚未校對。",
+  "lessons.pageNav": "頁面導覽"
 };

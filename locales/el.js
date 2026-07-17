@@ -1376,5 +1376,11 @@ export default {
   "firewall.state.disabled": "Η λειτουργία με κατάσταση είναι απενεργοποιημένη.",
   "firewall.state.col.source": "Πηγή",
   "firewall.state.col.dest": "Προορισμός",
-  "firewall.state.col.timeout": "Χρόνος λήξης"
+  "firewall.state.col.timeout": "Χρόνος λήξης",
+  "lessons.toc": "Περιεχόμενα",
+  "lessons.themeToggle": "Εναλλαγή λειτουργίας φωτεινή/σκοτεινή",
+  "lessons.footer": "BeaverTracer – Προσομοίωση δικτύου για την τάξη",
+  "lessons.wip.title": "🚧 Μαθήματα σε εξέλιξη",
+  "lessons.wip.text": "Αυτές οι σελίδες δεν είναι ακόμη ολοκληρωμένες. Το περιεχόμενο μπορεί να λείπει, να είναι ημιτελές ή να μην έχει ακόμη διορθωθεί.",
+  "lessons.pageNav": "Πλοήγηση σελίδας"
 };

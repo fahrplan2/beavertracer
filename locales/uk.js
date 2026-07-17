@@ -1376,5 +1376,11 @@ export default {
   "firewall.state.disabled": "Режим зі станом вимкнено.",
   "firewall.state.col.source": "Джерело",
   "firewall.state.col.dest": "Призначення",
-  "firewall.state.col.timeout": "Час очікування"
+  "firewall.state.col.timeout": "Час очікування",
+  "lessons.toc": "Зміст",
+  "lessons.themeToggle": "Перемикання світлого/темного режиму",
+  "lessons.footer": "BeaverTracer – Мережева симуляція для класу",
+  "lessons.wip.title": "🚧 Уроки в розробці",
+  "lessons.wip.text": "Ці сторінки ще не завершені. Вміст може бути неповним, незавершеним або ще не перевіреним.",
+  "lessons.pageNav": "Навігація по сторінці"
 };

@@ -1376,5 +1376,11 @@ export default {
   "firewall.state.disabled": "Режим отслеживания состояния отключен.",
   "firewall.state.col.source": "Источник",
   "firewall.state.col.dest": "Назначение",
-  "firewall.state.col.timeout": "Время ожидания"
+  "firewall.state.col.timeout": "Время ожидания",
+  "lessons.toc": "Оглавление",
+  "lessons.themeToggle": "Переключить светлый/тёмный режим",
+  "lessons.footer": "BeaverTracer – Сетевая симуляция для классов",
+  "lessons.wip.title": "🚧 Уроки в разработке",
+  "lessons.wip.text": "Эти страницы ещё не готовы. Содержание может быть неполным, незавершённым или непроверенным.",
+  "lessons.pageNav": "Навигация по страницам"
 };

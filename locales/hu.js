@@ -1375,5 +1375,11 @@ export default {
   "firewall.state.disabled": "Az állapotfüggő mód le van tiltva.",
   "firewall.state.col.source": "Forrás",
   "firewall.state.col.dest": "Cél",
-  "firewall.state.col.timeout": "Időtúllépés"
+  "firewall.state.col.timeout": "Időtúllépés",
+  "lessons.toc": "Tartalomjegyzék",
+  "lessons.themeToggle": "Világos/sötét mód váltása",
+  "lessons.footer": "BeaverTracer – Hálózati szimuláció az osztályteremben",
+  "lessons.wip.title": "🚧 Fejlesztés alatt álló leckék",
+  "lessons.wip.text": "Ezek az oldalak még nem teljesek. Előfordulhat, hogy tartalom hiányzik, hiányos vagy még nem lett lektorálva.",
+  "lessons.pageNav": "Oldal navigáció"
 };

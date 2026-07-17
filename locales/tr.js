@@ -1376,5 +1376,11 @@ export default {
   "firewall.state.disabled": "Durum İzlemeli mod devre dışıdır.",
   "firewall.state.col.source": "Kaynak",
   "firewall.state.col.dest": "Hedef",
-  "firewall.state.col.timeout": "Zaman Aşımı"
+  "firewall.state.col.timeout": "Zaman Aşımı",
+  "lessons.toc": "İçindekiler",
+  "lessons.themeToggle": "Açık/koyu modu aç/kapat",
+  "lessons.footer": "BeaverTracer – Sınıf için ağ simülasyonu",
+  "lessons.wip.title": "🚧 Devam eden dersler",
+  "lessons.wip.text": "Bu sayfalar henüz tamamlanmamıştır. İçerik eksik, eksik veya henüz gözden geçirilmemiş olabilir.",
+  "lessons.pageNav": "Sayfa navigasyonu"
 };

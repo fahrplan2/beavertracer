@@ -1,3 +1,7 @@
+## Version 0.1.27
+
+- minor bug fixes and features
+
 ## Version 0.1.26
 
 - added statefull firewall behavior

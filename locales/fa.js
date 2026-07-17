@@ -1376,5 +1376,11 @@ export default {
   "firewall.state.disabled": "حالت با وضعیت غیرفعال است.",
   "firewall.state.col.source": "منبع",
   "firewall.state.col.dest": "مقصد",
-  "firewall.state.col.timeout": "زمان انتظار"
+  "firewall.state.col.timeout": "زمان انتظار",
+  "lessons.toc": "فهرست مطالب",
+  "lessons.themeToggle": "تبدیل حالت روشن/تاریک",
+  "lessons.footer": "BeaverTracer – شبیه‌سازی شبکه برای کلاس درس",
+  "lessons.wip.title": "🚧 درس‌های در حال تکمیل",
+  "lessons.wip.text": "این صفحات هنوز کامل نشده‌اند. ممکن است محتوا ناقص، نامکمل یا هنوز بررسی‌شده نباشد.",
+  "lessons.pageNav": "ناوبری صفحه"
 };

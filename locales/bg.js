@@ -1376,5 +1376,11 @@ export default {
   "firewall.state.disabled": "Режимът със състояние е деактивиран.",
   "firewall.state.col.source": "Източник",
   "firewall.state.col.dest": "Местоназначение",
-  "firewall.state.col.timeout": "Време на изтичане"
+  "firewall.state.col.timeout": "Време на изтичане",
+  "lessons.toc": "Съдържание",
+  "lessons.themeToggle": "Превключване между светъл и тъмен режим",
+  "lessons.footer": "BeaverTracer – Мрежова симулация за класната стая",
+  "lessons.wip.title": "🚧 Уроци в процес на разработка",
+  "lessons.wip.text": "Тези страници все още не са завършени. Съдържанието може да липсва, да е непълно или да не е редактирано.",
+  "lessons.pageNav": "Навигация по страниците"
 };

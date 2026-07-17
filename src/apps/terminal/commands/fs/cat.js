@@ -12,10 +12,14 @@ export const cat = {
       { labelKey: "app.terminal.commands.cat.tldr.ex.basic", cmd: "cat /etc/hosts" },
     ],
   },
-  run: (ctx, args) => {
+  run: async (ctx, args) => {
     const fs = ctx.os.fs;
     if (!fs) return t("app.terminal.commands.cat.err.noFilesystem");
-    if (!args[0]) return t("app.terminal.commands.cat.usage", { cmd: "cat" });
+
+    if (!args[0]) {
+      if (!ctx.stdin) return t("app.terminal.commands.cat.usage", { cmd: "cat" });
+      return ctx.stdin.readAll();
+    }
 
     const abs = fs.resolve(ctx.cwd, args[0]);
     return fs.readFile(abs);

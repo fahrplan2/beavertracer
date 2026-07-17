@@ -59,6 +59,7 @@ import { makeDraggable } from "../lib/dragabble.js";
  *   minB: number;
  *   axis: "x" | "y";
  *   cursor: "col-resize" | "row-resize";
+ *   defaultRatio?: number;
  *   storageKey: string;
  *   getRatio: () => number|null;
  *   setRatio: (v: number|null) => void;
@@ -66,6 +67,45 @@ import { makeDraggable } from "../lib/dragabble.js";
  *   setAbort: (ac: AbortController|null) => void;
  * }} SplitConfig
  */
+
+/**
+ * Best-guess OSI layer (1–7) per top-level Wireshark dissector filter name.
+ * BeaverTracer only ever emits traffic from its own closed protocol set (src/net/pdu,
+ * src/apps), so this table doesn't need to cover arbitrary real-world captures.
+ *
+ * Several protocols don't map 1:1 onto OSI — these are deliberate judgment calls,
+ * not bugs:
+ *  - ARP, ICMPv4/v6, IGMP, GRE → Vermittlungsschicht (L3), matching how the project's
+ *    own protocol-support reference (lessons/de/99-protokollunterstuetzung.md) already
+ *    groups them, even though ARP has no IP header and ICMP/IGMP ride as an IP payload.
+ *  - TLS → Anwendungsschicht (L7), not the "textbook" L6 (Darstellungsschicht) — this
+ *    project's own docs group it under Anwendungsschicht, and in practice almost
+ *    nothing implements a real presentation layer.
+ *  - Routing protocols follow one consistent rule: encapsulated directly in IP (no L4
+ *    header) → L3 (OSPF, VRRP); riding inside TCP/UDP like any other app → L7 (BGP, RIP,
+ *    RIPng). This produces the slightly surprising but structurally honest result that
+ *    OSPF and BGP land on different layers despite both being "routing protocols".
+ *  - "data" (undissected payload — MCHAT, echo servers, raw TCP) is Anwendungsschicht
+ *    (L7) by the same rule as above: whatever's left after all lower-layer processing
+ *    is, by definition, application data.
+ * @type {Record<string, number>}
+ */
+const OSI_LAYER_BY_FILTER = {
+  // Bitübertragungsschicht (L1) — Wireshark's synthetic capture-metadata node
+  // (bytes on wire, capture timestamp) stands in for the physical transmission.
+  frame: 1,
+  // Sicherungsschicht (L2)
+  eth: 2, vlan: 2, stp: 2, lldp: 2, lacp: 2,
+  // Vermittlungsschicht (L3)
+  ip: 3, ipv4: 3, ipv6: 3, arp: 3, icmp: 3, icmpv6: 3, igmp: 3, gre: 3,
+  ospf: 3, vrrp: 3,
+  // Transportschicht (L4)
+  tcp: 4, udp: 4,
+  // Anwendungsschicht (L7)
+  dns: 7, dhcp: 7, bootp: 7, dhcpv6: 7, http: 7, tls: 7, ssl: 7,
+  smtp: 7, pop: 7, imap: 7, irc: 7, bitcoin: 7, rip: 7, ripng: 7, bgp: 7,
+  data: 7,
+};
 
 export class PCapViewer {
   /** @type {HTMLElement|null} */ #mount;
@@ -908,9 +948,15 @@ export class PCapViewer {
       const length = Number(n.length ?? 0);
       const ds = Number(n.data_source_idx ?? 0);
 
+      // OSI-Layer-Badges: noch nicht allgemein freigegeben, nur mit ?debug=1 sichtbar.
+      const osiLayer = (depth === 0 && this.#opt.simControl?.debug)
+        ? OSI_LAYER_BY_FILTER[String(n.filter ?? "").toLowerCase()]
+        : undefined;
+
       row.className = "pcapviewer-tree-node" +
         (hasKids ? "" : " pcapviewer-tree-leaf") +
-        (depth === 0 ? " pcapviewer-tree-proto" : "");
+        (depth === 0 ? " pcapviewer-tree-proto" : "") +
+        (osiLayer ? ` osi-l${osiLayer}` : "");
 
       const twisty = document.createElement("div");
       twisty.className = "pcapviewer-tree-twisty";
@@ -922,7 +968,18 @@ export class PCapViewer {
       label.textContent = String(n.label ?? n.text ?? n.name ?? t("pcap.tree.node"));
 
       row.appendChild(twisty);
-      row.appendChild(label);
+
+      const content = document.createElement("div");
+      content.className = "pcapviewer-tree-content";
+      content.appendChild(label);
+      if (osiLayer) {
+        const badge = document.createElement("span");
+        badge.className = "pcapviewer-osi-badge";
+        badge.textContent = String(osiLayer);
+        badge.title = t("pcap.tree.osiLayer", { n: osiLayer, name: t(`lessons.osi.l${osiLayer}`) });
+        content.appendChild(badge);
+      }
+      row.appendChild(content);
       li.appendChild(row);
 
       if (hasKids) {
@@ -1002,8 +1059,8 @@ export class PCapViewer {
   // Splitters (generic)
   // ======================================================================
 
+  /** @returns {SplitConfig} */
   #makeHSplitConfig() {
-    /** @type {SplitConfig} */
     return {
       containerSel: ".pcapviewer-layout",
       splitterSel: ".pcapviewer-splitter",
@@ -1016,14 +1073,14 @@ export class PCapViewer {
       cursor: "row-resize",
       storageKey: "pcapviewer.splitRatio.v1",
       getRatio: () => this.#hSplitRatio,
-      setRatio: (/** @type {number} */ v) => { this.#hSplitRatio = v; },
+      setRatio: (/** @type {number|null} */ v) => { this.#hSplitRatio = v; },
       getAbort: () => this.#hSplitAbort,
       setAbort: (/** @type {*} */ ac) => { this.#hSplitAbort = ac; },
     };
   }
 
+  /** @returns {SplitConfig} */
   #makeVSplitConfig() {
-    /** @type {SplitConfig} */
     return {
       containerSel: ".pcapviewer-bottom",
       splitterSel: ".pcapviewer-vsplitter",
@@ -1036,7 +1093,7 @@ export class PCapViewer {
       cursor: "col-resize",
       storageKey: "pcapviewer.vSplitRatio.v1",
       getRatio: () => this.#vSplitRatio,
-      setRatio: (/** @type {number} */ v) => { this.#vSplitRatio = v; },
+      setRatio: (/** @type {number|null} */ v) => { this.#vSplitRatio = v; },
       getAbort: () => this.#vSplitAbort,
       setAbort: (/** @type {*} */ ac) => { this.#vSplitAbort = ac; },
     };

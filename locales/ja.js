@@ -1376,5 +1376,11 @@ export default {
   "firewall.state.disabled": "ステートフルモードは無効です。",
   "firewall.state.col.source": "送信元",
   "firewall.state.col.dest": "宛先",
-  "firewall.state.col.timeout": "タイムアウト"
+  "firewall.state.col.timeout": "タイムアウト",
+  "lessons.toc": "目次",
+  "lessons.themeToggle": "ライト/ダークモード切り替え",
+  "lessons.footer": "BeaverTracer – 教室向けネットワークシミュレーション",
+  "lessons.wip.title": "🚧 作成中のレッスン",
+  "lessons.wip.text": "これらのページはまだ完成していません。コンテンツが不足している、不完全である、またはまだ校正されていない可能性があります。",
+  "lessons.pageNav": "ページナビゲーション"
 };

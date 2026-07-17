@@ -1376,5 +1376,11 @@ export default {
   "firewall.state.disabled": "Stāvokļa sekošanas režīms ir atspējots.",
   "firewall.state.col.source": "Avots",
   "firewall.state.col.dest": "Galamērķis",
-  "firewall.state.col.timeout": "Noildze"
+  "firewall.state.col.timeout": "Noildze",
+  "lessons.toc": "Satura rādītājs",
+  "lessons.themeToggle": "Pārslēgt gaismu/tumšo režīmu",
+  "lessons.footer": "BeaverTracer – Tīkla simulācija klasei",
+  "lessons.wip.title": "🚧 Nodarbības tiek izstrādātas",
+  "lessons.wip.text": "Šīs lapas vēl nav pabeigtas. Saturs var būt nepilnīgs, nepabeigts vai vēl nav pārbaudīts.",
+  "lessons.pageNav": "Lapas navigācija"
 };
