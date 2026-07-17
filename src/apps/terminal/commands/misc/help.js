@@ -16,6 +16,7 @@ export const help = {
     const cats = [
       { key: "net",  labelKey: "app.terminal.commands.help.cat.net" },
       { key: "fs",   labelKey: "app.terminal.commands.help.cat.fs" },
+      { key: "text", labelKey: "app.terminal.commands.help.cat.text" },
       { key: "misc", labelKey: "app.terminal.commands.help.cat.misc" },
     ];
 
