@@ -1,6 +1,7 @@
 //@ts-check
 
 import { t } from "../../../../i18n/index.js";
+import { CommandError } from "../lib/errors.js";
 
 /** @type {import("../types.js").Command} */
 export const mv = {
@@ -15,8 +16,8 @@ export const mv = {
   },
   run: (ctx, args) => {
     const fs = ctx.os.fs;
-    if (!fs) return t("app.terminal.commands.mv.err.noFilesystem");
-    if (args.length < 2) return t("app.terminal.commands.mv.usage");
+    if (!fs) throw new CommandError(t("app.terminal.commands.mv.err.noFilesystem"));
+    if (args.length < 2) throw new CommandError(t("app.terminal.commands.mv.usage"));
 
     const dstArg = args[args.length - 1];
     const srcArgs = args.slice(0, -1);
@@ -40,7 +41,7 @@ export const mv = {
     /** @param {string} srcAbs @param {string} dstAbsLocal */
     const copyOne = (srcAbs, dstAbsLocal) => {
       if (!fs.exists(srcAbs)) {
-        throw new Error(
+        throw new CommandError(
           t("app.terminal.commands.mv.err.cannotStat", { path: srcAbs })
         );
       }
@@ -49,7 +50,7 @@ export const mv = {
       if (st.type === "dir") {
         if (!fs.exists(dstAbsLocal)) fs.mkdir(dstAbsLocal, { recursive: true });
         else if (fs.stat(dstAbsLocal).type !== "dir") {
-          throw new Error(
+          throw new CommandError(
             t("app.terminal.commands.mv.err.overwriteNonDir", {
               dst: dstAbsLocal,
               src: srcAbs,
@@ -68,7 +69,7 @@ export const mv = {
     };
 
     if (srcArgs.length > 1 && !dstIsDir) {
-      return t("app.terminal.commands.mv.err.targetNotDir", { target: dstArg });
+      throw new CommandError(t("app.terminal.commands.mv.err.targetNotDir", { target: dstArg }));
     }
 
     for (const srcArg of srcArgs) {
@@ -79,15 +80,11 @@ export const mv = {
         finalDst = fs.resolve(dstAbs, base);
       }
 
-      try {
-        // If your fs has rename, prefer it:
-        // if (fs.rename) { fs.rename(srcAbs, finalDst); continue; }
+      // If your fs has rename, prefer it:
+      // if (fs.rename) { fs.rename(srcAbs, finalDst); continue; }
 
-        copyOne(srcAbs, finalDst);
-        removePath(srcAbs);
-      } catch (e) {
-        return e instanceof Error ? e.message : String(e);
-      }
+      copyOne(srcAbs, finalDst);
+      removePath(srcAbs);
     }
   },
 };

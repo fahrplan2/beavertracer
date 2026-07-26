@@ -3,6 +3,7 @@
 import { t } from "../../../../i18n/index.js";
 import { ipNumberToString } from "../lib/ip.js";
 import { IPAddress } from "../../../../net/models/IPAddress.js";
+import { CommandError } from "../lib/errors.js";
 
 /** @param {number} n */
 function u32(n) { return (n >>> 0); }
@@ -50,7 +51,7 @@ export const ss = {
   },
   run: (ctx, args) => {
     const ipf = ctx.os.net;
-    if (!ipf) return t("app.terminal.commands.ss.err.noNetworkDriver");
+    if (!ipf) throw new CommandError(t("app.terminal.commands.ss.err.noNetworkDriver"));
 
     const hasT = args.some(a => a === "-t" || a === "-tu" || a === "-ut");
     const hasU = args.some(a => a === "-u" || a === "-tu" || a === "-ut");

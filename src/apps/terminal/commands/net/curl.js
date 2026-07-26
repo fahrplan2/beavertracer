@@ -2,6 +2,7 @@
 
 import { IPAddress } from "../../../../net/models/IPAddress.js";
 import { t } from "../../../../i18n/index.js";
+import { CommandError } from "../lib/errors.js";
 
 // ── encoding helpers ──────────────────────────────────────────────────────────
 
@@ -157,7 +158,7 @@ export const curl = {
             else if (!a.startsWith("-")) url = a;
         }
 
-        if (!url) return t("app.terminal.commands.curl.usage");
+        if (!url) throw new CommandError(t("app.terminal.commands.curl.usage"));
 
         // normalize: bare IPv6 → wrap, no scheme → add http://
         if (!url.toLowerCase().startsWith("http://")) {
@@ -170,7 +171,7 @@ export const curl = {
         }
 
         const parsed = parseUrl(url);
-        if (!parsed.ok) return /** @type {any} */ (parsed).error;
+        if (!parsed.ok) throw new CommandError(/** @type {any} */ (parsed).error);
         const { host, port, path } = parsed;
 
         if (!method) method = headOnly ? "HEAD" : data != null ? "POST" : "GET";
@@ -181,7 +182,7 @@ export const curl = {
         let ip = null;
         try { ip = IPAddress.fromString(host); } catch {}
         if (!ip) try { ip = await ctx.os.dns.resolveIP(host); } catch {}
-        if (!ip) return t("app.terminal.commands.curl.err.resolve", { host });
+        if (!ip) throw new CommandError(t("app.terminal.commands.curl.err.resolve", { host }));
 
         // ── TCP connect ────────────────────────────────────────────────────
         let key = /** @type {string|null} */ (null);
@@ -189,9 +190,9 @@ export const curl = {
             const conn = await ctx.os.net.connectTCPConn(ip, port);
             key = conn?.key ?? null;
         } catch (e) {
-            return t("app.terminal.commands.curl.err.connect", { reason: e instanceof Error ? e.message : String(e) });
+            throw new CommandError(t("app.terminal.commands.curl.err.connect", { reason: e instanceof Error ? e.message : String(e) }));
         }
-        if (!key) return t("app.terminal.commands.curl.err.connect", { reason: "no key" });
+        if (!key) throw new CommandError(t("app.terminal.commands.curl.err.connect", { reason: "no key" }));
 
         ctx.onInterrupt(() => { try { ctx.os.net.closeTCPConn(key); } catch {} });
 
@@ -227,7 +228,7 @@ export const curl = {
             ctx.os.net.sendTCPConn(key, reqBytes);
         } catch (e) {
             try { ctx.os.net.closeTCPConn(key); } catch {}
-            return t("app.terminal.commands.curl.err.send", { reason: e instanceof Error ? e.message : String(e) });
+            throw new CommandError(t("app.terminal.commands.curl.err.send", { reason: e instanceof Error ? e.message : String(e) }));
         }
 
         // ── read response ──────────────────────────────────────────────────

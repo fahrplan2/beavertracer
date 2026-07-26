@@ -2,6 +2,7 @@
 
 import { t } from "../../../../i18n/index.js";
 import { readInput, splitLines } from "../lib/input.js";
+import { CommandError } from "../lib/errors.js";
 
 /** @type {import("../types.js").Command} */
 export const uniq = {
@@ -15,7 +16,7 @@ export const uniq = {
   },
   run: async (ctx, args) => {
     const fs = ctx.os.fs;
-    if (!fs) return t("app.terminal.commands.uniq.err.noFilesystem");
+    if (!fs) throw new CommandError(t("app.terminal.commands.uniq.err.noFilesystem"));
 
     let showCount = false;
     /** @type {string|undefined} */
@@ -27,7 +28,7 @@ export const uniq = {
     }
 
     const input = await readInput(ctx, fs, path);
-    if (input === null) return t("app.terminal.commands.uniq.usage");
+    if (input === null) throw new CommandError(t("app.terminal.commands.uniq.usage"));
 
     const lines = splitLines(input);
     /** @type {string[]} */

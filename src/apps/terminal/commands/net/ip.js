@@ -2,6 +2,7 @@
 
 import { t } from "../../../../i18n/index.js";
 import { IPAddress } from "../../../../net/models/IPAddress.js";
+import { CommandError } from "../lib/errors.js";
 
 /**
  * Parse "address/len" — supports both IPv4 and IPv6.
@@ -99,14 +100,14 @@ export const ip = {
   },
   run: (ctx, args) => {
     const ipf = ctx.os.net;
-    if (!ipf) return t("app.terminal.commands.ip.err.noNetDriver");
+    if (!ipf) throw new CommandError(t("app.terminal.commands.ip.err.noNetDriver"));
 
     const ifaces = ipf.interfaces ?? [];
     const sub = args[0] ?? "a";
 
     // Show (default)
     if (sub === "a" || sub === "addr" || sub === "address" || sub === "show" || sub === "-a") {
-      if (ifaces.length === 0) return t("app.terminal.commands.ip.err.noInterfaces");
+      if (ifaces.length === 0) throw new CommandError(t("app.terminal.commands.ip.err.noInterfaces"));
 
       for (let i = 0; i < ifaces.length; i++) {
         const itf = ifaces[i];
@@ -153,7 +154,7 @@ export const ip = {
       const linkSub = args[1] ?? "show";
 
       if (linkSub === "show" || linkSub === "ls") {
-        if (ifaces.length === 0) return t("app.terminal.commands.ip.err.noInterfaces");
+        if (ifaces.length === 0) throw new CommandError(t("app.terminal.commands.ip.err.noInterfaces"));
         for (let i = 0; i < ifaces.length; i++) {
           const itf = ifaces[i];
           const name = ifaceLabel(itf, i);
@@ -171,14 +172,14 @@ export const ip = {
         const sel   = args[2];
         const prop  = args[3];
         const value = args[4];
-        if (!sel || prop !== "mtu" || !value) return t("app.terminal.commands.ip.usage.linkSet");
+        if (!sel || prop !== "mtu" || !value) throw new CommandError(t("app.terminal.commands.ip.usage.linkSet"));
 
         const hit = findIface(ifaces, sel);
-        if (!hit) return t("app.terminal.commands.ip.err.unknownInterface", { iface: sel });
+        if (!hit) throw new CommandError(t("app.terminal.commands.ip.err.unknownInterface", { iface: sel }));
 
         const mtu = Number(value);
         if (!Number.isInteger(mtu) || mtu < 68 || mtu > 65535)
-          return t("app.terminal.commands.ip.err.invalidMtu");
+          throw new CommandError(t("app.terminal.commands.ip.err.invalidMtu"));
 
         hit.itf.mtuOverride = mtu;
         ctx.println(t("app.terminal.commands.ip.out.okMtu", {
@@ -188,7 +189,7 @@ export const ip = {
         return;
       }
 
-      return t("app.terminal.commands.ip.usage.link");
+      throw new CommandError(t("app.terminal.commands.ip.usage.link"));
     }
 
     // Set: ip set <iface> <ip>/<prefix>
@@ -196,13 +197,13 @@ export const ip = {
     if (sub === "set") {
       const sel = args[1];
       const cidr = args[2];
-      if (!sel || !cidr) return t("app.terminal.commands.ip.usage.set");
+      if (!sel || !cidr) throw new CommandError(t("app.terminal.commands.ip.usage.set"));
 
       const hit = findIface(ifaces, sel);
-      if (!hit) return t("app.terminal.commands.ip.err.unknownInterface", { iface: sel });
+      if (!hit) throw new CommandError(t("app.terminal.commands.ip.err.unknownInterface", { iface: sel }));
 
       const parsed = parseCidr(cidr);
-      if (!parsed) return t("app.terminal.commands.ip.err.invalidCidr");
+      if (!parsed) throw new CommandError(t("app.terminal.commands.ip.err.invalidCidr"));
 
       if (parsed.ip.isV4()) {
         ipf.configureInterface(hit.idx, {
@@ -231,6 +232,6 @@ export const ip = {
       return;
     }
 
-    return t("app.terminal.commands.ip.usage.main");
+    throw new CommandError(t("app.terminal.commands.ip.usage.main"));
   },
 };

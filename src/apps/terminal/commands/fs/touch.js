@@ -1,6 +1,7 @@
 //@ts-check
 
 import { t } from "../../../../i18n/index.js";
+import { CommandError } from "../lib/errors.js";
 
 /** @type {import("../types.js").Command} */
 export const touch = {
@@ -15,8 +16,8 @@ export const touch = {
   },
   run: (ctx, args) => {
     const fs = ctx.os.fs;
-    if (!fs) return t("app.terminal.commands.touch.err.noFilesystem");
-    if (args.length === 0) return t("app.terminal.commands.touch.usage");
+    if (!fs) throw new CommandError(t("app.terminal.commands.touch.err.noFilesystem"));
+    if (args.length === 0) throw new CommandError(t("app.terminal.commands.touch.usage"));
 
     for (const p of args) {
       const abs = fs.resolve(ctx.cwd, p);

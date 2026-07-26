@@ -14,7 +14,7 @@ const DEV_NULL = "/dev/null";
  * is current *at that point* (POSIX fd-dup semantics) - a later `>` does not
  * retroactively change an earlier `2>&1`.
  * @param {import("./Parser.js").Redirect[]} redirects
- * @returns {{ stdout: OutputTarget, stderr: OutputTarget, stdinPath: string|null }}
+ * @returns {{ stdout: OutputTarget, stderr: OutputTarget, stdinPath: string|null, stdinLiteral: string|null }}
  */
 export function resolveRedirectTargets(redirects) {
   /** @type {OutputTarget} */
@@ -23,6 +23,8 @@ export function resolveRedirectTargets(redirects) {
   let stderr = { kind: "terminal" };
   /** @type {string|null} */
   let stdinPath = null;
+  /** @type {string|null} */
+  let stdinLiteral = null;
 
   for (const r of redirects) {
     switch (r.type) {
@@ -31,11 +33,12 @@ export function resolveRedirectTargets(redirects) {
       case "stderrOverwrite": stderr = { kind: "file", path: r.path, mode: "w" }; break;
       case "stderrAppend": stderr = { kind: "file", path: r.path, mode: "a" }; break;
       case "stderrToStdout": stderr = stdout; break;
-      case "stdin": stdinPath = r.path; break;
+      case "stdin": stdinPath = r.path; stdinLiteral = null; break;
+      case "stdinLiteral": stdinLiteral = r.content; stdinPath = null; break;
     }
   }
 
-  return { stdout, stderr, stdinPath };
+  return { stdout, stderr, stdinPath, stdinLiteral };
 }
 
 /**

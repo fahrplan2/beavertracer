@@ -2,6 +2,7 @@
 
 import { t } from "../../../../i18n/index.js";
 import { readInput, splitLines } from "../lib/input.js";
+import { CommandError } from "../lib/errors.js";
 
 /**
  * Parses a -f field spec like "1,3" or "2-4" into a sorted, deduped list
@@ -41,7 +42,7 @@ export const cut = {
   },
   run: async (ctx, args) => {
     const fs = ctx.os.fs;
-    if (!fs) return t("app.terminal.commands.cut.err.noFilesystem");
+    if (!fs) throw new CommandError(t("app.terminal.commands.cut.err.noFilesystem"));
 
     let delim = "\t";
     /** @type {string|undefined} */
@@ -56,11 +57,11 @@ export const cut = {
       else path = a;
     }
 
-    if (!fieldsSpec) return t("app.terminal.commands.cut.usage");
+    if (!fieldsSpec) throw new CommandError(t("app.terminal.commands.cut.usage"));
     const fields = parseFields(fieldsSpec);
 
     const input = await readInput(ctx, fs, path);
-    if (input === null) return t("app.terminal.commands.cut.usage");
+    if (input === null) throw new CommandError(t("app.terminal.commands.cut.usage"));
 
     const out = splitLines(input).map((line) => {
       const parts = line.split(delim);

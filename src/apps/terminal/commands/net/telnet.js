@@ -2,6 +2,7 @@
 
 import { IPAddress } from "../../../../net/models/IPAddress.js";
 import { t } from "../../../../i18n/index.js";
+import { CommandError } from "../lib/errors.js";
 
 /** @param {string} s */
 function encodeUTF8(s) {
@@ -54,12 +55,12 @@ export const telnet = {
     ],
   },
   run: async (ctx, args) => {
-    if (args.length < 2) return t("app.terminal.commands.telnet.usage");
+    if (args.length < 2) throw new CommandError(t("app.terminal.commands.telnet.usage"));
 
     const host = args[0];
     const port = Number(args[1]);
     if (!Number.isInteger(port) || port < 1 || port > 65535)
-      return t("app.terminal.commands.telnet.err.invalidPort");
+      throw new CommandError(t("app.terminal.commands.telnet.err.invalidPort"));
 
     // resolve host → IPAddress
     let ip = null;
@@ -67,7 +68,7 @@ export const telnet = {
     if (!ip) {
       try { ip = await ctx.os.dns.resolveIP(host); } catch { /* ignore */ }
     }
-    if (!ip) return t("app.terminal.commands.telnet.err.resolve", { host });
+    if (!ip) throw new CommandError(t("app.terminal.commands.telnet.err.resolve", { host }));
 
     // connect
     let ck;
@@ -75,9 +76,9 @@ export const telnet = {
       const conn = await ctx.os.net.connectTCPConn(ip, port);
       ck = conn?.key ?? null;
     } catch (e) {
-      return t("app.terminal.commands.telnet.err.connect", { reason: e instanceof Error ? e.message : String(e) });
+      throw new CommandError(t("app.terminal.commands.telnet.err.connect", { reason: e instanceof Error ? e.message : String(e) }));
     }
-    if (!ck) return t("app.terminal.commands.telnet.err.connect", { reason: "no connection key" });
+    if (!ck) throw new CommandError(t("app.terminal.commands.telnet.err.connect", { reason: "no connection key" }));
 
     ctx.println(t("app.terminal.commands.telnet.connected", { host, port }));
 

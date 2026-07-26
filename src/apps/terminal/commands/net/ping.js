@@ -2,6 +2,7 @@
 
 import { t } from "../../../../i18n/index.js";
 import { nowMs } from "../lib/time.js";
+import { CommandError } from "../lib/errors.js";
 import { sleepAbortable } from "../lib/abort.js";
 import { simTimer, SimTimer } from "../../../../lib/SimTimer.js";
 import { IPAddress } from "../../../../net/models/IPAddress.js";
@@ -74,7 +75,7 @@ export const ping = {
       if (a === "-c") {
         argv.shift();
         const v = Number(take());
-        if (!Number.isFinite(v) || v <= 0) return t("app.terminal.commands.ping.err.invalidCount");
+        if (!Number.isFinite(v) || v <= 0) throw new CommandError(t("app.terminal.commands.ping.err.invalidCount"));
         count = Math.min(4, Math.floor(v));
         continue;
       }
@@ -82,7 +83,7 @@ export const ping = {
       if (a === "-i") {
         argv.shift();
         const v = Number(take());
-        if (!Number.isFinite(v) || v <= 0) return t("app.terminal.commands.ping.err.invalidInterval");
+        if (!Number.isFinite(v) || v <= 0) throw new CommandError(t("app.terminal.commands.ping.err.invalidInterval"));
         intervalMs = Math.max(1, Math.floor(v * 1000));
         continue;
       }
@@ -90,7 +91,7 @@ export const ping = {
       if (a === "-W") {
         argv.shift();
         const v = Number(take());
-        if (!Number.isFinite(v) || v <= 0) return t("app.terminal.commands.ping.err.invalidTimeout");
+        if (!Number.isFinite(v) || v <= 0) throw new CommandError(t("app.terminal.commands.ping.err.invalidTimeout"));
         timeoutMs = Math.max(1, Math.floor(v * 1000));
         continue;
       }
@@ -98,7 +99,7 @@ export const ping = {
       if (a === "-s") {
         argv.shift();
         const v = Number(take());
-        if (!Number.isFinite(v) || v < 0 || v > 65507) return t("app.terminal.commands.ping.err.invalidSize");
+        if (!Number.isFinite(v) || v < 0 || v > 65507) throw new CommandError(t("app.terminal.commands.ping.err.invalidSize"));
         payloadSize = Math.floor(v);
         continue;
       }
@@ -113,10 +114,10 @@ export const ping = {
       break;
     }
 
-    if (!host) return usage();
+    if (!host) throw new CommandError(usage());
 
     const ipf = ctx.os.net;
-    if (!ipf?.icmpEcho) return t("app.terminal.commands.ping.err.noNetworkDriver");
+    if (!ipf?.icmpEcho) throw new CommandError(t("app.terminal.commands.ping.err.noNetworkDriver"));
 
     // resolve host -> IPAddress
     let dstIp = parseHostAsIp(host);
@@ -130,7 +131,7 @@ export const ping = {
       }
     }
 
-    if (!dstIp) return t("app.terminal.commands.ping.err.cannotResolve", { host });
+    if (!dstIp) throw new CommandError(t("app.terminal.commands.ping.err.cannotResolve", { host }));
 
     const dstStr = dstIp.toString();
     const identifier = (Math.random() * 0xffff) | 0;

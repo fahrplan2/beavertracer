@@ -1,6 +1,7 @@
 //@ts-check
 
 import { t } from "../../../../i18n/index.js";
+import { CommandError } from "../lib/errors.js";
 
 /** @type {import("../types.js").Command} */
 export const cp = {
@@ -15,8 +16,8 @@ export const cp = {
   },
   run: (ctx, args) => {
     const fs = ctx.os.fs;
-    if (!fs) return t("app.terminal.commands.cp.err.noFilesystem");
-    if (args.length === 0) return t("app.terminal.commands.cp.usage");
+    if (!fs) throw new CommandError(t("app.terminal.commands.cp.err.noFilesystem"));
+    if (args.length === 0) throw new CommandError(t("app.terminal.commands.cp.usage"));
 
     let recursive = false;
     const paths = [];
@@ -26,7 +27,7 @@ export const cp = {
     }
 
     if (paths.length < 2) {
-      return t("app.terminal.commands.cp.err.missingDestination");
+      throw new CommandError(t("app.terminal.commands.cp.err.missingDestination"));
     }
 
     const dstArg = paths[paths.length - 1];
@@ -39,7 +40,7 @@ export const cp = {
     /** @param {string} srcAbs @param {string} dstAbsLocal */
     const copyOne = (srcAbs, dstAbsLocal) => {
       if (!fs.exists(srcAbs)) {
-        throw new Error(
+        throw new CommandError(
           t("app.terminal.commands.cp.err.noSuchFile", { path: srcAbs })
         );
       }
@@ -48,7 +49,7 @@ export const cp = {
 
       if (st.type === "dir") {
         if (!recursive) {
-          throw new Error(
+          throw new CommandError(
             t("app.terminal.commands.cp.err.omitDirectory", { path: srcAbs })
           );
         }
@@ -56,7 +57,7 @@ export const cp = {
         if (!fs.exists(dstAbsLocal)) {
           fs.mkdir(dstAbsLocal, { recursive: true });
         } else if (fs.stat(dstAbsLocal).type !== "dir") {
-          throw new Error(
+          throw new CommandError(
             t("app.terminal.commands.cp.err.overwriteNonDir", {
               dst: dstAbsLocal,
               src: srcAbs,
@@ -78,7 +79,7 @@ export const cp = {
     };
 
     if (srcArgs.length > 1 && !dstIsDir) {
-      return t("app.terminal.commands.cp.err.targetNotDir", { target: dstArg });
+      throw new CommandError(t("app.terminal.commands.cp.err.targetNotDir", { target: dstArg }));
     }
 
     for (const srcArg of srcArgs) {
@@ -90,11 +91,7 @@ export const cp = {
         finalDst = fs.resolve(dstAbs, base);
       }
 
-      try {
-        copyOne(srcAbs, finalDst);
-      } catch (e) {
-        return e instanceof Error ? e.message : String(e);
-      }
+      copyOne(srcAbs, finalDst);
     }
   },
 };

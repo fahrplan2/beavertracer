@@ -11,6 +11,7 @@ import { uniq } from '../../../../src/apps/terminal/commands/text/uniq.js';
 import { cut } from '../../../../src/apps/terminal/commands/text/cut.js';
 import { tr } from '../../../../src/apps/terminal/commands/text/tr.js';
 import { tee } from '../../../../src/apps/terminal/commands/text/tee.js';
+import { CommandError } from '../../../../src/apps/terminal/commands/lib/errors.js';
 
 /** @param {string} text one-shot Reader pre-loaded with `text`, matching ShellContext.stdin's shape */
 function makeReader(text) {
@@ -107,10 +108,9 @@ describe('text commands', () => {
     expect(await tr.run(makeCtx(fs, 'a1b2c3'), ['-d', '0-9'])).toBe('abc');
   });
 
-  it('tr without piped input reports usage instead of throwing', async () => {
+  it('tr without piped input throws a CommandError', async () => {
     const fs = new VirtualFileSystem();
-    const res = await tr.run(makeCtx(fs, null), ['a-z', 'A-Z']);
-    expect(typeof res).toBe('string');
+    await expect(tr.run(makeCtx(fs, null), ['a-z', 'A-Z'])).rejects.toBeInstanceOf(CommandError);
   });
 
   it('tee writes to file(s) and still passes the content through', async () => {

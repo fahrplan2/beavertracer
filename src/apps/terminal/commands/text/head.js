@@ -2,6 +2,7 @@
 
 import { t } from "../../../../i18n/index.js";
 import { readInput, splitLines } from "../lib/input.js";
+import { CommandError } from "../lib/errors.js";
 
 /** @type {import("../types.js").Command} */
 export const head = {
@@ -15,7 +16,7 @@ export const head = {
   },
   run: async (ctx, args) => {
     const fs = ctx.os.fs;
-    if (!fs) return t("app.terminal.commands.head.err.noFilesystem");
+    if (!fs) throw new CommandError(t("app.terminal.commands.head.err.noFilesystem"));
 
     let n = 10;
     /** @type {string|undefined} */
@@ -29,7 +30,7 @@ export const head = {
     }
 
     const input = await readInput(ctx, fs, path);
-    if (input === null) return t("app.terminal.commands.head.usage");
+    if (input === null) throw new CommandError(t("app.terminal.commands.head.usage"));
 
     return splitLines(input).slice(0, n).join("\n");
   },

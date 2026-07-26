@@ -2,6 +2,7 @@
 
 import { t } from "../../../../i18n/index.js";
 import { nowMs } from "../lib/time.js";
+import { CommandError } from "../lib/errors.js";
 import { simTimer, SimTimer } from "../../../../lib/SimTimer.js";
 
 import { DNSPacket } from "../../../../net/pdu/DNSPacket.js";
@@ -142,7 +143,7 @@ export const dig = {
         argv.shift();
         const v = Number(take());
         if (!Number.isFinite(v) || v < 1 || v > 65535) {
-          return t("app.terminal.commands.dig.err.invalidPort");
+          throw new CommandError(t("app.terminal.commands.dig.err.invalidPort"));
         }
         port = v | 0;
         continue;
@@ -156,13 +157,13 @@ export const dig = {
         }
         if (a.startsWith("+time=")) {
           const v = Number(a.slice("+time=".length));
-          if (!Number.isFinite(v) || v <= 0) return t("app.terminal.commands.dig.err.invalidTime");
+          if (!Number.isFinite(v) || v <= 0) throw new CommandError(t("app.terminal.commands.dig.err.invalidTime"));
           timeoutMs = Math.max(1, Math.floor(v * 1000));
           continue;
         }
         if (a.startsWith("+tries=")) {
           const v = Number(a.slice("+tries=".length));
-          if (!Number.isFinite(v) || v <= 0) return t("app.terminal.commands.dig.err.invalidTries");
+          if (!Number.isFinite(v) || v <= 0) throw new CommandError(t("app.terminal.commands.dig.err.invalidTries"));
           tries = Math.max(1, Math.min(10, Math.floor(v)));
           continue;
         }
@@ -188,7 +189,7 @@ export const dig = {
       argv.shift();
     }
 
-    if (!qname) return usage();
+    if (!qname) throw new CommandError(usage());
 
     // Determine qtype
     const qtype = typeMap.get(qtypeStr.toUpperCase()) ?? (qtypeStr ? Number(qtypeStr) : DNSPacket.TYPE_A);
@@ -198,7 +199,7 @@ export const dig = {
 
     const net = ctx.os?.net;
     if (!net?.openUDPSocket || !net?.sendUDPSocket || !net?.recvUDPSocket || !net?.closeUDPSocket) {
-      return t("app.terminal.commands.dig.err.noUdp");
+      throw new CommandError(t("app.terminal.commands.dig.err.noUdp"));
     }
 
     /**
@@ -243,7 +244,7 @@ export const dig = {
     if (serverStr) {
       serverIpObj = await resolveHostToIp(serverStr);
       if (serverIpObj == null) {
-        return t("app.terminal.commands.dig.err.cannotResolveServer", { host: serverStr });
+        throw new CommandError(t("app.terminal.commands.dig.err.cannotResolveServer", { host: serverStr }));
       }
     } else {
       serverIpObj = IPAddress.fromString("127.0.0.1");
@@ -252,7 +253,7 @@ export const dig = {
     // For now the UDP/IP stack is IPv4-only
     const serverV4Num = toV4NumOrNull(serverIpObj);
     if (serverV4Num == null) {
-      return t("app.terminal.commands.dig.err.cannotResolveServer", { host: serverStr || "127.0.0.1" });
+      throw new CommandError(t("app.terminal.commands.dig.err.cannotResolveServer", { host: serverStr || "127.0.0.1" }));
     }
 
     const serverIpText = serverIpObj.toString();

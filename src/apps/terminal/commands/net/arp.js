@@ -1,6 +1,7 @@
 //@ts-check
 
 import { t } from "../../../../i18n/index.js";
+import { CommandError } from "../lib/errors.js";
 
 /**
  * @param {any} itf
@@ -77,10 +78,10 @@ export const arp = {
   },
   run: (ctx, args) => {
     const net = ctx.os.net;
-    if (!net) return t("app.terminal.commands.arp.err.noNetDriver");
+    if (!net) throw new CommandError(t("app.terminal.commands.arp.err.noNetDriver"));
 
     const ifaces = net.interfaces;
-    if (!Array.isArray(ifaces) || ifaces.length === 0) return t("app.terminal.commands.arp.err.noInterfaces");
+    if (!Array.isArray(ifaces) || ifaces.length === 0) throw new CommandError(t("app.terminal.commands.arp.err.noInterfaces"));
 
     const sub = args[0] ?? "show";
 
@@ -96,7 +97,7 @@ export const arp = {
     const targets = [];
     if (sel) {
       const hit = findIface(ifaces, sel);
-      if (!hit) return t("app.terminal.commands.arp.err.unknownInterface", { iface: sel });
+      if (!hit) throw new CommandError(t("app.terminal.commands.arp.err.unknownInterface", { iface: sel }));
       targets.push(hit);
     } else {
       for (let i = 0; i < ifaces.length; i++) targets.push({ idx: i, itf: ifaces[i] });
