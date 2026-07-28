@@ -1,6 +1,7 @@
 //@ts-check
 
 import { t } from "../../../../i18n/index.js";
+import { CommandError } from "../lib/errors.js";
 
 /** @type {import("../types.js").Command} */
 export const rm = {
@@ -15,8 +16,8 @@ export const rm = {
   },
   run: (ctx, args) => {
     const fs = ctx.os.fs;
-    if (!fs) return t("app.terminal.commands.rm.err.noFilesystem");
-    if (args.length === 0) return t("app.terminal.commands.rm.usage");
+    if (!fs) throw new CommandError(t("app.terminal.commands.rm.err.noFilesystem"));
+    if (args.length === 0) throw new CommandError(t("app.terminal.commands.rm.usage"));
 
     let recursive = false;
     let force = false;
@@ -29,13 +30,13 @@ export const rm = {
       else paths.push(a);
     }
 
-    if (paths.length === 0) return t("app.terminal.commands.rm.err.missingOperand");
+    if (paths.length === 0) throw new CommandError(t("app.terminal.commands.rm.err.missingOperand"));
 
     /** @param {string} abs */
     const removePath = (abs) => {
       if (!fs.exists(abs)) {
         if (!force) {
-          throw new Error(
+          throw new CommandError(
             t("app.terminal.commands.rm.err.noSuchFile", { path: abs })
           );
         }
@@ -45,7 +46,7 @@ export const rm = {
       const st = fs.stat(abs);
       if (st.type === "dir") {
         if (!recursive) {
-          throw new Error(
+          throw new CommandError(
             t("app.terminal.commands.rm.err.isDirectory", { path: abs })
           );
         }
@@ -63,7 +64,7 @@ export const rm = {
       try {
         removePath(abs);
       } catch (e) {
-        if (!force) return e instanceof Error ? e.message : String(e);
+        if (!force) throw e;
       }
     }
   },

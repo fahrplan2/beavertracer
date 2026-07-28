@@ -1,6 +1,7 @@
 //@ts-check
 
 import { t } from "../../../../i18n/index.js";
+import { CommandError } from "../lib/errors.js";
 
 /** @type {import("../types.js").Command} */
 export const cat = {
@@ -14,10 +15,10 @@ export const cat = {
   },
   run: async (ctx, args) => {
     const fs = ctx.os.fs;
-    if (!fs) return t("app.terminal.commands.cat.err.noFilesystem");
+    if (!fs) throw new CommandError(t("app.terminal.commands.cat.err.noFilesystem"));
 
     if (!args[0]) {
-      if (!ctx.stdin) return t("app.terminal.commands.cat.usage", { cmd: "cat" });
+      if (!ctx.stdin) throw new CommandError(t("app.terminal.commands.cat.usage", { cmd: "cat" }));
       return ctx.stdin.readAll();
     }
 

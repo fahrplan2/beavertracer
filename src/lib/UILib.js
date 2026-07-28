@@ -274,6 +274,7 @@ export class UILib {
    * @param {string} opts.label - Button text (shown as tooltip when iconOnly)
    * @param {(ev: MouseEvent) => void} opts.onClick - Click handler
    * @param {string} [opts.icon] - Font Awesome icon class, e.g. "fa-play"
+   * @param {string} [opts.iconStyle="fas"] - Font Awesome style prefix, e.g. "fab" for brand icons
    * @param {string} [opts.badge] - Short badge label shown over the icon
    * @param {boolean} [opts.active=false] - Whether button starts active
    * @param {string} [opts.className] - Additional CSS classes
@@ -284,6 +285,7 @@ export class UILib {
     label,
     onClick,
     icon,
+    iconStyle = "fas",
     badge = "",
     active = false,
     className = "",
@@ -299,7 +301,7 @@ export class UILib {
 
     if (icon) {
       const iconEl = document.createElement("i");
-      iconEl.classList.add("fas", icon);
+      iconEl.classList.add(iconStyle, icon);
       btn.appendChild(iconEl);
     }
 

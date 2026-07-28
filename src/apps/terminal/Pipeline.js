@@ -2,6 +2,15 @@
 
 import { t } from "../../i18n/index.js";
 import { resolveRedirectTargets, flushFileTarget, readStdinFile } from "./Redirect.js";
+import { CommandError } from "./commands/lib/errors.js";
+
+/**
+ * Matches a bare `NAME=value` word - a stage consisting of exactly this one
+ * word (no other args) is a variable assignment, not a command lookup.
+ * `NAME=value cmd args` (temporary per-command env prefix) is not supported -
+ * it falls through to a normal (failing) command lookup for "NAME=value".
+ */
+const ASSIGNMENT_RE = /^[A-Za-z_][A-Za-z0-9_]*=/;
 
 /**
  * @typedef {import("./Parser.js").Stage} Stage
@@ -132,12 +141,32 @@ function terminalWriter(app, color) {
  * stderr never flows through a pipe: it always resolves to the terminal
  * (red) or an explicit 2>/2>> redirect, for every stage, not just the last.
  *
+ * Returns whether the pipeline succeeded - the exit status of its *last*
+ * stage, matching the default (non-pipefail) shell convention - so callers
+ * can implement `;`/`&&`/`||` sequencing.
+ *
  * @param {import("../TerminalApp.js").TerminalApp} app
  * @param {Stage[]} stages
  * @param {(overrides: Partial<ShellContext>) => ShellContext} buildCtx
- * @returns {Promise<void>}
+ * @param {(name: string) => import("./commands/types.js").Command | undefined} [resolveFunction]
+ *   Looks up a user-defined shell function (`name() { ...; }`, see
+ *   Script.js's `makeFunctionResolver`) by name, wrapped to look exactly
+ *   like a builtin `Command`. Checked *before* `app.commands` so a function
+ *   can shadow a builtin - matching real shells letting you override e.g.
+ *   `ls` with a function of the same name.
+ * @param {Reader|null} [inheritedStdin]
+ *   Falls back to this as stage 0's stdin when it has no `<`/heredoc
+ *   redirect of its own - used to pipe input into a shell function or a
+ *   whole `sh` script (`echo hi | myfunc`, `echo hi | sh script.sh`), whose
+ *   own commands otherwise have no way to see a pipe from *before* the call
+ *   (this pipeline is a brand new one, built fresh for whatever simple
+ *   statement is executing inside the function/script). The same Reader is
+ *   reused for every stage-0 lookup across the whole call (not one per
+ *   statement) so a second read after the first already consumed it sees
+ *   EOF immediately - matching a real inherited fd.
+ * @returns {Promise<boolean>}
  */
-export async function runPipeline(app, stages, buildCtx) {
+export async function runPipeline(app, stages, buildCtx, resolveFunction, inheritedStdin) {
   const fs = app.os.fs;
   const cwd = app.cwd;
 
@@ -194,8 +223,10 @@ export async function runPipeline(app, stages, buildCtx) {
     return writer;
   };
 
+  let lastStageOk = true;
+
   const runners = stages.map(async (stage, i) => {
-    const { stdout, stderr, stdinPath } = resolveRedirectTargets(stage.redirects);
+    const { stdout, stderr, stdinPath, stdinLiteral } = resolveRedirectTargets(stage.redirects);
 
     // Order matters: resolve stdout first so a `2>&1` (same target object as
     // stdout) reuses the already-decided pipe-vs-terminal-vs-file writer.
@@ -205,57 +236,86 @@ export async function runPipeline(app, stages, buildCtx) {
     /** @type {Reader|null} */
     let stdin = null;
     let skip = false;
+    let ok = true;
 
-    if (stdinPath !== null) {
+    if (stdinLiteral !== null) {
+      stdin = fileReader(stdinLiteral);
+    } else if (stdinPath !== null) {
       try {
         stdin = fileReader(readStdinFile(fs, cwd, stdinPath));
       } catch (e) {
         stderrWriter.println(t("app.terminal.err.errorPrefix", { msg: e instanceof Error ? e.message : String(e) }));
         skip = true;
+        ok = false;
       }
     } else if (i > 0) {
       stdin = pipes[i - 1];
+    } else if (inheritedStdin) {
+      stdin = inheritedStdin;
     }
 
     try {
       if (!skip) {
-        const entry = app.commands.get(stage.cmd);
-
-        if (!entry) {
-          stderrWriter.println(t("app.terminal.err.commandNotFound", { cmd: stage.cmd }));
-        } else {
+        if (stage.args.length === 0 && ASSIGNMENT_RE.test(stage.cmd)) {
           const ctx = buildCtx({
             stdout: stdoutWriter,
             stderr: stderrWriter,
             stdin,
             println: (text) => stdoutWriter.println(text ?? ""),
           });
+          const eq = stage.cmd.indexOf("=");
+          ctx.env[stage.cmd.slice(0, eq)] = stage.cmd.slice(eq + 1);
+        } else {
+          const entry = resolveFunction?.(stage.cmd) ?? app.commands.get(stage.cmd);
 
-          const res = await entry.run(ctx, stage.args);
-          if (typeof res === "string" && res.length) {
-            // Commands that return constructed text (ls, pwd, echo, ...) don't
-            // include a trailing newline - println() adds the one separator
-            // newline they need. Commands that return raw stored content
-            // (cat) may already end in "\n" - appending another would double
-            // it into a spurious blank line, compounding on every re-redirect
-            // (e.g. `cat a.txt > b.txt` then `cat b.txt > c.txt`).
-            if (res.endsWith("\n")) stdoutWriter.print(res);
-            else stdoutWriter.println(res);
+          if (!entry) {
+            stderrWriter.println(t("app.terminal.err.commandNotFound", { cmd: stage.cmd }));
+            ok = false;
+          } else {
+            const ctx = buildCtx({
+              stdout: stdoutWriter,
+              stderr: stderrWriter,
+              stdin,
+              println: (text) => stdoutWriter.println(text ?? ""),
+            });
+
+            const res = await entry.run(ctx, stage.args);
+            if (typeof res === "string" && res.length) {
+              // Commands that return constructed text (ls, pwd, echo, ...) don't
+              // include a trailing newline - println() adds the one separator
+              // newline they need. Commands that return raw stored content
+              // (cat) may already end in "\n" - appending another would double
+              // it into a spurious blank line, compounding on every re-redirect
+              // (e.g. `cat a.txt > b.txt` then `cat b.txt > c.txt`).
+              if (res.endsWith("\n")) stdoutWriter.print(res);
+              else stdoutWriter.println(res);
+            }
           }
         }
       }
     } catch (e) {
+      ok = false;
       if (!app.currentAbort?.signal.aborted) {
-        stderrWriter.println(t("app.terminal.err.errorPrefix", { msg: e instanceof Error ? e.message : String(e) }));
+        if (e instanceof CommandError) {
+          // An empty message is a deliberate "false, but not an error" signal
+          // (e.g. `test`/`[` evaluating to false for if/while) - sets exit
+          // status 1 silently, with no stderr output at all.
+          if (e.message) stderrWriter.println(e.message);
+        } else {
+          stderrWriter.println(t("app.terminal.err.errorPrefix", { msg: e instanceof Error ? e.message : String(e) }));
+        }
       }
     } finally {
       if (i < stages.length - 1) pipes[i].close();
+      if (i === stages.length - 1) lastStageOk = ok;
     }
   });
 
   await Promise.all(runners);
 
   for (const { flush } of pendingFlushes) flush();
+
+  return lastStageOk;
 }
 
 export {};

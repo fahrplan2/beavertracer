@@ -2,6 +2,7 @@
 
 import { t } from "../../../../i18n/index.js";
 import { flushFileTarget } from "../../Redirect.js";
+import { CommandError } from "../lib/errors.js";
 
 /** @type {import("../types.js").Command} */
 export const tee = {
@@ -15,7 +16,7 @@ export const tee = {
   },
   run: async (ctx, args) => {
     const fs = ctx.os.fs;
-    if (!fs) return t("app.terminal.commands.tee.err.noFilesystem");
+    if (!fs) throw new CommandError(t("app.terminal.commands.tee.err.noFilesystem"));
 
     let append = false;
     /** @type {string[]} */
@@ -26,8 +27,8 @@ export const tee = {
       else paths.push(a);
     }
 
-    if (paths.length === 0) return t("app.terminal.commands.tee.usage");
-    if (!ctx.stdin) return t("app.terminal.commands.tee.err.noStdin");
+    if (paths.length === 0) throw new CommandError(t("app.terminal.commands.tee.usage"));
+    if (!ctx.stdin) throw new CommandError(t("app.terminal.commands.tee.err.noStdin"));
 
     const input = await ctx.stdin.readAll();
 

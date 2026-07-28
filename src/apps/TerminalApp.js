@@ -4,8 +4,13 @@ import { GenericProcess } from "./GenericProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
 import { Disposer } from "../lib/Disposer.js";
 import { registerBuiltins } from "./terminal/commands/index.js";
-import { parsePipeline } from "./terminal/Parser.js";
+import { splitCommandList, parsePipeline } from "./terminal/Parser.js";
 import { runPipeline } from "./terminal/Pipeline.js";
+import { computeCompletions, longestCommonPrefix } from "./terminal/Completion.js";
+import { expandCommandSubstitutions } from "./terminal/CommandSubstitution.js";
+import { expandArithmetic } from "./terminal/Arithmetic.js";
+import { parseScript, runScript, makeFunctionResolver, IncompleteInputError } from "./terminal/Script.js";
+import { CommandError } from "./terminal/commands/lib/errors.js";
 import { t } from "../i18n/index.js";
 
 
@@ -42,10 +47,33 @@ export class TerminalApp extends GenericProcess {
         USER: "user",
         HOST: this.os.name.replace(" ",""),
         TERM: "xterm-ish",
+        HOME: "/home",
     };
+
+    /** Exit status of the last executed pipeline - backs `$?`, persists across lines like real bash. */
+    lastExitCode = 0;
+
+    /**
+     * Text accumulated across Enter-presses while an if/for/while/case
+     * construct is still open (no closing fi/done/esac yet) - null when not
+     * mid-continuation. Mirrors a real shell's PS2 prompt.
+     * @type {string|null}
+     */
+    pendingInput = null;
 
     /** @type {Map<string, Command>} */
     commands = new Map();
+
+    /**
+     * Shell functions (`name() { ...; }`) defined interactively - shared,
+     * mutable reference threaded into every `_handleLine`'s state (like
+     * `env`), so a definition persists across separate commands the same
+     * way it would in a real interactive shell. `sh script.sh` gets its own
+     * fresh, empty one instead (see sh.js) - real subshell semantics, a
+     * script doesn't inherit the caller's functions.
+     * @type {Map<string, import("./terminal/Script.js").ScriptNode[]>}
+     */
+    functions = new Map();
 
     // ---------------------------
     // Terminal geometry
@@ -405,6 +433,7 @@ export class TerminalApp extends GenericProcess {
     }
 
     _promptString() {
+        if (this.pendingInput) return "> "; // continuation prompt, like a real shell's PS2
         const user = this.env.USER ?? "user";
         const host = this.env.HOST ?? "host";
         return `${user}@${host}:${this.cwd}$ `;
@@ -529,7 +558,7 @@ export class TerminalApp extends GenericProcess {
 
             case "Tab":
                 ev.preventDefault();
-                // TODO: autocomplete
+                this._tabComplete();
                 break;
 
             case "l":
@@ -563,6 +592,48 @@ export class TerminalApp extends GenericProcess {
      */
     _moveCursor(delta) {
         this.cursor = Math.max(0, Math.min(this.lineBuffer.length, this.cursor + delta));
+        this._renderScreen();
+    }
+
+    _tabComplete() {
+        const head = this.lineBuffer.slice(0, this.cursor);
+        const tail = this.lineBuffer.slice(this.cursor);
+
+        const result = computeCompletions(head, {
+            commandNames: [...this.commands.entries()].filter(([, c]) => !c.hidden).map(([n]) => n),
+            cwd: this.cwd,
+            fs: this.os.fs,
+        });
+        if (!result) return;
+
+        const { prefix, names, trailingFor } = result;
+
+        if (names.length === 1) {
+            this._insertCompletionText(names[0].slice(prefix.length), tail, trailingFor(names[0]));
+            return;
+        }
+
+        // Ambiguous: complete as far as we unambiguously can. If that's no
+        // further than what's already typed, just stop - no candidate dump,
+        // keeps typing flow uninterrupted.
+        const lcp = longestCommonPrefix(names);
+        if (lcp.length > prefix.length) {
+            this._insertCompletionText(lcp.slice(prefix.length), tail, "");
+        }
+    }
+
+    /**
+     * @param {string} suffix
+     * @param {string} tail
+     * @param {string} trailingChar
+     */
+    _insertCompletionText(suffix, tail, trailingChar) {
+        let toInsert = suffix;
+        if (trailingChar && !tail.startsWith(trailingChar)) toInsert += trailingChar;
+        if (!toInsert) return;
+
+        this.lineBuffer = this.lineBuffer.slice(0, this.cursor) + toInsert + this.lineBuffer.slice(this.cursor);
+        this.cursor += toInsert.length;
         this._renderScreen();
     }
 
@@ -767,11 +838,147 @@ export class TerminalApp extends GenericProcess {
      * @param {string} line
      */
     async _handleLine(line) {
-        const trimmed = line.trim();
-        if (trimmed.length === 0) return;
+        if (!this.pendingInput && line.trim().length === 0) return;
 
-        const stages = parsePipeline(trimmed);
-        await runPipeline(this, stages, (overrides) => this._buildShellContext(overrides));
+        // Accumulate across Enter-presses while a construct (if/for/while/
+        // case) is still open - mirrors a real shell's PS2 continuation
+        // prompt. Structure (if/for/while/case) and execution both go
+        // through Script.js now - the same engine `sh` uses for whole
+        // files - so `$?`/export/cd/etc. are visible line-to-line exactly
+        // like they already were entry-to-entry within one `;`/`&&`/`||`
+        // chain.
+        const combinedText = this.pendingInput ? `${this.pendingInput}\n${line}` : line;
+
+        /** @type {import("./terminal/Script.js").ScriptNode[]} */
+        let nodes;
+        try {
+            nodes = parseScript(combinedText);
+        } catch (e) {
+            if (e instanceof IncompleteInputError) {
+                this.pendingInput = combinedText;
+                return;
+            }
+            this.pendingInput = null;
+            this.println(e instanceof CommandError ? e.message : t("app.terminal.err.errorPrefix", { msg: e instanceof Error ? e.message : String(e) }), "1");
+            return;
+        }
+        this.pendingInput = null;
+
+        const state = {
+            app: this,
+            env: this.env, // shared reference - this IS the session, no isolation
+            cwd: this.cwd,
+            pid: this.pid,
+            positional: /** @type {string[]} */ ([]),
+            scriptName: "sh",
+            lastExitCode: this.lastExitCode,
+            signal: this.currentAbort?.signal ?? new AbortController().signal,
+            functions: this.functions, // shared reference - same reasoning as env
+            heredocs: /** @type {Map<string, {body: string, literal: boolean}>} */ (
+                /** @type {any} */ (nodes).heredocs ?? new Map()
+            ),
+        };
+
+        try {
+            // Individual command failures inside a "simple" node are already
+            // handled by runPipeline's own per-stage try/catch and never
+            // reach here. What *can* propagate up to this level: Ctrl+C
+            // (AbortError) from a loop's own abort check, and a while/until
+            // loop hitting its iteration cap - neither goes through
+            // runPipeline, so there's no other net catching them.
+            await runScript(nodes, state);
+        } catch (e) {
+            if (e instanceof DOMException && e.name === "AbortError") {
+                // already interrupted (Ctrl+C) - nothing more to report
+            } else if (!this.currentAbort?.signal.aborted) {
+                this.println(e instanceof CommandError ? e.message : t("app.terminal.err.errorPrefix", { msg: e instanceof Error ? e.message : String(e) }), "1");
+            }
+        }
+
+        this.cwd = state.cwd;
+        this.lastExitCode = state.lastExitCode;
+    }
+
+    /**
+     * Runs `cmdText` (a possibly `;`/`&&`/`||`-joined chain, itself first
+     * expanded for any further nested `$(...)`) with stdout captured into a
+     * string instead of rendered - the engine behind `$(...)` command
+     * substitution. stderr (color "1") still goes to the real terminal,
+     * matching real shells (only stdout is captured). `env`/`cwd` are local
+     * copies of `baseEnv`/`baseCwd` (default: this session's live ones) -
+     * subshell-like isolation, so `cd`/`export`/assignments inside a
+     * substitution never leak into the caller, whether that caller is the
+     * interactive session or a running script (which passes its own,
+     * already-isolated env/cwd as the base - see Script.js).
+     * @param {string} cmdText
+     * @param {Record<string,string>} [baseEnv]
+     * @param {string} [baseCwd]
+     * @param {Map<string, import("./terminal/Script.js").ScriptNode[]>} [baseFunctions]
+     * @returns {Promise<string>}
+     */
+    async _runNestedCapture(cmdText, baseEnv = this.env, baseCwd = this.cwd, baseFunctions = this.functions) {
+        /** @type {import("./terminal/Script.js").ScriptExecState} */
+        const state = {
+            app: this,
+            env: { ...baseEnv },
+            cwd: baseCwd,
+            pid: this.pid,
+            lastExitCode: this.lastExitCode,
+            positional: [],
+            scriptName: "sh",
+            // Subshell semantics: inherits (copies) the caller's currently
+            // defined functions, but a funcdef executed inside `$(...)`
+            // itself never leaks back out - same isolation env already gets.
+            functions: new Map(baseFunctions),
+            // Heredocs aren't supported inside `$(...)` (this capture never
+            // runs Script.js's heredoc pre-pass) - always empty, just needs
+            // to exist so a function called from here (which does go
+            // through runSimpleText) doesn't crash reading `.size` on it.
+            heredocs: new Map(),
+            signal: this.currentAbort?.signal ?? new AbortController().signal,
+        };
+
+        /** @type {string[]} */
+        const chunks = [];
+        const captureApp = new Proxy(this, {
+            get: (target, prop) => {
+                if (prop === "cwd") return state.cwd;
+                if (prop === "print") return (/** @type {string} */ text, /** @type {"0"|"1"} */ color = "0") =>
+                    color === "1" ? target.print(text, color) : chunks.push(text ?? "");
+                if (prop === "println") return (/** @type {string} */ text, /** @type {"0"|"1"} */ color = "0") =>
+                    color === "1" ? target.println(text, color) : chunks.push((text ?? "") + "\n");
+                return Reflect.get(target, prop);
+            },
+        });
+
+        const buildCtx = (/** @type {Partial<ShellContext>} */ overrides) => ({
+            ...this._buildShellContext(overrides),
+            env: state.env,
+            cwd: state.cwd,
+            setCwd: (/** @type {string} */ cwd) => { state.cwd = cwd; },
+        });
+
+        const entries = splitCommandList(cmdText);
+        let lastOk = true;
+
+        for (const entry of entries) {
+            if (!entry.text) continue;
+            if (entry.op === "&&" && !lastOk) continue;
+            if (entry.op === "||" && lastOk) continue;
+
+            const substituted = await expandCommandSubstitutions(entry.text, (inner) => this._runNestedCapture(inner, state.env, state.cwd, state.functions));
+            const expanded = expandArithmetic(substituted, state.env);
+            const stages = parsePipeline(expanded, state.env, {
+                fs: this.os.fs,
+                cwd: state.cwd,
+                pid: this.pid,
+                lastExitCode: this.lastExitCode,
+            });
+
+            lastOk = await runPipeline(captureApp, stages, buildCtx, makeFunctionResolver(state));
+        }
+
+        return chunks.join("").replace(/\n+$/, "");
     }
 
     /**
@@ -814,6 +1021,10 @@ export class TerminalApp extends GenericProcess {
         // Clear current input buffer
         this.lineBuffer = "";
         this.cursor = 0;
+
+        // Cancel any open if/for/while/case continuation - matches a real
+        // shell discarding a partially-typed command on Ctrl+C
+        this.pendingInput = null;
 
         // Call optional interrupt handlers (rarely needed, but nice)
         for (const fn of this.interruptHandlers.splice(0)) {

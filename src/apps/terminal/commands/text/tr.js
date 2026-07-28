@@ -1,6 +1,7 @@
 //@ts-check
 
 import { t } from "../../../../i18n/index.js";
+import { CommandError } from "../lib/errors.js";
 
 /**
  * Expands a tr character-set spec (e.g. "a-z") into an explicit array of
@@ -46,8 +47,8 @@ export const tr = {
     }
 
     const [set1Spec, set2Spec] = positional;
-    if (!set1Spec) return t("app.terminal.commands.tr.usage");
-    if (!ctx.stdin) return t("app.terminal.commands.tr.err.noStdin");
+    if (!set1Spec) throw new CommandError(t("app.terminal.commands.tr.usage"));
+    if (!ctx.stdin) throw new CommandError(t("app.terminal.commands.tr.err.noStdin"));
 
     const input = await ctx.stdin.readAll();
     const set1 = expandSet(set1Spec);
@@ -57,7 +58,7 @@ export const tr = {
       return [...input].filter((ch) => !delSet.has(ch)).join("");
     }
 
-    if (!set2Spec) return t("app.terminal.commands.tr.usage");
+    if (!set2Spec) throw new CommandError(t("app.terminal.commands.tr.usage"));
     const set2 = expandSet(set2Spec);
     while (set2.length < set1.length) set2.push(set2[set2.length - 1]);
 

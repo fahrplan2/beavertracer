@@ -2,6 +2,7 @@
 
 import { IPAddress } from "../../../../net/models/IPAddress.js";
 import { t } from "../../../../i18n/index.js";
+import { CommandError } from "../lib/errors.js";
 
 // ── encoding helpers ──────────────────────────────────────────────────────────
 
@@ -81,16 +82,16 @@ async function ncTcpConnect(ctx, host, port) {
     let ip = /** @type {IPAddress|null} */ (null);
     try { ip = IPAddress.fromString(host); } catch {}
     if (!ip) try { ip = await ctx.os.dns.resolveIP(host); } catch {}
-    if (!ip) return t("app.terminal.commands.nc.err.resolve", { host });
+    if (!ip) throw new CommandError(t("app.terminal.commands.nc.err.resolve", { host }));
 
     let key = /** @type {string|null} */ (null);
     try {
         const conn = await ctx.os.net.connectTCPConn(ip, port);
         key = conn?.key ?? null;
     } catch (e) {
-        return t("app.terminal.commands.nc.err.connect", { reason: e instanceof Error ? e.message : String(e) });
+        throw new CommandError(t("app.terminal.commands.nc.err.connect", { reason: e instanceof Error ? e.message : String(e) }));
     }
-    if (!key) return t("app.terminal.commands.nc.err.nokey");
+    if (!key) throw new CommandError(t("app.terminal.commands.nc.err.nokey"));
 
     await bidir(ctx, {
         send:  (d) => ctx.os.net.sendTCPConn(key, d),
@@ -118,7 +119,7 @@ async function ncTcpListen(ctx, port) {
     try {
         ref = ctx.os.net.openTCPServerSocket(new IPAddress(4, 0), port);
     } catch (e) {
-        return t("app.terminal.commands.nc.err.listen", { port, reason: e instanceof Error ? e.message : String(e) });
+        throw new CommandError(t("app.terminal.commands.nc.err.listen", { port, reason: e instanceof Error ? e.message : String(e) }));
     }
 
     ctx.println(t("app.terminal.commands.nc.listening", { port }));
@@ -130,7 +131,7 @@ async function ncTcpListen(ctx, port) {
         ctx.os.net.closeTCPServerSocket(ref); ref = null;
     } catch (e) {
         cleanup();
-        return t("app.terminal.commands.nc.err.accept", { reason: e instanceof Error ? e.message : String(e) });
+        throw new CommandError(t("app.terminal.commands.nc.err.accept", { reason: e instanceof Error ? e.message : String(e) }));
     }
 
     ctx.println(t("app.terminal.commands.nc.connected"));
@@ -153,14 +154,14 @@ async function ncUdpConnect(ctx, host, port) {
     let ip = /** @type {IPAddress|null} */ (null);
     try { ip = IPAddress.fromString(host); } catch {}
     if (!ip) try { ip = await ctx.os.dns.resolveIP(host); } catch {}
-    if (!ip) return t("app.terminal.commands.nc.err.resolve", { host });
+    if (!ip) throw new CommandError(t("app.terminal.commands.nc.err.resolve", { host }));
 
     const localPort = 10000 + Math.floor(Math.random() * 40000);
     let sock = /** @type {any} */ (null);
     try {
         sock = ctx.os.net.openUDPSocket(new IPAddress(4, 0), localPort);
     } catch (e) {
-        return t("app.terminal.commands.nc.err.udpopen", { reason: e instanceof Error ? e.message : String(e) });
+        throw new CommandError(t("app.terminal.commands.nc.err.udpopen", { reason: e instanceof Error ? e.message : String(e) }));
     }
 
     ctx.println(t("app.terminal.commands.nc.udp.ready", { host: ip.toString(), port }));
@@ -210,7 +211,7 @@ async function ncUdpListen(ctx, port) {
     try {
         sock = ctx.os.net.openUDPSocket(new IPAddress(4, 0), port);
     } catch (e) {
-        return t("app.terminal.commands.nc.err.udpopen", { reason: e instanceof Error ? e.message : String(e) });
+        throw new CommandError(t("app.terminal.commands.nc.err.udpopen", { reason: e instanceof Error ? e.message : String(e) }));
     }
 
     ctx.println(t("app.terminal.commands.nc.udp.listening", { port }));
@@ -291,17 +292,17 @@ export const nc = {
         }
 
         if (listen) {
-            if (positional.length < 1) return t("app.terminal.commands.nc.usage");
+            if (positional.length < 1) throw new CommandError(t("app.terminal.commands.nc.usage"));
             const port = Number(positional[0]);
             if (!Number.isInteger(port) || port < 1 || port > 65535)
-                return t("app.terminal.commands.nc.err.invalidPort");
+                throw new CommandError(t("app.terminal.commands.nc.err.invalidPort"));
             return udp ? await ncUdpListen(ctx, port) : await ncTcpListen(ctx, port);
         } else {
-            if (positional.length < 2) return t("app.terminal.commands.nc.usage");
+            if (positional.length < 2) throw new CommandError(t("app.terminal.commands.nc.usage"));
             const host = positional[0];
             const port = Number(positional[1]);
             if (!Number.isInteger(port) || port < 1 || port > 65535)
-                return t("app.terminal.commands.nc.err.invalidPort");
+                throw new CommandError(t("app.terminal.commands.nc.err.invalidPort"));
             return udp ? await ncUdpConnect(ctx, host, port) : await ncTcpConnect(ctx, host, port);
         }
     },

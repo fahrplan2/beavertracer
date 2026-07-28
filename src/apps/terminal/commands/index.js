@@ -11,6 +11,12 @@ import { uname } from "./misc/uname.js";
 import { whoami } from "./misc/whoami.js";
 import { pwd } from "./misc/pwd.js";
 import { cd } from "./misc/cd.js";
+import { exportCmd } from "./misc/exportCmd.js";
+import { envCmd } from "./misc/envCmd.js";
+import { sh } from "./misc/sh.js";
+import { testCmd, bracketCmd } from "./misc/test.js";
+import { trueCmd } from "./misc/trueCmd.js";
+import { falseCmd } from "./misc/falseCmd.js";
 
 import { ls } from "./fs/ls.js";
 import { cat } from "./fs/cat.js";
@@ -61,6 +67,13 @@ export function registerBuiltins(app) {
         whoami,
         pwd,
         cd,
+        exportCmd,
+        envCmd,
+        sh,
+        testCmd,
+        bracketCmd,
+        trueCmd,
+        falseCmd,
 
         ls,
         cat,

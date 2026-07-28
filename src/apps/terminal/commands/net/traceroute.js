@@ -4,6 +4,7 @@ import { t } from "../../../../i18n/index.js";
 import { ipNumberToString, ipStringToNumber } from "../lib/ip.js";
 import { nowMs } from "../lib/time.js";
 import { sleepAbortable } from "../lib/abort.js";
+import { CommandError } from "../lib/errors.js";
 import { IPAddress } from "../../../../net/models/IPAddress.js";
 import { SimTimer } from "../../../../lib/SimTimer.js";
 
@@ -79,7 +80,7 @@ export const traceroute = {
       if (a === "-m") {
         argv.shift();
         const v = Number(take());
-        if (!Number.isFinite(v) || v <= 0) return t("app.terminal.commands.traceroute.err.invalidMaxTtl");
+        if (!Number.isFinite(v) || v <= 0) throw new CommandError(t("app.terminal.commands.traceroute.err.invalidMaxTtl"));
         maxTtl = Math.min(255, Math.floor(v));
         continue;
       }
@@ -87,7 +88,7 @@ export const traceroute = {
       if (a === "-q") {
         argv.shift();
         const v = Number(take());
-        if (!Number.isFinite(v) || v <= 0) return t("app.terminal.commands.traceroute.err.invalidProbes");
+        if (!Number.isFinite(v) || v <= 0) throw new CommandError(t("app.terminal.commands.traceroute.err.invalidProbes"));
         probes = Math.min(10, Math.floor(v));
         continue;
       }
@@ -95,7 +96,7 @@ export const traceroute = {
       if (a === "-w") {
         argv.shift();
         const v = Number(take());
-        if (!Number.isFinite(v) || v <= 0) return t("app.terminal.commands.traceroute.err.invalidTimeout");
+        if (!Number.isFinite(v) || v <= 0) throw new CommandError(t("app.terminal.commands.traceroute.err.invalidTimeout"));
         timeoutMs = Math.max(1, Math.floor(v * 1000));
         continue;
       }
@@ -104,18 +105,18 @@ export const traceroute = {
       break;
     }
 
-    if (!host) return usage();
+    if (!host) throw new CommandError(usage());
 
     const ipf = ctx.os.net;
-    if (!ipf?.icmpEcho) return t("app.terminal.commands.traceroute.err.noNetworkDriver");
+    if (!ipf?.icmpEcho) throw new CommandError(t("app.terminal.commands.traceroute.err.noNetworkDriver"));
 
     const dstIp = await resolveHostToIp(ctx, host);
-    if (!dstIp) return t("app.terminal.commands.traceroute.err.cannotResolve", { host });
+    if (!dstIp) throw new CommandError(t("app.terminal.commands.traceroute.err.cannotResolve", { host }));
 
     const echoFn = dstIp.isV4()
       ? ipf.icmpEcho.bind(ipf)
       : ipf.icmpv6Echo?.bind(ipf);
-    if (!echoFn) return t("app.terminal.commands.traceroute.err.noNetworkDriver");
+    if (!echoFn) throw new CommandError(t("app.terminal.commands.traceroute.err.noNetworkDriver"));
 
     const dstStr = dstIp.toString();
 

@@ -3,6 +3,7 @@
 import { t } from "../../../../i18n/index.js";
 import { ipStringToNumber, ipNumberToString } from "../lib/ip.js";
 import { IPAddress } from "../../../../net/models/IPAddress.js";
+import { CommandError } from "../lib/errors.js";
 
 /** @param {number} n */
 function u32(n) { return (n >>> 0); }
@@ -141,13 +142,15 @@ export const route = {
   },
   run: (ctx, args) => {
     const ipf = ctx.os.net;
-    if (!ipf) return t("app.terminal.commands.route.err.noNetworkDriver");
+    if (!ipf) throw new CommandError(t("app.terminal.commands.route.err.noNetworkDriver"));
 
     const rt = ipf.routingTable ?? [];
     const sub = args[0] ?? "show";
 
     // ---------------- show ----------------
     if (sub === "show" || sub === "list" || sub === "-n") {
+      // Empty routing table is a normal, successful outcome (like real
+      // `route`/`ip route` with nothing configured) - not an error.
       if (rt.length === 0) return t("app.terminal.commands.route.err.emptyTable");
 
       ctx.println(t("app.terminal.commands.route.out.tableHeader"));
@@ -190,17 +193,17 @@ export const route = {
       const ifSel = args[5];
 
       if (!(cidr && via === "via" && gwStr && dev === "dev" && ifSel)) {
-        return t("app.terminal.commands.route.usage.add");
+        throw new CommandError(t("app.terminal.commands.route.usage.add"));
       }
 
       const parsed = parseCidr(cidr);
-      if (!parsed) return t("app.terminal.commands.route.err.invalidDestinationCidr");
+      if (!parsed) throw new CommandError(t("app.terminal.commands.route.err.invalidDestinationCidr"));
 
       const gwIp = parseIpAddress(gwStr);
-      if (!gwIp) return t("app.terminal.commands.route.err.invalidGatewayIp");
+      if (!gwIp) throw new CommandError(t("app.terminal.commands.route.err.invalidGatewayIp"));
 
       const ifIndex = parseIfSel(ipf, ifSel);
-      if (ifIndex == null) return t("app.terminal.commands.route.err.invalidInterface", { iface: ifSel });
+      if (ifIndex == null) throw new CommandError(t("app.terminal.commands.route.err.invalidInterface", { iface: ifSel }));
 
       // IPStack.addRoute(dst, prefixLength, interf, nexthop)
       ipf.addRoute(parsed.dstIp, parsed.prefix, ifIndex, gwIp);
@@ -213,10 +216,10 @@ export const route = {
     // route del <dst>/<prefix> [via <gw>] [dev <if>]
     if (sub === "del" || sub === "delete") {
       const cidr = args[1];
-      if (!cidr) return t("app.terminal.commands.route.usage.del");
+      if (!cidr) throw new CommandError(t("app.terminal.commands.route.usage.del"));
 
       const parsed = parseCidr(cidr);
-      if (!parsed) return t("app.terminal.commands.route.err.invalidDestinationCidr");
+      if (!parsed) throw new CommandError(t("app.terminal.commands.route.err.invalidDestinationCidr"));
 
       // optional qualifiers
       let gwIp = null;
@@ -237,11 +240,11 @@ export const route = {
       }
 
       if (gwIp === null && args.includes("via")) {
-        return t("app.terminal.commands.route.err.invalidGatewayIp");
+        throw new CommandError(t("app.terminal.commands.route.err.invalidGatewayIp"));
       }
       if (ifIndex === null && args.includes("dev")) {
         const v = args[args.indexOf("dev") + 1];
-        return t("app.terminal.commands.route.err.invalidInterface", { iface: String(v ?? "") });
+        throw new CommandError(t("app.terminal.commands.route.err.invalidInterface", { iface: String(v ?? "") }));
       }
 
       let removed = 0;
@@ -268,6 +271,6 @@ export const route = {
       return;
     }
 
-    return t("app.terminal.commands.route.usage.main");
+    throw new CommandError(t("app.terminal.commands.route.usage.main"));
   },
 };

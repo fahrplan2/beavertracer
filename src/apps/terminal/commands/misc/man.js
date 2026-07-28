@@ -1,6 +1,7 @@
 //@ts-check
 
 import { t } from "../../../../i18n/index.js";
+import { CommandError } from "../lib/errors.js";
 
 /** @type {import("../types.js").Command} */
 export const man = {
@@ -14,11 +15,11 @@ export const man = {
   },
   run: (ctx, args) => {
     const name = args[0];
-    if (!name) return t("app.terminal.commands.man.usage");
+    if (!name) throw new CommandError(t("app.terminal.commands.man.usage"));
 
     const cmd = ctx.app.commands.get(name);
-    if (!cmd) return t("app.terminal.commands.man.notFound", { name });
-    if (!cmd.tldr) return t("app.terminal.commands.man.noEntry", { name });
+    if (!cmd) throw new CommandError(t("app.terminal.commands.man.notFound", { name }));
+    if (!cmd.tldr) throw new CommandError(t("app.terminal.commands.man.noEntry", { name }));
 
     const lines = [`${name} – ${t(cmd.tldr.descKey)}`];
     for (const { labelKey, cmd: example } of cmd.tldr.examples) {

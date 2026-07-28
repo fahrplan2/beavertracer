@@ -1,6 +1,7 @@
 //@ts-check
 
 import { t } from "../../../../i18n/index.js";
+import { CommandError } from "../lib/errors.js";
 
 /** @type {import("../types.js").Command} */
 export const ls = {
@@ -16,7 +17,7 @@ export const ls = {
   },
   run: (ctx, args) => {
     const fs = ctx.os.fs;
-    if (!fs) return t("app.terminal.commands.ls.err.noFilesystem");
+    if (!fs) throw new CommandError(t("app.terminal.commands.ls.err.noFilesystem"));
 
     let longFormat = false;
     let showAll = false;

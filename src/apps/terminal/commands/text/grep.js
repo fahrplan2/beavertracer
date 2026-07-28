@@ -2,6 +2,7 @@
 
 import { t } from "../../../../i18n/index.js";
 import { readInput, splitLines } from "../lib/input.js";
+import { CommandError } from "../lib/errors.js";
 
 /** @type {import("../types.js").Command} */
 export const grep = {
@@ -16,7 +17,7 @@ export const grep = {
   },
   run: async (ctx, args) => {
     const fs = ctx.os.fs;
-    if (!fs) return t("app.terminal.commands.grep.err.noFilesystem");
+    if (!fs) throw new CommandError(t("app.terminal.commands.grep.err.noFilesystem"));
 
     let ignoreCase = false;
     let invert = false;
@@ -37,18 +38,18 @@ export const grep = {
     }
 
     const [pattern, path] = positional;
-    if (!pattern) return t("app.terminal.commands.grep.usage");
+    if (!pattern) throw new CommandError(t("app.terminal.commands.grep.usage"));
 
     /** @type {RegExp} */
     let re;
     try {
       re = new RegExp(pattern, ignoreCase ? "i" : "");
     } catch {
-      return t("app.terminal.commands.grep.err.invalidPattern", { pattern });
+      throw new CommandError(t("app.terminal.commands.grep.err.invalidPattern", { pattern }));
     }
 
     const input = await readInput(ctx, fs, path);
-    if (input === null) return t("app.terminal.commands.grep.usage");
+    if (input === null) throw new CommandError(t("app.terminal.commands.grep.usage"));
 
     const lines = splitLines(input);
     /** @type {string[]} */

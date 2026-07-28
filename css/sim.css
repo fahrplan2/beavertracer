@@ -135,6 +135,15 @@
   min-height: 500px;
 }
 
+/* Linux (v86) serial console — needs real screen space to be usable as a
+   terminal; default noticeably bigger than the generic 600x200 floor, and
+   resizable (see Linux.js panelResizable) since there's no one right size. */
+.sim-panel:has(.linux-host-serial) {
+  width: 820px;
+  height: 560px;
+  min-height: 320px;
+}
+
 .sim-panel-header {
   height: 38px;
   padding: 0 var(--pad-lg);
@@ -420,7 +429,9 @@
 /**** Font Awesome Stuff ****/
 
 .sim-toolbar-buttons .fas,
-.sim-sidebar-btn .fas {
+.sim-toolbar-buttons .fab,
+.sim-sidebar-btn .fas,
+.sim-sidebar-btn .fab {
     font-size: 1.25rem;
 }
 
@@ -1326,7 +1337,8 @@ sim-toolbar-langbtn {
 }
 
 
-.sim-node .fas {
+.sim-node .fas,
+.sim-node .fab {
   font-size: 2rem;
 }
 
@@ -1656,7 +1668,9 @@ sim-toolbar-langbtn {
     gap: 3px;
   }
   .sim-toolbar-buttons .fas,
-  .sim-sidebar-btn .fas {
+  .sim-toolbar-buttons .fab,
+  .sim-sidebar-btn .fas,
+  .sim-sidebar-btn .fab {
     font-size: 1.3125rem;
   }
   .sim-sidebar-btn .my-icon-router,
@@ -1681,7 +1695,9 @@ sim-toolbar-langbtn {
     gap: 2px;
   }
   .sim-toolbar-buttons .fas,
-  .sim-sidebar-btn .fas {
+  .sim-toolbar-buttons .fab,
+  .sim-sidebar-btn .fas,
+  .sim-sidebar-btn .fab {
     font-size: 1.0625rem;
   }
   .sim-sidebar-btn .my-icon-router,
@@ -1718,7 +1734,9 @@ sim-toolbar-langbtn {
     gap: 0;
   }
   .sim-toolbar-buttons .fas,
-  .sim-sidebar-btn .fas {
+  .sim-toolbar-buttons .fab,
+  .sim-sidebar-btn .fas,
+  .sim-sidebar-btn .fab {
     font-size: 0.9375rem;
   }
   .sim-sidebar-btn .my-icon-router,
@@ -1750,7 +1768,8 @@ sim-toolbar-langbtn {
     font-size: 0.6875rem;
     gap: 3px;
   }
-  .sim-sidebar-btn .fas { font-size: 19px; }
+  .sim-sidebar-btn .fas,
+  .sim-sidebar-btn .fab { font-size: 19px; }
   .sim-sidebar-btn .my-icon-router,
   .sim-sidebar-btn .my-icon-switch {
     width: 20px; height: 20px;
@@ -1766,7 +1785,8 @@ sim-toolbar-langbtn {
     font-size: 0.625rem;
     gap: 2px;
   }
-  .sim-sidebar-btn .fas { font-size: 13px; }
+  .sim-sidebar-btn .fas,
+  .sim-sidebar-btn .fab { font-size: 13px; }
   .sim-sidebar-btn .my-icon-router,
   .sim-sidebar-btn .my-icon-switch {
     width: 14px; height: 14px;
@@ -1903,7 +1923,8 @@ sim-toolbar-langbtn {
     display: none;
   }
 
-  .sim-sidebar-btn .fas {
+  .sim-sidebar-btn .fas,
+  .sim-sidebar-btn .fab {
     font-size: 1.375rem;
   }
 
@@ -2012,21 +2033,65 @@ sim-toolbar-langbtn {
   }
 }
 
-/* ── Companion Bridge ──────────────────────────────────────────────────────── */
-.companion-bridge-status {
+/* ── Linux (v86) ────────────────────────────────────────────────────────────── */
+/* This is the same element as .sim-panel-body (the class is added onto the
+   existing panel body, not a separate wrapper) — don't redeclare `height`
+   here, .sim-panel-body's calc(100% - 38px) already accounts for the panel
+   header. A same-specificity `height: 100%` here would win on cascade order
+   alone and ignore that 38px, pushing the footer below the panel's bottom
+   edge. */
+.linux-host-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.linux-host-status {
+  flex: 0 0 auto;
   font-size: 0.85em;
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 4px;
+  color: #666;
+  background: #eee;
 }
-.companion-bridge-status--connected    { color: #1a7f37; background: #d3f8d3; }
-.companion-bridge-status--connecting   { color: #7a5800; background: #fff3cd; }
-.companion-bridge-status--disconnected { color: #666;    background: #eee; }
-.companion-bridge-status--error        { color: #a4262c; background: #fde7e9; }
 
-.companion-bridge-hint {
+/* xterm.js renders its own DOM/canvas inside this container (see Linux.js
+   for the FitAddon + ResizeObserver that keeps the terminal grid matching
+   this box); it grows with the panel instead of a fixed height so resizing
+   the window actually gives the terminal more room. */
+.linux-host-serial {
+  display: block;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 8px;
+  width: calc(100% - 16px);
+  overflow: hidden;
+  /* matches the xterm theme set in Linux.js — avoids a light flash before boot */
+  background: #202020;
+  border-radius: var(--radius-sm);
+}
+
+/* Slim status bar under the terminal (not a form row above it — this is a
+   running VM, not a settings field). */
+.linux-host-footer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pad-md);
+  padding: 6px var(--pad-md);
+  border-top: 1px solid color-mix(in oklch, var(--text), transparent 88%);
+  background: color-mix(in oklch, var(--surface-strong), var(--text) 4%);
+}
+
+.linux-host-hint {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 0.75em;
   color: #888;
-  margin: 8px 8px 0;
-  font-family: monospace;
+  margin: 0;
+  font-family: var(--font-mono);
 }

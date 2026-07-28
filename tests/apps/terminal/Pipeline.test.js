@@ -39,12 +39,16 @@ function makeApp() {
     },
   };
 
+  // Shared across every buildCtx() call, like TerminalApp's `this.env` - so a
+  // command that mutates ctx.env (export) is visible to later pipeline runs.
+  const shellEnv = /** @type {Record<string,string>} */ ({});
+
   /** @param {Partial<import('../../../src/apps/terminal/commands/types.js').ShellContext>} overrides */
   const buildCtx = (overrides) => /** @type {any} */ ({
     app,
     os: app.os,
     pid: 1,
-    env: {},
+    env: shellEnv,
     cwd: app.cwd,
     setCwd: (cwd) => { app.cwd = cwd; },
     clear: () => {},
@@ -260,5 +264,54 @@ describe('runPipeline', () => {
     const produced = events.filter((e) => e.startsWith('spin:')).length;
     const drained = events.filter((e) => e.startsWith('drain:')).length;
     expect(drained).toBe(produced);
+  });
+
+  it('returns true on success and false on command-not-found / thrown error', async () => {
+    expect(await runPipeline(env.app, parsePipeline('echo hi'), env.buildCtx)).toBe(true);
+    expect(await runPipeline(env.app, parsePipeline('nope'), env.buildCtx)).toBe(false);
+    expect(await runPipeline(env.app, parsePipeline('flaky'), env.buildCtx)).toBe(false);
+  });
+
+  it('returns the exit status of the last stage in a pipeline', async () => {
+    expect(await runPipeline(env.app, parsePipeline('echo hi | upper'), env.buildCtx)).toBe(true);
+    expect(await runPipeline(env.app, parsePipeline('echo hi | nope'), env.buildCtx)).toBe(false);
+  });
+
+  it('routes a thrown CommandError straight to stderr, with no errorPrefix wrapper', async () => {
+    const { CommandError } = await import('../../../src/apps/terminal/commands/lib/errors.js');
+
+    env.app.commands.set('bad-input', {
+      name: 'bad-input',
+      run: () => { throw new CommandError('bad-input: nope'); },
+    });
+
+    const ok = await runPipeline(env.app, parsePipeline('bad-input'), env.buildCtx);
+
+    expect(ok).toBe(false);
+    expect(env.stderr()).toBe('bad-input: nope\n');
+    expect(env.stderr()).not.toContain('errorPrefix');
+  });
+
+  it('a bare NAME=value stage sets an env var without needing export', async () => {
+    const { envCmd } = await import('../../../src/apps/terminal/commands/misc/envCmd.js');
+    env.app.commands.set('env', envCmd);
+
+    const ok = await runPipeline(env.app, parsePipeline('Test=1'), env.buildCtx);
+    expect(ok).toBe(true);
+
+    await runPipeline(env.app, parsePipeline('env'), env.buildCtx);
+    expect(env.stdout()).toContain('Test=1');
+  });
+
+  it('export persists an env var across pipeline runs, visible to env and later commands', async () => {
+    const { exportCmd } = await import('../../../src/apps/terminal/commands/misc/exportCmd.js');
+    const { envCmd } = await import('../../../src/apps/terminal/commands/misc/envCmd.js');
+    env.app.commands.set('export', exportCmd);
+    env.app.commands.set('env', envCmd);
+
+    await runPipeline(env.app, parsePipeline('export FOO=bar'), env.buildCtx);
+    await runPipeline(env.app, parsePipeline('env'), env.buildCtx);
+
+    expect(env.stdout()).toContain('FOO=bar');
   });
 });

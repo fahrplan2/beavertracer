@@ -3,6 +3,7 @@
 import { t } from "../../../../i18n/index.js";
 import { IPAddress } from "../../../../net/models/IPAddress.js";
 import { sleepAbortable } from "../lib/abort.js";
+import { CommandError } from "../lib/errors.js";
 
 // ── limits ────────────────────────────────────────────────────────────────────
 
@@ -212,12 +213,13 @@ export const nmap = {
             const a = argv.shift() ?? "";
 
             if (a === "--help" || a === "-h") {
+                // --help/-h prints usage text and succeeds, like real nmap.
                 return t("app.terminal.commands.nmap.help");
             }
 
             if (a === "-p") {
                 portSpec = argv.shift() ?? null;
-                if (!portSpec) return t("app.terminal.commands.nmap.err.missingPortSpec");
+                if (!portSpec) throw new CommandError(t("app.terminal.commands.nmap.err.missingPortSpec"));
                 continue;
             }
 
@@ -239,15 +241,15 @@ export const nmap = {
             }
         }
 
-        if (targets.length === 0) return t("app.terminal.commands.nmap.usage");
+        if (targets.length === 0) throw new CommandError(t("app.terminal.commands.nmap.usage"));
 
         // parse ports
         let ports = DEFAULT_PORTS;
         if (portSpec) {
             const parsed = parsePorts(portSpec);
-            if (!parsed) return t("app.terminal.commands.nmap.err.invalidPortSpec", { spec: portSpec });
+            if (!parsed) throw new CommandError(t("app.terminal.commands.nmap.err.invalidPortSpec", { spec: portSpec }));
             if (parsed.length > MAX_PORTS)
-                return t("app.terminal.commands.nmap.err.tooManyPorts", { max: MAX_PORTS });
+                throw new CommandError(t("app.terminal.commands.nmap.err.tooManyPorts", { max: MAX_PORTS }));
             ports = parsed;
         }
 
@@ -259,10 +261,10 @@ export const nmap = {
 
             if (target.includes("/")) {
                 const result = expandCIDR(target);
-                if (result === null) return t("app.terminal.commands.nmap.err.invalidTarget", { target });
-                if (typeof result === "string") return result;
+                if (result === null) throw new CommandError(t("app.terminal.commands.nmap.err.invalidTarget", { target }));
+                if (typeof result === "string") throw new CommandError(result);
                 if (hosts.length + result.length > MAX_HOSTS)
-                    return t("app.terminal.commands.nmap.err.tooManyHosts", { max: MAX_HOSTS });
+                    throw new CommandError(t("app.terminal.commands.nmap.err.tooManyHosts", { max: MAX_HOSTS }));
                 hosts.push(...result);
             } else {
                 let ip = /** @type {IPAddress|null} */ (null);
@@ -270,7 +272,7 @@ export const nmap = {
                 if (!ip) {
                     try { ip = await ctx.os.dns.resolveIP(target); } catch {}
                 }
-                if (!ip) return t("app.terminal.commands.nmap.err.cannotResolve", { host: target });
+                if (!ip) throw new CommandError(t("app.terminal.commands.nmap.err.cannotResolve", { host: target }));
                 hosts.push(ip);
             }
         }
