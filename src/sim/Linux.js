@@ -24,8 +24,8 @@ import { UILib } from "../lib/UILib.js";
  *   `ip link` by hand right after login; it isn't IP-configured on its own
  *   though — run `sh /root/networking.sh` for DHCP/static auto-config
  *
- * Only available in debug mode (?debug=1), like CompanionBridge — this is an
- * experimental, heavyweight node type.
+ * Only available in debug mode (?debug=1) — this is an experimental,
+ * heavyweight node type.
  */
 export class Linux extends SimulatedObject {
 

@@ -2021,25 +2021,6 @@ sim-toolbar-langbtn {
   }
 }
 
-/* ── Companion Bridge ──────────────────────────────────────────────────────── */
-.companion-bridge-status {
-  font-size: 0.85em;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 4px;
-}
-.companion-bridge-status--connected    { color: #1a7f37; background: #d3f8d3; }
-.companion-bridge-status--connecting   { color: #7a5800; background: #fff3cd; }
-.companion-bridge-status--disconnected { color: #666;    background: #eee; }
-.companion-bridge-status--error        { color: #a4262c; background: #fde7e9; }
-
-.companion-bridge-hint {
-  font-size: 0.75em;
-  color: #888;
-  margin: 8px 8px 0;
-  font-family: monospace;
-}
-
 /* ── Linux (v86) ────────────────────────────────────────────────────────────── */
 /* This is the same element as .sim-panel-body (the class is added onto the
    existing panel body, not a separate wrapper) — don't redeclare `height`

@@ -21,7 +21,6 @@ import { SimDialog } from "./lib/SimDialog.js";
 import { WelcomeDialog } from "./lib/WelcomeDialog.js";
 import { version } from "./lib/version.js";
 import { isTauri } from "./tauri.js";
-import { CompanionBridge } from "./sim/CompanionBridge.js";
 import { Linux } from "./sim/Linux.js";
 
 /**
@@ -42,7 +41,6 @@ const PLACE_TOOL_CTOR = /** @type {Record<string, new(...args: any[]) => Simulat
     "place-firewall":          Firewall,
     "place-text":              TextBox,
     "place-rect":              RectOverlay,
-    "place-companion-bridge":  CompanionBridge,
     "place-linux":             Linux,
 });
 
@@ -851,7 +849,6 @@ export class SimControl {
             ["Tablet", Tablet],
             ["HomeRouter", HomeRouter],
             ["Firewall", Firewall],
-            ["CompanionBridge", CompanionBridge],
             ["Linux", Linux],
             // Link handled separately
         ];
@@ -1322,7 +1319,6 @@ export class SimControl {
             ["place-firewall", t("sim.tool.firewall"), "fa-shield-halved"],
             ["place-text", t("sim.tool.textbox"), "fa-font"],
             ["place-rect", t("sim.tool.rectangle"), "fa-square"],
-            ...(this.debug ? [["place-companion-bridge", "Companion Bridge", "fa-network-wired"]] : []),
             ...(this.debug ? [["place-linux", "Linux", "fa-server"]] : []),
             ["delete", t("sim.tool.delete"), "fa-ban"],
         ];

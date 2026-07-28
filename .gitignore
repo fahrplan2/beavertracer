@@ -44,6 +44,3 @@ results/
 
 # Miscellaneous / scratch files
 /misc/
-
-# Companion build output
-companion/target/
