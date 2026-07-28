@@ -1,5 +1,4 @@
 // @ts-check
-import loadWiregasm from "@goodtools/wiregasm/dist/wiregasm";
 import { TabPicker } from "./lib/TabPicker.js";
 import { SplitGrid } from "./lib/SplitGrid.js";
 import { SimControl } from "../SimControl.js";
@@ -630,9 +629,10 @@ export class PCapViewer {
   // Wiregasm init + loading
   // ======================================================================
 
-  #makeWgPromise() {
+  async #makeWgPromise() {
     const locateWasm = this.#opt.locateWasm ?? "/wiregasm/wiregasm.wasm";
     const locateData = this.#opt.locateData ?? "/wiregasm/wiregasm.data";
+    const { default: loadWiregasm } = await import("@goodtools/wiregasm/dist/wiregasm");
     return loadWiregasm({
       locateFile: (/** @type {string} */ path, /** @type {string} */ prefix) => {
         if (path.endsWith(".wasm")) return locateWasm;

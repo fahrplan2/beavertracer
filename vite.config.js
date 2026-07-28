@@ -182,7 +182,7 @@ export default defineConfig({
     }),
   ],
   build: {
-    chunkSizeWarningLimit: 800,
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       input: buildInputs(),
       output: {
@@ -192,6 +192,7 @@ export default defineConfig({
           // chunk, not be downloaded by every visitor.
           if (id.includes("node_modules/v86")) return undefined;
           if (id.includes("node_modules/@xterm")) return undefined;
+          if (id.includes("node_modules/@goodtools/wiregasm")) return undefined;
           if (id.includes("node_modules")) return "vendor";
         },
       },
