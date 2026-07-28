@@ -2030,3 +2030,30 @@ sim-toolbar-langbtn {
   margin: 8px 8px 0;
   font-family: monospace;
 }
+
+/* ── Linux (v86) ────────────────────────────────────────────────────────────── */
+.linux-host-status {
+  font-size: 0.85em;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: #666;
+  background: #eee;
+}
+
+/* xterm.js renders its own canvas inside this container (see Linux.js); it
+   isn't a <textarea> anymore, so this only needs to size/contain that canvas. */
+.linux-host-serial {
+  display: block;
+  margin: 8px;
+  width: calc(100% - 16px);
+  height: 400px;
+  overflow: hidden;
+}
+
+.linux-host-hint {
+  font-size: 0.75em;
+  color: #888;
+  margin: 8px 8px 0;
+  font-family: var(--font-mono);
+}

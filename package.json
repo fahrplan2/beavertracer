@@ -14,7 +14,7 @@
   },
   "name": "beavertracer",
   "description": "",
-  "version": "0.1.25-dev.75.5a07861",
+  "version": "0.1.27-dev.30.847a6d0",
   "main": "electron/main.cjs",
   "repository": {
     "type": "git",
@@ -42,10 +42,12 @@
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.2.0",
     "@goodtools/wiregasm": "^1.9.1",
+    "@xterm/xterm": "^6.0.0",
     "country-flag-emoji-polyfill": "^0.1.8",
     "hack-font": "^3.3.0",
     "markdown-it-container": "^4.0.0",
-    "recast": "^0.23.11"
+    "recast": "^0.23.11",
+    "v86": "^0.5.424"
   },
   "allowScripts": {
     "fsevents@2.3.3": true
