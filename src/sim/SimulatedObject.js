@@ -82,6 +82,15 @@ export class SimulatedObject {
 
     panelOpen = false;
 
+    /** Whether the floating panel can be resized by dragging its edge/corner. Override per subclass. */
+    panelResizable = false;
+
+    /** @type {number} minimum panel width when panelResizable is true */
+    panelMinWidth = 220;
+
+    /** @type {number} minimum panel height when panelResizable is true */
+    panelMinHeight = 140;
+
     /**
      * callback when the panal was created
      * must be used e.g. for os->mount()
@@ -263,9 +272,9 @@ export class SimulatedObject {
             });
         }
         makeWindow(this.panelEl, {
-            resizable: false,
-            minWidth: 220,
-            minHeight: 140,
+            resizable: this.panelResizable,
+            minWidth: this.panelMinWidth,
+            minHeight: this.panelMinHeight,
             onResize: (w, h) => {
                 this.pw = w;
                 this.ph = h;

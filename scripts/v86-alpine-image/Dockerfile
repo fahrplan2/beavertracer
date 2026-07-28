@@ -2,7 +2,14 @@ FROM docker.io/i386/alpine:3.21.0
 
 ENV KERNEL=virt
 
-RUN apk add openrc alpine-base agetty alpine-conf linux-$KERNEL linux-firmware-none
+# Base system + a small set of userspace networking tools for testing a
+# hand-rolled network stack against a real client/server: iproute2 (full
+# `ip`/`ss`, not busybox's stripped-down applet), iputils (real `ping`),
+# bind-tools (`dig`/`nslookup`), curl, netcat-openbsd (`nc`).
+# No tcpdump — this project already ships its own packet analysis (Wiregasm).
+# nano for editing files (busybox already provides a minimal `vi` on its own).
+RUN apk add openrc alpine-base agetty alpine-conf linux-$KERNEL linux-firmware-none \
+    iproute2 iputils bind-tools curl netcat-openbsd nano
 
 RUN sed -i 's/getty 38400 tty1/agetty --autologin root tty1 linux/' /etc/inittab
 RUN echo 'ttyS0::respawn:/sbin/agetty --autologin root -s ttyS0 115200 vt100' >> /etc/inittab
@@ -10,7 +17,14 @@ RUN echo "root:" | chpasswd
 
 RUN setup-hostname localhost
 
-# Adding networking.sh script
+# Load the virtio-net driver automatically at boot (via the already-enabled
+# "modules" boot service, which modprobes each line of /etc/modules) so eth0
+# exists as soon as you log in — no manual driver load needed before running
+# `ip addr add ... dev eth0` yourself.
+RUN echo "virtio_net" >> /etc/modules
+
+# Adding networking.sh script — still useful for DHCP/static auto-config
+# (setup-interfaces -a -r); the driver itself is already loaded by boot time.
 RUN echo -e "rmmod ne2k-pci && modprobe ne2k-pci\nrmmod virtio-net && modprobe virtio-net\nhwclock -s\nsetup-interfaces -a -r" > /root/networking.sh && chmod +x /root/networking.sh
 
 # https://wiki.alpinelinux.org/wiki/Alpine_Linux_in_a_chroot#Preparing_init_services

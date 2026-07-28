@@ -29,6 +29,8 @@ rm alpine-rootfs.tar alpine-fs.json
 rm -rf alpine-rootfs-flat
 ```
 
-Login is automatic (root, no password). Networking is not configured on
-boot — run `sh /root/networking.sh` after login to load the NIC driver
-and DHCP/static-configure `eth0`.
+Login is automatic (root, no password). The virtio-net driver loads
+automatically at boot (via `/etc/modules`), so `eth0` is there right away —
+it just isn't IP-configured on its own; run `sh /root/networking.sh` after
+login for DHCP/static auto-config, or configure it by hand (`ip addr add
+... dev eth0`, `ip link set eth0 up`).

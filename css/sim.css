@@ -135,6 +135,15 @@
   min-height: 500px;
 }
 
+/* Linux (v86) serial console — needs real screen space to be usable as a
+   terminal; default noticeably bigger than the generic 600x200 floor, and
+   resizable (see Linux.js panelResizable) since there's no one right size. */
+.sim-panel:has(.linux-host-serial) {
+  width: 820px;
+  height: 560px;
+  min-height: 320px;
+}
+
 .sim-panel-header {
   height: 38px;
   padding: 0 var(--pad-lg);
@@ -2032,7 +2041,19 @@ sim-toolbar-langbtn {
 }
 
 /* ── Linux (v86) ────────────────────────────────────────────────────────────── */
+/* This is the same element as .sim-panel-body (the class is added onto the
+   existing panel body, not a separate wrapper) — don't redeclare `height`
+   here, .sim-panel-body's calc(100% - 38px) already accounts for the panel
+   header. A same-specificity `height: 100%` here would win on cascade order
+   alone and ignore that 38px, pushing the footer below the panel's bottom
+   edge. */
+.linux-host-body {
+  display: flex;
+  flex-direction: column;
+}
+
 .linux-host-status {
+  flex: 0 0 auto;
   font-size: 0.85em;
   font-weight: 600;
   padding: 2px 8px;
@@ -2041,19 +2062,43 @@ sim-toolbar-langbtn {
   background: #eee;
 }
 
-/* xterm.js renders its own canvas inside this container (see Linux.js); it
-   isn't a <textarea> anymore, so this only needs to size/contain that canvas. */
+/* xterm.js renders its own DOM/canvas inside this container (see Linux.js
+   for the FitAddon + ResizeObserver that keeps the terminal grid matching
+   this box); it grows with the panel instead of a fixed height so resizing
+   the window actually gives the terminal more room. */
 .linux-host-serial {
   display: block;
+  flex: 1 1 auto;
+  min-height: 0;
   margin: 8px;
   width: calc(100% - 16px);
-  height: 400px;
   overflow: hidden;
+  /* matches the xterm theme set in Linux.js — avoids a light flash before boot */
+  background: #202020;
+  border-radius: var(--radius-sm);
+}
+
+/* Slim status bar under the terminal (not a form row above it — this is a
+   running VM, not a settings field). */
+.linux-host-footer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pad-md);
+  padding: 6px var(--pad-md);
+  border-top: 1px solid color-mix(in oklch, var(--text), transparent 88%);
+  background: color-mix(in oklch, var(--surface-strong), var(--text) 4%);
 }
 
 .linux-host-hint {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 0.75em;
   color: #888;
-  margin: 8px 8px 0;
+  margin: 0;
   font-family: var(--font-mono);
 }
