@@ -35,6 +35,8 @@ export class SimulatedObject {
     name;
     kind = "SimulatedObject"; //needed for generating save id
     icon = "fa-heart";
+    /** FontAwesome style prefix for `icon` — override for brand icons (e.g. "fab" for "fa-linux"). */
+    iconStyle = "fas";
     id;
     static idnumber = 0;
 
@@ -147,7 +149,7 @@ export class SimulatedObject {
 
         // 1) icon
         const iconEl = document.createElement("i");
-        iconEl.classList.add("fas");
+        iconEl.classList.add(this.iconStyle);
         if (icon) iconEl.classList.add(this.icon);
 
         // 2) text
@@ -197,7 +199,7 @@ export class SimulatedObject {
         titleGroup.appendChild(rename);
 
         const panelIcon = document.createElement("i");
-        panelIcon.classList.add("fas", this.icon, "sim-panel-icon");
+        panelIcon.classList.add(this.iconStyle, this.icon, "sim-panel-icon");
         header.appendChild(panelIcon);
         header.appendChild(titleGroup);
         header.appendChild(close);

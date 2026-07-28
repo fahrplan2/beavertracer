@@ -1319,15 +1319,16 @@ export class SimControl {
             ["place-firewall", t("sim.tool.firewall"), "fa-shield-halved"],
             ["place-text", t("sim.tool.textbox"), "fa-font"],
             ["place-rect", t("sim.tool.rectangle"), "fa-square"],
-            ...(this.debug ? [["place-linux", "Linux", "fa-server"]] : []),
+            ...(this.debug ? [["place-linux", "Linux PC", "fa-linux", "fab"]] : []),
             ["delete", t("sim.tool.delete"), "fa-ban"],
         ];
 
-        for (const [id, label, icon] of tools) {
+        for (const [id, label, icon, iconStyle] of tools) {
             const b = UILib.iconbutton({
                 className: "sim-sidebar-btn",
                 label,
                 icon,
+                iconStyle,
                 onClick: () => {
                     this.tool = /** @type {any} */ (id);
                     if (this.root) this.root.dataset.tool = this.tool;

@@ -429,7 +429,9 @@
 /**** Font Awesome Stuff ****/
 
 .sim-toolbar-buttons .fas,
-.sim-sidebar-btn .fas {
+.sim-toolbar-buttons .fab,
+.sim-sidebar-btn .fas,
+.sim-sidebar-btn .fab {
     font-size: 1.25rem;
 }
 
@@ -1335,7 +1337,8 @@ sim-toolbar-langbtn {
 }
 
 
-.sim-node .fas {
+.sim-node .fas,
+.sim-node .fab {
   font-size: 2rem;
 }
 
@@ -1665,7 +1668,9 @@ sim-toolbar-langbtn {
     gap: 3px;
   }
   .sim-toolbar-buttons .fas,
-  .sim-sidebar-btn .fas {
+  .sim-toolbar-buttons .fab,
+  .sim-sidebar-btn .fas,
+  .sim-sidebar-btn .fab {
     font-size: 1.3125rem;
   }
   .sim-sidebar-btn .my-icon-router,
@@ -1690,7 +1695,9 @@ sim-toolbar-langbtn {
     gap: 2px;
   }
   .sim-toolbar-buttons .fas,
-  .sim-sidebar-btn .fas {
+  .sim-toolbar-buttons .fab,
+  .sim-sidebar-btn .fas,
+  .sim-sidebar-btn .fab {
     font-size: 1.0625rem;
   }
   .sim-sidebar-btn .my-icon-router,
@@ -1727,7 +1734,9 @@ sim-toolbar-langbtn {
     gap: 0;
   }
   .sim-toolbar-buttons .fas,
-  .sim-sidebar-btn .fas {
+  .sim-toolbar-buttons .fab,
+  .sim-sidebar-btn .fas,
+  .sim-sidebar-btn .fab {
     font-size: 0.9375rem;
   }
   .sim-sidebar-btn .my-icon-router,
@@ -1759,7 +1768,8 @@ sim-toolbar-langbtn {
     font-size: 0.6875rem;
     gap: 3px;
   }
-  .sim-sidebar-btn .fas { font-size: 19px; }
+  .sim-sidebar-btn .fas,
+  .sim-sidebar-btn .fab { font-size: 19px; }
   .sim-sidebar-btn .my-icon-router,
   .sim-sidebar-btn .my-icon-switch {
     width: 20px; height: 20px;
@@ -1775,7 +1785,8 @@ sim-toolbar-langbtn {
     font-size: 0.625rem;
     gap: 2px;
   }
-  .sim-sidebar-btn .fas { font-size: 13px; }
+  .sim-sidebar-btn .fas,
+  .sim-sidebar-btn .fab { font-size: 13px; }
   .sim-sidebar-btn .my-icon-router,
   .sim-sidebar-btn .my-icon-switch {
     width: 14px; height: 14px;
@@ -1912,7 +1923,8 @@ sim-toolbar-langbtn {
     display: none;
   }
 
-  .sim-sidebar-btn .fas {
+  .sim-sidebar-btn .fas,
+  .sim-sidebar-btn .fab {
     font-size: 1.375rem;
   }
 

@@ -30,7 +30,8 @@ import { UILib } from "../lib/UILib.js";
 export class Linux extends SimulatedObject {
 
     kind = "Linux";
-    icon = "fa-server";
+    icon = "fa-linux";
+    iconStyle = "fab";
 
     /** @type {EthernetPort} */
     port = new EthernetPort("eth0");
@@ -56,7 +57,7 @@ export class Linux extends SimulatedObject {
     /**
      * @param {string} [name]
      */
-    constructor(name = "Linux") {
+    constructor(name = "Linux PC") {
         super(name);
         this.root.classList.add("linux-host");
         // A serial console needs real screen real estate to be usable — and
@@ -285,7 +286,7 @@ export class Linux extends SimulatedObject {
 
     /** @param {any} n */
     static fromJSON(n) {
-        const obj = new Linux(n.name ?? "Linux");
+        const obj = new Linux(n.name ?? "Linux PC");
         obj._applyBaseJSON(n);
         return obj;
     }
