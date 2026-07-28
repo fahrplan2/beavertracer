@@ -42,3 +42,6 @@ results/
 
 # Companion build output
 companion/target/
+
+# gitignore for linux test file
+public/v86/build/v86.wasm
