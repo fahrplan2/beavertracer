@@ -21,7 +21,7 @@ import { SimDialog } from "./lib/SimDialog.js";
 import { WelcomeDialog } from "./lib/WelcomeDialog.js";
 import { version } from "./lib/version.js";
 import { isTauri } from "./tauri.js";
-import { CompanionBridge } from "./sim/CompanionBridge.js";
+import { Linux } from "./sim/Linux.js";
 
 /**
  * @typedef {Object} PortDescriptor
@@ -41,7 +41,7 @@ const PLACE_TOOL_CTOR = /** @type {Record<string, new(...args: any[]) => Simulat
     "place-firewall":          Firewall,
     "place-text":              TextBox,
     "place-rect":              RectOverlay,
-    "place-companion-bridge":  CompanionBridge,
+    "place-linux":             Linux,
 });
 
 /** Maps place-tool id → i18n name key (undefined = no default name) */
@@ -849,7 +849,7 @@ export class SimControl {
             ["Tablet", Tablet],
             ["HomeRouter", HomeRouter],
             ["Firewall", Firewall],
-            ["CompanionBridge", CompanionBridge],
+            ["Linux", Linux],
             // Link handled separately
         ];
         const REGISTRY = new Map(registryEntries);
@@ -1319,15 +1319,16 @@ export class SimControl {
             ["place-firewall", t("sim.tool.firewall"), "fa-shield-halved"],
             ["place-text", t("sim.tool.textbox"), "fa-font"],
             ["place-rect", t("sim.tool.rectangle"), "fa-square"],
-            ...(this.debug ? [["place-companion-bridge", "Companion Bridge", "fa-network-wired"]] : []),
+            ...(this.debug ? [["place-linux", "Linux PC", "fa-linux", "fab"]] : []),
             ["delete", t("sim.tool.delete"), "fa-ban"],
         ];
 
-        for (const [id, label, icon] of tools) {
+        for (const [id, label, icon, iconStyle] of tools) {
             const b = UILib.iconbutton({
                 className: "sim-sidebar-btn",
                 label,
                 icon,
+                iconStyle,
                 onClick: () => {
                     this.tool = /** @type {any} */ (id);
                     if (this.root) this.root.dataset.tool = this.tool;

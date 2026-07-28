@@ -92,6 +92,47 @@ function wiregasmAssets() {
   };
 }
 
+function v86Assets() {
+  // libv86.mjs (the V86 class) is imported normally from the "v86" package by
+  // src/sim/Linux.js and bundled by Vite. Only the wasm binary needs to be
+  // served as a static asset (referenced via the `wasm_path` V86 option).
+  const files = ["v86.wasm"];
+
+  function copyAssets(root) {
+    const srcDir = path.join(root, "node_modules", "v86", "build");
+    const dstDir = path.join(root, "public", "v86", "build");
+
+    if (!fs.existsSync(srcDir)) {
+      throw new Error("[v86] v86 not installed (missing build folder)");
+    }
+
+    fs.mkdirSync(dstDir, { recursive: true });
+
+    for (const f of files) {
+      const src = path.join(srcDir, f);
+      const dst = path.join(dstDir, f);
+
+      if (!fs.existsSync(src)) {
+        throw new Error(`[v86] Missing asset in package: ${src}`);
+      }
+
+      fs.copyFileSync(src, dst);
+    }
+  }
+
+  return {
+    name: "v86-assets",
+
+    configResolved(config) {
+      copyAssets(config.root ?? process.cwd());
+    },
+
+    buildStart() {
+      copyAssets(process.cwd());
+    },
+  };
+}
+
 function walk(dir) {
   /** @type {string[]} */
   const out = [];
@@ -125,6 +166,7 @@ export default defineConfig({
   base: "./",
   plugins: [
     wiregasmAssets(),
+    v86Assets(),
     lessonsPlugin(),
     staticSitemap({
       siteUrl: "https://www.beavertracer.eu",
@@ -145,6 +187,11 @@ export default defineConfig({
       input: buildInputs(),
       output: {
         manualChunks(id) {
+          // Keep out of the shared "vendor" chunk: Linux.js loads these via a
+          // dynamic import() so they should stay in their own lazy-loaded
+          // chunk, not be downloaded by every visitor.
+          if (id.includes("node_modules/v86")) return undefined;
+          if (id.includes("node_modules/@xterm")) return undefined;
           if (id.includes("node_modules")) return "vendor";
         },
       },

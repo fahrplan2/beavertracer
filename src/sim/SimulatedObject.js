@@ -35,6 +35,8 @@ export class SimulatedObject {
     name;
     kind = "SimulatedObject"; //needed for generating save id
     icon = "fa-heart";
+    /** FontAwesome style prefix for `icon` — override for brand icons (e.g. "fab" for "fa-linux"). */
+    iconStyle = "fas";
     id;
     static idnumber = 0;
 
@@ -81,6 +83,15 @@ export class SimulatedObject {
     py = 120;
 
     panelOpen = false;
+
+    /** Whether the floating panel can be resized by dragging its edge/corner. Override per subclass. */
+    panelResizable = false;
+
+    /** @type {number} minimum panel width when panelResizable is true */
+    panelMinWidth = 220;
+
+    /** @type {number} minimum panel height when panelResizable is true */
+    panelMinHeight = 140;
 
     /**
      * callback when the panal was created
@@ -138,7 +149,7 @@ export class SimulatedObject {
 
         // 1) icon
         const iconEl = document.createElement("i");
-        iconEl.classList.add("fas");
+        iconEl.classList.add(this.iconStyle);
         if (icon) iconEl.classList.add(this.icon);
 
         // 2) text
@@ -188,7 +199,7 @@ export class SimulatedObject {
         titleGroup.appendChild(rename);
 
         const panelIcon = document.createElement("i");
-        panelIcon.classList.add("fas", this.icon, "sim-panel-icon");
+        panelIcon.classList.add(this.iconStyle, this.icon, "sim-panel-icon");
         header.appendChild(panelIcon);
         header.appendChild(titleGroup);
         header.appendChild(close);
@@ -263,9 +274,9 @@ export class SimulatedObject {
             });
         }
         makeWindow(this.panelEl, {
-            resizable: false,
-            minWidth: 220,
-            minHeight: 140,
+            resizable: this.panelResizable,
+            minWidth: this.panelMinWidth,
+            minHeight: this.panelMinHeight,
             onResize: (w, h) => {
                 this.pw = w;
                 this.ph = h;
