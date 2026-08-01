@@ -1383,6 +1383,7 @@ export default {
   "lessons.wip.title": "🚧 Μαθήματα σε εξέλιξη",
   "lessons.wip.text": "Αυτές οι σελίδες δεν είναι ακόμη ολοκληρωμένες. Το περιεχόμενο μπορεί να λείπει, να είναι ημιτελές ή να μην έχει ακόμη διορθωθεί.",
   "lessons.pageNav": "Πλοήγηση σελίδας",
+  "lessons.notAvailableInLanguage": "Αυτό το μάθημα δεν είναι διαθέσιμο στη γλώσσα σας ακόμη.",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD δεν έχει οριστεί",
   "app.terminal.commands.sh.usage": "χρήση: sh <script> [args...]",
   "app.terminal.commands.sh.err.noFilesystem": "sh: δεν υπάρχει σύστημα αρχείων",
@@ -1463,5 +1464,11 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "Μετατροπή πεζών σε κεφαλαία",
   "app.terminal.commands.tr.tldr.ex.delete": "Αφαίρεση όλων των ψηφίων από την είσοδο",
   "app.terminal.commands.tee.tldr.desc": "Εγγραφή εισόδου σε αρχείο και μετάδοσή της",
-  "app.terminal.commands.tee.tldr.ex.basic": "Αποθήκευση εξόδου σε αρχείο ενώ εμφανίζεται ακόμα"
+  "app.terminal.commands.tee.tldr.ex.basic": "Αποθήκευση εξόδου σε αρχείο ενώ εμφανίζεται ακόμα",
+  "lessons.loadError": "Αυτό το μάθημα δεν μπορούσε να φορτωθεί.",
+  "lessons.simLaunch": "Φόρτωση προσομοίωσης",
+  "lessons.task.check": "Έλεγχος εργασίας",
+  "lessons.task.pass": "Σωστό!",
+  "lessons.task.fail": "Όχι ακριβώς — συνέχισε να προσπαθείς.",
+  "lessons.openStandalone": "Ανοίξτε εξωτερική σελίδα"
 };

@@ -1463,5 +1463,12 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "Перетворити малі літери на великі",
   "app.terminal.commands.tr.tldr.ex.delete": "Видалити всі цифри з введення",
   "app.terminal.commands.tee.tldr.desc": "Записати введення у файл і пропустити його далі",
-  "app.terminal.commands.tee.tldr.ex.basic": "Зберегти вивід у файл, одночасно показуючи його"
+  "app.terminal.commands.tee.tldr.ex.basic": "Зберегти вивід у файл, одночасно показуючи його",
+  "lessons.loadError": "Цей урок не вдалося завантажити.",
+  "lessons.notAvailableInLanguage": "Цей урок ще недоступний вашою мовою.",
+  "lessons.simLaunch": "Завантажити симуляцію",
+  "lessons.task.check": "Перевірити завдання",
+  "lessons.task.pass": "Правильно!",
+  "lessons.task.fail": "Не зовсім — продовжуйте спробувати.",
+  "lessons.openStandalone": "Відкрити зовнішню сторінку"
 };

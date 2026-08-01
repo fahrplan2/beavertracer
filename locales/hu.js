@@ -1462,5 +1462,12 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "Kisbetűk nagybetűvé konvertálása",
   "app.terminal.commands.tr.tldr.ex.delete": "Az összes számjegy eltávolítása a bemenetből",
   "app.terminal.commands.tee.tldr.desc": "Bemenet írása egy fájlba és átvezetése",
-  "app.terminal.commands.tee.tldr.ex.basic": "Kimenet mentése fájlba az megjelenítés közben"
+  "app.terminal.commands.tee.tldr.ex.basic": "Kimenet mentése fájlba az megjelenítés közben",
+  "lessons.loadError": "Ez a lecke nem töltődött be.",
+  "lessons.notAvailableInLanguage": "Ez a lecke még nem érhető el az Ön nyelvén.",
+  "lessons.simLaunch": "Szimuláció betöltése",
+  "lessons.task.check": "Feladat ellenőrzése",
+  "lessons.task.pass": "Helyes!",
+  "lessons.task.fail": "Nem egészen — próbálkozz újra.",
+  "lessons.openStandalone": "Külső oldal megnyitása"
 };

@@ -1383,6 +1383,7 @@ export default {
   "lessons.wip.title": "🚧 Oppitunnit työn alla",
   "lessons.wip.text": "Nämä sivut eivät ole vielä valmiit. Sisältö saattaa puuttua, olla epätäydellinen tai sitä ei ole vielä tarkistettu.",
   "lessons.pageNav": "Sivun navigointi",
+  "lessons.notAvailableInLanguage": "Tämä oppitunti ei ole vielä saatavilla omalla kielelläsi.",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD ei ole asetettu",
   "app.terminal.commands.sh.usage": "käyttö: sh <skripti> [argumentit...]",
   "app.terminal.commands.sh.err.noFilesystem": "sh: ei tiedostojärjestelmää",
@@ -1463,5 +1464,11 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "Muunna pienet kirjaimet isoiksi kirjaimiksi",
   "app.terminal.commands.tr.tldr.ex.delete": "Poista kaikki numerot syötteestä",
   "app.terminal.commands.tee.tldr.desc": "Kirjoita syöte tiedostoon ja välitä se eteenpäin",
-  "app.terminal.commands.tee.tldr.ex.basic": "Tallenna tulos tiedostoon ja näytä se samalla näytöllä"
+  "app.terminal.commands.tee.tldr.ex.basic": "Tallenna tulos tiedostoon ja näytä se samalla näytöllä",
+  "lessons.loadError": "Tätä oppituntia ei voitu ladata.",
+  "lessons.simLaunch": "Lataa simulaatio",
+  "lessons.task.check": "Tarkista tehtävä",
+  "lessons.task.pass": "Oikein!",
+  "lessons.task.fail": "Ei aivan — yritä uudelleen.",
+  "lessons.openStandalone": "Avaa ulkoinen sivu"
 };

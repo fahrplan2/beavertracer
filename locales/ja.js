@@ -1463,5 +1463,12 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "小文字を大文字に変換する",
   "app.terminal.commands.tr.tldr.ex.delete": "入力からすべての数字を削除する",
   "app.terminal.commands.tee.tldr.desc": "入力をファイルに書き込み、それをパスする",
-  "app.terminal.commands.tee.tldr.ex.basic": "出力をファイルに保存しながら同時に表示する"
+  "app.terminal.commands.tee.tldr.ex.basic": "出力をファイルに保存しながら同時に表示する",
+  "lessons.loadError": "このレッスンを読み込めませんでした。",
+  "lessons.notAvailableInLanguage": "このレッスンはまだあなたの言語では利用できません。",
+  "lessons.simLaunch": "シミュレーションを読み込む",
+  "lessons.task.check": "タスクを確認",
+  "lessons.task.pass": "正解です！",
+  "lessons.task.fail": "もう少し — 試し続けてください。",
+  "lessons.openStandalone": "外部ページを開く"
 };

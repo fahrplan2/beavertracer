@@ -1417,6 +1417,7 @@ export default {
   "lessons.wip.title": "🚧 Leçons en cours de développement",
   "lessons.wip.text": "Ces pages ne sont pas encore complètes. Le contenu peut être manquant, incomplet ou non encore relecture.",
   "lessons.pageNav": "Navigation de page",
+  "lessons.notAvailableInLanguage": "Cette leçon n'est pas encore disponible dans votre langue.",
   "app.terminal.commands.cd.err.noOldPwd": "cd : OLDPWD non défini",
   "app.terminal.commands.sh.usage": "usage : sh <script> [args...]",
   "app.terminal.commands.sh.err.noFilesystem": "sh : pas de système de fichiers",
@@ -1497,5 +1498,11 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "Convertir les minuscules en majuscules",
   "app.terminal.commands.tr.tldr.ex.delete": "Supprimer tous les chiffres de l'entrée",
   "app.terminal.commands.tee.tldr.desc": "Écrire l'entrée dans un fichier et la transmettre",
-  "app.terminal.commands.tee.tldr.ex.basic": "Enregistrer la sortie dans un fichier tout en l'affichant"
+  "app.terminal.commands.tee.tldr.ex.basic": "Enregistrer la sortie dans un fichier tout en l'affichant",
+  "lessons.loadError": "Cette leçon n'a pas pu être chargée.",
+  "lessons.simLaunch": "Charger la simulation",
+  "lessons.task.check": "Vérifier la tâche",
+  "lessons.task.pass": "Correct !",
+  "lessons.task.fail": "Pas tout à fait — continuez à essayer.",
+  "lessons.openStandalone": "Ouvrir la page externe"
 };

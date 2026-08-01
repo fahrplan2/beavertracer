@@ -1383,6 +1383,7 @@ export default {
   "lessons.wip.title": "🚧 Pooleli olevad õppetunnid",
   "lessons.wip.text": "Need lehed pole veel valmis. Sisu võib olla puudu, mittetäielik või pole veel korrektuuri läbinud.",
   "lessons.pageNav": "Lehekülje navigeerimine",
+  "lessons.notAvailableInLanguage": "See õppetund ei ole teie keeles saadaval.",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD pole määratud",
   "app.terminal.commands.sh.usage": "kasutamine: sh <skript> [argumendid...]",
   "app.terminal.commands.sh.err.noFilesystem": "sh: failisüsteemi pole",
@@ -1463,5 +1464,11 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "Teisenda väikesed tähed suureteks",
   "app.terminal.commands.tr.tldr.ex.delete": "Eemalda sisendist kõik numbrid",
   "app.terminal.commands.tee.tldr.desc": "Kirjuta sisend faili ja edasta see edasi",
-  "app.terminal.commands.tee.tldr.ex.basic": "Salvesta väljund faili, kuigi näita seda endiselt"
+  "app.terminal.commands.tee.tldr.ex.basic": "Salvesta väljund faili, kuigi näita seda endiselt",
+  "lessons.loadError": "Seda õppetundi ei saanud laadida.",
+  "lessons.simLaunch": "Laadi simulatsioon",
+  "lessons.task.check": "Kontrolli ülesannet",
+  "lessons.task.pass": "Õige!",
+  "lessons.task.fail": "Mitte päris — jätka proovimist.",
+  "lessons.openStandalone": "Ava väline leht"
 };

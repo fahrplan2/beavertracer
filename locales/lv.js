@@ -1463,5 +1463,12 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "Konvertēt mazos burtus uz lieliem",
   "app.terminal.commands.tr.tldr.ex.delete": "Noņemt visus ciparus no ievada",
   "app.terminal.commands.tee.tldr.desc": "Ierakstīt ievadu failā un to pārsūtīt",
-  "app.terminal.commands.tee.tldr.ex.basic": "Saglabāt izvadi failā, vienlaikus to parādot"
+  "app.terminal.commands.tee.tldr.ex.basic": "Saglabāt izvadi failā, vienlaikus to parādot",
+  "lessons.loadError": "Šo stundu nevarēja ielādēt.",
+  "lessons.notAvailableInLanguage": "Šī stunda vēl nav pieejama jūsu valodā.",
+  "lessons.simLaunch": "Ielādēt simulāciju",
+  "lessons.task.check": "Pārbaudīt uzdevumu",
+  "lessons.task.pass": "Pareizi!",
+  "lessons.task.fail": "Ne visai pareizi — turpini mēģināt.",
+  "lessons.openStandalone": "Atvērt ārējo lapu"
 };

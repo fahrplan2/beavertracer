@@ -523,17 +523,28 @@ body {
 }
 .callout-danger::after  { content: "\f057"; color: #dc2626; }
 
+/* ":::draft" — construction-site orange (opt-in per-page "not finished yet"
+   notice, replaces the old always-on wip-banner in _template.html). */
+.callout-draft {
+  border-color: #d97706;
+  background: #fffbeb;
+  color: #78350f;
+}
+.callout-draft::after   { content: "\f071"; color: #d97706; }
+
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .callout-note    { background: #1e3a5f; color: #bfdbfe; }
   :root:not([data-theme="light"]) .callout-tip     { background: #14532d; color: #bbf7d0; }
   :root:not([data-theme="light"]) .callout-warning { background: #451a03; color: #fde68a; }
   :root:not([data-theme="light"]) .callout-danger  { background: #450a0a; color: #fecaca; }
+  :root:not([data-theme="light"]) .callout-draft   { background: #451a03; color: #fde68a; }
 }
 
 [data-theme="dark"] .callout-note    { background: #1e3a5f; color: #bfdbfe; }
 [data-theme="dark"] .callout-tip     { background: #14532d; color: #bbf7d0; }
 [data-theme="dark"] .callout-warning { background: #451a03; color: #fde68a; }
 [data-theme="dark"] .callout-danger  { background: #450a0a; color: #fecaca; }
+[data-theme="dark"] .callout-draft   { background: #451a03; color: #fde68a; }
 
 /* ── Prev / Next navigation ───────────────────────────────────── */
 .lesson-nav {
@@ -578,17 +589,6 @@ body {
 .my-icon-switch {
   -webkit-mask-image: url('/switch.svg');
   mask-image: url('/switch.svg');
-}
-
-/* ── WIP banner ───────────────────────────────────────────────── */
-.wip-banner {
-  background: var(--warning-soft);
-  border-left: 4px solid var(--warning);
-  color: var(--text);
-  padding: 14px 20px;
-  margin-bottom: 28px;
-  font-size: 0.9rem;
-  line-height: 1.5;
 }
 
 /* ── Footer ───────────────────────────────────────────────────── */

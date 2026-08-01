@@ -3,6 +3,12 @@
 import { initLocale } from "./i18n/index.js";
 import { SimControl } from "./SimControl.js";
 import { WelcomeDialog } from "./lib/WelcomeDialog.js";
+import { readBootParams } from "./lib/AppUrl.js";
+
+// Read every recognized query param in one pass, before anything else
+// (StaticPageRouter's initial mount, i18n's own URL handling) touches
+// location.search — see AppUrl.js for why that ordering used to matter.
+const bootParams = readBootParams();
 
 /**
  * If ?sim=<url> is present, fetch that JSON.
@@ -10,11 +16,8 @@ import { WelcomeDialog } from "./lib/WelcomeDialog.js";
  * Returns null on any error or unsupported URL format.
  * @returns {Promise<object|null>}
  */
-// Capture before StaticPageRouter's navigate() strips query params via history.replaceState
-const _simParam = new URLSearchParams(window.location.search).get("sim");
-
 async function resolveStartupSim() {
-    const simUrl = _simParam;
+    const simUrl = bootParams.sim;
     if (!simUrl) return null;
 
     const isSameOrigin = simUrl.startsWith("/");
@@ -32,15 +35,12 @@ async function resolveStartupSim() {
 
 //******************* MAIN ENTRY POINT ************************/
 
-initLocale().then(async () => {
+initLocale(bootParams.lang).then(async () => {
     const simRoot = /** @type {HTMLElement} */ (document.getElementById("simcontrol"));
-    const params = new URLSearchParams(window.location.search);
-    const embedded = params.get("embed") === "1";
-    const editable = params.get("editable") === "1";
-    const debug = params.get("debug") === "1";
+    const { embed: embedded, editable, debug, sim: simParam, lesson } = bootParams;
     const sim = new SimControl(simRoot, { embedded, editable, debug });
 
-    if (_simParam) {
+    if (simParam) {
         const scene = await resolveStartupSim();
         if (scene) sim.restore(scene); else sim.new();
     } else {
@@ -53,7 +53,15 @@ initLocale().then(async () => {
         splash.addEventListener("transitionend", () => splash.remove(), { once: true });
     }
 
-    if (!_simParam && !embedded) {
+    // ?lesson=<href> deep link — jump straight to that lesson instead of
+    // showing the welcome dialog. Load it *before* opening the panel: that
+    // way toggleLessonsPanel()'s own "load the first lesson if nothing is
+    // shown yet" (ensureLoaded()) sees _currentHref already set and skips,
+    // instead of racing this fetch for what ends up in the panel.
+    if (lesson && !embedded) {
+        await sim.lessonsPanel?.load(lesson);
+        sim.toggleLessonsPanel(true);
+    } else if (!simParam && !embedded) {
         WelcomeDialog.show(sim);
     }
 
@@ -67,4 +75,3 @@ initLocale().then(async () => {
     }
 
 });
-

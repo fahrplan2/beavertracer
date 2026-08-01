@@ -1463,5 +1463,12 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "Chuyển đổi chữ thường thành chữ hoa",
   "app.terminal.commands.tr.tldr.ex.delete": "Xóa tất cả các chữ số từ đầu vào",
   "app.terminal.commands.tee.tldr.desc": "Ghi đầu vào vào một tệp và chuyển qua",
-  "app.terminal.commands.tee.tldr.ex.basic": "Lưu đầu ra vào một tệp trong khi vẫn hiển thị nó"
+  "app.terminal.commands.tee.tldr.ex.basic": "Lưu đầu ra vào một tệp trong khi vẫn hiển thị nó",
+  "lessons.loadError": "Không thể tải bài học này.",
+  "lessons.notAvailableInLanguage": "Bài học này chưa có sẵn bằng ngôn ngữ của bạn.",
+  "lessons.simLaunch": "Tải mô phỏng",
+  "lessons.task.check": "Kiểm tra bài tập",
+  "lessons.task.pass": "Chính xác!",
+  "lessons.task.fail": "Chưa đúng — tiếp tục thử lại.",
+  "lessons.openStandalone": "Mở trang bên ngoài"
 };

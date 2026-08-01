@@ -75,6 +75,9 @@ Das ist ein **warning**-Callout — für Warnungen, die Aufmerksamkeit erfordern
 Das ist ein **danger**-Callout — für kritische Fehlerquellen.
 :::
 
+:::draft
+:::
+
 ### Icons
 
 Font Awesome Solid: :fa-play: :fa-stop: :fa-desktop: :fa-shield-halved: :fa-wifi:
@@ -87,6 +90,15 @@ Gerätesymbole: :router: :switch:
 
 :::sim
 url=/sims/demo.btsim
+:::
+
+### Aufgabe mit Verhaltenscheck
+
+:::task
+title: PC 1 und PC 2 verbinden
+Prüfen Sie, ob PC 1 (id 9) eine IP im Netz 192.168.0.0/24 hat und PC 2 (id 11) erreichen kann.
+check: ip(9, "192.168.0.0/24")
+check: pingOk(9, 11)
 :::
 
 ---

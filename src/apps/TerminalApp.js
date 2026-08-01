@@ -982,6 +982,74 @@ export class TerminalApp extends GenericProcess {
     }
 
     /**
+     * Runs `cmdText` fully headless: no DOM/terminal panel is ever created
+     * or touched, stdout is captured (not rendered), and — unlike
+     * `_runNestedCapture` (the `$(...)` substitution engine, whose string-only
+     * return contract two other call sites already depend on) — whether the
+     * command chain succeeded is also returned. Used by CheckApi for
+     * ":::task" shell-command checks in the lessons panel.
+     * @param {string} cmdText
+     * @returns {Promise<{ stdout: string, ok: boolean }>}
+     */
+    async runHeadless(cmdText) {
+        /** @type {import("./terminal/Script.js").ScriptExecState} */
+        const state = {
+            app: this,
+            env: { ...this.env },
+            cwd: this.cwd,
+            pid: this.pid,
+            lastExitCode: this.lastExitCode,
+            positional: [],
+            scriptName: "sh",
+            functions: new Map(this.functions),
+            heredocs: new Map(),
+            signal: this.currentAbort?.signal ?? new AbortController().signal,
+        };
+
+        /** @type {string[]} */
+        const chunks = [];
+        const captureApp = new Proxy(this, {
+            get: (target, prop) => {
+                if (prop === "cwd") return state.cwd;
+                if (prop === "print") return (/** @type {string} */ text, /** @type {"0"|"1"} */ color = "0") =>
+                    color === "1" ? undefined : chunks.push(text ?? "");
+                if (prop === "println") return (/** @type {string} */ text, /** @type {"0"|"1"} */ color = "0") =>
+                    color === "1" ? undefined : chunks.push((text ?? "") + "\n");
+                return Reflect.get(target, prop);
+            },
+        });
+
+        const buildCtx = (/** @type {Partial<ShellContext>} */ overrides) => ({
+            ...this._buildShellContext(overrides),
+            env: state.env,
+            cwd: state.cwd,
+            setCwd: (/** @type {string} */ cwd) => { state.cwd = cwd; },
+        });
+
+        const entries = splitCommandList(cmdText);
+        let lastOk = true;
+
+        for (const entry of entries) {
+            if (!entry.text) continue;
+            if (entry.op === "&&" && !lastOk) continue;
+            if (entry.op === "||" && lastOk) continue;
+
+            const substituted = await expandCommandSubstitutions(entry.text, (inner) => this._runNestedCapture(inner, state.env, state.cwd, state.functions));
+            const expanded = expandArithmetic(substituted, state.env);
+            const stages = parsePipeline(expanded, state.env, {
+                fs: this.os.fs,
+                cwd: state.cwd,
+                pid: this.pid,
+                lastExitCode: this.lastExitCode,
+            });
+
+            lastOk = await runPipeline(captureApp, stages, buildCtx, makeFunctionResolver(state));
+        }
+
+        return { stdout: chunks.join("").replace(/\n+$/, ""), ok: lastOk };
+    }
+
+    /**
      * Builds the base ShellContext shared by every stage of a pipeline.
      * `overrides` supplies the per-stage stdout/stderr/stdin/println wiring.
      * @param {Partial<ShellContext>} overrides

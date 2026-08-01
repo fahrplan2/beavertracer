@@ -1463,5 +1463,12 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "소문자를 대문자로 변환",
   "app.terminal.commands.tr.tldr.ex.delete": "입력에서 모든 숫자 제거",
   "app.terminal.commands.tee.tldr.desc": "입력을 파일에 쓰고 통과시키기",
-  "app.terminal.commands.tee.tldr.ex.basic": "출력을 파일에 저장하면서 동시에 표시"
+  "app.terminal.commands.tee.tldr.ex.basic": "출력을 파일에 저장하면서 동시에 표시",
+  "lessons.loadError": "이 강의를 불러올 수 없습니다.",
+  "lessons.notAvailableInLanguage": "이 강의는 아직 귀하의 언어로 제공되지 않습니다.",
+  "lessons.simLaunch": "시뮬레이션 로드",
+  "lessons.task.check": "작업 확인",
+  "lessons.task.pass": "맞습니다!",
+  "lessons.task.fail": "아직 아닙니다 — 계속 시도하세요.",
+  "lessons.openStandalone": "외부 페이지 열기"
 };

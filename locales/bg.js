@@ -1383,6 +1383,7 @@ export default {
   "lessons.wip.title": "🚧 Уроци в процес на разработка",
   "lessons.wip.text": "Тези страници все още не са завършени. Съдържанието може да липсва, да е непълно или да не е редактирано.",
   "lessons.pageNav": "Навигация по страниците",
+  "lessons.notAvailableInLanguage": "Този урок все още не е достъпен на вашия език.",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD не е зададена",
   "app.terminal.commands.sh.usage": "употреба: sh <script> [args...]",
   "app.terminal.commands.sh.err.noFilesystem": "sh: няма файлова система",
@@ -1463,5 +1464,11 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "Преобразуване на малки букви в главни",
   "app.terminal.commands.tr.tldr.ex.delete": "Отстраняване на всички цифри от входа",
   "app.terminal.commands.tee.tldr.desc": "Запис на входа във файл и предаване през",
-  "app.terminal.commands.tee.tldr.ex.basic": "Запазване на изходния поток в файл, докато се показва на екрана"
+  "app.terminal.commands.tee.tldr.ex.basic": "Запазване на изходния поток в файл, докато се показва на екрана",
+  "lessons.loadError": "Този урок не можеше да бъде заредено.",
+  "lessons.simLaunch": "Зареди симулация",
+  "lessons.task.check": "Провери задачата",
+  "lessons.task.pass": "Правилно!",
+  "lessons.task.fail": "Не съвсем — продължи да опитваш.",
+  "lessons.openStandalone": "Отваряне на външната страница"
 };

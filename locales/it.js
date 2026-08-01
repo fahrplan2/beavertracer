@@ -1468,5 +1468,12 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "Converti minuscole in maiuscole",
   "app.terminal.commands.tr.tldr.ex.delete": "Rimuovi tutte le cifre dall'input",
   "app.terminal.commands.tee.tldr.desc": "Scrivi l'input in un file e trasferiscilo",
-  "app.terminal.commands.tee.tldr.ex.basic": "Salva l'output in un file mentre lo visualizzi ancora"
+  "app.terminal.commands.tee.tldr.ex.basic": "Salva l'output in un file mentre lo visualizzi ancora",
+  "lessons.loadError": "Questa lezione non ha potuto essere caricata.",
+  "lessons.notAvailableInLanguage": "Questa lezione non è ancora disponibile nella tua lingua.",
+  "lessons.simLaunch": "Carica simulazione",
+  "lessons.task.check": "Controlla attività",
+  "lessons.task.pass": "Corretto!",
+  "lessons.task.fail": "Non esattamente — continua a provare.",
+  "lessons.openStandalone": "Apri pagina esterna"
 };

@@ -33,9 +33,6 @@
       </nav>
     </details>
     <main class="lesson-main">
-      <div class="wip-banner" role="alert">
-        <strong>{{lessons.wip.title}}</strong> — {{lessons.wip.text}}
-      </div>
       <article class="lesson-article">
         {{body}}
       </article>
@@ -44,7 +41,7 @@
   <footer class="lesson-footer">
     {{lessons.footer}}
   </footer>
-  <script src="../_quiz.js"></script>
+  <script type="module" src="../_quiz.js"></script>
   <script>
   (function(){
     var btn = document.getElementById('themeToggle');

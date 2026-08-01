@@ -4,6 +4,7 @@ import { EthernetFrame } from "../net/pdu/EthernetFrame.js";
 import { Observable } from "../lib/Observeable.js";
 import { LoggedFrame } from "../tracer/loggedFrame.js";
 import { EthernetLink } from "./EthernetLink.js";
+import { isTrafficSuppressed } from "../lib/CheckState.js";
 
 
 /**
@@ -90,15 +91,20 @@ export class EthernetPort extends Observable {
             return;
         }
         this.outBuffer.push(frame);
-        this.loggedFrames.push(new LoggedFrame(frame.pack()));
-        if (this.loggedFrames.length > EthernetPort.MAX_LOGGED_FRAMES) this.loggedFrames.shift();
+        // Synthetic traffic from an active ":::task" check still gets
+        // delivered (see below) — only its visibility in the capture log
+        // is suppressed, so the check itself is unaffected.
+        if (!isTrafficSuppressed()) {
+            this.loggedFrames.push(new LoggedFrame(frame.pack()));
+            if (this.loggedFrames.length > EthernetPort.MAX_LOGGED_FRAMES) this.loggedFrames.shift();
+        }
         this.frameSeq++;
         this.doUpdate();
     }
 
     /**
-     * 
-     * @param {Uint8Array} bytes 
+     *
+     * @param {Uint8Array} bytes
      */
     recieve(bytes) {
         if(this.inBuffer.length > 100) {
@@ -108,8 +114,10 @@ export class EthernetPort extends Observable {
 
         let frame = EthernetFrame.fromBytes(bytes);
         this.inBuffer.push(frame);
-        this.loggedFrames.push(new LoggedFrame(bytes));
-        if (this.loggedFrames.length > EthernetPort.MAX_LOGGED_FRAMES) this.loggedFrames.shift();
+        if (!isTrafficSuppressed()) {
+            this.loggedFrames.push(new LoggedFrame(bytes));
+            if (this.loggedFrames.length > EthernetPort.MAX_LOGGED_FRAMES) this.loggedFrames.shift();
+        }
         this.frameSeq++;
         this.doUpdate();
     }

@@ -1,4 +1,5 @@
 //@ts-check
+import { clearParams } from "../lib/AppUrl.js";
 
 /**
  * @typedef {Record<string, string>} TranslationDict
@@ -198,27 +199,26 @@ export function t(key, params) {
 
 /**
  * Initializes the locale selection:
+ * 0) ?lang= URL param, if given by the caller (main.js reads it once via
+ *    AppUrl.readBootParams(), before anything else touches location.search)
  * 1) saved locale from localStorage
  * 2) browser language
  * 3) default "de"
  * Lazily loads the required dictionaries.
+ * @param {string|null} [urlLang]
  * @returns {Promise<void>}
  */
-export async function initLocale() {
+export async function initLocale(urlLang = null) {
   // Always load fallback first
   await loadLocaleDict(fallback);
 
   // 0) URL parameter ?lang= — applied but not persisted; removed from URL afterwards
-  const urlParams = new URLSearchParams(location.search);
-  const urlLang = urlParams.get("lang");
   if (urlLang) {
     const ok = await loadLocaleDict(urlLang);
     if (ok) {
       locale = urlLang;
       document.documentElement.lang = locale;
-      urlParams.delete("lang");
-      const newSearch = urlParams.toString();
-      history.replaceState(null, "", location.pathname + (newSearch ? "?" + newSearch : "") + location.hash);
+      clearParams(["lang"]);
       return;
     }
   }

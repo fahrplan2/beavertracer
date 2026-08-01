@@ -1463,5 +1463,12 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "Converteer kleine letters naar hoofdletters",
   "app.terminal.commands.tr.tldr.ex.delete": "Verwijder alle cijfers uit de invoer",
   "app.terminal.commands.tee.tldr.desc": "Schrijf invoer naar een bestand en geef het door",
-  "app.terminal.commands.tee.tldr.ex.basic": "Voer uitvoer op naar een bestand terwijl deze nog steeds wordt weergegeven"
+  "app.terminal.commands.tee.tldr.ex.basic": "Voer uitvoer op naar een bestand terwijl deze nog steeds wordt weergegeven",
+  "lessons.loadError": "Deze les kon niet worden geladen.",
+  "lessons.notAvailableInLanguage": "Deze les is in je taal nog niet beschikbaar.",
+  "lessons.simLaunch": "Simulatie laden",
+  "lessons.task.check": "Taak controleren",
+  "lessons.task.pass": "Correct!",
+  "lessons.task.fail": "Niet helemaal — probeer het opnieuw.",
+  "lessons.openStandalone": "Externe pagina openen"
 };

@@ -1462,5 +1462,12 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "Konverter små bokstaver til store bokstaver",
   "app.terminal.commands.tr.tldr.ex.delete": "Fjern alle sifre fra inndata",
   "app.terminal.commands.tee.tldr.desc": "Skriv inndata til en fil og send det videre",
-  "app.terminal.commands.tee.tldr.ex.basic": "Lagre utdata til en fil mens du fortsatt viser den"
+  "app.terminal.commands.tee.tldr.ex.basic": "Lagre utdata til en fil mens du fortsatt viser den",
+  "lessons.loadError": "Denne leksjonen kunne ikke lastes.",
+  "lessons.notAvailableInLanguage": "Denne leksjonen er ikke tilgjengelig på ditt språk ennå.",
+  "lessons.simLaunch": "Last simulering",
+  "lessons.task.check": "Kontroller oppgave",
+  "lessons.task.pass": "Riktig!",
+  "lessons.task.fail": "Ikke helt — fortsett å prøve.",
+  "lessons.openStandalone": "Åpne ekstern side"
 };

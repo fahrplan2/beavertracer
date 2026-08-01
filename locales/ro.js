@@ -1463,5 +1463,12 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "Convertiți minuscule în majuscule",
   "app.terminal.commands.tr.tldr.ex.delete": "Eliminați toate cifrele din intrare",
   "app.terminal.commands.tee.tldr.desc": "Scrieți intrarea într-un fișier și transmiteți-o mai departe",
-  "app.terminal.commands.tee.tldr.ex.basic": "Salvează rezultatul într-un fișier în timp ce îl afișează pe ecran"
+  "app.terminal.commands.tee.tldr.ex.basic": "Salvează rezultatul într-un fișier în timp ce îl afișează pe ecran",
+  "lessons.loadError": "Această lecție nu a putut fi încărcată.",
+  "lessons.notAvailableInLanguage": "Această lecție nu este disponibilă încă în limba dvs.",
+  "lessons.simLaunch": "Încarcă simularea",
+  "lessons.task.check": "Verifică sarcina",
+  "lessons.task.pass": "Corect!",
+  "lessons.task.fail": "Nu chiar — continuă să încerci.",
+  "lessons.openStandalone": "Deschide pagina externă"
 };

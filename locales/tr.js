@@ -1463,5 +1463,12 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "Küçük harfleri büyük harflere dönüştür",
   "app.terminal.commands.tr.tldr.ex.delete": "Girdiden tüm rakamları kaldır",
   "app.terminal.commands.tee.tldr.desc": "Girdiyi bir dosyaya yaz ve ilet",
-  "app.terminal.commands.tee.tldr.ex.basic": "Çıktıyı bir dosyaya kaydetirken aynı zamanda görüntüle"
+  "app.terminal.commands.tee.tldr.ex.basic": "Çıktıyı bir dosyaya kaydetirken aynı zamanda görüntüle",
+  "lessons.loadError": "Bu ders yüklenemedi.",
+  "lessons.notAvailableInLanguage": "Bu ders henüz dilinde mevcut değil.",
+  "lessons.simLaunch": "Simülasyonu yükle",
+  "lessons.task.check": "Görevi kontrol et",
+  "lessons.task.pass": "Doğru!",
+  "lessons.task.fail": "Henüz değil — denemeye devam et.",
+  "lessons.openStandalone": "Harici sayfayı aç"
 };

@@ -1383,6 +1383,7 @@ export default {
   "lessons.wip.title": "🚧 Lekcije u toku",
   "lessons.wip.text": "Ove stranice još nisu završene. Sadržaj može nedostajati, biti nepotpun ili još nije pregledан.",
   "lessons.pageNav": "Navigacija stranice",
+  "lessons.notAvailableInLanguage": "Ova lekcija nije dostupna na vašem jeziku.",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD nije postavljen",
   "app.terminal.commands.sh.usage": "upotreba: sh <skript> [argumenti...]",
   "app.terminal.commands.sh.err.noFilesystem": "sh: nema datotečnog sistema",
@@ -1463,5 +1464,11 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "Konvertirajte mala slova u velika",
   "app.terminal.commands.tr.tldr.ex.delete": "Uklonite sve znamenke iz ulaza",
   "app.terminal.commands.tee.tldr.desc": "Napišite ulaz u datoteku i prosljeđite ga dalje",
-  "app.terminal.commands.tee.tldr.ex.basic": "Spremi izlaz u datoteku dok ga još uvijek prikazuje"
+  "app.terminal.commands.tee.tldr.ex.basic": "Spremi izlaz u datoteku dok ga još uvijek prikazuje",
+  "lessons.loadError": "Ova lekcija se ne može učitati.",
+  "lessons.simLaunch": "Učitaj simulaciju",
+  "lessons.task.check": "Provjeri zadatak",
+  "lessons.task.pass": "Točno!",
+  "lessons.task.fail": "Nije baš — nastavi pokušavati.",
+  "lessons.openStandalone": "Otvorite vanjsku stranicu"
 };

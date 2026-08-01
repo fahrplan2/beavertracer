@@ -1462,5 +1462,12 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "Претвори мала слова у велика",
   "app.terminal.commands.tr.tldr.ex.delete": "Уклони све цифре из уноса",
   "app.terminal.commands.tee.tldr.desc": "Запиши унос у датотеку и пропусти га даље",
-  "app.terminal.commands.tee.tldr.ex.basic": "Сачувај излаз у датотеку док га и даље приказујеш"
+  "app.terminal.commands.tee.tldr.ex.basic": "Сачувај излаз у датотеку док га и даље приказујеш",
+  "lessons.loadError": "Ова лекција не може бити учитана.",
+  "lessons.notAvailableInLanguage": "Ова лекција није још увек доступна на вашем језику.",
+  "lessons.simLaunch": "Учитај симулацију",
+  "lessons.task.check": "Провери задатак",
+  "lessons.task.pass": "Тачно!",
+  "lessons.task.fail": "Није баш — настави да покушаваш.",
+  "lessons.openStandalone": "Отвори спољну страницу"
 };

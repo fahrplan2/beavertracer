@@ -282,6 +282,13 @@ textarea:focus {
   grid-row: 2;
 }
 
+/* Leave the lessons column to the lessons panel when it's docked open,
+   instead of the trace/about tab spanning underneath it. */
+.sim-root.lessons-open .page.tab-content.active,
+.sim-root.lessons-open .analyzer.tab-content.active {
+  grid-column: 1 / 3;
+}
+
 
 .page {
   overflow-y: auto;
