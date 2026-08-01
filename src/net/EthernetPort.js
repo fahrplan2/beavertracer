@@ -93,12 +93,17 @@ export class EthernetPort extends Observable {
         this.outBuffer.push(frame);
         // Synthetic traffic from an active ":::task" check still gets
         // delivered (see below) — only its visibility in the capture log
-        // is suppressed, so the check itself is unaffected.
+        // is suppressed, so the check itself is unaffected. frameSeq must
+        // stay in lockstep with loggedFrames.length — PCapController (the
+        // only consumer of frameSeq) assumes frameSeq counts exactly the
+        // frames that were actually appended, and slices loggedFrames by
+        // that assumption; incrementing it without appending desyncs the
+        // two and corrupts its next incremental read.
         if (!isTrafficSuppressed()) {
             this.loggedFrames.push(new LoggedFrame(frame.pack()));
             if (this.loggedFrames.length > EthernetPort.MAX_LOGGED_FRAMES) this.loggedFrames.shift();
+            this.frameSeq++;
         }
-        this.frameSeq++;
         this.doUpdate();
     }
 
@@ -114,11 +119,12 @@ export class EthernetPort extends Observable {
 
         let frame = EthernetFrame.fromBytes(bytes);
         this.inBuffer.push(frame);
+        // See send() above — frameSeq must only advance alongside loggedFrames.
         if (!isTrafficSuppressed()) {
             this.loggedFrames.push(new LoggedFrame(bytes));
             if (this.loggedFrames.length > EthernetPort.MAX_LOGGED_FRAMES) this.loggedFrames.shift();
+            this.frameSeq++;
         }
-        this.frameSeq++;
         this.doUpdate();
     }
 

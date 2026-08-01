@@ -89,6 +89,9 @@
 .lesson-article .callout-danger  { border-left-color: var(--danger, #c0392b); background: var(--danger-soft, #fbdad7); }
 /* ":::draft" — construction-site orange. */
 .lesson-article .callout-draft   { border-left-color: var(--warning, #c98a1a); background: var(--warning-soft, #fdecc8); }
+/* ":::goal" — for "Lernziel" blurbs. Deliberately purple: distinct from all
+   five callouts above so it reads as its own "before you start" category. */
+.lesson-article .callout-goal    { border-left-color: #7c3aed; background: color-mix(in oklch, #7c3aed 12%, transparent); }
 
 /* ── Table of contents ───────────────────────────────────────── */
 .lesson-article .lesson-toc { margin: 0 0 16px; padding: 10px 12px; border: 1px solid var(--ui-border-strong); border-radius: var(--radius-sm); }

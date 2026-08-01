@@ -216,11 +216,30 @@ export class LessonsPanel {
         }
     }
 
-    /** Reflects `href` in the chapter dropdown, if it's one of the listed pages. @param {string} href */
+    /**
+     * Reflects `href` in the chapter dropdown. If `href` itself isn't listed
+     * (depth > 2, e.g. "1.1.3" — see _buildNavSelect), falls back to its
+     * nearest listed ancestor chapter (e.g. "1.1") instead of leaving
+     * whatever was previously selected showing, now stale.
+     * @param {string} href
+     */
     _syncNavSelect(href) {
         const select = this._navSelect;
         if (!select) return;
-        if ([...select.options].some((o) => o.value === href)) select.value = href;
+
+        const hasOption = (/** @type {string} */ value) => [...select.options].some((o) => o.value === value);
+        if (hasOption(href)) {
+            select.value = href;
+            return;
+        }
+
+        const pages = this._manifest?.pages ?? [];
+        const num = pages.find((p) => p.href === href)?.num;
+        if (!num || num.length === 0) return;
+
+        const targetDepth = Math.min(num.length, 2);
+        const ancestor = pages.find((p) => p.num?.length === targetDepth && p.num.every((n, i) => n === num[i]));
+        if (ancestor && hasOption(ancestor.href)) select.value = ancestor.href;
     }
 
     /** Points the "open standalone" link at the given (or current) lesson. @param {string|null} [href] */

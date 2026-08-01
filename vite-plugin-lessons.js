@@ -548,7 +548,7 @@ function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI
   const headings = [];
   const md = new MarkdownIt({ html: true, linkify: true, typographer: true });
 
-  for (const type of ["note", "tip", "warning", "danger", "draft"]) {
+  for (const type of ["note", "tip", "warning", "danger", "draft", "goal"]) {
     md.use(markdownItContainer, type, {
       render(tokens, idx) {
         if (tokens[idx].nesting !== 1) return `</div>\n`;

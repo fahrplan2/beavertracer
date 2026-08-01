@@ -50,4 +50,26 @@ describe('EthernetPort + CheckState suppression', () => {
 
         expect(port.loggedFrames.length).toBe(1);
     });
+
+    it('frameSeq stays in lockstep with loggedFrames.length even while suppressed', () => {
+        // PCapController (the only consumer of frameSeq) assumes frameSeq
+        // counts exactly the frames appended to loggedFrames, and uses that
+        // to slice out "new since last time". Bumping frameSeq without
+        // appending — even temporarily during a suppressed check — desyncs
+        // that bookkeeping and corrupts every later incremental read, which
+        // is exactly the "no packets show up anymore afterwards" bug this
+        // guards against.
+        const port = new EthernetPort('eth0');
+
+        setTrafficSuppressed(true);
+        port.send(frame());
+        port.recieve(frame().pack());
+        expect(port.frameSeq).toBe(0);
+        expect(port.frameSeq).toBe(port.loggedFrames.length);
+
+        setTrafficSuppressed(false);
+        port.send(frame());
+        expect(port.frameSeq).toBe(1);
+        expect(port.frameSeq).toBe(port.loggedFrames.length);
+    });
 });
