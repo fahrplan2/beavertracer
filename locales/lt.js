@@ -1463,5 +1463,14 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "Konvertuoti mažąsias raides į didžiąsias",
   "app.terminal.commands.tr.tldr.ex.delete": "Pašalinti visus skaitmenis iš įvesties",
   "app.terminal.commands.tee.tldr.desc": "Parašyti įvestį į failą ir praleisti ją toliau",
-  "app.terminal.commands.tee.tldr.ex.basic": "Išsaugoti išvestį į failą, tuo pačiu metu ją rodant"
+  "app.terminal.commands.tee.tldr.ex.basic": "Išsaugoti išvestį į failą, tuo pačiu metu ją rodant",
+  "lessons.loadError": "Šios pamokos nepavyko įkrauti.",
+  "lessons.notAvailableInLanguage": "Ši pamoka dar nėra prieinama jūsų kalba.",
+  "lessons.simLaunch": "Įkrauti simuliaciją",
+  "lessons.task.check": "Patikrinti užduotį",
+  "lessons.task.pass": "Teisingai!",
+  "lessons.task.fail": "Ne visai — bandykite dar kartą.",
+  "lessons.quiz.retry": "Bandyti dar kartą",
+  "pcap.btn.showhex": "Rodyti šešioliktainį rodinį",
+  "pcap.btn.hidehex": "Slėpti šešioliktainį rodinį"
 };

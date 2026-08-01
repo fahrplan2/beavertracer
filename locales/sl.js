@@ -1463,5 +1463,14 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "Pretvori male črke v velike",
   "app.terminal.commands.tr.tldr.ex.delete": "Odstrani vse števke iz vhoda",
   "app.terminal.commands.tee.tldr.desc": "Zapiši vhod v datoteko in ga prosledi",
-  "app.terminal.commands.tee.tldr.ex.basic": "Shrani izhod v datoteko in ga hkrati prikazi"
+  "app.terminal.commands.tee.tldr.ex.basic": "Shrani izhod v datoteko in ga hkrati prikazi",
+  "lessons.loadError": "Te lekcije ni bilo mogoče naložiti.",
+  "lessons.notAvailableInLanguage": "Ta lekcija še ni na voljo v vašem jeziku.",
+  "lessons.simLaunch": "Naložite simulacijo",
+  "lessons.task.check": "Preveri nalogo",
+  "lessons.task.pass": "Pravilno!",
+  "lessons.task.fail": "Še ne — poskusi znova.",
+  "lessons.quiz.retry": "Poskusi ponovno",
+  "pcap.btn.showhex": "Prikaži heksadecimalni pogled",
+  "pcap.btn.hidehex": "Skrij heksadecimalni pogled"
 };

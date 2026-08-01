@@ -1462,5 +1462,14 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "Konvertoji shkronjat e vogla në të mëdha",
   "app.terminal.commands.tr.tldr.ex.delete": "Hiq të gjithë shifrat nga hyrja",
   "app.terminal.commands.tee.tldr.desc": "Shkruaj hyrjen në një skedari dhe kaloje atë",
-  "app.terminal.commands.tee.tldr.ex.basic": "Ruaj rezultatin në një skedar ndërsa e shfaq atë në ekran"
+  "app.terminal.commands.tee.tldr.ex.basic": "Ruaj rezultatin në një skedar ndërsa e shfaq atë në ekran",
+  "lessons.loadError": "Ky mësim nuk mund të ngarkohet.",
+  "lessons.notAvailableInLanguage": "Ky mësim nuk është ende i disponueshëm në gjuhën tuaj.",
+  "lessons.simLaunch": "Ngarko simulimin",
+  "lessons.task.check": "Kontrollo detyrën",
+  "lessons.task.pass": "Saktë!",
+  "lessons.task.fail": "Jo plotësisht — vazhdo të përpiqesh.",
+  "lessons.quiz.retry": "Provo përsëri",
+  "pcap.btn.showhex": "Shfaq pamjen hex",
+  "pcap.btn.hidehex": "Fsheh pamjen hex"
 };

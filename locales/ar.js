@@ -1383,6 +1383,7 @@ export default {
   "lessons.wip.title": "🚧 دروس قيد الإنجاز",
   "lessons.wip.text": "هذه الصفحات غير مكتملة بعد. قد يكون المحتوى غائباً أو غير مكتمل أو لم يتم مراجعته بعد.",
   "lessons.pageNav": "ملاحة الصفحة",
+  "lessons.notAvailableInLanguage": "هذا الدرس غير متاح في لغتك حتى الآن.",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD غير معيّن",
   "app.terminal.commands.sh.usage": "usage: sh <script> [args...]",
   "app.terminal.commands.sh.err.noFilesystem": "sh: لا توجد نظام ملفات",
@@ -1463,5 +1464,13 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "تحويل الأحرف الصغيرة إلى أحرف كبيرة",
   "app.terminal.commands.tr.tldr.ex.delete": "إزالة جميع الأرقام من الإدخال",
   "app.terminal.commands.tee.tldr.desc": "كتابة الإدخال إلى ملف وتمريره",
-  "app.terminal.commands.tee.tldr.ex.basic": "حفظ المخرجات في ملف مع عرضها في نفس الوقت"
+  "app.terminal.commands.tee.tldr.ex.basic": "حفظ المخرجات في ملف مع عرضها في نفس الوقت",
+  "lessons.loadError": "لم يتمكن من تحميل هذا الدرس.",
+  "lessons.simLaunch": "تحميل المحاكاة",
+  "lessons.task.check": "التحقق من المهمة",
+  "lessons.task.pass": "صحيح!",
+  "lessons.task.fail": "ليس تماماً — حاول مرة أخرى.",
+  "lessons.quiz.retry": "حاول مرة أخرى",
+  "pcap.btn.showhex": "عرض طريقة العرض السادسة عشرية",
+  "pcap.btn.hidehex": "إخفاء طريقة العرض السادسة عشرية"
 };

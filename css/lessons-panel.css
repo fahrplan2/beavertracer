@@ -1,0 +1,276 @@
+/* =========================================================
+   LESSONS PANEL — CONTENT STYLING
+   Scoped under .lesson-article (the docked panel's mount point) so it
+   never leaks into the rest of the app. Reuses the app's own CSS
+   variables (--bg, --text, --ui-border-strong, --radius-sm, --pad-*)
+   instead of the standalone lessons site's separate theme, so the panel
+   looks like part of the app rather than an embedded foreign document.
+   ========================================================= */
+
+.lesson-article {
+  /* Fixed blue for the panel's action buttons (Check task/answers, load
+     scenario) — independent of --primary-strong, which follows whatever
+     app theme is active (e.g. the "green" theme) rather than staying blue. */
+  --lesson-accent: #2563eb;
+  --lesson-accent-hover: #1d4ed8;
+
+  /* OSI layer rainbow (shared by .osi-table + .osi-ampel below) — fixed,
+     theme-independent hues, layer 1 = red … layer 7 = violet. Ported from
+     the standalone lessons site's _style.css so both places agree. */
+  --osi-l1: oklch(72% 0.19 25);
+  --osi-l2: oklch(75% 0.17 55);
+  --osi-l3: oklch(87% 0.17 98);
+  --osi-l4: oklch(78% 0.17 145);
+  --osi-l5: oklch(75% 0.12 220);
+  --osi-l6: oklch(68% 0.15 270);
+  --osi-l7: oklch(72% 0.18 320);
+  --osi-text: #14181f;
+
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+.lesson-article h1 { font-size: 1.4rem; margin: 0 0 var(--pad-md); line-height: 1.25; }
+.lesson-article h2 { font-size: 1.15rem; margin: 28px 0 10px; padding-top: 6px; border-top: 1px solid var(--ui-border-strong); }
+.lesson-article h3 { font-size: 1.05rem; margin: 20px 0 6px; }
+.lesson-article h4 { font-size: 1rem;   margin: 16px 0 6px; }
+.lesson-article p  { margin: 0 0 12px; }
+.lesson-article ul, .lesson-article ol { margin: 0 0 12px; padding-left: 1.4em; }
+.lesson-article li { margin-bottom: 4px; }
+/* var(--primary) itself is a pale accent tone (meant for backgrounds/tints,
+   ~81% lightness in this app's theme) — too low-contrast for text/borders.
+   --primary-strong (a darkened variant already defined for this exact
+   purpose) is used everywhere below that needs to read as foreground/text. */
+.lesson-article a  { color: var(--lesson-accent); }
+.lesson-article blockquote {
+  margin: 0 0 12px;
+  padding: 6px 12px;
+  border-left: 3px solid var(--ui-border-strong);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklch, var(--text) 4%, transparent);
+  color: var(--text);
+  font-style: italic;
+}
+.lesson-article code {
+  font-family: "Hack", ui-monospace, monospace;
+  font-size: 0.85em;
+  background: color-mix(in oklch, var(--text) 8%, transparent);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+.lesson-article pre {
+  overflow-x: auto;
+  padding: var(--pad-sm);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklch, var(--text) 6%, transparent);
+  margin: 0 0 12px;
+}
+.lesson-article pre code { background: none; padding: 0; }
+.lesson-article table { border-collapse: collapse; width: 100%; margin: 0 0 12px; font-size: 0.9em; }
+.lesson-article th, .lesson-article td { border: 1px solid var(--ui-border-strong); padding: 4px 8px; text-align: left; }
+.lesson-article .lesson-num { opacity: 0.65; font-weight: 400; }
+
+/* ── Callouts (note/tip/warning/danger) ─────────────────────── */
+.lesson-article .callout {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--ui-border-strong);
+}
+/* -soft variants are theme-aware pastel tints (mix toward white in light
+   mode, toward the dark background in dark mode) already defined for
+   exactly this — a colored-but-still-readable callout background. --primary
+   itself is too low-chroma/pale in this app's theme to read as "blue" here
+   (same reason --lesson-accent exists for buttons/links), so callout-note
+   uses that fixed accent instead of --primary-soft/-strong. */
+.lesson-article .callout-note    { border-left-color: var(--lesson-accent); background: color-mix(in oklch, var(--lesson-accent) 12%, transparent); }
+.lesson-article .callout-tip     { border-left-color: var(--ok, #2e9b4f);      background: var(--ok-soft, #d3f5df); }
+.lesson-article .callout-warning { border-left-color: var(--warning, #c98a1a); background: var(--warning-soft, #fdecc8); }
+.lesson-article .callout-danger  { border-left-color: var(--danger, #c0392b); background: var(--danger-soft, #fbdad7); }
+/* ":::draft" — construction-site orange. */
+.lesson-article .callout-draft   { border-left-color: var(--warning, #c98a1a); background: var(--warning-soft, #fdecc8); }
+/* ":::goal" — for "Lernziel" blurbs. Deliberately purple: distinct from all
+   five callouts above so it reads as its own "before you start" category. */
+.lesson-article .callout-goal    { border-left-color: #7c3aed; background: color-mix(in oklch, #7c3aed 12%, transparent); }
+
+/* ── Table of contents ───────────────────────────────────────── */
+.lesson-article .lesson-toc { margin: 0 0 16px; padding: 10px 12px; border: 1px solid var(--ui-border-strong); border-radius: var(--radius-sm); }
+.lesson-article .lesson-toc ul { list-style: none; padding-left: 0.2em; margin: 4px 0 0; }
+.lesson-article .lesson-toc a { text-decoration: none; }
+
+/* ── OSI "traffic light" ─────────────────────────────────────── */
+.lesson-article .osi-ampel { display: flex; flex-direction: column; gap: 2px; margin: 0 0 12px; font-size: 0.75rem; }
+.lesson-article .osi-ampel-box { display: flex; gap: 6px; padding: 3px 6px; border-radius: 3px; opacity: 0.7; }
+.lesson-article .osi-ampel-box.active { opacity: 1; color: var(--osi-text); font-weight: 600; }
+.lesson-article .osi-ampel-box.osi-l1.active { background: var(--osi-l1); }
+.lesson-article .osi-ampel-box.osi-l2.active { background: var(--osi-l2); }
+.lesson-article .osi-ampel-box.osi-l3.active { background: var(--osi-l3); }
+.lesson-article .osi-ampel-box.osi-l4.active { background: var(--osi-l4); }
+.lesson-article .osi-ampel-box.osi-l5.active { background: var(--osi-l5); }
+.lesson-article .osi-ampel-box.osi-l6.active { background: var(--osi-l6); }
+.lesson-article .osi-ampel-box.osi-l7.active { background: var(--osi-l7); }
+.lesson-article .osi-ampel-num { opacity: 0.75; }
+.lesson-article .osi-ampel-box.active .osi-ampel-num { background: rgba(0, 0, 0, 0.12); opacity: 1; }
+
+/* ── OSI table (table.osi-table, tr.osi-l1 … tr.osi-l7) — colors just the
+   layer-number cell so the row text stays readable. Raw HTML some lessons
+   embed directly in markdown, styled here to match the ampel above. */
+.lesson-article table.osi-table tr[class^="osi-l"] td:first-child,
+.lesson-article table.osi-table tr[class^="osi-l"] th:first-child {
+  color: var(--osi-text);
+  font-weight: 700;
+  text-align: center;
+}
+.lesson-article table.osi-table tr.osi-l1 td:first-child { background: var(--osi-l1); }
+.lesson-article table.osi-table tr.osi-l2 td:first-child { background: var(--osi-l2); }
+.lesson-article table.osi-table tr.osi-l3 td:first-child { background: var(--osi-l3); }
+.lesson-article table.osi-table tr.osi-l4 td:first-child { background: var(--osi-l4); }
+.lesson-article table.osi-table tr.osi-l5 td:first-child { background: var(--osi-l5); }
+.lesson-article table.osi-table tr.osi-l6 td:first-child { background: var(--osi-l6); }
+.lesson-article table.osi-table tr.osi-l7 td:first-child { background: var(--osi-l7); }
+
+/* ── ":::sim" launch button ──────────────────────────────────── */
+.lesson-article .lesson-sim-launch { margin: 0 0 16px; }
+.lesson-article .lesson-sim-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--lesson-accent);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+.lesson-article .lesson-sim-btn:hover { background: var(--lesson-accent-hover); }
+
+.lesson-load-error { color: var(--danger-strong, #96271e); }
+
+/* ── Prev/next navigation ─────────────────────────────────────── */
+.lesson-article .lesson-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--pad-sm);
+  margin-top: 20px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ui-border-strong);
+}
+.lesson-article .lesson-nav a { text-decoration: none; font-size: 0.9em; }
+
+/* ── Quiz blocks ─────────────────────────────────────────────── */
+.lesson-article .quiz-block {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--radius-sm);
+}
+.lesson-article .quiz-question { margin: 0 0 8px; font-weight: 600; }
+.lesson-article .quiz-input-row { display: flex; align-items: center; gap: 6px; }
+.lesson-article .quiz-input, .lesson-article .quiz-gap-input {
+  font: inherit;
+  padding: 4px 6px;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: 3px;
+  background: var(--bg);
+  color: var(--text);
+}
+.lesson-article .quiz-feedback { font-weight: 700; }
+.lesson-article .quiz-feedback.quiz-ok  { color: var(--ok-strong, #1f7a3d); }
+.lesson-article .quiz-feedback.quiz-err { color: var(--danger-strong, #96271e); }
+.lesson-article .quiz-options { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.lesson-article .quiz-option {
+  font: inherit;
+  text-align: left;
+  padding: 6px 10px;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: 3px;
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+}
+.lesson-article .quiz-option.selected {
+  border-color: var(--lesson-accent);
+  background: color-mix(in oklch, var(--lesson-accent) 15%, transparent);
+  font-weight: 600;
+}
+.lesson-article .quiz-option.quiz-correct { border-color: var(--ok, #2e9b4f); background: color-mix(in oklch, var(--ok, #2e9b4f) 15%, transparent); }
+.lesson-article .quiz-option.quiz-incorrect { border-color: var(--danger, #c0392b); background: color-mix(in oklch, var(--danger, #c0392b) 15%, transparent); }
+.lesson-article .quiz-gap { display: inline-flex; align-items: center; gap: 4px; }
+.lesson-article .quiz-gap-input.quiz-correct { border-color: var(--ok, #2e9b4f); }
+.lesson-article .quiz-gap-input.quiz-incorrect { border-color: var(--danger, #c0392b); }
+/* Side-by-side (terms | pool) doesn't work in a narrow panel — stacked
+   instead: the term/dropzone rows first, then the draggable chip pool
+   below as a wrapping "tag cloud", so nothing needs to share horizontal
+   space with anything else and long text always has room to wrap. */
+.lesson-article .quiz-match-layout { display: flex; flex-direction: column; gap: 12px; }
+.lesson-article .quiz-match-terms { display: flex; flex-direction: column; gap: 6px; }
+.lesson-article .quiz-match-row { display: flex; align-items: flex-start; gap: 8px; }
+.lesson-article .quiz-match-term { flex: 0 0 auto; min-width: 70px; padding-top: 3px; font-weight: 600; }
+.lesson-article .quiz-match-dropzone {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 1.8em;
+  border: 1px dashed var(--ui-border-strong);
+  border-radius: 3px;
+  padding: 4px 6px;
+  overflow-wrap: break-word;
+}
+.lesson-article .quiz-match-dropzone.drag-over { border-color: var(--primary-strong, #1d4ed8); }
+.lesson-article .quiz-match-dropzone.quiz-correct { border-color: var(--ok, #2e9b4f); border-style: solid; }
+.lesson-article .quiz-match-dropzone.quiz-incorrect { border-color: var(--danger, #c0392b); border-style: solid; }
+.lesson-article .quiz-match-pool { display: flex; flex-direction: row; flex-wrap: wrap; gap: 6px; }
+.lesson-article .quiz-match-chip {
+  max-width: 100%;
+  padding: 4px 8px;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: 3px;
+  background: var(--bg);
+  cursor: grab;
+  overflow-wrap: break-word;
+}
+.lesson-article .quiz-match-chip.dragging { opacity: 0.5; }
+.lesson-article .quiz-evaluate-wrap { display: flex; align-items: center; gap: 10px; margin: 0 0 16px; }
+.lesson-article .quiz-evaluate-btn {
+  font: inherit;
+  padding: 6px 12px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--lesson-accent);
+  color: #fff;
+  cursor: pointer;
+}
+.lesson-article .quiz-evaluate-btn:hover:not(:disabled) { background: var(--lesson-accent-hover); }
+.lesson-article .quiz-evaluate-btn:disabled { opacity: 0.6; cursor: default; }
+.lesson-article .quiz-evaluate-summary.quiz-summary-ok  { color: var(--ok-strong, #1f7a3d); font-weight: 600; }
+.lesson-article .quiz-evaluate-summary.quiz-summary-err { color: var(--danger-strong, #96271e); font-weight: 600; }
+
+/* ── Task blocks (":::task" — behavior checks) ──────────────────── */
+.lesson-article .task-block {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--primary-strong, #1d4ed8);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklch, var(--primary, #2563eb) 6%, transparent);
+}
+.lesson-article .task-title { margin: 0 0 6px; font-weight: 600; }
+.lesson-article .task-description { margin: 0 0 10px; }
+.lesson-article .task-check-wrap { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.lesson-article .task-check-btn {
+  font: inherit;
+  padding: 6px 12px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--lesson-accent);
+  color: #fff;
+  cursor: pointer;
+}
+.lesson-article .task-check-btn:hover:not(:disabled) { background: var(--lesson-accent-hover); }
+.lesson-article .task-check-btn:disabled { opacity: 0.6; cursor: default; }
+.lesson-article .task-check-summary.task-summary-ok  { color: var(--ok-strong, #1f7a3d); font-weight: 600; }
+.lesson-article .task-check-summary.task-summary-err { color: var(--danger-strong, #96271e); font-weight: 600; }
+.lesson-article .task-check-list { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-direction: column; gap: 4px; width: 100%; }
+.lesson-article .task-check-item { font-size: 0.85em; display: flex; align-items: center; gap: 6px; }
+.lesson-article .task-check-item.task-check-ok  { color: var(--ok-strong, #1f7a3d); }
+.lesson-article .task-check-item.task-check-err { color: var(--danger-strong, #96271e); }
+.lesson-article .task-check-item.task-check-pending { opacity: 0.6; }

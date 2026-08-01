@@ -4,6 +4,7 @@ import { EthernetLink } from "../net/EthernetLink.js";
 import { SimControl } from "../SimControl.js";
 import { SimulatedObject } from "./SimulatedObject.js";
 import { t } from "../i18n/index.js";
+import { isTrafficSuppressed } from "../lib/CheckState.js";
 
 
 /** @typedef {import("../net/EthernetPort.js").EthernetPort} EthernetPort */
@@ -344,6 +345,10 @@ export class Link extends SimulatedObject {
     this._packets = this._packets.filter(p => p.dir !== dir);
 
     if (!this.root) return;
+    // Keep synthetic ":::task" check traffic out of the visible animation —
+    // the packet is still actually delivered (see EthernetPort.send/recieve),
+    // only this visual representation is skipped.
+    if (isTrafficSuppressed()) return;
 
     const el = document.createElement("div");
     el.className = "sim-packet";

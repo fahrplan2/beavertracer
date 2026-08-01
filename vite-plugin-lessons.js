@@ -139,11 +139,88 @@ function processQuizBlocks(src) {
   );
 }
 
+// ── Task/check pre-processing ───────────────────────────────────
+
+/**
+ * Parses a simple comma-separated argument list of quoted strings and
+ * numbers only — no nested parens/objects. Keeps the ":::task" check
+ * vocabulary purely declarative (see CheckApi.js for the runtime side).
+ * @param {string} argStr
+ * @returns {(string|number)[]}
+ */
+function parseCheckArgs(argStr) {
+  const tokenRe = /"((?:[^"\\]|\\.)*)"|([^,\s][^,]*)/g;
+  /** @type {(string|number)[]} */
+  const args = [];
+  let m;
+  while ((m = tokenRe.exec(argStr))) {
+    if (m[1] !== undefined) {
+      args.push(m[1].replace(/\\"/g, '"'));
+    } else {
+      const raw = m[2].trim();
+      if (!raw) continue;
+      const num = Number(raw);
+      args.push(raw !== "" && !Number.isNaN(num) ? num : raw);
+    }
+  }
+  return args;
+}
+
+/**
+ * @param {string} id
+ * @param {string} content
+ * @param {Record<string, string>} chrome
+ */
+function renderTaskBlock(id, content, chrome) {
+  let title = "";
+  const descLines = [];
+  const checks = [];
+  for (const line of content.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const titleM = trimmed.match(/^title:\s*(.+)$/i);
+    const checkM = trimmed.match(/^check:\s*(\w+)\((.*)\)\s*$/i);
+    if (titleM) {
+      title = titleM[1].trim();
+    } else if (checkM) {
+      checks.push({ fn: checkM[1], args: parseCheckArgs(checkM[2]) });
+    } else {
+      descLines.push(line);
+    }
+  }
+  const checksAttr = safeAttr(JSON.stringify(checks));
+  const descHtml = descLines.length
+    ? `<p class="task-description">${escHtml(descLines.join(" ").trim())}</p>`
+    : "";
+  return [
+    `<div class="task-block" data-task-id="${id}" data-checks='${checksAttr}'>`,
+    title ? `<p class="task-title">${escHtml(title)}</p>` : "",
+    descHtml,
+    `<div class="task-check-wrap">`,
+    `<button class="task-check-btn" data-task-id="${id}">${escHtml(chrome["lessons.task.check"])}</button>`,
+    `<span class="task-check-summary"></span>`,
+    `</div>`,
+    `</div>`,
+  ].filter(Boolean).join("\n");
+}
+
+/**
+ * @param {string} src
+ * @param {Record<string, string>} chrome
+ */
+function processTaskBlocks(src, chrome) {
+  let counter = 0;
+  return src.replace(/:::task\s*\n([\s\S]*?):::/gm, (_, content) => {
+    const id = `task${++counter}`;
+    return renderTaskBlock(id, (content || "").trim(), chrome);
+  });
+}
+
 /**
  * Read display name and lessons.noLessons message from all locale files.
  * Returns a map of locale code → { name, noLessons, quiz }.
  * @param {string} localesDir
- * @returns {Record<string, { name: string, noLessons: string | null, quiz: { placeholder: string, evaluate: string, resultOne: string, resultOther: string } }>}
+ * @returns {Record<string, { name: string, noLessons: string | null, quiz: { placeholder: string, evaluate: string, resultOne: string, resultOther: string, retry: string } }>}
  */
 const OSI_LAYER_KEYS = [
   "lessons.osi.l1", "lessons.osi.l2", "lessons.osi.l3", "lessons.osi.l4",
@@ -163,10 +240,14 @@ const CHROME_KEYS = {
   "lessons.wip.title": "🚧 Lessons in progress",
   "lessons.wip.text": "These pages are not yet complete. Content may be missing, incomplete, or not yet proofread.",
   "lessons.pageNav": "Page navigation",
+  "lessons.simLaunch": "Load simulation",
+  "lessons.task.check": "Check task",
+  "lessons.task.pass": "Correct!",
+  "lessons.task.fail": "Not quite — try again.",
 };
 
 function loadLocaleInfo(localesDir) {
-  /** @type {Record<string, { name: string, noLessons: string | null, quiz: { placeholder: string, evaluate: string, resultOne: string, resultOther: string }, osiLabels: string[] }>} */
+  /** @type {Record<string, { name: string, noLessons: string | null, quiz: { placeholder: string, evaluate: string, resultOne: string, resultOther: string, retry: string }, osiLabels: string[] }>} */
   const info = {};
   if (!fs.existsSync(localesDir)) return info;
 
@@ -197,6 +278,7 @@ function loadLocaleInfo(localesDir) {
           evaluate:    extractKey(src, "lessons.quiz.evaluate")    ?? "Check answers",
           resultOne:   extractKey(src, "lessons.quiz.result.one")  ?? "{correct}/{total}",
           resultOther: extractKey(src, "lessons.quiz.result.other") ?? "{correct}/{total}",
+          retry:       extractKey(src, "lessons.quiz.retry")       ?? "Try again",
         },
         osiLabels: OSI_LAYER_KEYS.map((key) => extractKey(src, key) ?? OSI_LAYER_FALLBACK[key]),
         chrome: Object.fromEntries(
@@ -207,7 +289,7 @@ function loadLocaleInfo(localesDir) {
       info[code] = {
         name: code.toUpperCase(),
         noLessons: null,
-        quiz: { placeholder: "…", evaluate: "Check answers", resultOne: "{correct}/{total}", resultOther: "{correct}/{total}" },
+        quiz: { placeholder: "…", evaluate: "Check answers", resultOne: "{correct}/{total}", resultOther: "{correct}/{total}", retry: "Try again" },
         osiLabels: OSI_LAYER_KEYS.map((key) => OSI_LAYER_FALLBACK[key]),
         chrome: { ...CHROME_KEYS },
       };
@@ -407,23 +489,31 @@ function renderSidebar(tree, currentHref) {
  * @param {LessonNode} node
  * @param {{ prev?: {href:string,title:string}, next?: {href:string,title:string} }} nav
  * @param {string} sidebar
- * @param {{ placeholder: string, evaluate: string, resultOne: string, resultOther: string }} quizI18n
+ * @param {{ placeholder: string, evaluate: string, resultOne: string, resultOther: string, retry: string }} quizI18n
  * @param {string[]} osiLabels
  * @param {string} lang
  * @param {Record<string, string>} chrome
  */
-function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI18n = { placeholder: "…", evaluate: "Check answers", resultOne: "{correct}/{total}", resultOther: "{correct}/{total}" }, osiLabels = OSI_LAYER_KEYS.map((key) => OSI_LAYER_FALLBACK[key]), lang = "en", chrome = CHROME_KEYS) {
+function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI18n = { placeholder: "…", evaluate: "Check answers", resultOne: "{correct}/{total}", resultOther: "{correct}/{total}", retry: "Try again" }, osiLabels = OSI_LAYER_KEYS.map((key) => OSI_LAYER_FALLBACK[key]), lang = "en", chrome = CHROME_KEYS) {
   let src = fs.readFileSync(srcFile, "utf8");
 
   // ── Pre-process :::quiz / :::evaluate blocks ──────────────────
   src = processQuizBlocks(src);
 
+  // ── Pre-process :::task blocks ─────────────────────────────────
+  src = processTaskBlocks(src, chrome);
+
   // ── Pre-process :::sim blocks ──────────────────────────────────
   // Syntax:
   //   :::sim
   //   url=https://example.com/sim.btsim
-  //   height=520px
   //   :::
+  //
+  // Renders a launch button, not an iframe: the in-app lessons panel
+  // intercepts the click and loads the scenario directly into the already-
+  // running SimControl (see LessonsPanel.js). On the standalone lessons
+  // site (no live SimControl to attach to) the plain href fallback opens
+  // the scenario in the full embedded app view instead.
   src = src.replace(/:::sim\s*\n([\s\S]*?):::/gm, (_, content) => {
     /** @type {Record<string, string>} */
     const params = {};
@@ -432,14 +522,12 @@ function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI
       if (eq > 0) params[line.slice(0, eq).trim()] = line.slice(eq + 1).trim();
     }
     const simUrl = params.url ?? "";
-    const height = params.height ?? "520px";
-    const base = "../../";
-    const embedHref = simUrl
-      ? `${base}?embed=1&sim=${encodeURIComponent(simUrl)}`
-      : `${base}?embed=1`;
+    const openHref = simUrl
+      ? `../../?embed=1&sim=${encodeURIComponent(simUrl)}`
+      : `../../?embed=1`;
     return [
-      `<div class="lesson-sim">`,
-      `<iframe src="${embedHref}" class="lesson-sim-frame" style="height:${height}" loading="lazy" allowfullscreen></iframe>`,
+      `<div class="lesson-sim-launch">`,
+      `<a class="lesson-sim-btn" href="${openHref}" data-sim-url="${escHtml(simUrl)}"><i class="fa-solid fa-play"></i> ${escHtml(chrome["lessons.simLaunch"])}</a>`,
       `</div>`,
     ].join("\n");
   });
@@ -460,12 +548,18 @@ function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI
   const headings = [];
   const md = new MarkdownIt({ html: true, linkify: true, typographer: true });
 
-  for (const type of ["note", "tip", "warning", "danger"]) {
+  for (const type of ["note", "tip", "warning", "danger", "draft", "goal"]) {
     md.use(markdownItContainer, type, {
       render(tokens, idx) {
-        return tokens[idx].nesting === 1
-          ? `<div class="callout callout-${type}">\n`
-          : `</div>\n`;
+        if (tokens[idx].nesting !== 1) return `</div>\n`;
+        const open = `<div class="callout callout-${type}">\n`;
+        // ":::draft" (author opt-in, replaces the old always-on wip-banner
+        // in _template.html) always shows the same "page not finished yet"
+        // notice, using the existing lessons.wip.* chrome strings — any
+        // markdown content the author puts inside the block is appended
+        // below it.
+        if (type !== "draft") return open;
+        return open + `<p><strong>${escHtml(chrome["lessons.wip.title"])}</strong> — ${escHtml(chrome["lessons.wip.text"])}</p>\n`;
       },
     });
   }
@@ -535,21 +629,38 @@ function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI
   const rawTitle = headings.find((h) => h.level === 1)?.text ?? path.basename(srcFile, ".md");
   const title = node.num ? `${numLabel(node.num)} ${rawTitle}` : rawTitle;
 
-  return templateHtml
-    .replace(/\{\{title\}\}/g, title)
-    .replace(/\{\{body\}\}/g, body)
-    .replace(/\{\{sidebar\}\}/g, sidebar)
-    .replace(/\{\{lang\}\}/g, lang)
+  /** Resolves the {{quiz.*}} / {{lessons.*}} tokens quiz/task blocks embed
+   *  as literals (they're built by helpers that don't receive quizI18n/chrome).
+   *  @param {string} str */
+  const resolveChromeTokens = (str) => str
     .replace(/\{\{quiz\.placeholder\}\}/g, escHtml(quizI18n.placeholder))
     .replace(/\{\{quiz\.evaluate\}\}/g, escHtml(quizI18n.evaluate))
     .replace(/\{\{quiz\.result\.one\}\}/g, escHtml(quizI18n.resultOne))
     .replace(/\{\{quiz\.result\.other\}\}/g, escHtml(quizI18n.resultOther))
+    .replace(/\{\{quiz\.retry\}\}/g, escHtml(quizI18n.retry))
     .replace(/\{\{lessons\.toc\}\}/g, escHtml(chrome["lessons.toc"]))
     .replace(/\{\{lessons\.themeToggle\}\}/g, escHtml(chrome["lessons.themeToggle"]))
     .replace(/\{\{lessons\.footer\}\}/g, escHtml(chrome["lessons.footer"]))
     .replace(/\{\{lessons\.wip\.title\}\}/g, escHtml(chrome["lessons.wip.title"]))
     .replace(/\{\{lessons\.wip\.text\}\}/g, escHtml(chrome["lessons.wip.text"]))
-    .replace(/\{\{lessons\.pageNav\}\}/g, escHtml(chrome["lessons.pageNav"]));
+    .replace(/\{\{lessons\.pageNav\}\}/g, escHtml(chrome["lessons.pageNav"]))
+    .replace(/\{\{lessons\.simLaunch\}\}/g, escHtml(chrome["lessons.simLaunch"]));
+
+  // Resolve tokens in `body` itself first: it is handed back as-is (raw HTML
+  // fragment, no chrome/sidebar) so the in-app lessons panel can fetch just
+  // the per-page .json and inject it directly, without ever seeing the
+  // standalone template — so it needs to be self-contained.
+  body = resolveChromeTokens(body);
+
+  const html = resolveChromeTokens(
+    templateHtml
+      .replace(/\{\{title\}\}/g, title)
+      .replace(/\{\{body\}\}/g, body)
+      .replace(/\{\{sidebar\}\}/g, sidebar)
+      .replace(/\{\{lang\}\}/g, lang)
+  );
+
+  return { html, title, bodyHtml: body };
 }
 
 /**
@@ -646,7 +757,9 @@ function buildLessons(root) {
   const fallbackMsg = localeInfo["en"]?.noLessons ?? "No lessons available yet. 😔";
   fs.mkdirSync(outDir, { recursive: true });
   if (fs.existsSync(cssPath)) fs.copyFileSync(cssPath, path.join(outDir, "_style.css"));
-  const quizJsPath = path.join(srcDir, "_quiz.js");
+  // Canonical source lives in src/lib/ (so it's TS-checked and importable by
+  // the in-app lessons panel); copied here verbatim for the standalone site.
+  const quizJsPath = path.join(root, "src", "lib", "QuizInteractions.js");
   if (fs.existsSync(quizJsPath)) fs.copyFileSync(quizJsPath, path.join(outDir, "_quiz.js"));
 
   const builtLangs = [];
@@ -678,11 +791,16 @@ function buildLessons(root) {
     const tree = buildTree(flatLessons);
     const ordered = flatOrder(tree);
 
-    // Remove stale HTML files that no longer have a source .md
+    // Remove stale HTML/JSON files that no longer have a source .md
     const expectedHtml = new Set(ordered.map((n) => n.href));
     expectedHtml.add("index.html");
+    const expectedJson = new Set(ordered.map((n) => n.href.replace(/\.html$/, ".json")));
+    expectedJson.add("index.json");
     for (const existing of fs.readdirSync(langOut)) {
       if (existing.endsWith(".html") && !expectedHtml.has(existing)) {
+        fs.rmSync(path.join(langOut, existing));
+        console.log(`[lessons] ✗ removed stale ${lang}/${existing}`);
+      } else if (existing.endsWith(".json") && !expectedJson.has(existing)) {
         fs.rmSync(path.join(langOut, existing));
         console.log(`[lessons] ✗ removed stale ${lang}/${existing}`);
       }
@@ -698,32 +816,52 @@ function buildLessons(root) {
       const sidebar = renderSidebar(tree, node.href);
       const outFile = path.join(langOut, node.href);
       try {
-        fs.writeFileSync(
-          outFile,
-          renderLesson(
-            path.join(langDir, node.file),
-            templateHtml,
-            node,
-            nav,
-            sidebar,
-            (localeInfo[lang] ?? localeInfo["en"])?.quiz,
-            (localeInfo[lang] ?? localeInfo["en"])?.osiLabels,
-            lang,
-            (localeInfo[lang] ?? localeInfo["en"])?.chrome
-          ),
-          "utf8"
+        const rendered = renderLesson(
+          path.join(langDir, node.file),
+          templateHtml,
+          node,
+          nav,
+          sidebar,
+          (localeInfo[lang] ?? localeInfo["en"])?.quiz,
+          (localeInfo[lang] ?? localeInfo["en"])?.osiLabels,
+          lang,
+          (localeInfo[lang] ?? localeInfo["en"])?.chrome
         );
+        fs.writeFileSync(outFile, rendered.html, "utf8");
+
+        // Per-page JSON alongside the standalone HTML, for the in-app lessons
+        // panel to fetch (same bodyHtml, no chrome/sidebar/template wrapper).
+        const jsonFile = outFile.replace(/\.html$/, ".json");
+        fs.writeFileSync(jsonFile, JSON.stringify({
+          href: node.href,
+          title: rendered.title,
+          bodyHtml: rendered.bodyHtml,
+          chapterNum: node.num,
+          prev: nav.prev ? { href: nav.prev.href, title: nav.prev.title } : null,
+          next: nav.next ? { href: nav.next.href, title: nav.next.title } : null,
+        }), "utf8");
+
         console.log(`[lessons] ✓ ${lang}/${node.file}`);
       } catch (/** @type {*} */ e) {
         console.error(`[lessons] ✗ ${lang}/${node.file}: ${e.message}`);
       }
     }
 
-    // Language index → redirect to first lesson
+    // Language index → redirect to first lesson (+ JSON manifest for the
+    // in-app lessons panel: which page to open first, and the full ordered
+    // list/titles for a future table-of-contents view).
     if (ordered.length > 0) {
       fs.writeFileSync(
         path.join(langOut, "index.html"),
         generateLangRedirect(ordered[0].href),
+        "utf8"
+      );
+      fs.writeFileSync(
+        path.join(langOut, "index.json"),
+        JSON.stringify({
+          first: ordered[0].href,
+          pages: ordered.map((n) => ({ href: n.href, title: n.title, num: n.num })),
+        }),
         "utf8"
       );
       console.log(`[lessons] ✓ ${lang}/index.html → ${ordered[0].href}`);

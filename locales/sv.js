@@ -1463,5 +1463,14 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "Konvertera gemener till versaler",
   "app.terminal.commands.tr.tldr.ex.delete": "Ta bort alla siffror från inmatningen",
   "app.terminal.commands.tee.tldr.desc": "Skriv inmatning till en fil och skicka vidare",
-  "app.terminal.commands.tee.tldr.ex.basic": "Spara utdata till en fil medan du fortfarande visar den"
+  "app.terminal.commands.tee.tldr.ex.basic": "Spara utdata till en fil medan du fortfarande visar den",
+  "lessons.loadError": "Den här lektionen kunde inte läsas in.",
+  "lessons.notAvailableInLanguage": "Den här lektionen är inte tillgänglig på ditt språk ännu.",
+  "lessons.simLaunch": "Ladda simulering",
+  "lessons.task.check": "Kontrollera uppgift",
+  "lessons.task.pass": "Korrekt!",
+  "lessons.task.fail": "Inte riktigt — fortsätt försöka.",
+  "lessons.quiz.retry": "Försök igen",
+  "pcap.btn.showhex": "Visa hexadecimal vy",
+  "pcap.btn.hidehex": "Dölj hexadecimal vy"
 };

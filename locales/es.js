@@ -1390,6 +1390,7 @@ export default {
   "lessons.wip.title": "🚧 Lecciones en progreso",
   "lessons.wip.text": "Estas páginas aún no están completas. El contenido puede estar incompleto, no finalizado o aún no revisado.",
   "lessons.pageNav": "Navegación de página",
+  "lessons.notAvailableInLanguage": "Esta lección no está disponible en tu idioma aún.",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD no establecido",
   "app.terminal.commands.sh.usage": "uso: sh <script> [args...]",
   "app.terminal.commands.sh.err.noFilesystem": "sh: sin sistema de archivos",
@@ -1470,5 +1471,13 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "Convertir minúsculas a mayúsculas",
   "app.terminal.commands.tr.tldr.ex.delete": "Eliminar todos los dígitos de la entrada",
   "app.terminal.commands.tee.tldr.desc": "Escribir entrada en un archivo y pasarla",
-  "app.terminal.commands.tee.tldr.ex.basic": "Guardar salida en un archivo mientras se sigue mostrando"
+  "app.terminal.commands.tee.tldr.ex.basic": "Guardar salida en un archivo mientras se sigue mostrando",
+  "lessons.loadError": "No se pudo cargar esta lección.",
+  "lessons.simLaunch": "Cargar simulación",
+  "lessons.task.check": "Verificar tarea",
+  "lessons.task.pass": "¡Correcto!",
+  "lessons.task.fail": "No del todo — sigue intentando.",
+  "lessons.quiz.retry": "Intentar de nuevo",
+  "pcap.btn.showhex": "Mostrar vista hexadecimal",
+  "pcap.btn.hidehex": "Ocultar vista hexadecimal"
 };

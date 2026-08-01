@@ -1,5 +1,5 @@
 //@ts-check
-import { t, getLocale } from "../i18n/index.js";
+import { t } from "../i18n/index.js";
 import { MiniMarkdown } from "./MiniMarkdown.js";
 import { isTauri } from "../tauri.js";
 import { version } from "./version.js";
@@ -242,7 +242,7 @@ export class WelcomeDialog {
             ));
             right.appendChild(WelcomeDialog._footerBtn(
                 "fa-book-open", t("sim.lessons"),
-                () => { window.open(`/lessons/${getLocale()}/`, "_blank"); }
+                () => close(() => sim.toggleLessonsPanel(true))
             ));
         }
 

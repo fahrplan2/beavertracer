@@ -1462,5 +1462,14 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "Konvertujte mala slova u velika slova",
   "app.terminal.commands.tr.tldr.ex.delete": "Uklonite sve cifre iz ulaza",
   "app.terminal.commands.tee.tldr.desc": "Napišite ulaz u datoteku i propustite ga kroz",
-  "app.terminal.commands.tee.tldr.ex.basic": "Sačuva izlaz u datoteku dok ga i dalje prikazuje"
+  "app.terminal.commands.tee.tldr.ex.basic": "Sačuva izlaz u datoteku dok ga i dalje prikazuje",
+  "lessons.loadError": "Ova lekcija nije mogla biti učitana.",
+  "lessons.notAvailableInLanguage": "Ova lekcija još nije dostupna na vašem jeziku.",
+  "lessons.simLaunch": "Učitaj simulaciju",
+  "lessons.task.check": "Proveri zadatak",
+  "lessons.task.pass": "Tačno!",
+  "lessons.task.fail": "Nije baš — nastavi pokušavati.",
+  "lessons.quiz.retry": "Pokušaj ponovo",
+  "pcap.btn.showhex": "Prikaži heksadecimalni prikaz",
+  "pcap.btn.hidehex": "Sakrij heksadecimalni prikaz"
 };

@@ -1463,5 +1463,14 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "Konversi huruf kecil ke huruf besar",
   "app.terminal.commands.tr.tldr.ex.delete": "Hapus semua digit dari input",
   "app.terminal.commands.tee.tldr.desc": "Tulis input ke file dan teruskan",
-  "app.terminal.commands.tee.tldr.ex.basic": "Simpan keluaran ke file sambil tetap menampilkannya"
+  "app.terminal.commands.tee.tldr.ex.basic": "Simpan keluaran ke file sambil tetap menampilkannya",
+  "lessons.loadError": "Pelajaran ini tidak dapat dimuat.",
+  "lessons.notAvailableInLanguage": "Pelajaran ini belum tersedia dalam bahasa Anda.",
+  "lessons.simLaunch": "Muat simulasi",
+  "lessons.task.check": "Periksa tugas",
+  "lessons.task.pass": "Benar!",
+  "lessons.task.fail": "Belum tepat — terus coba.",
+  "lessons.quiz.retry": "Coba lagi",
+  "pcap.btn.showhex": "Tampilkan tampilan heksadesimal",
+  "pcap.btn.hidehex": "Sembunyikan tampilan heksadesimal"
 };

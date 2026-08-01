@@ -1462,5 +1462,14 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "Previesť malé písmená na veľké",
   "app.terminal.commands.tr.tldr.ex.delete": "Odstrániť všetky číslice zo vstupu",
   "app.terminal.commands.tee.tldr.desc": "Napísať vstup do súboru a prejsť ho ďalej",
-  "app.terminal.commands.tee.tldr.ex.basic": "Uložiť výstup do súboru a zároveň ho zobraziť"
+  "app.terminal.commands.tee.tldr.ex.basic": "Uložiť výstup do súboru a zároveň ho zobraziť",
+  "lessons.loadError": "Túto lekciu sa nepodarilo načítať.",
+  "lessons.notAvailableInLanguage": "Táto lekcia ešte nie je dostupná vo vašom jazyku.",
+  "lessons.simLaunch": "Načítať simuláciu",
+  "lessons.task.check": "Skontrolovať úlohu",
+  "lessons.task.pass": "Správne!",
+  "lessons.task.fail": "Nie celkom — pokúste sa znova.",
+  "lessons.quiz.retry": "Skúsiť znova",
+  "pcap.btn.showhex": "Zobraziť hexadecimálny pohľad",
+  "pcap.btn.hidehex": "Skryť hexadecimálny pohľad"
 };

@@ -9,15 +9,81 @@
   user-select: none;
 
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr) 0;
   grid-template-rows: auto minmax(0, 1fr);
   grid-template-areas:
-    "logo    toolbar"
-    "sidebar nodes";
+    "logo    toolbar toolbar"
+    "sidebar nodes   lessons";
+  transition: grid-template-columns 0.18s ease;
 
   border: 1px solid var(--ui-border-strong);
   background: var(--bg);
   color: var(--text);
+}
+
+/* Real grid column, confined to row 2 only (the toolbar row keeps spanning
+   both other columns — see grid-template-areas above) — so opening the
+   panel genuinely shrinks the simulation area (nodes is minmax(0,1fr) and
+   yields the width to this column) instead of covering it, and can never
+   push on the toolbar/logo row's height like an earlier version of this
+   did when the panel spanned both rows in its own column. */
+.sim-root.lessons-open {
+  grid-template-columns: auto minmax(0, 1fr) var(--lessons-width, 380px);
+}
+
+/* While actively dragging the resize handle, the column-width transition
+   would make the panel visibly lag behind the pointer — suppress it for
+   the duration (see LessonsPanel.js). */
+.sim-root.lessons-resizing {
+  transition: none;
+}
+
+.sim-lessons-panel {
+  position: relative;
+  grid-area: lessons;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--ui-border-strong);
+  background: var(--bg);
+  /* .sim-root disables selection globally (it's a diagram canvas) — the
+     lessons panel is for reading, so text selection needs to work here. */
+  user-select: text;
+}
+
+.sim-lessons-resize-handle {
+  position: absolute;
+  left: -4px;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  z-index: 5;
+  touch-action: none;
+}
+
+.sim-lessons-resize-handle:hover,
+.sim-lessons-resize-handle:active {
+  background: color-mix(in oklch, var(--primary, #2563eb) 40%, transparent);
+}
+
+.sim-lessons-nav {
+  flex: 0 0 auto;
+  padding: var(--pad-sm) var(--pad-md);
+  border-bottom: 1px solid var(--ui-border-strong);
+}
+
+.sim-lessons-nav select {
+  width: 100%;
+}
+
+.sim-lessons-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--pad-md);
 }
 
 /* .sim-body has no box of its own (display: contents, see global.css) — it
@@ -248,6 +314,13 @@
   border: 1px solid var(--ui-border);
   border-radius: var(--radius-md);
   padding: var(--pad-sm) var(--pad-md);
+}
+
+/* Pushes this separator — and every toolbar item after it — to the far
+   right of the toolbar. .sim-toolbar is a flex row, so margin-left:auto
+   on the separator eats all the remaining space in front of it. */
+.sim-toolbar-sep--push-right {
+  margin-left: auto;
 }
 
 .sim-toolbar-group-label {
@@ -1077,6 +1150,14 @@
 
 .sim-root.edit-mode * {
   user-select: none;
+}
+
+/* Higher specificity than the blanket rule above (3 classes vs 2) — the
+   lessons panel is for reading, edit-mode's canvas-wide selection lock
+   shouldn't apply inside it. */
+.sim-root.edit-mode .sim-lessons-panel,
+.sim-root.edit-mode .sim-lessons-panel * {
+  user-select: text;
 }
 
 .sim-root.edit-mode[data-tool="select"] {
@@ -2002,6 +2083,23 @@ sim-toolbar-langbtn {
   .fw-input {
     width: 100%;
     box-sizing: border-box;
+  }
+
+  /* ── Lessons panel: a fixed-width docked column doesn't fit — same
+     fullscreen-overlay treatment as .sim-panel above, instead of squeezing
+     the simulation area to nothing or overflowing. ── */
+  .sim-root.lessons-open {
+    grid-template-columns: auto minmax(0, 1fr) 0;
+  }
+  .sim-lessons-panel {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    z-index: 20;
+  }
+  .sim-lessons-resize-handle {
+    display: none;
   }
 }
 

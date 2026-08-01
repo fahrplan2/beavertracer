@@ -1463,5 +1463,14 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "Преобразовать прописные буквы в заглавные",
   "app.terminal.commands.tr.tldr.ex.delete": "Удалить все цифры из входных данных",
   "app.terminal.commands.tee.tldr.desc": "Записать ввод в файл и передать его дальше",
-  "app.terminal.commands.tee.tldr.ex.basic": "Сохранить вывод в файл, одновременно отображая его"
+  "app.terminal.commands.tee.tldr.ex.basic": "Сохранить вывод в файл, одновременно отображая его",
+  "lessons.loadError": "Этот урок не удалось загрузить.",
+  "lessons.notAvailableInLanguage": "Этот урок еще недоступен на вашем языке.",
+  "lessons.simLaunch": "Загрузить симуляцию",
+  "lessons.task.check": "Проверить задачу",
+  "lessons.task.pass": "Правильно!",
+  "lessons.task.fail": "Не совсем верно — продолжайте попытки.",
+  "lessons.quiz.retry": "Попробовать снова",
+  "pcap.btn.showhex": "Показать представление в hex",
+  "pcap.btn.hidehex": "Скрыть представление в hex"
 };

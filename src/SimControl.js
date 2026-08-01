@@ -19,6 +19,8 @@ import { PCapController } from "./tracer/PCapControler.js";
 import { UILib } from "./lib/UILib.js";
 import { SimDialog } from "./lib/SimDialog.js";
 import { WelcomeDialog } from "./lib/WelcomeDialog.js";
+import { LessonsPanel } from "./lib/LessonsPanel.js";
+import { resetPathToRoot, buildUrl, clearParams } from "./lib/AppUrl.js";
 import { version } from "./lib/version.js";
 import { isTauri } from "./tauri.js";
 import { Linux } from "./sim/Linux.js";
@@ -241,6 +243,37 @@ export class SimControl {
     /** @type {boolean} */
     editable = false;
 
+    /** @type {boolean} whether the docked lessons panel is open */
+    lessonsOpen = false;
+
+    /** @type {HTMLDivElement|null} */
+    _lessonsPanel = null;
+
+    /** @type {HTMLDivElement|null} mount point lesson content is rendered into */
+    _lessonsContent = null;
+
+    /** @type {HTMLDivElement|null} slim strip above the content, holds the chapter dropdown */
+    _lessonsNav = null;
+
+    /** @type {HTMLDivElement|null} drag handle on the panel's left edge */
+    _lessonsResizeHandle = null;
+
+    /** @type {LessonsPanel|null} */
+    lessonsPanel = null;
+
+    /** Public accessor for LessonsPanel to render into. @returns {HTMLDivElement|null} */
+    get lessonsMount() { return this._lessonsContent; }
+
+    /** Public accessor for LessonsPanel's chapter dropdown. @returns {HTMLDivElement|null} */
+    get lessonsNavMount() { return this._lessonsNav; }
+
+
+    /** Public accessor for LessonsPanel's resize handle. @returns {HTMLDivElement|null} */
+    get lessonsResizeHandle() { return this._lessonsResizeHandle; }
+
+    /** Public accessor for the docked lessons panel's own root element. @returns {HTMLDivElement|null} */
+    get lessonsPanelEl() { return this._lessonsPanel; }
+
     // ── Constructor & lifecycle ───────────────────────────────────────────────
 
     /** @type {boolean} */
@@ -269,6 +302,7 @@ export class SimControl {
         this.wifiMedium.setPcapController(this.pcapController);
 
         this._mount();          // build DOM once
+        this.lessonsPanel = new LessonsPanel(this);
         this._syncSceneDOM();   // render current objects
         this._updateUI();       // set active states
 
@@ -553,6 +587,27 @@ export class SimControl {
         });
         this._staticRouter.mount(pageContent, { initial: window.location.pathname });
 
+        // Lessons panel (docked right column, independent of mode)
+        const lessonsPanel = document.createElement("div");
+        lessonsPanel.className = "sim-lessons-panel";
+        root.appendChild(lessonsPanel);
+        this._lessonsPanel = lessonsPanel;
+
+        const lessonsResizeHandle = document.createElement("div");
+        lessonsResizeHandle.className = "sim-lessons-resize-handle";
+        lessonsPanel.appendChild(lessonsResizeHandle);
+        this._lessonsResizeHandle = lessonsResizeHandle;
+
+        const lessonsNav = document.createElement("div");
+        lessonsNav.className = "sim-lessons-nav";
+        lessonsPanel.appendChild(lessonsNav);
+        this._lessonsNav = lessonsNav;
+
+        const lessonsContent = document.createElement("div");
+        lessonsContent.className = "sim-lessons-content lesson-article";
+        lessonsPanel.appendChild(lessonsContent);
+        this._lessonsContent = lessonsContent;
+
         // Build toolbar + sidebar buttons once
         this._buildToolbar();
         this._buildSidebar();
@@ -636,6 +691,46 @@ export class SimControl {
         };
 
         this._rafId = requestAnimationFrame(loop);
+    }
+
+    // ── Lessons panel ────────────────────────────────────────────────────────
+
+    /**
+     * Opens/closes the docked lessons panel. Independent of `mode` — it sits
+     * beside the sim/trace/page content rather than replacing it.
+     * @param {boolean} [open] pass explicitly to force a state, omit to toggle
+     */
+    toggleLessonsPanel(open) {
+        const wasOpen = this.lessonsOpen;
+        this.lessonsOpen = open ?? !this.lessonsOpen;
+        this._invalidateUI();
+        if (this.lessonsOpen) this.lessonsPanel?.ensureLoaded();
+        else clearParams(["lesson"]);
+
+        // Opening genuinely shrinks the simulation area (see .sim-root's
+        // grid-template-columns in sim.css) — re-fit once that column-width
+        // transition has settled, so nothing ends up needing a manual pan to
+        // find. Only zooms out, never in, and only on open: closing gives the
+        // canvas more room back, which never hides anything, so the user's
+        // zoom/pan is left alone there.
+        if (this.lessonsOpen && !wasOpen) this._fitAfterLessonsResize();
+    }
+
+    _fitAfterLessonsResize() {
+        const root = this.root;
+        if (!root) return;
+        // Below the mobile breakpoint (see sim.css) the panel becomes a
+        // fullscreen overlay instead of a real grid column — the canvas
+        // itself never changes size there, grid-template-columns doesn't
+        // change value, and transitionend would simply never fire.
+        if (window.matchMedia("(max-width: 600px)").matches) return;
+        /** @param {TransitionEvent} ev */
+        const onEnd = (ev) => {
+            if (ev.propertyName !== "grid-template-columns" || ev.target !== root) return;
+            root.removeEventListener("transitionend", onEnd);
+            this._fitToContent(1);
+        };
+        root.addEventListener("transitionend", onEnd);
     }
 
     // ── Mode transitions ──────────────────────────────────────────────────────
@@ -1025,9 +1120,7 @@ export class SimControl {
                 label: t("sim.edit"),
                 icon: "fa-pencil",
                 onClick: () => {
-                    if (!this.embedded && window.location.pathname !== "/") {
-                        history.pushState({}, "", "/");
-                    }
+                    if (!this.embedded) resetPathToRoot();
                     this._enterEditMode();
                 },
             });
@@ -1039,9 +1132,7 @@ export class SimControl {
             label: t("sim.run"),
             icon: "fa-play",
             onClick: () => {
-                if (!this.embedded && window.location.pathname !== "/") {
-                    history.pushState({}, "", "/");
-                }
+                if (!this.embedded) resetPathToRoot();
                 if (this.mode === "edit") this._resetEditTools();
                 if (this.mode === "trace") {
                     this._leaveTraceMode();
@@ -1068,9 +1159,7 @@ export class SimControl {
             label: t("sim.trace"),
             icon: "fa-magnifying-glass",
             onClick: () => {
-                if (!this.embedded && window.location.pathname !== "/") {
-                    history.pushState({}, "", "/");
-                }
+                if (!this.embedded) resetPathToRoot();
                 if (this.mode === "edit") this._resetEditTools();
                 this._enterTraceMode();
             },
@@ -1291,14 +1380,29 @@ export class SimControl {
                 label: t("sim.embed.open"),
                 icon: "fa-up-right-from-square",
                 onClick: () => {
-                    const url = new URL(window.location.href);
-                    url.searchParams.delete("embed");
-                    url.searchParams.delete("editable");
-                    window.open(url.toString(), "_blank");
+                    window.open(buildUrl({ embed: null, editable: null }), "_blank");
                 },
             });
             btnOpen.dataset.role = "embed-open";
             toolbar.appendChild(btnOpen);
+        }
+
+        if (!this.embedded) {
+            //******** LESSONS (own group, pushed to the far right) ***********/
+            // The auto margin goes on the separator (not the group) so it's
+            // the one that eats the remaining flex space — pushing both
+            // itself and the group after it flush to the toolbar's right edge.
+            addSeparator("sep-lessons").classList.add("sim-toolbar-sep--push-right");
+            const gLessons = UILib.buttongroup(t("sim.lessons"), toolbar);
+            gLessons.dataset.group = "lessons";
+
+            const lessonsBtn = UILib.iconbutton({
+                label: t("sim.lessons"),
+                icon: "fa-book-open",
+                onClick: () => this.toggleLessonsPanel(),
+            });
+            lessonsBtn.dataset.role = "lessons-toggle";
+            gLessons.appendChild(lessonsBtn);
         }
     }
 
@@ -1469,6 +1573,9 @@ export class SimControl {
         const root = this.root;
         if (!root) return;
 
+        // lessons panel (independent of mode)
+        root.classList.toggle("lessons-open", this.lessonsOpen);
+
         // mode classes
         root.classList.toggle("edit-mode", this.mode === "edit");
         if (this.mode === "edit") root.dataset.tool = this.tool;
@@ -1501,6 +1608,7 @@ export class SimControl {
             setActive("mode-help",      this.mode === "page" && this._currentRoute === "/help");
             setActive("mode-about",     this.mode === "page" && this._currentRoute === "/about");
             setActive("mode-downloads", this.mode === "page" && this._currentRoute === "/downloads");
+            setActive("lessons-toggle", this.lessonsOpen);
 
             // --- active state for pause
             setActive("pause", this.mode === "run" && this.isPaused);

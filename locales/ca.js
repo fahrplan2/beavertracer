@@ -1382,6 +1382,7 @@ export default {
   "lessons.wip.title": "🚧 Lliçons en desenvolupament",
   "lessons.wip.text": "Aquestes pàgines encara no estan completes. Pot faltar contingut, estar incomplet o no estar revisat.",
   "lessons.pageNav": "Navegació de pàgina",
+  "lessons.notAvailableInLanguage": "Aquesta lliçó no està disponible en el vostre idioma encara.",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD no establert",
   "app.terminal.commands.sh.usage": "ús: sh <script> [args...]",
   "app.terminal.commands.sh.err.noFilesystem": "sh: no hi ha sistema de fitxers",
@@ -1462,5 +1463,13 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "Convertir minúscules a majúscules",
   "app.terminal.commands.tr.tldr.ex.delete": "Suprimir tots els dígits de l'entrada",
   "app.terminal.commands.tee.tldr.desc": "Escriure l'entrada en un fitxer i passar-la",
-  "app.terminal.commands.tee.tldr.ex.basic": "Guardar la sortida a un fitxer mentre es mostra ancora"
+  "app.terminal.commands.tee.tldr.ex.basic": "Guardar la sortida a un fitxer mentre es mostra ancora",
+  "lessons.loadError": "No s'ha pogut carregar aquesta lliçó.",
+  "lessons.simLaunch": "Carrega la simulació",
+  "lessons.task.check": "Comprova la tasca",
+  "lessons.task.pass": "Correcte!",
+  "lessons.task.fail": "No del tot — segueix intentant.",
+  "lessons.quiz.retry": "Torna a intentar",
+  "pcap.btn.showhex": "Mostrar vista en hexadecimal",
+  "pcap.btn.hidehex": "Amagar vista en hexadecimal"
 };

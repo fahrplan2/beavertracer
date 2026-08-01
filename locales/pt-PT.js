@@ -1468,5 +1468,14 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "Converter minúsculas em maiúsculas",
   "app.terminal.commands.tr.tldr.ex.delete": "Remover todos os dígitos da entrada",
   "app.terminal.commands.tee.tldr.desc": "Escrever a entrada num ficheiro e passá-la adiante",
-  "app.terminal.commands.tee.tldr.ex.basic": "Guardar saída num ficheiro enquanto ainda a apresenta"
+  "app.terminal.commands.tee.tldr.ex.basic": "Guardar saída num ficheiro enquanto ainda a apresenta",
+  "lessons.loadError": "Esta lição não pôde ser carregada.",
+  "lessons.notAvailableInLanguage": "Esta lição ainda não está disponível no seu idioma.",
+  "lessons.simLaunch": "Carregar simulação",
+  "lessons.task.check": "Verificar tarefa",
+  "lessons.task.pass": "Correto!",
+  "lessons.task.fail": "Ainda não — continue a tentar.",
+  "lessons.quiz.retry": "Tentar novamente",
+  "pcap.btn.showhex": "Mostrar visualização hexadecimal",
+  "pcap.btn.hidehex": "Ocultar visualização hexadecimal"
 };

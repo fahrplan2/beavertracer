@@ -1383,6 +1383,7 @@ export default {
   "lessons.wip.title": "🚧 Lektioner under udvikling",
   "lessons.wip.text": "Disse sider er endnu ikke færdige. Indhold kan mangle, være ufuldstændigt eller endnu ikke være korrekturlæst.",
   "lessons.pageNav": "Sidenavigation",
+  "lessons.notAvailableInLanguage": "Denne lektion er ikke tilgængelig på dit sprog endnu.",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD ikke indstillet",
   "app.terminal.commands.sh.usage": "brug: sh <script> [args...]",
   "app.terminal.commands.sh.err.noFilesystem": "sh: intet filsystem",
@@ -1463,5 +1464,13 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "Konverter små bogstaver til store bogstaver",
   "app.terminal.commands.tr.tldr.ex.delete": "Fjern alle cifre fra inputtet",
   "app.terminal.commands.tee.tldr.desc": "Skriv input til en fil og send det gennem",
-  "app.terminal.commands.tee.tldr.ex.basic": "Gem output til en fil og vis det stadig på skærmen"
+  "app.terminal.commands.tee.tldr.ex.basic": "Gem output til en fil og vis det stadig på skærmen",
+  "lessons.loadError": "Denne lektion kunne ikke indlæses.",
+  "lessons.simLaunch": "Indlæs simulation",
+  "lessons.task.check": "Tjek opgave",
+  "lessons.task.pass": "Korrekt!",
+  "lessons.task.fail": "Ikke helt — forsøg igen.",
+  "lessons.quiz.retry": "Prøv igen",
+  "pcap.btn.showhex": "Vis heksadecimal visning",
+  "pcap.btn.hidehex": "Skjul heksadecimal visning"
 };

@@ -1463,5 +1463,14 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "将小写转换为大写",
   "app.terminal.commands.tr.tldr.ex.delete": "从输入中删除所有数字",
   "app.terminal.commands.tee.tldr.desc": "将输入写入文件并传递",
-  "app.terminal.commands.tee.tldr.ex.basic": "将输出保存到文件的同时仍然显示它"
+  "app.terminal.commands.tee.tldr.ex.basic": "将输出保存到文件的同时仍然显示它",
+  "lessons.loadError": "无法加载此课程。",
+  "lessons.notAvailableInLanguage": "此课程暂未提供您的语言版本。",
+  "lessons.simLaunch": "加载模拟",
+  "lessons.task.check": "检查任务",
+  "lessons.task.pass": "正确！",
+  "lessons.task.fail": "不太对——继续尝试。",
+  "lessons.quiz.retry": "重试",
+  "pcap.btn.showhex": "显示十六进制视图",
+  "pcap.btn.hidehex": "隐藏十六进制视图"
 };

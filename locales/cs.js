@@ -1383,6 +1383,7 @@ export default {
   "lessons.wip.title": "🚧 Lekce probíhající zpracování",
   "lessons.wip.text": "Tyto stránky nejsou zatím kompletní. Obsah může být neúplný nebo ještě nezkontrolovaný.",
   "lessons.pageNav": "Navigace stránky",
+  "lessons.notAvailableInLanguage": "Tato lekce zatím není v tvém jazyce dostupná.",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD není nastavena",
   "app.terminal.commands.sh.usage": "použití: sh <skript> [args...]",
   "app.terminal.commands.sh.err.noFilesystem": "sh: žádný souborový systém",
@@ -1463,5 +1464,13 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "Převést malá písmena na velká",
   "app.terminal.commands.tr.tldr.ex.delete": "Odstranit všechny číslice ze vstupu",
   "app.terminal.commands.tee.tldr.desc": "Zapsat vstup do souboru a předat jej dál",
-  "app.terminal.commands.tee.tldr.ex.basic": "Uložit výstup do souboru a zároveň ho zobrazit"
+  "app.terminal.commands.tee.tldr.ex.basic": "Uložit výstup do souboru a zároveň ho zobrazit",
+  "lessons.loadError": "Tuto lekci nelze načíst.",
+  "lessons.simLaunch": "Načíst simulaci",
+  "lessons.task.check": "Zkontrolovat úkol",
+  "lessons.task.pass": "Správně!",
+  "lessons.task.fail": "Není to zcela správně — zkuste to znovu.",
+  "lessons.quiz.retry": "Zkusit znovu",
+  "pcap.btn.showhex": "Zobrazit hexadecimální pohled",
+  "pcap.btn.hidehex": "Skrýt hexadecimální pohled"
 };

@@ -1383,6 +1383,7 @@ export default {
   "lessons.wip.title": "🚧 درس‌های در حال تکمیل",
   "lessons.wip.text": "این صفحات هنوز کامل نشده‌اند. ممکن است محتوا ناقص، نامکمل یا هنوز بررسی‌شده نباشد.",
   "lessons.pageNav": "ناوبری صفحه",
+  "lessons.notAvailableInLanguage": "این درس هنوز به زبان شما موجود نیست.",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD تعریف نشده است",
   "app.terminal.commands.sh.usage": "نحوه استفاده: sh <script> [args...]",
   "app.terminal.commands.sh.err.noFilesystem": "sh: سیستم فایل موجود نیست",
@@ -1463,5 +1464,13 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "تبدیل حروف کوچک به بزرگ",
   "app.terminal.commands.tr.tldr.ex.delete": "حذف تمام ارقام از ورودی",
   "app.terminal.commands.tee.tldr.desc": "نوشتن ورودی به یک فایل و عبور آن از میان",
-  "app.terminal.commands.tee.tldr.ex.basic": "ذخیره خروجی در یک فایل در حالی که آن را نمایش می‌دهد"
+  "app.terminal.commands.tee.tldr.ex.basic": "ذخیره خروجی در یک فایل در حالی که آن را نمایش می‌دهد",
+  "lessons.loadError": "این درس نمی‌تواند بارگذاری شود.",
+  "lessons.simLaunch": "بارگذاری شبیه‌سازی",
+  "lessons.task.check": "بررسی تکلیف",
+  "lessons.task.pass": "درست!",
+  "lessons.task.fail": "نه خیلی صحیح نیست — دوباره تلاش کنید.",
+  "lessons.quiz.retry": "دوباره تلاش کنید",
+  "pcap.btn.showhex": "نمایش نمای هگزادسیمال",
+  "pcap.btn.hidehex": "پنهان کردن نمای هگزادسیمال"
 };

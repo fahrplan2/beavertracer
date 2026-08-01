@@ -133,9 +133,14 @@ export class PCapViewer {
   /** @type {HTMLButtonElement|null} */ #prevBtn = null;
   /** @type {HTMLButtonElement|null} */ #nextBtn = null;
   /** @type {HTMLButtonElement|null} */ #followBtn = null;
+  /** @type {HTMLButtonElement|null} */ #hexToggleBtn = null;
 
   // UI state
   /** @type {number} */ #filterTimer = 0;
+  // Hidden by default — the hex/raw byte view is the most overwhelming part
+  // of the tracer for newcomers; it's one click (or a drag on the existing
+  // splitter, which still works normally) away when actually needed.
+  /** @type {boolean} */ #hexHidden = true;
 
   // Splitters (ratios + listener lifetime)
   /** @type {number|null} */ #hSplitRatio = null;
@@ -392,6 +397,7 @@ export class PCapViewer {
       <div class="pcapviewer-toolbar">
         <input class="pcapviewer-filter" placeholder="${t("pcap.filter.placeholder")}" />
         <span class="pcapviewer-status"></span>
+        <button type="button" class="pcapviewer-hex-toggle" title="${t("pcap.btn.showhex")}"><i class="fas fa-code"></i></button>
       </div>
 
       <div class="pcapviewer-layout">
@@ -448,10 +454,26 @@ export class PCapViewer {
     this.#loadingOverlay = /** @type {HTMLElement} */ (root.querySelector(".pcapviewer-wg-overlay"));
     this.#treePane = /** @type {HTMLElement} */ (root.querySelector(".pcapviewer-treepane"));
     this.#rawPane = /** @type {HTMLElement} */ (root.querySelector(".pcapviewer-rawpane"));
+    this.#hexToggleBtn = /** @type {HTMLButtonElement} */ (root.querySelector(".pcapviewer-hex-toggle"));
+    this.#applyHexHidden();
+  }
+
+  #applyHexHidden() {
+    const bottom = /** @type {HTMLElement|null} */ (this.#root?.querySelector(".pcapviewer-bottom"));
+    bottom?.classList.toggle("pcapviewer-hex-hidden", this.#hexHidden);
+    this.#hexToggleBtn?.classList.toggle("active", !this.#hexHidden);
+    if (this.#hexToggleBtn) {
+      this.#hexToggleBtn.title = this.#hexHidden ? t("pcap.btn.showhex") : t("pcap.btn.hidehex");
+    }
   }
 
   #wireUI() {
     if (!this.#root) return;
+
+    this.#hexToggleBtn?.addEventListener("click", () => {
+      this.#hexHidden = !this.#hexHidden;
+      this.#applyHexHidden();
+    });
 
     this.#filterEl?.addEventListener("input", () => {
       window.clearTimeout(this.#filterTimer);

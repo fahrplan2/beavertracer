@@ -1463,5 +1463,14 @@ export default {
   "app.terminal.commands.tr.tldr.ex.basic": "Konwertuj małe litery na wielkie",
   "app.terminal.commands.tr.tldr.ex.delete": "Usuń wszystkie cyfry z wejścia",
   "app.terminal.commands.tee.tldr.desc": "Zapisz wejście do pliku i przekaż je dalej",
-  "app.terminal.commands.tee.tldr.ex.basic": "Zapisz wyjście do pliku, jednocześnie je wyświetlając"
+  "app.terminal.commands.tee.tldr.ex.basic": "Zapisz wyjście do pliku, jednocześnie je wyświetlając",
+  "lessons.loadError": "Nie można było załadować tej lekcji.",
+  "lessons.notAvailableInLanguage": "Ta lekcja nie jest jeszcze dostępna w Twoim języku.",
+  "lessons.simLaunch": "Załaduj symulację",
+  "lessons.task.check": "Sprawdź zadanie",
+  "lessons.task.pass": "Poprawnie!",
+  "lessons.task.fail": "Nie całkiem — spróbuj ponownie.",
+  "lessons.quiz.retry": "Spróbuj ponownie",
+  "pcap.btn.showhex": "Pokaż widok hex",
+  "pcap.btn.hidehex": "Ukryj widok hex"
 };
