@@ -1470,7 +1470,6 @@ export default {
   "lessons.task.check": "Kiểm tra bài tập",
   "lessons.task.pass": "Chính xác!",
   "lessons.task.fail": "Chưa đúng — tiếp tục thử lại.",
-  "lessons.openStandalone": "Mở trang bên ngoài",
   "lessons.quiz.retry": "Thử lại",
   "pcap.btn.showhex": "Hiển thị chế độ xem hex",
   "pcap.btn.hidehex": "Ẩn chế độ xem hex"

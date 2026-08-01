@@ -760,7 +760,6 @@ export default {
   "lessons.loadError": "This lesson could not be loaded.",
   "lessons.notAvailableInLanguage": "This lesson isn't available in your language yet.",
   "lessons.simLaunch": "Load simulation",
-  "lessons.openStandalone": "Open external page",
   "lessons.task.check": "Check task",
   "lessons.task.pass": "Correct!",
   "lessons.task.fail": "Not quite — keep trying.",

@@ -1470,7 +1470,6 @@ export default {
   "lessons.task.check": "Tarkista tehtävä",
   "lessons.task.pass": "Oikein!",
   "lessons.task.fail": "Ei aivan — yritä uudelleen.",
-  "lessons.openStandalone": "Avaa ulkoinen sivu",
   "lessons.quiz.retry": "Yritä uudelleen",
   "pcap.btn.showhex": "Näytä heksadesimaalinäkymä",
   "pcap.btn.hidehex": "Piilota heksadesimaalinäkymä"

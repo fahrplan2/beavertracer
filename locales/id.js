@@ -1470,7 +1470,6 @@ export default {
   "lessons.task.check": "Periksa tugas",
   "lessons.task.pass": "Benar!",
   "lessons.task.fail": "Belum tepat — terus coba.",
-  "lessons.openStandalone": "Buka halaman eksternal",
   "lessons.quiz.retry": "Coba lagi",
   "pcap.btn.showhex": "Tampilkan tampilan heksadesimal",
   "pcap.btn.hidehex": "Sembunyikan tampilan heksadesimal"

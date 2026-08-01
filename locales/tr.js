@@ -1470,7 +1470,6 @@ export default {
   "lessons.task.check": "Görevi kontrol et",
   "lessons.task.pass": "Doğru!",
   "lessons.task.fail": "Henüz değil — denemeye devam et.",
-  "lessons.openStandalone": "Harici sayfayı aç",
   "lessons.quiz.retry": "Tekrar dene",
   "pcap.btn.showhex": "Hex görünümünü göster",
   "pcap.btn.hidehex": "Hex görünümünü gizle"

@@ -1470,7 +1470,6 @@ export default {
   "lessons.task.check": "タスクを確認",
   "lessons.task.pass": "正解です！",
   "lessons.task.fail": "もう少し — 試し続けてください。",
-  "lessons.openStandalone": "外部ページを開く",
   "lessons.quiz.retry": "もう一度試す",
   "pcap.btn.showhex": "16進数ビューを表示",
   "pcap.btn.hidehex": "16進数ビューを非表示"

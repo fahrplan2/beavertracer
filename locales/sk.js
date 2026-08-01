@@ -1469,7 +1469,6 @@ export default {
   "lessons.task.check": "Skontrolovať úlohu",
   "lessons.task.pass": "Správne!",
   "lessons.task.fail": "Nie celkom — pokúste sa znova.",
-  "lessons.openStandalone": "Otvoriť externú stránku",
   "lessons.quiz.retry": "Skúsiť znova",
   "pcap.btn.showhex": "Zobraziť hexadecimálny pohľad",
   "pcap.btn.hidehex": "Skryť hexadecimálny pohľad"

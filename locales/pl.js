@@ -1470,7 +1470,6 @@ export default {
   "lessons.task.check": "Sprawdź zadanie",
   "lessons.task.pass": "Poprawnie!",
   "lessons.task.fail": "Nie całkiem — spróbuj ponownie.",
-  "lessons.openStandalone": "Otwórz stronę zewnętrzną",
   "lessons.quiz.retry": "Spróbuj ponownie",
   "pcap.btn.showhex": "Pokaż widok hex",
   "pcap.btn.hidehex": "Ukryj widok hex"

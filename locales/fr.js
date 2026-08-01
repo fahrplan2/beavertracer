@@ -1504,7 +1504,6 @@ export default {
   "lessons.task.check": "Vérifier la tâche",
   "lessons.task.pass": "Correct !",
   "lessons.task.fail": "Pas tout à fait — continuez à essayer.",
-  "lessons.openStandalone": "Ouvrir la page externe",
   "lessons.quiz.retry": "Réessayer",
   "pcap.btn.showhex": "Afficher l'affichage hexadécimal",
   "pcap.btn.hidehex": "Masquer l'affichage hexadécimal"

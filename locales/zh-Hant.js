@@ -1469,7 +1469,6 @@ export default {
   "lessons.task.check": "檢查任務",
   "lessons.task.pass": "正確！",
   "lessons.task.fail": "還差一點 — 繼續嘗試。",
-  "lessons.openStandalone": "開啟外部頁面",
   "lessons.quiz.retry": "重試",
   "pcap.btn.showhex": "顯示十六進位檢視",
   "pcap.btn.hidehex": "隱藏十六進位檢視"

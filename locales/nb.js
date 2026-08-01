@@ -1469,7 +1469,6 @@ export default {
   "lessons.task.check": "Kontroller oppgave",
   "lessons.task.pass": "Riktig!",
   "lessons.task.fail": "Ikke helt — fortsett å prøve.",
-  "lessons.openStandalone": "Åpne ekstern side",
   "lessons.quiz.retry": "Prøv igjen",
   "pcap.btn.showhex": "Vis heksadesimalt",
   "pcap.btn.hidehex": "Skjul heksadesimalt"

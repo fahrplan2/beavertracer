@@ -258,9 +258,6 @@ export class SimControl {
     /** @type {HTMLDivElement|null} drag handle on the panel's left edge */
     _lessonsResizeHandle = null;
 
-    /** @type {HTMLDivElement|null} slim strip below the content, pinned to the panel's bottom */
-    _lessonsFooter = null;
-
     /** @type {LessonsPanel|null} */
     lessonsPanel = null;
 
@@ -270,8 +267,6 @@ export class SimControl {
     /** Public accessor for LessonsPanel's chapter dropdown. @returns {HTMLDivElement|null} */
     get lessonsNavMount() { return this._lessonsNav; }
 
-    /** Public accessor for LessonsPanel's bottom footer strip. @returns {HTMLDivElement|null} */
-    get lessonsFooterMount() { return this._lessonsFooter; }
 
     /** Public accessor for LessonsPanel's resize handle. @returns {HTMLDivElement|null} */
     get lessonsResizeHandle() { return this._lessonsResizeHandle; }
@@ -612,11 +607,6 @@ export class SimControl {
         lessonsContent.className = "sim-lessons-content lesson-article";
         lessonsPanel.appendChild(lessonsContent);
         this._lessonsContent = lessonsContent;
-
-        const lessonsFooter = document.createElement("div");
-        lessonsFooter.className = "sim-lessons-footer";
-        lessonsPanel.appendChild(lessonsFooter);
-        this._lessonsFooter = lessonsFooter;
 
         // Build toolbar + sidebar buttons once
         this._buildToolbar();

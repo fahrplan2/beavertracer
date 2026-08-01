@@ -1469,7 +1469,6 @@ export default {
   "lessons.task.check": "Comprova la tasca",
   "lessons.task.pass": "Correcte!",
   "lessons.task.fail": "No del tot — segueix intentant.",
-  "lessons.openStandalone": "Obrir pàgina externa",
   "lessons.quiz.retry": "Torna a intentar",
   "pcap.btn.showhex": "Mostrar vista en hexadecimal",
   "pcap.btn.hidehex": "Amagar vista en hexadecimal"

@@ -1470,7 +1470,6 @@ export default {
   "lessons.task.check": "Patikrinti užduotį",
   "lessons.task.pass": "Teisingai!",
   "lessons.task.fail": "Ne visai — bandykite dar kartą.",
-  "lessons.openStandalone": "Atidaryti išorinį puslapį",
   "lessons.quiz.retry": "Bandyti dar kartą",
   "pcap.btn.showhex": "Rodyti šešioliktainį rodinį",
   "pcap.btn.hidehex": "Slėpti šešioliktainį rodinį"

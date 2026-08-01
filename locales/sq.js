@@ -1469,7 +1469,6 @@ export default {
   "lessons.task.check": "Kontrollo detyrën",
   "lessons.task.pass": "Saktë!",
   "lessons.task.fail": "Jo plotësisht — vazhdo të përpiqesh.",
-  "lessons.openStandalone": "Hap faqen e jashtme",
   "lessons.quiz.retry": "Provo përsëri",
   "pcap.btn.showhex": "Shfaq pamjen hex",
   "pcap.btn.hidehex": "Fsheh pamjen hex"

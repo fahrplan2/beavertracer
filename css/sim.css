@@ -79,30 +79,6 @@
   width: 100%;
 }
 
-.sim-lessons-footer {
-  flex: 0 0 auto;
-  padding: var(--pad-sm) var(--pad-md);
-  border-top: 1px solid var(--ui-border-strong);
-  text-align: right;
-}
-
-.sim-lessons-standalone-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 8px;
-  border: 1px solid var(--ui-border-strong);
-  border-radius: var(--radius-sm);
-  font-size: 0.7rem;
-  color: var(--muted, inherit);
-  text-decoration: none;
-}
-
-.sim-lessons-standalone-link:hover {
-  color: var(--text);
-  border-color: var(--text);
-}
-
 .sim-lessons-content {
   flex: 1 1 auto;
   min-height: 0;

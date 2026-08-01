@@ -666,7 +666,6 @@ export default {
   "lessons.loadError": "Diese Lektion konnte nicht geladen werden.",
   "lessons.notAvailableInLanguage": "Diese Lektion ist in deiner Sprache leider (noch) nicht verfügbar.",
   "lessons.simLaunch": "Simulation laden",
-  "lessons.openStandalone": "Externe Seite öffnen",
   "lessons.task.check": "Aufgabe prüfen",
   "lessons.task.pass": "Richtig gelöst!",
   "lessons.task.fail": "Noch nicht ganz richtig — versuch's weiter.",

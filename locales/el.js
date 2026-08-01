@@ -1470,7 +1470,6 @@ export default {
   "lessons.task.check": "Έλεγχος εργασίας",
   "lessons.task.pass": "Σωστό!",
   "lessons.task.fail": "Όχι ακριβώς — συνέχισε να προσπαθείς.",
-  "lessons.openStandalone": "Ανοίξτε εξωτερική σελίδα",
   "lessons.quiz.retry": "Δοκιμάστε ξανά",
   "pcap.btn.showhex": "Εμφάνιση hex προβολής",
   "pcap.btn.hidehex": "Απόκρυψη hex προβολής"

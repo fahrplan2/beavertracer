@@ -1470,7 +1470,6 @@ export default {
   "lessons.task.check": "작업 확인",
   "lessons.task.pass": "맞습니다!",
   "lessons.task.fail": "아직 아닙니다 — 계속 시도하세요.",
-  "lessons.openStandalone": "외부 페이지 열기",
   "lessons.quiz.retry": "다시 시도",
   "pcap.btn.showhex": "16진수 보기",
   "pcap.btn.hidehex": "16진수 숨기기"

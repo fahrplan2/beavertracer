@@ -9,3 +9,6 @@ Der Kurs richtet sich an **Einsteiger ohne oder mit wenig Vorkenntnissen** und f
 → [Direkt zu Kapitel 1: Einführung in den BeaverTracer](01-einfuehrung.html)
 :::
 
+:::warning
+Das Begleitmaterial ist noch in aktiver Entwicklung. Bis jetzt sind nur die ersten Lektionen fertig. Wir bitten um Verständnis.
+:::

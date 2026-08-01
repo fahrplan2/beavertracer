@@ -36,9 +36,6 @@ export class LessonsPanel {
         /** @type {HTMLSelectElement|null} */
         this._navSelect = null;
 
-        /** @type {HTMLAnchorElement|null} */
-        this._standaloneLink = null;
-
         // _quiz.js reads its "N of M points" i18n templates off document.body's
         // dataset. Those keys (lessons.quiz.result.*) live in the same locale
         // files the app's own t() already reads, so no separate lookup is needed.
@@ -195,25 +192,6 @@ export class LessonsPanel {
         select.addEventListener("change", () => this.load(select.value));
         navMount.appendChild(select);
         this._navSelect = select;
-
-        // Small, deliberately unobtrusive escape hatch to the standalone
-        // site (crawlable/shareable outside the app) — pinned to the
-        // panel's own footer strip so it doesn't compete for attention
-        // with the dropdown/content, and stays reachable without scrolling.
-        const footerMount = this.simControl.lessonsFooterMount;
-        if (footerMount) {
-            const standaloneLink = document.createElement("a");
-            standaloneLink.className = "sim-lessons-standalone-link";
-            const standaloneIcon = document.createElement("i");
-            standaloneIcon.className = "fa-solid fa-up-right-from-square";
-            standaloneLink.appendChild(standaloneIcon);
-            standaloneLink.appendChild(document.createTextNode(t("lessons.openStandalone")));
-            standaloneLink.target = "_blank";
-            standaloneLink.rel = "noopener";
-            footerMount.appendChild(standaloneLink);
-            this._standaloneLink = standaloneLink;
-            this._syncStandaloneLink(this._currentHref);
-        }
     }
 
     /**
@@ -242,12 +220,6 @@ export class LessonsPanel {
         if (ancestor && hasOption(ancestor.href)) select.value = ancestor.href;
     }
 
-    /** Points the "open standalone" link at the given (or current) lesson. @param {string|null} [href] */
-    _syncStandaloneLink(href) {
-        if (!this._standaloneLink) return;
-        this._standaloneLink.href = `/lessons/${getLocale()}/${href ?? ""}`;
-    }
-
     /** @param {string} href e.g. "01-einfuehrung.html" @returns {Promise<void>} */
     async load(href) {
         const mount = this.simControl.lessonsMount;
@@ -264,7 +236,6 @@ export class LessonsPanel {
             mount.scrollTop = 0;
             initQuizBlocks(mount);
             this._syncNavSelect(href);
-            this._syncStandaloneLink(href);
             // Keeps the URL sharable/deep-linkable to whatever's currently
             // shown, however the student got there (dropdown, prev/next,
             // an in-text link, or the initial ?lesson= deep link itself).
