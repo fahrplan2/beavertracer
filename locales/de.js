@@ -788,6 +788,8 @@ export default {
   "pcap.btn.follow": "TCP-Stream verfolgen",
   "pcap.btn.hidetab": "Registerkarte ausblenden",
   "pcap.btn.showtab": "Registerkarte anzeigen…",
+  "pcap.btn.showhex": "Hex-Ansicht einblenden",
+  "pcap.btn.hidehex": "Hex-Ansicht ausblenden",
   "pcap.stream.title": "TCP-Stream",
   "pcap.stream.notcp": "Das ausgewählte Paket enthält kein TCP-Segment.",
   "pcap.stream.empty": "Keine Nutzdaten in diesem Stream.",

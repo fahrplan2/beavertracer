@@ -1470,5 +1470,8 @@ export default {
   "lessons.task.check": "Tjek opgave",
   "lessons.task.pass": "Korrekt!",
   "lessons.task.fail": "Ikke helt — forsøg igen.",
-  "lessons.openStandalone": "Åbn ekstern side"
+  "lessons.openStandalone": "Åbn ekstern side",
+  "lessons.quiz.retry": "Prøv igen",
+  "pcap.btn.showhex": "Vis heksadecimal visning",
+  "pcap.btn.hidehex": "Skjul heksadecimal visning"
 };

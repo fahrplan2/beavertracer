@@ -28,6 +28,35 @@
   font-size: 0.75rem;
 }
 
+.pcapviewer-hex-toggle {
+  flex: 0 0 auto;
+  background: none;
+  border: 1px solid var(--ui-border, #ddd);
+  border-radius: var(--radius-sm, 4px);
+  color: var(--text);
+  opacity: 0.7;
+  padding: 5px 9px;
+  cursor: pointer;
+}
+.pcapviewer-hex-toggle:hover { opacity: 1; }
+.pcapviewer-hex-toggle.active {
+  opacity: 1;
+  border-color: var(--primary, #2563eb);
+  color: var(--primary, #2563eb);
+}
+
+/* Hex/raw pane hidden by default (toggled via .pcapviewer-hex-toggle) —
+   !important so it wins over SplitGrid's inline grid-template-columns
+   regardless of when/whether its own restore() has run yet. Dragging the
+   splitter itself still works normally once toggled back on. */
+.pcapviewer-bottom.pcapviewer-hex-hidden {
+  grid-template-columns: 1fr 0px 0px !important;
+}
+.pcapviewer-bottom.pcapviewer-hex-hidden .pcapviewer-pane--raw,
+.pcapviewer-bottom.pcapviewer-hex-hidden .pcapviewer-vsplitter {
+  display: none;
+}
+
 /* Main layout */
 .pcapviewer-layout {
   display: grid;

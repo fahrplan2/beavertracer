@@ -1470,5 +1470,8 @@ export default {
   "lessons.task.check": "Verifică sarcina",
   "lessons.task.pass": "Corect!",
   "lessons.task.fail": "Nu chiar — continuă să încerci.",
-  "lessons.openStandalone": "Deschide pagina externă"
+  "lessons.openStandalone": "Deschide pagina externă",
+  "lessons.quiz.retry": "Încearcă din nou",
+  "pcap.btn.showhex": "Arată vizualizarea hex",
+  "pcap.btn.hidehex": "Ascunde vizualizarea hex"
 };

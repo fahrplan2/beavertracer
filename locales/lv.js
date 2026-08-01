@@ -1470,5 +1470,8 @@ export default {
   "lessons.task.check": "Pārbaudīt uzdevumu",
   "lessons.task.pass": "Pareizi!",
   "lessons.task.fail": "Ne visai pareizi — turpini mēģināt.",
-  "lessons.openStandalone": "Atvērt ārējo lapu"
+  "lessons.openStandalone": "Atvērt ārējo lapu",
+  "lessons.quiz.retry": "Mēģiniet vēlreiz",
+  "pcap.btn.showhex": "Rādīt heksadecimālo skatu",
+  "pcap.btn.hidehex": "Slēpt heksadecimālo skatu"
 };

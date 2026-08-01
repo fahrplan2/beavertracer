@@ -1470,5 +1470,8 @@ export default {
   "lessons.task.check": "Provjeri zadatak",
   "lessons.task.pass": "Točno!",
   "lessons.task.fail": "Nije baš — nastavi pokušavati.",
-  "lessons.openStandalone": "Otvorite vanjsku stranicu"
+  "lessons.openStandalone": "Otvorite vanjsku stranicu",
+  "lessons.quiz.retry": "Pokušaj ponovo",
+  "pcap.btn.showhex": "Prikaži heksadecimalni prikaz",
+  "pcap.btn.hidehex": "Sakrij heksadecimalni prikaz"
 };

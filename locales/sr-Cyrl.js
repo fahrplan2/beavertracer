@@ -1469,5 +1469,8 @@ export default {
   "lessons.task.check": "Провери задатак",
   "lessons.task.pass": "Тачно!",
   "lessons.task.fail": "Није баш — настави да покушаваш.",
-  "lessons.openStandalone": "Отвори спољну страницу"
+  "lessons.openStandalone": "Отвори спољну страницу",
+  "lessons.quiz.retry": "Покушај поново",
+  "pcap.btn.showhex": "Прикажи хексадецимални преглед",
+  "pcap.btn.hidehex": "Сакриј хексадецимални преглед"
 };

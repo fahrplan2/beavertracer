@@ -1469,5 +1469,8 @@ export default {
   "lessons.task.check": "Feladat ellenőrzése",
   "lessons.task.pass": "Helyes!",
   "lessons.task.fail": "Nem egészen — próbálkozz újra.",
-  "lessons.openStandalone": "Külső oldal megnyitása"
+  "lessons.openStandalone": "Külső oldal megnyitása",
+  "lessons.quiz.retry": "Próbáld újra",
+  "pcap.btn.showhex": "Hexadecimális nézet megjelenítése",
+  "pcap.btn.hidehex": "Hexadecimális nézet elrejtése"
 };

@@ -1470,5 +1470,8 @@ export default {
   "lessons.task.check": "Taak controleren",
   "lessons.task.pass": "Correct!",
   "lessons.task.fail": "Niet helemaal — probeer het opnieuw.",
-  "lessons.openStandalone": "Externe pagina openen"
+  "lessons.openStandalone": "Externe pagina openen",
+  "lessons.quiz.retry": "Probeer opnieuw",
+  "pcap.btn.showhex": "Hex-weergave tonen",
+  "pcap.btn.hidehex": "Hex-weergave verbergen"
 };

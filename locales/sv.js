@@ -1470,5 +1470,8 @@ export default {
   "lessons.task.check": "Kontrollera uppgift",
   "lessons.task.pass": "Korrekt!",
   "lessons.task.fail": "Inte riktigt — fortsätt försöka.",
-  "lessons.openStandalone": "Öppna extern sida"
+  "lessons.openStandalone": "Öppna extern sida",
+  "lessons.quiz.retry": "Försök igen",
+  "pcap.btn.showhex": "Visa hexadecimal vy",
+  "pcap.btn.hidehex": "Dölj hexadecimal vy"
 };

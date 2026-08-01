@@ -922,6 +922,8 @@ export default {
   "pcap.btn.next": "Next page",
   "pcap.btn.hidetab": "Hide tab",
   "pcap.btn.showtab": "Show a tab…",
+  "pcap.btn.showhex": "Show hex view",
+  "pcap.btn.hidehex": "Hide hex view",
   "pcap.col.no": "No.",
   "pcap.col.time": "Time",
   "pcap.col.source": "Source",

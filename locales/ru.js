@@ -1470,5 +1470,8 @@ export default {
   "lessons.task.check": "Проверить задачу",
   "lessons.task.pass": "Правильно!",
   "lessons.task.fail": "Не совсем верно — продолжайте попытки.",
-  "lessons.openStandalone": "Открыть внешнюю страницу"
+  "lessons.openStandalone": "Открыть внешнюю страницу",
+  "lessons.quiz.retry": "Попробовать снова",
+  "pcap.btn.showhex": "Показать представление в hex",
+  "pcap.btn.hidehex": "Скрыть представление в hex"
 };

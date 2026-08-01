@@ -1470,5 +1470,8 @@ export default {
   "lessons.task.check": "Kontrolli ülesannet",
   "lessons.task.pass": "Õige!",
   "lessons.task.fail": "Mitte päris — jätka proovimist.",
-  "lessons.openStandalone": "Ava väline leht"
+  "lessons.openStandalone": "Ava väline leht",
+  "lessons.quiz.retry": "Proovi uuesti",
+  "pcap.btn.showhex": "Kuva kuusnurkmärgistus",
+  "pcap.btn.hidehex": "Peida kuusnurkmärgistus"
 };

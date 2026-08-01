@@ -1470,5 +1470,8 @@ export default {
   "lessons.task.check": "بررسی تکلیف",
   "lessons.task.pass": "درست!",
   "lessons.task.fail": "نه خیلی صحیح نیست — دوباره تلاش کنید.",
-  "lessons.openStandalone": "باز کردن صفحه خارجی"
+  "lessons.openStandalone": "باز کردن صفحه خارجی",
+  "lessons.quiz.retry": "دوباره تلاش کنید",
+  "pcap.btn.showhex": "نمایش نمای هگزادسیمال",
+  "pcap.btn.hidehex": "پنهان کردن نمای هگزادسیمال"
 };

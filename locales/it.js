@@ -1475,5 +1475,8 @@ export default {
   "lessons.task.check": "Controlla attività",
   "lessons.task.pass": "Corretto!",
   "lessons.task.fail": "Non esattamente — continua a provare.",
-  "lessons.openStandalone": "Apri pagina esterna"
+  "lessons.openStandalone": "Apri pagina esterna",
+  "lessons.quiz.retry": "Riprova",
+  "pcap.btn.showhex": "Mostra vista esadecimale",
+  "pcap.btn.hidehex": "Nascondi vista esadecimale"
 };

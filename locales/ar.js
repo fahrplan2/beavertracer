@@ -1470,5 +1470,8 @@ export default {
   "lessons.task.check": "التحقق من المهمة",
   "lessons.task.pass": "صحيح!",
   "lessons.task.fail": "ليس تماماً — حاول مرة أخرى.",
-  "lessons.openStandalone": "فتح صفحة خارجية"
+  "lessons.openStandalone": "فتح صفحة خارجية",
+  "lessons.quiz.retry": "حاول مرة أخرى",
+  "pcap.btn.showhex": "عرض طريقة العرض السادسة عشرية",
+  "pcap.btn.hidehex": "إخفاء طريقة العرض السادسة عشرية"
 };

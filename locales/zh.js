@@ -1470,5 +1470,8 @@ export default {
   "lessons.task.check": "检查任务",
   "lessons.task.pass": "正确！",
   "lessons.task.fail": "不太对——继续尝试。",
-  "lessons.openStandalone": "打开外部页面"
+  "lessons.openStandalone": "打开外部页面",
+  "lessons.quiz.retry": "重试",
+  "pcap.btn.showhex": "显示十六进制视图",
+  "pcap.btn.hidehex": "隐藏十六进制视图"
 };
