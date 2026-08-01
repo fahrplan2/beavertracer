@@ -220,7 +220,7 @@ function processTaskBlocks(src, chrome) {
  * Read display name and lessons.noLessons message from all locale files.
  * Returns a map of locale code → { name, noLessons, quiz }.
  * @param {string} localesDir
- * @returns {Record<string, { name: string, noLessons: string | null, quiz: { placeholder: string, evaluate: string, resultOne: string, resultOther: string } }>}
+ * @returns {Record<string, { name: string, noLessons: string | null, quiz: { placeholder: string, evaluate: string, resultOne: string, resultOther: string, retry: string } }>}
  */
 const OSI_LAYER_KEYS = [
   "lessons.osi.l1", "lessons.osi.l2", "lessons.osi.l3", "lessons.osi.l4",
@@ -247,7 +247,7 @@ const CHROME_KEYS = {
 };
 
 function loadLocaleInfo(localesDir) {
-  /** @type {Record<string, { name: string, noLessons: string | null, quiz: { placeholder: string, evaluate: string, resultOne: string, resultOther: string }, osiLabels: string[] }>} */
+  /** @type {Record<string, { name: string, noLessons: string | null, quiz: { placeholder: string, evaluate: string, resultOne: string, resultOther: string, retry: string }, osiLabels: string[] }>} */
   const info = {};
   if (!fs.existsSync(localesDir)) return info;
 
@@ -278,6 +278,7 @@ function loadLocaleInfo(localesDir) {
           evaluate:    extractKey(src, "lessons.quiz.evaluate")    ?? "Check answers",
           resultOne:   extractKey(src, "lessons.quiz.result.one")  ?? "{correct}/{total}",
           resultOther: extractKey(src, "lessons.quiz.result.other") ?? "{correct}/{total}",
+          retry:       extractKey(src, "lessons.quiz.retry")       ?? "Try again",
         },
         osiLabels: OSI_LAYER_KEYS.map((key) => extractKey(src, key) ?? OSI_LAYER_FALLBACK[key]),
         chrome: Object.fromEntries(
@@ -288,7 +289,7 @@ function loadLocaleInfo(localesDir) {
       info[code] = {
         name: code.toUpperCase(),
         noLessons: null,
-        quiz: { placeholder: "…", evaluate: "Check answers", resultOne: "{correct}/{total}", resultOther: "{correct}/{total}" },
+        quiz: { placeholder: "…", evaluate: "Check answers", resultOne: "{correct}/{total}", resultOther: "{correct}/{total}", retry: "Try again" },
         osiLabels: OSI_LAYER_KEYS.map((key) => OSI_LAYER_FALLBACK[key]),
         chrome: { ...CHROME_KEYS },
       };
@@ -488,12 +489,12 @@ function renderSidebar(tree, currentHref) {
  * @param {LessonNode} node
  * @param {{ prev?: {href:string,title:string}, next?: {href:string,title:string} }} nav
  * @param {string} sidebar
- * @param {{ placeholder: string, evaluate: string, resultOne: string, resultOther: string }} quizI18n
+ * @param {{ placeholder: string, evaluate: string, resultOne: string, resultOther: string, retry: string }} quizI18n
  * @param {string[]} osiLabels
  * @param {string} lang
  * @param {Record<string, string>} chrome
  */
-function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI18n = { placeholder: "…", evaluate: "Check answers", resultOne: "{correct}/{total}", resultOther: "{correct}/{total}" }, osiLabels = OSI_LAYER_KEYS.map((key) => OSI_LAYER_FALLBACK[key]), lang = "en", chrome = CHROME_KEYS) {
+function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI18n = { placeholder: "…", evaluate: "Check answers", resultOne: "{correct}/{total}", resultOther: "{correct}/{total}", retry: "Try again" }, osiLabels = OSI_LAYER_KEYS.map((key) => OSI_LAYER_FALLBACK[key]), lang = "en", chrome = CHROME_KEYS) {
   let src = fs.readFileSync(srcFile, "utf8");
 
   // ── Pre-process :::quiz / :::evaluate blocks ──────────────────
@@ -636,6 +637,7 @@ function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI
     .replace(/\{\{quiz\.evaluate\}\}/g, escHtml(quizI18n.evaluate))
     .replace(/\{\{quiz\.result\.one\}\}/g, escHtml(quizI18n.resultOne))
     .replace(/\{\{quiz\.result\.other\}\}/g, escHtml(quizI18n.resultOther))
+    .replace(/\{\{quiz\.retry\}\}/g, escHtml(quizI18n.retry))
     .replace(/\{\{lessons\.toc\}\}/g, escHtml(chrome["lessons.toc"]))
     .replace(/\{\{lessons\.themeToggle\}\}/g, escHtml(chrome["lessons.themeToggle"]))
     .replace(/\{\{lessons\.footer\}\}/g, escHtml(chrome["lessons.footer"]))

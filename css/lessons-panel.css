@@ -79,8 +79,11 @@
 }
 /* -soft variants are theme-aware pastel tints (mix toward white in light
    mode, toward the dark background in dark mode) already defined for
-   exactly this — a colored-but-still-readable callout background. */
-.lesson-article .callout-note    { border-left-color: var(--primary-strong, #1d4ed8); background: var(--primary-soft, #dbeafe); }
+   exactly this — a colored-but-still-readable callout background. --primary
+   itself is too low-chroma/pale in this app's theme to read as "blue" here
+   (same reason --lesson-accent exists for buttons/links), so callout-note
+   uses that fixed accent instead of --primary-soft/-strong. */
+.lesson-article .callout-note    { border-left-color: var(--lesson-accent); background: color-mix(in oklch, var(--lesson-accent) 12%, transparent); }
 .lesson-article .callout-tip     { border-left-color: var(--ok, #2e9b4f);      background: var(--ok-soft, #d3f5df); }
 .lesson-article .callout-warning { border-left-color: var(--warning, #c98a1a); background: var(--warning-soft, #fdecc8); }
 .lesson-article .callout-danger  { border-left-color: var(--danger, #c0392b); background: var(--danger-soft, #fbdad7); }
@@ -193,30 +196,38 @@
 .lesson-article .quiz-gap { display: inline-flex; align-items: center; gap: 4px; }
 .lesson-article .quiz-gap-input.quiz-correct { border-color: var(--ok, #2e9b4f); }
 .lesson-article .quiz-gap-input.quiz-incorrect { border-color: var(--danger, #c0392b); }
-.lesson-article .quiz-match-layout { display: flex; gap: 16px; flex-wrap: wrap; }
-.lesson-article .quiz-match-terms { flex: 1 1 auto; min-width: 140px; }
-.lesson-article .quiz-match-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
-.lesson-article .quiz-match-term { flex: 0 0 auto; }
+/* Side-by-side (terms | pool) doesn't work in a narrow panel — stacked
+   instead: the term/dropzone rows first, then the draggable chip pool
+   below as a wrapping "tag cloud", so nothing needs to share horizontal
+   space with anything else and long text always has room to wrap. */
+.lesson-article .quiz-match-layout { display: flex; flex-direction: column; gap: 12px; }
+.lesson-article .quiz-match-terms { display: flex; flex-direction: column; gap: 6px; }
+.lesson-article .quiz-match-row { display: flex; align-items: flex-start; gap: 8px; }
+.lesson-article .quiz-match-term { flex: 0 0 auto; min-width: 70px; padding-top: 3px; font-weight: 600; }
 .lesson-article .quiz-match-dropzone {
   flex: 1 1 auto;
+  min-width: 0;
   min-height: 1.8em;
   border: 1px dashed var(--ui-border-strong);
   border-radius: 3px;
-  padding: 2px 6px;
+  padding: 4px 6px;
+  overflow-wrap: break-word;
 }
 .lesson-article .quiz-match-dropzone.drag-over { border-color: var(--primary-strong, #1d4ed8); }
 .lesson-article .quiz-match-dropzone.quiz-correct { border-color: var(--ok, #2e9b4f); border-style: solid; }
 .lesson-article .quiz-match-dropzone.quiz-incorrect { border-color: var(--danger, #c0392b); border-style: solid; }
-.lesson-article .quiz-match-pool { flex: 0 0 auto; display: flex; flex-direction: column; gap: 4px; min-width: 140px; }
+.lesson-article .quiz-match-pool { display: flex; flex-direction: row; flex-wrap: wrap; gap: 6px; }
 .lesson-article .quiz-match-chip {
+  max-width: 100%;
   padding: 4px 8px;
   border: 1px solid var(--ui-border-strong);
   border-radius: 3px;
   background: var(--bg);
   cursor: grab;
+  overflow-wrap: break-word;
 }
 .lesson-article .quiz-match-chip.dragging { opacity: 0.5; }
-.lesson-article .quiz-evaluate-wrap { display: flex; align-items: center; gap: 10px; }
+.lesson-article .quiz-evaluate-wrap { display: flex; align-items: center; gap: 10px; margin: 0 0 16px; }
 .lesson-article .quiz-evaluate-btn {
   font: inherit;
   padding: 6px 12px;

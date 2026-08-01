@@ -44,6 +44,7 @@ export class LessonsPanel {
         // files the app's own t() already reads, so no separate lookup is needed.
         document.body.dataset.quizResultOne = t("lessons.quiz.result.one");
         document.body.dataset.quizResultOther = t("lessons.quiz.result.other");
+        document.body.dataset.quizRetry = t("lessons.quiz.retry");
 
         const mount = this.simControl.lessonsMount;
         mount?.addEventListener("click", (ev) => this._onClick(/** @type {MouseEvent} */ (ev)));

@@ -87,11 +87,24 @@ if (typeof document !== "undefined") {
     opt.classList.add("selected");
   });
 
-  // ── Evaluate button ──────────────────────────────────────────
+  // ── Evaluate button — doubles as "try again" once evaluated ───
   document.addEventListener("click", (/** @type {MouseEvent} */ e) => {
     const btn = /** @type {HTMLButtonElement|null} */ (e.target instanceof HTMLElement ? e.target.closest(".quiz-evaluate-btn") : null);
-    if (!btn || btn.disabled) return;
+    if (!btn) return;
     const ids = (btn.dataset.quizIds || "").split(",").filter(Boolean);
+    const summary = btn.nextElementSibling;
+
+    if (btn.dataset.mode === "retry") {
+      for (const id of ids) {
+        const block = /** @type {HTMLElement|null} */ (document.querySelector(`[data-quiz-id="${id}"]`));
+        if (block) resetBlock(block);
+      }
+      if (summary) { summary.textContent = ""; summary.className = "quiz-evaluate-summary"; }
+      btn.textContent = btn.dataset.originalLabel || btn.textContent;
+      delete btn.dataset.mode;
+      return;
+    }
+
     let correct = 0, total = 0;
     for (const id of ids) {
       const block = /** @type {HTMLElement|null} */ (document.querySelector(`[data-quiz-id="${id}"]`));
@@ -100,7 +113,6 @@ if (typeof document !== "undefined") {
       correct += r.correct;
       total += r.total;
     }
-    const summary = btn.nextElementSibling;
     if (summary && total > 0) {
       const tpl = total === 1
         ? (document.body.dataset.quizResultOne || "{correct}/{total}")
@@ -108,8 +120,56 @@ if (typeof document !== "undefined") {
       summary.textContent = tpl.replace("{correct}", String(correct)).replace("{total}", String(total));
       summary.className = "quiz-evaluate-summary " + (correct === total ? "quiz-summary-ok" : "quiz-summary-err");
     }
-    btn.disabled = true;
+    if (total > 0) {
+      btn.dataset.originalLabel = btn.textContent || "";
+      btn.textContent = document.body.dataset.quizRetry || btn.dataset.originalLabel || "";
+      btn.dataset.mode = "retry";
+    }
   });
+}
+
+/** Restores a block to its pre-evaluation state so the student can try again. @param {HTMLElement} block */
+function resetBlock(block) {
+  block.classList.remove("evaluated");
+  switch (block.dataset.type) {
+    case "short": {
+      const input = /** @type {HTMLInputElement|null} */ (block.querySelector(".quiz-input"));
+      const fb = block.querySelector(".quiz-feedback");
+      if (input) { input.value = ""; input.disabled = false; input.classList.remove("quiz-correct", "quiz-incorrect"); }
+      if (fb) { fb.textContent = ""; fb.className = "quiz-feedback"; }
+      break;
+    }
+    case "mc": {
+      block.querySelectorAll(".quiz-option").forEach((el) => {
+        const opt = /** @type {HTMLButtonElement} */ (el);
+        opt.disabled = false;
+        opt.classList.remove("selected", "quiz-correct", "quiz-incorrect");
+      });
+      break;
+    }
+    case "fill": {
+      block.querySelectorAll(".quiz-gap-input").forEach((el) => {
+        const input = /** @type {HTMLInputElement} */ (el);
+        input.value = "";
+        input.disabled = false;
+        input.classList.remove("quiz-correct", "quiz-incorrect");
+        const fb = input.nextElementSibling;
+        if (fb) { fb.textContent = ""; fb.className = "quiz-feedback"; }
+      });
+      break;
+    }
+    case "match": {
+      // initMatchBlock() below creates fresh chip elements — remove the old
+      // ones first (both any still in the pool and any dropped into zones),
+      // or they'd linger as orphaned duplicates.
+      block.querySelectorAll(".quiz-match-chip").forEach((el) => el.remove());
+      block.querySelectorAll(".quiz-match-dropzone").forEach((el) => {
+        el.classList.remove("quiz-correct", "quiz-incorrect", "quiz-missing");
+      });
+      initMatchBlock(block);
+      break;
+    }
+  }
 }
 
 /** @param {HTMLElement} block */

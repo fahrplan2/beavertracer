@@ -1,0 +1,51 @@
+{
+  "_info": "BeaverTracer Lektion 1.3 — Der Webseitenaufruf",
+  "version": 5,
+  "tick": 100,
+  "objects": [
+    {
+      "kind": "Computer",
+      "id": 1,
+      "name": "Client-PC",
+      "x": 80,
+      "y": 100,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "net": {
+        "name": "PC",
+        "forwarding": false,
+        "interfaces": [
+          { "name": "eth0", "ip": "192.168.0.10", "prefixLength": 24, "ip6": null, "prefixLength6": 0, "ip6LL": null }
+        ],
+        "routes": []
+      }
+    },
+    {
+      "kind": "Computer",
+      "id": 2,
+      "name": "Webserver",
+      "x": 420,
+      "y": 100,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "net": {
+        "name": "PC",
+        "forwarding": false,
+        "interfaces": [
+          { "name": "eth0", "ip": "192.168.0.20", "prefixLength": 24, "ip6": null, "prefixLength6": 0, "ip6LL": null }
+        ],
+        "routes": []
+      }
+    },
+    {
+      "kind": "Link",
+      "id": 3,
+      "a": 1,
+      "b": 2,
+      "portA": "eth0",
+      "portB": "eth0"
+    }
+  ]
+}

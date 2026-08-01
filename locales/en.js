@@ -743,6 +743,7 @@ export default {
   "lessons.quiz.evaluate":      "Check answers",
   "lessons.quiz.result.one":    "{correct} of {total} point scored",
   "lessons.quiz.result.other":  "{correct} of {total} points scored",
+  "lessons.quiz.retry":         "Try again",
   "lessons.osi.l1": "Physical",
   "lessons.osi.l2": "Data Link",
   "lessons.osi.l3": "Network",
