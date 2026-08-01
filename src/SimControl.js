@@ -729,6 +729,11 @@ export class SimControl {
     _fitAfterLessonsResize() {
         const root = this.root;
         if (!root) return;
+        // Below the mobile breakpoint (see sim.css) the panel becomes a
+        // fullscreen overlay instead of a real grid column — the canvas
+        // itself never changes size there, grid-template-columns doesn't
+        // change value, and transitionend would simply never fire.
+        if (window.matchMedia("(max-width: 600px)").matches) return;
         /** @param {TransitionEvent} ev */
         const onEnd = (ev) => {
             if (ev.propertyName !== "grid-template-columns" || ev.target !== root) return;

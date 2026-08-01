@@ -2108,6 +2108,23 @@ sim-toolbar-langbtn {
     width: 100%;
     box-sizing: border-box;
   }
+
+  /* ── Lessons panel: a fixed-width docked column doesn't fit — same
+     fullscreen-overlay treatment as .sim-panel above, instead of squeezing
+     the simulation area to nothing or overflowing. ── */
+  .sim-root.lessons-open {
+    grid-template-columns: auto minmax(0, 1fr) 0;
+  }
+  .sim-lessons-panel {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    z-index: 20;
+  }
+  .sim-lessons-resize-handle {
+    display: none;
+  }
 }
 
 /* ── Landscape phones: small height → panels fullscreen ── */
