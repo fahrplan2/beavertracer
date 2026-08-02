@@ -157,6 +157,7 @@
   border-top: 1px solid var(--ui-border-strong);
 }
 .lesson-article .lesson-nav a { text-decoration: none; font-size: 0.9em; }
+.lesson-article .lesson-nav-next { margin-left: auto; text-align: right; }
 
 /* ── Quiz blocks ─────────────────────────────────────────────── */
 .lesson-article .quiz-block {
