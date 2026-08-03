@@ -159,6 +159,10 @@
 .lesson-article .lesson-nav a { text-decoration: none; font-size: 0.9em; }
 .lesson-article .lesson-nav-next { margin-left: auto; text-align: right; }
 
+/* ── Draft pages: hidden from prev/next unless ?debug=1 ── */
+.lesson-article [data-draft="true"] { display: none; }
+html[data-debug="true"] .lesson-article [data-draft="true"] { display: revert; }
+
 /* ── Quiz blocks ─────────────────────────────────────────────── */
 .lesson-article .quiz-block {
   margin: 0 0 16px;

@@ -299,8 +299,13 @@ function loadLocaleInfo(localesDir) {
 }
 
 /**
- * @typedef {{ num: number[]|null, file: string, href: string, title: string, children: LessonNode[] }} LessonNode
+ * @typedef {{ num: number[]|null, file: string, href: string, title: string, draft: boolean, children: LessonNode[] }} LessonNode
  */
+
+/** True if the raw markdown source contains a top-level ":::draft" container. */
+function isDraft(src) {
+  return /^:::draft\s*$/m.test(src);
+}
 
 /** @param {string} text */
 function slugify(text) {
@@ -462,18 +467,22 @@ function renderSidebar(tree, currentHref) {
       const activeClass = isActive ? ' class="active"' : "";
       const prefix = node.num ? numLabel(node.num) + " " : "";
       const label = `${prefix}${node.title}`;
+      // Draft pages stay in the tree (links/prev-next keep resolving) but
+      // are hidden from the menu unless ?debug=1 — see the [data-draft]
+      // CSS rule in _style.css / lessons-panel.css.
+      const draftAttr = node.draft ? ' data-draft="true"' : "";
 
       if (node.children.length) {
         const open = isActiveSubtree(node, currentHref) ? " open" : "";
         return (
-          `<li><details${open}>\n` +
+          `<li${draftAttr}><details${open}>\n` +
           `<summary><a href="${node.href}"${activeClass}>${label}</a></summary>\n` +
           renderItems(node.children, false) +
           `</details></li>`
         );
       }
 
-      return `<li><a href="${node.href}"${activeClass}>${label}</a></li>`;
+      return `<li${draftAttr}><a href="${node.href}"${activeClass}>${label}</a></li>`;
     }).join("\n");
 
     const classAttr = isRoot ? ' class="lesson-sidebar-tree"' : ' class="lesson-sidebar-subtree"';
@@ -616,11 +625,13 @@ function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI
   const navParts = [];
   if (nav.prev) {
     const prevNum = nav.prev.num ? `${numLabel(nav.prev.num)} ` : "";
-    navParts.push(`<a href="${nav.prev.href}" class="lesson-nav-prev">← ${prevNum}${nav.prev.title}</a>`);
+    const draftAttr = nav.prev.draft ? ' data-draft="true"' : "";
+    navParts.push(`<a href="${nav.prev.href}" class="lesson-nav-prev"${draftAttr}>← ${prevNum}${nav.prev.title}</a>`);
   }
   if (nav.next) {
     const nextNum = nav.next.num ? `${numLabel(nav.next.num)} ` : "";
-    navParts.push(`<a href="${nav.next.href}" class="lesson-nav-next">${nextNum}${nav.next.title} →</a>`);
+    const draftAttr = nav.next.draft ? ' data-draft="true"' : "";
+    navParts.push(`<a href="${nav.next.href}" class="lesson-nav-next"${draftAttr}>${nextNum}${nav.next.title} →</a>`);
   }
   if (navParts.length) {
     body += `\n<nav class="lesson-nav" aria-label="${escHtml(chrome["lessons.pageNav"])}">${navParts.join("")}</nav>`;
@@ -775,7 +786,7 @@ function buildLessons(root) {
     const mdFiles = fs.readdirSync(langDir).filter((f) => f.endsWith(".md")).sort();
 
     // Collect flat lesson info
-    /** @type {{ num: number[]|null, file: string, href: string, title: string }[]} */
+    /** @type {{ num: number[]|null, file: string, href: string, title: string, draft: boolean }[]} */
     const flatLessons = mdFiles.map((file) => {
       const src = fs.readFileSync(path.join(langDir, file), "utf8");
       const href = file.replace(/\.md$/, ".html");
@@ -784,6 +795,7 @@ function buildLessons(root) {
         file,
         href,
         title: extractTitle(src) ?? file.replace(/\.md$/, ""),
+        draft: isDraft(src),
       };
     });
 
@@ -810,8 +822,8 @@ function buildLessons(root) {
     for (let i = 0; i < ordered.length; i++) {
       const node = ordered[i];
       const nav = {
-        prev: i > 0 ? { href: ordered[i - 1].href, title: ordered[i - 1].title, num: ordered[i - 1].num } : undefined,
-        next: i < ordered.length - 1 ? { href: ordered[i + 1].href, title: ordered[i + 1].title, num: ordered[i + 1].num } : undefined,
+        prev: i > 0 ? { href: ordered[i - 1].href, title: ordered[i - 1].title, num: ordered[i - 1].num, draft: ordered[i - 1].draft } : undefined,
+        next: i < ordered.length - 1 ? { href: ordered[i + 1].href, title: ordered[i + 1].title, num: ordered[i + 1].num, draft: ordered[i + 1].draft } : undefined,
       };
       const sidebar = renderSidebar(tree, node.href);
       const outFile = path.join(langOut, node.href);
@@ -860,7 +872,7 @@ function buildLessons(root) {
         path.join(langOut, "index.json"),
         JSON.stringify({
           first: ordered[0].href,
-          pages: ordered.map((n) => ({ href: n.href, title: n.title, num: n.num })),
+          pages: ordered.map((n) => ({ href: n.href, title: n.title, num: n.num, draft: n.draft })),
         }),
         "utf8"
       );

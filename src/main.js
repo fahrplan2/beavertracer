@@ -39,6 +39,10 @@ initLocale(bootParams.lang).then(async () => {
     const simRoot = /** @type {HTMLElement} */ (document.getElementById("simcontrol"));
     const { embed: embedded, editable, debug, sim: simParam, lesson } = bootParams;
     const sim = new SimControl(simRoot, { embedded, editable, debug });
+    // Mirrors lessons/_template.html's own ?debug=1 detection — lets the
+    // in-app lessons panel reuse the same [data-draft] CSS rule (see
+    // css/lessons-panel.css) to hide draft lessons from the nav dropdown.
+    if (debug) document.documentElement.dataset.debug = "true";
 
     if (simParam) {
         const scene = await resolveStartupSim();

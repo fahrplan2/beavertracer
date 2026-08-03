@@ -579,6 +579,10 @@ body {
 .lesson-nav a:hover { border-color: var(--primary); }
 .lesson-nav-next { margin-left: auto; text-align: right; }
 
+/* ── Draft pages: hidden from sidebar/prev-next unless ?debug=1 ── */
+[data-draft="true"] { display: none; }
+html[data-debug="true"] [data-draft="true"] { display: revert; }
+
 /* ── Custom sim icons (router.svg / switch.svg mask technique) ── */
 .lesson-icon {
   display: inline-block;

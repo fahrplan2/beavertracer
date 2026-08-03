@@ -156,7 +156,8 @@ export class LessonsPanel {
      * Builds the chapter dropdown — only first- and second-level chapters
      * (num.length <= 2) are listed; deeper sub-pages would make it
      * unwieldy and stay reachable via prev/next and in-text links instead.
-     * @param {{pages: {href: string, title: string, num: number[]|null}[]}} manifest
+     * Draft chapters (":::draft" in the source) are skipped unless ?debug=1.
+     * @param {{pages: {href: string, title: string, num: number[]|null, draft?: boolean}[]}} manifest
      */
     _buildNavSelect(manifest) {
         const navMount = this.simControl.lessonsNavMount;
@@ -171,6 +172,7 @@ export class LessonsPanel {
         for (const page of manifest.pages ?? []) {
             const depth = page.num?.length ?? 1;
             if (depth > 2) continue;
+            if (page.draft && !this.simControl.debug) continue;
 
             const numLabel = page.num?.length ? page.num.join(".") + " " : "";
             const label = numLabel + page.title;
