@@ -2092,6 +2092,12 @@ sim-toolbar-langbtn {
     grid-template-columns: auto minmax(0, 1fr) 0;
   }
   .sim-lessons-panel {
+    /* Without this, the element keeps resolving its abspos containing
+       block against its (zero-width, see .sim-root.lessons-open above)
+       "lessons" grid area instead of .sim-root — inset:0/width:100%
+       would then compute against 0, leaving the panel invisible even
+       though it "opens" correctly in JS. */
+    grid-area: unset !important;
     position: absolute !important;
     inset: 0 !important;
     width: 100% !important;

@@ -12,6 +12,9 @@
     var s = localStorage.getItem('bt-lesson-theme');
     var sys = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     document.documentElement.dataset.theme = s || sys;
+    if (new URLSearchParams(location.search).get('debug') === '1') {
+      document.documentElement.dataset.debug = 'true';
+    }
   })();
   </script>
 </head>

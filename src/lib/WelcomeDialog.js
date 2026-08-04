@@ -240,11 +240,11 @@ export class WelcomeDialog {
                 "fa-download", t("sim.downloads"),
                 () => close(() => sim.navigateTo("/downloads"))
             ));
-            right.appendChild(WelcomeDialog._footerBtn(
-                "fa-book-open", t("sim.lessons"),
-                () => close(() => sim.toggleLessonsPanel(true))
-            ));
         }
+        right.appendChild(WelcomeDialog._footerBtn(
+            "fa-book-open", t("sim.lessons"),
+            () => close(() => sim.toggleLessonsPanel(true))
+        ));
 
         right.appendChild(WelcomeDialog._footerBtn(
             "fa-circle-question", t("sim.help"),
