@@ -36,6 +36,7 @@ import { ping } from "./net/ping.js";
 import { traceroute } from "./net/traceroute.js";
 import { arp } from "./net/arp.js";
 import { dig } from "./net/dig.js";
+import { ntpdate } from "./net/ntpdate.js";
 import { telnet } from "./net/telnet.js";
 import { curl } from "./net/curl.js";
 import { nc } from "./net/nc.js";
@@ -86,6 +87,7 @@ export function registerBuiltins(app) {
 
         arp,
         dig,
+        ntpdate,
         ip,
         route,
         ss,

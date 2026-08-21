@@ -183,6 +183,19 @@ BeaverTracer ist ein Netzwerksimulator für den Unterricht. Er modelliert eine b
 </tbody>
 </table>
 
+### NTP
+
+<table class="pt">
+<thead><tr><th>Protokoll</th><th>RFC</th><th>Unterstützung</th><th>Anmerkungen &amp; Grenzen</th></tr></thead>
+<tbody>
+<tr>
+  <td>NTP (v4)</td><td>RFC 5905</td>
+  <td><span class="badge badge-partial">Teilweise</span></td>
+  <td>Vollständiger 48-Byte-Header (Client-Request/Server-Reply, Modus 3/4) inkl. LI/VN/Mode, Stratum, Poll, Precision, Root Delay/Dispersion, Reference ID und allen vier Zeitstempeln (Reference/Origin/Receive/Transmit) — von Wiresharks eigenem NTP-Dissector nativ lesbar. Der Simulator kann und darf die echte Systemzeit des Host-Rechners nicht verändern; jeder simulierte Rechner führt daher eine eigene fiktive Uhr (<code>date -s</code> zum absichtlichen Verstellen, <code>ntpdate</code> zum Korrigieren via Offset-/Delay-Berechnung nach RFC 5905 §8). Der eingebaute NTP-Server ist immer Stratum 1 mit fester Referenz-ID <code>LOCL</code>. Kein fortlaufender Sync-Daemon (kein Poll-Intervall, kein Slewing), keine Uhrendrift, keine Authentifizierung, keine NTP-Erweiterungsfelder.</td>
+</tr>
+</tbody>
+</table>
+
 ### HTTP / HTTPS / TLS
 
 <table class="pt">
