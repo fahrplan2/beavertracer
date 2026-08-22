@@ -103,7 +103,7 @@ const OSI_LAYER_BY_FILTER = {
   // Anwendungsschicht (L7)
   dns: 7, dhcp: 7, bootp: 7, dhcpv6: 7, http: 7, tls: 7, ssl: 7,
   smtp: 7, pop: 7, imap: 7, irc: 7, bitcoin: 7, rip: 7, ripng: 7, bgp: 7,
-  data: 7,
+  ntp: 7, data: 7,
 };
 
 export class PCapViewer {

@@ -343,7 +343,7 @@ export class LessonsPanel {
             const res = await fetch(simUrl);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const scene = await res.json();
-            this.simControl.restore(scene);
+            await this.simControl.restore(scene);
         } catch (err) {
             console.error("[LessonsPanel] failed to load scenario", simUrl, err);
         }

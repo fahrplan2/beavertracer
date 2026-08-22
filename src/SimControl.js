@@ -24,6 +24,7 @@ import { resetPathToRoot, buildUrl, clearParams } from "./lib/AppUrl.js";
 import { version } from "./lib/version.js";
 import { isTauri } from "./tauri.js";
 import { Linux } from "./sim/Linux.js";
+import { migrateCertSignatures } from "./lib/CertMigration.js";
 
 /**
  * @typedef {Object} PortDescriptor
@@ -922,7 +923,7 @@ export class SimControl {
 
     toJSON() {
         return {
-            version: 5,
+            version: 6,
             appVersion: version(),
             savedAt: new Date().toISOString(),
             tick: SimControl.tick,
@@ -931,7 +932,7 @@ export class SimControl {
     }
 
     /** @param {*} state */
-    restore(state) {
+    async restore(state) {
         this._isDirty = false;
         /** @type {[string, (new (...args: any[]) => SimulatedObject) & { fromJSON(n: any): SimulatedObject }][]} */
         const registryEntries = [
@@ -964,6 +965,16 @@ export class SimControl {
                     o && KIND_V4[o.kind] ? { ...o, kind: KIND_V4[o.kind] } : o
                 ),
             };
+        }
+
+        // v5 → v6: TlsCertificate's signed TBS bytes gained a Validity field
+        // (notBefore/notAfter), so certSignatures computed before this change
+        // no longer verify. Best-effort repair before objects are rebuilt
+        // (see CertMigration.js).
+        if ((state.version ?? 0) <= 5) {
+            const result = await migrateCertSignatures(state);
+            state = result.state;
+            if (result.unresolved > 0) SimDialog.alert(t("sim.certMigration.unresolved", { count: result.unresolved }));
         }
 
         this._clearScene();
@@ -1063,7 +1074,7 @@ export class SimControl {
             try {
                 const text = await file.text();
                 const scene = JSON.parse(text);
-                this.restore(scene);
+                await this.restore(scene);
             } catch (e) {
                 SimDialog.alert(t("sim.loadfailederror"));
             }
@@ -1205,7 +1216,7 @@ export class SimControl {
             icon: "fa-arrow-rotate-left",
             onClick: async () => {
                 if (!await SimDialog.confirm(t("sim.resetwarning"))) return;
-                this.restore(this.toJSON());
+                await this.restore(this.toJSON());
                 this.mode = "run";
                 this.isPaused = false;
                 this._invalidateUI();

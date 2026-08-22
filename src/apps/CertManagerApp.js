@@ -324,13 +324,15 @@ export class CertManagerApp extends GenericProcess {
     const isCA = this._t2IsCaEl?.checked ?? false;
     const type = this._t2TypeEl?.value ?? "self";
 
+    const nowMs = this.os.clock ? this.os.clock.nowMs() : Date.now();
+
     let cert;
     try {
       if (type === "ca" && this._t2CaEl?.value) {
         const ca = await TlsCertificate.fromJSON(JSON.parse(fs.readFile(this._t2CaEl.value)));
-        cert = await TlsCertificate.generate(cn, ca, { isCA, validityDays: days });
+        cert = await TlsCertificate.generate(cn, ca, { isCA, validityDays: days, nowMs });
       } else {
-        cert = await TlsCertificate.generate(cn, null, { isCA, validityDays: days });
+        cert = await TlsCertificate.generate(cn, null, { isCA, validityDays: days, nowMs });
       }
     } catch { this._setMsg(this._t2MsgEl, t("app.certmanager.gen.errLoadCA")); return; }
 
@@ -466,7 +468,8 @@ export class CertManagerApp extends GenericProcess {
     try {
       const cert   = await TlsCertificate.fromJSON(JSON.parse(fs.readFile(certPath)));
       const ca     = await TlsCertificate.fromJSON(JSON.parse(fs.readFile(caPath)));
-      const signed = await TlsCertificate.sign(cert, ca);
+      const nowMs  = this.os.clock ? this.os.clock.nowMs() : Date.now();
+      const signed = await TlsCertificate.sign(cert, ca, { nowMs });
       fs.writeFile(outPath, JSON.stringify(await signed.toSaveData(), null, 2));
       this._setMsg(this._t4MsgEl, t("app.certmanager.sign.ok", { name }));
       if (this._t4NameEl) { delete this._t4NameEl.dataset.manual; this._t4NameEl.value = ""; }
@@ -522,10 +525,27 @@ export class CertManagerApp extends GenericProcess {
               : t("app.certmanager.item.issuer", { issuer: cnOf(cert.issuer) }) }),
         ]}),
         cert.isCA ? UI.el("span", { className: "cm-badge", text: "CA" }) : null,
+        this._validityStatus(cert).key !== "valid"
+          ? UI.el("i", { className: "fas fa-triangle-exclamation cm-item-warn", attrs: { title: this._validityStatus(cert).label } })
+          : null,
       ].filter(/** @param {any} x */ x => x != null),
     });
     item.addEventListener("click", onSelect);
     return item;
+  }
+
+  /**
+   * Validity status of a cert against this host's virtual clock.
+   * @param {TlsCertificate} cert
+   * @returns {{ key: "valid"|"expired"|"notYetValid", label: string }}
+   */
+  _validityStatus(cert) {
+    const nowMs = this.os.clock ? this.os.clock.nowMs() : Date.now();
+    const key = cert.validityStatus(nowMs);
+    const label = key === "expired"     ? t("app.certmanager.detail.expired")
+                : key === "notYetValid" ? t("app.certmanager.detail.notYetValid")
+                : t("app.certmanager.detail.valid");
+    return { key, label };
   }
 
   /**
@@ -538,12 +558,13 @@ export class CertManagerApp extends GenericProcess {
     const chain = cert.chain.length
       ? [cnOf(cert.subject), ...cert.chain.map(c => cnOf(c.subject))].join(" ← ")
       : null;
+    const status = this._validityStatus(cert);
     return UI.el("div", { children: [
       this._detailRow(t("app.certmanager.detail.subject"),     cert.subject),
       this._detailRow(t("app.certmanager.detail.issuer"),
         cert.issuer + (cert.selfSigned ? ` (${t("app.certmanager.detail.selfSigned")})` : "")),
       this._detailRow(t("app.certmanager.detail.fingerprint"), cert.fingerprint()),
-      this._detailRow(t("app.certmanager.detail.expiry"),      expiryStr(cert.notAfter)),
+      this._detailRow(t("app.certmanager.detail.expiry"),      expiryStr(cert.notAfter), status.key, status.label),
       this._detailRow(t("app.certmanager.detail.isCA"),
         cert.isCA ? t("app.certmanager.detail.yes") : t("app.certmanager.detail.no")),
       this._detailRow(t("app.certmanager.detail.privateKey"),
@@ -555,12 +576,17 @@ export class CertManagerApp extends GenericProcess {
     ].filter(/** @param {any} x */ x => x != null)});
   }
 
-  /** @param {string} label @param {string} value */
-  _detailRow(label, value) {
+  /**
+   * @param {string} label @param {string} value
+   * @param {"valid"|"expired"|"notYetValid"} [statusKey] - optional colored status badge
+   * @param {string} [statusLabel]
+   */
+  _detailRow(label, value, statusKey, statusLabel) {
     return UI.el("div", { className: "cm-detail-row", children: [
       UI.el("span", { className: "cm-detail-label", text: label }),
       UI.el("span", { className: "cm-detail-value", text: value }),
-    ]});
+      statusKey ? UI.el("span", { className: `cm-status cm-status-${statusKey}`, text: statusLabel ?? "" }) : null,
+    ].filter(/** @param {any} x */ x => x != null)});
   }
 
   /** @param {TlsCertificate} cert @param {string} name */

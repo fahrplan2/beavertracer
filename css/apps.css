@@ -202,3 +202,8 @@ textarea.log {
 .cfg-info-row   { display: flex; align-items: baseline; gap: var(--pad-md); }
 .cfg-info-value { font-family: var(--font-mono); font-size: 0.8125rem; user-select: text; }
 .cfg-btn-row    { display: flex; gap: var(--pad-md); flex-wrap: wrap; margin-top: 4px; }
+
+/* ── ClockApp live readout ── */
+.clock-live         { align-items: center; text-align: center; padding: var(--pad-md) 0; }
+.clock-display      { font-family: var(--font-mono); font-size: 2rem; font-weight: 600; }
+.clock-display-date { font-size: 0.8125rem; color: var(--muted); }

@@ -319,7 +319,7 @@ export class WelcomeDialog {
             async () => {
                 if (sim._isDirty && !await SimDialog.confirm(t("sim.discardandnewwarning"))) return;
                 const scene = await WelcomeDialog._fetchSim("/sims/demo.btsim");
-                if (scene) close(() => sim.restore(scene));
+                if (scene) close(() => void sim.restore(scene));
             }
         ));
         sub.appendChild(WelcomeDialog._exampleSubItem(
@@ -327,7 +327,7 @@ export class WelcomeDialog {
             async () => {
                 if (sim._isDirty && !await SimDialog.confirm(t("sim.discardandnewwarning"))) return;
                 const scene = await WelcomeDialog._fetchSim("/sims/demo-full.btsim");
-                if (scene) close(() => sim.restore(scene));
+                if (scene) close(() => void sim.restore(scene));
             }
         ));
 

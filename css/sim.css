@@ -2097,7 +2097,7 @@ sim-toolbar-langbtn {
   .sim-root.lessons-open {
     grid-template-columns: auto minmax(0, 1fr) 0;
   }
-  .sim-lessons-panel {
+  .sim-root.lessons-open .sim-lessons-panel {
     /* Without this, the element keeps resolving its abspos containing
        block against its (zero-width, see .sim-root.lessons-open above)
        "lessons" grid area instead of .sim-root — inset:0/width:100%

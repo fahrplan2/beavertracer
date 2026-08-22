@@ -259,17 +259,14 @@ export const dig = {
     const serverIpText = serverIpObj.toString();
 
     // Open an ephemeral UDP socket
+    const anyV4 = IPAddress.fromString("0.0.0.0");
     const openEphemeral = () => {
-      try {
-        return net.openUDPSocket(0, 0);
-      } catch {
-        for (let p = 49152; p <= 65535; p++) {
-          try {
-            return net.openUDPSocket(0, p);
-          } catch { /* keep trying */ }
-        }
-        throw new Error("cannot open udp socket");
+      for (let p = 49152; p <= 65535; p++) {
+        try {
+          return net.openUDPSocket(anyV4, p);
+        } catch { /* keep trying */ }
       }
+      throw new Error("cannot open udp socket");
     };
 
     const sock = openEphemeral();
@@ -326,19 +323,25 @@ export const dig = {
       return null;
     };
 
-    /** @param {number} simMs */
+    /**
+     * Race exactly one outstanding recv() at a time against a single timeout
+     * deadline (both created once, not re-created every poll tick) — UdpEngine
+     * resolves waiters FIFO, so recreating the recv() call on every tick would
+     * abandon still-pending waiters that only get resolved once the reply
+     * finally arrives, i.e. too late for whichever call is current by then.
+     * @param {number} simMs
+     */
     const recvWithTimeout = async (simMs) => {
-      let ticksLeft = simTimer.toTicks(simMs);
+      if (ctx.signal.aborted) throw new DOMException("Aborted", "AbortError");
 
-      while (ticksLeft > 0) {
-        if (ctx.signal.aborted) throw new DOMException("Aborted", "AbortError");
+      const timedOut = Symbol("timeout");
+      const deadline = simTimer.sleep(simMs).then(() => timedOut);
+      let pending = net.recvUDPSocket(sock);
 
-        const res = await Promise.race([
-          net.recvUDPSocket(sock),
-          simTimer.sleep(SimTimer.SIM_MS_PER_TICK).then(() => "__timeout__"),
-        ]);
+      while (true) {
+        const res = await Promise.race([pending, deadline]);
 
-        if (res === "__timeout__") { ticksLeft--; continue; }
+        if (res === timedOut) return null;
         if (res == null) return null;
 
         const srcV4 = srcToV4NumOrNull(res.src);
@@ -349,10 +352,10 @@ export const dig = {
           (res.data instanceof Uint8Array) ? res.data :
           null;
 
-        if (!data) continue;
+        if (!data) { pending = net.recvUDPSocket(sock); continue; }
 
         // accept only from chosen server if src info exists
-        if (srcV4 != null && srcV4 !== (serverV4Num >>> 0)) continue;
+        if (srcV4 != null && srcV4 !== (serverV4Num >>> 0)) { pending = net.recvUDPSocket(sock); continue; }
 
         // Port check: keep it permissive (some stacks may not report exact port)
         if (srcPort != null && srcPort !== port) {
@@ -362,9 +365,10 @@ export const dig = {
 
         try {
           const pkt = DNSPacket.fromBytes(data);
-          if ((pkt.id & 0xffff) !== (id & 0xffff)) continue;
+          if ((pkt.id & 0xffff) !== (id & 0xffff)) { pending = net.recvUDPSocket(sock); continue; }
           return pkt;
         } catch {
+          pending = net.recvUDPSocket(sock);
           continue;
         }
       }

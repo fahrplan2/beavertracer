@@ -65,6 +65,9 @@ export class SimTimer {
     /** DNS resolve timeout (total, including recursive hops). */
     static DNS_RESOLVE_TIMEOUT_MS   = 5000;  // 1000 ticks
 
+    /** NTP query timeout (per single UDP attempt, ntpdate). */
+    static NTP_TIMEOUT_MS           =  400;  //  80 ticks
+
     /** Time to wait for a DHCP OFFER after DISCOVER. */
     static DHCP_OFFER_WAIT_MS       =  400;  //  80 ticks
     /** Time to wait for a DHCP ACK after REQUEST. */
