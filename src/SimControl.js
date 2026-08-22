@@ -602,7 +602,25 @@ export class SimControl {
         const lessonsNav = document.createElement("div");
         lessonsNav.className = "sim-lessons-nav";
         lessonsPanel.appendChild(lessonsNav);
-        this._lessonsNav = lessonsNav;
+
+        // Chapter dropdown mount (LessonsPanel replaces its contents wholesale
+        // via innerHTML — kept in its own child so that doesn't wipe out the
+        // close button below).
+        const lessonsNavSelect = document.createElement("div");
+        lessonsNavSelect.className = "sim-lessons-nav-select";
+        lessonsNav.appendChild(lessonsNavSelect);
+        this._lessonsNav = lessonsNavSelect;
+
+        // Explicit close button: on mobile the panel becomes a fullscreen
+        // overlay covering the toolbar (see sim.css), so the toolbar's
+        // lessons-toggle button underneath it is otherwise the only way out.
+        const lessonsClose = document.createElement("button");
+        lessonsClose.className = "sim-panel-close sim-lessons-close";
+        lessonsClose.type = "button";
+        lessonsClose.textContent = "×";
+        lessonsClose.title = t("panel.close");
+        lessonsClose.addEventListener("click", () => this.toggleLessonsPanel(false));
+        lessonsNav.appendChild(lessonsClose);
 
         const lessonsContent = document.createElement("div");
         lessonsContent.className = "sim-lessons-content lesson-article";

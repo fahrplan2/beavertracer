@@ -77,12 +77,24 @@
 
 .sim-lessons-nav {
   flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--pad-sm);
   padding: var(--pad-sm) var(--pad-md);
   border-bottom: 1px solid var(--ui-border-strong);
 }
 
+.sim-lessons-nav-select {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .sim-lessons-nav select {
   width: 100%;
+}
+
+.sim-lessons-close {
+  flex: 0 0 auto;
 }
 
 .sim-lessons-content {
