@@ -46,7 +46,7 @@ initLocale(bootParams.lang).then(async () => {
 
     if (simParam) {
         const scene = await resolveStartupSim();
-        if (scene) sim.restore(scene); else sim.new();
+        if (scene) await sim.restore(scene); else sim.new();
     } else {
         sim.new();
     }

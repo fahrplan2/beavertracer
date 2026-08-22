@@ -28,6 +28,20 @@ function derUtf8String(s) {
   return derTag(0x0C, enc.encode(s));
 }
 
+/**
+ * Encode a Unix-ms timestamp as an ASCII decimal string under the given tag.
+ * Real X.509 uses UTCTime (0x17) / GeneralizedTime (0x18) with a formatted
+ * date string; we reuse those tag numbers but keep the content as a plain
+ * decimal epoch-ms string — simpler to encode/parse and just as inspectable
+ * in a hex dump, since this simulator never talks to a real TLS stack.
+ * @param {number} tag
+ * @param {number} ms
+ */
+function derTimeField(tag, ms) {
+  const enc = new TextEncoder();
+  return derTag(tag, enc.encode(String(Math.trunc(ms))));
+}
+
 /** @param {Uint8Array[]} parts */
 function concatBytes(...parts) {
   let total = 0;
@@ -130,6 +144,13 @@ export class TlsCertificate {
       derTag(0x06, new Uint8Array([0x55, 0x04, 0x03])),
       derUtf8String(this.subject.replace(/^CN=/, "")),
     ))));
+    // Validity ::= SEQUENCE { notBefore Time, notAfter Time } — part of the
+    // signed TBS bytes so a validity period can't be forged/extended without
+    // invalidating the signature (see TlsSession._parseSingleCertDer()).
+    const validity = derTag(0x30, concatBytes(
+      derTimeField(0x17, this.notBefore),
+      derTimeField(0x18, this.notAfter),
+    ));
     const pubKeyBytes = this.publicKeyRaw ?? (() => {
       const p = new Uint8Array(65); p[0] = 0x04; return p;
     })();
@@ -137,7 +158,7 @@ export class TlsCertificate {
       algId,
       derTag(0x03, concatBytes(new Uint8Array([0x00]), pubKeyBytes)),
     ));
-    return derTag(0x30, concatBytes(serial, algId, issuerDn, subjectDn, subjectPKI));
+    return derTag(0x30, concatBytes(serial, algId, issuerDn, validity, subjectDn, subjectPKI));
   }
 
   // ── static constructors ───────────────────────────────────────────────────
@@ -146,7 +167,7 @@ export class TlsCertificate {
    * Generate a self-signed (or CA-signed) certificate with a fresh ECDSA-P256 key pair.
    * @param {string} cn
    * @param {TlsCertificate|null} [ca]
-   * @param {{ isCA?: boolean, validityDays?: number }} [opts]
+   * @param {{ isCA?: boolean, validityDays?: number, nowMs?: number }} [opts]
    * @returns {Promise<TlsCertificate>}
    */
   static async generate(cn, ca = null, opts = {}) {
@@ -160,7 +181,10 @@ export class TlsCertificate {
     cert.issuer        = ca ? ca.subject : `CN=${cn}`;
     cert.publicKeyId   = bytesToHex(pubRaw.slice(1, 17));
     cert.serialNumber  = Math.floor(Math.random() * 0x7fffffff);
-    cert.notBefore     = Date.now();
+    // notBefore is stamped from the issuing host's own (possibly skewed)
+    // virtual clock, not the real browser clock — callers pass opts.nowMs
+    // (e.g. os.clock.nowMs()); defaults to real time for callers that don't care.
+    cert.notBefore     = opts.nowMs ?? Date.now();
     cert.notAfter      = cert.notBefore + (opts.validityDays ?? 365) * 24 * 3600 * 1000;
     cert.selfSigned    = !ca;
     cert.isCA          = opts.isCA ?? false;
@@ -185,7 +209,7 @@ export class TlsCertificate {
    * Subject and key pair are preserved; issuer, chain and certSignature are replaced.
    * @param {TlsCertificate} cert
    * @param {TlsCertificate} ca
-   * @param {{ validityDays?: number }} [opts]
+   * @param {{ validityDays?: number, nowMs?: number }} [opts]
    * @returns {Promise<TlsCertificate>}
    */
   static async sign(cert, ca, opts = {}) {
@@ -194,7 +218,7 @@ export class TlsCertificate {
     signed.issuer        = ca.subject;
     signed.publicKeyId   = cert.publicKeyId;
     signed.serialNumber  = Math.floor(Math.random() * 0x7fffffff);
-    signed.notBefore     = Date.now();
+    signed.notBefore     = opts.nowMs ?? Date.now();
     signed.notAfter      = signed.notBefore + (opts.validityDays ?? 365) * 24 * 3600 * 1000;
     signed.selfSigned    = false;
     signed.isCA          = cert.isCA;
@@ -213,6 +237,26 @@ export class TlsCertificate {
     }
 
     return signed;
+  }
+
+  /**
+   * Recompute certSignature over the *current* TBS bytes using the given
+   * private key — unlike sign()/generate(), nothing else about the cert
+   * changes (subject, validity, serial, issuer, chain all stay as they are).
+   *
+   * Used to repair certificates saved before a TBS-layout change (e.g. the
+   * addition of the Validity field) so their old signature — computed over
+   * the old byte layout — verifies again. See SimControl's save-file
+   * migration for the caller.
+   * @param {CryptoKey} privateKey
+   * @returns {Promise<void>}
+   */
+  async resignWith(privateKey) {
+    const sigBuf = await crypto.subtle.sign(
+      { name: "ECDSA", hash: "SHA-256" }, privateKey,
+      /** @type {Uint8Array<ArrayBuffer>} */ (this._buildTbsBytes()),
+    );
+    this.certSignature = new Uint8Array(sigBuf);
   }
 
   // ── serialization ─────────────────────────────────────────────────────────
@@ -341,6 +385,19 @@ export class TlsCertificate {
   fingerprint() {
     return this.publicKeyId.slice(0, 20).toUpperCase()
       .match(/.{2}/g)?.join(":") ?? this.publicKeyId;
+  }
+
+  /**
+   * Validity status against a given instant (epoch ms). Pass the checking
+   * host's virtual clock (os.clock.nowMs()) — defaults to the real browser
+   * clock only for callers that don't have one at hand.
+   * @param {number} [nowMs]
+   * @returns {"valid"|"expired"|"notYetValid"}
+   */
+  validityStatus(nowMs = Date.now()) {
+    if (nowMs < this.notBefore) return "notYetValid";
+    if (nowMs > this.notAfter)  return "expired";
+    return "valid";
   }
 }
 

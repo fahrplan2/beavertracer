@@ -573,6 +573,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
       trustStore: this.os.tls?.certStore ?? null,
       timeoutMs:  this._timeoutMs(),
       sleepFn:    (ms) => simTimer.sleep(ms),
+      now:        () => this.os.clock.nowMs(),
     });
 
     try {
@@ -778,10 +779,14 @@ export class SimpleHTTPServerApp extends LoggedProcess {
       return;
     }
     const expiry = new Date(this._cert.notAfter).toLocaleDateString();
+    const status = this._cert.validityStatus(this.os.clock ? this.os.clock.nowMs() : Date.now());
+    const statusSuffix = status === "expired"     ? ` (${t("app.simplehttpsserver.cert.statusExpired")})`
+                        : status === "notYetValid" ? ` (${t("app.simplehttpsserver.cert.statusNotYetValid")})`
+                        : "";
     this._certInfoEl.textContent = [
       t("app.simplehttpsserver.cert.subject",     { subject: this._cert.subject }),
       t("app.simplehttpsserver.cert.fingerprint", { fp: this._cert.fingerprint() }),
-      t("app.simplehttpsserver.cert.expiry",      { date: expiry }),
+      t("app.simplehttpsserver.cert.expiry",      { date: expiry }) + statusSuffix,
     ].join("\n");
   }
 

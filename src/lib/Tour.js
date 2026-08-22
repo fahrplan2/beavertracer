@@ -380,7 +380,7 @@ export class Tour {
     /** @param {import('../SimControl.js').SimControl} sim */
     static async start(sim) {
         if (sim._isDirty && !await SimDialog.confirm(t('tour.confirm.discard'))) return;
-        sim.restore(getTourSim());
+        await sim.restore(getTourSim());
         new Tour(sim)._init();
     }
 

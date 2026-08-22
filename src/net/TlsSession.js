@@ -21,11 +21,17 @@ export class TlsCertUntrustedError extends TlsHandshakeError {
 }
 
 export class TlsCertExpiredError extends TlsHandshakeError {
-  /** @param {string} subject */
-  constructor(subject) {
-    super(`Certificate expired: ${subject}`);
+  /**
+   * @param {string} subject
+   * @param {"expired"|"notYetValid"} [reason]
+   */
+  constructor(subject, reason = "expired") {
+    super(reason === "notYetValid"
+      ? `Certificate not yet valid: ${subject}`
+      : `Certificate expired: ${subject}`);
     this.name = "TlsCertExpiredError";
     this.subject = subject;
+    this.reason = reason;
   }
 }
 
@@ -182,6 +188,35 @@ function extractCertSig(certDer) {
   return sigBytes;
 }
 
+/**
+ * Extract { notBefore, notAfter } (epoch ms) from the Validity SEQUENCE inside
+ * a Certificate's TBSCertificate — see TlsCertificate._buildTbsBytes() for the
+ * matching encoder. Walks the TBS children positionally (serial, signature
+ * algId, issuer, validity, ...) since that's the fixed order this simulator
+ * always produces. Returns null if the structure doesn't match.
+ * @param {Uint8Array} certDer
+ * @returns {{ notBefore: number, notAfter: number }|null}
+ */
+function extractValidity(certDer) {
+  try {
+    const outer   = derNextElement(certDer, 0);
+    const tbs     = derNextElement(certDer, outer.contentStart);
+    const serial  = derNextElement(certDer, tbs.contentStart);
+    const algId   = derNextElement(certDer, serial.end);
+    const issuer  = derNextElement(certDer, algId.end);
+    const validity = derNextElement(certDer, issuer.end);
+    const notBeforeEl = derNextElement(certDer, validity.contentStart);
+    const notAfterEl  = derNextElement(certDer, notBeforeEl.end);
+    const dec = new TextDecoder();
+    const notBefore = Number(dec.decode(certDer.slice(notBeforeEl.contentStart, notBeforeEl.end)));
+    const notAfter  = Number(dec.decode(certDer.slice(notAfterEl.contentStart,  notAfterEl.end)));
+    if (!Number.isFinite(notBefore) || !Number.isFinite(notAfter)) return null;
+    return { notBefore, notAfter };
+  } catch {
+    return null;
+  }
+}
+
 // ── TlsSession ─────────────────────────────────────────────────────────────
 
 /**
@@ -207,9 +242,10 @@ export class TlsSession {
    *   trustStore?: TlsTrustStore,
    *   timeoutMs?: number,
    *   sleepFn?: (ms: number) => Promise<void>,
+   *   now?: () => number,
    * }} opts
    */
-  constructor({ send, recv, isServer, cert, trustStore, timeoutMs = 400, sleepFn }) {
+  constructor({ send, recv, isServer, cert, trustStore, timeoutMs = 400, sleepFn, now }) {
     this._sendRaw = send;
     this._recvRaw = recv;
     this._isServer = isServer;
@@ -217,6 +253,10 @@ export class TlsSession {
     this._trustStore = trustStore ?? null;
     this._timeoutMs = timeoutMs;
     this._sleep = sleepFn ?? ((ms) => new Promise(r => setTimeout(r, ms)));
+    // This host's virtual clock (os.clock.nowMs, see SystemClock.js), used to
+    // judge peer-certificate validity — falls back to the real browser clock
+    // for callers that don't pass one (e.g. plain unit tests).
+    this._now = now ?? (() => Date.now());
 
     /** @type {"INIT"|"HANDSHAKE"|"ESTABLISHED"|"CLOSED"} */
     this._state = "INIT";
@@ -366,8 +406,9 @@ export class TlsSession {
           peerCert = await this._parseCertFromMessage(msg.body);
           this.peerCert = peerCert;
           if (peerCert && this._trustStore) {
-            if (peerCert.notAfter < Date.now()) {
-              throw new TlsCertExpiredError(peerCert.subject);
+            const status = peerCert.validityStatus(this._now());
+            if (status === "expired" || status === "notYetValid") {
+              throw new TlsCertExpiredError(peerCert.subject, status);
             }
             if (!await this._trustStore.isTrusted(peerCert, peerCert.chain)) {
               throw new TlsCertUntrustedError(peerCert.subject);
@@ -813,8 +854,12 @@ export class TlsSession {
     stub.subject    = subjectCN ? `CN=${subjectCN}` : "";
     stub.issuer     = issuerCN  ? `CN=${issuerCN}`  : stub.subject;
     stub.selfSigned = stub.subject === stub.issuer;
-    stub.notBefore  = 0;
-    stub.notAfter   = Date.now() + 365 * 24 * 3600 * 1000;
+    // Real validity period from the wire (see extractValidity()); if the DER
+    // can't be parsed for some reason, fall back to "valid for a year" rather
+    // than failing the whole handshake over a cosmetic field.
+    const validity = extractValidity(der);
+    stub.notBefore  = validity?.notBefore ?? 0;
+    stub.notAfter   = validity?.notAfter  ?? (this._now() + 365 * 24 * 3600 * 1000);
 
     // Extract the real ECDSA-P256 public key from SubjectPublicKeyInfo.
     // toDer() encodes it as BIT STRING (0x03) with content [0x00, 0x04, ...64 bytes].

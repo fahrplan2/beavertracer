@@ -670,6 +670,7 @@ export class MailClientApp extends LoggedProcess {
       trustStore: this.os.tls?.certStore ?? null,
       timeoutMs:  15000,
       sleepFn:    (ms) => simTimer.sleep(ms),
+      now:        () => this.os.clock.nowMs(),
     });
     await tls.handshake();
     return {
@@ -693,6 +694,7 @@ export class MailClientApp extends LoggedProcess {
       trustStore: this.os.tls?.certStore ?? null,
       timeoutMs:  15000,
       sleepFn:    (ms) => simTimer.sleep(ms),
+      now:        () => this.os.clock.nowMs(),
     });
     await tls.handshake();
     return {

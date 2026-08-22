@@ -10,7 +10,7 @@
  *  - Untrusted certificate is rejected
  */
 import { describe, it, expect } from 'vitest';
-import { TlsSession, TlsHandshakeError, TlsCertUntrustedError } from '../../src/net/TlsSession.js';
+import { TlsSession, TlsHandshakeError, TlsCertUntrustedError, TlsCertExpiredError } from '../../src/net/TlsSession.js';
 import { TlsCertificate, TlsTrustStore } from '../../src/net/models/TlsCertificate.js';
 
 // ── loopback wiring ────────────────────────────────────────────────────────
@@ -60,8 +60,11 @@ function makeQueues() {
 /**
  * Run a full TLS handshake between a client and server session.
  * Returns { client, server } after both handshakes complete.
+ * @param {TlsCertificate} serverCert
+ * @param {TlsTrustStore|null} [trustStore]
+ * @param {{ clientNow?: () => number }} [opts] - inject the client's "virtual clock"
  */
-async function runHandshake(serverCert, trustStore = null) {
+async function runHandshake(serverCert, trustStore = null, opts = {}) {
   const q = makeQueues();
 
   const client = new TlsSession({
@@ -71,6 +74,7 @@ async function runHandshake(serverCert, trustStore = null) {
     trustStore,
     timeoutMs: 5000,
     sleepFn: (ms) => new Promise(r => setTimeout(r, ms)),
+    now: opts.clientNow,
   });
 
   const server = new TlsSession({
@@ -259,6 +263,71 @@ describe('TlsSession', () => {
     const forged = await TlsCertificate.generate('Test CA', null, {});
 
     await expect(runHandshake(forged, trustStore)).rejects.toBeInstanceOf(TlsCertUntrustedError);
+  });
+
+  // ── certificate validity period (notBefore/notAfter) ────────────────────
+
+  describe('certificate validity period', () => {
+    it('rejects a certificate that has expired according to the client clock', async () => {
+      const cert = await TlsCertificate.generate('server.local', null, { validityDays: 30 });
+      const trustStore = new TlsTrustStore();
+      trustStore.add(cert);
+
+      // Client's virtual clock reads a moment 100 days past notAfter.
+      const clientNow = () => cert.notAfter + 100 * 24 * 3600 * 1000;
+
+      const err = await runHandshake(cert, trustStore, { clientNow }).catch(e => e);
+      expect(err).toBeInstanceOf(TlsCertExpiredError);
+      expect(/** @type {InstanceType<typeof TlsCertExpiredError>} */ (err).reason).toBe('expired');
+    });
+
+    it('rejects a certificate that is not yet valid according to the client clock', async () => {
+      const cert = await TlsCertificate.generate('server.local', null, { validityDays: 30 });
+      const trustStore = new TlsTrustStore();
+      trustStore.add(cert);
+
+      // Client's virtual clock reads a moment before notBefore.
+      const clientNow = () => cert.notBefore - 24 * 3600 * 1000;
+
+      const err = await runHandshake(cert, trustStore, { clientNow }).catch(e => e);
+      expect(err).toBeInstanceOf(TlsCertExpiredError);
+      expect(/** @type {InstanceType<typeof TlsCertExpiredError>} */ (err).reason).toBe('notYetValid');
+    });
+
+    it('accepts a real-time-expired certificate when the virtual clock is set to a valid moment', async () => {
+      // Cert whose validity window is entirely in the (real) past.
+      const skewedPast = Date.now() - 400 * 24 * 3600 * 1000;
+      const cert = await TlsCertificate.generate('server.local', null, { validityDays: 30, nowMs: skewedPast });
+      const trustStore = new TlsTrustStore();
+      trustStore.add(cert);
+
+      // The simulated host's virtual clock is set back to when the cert was still valid.
+      const clientNow = () => cert.notBefore + 24 * 3600 * 1000;
+
+      const { client } = await runHandshake(cert, trustStore, { clientNow });
+      expect(client['_state']).toBe('ESTABLISHED');
+    });
+
+    it('rejects a real-time-valid certificate when the virtual clock is skewed past notAfter', async () => {
+      const cert = await TlsCertificate.generate('server.local', null, { validityDays: 30 });
+      const trustStore = new TlsTrustStore();
+      trustStore.add(cert);
+
+      // Real time is well within validity, but this host's virtual clock was fast-forwarded.
+      const clientNow = () => cert.notAfter + 1000;
+
+      const err = await runHandshake(cert, trustStore, { clientNow }).catch(e => e);
+      expect(err).toBeInstanceOf(TlsCertExpiredError);
+    });
+
+    it('defaults to the real clock when no now() is injected', async () => {
+      const cert = await TlsCertificate.generate('server.local', null, { validityDays: 30 });
+      const trustStore = new TlsTrustStore();
+      trustStore.add(cert);
+
+      const { client } = await runHandshake(cert, trustStore);
+      expect(client['_state']).toBe('ESTABLISHED');
+    });
   });
 
   it('client and server derive identical master_secret', async () => {

@@ -69,6 +69,7 @@
 .app-certmanager .cm-item-cn   { font-weight: 600; font-size: 0.78125rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .app-certmanager .cm-item-meta { font-size: 0.6875rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .app-certmanager .cm-badge     { font-size: 0.5625rem; font-weight: 700; padding: 1px 5px; border-radius: var(--radius-sm); background: var(--accent, #5a8); color: #fff; flex-shrink: 0; }
+.app-certmanager .cm-item-warn { color: var(--danger); font-size: 12px; flex-shrink: 0; }
 
 .app-certmanager .cm-empty {
   color: var(--muted);
@@ -87,6 +88,11 @@
 .app-certmanager .cm-detail-row:last-child { border-bottom: none; }
 .app-certmanager .cm-detail-label { color: var(--text); flex: 0 0 112px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .app-certmanager .cm-detail-value { font-family: var(--font-mono); font-size: 0.71875rem; word-break: break-all; }
+
+.app-certmanager .cm-status         { font-size: 0.625rem; font-weight: 700; padding: 1px 6px; border-radius: var(--radius-sm); flex-shrink: 0; align-self: flex-start; }
+.app-certmanager .cm-status-valid       { background: var(--ok-tint);      color: var(--ok-strong); }
+.app-certmanager .cm-status-expired     { background: var(--danger-tint);  color: var(--danger-strong); }
+.app-certmanager .cm-status-notYetValid { background: var(--warning-tint); color: var(--warning-strong); }
 
 .app-certmanager .cm-preview {
   margin: var(--pad-md) 0;

@@ -767,6 +767,7 @@ export class SimpleMailServerApp extends LoggedProcess {
       trustStore: this.os.tls?.certStore ?? null,
       timeoutMs:  this._timeoutMs(),
       sleepFn:    (ms) => simTimer.sleep(ms),
+      now:        () => this.os.clock.nowMs(),
     });
     try {
       await tls.handshake();
@@ -799,6 +800,7 @@ export class SimpleMailServerApp extends LoggedProcess {
       trustStore: this.os.tls?.certStore ?? null,
       timeoutMs:  this._timeoutMs(),
       sleepFn:    (ms) => simTimer.sleep(ms),
+      now:        () => this.os.clock.nowMs(),
     });
     await tls.handshake();
     return {
@@ -1182,10 +1184,12 @@ export class SimpleMailServerApp extends LoggedProcess {
       return;
     }
     const expiry = new Date(this._cert.notAfter).toLocaleDateString();
+    const status = this._cert.validityStatus(this.os.clock ? this.os.clock.nowMs() : Date.now());
+    const statusSuffix = status === "expired" ? " (expired)" : status === "notYetValid" ? " (not yet valid)" : "";
     this.certInfoEl.textContent = [
       `Subject: ${this._cert.subject}`,
       `Fingerprint: ${this._cert.fingerprint()}`,
-      `Expires: ${expiry}`,
+      `Expires: ${expiry}${statusSuffix}`,
     ].join(" | ");
   }
 
