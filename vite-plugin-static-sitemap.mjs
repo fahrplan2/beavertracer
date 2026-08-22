@@ -1,4 +1,4 @@
-// vite-plugin-static-sitemap.js
+// vite-plugin-static-sitemap.mjs
 import fs from "node:fs";
 import path from "node:path";
 
