@@ -835,14 +835,18 @@ export class SimpleMailServerApp extends LoggedProcess {
     const failures = [];
 
     for (const user of locals) {
-      if (!this._findUser(user)) {
+      const acct = this._findUser(user);
+      if (!acct) {
         const addr = `${user}@${localDomain}`;
         this._appendLog(`[${nowStamp()}] local delivery failed: unknown user ${addr}`);
         failures.push({ addr, reason: "unknown user" });
         continue;
       }
-      this._storeLocal(user, rawRfc822);
-      this._appendLog(`[${nowStamp()}] local delivered: ${user}@${localDomain}`);
+      // Store under the account's canonical-case name so delivery and
+      // retrieval (POP3/IMAP) always agree on the mailbox file, regardless
+      // of the case used in the envelope recipient address.
+      this._storeLocal(acct.user, rawRfc822);
+      this._appendLog(`[${nowStamp()}] local delivered: ${acct.user}@${localDomain}`);
     }
 
     for (const addr of remotes) {
@@ -896,8 +900,9 @@ export class SimpleMailServerApp extends LoggedProcess {
       `${origHead}\r\n`;
 
     if (p.domain === this.mailDomain.toLowerCase()) {
-      if (this._findUser(p.local)) {
-        this._storeLocal(p.local, bounce);
+      const acct = this._findUser(p.local);
+      if (acct) {
+        this._storeLocal(acct.user, bounce);
         this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.bounceDelivered") || "bounce delivered to"} ${from}`);
       }
     } else {
@@ -1609,9 +1614,13 @@ export class SimpleMailServerApp extends LoggedProcess {
 
       if (state === "AUTH") {
         if (op === "USER") {
-          user = arg.trim();
-          if (!user) { send("-ERR Missing username. Usage: USER <name>"); continue; }
-          if (!this._findUser(user)) { send("-ERR No such mailbox. Create it in the server UI first."); continue; }
+          const typed = arg.trim();
+          if (!typed) { send("-ERR Missing username. Usage: USER <name>"); continue; }
+          const acct = this._findUser(typed);
+          if (!acct) { send("-ERR No such mailbox. Create it in the server UI first."); continue; }
+          // Normalize to the account's canonical-case name so the mailbox
+          // file we read later matches the one delivery wrote to.
+          user = acct.user;
           send("+OK User accepted. Enter your password with PASS.");
           continue;
         }
@@ -1753,7 +1762,9 @@ export class SimpleMailServerApp extends LoggedProcess {
           if (!u || !p) { send(`${tag} NO LOGIN failed`); continue; }
           if (!this._auth(u, p)) { send(`${tag} NO LOGIN failed`); continue; }
           authed = true;
-          user = u;
+          // Normalize to the account's canonical-case name so the mailbox
+          // file we read later matches the one delivery wrote to.
+          user = this._findUser(u)?.user ?? u;
           loadMailbox();
           send(`${tag} OK LOGIN completed`);
           continue;
