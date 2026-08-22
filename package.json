@@ -14,7 +14,7 @@
   },
   "name": "beavertracer",
   "description": "",
-  "version": "0.2.1-dev.14.1ba19ce",
+  "version": "0.2.1-dev.16.5ca1e60",
   "main": "electron/main.cjs",
   "repository": {
     "type": "git",
@@ -23,13 +23,13 @@
   "author": "Christian Klein",
   "license": "GPLv2",
   "devDependencies": {
-    "@anthropic-ai/sdk": "^0.111.0",
+    "@anthropic-ai/sdk": "^0.120.0",
     "@babel/parser": "^8.0.4",
     "@tauri-apps/cli": "^2.11.2",
-    "markdown-it": "^14.2.0",
+    "markdown-it": "^15.0.0",
     "typescript": "^7.0.2",
-    "vite": "^8.0.16",
-    "vitest": "^4.1.8"
+    "vite": "^8.2.2",
+    "vitest": "^4.1.11"
   },
   "build": {
     "appId": "eu.chklein.networksim",
@@ -40,15 +40,15 @@
     ]
   },
   "dependencies": {
-    "@fortawesome/fontawesome-free": "^7.2.0",
+    "@fortawesome/fontawesome-free": "^7.3.1",
     "@goodtools/wiregasm": "^1.9.1",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
-    "country-flag-emoji-polyfill": "^0.1.8",
+    "country-flag-emoji-polyfill": "^0.1.10",
     "hack-font": "^3.3.0",
     "markdown-it-container": "^4.0.0",
-    "recast": "^0.23.11",
-    "v86": "^0.5.424"
+    "recast": "^0.24.0",
+    "v86": "^0.5.441"
   },
   "allowScripts": {
     "fsevents@2.3.3": true
