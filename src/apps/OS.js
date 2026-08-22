@@ -17,6 +17,7 @@ import { CertManagerApp } from "./CertManagerApp.js";
 import { DNSServerApp } from "./DNSServerApp.js";
 import { DNSResolver } from "./lib/DNSResolver.js";
 import { NTPServerApp } from "./NTPServerApp.js";
+import { ClockApp } from "./ClockApp.js";
 import { SystemClock } from "./lib/SystemClock.js";
 import { DHCPServerApp } from "./DHCPServerApp.js";
 import { DHCPv6ServerApp } from "./DHCPv6ServerApp.js";
@@ -39,6 +40,7 @@ const APP_REGISTRY = [
     { id: "ExplorerApp",            Class: ExplorerApp,            mandatory: true,  category: "system", icon: "fa-folder-open",   labelKey: "app.explorer.title" },
     { id: "TextEditorApp",          Class: TextEditorApp,          mandatory: true,  category: "system", icon: "fa-file-pen",      labelKey: "app.texteditor.title" },
     { id: "CertManagerApp",         Class: CertManagerApp,         mandatory: false,  category: "system", icon: "fa-shield-halved", labelKey: "app.certmanager.title" },
+    { id: "ClockApp",               Class: ClockApp,               mandatory: false,  category: "system", icon: "fa-clock",         labelKey: "app.clock.title" },
     { id: "SparktailHTTPClientApp", Class: SparktailHTTPClientApp, mandatory: false, category: "client", icon: "fa-globe",         labelKey: "app.sparktail.title" },
     { id: "MailClientApp",          Class: MailClientApp,          mandatory: false, category: "client", icon: "fa-envelope-open", labelKey: "app.mailclient.title" },
     { id: "SimpleIRCClientApp",     Class: SimpleIRCClientApp,     mandatory: false, category: "client", icon: "fa-comments",          labelKey: "app.ircclient.title" },
