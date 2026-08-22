@@ -1,3 +1,14 @@
+## Version 0.2.1
+
+- New apps: Clock and NTP client/server
+- TLS certificates now expire based on the simulated clock instead of never
+- minor bug fixes
+
+## Version 0.2.0
+
+- Interactive lessons added directly in the app
+- Hex view in the tracer is now off by default
+
 ## Version 0.1.27
 
 - minor bug fixes and features

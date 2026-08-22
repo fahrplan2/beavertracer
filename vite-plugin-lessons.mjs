@@ -1,4 +1,4 @@
-// vite-plugin-lessons.js
+// vite-plugin-lessons.mjs
 // Processes lessons/{lang}/*.md → public/lessons/{lang}/*.html
 // Auto-generates index pages for root and each language.
 

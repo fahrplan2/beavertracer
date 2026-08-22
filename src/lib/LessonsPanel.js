@@ -14,7 +14,7 @@ const DEFAULT_WIDTH = 380;
 class LessonNotFoundError extends Error {}
 
 /**
- * Fetches lesson content (built by vite-plugin-lessons.js as per-page .json
+ * Fetches lesson content (built by vite-plugin-lessons.mjs as per-page .json
  * files alongside the standalone HTML) and renders it into the docked
  * lessons panel of a live SimControl instance. Also wires "::: sim" launch
  * buttons to load the referenced scenario directly into that same

@@ -16,7 +16,7 @@ You can see a demo of this project at https://beavertracer.eu
 
 ## Requirements
 
-* Node.js ≥ 18
+* Node.js ^20.19.0 or ≥ 22.12.0 (required by Vite 8)
 * npm
 * A modern browser with WebAssembly support
 
@@ -108,6 +108,7 @@ GPLv2
 ## Credits
 
 - **Wiregasm** by Good-Tools — powers the packet capture engine
+- **v86** — runs a real Linux kernel in the browser (the "Linux" node type) (BSD-2-Clause, https://github.com/copy/v86)
 - **Font Awesome Free** — icons (CC BY 4.0, © Fonticons, Inc.)
 - **Hack** font — © 2018 Source Foundry Authors (MIT)
 - **Noto Emoji** by Google — beaver app icon (Apache 2.0)

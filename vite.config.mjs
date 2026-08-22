@@ -3,8 +3,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { staticSitemap } from "./vite-plugin-static-sitemap.js";
-import { lessonsPlugin } from "./vite-plugin-lessons.js";
+import { staticSitemap } from "./vite-plugin-static-sitemap.mjs";
+import { lessonsPlugin } from "./vite-plugin-lessons.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 //const __dirname = path.dirname(__filename);

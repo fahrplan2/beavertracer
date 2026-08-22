@@ -485,4 +485,84 @@ describe('SimpleMailServerApp', () => {
       expect(lines.some(l => l.includes('BYE'))).toBe(true);
     });
   });
+
+  // ── Case sensitivity ──────────────────────────────────────────────────────────
+  // Regression tests for: SMTP/auth account lookup is case-insensitive, but the
+  // mailbox file used to be named after whatever case happened to be typed at
+  // delivery time vs. retrieval time. Mail sent to "Alice@…" (or CC'd to a
+  // capitalized name) could silently vanish for a user registered as "alice".
+
+  describe('case sensitivity', () => {
+    it('mail delivered to a differently-cased address is still visible via POP3', async () => {
+      const { toServer: ts, toClient: tc } = vnet.connect(server.serverRef.smtp);
+      const client = makeLineClient(ts, tc);
+      const result = await smtpSend(client, {
+        from: 'sender@other.com',
+        to: 'Alice@example.local', // capitalized, unlike the registered "alice"
+        subject: 'Case test',
+        body: 'hello',
+      });
+      expect(result).toMatch(/^250/);
+
+      const { toServer: pts, toClient: ptc } = vnet.connect(server.serverRef.pop3);
+      const pop3Client = makeLineClient(pts, ptc);
+      await pop3Login(pop3Client, 'alice', 'secret');
+      pop3Client.sendLine('STAT');
+      const stat = await pop3Client.recvLine();
+      expect(stat).toMatch(/^\+OK 1 /);
+    });
+
+    it('a CC recipient typed with different case than the registered username still receives mail', async () => {
+      server.users.push({ user: 'bob', password: 'secret' });
+
+      const { toServer: ts, toClient: tc } = vnet.connect(server.serverRef.smtp);
+      const client = makeLineClient(ts, tc);
+      await client.recvLine(); // 220
+      client.sendLine('EHLO testclient');
+      await client.readUntil(l => l.startsWith('250 '));
+      client.sendLine('MAIL FROM:<sender@other.com>');
+      await client.recvLine();
+      client.sendLine('RCPT TO:<alice@example.local>');
+      await client.recvLine();
+      client.sendLine('RCPT TO:<Bob@example.local>'); // CC'd with capitalized name
+      await client.recvLine();
+      client.sendLine('DATA');
+      await client.recvLine();
+      client.sendLine('Subject: CC test');
+      client.sendLine('To: alice@example.local');
+      client.sendLine('Cc: Bob@example.local');
+      client.sendLine('');
+      client.sendLine('hello cc');
+      client.sendLine('.');
+      const result = await client.recvLine();
+      expect(result).toMatch(/^250/);
+
+      const { toServer: pts, toClient: ptc } = vnet.connect(server.serverRef.pop3);
+      const pop3Client = makeLineClient(pts, ptc);
+      await pop3Login(pop3Client, 'bob', 'secret');
+      pop3Client.sendLine('STAT');
+      const stat = await pop3Client.recvLine();
+      expect(stat).toMatch(/^\+OK 1 /);
+    });
+
+    it('IMAP LOGIN with different case than the registered username still finds delivered mail', async () => {
+      const { toServer: ts, toClient: tc } = vnet.connect(server.serverRef.smtp);
+      const smtpClient = makeLineClient(ts, tc);
+      await smtpSend(smtpClient, {
+        from: 'sender@other.com',
+        to: 'Alice@example.local',
+        subject: 'IMAP case test',
+        body: 'hello imap',
+      });
+
+      const { toServer: its, toClient: itc } = vnet.connect(server.serverRef.imap);
+      const imapClient = makeLineClient(its, itc);
+      await imapClient.recvLine();
+      imapClient.sendLine('A1 LOGIN ALICE secret'); // all-caps login
+      await imapClient.recvLine();
+      imapClient.sendLine('A2 SELECT INBOX');
+      const lines = await imapClient.readUntil(l => l.startsWith('A2 OK'));
+      expect(lines.some(l => l.includes('1 EXISTS'))).toBe(true);
+    });
+  });
 });
