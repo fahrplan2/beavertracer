@@ -184,13 +184,12 @@
 .welcome-pages {
   flex: 1;
   min-height: 0;
-  position: relative;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .welcome-page {
   display: none;
-  height: 100%;
-  overflow-y: auto;
 }
 
 .welcome-page--active {
@@ -204,9 +203,6 @@
   flex-direction: column;
   gap: var(--pad-md);
   padding: var(--pad-xl) var(--pad-2xl);
-  overflow-y: auto;
-  min-height: 0;
-  height: 100%;
   box-sizing: border-box;
 }
 
@@ -260,10 +256,7 @@
 
 .welcome-news {
   padding: var(--pad-xl) var(--pad-2xl);
-  height: 100%;
   box-sizing: border-box;
-  overflow-y: auto;
-  min-height: 0;
 }
 
 .welcome-news-content .minimarkdown-h2 {
