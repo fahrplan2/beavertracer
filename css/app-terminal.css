@@ -36,6 +36,12 @@
   color: #ff5c5c;
 }
 
+/* Full-screen programs (e.g. nano): inverted title/footer bars */
+.app-terminal .term .term-status {
+  background-color: #00FF20;
+  color: #202020;
+}
+
 .term-context-menu {
   background: #2a2a2a;
   border: 1px solid #444;
