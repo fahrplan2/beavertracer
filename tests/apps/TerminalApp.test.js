@@ -900,3 +900,152 @@ describe('_recalcGeometry (row/col sizing from the real terminal element)', () =
     expect(resetCount).toBe(1); // not twice, even though both cols and rows changed here
   });
 });
+
+describe('cursor focus/blur: solid blinking block vs. static box-outline', () => {
+  /** @type {TerminalApp} */
+  let app;
+
+  beforeEach(() => {
+    const fs = new VirtualFileSystem();
+    const os = /** @type {any} */ ({ name: 'TestOS', fs, exit() {} });
+    app = new TerminalApp(os);
+    app._registerBuiltins();
+    app._resetScreen();
+    app.outEl = makeFakeEl('pre');
+    app.busy = false;
+    app.lineBuffer = 'ab';
+    app.cursor = 1; // cursor sits ON the 'b' - lets us check the char survives unfocused
+  });
+
+  /**
+   * The prompt-overlay cursor is painted into a *local clone* of
+   * screen/screenColor inside _renderScreen() - it never gets written back
+   * to app.screen, so the only way to observe it is the rendered DOM.
+   * Returns the outline span's text (or null) and whether a bare "▉" node
+   * is present among the top-level children.
+   */
+  function paintedCursor() {
+    /** @type {string|null} */
+    let outlineText = null;
+    let hasSolidGlyph = false;
+    for (const node of app.outEl.children) {
+      if (node.className === 'term-cursor-outline') outlineText = node.textContent;
+      if (node.nodeType === 3 && node.textContent.includes('▉')) hasSolidGlyph = true;
+    }
+    return { outlineText, hasSolidGlyph };
+  }
+
+  it('defaults to focused and renders the solid block cursor, replacing the character', () => {
+    app._renderScreen();
+    const { outlineText, hasSolidGlyph } = paintedCursor();
+    expect(hasSolidGlyph).toBe(true);
+    expect(outlineText).toBeNull();
+  });
+
+  it('losing focus outlines the cell (a .term-cursor-outline span) without touching its character', () => {
+    app._setHasFocus(false);
+    expect(app.hasFocus).toBe(false);
+    const { outlineText, hasSolidGlyph } = paintedCursor();
+    expect(outlineText).toBe('b'); // untouched character, not replaced by a glyph
+    expect(hasSolidGlyph).toBe(false);
+  });
+
+  it('regaining focus restores the solid block cursor', () => {
+    app._setHasFocus(false);
+    app._setHasFocus(true);
+    const { outlineText, hasSolidGlyph } = paintedCursor();
+    expect(hasSolidGlyph).toBe(true);
+    expect(outlineText).toBeNull();
+  });
+
+  it('setting the same focus state again is a no-op (no extra render)', () => {
+    let renders = 0;
+    const original = app._renderScreen.bind(app);
+    app._renderScreen = () => { renders++; original(); };
+
+    app._setHasFocus(true); // already true by default
+    expect(renders).toBe(0);
+  });
+
+  it('the blink timer skips re-rendering while unfocused', () => {
+    /** @type {(() => void) | null} */
+    let tick = null;
+    const realSetInterval = window.setInterval;
+    window.setInterval = /** @type {any} */ ((fn) => { tick = fn; return 1; });
+    // _stopCursorBlink() clears via the bare global clearInterval (Node's
+    // real one), not window.clearInterval - a fake handle is harmless there.
+
+    app._setHasFocus(false);
+    let renders = 0;
+    const original = app._renderScreen.bind(app);
+    app._renderScreen = () => { renders++; original(); };
+
+    try {
+      app._startCursorBlink();
+      tick?.(); // simulate one 500ms blink tick
+      expect(renders).toBe(0); // guarded by `if (!this.hasFocus) return;`
+
+      app._setHasFocus(true);
+      renders = 0;
+      tick?.();
+      expect(renders).toBe(1); // focused again -> blinking resumes
+    } finally {
+      app._stopCursorBlink();
+      window.setInterval = realSetInterval;
+    }
+  });
+});
+
+describe('nano cursor also respects focus (raw key mode)', () => {
+  /** @type {TerminalApp} */
+  let app;
+  /** @type {VirtualFileSystem} */
+  let fs;
+
+  beforeEach(() => {
+    fs = new VirtualFileSystem();
+    const os = /** @type {any} */ ({ name: 'TestOS', fs, exit() {} });
+    app = new TerminalApp(os);
+    app._registerBuiltins();
+    app._resetScreen();
+    app.outEl = makeFakeEl('pre');
+    app.busy = true;
+  });
+
+  /** @param {string} line */
+  function run(line) {
+    app.currentAbort = new AbortController();
+    app.interruptHandlers = [];
+    return app._handleLine(line);
+  }
+  async function untilEditorOpen() {
+    for (let i = 0; i < 20 && !app.rawKeyHandler; i++) await Promise.resolve();
+  }
+
+  it('losing focus while nano is open switches its cursor to a box outline immediately', async () => {
+    const done = run('nano /home/x.txt');
+    await untilEditorOpen();
+    // Cursor sits at the top-left of the (empty) content area: row 1, col 0.
+    expect(app.screen[1][0]).toBe('▉');
+    expect(app.screenColor[1][0]).toBe('0');
+
+    app._setHasFocus(false); // no keystroke - relies on rawFocusHandler
+    expect(app.screen[1][0]).toBe(' '); // untouched, not replaced by a glyph
+    expect(app.screenColor[1][0]).toBe('3');
+
+    app._setHasFocus(true);
+    expect(app.screen[1][0]).toBe('▉');
+    expect(app.screenColor[1][0]).toBe('0');
+
+    app._onKeyDown(/** @type {any} */ ({ key: 'x', ctrlKey: true, metaKey: false, preventDefault() {} }));
+    await done;
+  });
+
+  it('cleans up rawFocusHandler on exit', async () => {
+    const done = run('nano /home/x.txt');
+    await untilEditorOpen();
+    app._onKeyDown(/** @type {any} */ ({ key: 'x', ctrlKey: true, metaKey: false, preventDefault() {} }));
+    await done;
+    expect(app.rawFocusHandler).toBeNull();
+  });
+});

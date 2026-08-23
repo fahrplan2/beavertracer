@@ -366,8 +366,12 @@ export class Editor {
    * length `this.cols`, matching TerminalApp's `screen`/`screenColor`).
    * @param {string[]} screenRows
    * @param {string[]} screenColorRows
+   * @param {boolean} [hasFocus] false draws a static box-outline cursor
+   *   instead of the solid one - same convention as TerminalApp's own
+   *   prompt cursor, so a background terminal running nano doesn't draw
+   *   attention to itself.
    */
-  render(screenRows, screenColorRows) {
+  render(screenRows, screenColorRows, hasFocus = true) {
     const { cols, rows } = this;
     const h = this.contentHeight;
 
@@ -402,14 +406,25 @@ export class Editor {
     screenRows[footerY] = this._padTrunc(t("app.terminal.commands.nano.footer"), cols);
     screenColorRows[footerY] = "2".repeat(cols);
 
-    // Cursor glyph - drawn last so it's never overwritten.
+    // Cursor - drawn last so it's never overwritten. Focused: solid glyph,
+    // replacing the character. Unfocused: leave the character alone and
+    // just outline the cell (color "3", see TerminalApp's own prompt
+    // cursor) - only done on the content row (plain color "0"), not on the
+    // save prompt (color "2", the inverted status bar): outlining a single
+    // cell there would drop that one character back to plain colors,
+    // punching a visible hole in the bar. A field just not showing a
+    // cursor while unfocused is normal UI behavior anyway.
     if (this.mode === "edit") {
       const cy = 1 + (this.row - this.topLine);
       const cx = this.col - this.leftCol;
       if (cy >= 1 && cy <= h && cx >= 0 && cx < cols) {
-        screenRows[cy] = screenRows[cy].slice(0, cx) + "▉" + screenRows[cy].slice(cx + 1);
+        if (hasFocus) {
+          screenRows[cy] = screenRows[cy].slice(0, cx) + "▉" + screenRows[cy].slice(cx + 1);
+        } else {
+          screenColorRows[cy] = screenColorRows[cy].slice(0, cx) + "3" + screenColorRows[cy].slice(cx + 1);
+        }
       }
-    } else if (this.mode === "prompt-save") {
+    } else if (this.mode === "prompt-save" && hasFocus) {
       const cx = t("app.terminal.commands.nano.prompt.saveAs").length + this.promptCursor;
       if (cx < cols) {
         screenRows[statusY] = screenRows[statusY].slice(0, cx) + "▉" + screenRows[statusY].slice(cx + 1);

@@ -50,6 +50,7 @@ async function runEditor(ctx, args, programName) {
     if (closed) return;
     closed = true;
     app.rawKeyHandler = null;
+    app.rawFocusHandler = null;
     app.screen = savedScreen;
     app.screenColor = savedScreenColor;
     app.outX = savedOutX;
@@ -78,7 +79,7 @@ async function runEditor(ctx, args, programName) {
     if (closed) return;
     editor.promptExit();
     if (closed) return; // exited immediately (nothing unsaved) - screen is already restored
-    editor.render(app.screen, app.screenColor);
+    editor.render(app.screen, app.screenColor, app.hasFocus);
     app._renderScreen();
   });
 
@@ -90,11 +91,19 @@ async function runEditor(ctx, args, programName) {
     // repainted the screen, so re-rendering the (now stale) editor here
     // would clobber that restoration right back.
     if (closed) return;
-    editor.render(app.screen, app.screenColor);
+    editor.render(app.screen, app.screenColor, app.hasFocus);
     app._renderScreen();
   };
 
-  editor.render(app.screen, app.screenColor);
+  // Companion to rawKeyHandler: TerminalApp calls this when this terminal
+  // gains/loses focus, so the cursor switches between the solid (focused)
+  // and hollow (unfocused) glyph without waiting for the next keystroke.
+  app.rawFocusHandler = () => {
+    if (closed) return;
+    editor.render(app.screen, app.screenColor, app.hasFocus);
+  };
+
+  editor.render(app.screen, app.screenColor, app.hasFocus);
   app._renderScreen();
 
   await done;
