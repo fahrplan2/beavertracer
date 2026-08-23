@@ -132,6 +132,9 @@ tauri:linux:
     - if: *rule-any-release
   script:
     - node scripts/set-tauri-version.mjs
+    # Bundle-Output aus dem Cargo-Cache leeren, sonst sammeln sich hier
+    # Bundles aller bisherigen Releases an (Cache-Key ist nicht versionsspezifisch)
+    - rm -rf src-tauri/target/release/bundle
     - npm run tauri:build
   artifacts:
     name: tauri-linux
@@ -151,6 +154,9 @@ tauri:windows:
     - ln -sf "$(which makensis)" /usr/local/bin/makensis.exe
     - rustup target add x86_64-pc-windows-msvc
     - cargo install cargo-xwin
+    # Bundle-Output aus dem Cargo-Cache leeren, sonst sammeln sich hier
+    # Bundles aller bisherigen Releases an (Cache-Key ist nicht versionsspezifisch)
+    - rm -rf src-tauri/target/x86_64-pc-windows-msvc/release/bundle
     - npm run tauri:win
   artifacts:
     name: tauri-windows
