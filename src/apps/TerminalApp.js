@@ -124,6 +124,25 @@ export class TerminalApp extends GenericProcess {
     /** @type {((line: string) => void) | null} raw input mode: Enter sends line here instead of shell */
     rawInputHandler = null;
 
+    /**
+     * Raw key mode: every keydown is forwarded here as-is (no line editing,
+     * no prompt overlay) instead of going through the normal input model.
+     * Used by full-screen programs like `nano` - the handler is responsible
+     * for its own preventDefault() and for drawing into `screen`/`screenColor`.
+     * @type {((ev: KeyboardEvent) => void) | null}
+     */
+    rawKeyHandler = null;
+
+    /**
+     * Optional companion to `rawKeyHandler`: called when this terminal's
+     * focus state changes while a raw-key program is active, so it can
+     * redraw its own cursor glyph (solid vs. hollow) without waiting for
+     * the next keystroke. Cleared by the program itself alongside
+     * `rawKeyHandler` on exit.
+     * @type {(() => void) | null}
+     */
+    rawFocusHandler = null;
+
     // ---------------------------
     // Abort controll managment (CTRL+C)
     // ---------------------------
@@ -144,6 +163,15 @@ export class TerminalApp extends GenericProcess {
     // ---------------------------
     /** @type {boolean} */
     cursorVisible = true;
+
+    /**
+     * Whether this terminal's input element currently has focus. Drives
+     * whether the cursor renders as a blinking solid block (focused) or a
+     * static hollow box (unfocused) - so with several terminal windows open
+     * only the one you're actually typing into blinks.
+     * @type {boolean}
+     */
+    hasFocus = true;
 
     /** @type {number | null} */
     blinkTimer = null;
@@ -251,6 +279,8 @@ export class TerminalApp extends GenericProcess {
 
             this.disposer.on(term,      "pointerdown", () => mi.focus());
             this.disposer.on(this.root, "pointerdown", () => mi.focus());
+            this.disposer.on(mi, "focus", () => this._setHasFocus(true));
+            this.disposer.on(mi, "blur",  () => this._setHasFocus(false));
         } else {
             this.focusTarget = term;
             this.root.replaceChildren(term);
@@ -263,11 +293,13 @@ export class TerminalApp extends GenericProcess {
                 ev.preventDefault();
                 this._showContextMenu(/** @type {MouseEvent} */ (ev).clientX, /** @type {MouseEvent} */ (ev).clientY);
             });
+            this.disposer.on(term, "focus", () => this._setHasFocus(true));
+            this.disposer.on(term, "blur",  () => this._setHasFocus(false));
         }
 
-        // Recalculate column count based on actual pixel width (mobile font is smaller)
+        // Recalculate column/row count based on actual pixel size (mobile font is smaller)
         requestAnimationFrame(() => {
-            this._recalcCols(term);
+            this._recalcGeometry(term);
             this._renderScreen();
         });
 
@@ -286,11 +318,14 @@ export class TerminalApp extends GenericProcess {
     }
 
     /**
-     * Recalculate `cols` from the terminal element's rendered width.
-     * Uses a single-char probe so the result matches the actual font.
+     * Recalculate `cols`/`rows` from the terminal element's actual rendered
+     * size (font metrics + padding), so the grid fills the real viewport
+     * instead of staying at the fixed 60x20 field defaults. Uses a
+     * single-char probe for width, `line-height` for height (mobile uses a
+     * smaller font and a tighter line-height, see app-terminal.css).
      * @param {HTMLElement} termEl
      */
-    _recalcCols(termEl) {
+    _recalcGeometry(termEl) {
         const probe = document.createElement("span");
         probe.style.cssText = "position:absolute;visibility:hidden;white-space:pre;font:inherit";
         probe.textContent = "X".repeat(10);
@@ -298,14 +333,17 @@ export class TerminalApp extends GenericProcess {
         const charWidth = probe.getBoundingClientRect().width / 10;
         probe.remove();
 
-        if (!charWidth) return;
+        const lineHeight = parseFloat(window.getComputedStyle(termEl).lineHeight);
+
+        if (!charWidth || !lineHeight) return;
 
         const padding = 14; // 2 × 7px from .term { padding: 7px }
-        const available = termEl.clientWidth - padding;
-        const newCols = Math.max(20, Math.floor(available / charWidth));
+        const newCols = Math.max(20, Math.floor((termEl.clientWidth - padding) / charWidth));
+        const newRows = Math.max(10, Math.floor((termEl.clientHeight - padding) / lineHeight));
 
-        if (newCols !== this.cols) {
+        if (newCols !== this.cols || newRows !== this.rows) {
             this.cols = newCols;
+            this.rows = newRows;
             this._resetScreen();
             this.println(t("app.terminal.welcome", { host: this.env.HOST }));
             this.println("");
@@ -465,6 +503,13 @@ export class TerminalApp extends GenericProcess {
         if ((ev.ctrlKey || ev.metaKey) && (ev.key === "v" || ev.key === "V")) {
             ev.preventDefault();
             this._pasteFromClipboard();
+            return;
+        }
+
+        // Raw key mode (e.g. nano): forward every keydown as-is, before line
+        // editing and before the busy check - the handler owns the screen.
+        if (this.rawKeyHandler) {
+            this.rawKeyHandler(ev);
             return;
         }
 
@@ -693,6 +738,13 @@ export class TerminalApp extends GenericProcess {
         const sel = window.getSelection();
         if (sel && !sel.isCollapsed && this.outEl.contains(sel.anchorNode)) return;
 
+        // Raw key mode (e.g. nano): the handler owns `screen`/`screenColor`
+        // entirely (its own layout, its own cursor glyph) - no prompt overlay.
+        if (this.rawKeyHandler) {
+            this._paintRows(this.screen, this.screenColor);
+            return;
+        }
+
         // Clone base screen
         /** @type {string[]} */
         const tmp = this.screen.slice();
@@ -779,7 +831,13 @@ export class TerminalApp extends GenericProcess {
         if (cursorX >= this.cols) {
             cursorX = this.cols - 1;
         }
-        if (this.cursorVisible) {
+        // Focused: blinking solid block. Unfocused: static box outline
+        // drawn around whatever's already there (a CSS box-shadow, not a
+        // font-dependent glyph - see .term-cursor-outline), so with several
+        // terminal windows open only the focused one blinks.
+        if (!this.hasFocus) {
+            tmpColor[cursorY] = tmpColor[cursorY].slice(0, cursorX) + "3" + tmpColor[cursorY].slice(cursorX + 1);
+        } else if (this.cursorVisible) {
             tmp[cursorY] = tmp[cursorY].slice(0, cursorX) + "▉" + tmp[cursorY].slice(cursorX + 1);
             tmpColor[cursorY] = tmpColor[cursorY].slice(0, cursorX) + "0" + tmpColor[cursorY].slice(cursorX + 1);
         }
@@ -816,6 +874,16 @@ export class TerminalApp extends GenericProcess {
                 if (c === "1") {
                     const span = document.createElement("span");
                     span.className = "term-stderr";
+                    span.textContent = text;
+                    frag.appendChild(span);
+                } else if (c === "2") {
+                    const span = document.createElement("span");
+                    span.className = "term-status";
+                    span.textContent = text;
+                    frag.appendChild(span);
+                } else if (c === "3") {
+                    const span = document.createElement("span");
+                    span.className = "term-cursor-outline";
                     span.textContent = text;
                     frag.appendChild(span);
                 } else {
@@ -1183,6 +1251,17 @@ export class TerminalApp extends GenericProcess {
         document.addEventListener("pointerdown", close, { capture: true });
     }
 
+    /**
+     * @param {boolean} focused
+     */
+    _setHasFocus(focused) {
+        if (this.hasFocus === focused) return;
+        this.hasFocus = focused;
+        this.cursorVisible = true; // regaining focus always starts "on", not mid-blink
+        this.rawFocusHandler?.();
+        this._renderScreen();
+    }
+
     _startCursorBlink() {
         this._stopCursorBlink(); // defensive
         this.cursorVisible = true;
@@ -1191,6 +1270,11 @@ export class TerminalApp extends GenericProcess {
             // If busy, you can either keep blinking off, or do nothing.
             // Doing nothing avoids re-render spam while commands run.
             if (this.busy) return;
+            // Raw key mode (e.g. nano) draws its own static cursor glyph -
+            // nothing here to blink, and re-rendering would just be wasted work.
+            if (this.rawKeyHandler) return;
+            // Unfocused terminals show a static hollow cursor - nothing to blink.
+            if (!this.hasFocus) return;
 
             this.cursorVisible = !this.cursorVisible;
             this._renderScreen();

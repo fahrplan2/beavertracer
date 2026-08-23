@@ -70,7 +70,7 @@ export class LessonsPanel {
             ev.preventDefault();
             const startX = ev.clientX;
             const startWidth = this.simControl.lessonsPanelEl?.getBoundingClientRect().width ?? DEFAULT_WIDTH;
-            const maxWidth = Math.min(800, root.getBoundingClientRect().width * 0.7);
+            const maxWidth = Math.min(1400, root.getBoundingClientRect().width * 0.7);
 
             root.classList.add("lessons-resizing");
             handle.setPointerCapture?.(ev.pointerId);

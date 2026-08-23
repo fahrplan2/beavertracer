@@ -1,3 +1,7 @@
+## Version 0.2.2
+
+- added ability to simulate random packet loss on connections
+
 ## Version 0.2.1
 
 - New apps: Clock and NTP client/server

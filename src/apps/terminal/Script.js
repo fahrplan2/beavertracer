@@ -690,7 +690,7 @@ async function runSimpleText(text, state) {
       env: state.env,
       cwd: state.cwd,
       setCwd: (/** @type {string} */ cwd) => { state.cwd = cwd; },
-      clear: () => {},
+      clear: () => state.app._clear(),
       terminate: () => state.app.terminate(),
       signal: state.signal,
       onInterrupt: (/** @type {() => void} */ fn) => { state.app.interruptHandlers?.push(fn); },

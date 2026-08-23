@@ -20,6 +20,9 @@ export class EthernetLink {
     /** When true, no frames are transferred — simulates a broken cable. */
     broken = false;
 
+    /** Fraction (0..1) of frames dropped per direction — simulates a lossy/unreliable link. */
+    lossRate = 0;
+
     /** @type {*} */
     AtoB;
 
@@ -55,8 +58,21 @@ export class EthernetLink {
 
     _startTransfer() {
         if (this.broken) return;
-        this.AtoB = this.portA.getNextOutgoingFrame();
-        this.BtoA = this.portB.getNextOutgoingFrame();
+        this.AtoB = this._maybeDrop(this.portA.getNextOutgoingFrame());
+        this.BtoA = this._maybeDrop(this.portB.getNextOutgoingFrame());
+    }
+
+    /**
+     * Randomly discards a frame according to lossRate, simulating packet
+     * loss on an otherwise-working link. The frame has already left the
+     * sending port (and is thus visible in its own capture) — it simply
+     * never arrives at the other end, just like a real dropped packet.
+     * @param {Uint8Array|null} frame
+     * @returns {Uint8Array|null}
+     */
+    _maybeDrop(frame) {
+        if (frame == null || this.lossRate <= 0) return frame;
+        return Math.random() < this.lossRate ? null : frame;
     }
 
     _endTransfer() {

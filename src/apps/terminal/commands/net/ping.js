@@ -51,9 +51,10 @@ export const ping = {
   tldr: {
     descKey: "app.terminal.commands.ping.tldr.desc",
     examples: [
-      { labelKey: "app.terminal.commands.ping.tldr.ex.basic", cmd: "ping 192.168.1.1" },
-      { labelKey: "app.terminal.commands.ping.tldr.ex.count", cmd: "ping -c 3 192.168.1.1" },
-      { labelKey: "app.terminal.commands.ping.tldr.ex.mtu",   cmd: "ping -s 1400 -D 192.168.1.1" },
+      { labelKey: "app.terminal.commands.ping.tldr.ex.basic",      cmd: "ping 192.168.1.1" },
+      { labelKey: "app.terminal.commands.ping.tldr.ex.count",      cmd: "ping -c 3 192.168.1.1" },
+      { labelKey: "app.terminal.commands.ping.tldr.ex.mtu",        cmd: "ping -s 1400 -D 192.168.1.1" },
+      { labelKey: "app.terminal.commands.ping.tldr.ex.continuous", cmd: "ping -t 192.168.1.1" },
     ],
   },
   run: async (ctx, args) => {
@@ -64,6 +65,7 @@ export const ping = {
     let timeoutMs = SimTimer.PING_TIMEOUT_MS;
     let payloadSize = 56; // bytes of ICMP data (default matches real ping)
     let dontFragment = false;
+    let infinite = false;
     let host = "";
 
     const usage = () => t("app.terminal.commands.ping.usage");
@@ -76,7 +78,7 @@ export const ping = {
         argv.shift();
         const v = Number(take());
         if (!Number.isFinite(v) || v <= 0) throw new CommandError(t("app.terminal.commands.ping.err.invalidCount"));
-        count = Math.min(4, Math.floor(v));
+        count = Math.max(1, Math.floor(v));
         continue;
       }
 
@@ -107,6 +109,12 @@ export const ping = {
       if (a === "-D") {
         argv.shift();
         dontFragment = true;
+        continue;
+      }
+
+      if (a === "-t") {
+        argv.shift();
+        infinite = true;
         continue;
       }
 
@@ -148,8 +156,10 @@ export const ping = {
 
     const started = nowMs();
 
-    for (let seq = 1; seq <= count; seq++) {
-      if (ctx.signal.aborted) throw new DOMException("Aborted", "AbortError");
+    let interrupted = false;
+
+    for (let seq = 1; infinite || seq <= count; seq++) {
+      if (ctx.signal.aborted) { interrupted = true; break; }
 
       transmitted++;
 
@@ -189,15 +199,22 @@ export const ping = {
           })
         );
       } catch (e) {
-        if (ctx.signal.aborted) throw e;
+        if (ctx.signal.aborted) { interrupted = true; break; }
         ctx.println(t("app.terminal.commands.ping.out.timeout", { seq }));
       }
 
-      if (seq < count) await sleepAbortable(intervalMs, ctx.signal);
+      if (infinite || seq < count) {
+        try {
+          await sleepAbortable(intervalMs, ctx.signal);
+        } catch {
+          interrupted = true;
+          break;
+        }
+      }
     }
 
     const elapsedMs = Math.max(1, Math.round(nowMs() - started));
-    const lossPct = Math.round(((transmitted - received) / transmitted) * 100);
+    const lossPct = transmitted ? Math.round(((transmitted - received) / transmitted) * 100) : 0;
     const avgMs = received ? (sumMs / received) : 0;
 
     ctx.println("");
@@ -219,5 +236,10 @@ export const ping = {
         })
       );
     }
+
+    // Statistics are printed above like real ping does on SIGINT; re-throw
+    // afterwards so Ctrl+C still cancels the rest of a script/pipeline
+    // instead of letting it continue as if ping had finished normally.
+    if (interrupted) throw new DOMException("Aborted", "AbortError");
   },
 };

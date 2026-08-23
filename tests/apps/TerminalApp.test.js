@@ -140,6 +140,21 @@ describe('TerminalApp (end-to-end through the real command registry)', () => {
     expect(text).toMatch(/^<<.*>>\n?$/s);
   });
 
+  it('clear actually wipes the screen (regression: Script.js used to stub ctx.clear as a no-op)', async () => {
+    await run('echo hallo');
+    expect(renderedText(app.outEl)).toContain('hallo');
+
+    await run('clear');
+    expect(renderedText(app.outEl)).not.toContain('hallo');
+
+    // Same via a `;`-joined chain, which is the path that was actually broken.
+    await run('echo again');
+    await run('clear; echo done');
+    const text = renderedText(app.outEl);
+    expect(text).not.toContain('again');
+    expect(text).toContain('done');
+  });
+
   it('redirects a real error to a file with 2>, leaving the terminal clean', async () => {
     await run('cat /nope 2> /home/err.txt');
     expect(renderedText(app.outEl)).toBe('');
@@ -651,5 +666,386 @@ describe('test / [ builtins', () => {
     await run('test "a" = "a" && echo eq');
     await run('test 3 -lt 5 && echo lt');
     expect(renderedText(app.outEl)).toBe('eq\nlt\n');
+  });
+});
+
+describe('nano/pico editor (raw key mode through the real command registry)', () => {
+  /** @type {TerminalApp} */
+  let app;
+  /** @type {VirtualFileSystem} */
+  let fs;
+
+  beforeEach(() => {
+    fs = new VirtualFileSystem();
+    const os = /** @type {any} */ ({ name: 'TestOS', fs, exit() {} });
+    app = new TerminalApp(os);
+    app._registerBuiltins();
+    app._resetScreen();
+    app.outEl = makeFakeEl('pre');
+    app.busy = true;
+  });
+
+  /** @param {string} line */
+  function run(line) {
+    app.currentAbort = new AbortController();
+    app.interruptHandlers = [];
+    return app._handleLine(line); // intentionally not awaited by callers until the editor exits
+  }
+
+  /**
+   * @param {string} key
+   * @param {{ ctrl?: boolean }} [opts]
+   */
+  function keyEv(key, opts = {}) {
+    return /** @type {any} */ ({ key, ctrlKey: !!opts.ctrl, metaKey: false, preventDefault() {} });
+  }
+
+  /** @param {string} text */
+  function type(text) {
+    for (const ch of text) app._onKeyDown(keyEv(ch));
+  }
+
+  /** Waits until `nano`'s synchronous setup (up to its `await done`) has run. */
+  async function untilEditorOpen() {
+    for (let i = 0; i < 20 && !app.rawKeyHandler; i++) await Promise.resolve();
+  }
+
+  it('opens into raw key mode and takes over rendering', async () => {
+    const done = run('nano /home/new.txt');
+    await untilEditorOpen();
+    expect(app.rawKeyHandler).toBeTypeOf('function');
+    expect(app.busy).toBe(true);
+
+    app._onKeyDown(keyEv('x', { ctrl: true })); // unmodified -> exits immediately
+    await done;
+    expect(app.rawKeyHandler).toBeNull();
+  });
+
+  it('restores the prior screen content on exit instead of leaving editor leftovers behind (regression)', async () => {
+    await run('echo before-nano');
+    expect(renderedText(app.outEl)).toBe('before-nano\n');
+
+    const done = run('nano /home/x.txt');
+    await untilEditorOpen();
+    app._onKeyDown(keyEv('x', { ctrl: true })); // unmodified -> exits immediately, synchronously inside handleKey
+    await done;
+    app.busy = false;
+    app._renderScreen();
+
+    const text = renderedText(app.outEl);
+    expect(text).toContain('before-nano');
+    expect(text).not.toContain('^O'); // no leftover footer/title bar from the editor
+  });
+
+  it('typing then Ctrl+O, Enter writes the buffer to the given path', async () => {
+    const done = run('nano /home/new.txt');
+    await untilEditorOpen();
+
+    type('hallo beaver');
+    app._onKeyDown(keyEv('o', { ctrl: true }));   // Ctrl+O: save prompt, prefilled with /home/new.txt
+    app._onKeyDown(keyEv('Enter'));               // confirm
+
+    expect(fs.readFile('/home/new.txt')).toBe('hallo beaver');
+
+    app._onKeyDown(keyEv('x', { ctrl: true }));   // now unmodified -> exits immediately
+    await done;
+  });
+
+  it('Ctrl+X on a modified, unnamed buffer prompts, then routes "y" through the save prompt', async () => {
+    const done = run('nano'); // no path yet
+    await untilEditorOpen();
+
+    type('draft');
+    app._onKeyDown(keyEv('x', { ctrl: true })); // modified -> asks Y/N/Esc
+    app._onKeyDown(keyEv('y'));                 // yes, save -> no path yet -> falls into the save prompt
+    type('/home/draft.txt');
+    app._onKeyDown(keyEv('Enter'));
+
+    expect(fs.readFile('/home/draft.txt')).toBe('draft');
+    await done; // save-then-exit resolves the pipeline on its own
+    expect(app.rawKeyHandler).toBeNull();
+  });
+
+  it('Ctrl+X "n" discards changes without writing anything', async () => {
+    fs.writeFile('/home/existing.txt', 'original');
+    const done = run('nano /home/existing.txt');
+    await untilEditorOpen();
+
+    type('!!!');
+    app._onKeyDown(keyEv('x', { ctrl: true }));
+    app._onKeyDown(keyEv('n'));
+    await done;
+
+    expect(fs.readFile('/home/existing.txt')).toBe('original');
+    expect(app.rawKeyHandler).toBeNull();
+  });
+
+  it('opening an existing file preloads its content, editable via arrow/backspace', async () => {
+    fs.writeFile('/home/existing.txt', 'abc');
+    const done = run('nano /home/existing.txt');
+    await untilEditorOpen();
+
+    app._onKeyDown(keyEv('ArrowRight'));
+    app._onKeyDown(keyEv('ArrowRight'));
+    app._onKeyDown(keyEv('Backspace')); // "abc" -> "ac", cursor between a and c
+    app._onKeyDown(keyEv('o', { ctrl: true }));
+    app._onKeyDown(keyEv('Enter'));
+
+    expect(fs.readFile('/home/existing.txt')).toBe('ac');
+
+    app._onKeyDown(keyEv('x', { ctrl: true }));
+    await done;
+  });
+
+  it('Ctrl+C on an unmodified buffer exits immediately, like Ctrl+X', async () => {
+    const done = run('nano /home/new.txt');
+    await untilEditorOpen();
+
+    app._onKeyDown(keyEv('c', { ctrl: true })); // global interrupt
+    await done;
+
+    expect(app.rawKeyHandler).toBeNull();
+    expect(fs.exists('/home/new.txt')).toBe(false);
+  });
+
+  it('Ctrl+C on a modified buffer asks first instead of discarding it outright (regression: used to abandon like telnet)', async () => {
+    const done = run('nano /home/new.txt');
+    await untilEditorOpen();
+
+    type('unsaved');
+    app._onKeyDown(keyEv('c', { ctrl: true })); // must NOT exit yet - would lose unsaved work
+    expect(app.rawKeyHandler).toBeTypeOf('function');
+    expect(fs.exists('/home/new.txt')).toBe(false);
+    expect(renderedText(app.outEl)).toContain('exitConfirm'); // the exit-prompt row, not gone
+
+    app._onKeyDown(keyEv('y')); // confirm save -> path is known -> saves and exits
+    await done;
+
+    expect(fs.readFile('/home/new.txt')).toBe('unsaved');
+    expect(app.rawKeyHandler).toBeNull();
+  });
+
+  it('Ctrl+C, then "n" at the exit prompt discards the changes and exits', async () => {
+    fs.writeFile('/home/existing2.txt', 'original');
+    const done = run('nano /home/existing2.txt');
+    await untilEditorOpen();
+
+    type('!!!');
+    app._onKeyDown(keyEv('c', { ctrl: true }));
+    app._onKeyDown(keyEv('n'));
+    await done;
+
+    expect(fs.readFile('/home/existing2.txt')).toBe('original');
+    expect(app.rawKeyHandler).toBeNull();
+  });
+
+  it('opening a directory is rejected', async () => {
+    await run('nano /home');
+    expect(renderedText(app.outEl)).toMatch(/^<<.*>>\n?$/s); // CommandError, not the editor
+    expect(app.rawKeyHandler).toBeNull();
+  });
+
+  it('pico is registered as a separate command using the same editor', async () => {
+    expect(app.commands.get('pico')).toBeTruthy();
+    const done = run('pico /home/p.txt');
+    await untilEditorOpen();
+    type('hi');
+    app._onKeyDown(keyEv('o', { ctrl: true }));
+    app._onKeyDown(keyEv('Enter'));
+    expect(fs.readFile('/home/p.txt')).toBe('hi');
+    app._onKeyDown(keyEv('x', { ctrl: true }));
+    await done;
+  });
+});
+
+describe('_recalcGeometry (row/col sizing from the real terminal element)', () => {
+  it('derives cols and rows from the measured char size and available space, resetting the screen exactly once', () => {
+    const fs = new VirtualFileSystem();
+    const os = /** @type {any} */ ({ name: 'TestOS', fs, exit() {} });
+    const app = new TerminalApp(os);
+    app._registerBuiltins();
+    app._resetScreen();
+    app.outEl = makeFakeEl('pre');
+    app.busy = true;
+
+    // Fake char metrics: 8px wide, 21px tall per char/line.
+    const realCreateElement = document.createElement;
+    document.createElement = (/** @type {string} */ tag) => {
+      const el = realCreateElement(tag);
+      el.getBoundingClientRect = () => ({ width: 8 * 10, height: 21 });
+      return el;
+    };
+    const realGetComputedStyle = window.getComputedStyle;
+    window.getComputedStyle = /** @type {any} */ (() => ({ lineHeight: '21px' }));
+
+    let resetCount = 0;
+    const originalReset = app._resetScreen.bind(app);
+    app._resetScreen = () => { resetCount++; originalReset(); };
+
+    const termEl = /** @type {any} */ ({
+      appendChild: (/** @type {any} */ child) => child,
+      clientWidth: 8 * 82 + 14,   // -> 82 cols
+      clientHeight: 21 * 33 + 14, // -> 33 rows
+    });
+
+    try {
+      app._recalcGeometry(termEl);
+    } finally {
+      document.createElement = realCreateElement;
+      window.getComputedStyle = realGetComputedStyle;
+    }
+
+    expect(app.cols).toBe(82);
+    expect(app.rows).toBe(33);
+    expect(resetCount).toBe(1); // not twice, even though both cols and rows changed here
+  });
+});
+
+describe('cursor focus/blur: solid blinking block vs. static box-outline', () => {
+  /** @type {TerminalApp} */
+  let app;
+
+  beforeEach(() => {
+    const fs = new VirtualFileSystem();
+    const os = /** @type {any} */ ({ name: 'TestOS', fs, exit() {} });
+    app = new TerminalApp(os);
+    app._registerBuiltins();
+    app._resetScreen();
+    app.outEl = makeFakeEl('pre');
+    app.busy = false;
+    app.lineBuffer = 'ab';
+    app.cursor = 1; // cursor sits ON the 'b' - lets us check the char survives unfocused
+  });
+
+  /**
+   * The prompt-overlay cursor is painted into a *local clone* of
+   * screen/screenColor inside _renderScreen() - it never gets written back
+   * to app.screen, so the only way to observe it is the rendered DOM.
+   * Returns the outline span's text (or null) and whether a bare "▉" node
+   * is present among the top-level children.
+   */
+  function paintedCursor() {
+    /** @type {string|null} */
+    let outlineText = null;
+    let hasSolidGlyph = false;
+    for (const node of app.outEl.children) {
+      if (node.className === 'term-cursor-outline') outlineText = node.textContent;
+      if (node.nodeType === 3 && node.textContent.includes('▉')) hasSolidGlyph = true;
+    }
+    return { outlineText, hasSolidGlyph };
+  }
+
+  it('defaults to focused and renders the solid block cursor, replacing the character', () => {
+    app._renderScreen();
+    const { outlineText, hasSolidGlyph } = paintedCursor();
+    expect(hasSolidGlyph).toBe(true);
+    expect(outlineText).toBeNull();
+  });
+
+  it('losing focus outlines the cell (a .term-cursor-outline span) without touching its character', () => {
+    app._setHasFocus(false);
+    expect(app.hasFocus).toBe(false);
+    const { outlineText, hasSolidGlyph } = paintedCursor();
+    expect(outlineText).toBe('b'); // untouched character, not replaced by a glyph
+    expect(hasSolidGlyph).toBe(false);
+  });
+
+  it('regaining focus restores the solid block cursor', () => {
+    app._setHasFocus(false);
+    app._setHasFocus(true);
+    const { outlineText, hasSolidGlyph } = paintedCursor();
+    expect(hasSolidGlyph).toBe(true);
+    expect(outlineText).toBeNull();
+  });
+
+  it('setting the same focus state again is a no-op (no extra render)', () => {
+    let renders = 0;
+    const original = app._renderScreen.bind(app);
+    app._renderScreen = () => { renders++; original(); };
+
+    app._setHasFocus(true); // already true by default
+    expect(renders).toBe(0);
+  });
+
+  it('the blink timer skips re-rendering while unfocused', () => {
+    /** @type {(() => void) | null} */
+    let tick = null;
+    const realSetInterval = window.setInterval;
+    window.setInterval = /** @type {any} */ ((fn) => { tick = fn; return 1; });
+    // _stopCursorBlink() clears via the bare global clearInterval (Node's
+    // real one), not window.clearInterval - a fake handle is harmless there.
+
+    app._setHasFocus(false);
+    let renders = 0;
+    const original = app._renderScreen.bind(app);
+    app._renderScreen = () => { renders++; original(); };
+
+    try {
+      app._startCursorBlink();
+      tick?.(); // simulate one 500ms blink tick
+      expect(renders).toBe(0); // guarded by `if (!this.hasFocus) return;`
+
+      app._setHasFocus(true);
+      renders = 0;
+      tick?.();
+      expect(renders).toBe(1); // focused again -> blinking resumes
+    } finally {
+      app._stopCursorBlink();
+      window.setInterval = realSetInterval;
+    }
+  });
+});
+
+describe('nano cursor also respects focus (raw key mode)', () => {
+  /** @type {TerminalApp} */
+  let app;
+  /** @type {VirtualFileSystem} */
+  let fs;
+
+  beforeEach(() => {
+    fs = new VirtualFileSystem();
+    const os = /** @type {any} */ ({ name: 'TestOS', fs, exit() {} });
+    app = new TerminalApp(os);
+    app._registerBuiltins();
+    app._resetScreen();
+    app.outEl = makeFakeEl('pre');
+    app.busy = true;
+  });
+
+  /** @param {string} line */
+  function run(line) {
+    app.currentAbort = new AbortController();
+    app.interruptHandlers = [];
+    return app._handleLine(line);
+  }
+  async function untilEditorOpen() {
+    for (let i = 0; i < 20 && !app.rawKeyHandler; i++) await Promise.resolve();
+  }
+
+  it('losing focus while nano is open switches its cursor to a box outline immediately', async () => {
+    const done = run('nano /home/x.txt');
+    await untilEditorOpen();
+    // Cursor sits at the top-left of the (empty) content area: row 1, col 0.
+    expect(app.screen[1][0]).toBe('▉');
+    expect(app.screenColor[1][0]).toBe('0');
+
+    app._setHasFocus(false); // no keystroke - relies on rawFocusHandler
+    expect(app.screen[1][0]).toBe(' '); // untouched, not replaced by a glyph
+    expect(app.screenColor[1][0]).toBe('3');
+
+    app._setHasFocus(true);
+    expect(app.screen[1][0]).toBe('▉');
+    expect(app.screenColor[1][0]).toBe('0');
+
+    app._onKeyDown(/** @type {any} */ ({ key: 'x', ctrlKey: true, metaKey: false, preventDefault() {} }));
+    await done;
+  });
+
+  it('cleans up rawFocusHandler on exit', async () => {
+    const done = run('nano /home/x.txt');
+    await untilEditorOpen();
+    app._onKeyDown(/** @type {any} */ ({ key: 'x', ctrlKey: true, metaKey: false, preventDefault() {} }));
+    await done;
+    expect(app.rawFocusHandler).toBeNull();
   });
 });
