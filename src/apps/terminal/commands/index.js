@@ -8,6 +8,7 @@ import { date } from "./misc/date.js";
 import { exit } from "./misc/exit.js";
 
 import { uname } from "./misc/uname.js";
+import { hostname } from "./misc/hostname.js";
 import { whoami } from "./misc/whoami.js";
 import { pwd } from "./misc/pwd.js";
 import { cd } from "./misc/cd.js";
@@ -36,6 +37,7 @@ import { ping } from "./net/ping.js";
 import { traceroute } from "./net/traceroute.js";
 import { arp } from "./net/arp.js";
 import { dig } from "./net/dig.js";
+import { nslookup } from "./net/nslookup.js";
 import { ntpdate } from "./net/ntpdate.js";
 import { telnet } from "./net/telnet.js";
 import { curl } from "./net/curl.js";
@@ -65,6 +67,7 @@ export function registerBuiltins(app) {
         exit,
         date,
         uname,
+        hostname,
         whoami,
         pwd,
         cd,
@@ -87,6 +90,7 @@ export function registerBuiltins(app) {
 
         arp,
         dig,
+        nslookup,
         ntpdate,
         ip,
         route,
