@@ -16,6 +16,26 @@ function normalizeCRLF(s) {
 }
 
 /**
+ * mbox stores messages back-to-back, delimited only by a "From " envelope
+ * line — so a message whose own body happens to contain a line starting with
+ * "From " (a quoted reply, a forwarded mail's header block, or just a
+ * sentence) would otherwise be silently split in two, with that line dropped
+ * entirely. mboxrd quoting (see http://www.qmail.org/man/man5/mbox.html)
+ * escapes it before writing by prefixing an extra ">"; unquote() reverses
+ * that on read. Real envelope lines are unaffected either way — they never
+ * carry a leading ">".
+ * @param {string} s
+ */
+function quoteFromLines(s) {
+  return normalizeCRLF(s).split("\r\n").map((line) => (/^>*From /.test(line) ? ">" + line : line)).join("\r\n");
+}
+
+/** @param {string} s */
+function unquoteFromLines(s) {
+  return String(s).split(/\r\n|\n/).map((line) => (/^>+From /.test(line) ? line.slice(1) : line)).join("\r\n");
+}
+
+/**
  * Promise wrapper with timeout in ms.
  * @template T
  * @param {Promise<T>} p
@@ -234,7 +254,7 @@ function parseMbox(mbox) {
 
   const flush = () => {
     const m = cur.join("\n").trimEnd();
-    if (m) msgs.push(m.replace(/\n/g, "\r\n"));
+    if (m) msgs.push(unquoteFromLines(m));
     cur = [];
   };
 
@@ -291,6 +311,10 @@ export class SimpleMailServerApp extends LoggedProcess {
   serverRef = { smtp: null, pop3: null, imap: null, smtps: null, pop3s: null, imaps: null };
   runSeq = 0;
   /** @type {TlsCertificate|null} */ _cert = null;
+  /** Set by _loadConfig() when a certPath was restored; _tryAutostart() awaits
+   *  it so a TLS-enabled server actually opens its TLS sockets on autostart
+   *  instead of silently starting without them. */
+  /** @type {Promise<void>|null} */ _certLoadPromise = null;
 
   // ui
   /** @type {HTMLElement|null} */ usersEl = null;
@@ -319,7 +343,7 @@ export class SimpleMailServerApp extends LoggedProcess {
     setTimeout(() => this._tryAutostart(), 0);
   }
 
-  _tryAutostart() {
+  async _tryAutostart() {
     try {
       const fs = /** @type {any} */ (this.os.fs);
       if (!fs) return;
@@ -327,6 +351,10 @@ export class SimpleMailServerApp extends LoggedProcess {
       if (!raw?.trim()) return;
       const json = JSON.parse(raw);
       if (json.autostart !== true) return;
+      // Wait for the certPath restored in _loadConfig() to actually resolve to
+      // a TlsCertificate — otherwise _start() would open the plain SMTP/POP3/IMAP
+      // sockets but silently skip the TLS ones (tlsEnabled && !this._cert).
+      if (this._certLoadPromise) await this._certLoadPromise;
       this._start();
     } catch { }
   }
@@ -479,6 +507,9 @@ export class SimpleMailServerApp extends LoggedProcess {
         }
       }
       this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.loadedConfig") || "loaded config"}: ${this.configPath}`);
+      // certPath is just a string reference — the actual TlsCertificate object
+      // (needed to open the TLS sockets) has to be re-read from disk.
+      if (this.certPath) this._certLoadPromise = this._reloadCertFromPath(this.certPath);
     } catch (e) {
       const reason = (e instanceof Error ? e.message : String(e));
       this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.invalidConfig") || "invalid config"}: ${reason}`);
@@ -539,7 +570,7 @@ export class SimpleMailServerApp extends LoggedProcess {
     const stamp = new Date().toUTCString();
     const entry =
       `From relay@${this.mailDomain} ${stamp}\r\n` +
-      normalizeCRLF(rawRfc822) +
+      quoteFromLines(rawRfc822) +
       (String(rawRfc822).endsWith("\n") || String(rawRfc822).endsWith("\r\n") ? "" : "\r\n") +
       "\r\n";
     try {
@@ -582,7 +613,7 @@ export class SimpleMailServerApp extends LoggedProcess {
     let out = "";
     for (const m of msgs) {
       out += `From relay@${this.mailDomain} ${stamp}\r\n`;
-      out += normalizeCRLF(m);
+      out += quoteFromLines(m);
       out += (String(m).endsWith("\n") || String(m).endsWith("\r\n") ? "" : "\r\n");
       out += "\r\n";
     }
@@ -1198,18 +1229,29 @@ export class SimpleMailServerApp extends LoggedProcess {
     ].join(" | ");
   }
 
-  async _applyCert() {
-    const path = this.certSelectEl?.value;
-    if (!path) return;
+  /**
+   * (Re)load this._cert from a VFS path. Shared by _applyCert() (user picks a
+   * certificate in the UI) and _loadConfig() (restoring a saved certPath).
+   * @param {string} path
+   */
+  async _reloadCertFromPath(path) {
     const fs = /** @type {any} */ (this.os.fs);
     if (!fs) return;
     try {
       this._cert = await TlsCertificate.fromJSON(JSON.parse(fs.readFile(path)));
-      this.certPath = path;
       this._appendLog(`[${nowStamp()}] TLS cert loaded: ${this._cert.subject}`);
     } catch (e) {
       this._appendLog(`[${nowStamp()}] TLS cert load failed: ${e instanceof Error ? e.message : e}`);
       this._cert = null;
+    }
+  }
+
+  async _applyCert() {
+    const path = this.certSelectEl?.value;
+    if (!path) return;
+    await this._reloadCertFromPath(path);
+    if (this._cert) {
+      this.certPath = path;
     }
     this._updateCertInfo();
   }

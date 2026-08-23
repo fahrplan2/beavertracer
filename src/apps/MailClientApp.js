@@ -20,6 +20,43 @@ function crlf(s) {
   return String(s).replace(/\r\n/g, "\n").replace(/\r/g, "\n").replace(/\n/g, "\r\n");
 }
 
+// ── Sent-folder mbox storage ──────────────────────────────────────────────
+// Same on-disk format (and "From "-quoting, see SimpleMailServerApp.js) as
+// the mail server's mailboxes, kept local here since sent mail has no
+// server-side counterpart to fall back on if it isn't persisted.
+
+/** @param {string} s */
+function quoteFromLines(s) {
+  return crlf(s).split("\r\n").map((line) => (/^>*From /.test(line) ? ">" + line : line)).join("\r\n");
+}
+
+/** @param {string} s */
+function unquoteFromLines(s) {
+  return String(s).split(/\r\n|\n/).map((line) => (/^>+From /.test(line) ? line.slice(1) : line)).join("\r\n");
+}
+
+/** @param {string} mbox @returns {string[]} */
+function parseMbox(mbox) {
+  const text = String(mbox || "");
+  if (!text.trim()) return [];
+  const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+  /** @type {string[]} */
+  const msgs = [];
+  /** @type {string[]} */
+  let cur = [];
+  const flush = () => {
+    const m = cur.join("\n").trimEnd();
+    if (m) msgs.push(unquoteFromLines(m));
+    cur = [];
+  };
+  for (const line of lines) {
+    if (line.startsWith("From ")) { flush(); continue; }
+    cur.push(line);
+  }
+  flush();
+  return msgs;
+}
+
 /**
  * @template T
  * @param {Promise<T>} p
@@ -227,6 +264,7 @@ export class MailClientApp extends LoggedProcess {
   disposer = new Disposer();
 
   configPath = "/etc/mailclient.conf";
+  sentPath = "/var/mailclient/sent.mbox";
 
   // ── Config (persisted to VFS) ─────────────────────────────────
   cfg = {
@@ -296,6 +334,7 @@ export class MailClientApp extends LoggedProcess {
     super.onMount(root);
     this.disposer.dispose();
     this._loadConfig();   // populate this.cfg before building UI
+    this._loadSent();     // restore the sent folder (no server-side copy to re-fetch)
     this._build();
     this._switchTab(this.tab);
     this._renderList("inbox");
@@ -363,6 +402,37 @@ export class MailClientApp extends LoggedProcess {
       writeFile(fs, this.configPath, JSON.stringify(this.cfg, null, 2));
     } catch (e) {
       this._log(`Konfiguration speichern fehlgeschlagen: ${e instanceof Error ? e.message : e}`);
+    }
+  }
+
+  // ── Sent-folder persistence ─────────────────────────────────────
+  // The inbox is just a POP3/IMAP cache — losing it on reload only means
+  // re-fetching. The sent folder has no such fallback, so it's persisted.
+
+  _loadSent() {
+    const fs = /** @type {any} */ (this.os.fs);
+    if (!fs) return;
+    const raw = readFile(fs, this.sentPath);
+    if (!raw) return;
+    this.sent = parseMbox(raw).map((r) => ({ raw: r, headers: parseHeaders(r) }));
+  }
+
+  /** @param {string} raw */
+  _appendSent(raw) {
+    const fs = /** @type {any} */ (this.os.fs);
+    if (!fs) return;
+    ensureDir(fs, "/var/mailclient");
+    const stamp = new Date().toUTCString();
+    const entry =
+      `From sent@local ${stamp}\r\n` +
+      quoteFromLines(raw) +
+      (raw.endsWith("\n") || raw.endsWith("\r\n") ? "" : "\r\n") +
+      "\r\n";
+    try {
+      const prev = readFile(fs, this.sentPath) ?? "";
+      writeFile(fs, this.sentPath, prev + entry);
+    } catch (e) {
+      this._log(`Sent-Ordner speichern fehlgeschlagen: ${e instanceof Error ? e.message : e}`);
     }
   }
 
@@ -1010,6 +1080,7 @@ export class MailClientApp extends LoggedProcess {
         `From: ${from}\r\nTo: ${to}\r\n${ccHdr}Subject: ${subject || "(kein Betreff)"}\r\nDate: ${date}\r\n\r\n` +
         crlf(body);
       this.sent.push({ raw, headers: parseHeaders(raw) });
+      this._appendSent(raw);
       this._renderList("sent");
 
       this._setStatus(t("app.mailclient.status.sent") || "Nachricht gesendet");

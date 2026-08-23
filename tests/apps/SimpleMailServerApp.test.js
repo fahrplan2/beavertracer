@@ -2,6 +2,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { SimpleMailServerApp } from '../../src/apps/SimpleMailServerApp.js';
+import { TlsCertificate } from '../../src/net/models/TlsCertificate.js';
 
 // ── Minimal DOM stub ──────────────────────────────────────────────────────────
 
@@ -564,5 +565,141 @@ describe('SimpleMailServerApp', () => {
       const lines = await imapClient.readUntil(l => l.startsWith('A2 OK'));
       expect(lines.some(l => l.includes('1 EXISTS'))).toBe(true);
     });
+  });
+
+  // Regression tests for: mbox stores messages back-to-back, delimited only by
+  // a "From " envelope line. A delivered message whose own body happens to
+  // contain a line starting with "From " (a quoted reply, a forwarded mail's
+  // header block, or just a sentence) used to be silently split into two
+  // messages, with that line dropped entirely — corrupting the mailbox.
+
+  describe('mbox storage integrity', () => {
+    it('a message body line starting with "From " does not get mistaken for a new message boundary', async () => {
+      const conn = vnet.connect(server.serverRef.smtp);
+      await smtpSend(makeLineClient(conn.toServer, conn.toClient), {
+        from: 'sender@other.com',
+        to: 'alice@example.local',
+        subject: 'fwd',
+        body: 'See below:\r\nFrom bob@old.com Wed Jan 1 00:00:00 2025\r\nSubject: original\r\n\r\noriginal body',
+      });
+
+      const msgs = server._readMailbox('alice');
+      expect(msgs).toHaveLength(1);
+      expect(msgs[0]).toContain('From bob@old.com Wed Jan 1 00:00:00 2025');
+      expect(msgs[0]).toContain('original body');
+    });
+
+    it('a second, unrelated message delivered afterward is still parsed as its own message', async () => {
+      const conn1 = vnet.connect(server.serverRef.smtp);
+      await smtpSend(makeLineClient(conn1.toServer, conn1.toClient), {
+        from: 'sender@other.com',
+        to: 'alice@example.local',
+        subject: 'fwd',
+        body: 'From spoof@evil.com Mon Jan 1 00:00:00 2025\r\nlooks like an envelope line',
+      });
+      const conn2 = vnet.connect(server.serverRef.smtp);
+      await smtpSend(makeLineClient(conn2.toServer, conn2.toClient), {
+        from: 'sender@other.com',
+        to: 'alice@example.local',
+        subject: 'second',
+        body: 'hello again',
+      });
+
+      const msgs = server._readMailbox('alice');
+      expect(msgs).toHaveLength(2);
+      expect(msgs[1]).toContain('hello again');
+    });
+
+    it('survives a full save/load round trip (rewrite via IMAP EXPUNGE keeps the quoting intact)', async () => {
+      const conn = vnet.connect(server.serverRef.smtp);
+      await smtpSend(makeLineClient(conn.toServer, conn.toClient), {
+        from: 'sender@other.com',
+        to: 'alice@example.local',
+        subject: 'quoted',
+        body: 'From nested@example.com Tue Jan 1 00:00:00 2025\r\nquoted content',
+      });
+
+      // Rewrite the mailbox the way IMAP STORE \Deleted + EXPUNGE does — read
+      // blocks back, write them out again unchanged.
+      const before = server._readMailbox('alice');
+      server._writeMailbox('alice', before);
+      const after = server._readMailbox('alice');
+
+      expect(after).toEqual(before);
+      expect(after[0]).toContain('From nested@example.com Tue Jan 1 00:00:00 2025');
+    });
+  });
+});
+
+// ── TLS certificate persistence across save/load ────────────────────────────
+//
+// certPath (a plain string) is saved to /etc/mail.conf, but the actual
+// TlsCertificate object it points to lives only in memory (this._cert) —
+// a fresh process instance (i.e. after a scene reload) has to re-read it
+// from disk. Regression coverage for: certPath survived a save/load cycle
+// but _cert stayed null, so a TLS-enabled server would silently come back
+// up without its TLS listeners (smtps/pop3s/imaps) after loading a saved
+// scene, with no error shown anywhere.
+
+describe('SimpleMailServerApp – TLS certificate persistence', () => {
+  const certPath = '/etc/certs/server.json';
+
+  /** @param {any} fs */
+  async function writeTestCert(fs) {
+    const cert = await TlsCertificate.generate('mail.example.local');
+    fs.writeFile(certPath, JSON.stringify(cert.toJSON()));
+    return cert;
+  }
+
+  it('_loadConfig() re-reads the certificate object for a certPath restored from disk, not just the path string', async () => {
+    const fs = makeMockFS();
+    const cert = await writeTestCert(fs);
+
+    // Simulate a previous process instance having saved its config with TLS configured.
+    fs.writeFile('/etc/mail.conf', JSON.stringify({
+      mailDomain: 'example.local',
+      ports: { smtp: 25, pop3: 110, imap: 143 },
+      tls: { enabled: true, smtps: 465, pop3s: 995, imaps: 993, certPath },
+      users: [],
+    }));
+
+    // Fresh process instance — as if the scene had just been reloaded.
+    const app = new SimpleMailServerApp(makeOS(makeVirtualTCPNet().net, fs));
+    app._loadConfig();
+    expect(app.certPath).toBe(certPath); // the string was restored...
+    expect(app._cert).toBeNull();        // ...but the object isn't there yet (async)
+
+    await app._certLoadPromise;
+    expect(app._cert).not.toBeNull();
+    expect(app._cert.subject).toBe(cert.subject);
+  });
+
+  it('_tryAutostart() opens the TLS sockets too, not just the plain ones, after a save/load cycle', async () => {
+    const fs = makeMockFS();
+    await writeTestCert(fs);
+
+    fs.writeFile('/etc/mail.conf', JSON.stringify({
+      autostart: true,
+      mailDomain: 'example.local',
+      ports: { smtp: 25, pop3: 110, imap: 143 },
+      tls: { enabled: true, smtps: 465, pop3s: 995, imaps: 993, certPath },
+      users: [],
+    }));
+
+    const app = new SimpleMailServerApp(makeOS(makeVirtualTCPNet().net, fs));
+    app.run();
+    // run() defers to _tryAutostart() via setTimeout(0); let that macrotask,
+    // then the cert-load await inside it, actually settle.
+    await new Promise((r) => setTimeout(r, 0));
+    await app._certLoadPromise;
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(app.running).toBe(true);
+    expect(app.serverRef.smtp).not.toBeNull();
+    expect(app.serverRef.smtps).not.toBeNull();
+    expect(app.serverRef.pop3s).not.toBeNull();
+    expect(app.serverRef.imaps).not.toBeNull();
+
+    app._stop();
   });
 });
