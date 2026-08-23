@@ -651,8 +651,9 @@
   font-weight: 500;
 }
 
-.sim-link-fault-status.is-up   { color: var(--ok-strong); }
-.sim-link-fault-status.is-down { color: var(--danger); }
+.sim-link-fault-status.is-up    { color: var(--ok-strong); }
+.sim-link-fault-status.is-down  { color: var(--danger); }
+.sim-link-fault-status.is-lossy { color: var(--warning-strong); }
 
 .sim-link-fault-action {
   margin-top: 2px;

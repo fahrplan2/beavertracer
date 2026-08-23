@@ -1573,11 +1573,14 @@ export default {
   "app.terminal.commands.tee.tldr.desc":           "Eingabe gleichzeitig in eine Datei und weiter ausgeben",
   "app.terminal.commands.tee.tldr.ex.basic":       "Ausgabe in einer Datei sichern und trotzdem anzeigen",
   "link.fault.title":           "Verbindung",
+  "link.fault.endpoint.from":   "Von",
+  "link.fault.endpoint.to":     "Nach",
   "link.fault.status.up":       "Verbunden",
   "link.fault.status.down":     "Defekt",
+  "link.fault.status.lossy":    "{pct}% konfigurierter Paketverlust",
   "link.fault.action.break":    "Ausfall simulieren",
   "link.fault.action.restore":  "Verbindung wiederherstellen",
   "link.fault.close":           "Schließen",
-  "link.fault.loss.label":      "Paketverlust:",
+  "link.fault.loss.label":      "Konfigurierter Paketverlust:",
   "link.fault.loss.off":        "Aus"
 };

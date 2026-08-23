@@ -243,12 +243,18 @@ export class Link extends SimulatedObject {
     const endpoints = document.createElement("div");
     endpoints.className = "sim-link-fault-endpoints";
 
-    const ep = (node = /** @type {any} */ ({}), label = "") => {
+    // "Von"/"Nach" are just labels for endpoint A vs. B, purely so the two
+    // lines are distinguishable at a glance — the link itself has no real
+    // direction, both ends are equivalent.
+    const ep = (dir = "", node = /** @type {any} */ ({}), label = "") => {
       const s = document.createElement("span");
-      s.textContent = `${node.name ?? node.id} › ${label}`;
+      s.textContent = `${dir}: ${node.name ?? node.id} › ${label}`;
       return s;
     };
-    endpoints.append(ep(this.A, labelA), ep(this.B, labelB));
+    endpoints.append(
+      ep(t("link.fault.endpoint.from"), this.A, labelA),
+      ep(t("link.fault.endpoint.to"), this.B, labelB)
+    );
 
     const statusRow = document.createElement("div");
 
@@ -257,10 +263,16 @@ export class Link extends SimulatedObject {
     actionBtn.type = "button";
 
     const refresh = () => {
-      statusRow.textContent = this._fault
-        ? ("✕ " + t("link.fault.status.down"))
-        : ("● " + t("link.fault.status.up"));
-      statusRow.className = "sim-link-fault-status " + (this._fault ? "is-down" : "is-up");
+      if (this._fault) {
+        statusRow.textContent = "✕ " + t("link.fault.status.down");
+        statusRow.className = "sim-link-fault-status is-down";
+      } else if (this._lossRate > 0) {
+        statusRow.textContent = "◐ " + t("link.fault.status.lossy", { pct: Math.round(this._lossRate * 100) });
+        statusRow.className = "sim-link-fault-status is-lossy";
+      } else {
+        statusRow.textContent = "● " + t("link.fault.status.up");
+        statusRow.className = "sim-link-fault-status is-up";
+      }
       actionBtn.textContent = this._fault
         ? t("link.fault.action.restore")
         : t("link.fault.action.break");
@@ -284,7 +296,7 @@ export class Link extends SimulatedObject {
       <option value="0.5">50%</option>
     `;
     lossSelect.value = String(this._lossRate);
-    lossSelect.addEventListener("change", () => this.setLossRate(Number(lossSelect.value)));
+    lossSelect.addEventListener("change", () => { this.setLossRate(Number(lossSelect.value)); refresh(); });
 
     lossRow.append(lossLabel, lossSelect);
 

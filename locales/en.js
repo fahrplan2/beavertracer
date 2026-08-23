@@ -1575,11 +1575,14 @@ export default {
   "app.terminal.commands.tee.tldr.desc":           "Write input to a file and pass it through",
   "app.terminal.commands.tee.tldr.ex.basic":       "Save output to a file while still displaying it",
   "link.fault.title":           "Connection",
+  "link.fault.endpoint.from":   "From",
+  "link.fault.endpoint.to":     "To",
   "link.fault.status.up":       "Connected",
   "link.fault.status.down":     "Fault",
+  "link.fault.status.lossy":    "{pct}% configured packet loss",
   "link.fault.action.break":    "Simulate failure",
   "link.fault.action.restore":  "Restore connection",
   "link.fault.close":           "Close",
-  "link.fault.loss.label":      "Packet loss:",
+  "link.fault.loss.label":      "Configured packet loss:",
   "link.fault.loss.off":        "Off"
 };
