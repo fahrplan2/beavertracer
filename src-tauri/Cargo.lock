@@ -130,7 +130,7 @@ checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
 name = "beavertracer"
-version = "0.1.2+dev.1.0a0f448"
+version = "0.2.1-dev.19.a5c00bd"
 dependencies = [
  "log",
  "serde",
