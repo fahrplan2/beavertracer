@@ -3,11 +3,11 @@
 <style>
 .badge{display:inline-block;padding:1px 9px;border-radius:20px;font-size:.72rem;font-weight:600;white-space:nowrap}
 .badge-full   {background:color-mix(in oklch,var(--ok),      white 72%);color:oklch(30% .17 145)}
-.badge-mostly {background:color-mix(in oklch,var(--blue),    white 74%);color:oklch(30% .18 260)}
+.badge-mostly {background:color-mix(in oklch,var(--ok),      white 55%);color:oklch(28% .17 165)}
 .badge-partial{background:color-mix(in oklch,var(--warning), white 72%);color:oklch(35% .17 55)}
 .badge-stub   {background:color-mix(in oklch,var(--danger),  white 72%);color:oklch(32% .20 25)}
 [data-theme=dark] .badge-full   {background:color-mix(in oklch,var(--ok),      black 60%);color:oklch(88% .15 145)}
-[data-theme=dark] .badge-mostly {background:color-mix(in oklch,var(--blue),    black 55%);color:oklch(88% .15 250)}
+[data-theme=dark] .badge-mostly {background:color-mix(in oklch,var(--ok),      black 45%);color:oklch(88% .15 165)}
 [data-theme=dark] .badge-partial{background:color-mix(in oklch,var(--warning), black 60%);color:oklch(88% .15 75)}
 [data-theme=dark] .badge-stub   {background:color-mix(in oklch,var(--danger),  black 60%);color:oklch(88% .15 25)}
 .pt{font-size:.88rem}.pt td:last-child{color:var(--muted);font-size:.83rem}
@@ -35,11 +35,6 @@ BeaverTracer ist ein Netzwerksimulator für den Unterricht. Er modelliert eine b
   <td>802.1Q VLAN</td><td>IEEE 802.1Q</td>
   <td><span class="badge badge-mostly">Größtenteils</span></td>
   <td>PCP (3 Bit), DEI, VID (12 Bit), innerer EtherType. <strong>Port-Modi:</strong> Access (untagged, nur PVID), Trunk (alle VLANs getaggt, PVID = native VLAN auf Ingress), Hybrid (PVID verlässt den Port untagged, weitere VLANs bleiben getaggt). Kein VLAN-Translation.</td>
-</tr>
-<tr>
-  <td>QinQ (Double Tagging)</td><td>IEEE 802.1ad</td>
-  <td><span class="badge badge-partial">Teilweise</span></td>
-  <td>Port-basiertes S-Tag-Push/-Pop (TPID 0x88a8). Jeder Switch-Port kann mit einer Outer-S-VID konfiguriert werden (QinQ-Tab im Switch-UI): Ingress pusht den S-Tag, Egress poppt ihn. Trunk-Ports (tagged, S-VID in allowedVlans) transportieren doppelt getaggte Frames als NNI-Ports. Kein VLAN-Translation, kein symmetrisches QinQ, kein 0x9100-TPID.</td>
 </tr>
 <tr>
   <td>LLDP</td><td>IEEE 802.1AB</td>
