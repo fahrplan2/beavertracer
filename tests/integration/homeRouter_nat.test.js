@@ -218,7 +218,7 @@ describe('HomeRouter NAT integration', () => {
         expect(fwdTcp.srcPort).toBe(40000);
 
         // installDnatSession must have locked the LAN server's reply path to the forwarded WAN port.
-        expect(router._nat._out.get(`${ipn(LAN_SERVER_IP)}:80:6`)).toBe(8080);
+        expect(router._nat._out.get(`${ipn(LAN_SERVER_IP)}:80:6`).natPort).toBe(8080);
     });
 });
 
