@@ -27,6 +27,7 @@ import { rm } from "./fs/rm.js";
 import { rmdir } from "./fs/rmdir.js";
 import { cp } from "./fs/cp.js";
 import { mv } from "./fs/mv.js";
+import { nano, pico } from "./fs/nano.js";
 import { ip } from "./net/ip.js";
 import { route } from "./net/route.js";
 import { ss } from "./net/ss.js";
@@ -87,6 +88,8 @@ export function registerBuiltins(app) {
         rmdir,
         cp,
         mv,
+        nano,
+        pico,
 
         arp,
         dig,
