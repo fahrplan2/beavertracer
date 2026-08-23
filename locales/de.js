@@ -1576,5 +1576,7 @@ export default {
   "link.fault.status.down":     "Defekt",
   "link.fault.action.break":    "Ausfall simulieren",
   "link.fault.action.restore":  "Verbindung wiederherstellen",
-  "link.fault.close":           "Schließen"
+  "link.fault.close":           "Schließen",
+  "link.fault.loss.label":      "Paketverlust:",
+  "link.fault.loss.off":        "Aus"
 };

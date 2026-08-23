@@ -310,21 +310,18 @@ export class TcpEngine {
       payload: new Uint8Array(),
     });
 
-    // wait until handshake completes (or timeout)
+    // Wait until the handshake completes, or the TCP stack itself gives up —
+    // i.e. after TCP_MAX_REXMIT SYN retransmits with exponential backoff
+    // (see _fireRto/_destroy). There used to be a separate, much shorter
+    // "connect timeout" race here; it fired before even the first SYN
+    // retransmit could happen, so a single dropped SYN/SYN-ACK killed the
+    // attempt outright instead of letting TCP retry as designed.
     await /** @type {Promise<void>} */ (new Promise((resolve, reject) => {
-      const timerId = simTimer.schedule(() => {
-        this.conns.delete(key);
-        this.sockets.delete(srcPort);
-        conn.state = "CLOSED";
-        reject(new Error("connection timed out"));
-      }, SimTimer.TCP_CONNECT_TIMEOUT_MS);
-
-      conn.connectWaiters.push((err) => {
-        simTimer.cancel(timerId);
-        err ? reject(err) : resolve();
-      });
-      if (conn.state === "ESTABLISHED") { simTimer.cancel(timerId); resolve(); }
-      if (conn.state === "CLOSED")      { simTimer.cancel(timerId); reject(new Error("connect failed")); }
+      conn.connectWaiters.push((err) => (err ? reject(err) : resolve()));
+      // Loopback delivery can complete the handshake synchronously (within
+      // the _sendSegment call above) before this executor even runs.
+      if (conn.state === "ESTABLISHED") resolve();
+      if (conn.state === "CLOSED")      reject(new Error("connect failed"));
     }));
 
     return conn;

@@ -51,6 +51,9 @@ export class Link extends SimulatedObject {
   /** True when this cable is simulated as broken. */
   _fault = false;
 
+  /** Fraction (0..1) of frames dropped per direction, simulating a lossy link. */
+  _lossRate = 0;
+
   /** @type {HTMLDivElement|null} */
   _faultPanel = null;
 
@@ -191,6 +194,17 @@ export class Link extends SimulatedObject {
     }
   }
 
+  /**
+   * Set the link's packet-loss rate. Independent of setFault(): a link can
+   * be simultaneously lossy and, once broken, drop everything regardless.
+   * @param {number} rate 0..1 fraction of frames dropped per direction
+   */
+  setLossRate(rate) {
+    this._lossRate = rate;
+    this.link.lossRate = rate;
+    this.root?.classList.toggle("is-lossy", rate > 0);
+  }
+
   /** @param {number} clientX @param {number} clientY */
   _toggleFaultPanel(clientX, clientY) {
     if (this._faultPanel) {
@@ -255,9 +269,28 @@ export class Link extends SimulatedObject {
 
     actionBtn.addEventListener("click", () => { this.setFault(!this._fault); refresh(); });
 
+    // ── packet-loss control ─────────────────────────────────────
+    const lossRow = document.createElement("div");
+    lossRow.className = "sim-link-loss-row";
+
+    const lossLabel = document.createElement("span");
+    lossLabel.textContent = t("link.fault.loss.label");
+
+    const lossSelect = /** @type {HTMLSelectElement} */ (document.createElement("select"));
+    lossSelect.innerHTML = `
+      <option value="0">${t("link.fault.loss.off")}</option>
+      <option value="0.1">10%</option>
+      <option value="0.25">25%</option>
+      <option value="0.5">50%</option>
+    `;
+    lossSelect.value = String(this._lossRate);
+    lossSelect.addEventListener("change", () => this.setLossRate(Number(lossSelect.value)));
+
+    lossRow.append(lossLabel, lossSelect);
+
     const body = document.createElement("div");
     body.className = "sim-link-fault-body";
-    body.append(endpoints, statusRow, actionBtn);
+    body.append(endpoints, statusRow, actionBtn, lossRow);
 
     // ── assemble panel ───────────────────────────────────────────
     const panel = document.createElement("div");
@@ -474,6 +507,7 @@ export class Link extends SimulatedObject {
       portA: this.portAKey,
       portB: this.portBKey,
       ...(this._fault ? { fault: true } : {}),
+      ...(this._lossRate > 0 ? { lossRate: this._lossRate } : {}),
     };
   }
 
@@ -506,6 +540,7 @@ export class Link extends SimulatedObject {
     const obj = new Link(A, portA, portAKey, B, portB, portBKey, simcontrol);
     obj.id = Number(n.id);
     if (n.fault) obj.setFault(true);
+    if (n.lossRate) obj.setLossRate(Number(n.lossRate));
     return obj;
   }
 }

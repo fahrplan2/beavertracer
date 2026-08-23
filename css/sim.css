@@ -613,6 +613,15 @@
   cursor: pointer;
 }
 
+.sim-link.is-lossy:not(.is-faulted) .sim-link-line {
+  background: transparent;
+  border-top: 2px dashed var(--warning);
+}
+
+.sim-link.is-lossy:not(.is-faulted) .sim-link-hit {
+  cursor: pointer;
+}
+
 /* ── Link fault popover ──────────────────────────────────────── */
 .sim-link-fault-panel {
   position: fixed;
@@ -646,6 +655,15 @@
 .sim-link-fault-status.is-down { color: var(--danger); }
 
 .sim-link-fault-action {
+  margin-top: 2px;
+}
+
+.sim-link-loss-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
   margin-top: 2px;
 }
 

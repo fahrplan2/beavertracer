@@ -75,14 +75,22 @@ export class SimTimer {
     /** Pause between DHCP attempts. */
     static DHCP_BETWEEN_TRIES_MS    =  400;  //  80 ticks
 
-    /** TCP active-open (SYN sent, waiting for SYN-ACK) timeout. */
-    static TCP_CONNECT_TIMEOUT_MS   =  400;  //  80 ticks
+    /** App-level safety net around a TCP active-open (Sparktail only — TcpEngine's
+     *  own connect() has no independent deadline, it settles once the SYN
+     *  handshake either succeeds or the retransmit/backoff cycle below gives
+     *  up). Must stay well above the initial RTO (600ms) so at least a few
+     *  SYN retransmits get a chance to run before this cuts it off. */
+    static TCP_CONNECT_TIMEOUT_MS   = 10_000;  // 2000 ticks
     /** Minimum RTO after RTT measurement (RFC 6298 §2.4) */
     static TCP_MIN_RTO_MS           = 1000;  // 200 ticks
-    /** TCP connection / request timeout for HTTP server. */
-    static HTTP_SERVER_TIMEOUT_MS   =  400;  //  80 ticks
-    /** HTTP client request timeout. */
-    static HTTP_CLIENT_TIMEOUT_MS   =  400;  //  80 ticks
+    /** Per-chunk read timeout while a server waits for (more of) an HTTP
+     *  request. Wraps TcpEngine.recv(), which has no timeout of its own and
+     *  blocks until TCP actually delivers data — so like TCP_CONNECT_TIMEOUT_MS
+     *  above, this must stay well above the initial RTO (600ms) or a single
+     *  retransmitted segment looks like a dead connection. */
+    static HTTP_SERVER_TIMEOUT_MS   = 10_000;  // 2000 ticks
+    /** Same as HTTP_SERVER_TIMEOUT_MS, client side (Sparktail). */
+    static HTTP_CLIENT_TIMEOUT_MS   = 10_000;  // 2000 ticks
 
     /** STP Hello interval (IEEE default: 2 s). */
     static STP_HELLO_MS             =    500;  // 100 ticks  → 10 s @ 1×,  2 s @ 8×
