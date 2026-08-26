@@ -18,6 +18,15 @@ import { sh } from "./misc/sh.js";
 import { testCmd, bracketCmd } from "./misc/test.js";
 import { trueCmd } from "./misc/trueCmd.js";
 import { falseCmd } from "./misc/falseCmd.js";
+import { breakCmd } from "./misc/break.js";
+import { continueCmd } from "./misc/continue.js";
+import { unsetCmd } from "./misc/unset.js";
+import { shiftCmd } from "./misc/shift.js";
+import { setCmd } from "./misc/set.js";
+import { readCmd } from "./misc/read.js";
+import { returnCmd } from "./misc/returnCmd.js";
+import { dotCmd, sourceCmd } from "./misc/dot.js";
+import { printfCmd } from "./misc/printf.js";
 
 import { ls } from "./fs/ls.js";
 import { cat } from "./fs/cat.js";
@@ -79,6 +88,16 @@ export function registerBuiltins(app) {
         bracketCmd,
         trueCmd,
         falseCmd,
+        breakCmd,
+        continueCmd,
+        unsetCmd,
+        shiftCmd,
+        setCmd,
+        readCmd,
+        returnCmd,
+        dotCmd,
+        sourceCmd,
+        printfCmd,
 
         ls,
         cat,

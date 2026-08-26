@@ -120,7 +120,11 @@ export const nano = {
       { labelKey: "app.terminal.commands.nano.tldr.ex.new",   cmd: "nano" },
     ],
   },
-  run: (ctx, args) => runEditor(ctx, args, "nano"),
+  // "nano-ish", not "nano", in the title bar text (see Editor.js's
+  // _titleText) - the command name itself stays "nano" (that's the real
+  // POSIX-ish invocation students expect), but the editor is a simplified
+  // lookalike, not actual GNU nano, so the UI shouldn't claim otherwise.
+  run: (ctx, args) => runEditor(ctx, args, "nano-ish"),
 };
 
 /** @type {import("../types.js").Command} */
@@ -133,5 +137,6 @@ export const pico = {
       { labelKey: "app.terminal.commands.pico.tldr.ex.basic", cmd: "pico datei.txt" },
     ],
   },
-  run: (ctx, args) => runEditor(ctx, args, "pico"),
+  // Same reasoning as nano's "nano-ish" above.
+  run: (ctx, args) => runEditor(ctx, args, "pico-ish"),
 };
