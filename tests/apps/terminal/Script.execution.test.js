@@ -17,6 +17,9 @@ import { printfCmd } from '../../../src/apps/terminal/commands/misc/printf.js';
 import { VirtualFileSystem } from '../../../src/apps/lib/VirtualFileSystem.js';
 import { pwd } from '../../../src/apps/terminal/commands/misc/pwd.js';
 import { cd } from '../../../src/apps/terminal/commands/misc/cd.js';
+import { echo } from '../../../src/apps/terminal/commands/misc/echo.js';
+import { cat } from '../../../src/apps/terminal/commands/fs/cat.js';
+import { sh } from '../../../src/apps/terminal/commands/misc/sh.js';
 
 /**
  * Builds a minimal fake TerminalApp - just enough for `runScript` to execute
@@ -44,7 +47,9 @@ function makeApp() {
     },
   };
 
-  app.commands.set('echo', { name: 'echo', run: (_ctx, args) => args.join(' ') });
+  app.commands.set(echo.name, echo);
+  app.commands.set(cat.name, cat);
+  app.commands.set(sh.name, sh);
   app.commands.set(breakCmd.name, breakCmd);
   app.commands.set(continueCmd.name, continueCmd);
   app.commands.set(testCmd.name, testCmd);
@@ -65,8 +70,16 @@ function makeApp() {
   return { app, fs, stdout: () => stdoutChunks.join('') };
 }
 
-/** @param {ReturnType<typeof makeApp>['app']} app @param {string[]} [positional] */
-function makeState(app, positional = []) {
+/**
+ * @param {ReturnType<typeof makeApp>['app']} app @param {string[]} [positional]
+ * @param {ReturnType<typeof parseScript>} [nodes] the parsed script this
+ *   state is about to run - only needed when it actually contains a heredoc
+ *   (`parseScript` stashes the extracted body/ies on a non-enumerable
+ *   `.heredocs` property of the returned array, see Script.js), otherwise
+ *   `state.heredocs` stays an empty Map like every other test here already
+ *   relied on implicitly.
+ */
+function makeState(app, positional = [], nodes = undefined) {
   return {
     app,
     env: /** @type {Record<string,string>} */ ({}),
@@ -77,7 +90,7 @@ function makeState(app, positional = []) {
     scriptName: 'sh',
     signal: app.currentAbort.signal,
     functions: new Map(),
-    heredocs: new Map(),
+    heredocs: /** @type {any} */ (nodes)?.heredocs ?? new Map(),
   };
 }
 
@@ -372,5 +385,57 @@ describe('printf', () => {
     const nodes = parseScript('printf "100%%\\n"');
     await runScript(nodes, makeState(env.app));
     expect(env.stdout()).toBe('100%\n');
+  });
+});
+
+describe('sh (multi-command integration)', () => {
+  // Not a direct-runScript unit test like everything above: this writes a
+  // whole script FILE to the virtual filesystem using real terminal commands
+  // (cat + a redirect + a heredoc) and then executes it with a separate
+  // `sh <file>` call - the same two-step "create a script, then run it" a
+  // student would actually type, exercising cat/redirects/heredocs/sh/
+  // if/for/while/functions/arithmetic together in one pass instead of each
+  // in isolation.
+  /** @type {ReturnType<typeof makeApp>} */
+  let env;
+
+  beforeEach(() => { env = makeApp(); });
+
+  it('writes a script with a function, if/else, for and while via cat+heredoc, then runs it with sh', async () => {
+    const script = [
+      'greet() {',
+      '  echo "hello $1"',
+      '}',
+      '',
+      'for i in 1 2 3; do',
+      '  if [ "$i" = 2 ]; then',
+      '    echo two',
+      '  else',
+      '    echo "n:$i"',
+      '  fi',
+      'done',
+      '',
+      'count=0',
+      'while [ "$count" -lt 3 ]; do',
+      '  count=$((count + 1))',
+      'done',
+      'echo "final:$count"',
+      '',
+      'greet world',
+    ].join('\n');
+
+    // The heredoc's delimiter is quoted ('EOF') so its body - the script
+    // text above, itself full of $i/$((...)) - is stored and written out
+    // completely literally, not expanded while THIS outer command runs.
+    const cmdText = `cat > script.sh <<'EOF'\n${script}\nEOF\nsh script.sh`;
+
+    const nodes = parseScript(cmdText);
+    const ok = await runScript(nodes, makeState(env.app, [], nodes));
+
+    expect(ok).toBe(true);
+    // cat > script.sh really did create the file with exactly that content.
+    expect(env.fs.readFile('/home/script.sh')).toBe(script + '\n');
+    // ...and sh actually ran it, exercising every construct in one script.
+    expect(env.stdout()).toBe('n:1\ntwo\nn:3\nfinal:3\nhello world\n');
   });
 });

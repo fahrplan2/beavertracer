@@ -11,6 +11,7 @@ import { uniq } from '../../../../src/apps/terminal/commands/text/uniq.js';
 import { cut } from '../../../../src/apps/terminal/commands/text/cut.js';
 import { tr } from '../../../../src/apps/terminal/commands/text/tr.js';
 import { tee } from '../../../../src/apps/terminal/commands/text/tee.js';
+import { seq } from '../../../../src/apps/terminal/commands/text/seq.js';
 import { CommandError } from '../../../../src/apps/terminal/commands/lib/errors.js';
 
 /** @param {string} text one-shot Reader pre-loaded with `text`, matching ShellContext.stdin's shape */
@@ -125,5 +126,48 @@ describe('text commands', () => {
     await tee.run(makeCtx(fs, 'first'), ['out.txt']);
     await tee.run(makeCtx(fs, 'second'), ['-a', 'out.txt']);
     expect(fs.readFile('/home/out.txt')).toBe('firstsecond');
+  });
+
+  it('seq with one arg counts 1..LAST', async () => {
+    const fs = new VirtualFileSystem();
+    expect(await seq.run(makeCtx(fs), ['5'])).toBe('1\n2\n3\n4\n5');
+  });
+
+  it('seq with two args counts FIRST..LAST', async () => {
+    const fs = new VirtualFileSystem();
+    expect(await seq.run(makeCtx(fs), ['3', '6'])).toBe('3\n4\n5\n6');
+  });
+
+  it('seq with three args counts FIRST..LAST by INCREMENT, including a negative one', async () => {
+    const fs = new VirtualFileSystem();
+    expect(await seq.run(makeCtx(fs), ['1', '2', '9'])).toBe('1\n3\n5\n7\n9');
+    expect(await seq.run(makeCtx(fs), ['5', '-1', '1'])).toBe('5\n4\n3\n2\n1');
+  });
+
+  it('seq prints nothing (not an error) when FIRST is already past LAST', async () => {
+    const fs = new VirtualFileSystem();
+    expect(await seq.run(makeCtx(fs), ['5', '1'])).toBe('');
+  });
+
+  it('seq -s uses a custom separator', async () => {
+    const fs = new VirtualFileSystem();
+    expect(await seq.run(makeCtx(fs), ['-s', ',', '1', '4'])).toBe('1,2,3,4');
+  });
+
+  it('seq -w zero-pads to the widest number', async () => {
+    const fs = new VirtualFileSystem();
+    expect(await seq.run(makeCtx(fs), ['-w', '8', '11'])).toBe('08\n09\n10\n11');
+  });
+
+  it('seq rejects a non-integer argument', () => {
+    const fs = new VirtualFileSystem();
+    // seq.run is synchronous (throws directly, doesn't return a rejected
+    // Promise like the async commands above) - toThrow, not rejects.
+    expect(() => seq.run(makeCtx(fs), ['1.5'])).toThrow(CommandError);
+  });
+
+  it('seq rejects a zero increment', () => {
+    const fs = new VirtualFileSystem();
+    expect(() => seq.run(makeCtx(fs), ['1', '0', '5'])).toThrow(CommandError);
   });
 });
