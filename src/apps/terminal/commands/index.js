@@ -64,6 +64,7 @@ import { uniq } from "./text/uniq.js";
 import { cut } from "./text/cut.js";
 import { tr } from "./text/tr.js";
 import { tee } from "./text/tee.js";
+import { seq } from "./text/seq.js";
 
 /**
  * @param {import("../../TerminalApp.js").TerminalApp} app
@@ -135,6 +136,7 @@ export function registerBuiltins(app) {
         cut,
         tr,
         tee,
+        seq,
     ];
 
     for (const c of list) app.commands.set(c.name, c);
