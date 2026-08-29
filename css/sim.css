@@ -119,6 +119,34 @@
   z-index: 10;
 }
 
+/* Panels are mounted here, NOT inside .sim-nodes — .sim-nodes clips its
+   content (overflow:hidden) so the zoom/pan canvas can't spill over the
+   toolbar/lessons panel, which also stopped panels short of the left edge.
+   This layer sits exactly over .sim-nodes (same grid area → panel positions
+   keep their meaning, nothing shifts when switching edit ⇆ run), but does
+   NOT clip, so a panel can be dragged left into the space the hidden sidebar
+   leaves behind. pointer-events:none lets canvas panning / node interaction
+   pass through the gaps between panels; each .sim-panel re-enables pointer
+   events for itself. The drag itself is bounded by .sim-panel-bounds. */
+.sim-panel-layer {
+  grid-area: nodes;
+  position: relative;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 11;
+}
+
+/* Invisible reference box for clamping panel drags: spans the full width the
+   sim area can occupy (grid columns 1–2, i.e. including the empty sidebar
+   column outside edit mode) but only row 2, so panels clamp to the window's
+   left edge without being draggable up under the toolbar. */
+.sim-panel-bounds {
+  grid-column: 1 / span 2;
+  grid-row: 2;
+  pointer-events: none;
+  visibility: hidden;
+}
+
 /* Inner canvas — receives the CSS zoom/pan transform. */
 .sim-canvas {
   position: absolute;
@@ -210,13 +238,48 @@
 
 }
 
-/* OS panels (PC / Laptop)                                                      */
-/* min  = 3 icon rows: 38 header + 20 pad + 3×118 + 2×12 gap + 20 pad + 44 footer = 500px */
-/* default = 24 terminal lines: 38 header + 44 bar + 0 term-pad + 24×21px = 586px → 590px */
-/* saved pw/ph via inline style take precedence over the CSS default            */
+/* OS panels (PC / Laptop) behave like a little screen with a fixed internal
+   resolution (--os-native-*): the .os-root is laid out at that size and then
+   scaled with a CSS transform to fit whatever size the user drags the panel
+   to (--os-scale is set by OS._attachScaler). That's why the panel can go
+   much smaller than its content would otherwise allow.
+   saved pw/ph via inline style take precedence over the default width/height. */
 .sim-panel:has(.os-root) {
-  height: 590px;
-  min-height: 500px;
+  --os-native-w: 600px;
+  --os-native-h: 500px;
+
+  width: 600px;
+  height: 540px;
+  min-width: 320px;
+  min-height: 300px;
+}
+
+.sim-panel:has(.os-root) > .sim-panel-body {
+  position: relative;
+  overflow: hidden;         /* clip whatever the scaled screen doesn't cover */
+  padding: 0;               /* the screen fills the body edge to edge */
+}
+
+.sim-panel:has(.os-root) > .sim-panel-body > .os-root {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--os-native-w);
+  height: var(--os-native-h);
+  transform: scale(var(--os-scale, 1));
+  transform-origin: top left;   /* pin to the corner → no wandering while resizing */
+}
+
+/* On mobile the panel is relocated to .sim-root and shown full-screen (see
+   setPanelOpen + the @media blocks below); the fixed-resolution screen would
+   just letterbox inside it, so let .os-root fill the panel again there. */
+.sim-root > .sim-panel:has(.os-root) > .sim-panel-body {
+  display: block;
+}
+.sim-root > .sim-panel:has(.os-root) > .sim-panel-body > .os-root {
+  width: 100%;
+  height: 100%;
+  transform: none;
 }
 
 /* Linux (v86) serial console — needs real screen space to be usable as a

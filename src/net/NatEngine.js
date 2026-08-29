@@ -4,26 +4,82 @@ import { UDPPacket } from "./pdu/UDPPacket.js";
 import { TCPPacket } from "./pdu/TCPPacket.js";
 import { ICMPPacket } from "./pdu/ICMPPacket.js";
 import { IPAddress } from "./models/IPAddress.js";
+import { simTimer, SimTimer } from "../lib/SimTimer.js";
+
+/**
+ * @typedef {Object} NatSession
+ * @property {string} outKey
+ * @property {number} srcIpNum
+ * @property {number} srcPort
+ * @property {number} natPort
+ * @property {number} proto  6=TCP, 17=UDP
+ * @property {number} lastSeenTick
+ * @property {boolean} closing   TCP only: a FIN or RST has been observed on this flow
+ * @property {boolean} pinned    true for port-forward (DNAT) sessions — never idle-expired
+ */
 
 /**
  * Stateful SNAT engine for IPv4: maps (srcIp, srcPort, proto) → natPort.
  * Handles UDP, TCP, and ICMP echo (identifier rewriting).
  * Modifies IPv4Packet objects in-place; caller must re-pack.
+ *
+ * Sessions are garbage-collected so closed/abandoned connections free their
+ * NAT port back to the pool instead of pinning it forever: TCP flows get a
+ * short grace period once a FIN/RST is seen (long enough for a straggling
+ * retransmit to still find its way back), everything else expires after a
+ * plain idle timeout. Port-forward (DNAT) sessions are pinned — they're a
+ * standing rule, not a per-connection flow, and refresh themselves on every
+ * inbound packet anyway.
  */
 export class NatEngine {
-    /** @type {Map<string, number>} outbound key → natPort */
+    /** Idle timeout for an established TCP flow with no FIN/RST seen yet.
+     *  TcpEngine doesn't send keepalives, so a quiet-but-still-open connection
+     *  (e.g. an idle IRC/mail session while a lesson pauses) produces no
+     *  traffic at all — this is a leak safety net, not a real conntrack
+     *  timeout, and must stay long enough to never fire on a live connection. */
+    static TCP_IDLE_MS = 180_000;  // 36000 ticks → 1h @1×
+    /** grace period after a FIN or RST is observed, before the mapping is freed */
+    static TCP_CLOSE_GRACE_MS = 2_000;
+    /** idle timeout for a UDP flow */
+    static UDP_IDLE_MS = 15_000;
+    /** idle timeout for an ICMP echo mapping */
+    static ICMP_IDLE_MS = 5_000;
+    /** how often the expiry sweep runs */
+    static SWEEP_MS = 2_000;
+
+    /** @type {Map<string, NatSession>} outbound key (`srcIp:srcPort:proto`) → session */
     _out = new Map();
-    /** @type {Map<string, {srcIpNum:number, srcPort:number}>} `natPort:proto` → orig */
+    /** @type {Map<string, NatSession>} `natPort:proto` → session */
     _in = new Map();
-    /** @type {Map<string, number>} `srcIpNum:id` → natId */
+    /** @type {Map<string, {natId:number, srcIpNum:number, origId:number, lastSeenTick:number}>} `srcIpNum:id` → mapping */
     _icmpOut = new Map();
-    /** @type {Map<number, {srcIpNum:number, origId:number}>} natId → orig */
+    /** @type {Map<number, {key:string, srcIpNum:number, origId:number, lastSeenTick:number}>} natId → mapping */
     _icmpIn = new Map();
     /** @type {Map<number, number>} IPv4 identification → LAN IP for inbound non-first fragments */
     _fragIn = new Map();
 
     _nextPort = 10000;
     _nextIcmpId = 0xF000;
+
+    /** @type {number|null} */
+    _sweepTimer = null;
+
+    constructor() {
+        this._scheduleSweep();
+    }
+
+    _scheduleSweep() {
+        this._sweepTimer = simTimer.schedule(() => {
+            this.expire();
+            this._scheduleSweep();
+        }, NatEngine.SWEEP_MS);
+    }
+
+    /** Stop the periodic expiry sweep (call when the owning router is destroyed). */
+    destroy() {
+        if (this._sweepTimer != null) simTimer.cancel(this._sweepTimer);
+        this._sweepTimer = null;
+    }
 
     /**
      * Apply SNAT for an outbound packet (LAN → WAN).
@@ -52,22 +108,28 @@ export class NatEngine {
         }
 
         const isUdp = proto === 17;
-        let srcPort, dstPort;
+        let srcPort, dstPort, tcp;
         try {
             if (isUdp) { const u = UDPPacket.fromBytes(packet.payload); srcPort = u.srcPort; dstPort = u.dstPort; }
-            else        { const t = TCPPacket.fromBytes(packet.payload); srcPort = t.srcPort; dstPort = t.dstPort; }
+            else        { tcp = TCPPacket.fromBytes(packet.payload); srcPort = tcp.srcPort; dstPort = tcp.dstPort; }
         } catch { return false; }
 
         const outKey = `${srcNum}:${srcPort}:${proto}`;
-        let natPort = this._out.get(outKey);
-        if (!natPort) {
+        let session = this._out.get(outKey);
+        if (!session) {
             const allocated = this._allocPort(proto);
             if (allocated == null) return false; // port pool exhausted, drop
-            natPort = allocated;
-            this._out.set(outKey, natPort);
-            this._in.set(`${natPort}:${proto}`, { srcIpNum: srcNum, srcPort });
+            session = {
+                outKey, srcIpNum: srcNum, srcPort, natPort: allocated, proto,
+                lastSeenTick: simTimer.currentTick, closing: false, pinned: false,
+            };
+            this._out.set(outKey, session);
+            this._in.set(`${allocated}:${proto}`, session);
         }
+        session.lastSeenTick = simTimer.currentTick;
+        if (!isUdp && tcp && tcp.hasFlag(TCPPacket.FLAG_FIN | TCPPacket.FLAG_RST)) session.closing = true;
 
+        const natPort = session.natPort;
         packet.src = new IPAddress(4, wanIpNum);
         packet.headerChecksum = 0;
 
@@ -77,9 +139,8 @@ export class NatEngine {
                 u.srcPort = natPort; u.checksum = 0;
                 packet.payload = u.pack({ srcIp: packet.src, dstIp: packet.dst });
             } else {
-                const t = TCPPacket.fromBytes(packet.payload);
-                t.srcPort = natPort; t.checksum = 0;
-                packet.payload = t.pack({ srcIp: packet.src, dstIp: packet.dst });
+                /** @type {TCPPacket} */ (tcp).srcPort = natPort; /** @type {TCPPacket} */ (tcp).checksum = 0;
+                packet.payload = /** @type {TCPPacket} */ (tcp).pack({ srcIp: packet.src, dstIp: packet.dst });
             }
         } catch { return false; }
 
@@ -123,6 +184,11 @@ export class NatEngine {
      * so the client sees the SYN-ACK from an unexpected src port and sends RST.
      * Calling this locks the LAN host's (lanIpNum:lanPort:proto) outbound SNAT
      * to use wanPort, so replies reach the client with the expected src port.
+     *
+     * The session is pinned: it's a standing port-forward rule, not a
+     * per-connection flow, so it isn't subject to idle/close expiry. It's
+     * called again on every inbound packet for the rule anyway, which keeps
+     * it fresh for as long as the rule sees traffic.
      * @param {number} proto 6=TCP, 17=UDP
      * @param {number} wanPort the forwarded WAN port (e.g. 8080)
      * @param {number} lanIpNum target LAN host IP
@@ -130,8 +196,12 @@ export class NatEngine {
      */
     installDnatSession(proto, wanPort, lanIpNum, lanPort) {
         const outKey = `${lanIpNum}:${lanPort}:${proto}`;
-        this._out.set(outKey, wanPort);
-        this._in.set(`${wanPort}:${proto}`, { srcIpNum: lanIpNum, srcPort: lanPort });
+        const session = {
+            outKey, srcIpNum: lanIpNum, srcPort: lanPort, natPort: wanPort, proto,
+            lastSeenTick: simTimer.currentTick, closing: false, pinned: true,
+        };
+        this._out.set(outKey, session);
+        this._in.set(`${wanPort}:${proto}`, session);
     }
 
     /**
@@ -161,34 +231,35 @@ export class NatEngine {
         if (proto !== 6 && proto !== 17) return null;
 
         const isUdp = proto === 17;
-        let dstPort;
+        let dstPort, tcp;
         try {
             if (isUdp) dstPort = UDPPacket.fromBytes(packet.payload).dstPort;
-            else        dstPort = TCPPacket.fromBytes(packet.payload).dstPort;
+            else        { tcp = TCPPacket.fromBytes(packet.payload); dstPort = tcp.dstPort; }
         } catch { return null; }
 
-        const mapping = this._in.get(`${dstPort}:${proto}`);
-        if (!mapping) return null;
+        const session = this._in.get(`${dstPort}:${proto}`);
+        if (!session) return null;
+        session.lastSeenTick = simTimer.currentTick;
+        if (!isUdp && tcp && tcp.hasFlag(TCPPacket.FLAG_FIN | TCPPacket.FLAG_RST)) session.closing = true;
 
-        packet.dst = new IPAddress(4, mapping.srcIpNum);
+        packet.dst = new IPAddress(4, session.srcIpNum);
         packet.headerChecksum = 0;
 
         try {
             if (isUdp) {
                 const u = UDPPacket.fromBytes(packet.payload);
-                u.dstPort = mapping.srcPort; u.checksum = 0;
+                u.dstPort = session.srcPort; u.checksum = 0;
                 packet.payload = u.pack({ srcIp: packet.src, dstIp: packet.dst });
             } else {
-                const t = TCPPacket.fromBytes(packet.payload);
-                t.dstPort = mapping.srcPort; t.checksum = 0;
-                packet.payload = t.pack({ srcIp: packet.src, dstIp: packet.dst });
+                /** @type {TCPPacket} */ (tcp).dstPort = session.srcPort; /** @type {TCPPacket} */ (tcp).checksum = 0;
+                packet.payload = /** @type {TCPPacket} */ (tcp).pack({ srcIp: packet.src, dstIp: packet.dst });
             }
         } catch { return null; }
 
         if ((packet.flags & 0x01) !== 0)
-            this._fragIn.set(packet.identification, mapping.srcIpNum);
+            this._fragIn.set(packet.identification, session.srcIpNum);
 
-        return mapping.srcIpNum;
+        return session.srcIpNum;
     }
 
     /** @param {number} wanIpNum @param {number} srcNum @param {import("./pdu/IPv4Packet.js").IPv4Packet} p */
@@ -198,15 +269,19 @@ export class NatEngine {
         if (icmp.type !== 8) return false;
 
         const key = `${srcNum}:${icmp.identifier}`;
-        let natId = this._icmpOut.get(key);
-        if (natId === undefined) {
-            natId = this._nextIcmpId & 0xffff;
+        let mapping = this._icmpOut.get(key);
+        if (mapping === undefined) {
+            const natId = this._nextIcmpId & 0xffff;
             this._nextIcmpId = ((this._nextIcmpId + 1) & 0xffff) || 0xF000;
-            this._icmpOut.set(key, natId);
-            this._icmpIn.set(natId, { srcIpNum: srcNum, origId: icmp.identifier });
+            mapping = { natId, srcIpNum: srcNum, origId: icmp.identifier, lastSeenTick: simTimer.currentTick };
+            this._icmpOut.set(key, mapping);
+            this._icmpIn.set(natId, { key, srcIpNum: srcNum, origId: icmp.identifier, lastSeenTick: simTimer.currentTick });
         }
+        mapping.lastSeenTick = simTimer.currentTick;
+        const inMapping = this._icmpIn.get(mapping.natId);
+        if (inMapping) inMapping.lastSeenTick = simTimer.currentTick;
 
-        icmp.identifier = natId;
+        icmp.identifier = mapping.natId;
         icmp.checksum = 0;
         p.src = new IPAddress(4, wanIpNum);
         p.headerChecksum = 0;
@@ -222,6 +297,9 @@ export class NatEngine {
 
         const mapping = this._icmpIn.get(icmp.identifier);
         if (!mapping) return null;
+        mapping.lastSeenTick = simTimer.currentTick;
+        const outMapping = this._icmpOut.get(mapping.key);
+        if (outMapping) outMapping.lastSeenTick = simTimer.currentTick;
 
         p.dst = new IPAddress(4, mapping.srcIpNum);
         p.headerChecksum = 0;
@@ -246,18 +324,49 @@ export class NatEngine {
     }
 
     /**
+     * Evict sessions that have gone idle (or, for TCP, sat past their
+     * close-grace period since a FIN/RST was seen). Frees NAT ports back to
+     * the allocation pool. Pinned (port-forward) sessions are never evicted.
+     * Runs periodically off the sim timer; safe to call directly too.
+     */
+    expire() {
+        const now = simTimer.currentTick;
+        for (const [inKey, session] of this._in) {
+            if (session.pinned) continue;
+
+            const idleTicks = now - session.lastSeenTick;
+            const limitMs = session.proto === 6
+                ? (session.closing ? NatEngine.TCP_CLOSE_GRACE_MS : NatEngine.TCP_IDLE_MS)
+                : NatEngine.UDP_IDLE_MS;
+            if (idleTicks < SimTimer.toTicks(limitMs)) continue;
+
+            this._in.delete(inKey);
+            this._out.delete(session.outKey);
+        }
+
+        const icmpLimitTicks = SimTimer.toTicks(NatEngine.ICMP_IDLE_MS);
+        for (const [natId, mapping] of this._icmpIn) {
+            if (now - mapping.lastSeenTick < icmpLimitTicks) continue;
+            this._icmpIn.delete(natId);
+            this._icmpOut.delete(mapping.key);
+        }
+    }
+
+    /**
      * Returns all active NAT mappings as a flat list for display.
      * @returns {Array<{proto: string, lanIpNum: number, lanPort: number, natPort: number}>}
      */
     getEntries() {
         const entries = [];
-        for (const [key, natPort] of this._out) {
-            const [a, b, c] = key.split(":");
-            entries.push({ proto: Number(c) === 6 ? "TCP" : "UDP", lanIpNum: Number(a), lanPort: Number(b), natPort });
+        for (const session of this._out.values()) {
+            entries.push({
+                proto: session.proto === 6 ? "TCP" : "UDP",
+                lanIpNum: session.srcIpNum, lanPort: session.srcPort, natPort: session.natPort,
+            });
         }
-        for (const [key, natId] of this._icmpOut) {
-            const [a, b] = key.split(":");
-            entries.push({ proto: "ICMP", lanIpNum: Number(a), lanPort: Number(b), natPort: natId });
+        for (const [key, mapping] of this._icmpOut) {
+            const [a] = key.split(":");
+            entries.push({ proto: "ICMP", lanIpNum: Number(a), lanPort: mapping.origId, natPort: mapping.natId });
         }
         return entries;
     }

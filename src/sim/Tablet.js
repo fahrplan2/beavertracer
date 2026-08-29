@@ -38,12 +38,22 @@ export class Tablet extends SimulatedObject {
 
         this.os = new OS(this, fs, net, { mandatoryOnly: true });
 
+        // The OS screen scales to fit (see OS._attachScaler), so the panel may
+        // be resized down well below its content's natural size — but only at
+        // the screen's aspect ratio, so there is never any letterboxing.
+        this.panelResizable = true;
+        this.panelMinWidth = 320;
+        this.panelMinHeight = 300;
+        this.panelAspectRatio = OS.SCREEN_W / OS.SCREEN_H;
+
         this.onPanelCreated = (/** @type {HTMLElement} */ body) => {
             this.os.mount(body);
         };
         this.onPanelOpen = () => {
             this.os.refocus();
+            this.os.relayoutScreen();
         };
+        this.onPanelResize = () => this.os.relayoutScreen();
     }
 
     /**

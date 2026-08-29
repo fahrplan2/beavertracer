@@ -1846,6 +1846,7 @@ export class HomeRouter extends SimulatedObject {
     destroy() {
         this._stopPoll();
         this._stopRaTimer();
+        this._nat.destroy();
         super.destroy();
     }
 }

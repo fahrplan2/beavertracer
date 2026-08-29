@@ -33,7 +33,7 @@ export class Editor {
     this.path = opts.path;
     this.rows = opts.rows;
     this.cols = opts.cols;
-    this.programName = opts.programName ?? "nano";
+    this.programName = opts.programName ?? "nano-ish";
     this.onExit = opts.onExit;
 
     /** @type {string[]} always at least one entry, even for an empty buffer */

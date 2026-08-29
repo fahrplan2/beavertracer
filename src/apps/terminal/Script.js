@@ -6,7 +6,7 @@ import { runPipeline } from "./Pipeline.js";
 import { expandCommandSubstitutions } from "./CommandSubstitution.js";
 import { expandArithmetic } from "./Arithmetic.js";
 import { globToRegExp } from "./Glob.js";
-import { CommandError } from "./commands/lib/errors.js";
+import { CommandError, LoopControlSignal, ReturnSignal } from "./commands/lib/errors.js";
 import { sleepAbortable } from "./commands/lib/abort.js";
 
 /**
@@ -33,6 +33,13 @@ import { sleepAbortable } from "./commands/lib/abort.js";
  * invocation that itself received piped/redirected stdin sets it for the
  * call's duration (see `makeFunctionResolver` and `sh.js`) so the callee's
  * own first-stage commands can read it, same as a real inherited fd.
+ * `loopDepth` counts currently-active enclosing runFor/runWhile calls
+ * (absent/0 outside of any loop) - see `runLoopBody`. Since it lives on this
+ * shared, mutable `state` rather than being passed down a call chain, a
+ * function called from within a loop sees the same nonzero depth its caller
+ * does, giving `break`/`continue` inside that function the same
+ * caller-loop-affecting scoping real shells have (a function body itself
+ * with no loop of its own doesn't reset it back to 0).
  * @typedef {{
  *   app: any,
  *   env: Record<string,string>,
@@ -45,6 +52,7 @@ import { sleepAbortable } from "./commands/lib/abort.js";
  *   functions: Map<string, ScriptNode[]>,
  *   heredocs: Map<string, { body: string, literal: boolean }>,
  *   inheritedStdin?: import("./commands/types.js").Reader | null,
+ *   loopDepth?: number,
  * }} ScriptExecState
  */
 
@@ -690,6 +698,10 @@ async function runSimpleText(text, state) {
       env: state.env,
       cwd: state.cwd,
       setCwd: (/** @type {string} */ cwd) => { state.cwd = cwd; },
+      positional: state.positional,
+      setPositional: (/** @type {string[]} */ values) => { state.positional = values; },
+      scriptName: state.scriptName,
+      functions: state.functions,
       clear: () => state.app._clear(),
       terminate: () => state.app.terminate(),
       signal: state.signal,
@@ -742,18 +754,61 @@ async function runIf(node, state) {
   return true;
 }
 
+/**
+ * Runs one loop body iteration and interprets a `break`/`continue` thrown
+ * out of it (see `LoopControlSignal`): `{ stop: true }` tells the caller to
+ * end the loop entirely (`break`, or a level-1 `continue` never reaches this
+ * - see below); `{ stop: false }` tells it to proceed to the next iteration.
+ *
+ * A level > 1 (`break 2`, `continue 2`) means an outer loop is meant to be
+ * unwound past too - normally rethrown, decremented by one, for the
+ * next-outer runFor/runWhile to catch instead. But if THIS loop is currently
+ * the outermost one active (`state.loopDepth === 1`, set by runFor/runWhile
+ * below), there is no next-outer loop to hand it to; POSIX's rule for a level
+ * bigger than the actual nesting is to just target the last (outermost)
+ * enclosing loop, so it's clamped here instead of escaping the whole script
+ * as a "break/continue outside a loop" error. A bare `continue` is level 1
+ * and never reaches here at all - it's just a normal (non-exceptional)
+ * return from `runList`.
+ * @param {ScriptNode[]} body @param {ScriptExecState} state
+ * @returns {Promise<{ ok: boolean, stop: boolean }>}
+ */
+async function runLoopBody(body, state) {
+  try {
+    return { ok: await runList(body, state), stop: false };
+  } catch (e) {
+    if (!(e instanceof LoopControlSignal)) throw e;
+    if (e.level > 1 && (state.loopDepth ?? 0) > 1) throw new LoopControlSignal(e.kind, e.level - 1);
+    // The break/continue "command" itself always succeeds ($? == 0 after
+    // it, same as any other command that ran) - runPipeline never got a
+    // chance to set this itself (LoopControlSignal skips straight past its
+    // normal post-await state.lastExitCode assignment in runSimpleText, see
+    // Pipeline.js), so it's set here instead, at the point the signal is
+    // actually consumed rather than passed further up.
+    state.lastExitCode = 0;
+    return { ok: true, stop: e.kind === "break" };
+  }
+}
+
 /** @param {ForNode} node @param {ScriptExecState} state */
 async function runFor(node, state) {
   const wordsText = await expandText(node.wordsText, state);
   const words = expandWords(wordsText, state.env, scriptOpts(state));
   let ok = true;
   let i = 0;
-  for (const w of words) {
-    if (state.signal?.aborted) throw new DOMException("Aborted", "AbortError");
-    state.env[node.varName] = w;
-    ok = await runList(node.body, state);
-    i++;
-    if (i % 200 === 0) await sleepAbortable(0, state.signal);
+  state.loopDepth = (state.loopDepth ?? 0) + 1;
+  try {
+    for (const w of words) {
+      if (state.signal?.aborted) throw new DOMException("Aborted", "AbortError");
+      state.env[node.varName] = w;
+      const res = await runLoopBody(node.body, state);
+      ok = res.ok;
+      if (res.stop) break;
+      i++;
+      if (i % 200 === 0) await sleepAbortable(0, state.signal);
+    }
+  } finally {
+    state.loopDepth--;
   }
   return ok;
 }
@@ -762,17 +817,24 @@ async function runFor(node, state) {
 async function runWhile(node, state) {
   let ok = true;
   let iterations = 0;
-  while (true) {
-    if (state.signal?.aborted) throw new DOMException("Aborted", "AbortError");
-    const condOk = await runSimpleText(node.condText, state);
-    if ((node.negate ? !condOk : condOk) !== true) break;
+  state.loopDepth = (state.loopDepth ?? 0) + 1;
+  try {
+    while (true) {
+      if (state.signal?.aborted) throw new DOMException("Aborted", "AbortError");
+      const condOk = await runSimpleText(node.condText, state);
+      if ((node.negate ? !condOk : condOk) !== true) break;
 
-    ok = await runList(node.body, state);
-    iterations++;
-    if (iterations >= MAX_LOOP_ITERATIONS) {
-      throw new CommandError(t("app.terminal.commands.sh.err.loopLimit"));
+      const res = await runLoopBody(node.body, state);
+      ok = res.ok;
+      if (res.stop) break;
+      iterations++;
+      if (iterations >= MAX_LOOP_ITERATIONS) {
+        throw new CommandError(t("app.terminal.commands.sh.err.loopLimit"));
+      }
+      if (iterations % 200 === 0) await sleepAbortable(0, state.signal);
     }
-    if (iterations % 200 === 0) await sleepAbortable(0, state.signal);
+  } finally {
+    state.loopDepth--;
   }
   return ok;
 }
@@ -802,12 +864,62 @@ async function runCaseNode(node, state) {
 
 /**
  * Runs a parsed script. Returns the exit status of the last statement
- * actually executed (true/0 if the script had nothing to run).
+ * actually executed (true/0 if the script had nothing to run). Used for the
+ * genuine top level - the interactive prompt (`TerminalApp._handleLine`) and
+ * `sh script.sh` - where a `break`/`continue`/`return` escaping every
+ * enclosing loop/function/`.`-call is simply invalid, unlike
+ * `runWithReturnBoundary` below (used by an actual function call or
+ * `.`/source, where a `return` reaching this same point is the norm).
  * @param {ScriptNode[]} nodes @param {ScriptExecState} state
  * @returns {Promise<boolean>}
  */
 export async function runScript(nodes, state) {
-  return runList(nodes, state);
+  try {
+    return await runList(nodes, state);
+  } catch (e) {
+    // A break/continue/return that escaped every enclosing runFor/runWhile/
+    // runWithReturnBoundary - i.e. used outside of any loop, function, or
+    // `.`/source call. Real shells warn and carry on with the next
+    // statement; reproducing that here would mean catching this at every
+    // node in runList instead of just at this one top-level entry point, for
+    // a case that only ever happens in an already-malformed script - so this
+    // settles for failing the script cleanly instead, like a syntax error.
+    if (e instanceof LoopControlSignal) {
+      throw new CommandError(t(`app.terminal.commands.sh.err.${e.kind}OutsideLoop`));
+    }
+    if (e instanceof ReturnSignal) {
+      throw new CommandError(t("app.terminal.commands.sh.err.returnOutsideFunction"));
+    }
+    throw e;
+  }
+}
+
+/**
+ * Like {@link runScript}, but treats a `return [n]` (see `ReturnSignal`)
+ * reaching this call as the normal, expected way to end early instead of an
+ * error - the two POSIX-legal targets for `return`, a shell-function call
+ * (`makeFunctionResolver` below) and `.`/source (`commands/misc/dot.js`),
+ * both run their body through this instead of `runScript`. `status: null`
+ * (a bare `return`) reuses whatever `$?` already was.
+ *
+ * An explicit `return N`'s own precise N only decides the boolean this
+ * returns (0 = success) - it's NOT written back into `state.lastExitCode`,
+ * because it wouldn't survive there anyway: both call sites (the function
+ * wrapper, `dot.js`) turn that boolean back into a plain thrown/not-thrown
+ * outcome for their own caller, which `runSimpleText`'s normal per-statement
+ * bookkeeping then collapses to exactly 0 or 1 right after, same as any
+ * other command's exit status here. So `return 3; echo $?` reads back `1`,
+ * not `3` - a real (documented) simplification, not a bug.
+ * @param {ScriptNode[]} nodes @param {ScriptExecState} state
+ * @returns {Promise<boolean>}
+ */
+export async function runWithReturnBoundary(nodes, state) {
+  try {
+    return await runList(nodes, state);
+  } catch (e) {
+    if (!(e instanceof ReturnSignal)) throw e;
+    return (e.status ?? state.lastExitCode) === 0;
+  }
 }
 
 /**
@@ -841,9 +953,11 @@ export function wrapAppForCtx(app, ctx) {
  * (a `cd`/export/assignment inside a function affects the caller, unlike
  * `sh script.sh`). Positional params are swapped to the call's own args for
  * the duration of the call and restored after ($0 is left alone - POSIX
- * functions don't change it). A body whose last statement fails throws a
- * silent `CommandError("")` (exit 1, no message) - the same "false, not an
- * error" convention `test`/`[` already use.
+ * functions don't change it). A body whose last statement fails (or that
+ * ends via `return N` with a nonzero N) throws a silent `CommandError("")`
+ * (exit 1, no message) - the same "false, not an error" convention `test`/
+ * `[` already use. Runs the body through `runWithReturnBoundary`, not plain
+ * `runList`, so a `return` inside ends just this call - see there.
  *
  * `state.app` is temporarily swapped via {@link wrapAppForCtx} for the
  * duration of the call - without this, the body's own commands (which
@@ -877,7 +991,9 @@ export function makeFunctionResolver(state) {
         state.inheritedStdin = ctx.stdin;
         state.app = wrapAppForCtx(savedApp, ctx);
         try {
-          const ok = await runList(body, state);
+          // runWithReturnBoundary (not plain runList) - a `return` inside
+          // the function body ends just this call, see there.
+          const ok = await runWithReturnBoundary(body, state);
           if (!ok) throw new CommandError("");
         } finally {
           state.positional = savedPositional;

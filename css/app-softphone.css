@@ -1,0 +1,148 @@
+/* =========================================================
+   Softphone (SIP / RTP)
+   ========================================================= */
+
+.app-softphone .sp-pane {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pad-md);
+}
+.app-softphone .sp-phone { align-items: stretch; max-width: 360px; }
+
+/* ── display ── */
+.app-softphone .sp-display {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--pad-sm) var(--pad-md);
+  border: 1px solid var(--border, #333);
+  border-radius: 8px;
+  background: var(--bg1, #12160f);
+}
+.app-softphone .sp-disp-main {
+  font-family: var(--font-mono);
+  font-size: 1.35rem;
+  letter-spacing: 0.06em;
+  text-align: right;
+  border: none;
+  background: transparent;
+  padding: 2px 0;
+  color: var(--text);
+}
+.app-softphone .sp-disp-main:disabled { opacity: 1; -webkit-text-fill-color: var(--text); }
+.app-softphone .sp-disp-sub {
+  min-height: 1.1em;
+  font-size: 0.75rem;
+  text-align: right;
+  color: var(--muted, #8a9);
+  font-family: var(--font-mono);
+}
+
+/* ── keypad ── */
+.app-softphone .sp-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--pad-sm);
+}
+.app-softphone .sp-key {
+  padding: var(--pad-md) 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  border: 1px solid var(--border, #333);
+  border-radius: 8px;
+  background: var(--bg2, #1c1c1c);
+  color: var(--text);
+  cursor: pointer;
+}
+.app-softphone .sp-key:hover:not(:disabled) { background: var(--primary-soft, rgba(80,120,255,0.18)); }
+.app-softphone .sp-key:active:not(:disabled) { transform: translateY(1px); }
+.app-softphone .sp-key:disabled { opacity: 0.4; cursor: default; }
+
+.app-softphone .sp-callrow {
+  display: flex;
+  gap: var(--pad-sm);
+  align-items: center;
+}
+.app-softphone .sp-callrow .btn-primary { flex: 1; }
+.app-softphone .sp-bksp { min-width: 44px; }
+
+.app-softphone .sp-reg-row {
+  display: flex;
+  align-items: center;
+  gap: var(--pad-sm);
+  margin-top: var(--pad-xs);
+}
+
+.app-softphone .sp-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--muted, #888);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.06);
+  flex: none;
+}
+.app-softphone .sp-dot.is-on {
+  background: #3c6;
+  box-shadow: 0 0 6px #3c6;
+}
+
+.app-softphone .sp-incoming:not(:empty) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pad-sm);
+  padding: var(--pad-sm) var(--pad-md);
+  border: 1px solid var(--primary, #7ab);
+  border-radius: 6px;
+  background: var(--primary-soft, rgba(80, 120, 255, 0.15));
+}
+
+.app-softphone .sp-phrases {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pad-sm);
+}
+.app-softphone .sp-phrases:empty { display: none; }
+
+.app-softphone .sp-log {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--pad-sm) var(--pad-md);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.app-softphone .sp-log-line { white-space: pre-wrap; word-break: break-word; }
+.app-softphone .sp-log-sys   { color: var(--muted, #888); }
+.app-softphone .sp-log-err   { color: #e05; }
+.app-softphone .sp-log-tx    { color: #8cf; }
+.app-softphone .sp-log-rx    { color: #6c8; }
+.app-softphone .sp-log-media { color: #d9a; }
+
+/* ── SIP registrar / proxy server ─────────────────────────── */
+
+.app-sip-server .sip-pane { padding: var(--pad-sm) var(--pad-md); }
+
+.app-sip-server .sip-reg-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+.app-sip-server .sip-reg-table th,
+.app-sip-server .sip-reg-table td {
+  text-align: left;
+  padding: var(--pad-xs) var(--pad-sm);
+  border-bottom: 1px solid var(--border, #333);
+}
+.app-sip-server .sip-reg-table td { font-family: var(--font-mono); }
+.app-sip-server .sip-empty { color: var(--muted, #888); font-style: italic; }
+
+.app-sip-server .sip-log {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

@@ -6,6 +6,7 @@ import { UDPPacket } from '../../src/net/pdu/UDPPacket.js';
 import { TCPPacket } from '../../src/net/pdu/TCPPacket.js';
 import { ICMPPacket } from '../../src/net/pdu/ICMPPacket.js';
 import { IPAddress } from '../../src/net/models/IPAddress.js';
+import { simTimer, SimTimer } from '../../src/lib/SimTimer.js';
 
 const LAN_IP = '192.168.1.10';
 const LAN_IP_2 = '192.168.1.11';
@@ -26,15 +27,20 @@ function makeUdpPacket(srcPort, dstPort = 53, srcIp = LAN_IP) {
     });
 }
 
-/** @param {number} srcPort @param {number} [dstPort] */
-function makeTcpPacket(srcPort, dstPort = 80) {
-    const tcp = new TCPPacket({ srcPort, dstPort, seq: 1000, flags: TCPPacket.FLAG_SYN });
+/** @param {number} srcPort @param {number} [dstPort] @param {number} [flags] */
+function makeTcpPacket(srcPort, dstPort = 80, flags = TCPPacket.FLAG_SYN) {
+    const tcp = new TCPPacket({ srcPort, dstPort, seq: 1000, flags });
     const src = IPAddress.fromString(LAN_IP);
     const dst = IPAddress.fromString(REMOTE_IP);
     return new IPv4Packet({
         src, dst, protocol: 6,
         payload: tcp.pack({ srcIp: src, dstIp: dst }),
     });
+}
+
+/** Push a session's lastSeenTick back by `ms` of simulated idle time, without touching the shared simTimer clock. */
+function backdate(session, ms) {
+    session.lastSeenTick = simTimer.currentTick - SimTimer.toTicks(ms) - 1;
 }
 
 /** @param {number} identifier @param {number} [type] */
@@ -400,5 +406,111 @@ describe('NatEngine – getEntries / clear', () => {
         expect(nat._icmpIn.size).toBe(0);
         expect(nat._fragIn.size).toBe(0);
         expect(nat.getEntries()).toEqual([]);
+    });
+});
+
+// ─── expire (session GC) ─────────────────────────────────────────────────────
+
+describe('NatEngine – expire', () => {
+    it('leaves a fresh session alone', () => {
+        const nat = new NatEngine();
+        nat.natOutbound(wanIpNum(), makeUdpPacket(4000));
+        nat.expire();
+        expect(nat._out.size).toBe(1);
+    });
+
+    it('frees a TCP session shortly after a FIN is seen, once past the close-grace period', () => {
+        const nat = new NatEngine();
+        const fin = makeTcpPacket(5000, 80, TCPPacket.FLAG_FIN | TCPPacket.FLAG_ACK);
+        nat.natOutbound(wanIpNum(), fin);
+
+        const session = nat._out.get(`${ipn(LAN_IP)}:5000:6`);
+        expect(session.closing).toBe(true);
+
+        // Still within the grace period → kept (a straggling retransmit must still find its way back).
+        backdate(session, NatEngine.TCP_CLOSE_GRACE_MS - 500);
+        nat.expire();
+        expect(nat._out.size).toBe(1);
+
+        // Past the grace period → freed.
+        backdate(session, NatEngine.TCP_CLOSE_GRACE_MS + 500);
+        nat.expire();
+        expect(nat._out.size).toBe(0);
+        expect(nat._in.size).toBe(0);
+    });
+
+    it('frees a RST-closed TCP session after the close-grace period, not the long idle timeout', () => {
+        const nat = new NatEngine();
+        const rst = makeTcpPacket(5001, 80, TCPPacket.FLAG_RST);
+        nat.natOutbound(wanIpNum(), rst);
+        const session = nat._out.get(`${ipn(LAN_IP)}:5001:6`);
+
+        backdate(session, NatEngine.TCP_CLOSE_GRACE_MS + 500);
+        nat.expire();
+        expect(nat._out.size).toBe(0);
+    });
+
+    it('keeps a still-open TCP session past the close-grace window, only the long idle timeout frees it', () => {
+        const nat = new NatEngine();
+        nat.natOutbound(wanIpNum(), makeTcpPacket(5002)); // SYN only, no FIN/RST
+        const session = nat._out.get(`${ipn(LAN_IP)}:5002:6`);
+        expect(session.closing).toBe(false);
+
+        backdate(session, NatEngine.TCP_CLOSE_GRACE_MS + 500);
+        nat.expire();
+        expect(nat._out.size).toBe(1); // an open connection isn't killed by the short grace window
+
+        backdate(session, NatEngine.TCP_IDLE_MS + 500);
+        nat.expire();
+        expect(nat._out.size).toBe(0); // but a genuinely abandoned one eventually is
+    });
+
+    it('frees an idle UDP session after UDP_IDLE_MS', () => {
+        const nat = new NatEngine();
+        nat.natOutbound(wanIpNum(), makeUdpPacket(4001));
+        const session = nat._out.get(`${ipn(LAN_IP)}:4001:17`);
+
+        backdate(session, NatEngine.UDP_IDLE_MS + 500);
+        nat.expire();
+        expect(nat._out.size).toBe(0);
+    });
+
+    it('frees an idle ICMP mapping after ICMP_IDLE_MS', () => {
+        const nat = new NatEngine();
+        nat.natOutbound(wanIpNum(), makeIcmpPacket(0x2222));
+        expect(nat._icmpOut.size).toBe(1);
+
+        const mapping = [...nat._icmpIn.values()][0];
+        mapping.lastSeenTick = simTimer.currentTick - SimTimer.toTicks(NatEngine.ICMP_IDLE_MS) - 1;
+
+        nat.expire();
+        expect(nat._icmpIn.size).toBe(0);
+        expect(nat._icmpOut.size).toBe(0);
+    });
+
+    it('never expires a pinned port-forward (DNAT) session, however idle', () => {
+        const nat = new NatEngine();
+        nat.installDnatSession(6, 8080, ipn(LAN_IP), 80);
+        const session = nat._out.get(`${ipn(LAN_IP)}:80:6`);
+
+        backdate(session, NatEngine.TCP_IDLE_MS * 100);
+        nat.expire();
+        expect(nat._out.size).toBe(1);
+        expect(nat._in.has('8080:6')).toBe(true);
+    });
+
+    it('frees the NAT port back to the pool once a session expires, so a new flow can reclaim it', () => {
+        const nat = new NatEngine();
+        nat.natOutbound(wanIpNum(), makeUdpPacket(4002));
+        const session = nat._out.get(`${ipn(LAN_IP)}:4002:17`);
+        const oldPort = session.natPort;
+
+        backdate(session, NatEngine.UDP_IDLE_MS + 500);
+        nat.expire();
+        expect(nat._in.has(`${oldPort}:17`)).toBe(false);
+
+        // A fresh flow from the same LAN host/port can now reuse that NAT port again.
+        nat.natOutbound(wanIpNum(), makeUdpPacket(4002));
+        expect(nat._out.size).toBe(1);
     });
 });

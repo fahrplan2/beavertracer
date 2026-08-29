@@ -2,7 +2,7 @@
 
 import { t } from "../../i18n/index.js";
 import { resolveRedirectTargets, flushFileTarget, readStdinFile } from "./Redirect.js";
-import { CommandError } from "./commands/lib/errors.js";
+import { CommandError, ControlFlowSignal } from "./commands/lib/errors.js";
 
 /**
  * Matches a bare `NAME=value` word - a stage consisting of exactly this one
@@ -294,6 +294,13 @@ export async function runPipeline(app, stages, buildCtx, resolveFunction, inheri
         }
       }
     } catch (e) {
+      // `break`/`continue`/`return` (see ControlFlowSignal) aren't a real
+      // error - they must keep unwinding past this stage's own try/catch,
+      // all the way up to whichever Script.js frame is meant to catch them
+      // (runFor/runWhile, or runWithReturnBoundary), instead of being
+      // reported like an ordinary command failure.
+      if (e instanceof ControlFlowSignal) throw e;
+
       ok = false;
       if (!app.currentAbort?.signal.aborted) {
         if (e instanceof CommandError) {

@@ -54,6 +54,15 @@ export class TerminalApp extends GenericProcess {
     lastExitCode = 0;
 
     /**
+     * Positional parameters ($1, $2, ... / $@ / $#) at the interactive
+     * prompt - empty by default (no script args here), but persists across
+     * lines like `env`/`lastExitCode` once `set --`/`shift` change it (see
+     * `_handleLine`), matching a real interactive shell.
+     * @type {string[]}
+     */
+    positional = [];
+
+    /**
      * Text accumulated across Enter-presses while an if/for/while/case
      * construct is still open (no closing fi/done/esac yet) - null when not
      * mid-continuation. Mirrors a real shell's PS2 prompt.
@@ -327,10 +336,13 @@ export class TerminalApp extends GenericProcess {
      */
     _recalcGeometry(termEl) {
         const probe = document.createElement("span");
-        probe.style.cssText = "position:absolute;visibility:hidden;white-space:pre;font:inherit";
-        probe.textContent = "X".repeat(10);
+        probe.style.cssText = "position:absolute;visibility:hidden;white-space:pre;font:inherit;display:inline-block";
+        probe.textContent = "X".repeat(100);
         termEl.appendChild(probe);
-        const charWidth = probe.getBoundingClientRect().width / 10;
+        // offsetWidth, not getBoundingClientRect: the OS screen may be under a
+        // CSS transform: scale() (see OS._attachScaler) — offsetWidth is the
+        // unscaled layout size, matching termEl.clientWidth below.
+        const charWidth = probe.offsetWidth / 100;
         probe.remove();
 
         const lineHeight = parseFloat(window.getComputedStyle(termEl).lineHeight);
@@ -937,7 +949,7 @@ export class TerminalApp extends GenericProcess {
             env: this.env, // shared reference - this IS the session, no isolation
             cwd: this.cwd,
             pid: this.pid,
-            positional: /** @type {string[]} */ ([]),
+            positional: this.positional,
             scriptName: "sh",
             lastExitCode: this.lastExitCode,
             signal: this.currentAbort?.signal ?? new AbortController().signal,
@@ -965,6 +977,7 @@ export class TerminalApp extends GenericProcess {
 
         this.cwd = state.cwd;
         this.lastExitCode = state.lastExitCode;
+        this.positional = state.positional;
     }
 
     /**
@@ -1024,6 +1037,19 @@ export class TerminalApp extends GenericProcess {
             env: state.env,
             cwd: state.cwd,
             setCwd: (/** @type {string} */ cwd) => { state.cwd = cwd; },
+            // Own local (always-empty, see `state.positional` above)
+            // positional array - without this override, `_buildShellContext`'s
+            // default would point straight at the live interactive session's
+            // `this.positional`, letting e.g. `$(shift)` corrupt the caller's
+            // real positional params instead of just its own isolated copy.
+            positional: state.positional,
+            setPositional: (/** @type {string[]} */ values) => { state.positional = values; },
+            // Same reasoning: this capture's own copied function table (see
+            // `functions: new Map(baseFunctions)` above), not the live
+            // session's `this.functions` `_buildShellContext` defaults to -
+            // a funcdef executed inside `$(...)`/headless-check text must
+            // stay isolated, matching real subshell semantics.
+            functions: state.functions,
         });
 
         const entries = splitCommandList(cmdText);
@@ -1092,6 +1118,19 @@ export class TerminalApp extends GenericProcess {
             env: state.env,
             cwd: state.cwd,
             setCwd: (/** @type {string} */ cwd) => { state.cwd = cwd; },
+            // Own local (always-empty, see `state.positional` above)
+            // positional array - without this override, `_buildShellContext`'s
+            // default would point straight at the live interactive session's
+            // `this.positional`, letting e.g. `$(shift)` corrupt the caller's
+            // real positional params instead of just its own isolated copy.
+            positional: state.positional,
+            setPositional: (/** @type {string[]} */ values) => { state.positional = values; },
+            // Same reasoning: this capture's own copied function table (see
+            // `functions: new Map(baseFunctions)` above), not the live
+            // session's `this.functions` `_buildShellContext` defaults to -
+            // a funcdef executed inside `$(...)`/headless-check text must
+            // stay isolated, matching real subshell semantics.
+            functions: state.functions,
         });
 
         const entries = splitCommandList(cmdText);
@@ -1131,6 +1170,10 @@ export class TerminalApp extends GenericProcess {
             env: this.env,
             cwd: this.cwd,
             setCwd: (cwd) => { this.cwd = cwd; },
+            positional: this.positional,
+            setPositional: (values) => { this.positional = values; },
+            scriptName: "sh",
+            functions: this.functions,
             clear: () => this._clear(),
             terminate: () => this.terminate(),
 

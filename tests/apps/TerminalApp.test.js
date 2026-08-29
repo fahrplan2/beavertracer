@@ -868,11 +868,13 @@ describe('_recalcGeometry (row/col sizing from the real terminal element)', () =
     app.outEl = makeFakeEl('pre');
     app.busy = true;
 
-    // Fake char metrics: 8px wide, 21px tall per char/line.
+    // Fake char metrics: 8px wide, 21px tall per char/line. The probe is
+    // measured with offsetWidth (unscaled layout size) over a 100-char sample.
     const realCreateElement = document.createElement;
     document.createElement = (/** @type {string} */ tag) => {
       const el = realCreateElement(tag);
       el.getBoundingClientRect = () => ({ width: 8 * 10, height: 21 });
+      Object.defineProperty(el, 'offsetWidth', { configurable: true, get: () => 8 * 100 });
       return el;
     };
     const realGetComputedStyle = window.getComputedStyle;
