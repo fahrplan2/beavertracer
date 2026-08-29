@@ -27,6 +27,8 @@ import { MailClientApp } from "./MailClientApp.js";
 import { SimpleIRCServerApp } from "./SimpleIRCServerApp.js";
 import { SimpleIRCClientApp } from "./SimpleIRCClientApp.js";
 import { MulticastChatApp } from "./MulticastChatApp.js";
+import { SoftphoneApp } from "./SoftphoneApp.js";
+import { SIPServerApp } from "./SIPServerApp.js";
 import { BitcoinNodeApp } from "./BitcoinNodeApp.js";
 import { UILib } from "../lib/UILib.js";
 import { ExplorerApp } from "./ExplorerApp.js";
@@ -45,6 +47,7 @@ const APP_REGISTRY = [
     { id: "MailClientApp",          Class: MailClientApp,          mandatory: false, category: "client", icon: "fa-envelope-open", labelKey: "app.mailclient.title" },
     { id: "SimpleIRCClientApp",     Class: SimpleIRCClientApp,     mandatory: false, category: "client", icon: "fa-comments",          labelKey: "app.ircclient.title" },
     { id: "MulticastChatApp",       Class: MulticastChatApp,       mandatory: false, category: "client", icon: "fa-tower-broadcast",    labelKey: "app.multicastchat.title" },
+    { id: "SoftphoneApp",           Class: SoftphoneApp,           mandatory: false, category: "client", icon: "fa-phone",              labelKey: "app.softphone.title" },
     { id: "SimpleTCPClientApp",     Class: SimpleTCPClientApp,     mandatory: false, category: "client", icon: "fa-message",       labelKey: "app.simpletcpclient.title" },
     { id: "SimpleTCPServerApp",     Class: SimpleTCPServerApp,     mandatory: false, category: "server", icon: "fa-server",        labelKey: "app.simpletcpserver.title" },
     { id: "SimpleHTTPServerApp",    Class: SimpleHTTPServerApp,    mandatory: false, category: "server", icon: "fa-server",        labelKey: "app.simplehttpserver.title" },
@@ -55,6 +58,7 @@ const APP_REGISTRY = [
     { id: "DHCPv6ServerApp",        Class: DHCPv6ServerApp,        mandatory: false, category: "server", icon: "fa-server",        labelKey: "app.dhcpv6server.title" },
     { id: "SimpleMailServerApp",    Class: SimpleMailServerApp,    mandatory: false, category: "server", icon: "fa-server",        labelKey: "app.simplemailserver.title" },
     { id: "SimpleIRCServerApp",     Class: SimpleIRCServerApp,     mandatory: false, category: "server", icon: "fa-server",        labelKey: "app.ircserver.title" },
+    { id: "SIPServerApp",           Class: SIPServerApp,           mandatory: false, category: "server", icon: "fa-server",        labelKey: "app.sipserver.title" },
     { id: "BitcoinNodeApp",         Class: BitcoinNodeApp,         mandatory: false, category: "server", icon: "fa-coins",         labelKey: "app.bitcoin.title" },
 ];
 

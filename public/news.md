@@ -1,3 +1,7 @@
+## Version 0.2.3
+
+- added a simple SIP server and a VOIP client
+
 ## Version 0.2.2
 
 - added ability to simulate random packet loss on connections

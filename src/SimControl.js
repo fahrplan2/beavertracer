@@ -92,6 +92,12 @@ export class SimControl {
     /** @type {HTMLDivElement|null} */
     nodesLayer = null;
 
+    /** @type {HTMLDivElement|null} non-clipping layer that hosts the node panels */
+    panelLayer = null;
+
+    /** @type {HTMLElement|null} invisible full-width box panel drags clamp to */
+    panelBounds = null;
+
     /** @type {HTMLDivElement|null} */
     static packetsLayer = null;
 
@@ -412,6 +418,22 @@ export class SimControl {
         portLabelsLayer.className = "sim-port-labels-layer";
         simCanvas.appendChild(portLabelsLayer);
         SimControl.portLabelsLayer = portLabelsLayer;
+
+        // Panel layer — node panels are mounted here, not inside .sim-nodes,
+        // which clips its content. Sits exactly over .sim-nodes but doesn't
+        // clip, so a panel can be dragged left into the space the hidden
+        // sidebar leaves behind, while .sim-nodes and its zoom/pan canvas
+        // stay put (no shift when switching edit ⇆ run). The drag is bounded
+        // by panelBounds below.
+        const panelLayer = document.createElement("div");
+        panelLayer.className = "sim-panel-layer";
+        simbody.appendChild(panelLayer);
+        this.panelLayer = panelLayer;
+
+        const panelBounds = document.createElement("div");
+        panelBounds.className = "sim-panel-bounds";
+        simbody.appendChild(panelBounds);
+        this.panelBounds = panelBounds;
 
         // Bind pointer events on the outer nodesLayer
         nodes.addEventListener("pointerdown", (ev) => this._onPointerDown(ev));
@@ -845,7 +867,7 @@ export class SimControl {
 
             if (o instanceof Link) this._clearLinkPackets(o);
 
-            // panels now live in nodesLayer (outside obj.root) — remove explicitly
+            // panels now live in the panel layer (outside obj.root) — remove explicitly
             if (!(o instanceof Link) && o instanceof SimulatedObject) {
                 o.panelEl?.remove();
                 /** @type {any} */ (o).panelEl = null;
@@ -1722,8 +1744,9 @@ export class SimControl {
             if (obj instanceof Link) continue; // links are drawn via their own DOM; still include if your Link.render returns an element
 
             if (!this._objEls.has(obj.id)) {
-                // Place panel in nodesLayer (outside sim-canvas) so it is never zoomed
-                obj.panelRoot = nodes;
+                // Mount the panel in the dedicated panel layer (outside sim-canvas
+                // so it is never zoomed, and full-width so it can reach the left edge)
+                obj.panelRoot = this.panelLayer;
                 const el = obj.render();
                 this._objEls.set(obj.id, el);
 

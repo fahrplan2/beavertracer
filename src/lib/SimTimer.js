@@ -139,6 +139,22 @@ export class SimTimer {
     /** Maximum TCP retransmit attempts before aborting the connection (RFC 793). */
     static TCP_MAX_REXMIT           = 8;
 
+    /** SIP base transaction timer T1 (~RFC 3261 500 ms RTT estimate, simulation-scaled). */
+    static SIP_T1_MS               =    500;  // 100 ticks
+    /** SIP non-INVITE retransmit interval cap T2 (~RFC 3261 4 s). */
+    static SIP_T2_MS               =  4_000;  // 800 ticks
+    /** SIP transaction give-up window: Timer B / F / H = 64·T1 (~RFC 3261 32 s). */
+    static SIP_TIMEOUT_MS          = 32_000;  // 6400 ticks
+    /** SIP re-REGISTER floor when the negotiated expiry is very short. */
+    static SIP_MIN_REREGISTER_MS   =  2_000;  // 400 ticks
+
+    /** RTP packetization interval (ptime) — 100 ms keeps the packet rate low for the sim. */
+    static RTP_PTIME_MS            =    100;  // 20 ticks  → 10 packets/s per direction
+    /** RTP inbound talkspurt end: flush this many missed ptime-slices after the last packet. */
+    static RTP_TALKSPURT_GRACE_FRAMES = 4;
+    /** RTP "burst" pacing interval when a talkspurt is compressed rather than sent in real time. */
+    static RTP_BURST_INTERVAL_MS   =      5;  // 1 tick
+
     // -------------------------------------------------------------------------
     // Internal state
     // -------------------------------------------------------------------------

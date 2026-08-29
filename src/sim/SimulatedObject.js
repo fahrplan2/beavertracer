@@ -266,10 +266,16 @@ export class SimulatedObject {
         if (handle instanceof HTMLElement) {
             this._panelDraggable = makeDraggable(this.panelEl, {
                 handle: handle,
-                boundary: () => this.simcontrol.movementBoundary,
+                // Clamp to the full-width bounds box, not .sim-nodes, so the
+                // panel can be dragged into the area the sidebar leaves empty
+                // outside edit mode.
+                boundary: () => this.simcontrol.panelBounds ?? this.simcontrol.movementBoundary,
                 onDragEnd: ({ x, y }) => {
                     this.px = x;
                     this.py = y;
+                    // The panel layer doesn't clip, so pull the panel back in
+                    // if it was dragged past the right/bottom edge.
+                    this._clampPanelToViewport();
                 }
             });
         }
@@ -335,7 +341,7 @@ export class SimulatedObject {
     _clampPanelToViewport() {
         if (this._isMobile()) return;
         if (!this.panelEl) return;
-        const boundary = this.simcontrol?.movementBoundary;
+        const boundary = this.simcontrol?.panelBounds ?? this.simcontrol?.movementBoundary;
         if (!(boundary instanceof HTMLElement)) return;
 
         const b = boundary.getBoundingClientRect();
