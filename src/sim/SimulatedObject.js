@@ -93,6 +93,9 @@ export class SimulatedObject {
     /** @type {number} minimum panel height when panelResizable is true */
     panelMinHeight = 140;
 
+    /** @type {number} if > 0, lock resizing to this width/height ratio of the panel body */
+    panelAspectRatio = 0;
+
     /**
      * callback when the panal was created
      * must be used e.g. for os->mount()
@@ -105,6 +108,12 @@ export class SimulatedObject {
      * @type {(() => void) | undefined}
      */
     onPanelOpen;
+
+    /**
+     * callback fired while the panel is being resized (px)
+     * @type {((w: number, h: number) => void) | undefined}
+     */
+    onPanelResize;
 
     /**
      * @param {String} name
@@ -283,9 +292,12 @@ export class SimulatedObject {
             resizable: this.panelResizable,
             minWidth: this.panelMinWidth,
             minHeight: this.panelMinHeight,
+            aspectRatio: this.panelAspectRatio,
+            aspectRatioTarget: ".sim-panel-body",
             onResize: (w, h) => {
                 this.pw = w;
                 this.ph = h;
+                this.onPanelResize?.(w, h);
             }
         });
 

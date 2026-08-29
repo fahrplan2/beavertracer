@@ -64,6 +64,11 @@ const APP_REGISTRY = [
 
 export class OS {
 
+    /** Native screen resolution — the .os-root is laid out at this size and
+     *  scaled to fit the panel. Must match --os-native-w/h in css/sim.css. */
+    static SCREEN_W = 600;
+    static SCREEN_H = 500;
+
     /**
      * @type {SimulatedObject} Reference to the simulated object
      */
@@ -128,6 +133,12 @@ export class OS {
 
     /** @type {HTMLElement|null} */
     host = null;
+
+    /** @type {ResizeObserver|null} keeps --os-scale in sync with the panel size */
+    _scaleRO = null;
+
+    /** @type {(() => void)|null} recomputes --os-scale from the current panel size */
+    _applyScreenScale = null;
 
     /** @type {String} title of the current app */
     title;
@@ -274,7 +285,63 @@ export class OS {
         if (host) {
             this.render();
             host.replaceChildren(this.root);
+            this._attachScaler(host);
+        } else {
+            this._detachScaler();
         }
+    }
+
+    /**
+     * Treat the OS screen as a fixed-resolution display: keep .os-root laid
+     * out at its native size (CSS --os-native-*) and scale it with a CSS
+     * transform (origin top-left) so it always fits the panel body, however
+     * small the user drags the panel. Uniform scale → no distortion.
+     * @param {HTMLElement} host  the .sim-panel-body the screen is mounted in
+     */
+    _attachScaler(host) {
+        this._detachScaler();
+
+        const NATIVE_W = OS.SCREEN_W;
+        const NATIVE_H = OS.SCREEN_H;
+        const MIN_SCALE = 0.4;
+        const MAX_SCALE = 1.4;
+
+        this._applyScreenScale = () => {
+            // Mobile shows the panel full-screen with .os-root filling it
+            // (CSS); nothing to scale there.
+            if (window.matchMedia("(max-width: 600px), (max-height: 500px)").matches) {
+                this.root.style.removeProperty("--os-scale");
+                return;
+            }
+            const w = host.clientWidth;
+            const h = host.clientHeight;
+            if (!w || !h) return; // not laid out / hidden yet — a later call will catch it
+            let s = Math.min(w / NATIVE_W, h / NATIVE_H);
+            s = Math.max(MIN_SCALE, Math.min(MAX_SCALE, s));
+            this.root.style.setProperty("--os-scale", String(Math.round(s * 1000) / 1000));
+        };
+
+        if (typeof ResizeObserver === "function") {
+            this._scaleRO = new ResizeObserver(() => this._applyScreenScale?.());
+            this._scaleRO.observe(host);
+        }
+        this._applyScreenScale();
+        requestAnimationFrame(() => this._applyScreenScale?.());
+    }
+
+    _detachScaler() {
+        this._scaleRO?.disconnect();
+        this._scaleRO = null;
+    }
+
+    /**
+     * Recompute the screen scale now. Call when the panel becomes visible or
+     * is resized — covers the cases a ResizeObserver alone can miss (e.g. the
+     * first display:none → block transition).
+     */
+    relayoutScreen() {
+        this._applyScreenScale?.();
+        requestAnimationFrame(() => this._applyScreenScale?.());
     }
 
     /**

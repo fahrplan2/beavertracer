@@ -336,10 +336,13 @@ export class TerminalApp extends GenericProcess {
      */
     _recalcGeometry(termEl) {
         const probe = document.createElement("span");
-        probe.style.cssText = "position:absolute;visibility:hidden;white-space:pre;font:inherit";
-        probe.textContent = "X".repeat(10);
+        probe.style.cssText = "position:absolute;visibility:hidden;white-space:pre;font:inherit;display:inline-block";
+        probe.textContent = "X".repeat(100);
         termEl.appendChild(probe);
-        const charWidth = probe.getBoundingClientRect().width / 10;
+        // offsetWidth, not getBoundingClientRect: the OS screen may be under a
+        // CSS transform: scale() (see OS._attachScaler) — offsetWidth is the
+        // unscaled layout size, matching termEl.clientWidth below.
+        const charWidth = probe.offsetWidth / 100;
         probe.remove();
 
         const lineHeight = parseFloat(window.getComputedStyle(termEl).lineHeight);
