@@ -51,6 +51,7 @@ import { nslookup } from "./net/nslookup.js";
 import { ntpdate } from "./net/ntpdate.js";
 import { telnet } from "./net/telnet.js";
 import { curl } from "./net/curl.js";
+import { wget } from "./net/wget.js";
 import { nc } from "./net/nc.js";
 import { nmap } from "./net/nmap.js";
 import { beaver } from "./misc/beaver.js";
@@ -123,6 +124,7 @@ export function registerBuiltins(app) {
         traceroute,
         telnet,
         curl,
+        wget,
         nc,
         nmap,
         beaver,
