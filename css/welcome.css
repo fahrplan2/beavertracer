@@ -115,7 +115,7 @@
   content: "v";
 }
 
-.welcome-alpha {
+.welcome-stage {
   display: inline-block;
   padding: 1px 6px;
   border-radius: var(--radius-md);
@@ -123,8 +123,16 @@
   font-weight: 700;
   letter-spacing: 0.8px;
   line-height: 1.6;
+}
+
+.welcome-stage--alpha {
   color: var(--danger-strong);
   background: var(--danger-soft);
+}
+
+.welcome-stage--beta {
+  color: var(--warning-strong);
+  background: var(--warning-tint);
 }
 
 /* ---- Body (tabbed pages) ---- */
