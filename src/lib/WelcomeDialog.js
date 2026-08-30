@@ -78,7 +78,8 @@ export class WelcomeDialog {
 
         const ver = document.createElement("p");
         ver.className = "welcome-version";
-        ver.textContent = version(true);
+        const verStr = version(true);
+        ver.textContent = verStr;
 
         const closeBtn = document.createElement("button");
         closeBtn.type = "button";
@@ -87,14 +88,20 @@ export class WelcomeDialog {
         closeBtn.innerHTML = "&times;";
         closeBtn.addEventListener("click", () => close());
 
-        const alpha = document.createElement("span");
-        alpha.className = "welcome-alpha";
-        alpha.textContent = "ALPHA";
-
         const verBlock = document.createElement("div");
         verBlock.className = "welcome-ver-block";
         verBlock.appendChild(ver);
-        verBlock.appendChild(alpha);
+
+        // Release-stage badge: "-dev" builds are Alpha, other 0.x versions Beta.
+        const stage = verStr.endsWith("-dev") ? "alpha"
+                    : verStr.startsWith("0.") ? "beta"
+                    : null;
+        if (stage) {
+            const badge = document.createElement("span");
+            badge.className = `welcome-stage welcome-stage--${stage}`;
+            badge.textContent = stage.toUpperCase();
+            verBlock.appendChild(badge);
+        }
 
         const headerRight = document.createElement("div");
         headerRight.className = "welcome-header-right";

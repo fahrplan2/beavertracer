@@ -119,15 +119,27 @@
   z-index: 10;
 }
 
+/* Outside edit mode the sidebar is hidden, but its grid column stays as wide
+   as the logo above it. Let the canvas span into that column so nodes can be
+   dragged/placed there instead of being clipped by a dead strip of bare
+   background. SimControl._compensateNodesOriginShift() adjusts _panX by the
+   same amount the left edge moves, so the diagram doesn't visually jump on
+   the edit ⇄ run toggle and pointer→canvas mapping stays correct. */
+.sim-root:not(.edit-mode) .sim-nodes {
+  grid-column: 1 / span 2;
+}
+
 /* Panels are mounted here, NOT inside .sim-nodes — .sim-nodes clips its
    content (overflow:hidden) so the zoom/pan canvas can't spill over the
    toolbar/lessons panel, which also stopped panels short of the left edge.
-   This layer sits exactly over .sim-nodes (same grid area → panel positions
-   keep their meaning, nothing shifts when switching edit ⇆ run), but does
-   NOT clip, so a panel can be dragged left into the space the hidden sidebar
-   leaves behind. pointer-events:none lets canvas panning / node interaction
-   pass through the gaps between panels; each .sim-panel re-enables pointer
-   events for itself. The drag itself is bounded by .sim-panel-bounds. */
+   This layer stays in the "nodes" grid column so panel positions (px/py,
+   stored relative to it) keep their meaning and never shift on the
+   edit ⇆ run toggle — unlike .sim-nodes, which widens into the sidebar
+   column outside edit mode. It does NOT clip, so a panel can be dragged
+   left past that column too. pointer-events:none lets canvas panning / node
+   interaction pass through the gaps between panels; each .sim-panel
+   re-enables pointer events for itself. The drag itself is bounded by
+   .sim-panel-bounds. */
 .sim-panel-layer {
   grid-area: nodes;
   position: relative;

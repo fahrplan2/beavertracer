@@ -196,6 +196,10 @@ export class SimControl {
     /** @type {number} canvas pan Y in screen pixels */
     _panY = 0;
 
+    /** @type {number|undefined} last measured .sim-nodes left edge (screen px),
+     *  used to keep the viewport stable when the canvas grid column changes */
+    _lastNodesLeft = undefined;
+
     /** @type {HTMLDivElement|null} inner canvas that receives the CSS scale transform */
     _simCanvas = null;
 
@@ -1729,6 +1733,35 @@ export class SimControl {
             }
         }
 
+        // .sim-nodes spans a wider grid column outside edit mode (it covers the
+        // now-empty sidebar column). Absorb that left-edge shift into _panX so
+        // the diagram doesn't jump on the edit ⇄ run toggle.
+        this._compensateNodesOriginShift();
+    }
+
+    /**
+     * Keep the canvas viewport visually stable when the effective left edge of
+     * .sim-nodes moves — outside edit mode the canvas spans into the empty
+     * sidebar column (see sim.css), so its left edge shifts by roughly the logo
+     * width. Shift _panX by the same delta: on-screen node/link positions
+     * (screenX = nodesLeft + panX + x·zoom) stay put, and _getLocalPoint(),
+     * which reads the live boundary rect minus _panX, keeps mapping correctly.
+     */
+    _compensateNodesOriginShift() {
+        const layer = this.nodesLayer;
+        if (!layer) return;
+        // Hidden in trace/page mode → rect is all zeros; don't measure or store.
+        if (layer.offsetParent === null || layer.clientWidth < 2) return;
+
+        const left = layer.getBoundingClientRect().left;
+        const prev = this._lastNodesLeft;
+        this._lastNodesLeft = left;
+
+        if (prev === undefined || left === prev) return;
+
+        this._panX += prev - left;
+        this._applyCanvasTransform();
+        this._requestRedrawLinks();
     }
 
     // ── Scene DOM sync ────────────────────────────────────────────────────────
