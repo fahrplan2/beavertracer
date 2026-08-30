@@ -1,16 +1,18 @@
 {
   "_info": "This file was created by BeaverTracer, a network simulation tool. Open it with the BeaverTracer app or at https://beavertracer.eu/",
-  "version": 4,
+  "version": 6,
+  "appVersion": "0.2.1-dev.43.0003193",
+  "savedAt": "2026-08-30T09:22:27.957Z",
   "tick": 40,
   "objects": [
     {
-      "kind": "PC",
+      "kind": "Computer",
       "id": 9,
       "name": "PC 1",
       "x": 27.433300018310547,
       "y": 48,
-      "px": 569.5,
-      "py": 69.5,
+      "px": 578.6666259765625,
+      "py": 196.9166717529297,
       "panelOpen": false,
       "net": {
         "name": "PC",
@@ -22,9 +24,12 @@
             "prefixLength": 24,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a807:64ff:fea6:23e5"
+            "ip6LL": "fe80::a8e1:bfff:fe1d:a38f",
+            "slaac": false,
+            "raEnabled": false
           }
         ],
+        "tunnels": [],
         "routes": [
           {
             "dst": "0.0.0.0",
@@ -44,8 +49,25 @@
             "type": "dir",
             "name": "etc",
             "ctime": 1769934584550,
-            "mtime": 1769934584550,
-            "children": []
+            "mtime": 1788081655343,
+            "children": [
+              {
+                "type": "file",
+                "name": "mail.conf",
+                "data": "{\n  \"mailDomain\": \"example.local\",\n  \"ports\": {\n    \"smtp\": 25,\n    \"pop3\": 110,\n    \"imap\": 143\n  },\n  \"users\": []\n}",
+                "binary": false,
+                "ctime": 1788081655314,
+                "mtime": 1788081655314
+              },
+              {
+                "type": "file",
+                "name": "bitcoin.conf",
+                "data": "{\n  \"walletAddr\": \"1fGx2XX91H5JF2PBJVjpe9ULfo\",\n  \"seedAddr\": \"\"\n}",
+                "binary": false,
+                "ctime": 1788081655343,
+                "mtime": 1788081655343
+              }
+            ]
           },
           {
             "type": "dir",
@@ -57,6 +79,7 @@
                 "type": "file",
                 "name": "notes.txt",
                 "data": "hello vfs\n",
+                "binary": false,
                 "ctime": 1769934584550,
                 "mtime": 1769934584550
               }
@@ -73,7 +96,7 @@
             "type": "dir",
             "name": "var",
             "ctime": 1769934584550,
-            "mtime": 1769934584550,
+            "mtime": 1788081655314,
             "children": [
               {
                 "type": "dir",
@@ -85,8 +108,24 @@
                     "type": "file",
                     "name": "index.html",
                     "data": "<!doctype html>\n<html>\n    <head>\n      <meta charset=\"utf-8\" />\n      <title>Hello from SimpleHTTPServer</title>\n    </head>\n    <body>\n      <h1>It works!</h1>\n    <p>Served from /var/www/index.html</p>\n    </body>\n</html>\n",
+                    "binary": false,
                     "ctime": 1769934584550,
                     "mtime": 1769934584550
+                  }
+                ]
+              },
+              {
+                "type": "dir",
+                "name": "mail",
+                "ctime": 1788081655314,
+                "mtime": 1788081655314,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "queue",
+                    "ctime": 1788081655314,
+                    "mtime": 1788081655314,
+                    "children": []
                   }
                 ]
               }
@@ -94,10 +133,17 @@
           }
         ]
       },
-      "dns": null
+      "dns": null,
+      "dhcpMode": {},
+      "installedApps": [
+        "IPv4ConfigApp",
+        "TerminalApp",
+        "ExplorerApp",
+        "TextEditorApp"
+      ]
     },
     {
-      "kind": "PC",
+      "kind": "Computer",
       "id": 11,
       "name": "PC 2",
       "x": 270.43299865722656,
@@ -115,9 +161,12 @@
             "prefixLength": 24,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a8e0:91ff:fea0:9c"
+            "ip6LL": "fe80::a8f5:a7ff:fe7e:7cb1",
+            "slaac": false,
+            "raEnabled": false
           }
         ],
+        "tunnels": [],
         "routes": [
           {
             "dst": "0.0.0.0",
@@ -137,8 +186,25 @@
             "type": "dir",
             "name": "etc",
             "ctime": 1769934586432,
-            "mtime": 1769934586432,
-            "children": []
+            "mtime": 1788081655398,
+            "children": [
+              {
+                "type": "file",
+                "name": "mail.conf",
+                "data": "{\n  \"mailDomain\": \"example.local\",\n  \"ports\": {\n    \"smtp\": 25,\n    \"pop3\": 110,\n    \"imap\": 143\n  },\n  \"users\": []\n}",
+                "binary": false,
+                "ctime": 1788081655390,
+                "mtime": 1788081655390
+              },
+              {
+                "type": "file",
+                "name": "bitcoin.conf",
+                "data": "{\n  \"walletAddr\": \"1Km7PxYF72skpov1qP83LGpbm8\",\n  \"seedAddr\": \"\"\n}",
+                "binary": false,
+                "ctime": 1788081655398,
+                "mtime": 1788081655398
+              }
+            ]
           },
           {
             "type": "dir",
@@ -150,6 +216,7 @@
                 "type": "file",
                 "name": "notes.txt",
                 "data": "hello vfs\n",
+                "binary": false,
                 "ctime": 1769934586432,
                 "mtime": 1769934586432
               }
@@ -166,7 +233,7 @@
             "type": "dir",
             "name": "var",
             "ctime": 1769934586432,
-            "mtime": 1769934586432,
+            "mtime": 1788081655390,
             "children": [
               {
                 "type": "dir",
@@ -178,8 +245,24 @@
                     "type": "file",
                     "name": "index.html",
                     "data": "<!doctype html>\n<html>\n    <head>\n      <meta charset=\"utf-8\" />\n      <title>Hello from SimpleHTTPServer</title>\n    </head>\n    <body>\n      <h1>It works!</h1>\n    <p>Served from /var/www/index.html</p>\n    </body>\n</html>\n",
+                    "binary": false,
                     "ctime": 1769934586432,
                     "mtime": 1769934586432
+                  }
+                ]
+              },
+              {
+                "type": "dir",
+                "name": "mail",
+                "ctime": 1788081655390,
+                "mtime": 1788081655390,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "queue",
+                    "ctime": 1788081655390,
+                    "mtime": 1788081655390,
+                    "children": []
                   }
                 ]
               }
@@ -187,10 +270,17 @@
           }
         ]
       },
-      "dns": null
+      "dns": null,
+      "dhcpMode": {},
+      "installedApps": [
+        "IPv4ConfigApp",
+        "TerminalApp",
+        "ExplorerApp",
+        "TextEditorApp"
+      ]
     },
     {
-      "kind": "PC",
+      "kind": "Computer",
       "id": 13,
       "name": "PC 3",
       "x": 490.4329833984375,
@@ -208,9 +298,12 @@
             "prefixLength": 24,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a8af:72ff:fedc:f4c8"
+            "ip6LL": "fe80::a803:f8ff:fe85:d97b",
+            "slaac": false,
+            "raEnabled": false
           }
         ],
+        "tunnels": [],
         "routes": [
           {
             "dst": "0.0.0.0",
@@ -230,8 +323,25 @@
             "type": "dir",
             "name": "etc",
             "ctime": 1769934588698,
-            "mtime": 1769934588698,
-            "children": []
+            "mtime": 1788081655423,
+            "children": [
+              {
+                "type": "file",
+                "name": "mail.conf",
+                "data": "{\n  \"mailDomain\": \"example.local\",\n  \"ports\": {\n    \"smtp\": 25,\n    \"pop3\": 110,\n    \"imap\": 143\n  },\n  \"users\": []\n}",
+                "binary": false,
+                "ctime": 1788081655417,
+                "mtime": 1788081655417
+              },
+              {
+                "type": "file",
+                "name": "bitcoin.conf",
+                "data": "{\n  \"walletAddr\": \"1P9uXsMd3mgW8xWN9jpKg3BzS4\",\n  \"seedAddr\": \"\"\n}",
+                "binary": false,
+                "ctime": 1788081655423,
+                "mtime": 1788081655423
+              }
+            ]
           },
           {
             "type": "dir",
@@ -243,6 +353,7 @@
                 "type": "file",
                 "name": "notes.txt",
                 "data": "hello vfs\n",
+                "binary": false,
                 "ctime": 1769934588698,
                 "mtime": 1769934588698
               }
@@ -259,7 +370,7 @@
             "type": "dir",
             "name": "var",
             "ctime": 1769934588698,
-            "mtime": 1769934588698,
+            "mtime": 1788081655417,
             "children": [
               {
                 "type": "dir",
@@ -271,8 +382,24 @@
                     "type": "file",
                     "name": "index.html",
                     "data": "<!doctype html>\n<html>\n    <head>\n      <meta charset=\"utf-8\" />\n      <title>Hello from SimpleHTTPServer</title>\n    </head>\n    <body>\n      <h1>It works!</h1>\n    <p>Served from /var/www/index.html</p>\n    </body>\n</html>\n",
+                    "binary": false,
                     "ctime": 1769934588698,
                     "mtime": 1769934588698
+                  }
+                ]
+              },
+              {
+                "type": "dir",
+                "name": "mail",
+                "ctime": 1788081655417,
+                "mtime": 1788081655417,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "queue",
+                    "ctime": 1788081655417,
+                    "mtime": 1788081655417,
+                    "children": []
                   }
                 ]
               }
@@ -280,10 +407,17 @@
           }
         ]
       },
-      "dns": null
+      "dns": null,
+      "dhcpMode": {},
+      "installedApps": [
+        "IPv4ConfigApp",
+        "TerminalApp",
+        "ExplorerApp",
+        "TextEditorApp"
+      ]
     },
     {
-      "kind": "PC",
+      "kind": "Computer",
       "id": 15,
       "name": "PC 4",
       "x": 711.4329833984375,
@@ -301,9 +435,12 @@
             "prefixLength": 24,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a849:31ff:fee5:2d68"
+            "ip6LL": "fe80::a8d1:96ff:fec6:ca4f",
+            "slaac": false,
+            "raEnabled": false
           }
         ],
+        "tunnels": [],
         "routes": [
           {
             "dst": "0.0.0.0",
@@ -323,8 +460,25 @@
             "type": "dir",
             "name": "etc",
             "ctime": 1769934590352,
-            "mtime": 1769934590352,
-            "children": []
+            "mtime": 1788081655440,
+            "children": [
+              {
+                "type": "file",
+                "name": "mail.conf",
+                "data": "{\n  \"mailDomain\": \"example.local\",\n  \"ports\": {\n    \"smtp\": 25,\n    \"pop3\": 110,\n    \"imap\": 143\n  },\n  \"users\": []\n}",
+                "binary": false,
+                "ctime": 1788081655435,
+                "mtime": 1788081655435
+              },
+              {
+                "type": "file",
+                "name": "bitcoin.conf",
+                "data": "{\n  \"walletAddr\": \"1dMbDncmFbqVtmHMhVGiYYzYgg\",\n  \"seedAddr\": \"\"\n}",
+                "binary": false,
+                "ctime": 1788081655440,
+                "mtime": 1788081655440
+              }
+            ]
           },
           {
             "type": "dir",
@@ -336,6 +490,7 @@
                 "type": "file",
                 "name": "notes.txt",
                 "data": "hello vfs\n",
+                "binary": false,
                 "ctime": 1769934590352,
                 "mtime": 1769934590352
               }
@@ -352,7 +507,7 @@
             "type": "dir",
             "name": "var",
             "ctime": 1769934590352,
-            "mtime": 1769934590352,
+            "mtime": 1788081655435,
             "children": [
               {
                 "type": "dir",
@@ -364,8 +519,24 @@
                     "type": "file",
                     "name": "index.html",
                     "data": "<!doctype html>\n<html>\n    <head>\n      <meta charset=\"utf-8\" />\n      <title>Hello from SimpleHTTPServer</title>\n    </head>\n    <body>\n      <h1>It works!</h1>\n    <p>Served from /var/www/index.html</p>\n    </body>\n</html>\n",
+                    "binary": false,
                     "ctime": 1769934590352,
                     "mtime": 1769934590352
+                  }
+                ]
+              },
+              {
+                "type": "dir",
+                "name": "mail",
+                "ctime": 1788081655435,
+                "mtime": 1788081655435,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "queue",
+                    "ctime": 1788081655435,
+                    "mtime": 1788081655435,
+                    "children": []
                   }
                 ]
               }
@@ -373,7 +544,14 @@
           }
         ]
       },
-      "dns": null
+      "dns": null,
+      "dhcpMode": {},
+      "installedApps": [
+        "IPv4ConfigApp",
+        "TerminalApp",
+        "ExplorerApp",
+        "TextEditorApp"
+      ]
     },
     {
       "kind": "Switch",
@@ -385,65 +563,79 @@
       "py": 120,
       "panelOpen": false,
       "vlanEnabled": false,
+      "stpMode": "off",
       "stpEnabled": false,
+      "stpBridgePriority": 32768,
       "vlanPorts": [
         {
           "vlanMode": "untagged",
           "pvid": 1,
           "allowedVlans": [
             1
-          ]
+          ],
+          "svid": null
         },
         {
           "vlanMode": "untagged",
           "pvid": 1,
           "allowedVlans": [
             1
-          ]
+          ],
+          "svid": null
         },
         {
           "vlanMode": "untagged",
           "pvid": 1,
           "allowedVlans": [
             1
-          ]
+          ],
+          "svid": null
         },
         {
           "vlanMode": "untagged",
           "pvid": 1,
           "allowedVlans": [
             1
-          ]
+          ],
+          "svid": null
         },
         {
           "vlanMode": "untagged",
           "pvid": 1,
           "allowedVlans": [
             1
-          ]
+          ],
+          "svid": null
         },
         {
           "vlanMode": "untagged",
           "pvid": 1,
           "allowedVlans": [
             1
-          ]
+          ],
+          "svid": null
         },
         {
           "vlanMode": "untagged",
           "pvid": 1,
           "allowedVlans": [
             1
-          ]
+          ],
+          "svid": null
         },
         {
           "vlanMode": "untagged",
           "pvid": 1,
           "allowedVlans": [
             1
-          ]
+          ],
+          "svid": null
         }
-      ]
+      ],
+      "lagGroups": [],
+      "lagNextId": 0,
+      "igmpSnoopingEnabled": false,
+      "lldpEnabled": false
     },
     {
       "kind": "Switch",
@@ -455,65 +647,79 @@
       "py": 120,
       "panelOpen": false,
       "vlanEnabled": false,
+      "stpMode": "off",
       "stpEnabled": false,
+      "stpBridgePriority": 32768,
       "vlanPorts": [
         {
           "vlanMode": "untagged",
           "pvid": 1,
           "allowedVlans": [
             1
-          ]
+          ],
+          "svid": null
         },
         {
           "vlanMode": "untagged",
           "pvid": 1,
           "allowedVlans": [
             1
-          ]
+          ],
+          "svid": null
         },
         {
           "vlanMode": "untagged",
           "pvid": 1,
           "allowedVlans": [
             1
-          ]
+          ],
+          "svid": null
         },
         {
           "vlanMode": "untagged",
           "pvid": 1,
           "allowedVlans": [
             1
-          ]
+          ],
+          "svid": null
         },
         {
           "vlanMode": "untagged",
           "pvid": 1,
           "allowedVlans": [
             1
-          ]
+          ],
+          "svid": null
         },
         {
           "vlanMode": "untagged",
           "pvid": 1,
           "allowedVlans": [
             1
-          ]
+          ],
+          "svid": null
         },
         {
           "vlanMode": "untagged",
           "pvid": 1,
           "allowedVlans": [
             1
-          ]
+          ],
+          "svid": null
         },
         {
           "vlanMode": "untagged",
           "pvid": 1,
           "allowedVlans": [
             1
-          ]
+          ],
+          "svid": null
         }
-      ]
+      ],
+      "lagGroups": [],
+      "lagNextId": 0,
+      "igmpSnoopingEnabled": false,
+      "lldpEnabled": false
     },
     {
       "kind": "Router",
@@ -534,7 +740,9 @@
             "prefixLength": 24,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a81f:42ff:fe6e:8a63"
+            "ip6LL": "fe80::a832:40ff:fe03:9317",
+            "slaac": false,
+            "raEnabled": false
           },
           {
             "name": "eth1",
@@ -542,11 +750,47 @@
             "prefixLength": 24,
             "ip6": null,
             "prefixLength6": 0,
-            "ip6LL": "fe80::a857:5ff:fe1c:2347"
+            "ip6LL": "fe80::a8e6:afff:fe2c:3484",
+            "slaac": false,
+            "raEnabled": false
           }
         ],
+        "tunnels": [],
         "routes": []
-      }
+      },
+      "rip": {
+        "enabled": false,
+        "passive": []
+      },
+      "ripng": {
+        "enabled": false,
+        "passive": []
+      },
+      "bgp": {
+        "enabled": false,
+        "localAS": 0,
+        "routerId": "",
+        "peers": []
+      },
+      "ospf": {
+        "enabled": false,
+        "passive": [],
+        "routerIdOverride": null,
+        "interfaceAreas": {}
+      },
+      "vrrp": {
+        "groups": []
+      },
+      "pd6": {
+        "enabled": false,
+        "pool": "2001:db8:100::",
+        "poolLength": 48,
+        "delegatedLength": 56,
+        "leaseTime": 3600,
+        "clientEnabled": false,
+        "clientIfIndex": 0
+      },
+      "lldpEnabled": false
     },
     {
       "kind": "RectOverlay",
