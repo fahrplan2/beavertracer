@@ -72,7 +72,6 @@ export default {
   "app.ipv4config.label.gateway": "Brána",
   "app.ipv4config.msg.noInterfaces": "Žiadne dostupné rozhrania.",
   "app.ipv4config.msg.interfaceNotFound": "Rozhranie {i} nenájdené.",
-  "app.ipv4config.msg.loadedInterface": "Načítané rozhranie {i}.",
   "app.ipv4config.msg.appliedWithGw": "Použité: if{i} = {ip} / {netmask}, gw {gw}",
   "app.ipv4config.msg.appliedGwCleared": "Použité: if{i} = {ip} / {netmask}, gw (vymazané)",
   "app.ipv4config.err.noNetDriver": "Žiadny sieťový ovládač v OS.",

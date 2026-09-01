@@ -73,7 +73,6 @@ export default {
   "app.ipv4config.label.gateway": "Vārteja",
   "app.ipv4config.msg.noInterfaces": "Nav pieejamu interfeisu.",
   "app.ipv4config.msg.interfaceNotFound": "Saskarne {i} nav atrasta.",
-  "app.ipv4config.msg.loadedInterface": "Ielādēta saskarne {i}.",
   "app.ipv4config.msg.appliedWithGw": "Piemērots: if{i} = {ip} / {netmask}, vārteja {gw}",
   "app.ipv4config.msg.appliedGwCleared": "Piemērots: if{i} = {ip} / {netmask}, vārteja (notīrīta)",
   "app.ipv4config.err.noNetDriver": "Operētājsistēmā nav tīkla draivera.",

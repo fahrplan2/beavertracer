@@ -73,7 +73,6 @@ export default {
   "app.ipv4config.label.gateway": "Lüüs",
   "app.ipv4config.msg.noInterfaces": "Ühtegi liidest pole saadaval.",
   "app.ipv4config.msg.interfaceNotFound": "Liidest {i} ei leitud.",
-  "app.ipv4config.msg.loadedInterface": "Liides {i} laaditud.",
   "app.ipv4config.msg.appliedWithGw": "Rakendatud: if{i} = {ip} / {netmask}, lüüs {gw}",
   "app.ipv4config.msg.appliedGwCleared": "Rakendatud: if{i} = {ip} / {netmask}, lüüs (puhastatud)",
   "app.ipv4config.err.noNetDriver": "Operatsioonisüsteemis ei ole võrguajurit.",

@@ -73,7 +73,6 @@ export default {
   "app.ipv4config.label.gateway": "Cổng mặc định",
   "app.ipv4config.msg.noInterfaces": "Không có giao diện nào có sẵn.",
   "app.ipv4config.msg.interfaceNotFound": "Giao diện {i} không tìm thấy.",
-  "app.ipv4config.msg.loadedInterface": "Đã tải giao diện {i}.",
   "app.ipv4config.msg.appliedWithGw": "Áp dụng: if{i} = {ip} / {netmask}, gw {gw}",
   "app.ipv4config.msg.appliedGwCleared": "Áp dụng: if{i} = {ip} / {netmask}, gw (đã xóa)",
   "app.ipv4config.err.noNetDriver": "Không có trình điều khiển mạng trên HĐH.",

@@ -73,7 +73,6 @@ export default {
   "app.ipv4config.label.gateway": "Yhdyskäytävä",
   "app.ipv4config.msg.noInterfaces": "Liitäntöjä ei ole saatavilla.",
   "app.ipv4config.msg.interfaceNotFound": "Liitäntä {i} ei löydy.",
-  "app.ipv4config.msg.loadedInterface": "Ladattu liitäntä {i}.",
   "app.ipv4config.msg.appliedWithGw": "Sovellettu: if{i} = {ip} / {netmask}, yhdyskäytävä {gw}",
   "app.ipv4config.msg.appliedGwCleared": "Sovellettu: if{i} = {ip} / {netmask}, yhdyskäytävä (poistettu)",
   "app.ipv4config.err.noNetDriver": "Käyttöjärjestelmässä ei ole verkkoajuria.",

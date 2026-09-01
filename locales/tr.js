@@ -73,7 +73,6 @@ export default {
   "app.ipv4config.label.gateway": "Ağ Geçidi",
   "app.ipv4config.msg.noInterfaces": "Kullanılabilir arayüz yok.",
   "app.ipv4config.msg.interfaceNotFound": "Arabirim {i} bulunamadı.",
-  "app.ipv4config.msg.loadedInterface": "Arabirim {i} yüklendi.",
   "app.ipv4config.msg.appliedWithGw": "Uygulandı: if{i} = {ip} / {netmask}, ağ geçidi {gw}",
   "app.ipv4config.msg.appliedGwCleared": "Uygulandı: if{i} = {ip} / {netmask}, ağ geçidi (temizlendi)",
   "app.ipv4config.err.noNetDriver": "İşletim sisteminde ağ sürücüsü yok.",

@@ -73,7 +73,6 @@ export default {
   "app.ipv4config.label.gateway": "Puerta de enlace",
   "app.ipv4config.msg.noInterfaces": "No hay interfaces disponibles.",
   "app.ipv4config.msg.interfaceNotFound": "Interfaz {i} no encontrada.",
-  "app.ipv4config.msg.loadedInterface": "Interfaz {i} cargada.",
   "app.ipv4config.msg.appliedWithGw": "Aplicado: if{i} = {ip} / {netmask}, gw {gw}",
   "app.ipv4config.msg.appliedGwCleared": "Aplicado: if{i} = {ip} / {netmask}, gw (borrada)",
   "app.ipv4config.err.noNetDriver": "No hay controlador de red en el SO.",

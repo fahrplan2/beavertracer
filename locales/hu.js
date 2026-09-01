@@ -72,7 +72,6 @@ export default {
   "app.ipv4config.label.gateway": "Átjáró",
   "app.ipv4config.msg.noInterfaces": "Nincsenek elérhető csatolók.",
   "app.ipv4config.msg.interfaceNotFound": "Az {i} interfész nem található.",
-  "app.ipv4config.msg.loadedInterface": "Az {i} interfész betöltve.",
   "app.ipv4config.msg.appliedWithGw": "Alkalmazva: if{i} = {ip} / {netmask}, gw {gw}",
   "app.ipv4config.msg.appliedGwCleared": "Alkalmazva: if{i} = {ip} / {netmask}, gw (törölve)",
   "app.ipv4config.err.noNetDriver": "Nincs hálózati illesztőprogram az OS-en.",

@@ -73,7 +73,6 @@ export default {
   "app.ipv4config.label.gateway": "Passerelle",
   "app.ipv4config.msg.noInterfaces": "Aucune interface disponible.",
   "app.ipv4config.msg.interfaceNotFound": "Interface {i} introuvable.",
-  "app.ipv4config.msg.loadedInterface": "Interface {i} chargée.",
   "app.ipv4config.msg.appliedWithGw": "Appliqué : if{i} = {ip} / {netmask}, gw {gw}",
   "app.ipv4config.msg.appliedGwCleared": "Appliqué : if{i} = {ip} / {netmask}, gw (effacée)",
   "app.ipv4config.err.noNetDriver": "Pas de pilote réseau sur le système d'exploitation.",

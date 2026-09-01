@@ -72,7 +72,6 @@ export default {
   "app.ipv4config.label.gateway": "閘道",
   "app.ipv4config.msg.noInterfaces": "沒有可用的介面。",
   "app.ipv4config.msg.interfaceNotFound": "找不到介面 {i}。",
-  "app.ipv4config.msg.loadedInterface": "已載入介面 {i}。",
   "app.ipv4config.msg.appliedWithGw": "已套用：if{i} = {ip} / {netmask}，閘道 {gw}",
   "app.ipv4config.msg.appliedGwCleared": "已套用：if{i} = {ip} / {netmask}，閘道（已清除）",
   "app.ipv4config.err.noNetDriver": "作業系統上沒有網路驅動程式。",

@@ -72,7 +72,6 @@ export default {
   "app.ipv4config.label.gateway": "Шлеуз",
   "app.ipv4config.msg.noInterfaces": "Нема доступних интерфејса.",
   "app.ipv4config.msg.interfaceNotFound": "Интерфејс {i} није пронађен.",
-  "app.ipv4config.msg.loadedInterface": "Учитан интерфејс {i}.",
   "app.ipv4config.msg.appliedWithGw": "Примењено: if{i} = {ip} / {netmask}, шлузи {gw}",
   "app.ipv4config.msg.appliedGwCleared": "Примењено: if{i} = {ip} / {netmask}, шлузи (обрисан)",
   "app.ipv4config.err.noNetDriver": "Нема мрежног драјвера на ОС.",

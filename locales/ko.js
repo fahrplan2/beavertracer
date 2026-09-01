@@ -73,7 +73,6 @@ export default {
   "app.ipv4config.label.gateway": "게이트웨이",
   "app.ipv4config.msg.noInterfaces": "사용 가능한 인터페이스가 없습니다.",
   "app.ipv4config.msg.interfaceNotFound": "인터페이스 {i}를 찾을 수 없습니다.",
-  "app.ipv4config.msg.loadedInterface": "인터페이스 {i}를 로드했습니다.",
   "app.ipv4config.msg.appliedWithGw": "적용됨: if{i} = {ip} / {netmask}, gw {gw}",
   "app.ipv4config.msg.appliedGwCleared": "적용됨: if{i} = {ip} / {netmask}, gw (초기화됨)",
   "app.ipv4config.err.noNetDriver": "OS에 네트 드라이버가 없습니다.",

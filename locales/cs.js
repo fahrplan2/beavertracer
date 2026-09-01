@@ -73,7 +73,6 @@ export default {
   "app.ipv4config.label.gateway": "Brána",
   "app.ipv4config.msg.noInterfaces": "Žádná rozhraní nejsou dostupná.",
   "app.ipv4config.msg.interfaceNotFound": "Rozhraní {i} nebylo nalezeno.",
-  "app.ipv4config.msg.loadedInterface": "Načteno rozhraní {i}.",
   "app.ipv4config.msg.appliedWithGw": "Použito: if{i} = {ip} / {netmask}, gw {gw}",
   "app.ipv4config.msg.appliedGwCleared": "Použito: if{i} = {ip} / {netmask}, gw (vymazáno)",
   "app.ipv4config.err.noNetDriver": "V OS není přítomen síťový ovladač.",

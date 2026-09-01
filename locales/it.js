@@ -73,7 +73,6 @@ export default {
   "app.ipv4config.label.gateway": "Gateway",
   "app.ipv4config.msg.noInterfaces": "Nessuna interfaccia disponibile.",
   "app.ipv4config.msg.interfaceNotFound": "Interfaccia {i} non trovata.",
-  "app.ipv4config.msg.loadedInterface": "Interfaccia {i} caricata.",
   "app.ipv4config.msg.appliedWithGw": "Applicato: if{i} = {ip} / {netmask}, gw {gw}",
   "app.ipv4config.msg.appliedGwCleared": "Applicato: if{i} = {ip} / {netmask}, gw (cancellato)",
   "app.ipv4config.err.noNetDriver": "Nessun driver di rete sul sistema operativo.",

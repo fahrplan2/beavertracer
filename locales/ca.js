@@ -72,7 +72,6 @@ export default {
   "app.ipv4config.label.gateway": "Passarel·la",
   "app.ipv4config.msg.noInterfaces": "Cap interfície disponible.",
   "app.ipv4config.msg.interfaceNotFound": "Interfície {i} no trobada.",
-  "app.ipv4config.msg.loadedInterface": "Interfície {i} carregada.",
   "app.ipv4config.msg.appliedWithGw": "Aplicat: if{i} = {ip} / {netmask}, gw {gw}",
   "app.ipv4config.msg.appliedGwCleared": "Aplicat: if{i} = {ip} / {netmask}, gw (netejat)",
   "app.ipv4config.err.noNetDriver": "No hi ha controlador de xarxa al sistema operatiu.",

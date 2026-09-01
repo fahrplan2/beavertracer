@@ -73,7 +73,6 @@ export default {
   "app.ipv4config.label.gateway": "Πύλη",
   "app.ipv4config.msg.noInterfaces": "Δεν υπάρχουν διαθέσιμες διεπαφές.",
   "app.ipv4config.msg.interfaceNotFound": "Η διεπαφή {i} δεν βρέθηκε.",
-  "app.ipv4config.msg.loadedInterface": "Φόρτωση διεπαφής {i}.",
   "app.ipv4config.msg.appliedWithGw": "Εφαρμόγη: if{i} = {ip} / {netmask}, gw {gw}",
   "app.ipv4config.msg.appliedGwCleared": "Εφαρμόγη: if{i} = {ip} / {netmask}, gw (διαγράφηκε)",
   "app.ipv4config.err.noNetDriver": "Δεν υπάρχει δικτυακός οδηγός στο λειτουργικό σύστημα.",

@@ -73,7 +73,6 @@ export default {
   "app.ipv4config.label.gateway": "Gateway",
   "app.ipv4config.msg.noInterfaces": "Tidak ada antarmuka yang tersedia.",
   "app.ipv4config.msg.interfaceNotFound": "Antarmuka {i} tidak ditemukan.",
-  "app.ipv4config.msg.loadedInterface": "Antarmuka {i} dimuat.",
   "app.ipv4config.msg.appliedWithGw": "Diterapkan: if{i} = {ip} / {netmask}, gw {gw}",
   "app.ipv4config.msg.appliedGwCleared": "Diterapkan: if{i} = {ip} / {netmask}, gw (dihapus)",
   "app.ipv4config.err.noNetDriver": "Tidak ada driver jaringan di OS.",

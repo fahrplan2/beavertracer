@@ -72,7 +72,6 @@ export default {
   "app.ipv4config.label.gateway": "Pristupnik",
   "app.ipv4config.msg.noInterfaces": "Nema dostupnih interfejsa.",
   "app.ipv4config.msg.interfaceNotFound": "Interfejs {i} nije pronađen.",
-  "app.ipv4config.msg.loadedInterface": "Učitan interfejs {i}.",
   "app.ipv4config.msg.appliedWithGw": "Primenjeno: if{i} = {ip} / {netmask}, gw {gw}",
   "app.ipv4config.msg.appliedGwCleared": "Primenjeno: if{i} = {ip} / {netmask}, gw (obrisano)",
   "app.ipv4config.err.noNetDriver": "Nema mrežnog drajvera na OS.",

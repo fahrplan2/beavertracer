@@ -73,7 +73,6 @@ export default {
   "app.ipv4config.label.gateway": "Šliuzas",
   "app.ipv4config.msg.noInterfaces": "Nėra galimų sąsajų.",
   "app.ipv4config.msg.interfaceNotFound": "Sąsaja {i} nerasta.",
-  "app.ipv4config.msg.loadedInterface": "Įkrauta sąsaja {i}.",
   "app.ipv4config.msg.appliedWithGw": "Pritaikytas: if{i} = {ip} / {netmask}, šliuzas {gw}",
   "app.ipv4config.msg.appliedGwCleared": "Pritaikytas: if{i} = {ip} / {netmask}, šliuzas (išvalytas)",
   "app.ipv4config.err.noNetDriver": "OS nėra tinklo tvarkiklio.",

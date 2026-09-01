@@ -73,7 +73,6 @@ export default {
   "app.ipv4config.label.gateway": "Prehod",
   "app.ipv4config.msg.noInterfaces": "Nobenih vmesnikov ni na voljo.",
   "app.ipv4config.msg.interfaceNotFound": "Vmesnik {i} ni bil najden.",
-  "app.ipv4config.msg.loadedInterface": "Naložen vmesnik {i}.",
   "app.ipv4config.msg.appliedWithGw": "Uporabljeno: if{i} = {ip} / {netmask}, gw {gw}",
   "app.ipv4config.msg.appliedGwCleared": "Uporabljeno: if{i} = {ip} / {netmask}, gw (izbrisano)",
   "app.ipv4config.err.noNetDriver": "Na OS-u ni omrežnega gonilnika.",

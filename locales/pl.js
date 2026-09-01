@@ -73,7 +73,6 @@ export default {
   "app.ipv4config.label.gateway": "Brama",
   "app.ipv4config.msg.noInterfaces": "Brak dostępnych interfejsów.",
   "app.ipv4config.msg.interfaceNotFound": "Interfejs {i} nie znaleziony.",
-  "app.ipv4config.msg.loadedInterface": "Załadowany interfejs {i}.",
   "app.ipv4config.msg.appliedWithGw": "Zastosowano: if{i} = {ip} / {netmask}, brama {gw}",
   "app.ipv4config.msg.appliedGwCleared": "Zastosowano: if{i} = {ip} / {netmask}, brama (wyczyszczona)",
   "app.ipv4config.err.noNetDriver": "Brak sterownika sieciowego w systemie operacyjnym.",

@@ -73,7 +73,6 @@ export default {
   "app.ipv4config.label.gateway": "Gateway",
   "app.ipv4config.msg.noInterfaces": "Inga gränssnitt tillgängliga.",
   "app.ipv4config.msg.interfaceNotFound": "Gränssnitt {i} hittades inte.",
-  "app.ipv4config.msg.loadedInterface": "Gränssnitt {i} laddat.",
   "app.ipv4config.msg.appliedWithGw": "Tillämpad: if{i} = {ip} / {netmask}, gw {gw}",
   "app.ipv4config.msg.appliedGwCleared": "Tillämpad: if{i} = {ip} / {netmask}, gw (rensad)",
   "app.ipv4config.err.noNetDriver": "Ingen nätverksdrivrutin på operativsystemet.",

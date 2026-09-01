@@ -72,7 +72,6 @@ export default {
   "app.ipv4config.label.gateway": "Përshënues",
   "app.ipv4config.msg.noInterfaces": "Nuk ka ndërfaqe të disponueshme.",
   "app.ipv4config.msg.interfaceNotFound": "Ndërfaqja {i} nuk u gjet.",
-  "app.ipv4config.msg.loadedInterface": "Ndërfaqja {i} u ngarkua.",
   "app.ipv4config.msg.appliedWithGw": "Aplikuar: if{i} = {ip} / {netmask}, gw {gw}",
   "app.ipv4config.msg.appliedGwCleared": "Aplikuar: if{i} = {ip} / {netmask}, gw (pastruar)",
   "app.ipv4config.err.noNetDriver": "Nuk ka drajver rrjeti në OS.",

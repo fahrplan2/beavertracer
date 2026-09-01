@@ -73,7 +73,6 @@ export default {
   "app.ipv4config.label.gateway": "البوابة",
   "app.ipv4config.msg.noInterfaces": "لا توجد واجهات متاحة.",
   "app.ipv4config.msg.interfaceNotFound": "لم يتم العثور على الواجهة {i}.",
-  "app.ipv4config.msg.loadedInterface": "تم تحميل الواجهة {i}.",
   "app.ipv4config.msg.appliedWithGw": "تم التطبيق: if{i} = {ip} / {netmask}، بوابة {gw}",
   "app.ipv4config.msg.appliedGwCleared": "تم التطبيق: if{i} = {ip} / {netmask}، بوابة (تم حذفها)",
   "app.ipv4config.err.noNetDriver": "لا يوجد برنامج تشغيل شبكة على نظام التشغيل.",

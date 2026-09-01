@@ -73,7 +73,6 @@ export default {
   "app.ipv4config.label.gateway": "درگاه",
   "app.ipv4config.msg.noInterfaces": "هیچ رابط دسترسی موجود نیست.",
   "app.ipv4config.msg.interfaceNotFound": "رابط {i} یافت نشد.",
-  "app.ipv4config.msg.loadedInterface": "رابط {i} بارگذاری شد.",
   "app.ipv4config.msg.appliedWithGw": "اعمال شد: if{i} = {ip} / {netmask}، دروازه {gw}",
   "app.ipv4config.msg.appliedGwCleared": "اعمال شد: if{i} = {ip} / {netmask}، دروازه (پاک شد)",
   "app.ipv4config.err.noNetDriver": "درایور شبکه در سیستم‌عامل موجود نیست.",

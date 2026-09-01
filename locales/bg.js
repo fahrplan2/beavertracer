@@ -73,7 +73,6 @@ export default {
   "app.ipv4config.label.gateway": "Шлюз",
   "app.ipv4config.msg.noInterfaces": "Няма налични интерфейси.",
   "app.ipv4config.msg.interfaceNotFound": "Интерфейс {i} не е намерен.",
-  "app.ipv4config.msg.loadedInterface": "Зареден интерфейс {i}.",
   "app.ipv4config.msg.appliedWithGw": "Приложено: if{i} = {ip} / {netmask}, gw {gw}",
   "app.ipv4config.msg.appliedGwCleared": "Приложено: if{i} = {ip} / {netmask}, gw (изчистен)",
   "app.ipv4config.err.noNetDriver": "Няма мрежов драйвер в ОС.",

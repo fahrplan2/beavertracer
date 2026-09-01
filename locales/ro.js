@@ -73,7 +73,6 @@ export default {
   "app.ipv4config.label.gateway": "Pasarelă",
   "app.ipv4config.msg.noInterfaces": "Nu sunt interfețe disponibile.",
   "app.ipv4config.msg.interfaceNotFound": "Interfața {i} nu a fost găsită.",
-  "app.ipv4config.msg.loadedInterface": "Interfață încărcată {i}.",
   "app.ipv4config.msg.appliedWithGw": "Aplicat: if{i} = {ip} / {netmask}, gw {gw}",
   "app.ipv4config.msg.appliedGwCleared": "Aplicat: if{i} = {ip} / {netmask}, gw (șters)",
   "app.ipv4config.err.noNetDriver": "Nu există driver de rețea pe SO.",

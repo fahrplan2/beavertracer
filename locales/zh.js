@@ -73,7 +73,6 @@ export default {
   "app.ipv4config.label.gateway": "网关",
   "app.ipv4config.msg.noInterfaces": "没有可用的接口。",
   "app.ipv4config.msg.interfaceNotFound": "接口 {i} 未找到。",
-  "app.ipv4config.msg.loadedInterface": "已加载接口 {i}。",
   "app.ipv4config.msg.appliedWithGw": "已应用：if{i} = {ip} / {netmask}，网关 {gw}",
   "app.ipv4config.msg.appliedGwCleared": "已应用：if{i} = {ip} / {netmask}，网关（已清除）",
   "app.ipv4config.err.noNetDriver": "操作系统上没有网络驱动程序。",
