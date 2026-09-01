@@ -73,6 +73,24 @@ describe('registrar', () => {
     expect(events.find(e => e.ev === 'register').d.expires).toBe(600);
   });
 
+  it('binds to the observed source, not a private IP in the Contact URI (NAT)', () => {
+    const reg = SIPMessage.request('REGISTER', `sip:${PROXY}`, [
+      ['Via', 'SIP/2.0/UDP 192.168.1.50:5060;branch=z9hG4bKnat;rport'],
+      ['From', '<sip:dave@example.com>;tag=d1'],
+      ['To', '<sip:dave@example.com>'],
+      ['Call-ID', 'reg-dave'],
+      ['CSeq', '1 REGISTER'],
+      ['Contact', '<sip:dave@192.168.1.50:5060>'], // dave's private, pre-NAT address
+      ['Expires', '600'],
+    ]);
+    // ...but the packet actually arrives from the router's WAN-mapped address
+    proxy.receive(reg.pack(), '203.0.113.9', 40222);
+
+    const b = proxy.lookup('sip:dave@example.com');
+    expect(b.contactIp).toBe('203.0.113.9');
+    expect(b.contactPort).toBe(40222);
+  });
+
   it('removes the binding on Expires: 0', () => {
     alice.register({ registrarIp: PROXY, expires: 600 });
     alice.unregister();

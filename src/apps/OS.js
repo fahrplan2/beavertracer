@@ -29,6 +29,7 @@ import { SimpleIRCClientApp } from "./SimpleIRCClientApp.js";
 import { MulticastChatApp } from "./MulticastChatApp.js";
 import { SoftphoneApp } from "./SoftphoneApp.js";
 import { SIPServerApp } from "./SIPServerApp.js";
+import { STUNServerApp } from "./STUNServerApp.js";
 import { BitcoinNodeApp } from "./BitcoinNodeApp.js";
 import { UILib } from "../lib/UILib.js";
 import { ExplorerApp } from "./ExplorerApp.js";
@@ -59,6 +60,7 @@ const APP_REGISTRY = [
     { id: "SimpleMailServerApp",    Class: SimpleMailServerApp,    mandatory: false, category: "server", icon: "fa-server",        labelKey: "app.simplemailserver.title" },
     { id: "SimpleIRCServerApp",     Class: SimpleIRCServerApp,     mandatory: false, category: "server", icon: "fa-server",        labelKey: "app.ircserver.title" },
     { id: "SIPServerApp",           Class: SIPServerApp,           mandatory: false, category: "server", icon: "fa-server",        labelKey: "app.sipserver.title" },
+    { id: "STUNServerApp",          Class: STUNServerApp,          mandatory: false, category: "server", icon: "fa-server",        labelKey: "app.stunserver.title" },
     { id: "BitcoinNodeApp",         Class: BitcoinNodeApp,         mandatory: false, category: "server", icon: "fa-coins",         labelKey: "app.bitcoin.title" },
 ];
 

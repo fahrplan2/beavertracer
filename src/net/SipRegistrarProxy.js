@@ -153,7 +153,16 @@ export class SipRegistrarProxy {
     }
 
     const contact = SIPMessage.uriOf(contactRaw) ?? "";
-    const { ip: contactIp, port: contactPort } = this._parseUriHost(contact, srcIp, srcPort);
+    // NAT-aware binding (cf. Asterisk's nat=force_rport, Kamailio's
+    // fix_nated_register()): trust the packet's own observed source over
+    // whatever host the UA put in its Contact URI. A pre-NAT private IP in
+    // the URI is unreachable from here; the observed source is exactly what
+    // a NatEngine on the path already rewrote to the reachable WAN address —
+    // and for a UA with no NAT in between it's simply the same address the
+    // URI would have given anyway. The Contact text itself is still echoed
+    // back to the UA as-is below.
+    const contactIp = srcIp;
+    const contactPort = srcPort;
 
     this._removeBinding(aor);
     const timerId = this._timer.schedule(() => {

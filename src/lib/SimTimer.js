@@ -148,6 +148,16 @@ export class SimTimer {
     /** SIP re-REGISTER floor when the negotiated expiry is very short. */
     static SIP_MIN_REREGISTER_MS   =  2_000;  // 400 ticks
 
+    /** STUN Binding Request retransmit base interval (RFC 5389 §7.2.1, simulation-scaled). */
+    static STUN_RTO_MS             =    200;  //  40 ticks
+    /** STUN Binding Request give-up window if the server never answers. */
+    static STUN_TIMEOUT_MS         =  1_600;  // 320 ticks
+    /** How often a client re-punches a NAT binding it depends on (SIP socket
+     *  while registered, RTP socket while a call is being set up) — must
+     *  stay well under NatEngine.UDP_IDLE_MS (15 s) so the mapping never
+     *  goes stale between SIP re-registrations or during a long ring. */
+    static STUN_KEEPALIVE_MS       = 10_000;  // 2000 ticks
+
     /** RTP packetization interval (ptime) — 100 ms keeps the packet rate low for the sim. */
     static RTP_PTIME_MS            =    100;  // 20 ticks  → 10 packets/s per direction
     /** RTP inbound talkspurt end: flush this many missed ptime-slices after the last packet. */

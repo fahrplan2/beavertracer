@@ -11,6 +11,8 @@ import { simAudio } from "../lib/SimAudio.js";
 import { SipStack } from "../net/SipStack.js";
 import { RtpSession } from "../net/RtpSession.js";
 import { SdpMessage } from "../net/pdu/SdpMessage.js";
+import { StunClient } from "../net/StunClient.js";
+import { simTimer, SimTimer } from "../lib/SimTimer.js";
 
 const SIP_PORT = 5060;
 const CONF_PATH = "/etc/softphone.conf";
@@ -39,6 +41,9 @@ export class SoftphoneApp extends GenericProcess {
   user = "phone";
   domain = "";
   registrarHost = "";
+  /** optional STUN server (host[:port]) used to learn our NAT-mapped public
+   *  address for the SIP Contact and SDP — see StunClient / STUNServerApp. */
+  stunServer = "";
   registered = false;
   /** re-register automatically on next start (persisted in /etc/softphone.conf) */
   _autoRegister = false;
@@ -46,6 +51,11 @@ export class SoftphoneApp extends GenericProcess {
   // ── SIP ──
   /** @type {SipStack|null} */ _sip = null;
   /** @type {number|null} */   _sipSock = null;
+  /** @type {StunClient|null} */ _sipStun = null;
+  /** @type {StunClient|null} */ _rtpStun = null;
+  /** @type {string|null} resolved STUN server IP, cached once we've used it */ _stunServerIp = null;
+  /** @type {number|null} */ _sipKeepaliveTimer = null;
+  /** @type {number|null} */ _rtpKeepaliveTimer = null;
 
   // ── current call ──
   /** @type {string|null} */ _callId = null;
@@ -73,6 +83,7 @@ export class SoftphoneApp extends GenericProcess {
   /** @type {HTMLInputElement|null} */ _userEl = null;
   /** @type {HTMLInputElement|null} */ _domainEl = null;
   /** @type {HTMLInputElement|null} */ _registrarEl = null;
+  /** @type {HTMLInputElement|null} */ _stunEl = null;
   /** @type {HTMLButtonElement|null} */ _regBtn = null;
   /** @type {HTMLElement|null} */ _regDot = null;
   /** @type {HTMLInputElement|null} */ _dispEl = null;
@@ -102,6 +113,7 @@ export class SoftphoneApp extends GenericProcess {
       if (typeof j.user === "string" && j.user.trim()) this.user = j.user.trim();
       if (typeof j.domain === "string") this.domain = j.domain.trim();
       if (typeof j.registrar === "string") this.registrarHost = j.registrar.trim();
+      if (typeof j.stunServer === "string") this.stunServer = j.stunServer.trim();
       this._autoRegister = j.autoRegister === true;
     } catch { /* no config yet — keep defaults */ }
   }
@@ -118,6 +130,7 @@ export class SoftphoneApp extends GenericProcess {
         user: this.user,
         domain: this.domain,
         registrar: this.registrarHost,
+        stunServer: this.stunServer,
         ...extra,
       };
       fs.writeFile(CONF_PATH, JSON.stringify(next, null, 2) + "\n");
@@ -144,7 +157,7 @@ export class SoftphoneApp extends GenericProcess {
 
   onUnmount() {
     this.disposer.dispose();
-    this._userEl = this._domainEl = this._registrarEl = null;
+    this._userEl = this._domainEl = this._registrarEl = this._stunEl = null;
     this._regBtn = this._regDot = this._callBtn = this._hangBtn = this._bkspBtn = null;
     this._dispEl = this._dispSubEl = this._keypadEl = null;
     this._incomingEl = this._phrasesEl = this._logEl = null;
@@ -155,7 +168,10 @@ export class SoftphoneApp extends GenericProcess {
     this._stopRingtone();
     try { if (this._callId) this._sip?.hangup(this._callId); } catch { /* ignore */ }
     this._teardownRtp();
+    this._stopSipKeepalive();
     try { this._sip?.dispose(); } catch { /* ignore */ }
+    try { this._sipStun?.dispose(); } catch { /* ignore */ }
+    this._sipStun = null;
     if (this._sipSock != null) { try { this.os.net.closeUDPSocket(this._sipSock); } catch { /* ignore */ } this._sipSock = null; }
     // the AudioContext is sim-wide (SimAudio) — do not close it here
     super.destroy();
@@ -214,6 +230,15 @@ export class SoftphoneApp extends GenericProcess {
       this._sipSock = null;
       return false;
     }
+    this._sipStun = new StunClient({
+      transport: {
+        send: (bytes, dstIp, dstPort) => {
+          if (this._sipSock == null) return;
+          try { this.os.net.sendUDPSocket(this._sipSock, IPAddress.fromString(dstIp), dstPort, bytes); }
+          catch { /* drop */ }
+        },
+      },
+    });
     void this._sipRecvLoop();
     return true;
   }
@@ -225,7 +250,9 @@ export class SoftphoneApp extends GenericProcess {
       try { m = await this.os.net.recvUDPSocket(sock); }
       catch { break; }
       if (m == null) break;
-      try { this._sip?.receive(m.payload, m.src.toString(), m.srcPort); }
+      const srcIp = m.src.toString();
+      if (this._sipStun?.receive(m.payload, srcIp, m.srcPort)) continue; // STUN Binding reply for this socket
+      try { this._sip?.receive(m.payload, srcIp, m.srcPort); }
       catch (e) { this._log("err", `SIP recv: ${e instanceof Error ? e.message : e}`); }
     }
   }
@@ -242,6 +269,7 @@ export class SoftphoneApp extends GenericProcess {
     this.user = (this._userEl?.value ?? "").trim() || "phone";
     this.registrarHost = (this._registrarEl?.value ?? "").trim();
     this.domain = (this._domainEl?.value ?? "").trim() || this.registrarHost;
+    this.stunServer = (this._stunEl?.value ?? "").trim();
     if (!this.registrarHost) { this._log("err", t("app.softphone.err.noRegistrar")); return; }
     this._saveConfig();
     await this._doRegister();
@@ -255,12 +283,25 @@ export class SoftphoneApp extends GenericProcess {
     try { registrarIp = await this._resolve(this.registrarHost); }
     catch { this._log("err", t("app.softphone.err.resolve", { host: this.registrarHost })); return; }
 
-    const contactIp = this._localIp(registrarIp);
+    let contactIp = this._localIp(registrarIp);
+    let contactPort = SIP_PORT;
+    if (this.stunServer && this._sipStun) {
+      try {
+        this._stunServerIp = await this._resolve(this.stunServer);
+        const mapped = await this._sipStun.bind({ serverIp: this._stunServerIp });
+        contactIp = mapped.ip;
+        contactPort = mapped.port;
+        this._log("sys", t("app.softphone.log.stunMapped", { addr: `${contactIp}:${contactPort}` }));
+      } catch (e) {
+        this._log("err", t("app.softphone.err.stunFailed", { reason: e instanceof Error ? e.message : String(e) }));
+      }
+    }
+
     this._sip?.setIdentity({
       uri: `sip:${this.user}@${this.domain || registrarIp}`,
       displayName: this.user,
       contactIp,
-      contactPort: SIP_PORT,
+      contactPort,
     });
     this._log("sys", t("app.softphone.log.registering", { host: this.registrarHost }));
     try { this._sip?.register({ registrarIp, registrarPort: SIP_PORT, expires: 600 }); }
@@ -274,14 +315,38 @@ export class SoftphoneApp extends GenericProcess {
       this._log("sys", t("app.softphone.log.registered"));
       this._autoRegister = true;
       this._saveConfig({ autoRegister: true });
+      if (this._stunServerIp) this._startSipKeepalive();
     } else if (state === "unregistered") {
       this._log("sys", t("app.softphone.log.unregistered"));
       this._autoRegister = false;
       this._saveConfig({ autoRegister: false });
+      this._stopSipKeepalive();
     } else {
       this._log("err", t("app.softphone.log.regFailed", { reason: detail?.reason ?? "?" }));
+      this._stopSipKeepalive();
     }
     this._syncUI();
+  }
+
+  /**
+   * Re-punch the SIP socket's NAT binding on the sim clock while registered —
+   * independent of the (much longer) SIP re-REGISTER interval, since
+   * NatEngine.UDP_IDLE_MS is short enough that the mapping would otherwise go
+   * stale between registrations. No-op if we never learned a STUN mapping.
+   */
+  _startSipKeepalive() {
+    this._stopSipKeepalive();
+    const tick = () => {
+      this._sipKeepaliveTimer = null;
+      if (!this.registered || !this._stunServerIp || !this._sipStun) return;
+      this._sipStun.bind({ serverIp: this._stunServerIp }).catch(() => { /* next tick tries again */ });
+      this._sipKeepaliveTimer = simTimer.schedule(tick, SimTimer.STUN_KEEPALIVE_MS);
+    };
+    this._sipKeepaliveTimer = simTimer.schedule(tick, SimTimer.STUN_KEEPALIVE_MS);
+  }
+
+  _stopSipKeepalive() {
+    if (this._sipKeepaliveTimer != null) { simTimer.cancel(this._sipKeepaliveTimer); this._sipKeepaliveTimer = null; }
   }
 
   // ── outgoing call ──────────────────────────────────────────────────
@@ -300,8 +365,8 @@ export class SoftphoneApp extends GenericProcess {
     catch { this._log("err", t("app.softphone.err.resolve", { host: this.registrarHost })); return; }
 
     if (!this._openRtp()) { this._log("err", t("app.softphone.err.noRtpPort")); return; }
-    const localIp = this._localIp(registrarIp);
-    const offer = SdpMessage.audioOffer({ address: localIp, port: this._rtpPort }).toString();
+    const { address, port } = await this._rtpPublicAddress(registrarIp);
+    const offer = SdpMessage.audioOffer({ address, port }).toString();
 
     this._callState = "calling";
     this._log("sys", t("app.softphone.log.calling", { target: targetUri }));
@@ -343,7 +408,7 @@ export class SoftphoneApp extends GenericProcess {
     this._syncUI();
   }
 
-  _acceptIncoming() {
+  async _acceptIncoming() {
     const inc = this._incoming;
     if (!inc) return;
     this._stopRingtone();
@@ -359,8 +424,9 @@ export class SoftphoneApp extends GenericProcess {
     } catch (e) { this._log("err", `SDP: ${e instanceof Error ? e.message : e}`); }
     this._rtp?.setRemote(remoteAddr, remotePort);
 
-    const localIp = remoteAddr !== "0.0.0.0" ? this._localIp(remoteAddr) : this._localIp(this.registrarHost || "0.0.0.0");
-    const answer = SdpMessage.audioOffer({ address: localIp, port: this._rtpPort }).toString();
+    const towardIp = remoteAddr !== "0.0.0.0" ? remoteAddr : (this.registrarHost || "0.0.0.0");
+    const { address, port } = await this._rtpPublicAddress(towardIp);
+    const answer = SdpMessage.audioOffer({ address, port }).toString();
 
     this._callId = inc.callId;
     this._incoming = null;
@@ -429,6 +495,15 @@ export class SoftphoneApp extends GenericProcess {
     this._rtp.on("firstPacket", () => this._log("media", t("app.softphone.log.mediaUp")));
     this._rtp.on("talkstart", ({ phraseId }) => this._onTalkstart(phraseId));
     this._rtp.on("talkspurt", (ts) => this._onTalkspurt(ts));
+    this._rtpStun = new StunClient({
+      transport: {
+        send: (bytes, dstIp, dstPort) => {
+          if (this._rtpSock == null) return;
+          try { this.os.net.sendUDPSocket(this._rtpSock, IPAddress.fromString(dstIp), dstPort, bytes); }
+          catch { /* drop */ }
+        },
+      },
+    });
     void this._rtpRecvLoop();
     return true;
   }
@@ -440,14 +515,63 @@ export class SoftphoneApp extends GenericProcess {
       try { m = await this.os.net.recvUDPSocket(sock); }
       catch { break; }
       if (m == null) break;
-      try { this._rtp?.receive(m.payload, m.src.toString(), m.srcPort); }
+      const srcIp = m.src.toString();
+      if (this._rtpStun?.receive(m.payload, srcIp, m.srcPort)) continue; // STUN Binding reply for this socket
+      try { this._rtp?.receive(m.payload, srcIp, m.srcPort); }
       catch (e) { this._log("err", `RTP recv: ${e instanceof Error ? e.message : e}`); }
     }
   }
 
+  /**
+   * Public (NAT-mapped) address for the RTP socket, for SDP c=/m=. Falls back
+   * to the local interface address if no STUN server is configured or the
+   * Binding Request fails — the call still proceeds, just without NAT
+   * traversal (fine on a LAN / when there's no NAT in the path).
+   * @param {string} towardIp used only for the local-address fallback
+   * @returns {Promise<{address: string, port: number}>}
+   */
+  async _rtpPublicAddress(towardIp) {
+    if (this.stunServer && this._rtpStun) {
+      try {
+        this._stunServerIp ??= await this._resolve(this.stunServer);
+        const mapped = await this._rtpStun.bind({ serverIp: this._stunServerIp });
+        this._log("sys", t("app.softphone.log.stunMappedRtp", { addr: `${mapped.ip}:${mapped.port}` }));
+        this._startRtpKeepalive(this._stunServerIp);
+        return { address: mapped.ip, port: mapped.port };
+      } catch (e) {
+        this._log("err", t("app.softphone.err.stunFailed", { reason: e instanceof Error ? e.message : String(e) }));
+      }
+    }
+    return { address: this._localIp(towardIp), port: this._rtpPort };
+  }
+
+  /**
+   * Re-punch the RTP socket's NAT binding while a call is ringing/being set
+   * up — before media flows there's no other traffic to keep the mapping
+   * fresh, and a ring can easily outlast NatEngine.UDP_IDLE_MS.
+   * @param {string} stunIp
+   */
+  _startRtpKeepalive(stunIp) {
+    this._stopRtpKeepalive();
+    const tick = () => {
+      this._rtpKeepaliveTimer = null;
+      if (!this._rtpStun) return;
+      this._rtpStun.bind({ serverIp: stunIp }).catch(() => { /* next tick tries again */ });
+      this._rtpKeepaliveTimer = simTimer.schedule(tick, SimTimer.STUN_KEEPALIVE_MS);
+    };
+    this._rtpKeepaliveTimer = simTimer.schedule(tick, SimTimer.STUN_KEEPALIVE_MS);
+  }
+
+  _stopRtpKeepalive() {
+    if (this._rtpKeepaliveTimer != null) { simTimer.cancel(this._rtpKeepaliveTimer); this._rtpKeepaliveTimer = null; }
+  }
+
   _teardownRtp() {
+    this._stopRtpKeepalive();
     try { this._rtp?.close(); } catch { /* ignore */ }
     this._rtp = null;
+    try { this._rtpStun?.dispose(); } catch { /* ignore */ }
+    this._rtpStun = null;
     if (this._rtpSock != null) { try { this.os.net.closeUDPSocket(this._rtpSock); } catch { /* ignore */ } }
     this._rtpSock = null;
     this._rtpPort = 0;
@@ -718,6 +842,7 @@ export class SoftphoneApp extends GenericProcess {
     this._userEl = UI.input({ value: this.user, placeholder: t("app.softphone.ph.user") });
     this._domainEl = UI.input({ value: this.domain, placeholder: t("app.softphone.ph.domain") });
     this._registrarEl = UI.input({ value: this.registrarHost, placeholder: t("app.softphone.ph.registrar") });
+    this._stunEl = UI.input({ value: this.stunServer, placeholder: t("app.softphone.ph.stun") });
     this._regDot = UI.el("span", { className: "sp-dot" });
     this._regBtn = UI.button(t("app.softphone.btn.register"), () => void this._toggleRegister(), { primary: true, icon: "fa-right-to-bracket" });
     const testBtn = UI.button(t("app.softphone.btn.testTone"), () => void this._testTone(), { icon: "fa-volume-high" });
@@ -725,6 +850,7 @@ export class SoftphoneApp extends GenericProcess {
       UI.row(t("app.softphone.label.user"), this._userEl),
       UI.row(t("app.softphone.label.domain"), this._domainEl),
       UI.row(t("app.softphone.label.registrar"), this._registrarEl),
+      UI.row(t("app.softphone.label.stun"), this._stunEl),
       UI.el("div", { className: "sp-reg-row", children: [this._regDot, this._regBtn] }),
       UI.el("div", { className: "sp-reg-row", children: [testBtn] }),
     ]});
@@ -772,7 +898,7 @@ export class SoftphoneApp extends GenericProcess {
         document.createTextNode(this.registered ? t("app.softphone.btn.unregister") : t("app.softphone.btn.register")),
       );
     }
-    for (const el of [this._userEl, this._domainEl, this._registrarEl]) if (el) el.disabled = this.registered;
+    for (const el of [this._userEl, this._domainEl, this._registrarEl, this._stunEl]) if (el) el.disabled = this.registered;
 
     if (this._callBtn) this._callBtn.disabled = !this.registered || busy;
     if (this._hangBtn) this._hangBtn.disabled = !busy && st !== "ringing-in";
@@ -806,7 +932,7 @@ export class SoftphoneApp extends GenericProcess {
         if (this._dispEl) this._dispEl.value = who;
         this._incomingEl.appendChild(UI.el("span", { text: t("app.softphone.incoming.prompt", { from: who }) }));
         this._incomingEl.appendChild(UI.buttonRow([
-          UI.button(t("app.softphone.btn.accept"), () => this._acceptIncoming(), { primary: true, icon: "fa-phone" }),
+          UI.button(t("app.softphone.btn.accept"), () => void this._acceptIncoming(), { primary: true, icon: "fa-phone" }),
           UI.button(t("app.softphone.btn.reject"), () => this._rejectIncoming(), { icon: "fa-phone-slash" }),
         ]));
       }
