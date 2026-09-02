@@ -5,6 +5,7 @@ import { SimControl } from "../SimControl.js";
 import { SimulatedObject } from "./SimulatedObject.js";
 import { t } from "../i18n/index.js";
 import { isTrafficSuppressed } from "../lib/CheckState.js";
+import { makeDraggable } from "../lib/dragabble.js";
 
 
 /** @typedef {import("../net/EthernetPort.js").EthernetPort} EthernetPort */
@@ -56,6 +57,9 @@ export class Link extends SimulatedObject {
 
   /** @type {HTMLDivElement|null} */
   _faultPanel = null;
+
+  /** @type {import("../lib/dragabble.js").DraggableController|null} */
+  _faultPanelDraggable = null;
 
   /** @type {HTMLDivElement|null} */
   _labelA = null;
@@ -212,6 +216,11 @@ export class Link extends SimulatedObject {
       return;
     }
 
+    // Consistent with the node panels: the fault panel is only interactive
+    // in "run" mode (in edit mode a link click belongs to the delete/select
+    // tools, handled at the SimControl level).
+    if (this.simcontrol?.mode !== "run") return;
+
     const labelA = this._portLabel(this.A, this.portAKey);
     const labelB = this._portLabel(this.B, this.portBKey);
 
@@ -236,7 +245,6 @@ export class Link extends SimulatedObject {
 
     const header = document.createElement("div");
     header.className = "sim-panel-header";
-    header.style.cursor = "default";
     header.append(icon, titleGroup, closeBtn);
 
     // ── body ─────────────────────────────────────────────────────
@@ -311,6 +319,15 @@ export class Link extends SimulatedObject {
     document.body.appendChild(panel);
     this._faultPanel = panel;
 
+    // Draggable by its header, like the node panels (see
+    // SimulatedObject.wirePanelInteractions). Skipped on mobile, same as there.
+    if (!this._isMobile()) {
+      this._faultPanelDraggable = makeDraggable(panel, {
+        handle: header,
+        clampToViewport: true,
+      });
+    }
+
     // Position near click, keep within viewport
     requestAnimationFrame(() => {
       const pw = panel.offsetWidth  || 270;
@@ -331,8 +348,20 @@ export class Link extends SimulatedObject {
   }
 
   _closeFaultPanel() {
+    this._faultPanelDraggable?.destroy();
+    this._faultPanelDraggable = null;
     this._faultPanel?.remove();
     this._faultPanel = null;
+  }
+
+  /**
+   * A link has no standard node panel — its only panel is the fault popover.
+   * Overridden so SimControl.closeAllPanels() (fired on entering edit mode /
+   * resetting tools) dismisses it too, consistent with the node panels.
+   * @param {boolean} open
+   */
+  setPanelOpen(open) {
+    if (!open) this._closeFaultPanel();
   }
 
   destroy() {
