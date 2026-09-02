@@ -199,8 +199,16 @@ html[data-debug="true"] .lesson-article [data-draft="true"] { display: revert; }
   background: color-mix(in oklch, var(--lesson-accent) 15%, transparent);
   font-weight: 600;
 }
-.lesson-article .quiz-option.quiz-correct { border-color: var(--ok, #2e9b4f); background: color-mix(in oklch, var(--ok, #2e9b4f) 15%, transparent); }
-.lesson-article .quiz-option.quiz-incorrect { border-color: var(--danger, #c0392b); background: color-mix(in oklch, var(--danger, #c0392b) 15%, transparent); }
+.lesson-article .quiz-option.quiz-correct,
+.lesson-article .quiz-option.quiz-incorrect { border-width: 2px; }
+.lesson-article .quiz-option.quiz-correct { border-style: solid; border-color: var(--ok, #2e9b4f); background: color-mix(in oklch, var(--ok, #2e9b4f) 15%, transparent); }
+.lesson-article .quiz-option.quiz-incorrect { border-style: dashed; border-color: var(--danger, #c0392b); background: color-mix(in oklch, var(--danger, #c0392b) 15%, transparent); }
+/* Non-colour cue: symbol prefix so the result reads without relying on hue
+   (matches the ✓/✗ used for short-answer feedback in QuizInteractions.js) */
+.lesson-article .quiz-option.quiz-correct::before,
+.lesson-article .quiz-option.quiz-incorrect::before { font-weight: 700; margin-right: 0.35em; }
+.lesson-article .quiz-option.quiz-correct::before   { content: "✓"; }
+.lesson-article .quiz-option.quiz-incorrect::before { content: "✗"; }
 .lesson-article .quiz-gap { display: inline-flex; align-items: center; gap: 4px; }
 .lesson-article .quiz-gap-input.quiz-correct { border-color: var(--ok, #2e9b4f); }
 .lesson-article .quiz-gap-input.quiz-incorrect { border-color: var(--danger, #c0392b); }
@@ -222,8 +230,17 @@ html[data-debug="true"] .lesson-article [data-draft="true"] { display: revert; }
   overflow-wrap: break-word;
 }
 .lesson-article .quiz-match-dropzone.drag-over { border-color: var(--primary-strong, #1d4ed8); }
-.lesson-article .quiz-match-dropzone.quiz-correct { border-color: var(--ok, #2e9b4f); border-style: solid; }
-.lesson-article .quiz-match-dropzone.quiz-incorrect { border-color: var(--danger, #c0392b); border-style: solid; }
+.lesson-article .quiz-match-dropzone.quiz-correct,
+.lesson-article .quiz-match-dropzone.quiz-incorrect { position: relative; border-width: 2px; padding-right: 22px; }
+.lesson-article .quiz-match-dropzone.quiz-correct { border-style: solid; border-color: var(--ok, #2e9b4f); background: color-mix(in oklch, var(--ok, #2e9b4f) 15%, transparent); }
+.lesson-article .quiz-match-dropzone.quiz-incorrect { border-style: dotted; border-color: var(--danger, #c0392b); background: color-mix(in oklch, var(--danger, #c0392b) 15%, transparent); }
+/* "not filled" reads as neutral, not as a wrong answer */
+.lesson-article .quiz-match-dropzone.quiz-missing { border-style: dashed; border-color: var(--muted); }
+/* Non-colour cue: corner symbol */
+.lesson-article .quiz-match-dropzone.quiz-correct::after,
+.lesson-article .quiz-match-dropzone.quiz-incorrect::after { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); font-weight: 700; }
+.lesson-article .quiz-match-dropzone.quiz-correct::after   { content: "✓"; }
+.lesson-article .quiz-match-dropzone.quiz-incorrect::after { content: "✗"; }
 .lesson-article .quiz-match-pool { display: flex; flex-direction: row; flex-wrap: wrap; gap: 6px; }
 .lesson-article .quiz-match-chip {
   max-width: 100%;

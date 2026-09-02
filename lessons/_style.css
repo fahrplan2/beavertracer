@@ -788,25 +788,49 @@ html[data-debug="true"] [data-draft="true"] { display: revert; }
 .quiz-input.quiz-incorrect,
 .quiz-gap-input.quiz-incorrect { border-color: var(--danger); }
 
+.quiz-option.quiz-correct,
+.quiz-option.quiz-incorrect { border-width: 2px; }
 .quiz-option.quiz-correct {
+  border-style: solid;
   border-color: var(--ok);
   background: color-mix(in oklch, var(--ok), var(--bg) 88%);
 }
 .quiz-option.quiz-incorrect {
+  border-style: dashed;
   border-color: var(--danger);
   background: color-mix(in oklch, var(--danger), var(--bg) 88%);
 }
+/* Non-colour cue: symbol prefix so the result reads without relying on hue
+   (matches the ✓/✗ used for short-answer feedback in QuizInteractions.js) */
+.quiz-option.quiz-correct::before,
+.quiz-option.quiz-incorrect::before { font-weight: 700; margin-right: 0.35em; }
+.quiz-option.quiz-correct::before   { content: "✓"; }
+.quiz-option.quiz-incorrect::before { content: "✗"; }
+
+.quiz-match-dropzone.quiz-correct,
+.quiz-match-dropzone.quiz-incorrect { position: relative; padding-right: 24px; }
 .quiz-match-dropzone.quiz-correct {
   border-style: solid;
   border-color: var(--ok);
   background: color-mix(in oklch, var(--ok), var(--bg) 88%);
 }
 .quiz-match-dropzone.quiz-incorrect {
-  border-style: solid;
+  border-style: dotted;
   border-color: var(--danger);
   background: color-mix(in oklch, var(--danger), var(--bg) 88%);
 }
-.quiz-match-dropzone.quiz-missing { border-color: var(--danger); }
+/* "not filled" reads as neutral, not as a wrong answer */
+.quiz-match-dropzone.quiz-missing { border-style: dashed; border-color: var(--muted); }
+.quiz-match-dropzone.quiz-correct::after,
+.quiz-match-dropzone.quiz-incorrect::after {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-weight: 700;
+}
+.quiz-match-dropzone.quiz-correct::after   { content: "✓"; }
+.quiz-match-dropzone.quiz-incorrect::after { content: "✗"; }
 
 /* Evaluate button */
 .quiz-evaluate-wrap { display: flex; align-items: center; gap: 16px; margin: 28px 0; }

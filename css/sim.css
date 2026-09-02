@@ -680,7 +680,7 @@
 
 .sim-link.is-faulted .sim-link-line {
   background: transparent;
-  border-top: 2px dashed var(--danger);
+  border-top: 3px dashed var(--danger);
 }
 
 
@@ -688,9 +688,11 @@
   cursor: pointer;
 }
 
+/* dotted (not dashed) so a lossy link differs from a faulted one by stroke
+   pattern, not only by red-vs-amber hue */
 .sim-link.is-lossy:not(.is-faulted) .sim-link-line {
   background: transparent;
-  border-top: 2px dashed var(--warning);
+  border-top: 3px dotted var(--warning);
 }
 
 .sim-link.is-lossy:not(.is-faulted) .sim-link-hit {
