@@ -272,8 +272,10 @@ export class SwitchBackplane extends Observable {
         this.stpRootId = this.stpBridgeIdVal;
 
         // Create ports FIRST (addPort pushes to all arrays)
+        // Port names are 1-based to match the UI everywhere else (LLDP, VLAN/LAG
+        // tables, tracer picker) which all label ports `port ${i + 1}`.
         for (let i = 0; i < numberOfPorts; i++) {
-            this.addPort(new EthernetPort("" + i));
+            this.addPort(new EthernetPort("" + (i + 1)));
         }
 
         // Default: STP disabled => all forwarding, all designated
