@@ -40,6 +40,8 @@ export class IPv4ConfigApp extends GenericProcess {
   /** @type {HTMLInputElement|null} */ dnsEl = null;
 
   /** @type {HTMLElement|null} */ msgEl = null;
+  /** @type {HTMLElement|null} */ msgEl6 = null;
+  /** @type {HTMLElement|null} */ msgElWifi = null;
 
   /** @type {HTMLButtonElement|null} */ releaseBtn = null;
   lastDhcpServerByIface = new Map();
@@ -163,6 +165,8 @@ export class IPv4ConfigApp extends GenericProcess {
 
     const msg = UILib.el("div", { className: "ipcfg-msg" });
     this.msgEl = msg;
+    const msg6 = UILib.el("div", { className: "ipcfg-msg" });
+    this.msgEl6 = msg6;
 
     // Helper: stacked label + control
     const field = (/** @type {string} */ cls, /** @type {string} */ label, /** @type {HTMLElement} */ inp) => UILib.el("div", { className: "cfg-field " + cls, children: [
@@ -230,6 +234,7 @@ export class IPv4ConfigApp extends GenericProcess {
       ipv4StaticFields,
       ipv4DhcpInfo,
       UILib.div("cfg-btn-row", [applyBtn, releaseBtn]),
+      msg,
     ]});
     this._ipv4Section = ipv4Section;
 
@@ -294,6 +299,7 @@ export class IPv4ConfigApp extends GenericProcess {
       ]),
       ip6GwInfoRow,
       UILib.div("cfg-btn-row", [applyBtn6, dhcp6ReleaseBtn]),
+      msg6,
     ]});
     this._ipv6Section = ipv6Section;
 
@@ -303,15 +309,18 @@ export class IPv4ConfigApp extends GenericProcess {
     if (device?._wPort) {
       const ssidInput = UILib.input({ placeholder: "SSID", value: device._ssid ?? "" });
       this._ssidInput = ssidInput;
+      const msgWifi = UILib.el("div", { className: "ipcfg-msg" });
+      this.msgElWifi = msgWifi;
       const applyWifiBtn = UILib.button(t("wifi.apply"), () => {
         if (device._ssid !== undefined) {
           device._ssid = ssidInput.value.trim();
-          this._setMsg(t("wifi.ssid.applied"));
+          this._setMsgWifi(t("wifi.ssid.applied"));
         }
       }, { primary: true });
       wifiSection = UILib.el("div", { className: "cfg-section", children: [
         UILib.div("cfg-fields", [field("ipcfg-f-wide", t("wifi.ssid"), ssidInput)]),
         UILib.div("cfg-btn-row", [applyWifiBtn]),
+        msgWifi,
       ]});
       this._wifiSection = wifiSection;
     }
@@ -341,7 +350,6 @@ export class IPv4ConfigApp extends GenericProcess {
       UILib.el("span", { text: "MAC", className: "ipcfg-info-label" }),
       macEl,
     ]));
-    panelChildren.push(msg);
     const panel = UILib.panel(panelChildren);
 
     this.root.replaceChildren(panel);
@@ -426,6 +434,8 @@ export class IPv4ConfigApp extends GenericProcess {
     this.disposer.dispose();
     this.modeSel = this.ipEl = this.prefixEl = this.maskEl = this.gwEl = this.dnsEl = null;
     this.msgEl = null;
+    this.msgEl6 = null;
+    this.msgElWifi = null;
     this._ipv4Section = this._ipv6Section = this._wifiSection = null;
     this._setFamilyActive = null;
     this._ssidInput = null;
@@ -443,6 +453,16 @@ export class IPv4ConfigApp extends GenericProcess {
   /** @param {string} s */
   _setMsg(s) {
     if (this.msgEl) this.msgEl.textContent = s;
+  }
+
+  /** @param {string} s */
+  _setMsg6(s) {
+    if (this.msgEl6) this.msgEl6.textContent = s;
+  }
+
+  /** @param {string} s */
+  _setMsgWifi(s) {
+    if (this.msgElWifi) this.msgElWifi.textContent = s;
   }
 
   _idx() {
@@ -526,7 +546,7 @@ export class IPv4ConfigApp extends GenericProcess {
         });
         if (this._ip6SlaacStatusEl.textContent !== slaacAddrTxt) {
           this._ip6SlaacStatusEl.textContent = slaacAddrTxt;
-          this._setMsg(slaacAddrTxt);
+          this._setMsg6(slaacAddrTxt);
         }
       } else {
         this._ip6SlaacStatusEl.textContent = t("app.ipv4config.ipv6.msg.slaacPending");
@@ -579,7 +599,7 @@ export class IPv4ConfigApp extends GenericProcess {
 
   async _applyIPv6() {
     const net = this.os.net;
-    if (!net) return this._setMsg(t("app.ipv4config.err.noNetDriver"));
+    if (!net) return this._setMsg6(t("app.ipv4config.err.noNetDriver"));
     const i = this._idx();
 
     try {
@@ -588,7 +608,7 @@ export class IPv4ConfigApp extends GenericProcess {
       if (mode === "disabled") {
         net.configureInterface(i, { ip6: null, prefixLength6: 0, slaac: false });
         clearDefaultGatewayIPv6ForIface(net, i);
-        this._setMsg(t("app.ipv4config.ipv6.msg.disabled", { i }));
+        this._setMsg6(t("app.ipv4config.ipv6.msg.disabled", { i }));
         return;
       }
 
@@ -597,14 +617,14 @@ export class IPv4ConfigApp extends GenericProcess {
         if (this._ip6SlaacStatusEl) {
           this._ip6SlaacStatusEl.textContent = t("app.ipv4config.ipv6.msg.slaacPending");
         }
-        this._setMsg(t("app.ipv4config.ipv6.msg.slaacStarted"));
+        this._setMsg6(t("app.ipv4config.ipv6.msg.slaacStarted"));
         return;
       }
 
       if (mode === "dhcp6") {
-        this._setMsg(t("app.ipv4config.ipv6.dhcp6.starting", { i }));
+        this._setMsg6(t("app.ipv4config.ipv6.dhcp6.starting", { i }));
         const ok = await this._dhcpv6AcquireAndConfigure(i);
-        if (!ok) this._setMsg(t("app.ipv4config.ipv6.dhcp6.failed", { i }));
+        if (!ok) this._setMsg6(t("app.ipv4config.ipv6.dhcp6.failed", { i }));
         if (this.mounted) { this._loadIPv6(); this._syncIPv6UI(); }
         return;
       }
@@ -620,12 +640,12 @@ export class IPv4ConfigApp extends GenericProcess {
         ip6 = IPAddress.fromString(ipStr);
         if (!ip6.isV6()) throw new Error("not IPv6");
       } catch {
-        return this._setMsg(t("app.ipv4config.ipv6.err.invalidAddress"));
+        return this._setMsg6(t("app.ipv4config.ipv6.err.invalidAddress"));
       }
 
       const prefix6 = Number(prefixStr);
       if (!Number.isInteger(prefix6) || prefix6 < 0 || prefix6 > 128) {
-        return this._setMsg(t("app.ipv4config.ipv6.err.invalidPrefix"));
+        return this._setMsg6(t("app.ipv4config.ipv6.err.invalidPrefix"));
       }
 
       /** @type {IPAddress|null} */
@@ -635,7 +655,7 @@ export class IPv4ConfigApp extends GenericProcess {
           gw6 = IPAddress.fromString(gwStr);
           if (!gw6.isV6()) throw new Error("not IPv6");
         } catch {
-          return this._setMsg(t("app.ipv4config.ipv6.err.invalidGateway"));
+          return this._setMsg6(t("app.ipv4config.ipv6.err.invalidGateway"));
         }
       }
 
@@ -643,10 +663,10 @@ export class IPv4ConfigApp extends GenericProcess {
       clearDefaultGatewayIPv6ForIface(net, i);
       if (gw6 != null) net.addRoute(IPAddress.fromString("::"), 0, i, gw6);
 
-      this._setMsg(t("app.ipv4config.ipv6.msg.applied", { i, ip: ip6.toString(), prefix: prefix6 }));
+      this._setMsg6(t("app.ipv4config.ipv6.msg.applied", { i, ip: ip6.toString(), prefix: prefix6 }));
     } catch (e) {
       const reason = (e instanceof Error ? e.message : String(e));
-      this._setMsg(t("app.ipv4config.err.applyFailed", { reason }));
+      this._setMsg6(t("app.ipv4config.err.applyFailed", { reason }));
     }
   }
 
@@ -691,8 +711,6 @@ export class IPv4ConfigApp extends GenericProcess {
         ? Array.from(itf.mac).map(b => b.toString(16).padStart(2, '0')).join(':')
         : "";
     }
-
-    this._setMsg(t("app.ipv4config.msg.loadedInterface", { i }));
   }
 
   async _apply() {
@@ -1365,7 +1383,7 @@ export class IPv4ConfigApp extends GenericProcess {
     if (!allServers) return false;
 
     for (let attempt = 1; attempt <= 3; attempt++) {
-      this._setMsg(t("app.ipv4config.ipv6.dhcp6.attempt", { attempt }));
+      this._setMsg6(t("app.ipv4config.ipv6.dhcp6.attempt", { attempt }));
 
       /** @type {number|null} */
       let sock = null;
@@ -1456,7 +1474,7 @@ export class IPv4ConfigApp extends GenericProcess {
 
         const dnsStr = (dnsBytes && dnsBytes.length >= 16)
           ? (IPAddress.fromUInt8(dnsBytes.slice(0, 16))?.toString() ?? "—") : "—";
-        this._setMsg(t("app.ipv4config.ipv6.dhcp6.success", {
+        this._setMsg6(t("app.ipv4config.ipv6.dhcp6.success", {
           i: ifaceIdx, ip: ip6.toString(), prefix: String(prefixLength), dns: dnsStr,
         }));
 
@@ -1474,7 +1492,7 @@ export class IPv4ConfigApp extends GenericProcess {
   async _releaseDhcpv6(ifaceIdx) {
     const st = this._dhcp6StateByIface.get(ifaceIdx);
     if (!st) {
-      this._setMsg(t("app.ipv4config.ipv6.dhcp6.releaseNone", { i: ifaceIdx }));
+      this._setMsg6(t("app.ipv4config.ipv6.dhcp6.releaseNone", { i: ifaceIdx }));
       return;
     }
 
@@ -1509,7 +1527,7 @@ export class IPv4ConfigApp extends GenericProcess {
       clearDefaultGatewayIPv6ForIface(net, ifaceIdx);
     }
 
-    this._setMsg(t("app.ipv4config.ipv6.dhcp6.released", { i: ifaceIdx }));
+    this._setMsg6(t("app.ipv4config.ipv6.dhcp6.released", { i: ifaceIdx }));
     if (this.mounted && this._selectedFamily === 6) {
       this._loadIPv6();
       this._syncIPv6UI();

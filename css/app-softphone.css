@@ -146,3 +146,16 @@
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+/* ── STUN server ───────────────────────────────────────────── */
+
+.app-stun-server .stun-pane { padding: var(--pad-sm) var(--pad-md); }
+.app-stun-server .stun-status { color: var(--muted, #888); font-size: 0.8125rem; margin-top: var(--pad-sm); }
+
+.app-stun-server .stun-log {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
