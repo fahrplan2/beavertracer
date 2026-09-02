@@ -1772,10 +1772,13 @@ sim-toolbar-langbtn {
 
 .ui-tabbar {
   display: flex;
-  gap: 2px;
+  flex-wrap: wrap;          /* never clip tabs when there are many (e.g. 8+ router interfaces) */
+  gap: 6px 2px;             /* row-gap compensates for .ui-tab's -2px bottom margin when wrapped */
   padding: 0 4px;
   border-bottom: 2px solid var(--ui-border-strong);
   flex-shrink: 0;
+  max-height: 40vh;         /* extreme counts: cap height and scroll inside the bar */
+  overflow-y: auto;
 }
 
 .ui-tab {
@@ -2098,10 +2101,6 @@ sim-toolbar-langbtn {
    ========================================================= */
 
 @media (max-width: 600px) {
-
-  .ui-tabbar {
-    flex-wrap: wrap;
-  }
 
   .ui-tab {
     font-size: 0.8125rem;
