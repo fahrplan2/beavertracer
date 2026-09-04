@@ -488,11 +488,18 @@ export class Switch extends SimulatedObject {
         const card = UILib.div("switch-card");
 
         const header = UILib.div("switch-vlan-port-row switch-vlan-header");
-        for (const key of ["switch.vlan.col.port", "switch.vlan.col.mode", "switch.vlan.col.pvid", "switch.vlan.col.allowed", ""]) {
+        for (const key of ["switch.vlan.col.port", "switch.vlan.col.mode", "switch.vlan.col.pvid", "switch.vlan.col.allowed"]) {
             const th = UILib.el("span", { text: key ? t(key) : "", className: "switch-vlan-col-label" });
             header.appendChild(th);
         }
         card.appendChild(header);
+
+        /**
+         * Deferred apply: each row registers a commit fn here; a single footer
+         * button applies them all at once.
+         * @type {Array<() => void>}
+         */
+        const rowCommits = [];
 
         /**
          * @param {string} labelText
@@ -518,11 +525,10 @@ export class Switch extends SimulatedObject {
             pvid.max = "4094";
             pvid.step = "1";
 
-            const allowed = /** @type {HTMLInputElement} */ (UILib.input({ value: [...(refPort.allowedVlans ?? new Set([refPort.pvid]))].sort((a, b) => a - b).join(",") }));
+            const allowedFromPort = [...(refPort.allowedVlans ?? new Set([refPort.pvid]))].sort((a, b) => a - b).join(",");
+            const allowed = /** @type {HTMLInputElement} */ (UILib.input({ value: allowedFromPort }));
             allowed.placeholder = "e.g. 1,10,20";
             allowed.style.width = "100%";
-
-            const apply = UILib.button(t("switch.apply") ?? "Apply", null);
 
             const updateEnabledFields = () => {
                 const isTaggedOrHybrid = mode.value !== "untagged";
@@ -531,19 +537,26 @@ export class Switch extends SimulatedObject {
                 allowed.placeholder = mode.value === "hybrid"
                     ? "e.g. 10,20 (tagged, PVID exits untagged)"
                     : "e.g. 1,10,20";
+                // "Allowed VLANs" has no meaning for an untagged port — blank the
+                // field instead of showing a stale PVID; restore on switch back.
+                if (!isTaggedOrHybrid) {
+                    if (allowed.value !== "") allowed.dataset.stash = allowed.value;
+                    allowed.value = "";
+                } else if (allowed.value === "") {
+                    allowed.value = allowed.dataset.stash ?? allowedFromPort;
+                    delete allowed.dataset.stash;
+                }
             };
             updateEnabledFields();
             mode.addEventListener("change", updateEnabledFields);
 
-            apply.addEventListener("click", () => {
+            rowCommits.push(() => {
                 const newPvid = Number(pvid.value);
                 if (!Number.isInteger(newPvid) || newPvid < 1 || newPvid > 4094) return;
                 onApply(mode.value, newPvid, allowed.value);
-                this._renderSAT();
-                this._renderVLANSection();
             });
 
-            row.append(label, mode, pvid, allowed, apply);
+            row.append(label, mode, pvid, allowed);
             card.appendChild(row);
         };
 
@@ -592,6 +605,17 @@ export class Switch extends SimulatedObject {
                 applyToPort(modeVal, newPvid, allowedVal, p);
             });
         }
+
+        // Single "Apply" for the whole table
+        const footer = UILib.div("switch-vlan-footer");
+        const applyAll = UILib.button(t("switch.apply") ?? "Apply", null);
+        applyAll.addEventListener("click", () => {
+            for (const commit of rowCommits) commit();
+            this._renderSAT();
+            this._renderVLANSection();
+        });
+        footer.appendChild(applyAll);
+        card.appendChild(footer);
 
         this._vlanSection.appendChild(card);
     }

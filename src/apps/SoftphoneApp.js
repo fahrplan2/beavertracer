@@ -38,7 +38,9 @@ export class SoftphoneApp extends GenericProcess {
   disposer = new Disposer();
 
   // ── identity / registration ──
-  user = "phone";
+  // A numeric default nudges toward the keypad — the AOR user-part can just as
+  // well be a name ("alice"), which the user discovers by trying it.
+  user = "100";
   domain = "";
   registrarHost = "";
   /** optional STUN server (host[:port]) used to learn our NAT-mapped public
@@ -266,7 +268,7 @@ export class SoftphoneApp extends GenericProcess {
       try { this._sip?.unregister(); } catch { /* ignore */ }
       return;
     }
-    this.user = (this._userEl?.value ?? "").trim() || "phone";
+    this.user = (this._userEl?.value ?? "").trim() || "100";
     this.registrarHost = (this._registrarEl?.value ?? "").trim();
     this.domain = (this._domainEl?.value ?? "").trim() || this.registrarHost;
     this.stunServer = (this._stunEl?.value ?? "").trim();

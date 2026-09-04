@@ -109,6 +109,14 @@ export class TerminalApp extends GenericProcess {
     /** @type {string[]} per-cell color tags parallel to `scrollback` */
     scrollbackColor = [];
 
+    /**
+     * Scrollback view offset, in lines: 0 = live view (pinned to the bottom),
+     * >0 = that many lines scrolled up into history. Driven by the mouse wheel
+     * and PageUp/PageDown; snapped back to 0 on any output or typing.
+     * @type {number}
+     */
+    viewOffset = 0;
+
     /** Output cursor (where the next output character would go) */
     /** @type {number} */
     outX = 0;
@@ -306,6 +314,19 @@ export class TerminalApp extends GenericProcess {
             this.disposer.on(term, "blur",  () => this._setHasFocus(false));
         }
 
+        // Mouse wheel scrolls the scrollback buffer (the <pre> itself never
+        // overflows — it holds exactly `rows` lines — so there's nothing for
+        // the browser's native scrollbar to grab).
+        this.disposer.on(term, "wheel", (ev) => {
+            const e = /** @type {WheelEvent} */ (ev);
+            if (this.rawKeyHandler || this.rawInputHandler) return;
+            if (this.scrollback.length === 0) return;
+            // deltaMode: 0 = pixels, 1 = lines, 2 = pages
+            const step = e.deltaMode === 2 ? Math.max(1, this.rows - 1) : 3;
+            const moved = this._scrollHistory(e.deltaY < 0 ? step : -step);
+            if (moved || this.viewOffset > 0) ev.preventDefault();
+        }, { passive: false });
+
         // Recalculate column/row count based on actual pixel size (mobile font is smaller)
         requestAnimationFrame(() => {
             this._recalcGeometry(term);
@@ -371,6 +392,7 @@ export class TerminalApp extends GenericProcess {
     _resetScreen() {
         this.scrollback = [];
         this.scrollbackColor = [];
+        this.viewOffset = 0;
         this.screen = Array.from({ length: this.rows }, () => " ".repeat(this.cols));
         this.screenColor = Array.from({ length: this.rows }, () => "0".repeat(this.cols));
         this.outX = 0;
@@ -389,6 +411,23 @@ export class TerminalApp extends GenericProcess {
             this.scrollback.splice(0, excess);
             this.scrollbackColor.splice(0, excess);
         }
+    }
+
+    /**
+     * Move the scrollback view. `deltaLines` > 0 scrolls up into history,
+     * < 0 scrolls back down toward the live prompt. No-op in full-screen
+     * (nano) / raw-input (telnet) modes, which own the screen themselves.
+     * @param {number} deltaLines  signed; positive = further into history
+     * @returns {boolean} whether the view actually moved
+     */
+    _scrollHistory(deltaLines) {
+        if (this.rawKeyHandler || this.rawInputHandler) return false;
+        const maxOffset = this.scrollback.length;
+        const next = Math.max(0, Math.min(maxOffset, this.viewOffset + deltaLines));
+        if (next === this.viewOffset) return false;
+        this.viewOffset = next;
+        this._renderScreen();
+        return true;
     }
 
     /** Scroll visible screen up by 1 line. Top line goes to scrollback. */
@@ -411,6 +450,8 @@ export class TerminalApp extends GenericProcess {
      * @param {"0"|"1"} color "0" = normal (stdout), "1" = stderr
      */
     print(text = "", color = "0") {
+        // Any fresh output snaps the view back to the live bottom.
+        this.viewOffset = 0;
         let pos = 0;
         while (pos < text.length) {
             const ch = text[pos];
@@ -546,6 +587,22 @@ export class TerminalApp extends GenericProcess {
               else if (ev.key === "End")  { ev.preventDefault(); this.cursor = this.lineBuffer.length; this._renderScreen(); }
             return;
         }
+
+        // Scrollback paging — allowed even while busy (read history mid-command)
+        if (ev.key === "PageUp" || ev.key === "PageDown") {
+            ev.preventDefault();
+            const page = Math.max(1, this.rows - 1);
+            this._scrollHistory(ev.key === "PageUp" ? page : -page);
+            return;
+        }
+        if (ev.shiftKey && (ev.key === "Home" || ev.key === "End")) {
+            ev.preventDefault();
+            this._scrollHistory(ev.key === "Home" ? this.scrollback.length : -this.scrollback.length);
+            return;
+        }
+
+        // Any other key returns to the live view before it takes effect.
+        this.viewOffset = 0;
 
         // On interaction, show cursor immediately
         if (!this.busy) {
@@ -749,6 +806,23 @@ export class TerminalApp extends GenericProcess {
         if (this._isSelecting) return;
         const sel = window.getSelection();
         if (sel && !sel.isCollapsed && this.outEl.contains(sel.anchorNode)) return;
+
+        // Scrollback view: show `rows` lines from `scrollback` + `screen`,
+        // offset up by `viewOffset`. No prompt/cursor overlay while looking back.
+        if (this.viewOffset > 0 && !this.rawKeyHandler && !this.rawInputHandler) {
+            const full = this.scrollback.concat(this.screen);
+            const fullColor = this.scrollbackColor.concat(this.screenColor);
+            const maxOffset = Math.max(0, full.length - this.rows);
+            if (this.viewOffset > maxOffset) this.viewOffset = maxOffset;
+            if (this.viewOffset > 0) {
+                const start = full.length - this.rows - this.viewOffset;
+                this._paintRows(
+                    full.slice(start, start + this.rows),
+                    fullColor.slice(start, start + this.rows),
+                );
+                return;
+            }
+        }
 
         // Raw key mode (e.g. nano): the handler owns `screen`/`screenColor`
         // entirely (its own layout, its own cursor glyph) - no prompt overlay.

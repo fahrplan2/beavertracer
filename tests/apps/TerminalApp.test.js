@@ -998,6 +998,90 @@ describe('cursor focus/blur: solid blinking block vs. static box-outline', () =>
   });
 });
 
+describe('scrollback view (mouse wheel / PageUp / PageDown)', () => {
+  /** @type {TerminalApp} */
+  let app;
+
+  beforeEach(() => {
+    const fs = new VirtualFileSystem();
+    const os = /** @type {any} */ ({ name: 'TestOS', fs, exit() {} });
+    app = new TerminalApp(os);
+    app._registerBuiltins();
+    app.rows = 5;
+    app.cols = 20;
+    app._resetScreen();
+    app.outEl = makeFakeEl('pre');
+    app.busy = false;
+    // 20 lines of output -> most of it lives in scrollback (screen holds 5)
+    for (let i = 1; i <= 20; i++) app.println('line' + String(i).padStart(2, '0'));
+  });
+
+  /** @param {string} key @param {{shift?:boolean}} [opts] */
+  const keyEv = (key, opts = {}) =>
+    /** @type {any} */ ({ key, ctrlKey: false, metaKey: false, shiftKey: !!opts.shift, preventDefault() {} });
+
+  it('live view shows the newest lines, not the oldest', () => {
+    const text = renderedText(app.outEl);
+    expect(text).toContain('line20');
+    expect(text).not.toContain('line01');
+    expect(app.viewOffset).toBe(0);
+  });
+
+  it('_scrollHistory reveals older lines and hides the newest', () => {
+    app._scrollHistory(10);
+    expect(app.viewOffset).toBe(10);
+    const text = renderedText(app.outEl);
+    expect(text).toContain('line08');
+    expect(text).not.toContain('line20');
+  });
+
+  it('clamps at the top and bottom of the buffer', () => {
+    app._scrollHistory(9999);
+    expect(app.viewOffset).toBe(app.scrollback.length);
+    expect(renderedText(app.outEl)).toContain('line01');
+
+    app._scrollHistory(-9999);
+    expect(app.viewOffset).toBe(0);
+    expect(renderedText(app.outEl)).toContain('line20');
+  });
+
+  it('PageUp / PageDown page by (rows - 1) lines', () => {
+    app._onKeyDown(keyEv('PageUp'));
+    expect(app.viewOffset).toBe(app.rows - 1);
+    app._onKeyDown(keyEv('PageUp'));
+    expect(app.viewOffset).toBe(2 * (app.rows - 1));
+    app._onKeyDown(keyEv('PageDown'));
+    expect(app.viewOffset).toBe(app.rows - 1);
+  });
+
+  it('Shift+Home jumps to the oldest line, Shift+End back to live', () => {
+    app._onKeyDown(keyEv('Home', { shift: true }));
+    expect(app.viewOffset).toBe(app.scrollback.length);
+    app._onKeyDown(keyEv('End', { shift: true }));
+    expect(app.viewOffset).toBe(0);
+  });
+
+  it('typing a character snaps back to the live view', () => {
+    app._scrollHistory(8);
+    expect(app.viewOffset).toBe(8);
+    app._onKeyDown(keyEv('a'));
+    expect(app.viewOffset).toBe(0);
+  });
+
+  it('fresh output snaps back to the live view', () => {
+    app._scrollHistory(8);
+    app.println('brandnew');
+    expect(app.viewOffset).toBe(0);
+    expect(renderedText(app.outEl)).toContain('brandnew');
+  });
+
+  it('does nothing when there is no scrollback', () => {
+    app._resetScreen();
+    expect(app._scrollHistory(5)).toBe(false);
+    expect(app.viewOffset).toBe(0);
+  });
+});
+
 describe('nano cursor also respects focus (raw key mode)', () => {
   /** @type {TerminalApp} */
   let app;
