@@ -829,10 +829,19 @@ export class IPv4ConfigApp extends GenericProcess {
   // ------------------ persistence (/etc/ip.config) ------------------
 
   async _loadPersistedConfig() {
+    // A freshly placed machine — or a sim saved before this file existed — has
+    // no /etc/ip.config. That is not an error: it just means "use the defaults".
+    // Seed the file and carry on; only a file that IS present but won't
+    // read/parse is worth surfacing to the user.
+    if (!this.os.fs.exists(this.configPath)) {
+      await this._savePersistedConfig();
+      return;
+    }
+
     try {
       const txt = await this.os.fs.readFile(this.configPath);
       if (!txt.trim()) {
-        await this.os.fs.writeFile(this.configPath, JSON.stringify(this.persisted, null, 2) + "\n");
+        await this._savePersistedConfig();
         return;
       }
 
