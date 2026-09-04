@@ -68,6 +68,35 @@ function attachRegistrar(wire, ip, port = 5060) {
   return bindings;
 }
 
+/**
+ * Minimal stateless proxy that retargets every request straight back to its
+ * sender — i.e. what a registrar/proxy does when a UA's own AOR is the
+ * Request-URI. Responses have the proxy's top Via popped and are relayed on.
+ */
+function attachLoopProxy(wire, ip, port = 5060) {
+  const nextHop = (via) => {
+    const m = via.match(/UDP\s+([^:;\s]+)(?::(\d+))?/i);
+    return m ? { ip: m[1], port: m[2] ? Number(m[2]) : 5060 } : null;
+  };
+  const stub = {
+    receive(bytes, srcIp, srcPort) {
+      const msg = SIPMessage.parse(bytes);
+      if (msg.kind === 'response') {
+        const vias = msg.getHeaders('Via');
+        msg.removeHeader('Via');
+        for (let i = 1; i < vias.length; i++) msg.addHeader('Via', vias[i]);
+        const hop = nextHop(vias[1] ?? '');
+        if (hop) wire.nodes.get(hop.ip)?.stack.receive(msg.pack(), ip, port);
+        return;
+      }
+      if (msg.method === 'ACK') return; // absorbed by the loop
+      msg.prependHeader('Via', `SIP/2.0/UDP ${ip}:${port};branch=z9hG4bKproxy${Math.random().toString(36).slice(2, 8)}`);
+      wire.nodes.get(srcIp)?.stack.receive(msg.pack(), ip, port);
+    },
+  };
+  wire.attach(ip, port, stub);
+}
+
 // ── fixtures ──────────────────────────────────────────────────────────────
 
 let wire, timer, alice, bob;
@@ -181,6 +210,21 @@ describe('basic call', () => {
     expect(aliceEnded.args[1].reason).toBe('busy');
     expect(alice.getCall(callId).state).toBe('ended');
     expect(wire.linesFrom('10.0.0.1').some(l => l.startsWith('ACK'))).toBe(true);
+  });
+
+  it('dialing our own AOR loops back and is rejected as busy, not answered', () => {
+    attachLoopProxy(wire, '10.0.0.9');
+
+    const callId = alice.call({ targetUri: 'sip:alice@example.com', peerIp: '10.0.0.9', sdp: OFFER });
+
+    // the spiralled INVITE must not surface as an incoming call or get answered
+    expect(events.some(e => e.who === 'alice' && e.ev === 'incomingCall')).toBe(false);
+    expect(events.some(e => e.who === 'alice' && e.ev === 'answered')).toBe(false);
+
+    const ended = events.find(e => e.who === 'alice' && e.ev === 'ended');
+    expect(ended?.args[1].reason).toBe('busy');
+    expect(alice.getCall(callId).state).toBe('ended');
+    expect(wire.linesFrom('10.0.0.1').some(l => l.includes('486'))).toBe(true);
   });
 
   it('caller CANCEL during ringing yields 487 and ends both sides', () => {

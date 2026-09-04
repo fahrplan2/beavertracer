@@ -463,6 +463,17 @@ export class SipStack {
     const existing = this._calls.get(callId);
 
     if (method === "INVITE") {
+      if (existing && existing.role === "uac" && existing.state !== "in-call") {
+        // Our own outgoing INVITE has spiralled back to us: this is what a
+        // registrar/proxy does when a UA dials its own AOR — the Request-URI
+        // resolves to the caller's own Contact. Answering it (as a fresh call
+        // or as a re-INVITE) cross-wires the pending call with itself and the
+        // media/dialog state goes haywire. Reject with 486 so the caller just
+        // hears busy; the pending INVITE transaction turns that into an
+        // "ended" (reason "busy") the same as any far-end 486.
+        this._sendResponse(req, 486, "Busy Here", srcIp, srcPort);
+        return;
+      }
       if (existing && existing.state !== "ended") {
         // re-INVITE inside a confirmed dialog → accept, no media change
         this._respondToInvite(existing, req, 200, "OK", existing.localSdp ?? undefined);
