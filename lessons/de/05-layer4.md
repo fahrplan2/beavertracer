@@ -1,4 +1,4 @@
-# Layer 4 — Transportschicht
+# Schicht 4: Transportschicht
 
 :::draft
 :::
