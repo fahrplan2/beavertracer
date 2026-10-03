@@ -25,8 +25,12 @@
           document.documentElement.dataset.theme = theme;
 
         const hue = parseFloat(p.get("hue"));
-        if (!isNaN(hue))
-          document.documentElement.style.setProperty("--primary", `oklch(81.211% 0.05 ${hue})`);
+        if (!isNaN(hue)) {
+          // Shift the light chrome tint and the accent together (see css/global.css).
+          document.documentElement.style.setProperty("--primary", `oklch(78% 0.055 ${hue})`);
+          document.documentElement.style.setProperty("--accent", `oklch(50% 0.10 ${hue})`);
+          document.documentElement.style.setProperty("--accent-hover", `oklch(43% 0.10 ${hue})`);
+        }
       })();
     </script>
     <link rel="icon" href="/beaver-icon.svg" type="image/svg+xml">

@@ -13,11 +13,12 @@ import { HomeRouter } from "./sim/HomeRouter.js";
 import { Firewall } from "./sim/Firewall.js";
 import { WifiMedium } from "./net/WifiMedium.js";
 import { simTimer } from "./lib/SimTimer.js";
-import { t, getLocale, setLocale, getLocales } from "./i18n/index.js";
+import { t } from "./i18n/index.js";
 import { StaticPageRouter } from "./StaticPageRouter.js";
 import { PCapController } from "./tracer/PCapControler.js";
 import { UILib } from "./lib/UILib.js";
 import { SimDialog } from "./lib/SimDialog.js";
+import { buildLanguagePicker } from "./lib/LanguagePicker.js";
 import { choosePanelPlacement, segmentToRects } from "./lib/panelPlacement.js";
 import { WelcomeDialog } from "./lib/WelcomeDialog.js";
 import { LessonsPanel } from "./lib/LessonsPanel.js";
@@ -760,6 +761,12 @@ export class SimControl {
         const willOpen = open ?? !this.lessonsOpen;
         // Entering lessons mode replaces the user's simulation with the
         // lessons' own — ask first if there's unsaved work (see claimScene()).
+        // Nothing chosen yet (toolbar button on a fresh start): pick a page
+        // in the chapter overview first — it opens the panel at that page.
+        if (willOpen && !wasOpen && this.lessonsPanel && !this.lessonsPanel.hasPage) {
+            this.showChapterOverview();
+            return;
+        }
         if (willOpen && !wasOpen && this.lessonsPanel && !await this.lessonsPanel.claimScene()) return;
         this.lessonsOpen = willOpen;
         this._invalidateUI();
@@ -773,6 +780,11 @@ export class SimControl {
         // canvas more room back, which never hides anything, so the user's
         // zoom/pan is left alone there.
         if (this.lessonsOpen && !wasOpen) this._fitAfterLessonsResize();
+    }
+
+    /** Opens the welcome dialog on its chapter overview (lessons' "overview" buttons). */
+    showChapterOverview() {
+        void WelcomeDialog.show(this, { view: "chapters" });
     }
 
     /**
@@ -2006,126 +2018,33 @@ export class SimControl {
 
         const header = document.createElement("div");
         header.className = "sim-langdialog-header";
-        const title = document.createElement("span");
-        title.textContent = t("sim.language");
+        const title = document.createElement("h2");
+        title.className = "sim-langdialog-title";
+        title.innerHTML = `<i class="fa-solid fa-language" aria-hidden="true"></i> `;
+        title.appendChild(document.createTextNode(t("sim.language")));
+        dlg.setAttribute("aria-label", t("sim.language"));
         const closeBtn = document.createElement("button");
         closeBtn.type = "button";
         closeBtn.className = "sim-langdialog-close";
+        closeBtn.setAttribute("aria-label", t("sim.close") || "Close");
         closeBtn.innerHTML = "&times;";
         closeBtn.addEventListener("click", () => this._closeLanguageDialog());
         header.appendChild(title);
         header.appendChild(closeBtn);
         dlg.appendChild(header);
 
-        const search = document.createElement("input");
-        search.type = "search";
-        search.className = "sim-langdialog-search";
-        search.placeholder = "Filter…";
-        dlg.appendChild(search);
+        // Same frame as the welcome dialog: coloured header, padded body.
+        const body = document.createElement("div");
+        body.className = "sim-langdialog-body";
+        dlg.appendChild(body);
 
-        const locales = await getLocales();
-        const current = getLocale();
-
-        const FEATURED = new Set(["de", "en"]);
-
-        /** @param {{ key: string, label: string }} loc */
-        const makeClickHandler = (loc) => async (/** @type {MouseEvent} */ ev) => {
-            ev.preventDefault();
-            ev.stopPropagation();
-            if (loc.key === getLocale()) { this._closeLanguageDialog(); return; }
-            if (this._isDirty) {
-                const ok = await SimDialog.confirm(t("sim.langswitch.confirmdiscard"));
-                if (!ok) return;
-            }
-            await setLocale(loc.key);
-            this._isDirty = false;
-            window.location.reload();
-        };
-
-        const featured = document.createElement("div");
-        featured.className = "sim-langdialog-featured";
-
-        const sep = document.createElement("hr");
-        sep.className = "sim-langdialog-sep";
-
-        const list = document.createElement("div");
-        list.className = "sim-langlist";
-
-        let hasAI = false;
-
-        for (const loc of locales) {
-            const parts = loc.label.split(" ");
-            const flag = parts[0];
-            const isAI = loc.label.includes("(translated by AI)");
-            const name = parts.slice(1).join(" ").replace(/\s*\(translated by AI\)\s*$/g, "").trim();
-            if (isAI) hasAI = true;
-
-            if (FEATURED.has(loc.key)) {
-                const card = document.createElement("button");
-                card.type = "button";
-                card.className = "sim-lang-card";
-                if (loc.key === current) card.classList.add("active");
-
-                const flagEl = document.createElement("span");
-                flagEl.className = "sim-lang-card-flag";
-                flagEl.textContent = flag;
-
-                const nameEl = document.createElement("span");
-                nameEl.className = "sim-lang-card-name";
-                nameEl.textContent = name;
-
-                card.appendChild(flagEl);
-                card.appendChild(nameEl);
-                card.addEventListener("click", makeClickHandler(loc));
-                featured.appendChild(card);
-            } else {
-                const btn = document.createElement("button");
-                btn.type = "button";
-                btn.className = "sim-langlist-item";
-                if (loc.key === current) btn.classList.add("active");
-
-                const flagEl = document.createElement("span");
-                flagEl.className = "sim-langlist-item-flag";
-                flagEl.textContent = flag;
-
-                const nameEl = document.createElement("span");
-                nameEl.className = "sim-langlist-item-name";
-                nameEl.textContent = isAI ? `${name} *` : name;
-
-                btn.appendChild(flagEl);
-                btn.appendChild(nameEl);
-                btn.addEventListener("click", makeClickHandler(loc));
-                list.appendChild(btn);
-            }
-        }
-
-        dlg.appendChild(featured);
-        dlg.appendChild(sep);
-        dlg.appendChild(list);
-
-        search.addEventListener("input", () => {
-            const q = search.value.toLowerCase();
-            for (const el of /** @type {HTMLCollectionOf<HTMLElement>} */ (featured.children)) {
-                const nameEl = el.querySelector(".sim-lang-card-name");
-                el.style.display = !q || nameEl?.textContent?.toLowerCase().includes(q) ? "" : "none";
-            }
-            for (const el of /** @type {HTMLCollectionOf<HTMLElement>} */ (list.children)) {
-                const nameEl = el.querySelector(".sim-langlist-item-name");
-                el.style.display = !q || nameEl?.textContent?.toLowerCase().includes(q) ? "" : "none";
-            }
-        });
-
-        if (hasAI) {
-            const note = document.createElement("p");
-            note.className = "sim-langdialog-note";
-            note.textContent = "* translated by AI";
-            dlg.appendChild(note);
-        }
+        const { active, parts } = await buildLanguagePicker(this, () => this._closeLanguageDialog());
+        body.append(...parts);
 
         backdrop.appendChild(dlg);
         document.body.appendChild(backdrop);
         this._langPanel = backdrop;
-        search.focus();
+        (active ?? closeBtn).focus();
 
         /** @param {KeyboardEvent} ev */
         const onKey = (ev) => {

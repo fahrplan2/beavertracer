@@ -41,8 +41,8 @@
 .pcapviewer-hex-toggle:hover { opacity: 1; }
 .pcapviewer-hex-toggle.active {
   opacity: 1;
-  border-color: var(--primary, #2563eb);
-  color: var(--primary, #2563eb);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 /* Hex/raw pane hidden by default (toggled via .pcapviewer-hex-toggle) —
@@ -246,7 +246,7 @@
 }
 
 .hex-offset {
-  color: var(--primary, #2563eb);
+  color: var(--accent);
   user-select: none;
   opacity: 0.7;
   min-width: 3em;
@@ -532,9 +532,9 @@
 }
 
 .pcapviewer-hexbyte--hl {
-  background: color-mix(in oklch, var(--accent, #2563eb) 25%, transparent);
+  background: color-mix(in oklch, var(--accent) 25%, transparent);
   border-radius: 2px;
-  outline: 1px solid color-mix(in oklch, var(--accent, #2563eb) 60%, transparent);
+  outline: 1px solid color-mix(in oklch, var(--accent) 60%, transparent);
   outline-offset: -1px;
 }
 

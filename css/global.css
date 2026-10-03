@@ -21,7 +21,12 @@
   --pad-xl: 16px;
   --pad-2xl: 24px;
 
-  --primary: oklch(81.211% 0.01809 210.448);
+  /* Brand: clear petrol. --primary is the light chrome tint (toolbar,
+     surfaces), --accent the one colour for everything clickable/active. */
+  --primary: oklch(78% 0.055 202);
+  --accent: oklch(50% 0.10 205);
+  --accent-hover: oklch(43% 0.10 205);
+  --accent-text: #ffffff; /* text on accent-coloured buttons */
 
   --primary-strong: color-mix(in oklch, var(--primary), black 18%);
   --primary-soft: color-mix(in oklch, var(--primary), white 78%);
@@ -45,14 +50,16 @@
   --shadow-soft: 0 6px 14px rgba(0, 0, 0, 0.10);
 
   --border: #ccc;
-  --bg: #f5f5f5;
+  --bg: oklch(95.5% 0.006 200);
 
   --ok: oklch(70% 0.17 145);
   --warning: oklch(78% 0.17 85);
   --danger: oklch(62% 0.20 25);
 
   --green: var(--ok);
-  --blue:  oklch(34.125% 0.19032 270.352);
+  /* Device icons: classic network-diagram blue (Cisco-style plans) —
+     deliberately separate from the petrol accent. */
+  --blue:  #000080;
   --white: #FFFFFF;
   
   --ok-strong: color-mix(in oklch, var(--ok), black 18%);
@@ -119,7 +126,10 @@
   --ui-card:          oklch(22% 0.016 210);
   --ui-card-hover:    oklch(27% 0.018 210);
 
-  --blue: oklch(68% 0.18 250);
+  --accent: oklch(68% 0.10 200);
+  --accent-hover: oklch(74% 0.10 200);
+  --accent-text: oklch(16% 0.02 210);
+  --blue: #6f8cff; /* navy would vanish on dark ground */
 }
 
 [data-theme="green"] {
@@ -324,4 +334,19 @@ textarea:focus {
   height: auto;
   min-height: 44px;
   padding: 6px 10px;
+}
+
+/* Scroll hint (see src/lib/scrollHints.js): fade the edge where a list
+   continues — overlay scrollbars stay invisible until you scroll. */
+.scroll-hints.fade-bottom {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent);
+          mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent);
+}
+.scroll-hints.fade-top {
+  -webkit-mask-image: linear-gradient(to top, #000 calc(100% - 32px), transparent);
+          mask-image: linear-gradient(to top, #000 calc(100% - 32px), transparent);
+}
+.scroll-hints.fade-top.fade-bottom {
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 32px, #000 calc(100% - 32px), transparent);
+          mask-image: linear-gradient(to bottom, transparent, #000 32px, #000 calc(100% - 32px), transparent);
 }

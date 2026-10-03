@@ -8,7 +8,7 @@
   --muted:     #6b7280;
   --border:    #e5e7eb;
   --surface:   #f9fafb;
-  --primary:   #2563eb;
+  --primary:   oklch(50% 0.10 205);
   --code-bg:   #f3f4f6;
   --code-text: #111827;
   --radius:    6px;
@@ -18,20 +18,20 @@
   --warning:      oklch(78% 0.17 85);
   --danger:       oklch(62% 0.20 25);
   --green:        var(--ok);
-  --blue:         oklch(34.125% 0.19032 270.352);
+  --blue:         #000080;
   --warning-soft: color-mix(in oklch, var(--warning), white 78%);
 }
 
 /* Dark – only when explicitly set via data-theme or system (if no manual override) */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .lesson-header {
-    background: oklch(30% 0.025 210);
-    border-bottom-color: oklch(38% 0.025 210);
+    background: oklch(28% 0.035 205);
+    border-bottom-color: oklch(36% 0.04 205);
   }
 }
 [data-theme="dark"] .lesson-header {
-  background: oklch(30% 0.025 210);
-  border-bottom-color: oklch(38% 0.025 210);
+  background: oklch(28% 0.035 205);
+  border-bottom-color: oklch(36% 0.04 205);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -41,7 +41,7 @@
     --muted:     #9ca3af;
     --border:    #374151;
     --surface:   #1f2937;
-    --primary:   #60a5fa;
+    --primary:   oklch(72% 0.09 200);
     --code-bg:   #1e293b;
     --code-text: #e2e8f0;
 
@@ -55,7 +55,7 @@
   --muted:     #9ca3af;
   --border:    #374151;
   --surface:   #1f2937;
-  --primary:   #60a5fa;
+  --primary:   oklch(72% 0.09 200);
   --code-bg:   #1e293b;
   --code-text: #e2e8f0;
 
@@ -68,7 +68,7 @@
   --muted:     #6b7280;
   --border:    #e5e7eb;
   --surface:   #f9fafb;
-  --primary:   #2563eb;
+  --primary:   oklch(50% 0.10 205);
   --code-bg:   #f3f4f6;
   --code-text: #111827;
 }
@@ -83,8 +83,8 @@ body {
 
 /* ── Header ───────────────────────────────────────────────────── */
 .lesson-header {
-  border-bottom: 1px solid oklch(74% 0.018 210);
-  background: oklch(81% 0.018 210);
+  border-bottom: 1px solid oklch(70% 0.06 202);
+  background: oklch(78% 0.055 202); /* same petrol as the app's toolbar */
   position: sticky;
   top: 0;
   z-index: 10;
@@ -401,6 +401,9 @@ body {
   gap: 3px;
   width: 176px;
   margin: 4px 0 16px 20px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
 }
 .osi-ampel-box {
   display: flex;
@@ -410,9 +413,9 @@ body {
   border-radius: 4px;
   font-size: 0.78rem;
   font-weight: 600;
-  background: var(--surface);
+  background: color-mix(in oklch, var(--text) 7%, transparent);
   color: var(--muted);
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
 }
 .osi-ampel-num {
   display: inline-flex;
@@ -502,11 +505,11 @@ body {
 }
 
 .callout-note {
-  border-color: #2563eb;
-  background: #eff6ff;
-  color: #1e3a5f;
+  border-color: var(--primary);
+  background: oklch(96% 0.02 205);
+  color: oklch(30% 0.05 215);
 }
-.callout-note::after    { content: "\f05a"; color: #2563eb; }
+.callout-note::after    { content: "\f05a"; color: var(--primary); }
 
 .callout-tip {
   border-color: #16a34a;
@@ -548,7 +551,7 @@ body {
 .callout-goal::after    { content: "\f19d"; color: #7c3aed; }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .callout-note    { background: #1e3a5f; color: #bfdbfe; }
+  :root:not([data-theme="light"]) .callout-note    { background: oklch(30% 0.05 210); color: oklch(90% 0.03 200); }
   :root:not([data-theme="light"]) .callout-tip     { background: #14532d; color: #bbf7d0; }
   :root:not([data-theme="light"]) .callout-warning { background: #451a03; color: #fde68a; }
   :root:not([data-theme="light"]) .callout-danger  { background: #450a0a; color: #fecaca; }
@@ -556,7 +559,7 @@ body {
   :root:not([data-theme="light"]) .callout-goal    { background: #2e1065; color: #ddd6fe; }
 }
 
-[data-theme="dark"] .callout-note    { background: #1e3a5f; color: #bfdbfe; }
+[data-theme="dark"] .callout-note    { background: oklch(30% 0.05 210); color: oklch(90% 0.03 200); }
 [data-theme="dark"] .callout-tip     { background: #14532d; color: #bbf7d0; }
 [data-theme="dark"] .callout-warning { background: #451a03; color: #fde68a; }
 [data-theme="dark"] .callout-danger  { background: #450a0a; color: #fecaca; }
@@ -565,6 +568,7 @@ body {
 
 /* ── Prev / Next navigation ───────────────────────────────────── */
 .lesson-nav {
+  clear: both; /* below a floating OSI ampel */
   display: flex;
   justify-content: space-between;
   gap: 12px;

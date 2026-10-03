@@ -24,7 +24,7 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
   width: 100%;
-  max-width: 680px;
+  max-width: 780px;
   max-height: 90dvh;
   overflow: hidden;
   display: flex;
@@ -42,20 +42,20 @@
 .welcome-header {
   display: flex;
   align-items: center;
-  gap: var(--pad-xl);
-  padding: var(--pad-2xl) var(--pad-2xl) var(--pad-xl);
+  gap: var(--pad-lg);
+  padding: var(--pad-lg) var(--pad-lg) var(--pad-lg) var(--pad-2xl);
   background: var(--surface);
   border-bottom: 1px solid var(--ui-border);
 }
 
 .welcome-logo {
-  width: 52px;
-  height: 52px;
+  width: 46px;
+  height: 46px;
   flex-shrink: 0;
 }
 
 .welcome-title {
-  font-size: 1.375rem;
+  font-size: 1.5rem;
   font-weight: 700;
   margin: 0;
   color: var(--text);
@@ -63,18 +63,23 @@
 }
 
 .welcome-subtitle {
-  margin: 3px 0 0;
+  margin: 1px 0 0;
   font-size: 0.8125rem;
   color: var(--text);
 }
 
+/* Version badge and close button side by side, keeping the header low */
 .welcome-header-right {
   margin-left: auto;
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: var(--pad-xs);
+  flex-direction: row;
+  align-items: center;
+  gap: var(--pad-md);
   flex-shrink: 0;
+}
+
+.welcome-header-right .welcome-close-btn {
+  order: 1;
 }
 
 .welcome-close-btn {
@@ -135,147 +140,212 @@
   background: var(--warning-tint);
 }
 
-/* ---- Body (tabbed pages) ---- */
+/* ---- Body: two ways in ("Build freely" | "Learn") ---- */
 
 .welcome-body {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  height: 0;
-  overflow: hidden;
-}
-
-/* Tabs */
-
-.welcome-tabs {
-  display: flex;
-  gap: 0;
-  padding: 0 var(--pad-2xl);
-  border-bottom: 1px solid var(--ui-border);
-  background: var(--surface);
-  flex-shrink: 0;
-}
-
-.welcome-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--pad-sm);
-  padding: var(--pad-md) var(--pad-lg);
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--text);
-  cursor: pointer;
-  margin-bottom: -1px;
-  transition: color 0.1s, border-color 0.1s;
-}
-
-.welcome-tab:hover {
-  color: var(--text);
-}
-
-.welcome-tab--active {
-  color: var(--text);
-  border-bottom-color: var(--text);
-  font-weight: 600;
-}
-
-.welcome-tab:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: -2px;
-}
-
-/* Pages */
-
-.welcome-pages {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
 
-.welcome-page {
-  display: none;
-}
-
-.welcome-page--active {
-  display: block;
-}
-
-/* Actions */
-
-.welcome-actions {
+.welcome-home,
+.welcome-subview {
   display: flex;
   flex-direction: column;
   gap: var(--pad-md);
   padding: var(--pad-xl) var(--pad-2xl);
   box-sizing: border-box;
+  min-height: 0;
 }
 
-.welcome-action-btn {
-  display: grid;
-  grid-template-columns: 2rem 1fr;
-  grid-template-rows: auto auto;
+.welcome-subview-head {
+  display: flex;
   align-items: center;
-  column-gap: var(--pad-md);
-  padding: var(--pad-md) var(--pad-lg);
-  border: 1px solid var(--ui-border);
-  border-radius: var(--radius-md);
-  background: var(--bg-strong);
-  cursor: pointer;
-  text-align: left;
-  transition: background 0.1s, border-color 0.1s;
+  justify-content: space-between;
+  gap: var(--pad-md);
 }
 
-.welcome-action-btn:hover {
-  background: var(--ui-card);
-  border-color: var(--ui-border-strong);
+.welcome-home[hidden],
+.welcome-subview[hidden] {
+  display: none;
 }
 
-.welcome-action-btn:focus-visible {
+/* Two ways in, side by side, separated by a thin vertical line instead of
+   two framed cards — the buttons inside carry the frames. */
+.welcome-paths {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+
+/* Title, description and button list share rows across both columns
+   (subgrid), so the buttons start at the same height even when one
+   description wraps onto more lines. */
+.welcome-path {
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-row: span 3;
+  align-content: start;
+  row-gap: var(--pad-md);
+  padding: var(--pad-sm) var(--pad-xl) var(--pad-sm) 0;
+}
+
+.welcome-path + .welcome-path {
+  padding: var(--pad-sm) 0 var(--pad-sm) var(--pad-xl);
+  border-left: 1px solid var(--ui-border-strong);
+}
+
+/* The course is the recommended way in — tinted with the brand accent. */
+.welcome-path--learn {
+  --learn-accent: var(--accent);
+  /* no tinted card any more — accent on title icon and button */
+}
+
+.welcome-path-title {
+  display: flex;
+  align-items: center;
+  gap: var(--pad-md);
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.welcome-path-title i {
+  color: var(--blue);
+}
+
+.welcome-path--learn .welcome-path-title i {
+  color: var(--learn-accent);
+}
+
+.welcome-path-desc {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.welcome-path-meta {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.welcome-sim-item:focus-visible,
+.welcome-back-btn:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
 
-.welcome-action-icon {
-  grid-row: 1 / 3;
-  font-size: 1.25rem;
-  color: var(--blue);
-  text-align: center;
-  align-self: center;
+.welcome-back-btn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pad-sm);
+  padding: var(--pad-xs) var(--pad-md);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-md);
+  background: var(--bg-strong);
+  font-size: 0.8125rem;
+  color: var(--text);
+  cursor: pointer;
 }
 
-.welcome-action-label {
-  font-size: 0.875rem;
+.welcome-back-btn:hover {
+  background: var(--ui-card);
+  border-color: var(--accent);
+}
+
+.welcome-sim-item:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.welcome-sim-item:disabled:hover {
+  background: var(--bg-strong);
+  border-color: var(--ui-border);
+}
+
+/* The only emphasis on the course start: its icon in the accent colour */
+.welcome-path--learn .welcome-learn-primary .welcome-item-icon {
+  color: var(--learn-accent);
+}
+
+/* "Build freely" list */
+
+.welcome-sim-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pad-xs);
+}
+
+.welcome-sim-item {
+  display: grid;
+  grid-template-columns: 1.75rem 1fr;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: var(--pad-md);
+  padding: var(--pad-sm) var(--pad-md);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-md);
+  background: var(--bg-strong);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.welcome-sim-item:hover {
+  background: var(--ui-card);
+  border-color: var(--accent);
+}
+
+.welcome-item-icon {
+  grid-row: 1 / 3;
+  font-size: 1.05rem;
+  color: var(--blue);
+  text-align: center;
+}
+
+.welcome-item-label {
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--text);
   line-height: 1.25;
 }
 
-.welcome-action-desc {
+.welcome-item-desc {
   font-size: 0.75rem;
-  color: var(--text);
+  color: var(--muted);
   line-height: 1.3;
 }
 
 /* News */
 
-.welcome-news {
-  padding: var(--pad-xl) var(--pad-2xl);
-  box-sizing: border-box;
+.welcome-subview-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--pad-sm) var(--pad-lg);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-md);
+  background: var(--bg-strong);
 }
 
 .welcome-news-content .minimarkdown-h2 {
   font-size: 0.8125rem;
   font-weight: 700;
-  margin: var(--pad-lg) 0 var(--pad-sm);
+  margin: var(--pad-lg) 0 var(--pad-xs);
+  padding-top: var(--pad-md);
+  border-top: 1px solid var(--ui-border);
   color: var(--text);
 }
 
 .welcome-news-content .minimarkdown-h2:first-child {
   margin-top: 0;
+  border-top: none;
 }
 
 .welcome-news-content .minimarkdown-ul {
@@ -289,7 +359,302 @@
   line-height: 1.5;
 }
 
+/* Language chooser inside the welcome dialog: the framed box scrolls,
+   not the list itself (see css/sim.css for the item styles). */
+.welcome-lang-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pad-lg);
+  padding: var(--pad-lg);
+}
+
+.welcome-lang-content > * {
+  flex-shrink: 0;
+}
+
+.welcome-lang-content .sim-langlist {
+  max-height: none;
+  overflow: visible;
+}
+
+/* Chapter overview (see ChapterOverview.js): chapters left, the selected
+   chapter's pages right — each column scrolls on its own. */
+.welcome-chapters-content {
+  padding: 0;
+  overflow: hidden;
+}
+
+.chapter-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  height: 100%;
+}
+
+.chapter-overview-list,
+.chapter-overview-pages {
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--pad-lg);
+}
+
+.chapter-overview-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pad-md);
+  border-right: 1px solid var(--ui-border);
+}
+
+.chapter-overview-resume,
+.chapter-overview-chapter {
+  display: flex;
+  align-items: center;
+  gap: var(--pad-md);
+  width: 100%;
+  padding: var(--pad-sm) var(--pad-md);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-md);
+  background: var(--bg-strong);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.chapter-overview-resume:hover,
+.chapter-overview-chapter:hover {
+  background: color-mix(in oklch, var(--accent) 6%, var(--bg-strong));
+  border-color: var(--accent);
+}
+
+.chapter-overview-resume:focus-visible,
+.chapter-overview-chapter:focus-visible,
+.chapter-overview-page:focus-visible,
+.chapter-overview-more-link:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.chapter-overview-resume > i {
+  width: 1.75rem;
+  text-align: center;
+  font-size: 1.05rem;
+  color: var(--accent);
+}
+
+.chapter-overview-resume-text,
+.chapter-overview-chapter-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.chapter-overview-resume-label,
+.chapter-overview-chapter-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.chapter-overview-resume-page {
+  font-size: 0.75rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chapter-overview-chapters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pad-xs);
+}
+
+.chapter-overview-chapter.is-draft {
+  border-style: dashed;
+}
+
+/* Selected = shown on the right */
+.chapter-overview-chapter.is-selected {
+  border-color: var(--accent);
+  background: color-mix(in oklch, var(--accent) 12%, var(--bg-strong));
+}
+
+.chapter-overview-num {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background: color-mix(in oklch, var(--accent) 14%, transparent);
+  color: var(--accent);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Current = where the student is (or was last) */
+.chapter-overview-chapter.is-current .chapter-overview-num {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.chapter-overview-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--pad-md);
+  font-size: 0.75rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* Right column */
+.chapter-overview-pages-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pad-xs);
+  padding-bottom: var(--pad-md);
+  margin-bottom: var(--pad-sm);
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.chapter-overview-pages-title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.chapter-overview-page-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.chapter-overview-page-list li {
+  margin: 0;
+}
+
+.chapter-overview-page {
+  display: flex;
+  align-items: baseline;
+  gap: var(--pad-md);
+  width: 100%;
+  padding: 4px var(--pad-sm);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.chapter-overview-page:hover {
+  background: color-mix(in oklch, var(--accent) 10%, transparent);
+}
+
+.chapter-overview-page.is-current {
+  background: color-mix(in oklch, var(--accent) 14%, transparent);
+  font-weight: 600;
+}
+
+.chapter-overview-page[data-depth="1"],
+.chapter-overview-page[data-depth="2"] {
+  font-weight: 600;
+}
+
+.chapter-overview-page[data-depth="2"] {
+  margin-top: var(--pad-sm);
+}
+
+.chapter-overview-page[data-depth="3"] {
+  padding-left: calc(var(--pad-sm) + 1.25em);
+}
+
+.chapter-overview-page-num {
+  flex: 0 0 3.2em;
+  color: var(--muted);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.chapter-overview-page-title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Chapters still being written: a quiet list */
+.chapter-overview-soon-title {
+  margin: var(--pad-sm) 0 var(--pad-xs);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.chapter-overview-soon-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.chapter-overview-soon-list li {
+  display: flex;
+  gap: var(--pad-md);
+  margin: 0;
+  padding: 1px var(--pad-md);
+}
+
+.chapter-overview-soon-num {
+  flex: 0 0 1.75rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Course intro / appendix pages */
+.chapter-overview-more {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pad-xs);
+  margin-top: auto;
+  padding-top: var(--pad-md);
+  border-top: 1px solid var(--ui-border);
+}
+
+.chapter-overview-more-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pad-sm);
+  padding: var(--pad-xs) var(--pad-md);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-md);
+  background: var(--bg-strong);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.chapter-overview-more-link:hover {
+  border-color: var(--accent);
+}
+
+.chapter-overview-more-link i {
+  color: var(--blue);
+}
+
 /* ---- Footer ---- */
+
+/* Only on the start page — sub-views (news, language) have "Back" instead */
+.welcome-dlg--subview .welcome-footer {
+  display: none;
+}
 
 .welcome-footer {
   display: flex;
@@ -340,90 +705,9 @@
 
 
 .welcome-footer-btn--lang:hover {
-  border-color: var(--primary);
-  background: var(--primary-tint);
-  color: var(--text);
-}
-
-/* ---- Example submenu ---- */
-
-.welcome-example-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.welcome-example-wrapper .welcome-action-btn {
-  position: relative;
-}
-
-.welcome-example-chevron {
-  position: absolute;
-  right: var(--pad-lg);
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 0.6875rem;
-  color: var(--muted);
-  transition: transform 0.15s ease, color 0.1s;
-  pointer-events: none;
-}
-
-.welcome-action-btn:hover .welcome-example-chevron {
-  color: var(--text);
-}
-
-.welcome-example-sub {
-  display: none;
-  flex-direction: column;
-  border: 1px solid var(--ui-border);
-  border-top: none;
-  border-radius: 0 0 var(--radius-md) var(--radius-md);
-  overflow: hidden;
-}
-
-.welcome-example-wrapper--open .welcome-example-sub {
-  display: flex;
-}
-
-.welcome-example-wrapper--open .welcome-action-btn {
-  border-radius: var(--radius-md) var(--radius-md) 0 0;
-  border-color: var(--ui-border-strong);
+  border-color: var(--accent);
   background: var(--ui-card);
-}
-
-.welcome-example-sub-item {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  padding: var(--pad-sm) var(--pad-lg) var(--pad-sm) calc(2rem + var(--pad-md) + var(--pad-lg));
-  background: var(--bg-strong);
-  border: none;
-  border-top: 1px solid var(--ui-border);
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.1s;
-}
-
-.welcome-example-sub-item:hover {
-  background: var(--ui-card);
-}
-
-.welcome-example-sub-item:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: -2px;
-}
-
-.welcome-example-sub-label {
-  font-size: 0.8125rem;
-  font-weight: 600;
   color: var(--text);
-  line-height: 1.25;
-}
-
-.welcome-example-sub-desc {
-  font-size: 0.75rem;
-  color: var(--muted);
-  line-height: 1.3;
 }
 
 /* ---- Kompakte Höhe (z.B. kleines Tauri-Fenster, Laptop 768px) ---- */
@@ -438,10 +722,13 @@
     height: 38px;
   }
 
-  .welcome-actions {
-    gap: var(--pad-sm);
+  .welcome-home {
     padding-top: var(--pad-lg);
     padding-bottom: var(--pad-lg);
+  }
+
+  .welcome-path {
+    padding: var(--pad-lg);
   }
 }
 
@@ -459,7 +746,7 @@
   }
 
   .welcome-header {
-    padding: var(--pad-xl) var(--pad-xl) var(--pad-lg);
+    padding: var(--pad-md) var(--pad-md) var(--pad-md) var(--pad-lg);
   }
 
   .welcome-logo {
@@ -467,23 +754,51 @@
     height: 40px;
   }
 
-  .welcome-tabs {
-    padding: 0 var(--pad-lg);
-  }
-
-  .welcome-actions {
+  .welcome-home,
+  .welcome-subview {
     padding: var(--pad-lg);
   }
 
-  .welcome-news {
-    padding: var(--pad-lg);
+  .welcome-paths {
+    grid-template-columns: 1fr;
+    gap: var(--pad-md);
+  }
+
+  .welcome-chapters-content {
+    overflow-y: auto;
+  }
+
+  .chapter-overview {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .chapter-overview-list,
+  .chapter-overview-pages {
+    overflow: visible;
+  }
+
+  .chapter-overview-list {
+    border-right: none;
+    border-bottom: 1px solid var(--ui-border);
+  }
+
+  .welcome-path,
+  .welcome-path + .welcome-path {
+    padding: var(--pad-sm) 0;
+  }
+
+  .welcome-path + .welcome-path {
+    border-left: none;
+    border-top: 1px solid var(--ui-border-strong);
+    padding-top: var(--pad-lg);
   }
 
   .welcome-footer {
     padding: var(--pad-md) var(--pad-lg);
   }
 
-  .welcome-action-btn--tour {
+  .welcome-sim-item--tour {
     display: none;
   }
 }
@@ -505,28 +820,24 @@
     height: 30px;
   }
 
-  .welcome-subtitle {
+  .welcome-subtitle,
+  .welcome-path-desc {
     display: none;
   }
 
-  .welcome-tabs {
-    padding: 0 var(--pad-xl);
-  }
-
-  .welcome-tab {
-    padding: var(--pad-xs) var(--pad-lg);
-  }
-
-  .welcome-actions {
-    gap: var(--pad-sm);
+  .welcome-home {
     padding: var(--pad-md) var(--pad-xl);
   }
 
-  .welcome-action-btn {
-    padding: var(--pad-sm) var(--pad-lg);
+  .welcome-paths {
+    grid-template-columns: 1fr 1fr;
   }
 
-  .welcome-action-btn--tour {
+  .welcome-path {
+    padding: var(--pad-md);
+  }
+
+  .welcome-sim-item--tour {
     display: none;
   }
 
