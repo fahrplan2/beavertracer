@@ -210,7 +210,7 @@ export class LessonsPanel {
 
     /**
      * Course chapters (1…89) in the given page list, each with its pages.
-     * 0 (course start) and 90+ (appendix, test pages) aren't chapters.
+     * 0 (course start) counts as a chapter; 90+ (appendix, test pages) don't.
      * @param {LessonPage[]} pages
      * @returns {{chapter: LessonPage, pages: LessonPage[]}[]}
      */
@@ -219,7 +219,7 @@ export class LessonsPanel {
         const chapters = [];
         for (const page of pages) {
             const top = page.num?.[0];
-            if (top === undefined || top < 1 || top >= 90) continue;
+            if (top === undefined || top < 0 || top >= 90) continue;
             if (page.num?.length === 1) chapters.push({ chapter: page, pages: [page] });
             else if (chapters.at(-1)?.chapter.num?.[0] === top) chapters.at(-1)?.pages.push(page);
         }
@@ -275,11 +275,10 @@ export class LessonsPanel {
     }
 
     /**
-     * @param {LessonPage} page e.g. "1.2 Erste Simulation" — chapter 0
-     *   (course start) isn't a numbered chapter, so it goes without
+     * @param {LessonPage} page e.g. "1.2 Erste Simulation"
      */
     static pageLabel(page) {
-        return (page.num?.length && page.num[0] !== 0 ? page.num.join(".") + " " : "") + page.title;
+        return (page.num?.length ? page.num.join(".") + " " : "") + page.title;
     }
 
     /** @param {LessonPage} page */

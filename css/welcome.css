@@ -159,11 +159,19 @@
   min-height: 0;
 }
 
+/* "[←] Title" — the back arrow sits right before the sub-view's title */
 .welcome-subview-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--pad-md);
+}
+
+.welcome-subview-head .welcome-back-btn {
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  flex-shrink: 0;
 }
 
 .welcome-home[hidden],

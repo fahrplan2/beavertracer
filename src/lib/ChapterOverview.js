@@ -9,7 +9,7 @@ import { addScrollHints } from "./scrollHints.js";
  * right the pages of the
  * selected chapter (initially the current or last read one). Chapters
  * still being written are listed quietly below ("coming soon", clickable
- * with ?debug=1); course intro/appendix pages are linked at the bottom.
+ * with ?debug=1); appendix pages (90+) are linked at the bottom.
  * Requires the panel's manifest to be loaded.
  * @param {LessonsPanel} panel
  * @param {(href: string) => void} onPick called with the chosen page
@@ -93,10 +93,7 @@ export function buildChapterOverview(panel, onPick) {
         const title = document.createElement("span");
         title.className = "chapter-overview-chapter-title";
         title.textContent = chapter.title;
-        const meta = document.createElement("span");
-        meta.className = "chapter-overview-meta";
-        meta.textContent = countText;
-        body.append(title, meta);
+        body.append(title);
         item.append(num, body);
         chapters.appendChild(item);
 
@@ -119,10 +116,10 @@ export function buildChapterOverview(panel, onPick) {
         left.appendChild(soon);
     }
 
-    // ── Course intro / appendix pages ──
+    // ── Appendix pages (90+) ──
     const extras = pages.filter((p) => {
         const top = p.num?.[0];
-        return (top === 0 || (top !== undefined && top >= 90)) && (p.num?.length ?? 0) <= 2 && (!p.draft || debug);
+        return top !== undefined && top >= 90 && (p.num?.length ?? 0) <= 2 && (!p.draft || debug);
     });
     if (extras.length) {
         const more = document.createElement("nav");

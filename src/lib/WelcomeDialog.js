@@ -170,7 +170,9 @@ export class WelcomeDialog {
             const backBtn = document.createElement("button");
             backBtn.type = "button";
             backBtn.className = "welcome-back-btn";
-            backBtn.innerHTML = `<i class="fa-solid fa-arrow-left" aria-hidden="true"></i> ${t("welcome.back")}`;
+            backBtn.innerHTML = `<i class="fa-solid fa-arrow-left" aria-hidden="true"></i>`;
+            backBtn.title = t("welcome.back");
+            backBtn.setAttribute("aria-label", t("welcome.back"));
             const back = () => {
                 // Opened straight on this view (no start page behind it): close.
                 if (!opener) { close(); return; }
@@ -186,7 +188,7 @@ export class WelcomeDialog {
             h.appendChild(document.createTextNode(title));
             const head = document.createElement("div");
             head.className = "welcome-subview-head";
-            head.append(h, backBtn);
+            head.append(backBtn, h);
             const content = document.createElement("div");
             content.className = `welcome-subview-content ${contentClass}`;
             view.append(head, content);
