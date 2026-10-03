@@ -123,4 +123,73 @@ export class SimDialog {
   static prompt(message, defaultValue = "") {
     return SimDialog.#show("prompt", message, defaultValue);
   }
+
+  /**
+   * Dialog with a cancel button plus custom choices (e.g. "Save" / "Discard").
+   * The last choice is the focused default.
+   * @template {string} T
+   * @param {string} message
+   * @param {{ value: T, label: string }[]} choices
+   * @returns {Promise<T|null>} the chosen value, null on cancel/Escape/backdrop click
+   */
+  static choose(message, choices) {
+    return new Promise((resolve) => {
+      const backdrop = document.createElement("div");
+      backdrop.className = "sim-dialog-backdrop";
+
+      const box = document.createElement("div");
+      box.className = "sim-dialog";
+      box.setAttribute("role", "dialog");
+      box.setAttribute("aria-modal", "true");
+
+      const msg = document.createElement("p");
+      msg.className = "sim-dialog-msg";
+      msg.textContent = message;
+      box.appendChild(msg);
+
+      const actions = document.createElement("div");
+      actions.className = "sim-dialog-actions";
+
+      /** @param {T|null} value */
+      const done = (value) => {
+        backdrop.remove();
+        resolve(value);
+      };
+
+      const cancelBtn = document.createElement("button");
+      cancelBtn.type = "button";
+      cancelBtn.className = "sim-dialog-btn sim-dialog-cancel";
+      cancelBtn.textContent = t("ui.cancel");
+      cancelBtn.addEventListener("click", () => done(null));
+      actions.appendChild(cancelBtn);
+
+      /** @type {HTMLButtonElement|null} */
+      let lastBtn = null;
+      for (const choice of choices) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "sim-dialog-btn";
+        btn.textContent = choice.label;
+        btn.addEventListener("click", () => done(choice.value));
+        actions.appendChild(btn);
+        lastBtn = btn;
+      }
+      lastBtn?.classList.add("sim-dialog-ok");
+
+      box.appendChild(actions);
+      backdrop.appendChild(box);
+      document.body.appendChild(backdrop);
+      lastBtn?.focus();
+
+      backdrop.addEventListener("click", (ev) => {
+        if (ev.target === backdrop) done(null);
+      });
+      backdrop.addEventListener("keydown", (ev) => {
+        if (ev.key === "Escape") {
+          ev.preventDefault();
+          done(null);
+        }
+      });
+    });
+  }
 }

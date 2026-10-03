@@ -18,6 +18,7 @@ import { StaticPageRouter } from "./StaticPageRouter.js";
 import { PCapController } from "./tracer/PCapControler.js";
 import { UILib } from "./lib/UILib.js";
 import { SimDialog } from "./lib/SimDialog.js";
+import { choosePanelPlacement, segmentToRects } from "./lib/panelPlacement.js";
 import { WelcomeDialog } from "./lib/WelcomeDialog.js";
 import { LessonsPanel } from "./lib/LessonsPanel.js";
 import { resetPathToRoot, buildUrl, clearParams } from "./lib/AppUrl.js";
@@ -257,13 +258,21 @@ export class SimControl {
     /** @type {boolean} whether the docked lessons panel is open */
     lessonsOpen = false;
 
+    /**
+     * True while the scene was loaded by the lessons panel (a per-page
+     * lesson simulation) rather than being the user's own work. Reset by
+     * new()/restore(); LessonsPanel sets it again after loading.
+     * @type {boolean}
+     */
+    lessonScene = false;
+
     /** @type {HTMLDivElement|null} */
     _lessonsPanel = null;
 
     /** @type {HTMLDivElement|null} mount point lesson content is rendered into */
     _lessonsContent = null;
 
-    /** @type {HTMLDivElement|null} slim strip above the content, holds the chapter dropdown */
+    /** @type {HTMLDivElement|null} slim strip above the content, holds the overview button + current page title */
     _lessonsNav = null;
 
     /** @type {HTMLDivElement|null} drag handle on the panel's left edge */
@@ -275,7 +284,7 @@ export class SimControl {
     /** Public accessor for LessonsPanel to render into. @returns {HTMLDivElement|null} */
     get lessonsMount() { return this._lessonsContent; }
 
-    /** Public accessor for LessonsPanel's chapter dropdown. @returns {HTMLDivElement|null} */
+    /** Public accessor for LessonsPanel's header strip. @returns {HTMLDivElement|null} */
     get lessonsNavMount() { return this._lessonsNav; }
 
 
@@ -629,13 +638,13 @@ export class SimControl {
         lessonsNav.className = "sim-lessons-nav";
         lessonsPanel.appendChild(lessonsNav);
 
-        // Chapter dropdown mount (LessonsPanel replaces its contents wholesale
-        // via innerHTML — kept in its own child so that doesn't wipe out the
+        // Header mount (LessonsPanel replaces its contents wholesale via
+        // innerHTML — kept in its own child so that doesn't wipe out the
         // close button below).
-        const lessonsNavSelect = document.createElement("div");
-        lessonsNavSelect.className = "sim-lessons-nav-select";
-        lessonsNav.appendChild(lessonsNavSelect);
-        this._lessonsNav = lessonsNavSelect;
+        const lessonsNavMain = document.createElement("div");
+        lessonsNavMain.className = "sim-lessons-nav-main";
+        lessonsNav.appendChild(lessonsNavMain);
+        this._lessonsNav = lessonsNavMain;
 
         // Explicit close button: on mobile the panel becomes a fullscreen
         // overlay covering the toolbar (see sim.css), so the toolbar's
@@ -744,10 +753,15 @@ export class SimControl {
      * Opens/closes the docked lessons panel. Independent of `mode` — it sits
      * beside the sim/trace/page content rather than replacing it.
      * @param {boolean} [open] pass explicitly to force a state, omit to toggle
+     * @returns {Promise<void>}
      */
-    toggleLessonsPanel(open) {
+    async toggleLessonsPanel(open) {
         const wasOpen = this.lessonsOpen;
-        this.lessonsOpen = open ?? !this.lessonsOpen;
+        const willOpen = open ?? !this.lessonsOpen;
+        // Entering lessons mode replaces the user's simulation with the
+        // lessons' own — ask first if there's unsaved work (see claimScene()).
+        if (willOpen && !wasOpen && this.lessonsPanel && !await this.lessonsPanel.claimScene()) return;
+        this.lessonsOpen = willOpen;
         this._invalidateUI();
         if (this.lessonsOpen) this.lessonsPanel?.ensureLoaded();
         else clearParams(["lesson"]);
@@ -759,6 +773,16 @@ export class SimControl {
         // canvas more room back, which never hides anything, so the user's
         // zoom/pan is left alone there.
         if (this.lessonsOpen && !wasOpen) this._fitAfterLessonsResize();
+    }
+
+    /**
+     * Leaves lessons mode, keeping the current lesson simulation as the
+     * user's own work (unsaved — so the usual discard warnings apply again).
+     */
+    adoptLessonScene() {
+        this.lessonScene = false;
+        this.markDirty();
+        void this.toggleLessonsPanel(false);
     }
 
     _fitAfterLessonsResize() {
@@ -776,6 +800,82 @@ export class SimControl {
             this._fitToContent(1);
         };
         root.addEventListener("transitionend", onEnd);
+    }
+
+    // ── Device panels ─────────────────────────────────────────────────────────
+
+    /**
+     * Moves a just-opened device panel to where it covers as little of the
+     * network as possible — shrinking a resizable panel a bit and/or panning
+     * the canvas if needed (see choosePanelPlacement). Measured in the panel
+     * layer's coordinate system, which is what obj.px/py are relative to.
+     * @param {SimulatedObject} obj
+     */
+    autoPlacePanel(obj) {
+        const panel = obj.panelEl;
+        const layer = this.panelLayer;
+        const boundsEl = this.panelBounds ?? this.movementBoundary;
+        const viewEl = this.nodesLayer;
+        if (!panel || !layer || !boundsEl || !viewEl) return;
+
+        const origin = layer.getBoundingClientRect();
+        /** @param {DOMRect} r */
+        const rel = (r) => ({ x: r.left - origin.left, y: r.top - origin.top, w: r.width, h: r.height });
+        /** @param {SimulatedObject} o */
+        const centre = (o) => {
+            const r = /** @type {HTMLElement} */ (o.iconEl).getBoundingClientRect();
+            return { x: r.left + r.width / 2 - origin.left, y: r.top + r.height / 2 - origin.top };
+        };
+
+        /** @type {import("./lib/panelPlacement.js").Rect[]} */
+        const obstacles = [];
+        for (const o of this.simobjects) {
+            if (o instanceof Link) {
+                if (o.A?.iconEl && o.B?.iconEl) obstacles.push(...segmentToRects(centre(o.A), centre(o.B)));
+            } else if (o instanceof SimulatedObject && o.iconEl) {
+                obstacles.push(rel(o.iconEl.getBoundingClientRect()));
+            }
+        }
+
+        // Start from the panel's natural size, not a previous auto-shrunk one;
+        // a size the user dragged to (pw/ph) is kept as is.
+        const userSized = !!(obj.pw || obj.ph);
+        if (!userSized) {
+            panel.style.width = "";
+            panel.style.height = "";
+        }
+        const size = { w: panel.offsetWidth, h: panel.offsetHeight };
+
+        // Other open panels: better not covered either, but less important
+        // than the network itself.
+        const avoid = this.simobjects
+            .filter((o) => o !== obj && o instanceof SimulatedObject && o.panelOpen && o.panelEl)
+            .map((o) => rel(/** @type {HTMLElement} */ (o.panelEl).getBoundingClientRect()));
+
+        const place = choosePanelPlacement({
+            bounds: rel(boundsEl.getBoundingClientRect()),
+            view: rel(viewEl.getBoundingClientRect()),
+            size,
+            minSize: obj.panelResizable && !userSized ? { w: obj.panelMinWidth, h: obj.panelMinHeight } : null,
+            obstacles,
+            avoid,
+        });
+
+        obj.px = place.x;
+        obj.py = place.y;
+        panel.style.transform = `translate(${place.x}px, ${place.y}px)`;
+        if (place.w !== size.w || place.h !== size.h) {
+            panel.style.width = `${place.w}px`;
+            panel.style.height = `${place.h}px`;
+        }
+        if (place.shift.dx || place.shift.dy) {
+            this._panX += place.shift.dx;
+            this._panY += place.shift.dy;
+            this._applyCanvasTransform();
+            this._requestRedrawLinks();
+            // the hover tooltip would otherwise stay where the node was
+            this._hideTooltip();
+        }
     }
 
     // ── Mode transitions ──────────────────────────────────────────────────────
@@ -978,6 +1078,7 @@ export class SimControl {
     /** @param {*} state */
     async restore(state) {
         this._isDirty = false;
+        this.lessonScene = false;
         /** @type {[string, (new (...args: any[]) => SimulatedObject) & { fromJSON(n: any): SimulatedObject }][]} */
         const registryEntries = [
             ["Computer", Computer],
@@ -1101,6 +1202,7 @@ export class SimControl {
         }
         this._syncSceneDOM();
         this._isDirty = false;
+        this.lessonScene = false;
     }
 
     /**
@@ -1282,7 +1384,7 @@ export class SimControl {
                     label: t("sim.new"),
                     icon: "fa-file",
                     onClick: async () => {
-                        if (this._isDirty && !await SimDialog.confirm(t("sim.discardandnewwarning"))) return;
+                        if (this._isDirty && !this.lessonScene && !await SimDialog.confirm(t("sim.discardandnewwarning"))) return;
                         this.new();
                     },
                 });
@@ -1294,7 +1396,7 @@ export class SimControl {
                     label: t("sim.load"),
                     icon: "fa-file-arrow-up",
                     onClick: async () => {
-                        if (this._isDirty && !await SimDialog.confirm(t("sim.discardandloadwarning"))) return;
+                        if (this._isDirty && !this.lessonScene && !await SimDialog.confirm(t("sim.discardandloadwarning"))) return;
                         this.open();
                     },
                 });
@@ -1450,6 +1552,17 @@ export class SimControl {
             addSeparator("sep-lessons").classList.add("sim-toolbar-sep--push-right");
             const gLessons = UILib.buttongroup(t("sim.lessons"), toolbar);
             gLessons.dataset.group = "lessons";
+
+            // Only shown in lessons mode, where it replaces New/Load/Save:
+            // keeps the current lesson simulation as the user's own work.
+            const adoptBtn = UILib.iconbutton({
+                label: t("lessons.sim.adopt"),
+                icon: "fa-file-import",
+                onClick: () => this.adoptLessonScene(),
+            });
+            adoptBtn.title = t("lessons.sim.adoptTitle");
+            adoptBtn.dataset.role = "lessons-adopt";
+            gLessons.appendChild(adoptBtn);
 
             const lessonsBtn = UILib.iconbutton({
                 label: t("sim.lessons"),
@@ -1688,7 +1801,10 @@ export class SimControl {
             const setHidden = (el, hidden) => el?.classList?.toggle("hidden", !!hidden);
 
             const showSpeeds  = (this.mode === "run");
-            const showProject = (this.mode === "edit");
+            // In lessons mode every page brings its own simulation — New/Load/
+            // Save give way to the "adopt as my own simulation" button.
+            const showProject = (this.mode === "edit" && !this.lessonsOpen);
+            setHidden(toolbar.querySelector(`[data-role="lessons-adopt"]`), !this.lessonsOpen);
             const showZoom    = (this.mode === "edit" || this.mode === "run");
 
             setHidden(speedsGroup, !showSpeeds);

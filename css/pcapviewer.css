@@ -321,36 +321,30 @@
   background: color-mix(in oklch, var(--surface, #fff) 70%, var(--text, #000) 12%);
 }
 
-/* OSI-Layer-Kennzeichnung (Best-Guess-Zuordnung, siehe #OSI_LAYER_BY_FILTER) */
-.pcapviewer-tree-proto.osi-l1 { border-left-color: var(--osi-l1); }
-.pcapviewer-tree-proto.osi-l2 { border-left-color: var(--osi-l2); }
-.pcapviewer-tree-proto.osi-l3 { border-left-color: var(--osi-l3); }
-.pcapviewer-tree-proto.osi-l4 { border-left-color: var(--osi-l4); }
-.pcapviewer-tree-proto.osi-l5 { border-left-color: var(--osi-l5); }
-.pcapviewer-tree-proto.osi-l6 { border-left-color: var(--osi-l6); }
-.pcapviewer-tree-proto.osi-l7 { border-left-color: var(--osi-l7); }
+/* OSI-Layer-Kennzeichnung (siehe OSI_LAYER_BY_FILTER in PCapViewer.js).
+   --osi-from/--osi-to are set per row; for a layer range ("2/3", "5–7") the
+   bar and badge blend from the lower to the upper layer's colour. */
+.pcapviewer-tree-proto.pcapviewer-osi {
+  /* only the left border has a width, so the image only shows there */
+  border-image: linear-gradient(to bottom, var(--osi-from), var(--osi-to)) 1;
+}
 
 .pcapviewer-osi-badge {
   display: inline-flex;
   flex: none;
   align-items: center;
   justify-content: center;
-  width: 15px;
+  min-width: 15px;
   height: 15px;
+  padding: 0 4px;
   margin-left: 6px;
-  border-radius: 50%;
+  border-radius: 8px;
   font-size: 0.66rem;
   font-weight: 700;
   color: var(--osi-text);
+  background: linear-gradient(to right, var(--osi-from), var(--osi-to));
   cursor: default;
 }
-.osi-l1 .pcapviewer-osi-badge { background: var(--osi-l1); }
-.osi-l2 .pcapviewer-osi-badge { background: var(--osi-l2); }
-.osi-l3 .pcapviewer-osi-badge { background: var(--osi-l3); }
-.osi-l4 .pcapviewer-osi-badge { background: var(--osi-l4); }
-.osi-l5 .pcapviewer-osi-badge { background: var(--osi-l5); }
-.osi-l6 .pcapviewer-osi-badge { background: var(--osi-l6); }
-.osi-l7 .pcapviewer-osi-badge { background: var(--osi-l7); }
 
 .pcapviewer-tree-twisty {
   width: 16px;

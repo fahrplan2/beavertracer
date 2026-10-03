@@ -1,0 +1,261 @@
+{
+  "_info": "BeaverTracer Lektion 1.2.2 — zwei frisch verbundene PCs (beide noch mit der Standard-IP)",
+  "version": 6,
+  "appVersion": "0.2.1-dev.62.3f72c14",
+  "savedAt": "2026-10-03T15:43:36.375Z",
+  "tick": 100,
+  "objects": [
+    {
+      "kind": "Computer",
+      "id": 1,
+      "name": "Computer 1",
+      "x": 236,
+      "y": 320,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "net": {
+        "name": "Computer 1",
+        "forwarding": false,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "192.168.0.10",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a833:28ff:fe8e:d1cc",
+            "slaac": false,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": []
+      },
+      "fs": {
+        "type": "dir",
+        "name": "",
+        "ctime": 1791042214610,
+        "mtime": 1791042214610,
+        "children": [
+          {
+            "type": "dir",
+            "name": "etc",
+            "ctime": 1791042214610,
+            "mtime": 1791042214611,
+            "children": [
+              {
+                "type": "dir",
+                "name": "certs",
+                "ctime": 1791042214610,
+                "mtime": 1791042214610,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "trusted",
+                    "ctime": 1791042214610,
+                    "mtime": 1791042214610,
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "type": "file",
+                "name": "ip.config",
+                "data": "{\n  \"modeByIface\": {}\n}\n",
+                "binary": false,
+                "ctime": 1791042214611,
+                "mtime": 1791042214611
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "home",
+            "ctime": 1791042214610,
+            "mtime": 1791042214610,
+            "children": [
+              {
+                "type": "file",
+                "name": "notes.txt",
+                "data": "Welcome to BeaverOS!\n\nThis file lives in your home directory - feel free to edit or delete it.\nIt's also a handy scratch pad for trying out the terminal, e.g.:\n\n  cat notes.txt | grep BeaverOS\n  cat notes.txt | wc -l\n  cat notes.txt | tail -n 3\n\nHave fun exploring the network!\n",
+                "binary": false,
+                "ctime": 1791042214610,
+                "mtime": 1791042214610
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "bin",
+            "ctime": 1791042214610,
+            "mtime": 1791042214610,
+            "children": []
+          },
+          {
+            "type": "dir",
+            "name": "var",
+            "ctime": 1791042214610,
+            "mtime": 1791042214610,
+            "children": [
+              {
+                "type": "dir",
+                "name": "www",
+                "ctime": 1791042214610,
+                "mtime": 1791042214610,
+                "children": [
+                  {
+                    "type": "file",
+                    "name": "index.html",
+                    "data": "<!doctype html>\n<html>\n    <head>\n      <meta charset=\"utf-8\" />\n      <title>Hello from SimpleHTTPServer</title>\n    </head>\n    <body>\n      <h1>It works!</h1>\n    <p>Served from /var/www/index.html</p>\n    </body>\n</html>\n",
+                    "binary": false,
+                    "ctime": 1791042214610,
+                    "mtime": 1791042214610
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "dns": null,
+      "dhcpMode": {},
+      "installedApps": [
+        "IPv4ConfigApp",
+        "TerminalApp",
+        "ExplorerApp",
+        "TextEditorApp"
+      ]
+    },
+    {
+      "kind": "Computer",
+      "id": 3,
+      "name": "Computer 2",
+      "x": 586,
+      "y": 320,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "net": {
+        "name": "Computer 2",
+        "forwarding": false,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "192.168.0.10",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a83c:2ff:fe12:e724",
+            "slaac": false,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": []
+      },
+      "fs": {
+        "type": "dir",
+        "name": "",
+        "ctime": 1791042214964,
+        "mtime": 1791042214964,
+        "children": [
+          {
+            "type": "dir",
+            "name": "etc",
+            "ctime": 1791042214964,
+            "mtime": 1791042214964,
+            "children": [
+              {
+                "type": "dir",
+                "name": "certs",
+                "ctime": 1791042214964,
+                "mtime": 1791042214964,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "trusted",
+                    "ctime": 1791042214964,
+                    "mtime": 1791042214964,
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "type": "file",
+                "name": "ip.config",
+                "data": "{\n  \"modeByIface\": {}\n}\n",
+                "binary": false,
+                "ctime": 1791042214964,
+                "mtime": 1791042214964
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "home",
+            "ctime": 1791042214964,
+            "mtime": 1791042214964,
+            "children": [
+              {
+                "type": "file",
+                "name": "notes.txt",
+                "data": "Welcome to BeaverOS!\n\nThis file lives in your home directory - feel free to edit or delete it.\nIt's also a handy scratch pad for trying out the terminal, e.g.:\n\n  cat notes.txt | grep BeaverOS\n  cat notes.txt | wc -l\n  cat notes.txt | tail -n 3\n\nHave fun exploring the network!\n",
+                "binary": false,
+                "ctime": 1791042214964,
+                "mtime": 1791042214964
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "bin",
+            "ctime": 1791042214964,
+            "mtime": 1791042214964,
+            "children": []
+          },
+          {
+            "type": "dir",
+            "name": "var",
+            "ctime": 1791042214964,
+            "mtime": 1791042214964,
+            "children": [
+              {
+                "type": "dir",
+                "name": "www",
+                "ctime": 1791042214964,
+                "mtime": 1791042214964,
+                "children": [
+                  {
+                    "type": "file",
+                    "name": "index.html",
+                    "data": "<!doctype html>\n<html>\n    <head>\n      <meta charset=\"utf-8\" />\n      <title>Hello from SimpleHTTPServer</title>\n    </head>\n    <body>\n      <h1>It works!</h1>\n    <p>Served from /var/www/index.html</p>\n    </body>\n</html>\n",
+                    "binary": false,
+                    "ctime": 1791042214964,
+                    "mtime": 1791042214964
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "dns": null,
+      "dhcpMode": {},
+      "installedApps": [
+        "IPv4ConfigApp",
+        "TerminalApp",
+        "ExplorerApp",
+        "TextEditorApp"
+      ]
+    },
+    {
+      "kind": "Link",
+      "id": 4,
+      "a": 1,
+      "b": 3,
+      "portA": "eth0",
+      "portB": "eth0"
+    }
+  ]
+}

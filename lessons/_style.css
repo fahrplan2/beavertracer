@@ -482,6 +482,12 @@ body {
   border-radius: 0 var(--radius) var(--radius) 0;
 }
 
+/* ":::tip Merksatz" — optional heading line */
+.callout-title {
+  margin: 0 0 4px;
+  font-weight: 700;
+}
+
 .callout::after {
   position: absolute;
   right: 14px;

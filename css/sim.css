@@ -84,13 +84,26 @@
   border-bottom: 1px solid var(--ui-border-strong);
 }
 
-.sim-lessons-nav-select {
+.sim-lessons-nav-main {
   flex: 1 1 auto;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--pad-sm);
 }
 
-.sim-lessons-nav select {
-  width: 100%;
+.sim-lessons-home,
+.sim-lessons-reset {
+  flex: 0 0 auto;
+}
+
+.sim-lessons-current {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: 600;
 }
 
 .sim-lessons-close {

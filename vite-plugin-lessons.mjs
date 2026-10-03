@@ -299,8 +299,32 @@ function loadLocaleInfo(localesDir) {
 }
 
 /**
- * @typedef {{ num: number[]|null, file: string, href: string, title: string, draft: boolean, children: LessonNode[] }} LessonNode
+ * @typedef {{ num: number[]|null, file: string, href: string, title: string, draft: boolean, sim: {url: string}|{empty: true}|null, children: LessonNode[] }} LessonNode
  */
+
+/**
+ * Page-level simulation declared by the first ":::sim" block of a page:
+ *   :::sim            :::sim
+ *   url=/sims/x.btsim   empty
+ *   :::               :::
+ * The in-app lessons panel loads it automatically (pages without one keep
+ * the simulation of the nearest preceding page, see LessonsPanel.js).
+ * @param {string} src
+ * @returns {{url: string}|{empty: true}|null}
+ */
+function parseSimDirective(src) {
+  const m = src.match(/^:::sim\s*\n([\s\S]*?)^:::/m);
+  if (!m) return null;
+  /** @type {Record<string, string>} */
+  const params = {};
+  for (const line of m[1].trim().split("\n")) {
+    const eq = line.indexOf("=");
+    if (eq > 0) params[line.slice(0, eq).trim()] = line.slice(eq + 1).trim();
+    else if (line.trim()) params[line.trim()] = "";
+  }
+  if (params.url) return { url: params.url };
+  return { empty: true };
+}
 
 /** True if the raw markdown source contains a top-level ":::draft" container. */
 function isDraft(src) {
@@ -513,24 +537,15 @@ function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI
   src = processTaskBlocks(src, chrome);
 
   // ── Pre-process :::sim blocks ──────────────────────────────────
-  // Syntax:
-  //   :::sim
-  //   url=https://example.com/sim.btsim
-  //   :::
-  //
-  // Renders a launch button, not an iframe: the in-app lessons panel
-  // intercepts the click and loads the scenario directly into the already-
-  // running SimControl (see LessonsPanel.js). On the standalone lessons
-  // site (no live SimControl to attach to) the plain href fallback opens
-  // the scenario in the full embedded app view instead.
-  src = src.replace(/:::sim\s*\n([\s\S]*?):::/gm, (_, content) => {
-    /** @type {Record<string, string>} */
-    const params = {};
-    for (const line of content.trim().split("\n")) {
-      const eq = line.indexOf("=");
-      if (eq > 0) params[line.slice(0, eq).trim()] = line.slice(eq + 1).trim();
-    }
-    const simUrl = params.url ?? "";
+  // Syntax: see parseSimDirective(). The in-app lessons panel loads the
+  // page's simulation automatically and strips this block; on the
+  // standalone lessons site (no live SimControl to attach to) it renders a
+  // launch link that opens the scenario in the full embedded app view.
+  // ":::sim empty" (an empty canvas) has nothing to open there.
+  src = src.replace(/:::sim\s*\n([\s\S]*?):::/gm, (block) => {
+    const directive = parseSimDirective(block);
+    if (!directive || !("url" in directive)) return "";
+    const simUrl = directive.url;
     const openHref = simUrl
       ? `../../?embed=1&sim=${encodeURIComponent(simUrl)}`
       : `../../?embed=1`;
@@ -567,7 +582,12 @@ function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI
         // notice, using the existing lessons.wip.* chrome strings — any
         // markdown content the author puts inside the block is appended
         // below it.
-        if (type !== "draft") return open;
+        if (type !== "draft") {
+          // Optional heading after the type, e.g. ":::tip Merksatz" — inline
+          // markdown allowed, rendered as a bold first line of the box.
+          const title = tokens[idx].info.trim().slice(type.length).trim();
+          return title ? open + `<p class="callout-title">${md.renderInline(title)}</p>\n` : open;
+        }
         return open + `<p><strong>${escHtml(chrome["lessons.wip.title"])}</strong> — ${escHtml(chrome["lessons.wip.text"])}</p>\n`;
       },
     });
@@ -671,7 +691,7 @@ function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI
       .replace(/\{\{lang\}\}/g, lang)
   );
 
-  return { html, title, bodyHtml: body };
+  return { html, title, bodyHtml: body, sim: parseSimDirective(fs.readFileSync(srcFile, "utf8")) };
 }
 
 /**
@@ -786,7 +806,7 @@ function buildLessons(root) {
     const mdFiles = fs.readdirSync(langDir).filter((f) => f.endsWith(".md")).sort();
 
     // Collect flat lesson info
-    /** @type {{ num: number[]|null, file: string, href: string, title: string, draft: boolean }[]} */
+    /** @type {{ num: number[]|null, file: string, href: string, title: string, draft: boolean, sim: {url: string}|{empty: true}|null }[]} */
     const flatLessons = mdFiles.map((file) => {
       const src = fs.readFileSync(path.join(langDir, file), "utf8");
       const href = file.replace(/\.md$/, ".html");
@@ -796,6 +816,7 @@ function buildLessons(root) {
         href,
         title: extractTitle(src) ?? file.replace(/\.md$/, ""),
         draft: isDraft(src),
+        sim: parseSimDirective(src),
       };
     });
 
@@ -849,6 +870,7 @@ function buildLessons(root) {
           title: rendered.title,
           bodyHtml: rendered.bodyHtml,
           chapterNum: node.num,
+          sim: rendered.sim,
           prev: nav.prev ? { href: nav.prev.href, title: nav.prev.title } : null,
           next: nav.next ? { href: nav.next.href, title: nav.next.title } : null,
         }), "utf8");
@@ -872,7 +894,7 @@ function buildLessons(root) {
         path.join(langOut, "index.json"),
         JSON.stringify({
           first: ordered[0].href,
-          pages: ordered.map((n) => ({ href: n.href, title: n.title, num: n.num, draft: n.draft })),
+          pages: ordered.map((n) => ({ href: n.href, title: n.title, num: n.num, draft: n.draft, sim: n.sim })),
         }),
         "utf8"
       );

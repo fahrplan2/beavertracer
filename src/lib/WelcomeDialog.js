@@ -34,9 +34,15 @@ export class WelcomeDialog {
             backdrop.appendChild(dlg);
             document.body.appendChild(backdrop);
 
-            /** @param {() => void} [action] */
-            function close(action) {
+            /**
+             * Choosing anything but "Lessons" here leaves lessons mode, so the
+             * lessons panel closes (just dismissing the dialog keeps it open).
+             * @param {() => void} [action]
+             * @param {{ keepLessons?: boolean }} [opts]
+             */
+            function close(action, { keepLessons = false } = {}) {
                 backdrop.remove();
+                if (action && !keepLessons && sim.lessonsOpen) void sim.toggleLessonsPanel(false);
                 action?.();
                 resolve();
             }
@@ -53,7 +59,7 @@ export class WelcomeDialog {
     }
 
     /**
-     * @param {(action?: () => void) => void} close
+     * @param {(action?: () => void, opts?: { keepLessons?: boolean }) => void} close
      */
     static _buildHeader(close) {
         const header = document.createElement("div");
@@ -118,7 +124,7 @@ export class WelcomeDialog {
 
     /**
      * @param {import("../SimControl.js").SimControl} sim
-     * @param {(action?: () => void) => void} close
+     * @param {(action?: () => void, opts?: { keepLessons?: boolean }) => void} close
      */
     static _buildBody(sim, close) {
         const body = document.createElement("div");
@@ -159,14 +165,14 @@ export class WelcomeDialog {
         actions.appendChild(WelcomeDialog._actionBtn(
             "fa-file", t("welcome.new"), t("welcome.new.desc"),
             async () => {
-                if (sim._isDirty && !await SimDialog.confirm(t("sim.discardandnewwarning"))) return;
+                if (sim._isDirty && !sim.lessonScene && !await SimDialog.confirm(t("sim.discardandnewwarning"))) return;
                 close(() => sim.new());
             }
         ));
         actions.appendChild(WelcomeDialog._actionBtn(
             "fa-file-arrow-up", t("welcome.open"), t("welcome.open.desc"),
             async () => {
-                if (sim._isDirty && !await SimDialog.confirm(t("sim.discardandloadwarning"))) return;
+                if (sim._isDirty && !sim.lessonScene && !await SimDialog.confirm(t("sim.discardandloadwarning"))) return;
                 close(() => sim.open());
             }
         ));
@@ -223,7 +229,7 @@ export class WelcomeDialog {
 
     /**
      * @param {import("../SimControl.js").SimControl} sim
-     * @param {(action?: () => void) => void} close
+     * @param {(action?: () => void, opts?: { keepLessons?: boolean }) => void} close
      */
     static _buildFooter(sim, close) {
         const footer = document.createElement("div");
@@ -250,7 +256,7 @@ export class WelcomeDialog {
         }
         right.appendChild(WelcomeDialog._footerBtn(
             "fa-book-open", t("sim.lessons"),
-            () => close(() => sim.toggleLessonsPanel(true))
+            () => close(() => sim.toggleLessonsPanel(true), { keepLessons: true })
         ));
 
         right.appendChild(WelcomeDialog._footerBtn(
@@ -299,7 +305,7 @@ export class WelcomeDialog {
 
     /**
      * @param {import("../SimControl.js").SimControl} sim
-     * @param {(action?: () => void) => void} close
+     * @param {(action?: () => void, opts?: { keepLessons?: boolean }) => void} close
      */
     static _exampleBtn(sim, close) {
         const wrapper = document.createElement("div");
@@ -324,7 +330,7 @@ export class WelcomeDialog {
         sub.appendChild(WelcomeDialog._exampleSubItem(
             t("welcome.example.simple"), t("welcome.example.simple.desc"),
             async () => {
-                if (sim._isDirty && !await SimDialog.confirm(t("sim.discardandnewwarning"))) return;
+                if (sim._isDirty && !sim.lessonScene && !await SimDialog.confirm(t("sim.discardandnewwarning"))) return;
                 const scene = await WelcomeDialog._fetchSim("/sims/demo.btsim");
                 if (scene) close(() => void sim.restore(scene));
             }
@@ -332,7 +338,7 @@ export class WelcomeDialog {
         sub.appendChild(WelcomeDialog._exampleSubItem(
             t("welcome.example.complex"), t("welcome.example.complex.desc"),
             async () => {
-                if (sim._isDirty && !await SimDialog.confirm(t("sim.discardandnewwarning"))) return;
+                if (sim._isDirty && !sim.lessonScene && !await SimDialog.confirm(t("sim.discardandnewwarning"))) return;
                 const scene = await WelcomeDialog._fetchSim("/sims/demo-full.btsim");
                 if (scene) close(() => void sim.restore(scene));
             }
