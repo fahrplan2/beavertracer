@@ -55,6 +55,8 @@ import { wget } from "./net/wget.js";
 import { nc } from "./net/nc.js";
 import { nmap } from "./net/nmap.js";
 import { beaver } from "./misc/beaver.js";
+import { figlet } from "./misc/figlet.js";
+import { sl } from "./misc/sl.js";
 
 import { grep } from "./text/grep.js";
 import { head } from "./text/head.js";
@@ -128,6 +130,8 @@ export function registerBuiltins(app) {
         nc,
         nmap,
         beaver,
+        figlet,
+        sl,
 
         grep,
         head,
