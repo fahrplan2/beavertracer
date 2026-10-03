@@ -20,6 +20,17 @@ function escHtml(str) {
     .replace(/"/g, "&quot;");
 }
 
+/**
+ * Quiz questions/options and task texts allow inline markdown (`code`,
+ * **bold**, *italic*) — rendered with a separate, HTML-free instance since
+ * these blocks are turned into raw HTML before the page's own markdown pass.
+ */
+const inlineMd = new MarkdownIt({ html: false, linkify: false, typographer: true });
+/** @param {string} str */
+function inlineHtml(str) {
+  return inlineMd.renderInline(String(str));
+}
+
 function safeAttr(jsonStr) {
   return jsonStr.replace(/'/g, "&#39;");
 }
@@ -34,7 +45,7 @@ function renderQuizShort(id, content) {
   const answersAttr = safeAttr(JSON.stringify(answers));
   return [
     `<div class="quiz-block quiz-short" data-quiz-id="${id}" data-type="short" data-answers='${answersAttr}'>`,
-    `<p class="quiz-question">${escHtml(questionLines.join(" ").trim())}</p>`,
+    `<p class="quiz-question">${inlineHtml(questionLines.join(" ").trim())}</p>`,
     `<div class="quiz-input-row">`,
     `<input type="text" class="quiz-input" placeholder="{{quiz.placeholder}}" autocomplete="off" spellcheck="false">`,
     `<span class="quiz-feedback" aria-hidden="true"></span>`,
@@ -53,11 +64,11 @@ function renderQuizMC(id, content) {
     else if (line.trim()) questionLines.push(line);
   }
   const optHtml = options
-    .map(o => `<li><button class="quiz-option" data-correct="${o.correct}">${escHtml(o.text)}</button></li>`)
+    .map(o => `<li><button class="quiz-option" data-correct="${o.correct}">${inlineHtml(o.text)}</button></li>`)
     .join("\n");
   return [
     `<div class="quiz-block quiz-mc" data-quiz-id="${id}" data-type="mc">`,
-    `<p class="quiz-question">${escHtml(questionLines.join(" ").trim())}</p>`,
+    `<p class="quiz-question">${inlineHtml(questionLines.join(" ").trim())}</p>`,
     `<ul class="quiz-options">${optHtml}</ul>`,
     `</div>`,
   ].join("\n");
@@ -73,7 +84,7 @@ function renderQuizFill(id, content) {
       const size = Math.max(...variants.map(v => v.length), 4) + 2;
       fillHtml += `<span class="quiz-gap"><input type="text" class="quiz-gap-input" data-answers='${answersAttr}' placeholder="…" size="${size}" autocomplete="off" spellcheck="false"><span class="quiz-feedback" aria-hidden="true"></span></span>`;
     } else {
-      fillHtml += escHtml(part).replace(/\n/g, " ");
+      fillHtml += inlineHtml(part.replace(/\n/g, " "));
     }
   }
   return [
@@ -190,11 +201,11 @@ function renderTaskBlock(id, content, chrome) {
   }
   const checksAttr = safeAttr(JSON.stringify(checks));
   const descHtml = descLines.length
-    ? `<p class="task-description">${escHtml(descLines.join(" ").trim())}</p>`
+    ? `<p class="task-description">${inlineHtml(descLines.join(" ").trim())}</p>`
     : "";
   return [
     `<div class="task-block" data-task-id="${id}" data-checks='${checksAttr}'>`,
-    title ? `<p class="task-title">${escHtml(title)}</p>` : "",
+    title ? `<p class="task-title">${inlineHtml(title)}</p>` : "",
     descHtml,
     `<div class="task-check-wrap">`,
     `<button class="task-check-btn" data-task-id="${id}">${escHtml(chrome["lessons.task.check"])}</button>`,

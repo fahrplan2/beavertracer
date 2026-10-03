@@ -1,8 +1,14 @@
 //@ts-check
 import { Computer } from "../sim/Computer.js";
+import { Tablet } from "../sim/Tablet.js";
 import { IPAddress } from "../net/models/IPAddress.js";
 import { TerminalApp } from "../apps/TerminalApp.js";
 import { setTrafficSuppressed } from "../lib/CheckState.js";
+import { SimTimer } from "../lib/SimTimer.js";
+
+/** Step interval (real ms) while checks run — the fastest speed preset, so a
+ *  failing ping's simulated timeout passes in seconds rather than a minute. */
+const CHECK_TICK_MS = 20;
 
 /**
  * @param {IPAddress} addr
@@ -60,6 +66,11 @@ export class CheckApi {
      */
     async runChecks(checks) {
         const wasPaused = this.simControl.isPaused;
+        // SimControl.tick is static; reached via the instance's class to
+        // avoid a circular import (SimControl → LessonsPanel → CheckApi).
+        const simClass = /** @type {any} */ (this.simControl.constructor);
+        const prevTick = typeof simClass.tick === "number" ? simClass.tick : null;
+        if (prevTick !== null) simClass.tick = Math.min(prevTick, CHECK_TICK_MS);
         if (wasPaused) {
             this.simControl.isPaused = false;
             this.simControl.scheduleNextStep();
@@ -80,6 +91,7 @@ export class CheckApi {
             return results;
         } finally {
             setTrafficSuppressed(false);
+            if (prevTick !== null) simClass.tick = prevTick;
             if (wasPaused) {
                 this.simControl.isPaused = true;
                 this.simControl.scheduleNextStep();
@@ -93,10 +105,13 @@ export class CheckApi {
         return this.simControl.simobjects.find((o) => o.id === id);
     }
 
-    /** @param {number} id */
+    /**
+     * End devices with their own IP stack and OS — PCs and tablets alike.
+     * @param {number} id
+     */
     _computer(id) {
         const obj = this._find(id);
-        if (!(obj instanceof Computer)) throw new Error(`Device ${id} is not a computer`);
+        if (!(obj instanceof Computer) && !(obj instanceof Tablet)) throw new Error(`Device ${id} is not a computer or tablet`);
         return obj;
     }
 
@@ -151,18 +166,28 @@ export class CheckApi {
 
     /**
      * Sends a real ICMP echo from `fromId` to `to` (a device id or literal
-     * IP) and waits for a reply.
+     * IP) and waits for a reply — twice as long as a terminal ping would,
+     * which leaves room for a first ARP round trip.
      * @param {number} fromId @param {number|string} to
      */
     async pingOk(fromId, to) {
         const from = this._computer(fromId);
         const dstIp = this._resolveIp(to);
         try {
-            await from.net.icmpEcho(dstIp, { timeoutMs: 3000 });
+            await from.net.icmpEcho(dstIp, { timeoutMs: 2 * SimTimer.PING_TIMEOUT_MS });
             return true;
         } catch {
             return false;
         }
+    }
+
+    /**
+     * The opposite of pingOk(): true if `to` does NOT answer — for tasks
+     * where traffic must be blocked (VLAN separation, firewall rules).
+     * @param {number} fromId @param {number|string} to
+     */
+    async pingFails(fromId, to) {
+        return !(await this.pingOk(fromId, to));
     }
 
     /**
