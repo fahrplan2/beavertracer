@@ -564,7 +564,7 @@ export default {
   "app.terminal.commands.route.usage.add": "Verwendung: route add <dst>/<prefix> via <gateway> dev <ifIndex|ifName|lo>",
   "app.terminal.commands.route.usage.del": "Verwendung: route del <dst>/<prefix>",
   "app.terminal.commands.route.usage.main": "Verwendung: route [show] | route add ... | route del ...",
-  "app.terminal.commands.route.out.tableHeader": "Ziel              Netzmaske         Gateway           Iface  Auto",
+  "app.terminal.commands.route.out.tableHeader": "Ziel               Netzmaske          Gateway            Iface  Auto",
   "app.terminal.commands.route.out.autoYes": "ja",
   "app.terminal.commands.route.out.autoNo": "nein",
   "app.terminal.commands.route.out.okAdded": "ok: Route hinzugefügt",

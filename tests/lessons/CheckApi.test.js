@@ -182,6 +182,22 @@ describe('CheckApi', () => {
         expect(await api.ip(7, '192.168.0.30/32')).toBe(true);
     });
 
+    it('pingOk(): false when the target device has the same IP as the sender', async () => {
+        const a = makeComputer(1, '192.168.0.10');
+        const b = makeComputer(2, '192.168.0.10');
+        const api = new CheckApi(fakeSimControl([a, b]));
+        expect(await api.pingOk(1, 2)).toBe(false);
+    });
+
+    it('hasRoute(): works for any device with an IP stack, e.g. a router', async () => {
+        const router = { id: 3, net: { interfaces: [], routingTable: [
+            { dst: { toUInt8: () => new Uint8Array([172, 16, 0, 0]) }, prefixLength: 24 },
+        ] } };
+        const api = new CheckApi(fakeSimControl([router]));
+        expect(await api.hasRoute(3, '172.16.0.0/24')).toBe(true);
+        expect(await api.hasRoute(3, '10.0.0.0/8')).toBe(false);
+    });
+
     it('pingFails(): true when the destination does not answer', async () => {
         const { simTimer } = await import('../../src/lib/SimTimer.js');
         const a = makeComputer(1, '10.0.0.1');

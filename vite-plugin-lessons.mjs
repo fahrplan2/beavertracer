@@ -53,6 +53,40 @@ function renderQuizShort(id, content) {
   ].join("\n");
 }
 
+/**
+ * Like MC, but any number of options can be correct; each option is scored
+ * on its own ("tick only the true statements").
+ * @param {string} id @param {string} content
+ */
+function renderQuizMulti(id, content) {
+  return renderQuizMC(id, content).replace('quiz-mc" data-quiz-id', 'quiz-multi" data-quiz-id').replace('data-type="mc"', 'data-type="multi"');
+}
+
+/**
+ * ":::quiz random <generator>" — the task itself is generated in the browser
+ * (src/lib/quizGenerators.js), fresh on every load and every "try again".
+ * Body lines of the form key=value are options (count=N), anything else is
+ * an optional intro shown above the generated tasks.
+ * @param {string} id @param {string} generator @param {string} content @param {string} lang
+ */
+function renderQuizRandom(id, generator, content, lang) {
+  /** @type {Record<string, string>} */
+  const params = {};
+  const intro = [];
+  for (const line of content.split("\n")) {
+    const m = line.match(/^\s*(\w+)\s*=\s*(.+?)\s*$/);
+    if (m) params[m[1]] = m[2];
+    else if (line.trim()) intro.push(line.trim());
+  }
+  const count = Math.max(1, Math.min(10, Number(params.count) || 1));
+  return [
+    `<div class="quiz-block quiz-random" data-quiz-id="${id}" data-type="random" data-generator="${escHtml(generator)}" data-count="${count}" data-lang="${escHtml(lang)}">`,
+    intro.length ? `<p class="quiz-question">${inlineHtml(intro.join(" "))}</p>` : "",
+    `<div class="quiz-random-tasks"></div>`,
+    `</div>`,
+  ].filter(Boolean).join("\n");
+}
+
 function renderQuizMC(id, content) {
   const lines = content.split("\n");
   const questionLines = [], options = [];
@@ -74,19 +108,54 @@ function renderQuizMC(id, content) {
   ].join("\n");
 }
 
-function renderQuizFill(id, content) {
-  const parts = content.split(/(\{[^}]+\})/g);
-  let fillHtml = "";
-  for (const part of parts) {
+/**
+ * Text with {answer|variant} gaps → inline HTML with input fields.
+ * @param {string} text
+ */
+function renderGaps(text) {
+  let html = "";
+  for (const part of text.split(/(\{[^}]+\})/g)) {
     if (part.startsWith("{") && part.endsWith("}")) {
       const variants = part.slice(1, -1).split("|").map(v => v.trim().toLowerCase());
       const answersAttr = safeAttr(JSON.stringify(variants));
       const size = Math.max(...variants.map(v => v.length), 4) + 2;
-      fillHtml += `<span class="quiz-gap"><input type="text" class="quiz-gap-input" data-answers='${answersAttr}' placeholder="…" size="${size}" autocomplete="off" spellcheck="false"><span class="quiz-feedback" aria-hidden="true"></span></span>`;
+      html += `<span class="quiz-gap"><input type="text" class="quiz-gap-input" data-answers='${answersAttr}' placeholder="…" size="${size}" autocomplete="off" spellcheck="false"><span class="quiz-feedback" aria-hidden="true"></span></span>`;
     } else {
-      fillHtml += inlineHtml(part.replace(/\n/g, " "));
+      html += inlineHtml(part.replace(/\n/g, " "));
     }
   }
+  return html;
+}
+
+/**
+ * ":::quiz table" — a markdown table whose {answer} cells become input
+ * fields; text lines before the table are the question. Evaluated exactly
+ * like a fill quiz (same gap inputs, data-type="fill").
+ * @param {string} id @param {string} content
+ */
+function renderQuizTable(id, content) {
+  const intro = [];
+  /** @type {string[][]} */
+  const rows = [];
+  for (const line of content.split("\n")) {
+    const t = line.trim();
+    if (!t.startsWith("|")) { if (t) intro.push(t); continue; }
+    if (/^\|[\s:|-]+\|$/.test(t)) continue; // separator row
+    rows.push(t.replace(/^\|/, "").replace(/\|$/, "").split("|").map(c => c.trim()));
+  }
+  const [head, ...body] = rows;
+  const th = (head ?? []).map(c => `<th>${inlineHtml(c)}</th>`).join("");
+  const tr = body.map(r => `<tr>${r.map(c => `<td>${renderGaps(c)}</td>`).join("")}</tr>`).join("\n");
+  return [
+    `<div class="quiz-block quiz-fill quiz-table" data-quiz-id="${id}" data-type="fill">`,
+    intro.length ? `<p class="quiz-question">${inlineHtml(intro.join(" "))}</p>` : "",
+    `<div class="quiz-table-scroll"><table><thead><tr>${th}</tr></thead><tbody>${tr}</tbody></table></div>`,
+    `</div>`,
+  ].filter(Boolean).join("\n");
+}
+
+function renderQuizFill(id, content) {
+  const fillHtml = renderGaps(content);
   return [
     `<div class="quiz-block quiz-fill" data-quiz-id="${id}" data-type="fill">`,
     `<p class="quiz-fill-text">${fillHtml}</p>`,
@@ -124,12 +193,13 @@ function renderEvaluateButton(ids, label) {
   ].join("\n");
 }
 
-function processQuizBlocks(src) {
+/** @param {string} src @param {string} [lang] */
+function processQuizBlocks(src, lang = "en") {
   let counter = 0;
   const pending = [];
   return src.replace(
-    /:::quiz\s+(\w+)\s*\n([\s\S]*?):::|:::evaluate\s*\n([\s\S]*?):::/gm,
-    (match, subtype, quizContent, evalContent) => {
+    /:::quiz\s+(\w+)[ \t]*([\w-]*)[ \t]*\n([\s\S]*?):::|:::evaluate\s*\n([\s\S]*?):::/gm,
+    (match, subtype, arg, quizContent, evalContent) => {
       if (subtype !== undefined) {
         const id = `q${++counter}`;
         pending.push(id);
@@ -137,7 +207,10 @@ function processQuizBlocks(src) {
         switch (subtype) {
           case "short": return renderQuizShort(id, content);
           case "mc":    return renderQuizMC(id, content);
+          case "multi": return renderQuizMulti(id, content);
+          case "random": return renderQuizRandom(id, arg, content, lang);
           case "fill":  return renderQuizFill(id, content);
+          case "table": return renderQuizTable(id, content);
           case "match": return renderQuizMatch(id, content);
           default:      return match;
         }
@@ -542,7 +615,7 @@ function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI
   let src = fs.readFileSync(srcFile, "utf8");
 
   // ── Pre-process :::quiz / :::evaluate blocks ──────────────────
-  src = processQuizBlocks(src);
+  src = processQuizBlocks(src, lang);
 
   // ── Pre-process :::task blocks ─────────────────────────────────
   src = processTaskBlocks(src, chrome);
@@ -566,6 +639,13 @@ function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI
       `</div>`,
     ].join("\n");
   });
+
+  // ── Pre-process bit colouring: [[n|…]] [[e|…]] [[h|…]] ─────────
+  // Netzteil (n), Erweiterung/Subnetzbits (e), Hostteil (h) — used in the
+  // IP/subnetting lessons. Works in text and tables; for multi-line binary
+  // blocks use a raw <pre class="bits-block"> (inside ``` fences the
+  // generated <span>s would be escaped).
+  src = src.replace(/\[\[(n|e|h)\|([^\]\n]+?)\]\]/g, (_, kind, text) => `<span class="bits bits-${kind}">${escHtml(text)}</span>`);
 
   // ── Pre-process :fa-icon: shortcuts ───────────────────────────
   // :fa-house:   → fa-solid   :far-house:  → fa-regular   :fab-github: → fa-brands
@@ -803,6 +883,9 @@ function buildLessons(root) {
   // the in-app lessons panel); copied here verbatim for the standalone site.
   const quizJsPath = path.join(root, "src", "lib", "QuizInteractions.js");
   if (fs.existsSync(quizJsPath)) fs.copyFileSync(quizJsPath, path.join(outDir, "_quiz.js"));
+  // _quiz.js imports "./quizGenerators.js" — same relative path as in src/lib/.
+  const quizGenPath = path.join(root, "src", "lib", "quizGenerators.js");
+  if (fs.existsSync(quizGenPath)) fs.copyFileSync(quizGenPath, path.join(outDir, "quizGenerators.js"));
 
   const builtLangs = [];
 

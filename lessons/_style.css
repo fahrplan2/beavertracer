@@ -871,3 +871,64 @@ html[data-debug="true"] [data-draft="true"] { display: revert; }
 .fa-desktop, .fa-laptop,
 .fa-wifi, .fa-house-signal,
 .fa-shield-halved           { color: var(--blue); }
+
+/* ── ":::quiz multi" — a true statement left unticked ── */
+/* Checkboxes hint that several answers may be ticked; replaced by ✓/✗ once evaluated. */
+.quiz-multi:not(.evaluated) .quiz-option::before { content: "☐"; margin-right: 0.35em; }
+.quiz-multi:not(.evaluated) .quiz-option.selected::before { content: "☑"; }
+.quiz-option.quiz-missed { border-width: 2px; border-style: dashed; border-color: var(--ok, #2e9b4f); }
+.quiz-option.quiz-missed::before { content: "!"; font-weight: 700; margin-right: 0.35em; }
+
+/* ── ":::quiz random" — generated practice tasks ── */
+.quiz-random-task { margin: 0 0 12px; }
+.quiz-random-task + .quiz-random-task { padding-top: 10px; border-top: 1px dashed var(--ui-border-strong); }
+.quiz-random-text { margin: 0 0 6px; font-weight: 600; }
+.quiz-random-fields { display: flex; flex-direction: column; gap: 6px; }
+.quiz-random-field { display: grid; grid-template-columns: minmax(8em, 40%) 1fr; align-items: center; gap: 4px 8px; }
+.quiz-random-label { font-size: 0.9em; }
+.quiz-random-input {
+  font: inherit;
+  font-family: "Hack", ui-monospace, monospace;
+  font-size: 0.9em;
+  min-width: 0;
+  padding: 4px 6px;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: 3px;
+  background: var(--bg);
+  color: var(--text);
+}
+.quiz-random-input.quiz-correct { border-color: var(--ok, #2e9b4f); }
+.quiz-random-input.quiz-incorrect { border-color: var(--danger, #c0392b); }
+.quiz-random-field .quiz-feedback { grid-column: 2; font-size: 0.85em; }
+.quiz-random-field--wide { grid-template-columns: 1fr; }
+.quiz-random-field--wide .quiz-feedback { grid-column: 1; }
+
+/* ── Bit colouring in the IP/subnetting lessons ([[n|…]] [[e|…]] [[h|…]]) ──
+   Tinted background + coloured underline: readable in light and dark. */
+.bits {
+  font-family: "Hack", ui-monospace, monospace;
+  font-size: 0.92em;
+  padding: 0 1px;
+  border-radius: 2px;
+  border-bottom: 2px solid;
+  white-space: pre;
+}
+.bits-n { background: color-mix(in oklch, #f97316 22%, transparent); border-bottom-color: #f97316; }
+.bits-e { background: color-mix(in oklch, #22c55e 24%, transparent); border-bottom-color: #16a34a; }
+.bits-h { background: color-mix(in oklch, #3b82f6 22%, transparent); border-bottom-color: #3b82f6; }
+pre.bits-block {
+  font-family: "Hack", ui-monospace, monospace;
+  font-size: 0.85em;
+  line-height: 1.8;
+}
+pre.bits-block .bits { font-size: 1em; }
+
+/* ── ":::quiz table" — fill-in table ── */
+.quiz-table-scroll { overflow-x: auto; }
+.quiz-table table { display: table; width: auto; margin: 0; font-size: 0.85em; }
+.quiz-table td, .quiz-table th { padding: 3px 6px; white-space: nowrap; }
+.quiz-table .quiz-gap-input { font-family: "Hack", ui-monospace, monospace; font-size: 0.95em; padding: 2px 4px; }
+
+.quiz-random-table { display: table; width: auto; margin: 6px 0 0; font-size: 0.85em; }
+.quiz-random-table td, .quiz-random-table th { padding: 3px 6px; white-space: nowrap; }
+.quiz-random-table .quiz-feedback { display: block; font-size: 0.85em; }

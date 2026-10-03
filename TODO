@@ -1,1 +1,17 @@
-Namen des Rechtecks anzeigen an
+Router + traceroute: ICMP-Fehlermeldungen
+- Ist: Router ohne passende Route verwirft das Paket stillschweigend.
+  traceroute zeigt dann schon beim ersten Router nur "* *" (z.B. Lektion 4.5.2,
+  Router A ohne Route nach 172.16.0.0/24), ping meldet nur Timeouts.
+- Soll: Router schickt ICMP Destination Unreachable (Network Unreachable,
+  Typ 3 Code 0) an den Absender; bei TTL-Ablauf weiterhin Time Exceeded.
+- traceroute: Unreachable anzeigen (z.B. "!N" wie unter Linux) und abbrechen,
+  statt bis Hop 30 "*" zu drucken. ping: "Ziel nicht erreichbar" melden.
+- Danach Lektionen prüfen: 4.5.2 (Schritt vor dem Eintragen der Route),
+  4.5.3 (Rückroute fehlt: Router B würde Clara Unreachable melden ->
+  Tipps zu traceroute anpassen).
+
+ping bei IPv6: falsche Paketgröße in der ersten Zeile
+- Ist: "PING 2001:db8:… 56(84) Bytes Daten." — 84 = 56 Daten + 8 ICMP + 20 IPv4-Kopf.
+- Soll: IPv6-Kopf ist 40 Byte -> 56(104), oder wie Linux-ping bei IPv6 nur
+  "56 Bytes Daten" ausgeben. (Die Ausgabe "ttl=" bei IPv6 ist dagegen korrekt —
+  Linux-ping zeigt das Hop Limit dort ebenfalls als ttl an.)

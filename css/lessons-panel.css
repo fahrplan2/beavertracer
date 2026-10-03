@@ -72,6 +72,26 @@
 .lesson-article th, .lesson-article td { border: 1px solid var(--ui-border-strong); padding: 4px 8px; text-align: left; }
 .lesson-article .lesson-num { opacity: 0.65; font-weight: 400; }
 
+/* ── Bit colouring in the IP/subnetting lessons ([[n|…]] [[e|…]] [[h|…]]) ──
+   Tinted background + coloured underline: readable in light and dark. */
+.lesson-article .bits {
+  font-family: "Hack", ui-monospace, monospace;
+  font-size: 0.92em;
+  padding: 0 1px;
+  border-radius: 2px;
+  border-bottom: 2px solid;
+  white-space: pre;
+}
+.lesson-article .bits-n { background: color-mix(in oklch, #f97316 22%, transparent); border-bottom-color: #f97316; }
+.lesson-article .bits-e { background: color-mix(in oklch, #22c55e 24%, transparent); border-bottom-color: #16a34a; }
+.lesson-article .bits-h { background: color-mix(in oklch, #3b82f6 22%, transparent); border-bottom-color: #3b82f6; }
+.lesson-article pre.bits-block {
+  font-family: "Hack", ui-monospace, monospace;
+  font-size: 0.85em;
+  line-height: 1.8;
+}
+.lesson-article pre.bits-block .bits { font-size: 1em; }
+
 /* ── Callouts (note/tip/warning/danger) ─────────────────────── */
 .lesson-article .callout {
   margin: 0 0 12px;
@@ -324,6 +344,47 @@ html[data-debug="true"] .lesson-article [data-draft="true"] { display: revert; }
 .lesson-article .quiz-evaluate-btn:disabled { opacity: 0.6; cursor: default; }
 .lesson-article .quiz-evaluate-summary.quiz-summary-ok  { color: var(--ok-strong, #1f7a3d); font-weight: 600; }
 .lesson-article .quiz-evaluate-summary.quiz-summary-err { color: var(--danger-strong, #96271e); font-weight: 600; }
+
+/* ── ":::quiz multi" — a true statement left unticked ── */
+/* Checkboxes hint that several answers may be ticked; replaced by ✓/✗ once evaluated. */
+.lesson-article .quiz-multi:not(.evaluated) .quiz-option::before { content: "☐"; margin-right: 0.35em; }
+.lesson-article .quiz-multi:not(.evaluated) .quiz-option.selected::before { content: "☑"; }
+.lesson-article .quiz-option.quiz-missed { border-width: 2px; border-style: dashed; border-color: var(--ok, #2e9b4f); }
+.lesson-article .quiz-option.quiz-missed::before { content: "!"; font-weight: 700; margin-right: 0.35em; }
+
+/* ── ":::quiz random" — generated practice tasks ── */
+.lesson-article .quiz-random-task { margin: 0 0 12px; }
+.lesson-article .quiz-random-task + .quiz-random-task { padding-top: 10px; border-top: 1px dashed var(--ui-border-strong); }
+.lesson-article .quiz-random-text { margin: 0 0 6px; font-weight: 600; }
+.lesson-article .quiz-random-fields { display: flex; flex-direction: column; gap: 6px; }
+.lesson-article .quiz-random-field { display: grid; grid-template-columns: minmax(8em, 40%) 1fr; align-items: center; gap: 4px 8px; }
+.lesson-article .quiz-random-label { font-size: 0.9em; }
+.lesson-article .quiz-random-input {
+  font: inherit;
+  font-family: "Hack", ui-monospace, monospace;
+  font-size: 0.9em;
+  min-width: 0;
+  padding: 4px 6px;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: 3px;
+  background: var(--bg);
+  color: var(--text);
+}
+.lesson-article .quiz-random-input.quiz-correct { border-color: var(--ok, #2e9b4f); }
+.lesson-article .quiz-random-input.quiz-incorrect { border-color: var(--danger, #c0392b); }
+.lesson-article .quiz-random-field .quiz-feedback { grid-column: 2; font-size: 0.85em; }
+.lesson-article .quiz-random-field--wide { grid-template-columns: 1fr; }
+.lesson-article .quiz-random-field--wide .quiz-feedback { grid-column: 1; }
+
+/* ── ":::quiz table" — fill-in table ── */
+.lesson-article .quiz-table-scroll { overflow-x: auto; }
+.lesson-article .quiz-table table { display: table; width: auto; margin: 0; font-size: 0.85em; }
+.lesson-article .quiz-table td, .lesson-article .quiz-table th { padding: 3px 6px; white-space: nowrap; }
+.lesson-article .quiz-table .quiz-gap-input { font-family: "Hack", ui-monospace, monospace; font-size: 0.95em; padding: 2px 4px; }
+
+.lesson-article .quiz-random-table { display: table; width: auto; margin: 6px 0 0; font-size: 0.85em; }
+.lesson-article .quiz-random-table td, .lesson-article .quiz-random-table th { padding: 3px 6px; white-space: nowrap; }
+.lesson-article .quiz-random-table .quiz-feedback { display: block; font-size: 0.85em; }
 
 /* ── Task blocks (":::task" — behavior checks) ──────────────────── */
 .lesson-article .task-block {

@@ -207,3 +207,65 @@ Ein /25-Subnetz hat {128} Adressen, davon sind {126} für Hosts nutzbar.
 :::evaluate
 Abschnitt 3 prüfen
 :::
+
+## Abschnitt 4: Mehrfachauswahl und Zufallsaufgaben
+
+Bei `:::quiz multi` können beliebig viele Antworten richtig sein — jede Aussage wird einzeln bewertet:
+
+:::quiz multi
+Welche Aussagen über ARP stimmen?
+- [x] ARP ermittelt zu einer IP-Adresse die MAC-Adresse
+- [ ] ARP ermittelt zu einem Namen die IP-Adresse
+- [x] Eine ARP-Anfrage ist ein Broadcast
+- [ ] Eine ARP-Antwort ist ein Broadcast
+:::
+
+`:::quiz random <typ>` erzeugt bei jedem Aufruf neue Aufgaben (`count=N` legt die Anzahl fest). Typen: `bin2dec`, `dec2bin`, `cidr2mask`, `hosts`, `netbcast`, `samenet`, `subnet`.
+
+:::quiz random dec2bin
+count=2
+:::
+
+:::quiz random netbcast
+Berechne für die folgende Adresse:
+:::
+
+:::quiz random samenet
+count=3
+:::
+
+:::quiz random subnet
+:::
+
+:::evaluate
+Abschnitt 4 prüfen
+:::
+
+## Abschnitt 4b: Tabelle zum Ausfüllen
+
+`:::quiz table` — eine normale Markdown-Tabelle, `{Antwort}`-Zellen werden zu Eingabefeldern (Varianten mit `|` trennen):
+
+:::quiz table
+Teile `192.168.42.0/24` in zwei Teilnetze:
+| Teilnetz | Netzadresse | Broadcastadresse |
+|---|---|---|
+| 1 | {192.168.42.0} | {192.168.42.127} |
+| 2 | {192.168.42.128} | {192.168.42.255} |
+:::
+
+:::evaluate
+Tabelle prüfen
+:::
+
+## Abschnitt 5: Bits einfärben
+
+Für die IP- und Subnetting-Kapitel: `[[n|…]]` = Netzteil, `[[e|…]]` = Erweiterung, `[[h|…]]` = Hostteil — im Fließtext und in Tabellen:
+
+[[n|11111111.11111111.11111111]].[[e|11]][[h|000000]] = `255.255.255.192`
+
+Für mehrzeilige Darstellungen statt ``` einen `<pre class="bits-block">`-Block verwenden (in Code-Blöcken würden die Farben nicht dargestellt):
+
+<pre class="bits-block">
+vorher  (/24):  [[n|NNNNNNNN.NNNNNNNN.NNNNNNNN]].[[h|HHHHHHHH]]
+nachher (/26):  [[n|NNNNNNNN.NNNNNNNN.NNNNNNNN]].[[e|EE]][[h|HHHHHH]]
+</pre>

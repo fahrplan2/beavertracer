@@ -169,7 +169,11 @@ export const route = {
         } else {
           pfx = null;
         }
-        const dstCidr = `${dstStr}/${pfx == null ? "?" : String(pfx)}`;
+        // Netmask in its own column, matching the table header (and the
+        // router panel); IPv6 has no dotted mask, so it shows "/prefix".
+        const maskStr = pfx == null
+          ? "?"
+          : (dst?.isV6?.() ? `/${pfx}` : ipNumberToString(prefixToNetmask32(pfx)));
 
         const nhDefault = dst?.isV6?.() ? "::" : "0.0.0.0";
         const gwStr = nh ? nh.toString() : nhDefault;
@@ -177,7 +181,7 @@ export const route = {
         const auto = (r?.auto ? t("app.terminal.commands.route.out.autoYes") : t("app.terminal.commands.route.out.autoNo"));
 
         ctx.println(
-          `${dstCidr.padEnd(26)} ${gwStr.padEnd(22)} ${ifn.padEnd(6)} ${auto}`
+          `${dstStr.padEnd(18)} ${maskStr.padEnd(18)} ${gwStr.padEnd(18)} ${ifn.padEnd(6)} ${auto}`
         );
       }
       return;

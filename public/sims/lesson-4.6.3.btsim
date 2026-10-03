@@ -1,0 +1,430 @@
+{
+  "_info": "BeaverTracer Lektion 4.6.3 — Router kündigt 2001:db8:1::/64 an, Anna und Ben holen sich ihre IPv6-Adresse per SLAAC",
+  "version": 6,
+  "tick": 100,
+  "objects": [
+    {
+      "kind": "Router",
+      "id": 1,
+      "name": "Router",
+      "x": 420,
+      "y": 40,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "net": {
+        "name": "Router",
+        "forwarding": true,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "192.168.0.1",
+            "prefixLength": 24,
+            "ip6": "2001:db8:1::1",
+            "prefixLength6": 64,
+            "ip6LL": null,
+            "slaac": false,
+            "raEnabled": true
+          },
+          {
+            "name": "eth1",
+            "ip": "10.0.0.1",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "slaac": false,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": []
+      },
+      "rip": {
+        "enabled": false,
+        "passive": []
+      },
+      "ripng": {
+        "enabled": false,
+        "passive": []
+      },
+      "bgp": {
+        "enabled": false,
+        "localAS": 0,
+        "routerId": "",
+        "peers": []
+      },
+      "ospf": {
+        "enabled": false,
+        "passive": [],
+        "routerIdOverride": null,
+        "interfaceAreas": {}
+      },
+      "vrrp": {
+        "groups": []
+      },
+      "pd6": {
+        "enabled": false,
+        "pool": "2001:db8:100::",
+        "poolLength": 48,
+        "delegatedLength": 56,
+        "leaseTime": 3600,
+        "clientEnabled": false,
+        "clientIfIndex": 0
+      },
+      "lldpEnabled": false
+    },
+    {
+      "kind": "Switch",
+      "id": 3,
+      "name": "Switch",
+      "x": 420,
+      "y": 220,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "vlanEnabled": false,
+      "stpMode": "off",
+      "stpEnabled": false,
+      "stpBridgePriority": 32768,
+      "vlanPorts": [
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ],
+          "svid": null
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ],
+          "svid": null
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ],
+          "svid": null
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ],
+          "svid": null
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ],
+          "svid": null
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ],
+          "svid": null
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ],
+          "svid": null
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ],
+          "svid": null
+        }
+      ],
+      "lagGroups": [],
+      "lagNextId": 0,
+      "igmpSnoopingEnabled": false,
+      "lldpEnabled": false
+    },
+    {
+      "kind": "Computer",
+      "id": 5,
+      "name": "Anna",
+      "x": 200,
+      "y": 420,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "net": {
+        "name": "Computer 1",
+        "forwarding": false,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "192.168.0.10",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "slaac": true,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": []
+      },
+      "fs": {
+        "type": "dir",
+        "name": "",
+        "ctime": 1791045719152,
+        "mtime": 1791045719153,
+        "children": [
+          {
+            "type": "dir",
+            "name": "etc",
+            "ctime": 1791045719152,
+            "mtime": 1791045719153,
+            "children": [
+              {
+                "type": "dir",
+                "name": "certs",
+                "ctime": 1791045719152,
+                "mtime": 1791045719152,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "trusted",
+                    "ctime": 1791045719152,
+                    "mtime": 1791045719152,
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "type": "file",
+                "name": "ip.config",
+                "data": "{\n  \"modeByIface\": {}\n}\n",
+                "binary": false,
+                "ctime": 1791045719153,
+                "mtime": 1791045719153
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "home",
+            "ctime": 1791045719152,
+            "mtime": 1791045719152,
+            "children": [
+              {
+                "type": "file",
+                "name": "notes.txt",
+                "data": "Welcome to BeaverOS!\n\nThis file lives in your home directory - feel free to edit or delete it.\nIt's also a handy scratch pad for trying out the terminal, e.g.:\n\n  cat notes.txt | grep BeaverOS\n  cat notes.txt | wc -l\n  cat notes.txt | tail -n 3\n\nHave fun exploring the network!\n",
+                "binary": false,
+                "ctime": 1791045719152,
+                "mtime": 1791045719152
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "bin",
+            "ctime": 1791045719152,
+            "mtime": 1791045719152,
+            "children": []
+          },
+          {
+            "type": "dir",
+            "name": "var",
+            "ctime": 1791045719153,
+            "mtime": 1791045719153,
+            "children": [
+              {
+                "type": "dir",
+                "name": "www",
+                "ctime": 1791045719153,
+                "mtime": 1791045719153,
+                "children": [
+                  {
+                    "type": "file",
+                    "name": "index.html",
+                    "data": "<!doctype html>\n<html>\n    <head>\n      <meta charset=\"utf-8\" />\n      <title>Hello from SimpleHTTPServer</title>\n    </head>\n    <body>\n      <h1>It works!</h1>\n    <p>Served from /var/www/index.html</p>\n    </body>\n</html>\n",
+                    "binary": false,
+                    "ctime": 1791045719153,
+                    "mtime": 1791045719153
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "dns": null,
+      "dhcpMode": {},
+      "installedApps": [
+        "IPv4ConfigApp",
+        "TerminalApp",
+        "ExplorerApp",
+        "TextEditorApp"
+      ]
+    },
+    {
+      "kind": "Computer",
+      "id": 7,
+      "name": "Ben",
+      "x": 640,
+      "y": 420,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "net": {
+        "name": "Computer 1",
+        "forwarding": false,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "192.168.0.11",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": null,
+            "slaac": true,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": []
+      },
+      "fs": {
+        "type": "dir",
+        "name": "",
+        "ctime": 1791045719152,
+        "mtime": 1791045719153,
+        "children": [
+          {
+            "type": "dir",
+            "name": "etc",
+            "ctime": 1791045719152,
+            "mtime": 1791045719153,
+            "children": [
+              {
+                "type": "dir",
+                "name": "certs",
+                "ctime": 1791045719152,
+                "mtime": 1791045719152,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "trusted",
+                    "ctime": 1791045719152,
+                    "mtime": 1791045719152,
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "type": "file",
+                "name": "ip.config",
+                "data": "{\n  \"modeByIface\": {}\n}\n",
+                "binary": false,
+                "ctime": 1791045719153,
+                "mtime": 1791045719153
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "home",
+            "ctime": 1791045719152,
+            "mtime": 1791045719152,
+            "children": [
+              {
+                "type": "file",
+                "name": "notes.txt",
+                "data": "Welcome to BeaverOS!\n\nThis file lives in your home directory - feel free to edit or delete it.\nIt's also a handy scratch pad for trying out the terminal, e.g.:\n\n  cat notes.txt | grep BeaverOS\n  cat notes.txt | wc -l\n  cat notes.txt | tail -n 3\n\nHave fun exploring the network!\n",
+                "binary": false,
+                "ctime": 1791045719152,
+                "mtime": 1791045719152
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "bin",
+            "ctime": 1791045719152,
+            "mtime": 1791045719152,
+            "children": []
+          },
+          {
+            "type": "dir",
+            "name": "var",
+            "ctime": 1791045719153,
+            "mtime": 1791045719153,
+            "children": [
+              {
+                "type": "dir",
+                "name": "www",
+                "ctime": 1791045719153,
+                "mtime": 1791045719153,
+                "children": [
+                  {
+                    "type": "file",
+                    "name": "index.html",
+                    "data": "<!doctype html>\n<html>\n    <head>\n      <meta charset=\"utf-8\" />\n      <title>Hello from SimpleHTTPServer</title>\n    </head>\n    <body>\n      <h1>It works!</h1>\n    <p>Served from /var/www/index.html</p>\n    </body>\n</html>\n",
+                    "binary": false,
+                    "ctime": 1791045719153,
+                    "mtime": 1791045719153
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "dns": null,
+      "dhcpMode": {},
+      "installedApps": [
+        "IPv4ConfigApp",
+        "TerminalApp",
+        "ExplorerApp",
+        "TextEditorApp"
+      ]
+    },
+    {
+      "kind": "Link",
+      "id": 10,
+      "a": 1,
+      "b": 3,
+      "portA": "eth0",
+      "portB": "sw7"
+    },
+    {
+      "kind": "Link",
+      "id": 11,
+      "a": 5,
+      "b": 3,
+      "portA": "eth0",
+      "portB": "sw0"
+    },
+    {
+      "kind": "Link",
+      "id": 12,
+      "a": 7,
+      "b": 3,
+      "portA": "eth0",
+      "portB": "sw1"
+    }
+  ]
+}

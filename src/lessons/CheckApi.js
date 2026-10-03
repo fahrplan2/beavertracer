@@ -106,6 +106,18 @@ export class CheckApi {
     }
 
     /**
+     * Any device with an IP stack (PCs, tablets, routers, …) — enough for
+     * the passive checks that only read addresses or routes.
+     * @param {number} id
+     * @returns {{ net: any }}
+     */
+    _netDevice(id) {
+        const obj = /** @type {any} */ (this._find(id));
+        if (!obj?.net?.interfaces || !obj?.net?.routingTable) throw new Error(`Device ${id} has no IP stack`);
+        return obj;
+    }
+
+    /**
      * End devices with their own IP stack and OS — PCs and tablets alike.
      * @param {number} id
      */
@@ -137,9 +149,9 @@ export class CheckApi {
      * @param {number} deviceId @param {string} cidr
      */
     async ip(deviceId, cidr) {
-        const computer = this._computer(deviceId);
+        const computer = this._netDevice(deviceId);
         const { network, prefix } = parseCidr(cidr);
-        return computer.net.interfaces.some((iface) => iface.ip && iface.ip.isV4() && matchesPrefix(iface.ip, network, prefix));
+        return computer.net.interfaces.some((/** @type {any} */ iface) => iface.ip && iface.ip.isV4() && matchesPrefix(iface.ip, network, prefix));
     }
 
     /**
@@ -148,9 +160,9 @@ export class CheckApi {
      * @param {number} deviceId @param {string} cidr
      */
     async hasRoute(deviceId, cidr) {
-        const computer = this._computer(deviceId);
+        const computer = this._netDevice(deviceId);
         const { network, prefix } = parseCidr(cidr);
-        return computer.net.routingTable.some((r) => r.prefixLength === prefix && matchesPrefix(r.dst, network, prefix));
+        return computer.net.routingTable.some((/** @type {any} */ r) => r.prefixLength === prefix && matchesPrefix(r.dst, network, prefix));
     }
 
     /**
@@ -173,6 +185,10 @@ export class CheckApi {
     async pingOk(fromId, to) {
         const from = this._computer(fromId);
         const dstIp = this._resolveIp(to);
+        // Another device whose address is one of our own (duplicate IP, e.g.
+        // two fresh PCs on the default address) would "answer" from inside
+        // this very stack — that proves nothing about reachability.
+        if (to !== fromId && from.net.interfaces.some((i) => i.ip && i.ip.toString() === dstIp.toString())) return false;
         try {
             await from.net.icmpEcho(dstIp, { timeoutMs: 2 * SimTimer.PING_TIMEOUT_MS });
             return true;
