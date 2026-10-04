@@ -269,3 +269,36 @@ Für mehrzeilige Darstellungen statt ``` einen `<pre class="bits-block">`-Block 
 vorher  (/24):  [[n|NNNNNNNN.NNNNNNNN.NNNNNNNN]].[[h|HHHHHHHH]]
 nachher (/26):  [[n|NNNNNNNN.NNNNNNNN.NNNNNNNN]].[[e|EE]][[h|HHHHHH]]
 </pre>
+
+## Abschnitt 6: Kommunikationsdiagramm
+
+`:::seq` zeichnet ein Diagramm mit zwei Lebenslinien. SEQ- und ACK-Nummern sowie die Zähler an den Lebenslinien werden aus Flags und Nutzdaten (`"…"`) berechnet. `-x` statt `->` lässt ein Segment verloren gehen, `seq=…` überschreibt eine Nummer (z.B. bei einer Neuübertragung).
+
+:::seq
+Client -> Server: SYN
+Server -> Client: SYN, ACK
+Client -> Server: ACK
+Client -> Server: PSH, ACK "Hello World"
+Server -> Client: ACK
+Client -x Server: PSH, ACK "Hallo"
+Client -> Server: PSH, ACK "Hallo" seq=12
+Server -> Client: ACK
+Client -> Server: FIN, ACK
+Server -> Client: ACK
+Server -> Client: FIN, ACK
+Client -> Server: ACK
+:::
+
+Mit `:::quiz seq` werden `?` (vor den Flags, oder `seq=?` / `ack=?`) zu Eingabefeldern; `hide: counters` blendet die Zähler aus:
+
+:::quiz seq
+Client -> Server: SYN
+Server -> Client: ? SYN, ACK ack=?
+Client -> Server: ? ACK ack=?
+Client -> Server: PSH, ACK "Hello World"
+Server -> Client: ACK ack=?
+:::
+
+:::evaluate
+Diagramm prüfen
+:::
