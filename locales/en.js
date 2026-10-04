@@ -566,6 +566,7 @@ export default {
   "app.terminal.commands.nslookup.err.noReverse": "nslookup: reverse (PTR) lookups are not supported",
   "app.terminal.commands.nslookup.err.noServer": ";; connection timed out; no DNS server configured",
   "app.terminal.commands.nslookup.err.notFound": "** server can't find {name}: NXDOMAIN",
+  "app.terminal.commands.nslookup.err.timeout": ";; connection timed out; no servers could be reached",
   "app.terminal.commands.nslookup.out.server": "Server:\t\t{server}",
   "app.terminal.commands.nslookup.out.address": "Address:\t{address}",
   "app.terminal.commands.nslookup.out.nonAuth": "Non-authoritative answer:",

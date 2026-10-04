@@ -14,6 +14,9 @@
 //   Client -> Server: PSH, ACK "lost" seq=12   ← seq=/ack=/len= override
 //   :::
 //
+// "mode: text" switches numbering off: each arrow then just carries free
+// text, "title | second line" (DHCP Discover | Broadcast, GET / | HTTP).
+//
 // ":::quiz seq" turns "?" (flags, seq=?, ack=?) into answer fields that are
 // evaluated like a fill quiz. An option line "hide: counters, seq, ack,
 // flags" hides/asks those parts everywhere.
@@ -38,7 +41,7 @@ export function normalizeFlags(s) {
 }
 
 /**
- * @typedef {{ from: number, to: number, lost: boolean, flags: string, label: string, askFlags: boolean,
+ * @typedef {{ from: number, to: number, lost: boolean, flags: string, label: string, sub?: string, askFlags: boolean,
  *   data: string|null, len: number, seq: number, ack: number|null, askSeq: boolean, askAck: boolean,
  *   counterFrom: number, counterTo: number|null }} SeqMessage
  */
@@ -46,12 +49,13 @@ export function normalizeFlags(s) {
 /**
  * Parses the block and computes all numbers.
  * @param {string} content
- * @returns {{ names: string[], messages: SeqMessage[], hide: Set<string> }}
+ * @returns {{ names: string[], messages: SeqMessage[], hide: Set<string>, textMode: boolean }}
  */
 export function parseSeq(content) {
   /** @type {string[]} */
   const names = [];
   const hide = new Set();
+  let textMode = false;
   /** @type {SeqMessage[]} */
   const messages = [];
   const next = [0, 0];                 // own next sequence number
@@ -73,6 +77,7 @@ export function parseSeq(content) {
   for (const raw of content.split("\n")) {
     const line = raw.trim();
     if (!line) continue;
+    if (/^mode\s*:\s*text$/i.test(line)) { textMode = true; continue; }
     const opt = line.match(/^hide\s*:\s*(.+)$/i);
     if (opt) { for (const h of opt[1].split(/[\s,]+/)) if (h) hide.add(h.toLowerCase()); continue; }
     const m = line.match(/^(.+?)\s*(->|-x)\s*(.+?)\s*:\s*(.*)$/);
@@ -80,6 +85,15 @@ export function parseSeq(content) {
     const from = idx(m[1]), to = idx(m[3]);
     if (from === to) throw new Error(`:::seq: arrow from "${m[1]}" to itself`);
     let rest = m[4];
+
+    if (textMode) {
+      const [title, ...more] = rest.split("|");
+      messages.push({
+        from, to, lost: m[2] === "-x", flags: title.trim().toLowerCase(), label: title.trim(), sub: more.join("|").trim(),
+        askFlags: false, data: null, len: 0, seq: 0, ack: null, askSeq: false, askAck: false, counterFrom: 0, counterTo: null,
+      });
+      continue;
+    }
 
     let data = null;
     rest = rest.replace(/"((?:[^"\\]|\\.)*)"/, (_, d) => { data = d.replace(/\\(.)/g, "$1"); return " "; });
@@ -134,7 +148,7 @@ export function parseSeq(content) {
     });
   }
   if (names.length < 2) throw new Error(":::seq needs arrows between two participants");
-  return { names, messages, hide };
+  return { names, messages, hide, textMode };
 }
 
 /**
@@ -160,7 +174,7 @@ export function renderSeqDiagram(content, { quiz = false, id = "" } = {}) {
     askedFlags.push(true);
     return mm[1] + mm[2];
   });
-  const { names, messages, hide } = parseSeq(prepared.join("\n"));
+  const { names, messages, hide, textMode } = parseSeq(prepared.join("\n"));
   const lineAsk = askedFlags.filter((_, i) => /(?:->|-x)/.test(prepared[i]) && prepared[i].trim());
   messages.forEach((m, i) => { m.askFlags = quiz && (lineAsk[i] || hide.has("flags")); });
   if (quiz) for (const m of messages) { if (hide.has("seq")) m.askSeq = true; if (hide.has("ack") && m.ack != null) m.askAck = true; }
@@ -200,7 +214,9 @@ export function renderSeqDiagram(content, { quiz = false, id = "" } = {}) {
     svg += `</g>`;
 
     // label above the arrow's middle
-    const flagsHtml = m.askFlags ? gap([m.flags], 9, "flags") : esc(m.label);
+    const flagsHtml = m.askFlags
+      ? (textMode ? gap([m.flags], Math.max(8, m.label.length + 2)) : gap([m.flags], 9, "flags"))
+      : esc(m.label);
     const seqHtml = m.askSeq ? gap([String(m.seq)], 4) : `<span class="seq-num seq-p${m.from}">${m.seq}</span>`;
     const ackHtml = m.ack == null ? "" : ` <span class="seq-field">ACK=${m.askAck ? gap([String(m.ack)], 4) : `<span class="seq-num seq-p${m.to}">${m.ack}</span>`}</span>`;
     const dataHtml = m.len > 0 ? ` <span class="seq-data">DATA</span> <span class="seq-len">Len=${m.len}</span>` : "";
@@ -210,10 +226,12 @@ export function renderSeqDiagram(content, { quiz = false, id = "" } = {}) {
     const tilt = (Math.atan2(DROP, Math.abs(xEnd - x1)) * 180 / Math.PI) * dir;
     html += `<div class="seq-label${m.lost ? " seq-lost" : ""}" style="${at(mid, y1 + DROP / 2)};--seq-tilt:${tilt.toFixed(2)}deg">`
       + `<div class="seq-flags">${flagsHtml}</div>`
-      + `<div class="seq-fields"><span class="seq-field">SEQ=${seqHtml}</span>${ackHtml}${dataHtml}</div></div>`;
+      + (textMode
+        ? `<div class="seq-fields seq-text">${m.sub ? esc(m.sub) : "&nbsp;"}</div></div>`
+        : `<div class="seq-fields"><span class="seq-field">SEQ=${seqHtml}</span>${ackHtml}${dataHtml}</div></div>`);
 
     // own sequence counters where the arrow meets the lifelines
-    if (!hide.has("counters")) {
+    if (!textMode && !hide.has("counters")) {
       const side = (/** @type {number} */ p) => (p === 0 ? "seq-left" : "seq-right");
       html += `<div class="seq-counter seq-p${m.from} ${side(m.from)}" style="${at(X[m.from], y1)}">${m.counterFrom}</div>`;
       if (m.counterTo != null) html += `<div class="seq-counter seq-p${m.to} ${side(m.to)}" style="${at(X[m.to], y2)}">${m.counterTo}</div>`;

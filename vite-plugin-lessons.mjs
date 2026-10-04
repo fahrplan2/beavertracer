@@ -946,10 +946,10 @@ function buildLessons(root) {
     expectedJson.add("index.json");
     for (const existing of fs.readdirSync(langOut)) {
       if (existing.endsWith(".html") && !expectedHtml.has(existing)) {
-        fs.rmSync(path.join(langOut, existing));
+        fs.rmSync(path.join(langOut, existing), { force: true }); // force: a parallel rebuild may have removed it already
         console.log(`[lessons] ✗ removed stale ${lang}/${existing}`);
       } else if (existing.endsWith(".json") && !expectedJson.has(existing)) {
-        fs.rmSync(path.join(langOut, existing));
+        fs.rmSync(path.join(langOut, existing), { force: true }); // force: a parallel rebuild may have removed it already
         console.log(`[lessons] ✗ removed stale ${lang}/${existing}`);
       }
     }

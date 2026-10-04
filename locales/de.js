@@ -503,6 +503,7 @@ export default {
   "app.terminal.commands.nslookup.err.noReverse": "nslookup: Reverse-Lookups (PTR) werden nicht unterstützt",
   "app.terminal.commands.nslookup.err.noServer": ";; Verbindungszeitüberschreitung; kein DNS-Server konfiguriert",
   "app.terminal.commands.nslookup.err.notFound": "** Server kann {name} nicht finden: NXDOMAIN",
+  "app.terminal.commands.nslookup.err.timeout": ";; Zeitüberschreitung: kein DNS-Server erreichbar",
   "app.terminal.commands.nslookup.out.server": "Server:\t\t{server}",
   "app.terminal.commands.nslookup.out.address": "Address:\t{address}",
   "app.terminal.commands.nslookup.out.nonAuth": "Non-authoritative answer:",
