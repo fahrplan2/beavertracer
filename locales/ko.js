@@ -1382,6 +1382,8 @@ export default {
   "lessons.footer": "BeaverTracer – 교실용 네트워크 시뮬레이션",
   "lessons.wip.title": "🚧 진행 중인 강의",
   "lessons.wip.text": "이 페이지는 아직 완성되지 않았습니다. 내용이 누락되었거나 불완전하거나 아직 검수되지 않았을 수 있습니다.",
+  "lessons.aiNotice.text": "이 페이지는 AI가 번역했으며 사람이 검토하지 않았습니다. 오류가 있을 수 있습니다.",
+  "lessons.aiNotice.report": "오류 신고",
   "lessons.pageNav": "페이지 네비게이션",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD가 설정되지 않음",
   "app.terminal.commands.sh.usage": "usage: sh <script> [args...]",

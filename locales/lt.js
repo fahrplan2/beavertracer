@@ -1382,6 +1382,8 @@ export default {
   "lessons.footer": "BeaverTracer – Tinklo simuliacija klasėje",
   "lessons.wip.title": "🚧 Pamokos vykdomos",
   "lessons.wip.text": "Šie puslapiai dar nėra baigti. Gali trūkti turinio, jis gali būti nebaigtas arba dar neperžiūrėtas.",
+  "lessons.aiNotice.text": "Šį puslapį išvertė dirbtinis intelektas, o žmogus jo nepatikrino. Jame gali būti klaidų.",
+  "lessons.aiNotice.report": "Pranešti apie klaidą",
   "lessons.pageNav": "Puslapio navigacija",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD nenustatyta",
   "app.terminal.commands.sh.usage": "naudojimas: sh <scenarijus> [argumentai...]",

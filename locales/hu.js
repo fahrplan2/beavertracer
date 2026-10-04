@@ -1381,6 +1381,8 @@ export default {
   "lessons.footer": "BeaverTracer – Hálózati szimuláció az osztályteremben",
   "lessons.wip.title": "🚧 Fejlesztés alatt álló leckék",
   "lessons.wip.text": "Ezek az oldalak még nem teljesek. Előfordulhat, hogy tartalom hiányzik, hiányos vagy még nem lett lektorálva.",
+  "lessons.aiNotice.text": "Ezt az oldalt mesterséges intelligencia fordította, és ember nem ellenőrizte. Hibákat tartalmazhat.",
+  "lessons.aiNotice.report": "Hiba jelentése",
   "lessons.pageNav": "Oldal navigáció",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD nincs beállítva",
   "app.terminal.commands.sh.usage": "használat: sh <script> [args...]",

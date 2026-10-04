@@ -1381,6 +1381,8 @@ export default {
   "lessons.footer": "BeaverTracer – Simulim rrjetash për klasën",
   "lessons.wip.title": "🚧 Mësimet në progres",
   "lessons.wip.text": "Këto faqe nuk janë ende të plota. Përmbajtja mund të jetë e paplote, jo e plotë, ose ende pa u rishikuar.",
+  "lessons.aiNotice.text": "Kjo faqe është përkthyer nga IA dhe nuk është kontrolluar nga një njeri. Mund të përmbajë gabime.",
+  "lessons.aiNotice.report": "Raporto një gabim",
   "lessons.pageNav": "Navigimi në faqe",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD nuk është vendosur",
   "app.terminal.commands.sh.usage": "përdorimi: sh <script> [args...]",

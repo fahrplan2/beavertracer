@@ -1416,6 +1416,8 @@ export default {
   "lessons.footer": "BeaverTracer – Simulation réseau pour la classe",
   "lessons.wip.title": "🚧 Leçons en cours de développement",
   "lessons.wip.text": "Ces pages ne sont pas encore complètes. Le contenu peut être manquant, incomplet ou non encore relecture.",
+  "lessons.aiNotice.text": "Cette page a été traduite par une IA et n'a pas été relue par un humain. Elle peut contenir des erreurs.",
+  "lessons.aiNotice.report": "Signaler une erreur",
   "lessons.pageNav": "Navigation de page",
   "lessons.notAvailableInLanguage": "Cette leçon n'est pas encore disponible dans votre langue.",
   "app.terminal.commands.cd.err.noOldPwd": "cd : OLDPWD non défini",

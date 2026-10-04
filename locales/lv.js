@@ -1382,6 +1382,8 @@ export default {
   "lessons.footer": "BeaverTracer – Tīkla simulācija klasei",
   "lessons.wip.title": "🚧 Nodarbības tiek izstrādātas",
   "lessons.wip.text": "Šīs lapas vēl nav pabeigtas. Saturs var būt nepilnīgs, nepabeigts vai vēl nav pārbaudīts.",
+  "lessons.aiNotice.text": "Šo lapu ir tulkojis mākslīgais intelekts, un to nav pārbaudījis cilvēks. Tajā var būt kļūdas.",
+  "lessons.aiNotice.report": "Ziņot par kļūdu",
   "lessons.pageNav": "Lapas navigācija",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD nav iestatīts",
   "app.terminal.commands.sh.usage": "lietojums: sh <skripts> [argumenti...]",

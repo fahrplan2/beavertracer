@@ -1382,6 +1382,8 @@ export default {
   "lessons.footer": "BeaverTracer – Netværkssimulation til klasseværelset",
   "lessons.wip.title": "🚧 Lektioner under udvikling",
   "lessons.wip.text": "Disse sider er endnu ikke færdige. Indhold kan mangle, være ufuldstændigt eller endnu ikke være korrekturlæst.",
+  "lessons.aiNotice.text": "Denne side er oversat af AI og er ikke blevet kontrolleret af et menneske. Den kan indeholde fejl.",
+  "lessons.aiNotice.report": "Rapportér en fejl",
   "lessons.pageNav": "Sidenavigation",
   "lessons.notAvailableInLanguage": "Denne lektion er ikke tilgængelig på dit sprog endnu.",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD ikke indstillet",

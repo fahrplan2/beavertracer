@@ -1382,6 +1382,8 @@ export default {
   "lessons.footer": "BeaverTracer – Võrgusimuleerimine klassitubades",
   "lessons.wip.title": "🚧 Pooleli olevad õppetunnid",
   "lessons.wip.text": "Need lehed pole veel valmis. Sisu võib olla puudu, mittetäielik või pole veel korrektuuri läbinud.",
+  "lessons.aiNotice.text": "Selle lehe tõlkis tehisintellekt ja inimene pole seda üle kontrollinud. See võib sisaldada vigu.",
+  "lessons.aiNotice.report": "Teata veast",
   "lessons.pageNav": "Lehekülje navigeerimine",
   "lessons.notAvailableInLanguage": "See õppetund ei ole teie keeles saadaval.",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD pole määratud",

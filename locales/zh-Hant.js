@@ -1381,6 +1381,8 @@ export default {
   "lessons.footer": "BeaverTracer – 課堂網路模擬",
   "lessons.wip.title": "🚧 課程進行中",
   "lessons.wip.text": "這些頁面尚未完成。內容可能不完整、未完成或尚未校對。",
+  "lessons.aiNotice.text": "本頁由 AI 翻譯，未經人工審閱，可能有錯誤。",
+  "lessons.aiNotice.report": "回報錯誤",
   "lessons.pageNav": "頁面導覽",
   "app.terminal.commands.cd.err.noOldPwd": "cd：未設定 OLDPWD",
   "app.terminal.commands.sh.usage": "用法：sh <script> [args...]",

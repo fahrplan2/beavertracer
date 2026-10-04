@@ -16,6 +16,15 @@
  * The English course (if up to date for a page) is passed along as a
  * reference translation; German always wins on disagreement.
  *
+ * Glossary (lessons/_translation/glossary.json) keeps terms consistent:
+ * "ui" maps German UI labels to locale keys — their translation is read from
+ * locales/<lang>.js, so lessons name buttons exactly as the app shows them;
+ * "terms" maps German technical terms to the English course's wording. For
+ * other languages the terms are translated once and stored in
+ * lessons/_translation/glossary/<lang>.json (new terms are added on the next
+ * run; edit that file to fix a term — pages already translated are not
+ * re-translated automatically).
+ *
  * Every result is checked against the German page's skeleton (directives,
  * task checks, quiz slots, links — see lesson-skeleton.mjs, same rule as the
  * parity test). A translation that fails the check is retried and, if it still
@@ -51,6 +60,7 @@ Selecting languages:
                        already a translation (has more than the placeholder page)
 
 Modes:
+  --glossary           Only create/complete glossary/<lang>.json, no pages
   --status             Only report what is up to date / changed / new / untracked
   --adopt              Record the current German files as the base of the existing
                        translations, without calling the API. Use once for courses
@@ -98,6 +108,9 @@ const PIVOT = "en";
 const STATE_DIR = path.join(LESSONS, "_translation");
 const STATE_FILE = path.join(STATE_DIR, "state.json");
 const BASE_DIR = path.join(STATE_DIR, "base");
+const GLOSSARY_FILE = path.join(STATE_DIR, "glossary.json");
+const GLOSSARY_DIR = path.join(STATE_DIR, "glossary");
+const LOCALES_DIR = path.join(ROOT, "locales");
 
 const MODEL = args.model || "claude-opus-5-5";
 const EFFORT = args.effort || "high";
@@ -106,6 +119,7 @@ const STATUS = Boolean(args.status);
 const ADOPT = Boolean(args.adopt);
 const DRY_RUN = Boolean(args["dry-run"]);
 const FORCE = Boolean(args.force);
+const GLOSSARY_ONLY = Boolean(args.glossary);
 const ONLY = args.only ? new Set(String(args.only).split(",").map((s) => s.trim()).filter(Boolean)) : null;
 
 const LANG_NAMES = Object.fromEntries([...LOCALES.map((l) => [l.code, l.name]), ["en", "English"]]);
@@ -183,6 +197,112 @@ function plan(lang, state) {
   return out;
 }
 
+// ── glossary ─────────────────────────────────────────────────────────────────
+
+const GLOSSARY = fs.existsSync(GLOSSARY_FILE)
+  ? JSON.parse(fs.readFileSync(GLOSSARY_FILE, "utf8"))
+  : { ui: {}, terms: {} };
+
+/** @returns {Map<string, string>} key -> string, from a locales/<code>.js file */
+function loadLocaleStrings(code) {
+  const p = path.join(LOCALES_DIR, `${code}.js`);
+  const map = new Map();
+  if (!fs.existsSync(p)) return map;
+  const src = fs.readFileSync(p, "utf8");
+  for (const m of src.matchAll(/^\s*"([\w.-]+)"\s*:\s*"((?:[^"\\]|\\.)*)"/gm)) {
+    map.set(m[1], JSON.parse(`"${m[2]}"`));
+  }
+  return map;
+}
+
+/** Warn about ui entries whose German label no longer matches locales/de.js. */
+function checkUiGlossary() {
+  const de = loadLocaleStrings(SOURCE);
+  for (const [label, key] of Object.entries(GLOSSARY.ui ?? {})) {
+    if (!de.has(key)) console.log(`${c.yellow}glossary: ui key "${key}" (${label}) not found in locales/de.js${c.reset}`);
+    else if (de.get(key) !== label) console.log(`${c.yellow}glossary: "${label}" — locales/de.js now says "${de.get(key)}" for ${key}${c.reset}`);
+  }
+}
+
+const glossaryPath = (lang) => path.join(GLOSSARY_DIR, `${lang}.json`);
+
+/** Stored term translations for one language (English comes from glossary.json itself). */
+function loadTerms(lang) {
+  if (lang === PIVOT) return { ...(GLOSSARY.terms ?? {}) };
+  const p = glossaryPath(lang);
+  return fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, "utf8")) : {};
+}
+
+const missingTerms = (lang) => {
+  const have = loadTerms(lang);
+  return Object.keys(GLOSSARY.terms ?? {}).filter((t) => !have[t]);
+};
+
+/** Translate glossary terms not yet in glossary/<lang>.json; drops terms removed from glossary.json. */
+async function completeGlossary(lang, targetName) {
+  if (lang === PIVOT) return;
+  const terms = GLOSSARY.terms ?? {};
+  const have = loadTerms(lang);
+  const missing = Object.keys(terms).filter((t) => !have[t]);
+  const kept = Object.fromEntries(Object.entries(have).filter(([t]) => t in terms));
+  if (missing.length) {
+    const list = missing.map((t) => `${t}\t${terms[t]}`).join("\n");
+    const msg = await client.messages
+      .stream({
+        model: MODEL,
+        max_tokens: 16000,
+        output_config: { effort: EFFORT },
+        system:
+          `You build a terminology glossary for translating networking lessons (BeaverTracer network simulator, ` +
+          `upper secondary school) from German to ${targetName}. For each German term (with its English equivalent ` +
+          `for orientation) give the term a ${targetName} networking textbook for that age group would use. ` +
+          `Keep the grammatical form (singular noun etc.); for UI-like terms ("Run mode", "tab", "workspace") use ` +
+          `the usual software wording in ${targetName}. Answer with one JSON object mapping each German term ` +
+          `exactly as given to its ${targetName} term, nothing else.`,
+        messages: [{ role: "user", content: `German term<TAB>English term:\n${list}` }],
+      })
+      .finalMessage();
+    if (msg.stop_reason !== "end_turn") throw new Error(`glossary: stop_reason=${msg.stop_reason}`);
+    const text = stripFences(msg.content.filter((b) => b.type === "text").map((b) => b.text).join(""));
+    const parsed = JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1));
+    for (const t of missing) {
+      if (typeof parsed[t] === "string" && parsed[t].trim()) kept[t] = parsed[t].trim();
+    }
+    const still = missing.filter((t) => !kept[t]);
+    if (still.length) console.log(`  ${c.yellow}glossary: no translation for ${still.join(", ")}${c.reset}`);
+    console.log(`  ${c.green}✓${c.reset} glossary   ${missing.length - still.length} new term(s)`);
+  }
+  fs.mkdirSync(GLOSSARY_DIR, { recursive: true });
+  const ordered = Object.fromEntries(Object.keys(terms).filter((t) => kept[t]).map((t) => [t, kept[t]]));
+  fs.writeFileSync(glossaryPath(lang), JSON.stringify(ordered, null, 2) + "\n", "utf8");
+}
+
+/** Glossary section for the system prompt of one language. */
+function glossaryPrompt(lang) {
+  const locale = loadLocaleStrings(lang);
+  const en = loadLocaleStrings(PIVOT);
+  const ui = Object.entries(GLOSSARY.ui ?? {})
+    .map(([label, key]) => [label, locale.get(key) ?? en.get(key)]) // the app falls back to English too
+    .filter(([, v]) => v);
+  const terms = Object.entries(loadTerms(lang));
+  if (!ui.length && !terms.length) return "";
+  const lines = ["", "Rules — GLOSSARY:"];
+  if (ui.length) {
+    lines.push(
+      "- UI labels: the app shows these German labels as follows. When the German text refers to the button, tab,",
+      "  window or field (usually in **bold**), use exactly this wording, including capitalization:",
+      ...ui.map(([de, t]) => `  ${de} → ${t}`)
+    );
+  }
+  if (terms.length) {
+    lines.push(
+      "- Technical terms: translate these consistently as given (inflect as the grammar requires):",
+      ...terms.map(([de, t]) => `  ${de} → ${t}`)
+    );
+  }
+  return lines.join("\n");
+}
+
 // ── line diff (for the prompt) ───────────────────────────────────────────────
 
 /** Minimal unified-style diff (LCS over lines) — lesson pages are small enough. */
@@ -224,7 +344,7 @@ function lineDiff(oldText, newText, context = 3) {
 
 // ── prompts ──────────────────────────────────────────────────────────────────
 
-function systemPrompt(targetName) {
+function systemPrompt(lang, targetName) {
   return `
 You are a professional translator localizing lesson content for BeaverTracer, an interactive
 browser-based network simulator used as a teaching tool in German vocational upper secondary
@@ -265,6 +385,7 @@ Rules — SYNTAX (preserve exactly, do not translate or alter):
 - Do not add, remove, merge, split or reorder blocks, list items, quiz answers or directives.
 
 Output: only the complete translated file content — no explanation, no code fences around it.
+${glossaryPrompt(lang)}
 `.trim();
 }
 
@@ -406,6 +527,7 @@ async function main() {
     return;
   }
 
+  checkUiGlossary();
   const state = loadState();
   const needsApi = !STATUS && !ADOPT && !DRY_RUN;
   if (needsApi) client = new Anthropic();
@@ -420,6 +542,9 @@ async function main() {
       `\n${lang} (${targetName}): ${counts.ok} ok, ${counts.changed} changed, ${counts.new} new, ` +
       `${counts.untracked} untracked, ${counts.orphan} orphan`
     );
+
+    const gMissing = lang === PIVOT ? [] : missingTerms(lang);
+    if (gMissing.length) console.log(`  glossary: ${gMissing.length} term(s) not yet translated`);
 
     if (STATUS) {
       for (const it of items) if (it.status !== "ok") console.log(`  ${STATUS_COLOR[it.status]}${it.status.padEnd(9)}${c.reset} ${it.file}`);
@@ -438,6 +563,20 @@ async function main() {
       }
       continue;
     }
+
+    // Glossary first: every page of this language is translated with it.
+    if (DRY_RUN) {
+      if (gMissing.length) console.log(`  would translate ${gMissing.length} glossary term(s)`);
+    } else {
+      try {
+        await completeGlossary(lang, targetName);
+      } catch (e) {
+        failed++;
+        console.log(`  ${c.red}✗${c.reset} glossary: ${e.message} — skipping ${lang}`);
+        continue;
+      }
+    }
+    if (GLOSSARY_ONLY) continue;
 
     // Pages removed from the German course (and the "not available" placeholder).
     for (const it of items.filter((i) => i.status === "orphan")) {
@@ -465,7 +604,7 @@ async function main() {
     }
 
     fs.mkdirSync(path.join(LESSONS, lang), { recursive: true });
-    const system = systemPrompt(targetName);
+    const system = systemPrompt(lang, targetName);
 
     await pool(todo, CONCURRENCY, async (it) => {
       const newSource = readLesson(SOURCE, it.file);

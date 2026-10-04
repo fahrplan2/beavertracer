@@ -1382,6 +1382,8 @@ export default {
   "lessons.footer": "BeaverTracer – 课堂网络仿真工具",
   "lessons.wip.title": "🚧 课程进行中",
   "lessons.wip.text": "这些页面尚未完成。内容可能缺失、不完整或尚未校对。",
+  "lessons.aiNotice.text": "本页由 AI 翻译，未经人工审核，可能存在错误。",
+  "lessons.aiNotice.report": "报告错误",
   "lessons.pageNav": "页面导航",
   "app.terminal.commands.cd.err.noOldPwd": "cd: 未设置 OLDPWD",
   "app.terminal.commands.sh.usage": "用法: sh <script> [args...]",

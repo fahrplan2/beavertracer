@@ -1382,6 +1382,8 @@ export default {
   "lessons.footer": "BeaverTracer – Simulace sítě pro třídu",
   "lessons.wip.title": "🚧 Lekce probíhající zpracování",
   "lessons.wip.text": "Tyto stránky nejsou zatím kompletní. Obsah může být neúplný nebo ještě nezkontrolovaný.",
+  "lessons.aiNotice.text": "Tuto stránku přeložila umělá inteligence a nekontroloval ji člověk. Může obsahovat chyby.",
+  "lessons.aiNotice.report": "Nahlásit chybu",
   "lessons.pageNav": "Navigace stránky",
   "lessons.notAvailableInLanguage": "Tato lekce zatím není v tvém jazyce dostupná.",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD není nastavena",

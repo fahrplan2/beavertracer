@@ -1382,6 +1382,8 @@ export default {
   "lessons.footer": "BeaverTracer – Sınıf için ağ simülasyonu",
   "lessons.wip.title": "🚧 Devam eden dersler",
   "lessons.wip.text": "Bu sayfalar henüz tamamlanmamıştır. İçerik eksik, eksik veya henüz gözden geçirilmemiş olabilir.",
+  "lessons.aiNotice.text": "Bu sayfa yapay zekâ tarafından çevrilmiştir ve bir insan tarafından kontrol edilmemiştir. Hatalar içerebilir.",
+  "lessons.aiNotice.report": "Hata bildir",
   "lessons.pageNav": "Sayfa navigasyonu",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD ayarlanmamış",
   "app.terminal.commands.sh.usage": "kullanım: sh <script> [args...]",

@@ -1382,6 +1382,8 @@ export default {
   "lessons.footer": "BeaverTracer – Simulasi jaringan untuk kelas",
   "lessons.wip.title": "🚧 Pelajaran sedang dikerjakan",
   "lessons.wip.text": "Halaman ini belum lengkap. Konten mungkin hilang, tidak lengkap, atau belum diperiksa ulang.",
+  "lessons.aiNotice.text": "Halaman ini diterjemahkan oleh AI dan belum diperiksa oleh manusia. Halaman ini mungkin mengandung kesalahan.",
+  "lessons.aiNotice.report": "Laporkan kesalahan",
   "lessons.pageNav": "Navigasi halaman",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD tidak diatur",
   "app.terminal.commands.sh.usage": "penggunaan: sh <script> [args...]",

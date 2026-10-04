@@ -1382,6 +1382,8 @@ export default {
   "lessons.footer": "BeaverTracer – 教室向けネットワークシミュレーション",
   "lessons.wip.title": "🚧 作成中のレッスン",
   "lessons.wip.text": "これらのページはまだ完成していません。コンテンツが不足している、不完全である、またはまだ校正されていない可能性があります。",
+  "lessons.aiNotice.text": "このページは AI によって翻訳されており、人による確認は行われていません。誤りが含まれている可能性があります。",
+  "lessons.aiNotice.report": "誤りを報告",
   "lessons.pageNav": "ページナビゲーション",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWDが設定されていません",
   "app.terminal.commands.sh.usage": "使用方法: sh <スクリプト> [引数...]",

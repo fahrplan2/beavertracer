@@ -1381,6 +1381,8 @@ export default {
   "lessons.footer": "BeaverTracer – Simulació de xarxa per a l'aula",
   "lessons.wip.title": "🚧 Lliçons en desenvolupament",
   "lessons.wip.text": "Aquestes pàgines encara no estan completes. Pot faltar contingut, estar incomplet o no estar revisat.",
+  "lessons.aiNotice.text": "Aquesta pàgina l'ha traduïda una IA i no l'ha revisada cap persona. Pot contenir errors.",
+  "lessons.aiNotice.report": "Informa d'un error",
   "lessons.pageNav": "Navegació de pàgina",
   "lessons.notAvailableInLanguage": "Aquesta lliçó no està disponible en el vostre idioma encara.",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD no establert",

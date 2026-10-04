@@ -864,6 +864,8 @@ export default {
   "lessons.footer": "BeaverTracer – Network simulation for the classroom",
   "lessons.wip.title": "🚧 Lessons in progress",
   "lessons.wip.text": "These pages are not yet complete. Content may be missing, incomplete, or not yet proofread.",
+  "lessons.aiNotice.text": "This page was translated by AI and has not been checked by a human. It may contain errors.",
+  "lessons.aiNotice.report": "Report an error",
   "lessons.pageNav": "Page navigation",
   "lessons.loadError": "This lesson could not be loaded.",
   "lessons.notAvailableInLanguage": "This lesson isn't available in your language yet.",

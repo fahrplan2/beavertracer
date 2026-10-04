@@ -1382,6 +1382,8 @@ export default {
   "lessons.footer": "BeaverTracer – شبیه‌سازی شبکه برای کلاس درس",
   "lessons.wip.title": "🚧 درس‌های در حال تکمیل",
   "lessons.wip.text": "این صفحات هنوز کامل نشده‌اند. ممکن است محتوا ناقص، نامکمل یا هنوز بررسی‌شده نباشد.",
+  "lessons.aiNotice.text": "این صفحه توسط هوش مصنوعی ترجمه شده و توسط انسان بررسی نشده است. ممکن است دارای خطا باشد.",
+  "lessons.aiNotice.report": "گزارش خطا",
   "lessons.pageNav": "ناوبری صفحه",
   "lessons.notAvailableInLanguage": "این درس هنوز به زبان شما موجود نیست.",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD تعریف نشده است",

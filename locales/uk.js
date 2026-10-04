@@ -1382,6 +1382,8 @@ export default {
   "lessons.footer": "BeaverTracer – Мережева симуляція для класу",
   "lessons.wip.title": "🚧 Уроки в розробці",
   "lessons.wip.text": "Ці сторінки ще не завершені. Вміст може бути неповним, незавершеним або ще не перевіреним.",
+  "lessons.aiNotice.text": "Цю сторінку перекладено штучним інтелектом, і людина її не перевіряла. Вона може містити помилки.",
+  "lessons.aiNotice.report": "Повідомити про помилку",
   "lessons.pageNav": "Навігація по сторінці",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD не встановлено",
   "app.terminal.commands.sh.usage": "використання: sh <скрипт> [аргументи...]",

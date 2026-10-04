@@ -1382,6 +1382,8 @@ export default {
   "lessons.footer": "BeaverTracer – Nätverkssimulering för klassrummet",
   "lessons.wip.title": "🚧 Lektioner under utveckling",
   "lessons.wip.text": "Dessa sidor är inte helt klara än. Innehållet kan vara ofullständigt eller inte ännu granskad.",
+  "lessons.aiNotice.text": "Den här sidan har översatts av AI och har inte granskats av en människa. Den kan innehålla fel.",
+  "lessons.aiNotice.report": "Rapportera ett fel",
   "lessons.pageNav": "Sidnavigering",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD är inte inställd",
   "app.terminal.commands.sh.usage": "användning: sh <skript> [arg...]",

@@ -1382,6 +1382,8 @@ export default {
   "lessons.footer": "BeaverTracer – Simulare de rețea pentru sala de clasă",
   "lessons.wip.title": "🚧 Lecții în curs de elaborare",
   "lessons.wip.text": "Aceste pagini nu sunt încă complete. Conținutul poate să lipsească, să fie incomplet sau să nu fi fost încă corectat.",
+  "lessons.aiNotice.text": "Această pagină a fost tradusă de AI și nu a fost verificată de un om. Poate conține greșeli.",
+  "lessons.aiNotice.report": "Raportează o greșeală",
   "lessons.pageNav": "Navigare prin pagini",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD nu este setat",
   "app.terminal.commands.sh.usage": "utilizare: sh <script> [args...]",

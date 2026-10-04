@@ -1381,6 +1381,8 @@ export default {
   "lessons.footer": "BeaverTracer – Sieťová simulácia pre učebňu",
   "lessons.wip.title": "🚧 Lekcie v príprave",
   "lessons.wip.text": "Tieto stránky nie sú ešte dokončené. Obsah môže chýbať, byť neúplný alebo ešte nie je skontrolovaný.",
+  "lessons.aiNotice.text": "Túto stránku preložila umelá inteligencia a nekontroloval ju človek. Môže obsahovať chyby.",
+  "lessons.aiNotice.report": "Nahlásiť chybu",
   "lessons.pageNav": "Navigácia stránky",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD nie je nastavené",
   "app.terminal.commands.sh.usage": "použitie: sh <skript> [argumenty...]",

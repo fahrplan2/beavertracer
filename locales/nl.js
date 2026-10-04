@@ -1382,6 +1382,8 @@ export default {
   "lessons.footer": "BeaverTracer – Netwerksimulatie voor het klaslokaal",
   "lessons.wip.title": "🚧 Lessen in voorbereiding",
   "lessons.wip.text": "Deze pagina's zijn nog niet volledig. Inhoud kan ontbreken, onvolledig zijn of nog niet zijn nagekeken.",
+  "lessons.aiNotice.text": "Deze pagina is vertaald door AI en niet door een mens gecontroleerd. Er kunnen fouten in staan.",
+  "lessons.aiNotice.report": "Fout melden",
   "lessons.pageNav": "Paginanavigatie",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD niet ingesteld",
   "app.terminal.commands.sh.usage": "gebruik: sh <script> [args...]",

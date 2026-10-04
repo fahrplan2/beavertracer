@@ -1381,6 +1381,8 @@ export default {
   "lessons.footer": "BeaverTracer – Simulacija mreže za učionicu",
   "lessons.wip.title": "🚧 Lekcije u toku",
   "lessons.wip.text": "Ove stranice još nisu završene. Sadržaj može biti nepotpun ili nije još pregledan.",
+  "lessons.aiNotice.text": "Ovu stranicu je prevela veštačka inteligencija i nije je proverio čovek. Može sadržati greške.",
+  "lessons.aiNotice.report": "Prijavi grešku",
   "lessons.pageNav": "Navigacija po stranici",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD nije postavljen",
   "app.terminal.commands.sh.usage": "upotreba: sh <skripта> [аргументи...]",

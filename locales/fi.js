@@ -1382,6 +1382,8 @@ export default {
   "lessons.footer": "BeaverTracer – Verkon simulointi luokkahuoneeseen",
   "lessons.wip.title": "🚧 Oppitunnit työn alla",
   "lessons.wip.text": "Nämä sivut eivät ole vielä valmiit. Sisältö saattaa puuttua, olla epätäydellinen tai sitä ei ole vielä tarkistettu.",
+  "lessons.aiNotice.text": "Tämän sivun on kääntänyt tekoäly, eikä ihminen ole tarkistanut sitä. Se voi sisältää virheitä.",
+  "lessons.aiNotice.report": "Ilmoita virheestä",
   "lessons.pageNav": "Sivun navigointi",
   "lessons.notAvailableInLanguage": "Tämä oppitunti ei ole vielä saatavilla omalla kielelläsi.",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD ei ole asetettu",

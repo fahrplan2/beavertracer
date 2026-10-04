@@ -553,6 +553,17 @@ body {
 }
 .callout-goal::after    { content: "\f19d"; color: #7c3aed; }
 
+/* AI translation notice — added by the build on every page of a
+   machine-translated course (see REVIEWED_LANGS in vite-plugin-lessons.mjs). */
+.callout-ai {
+  border-color: #64748b;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 0.92em;
+}
+.callout-ai::after      { content: "\f1ab"; color: #64748b; }
+.callout-ai a           { color: inherit; font-weight: 600; }
+
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .callout-note    { background: oklch(30% 0.05 210); color: oklch(90% 0.03 200); }
   :root:not([data-theme="light"]) .callout-tip     { background: #14532d; color: #bbf7d0; }
@@ -560,6 +571,7 @@ body {
   :root:not([data-theme="light"]) .callout-danger  { background: #450a0a; color: #fecaca; }
   :root:not([data-theme="light"]) .callout-draft   { background: #451a03; color: #fde68a; }
   :root:not([data-theme="light"]) .callout-goal    { background: #2e1065; color: #ddd6fe; }
+  :root:not([data-theme="light"]) .callout-ai      { background: #1e293b; color: #cbd5e1; }
 }
 
 [data-theme="dark"] .callout-note    { background: oklch(30% 0.05 210); color: oklch(90% 0.03 200); }
@@ -568,6 +580,7 @@ body {
 [data-theme="dark"] .callout-danger  { background: #450a0a; color: #fecaca; }
 [data-theme="dark"] .callout-draft   { background: #451a03; color: #fde68a; }
 [data-theme="dark"] .callout-goal    { background: #2e1065; color: #ddd6fe; }
+[data-theme="dark"] .callout-ai      { background: #1e293b; color: #cbd5e1; }
 
 /* ── Prev / Next navigation ───────────────────────────────────── */
 .lesson-nav {

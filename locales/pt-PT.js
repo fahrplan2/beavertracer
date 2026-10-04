@@ -1387,6 +1387,8 @@ export default {
   "lessons.footer": "BeaverTracer – Simulação de rede para a sala de aula",
   "lessons.wip.title": "🚧 Lições em progresso",
   "lessons.wip.text": "Estas páginas ainda não estão completas. O conteúdo pode estar incompleto ou ainda não foi revisto.",
+  "lessons.aiNotice.text": "Esta página foi traduzida por IA e não foi revista por uma pessoa. Pode conter erros.",
+  "lessons.aiNotice.report": "Comunicar um erro",
   "lessons.pageNav": "Navegação da página",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD não definida",
   "app.terminal.commands.sh.usage": "uso: sh <script> [args...]",

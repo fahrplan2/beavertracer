@@ -1382,6 +1382,8 @@ export default {
   "lessons.footer": "BeaverTracer – Προσομοίωση δικτύου για την τάξη",
   "lessons.wip.title": "🚧 Μαθήματα σε εξέλιξη",
   "lessons.wip.text": "Αυτές οι σελίδες δεν είναι ακόμη ολοκληρωμένες. Το περιεχόμενο μπορεί να λείπει, να είναι ημιτελές ή να μην έχει ακόμη διορθωθεί.",
+  "lessons.aiNotice.text": "Αυτή η σελίδα μεταφράστηκε από τεχνητή νοημοσύνη και δεν έχει ελεγχθεί από άνθρωπο. Μπορεί να περιέχει λάθη.",
+  "lessons.aiNotice.report": "Αναφορά σφάλματος",
   "lessons.pageNav": "Πλοήγηση σελίδας",
   "lessons.notAvailableInLanguage": "Αυτό το μάθημα δεν είναι διαθέσιμο στη γλώσσα σας ακόμη.",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD δεν έχει οριστεί",

@@ -1382,6 +1382,8 @@ export default {
   "lessons.footer": "BeaverTracer – Mô phỏng mạng cho lớp học",
   "lessons.wip.title": "🚧 Bài học đang phát triển",
   "lessons.wip.text": "Các trang này chưa hoàn thành. Nội dung có thể còn thiếu, chưa đầy đủ hoặc chưa được kiểm tra lại.",
+  "lessons.aiNotice.text": "Trang này được dịch bằng AI và chưa được con người kiểm tra. Trang có thể chứa lỗi.",
+  "lessons.aiNotice.report": "Báo lỗi",
   "lessons.pageNav": "Điều hướng trang",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD không được đặt",
   "app.terminal.commands.sh.usage": "cách dùng: sh <script> [args...]",

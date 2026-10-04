@@ -1382,6 +1382,8 @@ export default {
   "lessons.footer": "BeaverTracer – محاكاة الشبكة للفصل الدراسي",
   "lessons.wip.title": "🚧 دروس قيد الإنجاز",
   "lessons.wip.text": "هذه الصفحات غير مكتملة بعد. قد يكون المحتوى غائباً أو غير مكتمل أو لم يتم مراجعته بعد.",
+  "lessons.aiNotice.text": "تُرجمت هذه الصفحة بواسطة الذكاء الاصطناعي ولم يراجعها إنسان. قد تحتوي على أخطاء.",
+  "lessons.aiNotice.report": "الإبلاغ عن خطأ",
   "lessons.pageNav": "ملاحة الصفحة",
   "lessons.notAvailableInLanguage": "هذا الدرس غير متاح في لغتك حتى الآن.",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD غير معيّن",

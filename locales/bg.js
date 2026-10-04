@@ -1382,6 +1382,8 @@ export default {
   "lessons.footer": "BeaverTracer – Мрежова симулация за класната стая",
   "lessons.wip.title": "🚧 Уроци в процес на разработка",
   "lessons.wip.text": "Тези страници все още не са завършени. Съдържанието може да липсва, да е непълно или да не е редактирано.",
+  "lessons.aiNotice.text": "Тази страница е преведена от изкуствен интелект и не е проверена от човек. Възможно е да съдържа грешки.",
+  "lessons.aiNotice.report": "Съобщи за грешка",
   "lessons.pageNav": "Навигация по страниците",
   "lessons.notAvailableInLanguage": "Този урок все още не е достъпен на вашия език.",
   "app.terminal.commands.cd.err.noOldPwd": "cd: OLDPWD не е зададена",

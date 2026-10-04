@@ -760,6 +760,8 @@ export default {
   "lessons.footer": "BeaverTracer – Netzwerksimulation für den Unterricht",
   "lessons.wip.title": "🚧 Lektionen in Bearbeitung",
   "lessons.wip.text": "Diese Seiten sind noch nicht vollständig. Inhalte können fehlen, unvollständig oder noch nicht korrekturgelesen sein.",
+  "lessons.aiNotice.text": "Diese Seite wurde von einer KI übersetzt und nicht von einem Menschen geprüft. Sie kann Fehler enthalten.",
+  "lessons.aiNotice.report": "Fehler melden",
   "lessons.pageNav": "Seitennavigation",
   "lessons.loadError": "Diese Lektion konnte nicht geladen werden.",
   "lessons.notAvailableInLanguage": "Diese Lektion ist in deiner Sprache leider (noch) nicht verfügbar.",
