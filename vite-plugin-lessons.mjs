@@ -6,6 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import MarkdownIt from "markdown-it";
 import markdownItContainer from "markdown-it-container";
+import { renderSeqDiagram } from "./lessons-seq-diagram.mjs";
 
 const SRC_DIR = "lessons";
 const OUT_DIR = "public/lessons";
@@ -193,6 +194,24 @@ function renderEvaluateButton(ids, label) {
   ].join("\n");
 }
 
+/**
+ * ":::seq" sequence diagram (see lessons-seq-diagram.mjs). A malformed
+ * block shows its error on the page instead of breaking the build.
+ * @param {string} content @param {{ quiz?: boolean, id?: string }} [opts]
+ */
+function seqOrError(content, opts) {
+  try {
+    return renderSeqDiagram(content, opts);
+  } catch (err) {
+    return `<div class="seq-error">${escHtml(err instanceof Error ? err.message : String(err))}</div>`;
+  }
+}
+
+/** @param {string} src */
+function processSeqBlocks(src) {
+  return src.replace(/^:::seq[ \t]*\n([\s\S]*?)^:::[ \t]*$/gm, (_, content) => seqOrError(content));
+}
+
 /** @param {string} src @param {string} [lang] */
 function processQuizBlocks(src, lang = "en") {
   let counter = 0;
@@ -212,6 +231,7 @@ function processQuizBlocks(src, lang = "en") {
           case "fill":  return renderQuizFill(id, content);
           case "table": return renderQuizTable(id, content);
           case "match": return renderQuizMatch(id, content);
+          case "seq":   return seqOrError(content, { quiz: true, id });
           default:      return match;
         }
       } else {
@@ -616,6 +636,7 @@ function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI
 
   // ── Pre-process :::quiz / :::evaluate blocks ──────────────────
   src = processQuizBlocks(src, lang);
+  src = processSeqBlocks(src);
 
   // ── Pre-process :::task blocks ─────────────────────────────────
   src = processTaskBlocks(src, chrome);

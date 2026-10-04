@@ -80,6 +80,10 @@
   --ui-border-strong: color-mix(in oklch, var(--text), transparent 65%);
   --ui-card: color-mix(in oklch, var(--surface), var(--text) 6%);
   --ui-card-hover: color-mix(in oklch, var(--surface), var(--text) 10%);
+  /* Toolbar/sidebar buttons: lighter than the petrol bar so they read as
+     raised, not sunken. */
+  --ui-btn: color-mix(in oklch, var(--surface), white 60%);
+  --ui-btn-hover: color-mix(in oklch, var(--surface), white 85%);
   --ui-active: white;
   --ui-active-border: white;
   --ui-line: color-mix(in oklch, var(--text), transparent 55%);
@@ -125,6 +129,8 @@
   --ui-active-border: var(--primary);
   --ui-card:          oklch(22% 0.016 210);
   --ui-card-hover:    oklch(27% 0.018 210);
+  --ui-btn:           var(--ui-card);
+  --ui-btn-hover:     var(--ui-card-hover);
 
   --accent: oklch(68% 0.10 200);
   --accent-hover: oklch(74% 0.10 200);
@@ -160,6 +166,8 @@
   --ui-active-border: var(--primary);
   --ui-card:          oklch(12% 0.035 145);
   --ui-card-hover:    oklch(18% 0.045 145);
+  --ui-btn:           var(--ui-card);
+  --ui-btn-hover:     var(--ui-card-hover);
 
   --blue: oklch(68% 0.18 145);
 }

@@ -187,6 +187,18 @@ describe('data transfer', () => {
     dataSegs.forEach(seg => expect(seg.tcp.payload.length).toBeLessThanOrEqual(512));
   });
 
+  it('data segments carry PSH only on the piece that completes a write', async () => {
+    const { client, server, log } = makeLoopback();
+    const { clientKey } = await connect(client, server);
+    log.length = 0;
+    client.send(clientKey, new Uint8Array(1200)); // MSS 512 → 512 + 512 + 176
+    const data = log.filter(e => e.from === 'client' && e.tcp.payload.length > 0);
+    expect(data.length).toBeGreaterThanOrEqual(1);
+    const psh = data.map(e => e.tcp.hasFlag(TCPPacket.FLAG_PSH));
+    expect(psh.at(-1)).toBe(true);
+    expect(psh.slice(0, -1).every(f => !f)).toBe(true);
+  });
+
   it('sequence number advances by payload size after send', () => {
     const conn = client.conns.get(clientKey);
     const accBefore = (conn?.myacc ?? 0) >>> 0;

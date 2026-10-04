@@ -367,24 +367,6 @@
   line-height: 1.5;
 }
 
-/* Language chooser inside the welcome dialog: the framed box scrolls,
-   not the list itself (see css/sim.css for the item styles). */
-.welcome-lang-content {
-  display: flex;
-  flex-direction: column;
-  gap: var(--pad-lg);
-  padding: var(--pad-lg);
-}
-
-.welcome-lang-content > * {
-  flex-shrink: 0;
-}
-
-.welcome-lang-content .sim-langlist {
-  max-height: none;
-  overflow: visible;
-}
-
 /* Chapter overview (see ChapterOverview.js): chapters left, the selected
    chapter's pages right — each column scrolls on its own. */
 .welcome-chapters-content {

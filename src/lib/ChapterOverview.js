@@ -103,6 +103,8 @@ export function buildChapterOverview(panel, onPick) {
             right.scrollTop = 0;
         };
         item.addEventListener("click", show);
+        // Double click: straight into the chapter's first page
+        item.addEventListener("dblclick", () => onPick(chapter.href));
         entries.push({ item, show });
     }
 

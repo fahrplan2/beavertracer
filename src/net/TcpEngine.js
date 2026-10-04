@@ -395,7 +395,11 @@ export class TcpEngine {
 
       const chunk = head.subarray(0, n);
 
-      if (n === head.length) conn.sendQ.shift();
+      // The segment that completes an application write carries PSH
+      // ("hand it to the application now"), as real stacks do — Wireshark
+      // then shows [PSH, ACK]; earlier pieces of a split write don't.
+      const endOfWrite = n === head.length;
+      if (endOfWrite) conn.sendQ.shift();
       else conn.sendQ[0] = head.subarray(n);
 
       conn.sendQBytes = Math.max(0, (conn.sendQBytes ?? 0) - n);
@@ -403,7 +407,7 @@ export class TcpEngine {
       this._sendSegment(conn, {
         seq: conn.myacc,
         ack: conn.theiracc,
-        flags: TCPPacket.FLAG_ACK,
+        flags: endOfWrite ? (TCPPacket.FLAG_PSH | TCPPacket.FLAG_ACK) : TCPPacket.FLAG_ACK,
         window: this._calcRcvWnd(conn),
         payload: chunk,
       });

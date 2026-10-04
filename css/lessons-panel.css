@@ -434,3 +434,80 @@ html[data-debug="true"] .lesson-article [data-draft="true"] { display: revert; }
 .lesson-article .task-check-item.task-check-ok  { color: var(--ok-strong, #1f7a3d); }
 .lesson-article .task-check-item.task-check-err { color: var(--danger-strong, #96271e); }
 .lesson-article .task-check-item.task-check-pending { opacity: 0.6; }
+
+/* ── Sequence diagrams (:::seq, see lessons-seq-diagram.mjs) ──────
+   SVG lines on a 600-unit grid, HTML labels positioned in % and sized in
+   container units (cqw) — the whole diagram scales like one picture. The
+   two hosts' number circles: left = red, right = blue. */
+.seq-scroll { overflow-x: auto; margin: 0 0 16px; }
+.seq-diagram {
+  --seq-p0: oklch(54% 0.19 25);
+  --seq-p1: oklch(48% 0.17 255);
+  container-type: inline-size;
+  position: relative;
+  width: 100%;
+  min-width: 460px;
+  max-width: 720px;
+  margin: 0 auto;
+  line-height: 1.25;
+}
+[data-theme="dark"] .seq-diagram { --seq-p0: oklch(72% 0.15 25); --seq-p1: oklch(72% 0.13 255); }
+.seq-diagram svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.seq-diagram .seq-life { stroke: var(--muted, #888); stroke-width: 2; }
+.seq-diagram .seq-msg { color: var(--text, #222); }
+.seq-diagram .seq-msg.seq-from-p0 { color: var(--seq-p0); }
+.seq-diagram .seq-msg.seq-from-p1 { color: var(--seq-p1); }
+.seq-diagram .seq-msg line { stroke: currentColor; stroke-width: 2; }
+.seq-diagram .seq-msg polygon { fill: currentColor; }
+.seq-diagram .seq-msg.seq-lost line { stroke-dasharray: 6 4; }
+.seq-diagram .seq-x { stroke: var(--danger, #c0392b); stroke-width: 3; stroke-linecap: round; fill: none; }
+.seq-diagram .seq-head,
+.seq-diagram .seq-label,
+.seq-diagram .seq-counter { position: absolute; white-space: nowrap; font-size: 2.3cqw; }
+.seq-diagram .seq-head {
+  transform: translate(-50%, -50%);
+  padding: 0.35em 1em;
+  border: 1.5px solid currentColor;
+  border-radius: 6px;
+  background: var(--bg-strong, #fff);
+  font-weight: 700;
+}
+.seq-diagram .seq-head.seq-p0 { color: var(--seq-p0); }
+.seq-diagram .seq-head.seq-p1 { color: var(--seq-p1); }
+.seq-diagram .seq-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6em; /* the arrow runs through this gap */
+  transform: translate(-50%, -50%) rotate(var(--seq-tilt, 0deg));
+  text-align: center;
+  color: var(--text, #222);
+}
+.seq-diagram .seq-label.seq-lost { opacity: 0.75; }
+.seq-diagram .seq-flags { font-weight: 700; }
+.seq-diagram .seq-fields { font-family: "Hack", ui-monospace, monospace; font-size: 0.9em; }
+.seq-diagram .seq-field + .seq-field { margin-left: 0.5em; }
+.seq-diagram .seq-num { font-weight: 700; }
+.seq-diagram .seq-num.seq-p0 { color: var(--seq-p0); }
+.seq-diagram .seq-num.seq-p1 { color: var(--seq-p1); }
+.seq-diagram .seq-data {
+  margin-left: 0.5em;
+  padding: 0 0.35em;
+  border-radius: 3px;
+  background: color-mix(in oklch, var(--text, #222) 12%, transparent);
+  font-family: inherit;
+  font-weight: 700;
+}
+.seq-diagram .seq-len { color: var(--muted, #777); }
+.seq-diagram .seq-counter {
+  font-family: "Hack", ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 2.2cqw;
+}
+.seq-diagram .seq-counter.seq-p0 { color: var(--seq-p0); }
+.seq-diagram .seq-counter.seq-p1 { color: var(--seq-p1); }
+.seq-diagram .seq-counter.seq-left { transform: translate(calc(-100% - 0.6em), -50%); }
+.seq-diagram .seq-counter.seq-right { transform: translate(0.6em, -50%); }
+.seq-diagram .quiz-gap { display: inline-flex; vertical-align: baseline; }
+.seq-diagram .quiz-gap-input { font: inherit; padding: 0 0.2em; width: auto; min-width: 0; }
+.seq-error { padding: 8px 12px; border: 1px solid var(--danger, #c0392b); border-radius: 6px; color: var(--danger, #c0392b); font-family: ui-monospace, monospace; font-size: 0.85em; }

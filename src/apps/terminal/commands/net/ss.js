@@ -113,7 +113,9 @@ export const ss = {
         const state = String(sock.state ?? "UNKNOWN");
         if (state === "LISTEN") continue;
 
-        const local = `${fmtIP(sock.bindaddr)}:${sock.port ?? 0}`;
+        // The address this connection actually uses (a server socket bound
+        // to 0.0.0.0/:: accepts on whichever local address was dialled).
+        const local = `${fmtIP(sock.localIP ?? sock.bindaddr)}:${sock.port ?? 0}`;
         const peer = `${fmtIP(sock.peerIP)}:${sock.peerPort ?? 0}`;
         const rxq = (sock.in?.length ?? 0);
 

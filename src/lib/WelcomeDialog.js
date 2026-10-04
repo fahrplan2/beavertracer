@@ -6,7 +6,6 @@ import { version } from "./version.js";
 import { SimDialog } from "./SimDialog.js";
 import { Tour } from "./Tour.js";
 import { LessonsPanel } from "./LessonsPanel.js";
-import { buildLanguagePicker } from "./LanguagePicker.js";
 import { buildChapterOverview } from "./ChapterOverview.js";
 import { addScrollHints } from "./scrollHints.js";
 
@@ -30,9 +29,9 @@ export class WelcomeDialog {
             dlg.setAttribute("aria-label", "Beaver Tracer");
 
             dlg.appendChild(WelcomeDialog._buildHeader(close));
-            const { body, showNews, showLanguage, showChapters } = WelcomeDialog._buildBody(sim, close);
+            const { body, showNews, showChapters } = WelcomeDialog._buildBody(sim, close);
             dlg.appendChild(body);
-            dlg.appendChild(WelcomeDialog._buildFooter(sim, close, showNews, showLanguage));
+            dlg.appendChild(WelcomeDialog._buildFooter(sim, close, showNews));
 
             backdrop.addEventListener("click", (ev) => {
                 if (ev.target === backdrop) close();
@@ -133,10 +132,10 @@ export class WelcomeDialog {
     /**
      * Two ways in — "Build freely" (own simulations, tour) and "Learn"
      * (the course, on the right like the lessons panel itself). News and
-     * the language chooser replace the two columns in place.
+     * the chapter overview replace the two columns in place.
      * @param {import("../SimControl.js").SimControl} sim
      * @param {(action?: () => void, opts?: { keepLessons?: boolean }) => void} close
-     * @returns {{ body: HTMLElement, showNews: (returnFocus: HTMLElement) => void, showLanguage: (returnFocus: HTMLElement) => void, showChapters: (returnFocus: HTMLElement|null) => void }}
+     * @returns {{ body: HTMLElement, showNews: (returnFocus: HTMLElement) => void, showChapters: (returnFocus: HTMLElement|null) => void }}
      */
     static _buildBody(sim, close) {
         const body = document.createElement("div");
@@ -151,7 +150,7 @@ export class WelcomeDialog {
         paths.appendChild(WelcomeDialog._buildLearnPath(sim, close, (btn) => showChapters(btn)));
         home.appendChild(paths);
 
-        // Sub-views (news, language) replace the two columns in place, keep
+        // Sub-views (news, chapters) replace the two columns in place, keep
         // the dialog's size and scroll their content in a framed box.
         /** @type {HTMLElement|null} */
         let opener = null;
@@ -217,17 +216,6 @@ export class WelcomeDialog {
             .then((md) => { news.content.innerHTML = md ? MiniMarkdown.render(md) : "—"; })
             .catch(() => { news.content.textContent = "—"; });
 
-        const langLabel = t("sim.language");
-        const lang = subView("fa-language", langLabel === "Language" ? langLabel : `${langLabel} / Language`,
-            "welcome-lang-content");
-        /** @type {HTMLElement|null} */
-        let langActive = null;
-        const langReady = buildLanguagePicker(sim, lang.back)
-            .then(({ active, parts }) => {
-                langActive = active;
-                lang.content.append(...parts);
-            });
-
         // Chapter overview: built on first show (needs the chapter list);
         // picking a page opens the lessons panel there.
         const chapters = subView("fa-graduation-cap",
@@ -252,12 +240,7 @@ export class WelcomeDialog {
         body.append(home, ...views);
         /** @param {HTMLElement} returnFocus */
         const showNews = (returnFocus) => news.show(returnFocus);
-        /** @param {HTMLElement} returnFocus */
-        const showLanguage = (returnFocus) => {
-            lang.show(returnFocus);
-            void langReady.then(() => langActive?.focus());
-        };
-        return { body, showNews, showLanguage, showChapters };
+        return { body, showNews, showChapters };
     }
 
     /**
@@ -382,9 +365,8 @@ export class WelcomeDialog {
      * @param {import("../SimControl.js").SimControl} sim
      * @param {(action?: () => void, opts?: { keepLessons?: boolean }) => void} close
      * @param {(returnFocus: HTMLElement) => void} showNews
-     * @param {(returnFocus: HTMLElement) => void} showLanguage
      */
-    static _buildFooter(sim, close, showNews, showLanguage) {
+    static _buildFooter(sim, close, showNews) {
         const footer = document.createElement("div");
         footer.className = "welcome-footer";
 
@@ -393,7 +375,9 @@ export class WelcomeDialog {
         const langLabel = t("sim.language");
         const langBtn = WelcomeDialog._footerBtn(
             "fa-language", langLabel === "Language" ? langLabel : `${langLabel} / Language`,
-            () => showLanguage(langBtn)
+            // The app's language dialog, opened on top of this one (picking
+            // a language reloads the page anyway).
+            () => sim.openLanguageDialog()
         );
         langBtn.classList.add("welcome-footer-btn--lang");
         left.appendChild(langBtn);

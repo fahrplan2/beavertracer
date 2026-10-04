@@ -169,6 +169,30 @@ describe('CheckApi', () => {
         expect(await outcome).toBe(false);
     });
 
+    it('tcpOpen(): true while a server listens on the port, false for a closed port (RST)', async () => {
+        const a = makeComputer(1, '10.0.0.1');
+        const b = makeComputer(2, '10.0.0.2');
+        const itfA = a.net.interfaces[0];
+        const itfB = b.net.interfaces[0];
+        itfA.neighborCache.set('10.0.0.2', itfB.mac.slice());
+        itfB.neighborCache.set('10.0.0.1', itfA.mac.slice());
+        const { IPv4Packet } = await import('../../src/net/pdu/IPv4Packet.js');
+        itfA.sendFrame = (/** @type {*} */ _mac, /** @type {number} */ etherType, /** @type {Uint8Array} */ payload) => {
+            if (etherType !== 0x0800) return;
+            itfB.inQueue.push(IPv4Packet.fromBytes(payload)); itfB.doUpdate();
+        };
+        itfB.sendFrame = (/** @type {*} */ _mac, /** @type {number} */ etherType, /** @type {Uint8Array} */ payload) => {
+            if (etherType !== 0x0800) return;
+            itfA.inQueue.push(IPv4Packet.fromBytes(payload)); itfA.doUpdate();
+        };
+        const { IPAddress } = await import('../../src/net/models/IPAddress.js');
+        b.net.openTCPServerSocket(IPAddress.fromString('0.0.0.0'), 5000);
+
+        const api = new CheckApi(fakeSimControl([a, b]));
+        expect(await api.tcpOpen(1, 2, 5000)).toBe(true);
+        expect(await api.tcpOpen(1, '10.0.0.2', 5001)).toBe(false);
+    });
+
     it('ip(): also works for tablets', async () => {
         const tab = Tablet.fromJSON({
             kind: 'Tablet', id: 7, name: 'Anna', x: 0, y: 0, ssid: 'Schule',

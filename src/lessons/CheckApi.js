@@ -4,7 +4,7 @@ import { Tablet } from "../sim/Tablet.js";
 import { IPAddress } from "../net/models/IPAddress.js";
 import { TerminalApp } from "../apps/TerminalApp.js";
 import { setTrafficSuppressed } from "../lib/CheckState.js";
-import { SimTimer } from "../lib/SimTimer.js";
+import { SimTimer, simTimer } from "../lib/SimTimer.js";
 
 /** Step interval (real ms) while checks run — the fastest speed preset, so a
  *  failing ping's simulated timeout passes in seconds rather than a minute. */
@@ -204,6 +204,26 @@ export class CheckApi {
      */
     async pingFails(fromId, to) {
         return !(await this.pingOk(fromId, to));
+    }
+
+    /**
+     * True if a TCP connection from `fromId` to `to`:`port` can be opened
+     * (a server listens there) — closed again right away. False on RST
+     * (port closed), no answer, or no route.
+     * @param {number} fromId @param {number|string} to @param {number} port
+     */
+    async tcpOpen(fromId, to, port) {
+        const from = this._computer(fromId);
+        const dstIp = this._resolveIp(to);
+        const timeout = new Promise((resolve) => simTimer.schedule(() => resolve(null), 2 * SimTimer.PING_TIMEOUT_MS));
+        try {
+            const conn = await Promise.race([from.net.connectTCPConn(dstIp, Number(port)), timeout]);
+            if (!conn) return false;
+            try { from.net.closeTCPConn(conn.key); } catch { /* already gone */ }
+            return true;
+        } catch {
+            return false;
+        }
     }
 
     /**

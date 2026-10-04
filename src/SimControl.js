@@ -170,6 +170,9 @@ export class SimControl {
     _toolsWrap = null;
 
     /** @type {HTMLDivElement|null} */
+    _zoomCtl = null;
+
+    /** @type {HTMLDivElement|null} */
     _tracerBody = null;
 
     /** @type {HTMLDivElement|null} */
@@ -384,6 +387,7 @@ export class SimControl {
         toolbar.className = "sim-toolbar";
         root.appendChild(toolbar);
         this._toolbar = toolbar;
+        new ResizeObserver(() => this._fitToolbar()).observe(toolbar);
 
         // Sim body (sidebar + nodes)
         const simbody = document.createElement("div");
@@ -1428,46 +1432,8 @@ export class SimControl {
             gProject.appendChild(btnSave);
         }
 
-        //******** ZOOM ***********/
-        addSeparator("sep-zoom");
-        const gZoom = UILib.buttongroup(t("sim.zoom"), toolbar);
-        gZoom.dataset.group = "zoom";
-
-        const btnZoomOut = UILib.iconbutton({
-            label: "−",
-            icon: "fa-magnifying-glass-minus",
-            onClick: () => {
-                const layer = this.nodesLayer;
-                if (!layer) return;
-                this._zoomAt(1 / 1.25, layer.clientWidth / 2, layer.clientHeight / 2);
-            },
-        });
-        btnZoomOut.dataset.role = "zoom-out";
-        btnZoomOut.title = t("sim.zoom.out");
-        gZoom.appendChild(btnZoomOut);
-
-        const btnFit = UILib.iconbutton({
-            label: t("sim.zoom.fit"),
-            icon: "fa-expand",
-            onClick: () => this._fitToContent(),
-        });
-        btnFit.dataset.role = "zoom-fit";
-        btnFit.title = t("sim.zoom.fit");
-        gZoom.appendChild(btnFit);
-
-        const btnZoomIn = UILib.iconbutton({
-            label: "+",
-            icon: "fa-magnifying-glass-plus",
-            onClick: () => {
-                const layer = this.nodesLayer;
-                if (!layer) return;
-                this._zoomAt(1.25, layer.clientWidth / 2, layer.clientHeight / 2);
-            },
-        });
-        btnZoomIn.dataset.role = "zoom-in";
-        btnZoomIn.title = t("sim.zoom.in");
-        gZoom.appendChild(btnZoomIn);
-
+        //******** ZOOM (floating on the canvas, not in the toolbar) ***********/
+        this._buildZoomControls();
 
         //******** TRACING ***********/
         addSeparator("sep-tracing");
@@ -1500,12 +1466,25 @@ export class SimControl {
 
         if (!this.embedded) {
             //******** COMMON ***********/
-            addSeparator("sep-common");
+            // Auto margin on this separator pushes Common + Lessons flush right.
+            addSeparator("sep-common").classList.add("sim-toolbar-sep--push-right");
             const gCommon = UILib.buttongroup(t("sim.common"), toolbar);
             gCommon.dataset.group = "common";
 
+            // Same as clicking the logo — not everyone guesses that the
+            // beaver leads back to the start (course, examples, …).
+            const homeBtn = UILib.iconbutton({
+                label: t("sim.home"),
+                icon: "fa-house",
+                iconOnly: true,
+                onClick: () => WelcomeDialog.show(this),
+            });
+            homeBtn.dataset.role = "home";
+            gCommon.appendChild(homeBtn);
+
             const langBtn = UILib.iconbutton({
                 label: t("sim.language"),
+                iconOnly: true,
                 icon: "fa-language",
                 onClick: (/** @type {MouseEvent} */ ev) => {
                     ev.preventDefault();
@@ -1518,6 +1497,7 @@ export class SimControl {
 
             const helpBtn = UILib.iconbutton({
                 label: t("sim.help"),
+                iconOnly: true,
                 icon: "fa-circle-question",
                 onClick: () => {
                     this.pause();
@@ -1531,6 +1511,7 @@ export class SimControl {
 
             const aboutBtn = UILib.iconbutton({
                 label: t("sim.about"),
+                iconOnly: true,
                 icon: "fa-circle-info",
                 onClick: () => {
                     this.pause();
@@ -1557,11 +1538,8 @@ export class SimControl {
         }
 
         if (!this.embedded) {
-            //******** LESSONS (own group, pushed to the far right) ***********/
-            // The auto margin goes on the separator (not the group) so it's
-            // the one that eats the remaining flex space — pushing both
-            // itself and the group after it flush to the toolbar's right edge.
-            addSeparator("sep-lessons").classList.add("sim-toolbar-sep--push-right");
+            //******** LESSONS (far right, after Common) ***********/
+            addSeparator("sep-lessons");
             const gLessons = UILib.buttongroup(t("sim.lessons"), toolbar);
             gLessons.dataset.group = "lessons";
 
@@ -1584,6 +1562,53 @@ export class SimControl {
             lessonsBtn.dataset.role = "lessons-toggle";
             gLessons.appendChild(lessonsBtn);
         }
+    }
+
+    /**
+     * Drop the labels of the middle-zone tools (icons + tooltips remain) only
+     * when the toolbar would otherwise overflow — label lengths differ a lot
+     * between languages, so a fixed width breakpoint can't decide this.
+     */
+    _fitToolbar() {
+        const toolbar = this._toolbar;
+        if (!toolbar) return;
+        toolbar.classList.remove("is-compact");
+        if (toolbar.scrollWidth > toolbar.clientWidth + 1) toolbar.classList.add("is-compact");
+    }
+
+    /**
+     * Zoom −/fit/+ as a small floating control in the canvas corner (like
+     * map apps). Lives in .sim-nodes, so it disappears with the canvas in
+     * trace/page mode. Rebuilt with the toolbar (language change).
+     */
+    _buildZoomControls() {
+        const layer = this.nodesLayer;
+        if (!layer) return;
+        this._zoomCtl?.remove();
+
+        const ctl = document.createElement("div");
+        ctl.className = "sim-zoom-ctl";
+        // Keep clicks here from reaching the canvas (pan, place, deselect).
+        for (const type of ["pointerdown", "pointerup", "click", "dblclick", "contextmenu"]) {
+            ctl.addEventListener(type, (ev) => ev.stopPropagation());
+        }
+
+        /** @param {number} factor */
+        const zoomCentre = (factor) => this._zoomAt(factor, layer.clientWidth / 2, layer.clientHeight / 2);
+
+        const items = [
+            ["zoom-in", t("sim.zoom.in"), "fa-plus", () => zoomCentre(1.25)],
+            ["zoom-out", t("sim.zoom.out"), "fa-minus", () => zoomCentre(1 / 1.25)],
+            ["zoom-fit", t("sim.zoom.fit"), "fa-expand", () => this._fitToContent()],
+        ];
+        for (const [role, label, icon, onClick] of /** @type {Array<[string, string, string, () => void]>} */ (items)) {
+            const b = UILib.iconbutton({ label, icon, iconOnly: true, onClick });
+            b.dataset.role = role;
+            ctl.appendChild(b);
+        }
+
+        layer.appendChild(ctl);
+        this._zoomCtl = ctl;
     }
 
     _buildSidebar() {
@@ -1817,19 +1842,12 @@ export class SimControl {
             // Save give way to the "adopt as my own simulation" button.
             const showProject = (this.mode === "edit" && !this.lessonsOpen);
             setHidden(toolbar.querySelector(`[data-role="lessons-adopt"]`), !this.lessonsOpen);
-            const showZoom    = (this.mode === "edit" || this.mode === "run");
 
             setHidden(speedsGroup, !showSpeeds);
             setHidden(sepSpeeds, !showSpeeds);
 
             setHidden(projectGroup, !showProject);
             setHidden(sepProject, !showProject);
-
-            const zoomInner = toolbar.querySelector(`[data-group="zoom"]`);
-            const zoomGroup = zoomInner?.closest(".sim-toolbar-group") ?? zoomInner;
-            const sepZoom   = toolbar.querySelector(`[data-role="sep-zoom"]`);
-            setHidden(zoomGroup, !showZoom);
-            setHidden(sepZoom, !showZoom);
 
             const showTracing = (this.mode === "trace");
             const tracingInner = toolbar.querySelector(`[data-group="tracing"]`);
@@ -1849,6 +1867,7 @@ export class SimControl {
                 setDisabled("tracing-follow", !this.pcapViewer.canFollowTcpStream());
             }
 
+            this._fitToolbar();
         }
 
         // sidebar tool actives
@@ -2046,9 +2065,13 @@ export class SimControl {
         this._langPanel = backdrop;
         (active ?? closeBtn).focus();
 
+        // Capture phase on window, so Esc closes only this dialog and not
+        // the welcome dialog it may have been opened from.
         /** @param {KeyboardEvent} ev */
         const onKey = (ev) => {
-            if (ev.key === "Escape") this._closeLanguageDialog();
+            if (ev.key !== "Escape") return;
+            ev.stopPropagation();
+            this._closeLanguageDialog();
         };
 
         backdrop.addEventListener("click", (ev) => {
@@ -2056,9 +2079,9 @@ export class SimControl {
         });
 
         this._langCleanup = () => {
-            window.removeEventListener("keydown", onKey);
+            window.removeEventListener("keydown", onKey, true);
         };
-        window.addEventListener("keydown", onKey);
+        window.addEventListener("keydown", onKey, true);
     }
 
     _closeLanguageDialog() {
@@ -2263,18 +2286,15 @@ export class SimControl {
             const targetEl = this._getHoverTargetEl(ev);
             this._clearDeleteHover();
 
-            if (link instanceof Link) {
-                ev.preventDefault();
-                ev.stopPropagation();
-                this.deleteObject(link);
-                return;
-            }
-            if (obj) {
-                ev.preventDefault();
-                ev.stopPropagation();
-                this.deleteObject(obj);
-                return;
-            }
+            const target = link instanceof Link ? link : obj;
+            if (!target) return;
+            ev.preventDefault();
+            ev.stopPropagation();
+            this.deleteObject(target);
+            // The delete tool stays active for the next object — unless
+            // there is nothing left to delete.
+            console.log("DBGDEL", this.simobjects.map(o => o.constructor.name).join(","));
+            if (this.simobjects.length === 0) this._resetEditTools();
             return;
         }
 
