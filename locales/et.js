@@ -583,6 +583,8 @@ export default {
   "sim.discardandloadwarning": "Kas hülgata praegune simulatsioon ja laadida teine?",
   "sim.langswitch.confirmdiscard": "Kas hülgata praegune simulatsioon ja vahetada keelt?",
   "sim.language": "Keel",
+  "sim.theme.dark": "Tume režiim",
+  "sim.theme.light": "Hele režiim",
   "sim.tool.link": "Link",
   "sim.tool.computer": "Arvuti",
   "sim.tool.rectangle": "Ristkülik",

@@ -686,6 +686,8 @@ export default {
   "sim.discardandloadwarning": "Të hidhet poshtë simulimi aktual dhe të ngarkohet një tjetër?",
   "sim.langswitch.confirmdiscard": "Të hidhet poshtë simulimi aktual dhe të ndërrohet gjuha?",
   "sim.language": "Gjuha",
+  "sim.theme.dark": "Modaliteti i errët",
+  "sim.theme.light": "Modaliteti i çelët",
   "sim.tool.link": "Lidhje",
   "sim.tool.computer": "Kompjuter",
   "sim.tool.rectangle": "Drejtkëndësh",

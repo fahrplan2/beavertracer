@@ -583,6 +583,8 @@ export default {
   "sim.discardandloadwarning": "Renunțați la simularea curentă și încărcați alta?",
   "sim.langswitch.confirmdiscard": "Renunțați la simularea curentă și schimbați limbile?",
   "sim.language": "Limbă",
+  "sim.theme.dark": "Mod întunecat",
+  "sim.theme.light": "Mod luminos",
   "sim.tool.link": "Legătură",
   "sim.tool.computer": "Calculator",
   "sim.tool.rectangle": "Dreptunghi",

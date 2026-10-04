@@ -583,6 +583,8 @@ export default {
   "sim.discardandloadwarning": "هل تريد التخلص من المحاكاة الحالية وتحميل محاكاة أخرى؟",
   "sim.langswitch.confirmdiscard": "هل تريد التخلص من المحاكاة الحالية وتبديل اللغات؟",
   "sim.language": "اللغة",
+  "sim.theme.dark": "الوضع الداكن",
+  "sim.theme.light": "الوضع الفاتح",
   "sim.tool.link": "ربط",
   "sim.tool.computer": "جهاز كمبيوتر",
   "sim.tool.rectangle": "مستطيل",

@@ -809,6 +809,8 @@ export default {
   "sim.discardandloadwarning": "Aktuelle Simulation verwerfen und eine andere laden?",
   "sim.langswitch.confirmdiscard": "Aktuelle Simulation verwerfen und Sprache wechseln?",
   "sim.language": "Sprache",
+  "sim.theme.dark": "Dunkler Modus",
+  "sim.theme.light": "Heller Modus",
   "sim.tool.link": "Verbindung",
   "sim.tool.computer": "Computer",
   "sim.tool.rectangle": "Rechteck",

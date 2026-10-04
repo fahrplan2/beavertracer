@@ -583,6 +583,8 @@ export default {
   "sim.discardandloadwarning": "Buang simulasi saat ini dan muat yang lain?",
   "sim.langswitch.confirmdiscard": "Buang simulasi saat ini dan ganti bahasa?",
   "sim.language": "Bahasa",
+  "sim.theme.dark": "Mode gelap",
+  "sim.theme.light": "Mode terang",
   "sim.tool.link": "Tautan",
   "sim.tool.computer": "Komputer",
   "sim.tool.rectangle": "Persegi Panjang",

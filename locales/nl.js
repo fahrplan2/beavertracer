@@ -583,6 +583,8 @@ export default {
   "sim.discardandloadwarning": "Huidige simulatie negeren en een ander laden?",
   "sim.langswitch.confirmdiscard": "Huidige simulatie negeren en van taal wisselen?",
   "sim.language": "Taal",
+  "sim.theme.dark": "Donkere modus",
+  "sim.theme.light": "Lichte modus",
   "sim.tool.link": "Link",
   "sim.tool.computer": "Computer",
   "sim.tool.rectangle": "Rechthoek",

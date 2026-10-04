@@ -583,6 +583,8 @@ export default {
   "sim.discardandloadwarning": "Hủy bỏ mô phỏng hiện tại và tải một mô phỏng khác?",
   "sim.langswitch.confirmdiscard": "Hủy bỏ mô phỏng hiện tại và chuyển đổi ngôn ngữ?",
   "sim.language": "Ngôn ngữ",
+  "sim.theme.dark": "Chế độ tối",
+  "sim.theme.light": "Chế độ sáng",
   "sim.tool.link": "Liên kết",
   "sim.tool.computer": "Máy tính",
   "sim.tool.rectangle": "Hình chữ nhật",

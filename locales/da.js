@@ -583,6 +583,8 @@ export default {
   "sim.discardandloadwarning": "Kassér nuværende simulation og indlæs en anden?",
   "sim.langswitch.confirmdiscard": "Kassér nuværende simulation og skift sprog?",
   "sim.language": "Sprog",
+  "sim.theme.dark": "Mørk tilstand",
+  "sim.theme.light": "Lys tilstand",
   "sim.tool.link": "Forbindelse",
   "sim.tool.computer": "Computer",
   "sim.tool.rectangle": "Rektangel",

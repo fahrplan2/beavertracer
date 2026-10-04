@@ -583,6 +583,8 @@ export default {
   "sim.discardandloadwarning": "Geçerli simülasyonu iptal et ve başka birini yükle?",
   "sim.langswitch.confirmdiscard": "Geçerli simülasyonu iptal et ve dili değiştir?",
   "sim.language": "Dil",
+  "sim.theme.dark": "Karanlık mod",
+  "sim.theme.light": "Aydınlık mod",
   "sim.tool.link": "Bağlantı",
   "sim.tool.computer": "Bilgisayar",
   "sim.tool.rectangle": "Dikdörtgen",

@@ -583,6 +583,8 @@ export default {
   "sim.discardandloadwarning": "Отхвърли текущата симулация и зареди друга?",
   "sim.langswitch.confirmdiscard": "Отхвърли текущата симулация и смени езика?",
   "sim.language": "Език",
+  "sim.theme.dark": "Тъмен режим",
+  "sim.theme.light": "Светъл режим",
   "sim.tool.link": "Връзка",
   "sim.tool.computer": "Компютър",
   "sim.tool.rectangle": "Правоъгълник",

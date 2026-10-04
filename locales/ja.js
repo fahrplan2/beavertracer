@@ -583,6 +583,8 @@ export default {
   "sim.discardandloadwarning": "現在のシミュレーションを破棄して別のファイルを読み込みますか?",
   "sim.langswitch.confirmdiscard": "現在のシミュレーションを破棄して言語を切り替えますか?",
   "sim.language": "言語",
+  "sim.theme.dark": "ダークモード",
+  "sim.theme.light": "ライトモード",
   "sim.tool.link": "リンク",
   "sim.tool.computer": "パソコン",
   "sim.tool.rectangle": "矩形",

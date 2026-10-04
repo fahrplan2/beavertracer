@@ -688,6 +688,8 @@ export default {
   "sim.discardandloadwarning": "放棄當前模擬並加載另一個？",
   "sim.langswitch.confirmdiscard": "放棄當前模擬並切換語言？",
   "sim.language": "語言",
+  "sim.theme.dark": "深色模式",
+  "sim.theme.light": "淺色模式",
   "sim.tool.link": "連結",
   "sim.tool.computer": "電腦",
   "sim.tool.rectangle": "矩形",

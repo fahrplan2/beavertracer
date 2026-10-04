@@ -583,6 +583,8 @@ export default {
   "sim.discardandloadwarning": "Відкинути поточну симуляцію та завантажити іншу?",
   "sim.langswitch.confirmdiscard": "Відкинути поточну симуляцію та змінити мову?",
   "sim.language": "Мова",
+  "sim.theme.dark": "Темна тема",
+  "sim.theme.light": "Світла тема",
   "sim.tool.link": "Лінія зв'язку",
   "sim.tool.computer": "Комп'ютер",
   "sim.tool.rectangle": "Прямокутник",

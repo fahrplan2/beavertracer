@@ -686,6 +686,8 @@ export default {
   "sim.discardandloadwarning": "Zahodiť aktuálnu simuláciu a načítať inú?",
   "sim.langswitch.confirmdiscard": "Zahodiť aktuálnu simuláciu a prepnúť jazyk?",
   "sim.language": "Jazyk",
+  "sim.theme.dark": "Tmavý režim",
+  "sim.theme.light": "Svetlý režim",
   "sim.tool.link": "Spojenie",
   "sim.tool.computer": "Počítač",
   "sim.tool.rectangle": "Obdĺžnik",

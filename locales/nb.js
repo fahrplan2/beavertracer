@@ -686,6 +686,8 @@ export default {
   "sim.discardandloadwarning": "Forkast gjeldende simulering og last inn en annen?",
   "sim.langswitch.confirmdiscard": "Forkast gjeldende simulering og bytt språk?",
   "sim.language": "Språk",
+  "sim.theme.dark": "Mørk modus",
+  "sim.theme.light": "Lys modus",
   "sim.tool.link": "Lenke",
   "sim.tool.computer": "Datamaskin",
   "sim.tool.rectangle": "Rektangel",

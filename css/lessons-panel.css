@@ -10,7 +10,7 @@
 .lesson-article {
   /* Fixed blue for the panel's action buttons (Check task/answers, load
      scenario) — independent of --primary-strong, which follows whatever
-     app theme is active (e.g. the "green" theme) rather than staying blue. */
+     app theme is active rather than staying blue. */
   --lesson-accent: var(--accent);
   --lesson-accent-hover: var(--accent-hover);
 

@@ -583,6 +583,8 @@ export default {
   "sim.discardandloadwarning": "Απόρριψη της τρέχουσας προσομοίωσης και φόρτωση μιας άλλης;",
   "sim.langswitch.confirmdiscard": "Απόρριψη της τρέχουσας προσομοίωσης και αλλαγή γλώσσας;",
   "sim.language": "Γλώσσα",
+  "sim.theme.dark": "Σκούρο θέμα",
+  "sim.theme.light": "Φωτεινό θέμα",
   "sim.tool.link": "Σύνδεσμος",
   "sim.tool.computer": "Υπολογιστής",
   "sim.tool.rectangle": "Ορθογώνιο",

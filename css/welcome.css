@@ -157,6 +157,11 @@
   background: var(--danger-soft);
 }
 
+/* --danger-soft is dark in dark mode: light red text instead */
+[data-theme="dark"] .welcome-stage--alpha {
+  color: color-mix(in oklch, var(--danger), white 50%);
+}
+
 .welcome-stage--beta {
   color: var(--warning-strong);
   background: var(--warning-tint);

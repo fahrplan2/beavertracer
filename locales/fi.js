@@ -583,6 +583,8 @@ export default {
   "sim.discardandloadwarning": "Hylätään nykyinen simulaatio ja ladataan toinen?",
   "sim.langswitch.confirmdiscard": "Hylätään nykyinen simulaatio ja vaihdetaan kieli?",
   "sim.language": "Kieli",
+  "sim.theme.dark": "Tumma tila",
+  "sim.theme.light": "Vaalea tila",
   "sim.tool.link": "Linkki",
   "sim.tool.computer": "Tietokone",
   "sim.tool.rectangle": "Suorakulmio",

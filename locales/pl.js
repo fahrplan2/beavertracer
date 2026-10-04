@@ -583,6 +583,8 @@ export default {
   "sim.discardandloadwarning": "Odrzucić bieżącą symulację i załadować inną?",
   "sim.langswitch.confirmdiscard": "Odrzucić bieżącą symulację i zmienić język?",
   "sim.language": "Język",
+  "sim.theme.dark": "Tryb ciemny",
+  "sim.theme.light": "Tryb jasny",
   "sim.tool.link": "Łącze",
   "sim.tool.computer": "Komputer",
   "sim.tool.rectangle": "Prostokąt",

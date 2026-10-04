@@ -583,6 +583,8 @@ export default {
   "sim.discardandloadwarning": "Atmesti esamą simuliaciją ir atidaryti kitą?",
   "sim.langswitch.confirmdiscard": "Atmesti esamą simuliaciją ir pakeisti kalbą?",
   "sim.language": "Kalba",
+  "sim.theme.dark": "Tamsus režimas",
+  "sim.theme.light": "Šviesus režimas",
   "sim.tool.link": "Ryšys",
   "sim.tool.computer": "Kompiuteris",
   "sim.tool.rectangle": "Stačiakampis",

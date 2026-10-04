@@ -588,6 +588,8 @@ export default {
   "sim.discardandloadwarning": "Descartar simulação atual e carregar outra?",
   "sim.langswitch.confirmdiscard": "Descartar simulação atual e mudar de idioma?",
   "sim.language": "Idioma",
+  "sim.theme.dark": "Modo escuro",
+  "sim.theme.light": "Modo claro",
   "sim.tool.link": "Ligação",
   "sim.tool.computer": "Computador",
   "sim.tool.rectangle": "Retângulo",

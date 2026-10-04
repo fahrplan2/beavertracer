@@ -583,6 +583,8 @@ export default {
   "sim.discardandloadwarning": "شبیه‌سازی فعلی را رها کنید و یک شبیه‌سازی دیگر را بارگیری کنید؟",
   "sim.langswitch.confirmdiscard": "شبیه‌سازی فعلی را رها کنید و زبان را تغییر دهید؟",
   "sim.language": "زبان",
+  "sim.theme.dark": "حالت تیره",
+  "sim.theme.light": "حالت روشن",
   "sim.tool.link": "پیوند",
   "sim.tool.computer": "رایانه",
   "sim.tool.rectangle": "مستطیل",

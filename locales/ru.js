@@ -583,6 +583,8 @@ export default {
   "sim.discardandloadwarning": "Отменить текущее моделирование и загрузить другое?",
   "sim.langswitch.confirmdiscard": "Отменить текущее моделирование и переключить язык?",
   "sim.language": "Язык",
+  "sim.theme.dark": "Тёмная тема",
+  "sim.theme.light": "Светлая тема",
   "sim.tool.link": "Связь",
   "sim.tool.computer": "Компьютер",
   "sim.tool.rectangle": "Прямоугольник",

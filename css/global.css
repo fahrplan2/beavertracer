@@ -122,8 +122,13 @@
   --primary-soft:  color-mix(in oklch, var(--primary), oklch(16% 0.014 210) 78%);
   --primary-tint:  color-mix(in oklch, var(--primary), oklch(16% 0.014 210) 88%);
   --ok-tint:       color-mix(in oklch, var(--ok),      oklch(16% 0.014 210) 88%);
-  --warning-soft:  color-mix(in oklch, var(--warning),  oklch(16% 0.014 210) 78%);
   --danger-tint:   color-mix(in oklch, var(--danger),   oklch(16% 0.014 210) 88%);
+  /* -soft = callout backgrounds (light text on top). Mixed in oklab, not
+     oklch: an oklch mix rotates the hue toward the petrol base, which
+     turned the amber warning box teal. */
+  --ok-soft:       color-mix(in oklab, var(--ok),      oklch(16% 0.014 210) 78%);
+  --warning-soft:  color-mix(in oklab, var(--warning),  oklch(16% 0.014 210) 78%);
+  --danger-soft:   color-mix(in oklab, var(--danger),   oklch(16% 0.014 210) 78%);
 
   --ui-active:        oklch(24% 0.016 210);
   --ui-active-border: var(--primary);
@@ -136,40 +141,6 @@
   --accent-hover: oklch(74% 0.10 200);
   --accent-text: oklch(16% 0.02 210);
   --blue: #6f8cff; /* navy would vanish on dark ground */
-}
-
-[data-theme="green"] {
-  --primary: oklch(75% 0.22 145);
-
-  --bg:             #000000;
-  --bg1:            oklch(8%  0.025 145);
-  --bg2:            oklch(12% 0.030 145);
-  --bg-strong:      oklch(10% 0.020 145);
-
-  --surface:        oklch(16% 0.040 145);
-  --surface-strong: oklch(14% 0.035 145);
-
-  --text:   oklch(82% 0.18 145);
-  --border: oklch(28% 0.060 145);
-  --grey:   oklch(20% 0.020 145);
-
-  --shadow:      0 10px 24px rgba(0, 0, 0, 0.70);
-  --shadow-soft: 0 6px 14px rgba(0, 0, 0, 0.50);
-
-  --primary-soft:  color-mix(in oklch, var(--primary), #000 78%);
-  --primary-tint:  color-mix(in oklch, var(--primary), #000 88%);
-  --ok-tint:       color-mix(in oklch, var(--ok),      #000 88%);
-  --warning-soft:  color-mix(in oklch, var(--warning),  #000 78%);
-  --danger-tint:   color-mix(in oklch, var(--danger),   #000 88%);
-
-  --ui-active:        oklch(14% 0.040 145);
-  --ui-active-border: var(--primary);
-  --ui-card:          oklch(12% 0.035 145);
-  --ui-card-hover:    oklch(18% 0.045 145);
-  --ui-btn:           var(--ui-card);
-  --ui-btn-hover:     var(--ui-card-hover);
-
-  --blue: oklch(68% 0.18 145);
 }
 
 html { font-size: 100%; }

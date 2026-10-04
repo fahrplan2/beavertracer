@@ -686,6 +686,8 @@ export default {
   "sim.discardandloadwarning": "Elveti az aktuális szimulációt és egy másikat betölt?",
   "sim.langswitch.confirmdiscard": "Elveti az aktuális szimulációt és nyelveket vált?",
   "sim.language": "Nyelv",
+  "sim.theme.dark": "Sötét mód",
+  "sim.theme.light": "Világos mód",
   "sim.tool.link": "Kapcsolat",
   "sim.tool.computer": "Számítógép",
   "sim.tool.rectangle": "Téglalap",

@@ -1495,6 +1495,31 @@ export class SimControl {
             langBtn.dataset.role = "lang";
             gCommon.appendChild(langBtn);
 
+            // Light/dark toggle: shows what a click switches *to* (moon in
+            // light mode). Light stays the default; the choice is saved.
+            const themeBtn = UILib.iconbutton({
+                label: "",
+                iconOnly: true,
+                icon: "fa-moon",
+                onClick: () => {
+                    const dark = document.documentElement.dataset.theme !== "dark";
+                    document.documentElement.dataset.theme = dark ? "dark" : "light";
+                    try { localStorage.setItem("sim_theme", dark ? "dark" : "light"); } catch { /* storage blocked */ }
+                    syncThemeBtn();
+                },
+            });
+            const syncThemeBtn = () => {
+                const dark = document.documentElement.dataset.theme === "dark";
+                const icon = themeBtn.querySelector("i");
+                icon?.classList.toggle("fa-moon", !dark);
+                icon?.classList.toggle("fa-sun", dark);
+                themeBtn.title = t(dark ? "sim.theme.light" : "sim.theme.dark");
+                themeBtn.setAttribute("aria-label", themeBtn.title);
+            };
+            syncThemeBtn();
+            themeBtn.dataset.role = "theme";
+            gCommon.appendChild(themeBtn);
+
             const helpBtn = UILib.iconbutton({
                 label: t("sim.help"),
                 iconOnly: true,

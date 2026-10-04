@@ -583,6 +583,8 @@ export default {
   "sim.discardandloadwarning": "Atmest pašreizējo simulāciju un ielādēt citu?",
   "sim.langswitch.confirmdiscard": "Atmest pašreizējo simulāciju un pārslēgt valodu?",
   "sim.language": "Valoda",
+  "sim.theme.dark": "Tumšais režīms",
+  "sim.theme.light": "Gaišais režīms",
   "sim.tool.link": "Saite",
   "sim.tool.computer": "Dators",
   "sim.tool.rectangle": "Taisnstūris",
