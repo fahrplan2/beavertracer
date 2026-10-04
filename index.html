@@ -20,8 +20,13 @@
       (function () {
         const p = new URLSearchParams(location.search);
 
-        const theme = p.get("theme");
-        if (theme === "dark" || theme === "light" || theme === "green")
+        // Light by default (no prefers-color-scheme): dark only when asked
+        // for — via ?theme= or the toolbar toggle (saved as sim_theme).
+        let theme = p.get("theme");
+        if (theme !== "dark" && theme !== "light") {
+          try { theme = localStorage.getItem("sim_theme"); } catch { theme = null; }
+        }
+        if (theme === "dark" || theme === "light")
           document.documentElement.dataset.theme = theme;
 
         const hue = parseFloat(p.get("hue"));
@@ -80,7 +85,6 @@
         transition: opacity 600ms ease;
       }
       [data-theme="dark"]  #splash { background: oklch(14% 0.012 210); }
-      [data-theme="green"] #splash { background: #000000; }
       #splash.is-hiding { opacity: 0; pointer-events: none; }
       #splash img {
         animation: splash-pulse 1.8s ease-in-out infinite;
@@ -105,10 +109,6 @@
       [data-theme="dark"]  .splash-spinner {
         border-color: rgba(255,255,255,.12);
         border-top-color: rgba(255,255,255,.55);
-      }
-      [data-theme="green"] .splash-spinner {
-        border-color: rgba(0,255,80,.12);
-        border-top-color: rgba(0,255,80,.70);
       }
       @keyframes splash-spin { to { transform: rotate(360deg); } }
     </style>
