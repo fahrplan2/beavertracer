@@ -1132,6 +1132,7 @@ export default {
   "router.rip.tab.config": "Cấu hình",
   "router.rip.tab.log": "Nhật ký",
   "sim.welcome": "Chào mừng",
+  "sim.home": "Trang bắt đầu",
   "sim.resetwarning": "Đặt lại mô phỏng?\n\nTất cả các bộ đệm và trạng thái động sẽ được đặt lại (ARP, SAT, định tuyến, kết nối TCP, DNS, v.v.).",
   "router.pd6.tab": "DHCPv6-PD",
   "router.pd6.server.tab": "Máy chủ",

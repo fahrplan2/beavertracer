@@ -1131,6 +1131,7 @@ export default {
   "os.apps.category.client": "Klientprogramvare",
   "os.apps.category.server": "Serverprogramvare",
   "sim.welcome": "Velkommen",
+  "sim.home": "Startside",
   "sim.resetwarning": "Tilbakestille simulering?\n\nAlle hurtigminne og dynamisk tilstand vil bli tilbakestilt (ARP, SAT, ruting, TCP-tilkoblinger, DNS osv.).",
   "router.pd6.tab": "DHCPv6-PD",
   "router.pd6.server.tab": "Server",

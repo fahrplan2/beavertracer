@@ -1131,6 +1131,7 @@ export default {
   "os.apps.category.client": "Ügyfélszoftver",
   "os.apps.category.server": "Szervezőszoftver",
   "sim.welcome": "Üdvözöljük",
+  "sim.home": "Kezdőlap",
   "sim.resetwarning": "Szimulálás alaphelyzetbe állítása?\n\nAz összes gyorsítótár és dinamikus állapot alaphelyzetbe áll (ARP, SAT, routing, TCP-kapcsolatok, DNS, stb.).",
   "router.pd6.tab": "DHCPv6-PD",
   "router.pd6.server.tab": "Kiszolgáló",

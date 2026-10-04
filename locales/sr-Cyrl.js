@@ -1131,6 +1131,7 @@ export default {
   "os.apps.category.client": "Клијентски софтвер",
   "os.apps.category.server": "Серверски софтвер",
   "sim.welcome": "Добро дошли",
+  "sim.home": "Почетна страница",
   "sim.resetwarning": "Ресетовати симулацију?\n\nСве кеш меморије и динамичко стање ће бити ресетовано (ARP, SAT, рутирање, TCP конекције, DNS, итд.).",
   "router.pd6.tab": "DHCPv6-PD",
   "router.pd6.server.tab": "Сервер",

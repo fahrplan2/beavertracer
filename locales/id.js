@@ -1132,6 +1132,7 @@ export default {
   "router.rip.tab.config": "Konfigurasi",
   "router.rip.tab.log": "Log",
   "sim.welcome": "Selamat Datang",
+  "sim.home": "Halaman awal",
   "sim.resetwarning": "Reset simulasi?\n\nSemua cache dan state dinamis akan direset (ARP, SAT, routing, koneksi TCP, DNS, dll).",
   "router.pd6.tab": "DHCPv6-PD",
   "router.pd6.server.tab": "Server",

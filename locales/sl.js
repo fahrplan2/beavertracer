@@ -1132,6 +1132,7 @@ export default {
   "router.rip.tab.config": "Konfiguracija",
   "router.rip.tab.log": "Dnevnik",
   "sim.welcome": "Dobrodošli",
+  "sim.home": "Začetna stran",
   "sim.resetwarning": "Ponastaviti simulacijo?\n\nVsi predpomnilniki in dinamično stanje bodo ponastavljeni (ARP, SAT, usmerjevanje, TCP povezave, DNS itd.).",
   "router.pd6.tab": "DHCPv6-PD",
   "router.pd6.server.tab": "Strežnik",

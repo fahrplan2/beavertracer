@@ -1131,6 +1131,7 @@ export default {
   "os.apps.category.client": "Software Client",
   "os.apps.category.server": "Software Servidor",
   "sim.welcome": "Benvingut",
+  "sim.home": "Pàgina d'inici",
   "sim.resetwarning": "Voleu reiniciar la simulació?\n\nTotes les memòries cau i l'estat dinàmic es reiniciaran (ARP, SAT, encaminament, connexions TCP, DNS, etc.).",
   "router.pd6.tab": "DHCPv6-PD",
   "router.pd6.server.tab": "Servidor",

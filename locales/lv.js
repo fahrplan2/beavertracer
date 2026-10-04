@@ -1132,6 +1132,7 @@ export default {
   "router.rip.tab.config": "Konfigurācija",
   "router.rip.tab.log": "Žurnāls",
   "sim.welcome": "Sveiki",
+  "sim.home": "Sākumlapa",
   "sim.resetwarning": "Pārstartēt simulāciju?\n\nVisas kešatmiņas un dinamiskas stāvokļi tiks atiestatīti (ARP, SAT, maršrutēšana, TCP savienojumi, DNS utt.).",
   "router.pd6.tab": "DHCPv6-PD",
   "router.pd6.server.tab": "Serveris",

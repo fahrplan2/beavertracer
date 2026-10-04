@@ -1132,6 +1132,7 @@ export default {
   "router.rip.tab.config": "Konfiguracja",
   "router.rip.tab.log": "Dziennik",
   "sim.welcome": "Witaj",
+  "sim.home": "Strona startowa",
   "sim.resetwarning": "Zresetować symulację?\n\nWszystkie pamięci podręczne i stan dynamiczny zostaną zresetowane (ARP, SAT, routing, połączenia TCP, DNS, itp.).",
   "router.pd6.tab": "DHCPv6-PD",
   "router.pd6.server.tab": "Serwer",

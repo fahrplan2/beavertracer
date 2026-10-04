@@ -1132,6 +1132,7 @@ export default {
   "router.rip.tab.config": "設定",
   "router.rip.tab.log": "ログ",
   "sim.welcome": "ようこそ",
+  "sim.home": "スタートページ",
   "sim.resetwarning": "シミュレーションをリセットしますか？\n\nすべてのキャッシュと動的状態がリセットされます（ARP、SAT、ルーティング、TCP接続、DNS等）。",
   "router.pd6.tab": "DHCPv6-PD",
   "router.pd6.server.tab": "サーバー",

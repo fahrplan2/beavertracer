@@ -1132,6 +1132,7 @@ export default {
   "router.rip.tab.config": "Конфігурація",
   "router.rip.tab.log": "Журнал",
   "sim.welcome": "Ласкаво просимо",
+  "sim.home": "Початкова сторінка",
   "sim.resetwarning": "Скинути симуляцію?\n\nУсі кеші та динамічний стан будуть скинуті (ARP, SAT, маршрутизація, TCP-з'єднання, DNS тощо).",
   "router.pd6.tab": "DHCPv6-PD",
   "router.pd6.server.tab": "Сервер",

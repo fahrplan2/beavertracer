@@ -1132,6 +1132,7 @@ export default {
   "router.rip.tab.config": "Configurare",
   "router.rip.tab.log": "Jurnal",
   "sim.welcome": "Bun venit",
+  "sim.home": "Pagina de start",
   "sim.resetwarning": "Resetați simularea?\n\nToate cache-urile și starea dinamică vor fi resetate (ARP, SAT, rutare, conexiuni TCP, DNS, etc.).",
   "router.pd6.tab": "DHCPv6-PD",
   "router.pd6.server.tab": "Server",

@@ -1137,6 +1137,7 @@ export default {
   "router.rip.tab.config": "Configurazione",
   "router.rip.tab.log": "Registro",
   "sim.welcome": "Benvenuto",
+  "sim.home": "Pagina iniziale",
   "sim.resetwarning": "Ripristinare la simulazione?\n\nTutte le cache e lo stato dinamico verranno ripristinati (ARP, SAT, routing, connessioni TCP, DNS, ecc.).",
   "router.pd6.tab": "DHCPv6-PD",
   "router.pd6.server.tab": "Server",

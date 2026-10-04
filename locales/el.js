@@ -1132,6 +1132,7 @@ export default {
   "router.rip.tab.config": "Ρύθμιση",
   "router.rip.tab.log": "Αρχείο καταγραφής",
   "sim.welcome": "Καλώς ήρθατε",
+  "sim.home": "Αρχική σελίδα",
   "sim.resetwarning": "Επαναφορά προσομοίωσης;\n\nΌλες οι μνήμες cache και η δυναμική κατάσταση θα επαναφερθούν (ARP, SAT, δρομολόγηση, συνδέσεις TCP, DNS, κ.λπ.).",
   "router.pd6.tab": "DHCPv6-PD",
   "router.pd6.server.tab": "Διακομιστής",

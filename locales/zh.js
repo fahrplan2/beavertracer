@@ -1132,6 +1132,7 @@ export default {
   "router.rip.tab.config": "配置",
   "router.rip.tab.log": "日志",
   "sim.welcome": "欢迎",
+  "sim.home": "起始页",
   "sim.resetwarning": "重置仿真?\n\n所有缓存和动态状态将被重置 (ARP, SAT, 路由, TCP 连接, DNS, 等)。",
   "router.pd6.tab": "DHCPv6-PD",
   "router.pd6.server.tab": "服务器",

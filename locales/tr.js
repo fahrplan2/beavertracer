@@ -1132,6 +1132,7 @@ export default {
   "router.rip.tab.config": "Yapılandırma",
   "router.rip.tab.log": "Günlük",
   "sim.welcome": "Hoş Geldiniz",
+  "sim.home": "Başlangıç sayfası",
   "sim.resetwarning": "Simülasyonu sıfırla?\n\nTüm önbellekler ve dinamik durum sıfırlanacaktır (ARP, SAT, yönlendirme, TCP bağlantıları, DNS, vb.).",
   "router.pd6.tab": "DHCPv6-PD",
   "router.pd6.server.tab": "Sunucu",

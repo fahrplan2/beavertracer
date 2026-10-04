@@ -1132,6 +1132,7 @@ export default {
   "router.rip.tab.config": "الإعدادات",
   "router.rip.tab.log": "السجل",
   "sim.welcome": "مرحباً",
+  "sim.home": "الصفحة الرئيسية",
   "sim.resetwarning": "إعادة تعيين المحاكاة؟\n\nسيتم إعادة تعيين جميع ذاكرات التخزين المؤقت والحالة الديناميكية (ARP, SAT, التوجيه, اتصالات TCP, DNS، إلخ).",
   "router.pd6.tab": "DHCPv6-PD",
   "router.pd6.server.tab": "الخادم",

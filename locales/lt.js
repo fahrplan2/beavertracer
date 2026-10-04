@@ -1132,6 +1132,7 @@ export default {
   "router.rip.tab.config": "Konfigūracija",
   "router.rip.tab.log": "Žurnalas",
   "sim.welcome": "Sveiki",
+  "sim.home": "Pradžios puslapis",
   "sim.resetwarning": "Iš naujo nustatyti simuliaciją?\n\nVisos talpyklos ir dinaminė būsena bus iš naujo nustatyta (ARP, SAT, maršrutizavimas, TCP ryšiai, DNS ir kt.).",
   "router.pd6.tab": "DHCPv6-PD",
   "router.pd6.server.tab": "Serveris",

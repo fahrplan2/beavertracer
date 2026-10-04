@@ -1132,6 +1132,7 @@ export default {
   "router.rip.tab.config": "Konfiguration",
   "router.rip.tab.log": "Log",
   "sim.welcome": "Velkommen",
+  "sim.home": "Startside",
   "sim.resetwarning": "Nulstil simulering?\n\nAlle cacher og dynamisk tilstand vil blive nulstillet (ARP, SAT, routing, TCP-forbindelser, DNS osv.).",
   "router.pd6.tab": "DHCPv6-PD",
   "router.pd6.server.tab": "Server",

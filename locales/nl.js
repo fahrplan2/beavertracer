@@ -1132,6 +1132,7 @@ export default {
   "router.rip.tab.config": "Configuratie",
   "router.rip.tab.log": "Logboek",
   "sim.welcome": "Welkom",
+  "sim.home": "Startpagina",
   "sim.resetwarning": "Simulatie resetten?\n\nAlle caches en dynamische status worden opnieuw ingesteld (ARP, SAT, routering, TCP-verbindingen, DNS, enz.).",
   "router.pd6.tab": "DHCPv6-PD",
   "router.pd6.server.tab": "Server",

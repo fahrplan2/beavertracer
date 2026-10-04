@@ -1132,6 +1132,7 @@ export default {
   "router.rip.tab.config": "تنظیمات",
   "router.rip.tab.log": "گزارش",
   "sim.welcome": "خوش آمدید",
+  "sim.home": "صفحه شروع",
   "sim.resetwarning": "شبیه‌سازی را بازنشانی کنید؟\n\nتمام کش‌ها و وضعیت پویا بازنشانی خواهند شد (ARP، SAT، مسیریابی، اتصالات TCP، DNS و غیره).",
   "router.pd6.tab": "DHCPv6-PD",
   "router.pd6.server.tab": "سرور",

@@ -1132,6 +1132,7 @@ export default {
   "router.rip.tab.config": "Konfigurace",
   "router.rip.tab.log": "Protokol",
   "sim.welcome": "Vítejte",
+  "sim.home": "Úvodní stránka",
   "sim.resetwarning": "Resetovat simulaci?\n\nVšechny mezipaměti a dynamický stav budou resetovány (ARP, SAT, směrování, TCP připojení, DNS atd.).",
   "router.pd6.tab": "DHCPv6-PD",
   "router.pd6.server.tab": "Server",

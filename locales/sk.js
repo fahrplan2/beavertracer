@@ -1131,6 +1131,7 @@ export default {
   "os.apps.category.client": "Klientsky softvér",
   "os.apps.category.server": "Serverový softvér",
   "sim.welcome": "Vitajte",
+  "sim.home": "Úvodná stránka",
   "sim.resetwarning": "Resetovať simuláciu?\n\nVšetky vyrovnávacie pamäte a dynamický stav budú resetovaní (ARP, SAT, smerovanie, TCP spojenia, DNS atď.).",
   "router.pd6.tab": "DHCPv6-PD",
   "router.pd6.server.tab": "Server",

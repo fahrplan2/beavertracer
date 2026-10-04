@@ -1166,6 +1166,7 @@ export default {
   "os.apps.category.client": "Logiciels clients",
   "os.apps.category.server": "Logiciels serveurs",
   "sim.welcome": "Bienvenue",
+  "sim.home": "Page d'accueil",
   "sim.resetwarning": "Réinitialiser la simulation ?\n\nTous les caches et états dynamiques seront réinitialisés (ARP, SAT, routage, connexions TCP, DNS, etc.).",
   "router.pd6.tab": "DHCPv6-PD",
   "router.pd6.server.tab": "Serveur",

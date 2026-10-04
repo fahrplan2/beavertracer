@@ -1131,6 +1131,7 @@ export default {
   "os.apps.category.client": "Softueri i Klientit",
   "os.apps.category.server": "Softueri i Serverit",
   "sim.welcome": "Mirësevini",
+  "sim.home": "Faqja kryesore",
   "sim.resetwarning": "Rivendosni simulimin?\n\nTë gjitha caches dhe gjendja dinamike do të rivendosen (ARP, SAT, rutim, lidhje TCP, DNS, etj.).",
   "router.pd6.tab": "DHCPv6-PD",
   "router.pd6.server.tab": "Server",

@@ -1132,6 +1132,7 @@ export default {
   "router.rip.tab.config": "구성",
   "router.rip.tab.log": "로그",
   "sim.welcome": "환영합니다",
+  "sim.home": "시작 페이지",
   "sim.resetwarning": "시뮬레이션을 초기화하시겠습니까?\n\n모든 캐시 및 동적 상태가 초기화됩니다(ARP, SAT, 라우팅, TCP 연결, DNS 등).",
   "router.pd6.tab": "DHCPv6-PD",
   "router.pd6.server.tab": "서버",

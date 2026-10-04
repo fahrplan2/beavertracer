@@ -1132,6 +1132,7 @@ export default {
   "router.rip.tab.config": "Asetukset",
   "router.rip.tab.log": "Loki",
   "sim.welcome": "Tervetuloa",
+  "sim.home": "Aloitussivu",
   "sim.resetwarning": "Nollaa simulaatio?\n\nKaikki välimuistit ja dynaamiset tilat nollataan (ARP, SAT, reititys, TCP-yhteydet, DNS jne.).",
   "router.pd6.tab": "DHCPv6-PD",
   "router.pd6.server.tab": "Palvelin",
