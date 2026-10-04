@@ -1,4 +1,4 @@
-# Layer 5–7 — Anwendungsschicht
+# Schicht 5–7: Anwendungsschicht
 
 :::draft
 :::

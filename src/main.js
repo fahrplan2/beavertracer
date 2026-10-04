@@ -58,13 +58,9 @@ initLocale(bootParams.lang).then(async () => {
     }
 
     // ?lesson=<href> deep link — jump straight to that lesson instead of
-    // showing the welcome dialog. Load it *before* opening the panel: that
-    // way toggleLessonsPanel()'s own "load the first lesson if nothing is
-    // shown yet" (ensureLoaded()) sees _currentHref already set and skips,
-    // instead of racing this fetch for what ends up in the panel.
+    // showing the welcome dialog.
     if (lesson && !embedded) {
-        await sim.lessonsPanel?.load(lesson);
-        sim.toggleLessonsPanel(true);
+        await sim.lessonsPanel?.open(lesson);
     } else if (!simParam && !embedded) {
         WelcomeDialog.show(sim);
     }

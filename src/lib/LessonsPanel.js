@@ -1,24 +1,34 @@
 //@ts-check
 import { t, getLocale } from "../i18n/index.js";
 import { SimDialog } from "./SimDialog.js";
+import { addScrollHints } from "./scrollHints.js";
 import { initQuizBlocks } from "./QuizInteractions.js";
 import { CheckApi } from "../lessons/CheckApi.js";
-import { setParam } from "./AppUrl.js";
+import { setParam, clearParams } from "./AppUrl.js";
 
-const WIDTH_STORAGE_KEY = "bt.lessonsPanelWidth";
+// Stored as a percentage of the app's width (not px), so the panel keeps
+// its share of the screen across window sizes. Default: half (see sim.css).
+const WIDTH_STORAGE_KEY = "bt.lessonsPanelWidthPct";
 const MIN_WIDTH = 280;
-const DEFAULT_WIDTH = 380;
+const MAX_WIDTH_FRACTION = 0.7;
+const PROGRESS_STORAGE_KEY = "bt.lessonsProgress";
 
 /** Thrown for a 404 — distinguished from other failures so the panel can
  *  show "not available in your language" instead of a generic load error. */
 class LessonNotFoundError extends Error {}
 
+/** @typedef {{url: string}|{empty: true}} LessonSim a page's ":::sim" declaration */
+/** @typedef {{href: string, title: string, num: number[]|null, draft?: boolean, sim?: LessonSim|null}} LessonPage */
+/** @typedef {{first: string, pages: LessonPage[]}} LessonManifest */
+
 /**
  * Fetches lesson content (built by vite-plugin-lessons.mjs as per-page .json
  * files alongside the standalone HTML) and renders it into the docked
- * lessons panel of a live SimControl instance. Also wires "::: sim" launch
- * buttons to load the referenced scenario directly into that same
- * SimControl, intercepts in-lesson navigation links so browsing lessons
+ * lessons panel of a live SimControl instance, with prev/overview/next
+ * buttons above and below each lesson. The chapter overview itself lives in
+ * the welcome dialog (see ChapterOverview.js, SimControl.showChapterOverview). Each page's simulation (its own ":::sim" or the nearest preceding
+ * page's) is loaded into that same SimControl automatically on every page
+ * change, so every page starts from a known state. Also intercepts in-lesson navigation links so browsing lessons
  * never leaves/reloads the app, and makes the panel's width draggable.
  */
 export class LessonsPanel {
@@ -30,11 +40,21 @@ export class LessonsPanel {
         /** @type {string|null} href of the currently displayed lesson, e.g. "01-einfuehrung.html" */
         this._currentHref = null;
 
-        /** @type {{first: string, pages: {href: string, title: string, num: number[]|null}[]}|null} */
+        /** @type {LessonManifest|null} */
         this._manifest = null;
 
-        /** @type {HTMLSelectElement|null} */
-        this._navSelect = null;
+        /** @type {HTMLSpanElement|null} */
+        this._currentLabel = null;
+
+        /** @type {HTMLButtonElement|null} */
+        this._resetBtn = null;
+
+        /** @type {HTMLButtonElement|null} */
+        this._prevBtn = null;
+
+        /** @type {HTMLButtonElement|null} */
+        this._nextBtn = null;
+
 
         // _quiz.js reads its "N of M points" i18n templates off document.body's
         // dataset. Those keys (lessons.quiz.result.*) live in the same locale
@@ -45,7 +65,9 @@ export class LessonsPanel {
 
         const mount = this.simControl.lessonsMount;
         mount?.addEventListener("click", (ev) => this._onClick(/** @type {MouseEvent} */ (ev)));
+        if (mount) addScrollHints(mount);
 
+        this._buildHeader();
         this._restorePanelWidth();
         this._wireResizeHandle();
     }
@@ -54,9 +76,10 @@ export class LessonsPanel {
     _restorePanelWidth() {
         const root = this.simControl.root;
         if (!root) return;
-        const saved = Number(localStorage.getItem(WIDTH_STORAGE_KEY));
-        if (Number.isFinite(saved) && saved >= MIN_WIDTH) {
-            root.style.setProperty("--lessons-width", `${saved}px`);
+        let saved = NaN;
+        try { saved = Number(localStorage.getItem(WIDTH_STORAGE_KEY)); } catch { /* storage blocked */ }
+        if (Number.isFinite(saved) && saved > 0 && saved <= MAX_WIDTH_FRACTION * 100) {
+            root.style.setProperty("--lessons-width", `${saved}%`);
         }
     }
 
@@ -69,8 +92,9 @@ export class LessonsPanel {
         handle.addEventListener("pointerdown", (/** @type {PointerEvent} */ ev) => {
             ev.preventDefault();
             const startX = ev.clientX;
-            const startWidth = this.simControl.lessonsPanelEl?.getBoundingClientRect().width ?? DEFAULT_WIDTH;
-            const maxWidth = Math.min(1400, root.getBoundingClientRect().width * 0.7);
+            const rootWidth = root.getBoundingClientRect().width;
+            const startWidth = this.simControl.lessonsPanelEl?.getBoundingClientRect().width ?? rootWidth / 2;
+            const maxWidth = rootWidth * MAX_WIDTH_FRACTION;
 
             root.classList.add("lessons-resizing");
             handle.setPointerCapture?.(ev.pointerId);
@@ -93,8 +117,13 @@ export class LessonsPanel {
                 document.body.style.cursor = "";
                 document.body.style.userSelect = "";
 
-                const finalWidth = parseFloat(root.style.getPropertyValue("--lessons-width")) || DEFAULT_WIDTH;
-                localStorage.setItem(WIDTH_STORAGE_KEY, String(Math.round(finalWidth)));
+                // px while dragging (follows the pointer exactly), then
+                // converted to a share of the app's width for storage.
+                const finalPx = parseFloat(root.style.getPropertyValue("--lessons-width"));
+                if (!finalPx || !rootWidth) return;
+                const pct = Math.round((finalPx / rootWidth) * 1000) / 10;
+                root.style.setProperty("--lessons-width", `${pct}%`);
+                try { localStorage.setItem(WIDTH_STORAGE_KEY, String(pct)); } catch { /* storage blocked */ }
             };
             window.addEventListener("pointermove", onMove, true);
             window.addEventListener("pointerup", onUp, true);
@@ -102,28 +131,109 @@ export class LessonsPanel {
         });
     }
 
-    /** Loads the first lesson if nothing has been shown yet; no-op on reopen. */
+    /**
+     * Shows the current page (again) — with its simulation freshly loaded.
+     * Without one, the course continues where the student left off.
+     */
     async ensureLoaded() {
-        if (this._currentHref) return;
-        try {
-            const manifest = await this._loadManifest();
-            await this.load(manifest.first ?? "index.html");
-        } catch (err) {
-            const mount = this.simControl.lessonsMount;
-            if (mount) mount.innerHTML = `<p class="lesson-load-error">${this._errorMessage(err)}</p>`;
-            console.error("[LessonsPanel] failed to load lesson index", err);
+        if (!this._currentHref) {
+            try {
+                await this._loadManifest();
+            } catch (err) {
+                const mount = this.simControl.lessonsMount;
+                if (mount) mount.innerHTML = `<p class="lesson-load-error">${this._errorMessage(err)}</p>`;
+                return;
+            }
+            this._currentHref = this.resumePage()?.href ?? this._manifest?.first ?? null;
         }
+        if (this._currentHref) await this.load(this._currentHref);
     }
 
     /**
-     * Fetches (and caches) the language's chapter list, building the nav dropdown from it.
-     * @returns {Promise<{first: string, pages: {href: string, title: string, num: number[]|null}[]}>}
+     * Opens the lessons panel at `href` — for entry points outside the
+     * panel (chapter overview, ?lesson= deep link). Sets the target up
+     * front so toggleLessonsPanel()'s ensureLoaded() loads it exactly once.
+     * @param {string} href
+     * @returns {Promise<void>}
+     */
+    async open(href) {
+        this._currentHref = href;
+        await this.simControl.toggleLessonsPanel(true);
+    }
+
+    /** True once a page has been chosen (the panel can show something on its own). */
+    get hasPage() { return this._currentHref !== null; }
+
+    /** @returns {string|null} href of the page shown in the panel */
+    get currentHref() { return this._currentHref; }
+
+    /** @returns {LessonManifest|null} the loaded chapter list */
+    get manifest() { return this._manifest; }
+
+    /** Public access to the chapter list, e.g. for the welcome dialog. @returns {Promise<LessonManifest>} */
+    loadManifest() {
+        return this._loadManifest();
+    }
+
+    // ── Last opened page (per language — page hrefs differ between locales) ──
+    // Only the last page is remembered, for "continue"; no read/unread
+    // tracking (school PCs are shared, and it would need a "reset").
+
+    /** @returns {string|null} */
+    _readLast() {
+        try {
+            const last = JSON.parse(localStorage.getItem(PROGRESS_STORAGE_KEY) || "{}")?.[getLocale()]?.last;
+            return typeof last === "string" ? last : null;
+        } catch {
+            return null;
+        }
+    }
+
+    /** @param {string} href */
+    _rememberLast(href) {
+        try {
+            const all = JSON.parse(localStorage.getItem(PROGRESS_STORAGE_KEY) || "{}") || {};
+            all[getLocale()] = { last: href };
+            localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(all));
+        } catch { /* storage blocked — "continue" just isn't offered */ }
+    }
+
+    /**
+     * The page to continue with — the last one opened, if it still exists.
+     * Requires the manifest to be loaded.
+     * @returns {LessonPage|null}
+     */
+    resumePage() {
+        const last = this._readLast();
+        return this._manifest?.pages.find((p) => p.href === last) ?? null;
+    }
+
+    /**
+     * Course chapters (1…89) in the given page list, each with its pages.
+     * 0 (course start) counts as a chapter; 90+ (appendix, test pages) don't.
+     * @param {LessonPage[]} pages
+     * @returns {{chapter: LessonPage, pages: LessonPage[]}[]}
+     */
+    static chaptersOf(pages) {
+        /** @type {{chapter: LessonPage, pages: LessonPage[]}[]} */
+        const chapters = [];
+        for (const page of pages) {
+            const top = page.num?.[0];
+            if (top === undefined || top < 0 || top >= 90) continue;
+            if (page.num?.length === 1) chapters.push({ chapter: page, pages: [page] });
+            else if (chapters.at(-1)?.chapter.num?.[0] === top) chapters.at(-1)?.pages.push(page);
+        }
+        return chapters;
+    }
+
+    /**
+     * Fetches (and caches) the language's chapter list.
+     * @returns {Promise<LessonManifest>}
      */
     async _loadManifest() {
         if (this._manifest) return this._manifest;
         const manifest = await this._fetchLessonJson(`/lessons/${getLocale()}/index.json`);
         this._manifest = manifest;
-        this._buildNavSelect(manifest);
         return manifest;
     }
 
@@ -153,73 +263,239 @@ export class LessonsPanel {
     }
 
     /**
-     * Builds the chapter dropdown — only first- and second-level chapters
-     * (num.length <= 2) are listed; deeper sub-pages would make it
-     * unwieldy and stay reachable via prev/next and in-text links instead.
-     * Draft chapters (":::draft" in the source) are skipped unless ?debug=1.
-     * @param {{pages: {href: string, title: string, num: number[]|null, draft?: boolean}[]}} manifest
+     * Pages that show up in the overview and prev/next — drafts (":::draft"
+     * in the source) are skipped unless ?debug=1. `keepHref` stays in even
+     * if it's a draft, so a deep-linked draft page still gets neighbours.
+     * @param {string|null} [keepHref]
+     * @returns {LessonPage[]}
      */
-    _buildNavSelect(manifest) {
+    _visiblePages(keepHref = null) {
+        const pages = this._manifest?.pages ?? [];
+        return pages.filter((p) => !p.draft || this.simControl.debug || p.href === keepHref);
+    }
+
+    /**
+     * @param {LessonPage} page e.g. "1.2 Erste Simulation"
+     */
+    static pageLabel(page) {
+        return (page.num?.length ? page.num.join(".") + " " : "") + page.title;
+    }
+
+    /** @param {LessonPage} page */
+    _pageLabel(page) {
+        return LessonsPanel.pageLabel(page);
+    }
+
+    /**
+     * Builds the panel's header strip once: "← | chapters | page title | →",
+     * then reset. Prev/next are icon-only here (the target page is in the
+     * tooltip); the full-text row stays at the bottom of each page.
+     */
+    _buildHeader() {
         const navMount = this.simControl.lessonsNavMount;
         if (!navMount) return;
         navMount.innerHTML = "";
 
-        const select = document.createElement("select");
-        select.className = "input";
+        /**
+         * @param {string} className
+         * @param {string} icon
+         * @param {string} title
+         */
+        const iconBtn = (className, icon, title) => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = className;
+            btn.title = title;
+            btn.setAttribute("aria-label", title);
+            btn.innerHTML = `<i class="fa-solid ${icon}" aria-hidden="true"></i>`;
+            return btn;
+        };
 
-        /** @type {HTMLOptGroupElement|null} */
-        let currentGroup = null;
-        for (const page of manifest.pages ?? []) {
-            const depth = page.num?.length ?? 1;
-            if (depth > 2) continue;
-            if (page.draft && !this.simControl.debug) continue;
-
-            const numLabel = page.num?.length ? page.num.join(".") + " " : "";
-            const label = numLabel + page.title;
-
-            const opt = document.createElement("option");
-            opt.value = page.href;
-            opt.textContent = label;
-
-            if (depth <= 1) {
-                currentGroup = document.createElement("optgroup");
-                currentGroup.label = label;
-                select.appendChild(currentGroup);
-                currentGroup.appendChild(opt);
-            } else {
-                (currentGroup ?? select).appendChild(opt);
-            }
+        const prevBtn = iconBtn("sim-lessons-prev", "fa-arrow-left", t("lessons.nav.prev"));
+        const homeBtn = iconBtn("sim-lessons-home", "fa-list", t("lessons.overview.title"));
+        homeBtn.addEventListener("click", () => this.simControl.showChapterOverview());
+        const nextBtn = iconBtn("sim-lessons-next", "fa-arrow-right", t("lessons.nav.next"));
+        for (const btn of [prevBtn, nextBtn]) {
+            btn.disabled = true;
+            btn.addEventListener("click", () => {
+                const target = btn.dataset.lessonTarget;
+                if (target) this.load(target);
+                else this.simControl.showChapterOverview();
+            });
         }
 
-        select.addEventListener("change", () => this.load(select.value));
-        navMount.appendChild(select);
-        this._navSelect = select;
+        const current = document.createElement("span");
+        current.className = "sim-lessons-current";
+
+        const resetBtn = iconBtn("sim-lessons-reset", "fa-rotate-left", t("lessons.sim.reset"));
+        resetBtn.disabled = true;
+        resetBtn.addEventListener("click", () => this.resetSim());
+
+        navMount.append(prevBtn, homeBtn, current, nextBtn, resetBtn);
+        this._prevBtn = prevBtn;
+        this._nextBtn = nextBtn;
+        this._currentLabel = current;
+        this._resetBtn = resetBtn;
+    }
+
+    /** @param {string} href currently shown page */
+    _updateHeader(href) {
+        const page = this._manifest?.pages.find((p) => p.href === href);
+        if (this._currentLabel) {
+            this._currentLabel.textContent = page ? this._pageLabel(page) : "";
+            this._currentLabel.title = this._currentLabel.textContent;
+        }
+        const { prev, next } = this._neighbours(href);
+        if (this._prevBtn) {
+            this._prevBtn.disabled = false;
+            this._prevBtn.dataset.lessonTarget = prev?.href ?? "";
+            this._prevBtn.title = prev ? `${t("lessons.nav.prev")}: ${this._pageLabel(prev)}` : t("lessons.overview.title");
+        }
+        if (this._nextBtn) {
+            this._nextBtn.disabled = false;
+            this._nextBtn.dataset.lessonTarget = next?.href ?? "";
+            this._nextBtn.title = next ? `${t("lessons.nav.next")}: ${this._pageLabel(next)}` : t("lessons.nav.toOverview");
+        }
     }
 
     /**
-     * Reflects `href` in the chapter dropdown. If `href` itself isn't listed
-     * (depth > 2, e.g. "1.1.3" — see _buildNavSelect), falls back to its
-     * nearest listed ancestor chapter (e.g. "1.1") instead of leaving
-     * whatever was previously selected showing, now stale.
      * @param {string} href
+     * @returns {{prev: LessonPage|null, next: LessonPage|null}}
      */
-    _syncNavSelect(href) {
-        const select = this._navSelect;
-        if (!select) return;
+    _neighbours(href) {
+        const pages = this._visiblePages(href);
+        const idx = pages.findIndex((p) => p.href === href);
+        return {
+            prev: idx > 0 ? pages[idx - 1] : null,
+            next: idx >= 0 && idx < pages.length - 1 ? pages[idx + 1] : null,
+        };
+    }
 
-        const hasOption = (/** @type {string} */ value) => [...select.options].some((o) => o.value === value);
-        if (hasOption(href)) {
-            select.value = href;
-            return;
+    // ── Lesson simulations ────────────────────────────────────────────────────
+
+    /**
+     * Takes over the SimControl's scene for lessons mode. The user's own
+     * simulation is discarded — after asking to save it first if it has
+     * unsaved changes. A scene the lessons panel loaded itself is kept.
+     * @returns {Promise<boolean>} false if the user cancelled
+     */
+    async claimScene() {
+        const sim = this.simControl;
+        if (sim.lessonScene) return true;
+
+        if (sim._isDirty) {
+            const choice = await SimDialog.choose(t("lessons.sim.unsavedPrompt"), [
+                { value: "discard", label: t("lessons.sim.discard") },
+                { value: "save", label: t("sim.save") },
+            ]);
+            if (choice === null) return false;
+            if (choice === "save") {
+                await sim.download();
+                if (sim._isDirty) return false; // filename prompt cancelled
+            }
         }
 
-        const pages = this._manifest?.pages ?? [];
-        const num = pages.find((p) => p.href === href)?.num;
-        if (!num || num.length === 0) return;
+        sim.new();
+        sim.lessonScene = true;
+        this._updateResetBtn();
+        return true;
+    }
 
-        const targetDepth = Math.min(num.length, 2);
-        const ancestor = pages.find((p) => p.num?.length === targetDepth && p.num.every((n, i) => n === num[i]));
-        if (ancestor && hasOption(ancestor.href)) select.value = ancestor.href;
+    /**
+     * The page a lesson's simulation comes from: the page itself if it has
+     * a ":::sim", else the nearest preceding page (in reading order) that
+     * has one. Drafts count too, so the result doesn't depend on ?debug=1.
+     * @param {string} href
+     * @returns {{source: string, sim: LessonSim|null}} source "" = none
+     */
+    _simSourceFor(href) {
+        /** @type {{source: string, sim: LessonSim|null}} */
+        let found = { source: "", sim: null };
+        for (const page of this._manifest?.pages ?? []) {
+            if (page.sim) found = { source: page.href, sim: page.sim };
+            if (page.href === href) break;
+        }
+        return found;
+    }
+
+    /**
+     * Loads `href`'s start simulation — on every page change, so each page
+     * starts from a known state. Work worth keeping is taken over with the
+     * toolbar's "adopt" button (SimControl.adoptLessonScene) first.
+     * @param {string} href
+     */
+    async _syncSim(href) {
+        if (!await this.claimScene()) return;
+        await this._loadLessonSim(this._simSourceFor(href));
+    }
+
+    /** @param {{source: string, sim: LessonSim|null}} target */
+    async _loadLessonSim(target) {
+        const sim = this.simControl;
+        try {
+            if (target.sim && "url" in target.sim) {
+                const res = await fetch(target.sim.url);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                await sim.restore(await res.json());
+            } else {
+                sim.new();
+            }
+        } catch (err) {
+            console.error("[LessonsPanel] failed to load scenario", target.sim, err);
+            sim.new();
+        }
+        sim.lessonScene = true;
+        this._updateResetBtn();
+    }
+
+    /** Restores the current page's simulation to its start state. @returns {Promise<void>} */
+    async resetSim() {
+        if (!this._currentHref || !this.simControl.lessonScene) return;
+        if (!await SimDialog.confirm(t("lessons.sim.resetConfirm"))) return;
+        await this._loadLessonSim(this._simSourceFor(this._currentHref));
+    }
+
+    _updateResetBtn() {
+        if (this._resetBtn) this._resetBtn.disabled = !this._currentHref || !this.simControl.lessonScene;
+    }
+
+    /**
+     * "← Zurück | Übersicht | Weiter →" — at the bottom of every page (the
+     * header carries the same as icons).
+     * At either end of the course the outer buttons lead to the chapter
+     * overview (welcome dialog) instead of being dead.
+     * @param {string} href
+     * @returns {HTMLElement}
+     */
+    _buildNavRow(href) {
+        const { prev, next } = this._neighbours(href);
+
+        /**
+         * @param {string} className
+         * @param {string} html
+         * @param {LessonPage|null} target null = overview
+         */
+        const button = (className, html, target) => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = `lesson-nav-btn ${className}`;
+            btn.innerHTML = html;
+            btn.dataset.lessonTarget = target?.href ?? "";
+            btn.title = target ? this._pageLabel(target) : t("lessons.overview.title");
+            return btn;
+        };
+
+        const row = document.createElement("nav");
+        row.className = "lesson-nav-row";
+        row.setAttribute("aria-label", t("lessons.pageNav"));
+        row.append(
+            button("lesson-nav-btn-prev", `<i class="fa-solid fa-arrow-left" aria-hidden="true"></i> ${t("lessons.nav.prev")}`, prev),
+            button("lesson-nav-btn-overview", `<i class="fa-solid fa-list" aria-hidden="true"></i> ${t("lessons.nav.overview")}`, null),
+            next
+                ? button("lesson-nav-btn-next", `${t("lessons.nav.next")} <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>`, next)
+                : button("lesson-nav-btn-next", `${t("lessons.nav.toOverview")} <i class="fa-solid fa-list" aria-hidden="true"></i>`, null),
+        );
+        return row;
     }
 
     /** @param {string} href e.g. "01-einfuehrung.html" @returns {Promise<void>} */
@@ -235,21 +511,31 @@ export class LessonsPanel {
 
             this._currentHref = href;
             mount.innerHTML = data.bodyHtml;
+            // The body's own text-link prev/next (built for the standalone
+            // site) is replaced by the header buttons and the row below.
+            mount.querySelector(":scope > .lesson-nav")?.remove();
+            // ":::sim" launch links are for the standalone site — here the
+            // page's simulation is loaded automatically (_syncSim below).
+            mount.querySelectorAll(".lesson-sim-launch").forEach((el) => el.remove());
+            mount.append(this._buildNavRow(href));
             mount.scrollTop = 0;
             initQuizBlocks(mount);
-            this._syncNavSelect(href);
+            this._updateHeader(href);
             // Keeps the URL sharable/deep-linkable to whatever's currently
-            // shown, however the student got there (dropdown, prev/next,
+            // shown, however the student got there (overview, prev/next,
             // an in-text link, or the initial ?lesson= deep link itself).
             setParam("lesson", href);
+            this._rememberLast(href);
+            await this._syncSim(href);
+            this._updateResetBtn();
         } catch (err) {
             // This specific page doesn't exist in the current language (e.g.
             // right after a language switch — window.location.reload() re-runs
             // the ?lesson= deep link in the new locale) but the language does
-            // have lessons — fall back to its start page instead of a dead end.
-            const fallbackHref = this._manifest?.first;
-            if (err instanceof LessonNotFoundError && fallbackHref && fallbackHref !== href) {
-                return this.load(fallbackHref);
+            // have lessons — fall back to its first page instead of a dead end.
+            const first = this._manifest?.first;
+            if (err instanceof LessonNotFoundError && first && href !== first) {
+                return this.load(first);
             }
             mount.innerHTML = `<p class="lesson-load-error">${this._errorMessage(err)}</p>`;
             console.error("[LessonsPanel] failed to load lesson", href, err);
@@ -261,12 +547,13 @@ export class LessonsPanel {
         const target = /** @type {HTMLElement|null} */ (ev.target instanceof HTMLElement ? ev.target : null);
         if (!target) return;
 
-        // ":::sim" launch button — load the scenario into the live SimControl
-        // instead of following its standalone-site href fallback.
-        const simBtn = target.closest(".lesson-sim-btn");
-        if (simBtn instanceof HTMLElement && simBtn.dataset.simUrl) {
+        // Prev/next/overview buttons (see _buildNavRow).
+        const navBtn = target.closest("[data-lesson-target]");
+        if (navBtn instanceof HTMLElement) {
             ev.preventDefault();
-            this._loadSim(simBtn.dataset.simUrl);
+            const targetHref = navBtn.dataset.lessonTarget;
+            if (targetHref) this.load(targetHref);
+            else this.simControl.showChapterOverview();
             return;
         }
 
@@ -333,19 +620,6 @@ export class LessonsPanel {
             const args = r.args.map((a) => JSON.stringify(a)).join(", ");
             li.textContent = `${r.ok ? "✓" : "✗"} ${r.fn}(${args})`;
             list.appendChild(li);
-        }
-    }
-
-    /** @param {string} simUrl */
-    async _loadSim(simUrl) {
-        if (this.simControl._isDirty && !await SimDialog.confirm(t("sim.discardandloadwarning"))) return;
-        try {
-            const res = await fetch(simUrl);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const scene = await res.json();
-            await this.simControl.restore(scene);
-        } catch (err) {
-            console.error("[LessonsPanel] failed to load scenario", simUrl, err);
         }
     }
 }

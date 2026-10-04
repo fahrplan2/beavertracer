@@ -108,17 +108,21 @@ export const arp = {
     for (const { idx, itf } of targets) {
       const name = ifaceName(itf, idx);
 
+      // NetworkInterface keeps learned neighbours (ARP for IPv4, NDP for
+      // IPv6) together with its own addresses in `neighborCache`; `arp`
+      // shows only the IPv4 neighbours — the ARP cache proper.
       /** @type {Map<string, Uint8Array>|null} */
-      const table = itf?.arpTable ?? null;
+      const table = itf?.neighborCache ?? itf?.arpTable ?? null;
 
       if (!(table instanceof Map)) {
         ctx.println(t("app.terminal.commands.arp.msg.noArpTable", { iface: name }));
         continue;
       }
 
+      const ownIp = itf?.ip ? String(itf.ip) : "";
       // entries: [ipString, mac]
       const entries = [...table.entries()]
-        .filter(([k]) => typeof k === "string" && k.length > 0)
+        .filter(([k]) => typeof k === "string" && ipv4ToU32OrNull(k) != null && k !== ownIp)
         .sort((a, b) => compareIpStrings(a[0], b[0]));
 
       ctx.println(t("app.terminal.commands.arp.msg.header", { iface: name }));

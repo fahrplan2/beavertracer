@@ -1,4 +1,4 @@
-# Virtual private network (VPN)
+# Virtual Private Network (VPN)
 
 :::draft
 :::

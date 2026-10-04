@@ -73,7 +73,7 @@
 .app-irc-client .irc-buf-btn:hover { background: rgba(255,255,255,0.06); }
 .app-irc-client .irc-buf-btn.active {
   background: var(--primary-soft, rgba(80,120,255,0.18));
-  color: var(--primary, #7ab);
+  color: var(--accent);
   font-weight: 600;
 }
 .app-irc-client .irc-buf-btn.unread { font-weight: 700; }

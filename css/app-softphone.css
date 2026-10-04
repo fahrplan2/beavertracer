@@ -104,6 +104,18 @@
 }
 .app-softphone .sp-phrases:empty { display: none; }
 
+/* The generic .btn stacks icon-over-label, which made these run to 5 tall
+   rows in the ~360px-wide phone column and clipped the bottom ones against
+   the app frame (which deliberately doesn't scroll — see .app:has(.log-pane)
+   in apps.css). Row layout + tighter padding keeps the whole phrase list
+   inside the fixed OS screen height. */
+.app-softphone .sp-phrases .btn {
+  flex-direction: row;
+  gap: 5px;
+  padding: var(--pad-xs) var(--pad-sm);
+  font-size: 0.75rem;
+}
+
 .app-softphone .sp-log {
   flex: 1;
   min-height: 0;

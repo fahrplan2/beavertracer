@@ -84,6 +84,9 @@ export class SimulatedObject {
 
     panelOpen = false;
 
+    /** Set once the user drags the panel — from then on it opens where they left it. */
+    _panelUserPlaced = false;
+
     /** Whether the floating panel can be resized by dragging its edge/corner. Override per subclass. */
     panelResizable = false;
 
@@ -282,6 +285,7 @@ export class SimulatedObject {
                 onDragEnd: ({ x, y }) => {
                     this.px = x;
                     this.py = y;
+                    this._panelUserPlaced = true;
                     // The panel layer doesn't clip, so pull the panel back in
                     // if it was dragged past the right/bottom edge.
                     this._clampPanelToViewport();
@@ -335,6 +339,9 @@ export class SimulatedObject {
 
         this._applyPositions();
         this._applyPanelVisibility();
+        // Open next to the network rather than on top of it (see
+        // SimControl.autoPlacePanel), unless the user already placed it.
+        if (open && !this._panelUserPlaced && !this._isMobile()) this.simcontrol?.autoPlacePanel(this);
     }
 
     _applyPanelVisibility() {

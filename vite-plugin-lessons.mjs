@@ -20,6 +20,17 @@ function escHtml(str) {
     .replace(/"/g, "&quot;");
 }
 
+/**
+ * Quiz questions/options and task texts allow inline markdown (`code`,
+ * **bold**, *italic*) — rendered with a separate, HTML-free instance since
+ * these blocks are turned into raw HTML before the page's own markdown pass.
+ */
+const inlineMd = new MarkdownIt({ html: false, linkify: false, typographer: true });
+/** @param {string} str */
+function inlineHtml(str) {
+  return inlineMd.renderInline(String(str));
+}
+
 function safeAttr(jsonStr) {
   return jsonStr.replace(/'/g, "&#39;");
 }
@@ -34,12 +45,46 @@ function renderQuizShort(id, content) {
   const answersAttr = safeAttr(JSON.stringify(answers));
   return [
     `<div class="quiz-block quiz-short" data-quiz-id="${id}" data-type="short" data-answers='${answersAttr}'>`,
-    `<p class="quiz-question">${escHtml(questionLines.join(" ").trim())}</p>`,
+    `<p class="quiz-question">${inlineHtml(questionLines.join(" ").trim())}</p>`,
     `<div class="quiz-input-row">`,
     `<input type="text" class="quiz-input" placeholder="{{quiz.placeholder}}" autocomplete="off" spellcheck="false">`,
     `<span class="quiz-feedback" aria-hidden="true"></span>`,
     `</div></div>`,
   ].join("\n");
+}
+
+/**
+ * Like MC, but any number of options can be correct; each option is scored
+ * on its own ("tick only the true statements").
+ * @param {string} id @param {string} content
+ */
+function renderQuizMulti(id, content) {
+  return renderQuizMC(id, content).replace('quiz-mc" data-quiz-id', 'quiz-multi" data-quiz-id').replace('data-type="mc"', 'data-type="multi"');
+}
+
+/**
+ * ":::quiz random <generator>" — the task itself is generated in the browser
+ * (src/lib/quizGenerators.js), fresh on every load and every "try again".
+ * Body lines of the form key=value are options (count=N), anything else is
+ * an optional intro shown above the generated tasks.
+ * @param {string} id @param {string} generator @param {string} content @param {string} lang
+ */
+function renderQuizRandom(id, generator, content, lang) {
+  /** @type {Record<string, string>} */
+  const params = {};
+  const intro = [];
+  for (const line of content.split("\n")) {
+    const m = line.match(/^\s*(\w+)\s*=\s*(.+?)\s*$/);
+    if (m) params[m[1]] = m[2];
+    else if (line.trim()) intro.push(line.trim());
+  }
+  const count = Math.max(1, Math.min(10, Number(params.count) || 1));
+  return [
+    `<div class="quiz-block quiz-random" data-quiz-id="${id}" data-type="random" data-generator="${escHtml(generator)}" data-count="${count}" data-lang="${escHtml(lang)}">`,
+    intro.length ? `<p class="quiz-question">${inlineHtml(intro.join(" "))}</p>` : "",
+    `<div class="quiz-random-tasks"></div>`,
+    `</div>`,
+  ].filter(Boolean).join("\n");
 }
 
 function renderQuizMC(id, content) {
@@ -53,29 +98,64 @@ function renderQuizMC(id, content) {
     else if (line.trim()) questionLines.push(line);
   }
   const optHtml = options
-    .map(o => `<li><button class="quiz-option" data-correct="${o.correct}">${escHtml(o.text)}</button></li>`)
+    .map(o => `<li><button class="quiz-option" data-correct="${o.correct}">${inlineHtml(o.text)}</button></li>`)
     .join("\n");
   return [
     `<div class="quiz-block quiz-mc" data-quiz-id="${id}" data-type="mc">`,
-    `<p class="quiz-question">${escHtml(questionLines.join(" ").trim())}</p>`,
+    `<p class="quiz-question">${inlineHtml(questionLines.join(" ").trim())}</p>`,
     `<ul class="quiz-options">${optHtml}</ul>`,
     `</div>`,
   ].join("\n");
 }
 
-function renderQuizFill(id, content) {
-  const parts = content.split(/(\{[^}]+\})/g);
-  let fillHtml = "";
-  for (const part of parts) {
+/**
+ * Text with {answer|variant} gaps → inline HTML with input fields.
+ * @param {string} text
+ */
+function renderGaps(text) {
+  let html = "";
+  for (const part of text.split(/(\{[^}]+\})/g)) {
     if (part.startsWith("{") && part.endsWith("}")) {
       const variants = part.slice(1, -1).split("|").map(v => v.trim().toLowerCase());
       const answersAttr = safeAttr(JSON.stringify(variants));
       const size = Math.max(...variants.map(v => v.length), 4) + 2;
-      fillHtml += `<span class="quiz-gap"><input type="text" class="quiz-gap-input" data-answers='${answersAttr}' placeholder="…" size="${size}" autocomplete="off" spellcheck="false"><span class="quiz-feedback" aria-hidden="true"></span></span>`;
+      html += `<span class="quiz-gap"><input type="text" class="quiz-gap-input" data-answers='${answersAttr}' placeholder="…" size="${size}" autocomplete="off" spellcheck="false"><span class="quiz-feedback" aria-hidden="true"></span></span>`;
     } else {
-      fillHtml += escHtml(part).replace(/\n/g, " ");
+      html += inlineHtml(part.replace(/\n/g, " "));
     }
   }
+  return html;
+}
+
+/**
+ * ":::quiz table" — a markdown table whose {answer} cells become input
+ * fields; text lines before the table are the question. Evaluated exactly
+ * like a fill quiz (same gap inputs, data-type="fill").
+ * @param {string} id @param {string} content
+ */
+function renderQuizTable(id, content) {
+  const intro = [];
+  /** @type {string[][]} */
+  const rows = [];
+  for (const line of content.split("\n")) {
+    const t = line.trim();
+    if (!t.startsWith("|")) { if (t) intro.push(t); continue; }
+    if (/^\|[\s:|-]+\|$/.test(t)) continue; // separator row
+    rows.push(t.replace(/^\|/, "").replace(/\|$/, "").split("|").map(c => c.trim()));
+  }
+  const [head, ...body] = rows;
+  const th = (head ?? []).map(c => `<th>${inlineHtml(c)}</th>`).join("");
+  const tr = body.map(r => `<tr>${r.map(c => `<td>${renderGaps(c)}</td>`).join("")}</tr>`).join("\n");
+  return [
+    `<div class="quiz-block quiz-fill quiz-table" data-quiz-id="${id}" data-type="fill">`,
+    intro.length ? `<p class="quiz-question">${inlineHtml(intro.join(" "))}</p>` : "",
+    `<div class="quiz-table-scroll"><table><thead><tr>${th}</tr></thead><tbody>${tr}</tbody></table></div>`,
+    `</div>`,
+  ].filter(Boolean).join("\n");
+}
+
+function renderQuizFill(id, content) {
+  const fillHtml = renderGaps(content);
   return [
     `<div class="quiz-block quiz-fill" data-quiz-id="${id}" data-type="fill">`,
     `<p class="quiz-fill-text">${fillHtml}</p>`,
@@ -113,12 +193,13 @@ function renderEvaluateButton(ids, label) {
   ].join("\n");
 }
 
-function processQuizBlocks(src) {
+/** @param {string} src @param {string} [lang] */
+function processQuizBlocks(src, lang = "en") {
   let counter = 0;
   const pending = [];
   return src.replace(
-    /:::quiz\s+(\w+)\s*\n([\s\S]*?):::|:::evaluate\s*\n([\s\S]*?):::/gm,
-    (match, subtype, quizContent, evalContent) => {
+    /:::quiz\s+(\w+)[ \t]*([\w-]*)[ \t]*\n([\s\S]*?):::|:::evaluate\s*\n([\s\S]*?):::/gm,
+    (match, subtype, arg, quizContent, evalContent) => {
       if (subtype !== undefined) {
         const id = `q${++counter}`;
         pending.push(id);
@@ -126,7 +207,10 @@ function processQuizBlocks(src) {
         switch (subtype) {
           case "short": return renderQuizShort(id, content);
           case "mc":    return renderQuizMC(id, content);
+          case "multi": return renderQuizMulti(id, content);
+          case "random": return renderQuizRandom(id, arg, content, lang);
           case "fill":  return renderQuizFill(id, content);
+          case "table": return renderQuizTable(id, content);
           case "match": return renderQuizMatch(id, content);
           default:      return match;
         }
@@ -190,11 +274,11 @@ function renderTaskBlock(id, content, chrome) {
   }
   const checksAttr = safeAttr(JSON.stringify(checks));
   const descHtml = descLines.length
-    ? `<p class="task-description">${escHtml(descLines.join(" ").trim())}</p>`
+    ? `<p class="task-description">${inlineHtml(descLines.join(" ").trim())}</p>`
     : "";
   return [
     `<div class="task-block" data-task-id="${id}" data-checks='${checksAttr}'>`,
-    title ? `<p class="task-title">${escHtml(title)}</p>` : "",
+    title ? `<p class="task-title">${inlineHtml(title)}</p>` : "",
     descHtml,
     `<div class="task-check-wrap">`,
     `<button class="task-check-btn" data-task-id="${id}">${escHtml(chrome["lessons.task.check"])}</button>`,
@@ -299,8 +383,32 @@ function loadLocaleInfo(localesDir) {
 }
 
 /**
- * @typedef {{ num: number[]|null, file: string, href: string, title: string, draft: boolean, children: LessonNode[] }} LessonNode
+ * @typedef {{ num: number[]|null, file: string, href: string, title: string, draft: boolean, sim: {url: string}|{empty: true}|null, children: LessonNode[] }} LessonNode
  */
+
+/**
+ * Page-level simulation declared by the first ":::sim" block of a page:
+ *   :::sim            :::sim
+ *   url=/sims/x.btsim   empty
+ *   :::               :::
+ * The in-app lessons panel loads it automatically (pages without one keep
+ * the simulation of the nearest preceding page, see LessonsPanel.js).
+ * @param {string} src
+ * @returns {{url: string}|{empty: true}|null}
+ */
+function parseSimDirective(src) {
+  const m = src.match(/^:::sim\s*\n([\s\S]*?)^:::/m);
+  if (!m) return null;
+  /** @type {Record<string, string>} */
+  const params = {};
+  for (const line of m[1].trim().split("\n")) {
+    const eq = line.indexOf("=");
+    if (eq > 0) params[line.slice(0, eq).trim()] = line.slice(eq + 1).trim();
+    else if (line.trim()) params[line.trim()] = "";
+  }
+  if (params.url) return { url: params.url };
+  return { empty: true };
+}
 
 /** True if the raw markdown source contains a top-level ":::draft" container. */
 function isDraft(src) {
@@ -507,30 +615,21 @@ function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI
   let src = fs.readFileSync(srcFile, "utf8");
 
   // ── Pre-process :::quiz / :::evaluate blocks ──────────────────
-  src = processQuizBlocks(src);
+  src = processQuizBlocks(src, lang);
 
   // ── Pre-process :::task blocks ─────────────────────────────────
   src = processTaskBlocks(src, chrome);
 
   // ── Pre-process :::sim blocks ──────────────────────────────────
-  // Syntax:
-  //   :::sim
-  //   url=https://example.com/sim.btsim
-  //   :::
-  //
-  // Renders a launch button, not an iframe: the in-app lessons panel
-  // intercepts the click and loads the scenario directly into the already-
-  // running SimControl (see LessonsPanel.js). On the standalone lessons
-  // site (no live SimControl to attach to) the plain href fallback opens
-  // the scenario in the full embedded app view instead.
-  src = src.replace(/:::sim\s*\n([\s\S]*?):::/gm, (_, content) => {
-    /** @type {Record<string, string>} */
-    const params = {};
-    for (const line of content.trim().split("\n")) {
-      const eq = line.indexOf("=");
-      if (eq > 0) params[line.slice(0, eq).trim()] = line.slice(eq + 1).trim();
-    }
-    const simUrl = params.url ?? "";
+  // Syntax: see parseSimDirective(). The in-app lessons panel loads the
+  // page's simulation automatically and strips this block; on the
+  // standalone lessons site (no live SimControl to attach to) it renders a
+  // launch link that opens the scenario in the full embedded app view.
+  // ":::sim empty" (an empty canvas) has nothing to open there.
+  src = src.replace(/:::sim\s*\n([\s\S]*?):::/gm, (block) => {
+    const directive = parseSimDirective(block);
+    if (!directive || !("url" in directive)) return "";
+    const simUrl = directive.url;
     const openHref = simUrl
       ? `../../?embed=1&sim=${encodeURIComponent(simUrl)}`
       : `../../?embed=1`;
@@ -540,6 +639,13 @@ function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI
       `</div>`,
     ].join("\n");
   });
+
+  // ── Pre-process bit colouring: [[n|…]] [[e|…]] [[h|…]] ─────────
+  // Netzteil (n), Erweiterung/Subnetzbits (e), Hostteil (h) — used in the
+  // IP/subnetting lessons. Works in text and tables; for multi-line binary
+  // blocks use a raw <pre class="bits-block"> (inside ``` fences the
+  // generated <span>s would be escaped).
+  src = src.replace(/\[\[(n|e|h)\|([^\]\n]+?)\]\]/g, (_, kind, text) => `<span class="bits bits-${kind}">${escHtml(text)}</span>`);
 
   // ── Pre-process :fa-icon: shortcuts ───────────────────────────
   // :fa-house:   → fa-solid   :far-house:  → fa-regular   :fab-github: → fa-brands
@@ -567,7 +673,12 @@ function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI
         // notice, using the existing lessons.wip.* chrome strings — any
         // markdown content the author puts inside the block is appended
         // below it.
-        if (type !== "draft") return open;
+        if (type !== "draft") {
+          // Optional heading after the type, e.g. ":::tip Merksatz" — inline
+          // markdown allowed, rendered as a bold first line of the box.
+          const title = tokens[idx].info.trim().slice(type.length).trim();
+          return title ? open + `<p class="callout-title">${md.renderInline(title)}</p>\n` : open;
+        }
         return open + `<p><strong>${escHtml(chrome["lessons.wip.title"])}</strong> — ${escHtml(chrome["lessons.wip.text"])}</p>\n`;
       },
     });
@@ -671,7 +782,7 @@ function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI
       .replace(/\{\{lang\}\}/g, lang)
   );
 
-  return { html, title, bodyHtml: body };
+  return { html, title, bodyHtml: body, sim: parseSimDirective(fs.readFileSync(srcFile, "utf8")) };
 }
 
 /**
@@ -772,6 +883,9 @@ function buildLessons(root) {
   // the in-app lessons panel); copied here verbatim for the standalone site.
   const quizJsPath = path.join(root, "src", "lib", "QuizInteractions.js");
   if (fs.existsSync(quizJsPath)) fs.copyFileSync(quizJsPath, path.join(outDir, "_quiz.js"));
+  // _quiz.js imports "./quizGenerators.js" — same relative path as in src/lib/.
+  const quizGenPath = path.join(root, "src", "lib", "quizGenerators.js");
+  if (fs.existsSync(quizGenPath)) fs.copyFileSync(quizGenPath, path.join(outDir, "quizGenerators.js"));
 
   const builtLangs = [];
 
@@ -786,7 +900,7 @@ function buildLessons(root) {
     const mdFiles = fs.readdirSync(langDir).filter((f) => f.endsWith(".md")).sort();
 
     // Collect flat lesson info
-    /** @type {{ num: number[]|null, file: string, href: string, title: string, draft: boolean }[]} */
+    /** @type {{ num: number[]|null, file: string, href: string, title: string, draft: boolean, sim: {url: string}|{empty: true}|null }[]} */
     const flatLessons = mdFiles.map((file) => {
       const src = fs.readFileSync(path.join(langDir, file), "utf8");
       const href = file.replace(/\.md$/, ".html");
@@ -796,6 +910,7 @@ function buildLessons(root) {
         href,
         title: extractTitle(src) ?? file.replace(/\.md$/, ""),
         draft: isDraft(src),
+        sim: parseSimDirective(src),
       };
     });
 
@@ -849,6 +964,7 @@ function buildLessons(root) {
           title: rendered.title,
           bodyHtml: rendered.bodyHtml,
           chapterNum: node.num,
+          sim: rendered.sim,
           prev: nav.prev ? { href: nav.prev.href, title: nav.prev.title } : null,
           next: nav.next ? { href: nav.next.href, title: nav.next.title } : null,
         }), "utf8");
@@ -872,7 +988,7 @@ function buildLessons(root) {
         path.join(langOut, "index.json"),
         JSON.stringify({
           first: ordered[0].href,
-          pages: ordered.map((n) => ({ href: n.href, title: n.title, num: n.num, draft: n.draft })),
+          pages: ordered.map((n) => ({ href: n.href, title: n.title, num: n.num, draft: n.draft, sim: n.sim })),
         }),
         "utf8"
       );

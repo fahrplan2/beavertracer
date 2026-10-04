@@ -4,6 +4,9 @@ import { describe, it, expect } from 'vitest';
 import { VirtualFileSystem } from '../../../../src/apps/lib/VirtualFileSystem.js';
 import { curl } from '../../../../src/apps/terminal/commands/net/curl.js';
 import { wget } from '../../../../src/apps/terminal/commands/net/wget.js';
+import { arp } from '../../../../src/apps/terminal/commands/net/arp.js';
+import { route } from '../../../../src/apps/terminal/commands/net/route.js';
+import { IPAddress } from '../../../../src/net/models/IPAddress.js';
 import { CommandError } from '../../../../src/apps/terminal/commands/lib/errors.js';
 import { TlsSession } from '../../../../src/net/TlsSession.js';
 import { TlsCertificate, TlsTrustStore } from '../../../../src/net/models/TlsCertificate.js';
@@ -316,5 +319,47 @@ describe('curl / wget over TLS', () => {
 
     await wget.run(ctx, ['https://server.local/secret.txt']);
     expect(fs.readFile('/home/secret.txt')).toBe('tls-body!');
+  });
+});
+
+describe('arp', () => {
+  /** @param {any[]} interfaces */
+  function run(interfaces, args = []) {
+    const out = [];
+    arp.run(/** @type {any} */ ({ os: { net: { interfaces } }, println: (l) => out.push(l) }), args);
+    return out;
+  }
+  const mac = (b) => new Uint8Array([0xaa, 0, 0, 0, 0, b]);
+
+  it('lists learned IPv4 neighbours, without the own address and IPv6 entries', () => {
+    const neighborCache = new Map([
+      ['192.168.0.10', mac(1)],          // own address
+      ['192.168.0.1', mac(2)],           // learned router
+      ['fe80::1', mac(3)],               // IPv6 neighbour (NDP)
+    ]);
+    const out = run([{ name: 'eth0', ip: '192.168.0.10', neighborCache }]);
+    expect(out.join('\n')).toContain('192.168.0.1  aa:00:00:00:00:02');
+    expect(out.join('\n')).not.toContain('192.168.0.10 ');
+    expect(out.join('\n')).not.toContain('fe80::1');
+  });
+
+  it('reports an empty table before anything was learned', () => {
+    const out = run([{ name: 'eth0', ip: '192.168.0.10', neighborCache: new Map([['192.168.0.10', mac(1)]]) }]);
+    expect(out.length).toBe(2); // header + "(empty)" — no neighbour rows
+    expect(out.some((l) => l.includes('192.168.0.10'))).toBe(false);
+  });
+});
+
+describe('route', () => {
+  it('prints destination, netmask and gateway in separate columns', () => {
+    const out = [];
+    const routingTable = [
+      { dst: IPAddress.fromString('192.168.0.0'), prefixLength: 24, nexthop: IPAddress.fromString('0.0.0.0'), interf: 0, auto: true },
+      { dst: IPAddress.fromString('0.0.0.0'), prefixLength: 0, nexthop: IPAddress.fromString('192.168.0.1'), interf: 0, auto: false },
+    ];
+    route.run(/** @type {any} */ ({ os: { net: { routingTable, interfaces: [{ name: 'eth0' }] } }, println: (l) => out.push(l) }), []);
+    const rows = out.slice(1).map((l) => l.trim().split(/\s+/));
+    expect(rows[0].slice(0, 4)).toEqual(['192.168.0.0', '255.255.255.0', '0.0.0.0', 'eth0']);
+    expect(rows[1].slice(0, 4)).toEqual(['0.0.0.0', '0.0.0.0', '192.168.0.1', 'eth0']);
   });
 });

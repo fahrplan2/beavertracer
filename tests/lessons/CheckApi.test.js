@@ -41,6 +41,7 @@ if (!globalThis.document) {
 }
 
 const { Computer } = await import('../../src/sim/Computer.js');
+const { Tablet } = await import('../../src/sim/Tablet.js');
 const { CheckApi } = await import('../../src/lessons/CheckApi.js');
 
 /** @param {number} id @param {string} ip @param {string} [route] */
@@ -160,12 +161,71 @@ describe('CheckApi', () => {
         const api = new CheckApi(fakeSimControl([a]));
 
         const outcome = api.pingOk(1, '10.0.0.99');
-        // 3000ms timeout / 5ms-per-tick = 600 ticks; a bit of headroom on top.
-        for (let i = 0; i < 650; i++) {
+        // 2 × PING_TIMEOUT_MS (800ms) / 5ms-per-tick = 160 ticks; a bit of headroom on top.
+        for (let i = 0; i < 200; i++) {
             simTimer.tick();
             await Promise.resolve();
         }
         expect(await outcome).toBe(false);
+    });
+
+    it('ip(): also works for tablets', async () => {
+        const tab = Tablet.fromJSON({
+            kind: 'Tablet', id: 7, name: 'Anna', x: 0, y: 0, ssid: 'Schule',
+            net: {
+                name: 'Tablet', forwarding: false,
+                interfaces: [{ name: 'wlan0', ip: '192.168.0.30', prefixLength: 24, ip6: null, prefixLength6: 0, ip6LL: null }],
+                routes: [],
+            },
+        });
+        const api = new CheckApi(fakeSimControl([tab]));
+        expect(await api.ip(7, '192.168.0.30/32')).toBe(true);
+    });
+
+    it('pingOk(): false when the target device has the same IP as the sender', async () => {
+        const a = makeComputer(1, '192.168.0.10');
+        const b = makeComputer(2, '192.168.0.10');
+        const api = new CheckApi(fakeSimControl([a, b]));
+        expect(await api.pingOk(1, 2)).toBe(false);
+    });
+
+    it('hasRoute(): works for any device with an IP stack, e.g. a router', async () => {
+        const router = { id: 3, net: { interfaces: [], routingTable: [
+            { dst: { toUInt8: () => new Uint8Array([172, 16, 0, 0]) }, prefixLength: 24 },
+        ] } };
+        const api = new CheckApi(fakeSimControl([router]));
+        expect(await api.hasRoute(3, '172.16.0.0/24')).toBe(true);
+        expect(await api.hasRoute(3, '10.0.0.0/8')).toBe(false);
+    });
+
+    it('pingFails(): true when the destination does not answer', async () => {
+        const { simTimer } = await import('../../src/lib/SimTimer.js');
+        const a = makeComputer(1, '10.0.0.1');
+        const api = new CheckApi(fakeSimControl([a]));
+
+        const outcome = api.pingFails(1, '10.0.0.99');
+        for (let i = 0; i < 200; i++) {
+            simTimer.tick();
+            await Promise.resolve();
+        }
+        expect(await outcome).toBe(true);
+    });
+
+    it('runChecks(): runs at the fastest step interval and restores the previous speed', async () => {
+        class FakeSim { static tick = 100; }
+        const sim = Object.assign(new FakeSim(), fakeSimControl([makeComputer(9, '192.168.0.11')]));
+        const api = new CheckApi(sim);
+
+        let tickDuringCheck = 0;
+        const originalIp = api.ip.bind(api);
+        api.ip = async (...args) => {
+            tickDuringCheck = FakeSim.tick;
+            return originalIp(...args);
+        };
+
+        await api.runChecks([{ fn: 'ip', args: [9, '192.168.0.0/24'] }]);
+        expect(tickDuringCheck).toBe(20);
+        expect(FakeSim.tick).toBe(100);
     });
 
     it('runChecks(): temporarily unpauses the sim and restores the previous pause state', async () => {

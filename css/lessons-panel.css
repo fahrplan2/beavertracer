@@ -11,8 +11,8 @@
   /* Fixed blue for the panel's action buttons (Check task/answers, load
      scenario) — independent of --primary-strong, which follows whatever
      app theme is active (e.g. the "green" theme) rather than staying blue. */
-  --lesson-accent: #2563eb;
-  --lesson-accent-hover: #1d4ed8;
+  --lesson-accent: var(--accent);
+  --lesson-accent-hover: var(--accent-hover);
 
   /* OSI layer rainbow (shared by .osi-table + .osi-ampel below) — fixed,
      theme-independent hues, layer 1 = red … layer 7 = violet. Ported from
@@ -66,9 +66,31 @@
   margin: 0 0 12px;
 }
 .lesson-article pre code { background: none; padding: 0; }
-.lesson-article table { border-collapse: collapse; width: 100%; margin: 0 0 12px; font-size: 0.9em; }
+/* display:block + overflow lets wide tables (e.g. the OSI table) scroll
+   sideways inside the narrow panel instead of being cut off. */
+.lesson-article table { display: block; overflow-x: auto; max-width: 100%; border-collapse: collapse; margin: 0 0 12px; font-size: 0.9em; }
 .lesson-article th, .lesson-article td { border: 1px solid var(--ui-border-strong); padding: 4px 8px; text-align: left; }
 .lesson-article .lesson-num { opacity: 0.65; font-weight: 400; }
+
+/* ── Bit colouring in the IP/subnetting lessons ([[n|…]] [[e|…]] [[h|…]]) ──
+   Tinted background + coloured underline: readable in light and dark. */
+.lesson-article .bits {
+  font-family: "Hack", ui-monospace, monospace;
+  font-size: 0.92em;
+  padding: 0 1px;
+  border-radius: 2px;
+  border-bottom: 2px solid;
+  white-space: pre;
+}
+.lesson-article .bits-n { background: color-mix(in oklch, #f97316 22%, transparent); border-bottom-color: #f97316; }
+.lesson-article .bits-e { background: color-mix(in oklch, #22c55e 24%, transparent); border-bottom-color: #16a34a; }
+.lesson-article .bits-h { background: color-mix(in oklch, #3b82f6 22%, transparent); border-bottom-color: #3b82f6; }
+.lesson-article pre.bits-block {
+  font-family: "Hack", ui-monospace, monospace;
+  font-size: 0.85em;
+  line-height: 1.8;
+}
+.lesson-article pre.bits-block .bits { font-size: 1em; }
 
 /* ── Callouts (note/tip/warning/danger) ─────────────────────── */
 .lesson-article .callout {
@@ -92,16 +114,56 @@
 /* ":::goal" — for "Lernziel" blurbs. Deliberately purple: distinct from all
    five callouts above so it reads as its own "before you start" category. */
 .lesson-article .callout-goal    { border-left-color: #7c3aed; background: color-mix(in oklch, #7c3aed 12%, transparent); }
-
+/* ":::tip Merksatz" — optional heading line */
+.lesson-article .callout-title   { margin: 0 0 4px; font-weight: 700; }
 /* ── Table of contents ───────────────────────────────────────── */
 .lesson-article .lesson-toc { margin: 0 0 16px; padding: 10px 12px; border: 1px solid var(--ui-border-strong); border-radius: var(--radius-sm); }
 .lesson-article .lesson-toc ul { list-style: none; padding-left: 0.2em; margin: 4px 0 0; }
 .lesson-article .lesson-toc a { text-decoration: none; }
 
-/* ── OSI "traffic light" ─────────────────────────────────────── */
-.lesson-article .osi-ampel { display: flex; flex-direction: column; gap: 2px; margin: 0 0 12px; font-size: 0.75rem; }
-.lesson-article .osi-ampel-box { display: flex; gap: 6px; padding: 3px 6px; border-radius: 3px; opacity: 0.7; }
-.lesson-article .osi-ampel-box.active { opacity: 1; color: var(--osi-text); font-weight: 600; }
+/* ── OSI "traffic light" (:::osi N) ─────────────────────────────
+   A small stack floating beside the text: the chapter's layer in its
+   rainbow colour, all other layers as grey boxes, so the whole picture
+   stands out from the text. Same look as lessons/_style.css. */
+.lesson-article .osi-ampel {
+  float: right;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 168px;
+  margin: 2px 0 12px 16px;
+  padding: 6px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-md);
+  background: var(--bg-strong);
+}
+.lesson-article .osi-ampel-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+  background: color-mix(in oklch, var(--text) 7%, transparent);
+  color: var(--muted);
+}
+.lesson-article .osi-ampel-num {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: color-mix(in oklch, var(--text) 12%, transparent);
+  font-size: 0.7rem;
+}
+.lesson-article .osi-ampel-box.active {
+  color: var(--osi-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+.lesson-article .osi-ampel-box.active .osi-ampel-num { background: rgba(0, 0, 0, 0.14); }
 .lesson-article .osi-ampel-box.osi-l1.active { background: var(--osi-l1); }
 .lesson-article .osi-ampel-box.osi-l2.active { background: var(--osi-l2); }
 .lesson-article .osi-ampel-box.osi-l3.active { background: var(--osi-l3); }
@@ -109,8 +171,13 @@
 .lesson-article .osi-ampel-box.osi-l5.active { background: var(--osi-l5); }
 .lesson-article .osi-ampel-box.osi-l6.active { background: var(--osi-l6); }
 .lesson-article .osi-ampel-box.osi-l7.active { background: var(--osi-l7); }
-.lesson-article .osi-ampel-num { opacity: 0.75; }
-.lesson-article .osi-ampel-box.active .osi-ampel-num { background: rgba(0, 0, 0, 0.12); opacity: 1; }
+/* Headings after the intro start below the float */
+.lesson-article h2,
+.lesson-article .lesson-nav-row { clear: both; }
+/* Narrow panel: no room beside the text — sit on top instead */
+@container lesson (max-width: 420px) {
+  .lesson-article .osi-ampel { float: none; margin: 0 0 12px; }
+}
 
 /* ── OSI table (table.osi-table, tr.osi-l1 … tr.osi-l7) — colors just the
    layer-number cell so the row text stays readable. Raw HTML some lessons
@@ -138,7 +205,7 @@
   padding: 8px 14px;
   border-radius: var(--radius-sm);
   background: var(--lesson-accent);
-  color: #fff;
+  color: var(--accent-text);
   text-decoration: none;
   font-weight: 600;
   cursor: pointer;
@@ -158,6 +225,36 @@
 }
 .lesson-article .lesson-nav a { text-decoration: none; font-size: 0.9em; }
 .lesson-article .lesson-nav-next { margin-left: auto; text-align: right; }
+
+/* ── Prev/overview/next button rows (in-app panel, see LessonsPanel._buildNavRow) ── */
+.lesson-article .lesson-nav-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--pad-sm);
+}
+.lesson-article .lesson-nav-row:first-child { margin-bottom: var(--pad-md); }
+.lesson-article .lesson-nav-row:last-child {
+  margin-top: 20px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ui-border-strong);
+}
+.lesson-article .lesson-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 0.9em;
+  white-space: nowrap;
+}
+.lesson-article .lesson-nav-btn-next {
+  border-color: var(--lesson-accent);
+  background: var(--lesson-accent);
+  color: var(--accent-text);
+}
+.lesson-article .lesson-nav-btn-next:hover:not(:disabled) { background: var(--lesson-accent-hover); }
 
 /* ── Draft pages: hidden from prev/next unless ?debug=1 ── */
 .lesson-article [data-draft="true"] { display: none; }
@@ -229,7 +326,7 @@ html[data-debug="true"] .lesson-article [data-draft="true"] { display: revert; }
   padding: 4px 6px;
   overflow-wrap: break-word;
 }
-.lesson-article .quiz-match-dropzone.drag-over { border-color: var(--primary-strong, #1d4ed8); }
+.lesson-article .quiz-match-dropzone.drag-over { border-color: var(--accent); }
 .lesson-article .quiz-match-dropzone.quiz-correct,
 .lesson-article .quiz-match-dropzone.quiz-incorrect { position: relative; border-width: 2px; padding-right: 22px; }
 .lesson-article .quiz-match-dropzone.quiz-correct { border-style: solid; border-color: var(--ok, #2e9b4f); background: color-mix(in oklch, var(--ok, #2e9b4f) 15%, transparent); }
@@ -259,7 +356,7 @@ html[data-debug="true"] .lesson-article [data-draft="true"] { display: revert; }
   border: none;
   border-radius: var(--radius-sm);
   background: var(--lesson-accent);
-  color: #fff;
+  color: var(--accent-text);
   cursor: pointer;
 }
 .lesson-article .quiz-evaluate-btn:hover:not(:disabled) { background: var(--lesson-accent-hover); }
@@ -267,13 +364,54 @@ html[data-debug="true"] .lesson-article [data-draft="true"] { display: revert; }
 .lesson-article .quiz-evaluate-summary.quiz-summary-ok  { color: var(--ok-strong, #1f7a3d); font-weight: 600; }
 .lesson-article .quiz-evaluate-summary.quiz-summary-err { color: var(--danger-strong, #96271e); font-weight: 600; }
 
+/* ── ":::quiz multi" — a true statement left unticked ── */
+/* Checkboxes hint that several answers may be ticked; replaced by ✓/✗ once evaluated. */
+.lesson-article .quiz-multi:not(.evaluated) .quiz-option::before { content: "☐"; margin-right: 0.35em; }
+.lesson-article .quiz-multi:not(.evaluated) .quiz-option.selected::before { content: "☑"; }
+.lesson-article .quiz-option.quiz-missed { border-width: 2px; border-style: dashed; border-color: var(--ok, #2e9b4f); }
+.lesson-article .quiz-option.quiz-missed::before { content: "!"; font-weight: 700; margin-right: 0.35em; }
+
+/* ── ":::quiz random" — generated practice tasks ── */
+.lesson-article .quiz-random-task { margin: 0 0 12px; }
+.lesson-article .quiz-random-task + .quiz-random-task { padding-top: 10px; border-top: 1px dashed var(--ui-border-strong); }
+.lesson-article .quiz-random-text { margin: 0 0 6px; font-weight: 600; }
+.lesson-article .quiz-random-fields { display: flex; flex-direction: column; gap: 6px; }
+.lesson-article .quiz-random-field { display: grid; grid-template-columns: minmax(8em, 40%) 1fr; align-items: center; gap: 4px 8px; }
+.lesson-article .quiz-random-label { font-size: 0.9em; }
+.lesson-article .quiz-random-input {
+  font: inherit;
+  font-family: "Hack", ui-monospace, monospace;
+  font-size: 0.9em;
+  min-width: 0;
+  padding: 4px 6px;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: 3px;
+  background: var(--bg);
+  color: var(--text);
+}
+.lesson-article .quiz-random-input.quiz-correct { border-color: var(--ok, #2e9b4f); }
+.lesson-article .quiz-random-input.quiz-incorrect { border-color: var(--danger, #c0392b); }
+.lesson-article .quiz-random-field .quiz-feedback { grid-column: 2; font-size: 0.85em; }
+.lesson-article .quiz-random-field--wide { grid-template-columns: 1fr; }
+.lesson-article .quiz-random-field--wide .quiz-feedback { grid-column: 1; }
+
+/* ── ":::quiz table" — fill-in table ── */
+.lesson-article .quiz-table-scroll { overflow-x: auto; }
+.lesson-article .quiz-table table { display: table; width: auto; margin: 0; font-size: 0.85em; }
+.lesson-article .quiz-table td, .lesson-article .quiz-table th { padding: 3px 6px; white-space: nowrap; }
+.lesson-article .quiz-table .quiz-gap-input { font-family: "Hack", ui-monospace, monospace; font-size: 0.95em; padding: 2px 4px; }
+
+.lesson-article .quiz-random-table { display: table; width: auto; margin: 6px 0 0; font-size: 0.85em; }
+.lesson-article .quiz-random-table td, .lesson-article .quiz-random-table th { padding: 3px 6px; white-space: nowrap; }
+.lesson-article .quiz-random-table .quiz-feedback { display: block; font-size: 0.85em; }
+
 /* ── Task blocks (":::task" — behavior checks) ──────────────────── */
 .lesson-article .task-block {
   margin: 0 0 16px;
   padding: 10px 12px;
-  border: 1px solid var(--primary-strong, #1d4ed8);
+  border: 1px solid var(--accent);
   border-radius: var(--radius-sm);
-  background: color-mix(in oklch, var(--primary, #2563eb) 6%, transparent);
+  background: color-mix(in oklch, var(--accent) 6%, transparent);
 }
 .lesson-article .task-title { margin: 0 0 6px; font-weight: 600; }
 .lesson-article .task-description { margin: 0 0 10px; }
@@ -284,7 +422,7 @@ html[data-debug="true"] .lesson-article [data-draft="true"] { display: revert; }
   border: none;
   border-radius: var(--radius-sm);
   background: var(--lesson-accent);
-  color: #fff;
+  color: var(--accent-text);
   cursor: pointer;
 }
 .lesson-article .task-check-btn:hover:not(:disabled) { background: var(--lesson-accent-hover); }
