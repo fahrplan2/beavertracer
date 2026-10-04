@@ -511,3 +511,4 @@ html[data-debug="true"] .lesson-article [data-draft="true"] { display: revert; }
 .seq-diagram .quiz-gap { display: inline-flex; vertical-align: baseline; }
 .seq-diagram .quiz-gap-input { font: inherit; padding: 0 0.2em; width: auto; min-width: 0; }
 .seq-error { padding: 8px 12px; border: 1px solid var(--danger, #c0392b); border-radius: 6px; color: var(--danger, #c0392b); font-family: ui-monospace, monospace; font-size: 0.85em; }
+.seq-diagram .seq-fields.seq-text { font-family: inherit; color: var(--muted, #777); }

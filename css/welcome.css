@@ -54,6 +54,28 @@
   flex-shrink: 0;
 }
 
+/* Easter egg: wer mit der Maus auf dem Biber verweilt, sieht ihn tanzen.
+   Die Verzögerung sorgt dafür, dass bloßes Überfahren nichts auslöst. */
+.welcome-logo:hover {
+  animation: welcome-beaver-dance 1.4s ease-in-out 0.8s 1;
+}
+
+@keyframes welcome-beaver-dance {
+  0%   { transform: none; }
+  15%  { transform: rotate(-15deg) translateY(-3px); }
+  30%  { transform: rotate(15deg) translateY(0); }
+  45%  { transform: rotate(-15deg) translateY(-3px); }
+  60%  { transform: rotate(0deg) scale(1.1); }
+  85%  { transform: rotate(360deg) scale(1.1); }
+  100% { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome-logo:hover {
+    animation: none;
+  }
+}
+
 .welcome-title {
   font-size: 1.5rem;
   font-weight: 700;
