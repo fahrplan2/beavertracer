@@ -2293,7 +2293,6 @@ export class SimControl {
             this.deleteObject(target);
             // The delete tool stays active for the next object — unless
             // there is nothing left to delete.
-            console.log("DBGDEL", this.simobjects.map(o => o.constructor.name).join(","));
             if (this.simobjects.length === 0) this._resetEditTools();
             return;
         }
