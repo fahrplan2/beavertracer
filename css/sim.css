@@ -2424,6 +2424,12 @@ sim-toolbar-langbtn {
 /* Sidebar buttons: icon-only square touch targets — only for fingers.
    With a mouse, a narrow window keeps the compact icon-only size (≤960px). */
 @media (max-width: 600px) and (pointer: coarse) {
+  /* The column width comes from the logo cell — make it fit a 48px button
+     plus the sidebar's 6px padding on each side. */
+  .sim-logo-cell { min-width: 60px; }
+  /* tighter spacing so all 12 tools fit an iPhone's height without scrolling */
+  .sim-sidebar-tools { gap: 2px; }
+
   .sim-sidebar-btn {
     height: 48px !important;
     min-width: 48px !important;
