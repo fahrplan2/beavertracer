@@ -391,6 +391,9 @@ body {
 .lesson-article table.osi-table tr.osi-l5 td:first-child { background: var(--osi-l5); }
 .lesson-article table.osi-table tr.osi-l6 td:first-child { background: var(--osi-l6); }
 .lesson-article table.osi-table tr.osi-l7 td:first-child { background: var(--osi-l7); }
+/* Protocols spanning two layers (ARP 2/3, TLS 4/5) */
+.lesson-article table.osi-table tr.osi-l2-3 td:first-child { background: linear-gradient(90deg, var(--osi-l2), var(--osi-l3)); }
+.lesson-article table.osi-table tr.osi-l4-5 td:first-child { background: linear-gradient(90deg, var(--osi-l4), var(--osi-l5)); }
 
 /* ── OSI "Ampel" (:::osi N — 7 gestapelte Layer-Boxen) ───────────
    Floats beside the following paragraph(s) for text wrap. */
