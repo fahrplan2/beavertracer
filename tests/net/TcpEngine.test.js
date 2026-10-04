@@ -365,6 +365,53 @@ describe('out-of-order delivery', () => {
   });
 });
 
+describe('duplicate ACKs (RFC 5681 §4.2)', () => {
+  /** Segment from the client at `seqOffset` bytes past what the server expects next. */
+  function setup() {
+    const env = makeLoopback();
+    return connect(env.client, env.server).then(({ serverKey }) => {
+      const serverConn = env.server.conns.get(serverKey);
+      const clientConn = [...env.client.conns.values()].find(c => c.state === 'ESTABLISHED');
+      const base = serverConn.theiracc;
+      const inject = (seqOffset, data) => env.server.handle({
+        src: CLIENT_IP, dst: SERVER_IP,
+        payload: new TCPPacket({
+          srcPort: clientConn.port, dstPort: SERVER_PORT,
+          seq: (base + seqOffset) >>> 0, ack: serverConn.myacc,
+          flags: TCPPacket.FLAG_ACK, payload: data,
+        }).pack(),
+      });
+      const serverAcks = () => env.log.filter(e => e.from === 'server' && e.tcp.payload.length === 0).map(e => e.tcp.ack >>> 0);
+      return { ...env, base, inject, serverAcks };
+    });
+  }
+
+  it('acknowledges every out-of-order segment immediately with the old ACK number', async () => {
+    const { base, inject, serverAcks } = await setup();
+    inject(0, new Uint8Array([1, 2, 3, 4, 5]));           // in order → ACK base+5
+    inject(10, new Uint8Array([11, 12, 13, 14, 15]));      // gap (5..9 lost) → dup ACK base+5
+    inject(15, new Uint8Array([16, 17, 18, 19, 20]));      // still gap → dup ACK base+5
+    expect(serverAcks().slice(-3)).toEqual([base + 5, base + 5, base + 5].map(n => n >>> 0));
+  });
+
+  it('acknowledges everything at once when the gap is filled', async () => {
+    const { base, inject, serverAcks } = await setup();
+    inject(0, new Uint8Array([1, 2, 3, 4, 5]));
+    inject(10, new Uint8Array([11, 12, 13, 14, 15]));
+    inject(5, new Uint8Array([6, 7, 8, 9, 10]));           // fills the gap
+    expect(serverAcks().at(-1)).toBe((base + 15) >>> 0);
+  });
+
+  it('re-acknowledges a duplicate (already received) segment', async () => {
+    const { base, inject, serverAcks } = await setup();
+    inject(0, new Uint8Array([1, 2, 3]));
+    const before = serverAcks().length;
+    inject(0, new Uint8Array([1, 2, 3]));                  // retransmitted copy
+    expect(serverAcks().length).toBe(before + 1);
+    expect(serverAcks().at(-1)).toBe((base + 3) >>> 0);
+  });
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Zero-window flow control
 // ─────────────────────────────────────────────────────────────────────────────

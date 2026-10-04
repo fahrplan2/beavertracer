@@ -742,6 +742,8 @@ export class TcpEngine {
       else conn.finSeq = seqLT(finAt, conn.finSeq >>> 0) ? finAt : (conn.finSeq >>> 0);
     }
 
+    const expectedBefore = conn.theiracc >>> 0;
+
     // Ingest payload respecting receive window
     if (payload.length > 0) {
       this._oooIngest(conn, tcp.seq >>> 0, payload);
@@ -756,8 +758,13 @@ export class TcpEngine {
     // Drain contiguous bytes; may consume FIN
     this._oooDrain(conn);
 
-    // ACK cumulatively + advertise current window
-    this._sendAckOnly(conn);
+    // ACK cumulatively + advertise current window. Data that didn't advance
+    // the cumulative ACK (out of order behind a gap, or a duplicate) is
+    // acknowledged immediately anyway — a *duplicate ACK* (RFC 5681 §4.2,
+    // RFC 1122 4.2.2.21). It tells the sender which byte is still missing
+    // and, three in a row, triggers its Fast Retransmit.
+    const noProgress = payload.length > 0 && (conn.theiracc >>> 0) === expectedBefore;
+    this._sendAckOnly(conn, noProgress);
   }
 
   /**
