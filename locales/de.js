@@ -771,6 +771,7 @@ export default {
   "lessons.overview.title": "Kapitelübersicht",
   "lessons.overview.resume": "Weiter bei",
   "lessons.overview.start": "Kurs starten",
+  "lessons.overview.startChapter": "Kapitel starten",
   "lessons.overview.soon": "Bald verfügbar",
   "lessons.overview.pages.one": "{count} Seite",
   "lessons.overview.pages.other": "{count} Seiten",

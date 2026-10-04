@@ -1754,6 +1754,7 @@ export default {
   "lessons.overview.title": "Przegląd rozdziału",
   "lessons.overview.resume": "Kontynuuj z",
   "lessons.overview.start": "Rozpocznij kurs",
+  "lessons.overview.startChapter": "Rozpocznij rozdział",
   "lessons.overview.soon": "Wkrótce",
   "lessons.overview.pages.one": "{count} strona",
   "lessons.overview.pages.other": "{count} stron",

@@ -158,7 +158,18 @@ export function buildChapterOverview(panel, onPick) {
         const meta = document.createElement("span");
         meta.className = "chapter-overview-meta";
         meta.textContent = countText;
-        head.append(title, meta);
+        const titleRow = document.createElement("div");
+        titleRow.className = "chapter-overview-pages-title-row";
+        // Second way in besides the page list: makes clear the chapter can
+        // be entered right from here
+        const start = document.createElement("button");
+        start.type = "button";
+        start.className = "chapter-overview-start";
+        start.innerHTML = `<i class="fa-solid fa-play" aria-hidden="true"></i> `;
+        start.appendChild(document.createTextNode(t("lessons.overview.startChapter")));
+        start.addEventListener("click", () => onPick(chapter.href));
+        titleRow.append(title, start);
+        head.append(titleRow, meta);
 
         const list = document.createElement("ol");
         list.className = "chapter-overview-page-list";
@@ -175,7 +186,10 @@ export function buildChapterOverview(panel, onPick) {
             const pt = document.createElement("span");
             pt.className = "chapter-overview-page-title";
             pt.textContent = page.title;
-            btn.append(n, pt);
+            const go = document.createElement("i");
+            go.className = "fa-solid fa-play chapter-overview-page-go";
+            go.setAttribute("aria-hidden", "true");
+            btn.append(n, pt, go);
             btn.addEventListener("click", () => onPick(page.href));
             li.appendChild(btn);
             list.appendChild(li);

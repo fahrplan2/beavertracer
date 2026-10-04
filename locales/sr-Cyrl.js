@@ -1753,6 +1753,7 @@ export default {
   "lessons.overview.title": "Преглед поглавља",
   "lessons.overview.resume": "Наставите са",
   "lessons.overview.start": "Започните курс",
+  "lessons.overview.startChapter": "Започните поглавље",
   "lessons.overview.soon": "Ускоро",
   "lessons.overview.pages.one": "{count} страна",
   "lessons.overview.pages.other": "{count} страна",

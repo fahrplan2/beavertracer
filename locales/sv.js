@@ -1754,6 +1754,7 @@ export default {
   "lessons.overview.title": "Kapiteloversikt",
   "lessons.overview.resume": "Fortsätt med",
   "lessons.overview.start": "Starta kursen",
+  "lessons.overview.startChapter": "Starta kapitlet",
   "lessons.overview.soon": "Kommer snart",
   "lessons.overview.pages.one": "{count} sida",
   "lessons.overview.pages.other": "{count} sidor",

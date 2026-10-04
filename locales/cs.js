@@ -1754,6 +1754,7 @@ export default {
   "lessons.overview.title": "Přehled kapitoly",
   "lessons.overview.resume": "Pokračovat s",
   "lessons.overview.start": "Začít kurz",
+  "lessons.overview.startChapter": "Začít kapitolu",
   "lessons.overview.soon": "Již brzy",
   "lessons.overview.pages.one": "{count} stránka",
   "lessons.overview.pages.other": "{count} stránek",

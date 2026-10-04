@@ -1754,6 +1754,7 @@ export default {
   "lessons.overview.title": "Tổng quan chương",
   "lessons.overview.resume": "Tiếp tục với",
   "lessons.overview.start": "Bắt đầu khóa học",
+  "lessons.overview.startChapter": "Bắt đầu chương",
   "lessons.overview.soon": "Sắp có",
   "lessons.overview.pages.one": "{count} trang",
   "lessons.overview.pages.other": "{count} trang",

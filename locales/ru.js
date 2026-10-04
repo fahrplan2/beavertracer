@@ -1754,6 +1754,7 @@ export default {
   "lessons.overview.title": "Обзор главы",
   "lessons.overview.resume": "Продолжить с",
   "lessons.overview.start": "Начать курс",
+  "lessons.overview.startChapter": "Начать главу",
   "lessons.overview.soon": "Скоро",
   "lessons.overview.pages.one": "{count} страница",
   "lessons.overview.pages.other": "{count} страниц",

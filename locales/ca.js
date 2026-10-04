@@ -1753,6 +1753,7 @@ export default {
   "lessons.overview.title": "Visió general del capítol",
   "lessons.overview.resume": "Continuar amb",
   "lessons.overview.start": "Comença el curs",
+  "lessons.overview.startChapter": "Comença el capítol",
   "lessons.overview.soon": "Properament",
   "lessons.overview.pages.one": "{count} pàgina",
   "lessons.overview.pages.other": "{count} pàgines",

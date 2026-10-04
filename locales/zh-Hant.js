@@ -1753,6 +1753,7 @@ export default {
   "lessons.overview.title": "章節概覽",
   "lessons.overview.resume": "繼續進行",
   "lessons.overview.start": "開始課程",
+  "lessons.overview.startChapter": "開始本章",
   "lessons.overview.soon": "即將推出",
   "lessons.overview.pages.one": "{count} 頁",
   "lessons.overview.pages.other": "{count} 頁",

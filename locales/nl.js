@@ -1754,6 +1754,7 @@ export default {
   "lessons.overview.title": "Hoofdstukoverzicht",
   "lessons.overview.resume": "Doorgaan met",
   "lessons.overview.start": "Start de cursus",
+  "lessons.overview.startChapter": "Start het hoofdstuk",
   "lessons.overview.soon": "Binnenkort beschikbaar",
   "lessons.overview.pages.one": "{count} pagina",
   "lessons.overview.pages.other": "{count} pagina's",

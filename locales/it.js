@@ -1759,6 +1759,7 @@ export default {
   "lessons.overview.title": "Panoramica del capitolo",
   "lessons.overview.resume": "Continua con",
   "lessons.overview.start": "Inizia il corso",
+  "lessons.overview.startChapter": "Inizia il capitolo",
   "lessons.overview.soon": "Prossimamente",
   "lessons.overview.pages.one": "{count} pagina",
   "lessons.overview.pages.other": "{count} pagine",

@@ -1754,6 +1754,7 @@ export default {
   "lessons.overview.title": "Bölüm özeti",
   "lessons.overview.resume": "Devam et",
   "lessons.overview.start": "Kursu başlat",
+  "lessons.overview.startChapter": "Bölümü başlat",
   "lessons.overview.soon": "Çok yakında",
   "lessons.overview.pages.one": "{count} sayfa",
   "lessons.overview.pages.other": "{count} sayfa",

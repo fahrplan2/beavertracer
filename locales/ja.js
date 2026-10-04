@@ -1754,6 +1754,7 @@ export default {
   "lessons.overview.title": "チャプター概要",
   "lessons.overview.resume": "続行:",
   "lessons.overview.start": "コースを開始",
+  "lessons.overview.startChapter": "章を開始",
   "lessons.overview.soon": "近日公開予定",
   "lessons.overview.pages.one": "{count} ページ",
   "lessons.overview.pages.other": "{count} ページ",

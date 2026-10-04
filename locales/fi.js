@@ -1754,6 +1754,7 @@ export default {
   "lessons.overview.title": "Luvun yleiskatsaus",
   "lessons.overview.resume": "Jatka kohdasta",
   "lessons.overview.start": "Aloita kurssi",
+  "lessons.overview.startChapter": "Aloita luku",
   "lessons.overview.soon": "Tulossa pian",
   "lessons.overview.pages.one": "{count} sivu",
   "lessons.overview.pages.other": "{count} sivua",

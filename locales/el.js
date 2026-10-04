@@ -1754,6 +1754,7 @@ export default {
   "lessons.overview.title": "Επισκόπηση κεφαλαίου",
   "lessons.overview.resume": "Συνέχεια με",
   "lessons.overview.start": "Ξεκινήστε το μάθημα",
+  "lessons.overview.startChapter": "Ξεκινήστε το κεφάλαιο",
   "lessons.overview.soon": "Σύντομα",
   "lessons.overview.pages.one": "{count} σελίδα",
   "lessons.overview.pages.other": "{count} σελίδες",

@@ -1754,6 +1754,7 @@ export default {
   "lessons.overview.title": "Ringkasan bab",
   "lessons.overview.resume": "Lanjutkan dengan",
   "lessons.overview.start": "Mulai kursus",
+  "lessons.overview.startChapter": "Mulai bab",
   "lessons.overview.soon": "Segera hadir",
   "lessons.overview.pages.one": "{count} halaman",
   "lessons.overview.pages.other": "{count} halaman",

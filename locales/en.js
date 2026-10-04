@@ -873,6 +873,7 @@ export default {
   "lessons.overview.title": "Chapter overview",
   "lessons.overview.resume": "Continue with",
   "lessons.overview.start": "Start the course",
+  "lessons.overview.startChapter": "Start chapter",
   "lessons.overview.soon": "Coming soon",
   "lessons.overview.pages.one": "{count} page",
   "lessons.overview.pages.other": "{count} pages",

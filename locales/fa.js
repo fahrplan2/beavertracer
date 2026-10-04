@@ -1754,6 +1754,7 @@ export default {
   "lessons.overview.title": "مرور فصل",
   "lessons.overview.resume": "ادامه با",
   "lessons.overview.start": "شروع دوره",
+  "lessons.overview.startChapter": "شروع فصل",
   "lessons.overview.soon": "به زودی",
   "lessons.overview.pages.one": "{count} صفحه",
   "lessons.overview.pages.other": "{count} صفحه",

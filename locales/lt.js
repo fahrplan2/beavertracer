@@ -1754,6 +1754,7 @@ export default {
   "lessons.overview.title": "Skyriaus apžvalga",
   "lessons.overview.resume": "Tęsti su",
   "lessons.overview.start": "Pradėti kursą",
+  "lessons.overview.startChapter": "Pradėti skyrių",
   "lessons.overview.soon": "Netrukus",
   "lessons.overview.pages.one": "{count} puslapis",
   "lessons.overview.pages.other": "{count} puslapiai",

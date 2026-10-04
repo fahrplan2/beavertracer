@@ -1753,6 +1753,7 @@ export default {
   "lessons.overview.title": "Prehľad kapitoly",
   "lessons.overview.resume": "Pokračovať s",
   "lessons.overview.start": "Spustiť kurz",
+  "lessons.overview.startChapter": "Spustiť kapitolu",
   "lessons.overview.soon": "Čoskoro",
   "lessons.overview.pages.one": "{count} strana",
   "lessons.overview.pages.other": "{count} strán",

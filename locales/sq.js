@@ -1753,6 +1753,7 @@ export default {
   "lessons.overview.title": "Përmbledhje e kapitullit",
   "lessons.overview.resume": "Vazhdo me",
   "lessons.overview.start": "Fillo kursin",
+  "lessons.overview.startChapter": "Fillo kapitullin",
   "lessons.overview.soon": "Së shpejti",
   "lessons.overview.pages.one": "{count} faqe",
   "lessons.overview.pages.other": "{count} faqe",

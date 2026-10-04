@@ -1753,6 +1753,7 @@ export default {
   "lessons.overview.title": "Kapitteloversikt",
   "lessons.overview.resume": "Fortsett med",
   "lessons.overview.start": "Start kurset",
+  "lessons.overview.startChapter": "Start kapittelet",
   "lessons.overview.soon": "Kommer snart",
   "lessons.overview.pages.one": "{count} side",
   "lessons.overview.pages.other": "{count} sider",

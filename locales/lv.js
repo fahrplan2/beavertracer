@@ -1754,6 +1754,7 @@ export default {
   "lessons.overview.title": "Nodaļas pārskats",
   "lessons.overview.resume": "Turpināt ar",
   "lessons.overview.start": "Sākt kursu",
+  "lessons.overview.startChapter": "Sākt nodaļu",
   "lessons.overview.soon": "Drīzumā",
   "lessons.overview.pages.one": "{count} lapa",
   "lessons.overview.pages.other": "{count} lapas",

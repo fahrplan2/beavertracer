@@ -1754,6 +1754,7 @@ export default {
   "lessons.overview.title": "Peatüki ülevaade",
   "lessons.overview.resume": "Jätka koos",
   "lessons.overview.start": "Alusta kursust",
+  "lessons.overview.startChapter": "Alusta peatükki",
   "lessons.overview.soon": "Tulemas peagi",
   "lessons.overview.pages.one": "{count} lehekülg",
   "lessons.overview.pages.other": "{count} lehekülge",

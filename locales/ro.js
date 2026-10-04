@@ -1754,6 +1754,7 @@ export default {
   "lessons.overview.title": "Prezentare generală a capitolului",
   "lessons.overview.resume": "Continuă cu",
   "lessons.overview.start": "Pornește cursul",
+  "lessons.overview.startChapter": "Pornește capitolul",
   "lessons.overview.soon": "În curând",
   "lessons.overview.pages.one": "{count} pagină",
   "lessons.overview.pages.other": "{count} pagini",

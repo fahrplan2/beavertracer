@@ -1754,6 +1754,7 @@ export default {
   "lessons.overview.title": "章节概览",
   "lessons.overview.resume": "继续学习",
   "lessons.overview.start": "开始课程",
+  "lessons.overview.startChapter": "开始本章",
   "lessons.overview.soon": "即将推出",
   "lessons.overview.pages.one": "{count} 页",
   "lessons.overview.pages.other": "{count} 页",

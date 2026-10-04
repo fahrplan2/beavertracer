@@ -1754,6 +1754,7 @@ export default {
   "lessons.overview.title": "نظرة عامة على الفصل",
   "lessons.overview.resume": "المتابعة مع",
   "lessons.overview.start": "ابدأ الدورة",
+  "lessons.overview.startChapter": "ابدأ الفصل",
   "lessons.overview.soon": "قريباً",
   "lessons.overview.pages.one": "{count} صفحة",
   "lessons.overview.pages.other": "{count} صفحات",

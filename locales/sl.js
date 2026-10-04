@@ -1754,6 +1754,7 @@ export default {
   "lessons.overview.title": "Pregled poglavja",
   "lessons.overview.resume": "Nadaljuj s",
   "lessons.overview.start": "Začni tečaj",
+  "lessons.overview.startChapter": "Začni poglavje",
   "lessons.overview.soon": "Kmalu na voljo",
   "lessons.overview.pages.one": "{count} stran",
   "lessons.overview.pages.other": "{count} strani",

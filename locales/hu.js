@@ -1753,6 +1753,7 @@ export default {
   "lessons.overview.title": "Fejezet áttekintése",
   "lessons.overview.resume": "Folytatás ezzel",
   "lessons.overview.start": "Tanfolyam indítása",
+  "lessons.overview.startChapter": "Fejezet indítása",
   "lessons.overview.soon": "Hamarosan",
   "lessons.overview.pages.one": "{count} oldal",
   "lessons.overview.pages.other": "{count} oldal",

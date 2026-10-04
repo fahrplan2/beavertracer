@@ -1754,6 +1754,7 @@ export default {
   "lessons.overview.title": "챕터 개요",
   "lessons.overview.resume": "계속하기",
   "lessons.overview.start": "강의 시작",
+  "lessons.overview.startChapter": "장 시작",
   "lessons.overview.soon": "곧 출시 예정",
   "lessons.overview.pages.one": "{count}페이지",
   "lessons.overview.pages.other": "{count}페이지",
