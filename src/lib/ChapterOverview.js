@@ -5,9 +5,9 @@ import { addScrollHints } from "./scrollHints.js";
 
 /**
  * Course chapter overview, shown as a sub-view of the welcome dialog:
- * left the "continue" entry and the chapters (no read/unread tracking),
- * right the pages of the
- * selected chapter (initially the current or last read one). Chapters
+ * left the chapters (no read/unread tracking), right the pages of the
+ * selected chapter (initially the current or last read one). Laid out like
+ * the start page: two open columns with a divider, start-page headings. Chapters
  * still being written are listed quietly below ("coming soon", clickable
  * with ?debug=1); appendix pages (90+) are linked at the bottom.
  * Requires the panel's manifest to be loaded.
@@ -33,29 +33,14 @@ export function buildChapterOverview(panel, onPick) {
     addScrollHints(left);
     addScrollHints(right);
 
-    // ── Continue / start ──
-    const first = pages.find((p) => p.href === panel.manifest?.first) ?? pages[0];
-    const target = resume ?? first;
-    if (target) {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "chapter-overview-resume";
-        btn.innerHTML = `<i class="fa-solid fa-play" aria-hidden="true"></i>`;
-        const text = document.createElement("span");
-        text.className = "chapter-overview-resume-text";
-        const label = document.createElement("span");
-        label.className = "chapter-overview-resume-label";
-        label.textContent = resume ? t("lessons.overview.resume") : t("lessons.overview.start");
-        const page = document.createElement("span");
-        page.className = "chapter-overview-resume-page";
-        page.textContent = LessonsPanel.pageLabel(target);
-        text.append(label, page);
-        btn.appendChild(text);
-        btn.addEventListener("click", () => onPick(target.href));
-        left.appendChild(btn);
-    }
+    // ── Chapters ── (column heading in the start page's style; "start /
+    // continue the course" lives on the start page itself)
+    const leftTitle = document.createElement("h3");
+    leftTitle.className = "welcome-path-title chapter-overview-col-title";
+    leftTitle.innerHTML = `<i class="fa-solid fa-list-ol" aria-hidden="true"></i> `;
+    leftTitle.appendChild(document.createTextNode(t("lessons.overview.chapters")));
+    left.appendChild(leftTitle);
 
-    // ── Chapters ──
     const chapters = document.createElement("div");
     chapters.className = "chapter-overview-chapters";
     left.appendChild(chapters);
@@ -93,13 +78,16 @@ export function buildChapterOverview(panel, onPick) {
         const title = document.createElement("span");
         title.className = "chapter-overview-chapter-title";
         title.textContent = chapter.title;
-        body.append(title);
+        const desc = document.createElement("span");
+        desc.className = "chapter-overview-chapter-desc";
+        desc.textContent = countText;
+        body.append(title, desc);
         item.append(num, body);
         chapters.appendChild(item);
 
         const show = () => {
             for (const e of entries) e.item.classList.toggle("is-selected", e.item === item);
-            right.replaceChildren(pageList(chapter, shown, countText));
+            right.replaceChildren(pageList(chapter, shown));
             right.scrollTop = 0;
         };
         item.addEventListener("click", show);
@@ -146,18 +134,14 @@ export function buildChapterOverview(panel, onPick) {
      * Right column: the chapter's pages, sections bold, sub-pages indented.
      * @param {import("./LessonsPanel.js").LessonPage} chapter
      * @param {import("./LessonsPanel.js").LessonPage[]} shown
-     * @param {string} countText
      */
-    function pageList(chapter, shown, countText) {
+    function pageList(chapter, shown) {
         const wrap = document.createElement("div");
         const head = document.createElement("div");
         head.className = "chapter-overview-pages-head";
         const title = document.createElement("h3");
-        title.className = "chapter-overview-pages-title";
+        title.className = "welcome-path-title chapter-overview-col-title";
         title.textContent = LessonsPanel.pageLabel(chapter);
-        const meta = document.createElement("span");
-        meta.className = "chapter-overview-meta";
-        meta.textContent = countText;
         const titleRow = document.createElement("div");
         titleRow.className = "chapter-overview-pages-title-row";
         // Second way in besides the page list: makes clear the chapter can
@@ -169,7 +153,7 @@ export function buildChapterOverview(panel, onPick) {
         start.appendChild(document.createTextNode(t("lessons.overview.startChapter")));
         start.addEventListener("click", () => onPick(chapter.href));
         titleRow.append(title, start);
-        head.append(titleRow, meta);
+        head.append(titleRow);
 
         const list = document.createElement("ol");
         list.className = "chapter-overview-page-list";

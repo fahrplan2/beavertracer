@@ -151,7 +151,7 @@ export class WelcomeDialog {
         home.appendChild(paths);
 
         // Sub-views (news, chapters) replace the two columns in place, keep
-        // the dialog's size and scroll their content in a framed box.
+        // the dialog's size and scroll their content.
         /** @type {HTMLElement|null} */
         let opener = null;
         /** @type {HTMLElement[]} */
@@ -160,9 +160,8 @@ export class WelcomeDialog {
          * @param {string} icon
          * @param {string} title
          * @param {string} contentClass
-         * @param {number} [minHeight] px — at least this tall (chapter lists)
          */
-        const subView = (icon, title, contentClass, minHeight = 0) => {
+        const subView = (icon, title, contentClass) => {
             const view = document.createElement("div");
             view.className = "welcome-subview";
             view.hidden = true;
@@ -200,7 +199,7 @@ export class WelcomeDialog {
                 // page; its room goes to the sub-view so the dialog keeps its size.
                 const dlg = body.closest(".welcome-dlg");
                 const footer = /** @type {HTMLElement|null} */ (dlg?.querySelector(".welcome-footer"));
-                view.style.height = `${Math.max(home.offsetHeight + (footer?.offsetHeight ?? 0), minHeight)}px`;
+                view.style.height = `${home.offsetHeight + (footer?.offsetHeight ?? 0)}px`;
                 for (const v of views) v.hidden = v !== view;
                 home.hidden = true;
                 dlg?.classList.add("welcome-dlg--subview");
@@ -218,8 +217,9 @@ export class WelcomeDialog {
 
         // Chapter overview: built on first show (needs the chapter list);
         // picking a page opens the lessons panel there.
-        const chapters = subView("fa-graduation-cap",
-            `${t("welcome.learn.title")} – ${t("lessons.overview.title")}`, "welcome-chapters-content", 440);
+        // Titled just "Learn" (as on the start page): the columns below carry
+        // their own headings ("Chapters" | chapter name).
+        const chapters = subView("fa-graduation-cap", t("welcome.learn.title"), "welcome-chapters-content");
         let chaptersBuilt = false;
         /** @param {HTMLElement|null} returnFocus */
         const showChapters = (returnFocus) => {
@@ -231,7 +231,7 @@ export class WelcomeDialog {
             panel?.loadManifest().then(() => {
                 chapters.content.replaceChildren(buildChapterOverview(panel,
                     (href) => close(() => void panel.open(href), { keepLessons: true })));
-                /** @type {HTMLElement|null} */ (chapters.content.querySelector(".chapter-overview-chapter.is-selected, .chapter-overview-resume"))?.focus();
+                /** @type {HTMLElement|null} */ (chapters.content.querySelector(".chapter-overview-chapter.is-selected"))?.focus();
             }).catch(() => {
                 chapters.content.textContent = t("welcome.learn.unavailable");
             });

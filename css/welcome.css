@@ -394,16 +394,20 @@
   line-height: 1.5;
 }
 
-/* Chapter overview (see ChapterOverview.js): chapters left, the selected
-   chapter's pages right — each column scrolls on its own. */
+/* Chapter overview (see ChapterOverview.js): laid out like the start page —
+   two open columns split by a thin line, start-page headings and cards, no
+   framed box around it all. Each column scrolls on its own. */
 .welcome-chapters-content {
   padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
   overflow: hidden;
 }
 
 .chapter-overview {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   height: 100%;
 }
 
@@ -411,17 +415,29 @@
 .chapter-overview-pages {
   min-height: 0;
   overflow-y: auto;
-  padding: var(--pad-lg);
+  /* room for the cards' focus ring and hover border */
+  padding: var(--pad-sm) var(--pad-xl) var(--pad-sm) 2px;
 }
 
 .chapter-overview-list {
   display: flex;
   flex-direction: column;
   gap: var(--pad-md);
-  border-right: 1px solid var(--ui-border);
 }
 
-.chapter-overview-resume,
+.chapter-overview-pages {
+  padding: var(--pad-sm) 2px var(--pad-sm) var(--pad-xl);
+  border-left: 1px solid var(--ui-border-strong);
+}
+
+/* Column headings reuse .welcome-path-title; icon in the course accent */
+.chapter-overview-col-title i,
+.welcome-subview-head .welcome-path-title i {
+  color: var(--accent);
+}
+
+/* Chapter cards: same build as the start page's .welcome-sim-item —
+   badge left, bold title over a muted line */
 .chapter-overview-chapter {
   display: flex;
   align-items: center;
@@ -438,13 +454,11 @@
   transition: background 0.1s, border-color 0.1s;
 }
 
-.chapter-overview-resume:hover,
 .chapter-overview-chapter:hover {
-  background: color-mix(in oklch, var(--accent) 6%, var(--bg-strong));
+  background: var(--ui-card);
   border-color: var(--accent);
 }
 
-.chapter-overview-resume:focus-visible,
 .chapter-overview-chapter:focus-visible,
 .chapter-overview-page:focus-visible,
 .chapter-overview-more-link:focus-visible {
@@ -452,35 +466,24 @@
   outline-offset: 2px;
 }
 
-.chapter-overview-resume > i {
-  width: 1.75rem;
-  text-align: center;
-  font-size: 1.05rem;
-  color: var(--accent);
-}
-
-.chapter-overview-resume-text,
 .chapter-overview-chapter-body {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   min-width: 0;
   flex: 1;
 }
 
-.chapter-overview-resume-label,
 .chapter-overview-chapter-title {
   font-size: 0.8125rem;
   font-weight: 600;
-  line-height: 1.3;
+  line-height: 1.25;
 }
 
-.chapter-overview-resume-page {
+.chapter-overview-chapter-desc {
   font-size: 0.75rem;
   color: var(--muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.3;
 }
 
 .chapter-overview-chapters {
@@ -496,7 +499,7 @@
 /* Selected = shown on the right */
 .chapter-overview-chapter.is-selected {
   border-color: var(--accent);
-  background: color-mix(in oklch, var(--accent) 12%, var(--bg-strong));
+  background: color-mix(in oklch, var(--accent) 10%, var(--bg-strong));
 }
 
 .chapter-overview-num {
@@ -519,20 +522,8 @@
   color: var(--accent-text);
 }
 
-.chapter-overview-meta {
-  display: flex;
-  align-items: center;
-  gap: var(--pad-md);
-  font-size: 0.75rem;
-  color: var(--muted);
-  white-space: nowrap;
-}
-
-/* Right column */
+/* Right column: heading row (chapter name + start button), then pages */
 .chapter-overview-pages-head {
-  display: flex;
-  flex-direction: column;
-  gap: var(--pad-xs);
   padding-bottom: var(--pad-md);
   margin-bottom: var(--pad-sm);
   border-bottom: 1px solid var(--ui-border);
@@ -543,13 +534,6 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--pad-md);
-}
-
-.chapter-overview-pages-title {
-  margin: 0;
-  font-size: 0.9375rem;
-  font-weight: 700;
-  color: var(--text);
 }
 
 .chapter-overview-start {
@@ -854,9 +838,15 @@
     overflow: visible;
   }
 
-  .chapter-overview-list {
-    border-right: none;
-    border-bottom: 1px solid var(--ui-border);
+  .chapter-overview-list,
+  .chapter-overview-pages {
+    padding: var(--pad-sm) 2px;
+  }
+
+  .chapter-overview-pages {
+    border-left: none;
+    border-top: 1px solid var(--ui-border-strong);
+    padding-top: var(--pad-lg);
   }
 
   .welcome-path,
