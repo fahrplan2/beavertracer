@@ -1013,6 +1013,7 @@ export default {
   "homerouter.pf.col.lanport": "LAN Port",
   "homerouter.pf.empty": "No rules configured.",
   "homerouter.pf.invalid": "Invalid port forward rule.",
+  "homerouter.pf.add": "+ Add",
   "homerouter.wan.mode": "Mode",
   "homerouter.wan.mode.static": "Static",
   "homerouter.wan.mode.dhcp": "DHCP",

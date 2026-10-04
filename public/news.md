@@ -1,3 +1,9 @@
+## Version 0.3.0
+
+- added networking lesson system
+- overhauld design
+- added a STUN Server
+
 ## Version 0.2.3
 
 - added a simple SIP server and a VOIP client
