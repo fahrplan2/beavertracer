@@ -641,6 +641,65 @@ describe('SimpleMailServerApp', () => {
 // up without its TLS listeners (smtps/pop3s/imaps) after loading a saved
 // scene, with no error shown anywhere.
 
+describe('SimpleMailServerApp – relay to another domain (MX)', () => {
+  it('looks up the MX host, relays via SMTP with the original sender, and the remote server stores it', async () => {
+    // Server B: biber.test, user ben
+    const vB = makeVirtualTCPNet();
+    /** @type {Map<number, number>} */
+    const refByPort = new Map();
+    const openB = vB.net.openTCPServerSocket;
+    vB.net.openTCPServerSocket = (ip, port) => { const ref = openB(ip, port); refByPort.set(port, ref); return ref; };
+    const fsB = makeMockFS();
+    const b = new SimpleMailServerApp(makeOS(vB.net, fsB));
+    b.mailDomain = 'biber.test';
+    b.users = [{ user: 'ben', password: 'x' }];
+    b._start();
+
+    // Server A: schule.test — its outgoing connections go to server B
+    const vA = makeVirtualTCPNet();
+    /** @type {Map<string, {toServer: any, toClient: any}>} */
+    const out = new Map();
+    const { sendTCPConn, recvTCPConn, closeTCPConn } = vA.net;
+    Object.assign(vA.net, {
+      async connectTCPConn() {
+        const pair = vB.connect(/** @type {number} */ (refByPort.get(25)));
+        const key = `relay${out.size}`;
+        out.set(key, pair);
+        return { key };
+      },
+      sendTCPConn(/** @type {string} */ ck, /** @type {Uint8Array} */ d) { const c = out.get(ck); if (c) c.toServer.push(d); else sendTCPConn(ck, d); },
+      async recvTCPConn(/** @type {string} */ ck) { const c = out.get(ck); if (!c) return recvTCPConn(ck); const r = await c.toClient.next(); return r.done ? null : r.value; },
+      closeTCPConn(/** @type {string} */ ck) { const c = out.get(ck); if (c) { c.toServer.close(); out.delete(ck); } else closeTCPConn(ck); },
+    });
+    const osA = makeOS(vA.net, makeMockFS());
+    /** @type {string[]} */
+    const lookups = [];
+    osA.dns = /** @type {any} */ ({
+      async resolveMX(/** @type {string} */ d) { lookups.push(`MX ${d}`); return [{ exchange: 'mail.biber.test', preference: 10 }]; },
+      async resolveA(/** @type {string} */ h) { lookups.push(`A ${h}`); return [0x0a000002]; },
+    });
+    const a = new SimpleMailServerApp(osA);
+    a.mailDomain = 'schule.test';
+    a.users = [{ user: 'anna', password: 'y' }];
+    a._start();
+
+    const { toServer: ts, toClient: tc } = vA.connect(a.serverRef.smtp);
+    const result = await smtpSend(makeLineClient(ts, tc), { from: 'anna@schule.test', to: 'ben@biber.test', subject: 'Hi', body: 'Hallo Ben' });
+    expect(result).toMatch(/^250/);
+    expect(lookups).toEqual(['MX biber.test', 'A mail.biber.test']);
+
+    // Ben fetches it from server B
+    const { toServer: ts2, toClient: tc2 } = vB.connect(b.serverRef.pop3);
+    const pop = makeLineClient(ts2, tc2);
+    expect(await pop3Login(pop, 'ben', 'x')).toMatch(/^\+OK/);
+    pop.sendLine('RETR 1');
+    const msg = (await pop.readUntil((l) => l === '.')).join('\n');
+    expect(msg).toContain('Hallo Ben');
+    expect(msg).toContain('anna@schule.test');
+    a._stop(); b._stop();
+  });
+});
+
 describe('SimpleMailServerApp – TLS certificate persistence', () => {
   const certPath = '/etc/certs/server.json';
 

@@ -76,6 +76,8 @@ export const nslookup = {
 
     const ips = typeStr === "AAAA" ? await dns.resolveAAAA(name) : await dns.resolveA_IP(name);
     if (!ips.length) {
+      // No answer at all is not the same as "name doesn't exist" (NXDOMAIN)
+      if (dns.lastQueryTimedOut) throw new CommandError(t("app.terminal.commands.nslookup.err.timeout"));
       ctx.println(t("app.terminal.commands.nslookup.err.notFound", { name }));
       return;
     }

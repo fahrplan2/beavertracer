@@ -247,7 +247,12 @@ export const dig = {
         throw new CommandError(t("app.terminal.commands.dig.err.cannotResolveServer", { host: serverStr }));
       }
     } else {
-      serverIpObj = IPAddress.fromString("127.0.0.1");
+      // Like real dig: without @server, ask the system's configured DNS
+      // server (IP settings); only fall back to localhost if there is none.
+      const configured = ctx.os.dns?.serverIp;
+      serverIpObj = configured instanceof IPAddress && configured.toString() !== "0.0.0.0"
+        ? configured
+        : IPAddress.fromString("127.0.0.1");
     }
 
     // For now the UDP/IP stack is IPv4-only

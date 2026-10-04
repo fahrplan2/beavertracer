@@ -545,7 +545,7 @@ export class IPStack extends Observable {
                     // DHCP: src can be 0.0.0.0
                     const pktSrcIsZero = (this._v4n(src) === 0);
                     const srcIp =
-                        !pktSrcIsZero ? src :
+                        (!pktSrcIsZero || /** @type {any} */ (packet).keepUnspecifiedSrc) ? src :
                             (!this._isZero(itf.ip) ? itf.ip : IPAddress.fromString("0.0.0.0"));
 
                     const p2 = new IPv4Packet({
@@ -667,7 +667,7 @@ export class IPStack extends Observable {
     /** @param {IPAddress} bindaddr @param {number} port */
     openUDPSocket(bindaddr, port) { return this.udp.open(bindaddr, port); }
     /** @param {number} port @param {IPAddress} dstip @param {number} dstport @param {*} data */
-    sendUDPSocket(port, dstip, dstport, data) { return this.udp.send(port, dstip, dstport, data); }
+    sendUDPSocket(port, dstip, dstport, data, opts = {}) { return this.udp.send(port, dstip, dstport, data, opts); }
     /** @param {number} port */
     recvUDPSocket(port) { return this.udp.recv(port); }
     /** @param {number} port */
@@ -1215,12 +1215,14 @@ export class IPStack extends Observable {
      * @param {Number} [opts.ttl]
      * @param {Number} [opts.flags]
      * @param {Uint8Array} [opts.payload]
+     * @param {boolean} [opts.keepUnspecifiedSrc] send with source 0.0.0.0 as
+     *   given instead of filling in an interface address (DHCP client)
      */
     async send(opts = {}) {
         const dst = opts.dst ?? IPAddress.fromString("0.0.0.0");
         let src = opts.src ?? IPAddress.fromString("0.0.0.0");
 
-        if (this._isZero(src)) src = this._pickSrcIp(dst);
+        if (this._isZero(src) && !opts.keepUnspecifiedSrc) src = this._pickSrcIp(dst);
 
         const protocol = (opts.protocol ?? 0);
         const ttl = (opts.ttl ?? 64);
@@ -1235,6 +1237,7 @@ export class IPStack extends Observable {
             ttl,
             flags,
         });
+        if (opts.keepUnspecifiedSrc) /** @type {any} */ (packet).keepUnspecifiedSrc = true;
 
         this.route(packet, true).catch(console.error);
     }

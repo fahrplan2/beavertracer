@@ -77,18 +77,23 @@ export class UdpEngine {
      * @param {IPAddress} dstip destination IP
      * @param {number} dstport destination UDP port
      * @param {Uint8Array} data payload
+     * @param {{srcIp?: IPAddress}} [opts] srcIp forces the source address —
+     *   e.g. 0.0.0.0 for a DHCP client that has no lease yet (RFC 2131 §4.1),
+     *   even if the interface meanwhile holds an APIPA address
      */
-    async send(port, dstip, dstport, data) {
+    async send(port, dstip, dstport, data, opts = {}) {
         const socket = this.sockets.get(port);
         if (!socket) throw new Error("Port not in use!");
 
-        const srcIp = (this._resolveSrcIp && this._isWildcard(socket.bindaddr))
-            ? this._resolveSrcIp(dstip)
-            : socket.bindaddr;
+        const srcIp = opts.srcIp
+            ?? ((this._resolveSrcIp && this._isWildcard(socket.bindaddr))
+                ? this._resolveSrcIp(dstip)
+                : socket.bindaddr);
 
         await this._ipSend({
             dst: dstip,
             src: srcIp,
+            ...(opts.srcIp && this._isWildcard(opts.srcIp) ? { keepUnspecifiedSrc: true } : {}),
             protocol: 17,
             payload: new UDPPacket({
                 srcPort: socket.port,

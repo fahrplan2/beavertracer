@@ -675,8 +675,12 @@ export class SimpleMailServerApp extends LoggedProcess {
    */
   async _resolveHostA(host) {
     const h = String(host).trim();
-    const ipLiteral = IPAddress.fromString(h);
-    if (ipLiteral.isV4() && ipLiteral.getNumber() !== 0) return [ipLiteral];
+    // An IP literal is used as is; anything else (a host name like the MX
+    // target "mail.example.com") is looked up — fromString throws on those.
+    try {
+      const ipLiteral = IPAddress.fromString(h);
+      if (ipLiteral.isV4() && ipLiteral.getNumber() !== 0) return [ipLiteral];
+    } catch { /* not an IP literal */ }
 
     try {
       const nums = await this.os.dns.resolveA(h);
@@ -690,8 +694,10 @@ export class SimpleMailServerApp extends LoggedProcess {
    * Relay one message to remote rcpt via MX/A + SMTP client.
    * @param {string} rcptAddr
    * @param {string} rawRfc822
+   * @param {string} [envelopeFrom] original envelope sender; "" = null sender
+   *   (<>), as RFC 5321 §4.5.5 requires for bounces
    */
-  async _relaySmtp(rcptAddr, rawRfc822) {
+  async _relaySmtp(rcptAddr, rawRfc822, envelopeFrom = "") {
     const p = parseEmailAddressLoose(rcptAddr);
     if (!p) throw new Error("invalid rcpt");
 
@@ -708,9 +714,10 @@ export class SimpleMailServerApp extends LoggedProcess {
 
       for (const ip of ips) {
         try {
-          const connKey = await this.os.net.connectTCPConn(ip, 25);
+          const conn = await this.os.net.connectTCPConn(ip, 25);
+          const connKey = conn?.key ?? conn;
           try {
-            await this._smtpClientDeliver(connKey, rcptAddr, rawRfc822);
+            await this._smtpClientDeliver(connKey, rcptAddr, rawRfc822, envelopeFrom);
           } finally {
             try { this.os.net.closeTCPConn(connKey); } catch { /* ignore */ }
           }
@@ -729,8 +736,9 @@ export class SimpleMailServerApp extends LoggedProcess {
    * @param {any} connKey
    * @param {string} rcptAddr
    * @param {string} rawRfc822
+   * @param {string} [envelopeFrom] "" = null sender (<>)
    */
-  async _smtpClientDeliver(connKey, rcptAddr, rawRfc822) {
+  async _smtpClientDeliver(connKey, rcptAddr, rawRfc822, envelopeFrom = "") {
     const net = this.os.net;
     const timeout = this._timeoutMs();
     const st = { buf: new Uint8Array(0) };
@@ -751,7 +759,7 @@ export class SimpleMailServerApp extends LoggedProcess {
     writeLine(tr, `EHLO ${this.mailDomain}`);
     await expect([250]);
 
-    writeLine(tr, `MAIL FROM:<postmaster@${this.mailDomain}>`);
+    writeLine(tr, `MAIL FROM:<${envelopeFrom.replace(/^<|>$/g, "").trim()}>`);
     await expect([250]);
 
     writeLine(tr, `RCPT TO:<${rcptAddr}>`);
@@ -882,7 +890,7 @@ export class SimpleMailServerApp extends LoggedProcess {
 
     for (const addr of remotes) {
       try {
-        await this._relaySmtp(addr, rawRfc822);
+        await this._relaySmtp(addr, rawRfc822, mailFrom);
         this._appendLog(`[${nowStamp()}] relayed: ${addr}`);
       } catch (e) {
         const reason = (e instanceof Error ? e.message : String(e));
@@ -937,7 +945,7 @@ export class SimpleMailServerApp extends LoggedProcess {
         this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.bounceDelivered") || "bounce delivered to"} ${from}`);
       }
     } else {
-      this._relaySmtp(from, bounce).catch((e) => {
+      this._relaySmtp(from, bounce, "").catch((e) => {
         const reason = (e instanceof Error ? e.message : String(e));
         this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.bounceRelayFailed") || "bounce relay failed for"} ${from}: ${reason}`);
       });

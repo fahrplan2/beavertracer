@@ -207,6 +207,20 @@ export class CheckApi {
     }
 
     /**
+     * True if `deviceId`, asking its configured DNS server, resolves `name`
+     * to `expectedIp` (IPv4) — for DNS tasks (records, resolver settings).
+     * @param {number} deviceId @param {string} name @param {string} expectedIp
+     */
+    async resolves(deviceId, name, expectedIp) {
+        const dns = this._computer(deviceId).os?.dns;
+        if (!dns?.resolveA_IP) return false;
+        const lookup = dns.resolveA_IP(String(name)).catch(() => []);
+        const timeout = new Promise((resolve) => simTimer.schedule(() => resolve([]), 2 * SimTimer.DNS_RESOLVE_TIMEOUT_MS));
+        const ips = /** @type {IPAddress[]} */ (await Promise.race([lookup, timeout]));
+        return ips.some((ip) => ip.toString() === String(expectedIp));
+    }
+
+    /**
      * True if a TCP connection from `fromId` to `to`:`port` can be opened
      * (a server listens there) — closed again right away. False on RST
      * (port closed), no answer, or no route.
