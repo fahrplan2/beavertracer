@@ -79,3 +79,25 @@ Server -> Client: ? SYN, ACK ack=?
     expect(renderSeqDiagram(HANDSHAKE + "Client -> Server: PSH, ACK \"x\" seq=?")).not.toContain("quiz-gap-input");
   });
 });
+
+describe(":::seq mode: text", () => {
+  const SRC = `
+mode: text
+PC -> DHCP-Server: DHCP Discover | Broadcast
+DHCP-Server -> PC: DHCP Offer | 192.168.0.100
+`;
+  it("keeps free labels as written and computes no numbers", () => {
+    const { messages, textMode } = parseSeq(SRC);
+    expect(textMode).toBe(true);
+    expect(messages.map((m) => [m.label, m.sub])).toEqual([["DHCP Discover", "Broadcast"], ["DHCP Offer", "192.168.0.100"]]);
+    const html = renderSeqDiagram(SRC);
+    expect(html).toContain("DHCP Discover");
+    expect(html).not.toContain("SEQ=");
+    expect(html).not.toContain("seq-counter");
+  });
+
+  it("asks for a label in quiz mode", () => {
+    const html = renderSeqDiagram(SRC.replace("PC: DHCP Offer", "PC: ? DHCP Offer"), { quiz: true, id: "q1" });
+    expect(html).toMatch(/data-answers="\[&quot;dhcp offer&quot;\]"/);
+  });
+});
