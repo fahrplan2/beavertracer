@@ -9,12 +9,13 @@
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
     "tauri:win": "tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc",
+    "tauri:mac": "tauri build --target universal-apple-darwin --bundles dmg",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "name": "beavertracer",
   "description": "",
-  "version": "0.3.1-dev.2.1ad98b4",
+  "version": "0.3.1-dev.5.efa395a",
   "main": "electron/main.cjs",
   "repository": {
     "type": "git",

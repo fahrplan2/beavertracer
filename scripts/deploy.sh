@@ -171,7 +171,8 @@ download_artifacts() {
   for filename in \
     "beavertracer_${VERSION}_amd64.AppImage" \
     "beavertracer_${VERSION}_amd64.deb" \
-    "beavertracer_${VERSION}_x64-setup.exe"; do
+    "beavertracer_${VERSION}_x64-setup.exe" \
+    "beavertracer_${VERSION}_universal.dmg"; do
 
     dest="${RELEASES_DIR}/${filename}"
     if [[ ! -f "$dest" ]]; then

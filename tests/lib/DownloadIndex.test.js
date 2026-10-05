@@ -11,6 +11,7 @@ const allFiles = (v) => [
   `beavertracer_${v}_x64-setup.exe`,
   `beavertracer_${v}_amd64.AppImage`,
   `beavertracer_${v}_amd64.deb`,
+  `beavertracer_${v}_universal.dmg`,
 ].map((name) => ({ name, size: 1 }));
 
 describe("compareVersions", () => {
@@ -35,6 +36,7 @@ describe("parseReleaseIndex", () => {
       exe: "beavertracer_0.1.16_x64-setup.exe",
       appimage: "beavertracer_0.1.16_amd64.AppImage",
       deb: "beavertracer_0.1.16_amd64.deb",
+      dmg: "beavertracer_0.1.16_universal.dmg",
     });
   });
 

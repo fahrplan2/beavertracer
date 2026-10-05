@@ -17,12 +17,13 @@ export const DOWNLOAD_KINDS = /** @type {const} */ ({
   exe: "_x64-setup.exe",
   appimage: "_amd64.AppImage",
   deb: "_amd64.deb",
+  dmg: "_universal.dmg",
 });
 
 /** @typedef {keyof typeof DOWNLOAD_KINDS} DownloadKind */
 /** @typedef {{ version: string, prerelease: boolean, files: Partial<Record<DownloadKind, string>> }} ReleaseEntry */
 
-const FILE_RE = /^beavertracer_(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)(_x64-setup\.exe|_amd64\.AppImage|_amd64\.deb)$/;
+const FILE_RE = /^beavertracer_(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)(_x64-setup\.exe|_amd64\.AppImage|_amd64\.deb|_universal\.dmg)$/;
 
 /**
  * SemVer order: 0.1.16 < 0.1.17-rc.1 < 0.1.17-rc.2 < 0.1.17.
