@@ -8,7 +8,8 @@ import { Tour } from "./Tour.js";
 import { LessonsPanel } from "./LessonsPanel.js";
 import { buildChapterOverview } from "./ChapterOverview.js";
 import { addScrollHints } from "./scrollHints.js";
-import { loadPage, pageRoute } from "./StaticPages.js";
+import { downloadInfo, loadPage, pageRoute } from "./StaticPages.js";
+import { initDownloadsPage } from "./DownloadIndex.js";
 
 /**
  * Info pages shown as sub-views (see StaticPages.js); routes without an
@@ -305,7 +306,13 @@ export class WelcomeDialog {
             page.content.textContent = "…";
             const content = page.content;
             loadPage(route)
-                .then((html) => { content.innerHTML = html ?? "—"; })
+                .then((html) => {
+                    content.innerHTML = html ?? "—";
+                    if (route === "/downloads") {
+                        const { downloadBase, version } = downloadInfo();
+                        initDownloadsPage(content, { downloadBase, current: version });
+                    }
+                })
                 .catch(() => { content.textContent = "—"; });
         };
 
