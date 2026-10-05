@@ -54,6 +54,28 @@
   flex-shrink: 0;
 }
 
+/* Easter egg: wer mit der Maus auf dem Biber verweilt, sieht ihn tanzen.
+   Die Verzögerung sorgt dafür, dass bloßes Überfahren nichts auslöst. */
+.welcome-logo:hover {
+  animation: welcome-beaver-dance 1.4s ease-in-out 0.8s 1;
+}
+
+@keyframes welcome-beaver-dance {
+  0%   { transform: none; }
+  15%  { transform: rotate(-15deg) translateY(-3px); }
+  30%  { transform: rotate(15deg) translateY(0); }
+  45%  { transform: rotate(-15deg) translateY(-3px); }
+  60%  { transform: rotate(0deg) scale(1.1); }
+  85%  { transform: rotate(360deg) scale(1.1); }
+  100% { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome-logo:hover {
+    animation: none;
+  }
+}
+
 .welcome-title {
   font-size: 1.5rem;
   font-weight: 700;
@@ -83,14 +105,21 @@
 }
 
 .welcome-close-btn {
+  /* same 32px square as the back button beside it */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
   background: transparent;
   border: none;
-  font-size: 1.125rem;
+  font-size: 1.75rem;
   line-height: 1;
   color: var(--muted);
   cursor: pointer;
-  padding: 2px 5px;
-  border-radius: var(--radius-sm);
+  padding: 0;
+  border-radius: var(--radius-md);
   transition: color 0.1s, background 0.1s;
 }
 
@@ -135,6 +164,11 @@
   background: var(--danger-soft);
 }
 
+/* --danger-soft is dark in dark mode: light red text instead */
+[data-theme="dark"] .welcome-stage--alpha {
+  color: color-mix(in oklch, var(--danger), white 50%);
+}
+
 .welcome-stage--beta {
   color: var(--warning-strong);
   background: var(--warning-tint);
@@ -159,11 +193,29 @@
   min-height: 0;
 }
 
-/* "[←] Title" — the back arrow sits right before the sub-view's title */
+/* "[←] Title" — the back arrow sits right before the sub-view's title. It
+   lives in the header (see .welcome-header-sub), replacing logo and title. */
 .welcome-subview-head {
   display: flex;
   align-items: center;
   gap: var(--pad-md);
+}
+
+.welcome-subview-head .welcome-path-title {
+  margin: 0;
+  font-size: 1.125rem;
+  color: var(--text);
+}
+
+.welcome-header-sub,
+.welcome-dlg--subview .welcome-logo,
+.welcome-dlg--subview .welcome-title-block,
+.welcome-dlg--subview .welcome-ver-block {
+  display: none;
+}
+
+.welcome-dlg--subview .welcome-header-sub {
+  display: block;
 }
 
 .welcome-subview-head .welcome-back-btn {
@@ -336,10 +388,6 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: var(--pad-sm) var(--pad-lg);
-  border: 1px solid var(--ui-border);
-  border-radius: var(--radius-md);
-  background: var(--bg-strong);
 }
 
 .welcome-news-content .minimarkdown-h2 {
@@ -367,34 +415,55 @@
   line-height: 1.5;
 }
 
-/* Language chooser inside the welcome dialog: the framed box scrolls,
-   not the list itself (see css/sim.css for the item styles). */
-.welcome-lang-content {
+/* Info pages (help, about, downloads — see StaticPages.js). The sub-view
+   heading already names the page, so the page's own title is dropped.
+   (ar/fa pages wrap everything in <div dir="rtl">, hence the second form.) */
+.welcome-page-content .about-container > h2:first-child,
+.welcome-page-content .about-container > [dir] > h2:first-child {
+  display: none;
+}
+
+.welcome-page-content .about-container > .subtitle:nth-child(2),
+.welcome-page-content .about-container > [dir] > .subtitle:nth-child(2) {
+  margin-top: var(--pad-sm);
+}
+
+/* About is the exception: its title ("Beaver Tracer") isn't the sub-view's
+   ("About"), so it stays — with the logo the header now leaves out. */
+.welcome-page--about .about-container > h2:first-child,
+.welcome-page--about .about-container > [dir] > h2:first-child {
   display: flex;
-  flex-direction: column;
-  gap: var(--pad-lg);
-  padding: var(--pad-lg);
+  align-items: center;
+  gap: var(--pad-md);
 }
 
-.welcome-lang-content > * {
+.welcome-page--about .about-container h2:first-child::before {
+  content: "";
+  width: 46px;
+  height: 46px;
   flex-shrink: 0;
+  background: url("/beaver-icon.svg") center / contain no-repeat;
 }
 
-.welcome-lang-content .sim-langlist {
-  max-height: none;
-  overflow: visible;
+.welcome-page--about .about-container > .subtitle:nth-child(2),
+.welcome-page--about .about-container > [dir] > .subtitle:nth-child(2) {
+  margin-top: -0.5rem;
 }
 
-/* Chapter overview (see ChapterOverview.js): chapters left, the selected
-   chapter's pages right — each column scrolls on its own. */
+/* Chapter overview (see ChapterOverview.js): laid out like the start page —
+   two open columns split by a thin line, start-page headings and cards, no
+   framed box around it all. Each column scrolls on its own. */
 .welcome-chapters-content {
   padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
   overflow: hidden;
 }
 
 .chapter-overview {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   height: 100%;
 }
 
@@ -402,17 +471,29 @@
 .chapter-overview-pages {
   min-height: 0;
   overflow-y: auto;
-  padding: var(--pad-lg);
+  /* room for the cards' focus ring and hover border */
+  padding: var(--pad-sm) var(--pad-xl) var(--pad-sm) 2px;
 }
 
 .chapter-overview-list {
   display: flex;
   flex-direction: column;
   gap: var(--pad-md);
-  border-right: 1px solid var(--ui-border);
 }
 
-.chapter-overview-resume,
+.chapter-overview-pages {
+  padding: var(--pad-sm) 2px var(--pad-sm) var(--pad-xl);
+  border-left: 1px solid var(--ui-border-strong);
+}
+
+/* Column headings reuse .welcome-path-title; icon in the course accent */
+.chapter-overview-col-title i,
+.welcome-subview-head .welcome-path-title i {
+  color: var(--accent);
+}
+
+/* Chapter cards: same build as the start page's .welcome-sim-item —
+   badge left, bold title over a muted line */
 .chapter-overview-chapter {
   display: flex;
   align-items: center;
@@ -429,13 +510,11 @@
   transition: background 0.1s, border-color 0.1s;
 }
 
-.chapter-overview-resume:hover,
 .chapter-overview-chapter:hover {
-  background: color-mix(in oklch, var(--accent) 6%, var(--bg-strong));
+  background: var(--ui-card);
   border-color: var(--accent);
 }
 
-.chapter-overview-resume:focus-visible,
 .chapter-overview-chapter:focus-visible,
 .chapter-overview-page:focus-visible,
 .chapter-overview-more-link:focus-visible {
@@ -443,35 +522,24 @@
   outline-offset: 2px;
 }
 
-.chapter-overview-resume > i {
-  width: 1.75rem;
-  text-align: center;
-  font-size: 1.05rem;
-  color: var(--accent);
-}
-
-.chapter-overview-resume-text,
 .chapter-overview-chapter-body {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   min-width: 0;
   flex: 1;
 }
 
-.chapter-overview-resume-label,
 .chapter-overview-chapter-title {
   font-size: 0.8125rem;
   font-weight: 600;
-  line-height: 1.3;
+  line-height: 1.25;
 }
 
-.chapter-overview-resume-page {
+.chapter-overview-chapter-desc {
   font-size: 0.75rem;
   color: var(--muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.3;
 }
 
 .chapter-overview-chapters {
@@ -487,7 +555,7 @@
 /* Selected = shown on the right */
 .chapter-overview-chapter.is-selected {
   border-color: var(--accent);
-  background: color-mix(in oklch, var(--accent) 12%, var(--bg-strong));
+  background: color-mix(in oklch, var(--accent) 10%, var(--bg-strong));
 }
 
 .chapter-overview-num {
@@ -510,30 +578,50 @@
   color: var(--accent-text);
 }
 
-.chapter-overview-meta {
-  display: flex;
-  align-items: center;
-  gap: var(--pad-md);
-  font-size: 0.75rem;
-  color: var(--muted);
-  white-space: nowrap;
-}
-
-/* Right column */
+/* Right column: heading row (chapter name + start button), then pages */
 .chapter-overview-pages-head {
-  display: flex;
-  flex-direction: column;
-  gap: var(--pad-xs);
   padding-bottom: var(--pad-md);
   margin-bottom: var(--pad-sm);
   border-bottom: 1px solid var(--ui-border);
 }
 
-.chapter-overview-pages-title {
-  margin: 0;
-  font-size: 0.9375rem;
-  font-weight: 700;
-  color: var(--text);
+.chapter-overview-pages-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pad-md);
+}
+
+.chapter-overview-start {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pad-sm);
+  padding: var(--pad-xs) var(--pad-md);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-md);
+  background: var(--accent);
+  color: var(--accent-text);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: filter 0.1s;
+}
+
+/* white like the label, not the global green play icon */
+.chapter-overview-start > i {
+  color: inherit;
+}
+
+.chapter-overview-start:hover {
+  filter: brightness(1.1);
+}
+
+.chapter-overview-start:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 
 .chapter-overview-page-list {
@@ -594,6 +682,26 @@
 .chapter-overview-page-title {
   flex: 1 1 auto;
   min-width: 0;
+}
+
+/* Hover/focus hint that each page row opens the page */
+.chapter-overview-page-go {
+  flex: 0 0 auto;
+  align-self: center;
+  font-size: 0.6875rem;
+  color: var(--accent);
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+
+.chapter-overview-page:hover .chapter-overview-page-go,
+.chapter-overview-page:focus-visible .chapter-overview-page-go {
+  opacity: 1;
+}
+
+/* No hover on touch: keep the hint faintly visible */
+@media (hover: none) {
+  .chapter-overview-page-go { opacity: 0.45; }
 }
 
 /* Chapters still being written: a quiet list */
@@ -786,9 +894,15 @@
     overflow: visible;
   }
 
-  .chapter-overview-list {
-    border-right: none;
-    border-bottom: 1px solid var(--ui-border);
+  .chapter-overview-list,
+  .chapter-overview-pages {
+    padding: var(--pad-sm) 2px;
+  }
+
+  .chapter-overview-pages {
+    border-left: none;
+    border-top: 1px solid var(--ui-border-strong);
+    padding-top: var(--pad-lg);
   }
 
   .welcome-path,

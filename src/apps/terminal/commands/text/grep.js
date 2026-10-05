@@ -61,6 +61,10 @@ export const grep = {
       }
     });
 
+    // Like POSIX grep: no matching line means exit status 1 — silently, so
+    // "grep … && …" / "if grep …" and lesson shellCommand checks work.
+    if (out.length === 0) throw new CommandError("");
+
     return out.join("\n");
   },
 };

@@ -109,7 +109,7 @@ export class Tablet extends SimulatedObject {
             obj._wPort = Tablet._installWirelessPort(net);
             obj.os.net = net;
         }
-        if (n.fs)  obj.os.fs = VirtualFileSystem.fromJSON(n.fs);
+        if (n.fs)  { obj.os.fs = VirtualFileSystem.fromJSON(n.fs); obj.os.reloadCertStore(); }
         if (n.dns) obj.os.dns.setServer(n.dns);
         obj._ssid = String(n.ssid ?? "");
 

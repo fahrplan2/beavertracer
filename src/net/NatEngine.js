@@ -5,6 +5,7 @@ import { TCPPacket } from "./pdu/TCPPacket.js";
 import { ICMPPacket } from "./pdu/ICMPPacket.js";
 import { IPAddress } from "./models/IPAddress.js";
 import { simTimer, SimTimer } from "../lib/SimTimer.js";
+import { onesComplementChecksum } from "./util/checksumUtils.js";
 
 /**
  * @typedef {Object} NatSession
@@ -293,6 +294,7 @@ export class NatEngine {
     _inIcmp(p) {
         let icmp;
         try { icmp = ICMPPacket.fromBytes(p.payload); } catch { return null; }
+        if (icmp.type === 3 || icmp.type === 11 || icmp.type === 12) return this._inIcmpError(p, icmp);
         if (icmp.type !== 0) return null;
 
         const mapping = this._icmpIn.get(icmp.identifier);
@@ -307,6 +309,55 @@ export class NatEngine {
         icmp.checksum = 0;
         p.payload = icmp.pack();
         return mapping.srcIpNum;
+    }
+
+    /**
+     * Un-NAT an ICMP error (Destination Unreachable, Time Exceeded, Parameter
+     * Problem) that refers to a packet we translated on its way out — so that
+     * e.g. traceroute works from behind the router (RFC 5508 §4). The quoted
+     * original header (src = our WAN IP, src port / echo id = NAT port) is
+     * mapped back to the LAN host, and the outer packet is sent to that host.
+     * @param {import("./pdu/IPv4Packet.js").IPv4Packet} p
+     * @param {ICMPPacket} icmp
+     * @returns {number|null} LAN host IP (uint32) or null if no mapping
+     */
+    _inIcmpError(p, icmp) {
+        const q = new Uint8Array(icmp.payload); // quoted: original IP header + 8 bytes
+        if (q.length < 20) return null;
+        const ihl = (q[0] & 0x0f) * 4;
+        if (q.length < ihl + 8) return null;
+        const proto = q[9];
+        const l4 = ihl;
+
+        let lanIpNum, origPortOrId;
+        if (proto === 6 || proto === 17) {
+            const natPort = (q[l4] << 8) | q[l4 + 1];
+            const session = this._in.get(`${natPort}:${proto}`);
+            if (!session) return null;
+            lanIpNum = session.srcIpNum; origPortOrId = session.srcPort;
+            q[l4] = origPortOrId >> 8; q[l4 + 1] = origPortOrId & 0xff;
+        } else if (proto === 1) {
+            const natId = (q[l4 + 4] << 8) | q[l4 + 5];
+            const mapping = this._icmpIn.get(natId);
+            if (!mapping) return null;
+            lanIpNum = mapping.srcIpNum; origPortOrId = mapping.origId;
+            q[l4 + 4] = origPortOrId >> 8; q[l4 + 5] = origPortOrId & 0xff;
+        } else {
+            return null;
+        }
+
+        // quoted source IP back to the LAN host, fix the quoted header checksum
+        q[12] = lanIpNum >>> 24; q[13] = (lanIpNum >>> 16) & 0xff; q[14] = (lanIpNum >>> 8) & 0xff; q[15] = lanIpNum & 0xff;
+        q[10] = 0; q[11] = 0;
+        const cs = onesComplementChecksum([q.subarray(0, ihl)]);
+        q[10] = cs >> 8; q[11] = cs & 0xff;
+
+        icmp.payload = q;
+        icmp.checksum = 0;
+        p.payload = icmp.pack();
+        p.dst = new IPAddress(4, lanIpNum);
+        p.headerChecksum = 0;
+        return lanIpNum;
     }
 
     /** @param {number} proto @returns {number|null} null if the port pool is exhausted */

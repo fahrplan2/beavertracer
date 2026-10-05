@@ -393,7 +393,11 @@ function evalFill(block) {
   block.querySelectorAll(".quiz-gap-input").forEach((el) => {
     const input = /** @type {HTMLInputElement} */ (el);
     const answers = JSON.parse(input.dataset.answers || "[]");
-    const ok = answers.includes(input.value.trim().toLowerCase());
+    // TCP flags (sequence-diagram quizzes): order and separators don't matter
+    const value = input.dataset.kind === "flags"
+      ? input.value.toLowerCase().split(/[\s,+/]+/).filter(Boolean).sort().join(",")
+      : input.value.trim().toLowerCase();
+    const ok = answers.includes(value);
     markFeedback(input, input.nextElementSibling, ok);
     if (ok) correct++;
   });

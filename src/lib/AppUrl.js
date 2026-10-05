@@ -6,10 +6,10 @@
  * existed, main.js, i18n/index.js and SimControl.js each read
  * `location.search` and called history.pushState/replaceState independently,
  * with no shared knowledge of what params existed — main.js even had to
- * capture ?sim= into a module-level constant before StaticPageRouter's
- * first replaceState could touch the URL. StaticPageRouter still owns
- * pathname-based routes (/help, /about, ...); this module is only about
- * query-string params and the "back to /" transition out of those routes.
+ * capture ?sim= into a module-level constant before the old page router's
+ * first replaceState could touch the URL. Besides query-string params, this
+ * module only handles the "back to /" transition out of old page URLs
+ * (/help, /about, ...), which main.js turns into welcome-dialog views.
  */
 
 /**
@@ -25,7 +25,7 @@
 
 /**
  * Reads every recognized query param in one pass. Call this once, as early
- * as possible (before StaticPageRouter mounts or i18n applies ?lang=), and
+ * as possible (before i18n applies ?lang=), and
  * pass the result down instead of re-reading location.search elsewhere.
  * @returns {BootParams}
  */
@@ -45,7 +45,7 @@ export function readBootParams() {
  * Sets (or, if value is null, clears) one query param, preserving every
  * other param/pathname/hash currently in the URL. Defaults to replaceState
  * (no new back-history entry) — pass {replace:false} for actions that
- * should be reachable via the back button (see resetPathToRoot).
+ * should be reachable via the back button.
  * @param {string} key
  * @param {string|null} value
  * @param {{replace?: boolean}} [opts]
@@ -85,17 +85,14 @@ export function buildUrl(overrides) {
 }
 
 /**
- * Resets the pathname to "/" (leaving a StaticPageRouter route like /help),
- * preserving query params/hash. Defaults to pushState (matches the previous
- * per-button behavior: reachable via the back button), unlike setParam/
- * clearParams above.
- * @param {{replace?: boolean}} [opts]
+ * Resets the pathname to "/" (leaving an old page URL like /help),
+ * preserving query params/hash, without a new back-history entry.
  */
-export function resetPathToRoot(opts = {}) {
+export function resetPathToRoot() {
     if (window.location.pathname === "/") return;
     const url = new URL(window.location.href);
     url.pathname = "/";
-    _write(url, opts.replace ?? false);
+    _write(url, true);
 }
 
 /**

@@ -1,0 +1,173 @@
+{
+ "_info": "BeaverTracer Lektion 1.3 \u2014 Der Webseitenaufruf",
+ "version": 5,
+ "tick": 100,
+ "objects": [
+  {
+   "kind": "Computer",
+   "id": 1,
+   "name": "Client-PC",
+   "x": 80,
+   "y": 100,
+   "px": 220,
+   "py": 120,
+   "panelOpen": false,
+   "installedApps": [
+    "SparktailHTTPClientApp"
+   ],
+   "net": {
+    "name": "PC",
+    "forwarding": false,
+    "interfaces": [
+     {
+      "name": "eth0",
+      "ip": "192.168.0.10",
+      "prefixLength": 24,
+      "ip6": null,
+      "prefixLength6": 0,
+      "ip6LL": null
+     }
+    ],
+    "routes": []
+   }
+  },
+  {
+   "kind": "Computer",
+   "id": 2,
+   "name": "Server",
+   "x": 420,
+   "y": 100,
+   "px": 220,
+   "py": 120,
+   "panelOpen": false,
+   "installedApps": [
+    "SimpleHTTPServerApp"
+   ],
+   "net": {
+    "name": "PC",
+    "forwarding": false,
+    "interfaces": [
+     {
+      "name": "eth0",
+      "ip": "192.168.0.20",
+      "prefixLength": 24,
+      "ip6": null,
+      "prefixLength6": 0,
+      "ip6LL": null
+     }
+    ],
+    "routes": []
+   },
+   "fs": {
+    "type": "dir",
+    "name": "",
+    "ctime": 1785618849375,
+    "mtime": 1785618849375,
+    "children": [
+     {
+      "type": "dir",
+      "name": "etc",
+      "ctime": 1785618849375,
+      "mtime": 1785618849375,
+      "children": [
+       {
+        "type": "dir",
+        "name": "certs",
+        "ctime": 1785618849375,
+        "mtime": 1785618849375,
+        "children": [
+         {
+          "type": "dir",
+          "name": "trusted",
+          "ctime": 1785618849375,
+          "mtime": 1785618849375,
+          "children": []
+         }
+        ]
+       },
+       {
+        "type": "file",
+        "name": "httpd.conf",
+        "data": "{\n  \"port\": 80,\n  \"docRoot\": \"/var/www/\",\n  \"httpsEnabled\": false,\n  \"httpsPort\": 443,\n  \"certPath\": \"\",\n  \"autostart\": true\n}",
+        "binary": false,
+        "ctime": 1785618849375,
+        "mtime": 1785618849375
+       }
+      ]
+     },
+     {
+      "type": "dir",
+      "name": "home",
+      "ctime": 1785618849375,
+      "mtime": 1785618849375,
+      "children": [
+       {
+        "type": "file",
+        "name": "notes.txt",
+        "data": "Welcome to BeaverOS!\n\nThis file lives in your home directory - feel free to edit or delete it.\nIt's also a handy scratch pad for trying out the terminal, e.g.:\n\n  cat notes.txt | grep BeaverOS\n  cat notes.txt | wc -l\n  cat notes.txt | tail -n 3\n\nHave fun exploring the network!\n",
+        "binary": false,
+        "ctime": 1785618849375,
+        "mtime": 1785618849375
+       },
+       {
+        "type": "file",
+        "name": "kontakt.html",
+        "data": "<!doctype html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n  <title>Kontakt</title>\n  <link rel=\"stylesheet\" href=\"style.css\">\n</head>\n<body>\n  <h1>Kontakt</h1>\n  <p>Sekretariat: Mo\u2013Fr 7:30\u201313:00 Uhr</p>\n  <p><a href=\"index.html\">Zur\u00fcck zur Startseite</a></p>\n</body>\n</html>\n",
+        "binary": false,
+        "ctime": 1785618849375,
+        "mtime": 1785618849375
+       }
+      ]
+     },
+     {
+      "type": "dir",
+      "name": "bin",
+      "ctime": 1785618849375,
+      "mtime": 1785618849375,
+      "children": []
+     },
+     {
+      "type": "dir",
+      "name": "var",
+      "ctime": 1785618849375,
+      "mtime": 1785618849375,
+      "children": [
+       {
+        "type": "dir",
+        "name": "www",
+        "ctime": 1785618849375,
+        "mtime": 1785618849375,
+        "children": [
+         {
+          "type": "file",
+          "name": "index.html",
+          "data": "<!doctype html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n  <title>Beaver-Schule</title>\n  <link rel=\"stylesheet\" href=\"style.css\">\n</head>\n<body>\n  <h1>Willkommen an der Beaver-Schule</h1>\n  <p>Hier findest du alles rund um unsere Schule.</p>\n  <p><a href=\"kontakt.html\">Kontakt</a></p>\n</body>\n</html>\n",
+          "binary": false,
+          "ctime": 1785618849375,
+          "mtime": 1785618849375
+         },
+         {
+          "type": "file",
+          "name": "style.css",
+          "data": "body { font-family: sans-serif; margin: 2em; background: #f4f8f8; }\nh1 { color: #006d75; }\n",
+          "binary": false,
+          "ctime": 1785618849375,
+          "mtime": 1785618849375
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "kind": "Link",
+   "id": 3,
+   "a": 1,
+   "b": 2,
+   "portA": "eth0",
+   "portB": "eth0"
+  }
+ ]
+}

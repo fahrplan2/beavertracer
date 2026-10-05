@@ -223,6 +223,47 @@ describe('NatEngine – ICMP echo NAT', () => {
 
 // ─── dnat / installDnatSession (port forwarding) ────────────────────────────
 
+describe('NatEngine – ICMP errors (traceroute through NAT)', () => {
+    /** ICMP Time Exceeded from a router on the way, quoting `orig` (as it left the NAT). @param {IPv4Packet} orig */
+    function timeExceeded(orig) {
+        const quoted = orig.pack().slice(0, 28); // IP header + 8 bytes
+        const icmp = new ICMPPacket({ type: 11, code: 0, payload: quoted });
+        return new IPv4Packet({ src: IPAddress.fromString('198.51.100.1'), dst: IPAddress.fromString(WAN_IP), protocol: 1, payload: icmp.pack() });
+    }
+
+    it('maps a Time Exceeded for a translated echo request back to the LAN host', () => {
+        const nat = new NatEngine();
+        const echo = new ICMPPacket({ type: 8, identifier: 0x1234, sequence: 1, payload: new Uint8Array(8) });
+        const out = new IPv4Packet({ src: IPAddress.fromString(LAN_IP), dst: IPAddress.fromString(REMOTE_IP), protocol: 1, ttl: 1, payload: echo.pack() });
+        expect(nat.natOutbound(ipn(WAN_IP), out)).toBe(true);
+
+        const err = timeExceeded(out);
+        expect(nat.natInbound(err)).toBe(ipn(LAN_IP));
+        expect(err.dst.toString()).toBe(LAN_IP);
+        const q = ICMPPacket.fromBytes(err.payload).payload;
+        expect(IPAddress.fromUInt8(q.slice(12, 16)).toString()).toBe(LAN_IP);   // quoted source back to the LAN host
+        expect((q[24] << 8) | q[25]).toBe(0x1234);                              // quoted echo id restored
+    });
+
+    it('maps a Destination Unreachable for a translated UDP datagram back, with the original port', () => {
+        const nat = new NatEngine();
+        const out = makeUdpPacket(40000);
+        nat.natOutbound(ipn(WAN_IP), out);
+        const icmp = new ICMPPacket({ type: 3, code: 3, payload: out.pack().slice(0, 28) });
+        const err = new IPv4Packet({ src: IPAddress.fromString(REMOTE_IP), dst: IPAddress.fromString(WAN_IP), protocol: 1, payload: icmp.pack() });
+        expect(nat.natInbound(err)).toBe(ipn(LAN_IP));
+        const q = ICMPPacket.fromBytes(err.payload).payload;
+        expect((q[20] << 8) | q[21]).toBe(40000);
+    });
+
+    it('drops an ICMP error that refers to no known mapping', () => {
+        const nat = new NatEngine();
+        const stranger = makeUdpPacket(40000);
+        stranger.src = IPAddress.fromString(WAN_IP);
+        expect(nat.natInbound(timeExceeded(stranger))).toBeNull();
+    });
+});
+
 describe('NatEngine – dnat', () => {
     it('rewrites destination IP/port for UDP', () => {
         const nat = new NatEngine();

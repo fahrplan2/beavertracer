@@ -444,6 +444,9 @@ export class HomeRouter extends SimulatedObject {
         } else {
             if (this._wanIp && pkt.ttl > 1) {
                 void this._routeLanToWan(pkt);
+            } else if (this._wanIp) {
+                // TTL would expire here: answer like any router (traceroute hop 1)
+                this._lanStack._sendICMPError(pkt, 11, 0);
             }
         }
     }
@@ -1746,7 +1749,7 @@ export class HomeRouter extends SimulatedObject {
         const lanIpIn   = UILib.input({ placeholder: "192.168.1.10" });
         const lanPortIn = UILib.input({ placeholder: "80" });
 
-        const addBtn = UILib.button("+ Add");
+        const addBtn = UILib.button(t("homerouter.pf.add"));
         addBtn.addEventListener("click", () => {
             const wanPort = parseInt(wanPortIn.value) | 0;
             const lanIp   = strToNum(lanIpIn.value);

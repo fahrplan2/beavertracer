@@ -68,6 +68,8 @@ export class DNSResolver {
   /** @type {number} */ timeoutMs;
   /** @type {number} */ tries;
   /** @type {boolean} */ cacheEnabled;
+  /** True if the last lookup got no answer at all (server unreachable/silent). @type {boolean} */
+  lastQueryTimedOut = false;
   /** @type {number} */ maxDepth;
 
   /** @type {number} */ negativeCacheSec;
@@ -292,7 +294,10 @@ export class DNSResolver {
     const visited = new Set();
 
     // serverIp is guaranteed non-null here
-    return this._queryRecursive(n, qtype & 0xffff, /** @type {IPAddress} */ (this.serverIp), this.port | 0, this.maxDepth, visited);
+    const resp = await this._queryRecursive(n, qtype & 0xffff, /** @type {IPAddress} */ (this.serverIp), this.port | 0, this.maxDepth, visited);
+    // Lets callers (nslookup) tell "no server answered" apart from NXDOMAIN.
+    this.lastQueryTimedOut = resp == null;
+    return resp;
   }
 
   /**

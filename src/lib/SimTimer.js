@@ -81,8 +81,10 @@ export class SimTimer {
      *  up). Must stay well above the initial RTO (600ms) so at least a few
      *  SYN retransmits get a chance to run before this cuts it off. */
     static TCP_CONNECT_TIMEOUT_MS   = 10_000;  // 2000 ticks
-    /** Minimum RTO after RTT measurement (RFC 6298 §2.4) */
-    static TCP_MIN_RTO_MS           = 1000;  // 200 ticks
+    /** Minimum RTO after RTT measurement. RFC 6298 §2.4 suggests 1 s; like
+     *  Linux we use 200 ms — 1 s is ~20 s of real time at normal sim speed,
+     *  far too long to watch a retransmission happen. */
+    static TCP_MIN_RTO_MS           = 200;   //  40 ticks
     /** Per-chunk read timeout while a server waits for (more of) an HTTP
      *  request. Wraps TcpEngine.recv(), which has no timeout of its own and
      *  blocks until TCP actually delivers data — so like TCP_CONNECT_TIMEOUT_MS

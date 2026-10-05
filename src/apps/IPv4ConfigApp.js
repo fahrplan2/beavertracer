@@ -934,7 +934,8 @@ export class IPv4ConfigApp extends GenericProcess {
           DHCPPacket.OPT_LEASE_TIME,
         ]));
 
-        this.os.net.sendUDPSocket(sock,IPAddress.fromString("255.255.255.255"), 67, discover.pack());
+        // No lease yet: always from 0.0.0.0, even with an APIPA address (RFC 2131 §4.1)
+        this.os.net.sendUDPSocket(sock, IPAddress.fromString("255.255.255.255"), 67, discover.pack(), { srcIp: new IPAddress(4, 0) });
 
         const offerPkt = await this._waitDhcp(sock, xid, DHCPPacket.MT_OFFER, OFFER_WAIT_SIM);
         if (!offerPkt) {
@@ -957,7 +958,7 @@ export class IPv4ConfigApp extends GenericProcess {
         req.setOption(DHCPPacket.OPT_REQUESTED_IP, numberToIPv4Bytes(offeredIpNum));
         if (serverId !== 0) req.setOption(DHCPPacket.OPT_SERVER_ID, numberToIPv4Bytes(serverId));
 
-        this.os.net.sendUDPSocket(sock, IPAddress.fromString("255.255.255.255"), 67, req.pack());
+        this.os.net.sendUDPSocket(sock, IPAddress.fromString("255.255.255.255"), 67, req.pack(), { srcIp: new IPAddress(4, 0) });
 
         const ackPkt = await this._waitDhcp(sock, xid, DHCPPacket.MT_ACK, ACK_WAIT_SIM);
         try { this.os.net.closeUDPSocket(sock); } catch { }

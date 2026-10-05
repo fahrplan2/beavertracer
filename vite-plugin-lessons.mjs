@@ -6,9 +6,16 @@ import fs from "node:fs";
 import path from "node:path";
 import MarkdownIt from "markdown-it";
 import markdownItContainer from "markdown-it-container";
+import { renderSeqDiagram } from "./lessons-seq-diagram.mjs";
 
 const SRC_DIR = "lessons";
 const OUT_DIR = "public/lessons";
+
+// Courses checked by a human. All other languages are machine translations and
+// get a notice with a "report an error" mail link at the top of every page.
+const REVIEWED_LANGS = new Set(["de", "en"]);
+const REPORT_EMAIL = "info@beavertracer.eu";
+const SITE_URL = "https://www.beavertracer.eu";
 
 // ── Quiz pre-processing ────────────────────────────────────────
 
@@ -193,6 +200,24 @@ function renderEvaluateButton(ids, label) {
   ].join("\n");
 }
 
+/**
+ * ":::seq" sequence diagram (see lessons-seq-diagram.mjs). A malformed
+ * block shows its error on the page instead of breaking the build.
+ * @param {string} content @param {{ quiz?: boolean, id?: string }} [opts]
+ */
+function seqOrError(content, opts) {
+  try {
+    return renderSeqDiagram(content, opts);
+  } catch (err) {
+    return `<div class="seq-error">${escHtml(err instanceof Error ? err.message : String(err))}</div>`;
+  }
+}
+
+/** @param {string} src */
+function processSeqBlocks(src) {
+  return src.replace(/^:::seq[ \t]*\n([\s\S]*?)^:::[ \t]*$/gm, (_, content) => seqOrError(content));
+}
+
 /** @param {string} src @param {string} [lang] */
 function processQuizBlocks(src, lang = "en") {
   let counter = 0;
@@ -212,6 +237,7 @@ function processQuizBlocks(src, lang = "en") {
           case "fill":  return renderQuizFill(id, content);
           case "table": return renderQuizTable(id, content);
           case "match": return renderQuizMatch(id, content);
+          case "seq":   return seqOrError(content, { quiz: true, id });
           default:      return match;
         }
       } else {
@@ -328,6 +354,8 @@ const CHROME_KEYS = {
   "lessons.task.check": "Check task",
   "lessons.task.pass": "Correct!",
   "lessons.task.fail": "Not quite — try again.",
+  "lessons.aiNotice.text": "This page was translated by AI and has not been checked by a human. It may contain errors.",
+  "lessons.aiNotice.report": "Report an error",
 };
 
 function loadLocaleInfo(localesDir) {
@@ -616,6 +644,7 @@ function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI
 
   // ── Pre-process :::quiz / :::evaluate blocks ──────────────────
   src = processQuizBlocks(src, lang);
+  src = processSeqBlocks(src);
 
   // ── Pre-process :::task blocks ─────────────────────────────────
   src = processTaskBlocks(src, chrome);
@@ -730,6 +759,17 @@ function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI
     const prefix = numLabel(node.num);
     // Inject <span class="lesson-num"> after the opening <h1 ...> tag
     body = body.replace(/(<h1[^>]*>)/, `$1<span class="lesson-num">${prefix}</span> `);
+  }
+
+  // ── AI translation notice (after the H1) ───────────────────────
+  if (!REVIEWED_LANGS.has(lang)) {
+    const page = path.basename(srcFile, ".md");
+    const url = `${SITE_URL}/lessons/${lang}/${page}.html`;
+    const mailto = `mailto:${REPORT_EMAIL}?subject=${encodeURIComponent(`BeaverTracer translation error [${lang}] ${page}`)}` +
+      `&body=${encodeURIComponent(`${url}\n\n`)}`;
+    const notice = `<div class="callout callout-ai"><p>${escHtml(chrome["lessons.aiNotice.text"])} ` +
+      `<a href="${escHtml(mailto)}">${escHtml(chrome["lessons.aiNotice.report"])}</a></p></div>\n`;
+    body = /<\/h1>/.test(body) ? body.replace(/(<\/h1>\s*)/, `$1${notice}`) : notice + body;
   }
 
   // ── Prev / Next navigation ─────────────────────────────────────
@@ -925,10 +965,10 @@ function buildLessons(root) {
     expectedJson.add("index.json");
     for (const existing of fs.readdirSync(langOut)) {
       if (existing.endsWith(".html") && !expectedHtml.has(existing)) {
-        fs.rmSync(path.join(langOut, existing));
+        fs.rmSync(path.join(langOut, existing), { force: true }); // force: a parallel rebuild may have removed it already
         console.log(`[lessons] ✗ removed stale ${lang}/${existing}`);
       } else if (existing.endsWith(".json") && !expectedJson.has(existing)) {
-        fs.rmSync(path.join(langOut, existing));
+        fs.rmSync(path.join(langOut, existing), { force: true }); // force: a parallel rebuild may have removed it already
         console.log(`[lessons] ✗ removed stale ${lang}/${existing}`);
       }
     }

@@ -25,6 +25,10 @@
   border: 1px solid var(--ui-border-strong);
   background: var(--bg);
   color: var(--text);
+
+  /* Sidebar buttons: as wide as the column (set by the logo above, so the
+     same in every language), at least this wide (≤960px: icon-only). */
+  --tool-btn-w: 78px; /* minimum; the buttons fill the logo-wide column */
 }
 
 /* Real grid column, confined to row 2 only (the toolbar row keeps spanning
@@ -416,6 +420,9 @@
 
 /* =========================================================
    TOP TOOLBAR
+   One flat row in three zones: mode switch (left) · tools of the current
+   mode (middle, swapped by _invalidateUI) · common icons + lessons (right).
+   Buttons have icon left of the label and their natural width.
    ========================================================= */
 .sim-toolbar {
   grid-area: toolbar;
@@ -423,9 +430,9 @@
   flex-wrap: nowrap;
   overflow-x: auto;
   overflow-y: hidden;
-  align-items: stretch;
-  gap: var(--pad-sm);
-  padding: var(--pad-md);
+  align-items: center;
+  gap: var(--pad-lg);
+  padding: var(--pad-sm) var(--pad-md);
   background-color: var(--surface);
   user-select: none;
 }
@@ -435,54 +442,148 @@
 
 .sim-toolbar-group {
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-
-  border: 1px solid var(--ui-border);
-  border-radius: var(--radius-md);
-  padding: var(--pad-sm) var(--pad-md);
+  align-items: center;
+  flex-shrink: 0;
 }
 
-/* Pushes this separator — and every toolbar item after it — to the far
-   right of the toolbar. .sim-toolbar is a flex row, so margin-left:auto
-   on the separator eats all the remaining space in front of it. */
-.sim-toolbar-sep--push-right {
-  margin-left: auto;
-}
-
+/* Group titles ("Modus", "Projekt" …) — the zones speak for themselves. */
 .sim-toolbar-group-label {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  opacity: 0.7;
-
-  min-height: 14px;      
-  margin-bottom: 6px;    
-  line-height: 1.2;
-
-  user-select: none;
-  pointer-events: none;
-  text-align: center;
-  color: var(--text);
+  display: none;
 }
 
 .sim-toolbar-buttons {
   display: flex;
   flex-wrap: nowrap;
-  gap: var(--pad-sm);
+  align-items: center;
+  gap: var(--pad-xs);
 }
 
+/* Thin divider between zones */
+.sim-toolbar-sep {
+  flex-shrink: 0;
+  align-self: center;
+  width: 1px;
+  height: 24px;
+  background: var(--ui-border-strong);
+}
+.sim-toolbar-sep:first-child { display: none; }
+
+/* Pushes this separator — and every toolbar item after it — to the far
+   right of the toolbar (margin-left:auto eats the remaining flex space). */
+.sim-toolbar-sep--push-right {
+  margin-left: auto;
+  background: none;
+}
+
+.sim-toolbar button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--pad-sm);
+
+  height: 36px;
+  padding: 0 var(--pad-lg);
+
+  border-radius: var(--radius-md);
+  border: 1px solid var(--ui-border);
+  background: var(--ui-btn);
+  color: var(--text);
+
+  font-size: 0.8125rem;
+  line-height: 1;
+  white-space: nowrap;
+
+  transition: transform 80ms ease, background 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+}
+
+.sim-toolbar button .fas,
+.sim-toolbar button .fab {
+  font-size: 1rem;
+}
+
+.sim-toolbar button.icon-only {
+  width: 36px;
+  padding: 0;
+}
+
+/* Mode switch: one segmented control, the active mode filled with the
+   accent — it is the main state of the app. */
+.sim-toolbar-buttons[data-group="mode"] {
+  gap: 0;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--ui-btn);
+  overflow: hidden;
+}
+.sim-toolbar-buttons[data-group="mode"] button {
+  height: 34px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+.sim-toolbar-buttons[data-group="mode"] button + button {
+  border-left: 1px solid var(--ui-border);
+}
+.sim-toolbar-buttons[data-group="mode"] button:hover {
+  background: var(--ui-btn-hover);
+}
+
+/* Speeds: compact segmented row 0.5× 1× 4× 8× */
 .sim-speed-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2px;
+  display: flex;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
 
 .sim-speed-grid button {
-  height: 21px !important;
-  min-width: 36px;
-  padding: 0 6px;
-  font-size: 0.625rem;
-  gap: 0;
+  height: 34px !important;
+  min-width: 40px;
+  padding: 0 var(--pad-sm);
+  border: none;
+  border-radius: 0;
+  font-variant-numeric: tabular-nums;
+}
+.sim-speed-grid button + button {
+  border-left: 1px solid var(--ui-border);
+}
+
+/* Floating zoom control, bottom right of the canvas */
+.sim-zoom-ctl {
+  position: absolute;
+  right: var(--pad-lg);
+  bottom: var(--pad-lg);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--ui-btn);
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+}
+.sim-zoom-ctl button {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+.sim-zoom-ctl button + button {
+  border-top: 1px solid var(--ui-border);
+}
+.sim-zoom-ctl button:hover {
+  background: var(--ui-btn-hover);
+  color: var(--accent);
+}
+.sim-zoom-ctl button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 
 
@@ -493,10 +594,12 @@
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: var(--pad-md);
+  gap: 5px;
   cursor: pointer;
   border: none;
-  padding: 0 var(--pad-lg);
+  /* Symmetric, generous padding: centres the logo and makes the column
+     (shared with the sidebar) ~120px, wide enough for long tool labels. */
+  padding: 0 var(--pad-xl);
   background-color: var(--surface);
 }
 
@@ -514,14 +617,14 @@
 }
 
 .sim-toolbar-branding {
-  font-size: 1.5rem;
+  font-size: 0.9375rem;
   font-weight: 700;
   letter-spacing: 0.2px;
   color: var(--text);
   user-select: none;
-  line-height: 1.25;
-  text-align: center;
-  max-width: 70px;
+  line-height: 1.05;
+  text-align: left;
+  width: min-content; /* "Beaver" / "Tracer" on two lines, no trailing gap */
 }
 
 .sim-toolbar-branding-version {
@@ -544,31 +647,21 @@
   user-select: none;
 }
 
-.sim-logo-cell::after {
+/* The beaver as a real icon left of the wordmark (same art as the
+   welcome dialog), not a faded background — the toolbar row is too flat
+   for that since the redesign. */
+.sim-logo-cell::before {
   content: "";
-  position: absolute;
-  inset: 0;
-
-  background-image: url("/beaver.svg");
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: 100% 100%;
-  transform: scaleX(-1);
-
-  opacity: 0.40;
-  pointer-events: none;
-  z-index: 0;
-  transition: opacity 0.2s, filter 0.2s;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  background: url("/beaver-icon.svg") no-repeat center / contain;
+  transition: transform 0.2s, filter 0.2s;
 }
 
-.sim-logo-cell:hover::after {
-  opacity: 0.85;
-  filter: drop-shadow(0 0 6px var(--primary)) drop-shadow(0 0 12px color-mix(in oklch, var(--primary), transparent 50%));
-}
-
-.sim-logo-cell:active::after {
-  opacity: 1;
-  filter: drop-shadow(0 0 4px var(--primary));
+.sim-logo-cell:hover::before {
+  transform: rotate(-6deg) scale(1.08);
+  filter: drop-shadow(0 0 4px color-mix(in oklch, var(--accent), transparent 50%));
 }
 
 /* =========================================================
@@ -576,7 +669,10 @@
    ========================================================= */
 .sim-sidebar {
   grid-area: sidebar;
-  padding: var(--pad-lg);
+  /* Width comes from the logo cell above only — long labels wrap instead
+     of widening the column (it would otherwise grow to fit them on one line). */
+  contain: inline-size;
+  padding: var(--pad-lg) var(--pad-md);
   overflow: auto;
 
   border-right: 1px solid var(--ui-border);
@@ -598,7 +694,6 @@
   gap: var(--pad-md);
 }
 
-.sim-toolbar button,
 .sim-sidebar-btn {
   position: relative;
 
@@ -608,73 +703,104 @@
   justify-content: center;
   gap: var(--pad-xs);
 
-  height: 44px;
-  min-width: 58px;
-  padding: 5px 10px;
+  /* One width for every toolbar/sidebar button, whatever the language;
+     long labels wrap to a second line instead of widening the button. */
+  width: 100%;
+  min-width: var(--tool-btn-w);
+  min-height: 44px;
+  padding: 5px 4px;
 
   border-radius: var(--radius-md);
   border: 1px solid var(--ui-border);
-  background: var(--ui-card);
+  background: var(--ui-btn);
   color: var(--text);
 
   font-size: 0.6875rem;
   line-height: 1.1;
   text-align: center;
-  white-space: nowrap;
 
   transition: transform 80ms ease, background 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
 }
 
 
+/* Label: at most two lines; a single over-long word gets hyphenated
+   (lang is set on <html>), anything beyond that ends in "…" — the full
+   text is in the button's title tooltip. */
+.sim-sidebar-btn > span {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  max-width: 100%;
+  hyphens: auto;
+  overflow-wrap: anywhere;
+}
+
 /**** Font Awesome Stuff ****/
 
-.sim-toolbar-buttons .fas,
-.sim-toolbar-buttons .fab,
 .sim-sidebar-btn .fas,
 .sim-sidebar-btn .fab {
     font-size: 1.25rem;
 }
 
 
-/* Active */
+/* Active = selected (mode, speed, pause, sidebar tool): filled accent,
+   one look everywhere. Coloured icons (navy devices, green ▶, red ⃠)
+   switch to the text colour — they'd vanish on dark petrol. */
 .sim-toolbar button.active,
 .sim-sidebar-btn.active {
-  outline: 2px solid var(--focus);
-  outline-offset: -2px;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+.sim-toolbar button.active .fas,
+.sim-toolbar button.active .fab,
+.sim-sidebar-btn.active .fas,
+.sim-sidebar-btn.active .fab {
+  color: inherit;
+}
+.sim-sidebar-btn.active .my-icon-router,
+.sim-sidebar-btn.active .my-icon-switch {
+  background-color: var(--accent-text);
+}
 
-  border-color: var(--ui-active-border);
-  background: color-mix(in oklch, var(--ui-active), var(--surface) 60%);
+/* Delete is the one destructive tool: while it is active the button is red
+   (fixed --danger, not shifted by ?hue=), so you notice that clicks delete. */
+.sim-sidebar-btn.active[data-role="tool-delete"],
+.sim-sidebar-btn.active[data-role="tool-delete"]:hover {
+  background: var(--danger-strong);
+  border-color: var(--danger-strong);
+  color: #fff;
 }
 
 /* Hover */
 .sim-toolbar button:hover,
 .sim-sidebar-btn:hover {
-  background: var(--ui-card-hover);
-  border-color: var(--ui-border-strong);
+  background: var(--ui-btn-hover);
+  border-color: var(--accent);
 }
 
 /* Pressed (more distinguishable) */
 .sim-toolbar button:active,
 .sim-sidebar-btn:active {
   transform: translateY(1px);
-  background: color-mix(in oklch, var(--primary), var(--surface) 78%);
-  border-color: var(--ui-active-border);
-  box-shadow:
-    inset 0 0 0 1px color-mix(in oklch, var(--primary), transparent 70%),
-    inset 0 10px 22px color-mix(in oklch, var(--text), transparent 88%);
+  background: color-mix(in oklch, var(--accent) 24%, var(--ui-btn));
+  border-color: var(--accent);
+  box-shadow: inset 0 2px 6px color-mix(in oklch, var(--text), transparent 85%);
 }
 
 /* Keyboard focus */
 .sim-toolbar button:focus-visible,
 .sim-sidebar-btn:focus-visible {
-  outline: 2px solid var(--focus);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
 .sim-toolbar button.active:hover,
 .sim-sidebar-btn.active:hover {
-  background: color-mix(in oklch, var(--ui-active), var(--surface) 60%);
-  border-color: var(--ui-active-border);
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
   transform: none;
 }
 
@@ -739,11 +865,12 @@
   z-index: 9500;
   min-width: 260px;
   min-height: unset;
-  max-width: 340px;
+  max-width: 380px;
 }
 
 .sim-link-fault-body {
   padding: 12px 14px 14px;
+  color: var(--text);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -777,6 +904,56 @@
   gap: 8px;
   font-size: 13px;
   margin-top: 2px;
+}
+
+/* "Targeted packet loss" section (Link._buildDropPatternControls) */
+.sim-link-pattern {
+  margin: 4px 0 0;
+  padding: 6px 10px 8px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+}
+
+.sim-link-pattern legend label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px;
+  cursor: pointer;
+}
+
+.sim-link-pattern-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.sim-link-pattern-fields[hidden] {
+  display: none;
+}
+
+.sim-link-pattern-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sim-link-pattern-row select {
+  flex: 0 1 200px;
+  min-width: 0;
+}
+
+.sim-link-pattern-row input[type="number"] {
+  width: 64px;
+}
+
+.sim-link-pattern-stats {
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .sim-packets-layer {
@@ -1454,14 +1631,21 @@ sim-toolbar-langbtn {
 }
 
 .sim-langdialog-close {
+  /* same 32px square as the back button beside it */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
   background: transparent;
   border: none;
-  font-size: 1.125rem;
+  font-size: 1.75rem;
   line-height: 1;
   color: var(--muted);
   cursor: pointer;
-  padding: 2px 5px;
-  border-radius: var(--radius-sm);
+  padding: 0;
+  border-radius: var(--radius-md);
   transition: color 0.1s, background 0.1s;
 }
 
@@ -1914,16 +2098,12 @@ sim-toolbar-langbtn {
 /* ── Responsive toolbar + sidebar (width breakpoints) ────────── */
 
 @media (max-width: 1300px) {
-  .sim-toolbar button,
   .sim-sidebar-btn {
-    height: 46px;
-    min-width: 62px;
-    padding: 5px 9px;
+    min-height: 46px;
+    padding: 5px 4px;
     font-size: 0.6875rem;
     gap: 3px;
   }
-  .sim-toolbar-buttons .fas,
-  .sim-toolbar-buttons .fab,
   .sim-sidebar-btn .fas,
   .sim-sidebar-btn .fab {
     font-size: 1.3125rem;
@@ -1933,24 +2113,16 @@ sim-toolbar-langbtn {
     width: 21px; height: 21px;
     -webkit-mask-size: 21px 21px; mask-size: 21px 21px;
   }
-  .sim-toolbar-buttons { gap: 5px; }
-  .sim-toolbar-group { padding: 4px 6px 6px; }
-  .sim-toolbar-group-label { font-size: 0.625rem; margin-bottom: 4px; }
-  .sim-toolbar-branding { font-size: 1.25rem; }
   .sim-sidebar-tools { gap: var(--pad-sm); }
 }
 
 @media (max-width: 1050px) {
-  .sim-toolbar button,
   .sim-sidebar-btn {
-    height: 38px;
-    min-width: 55px;
-    padding: 3px 7px;
+    min-height: 38px;
+    padding: 3px 3px;
     font-size: 0.625rem;
     gap: 2px;
   }
-  .sim-toolbar-buttons .fas,
-  .sim-toolbar-buttons .fab,
   .sim-sidebar-btn .fas,
   .sim-sidebar-btn .fab {
     font-size: 1.0625rem;
@@ -1960,36 +2132,31 @@ sim-toolbar-langbtn {
     width: 17px; height: 17px;
     -webkit-mask-size: 17px 17px; mask-size: 17px 17px;
   }
-  .sim-toolbar-buttons { gap: var(--pad-xs); }
-  .sim-toolbar-group { padding: 3px 5px 5px; }
-  .sim-toolbar-group-label { font-size: 0.5625rem; margin-bottom: 2px; min-height: 10px; }
-  .sim-toolbar { gap: var(--pad-xs); padding: 5px; }
-  .sim-toolbar-branding { font-size: 1.0625rem; }
-  .sim-toolbar-branding-alpha { font-size: 0.5625rem; padding: 1px 4px; }
   .sim-sidebar-tools { gap: var(--pad-xs); }
-  /* speed grid: (38px − 2px gap) / 2 rows = 18px per button */
-  .sim-speed-grid button { height: 18px !important; }
+}
+
+/* ── Toolbar too narrow (set by SimControl._fitToolbar on overflow):
+      middle-zone tools drop their labels first (tooltips stay), the mode
+      switch and "Lektionen" keep theirs down to 960px ── */
+.sim-toolbar.is-compact .sim-toolbar-buttons:not([data-group="mode"]):not([data-group="lessons"]) > button > span {
+  display: none;
+}
+.sim-toolbar.is-compact .sim-toolbar-buttons:not([data-group="mode"]):not([data-group="lessons"]) > button {
+  width: 36px;
+  padding: 0;
 }
 
 /* ── Icon-only mode (≤960px) ─────────────────────────────────── */
 
 @media (max-width: 960px) {
-  .sim-toolbar button span,
-  .sim-sidebar-btn span {
+  .sim-sidebar-btn > span {
     display: none;
   }
-  .sim-speed-grid button span {
-    display: inline;
-  }
-  .sim-toolbar button,
   .sim-sidebar-btn {
-    height: 34px;
-    min-width: 34px;
+    min-height: 34px;
     padding: 4px;
     gap: 0;
   }
-  .sim-toolbar-buttons .fas,
-  .sim-toolbar-buttons .fab,
   .sim-sidebar-btn .fas,
   .sim-sidebar-btn .fab {
     font-size: 0.9375rem;
@@ -1999,27 +2166,27 @@ sim-toolbar-langbtn {
     width: 15px; height: 15px;
     -webkit-mask-size: 15px 15px; mask-size: 15px 15px;
   }
-  .sim-toolbar-group-label { display: none; }
-  .sim-toolbar-group { padding: 4px; }
-  .sim-logo-cell { flex-direction: column; padding: 2px 4px; gap: 0; min-width: 36px; }
+  .sim-logo-cell { padding: 2px 4px; gap: 0; min-width: 36px; }
+  .sim-logo-cell .sim-toolbar-branding-text { display: none; }
+  .sim-toolbar > .sim-toolbar-group button > span { display: none; }
+  .sim-toolbar > .sim-toolbar-group button { width: 34px; padding: 0; }
+  .sim-toolbar .sim-speed-grid button { width: auto; min-width: 34px; padding: 0 4px; }
+  .sim-toolbar .sim-speed-grid button > span { display: inline; }
+  .sim-toolbar { gap: var(--pad-sm); padding: var(--pad-xs) var(--pad-sm); }
   .sim-toolbar-branding { font-size: 0.6875rem; }
   .sim-toolbar-branding-alpha { font-size: 0.5rem; padding: 1px 3px; letter-spacing: 0.4px; }
-  .sim-toolbar-group { justify-content: center; }
-  .sim-toolbar-buttons { gap: 3px; }
-  .sim-toolbar { gap: 3px; padding: 4px; }
-  /* speed grid: (34px − 2px gap) / 2 rows = 16px per button */
-  .sim-speed-grid button { height: 16px !important; }
   .sim-sidebar-title { display: none; }
   .sim-sidebar-tools { gap: 3px; }
   .sim-sidebar { padding: 6px; }
+  .sim-root { --tool-btn-w: 34px; }
 }
 
 /* ── Responsive sidebar (height breakpoints) ─────────────────── */
 
 @media (max-height: 850px) {
   .sim-sidebar-btn {
-    height: 42px;
-    padding: 4px 8px;
+    min-height: 42px;
+    padding: 4px 4px;
     font-size: 0.6875rem;
     gap: 3px;
   }
@@ -2035,11 +2202,13 @@ sim-toolbar-langbtn {
 
 @media (max-height: 650px) {
   .sim-sidebar-btn {
-    height: 32px;
-    padding: 2px 6px;
+    min-height: 32px;
+    padding: 2px 3px;
     font-size: 0.625rem;
     gap: 2px;
   }
+  /* too little height for two lines: one line, then "…" */
+  .sim-sidebar-btn > span { -webkit-line-clamp: 1; line-clamp: 1; }
   .sim-sidebar-btn .fas,
   .sim-sidebar-btn .fab { font-size: 13px; }
   .sim-sidebar-btn .my-icon-router,
@@ -2063,6 +2232,7 @@ sim-toolbar-langbtn {
   color: #fff;
   border-color: var(--blue, #5b9bd5);
   margin-left: auto;
+  width: auto;
   height: auto;
   align-self: stretch;
 }
@@ -2075,66 +2245,97 @@ sim-toolbar-langbtn {
    Downloads page
    ========================================================= */
 
+/* Three equal cards side by side (wrapping on narrow screens); buttons sit
+   at the bottom, so cards with one or two downloads still line up. */
 .download-cards {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--pad-xl);
-  margin: 20px 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: var(--pad-lg);
+  margin: var(--pad-lg) 0;
 }
 
 .download-card {
-  flex: 1 1 200px;
   border: 1px solid var(--ui-border);
   border-radius: var(--radius-lg);
-  padding: var(--pad-xl);
-  background: var(--ui-card);
+  padding: var(--pad-lg);
+  background: var(--bg-strong);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--pad-sm);
 }
 
 .download-card-icon {
-  font-size: 2.25rem;
-  color: color-mix(in oklch, var(--primary), black 55%);
+  font-size: 1.75rem;
+  color: var(--text);
   line-height: 1;
 }
 
-.download-card-body h3 {
-  margin: 0 0 4px;
+.download-card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--pad-sm);
+}
+
+/* (doubled class: beats .about-container's h3 margin and link colour) */
+.download-card .download-card-body h3 {
+  margin: 0;
+  color: var(--text);
   font-size: 1rem;
 }
 
 .download-card-body p {
-  margin: 0 0 10px;
+  margin: 0 0 auto;
   font-size: 0.8125rem;
   color: var(--muted);
 }
 
-.download-btn {
-  display: inline-flex;
+.download-card .download-btn {
+  display: flex;
+  justify-content: center;
   align-items: center;
   gap: var(--pad-sm);
-  padding: var(--pad-md) var(--pad-lg);
+  padding: var(--pad-sm) var(--pad-lg);
   border-radius: var(--radius-md);
   font-size: 0.8125rem;
   font-weight: 600;
   text-decoration: none;
-  background: var(--primary);
-  color: var(--text);
-  border: 1px solid var(--primary-strong);
+  background: var(--accent);
+  color: var(--accent-text);
+  border: 1px solid var(--accent);
   cursor: pointer;
-  margin-right: 6px;
-  margin-bottom: 6px;
   transition: filter 0.1s;
 }
 
-.download-btn:hover {
-  filter: brightness(0.92);
+.download-card .download-btn:hover {
+  filter: brightness(1.1);
+  text-decoration: none;
 }
 
 .download-btn-secondary {
   background: var(--surface);
   border-color: var(--ui-border);
+}
+
+/* Not yet available (macOS): same card, muted, a label instead of a button */
+.download-card--soon {
+  background: transparent;
+  border-style: dashed;
+}
+
+.download-card--soon .download-card-icon {
+  color: var(--muted);
+}
+
+.download-soon {
+  margin-top: auto;
+  padding: var(--pad-sm) var(--pad-lg);
+  border: 1px dashed var(--ui-border-strong);
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-align: center;
 }
 
 .download-note {
@@ -2162,29 +2363,8 @@ sim-toolbar-langbtn {
     grid-template-columns: 1fr 1fr;
   }
 
-  /* sidebar buttons: icon-only square touch targets */
-  .sim-sidebar-btn {
-    height: 48px !important;
-    min-width: 48px !important;
-    padding: 6px !important;
-    gap: 0 !important;
-  }
-
-  .sim-sidebar-btn span {
+  .sim-sidebar-btn > span {
     display: none;
-  }
-
-  .sim-sidebar-btn .fas,
-  .sim-sidebar-btn .fab {
-    font-size: 1.375rem;
-  }
-
-  .sim-sidebar-btn .my-icon-router,
-  .sim-sidebar-btn .my-icon-switch {
-    width: 22px;
-    height: 22px;
-    -webkit-mask-size: 22px 22px;
-    mask-size: 22px 22px;
   }
 
   /* ── Canvas: allow native touch-scroll on the node area ── */
@@ -2276,6 +2456,36 @@ sim-toolbar-langbtn {
   }
   .sim-lessons-resize-handle {
     display: none;
+  }
+}
+
+/* Sidebar buttons: icon-only square touch targets — only for fingers.
+   With a mouse, a narrow window keeps the compact icon-only size (≤960px). */
+@media (max-width: 600px) and (pointer: coarse) {
+  /* The column width comes from the logo cell — make it fit a 48px button
+     plus the sidebar's 6px padding on each side. */
+  .sim-logo-cell { min-width: 60px; }
+  /* tighter spacing so all 12 tools fit an iPhone's height without scrolling */
+  .sim-sidebar-tools { gap: 2px; }
+
+  .sim-sidebar-btn {
+    height: 48px !important;
+    min-width: 48px !important;
+    padding: 6px !important;
+    gap: 0 !important;
+  }
+
+  .sim-sidebar-btn .fas,
+  .sim-sidebar-btn .fab {
+    font-size: 1.375rem;
+  }
+
+  .sim-sidebar-btn .my-icon-router,
+  .sim-sidebar-btn .my-icon-switch {
+    width: 22px;
+    height: 22px;
+    -webkit-mask-size: 22px 22px;
+    mask-size: 22px 22px;
   }
 }
 

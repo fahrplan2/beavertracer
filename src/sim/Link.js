@@ -55,8 +55,17 @@ export class Link extends SimulatedObject {
   /** Fraction (0..1) of frames dropped per direction, simulating a lossy link. */
   _lossRate = 0;
 
+  /**
+   * Deterministic packet loss for lessons, see EthernetLink.dropPattern.
+   * @type {import("../net/EthernetLink.js").DropPattern|null}
+   */
+  _dropPattern = null;
+
   /** @type {HTMLDivElement|null} */
   _faultPanel = null;
+
+  /** @type {ReturnType<typeof setInterval>|null} keeps the drop counters in the panel current */
+  _faultPanelTimer = null;
 
   /** @type {import("../lib/dragabble.js").DraggableController|null} */
   _faultPanelDraggable = null;
@@ -206,7 +215,21 @@ export class Link extends SimulatedObject {
   setLossRate(rate) {
     this._lossRate = rate;
     this.link.lossRate = rate;
-    this.root?.classList.toggle("is-lossy", rate > 0);
+    this._updateLossyClass();
+  }
+
+  /**
+   * Sets (or clears) the deterministic drop pattern; restarts its counters.
+   * @param {import("../net/EthernetLink.js").DropPattern|null} pattern
+   */
+  setDropPattern(pattern) {
+    this._dropPattern = pattern;
+    this.link.setDropPattern(pattern);
+    this._updateLossyClass();
+  }
+
+  _updateLossyClass() {
+    this.root?.classList.toggle("is-lossy", this._lossRate > 0 || this._dropPattern !== null);
   }
 
   /** @param {number} clientX @param {number} clientY */
@@ -277,6 +300,9 @@ export class Link extends SimulatedObject {
       } else if (this._lossRate > 0) {
         statusRow.textContent = "◐ " + t("link.fault.status.lossy", { pct: Math.round(this._lossRate * 100) });
         statusRow.className = "sim-link-fault-status is-lossy";
+      } else if (this._dropPattern) {
+        statusRow.textContent = "◐ " + t("link.fault.status.pattern");
+        statusRow.className = "sim-link-fault-status is-lossy";
       } else {
         statusRow.textContent = "● " + t("link.fault.status.up");
         statusRow.className = "sim-link-fault-status is-up";
@@ -308,9 +334,11 @@ export class Link extends SimulatedObject {
 
     lossRow.append(lossLabel, lossSelect);
 
+    const patternBox = this._buildDropPatternControls(labelA, labelB, refresh);
+
     const body = document.createElement("div");
     body.className = "sim-link-fault-body";
-    body.append(endpoints, statusRow, actionBtn, lossRow);
+    body.append(endpoints, statusRow, actionBtn, lossRow, patternBox);
 
     // ── assemble panel ───────────────────────────────────────────
     const panel = document.createElement("div");
@@ -347,7 +375,125 @@ export class Link extends SimulatedObject {
     setTimeout(() => document.addEventListener("mousedown", onOutside, true), 0);
   }
 
+  /**
+   * "Targeted packet loss" section of the fault panel: drop the n-th packet
+   * (and every k-th after it) in a chosen direction — so a lesson can lose
+   * exactly one particular packet. Shows live counters while open.
+   * @param {string} labelA
+   * @param {string} labelB
+   * @param {() => void} onChange refreshes the panel's status line
+   */
+  _buildDropPatternControls(labelA, labelB, onChange) {
+    const box = document.createElement("fieldset");
+    box.className = "sim-link-pattern";
+
+    const legend = document.createElement("legend");
+    const enable = document.createElement("input");
+    enable.type = "checkbox";
+    enable.checked = this._dropPattern !== null;
+    const legendText = document.createElement("span");
+    legendText.textContent = t("link.fault.pattern.label");
+    const legendLabel = document.createElement("label");
+    legendLabel.append(enable, legendText);
+    legend.appendChild(legendLabel);
+
+    const nameA = `${this.A.name ?? this.A.id} › ${labelA}`;
+    const nameB = `${this.B.name ?? this.B.id} › ${labelB}`;
+
+    /** @param {string} label @param {HTMLElement} control */
+    const row = (label, control) => {
+      const r = document.createElement("label");
+      r.className = "sim-link-pattern-row";
+      const span = document.createElement("span");
+      span.textContent = label;
+      r.append(span, control);
+      return r;
+    };
+    /** @param {[string, string][]} options @param {string} value */
+    const select = (options, value) => {
+      const el = document.createElement("select");
+      for (const [v, text] of options) el.add(new Option(text, v));
+      el.value = value;
+      return el;
+    };
+    /** @param {number} value @param {number} min */
+    const number = (value, min) => {
+      const el = document.createElement("input");
+      el.type = "number";
+      el.min = String(min);
+      el.step = "1";
+      el.value = String(value);
+      return el;
+    };
+
+    const p = this._dropPattern ?? { start: 1, every: 0, dir: "ab", count: "all" };
+    const dirSel = select([
+      ["ab", `${this.A.name ?? this.A.id} → ${this.B.name ?? this.B.id}`],
+      ["ba", `${this.B.name ?? this.B.id} → ${this.A.name ?? this.A.id}`],
+      ["both", t("link.fault.pattern.dir.both")],
+    ], p.dir);
+    dirSel.title = `${nameA} / ${nameB}`;
+    const countSel = select([
+      ["all", t("link.fault.pattern.count.all")],
+      ["data", t("link.fault.pattern.count.data")],
+    ], p.count);
+    const startIn = number(p.start, 1);
+    const everyIn = number(p.every, 0);
+    everyIn.title = t("link.fault.pattern.everyHint");
+
+    const fields = document.createElement("div");
+    fields.className = "sim-link-pattern-fields";
+    const stats = document.createElement("div");
+    stats.className = "sim-link-pattern-stats";
+    fields.append(
+      row(t("link.fault.pattern.dir"), dirSel),
+      row(t("link.fault.pattern.count"), countSel),
+      row(t("link.fault.pattern.start"), startIn),
+      row(`${t("link.fault.pattern.every")} (${t("link.fault.pattern.everyHint")})`, everyIn),
+      stats,
+    );
+    box.append(legend, fields);
+
+    const showStats = () => {
+      const st = this.link.dropStats;
+      const lines = [];
+      if (this._dropPattern?.dir !== "ba") lines.push(t("link.fault.pattern.stats", { dir: "→", ...st.ab }));
+      if (this._dropPattern?.dir !== "ab") lines.push(t("link.fault.pattern.stats", { dir: "←", ...st.ba }));
+      stats.textContent = this._dropPattern ? lines.join(" · ") : "";
+    };
+    const apply = () => {
+      fields.hidden = !enable.checked;
+      this.setDropPattern(enable.checked ? {
+        start: Math.max(1, Math.floor(Number(startIn.value) || 1)),
+        every: Math.max(0, Math.floor(Number(everyIn.value) || 0)),
+        dir: /** @type {"ab"|"ba"|"both"} */ (dirSel.value),
+        count: /** @type {"all"|"data"} */ (countSel.value),
+      } : null);
+      showStats();
+      onChange();
+      requestAnimationFrame(() => this._keepFaultPanelInView());
+    };
+    for (const el of [enable, dirSel, countSel, startIn, everyIn]) el.addEventListener("change", apply);
+    fields.hidden = !enable.checked;
+    showStats();
+
+    if (this._faultPanelTimer) clearInterval(this._faultPanelTimer);
+    this._faultPanelTimer = setInterval(showStats, 500);
+    return box;
+  }
+
+  /** Pulls the fault panel back into the viewport after it grew (e.g. pattern section opened). */
+  _keepFaultPanelInView() {
+    const panel = this._faultPanel;
+    if (!panel) return;
+    const r = panel.getBoundingClientRect();
+    const over = r.bottom - (window.innerHeight - 8);
+    if (over > 0) panel.style.top = `${Math.max(8, r.top - over)}px`;
+  }
+
   _closeFaultPanel() {
+    if (this._faultPanelTimer) clearInterval(this._faultPanelTimer);
+    this._faultPanelTimer = null;
     this._faultPanelDraggable?.destroy();
     this._faultPanelDraggable = null;
     this._faultPanel?.remove();
@@ -549,6 +695,7 @@ export class Link extends SimulatedObject {
       portB: this.portBKey,
       ...(this._fault ? { fault: true } : {}),
       ...(this._lossRate > 0 ? { lossRate: this._lossRate } : {}),
+      ...(this._dropPattern ? { dropPattern: { ...this._dropPattern } } : {}),
     };
   }
 
@@ -582,6 +729,15 @@ export class Link extends SimulatedObject {
     obj.id = Number(n.id);
     if (n.fault) obj.setFault(true);
     if (n.lossRate) obj.setLossRate(Number(n.lossRate));
+    if (n.dropPattern) {
+      const d = n.dropPattern;
+      obj.setDropPattern({
+        start: Math.max(1, Number(d.start) || 1),
+        every: Math.max(0, Number(d.every) || 0),
+        dir: d.dir === "ba" || d.dir === "both" ? d.dir : "ab",
+        count: d.count === "data" ? "data" : "all",
+      });
+    }
     return obj;
   }
 }

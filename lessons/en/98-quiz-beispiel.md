@@ -269,3 +269,36 @@ For multi-line displays, use a `<pre class="bits-block">` block instead of ``` (
 before (/24):  [[n|NNNNNNNN.NNNNNNNN.NNNNNNNN]].[[h|HHHHHHHH]]
 after  (/26):  [[n|NNNNNNNN.NNNNNNNN.NNNNNNNN]].[[e|EE]][[h|HHHHHH]]
 </pre>
+
+## Section 6: Sequence diagram
+
+`:::seq` draws a diagram with two lifelines. SEQ and ACK numbers and the counters on the lifelines are calculated from the flags and payloads (`"…"`). `-x` instead of `->` makes a segment get lost, `seq=…` overrides a number (e.g. for a retransmission).
+
+:::seq
+Client -> Server: SYN
+Server -> Client: SYN, ACK
+Client -> Server: ACK
+Client -> Server: PSH, ACK "Hello World"
+Server -> Client: ACK
+Client -x Server: PSH, ACK "Hallo"
+Client -> Server: PSH, ACK "Hallo" seq=12
+Server -> Client: ACK
+Client -> Server: FIN, ACK
+Server -> Client: ACK
+Server -> Client: FIN, ACK
+Client -> Server: ACK
+:::
+
+With `:::quiz seq`, `?` (before the flags, or `seq=?` / `ack=?`) becomes an input field; `hide: counters` hides the counters:
+
+:::quiz seq
+Client -> Server: SYN
+Server -> Client: ? SYN, ACK ack=?
+Client -> Server: ? ACK ack=?
+Client -> Server: PSH, ACK "Hello World"
+Server -> Client: ACK ack=?
+:::
+
+:::evaluate
+Check diagram
+:::

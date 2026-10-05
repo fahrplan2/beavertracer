@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
+import { skeleton, UNTRANSLATED } from "../../scripts/lesson-skeleton.mjs";
 
 // Translated courses (lessons/<lang>/) must stay in step with the German
 // source: same pages, same simulations, task checks, quiz types and answer
@@ -10,23 +11,8 @@ import path from "node:path";
 
 const LESSONS = path.resolve(__dirname, "../../lessons");
 const SOURCE = "de";
-/** Pages that are intentionally not translated (yet). */
-const UNTRANSLATED = new Set(["99-protokollunterstuetzung.md"]);
-
 const mdFiles = (lang) => fs.readdirSync(path.join(LESSONS, lang)).filter((f) => f.endsWith(".md")).sort();
 const read = (lang, file) => fs.readFileSync(path.join(LESSONS, lang, file), "utf8");
-
-/** Language-independent skeleton of a lesson page. */
-function skeleton(src) {
-  return {
-    directives: [...src.matchAll(/^(:::(?:sim|task|quiz|osi|evaluate|goal|tip|note|warning|danger|draft)\b[^\n]*|check: [^\n]*|url=[^\n]*|empty$|count=\d+|- \[[x ]\])/gm)]
-      // callout titles and button labels are prose
-      .map((m) => m[1].replace(/^(:::(?:tip|note|warning|danger|evaluate))\b.*$/, "$1")),
-    gaps: (src.match(/\{[^}\n]+\}/g) ?? []).length,
-    matchPairs: (src.match(/^[^\n]+ -> [^\n]+$/gm) ?? []).length,
-    links: [...src.matchAll(/\]\(([\w.-]+\.html)\)/g)].map((m) => m[1]),
-  };
-}
 
 const translations = fs.readdirSync(LESSONS, { withFileTypes: true })
   .filter((d) => d.isDirectory() && d.name !== SOURCE && fs.existsSync(path.join(LESSONS, d.name, "01-einfuehrung.md")))

@@ -169,6 +169,67 @@ describe('CheckApi', () => {
         expect(await outcome).toBe(false);
     });
 
+    it('tcpOpen(): true while a server listens on the port, false for a closed port (RST)', async () => {
+        const a = makeComputer(1, '10.0.0.1');
+        const b = makeComputer(2, '10.0.0.2');
+        const itfA = a.net.interfaces[0];
+        const itfB = b.net.interfaces[0];
+        itfA.neighborCache.set('10.0.0.2', itfB.mac.slice());
+        itfB.neighborCache.set('10.0.0.1', itfA.mac.slice());
+        const { IPv4Packet } = await import('../../src/net/pdu/IPv4Packet.js');
+        itfA.sendFrame = (/** @type {*} */ _mac, /** @type {number} */ etherType, /** @type {Uint8Array} */ payload) => {
+            if (etherType !== 0x0800) return;
+            itfB.inQueue.push(IPv4Packet.fromBytes(payload)); itfB.doUpdate();
+        };
+        itfB.sendFrame = (/** @type {*} */ _mac, /** @type {number} */ etherType, /** @type {Uint8Array} */ payload) => {
+            if (etherType !== 0x0800) return;
+            itfA.inQueue.push(IPv4Packet.fromBytes(payload)); itfA.doUpdate();
+        };
+        const { IPAddress } = await import('../../src/net/models/IPAddress.js');
+        b.net.openTCPServerSocket(IPAddress.fromString('0.0.0.0'), 5000);
+
+        const api = new CheckApi(fakeSimControl([a, b]));
+        expect(await api.tcpOpen(1, 2, 5000)).toBe(true);
+        expect(await api.tcpOpen(1, '10.0.0.2', 5001)).toBe(false);
+    });
+
+    it('hasCert()/trusts(): read /etc/certs and the trust store', async () => {
+        const { TlsCertificate } = await import('../../src/net/models/TlsCertificate.js');
+        const pc = makeComputer(1, '10.0.0.1');
+        const ca = await TlsCertificate.generate('Schul-CA', null, { isCA: true });
+        const leaf = await TlsCertificate.generate('www.biber-shop.de', ca);
+        pc.fs.mkdir('/etc/certs/trusted', { recursive: true });
+        pc.fs.writeFile('/etc/certs/shop.json', JSON.stringify(await leaf.toSaveData()));
+        pc.os.tls.certStore.add(ca);
+
+        const api = new CheckApi(fakeSimControl([pc]));
+        expect(await api.hasCert(1, 'www.biber-shop.de')).toBe(true);
+        expect(await api.hasCert(1, 'www.biber-shop.de', 'Schul-CA')).toBe(true);
+        expect(await api.hasCert(1, 'www.biber-shop.de', 'Andere CA')).toBe(false);
+        expect(await api.hasCert(1, 'www.biber-bank.de')).toBe(false);
+        expect(await api.trusts(1, 'Schul-CA')).toBe(true);
+        expect(await api.trusts(1, 'www.biber-shop.de')).toBe(false);
+    });
+
+    it('trusts(): CAs from a saved file system are loaded into the trust store', async () => {
+        const { TlsCertificate } = await import('../../src/net/models/TlsCertificate.js');
+        const ca = await TlsCertificate.generate('Biber Root CA', null, { isCA: true });
+        const pc = Computer.fromJSON({
+            kind: 'Computer', id: 3, name: 'PC3', x: 0, y: 0,
+            net: { name: 'PC', forwarding: false, interfaces: [{ name: 'eth0', ip: '10.0.0.3', prefixLength: 24, ip6: null, prefixLength6: 0, ip6LL: null }], routes: [] },
+            fs: { type: 'dir', name: '', ctime: 0, mtime: 0, children: [{ type: 'dir', name: 'etc', ctime: 0, mtime: 0, children: [
+                { type: 'dir', name: 'certs', ctime: 0, mtime: 0, children: [
+                    { type: 'dir', name: 'trusted', ctime: 0, mtime: 0, children: [
+                        { type: 'file', name: 'root.json', ctime: 0, mtime: 0, data: JSON.stringify({ ...ca.toJSON(), hasPrivateKey: false }) },
+                    ] },
+                ] },
+            ] }] },
+            dns: null,
+        });
+        await new Promise((r) => setTimeout(r, 50)); // trust store loads asynchronously
+        expect(await new CheckApi(fakeSimControl([pc])).trusts(3, 'Biber Root CA')).toBe(true);
+    });
+
     it('ip(): also works for tablets', async () => {
         const tab = Tablet.fromJSON({
             kind: 'Tablet', id: 7, name: 'Anna', x: 0, y: 0, ssid: 'Schule',

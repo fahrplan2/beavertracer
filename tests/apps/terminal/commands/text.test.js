@@ -12,6 +12,7 @@ import { cut } from '../../../../src/apps/terminal/commands/text/cut.js';
 import { tr } from '../../../../src/apps/terminal/commands/text/tr.js';
 import { tee } from '../../../../src/apps/terminal/commands/text/tee.js';
 import { seq } from '../../../../src/apps/terminal/commands/text/seq.js';
+import { sha256sum } from '../../../../src/apps/terminal/commands/text/sha256sum.js';
 import { CommandError } from '../../../../src/apps/terminal/commands/lib/errors.js';
 
 /** @param {string} text one-shot Reader pre-loaded with `text`, matching ShellContext.stdin's shape */
@@ -38,11 +39,23 @@ function makeCtx(fs, stdinText = null) {
 }
 
 describe('text commands', () => {
+  it('sha256sum hashes files and piped text; one changed letter changes the whole hash', async () => {
+    const fs = new VirtualFileSystem();
+    fs.writeFile('/home/a.txt', 'abc');
+    fs.writeFile('/home/b.txt', 'abd');
+    const out = await sha256sum.run(makeCtx(fs), ['a.txt', 'b.txt']);
+    expect(out).toBe(
+      'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad  a.txt\n' +
+      'a52d159f262b2c6ddb724a61840befc36eb30c88877a4030b65cbe86298449c9  b.txt');
+    expect(await sha256sum.run(makeCtx(fs, 'abc'), [])).toBe('ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad  -');
+    await expect(sha256sum.run(makeCtx(fs), ['fehlt.txt'])).rejects.toBeInstanceOf(CommandError);
+  });
+
   it('grep filters piped input and supports -i/-v/-n', async () => {
     const fs = new VirtualFileSystem();
     const input = 'Error: disk full\nok: all good\nERROR: retry\nok again';
 
-    expect(await grep.run(makeCtx(fs, input), ['error'])).toBe('');
+    await expect(grep.run(makeCtx(fs, input), ['error'])).rejects.toBeInstanceOf(CommandError); // no match → exit 1
     expect(await grep.run(makeCtx(fs, input), ['-i', 'error'])).toBe('Error: disk full\nERROR: retry');
     expect(await grep.run(makeCtx(fs, input), ['-i', '-v', 'error'])).toBe('ok: all good\nok again');
     expect(await grep.run(makeCtx(fs, input), ['-i', '-n', 'error'])).toBe('1:Error: disk full\n3:ERROR: retry');

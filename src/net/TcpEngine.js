@@ -395,7 +395,11 @@ export class TcpEngine {
 
       const chunk = head.subarray(0, n);
 
-      if (n === head.length) conn.sendQ.shift();
+      // The segment that completes an application write carries PSH
+      // ("hand it to the application now"), as real stacks do — Wireshark
+      // then shows [PSH, ACK]; earlier pieces of a split write don't.
+      const endOfWrite = n === head.length;
+      if (endOfWrite) conn.sendQ.shift();
       else conn.sendQ[0] = head.subarray(n);
 
       conn.sendQBytes = Math.max(0, (conn.sendQBytes ?? 0) - n);
@@ -403,7 +407,7 @@ export class TcpEngine {
       this._sendSegment(conn, {
         seq: conn.myacc,
         ack: conn.theiracc,
-        flags: TCPPacket.FLAG_ACK,
+        flags: endOfWrite ? (TCPPacket.FLAG_PSH | TCPPacket.FLAG_ACK) : TCPPacket.FLAG_ACK,
         window: this._calcRcvWnd(conn),
         payload: chunk,
       });
@@ -742,6 +746,8 @@ export class TcpEngine {
       else conn.finSeq = seqLT(finAt, conn.finSeq >>> 0) ? finAt : (conn.finSeq >>> 0);
     }
 
+    const expectedBefore = conn.theiracc >>> 0;
+
     // Ingest payload respecting receive window
     if (payload.length > 0) {
       this._oooIngest(conn, tcp.seq >>> 0, payload);
@@ -756,8 +762,13 @@ export class TcpEngine {
     // Drain contiguous bytes; may consume FIN
     this._oooDrain(conn);
 
-    // ACK cumulatively + advertise current window
-    this._sendAckOnly(conn);
+    // ACK cumulatively + advertise current window. Data that didn't advance
+    // the cumulative ACK (out of order behind a gap, or a duplicate) is
+    // acknowledged immediately anyway — a *duplicate ACK* (RFC 5681 §4.2,
+    // RFC 1122 4.2.2.21). It tells the sender which byte is still missing
+    // and, three in a row, triggers its Fast Retransmit.
+    const noProgress = payload.length > 0 && (conn.theiracc >>> 0) === expectedBefore;
+    this._sendAckOnly(conn, noProgress);
   }
 
   /**

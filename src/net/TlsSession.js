@@ -51,7 +51,38 @@ export class TlsCertSignatureError extends TlsCertUntrustedError {
   }
 }
 
+export class TlsCertNameMismatchError extends TlsCertUntrustedError {
+  /**
+   * @param {string} subject
+   * @param {string} serverName
+   */
+  constructor(subject, serverName) {
+    super(subject);
+    this.message = `Certificate name mismatch: ${subject} does not match ${serverName}`;
+    this.name = "TlsCertNameMismatchError";
+    this.serverName = serverName;
+  }
+}
+
 // ── helpers ────────────────────────────────────────────────────────────────
+
+/**
+ * Does the certificate subject (CN) cover the name the client asked for?
+ * Case-insensitive; a "*." wildcard covers exactly one leftmost label.
+ * @param {string} subject  e.g. "CN=www.example.org"
+ * @param {string} serverName
+ */
+export function certMatchesName(subject, serverName) {
+  const cn = subject.replace(/^CN=/i, "").trim().toLowerCase();
+  const name = serverName.trim().toLowerCase().replace(/\.$/, "").replace(/^\[|\]$/g, "");
+  if (!cn || !name) return false;
+  if (cn === name) return true;
+  if (cn.startsWith("*.")) {
+    const dot = name.indexOf(".");
+    return dot > 0 && name.slice(dot + 1) === cn.slice(2);
+  }
+  return false;
+}
 
 /** @param {Uint8Array[]} parts */
 function concat(...parts) {
@@ -243,9 +274,10 @@ export class TlsSession {
    *   timeoutMs?: number,
    *   sleepFn?: (ms: number) => Promise<void>,
    *   now?: () => number,
+   *   serverName?: string,
    * }} opts
    */
-  constructor({ send, recv, isServer, cert, trustStore, timeoutMs = 400, sleepFn, now }) {
+  constructor({ send, recv, isServer, cert, trustStore, timeoutMs = 400, sleepFn, now, serverName }) {
     this._sendRaw = send;
     this._recvRaw = recv;
     this._isServer = isServer;
@@ -257,6 +289,9 @@ export class TlsSession {
     // judge peer-certificate validity — falls back to the real browser clock
     // for callers that don't pass one (e.g. plain unit tests).
     this._now = now ?? (() => Date.now());
+    // Name the client wants to reach (URL host). When set together with a
+    // trust store, the peer certificate's CN must match it.
+    this._serverName = serverName ?? "";
 
     /** @type {"INIT"|"HANDSHAKE"|"ESTABLISHED"|"CLOSED"} */
     this._state = "INIT";
@@ -412,6 +447,9 @@ export class TlsSession {
             }
             if (!await this._trustStore.isTrusted(peerCert, peerCert.chain)) {
               throw new TlsCertUntrustedError(peerCert.subject);
+            }
+            if (this._serverName && !certMatchesName(peerCert.subject, this._serverName)) {
+              throw new TlsCertNameMismatchError(peerCert.subject, this._serverName);
             }
           }
         } else if (msg.type === TLS_HT.SERVER_KEY_EXCHANGE) {

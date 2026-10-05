@@ -319,7 +319,9 @@ export class SimulatedObject {
      * @param {boolean} open
      */
     setPanelOpen(open) {
-        if (open && this.simcontrol?.tool === "link") return;
+        // Link/delete tools use the click themselves; the pointerup that
+        // follows must not open the panel (which would reset the tool).
+        if (open && (this.simcontrol?.tool === "link" || this.simcontrol?.tool === "delete")) return;
         if (open && this.simcontrol?.mode === "edit") {
             this.simcontrol._resetEditTools();
             return;

@@ -15,3 +15,9 @@ ping bei IPv6: falsche Paketgröße in der ersten Zeile
 - Soll: IPv6-Kopf ist 40 Byte -> 56(104), oder wie Linux-ping bei IPv6 nur
   "56 Bytes Daten" ausgeben. (Die Ausgabe "ttl=" bei IPv6 ist dagegen korrekt —
   Linux-ping zeigt das Hop Limit dort ebenfalls als ttl an.)
+
+QUIC / HTTP/3 simulieren (später)
+- Wunsch des Nutzers (2026-10-04), angestoßen durch Lektion 6.6 (Ausblick).
+- QUIC (RFC 9000) über UDP 443 mit eingebauter Verschlüsselung; HTTP/3 (RFC 9114)
+  darauf. Danach in 6.6 bei QUIC das :fa-flask:-Symbol ergänzen und ggf. eine
+  Vergleichsseite TCP+TLS vs. QUIC (weniger Round-Trips beim Verbindungsaufbau).
