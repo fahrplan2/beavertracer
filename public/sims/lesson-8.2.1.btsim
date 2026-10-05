@@ -1,0 +1,527 @@
+{
+ "_info": "BeaverTracer Lektion 3.1.1 \u2014 drei PCs und ein Switch, noch nicht verkabelt",
+ "version": 6,
+ "tick": 100,
+ "objects": [
+  {
+   "kind": "Switch",
+   "id": 1,
+   "name": "Switch",
+   "x": 420,
+   "y": 260,
+   "px": 220,
+   "py": 120,
+   "panelOpen": false,
+   "vlanEnabled": false,
+   "stpMode": "off",
+   "stpEnabled": false,
+   "stpBridgePriority": 32768,
+   "vlanPorts": [
+    {
+     "vlanMode": "untagged",
+     "pvid": 1,
+     "allowedVlans": [
+      1
+     ],
+     "svid": null
+    },
+    {
+     "vlanMode": "untagged",
+     "pvid": 1,
+     "allowedVlans": [
+      1
+     ],
+     "svid": null
+    },
+    {
+     "vlanMode": "untagged",
+     "pvid": 1,
+     "allowedVlans": [
+      1
+     ],
+     "svid": null
+    },
+    {
+     "vlanMode": "untagged",
+     "pvid": 1,
+     "allowedVlans": [
+      1
+     ],
+     "svid": null
+    },
+    {
+     "vlanMode": "untagged",
+     "pvid": 1,
+     "allowedVlans": [
+      1
+     ],
+     "svid": null
+    },
+    {
+     "vlanMode": "untagged",
+     "pvid": 1,
+     "allowedVlans": [
+      1
+     ],
+     "svid": null
+    },
+    {
+     "vlanMode": "untagged",
+     "pvid": 1,
+     "allowedVlans": [
+      1
+     ],
+     "svid": null
+    },
+    {
+     "vlanMode": "untagged",
+     "pvid": 1,
+     "allowedVlans": [
+      1
+     ],
+     "svid": null
+    }
+   ],
+   "lagGroups": [],
+   "lagNextId": 0,
+   "igmpSnoopingEnabled": false,
+   "lldpEnabled": false
+  },
+  {
+   "kind": "Computer",
+   "id": 2,
+   "name": "Client-PC",
+   "x": 100,
+   "y": 430,
+   "px": 220,
+   "py": 120,
+   "panelOpen": false,
+   "net": {
+    "name": "Client-PC",
+    "forwarding": false,
+    "interfaces": [
+     {
+      "name": "eth0",
+      "ip": "192.168.0.10",
+      "prefixLength": 24,
+      "ip6": null,
+      "prefixLength6": 0,
+      "ip6LL": null,
+      "slaac": false,
+      "raEnabled": false
+     }
+    ],
+    "tunnels": [],
+    "routes": []
+   },
+   "fs": {
+    "type": "dir",
+    "name": "",
+    "ctime": 1791045719152,
+    "mtime": 1791045719153,
+    "children": [
+     {
+      "type": "dir",
+      "name": "etc",
+      "ctime": 1791045719152,
+      "mtime": 1791045719153,
+      "children": [
+       {
+        "type": "dir",
+        "name": "certs",
+        "ctime": 1791045719152,
+        "mtime": 1791045719152,
+        "children": [
+         {
+          "type": "dir",
+          "name": "trusted",
+          "ctime": 1791045719152,
+          "mtime": 1791045719152,
+          "children": [
+           {
+            "type": "file",
+            "name": "biber-root-ca.json",
+            "data": "{\n  \"subject\": \"CN=Biber Root CA\",\n  \"issuer\": \"CN=Biber Root CA\",\n  \"publicKeyId\": \"ec2fda02d0a9fddc06dc510fb993d354\",\n  \"publicKeyRaw\": \"04ec2fda02d0a9fddc06dc510fb993d354321809db6789f3aa218b3db3df1cdc94123752433ca58cb69802b265f58b7206ffae560e6d2e4c7a5839e562290491f4\",\n  \"certSignatureHex\": \"25ad305d0750e275cd4fa5c3506bf7447fc9213e637457b4cab1dc12fece46fe62a02178655e96275029ed61a1bb276a843dc0f3afe98530ddb63ebff86af7af\",\n  \"serialNumber\": 959567451,\n  \"notBefore\": 1756581116462,\n  \"notAfter\": 2387301116462,\n  \"selfSigned\": true,\n  \"isCA\": true,\n  \"hasPrivateKey\": false,\n  \"chain\": []\n}",
+            "binary": false,
+            "ctime": 1791045719152,
+            "mtime": 1791045719152
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "type": "file",
+        "name": "ip.config",
+        "data": "{\n  \"modeByIface\": {}\n}\n",
+        "binary": false,
+        "ctime": 1791045719153,
+        "mtime": 1791045719153
+       }
+      ]
+     },
+     {
+      "type": "dir",
+      "name": "home",
+      "ctime": 1791045719152,
+      "mtime": 1791045719152,
+      "children": [
+       {
+        "type": "file",
+        "name": "notes.txt",
+        "data": "Welcome to BeaverOS!\n\nThis file lives in your home directory - feel free to edit or delete it.\nIt's also a handy scratch pad for trying out the terminal, e.g.:\n\n  cat notes.txt | grep BeaverOS\n  cat notes.txt | wc -l\n  cat notes.txt | tail -n 3\n\nHave fun exploring the network!\n",
+        "binary": false,
+        "ctime": 1791045719152,
+        "mtime": 1791045719152
+       }
+      ]
+     },
+     {
+      "type": "dir",
+      "name": "bin",
+      "ctime": 1791045719152,
+      "mtime": 1791045719152,
+      "children": []
+     },
+     {
+      "type": "dir",
+      "name": "var",
+      "ctime": 1791045719153,
+      "mtime": 1791045719153,
+      "children": [
+       {
+        "type": "dir",
+        "name": "www",
+        "ctime": 1791045719153,
+        "mtime": 1791045719153,
+        "children": [
+         {
+          "type": "file",
+          "name": "index.html",
+          "data": "<!doctype html>\n<html>\n    <head>\n      <meta charset=\"utf-8\" />\n      <title>Hello from SimpleHTTPServer</title>\n    </head>\n    <body>\n      <h1>It works!</h1>\n    <p>Served from /var/www/index.html</p>\n    </body>\n</html>\n",
+          "binary": false,
+          "ctime": 1791045719153,
+          "mtime": 1791045719153
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "dns": "192.168.0.53",
+   "dhcpMode": {},
+   "installedApps": [
+    "IPv4ConfigApp",
+    "TerminalApp",
+    "ExplorerApp",
+    "TextEditorApp",
+    "SparktailHTTPClientApp",
+    "CertManagerApp"
+   ]
+  },
+  {
+   "kind": "Computer",
+   "id": 3,
+   "name": "DNS-Server",
+   "x": 420,
+   "y": 60,
+   "px": 220,
+   "py": 120,
+   "panelOpen": false,
+   "net": {
+    "name": "DNS-Server",
+    "forwarding": false,
+    "interfaces": [
+     {
+      "name": "eth0",
+      "ip": "192.168.0.53",
+      "prefixLength": 24,
+      "ip6": null,
+      "prefixLength6": 0,
+      "ip6LL": null,
+      "slaac": false,
+      "raEnabled": false
+     }
+    ],
+    "tunnels": [],
+    "routes": []
+   },
+   "fs": {
+    "type": "dir",
+    "name": "",
+    "ctime": 1791045719152,
+    "mtime": 1791045719153,
+    "children": [
+     {
+      "type": "dir",
+      "name": "etc",
+      "ctime": 1791045719152,
+      "mtime": 1791045719153,
+      "children": [
+       {
+        "type": "dir",
+        "name": "certs",
+        "ctime": 1791045719152,
+        "mtime": 1791045719152,
+        "children": [
+         {
+          "type": "dir",
+          "name": "trusted",
+          "ctime": 1791045719152,
+          "mtime": 1791045719152,
+          "children": []
+         }
+        ]
+       },
+       {
+        "type": "file",
+        "name": "ip.config",
+        "data": "{\n  \"modeByIface\": {}\n}\n",
+        "binary": false,
+        "ctime": 1791045719153,
+        "mtime": 1791045719153
+       },
+       {
+        "type": "file",
+        "name": "dnsd.conf",
+        "data": "{\n  \"autostart\": true,\n  \"mode\": \"authoritative\",\n  \"forwarderIp\": \"\",\n  \"a\": [\n    {\n      \"name\": \"www.beaver-schule.de\",\n      \"ip\": \"192.168.0.20\",\n      \"ttl\": 60\n    }\n  ],\n  \"aaaa\": [],\n  \"cname\": [],\n  \"mx\": [],\n  \"ns\": []\n}\n",
+        "binary": false,
+        "ctime": 1791045719152,
+        "mtime": 1791045719152
+       }
+      ]
+     },
+     {
+      "type": "dir",
+      "name": "home",
+      "ctime": 1791045719152,
+      "mtime": 1791045719152,
+      "children": [
+       {
+        "type": "file",
+        "name": "notes.txt",
+        "data": "Welcome to BeaverOS!\n\nThis file lives in your home directory - feel free to edit or delete it.\nIt's also a handy scratch pad for trying out the terminal, e.g.:\n\n  cat notes.txt | grep BeaverOS\n  cat notes.txt | wc -l\n  cat notes.txt | tail -n 3\n\nHave fun exploring the network!\n",
+        "binary": false,
+        "ctime": 1791045719152,
+        "mtime": 1791045719152
+       }
+      ]
+     },
+     {
+      "type": "dir",
+      "name": "bin",
+      "ctime": 1791045719152,
+      "mtime": 1791045719152,
+      "children": []
+     },
+     {
+      "type": "dir",
+      "name": "var",
+      "ctime": 1791045719153,
+      "mtime": 1791045719153,
+      "children": [
+       {
+        "type": "dir",
+        "name": "www",
+        "ctime": 1791045719153,
+        "mtime": 1791045719153,
+        "children": [
+         {
+          "type": "file",
+          "name": "index.html",
+          "data": "<!doctype html>\n<html>\n    <head>\n      <meta charset=\"utf-8\" />\n      <title>Hello from SimpleHTTPServer</title>\n    </head>\n    <body>\n      <h1>It works!</h1>\n    <p>Served from /var/www/index.html</p>\n    </body>\n</html>\n",
+          "binary": false,
+          "ctime": 1791045719153,
+          "mtime": 1791045719153
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "dns": null,
+   "dhcpMode": {},
+   "installedApps": [
+    "IPv4ConfigApp",
+    "TerminalApp",
+    "ExplorerApp",
+    "TextEditorApp",
+    "DNSServerApp"
+   ]
+  },
+  {
+   "kind": "Computer",
+   "id": 4,
+   "name": "www.beaver-schule.de",
+   "x": 740,
+   "y": 430,
+   "px": 220,
+   "py": 120,
+   "panelOpen": false,
+   "net": {
+    "name": "www.beaver-schule.de",
+    "forwarding": false,
+    "interfaces": [
+     {
+      "name": "eth0",
+      "ip": "192.168.0.20",
+      "prefixLength": 24,
+      "ip6": null,
+      "prefixLength6": 0,
+      "ip6LL": null,
+      "slaac": false,
+      "raEnabled": false
+     }
+    ],
+    "tunnels": [],
+    "routes": []
+   },
+   "fs": {
+    "type": "dir",
+    "name": "",
+    "ctime": 1791045719152,
+    "mtime": 1791045719153,
+    "children": [
+     {
+      "type": "dir",
+      "name": "etc",
+      "ctime": 1791045719152,
+      "mtime": 1791045719153,
+      "children": [
+       {
+        "type": "dir",
+        "name": "certs",
+        "ctime": 1791045719152,
+        "mtime": 1791045719152,
+        "children": [
+         {
+          "type": "dir",
+          "name": "trusted",
+          "ctime": 1791045719152,
+          "mtime": 1791045719152,
+          "children": []
+         },
+         {
+          "type": "file",
+          "name": "www.beaver-schule.de.json",
+          "data": "{\n  \"subject\": \"CN=www.beaver-schule.de\",\n  \"issuer\": \"CN=Biber Root CA\",\n  \"publicKeyId\": \"921ee3011f89ef0a0877464f69c4332e\",\n  \"publicKeyRaw\": \"04921ee3011f89ef0a0877464f69c4332e9c9999099483e940ccf8967cdfe7b7a4b98dcf9e8970ef182c2037e3f555285915c400828be0d3caef2e80054b014488\",\n  \"certSignatureHex\": \"e007197bf4d57293c173dd61be72d48cad980ded36615e1d08c97b89924b54df622bde2a7c580f18102237191e15e73cc9038f8d48edf4d9ea3be3871cb87b1c\",\n  \"serialNumber\": 2001800071,\n  \"notBefore\": 1788549116462,\n  \"notAfter\": 2103909116462,\n  \"selfSigned\": false,\n  \"isCA\": false,\n  \"hasPrivateKey\": true,\n  \"chain\": [\n    {\n      \"subject\": \"CN=Biber Root CA\",\n      \"issuer\": \"CN=Biber Root CA\",\n      \"publicKeyId\": \"ec2fda02d0a9fddc06dc510fb993d354\",\n      \"publicKeyRaw\": \"04ec2fda02d0a9fddc06dc510fb993d354321809db6789f3aa218b3db3df1cdc94123752433ca58cb69802b265f58b7206ffae560e6d2e4c7a5839e562290491f4\",\n      \"certSignatureHex\": \"25ad305d0750e275cd4fa5c3506bf7447fc9213e637457b4cab1dc12fece46fe62a02178655e96275029ed61a1bb276a843dc0f3afe98530ddb63ebff86af7af\",\n      \"serialNumber\": 959567451,\n      \"notBefore\": 1756581116462,\n      \"notAfter\": 2387301116462,\n      \"selfSigned\": true,\n      \"isCA\": true,\n      \"hasPrivateKey\": true,\n      \"chain\": []\n    }\n  ],\n  \"privateKeyJwk\": {\n    \"key_ops\": [\n      \"sign\"\n    ],\n    \"ext\": true,\n    \"kty\": \"EC\",\n    \"x\": \"kh7jAR-J7woId0ZPacQzLpyZmQmUg-lAzPiWfN_nt6Q\",\n    \"y\": \"uY3Pnolw7xgsIDfj9VUoWRXEAIKL4NPK7y6ABUsBRIg\",\n    \"crv\": \"P-256\",\n    \"d\": \"OeDrZfZH2UNW9j5ROMAZDay7IECfhz_3fpKKxg8xmr4\"\n  },\n  \"publicKeyJwk\": {\n    \"key_ops\": [\n      \"verify\"\n    ],\n    \"ext\": true,\n    \"kty\": \"EC\",\n    \"x\": \"kh7jAR-J7woId0ZPacQzLpyZmQmUg-lAzPiWfN_nt6Q\",\n    \"y\": \"uY3Pnolw7xgsIDfj9VUoWRXEAIKL4NPK7y6ABUsBRIg\",\n    \"crv\": \"P-256\"\n  }\n}",
+          "binary": false,
+          "ctime": 1791045719152,
+          "mtime": 1791045719152
+         }
+        ]
+       },
+       {
+        "type": "file",
+        "name": "ip.config",
+        "data": "{\n  \"modeByIface\": {}\n}\n",
+        "binary": false,
+        "ctime": 1791045719153,
+        "mtime": 1791045719153
+       },
+       {
+        "type": "file",
+        "name": "httpd.conf",
+        "data": "{\n  \"port\": 80,\n  \"docRoot\": \"/var/www/\",\n  \"httpsEnabled\": true,\n  \"httpsPort\": 443,\n  \"certPath\": \"/etc/certs/www.beaver-schule.de.json\",\n  \"autostart\": true\n}\n",
+        "binary": false,
+        "ctime": 1791045719152,
+        "mtime": 1791045719152
+       }
+      ]
+     },
+     {
+      "type": "dir",
+      "name": "home",
+      "ctime": 1791045719152,
+      "mtime": 1791045719152,
+      "children": [
+       {
+        "type": "file",
+        "name": "notes.txt",
+        "data": "Welcome to BeaverOS!\n\nThis file lives in your home directory - feel free to edit or delete it.\nIt's also a handy scratch pad for trying out the terminal, e.g.:\n\n  cat notes.txt | grep BeaverOS\n  cat notes.txt | wc -l\n  cat notes.txt | tail -n 3\n\nHave fun exploring the network!\n",
+        "binary": false,
+        "ctime": 1791045719152,
+        "mtime": 1791045719152
+       }
+      ]
+     },
+     {
+      "type": "dir",
+      "name": "bin",
+      "ctime": 1791045719152,
+      "mtime": 1791045719152,
+      "children": []
+     },
+     {
+      "type": "dir",
+      "name": "var",
+      "ctime": 1791045719153,
+      "mtime": 1791045719153,
+      "children": [
+       {
+        "type": "dir",
+        "name": "www",
+        "ctime": 1791045719153,
+        "mtime": 1791045719153,
+        "children": [
+         {
+          "type": "file",
+          "name": "index.html",
+          "data": "<!doctype html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n  <title>Notenportal</title>\n  <link rel=\"stylesheet\" href=\"style.css\">\n</head>\n<body>\n  <h1>Notenportal der Beaver-Schule</h1>\n  <div class=\"box\">\n    <p>Hallo Anna! Deine aktuellen Noten:</p>\n    <p>Mathematik: 2<br>Deutsch: 1<br>Informatik: 1</p>\n  </div>\n</body>\n</html>\n",
+          "binary": false,
+          "ctime": 1791045719152,
+          "mtime": 1791045719152
+         },
+         {
+          "type": "file",
+          "name": "style.css",
+          "data": "body { font-family: sans-serif; margin: 2em; background: #f4f8f8; }\nh1 { color: #006d75; }\n.box { background: #fff; border: 1px solid #cde; border-radius: 8px; padding: 1em 1.5em; max-width: 28em; }\n",
+          "binary": false,
+          "ctime": 1791045719152,
+          "mtime": 1791045719152
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "dns": "192.168.0.53",
+   "dhcpMode": {},
+   "installedApps": [
+    "IPv4ConfigApp",
+    "TerminalApp",
+    "ExplorerApp",
+    "TextEditorApp",
+    "SimpleHTTPServerApp",
+    "CertManagerApp"
+   ]
+  },
+  {
+   "kind": "Link",
+   "id": 20,
+   "a": 2,
+   "b": 1,
+   "portA": "eth0",
+   "portB": "sw0"
+  },
+  {
+   "kind": "Link",
+   "id": 21,
+   "a": 3,
+   "b": 1,
+   "portA": "eth0",
+   "portB": "sw1"
+  },
+  {
+   "kind": "Link",
+   "id": 22,
+   "a": 4,
+   "b": 1,
+   "portA": "eth0",
+   "portB": "sw2"
+  }
+ ]
+}

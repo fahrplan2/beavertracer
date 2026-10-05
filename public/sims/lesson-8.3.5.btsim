@@ -1,0 +1,683 @@
+{
+ "_info": "BeaverTracer Lektion 3.1.1 \u2014 drei PCs und ein Switch, noch nicht verkabelt",
+ "version": 6,
+ "tick": 100,
+ "objects": [
+  {
+   "kind": "Switch",
+   "id": 1,
+   "name": "Switch",
+   "x": 420,
+   "y": 260,
+   "px": 220,
+   "py": 120,
+   "panelOpen": false,
+   "vlanEnabled": false,
+   "stpMode": "off",
+   "stpEnabled": false,
+   "stpBridgePriority": 32768,
+   "vlanPorts": [
+    {
+     "vlanMode": "untagged",
+     "pvid": 1,
+     "allowedVlans": [
+      1
+     ],
+     "svid": null
+    },
+    {
+     "vlanMode": "untagged",
+     "pvid": 1,
+     "allowedVlans": [
+      1
+     ],
+     "svid": null
+    },
+    {
+     "vlanMode": "untagged",
+     "pvid": 1,
+     "allowedVlans": [
+      1
+     ],
+     "svid": null
+    },
+    {
+     "vlanMode": "untagged",
+     "pvid": 1,
+     "allowedVlans": [
+      1
+     ],
+     "svid": null
+    },
+    {
+     "vlanMode": "untagged",
+     "pvid": 1,
+     "allowedVlans": [
+      1
+     ],
+     "svid": null
+    },
+    {
+     "vlanMode": "untagged",
+     "pvid": 1,
+     "allowedVlans": [
+      1
+     ],
+     "svid": null
+    },
+    {
+     "vlanMode": "untagged",
+     "pvid": 1,
+     "allowedVlans": [
+      1
+     ],
+     "svid": null
+    },
+    {
+     "vlanMode": "untagged",
+     "pvid": 1,
+     "allowedVlans": [
+      1
+     ],
+     "svid": null
+    }
+   ],
+   "lagGroups": [],
+   "lagNextId": 0,
+   "igmpSnoopingEnabled": false,
+   "lldpEnabled": false
+  },
+  {
+   "kind": "Computer",
+   "id": 2,
+   "name": "Client-PC",
+   "x": 100,
+   "y": 430,
+   "px": 220,
+   "py": 120,
+   "panelOpen": false,
+   "net": {
+    "name": "Client-PC",
+    "forwarding": false,
+    "interfaces": [
+     {
+      "name": "eth0",
+      "ip": "192.168.0.10",
+      "prefixLength": 24,
+      "ip6": null,
+      "prefixLength6": 0,
+      "ip6LL": null,
+      "slaac": false,
+      "raEnabled": false
+     }
+    ],
+    "tunnels": [],
+    "routes": []
+   },
+   "fs": {
+    "type": "dir",
+    "name": "",
+    "ctime": 1791045719152,
+    "mtime": 1791045719153,
+    "children": [
+     {
+      "type": "dir",
+      "name": "etc",
+      "ctime": 1791045719152,
+      "mtime": 1791045719153,
+      "children": [
+       {
+        "type": "dir",
+        "name": "certs",
+        "ctime": 1791045719152,
+        "mtime": 1791045719152,
+        "children": [
+         {
+          "type": "dir",
+          "name": "trusted",
+          "ctime": 1791045719152,
+          "mtime": 1791045719152,
+          "children": [
+           {
+            "type": "file",
+            "name": "biber-root-ca.json",
+            "data": "{\n  \"subject\": \"CN=Biber Root CA\",\n  \"issuer\": \"CN=Biber Root CA\",\n  \"publicKeyId\": \"ec2fda02d0a9fddc06dc510fb993d354\",\n  \"publicKeyRaw\": \"04ec2fda02d0a9fddc06dc510fb993d354321809db6789f3aa218b3db3df1cdc94123752433ca58cb69802b265f58b7206ffae560e6d2e4c7a5839e562290491f4\",\n  \"certSignatureHex\": \"25ad305d0750e275cd4fa5c3506bf7447fc9213e637457b4cab1dc12fece46fe62a02178655e96275029ed61a1bb276a843dc0f3afe98530ddb63ebff86af7af\",\n  \"serialNumber\": 959567451,\n  \"notBefore\": 1756581116462,\n  \"notAfter\": 2387301116462,\n  \"selfSigned\": true,\n  \"isCA\": true,\n  \"hasPrivateKey\": false,\n  \"chain\": []\n}",
+            "binary": false,
+            "ctime": 1791045719152,
+            "mtime": 1791045719152
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "type": "file",
+        "name": "ip.config",
+        "data": "{\n  \"modeByIface\": {}\n}\n",
+        "binary": false,
+        "ctime": 1791045719153,
+        "mtime": 1791045719153
+       }
+      ]
+     },
+     {
+      "type": "dir",
+      "name": "home",
+      "ctime": 1791045719152,
+      "mtime": 1791045719152,
+      "children": [
+       {
+        "type": "file",
+        "name": "notes.txt",
+        "data": "Welcome to BeaverOS!\n\nThis file lives in your home directory - feel free to edit or delete it.\nIt's also a handy scratch pad for trying out the terminal, e.g.:\n\n  cat notes.txt | grep BeaverOS\n  cat notes.txt | wc -l\n  cat notes.txt | tail -n 3\n\nHave fun exploring the network!\n",
+        "binary": false,
+        "ctime": 1791045719152,
+        "mtime": 1791045719152
+       }
+      ]
+     },
+     {
+      "type": "dir",
+      "name": "bin",
+      "ctime": 1791045719152,
+      "mtime": 1791045719152,
+      "children": []
+     },
+     {
+      "type": "dir",
+      "name": "var",
+      "ctime": 1791045719153,
+      "mtime": 1791045719153,
+      "children": [
+       {
+        "type": "dir",
+        "name": "www",
+        "ctime": 1791045719153,
+        "mtime": 1791045719153,
+        "children": [
+         {
+          "type": "file",
+          "name": "index.html",
+          "data": "<!doctype html>\n<html>\n    <head>\n      <meta charset=\"utf-8\" />\n      <title>Hello from SimpleHTTPServer</title>\n    </head>\n    <body>\n      <h1>It works!</h1>\n    <p>Served from /var/www/index.html</p>\n    </body>\n</html>\n",
+          "binary": false,
+          "ctime": 1791045719153,
+          "mtime": 1791045719153
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "dns": "192.168.0.53",
+   "dhcpMode": {},
+   "installedApps": [
+    "IPv4ConfigApp",
+    "TerminalApp",
+    "ExplorerApp",
+    "TextEditorApp",
+    "SparktailHTTPClientApp",
+    "CertManagerApp"
+   ]
+  },
+  {
+   "kind": "Computer",
+   "id": 3,
+   "name": "DNS-Server",
+   "x": 420,
+   "y": 60,
+   "px": 220,
+   "py": 120,
+   "panelOpen": false,
+   "net": {
+    "name": "DNS-Server",
+    "forwarding": false,
+    "interfaces": [
+     {
+      "name": "eth0",
+      "ip": "192.168.0.53",
+      "prefixLength": 24,
+      "ip6": null,
+      "prefixLength6": 0,
+      "ip6LL": null,
+      "slaac": false,
+      "raEnabled": false
+     }
+    ],
+    "tunnels": [],
+    "routes": []
+   },
+   "fs": {
+    "type": "dir",
+    "name": "",
+    "ctime": 1791045719152,
+    "mtime": 1791045719153,
+    "children": [
+     {
+      "type": "dir",
+      "name": "etc",
+      "ctime": 1791045719152,
+      "mtime": 1791045719153,
+      "children": [
+       {
+        "type": "dir",
+        "name": "certs",
+        "ctime": 1791045719152,
+        "mtime": 1791045719152,
+        "children": [
+         {
+          "type": "dir",
+          "name": "trusted",
+          "ctime": 1791045719152,
+          "mtime": 1791045719152,
+          "children": []
+         }
+        ]
+       },
+       {
+        "type": "file",
+        "name": "ip.config",
+        "data": "{\n  \"modeByIface\": {}\n}\n",
+        "binary": false,
+        "ctime": 1791045719153,
+        "mtime": 1791045719153
+       },
+       {
+        "type": "file",
+        "name": "dnsd.conf",
+        "data": "{\n  \"autostart\": true,\n  \"mode\": \"authoritative\",\n  \"forwarderIp\": \"\",\n  \"a\": [\n    {\n      \"name\": \"www.biberbank.de\",\n      \"ip\": \"192.168.0.66\",\n      \"ttl\": 10\n    },\n    {\n      \"name\": \"www.biber-gewinnspiel.de\",\n      \"ip\": \"192.168.0.66\",\n      \"ttl\": 10\n    }\n  ],\n  \"aaaa\": [],\n  \"cname\": [],\n  \"mx\": [],\n  \"ns\": []\n}\n",
+        "binary": false,
+        "ctime": 1791045719152,
+        "mtime": 1791045719152
+       }
+      ]
+     },
+     {
+      "type": "dir",
+      "name": "home",
+      "ctime": 1791045719152,
+      "mtime": 1791045719152,
+      "children": [
+       {
+        "type": "file",
+        "name": "notes.txt",
+        "data": "Welcome to BeaverOS!\n\nThis file lives in your home directory - feel free to edit or delete it.\nIt's also a handy scratch pad for trying out the terminal, e.g.:\n\n  cat notes.txt | grep BeaverOS\n  cat notes.txt | wc -l\n  cat notes.txt | tail -n 3\n\nHave fun exploring the network!\n",
+        "binary": false,
+        "ctime": 1791045719152,
+        "mtime": 1791045719152
+       }
+      ]
+     },
+     {
+      "type": "dir",
+      "name": "bin",
+      "ctime": 1791045719152,
+      "mtime": 1791045719152,
+      "children": []
+     },
+     {
+      "type": "dir",
+      "name": "var",
+      "ctime": 1791045719153,
+      "mtime": 1791045719153,
+      "children": [
+       {
+        "type": "dir",
+        "name": "www",
+        "ctime": 1791045719153,
+        "mtime": 1791045719153,
+        "children": [
+         {
+          "type": "file",
+          "name": "index.html",
+          "data": "<!doctype html>\n<html>\n    <head>\n      <meta charset=\"utf-8\" />\n      <title>Hello from SimpleHTTPServer</title>\n    </head>\n    <body>\n      <h1>It works!</h1>\n    <p>Served from /var/www/index.html</p>\n    </body>\n</html>\n",
+          "binary": false,
+          "ctime": 1791045719153,
+          "mtime": 1791045719153
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "dns": null,
+   "dhcpMode": {},
+   "installedApps": [
+    "IPv4ConfigApp",
+    "TerminalApp",
+    "ExplorerApp",
+    "TextEditorApp",
+    "DNSServerApp"
+   ]
+  },
+  {
+   "kind": "Computer",
+   "id": 4,
+   "name": "www.biberbank.de",
+   "x": 760,
+   "y": 140,
+   "px": 220,
+   "py": 120,
+   "panelOpen": false,
+   "net": {
+    "name": "www.biberbank.de",
+    "forwarding": false,
+    "interfaces": [
+     {
+      "name": "eth0",
+      "ip": "192.168.0.30",
+      "prefixLength": 24,
+      "ip6": null,
+      "prefixLength6": 0,
+      "ip6LL": null,
+      "slaac": false,
+      "raEnabled": false
+     }
+    ],
+    "tunnels": [],
+    "routes": []
+   },
+   "fs": {
+    "type": "dir",
+    "name": "",
+    "ctime": 1791045719152,
+    "mtime": 1791045719153,
+    "children": [
+     {
+      "type": "dir",
+      "name": "etc",
+      "ctime": 1791045719152,
+      "mtime": 1791045719153,
+      "children": [
+       {
+        "type": "dir",
+        "name": "certs",
+        "ctime": 1791045719152,
+        "mtime": 1791045719152,
+        "children": [
+         {
+          "type": "dir",
+          "name": "trusted",
+          "ctime": 1791045719152,
+          "mtime": 1791045719152,
+          "children": []
+         },
+         {
+          "type": "file",
+          "name": "www.biberbank.de.json",
+          "data": "{\n  \"subject\": \"CN=www.biberbank.de\",\n  \"issuer\": \"CN=Biber Root CA\",\n  \"publicKeyId\": \"9eef1564c08be307bd323c6bc49fe220\",\n  \"publicKeyRaw\": \"049eef1564c08be307bd323c6bc49fe220ec85c1198bfaf1b859d487c721bfe837a7e86576b713008f441045f78973db70571cde06ad8c8747e09dd9603c5ad4d5\",\n  \"certSignatureHex\": \"c1bc10b0daf17815619c9d12bb77b3e99cea2ce3130d35b01226cf31b2851802101bb7377b0ed0501e7d4af6b332c1d701c9f9299d236ddebdb72864378b9f69\",\n  \"serialNumber\": 1302416094,\n  \"notBefore\": 1788549116462,\n  \"notAfter\": 2103909116462,\n  \"selfSigned\": false,\n  \"isCA\": false,\n  \"hasPrivateKey\": true,\n  \"chain\": [\n    {\n      \"subject\": \"CN=Biber Root CA\",\n      \"issuer\": \"CN=Biber Root CA\",\n      \"publicKeyId\": \"ec2fda02d0a9fddc06dc510fb993d354\",\n      \"publicKeyRaw\": \"04ec2fda02d0a9fddc06dc510fb993d354321809db6789f3aa218b3db3df1cdc94123752433ca58cb69802b265f58b7206ffae560e6d2e4c7a5839e562290491f4\",\n      \"certSignatureHex\": \"25ad305d0750e275cd4fa5c3506bf7447fc9213e637457b4cab1dc12fece46fe62a02178655e96275029ed61a1bb276a843dc0f3afe98530ddb63ebff86af7af\",\n      \"serialNumber\": 959567451,\n      \"notBefore\": 1756581116462,\n      \"notAfter\": 2387301116462,\n      \"selfSigned\": true,\n      \"isCA\": true,\n      \"hasPrivateKey\": true,\n      \"chain\": []\n    }\n  ],\n  \"privateKeyJwk\": {\n    \"key_ops\": [\n      \"sign\"\n    ],\n    \"ext\": true,\n    \"kty\": \"EC\",\n    \"x\": \"nu8VZMCL4we9MjxrxJ_iIOyFwRmL-vG4WdSHxyG_6Dc\",\n    \"y\": \"p-hldrcTAI9EEEX3iXPbcFcc3gatjIdH4J3ZYDxa1NU\",\n    \"crv\": \"P-256\",\n    \"d\": \"ml0OjjeBHMwcQotWHV2oXW26i1VEpi-a8REHO8b2Np8\"\n  },\n  \"publicKeyJwk\": {\n    \"key_ops\": [\n      \"verify\"\n    ],\n    \"ext\": true,\n    \"kty\": \"EC\",\n    \"x\": \"nu8VZMCL4we9MjxrxJ_iIOyFwRmL-vG4WdSHxyG_6Dc\",\n    \"y\": \"p-hldrcTAI9EEEX3iXPbcFcc3gatjIdH4J3ZYDxa1NU\",\n    \"crv\": \"P-256\"\n  }\n}",
+          "binary": false,
+          "ctime": 1791045719152,
+          "mtime": 1791045719152
+         }
+        ]
+       },
+       {
+        "type": "file",
+        "name": "ip.config",
+        "data": "{\n  \"modeByIface\": {}\n}\n",
+        "binary": false,
+        "ctime": 1791045719153,
+        "mtime": 1791045719153
+       },
+       {
+        "type": "file",
+        "name": "httpd.conf",
+        "data": "{\n  \"port\": 80,\n  \"docRoot\": \"/var/www/\",\n  \"httpsEnabled\": true,\n  \"httpsPort\": 443,\n  \"certPath\": \"/etc/certs/www.biberbank.de.json\",\n  \"autostart\": true\n}\n",
+        "binary": false,
+        "ctime": 1791045719152,
+        "mtime": 1791045719152
+       }
+      ]
+     },
+     {
+      "type": "dir",
+      "name": "home",
+      "ctime": 1791045719152,
+      "mtime": 1791045719152,
+      "children": [
+       {
+        "type": "file",
+        "name": "notes.txt",
+        "data": "Welcome to BeaverOS!\n\nThis file lives in your home directory - feel free to edit or delete it.\nIt's also a handy scratch pad for trying out the terminal, e.g.:\n\n  cat notes.txt | grep BeaverOS\n  cat notes.txt | wc -l\n  cat notes.txt | tail -n 3\n\nHave fun exploring the network!\n",
+        "binary": false,
+        "ctime": 1791045719152,
+        "mtime": 1791045719152
+       }
+      ]
+     },
+     {
+      "type": "dir",
+      "name": "bin",
+      "ctime": 1791045719152,
+      "mtime": 1791045719152,
+      "children": []
+     },
+     {
+      "type": "dir",
+      "name": "var",
+      "ctime": 1791045719153,
+      "mtime": 1791045719153,
+      "children": [
+       {
+        "type": "dir",
+        "name": "www",
+        "ctime": 1791045719153,
+        "mtime": 1791045719153,
+        "children": [
+         {
+          "type": "file",
+          "name": "index.html",
+          "data": "<!doctype html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n  <title>Biberbank</title>\n  <link rel=\"stylesheet\" href=\"style.css\">\n</head>\n<body>\n  <h1>Biberbank \u2013 Online-Banking</h1>\n  <div class=\"box\">\n    <form>\n      <p>Kontonummer<br><input name=\"konto\"></p>\n      <p>PIN<br><input name=\"pin\" type=\"password\"></p>\n      <p><button>Anmelden</button></p>\n    </form>\n  </div>\n</body>\n</html>\n",
+          "binary": false,
+          "ctime": 1791045719152,
+          "mtime": 1791045719152
+         },
+         {
+          "type": "file",
+          "name": "style.css",
+          "data": "body { font-family: sans-serif; margin: 2em; background: #f4f8f8; }\nh1 { color: #006d75; }\n.box { background: #fff; border: 1px solid #cde; border-radius: 8px; padding: 1em 1.5em; max-width: 28em; }\n",
+          "binary": false,
+          "ctime": 1791045719152,
+          "mtime": 1791045719152
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "dns": "192.168.0.53",
+   "dhcpMode": {},
+   "installedApps": [
+    "IPv4ConfigApp",
+    "TerminalApp",
+    "ExplorerApp",
+    "TextEditorApp",
+    "SimpleHTTPServerApp",
+    "CertManagerApp"
+   ]
+  },
+  {
+   "kind": "Computer",
+   "id": 5,
+   "name": "Angreifer",
+   "x": 760,
+   "y": 430,
+   "px": 220,
+   "py": 120,
+   "panelOpen": false,
+   "net": {
+    "name": "Angreifer",
+    "forwarding": false,
+    "interfaces": [
+     {
+      "name": "eth0",
+      "ip": "192.168.0.66",
+      "prefixLength": 24,
+      "ip6": null,
+      "prefixLength6": 0,
+      "ip6LL": null,
+      "slaac": false,
+      "raEnabled": false
+     }
+    ],
+    "tunnels": [],
+    "routes": []
+   },
+   "fs": {
+    "type": "dir",
+    "name": "",
+    "ctime": 1791045719152,
+    "mtime": 1791045719153,
+    "children": [
+     {
+      "type": "dir",
+      "name": "etc",
+      "ctime": 1791045719152,
+      "mtime": 1791045719153,
+      "children": [
+       {
+        "type": "dir",
+        "name": "certs",
+        "ctime": 1791045719152,
+        "mtime": 1791045719152,
+        "children": [
+         {
+          "type": "dir",
+          "name": "trusted",
+          "ctime": 1791045719152,
+          "mtime": 1791045719152,
+          "children": []
+         },
+         {
+          "type": "file",
+          "name": "www.biber-gewinnspiel.de.json",
+          "data": "{\n  \"subject\": \"CN=www.biber-gewinnspiel.de\",\n  \"issuer\": \"CN=Biber Root CA\",\n  \"publicKeyId\": \"e53d01f42cba8915549a6499047400af\",\n  \"publicKeyRaw\": \"04e53d01f42cba8915549a6499047400aff496b18c36b7618e0c3dc782a2407e2d1a6a4e274d2dd7e927a2032801d83aa56ae39ec11881fc9681ae7f2b76878616\",\n  \"certSignatureHex\": \"30999fced9b166c1246890600aecdbaeeccfac651c1d47087c7e4dc6254058475e6880c3ede8fa3d09c1218d1c5405e5272c5f7c319466fe2da2e0cbf4937e27\",\n  \"serialNumber\": 1072781522,\n  \"notBefore\": 1788549116462,\n  \"notAfter\": 2103909116462,\n  \"selfSigned\": false,\n  \"isCA\": false,\n  \"hasPrivateKey\": true,\n  \"chain\": [\n    {\n      \"subject\": \"CN=Biber Root CA\",\n      \"issuer\": \"CN=Biber Root CA\",\n      \"publicKeyId\": \"ec2fda02d0a9fddc06dc510fb993d354\",\n      \"publicKeyRaw\": \"04ec2fda02d0a9fddc06dc510fb993d354321809db6789f3aa218b3db3df1cdc94123752433ca58cb69802b265f58b7206ffae560e6d2e4c7a5839e562290491f4\",\n      \"certSignatureHex\": \"25ad305d0750e275cd4fa5c3506bf7447fc9213e637457b4cab1dc12fece46fe62a02178655e96275029ed61a1bb276a843dc0f3afe98530ddb63ebff86af7af\",\n      \"serialNumber\": 959567451,\n      \"notBefore\": 1756581116462,\n      \"notAfter\": 2387301116462,\n      \"selfSigned\": true,\n      \"isCA\": true,\n      \"hasPrivateKey\": true,\n      \"chain\": []\n    }\n  ],\n  \"privateKeyJwk\": {\n    \"key_ops\": [\n      \"sign\"\n    ],\n    \"ext\": true,\n    \"kty\": \"EC\",\n    \"x\": \"5T0B9Cy6iRVUmmSZBHQAr_SWsYw2t2GODD3HgqJAfi0\",\n    \"y\": \"GmpOJ00t1-knogMoAdg6pWrjnsEYgfyWga5_K3aHhhY\",\n    \"crv\": \"P-256\",\n    \"d\": \"BQGFeDtWTOVabWPXsIDS8XKcGqMw9O3DbxB5XM_aYYQ\"\n  },\n  \"publicKeyJwk\": {\n    \"key_ops\": [\n      \"verify\"\n    ],\n    \"ext\": true,\n    \"kty\": \"EC\",\n    \"x\": \"5T0B9Cy6iRVUmmSZBHQAr_SWsYw2t2GODD3HgqJAfi0\",\n    \"y\": \"GmpOJ00t1-knogMoAdg6pWrjnsEYgfyWga5_K3aHhhY\",\n    \"crv\": \"P-256\"\n  }\n}",
+          "binary": false,
+          "ctime": 1791045719152,
+          "mtime": 1791045719152
+         }
+        ]
+       },
+       {
+        "type": "file",
+        "name": "ip.config",
+        "data": "{\n  \"modeByIface\": {}\n}\n",
+        "binary": false,
+        "ctime": 1791045719153,
+        "mtime": 1791045719153
+       },
+       {
+        "type": "file",
+        "name": "httpd.conf",
+        "data": "{\n  \"port\": 80,\n  \"docRoot\": \"/var/www/\",\n  \"httpsEnabled\": true,\n  \"httpsPort\": 443,\n  \"certPath\": \"/etc/certs/www.biber-gewinnspiel.de.json\",\n  \"autostart\": true\n}\n",
+        "binary": false,
+        "ctime": 1791045719152,
+        "mtime": 1791045719152
+       }
+      ]
+     },
+     {
+      "type": "dir",
+      "name": "home",
+      "ctime": 1791045719152,
+      "mtime": 1791045719152,
+      "children": [
+       {
+        "type": "file",
+        "name": "notes.txt",
+        "data": "Welcome to BeaverOS!\n\nThis file lives in your home directory - feel free to edit or delete it.\nIt's also a handy scratch pad for trying out the terminal, e.g.:\n\n  cat notes.txt | grep BeaverOS\n  cat notes.txt | wc -l\n  cat notes.txt | tail -n 3\n\nHave fun exploring the network!\n",
+        "binary": false,
+        "ctime": 1791045719152,
+        "mtime": 1791045719152
+       }
+      ]
+     },
+     {
+      "type": "dir",
+      "name": "bin",
+      "ctime": 1791045719152,
+      "mtime": 1791045719152,
+      "children": []
+     },
+     {
+      "type": "dir",
+      "name": "var",
+      "ctime": 1791045719153,
+      "mtime": 1791045719153,
+      "children": [
+       {
+        "type": "dir",
+        "name": "www",
+        "ctime": 1791045719153,
+        "mtime": 1791045719153,
+        "children": [
+         {
+          "type": "file",
+          "name": "index.html",
+          "data": "<!doctype html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n  <title>Biberbank</title>\n  <link rel=\"stylesheet\" href=\"style.css\">\n</head>\n<body>\n  <h1>Biberbank \u2013 Online-Banking</h1>\n  <div class=\"box\">\n    <form>\n      <p>Kontonummer<br><input name=\"konto\"></p>\n      <p>PIN<br><input name=\"pin\" type=\"password\"></p>\n      <p><button>Anmelden</button></p>\n    </form>\n  </div>\n</body>\n</html>\n",
+          "binary": false,
+          "ctime": 1791045719152,
+          "mtime": 1791045719152
+         },
+         {
+          "type": "file",
+          "name": "style.css",
+          "data": "body { font-family: sans-serif; margin: 2em; background: #f4f8f8; }\nh1 { color: #006d75; }\n.box { background: #fff; border: 1px solid #cde; border-radius: 8px; padding: 1em 1.5em; max-width: 28em; }\n",
+          "binary": false,
+          "ctime": 1791045719152,
+          "mtime": 1791045719152
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "dns": "192.168.0.53",
+   "dhcpMode": {},
+   "installedApps": [
+    "IPv4ConfigApp",
+    "TerminalApp",
+    "ExplorerApp",
+    "TextEditorApp",
+    "SimpleHTTPServerApp",
+    "CertManagerApp"
+   ]
+  },
+  {
+   "kind": "Link",
+   "id": 20,
+   "a": 2,
+   "b": 1,
+   "portA": "eth0",
+   "portB": "sw0"
+  },
+  {
+   "kind": "Link",
+   "id": 21,
+   "a": 3,
+   "b": 1,
+   "portA": "eth0",
+   "portB": "sw1"
+  },
+  {
+   "kind": "Link",
+   "id": 22,
+   "a": 4,
+   "b": 1,
+   "portA": "eth0",
+   "portB": "sw2"
+  },
+  {
+   "kind": "Link",
+   "id": 23,
+   "a": 5,
+   "b": 1,
+   "portA": "eth0",
+   "portB": "sw3"
+  }
+ ]
+}
