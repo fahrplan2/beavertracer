@@ -292,6 +292,16 @@ export class CheckApi {
     }
 
     /**
+     * The opposite of tcpOpen(): true if NO TCP connection from `fromId` to
+     * `to`:`port` comes about — for firewall tasks (blocked = dropped or
+     * rejected, or simply nothing listening).
+     * @param {number} fromId @param {number|string} to @param {number} port
+     */
+    async tcpFails(fromId, to, port) {
+        return !(await this.tcpOpen(fromId, to, port));
+    }
+
+    /**
      * Runs `cmd` in a headless shell on `deviceId` (no terminal window is
      * ever opened) and checks whether it succeeded/failed as expected.
      * `expectOk` is 1 (default, command should succeed) or 0 (should fail).

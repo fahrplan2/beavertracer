@@ -177,7 +177,9 @@ download_artifacts() {
     if [[ ! -f "$dest" ]]; then
       url="${PKG_BASE}/${VERSION}/${filename}"
       echo "Downloading ${filename} ..."
-      tmp="$(mktemp)"
+      # Temp-Datei im Zielverzeichnis (Punkt-Präfix, taucht nicht im Index auf),
+      # damit mv ein atomares Rename ist und nie eine halbe Datei sichtbar wird
+      tmp="$(mktemp "${RELEASES_DIR}/.download.XXXXXX")"
       if curl --silent --fail \
               --header "DEPLOY-TOKEN: ${GITLAB_DEPLOY_TOKEN}" \
               --output "$tmp" \
@@ -191,8 +193,32 @@ download_artifacts() {
   done
 }
 
+echo "Checking Tauri releases (stable: ${LATEST_STABLE:-none}, pre-release: ${LATEST_PRERELEASE:-none})..."
 download_artifacts "$LATEST_STABLE"
 download_artifacts "$LATEST_PRERELEASE"
+
+# 12. releases/index.json — Liste der tatsächlich vorhandenen Dateien.
+#     Die Download-Seite (src/lib/DownloadIndex.js) erkennt daran, ob die
+#     Desktop-Builds der aktuellen Version schon da sind, und bietet ältere
+#     Versionen im Drop-down an. Wird bei jedem Lauf neu geschrieben.
+write_release_index() {
+  local tmp first=true
+  tmp="$(mktemp "${RELEASES_DIR}/.index.XXXXXX")"
+  {
+    printf '{\n  "generated": "%s",\n  "files": [' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    for f in "$RELEASES_DIR"/beavertracer_*; do
+      [[ -f "$f" ]] || continue
+      $first || printf ','
+      first=false
+      printf '\n    {"name": "%s", "size": %s}' "$(basename "$f")" "$(wc -c < "$f" | tr -d ' ')"
+    done
+    printf '\n  ]\n}\n'
+  } > "$tmp"
+  mv "$tmp" "${RELEASES_DIR}/index.json"
+  echo "Wrote ${RELEASES_DIR}/index.json ($(grep -c '"name"' "${RELEASES_DIR}/index.json" || true) files)."
+}
+
+write_release_index
 
 if [[ -d "$RELEASES_DIR" ]]; then
   chown -R www-data:www-data "$RELEASES_DIR"

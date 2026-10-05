@@ -62,14 +62,25 @@ export async function loadPage(route) {
 }
 
 /**
+ * Where the desktop builds live and which version the downloads page offers.
+ * VITE_LAST_RELEASE = the actual last git tag (e.g. "0.1.11" when the dev
+ * version is "0.1.12-dev.x").
+ * @returns {{ downloadBase: string, version: string }}
+ */
+export function downloadInfo() {
+  return {
+    downloadBase: import.meta.env.VITE_DOWNLOAD_BASE ?? "https://www.beavertracer.eu/releases",
+    version: String(import.meta.env.VITE_LAST_RELEASE || version()),
+  };
+}
+
+/**
  * @param {string} html
  * @param {string} route
  */
 function replaceTags(html, route) {
-  const downloadBase = import.meta.env.VITE_DOWNLOAD_BASE ?? "https://www.beavertracer.eu/releases";
+  const { downloadBase, version: vBase } = downloadInfo();
   const v = String(version());
-  // VITE_LAST_RELEASE = the actual last git tag (e.g. "0.1.11" when dev version is "0.1.12-dev.x")
-  const vBase = String(import.meta.env.VITE_LAST_RELEASE || v);
   const vDisplay = route === "/downloads" ? vBase : v;
   return String(html)
     .replace(/\{VERSION\}/g, vDisplay)

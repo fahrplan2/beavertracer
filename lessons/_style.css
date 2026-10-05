@@ -693,70 +693,175 @@ html[data-debug="true"] [data-draft="true"] { display: revert; }
 }
 
 /* ── Quiz blocks ──────────────────────────────────────────────── */
-.quiz-block {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-  padding: 20px 24px;
-  margin: 24px 0;
+/* Same look as the in-app panel (css/lessons-panel.css): card with an
+   accent bar on the left (marker position shared with callouts), "?"
+   badge before the question, drawn radio/checkbox indicators, muted
+   result colours plus a symbol so the state never relies on hue alone. */
+:root {
+  --quiz-card: var(--bg);
+  --quiz-line: color-mix(in oklch, var(--text) 28%, var(--bg));
+  --quiz-accent-text: #fff;
+  --quiz-ok: oklch(52% 0.12 155);
+  --quiz-err: oklch(53% 0.15 28);
 }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --quiz-card: var(--surface);
+    --quiz-accent-text: #111827;
+    --quiz-ok: oklch(72% 0.12 155);
+    --quiz-err: oklch(72% 0.13 28);
+  }
+}
+[data-theme="dark"] {
+  --quiz-card: var(--surface);
+  --quiz-accent-text: #111827;
+  --quiz-ok: oklch(72% 0.12 155);
+  --quiz-err: oklch(72% 0.13 28);
+}
+
+.quiz-block {
+  margin: 24px 0;
+  padding: 18px 22px;
+  background: var(--quiz-card);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--primary);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.06);
+}
+/* Badge is positioned, not a flex item — a flex row would split inline
+   <code> in the question into separate columns. */
 .quiz-question {
+  position: relative;
+  padding-left: calc(1.45em + 10px);
   font-weight: 600;
   margin-bottom: 14px !important;
 }
+.quiz-question::before {
+  content: "?";
+  position: absolute;
+  left: 0;
+  top: 0.1em;
+  width: 1.45em;
+  height: 1.45em;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--quiz-accent-text);
+  font-size: 0.85em;
+  font-weight: 700;
+}
 
-/* Short answer */
+/* Text inputs (short answer, gaps, random tasks) share one look */
 .quiz-input-row { display: flex; align-items: center; gap: 10px; }
-.quiz-input {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 6px 10px;
-  font-size: 0.95rem;
-  background: var(--bg);
-  color: var(--text);
+.quiz-input,
+.quiz-gap-input,
+.quiz-random-input {
   font-family: inherit;
+  font-size: 0.95rem;
+  padding: 6px 10px;
+  border: 1px solid var(--quiz-line);
+  border-radius: var(--radius);
+  background: var(--quiz-card);
+  color: var(--text);
   transition: border-color 150ms;
 }
-.quiz-input:focus { outline: none; border-color: var(--primary); }
+.quiz-input:focus-visible,
+.quiz-gap-input:focus-visible,
+.quiz-random-input:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+  border-color: var(--primary);
+}
+.quiz-input.quiz-correct,
+.quiz-gap-input.quiz-correct,
+.quiz-random-input.quiz-correct { border-color: var(--quiz-ok); background: color-mix(in oklch, var(--quiz-ok) 8%, var(--quiz-card)); }
+.quiz-input.quiz-incorrect,
+.quiz-gap-input.quiz-incorrect,
+.quiz-random-input.quiz-incorrect { border-color: var(--quiz-err); background: color-mix(in oklch, var(--quiz-err) 8%, var(--quiz-card)); }
+.quiz-feedback { font-weight: 700; font-size: 1rem; min-width: 1.2em; }
+.quiz-feedback.quiz-ok  { color: var(--quiz-ok); }
+.quiz-feedback.quiz-err { color: var(--quiz-err); }
 
-/* Multiple choice */
+/* Choice options (":::quiz mc" / ":::quiz multi") */
 .quiz-options { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.quiz-options li { margin: 0; }
 .quiz-option {
+  position: relative;
   display: block;
   width: 100%;
   text-align: left;
-  padding: 10px 14px;
-  border: 1px solid var(--border);
+  padding: 10px 14px 10px 44px;
+  border: 1px solid var(--quiz-line);
   border-radius: var(--radius);
-  background: var(--bg);
+  background: var(--quiz-card);
   color: var(--text);
   font-size: 0.95rem;
   font-family: inherit;
   cursor: pointer;
-  transition: border-color 150ms, background 150ms;
+  transition: border-color 150ms, background-color 150ms;
 }
-.quiz-option:hover:not(:disabled) { border-color: var(--primary); background: var(--surface); }
+.quiz-option:disabled { opacity: 1; cursor: default; }
+/* Drawn indicator: circle = pick one, rounded square = pick several.
+   Vertically centred; positioned rather than a flex item so
+   inline <code> in the option text keeps flowing normally. */
+.quiz-option::before {
+  content: "";
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  box-sizing: border-box;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--quiz-line);
+  border-radius: 50%;
+  background: var(--quiz-card);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+.quiz-multi .quiz-option::before { border-radius: 4px; }
+.quiz-option:hover:not(:disabled) {
+  border-color: var(--primary);
+  background: color-mix(in oklch, var(--primary) 5%, var(--quiz-card));
+}
+.quiz-option:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .quiz-option.selected {
   border-color: var(--primary);
-  background: color-mix(in oklch, var(--primary), var(--bg) 88%);
+  background: color-mix(in oklch, var(--primary) 12%, var(--quiz-card));
 }
+.quiz-option.selected::before {
+  border-color: var(--primary);
+  background: radial-gradient(circle, var(--primary) 0 4px, var(--quiz-card) 4.5px);
+}
+.quiz-multi .quiz-option.selected::before {
+  content: "✓";
+  background: var(--primary);
+  color: var(--quiz-accent-text);
+}
+
+/* Evaluated: one border style, the symbol sits in the indicator.
+   ✓ right, ✕ wrong pick, ! a true statement left unticked (multi). */
+.quiz-option.quiz-correct { border-color: var(--quiz-ok); background: color-mix(in oklch, var(--quiz-ok) 10%, var(--quiz-card)); }
+.quiz-option.quiz-incorrect { border-color: var(--quiz-err); background: color-mix(in oklch, var(--quiz-err) 10%, var(--quiz-card)); }
+.quiz-option.quiz-missed { border-color: var(--quiz-ok); background: var(--quiz-card); }
+.quiz-option.quiz-correct::before,
+.quiz-multi .quiz-option.quiz-correct::before { content: "✓"; border-color: var(--quiz-ok); background: var(--quiz-ok); color: var(--quiz-card); }
+.quiz-option.quiz-incorrect::before,
+.quiz-multi .quiz-option.quiz-incorrect::before { content: "✕"; border-color: var(--quiz-err); background: var(--quiz-err); color: var(--quiz-card); }
+.quiz-option.quiz-missed::before,
+.quiz-multi .quiz-option.quiz-missed::before { content: "!"; border-color: var(--quiz-ok); background: var(--quiz-card); color: var(--quiz-ok); }
+/* Options that play no part in the result step back */
+.evaluated .quiz-option:not(.quiz-correct, .quiz-incorrect, .quiz-missed) { opacity: 0.6; }
 
 /* Fill in the blank */
 .quiz-fill-text { line-height: 2.4; }
 .quiz-gap { display: inline-flex; align-items: baseline; gap: 3px; }
-.quiz-gap-input {
-  border: none;
-  border-bottom: 2px solid var(--primary);
-  background: transparent;
-  color: var(--text);
-  font-size: inherit;
-  font-family: inherit;
-  padding: 0 2px;
-  outline: none;
-  min-width: 60px;
-  transition: border-color 150ms;
-}
-.quiz-gap-input:focus { border-bottom-color: var(--primary); }
+.quiz-gap-input { padding: 2px 8px; min-width: 60px; font-size: inherit; }
 
 /* Matching */
 .quiz-match-layout { display: flex; gap: 20px; align-items: flex-start; }
@@ -764,18 +869,20 @@ html[data-debug="true"] [data-draft="true"] { display: revert; }
 .quiz-match-row { display: flex; align-items: center; gap: 12px; }
 .quiz-match-term { flex: 0 0 140px; font-weight: 600; font-size: 0.9rem; }
 .quiz-match-dropzone {
+  position: relative;
   flex: 1;
   min-height: 42px;
-  border: 2px dashed var(--border);
-  border-radius: var(--radius);
   display: flex;
   align-items: center;
   padding: 4px;
-  transition: border-color 150ms, background 150ms;
+  border: 1px dashed var(--quiz-line);
+  border-radius: var(--radius);
+  background: color-mix(in oklch, var(--text) 3%, var(--quiz-card));
+  transition: border-color 150ms, background-color 150ms;
 }
 .quiz-match-dropzone.drag-over {
   border-color: var(--primary);
-  background: color-mix(in oklch, var(--primary), var(--bg) 90%);
+  background: color-mix(in oklch, var(--primary) 8%, var(--quiz-card));
 }
 .quiz-match-pool {
   flex: 0 0 220px;
@@ -783,106 +890,106 @@ html[data-debug="true"] [data-draft="true"] { display: revert; }
   flex-direction: column;
   gap: 8px;
   padding: 12px;
-  background: var(--bg);
+  min-height: 60px;
+  background: color-mix(in oklch, var(--text) 3%, var(--quiz-card));
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  min-height: 60px;
   transition: border-color 150ms;
 }
 .quiz-match-pool.drag-over { border-color: var(--primary); }
 .quiz-match-chip {
+  box-sizing: border-box;
+  width: 100%;
   padding: 8px 12px;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--quiz-card);
+  border: 1px solid var(--quiz-line);
   border-radius: var(--radius);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
   font-size: 0.88rem;
+  line-height: 1.35;
   cursor: grab;
   user-select: none;
-  line-height: 1.35;
-  transition: box-shadow 150ms, opacity 150ms;
+  transition: border-color 150ms, opacity 150ms;
 }
-.quiz-match-chip:hover { box-shadow: 0 2px 6px color-mix(in oklch, var(--text), transparent 82%); }
+.quiz-match-chip:hover { border-color: var(--primary); }
 .quiz-match-chip.dragging { opacity: 0.35; cursor: grabbing; }
-
-/* Feedback */
-.quiz-feedback { font-weight: 700; font-size: 1rem; min-width: 1.2em; }
-.quiz-feedback.quiz-ok  { color: var(--ok); }
-.quiz-feedback.quiz-err { color: var(--danger); }
-
-.quiz-input.quiz-correct,
-.quiz-gap-input.quiz-correct   { border-color: var(--ok); }
-.quiz-input.quiz-incorrect,
-.quiz-gap-input.quiz-incorrect { border-color: var(--danger); }
-
-.quiz-option.quiz-correct,
-.quiz-option.quiz-incorrect { border-width: 2px; }
-.quiz-option.quiz-correct {
-  border-style: solid;
-  border-color: var(--ok);
-  background: color-mix(in oklch, var(--ok), var(--bg) 88%);
-}
-.quiz-option.quiz-incorrect {
-  border-style: dashed;
-  border-color: var(--danger);
-  background: color-mix(in oklch, var(--danger), var(--bg) 88%);
-}
-/* Non-colour cue: symbol prefix so the result reads without relying on hue
-   (matches the ✓/✗ used for short-answer feedback in QuizInteractions.js) */
-.quiz-option.quiz-correct::before,
-.quiz-option.quiz-incorrect::before { font-weight: 700; margin-right: 0.35em; }
-.quiz-option.quiz-correct::before   { content: "✓"; }
-.quiz-option.quiz-incorrect::before { content: "✗"; }
-
 .quiz-match-dropzone.quiz-correct,
-.quiz-match-dropzone.quiz-incorrect { position: relative; padding-right: 24px; }
-.quiz-match-dropzone.quiz-correct {
-  border-style: solid;
-  border-color: var(--ok);
-  background: color-mix(in oklch, var(--ok), var(--bg) 88%);
-}
-.quiz-match-dropzone.quiz-incorrect {
-  border-style: dotted;
-  border-color: var(--danger);
-  background: color-mix(in oklch, var(--danger), var(--bg) 88%);
-}
+.quiz-match-dropzone.quiz-incorrect { border-style: solid; padding-right: 30px; }
+.quiz-match-dropzone.quiz-correct { border-color: var(--quiz-ok); background: color-mix(in oklch, var(--quiz-ok) 10%, var(--quiz-card)); }
+.quiz-match-dropzone.quiz-incorrect { border-color: var(--quiz-err); background: color-mix(in oklch, var(--quiz-err) 10%, var(--quiz-card)); }
 /* "not filled" reads as neutral, not as a wrong answer */
-.quiz-match-dropzone.quiz-missing { border-style: dashed; border-color: var(--muted); }
+.quiz-match-dropzone.quiz-missing { border-color: var(--muted); }
 .quiz-match-dropzone.quiz-correct::after,
 .quiz-match-dropzone.quiz-incorrect::after {
   position: absolute;
   right: 8px;
   top: 50%;
   transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--quiz-card);
+  font-size: 12px;
   font-weight: 700;
+  line-height: 1;
 }
-.quiz-match-dropzone.quiz-correct::after   { content: "✓"; }
-.quiz-match-dropzone.quiz-incorrect::after { content: "✗"; }
+.quiz-match-dropzone.quiz-correct::after   { content: "✓"; background: var(--quiz-ok); }
+.quiz-match-dropzone.quiz-incorrect::after { content: "✕"; background: var(--quiz-err); }
 
 /* Evaluate button */
 .quiz-evaluate-wrap { display: flex; align-items: center; gap: 16px; margin: 28px 0; }
 .quiz-evaluate-btn {
   padding: 10px 24px;
   background: var(--primary);
-  color: #fff;
+  color: var(--quiz-accent-text);
   border: none;
   border-radius: var(--radius);
   font-size: 0.95rem;
   font-family: inherit;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 150ms;
+  transition: background-color 150ms;
 }
-.quiz-evaluate-btn:hover:not(:disabled) { opacity: 0.85; }
+.quiz-evaluate-btn:hover:not(:disabled) { background: color-mix(in oklch, var(--primary), black 12%); }
+.quiz-evaluate-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .quiz-evaluate-btn:disabled { opacity: 0.5; cursor: default; }
+/* Partial score stays neutral — the per-option marks already show what was wrong */
 .quiz-evaluate-summary { font-size: 0.9rem; font-weight: 600; }
-.quiz-evaluate-summary.quiz-summary-ok  { color: var(--ok); }
-.quiz-evaluate-summary.quiz-summary-err { color: var(--danger); }
+.quiz-evaluate-summary.quiz-summary-ok { color: var(--quiz-ok); }
 
 @media (max-width: 720px) {
-  .quiz-match-layout { flex-direction: column; }
+  .quiz-match-layout { flex-direction: column; align-items: stretch; }
   .quiz-match-pool   { flex: none; width: 100%; }
   .quiz-match-term   { flex: 0 0 100px; }
 }
+
+/* ":::quiz random" — generated practice tasks */
+.quiz-random-task { margin: 0 0 12px; }
+.quiz-random-task + .quiz-random-task { padding-top: 10px; border-top: 1px solid var(--border); }
+.quiz-random-text { margin: 0 0 6px; font-weight: 600; }
+.quiz-random-fields { display: flex; flex-direction: column; gap: 6px; }
+.quiz-random-field { display: grid; grid-template-columns: minmax(8em, 40%) 1fr; align-items: center; gap: 4px 8px; }
+.quiz-random-label { font-size: 0.9em; }
+.quiz-random-input {
+  font-family: "Hack", ui-monospace, monospace;
+  font-size: 0.9em;
+  min-width: 0;
+}
+.quiz-random-field .quiz-feedback { grid-column: 2; font-size: 0.85em; }
+.quiz-random-field--wide { grid-template-columns: 1fr; }
+.quiz-random-field--wide .quiz-feedback { grid-column: 1; }
+
+/* ":::quiz table" — fill-in table */
+.quiz-table-scroll { overflow-x: auto; }
+.quiz-table table { display: table; width: auto; margin: 0; font-size: 0.85em; }
+.quiz-table td, .quiz-table th { padding: 3px 6px; white-space: nowrap; }
+.quiz-table .quiz-gap-input { font-family: "Hack", ui-monospace, monospace; font-size: 0.95em; padding: 2px 4px; }
+
+.quiz-random-table { display: table; width: auto; margin: 6px 0 0; font-size: 0.85em; }
+.quiz-random-table td, .quiz-random-table th { padding: 3px 6px; white-space: nowrap; }
+.quiz-random-table .quiz-feedback { display: block; font-size: 0.85em; }
 
 /* ── FA icon colors (matching main app) ───────────────────────── */
 .fa-ban, .fa-stop           { color: var(--danger); }
@@ -891,37 +998,6 @@ html[data-debug="true"] [data-draft="true"] { display: revert; }
 .fa-desktop, .fa-laptop,
 .fa-wifi, .fa-house-signal,
 .fa-shield-halved           { color: var(--blue); }
-
-/* ── ":::quiz multi" — a true statement left unticked ── */
-/* Checkboxes hint that several answers may be ticked; replaced by ✓/✗ once evaluated. */
-.quiz-multi:not(.evaluated) .quiz-option::before { content: "☐"; margin-right: 0.35em; }
-.quiz-multi:not(.evaluated) .quiz-option.selected::before { content: "☑"; }
-.quiz-option.quiz-missed { border-width: 2px; border-style: dashed; border-color: var(--ok, #2e9b4f); }
-.quiz-option.quiz-missed::before { content: "!"; font-weight: 700; margin-right: 0.35em; }
-
-/* ── ":::quiz random" — generated practice tasks ── */
-.quiz-random-task { margin: 0 0 12px; }
-.quiz-random-task + .quiz-random-task { padding-top: 10px; border-top: 1px dashed var(--ui-border-strong); }
-.quiz-random-text { margin: 0 0 6px; font-weight: 600; }
-.quiz-random-fields { display: flex; flex-direction: column; gap: 6px; }
-.quiz-random-field { display: grid; grid-template-columns: minmax(8em, 40%) 1fr; align-items: center; gap: 4px 8px; }
-.quiz-random-label { font-size: 0.9em; }
-.quiz-random-input {
-  font: inherit;
-  font-family: "Hack", ui-monospace, monospace;
-  font-size: 0.9em;
-  min-width: 0;
-  padding: 4px 6px;
-  border: 1px solid var(--ui-border-strong);
-  border-radius: 3px;
-  background: var(--bg);
-  color: var(--text);
-}
-.quiz-random-input.quiz-correct { border-color: var(--ok, #2e9b4f); }
-.quiz-random-input.quiz-incorrect { border-color: var(--danger, #c0392b); }
-.quiz-random-field .quiz-feedback { grid-column: 2; font-size: 0.85em; }
-.quiz-random-field--wide { grid-template-columns: 1fr; }
-.quiz-random-field--wide .quiz-feedback { grid-column: 1; }
 
 /* ── Bit colouring in the IP/subnetting lessons ([[n|…]] [[e|…]] [[h|…]]) ──
    Tinted background + coloured underline: readable in light and dark. */
@@ -942,16 +1018,6 @@ pre.bits-block {
   line-height: 1.8;
 }
 pre.bits-block .bits { font-size: 1em; }
-
-/* ── ":::quiz table" — fill-in table ── */
-.quiz-table-scroll { overflow-x: auto; }
-.quiz-table table { display: table; width: auto; margin: 0; font-size: 0.85em; }
-.quiz-table td, .quiz-table th { padding: 3px 6px; white-space: nowrap; }
-.quiz-table .quiz-gap-input { font-family: "Hack", ui-monospace, monospace; font-size: 0.95em; padding: 2px 4px; }
-
-.quiz-random-table { display: table; width: auto; margin: 6px 0 0; font-size: 0.85em; }
-.quiz-random-table td, .quiz-random-table th { padding: 3px 6px; white-space: nowrap; }
-.quiz-random-table .quiz-feedback { display: block; font-size: 0.85em; }
 
 /* ── Sequence diagrams (:::seq, see lessons-seq-diagram.mjs) ──────
    SVG lines on a 600-unit grid, HTML labels positioned in % and sized in

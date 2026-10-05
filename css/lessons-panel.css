@@ -267,98 +267,238 @@
 html[data-debug="true"] .lesson-article [data-draft="true"] { display: revert; }
 
 /* ── Quiz blocks ─────────────────────────────────────────────── */
+/* White card + accent bar on the left (same marker position as callouts),
+   "?" badge before the question. Result colours are muted to sit next to
+   the petrol accent; the state is also carried by a symbol, never by
+   colour alone. */
+.lesson-article {
+  --quiz-card: var(--bg-strong, #fff);
+  --quiz-ok: oklch(52% 0.12 155);
+  --quiz-err: oklch(53% 0.15 28);
+}
+[data-theme="dark"] .lesson-article {
+  --quiz-ok: oklch(72% 0.12 155);
+  --quiz-err: oklch(72% 0.13 28);
+}
 .lesson-article .quiz-block {
   margin: 0 0 16px;
-  padding: 10px 12px;
+  padding: 12px 14px;
+  background: var(--quiz-card);
+  border: 1px solid var(--ui-border);
+  border-left: 3px solid var(--lesson-accent);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.06);
+}
+/* Badge is positioned, not a flex item — a flex row would split inline
+   <code> in the question into separate columns. */
+.lesson-article .quiz-question { position: relative; margin: 0 0 10px; padding-left: calc(1.4em + 8px); font-weight: 600; }
+.lesson-article .quiz-question::before {
+  content: "?";
+  position: absolute;
+  left: 0;
+  top: 0.1em;
+  width: 1.4em;
+  height: 1.4em;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--lesson-accent);
+  color: var(--accent-text);
+  font-size: 0.85em;
+  font-weight: 700;
+}
+
+/* Text inputs (short answer, gaps, random tasks) share one look */
+.lesson-article .quiz-input-row { display: flex; align-items: center; gap: 8px; }
+.lesson-article .quiz-input,
+.lesson-article .quiz-gap-input,
+.lesson-article .quiz-random-input {
+  font: inherit;
+  padding: 5px 8px;
   border: 1px solid var(--ui-border-strong);
   border-radius: var(--radius-sm);
-}
-.lesson-article .quiz-question { margin: 0 0 8px; font-weight: 600; }
-.lesson-article .quiz-input-row { display: flex; align-items: center; gap: 6px; }
-.lesson-article .quiz-input, .lesson-article .quiz-gap-input {
-  font: inherit;
-  padding: 4px 6px;
-  border: 1px solid var(--ui-border-strong);
-  border-radius: 3px;
-  background: var(--bg);
+  background: var(--quiz-card);
   color: var(--text);
 }
+.lesson-article .quiz-input:focus-visible,
+.lesson-article .quiz-gap-input:focus-visible,
+.lesson-article .quiz-random-input:focus-visible {
+  outline: 2px solid var(--lesson-accent);
+  outline-offset: 1px;
+  border-color: var(--lesson-accent);
+}
+.lesson-article .quiz-input.quiz-correct,
+.lesson-article .quiz-gap-input.quiz-correct,
+.lesson-article .quiz-random-input.quiz-correct { border-color: var(--quiz-ok); background: color-mix(in oklch, var(--quiz-ok) 8%, var(--quiz-card)); }
+.lesson-article .quiz-input.quiz-incorrect,
+.lesson-article .quiz-gap-input.quiz-incorrect,
+.lesson-article .quiz-random-input.quiz-incorrect { border-color: var(--quiz-err); background: color-mix(in oklch, var(--quiz-err) 8%, var(--quiz-card)); }
 .lesson-article .quiz-feedback { font-weight: 700; }
-.lesson-article .quiz-feedback.quiz-ok  { color: var(--ok-strong, #1f7a3d); }
-.lesson-article .quiz-feedback.quiz-err { color: var(--danger-strong, #96271e); }
-.lesson-article .quiz-options { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.lesson-article .quiz-feedback.quiz-ok  { color: var(--quiz-ok); }
+.lesson-article .quiz-feedback.quiz-err { color: var(--quiz-err); }
+
+/* ── Choice options (":::quiz mc" / ":::quiz multi") ── */
+.lesson-article .quiz-options { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.lesson-article .quiz-options li { margin: 0; }
 .lesson-article .quiz-option {
+  position: relative;
+  display: block;
+  width: 100%;
   font: inherit;
   text-align: left;
-  padding: 6px 10px;
+  padding: 7px 12px 7px 38px;
   border: 1px solid var(--ui-border-strong);
-  border-radius: 3px;
-  background: var(--bg);
+  border-radius: var(--radius-sm);
+  background: var(--quiz-card);
   color: var(--text);
   cursor: pointer;
+  transition: border-color 0.12s, background-color 0.12s;
 }
+/* evaluated options are disabled — keep them legible (global button:disabled fades to 0.45) */
+.lesson-article .quiz-option:disabled { opacity: 1; cursor: default; }
+/* Drawn indicator: circle = pick one, rounded square = pick several.
+   Vertically centred and positioned (not a flex item, so inline <code>
+   in the option text keeps flowing normally). */
+.lesson-article .quiz-option::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  box-sizing: border-box;
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--ui-border-strong);
+  border-radius: 50%;
+  background: var(--quiz-card);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+.lesson-article .quiz-multi .quiz-option::before { border-radius: 4px; }
+.lesson-article .quiz-option:hover:not(:disabled) {
+  border-color: var(--lesson-accent);
+  background: color-mix(in oklch, var(--lesson-accent) 5%, var(--quiz-card));
+}
+.lesson-article .quiz-option:focus-visible { outline: 2px solid var(--lesson-accent); outline-offset: 2px; }
 .lesson-article .quiz-option.selected {
   border-color: var(--lesson-accent);
-  background: color-mix(in oklch, var(--lesson-accent) 15%, transparent);
-  font-weight: 600;
+  background: color-mix(in oklch, var(--lesson-accent) 12%, var(--quiz-card));
 }
-.lesson-article .quiz-option.quiz-correct,
-.lesson-article .quiz-option.quiz-incorrect { border-width: 2px; }
-.lesson-article .quiz-option.quiz-correct { border-style: solid; border-color: var(--ok, #2e9b4f); background: color-mix(in oklch, var(--ok, #2e9b4f) 15%, transparent); }
-.lesson-article .quiz-option.quiz-incorrect { border-style: dashed; border-color: var(--danger, #c0392b); background: color-mix(in oklch, var(--danger, #c0392b) 15%, transparent); }
-/* Non-colour cue: symbol prefix so the result reads without relying on hue
-   (matches the ✓/✗ used for short-answer feedback in QuizInteractions.js) */
+.lesson-article .quiz-option.selected::before {
+  border-color: var(--lesson-accent);
+  background: radial-gradient(circle, var(--lesson-accent) 0 3.5px, var(--quiz-card) 4px);
+}
+.lesson-article .quiz-multi .quiz-option.selected::before {
+  content: "✓";
+  background: var(--lesson-accent);
+  color: var(--accent-text);
+}
+[data-theme="dark"] .lesson-article .quiz-option.selected { background: color-mix(in oklch, var(--lesson-accent) 20%, var(--quiz-card)); }
+
+/* Evaluated: one border style, the symbol sits in the indicator.
+   ✓ right, ✕ wrong pick, ! a true statement left unticked (multi). */
+.lesson-article .quiz-option.quiz-correct { border-color: var(--quiz-ok); background: color-mix(in oklch, var(--quiz-ok) 10%, var(--quiz-card)); }
+.lesson-article .quiz-option.quiz-incorrect { border-color: var(--quiz-err); background: color-mix(in oklch, var(--quiz-err) 10%, var(--quiz-card)); }
+.lesson-article .quiz-option.quiz-missed { border-color: var(--quiz-ok); background: var(--quiz-card); }
 .lesson-article .quiz-option.quiz-correct::before,
-.lesson-article .quiz-option.quiz-incorrect::before { font-weight: 700; margin-right: 0.35em; }
-.lesson-article .quiz-option.quiz-correct::before   { content: "✓"; }
-.lesson-article .quiz-option.quiz-incorrect::before { content: "✗"; }
+.lesson-article .quiz-multi .quiz-option.quiz-correct::before { content: "✓"; border-color: var(--quiz-ok); background: var(--quiz-ok); color: var(--quiz-card); }
+.lesson-article .quiz-option.quiz-incorrect::before,
+.lesson-article .quiz-multi .quiz-option.quiz-incorrect::before { content: "✕"; border-color: var(--quiz-err); background: var(--quiz-err); color: var(--quiz-card); }
+.lesson-article .quiz-option.quiz-missed::before,
+.lesson-article .quiz-multi .quiz-option.quiz-missed::before { content: "!"; border-color: var(--quiz-ok); background: var(--quiz-card); color: var(--quiz-ok); }
+/* Options that play no part in the result step back */
+.lesson-article .evaluated .quiz-option:not(.quiz-correct, .quiz-incorrect, .quiz-missed) { opacity: 0.6; }
+
+/* ── ":::quiz fill" — gaps ── */
 .lesson-article .quiz-gap { display: inline-flex; align-items: center; gap: 4px; }
-.lesson-article .quiz-gap-input.quiz-correct { border-color: var(--ok, #2e9b4f); }
-.lesson-article .quiz-gap-input.quiz-incorrect { border-color: var(--danger, #c0392b); }
-/* Side-by-side (terms | pool) doesn't work in a narrow panel — stacked
+.lesson-article .quiz-gap-input { padding: 2px 6px; }
+
+/* ── ":::quiz match" ──
+   Side-by-side (terms | pool) doesn't work in a narrow panel — stacked
    instead: the term/dropzone rows first, then the draggable chip pool
    below as a wrapping "tag cloud", so nothing needs to share horizontal
    space with anything else and long text always has room to wrap. */
 .lesson-article .quiz-match-layout { display: flex; flex-direction: column; gap: 12px; }
-.lesson-article .quiz-match-terms { display: flex; flex-direction: column; gap: 6px; }
-.lesson-article .quiz-match-row { display: flex; align-items: flex-start; gap: 8px; }
-.lesson-article .quiz-match-term { flex: 0 0 auto; min-width: 70px; padding-top: 3px; font-weight: 600; }
+/* One shared term column (wraps beyond 40 %) so every dropzone starts at
+   the same x, whatever the term length. */
+.lesson-article .quiz-match-terms { display: grid; grid-template-columns: fit-content(40%) 1fr; gap: 6px 10px; align-items: start; }
+.lesson-article .quiz-match-row { display: contents; }
+.lesson-article .quiz-match-term { padding-top: 5px; font-weight: 600; overflow-wrap: break-word; hyphens: auto; }
 .lesson-article .quiz-match-dropzone {
+  position: relative;
   flex: 1 1 auto;
   min-width: 0;
-  min-height: 1.8em;
-  border: 1px dashed var(--ui-border-strong);
-  border-radius: 3px;
+  min-height: 2.1em;
   padding: 4px 6px;
+  border: 1px dashed var(--ui-border-strong);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklch, var(--text) 3%, var(--quiz-card));
   overflow-wrap: break-word;
 }
-.lesson-article .quiz-match-dropzone.drag-over { border-color: var(--accent); }
+.lesson-article .quiz-match-dropzone.drag-over {
+  border-color: var(--lesson-accent);
+  background: color-mix(in oklch, var(--lesson-accent) 8%, var(--quiz-card));
+}
 .lesson-article .quiz-match-dropzone.quiz-correct,
-.lesson-article .quiz-match-dropzone.quiz-incorrect { position: relative; border-width: 2px; padding-right: 22px; }
-.lesson-article .quiz-match-dropzone.quiz-correct { border-style: solid; border-color: var(--ok, #2e9b4f); background: color-mix(in oklch, var(--ok, #2e9b4f) 15%, transparent); }
-.lesson-article .quiz-match-dropzone.quiz-incorrect { border-style: dotted; border-color: var(--danger, #c0392b); background: color-mix(in oklch, var(--danger, #c0392b) 15%, transparent); }
+.lesson-article .quiz-match-dropzone.quiz-incorrect { border-style: solid; padding-right: 26px; }
+.lesson-article .quiz-match-dropzone.quiz-correct { border-color: var(--quiz-ok); background: color-mix(in oklch, var(--quiz-ok) 10%, var(--quiz-card)); }
+.lesson-article .quiz-match-dropzone.quiz-incorrect { border-color: var(--quiz-err); background: color-mix(in oklch, var(--quiz-err) 10%, var(--quiz-card)); }
 /* "not filled" reads as neutral, not as a wrong answer */
-.lesson-article .quiz-match-dropzone.quiz-missing { border-style: dashed; border-color: var(--muted); }
-/* Non-colour cue: corner symbol */
+.lesson-article .quiz-match-dropzone.quiz-missing { border-color: var(--muted); }
 .lesson-article .quiz-match-dropzone.quiz-correct::after,
-.lesson-article .quiz-match-dropzone.quiz-incorrect::after { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); font-weight: 700; }
-.lesson-article .quiz-match-dropzone.quiz-correct::after   { content: "✓"; }
-.lesson-article .quiz-match-dropzone.quiz-incorrect::after { content: "✗"; }
-.lesson-article .quiz-match-pool { display: flex; flex-direction: row; flex-wrap: wrap; gap: 6px; }
+.lesson-article .quiz-match-dropzone.quiz-incorrect::after {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--quiz-card);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+.lesson-article .quiz-match-dropzone.quiz-correct::after   { content: "✓"; background: var(--quiz-ok); }
+.lesson-article .quiz-match-dropzone.quiz-incorrect::after { content: "✕"; background: var(--quiz-err); }
+/* Chips as an even, full-width list — a wrapping tag cloud of
+   differently long sentences looks ragged. */
+.lesson-article .quiz-match-pool {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklch, var(--text) 3%, var(--quiz-card));
+}
+.lesson-article .quiz-match-pool:empty { display: none; }
 .lesson-article .quiz-match-chip {
-  max-width: 100%;
-  padding: 4px 8px;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 4px 10px;
   border: 1px solid var(--ui-border-strong);
-  border-radius: 3px;
-  background: var(--bg);
+  border-radius: var(--radius-sm);
+  background: var(--quiz-card);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
   cursor: grab;
   overflow-wrap: break-word;
 }
-.lesson-article .quiz-match-chip.dragging { opacity: 0.5; }
-.lesson-article .quiz-evaluate-wrap { display: flex; align-items: center; gap: 10px; margin: 0 0 16px; }
+.lesson-article .quiz-match-chip:hover { border-color: var(--lesson-accent); }
+.lesson-article .quiz-match-chip.dragging { opacity: 0.5; cursor: grabbing; }
+
+/* ── ":::evaluate" button ── */
+.lesson-article .quiz-evaluate-wrap { display: flex; align-items: center; gap: 12px; margin: 0 0 16px; }
 .lesson-article .quiz-evaluate-btn {
   font: inherit;
-  padding: 6px 12px;
+  font-weight: 600;
+  padding: 7px 16px;
   border: none;
   border-radius: var(--radius-sm);
   background: var(--lesson-accent);
@@ -366,37 +506,24 @@ html[data-debug="true"] .lesson-article [data-draft="true"] { display: revert; }
   cursor: pointer;
 }
 .lesson-article .quiz-evaluate-btn:hover:not(:disabled) { background: var(--lesson-accent-hover); }
+.lesson-article .quiz-evaluate-btn:focus-visible { outline: 2px solid var(--lesson-accent); outline-offset: 2px; }
 .lesson-article .quiz-evaluate-btn:disabled { opacity: 0.6; cursor: default; }
-.lesson-article .quiz-evaluate-summary.quiz-summary-ok  { color: var(--ok-strong, #1f7a3d); font-weight: 600; }
-.lesson-article .quiz-evaluate-summary.quiz-summary-err { color: var(--danger-strong, #96271e); font-weight: 600; }
-
-/* ── ":::quiz multi" — a true statement left unticked ── */
-/* Checkboxes hint that several answers may be ticked; replaced by ✓/✗ once evaluated. */
-.lesson-article .quiz-multi:not(.evaluated) .quiz-option::before { content: "☐"; margin-right: 0.35em; }
-.lesson-article .quiz-multi:not(.evaluated) .quiz-option.selected::before { content: "☑"; }
-.lesson-article .quiz-option.quiz-missed { border-width: 2px; border-style: dashed; border-color: var(--ok, #2e9b4f); }
-.lesson-article .quiz-option.quiz-missed::before { content: "!"; font-weight: 700; margin-right: 0.35em; }
+/* Partial score stays neutral — the per-option marks already show what was wrong */
+.lesson-article .quiz-evaluate-summary { font-weight: 600; }
+.lesson-article .quiz-evaluate-summary.quiz-summary-ok { color: var(--quiz-ok); }
 
 /* ── ":::quiz random" — generated practice tasks ── */
 .lesson-article .quiz-random-task { margin: 0 0 12px; }
-.lesson-article .quiz-random-task + .quiz-random-task { padding-top: 10px; border-top: 1px dashed var(--ui-border-strong); }
+.lesson-article .quiz-random-task + .quiz-random-task { padding-top: 10px; border-top: 1px solid var(--ui-border); }
 .lesson-article .quiz-random-text { margin: 0 0 6px; font-weight: 600; }
 .lesson-article .quiz-random-fields { display: flex; flex-direction: column; gap: 6px; }
 .lesson-article .quiz-random-field { display: grid; grid-template-columns: minmax(8em, 40%) 1fr; align-items: center; gap: 4px 8px; }
 .lesson-article .quiz-random-label { font-size: 0.9em; }
 .lesson-article .quiz-random-input {
-  font: inherit;
   font-family: "Hack", ui-monospace, monospace;
   font-size: 0.9em;
   min-width: 0;
-  padding: 4px 6px;
-  border: 1px solid var(--ui-border-strong);
-  border-radius: 3px;
-  background: var(--bg);
-  color: var(--text);
 }
-.lesson-article .quiz-random-input.quiz-correct { border-color: var(--ok, #2e9b4f); }
-.lesson-article .quiz-random-input.quiz-incorrect { border-color: var(--danger, #c0392b); }
 .lesson-article .quiz-random-field .quiz-feedback { grid-column: 2; font-size: 0.85em; }
 .lesson-article .quiz-random-field--wide { grid-template-columns: 1fr; }
 .lesson-article .quiz-random-field--wide .quiz-feedback { grid-column: 1; }

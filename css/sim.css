@@ -1242,6 +1242,25 @@
   background: color-mix(in oklch, var(--bg-strong), #ff4444 8%);
 }
 
+.fw-rules-table tr[data-action="reject"] {
+  background: color-mix(in oklch, var(--bg-strong), #ff9900 10%);
+}
+
+.fw-hits {
+  display: inline-block;
+  min-width: 2.5em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.fw-policy-hits {
+  margin-right: 12px;
+  font-size: 0.85em;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
 .fw-input {
   width: 130px;
 }
@@ -2338,6 +2357,39 @@ sim-toolbar-langbtn {
   text-align: center;
 }
 
+/* Desktop file not on the server yet (see DownloadIndex.js) */
+.download-card .download-btn--missing {
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--ui-border-strong);
+  color: var(--muted);
+  cursor: default;
+  flex-wrap: wrap;
+}
+
+.download-card .download-btn--missing:hover {
+  filter: none;
+}
+
+.download-btn-hint {
+  flex-basis: 100%;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+/* Version drop-down in the subtitle (replaces the bold version number) */
+.download-version-select {
+  font: inherit;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-md);
+  padding: 2px 4px;
+  max-width: 100%;
+}
+
 .download-note {
   font-size: 0.8125rem;
   color: var(--muted);
@@ -2346,6 +2398,15 @@ sim-toolbar-langbtn {
 
 .download-note i {
   margin-right: 4px;
+}
+
+/* "Version is being built" — the one note that needs to be noticed */
+.download-note--pending {
+  color: var(--text);
+  padding: var(--pad-sm) var(--pad-lg);
+  border-left: 3px solid var(--accent);
+  background: var(--bg-strong);
+  border-radius: var(--radius-md);
 }
 
 /* =========================================================

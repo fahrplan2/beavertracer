@@ -191,6 +191,8 @@ describe('CheckApi', () => {
         const api = new CheckApi(fakeSimControl([a, b]));
         expect(await api.tcpOpen(1, 2, 5000)).toBe(true);
         expect(await api.tcpOpen(1, '10.0.0.2', 5001)).toBe(false);
+        expect(await api.tcpFails(1, 2, 5000)).toBe(false);
+        expect(await api.tcpFails(1, '10.0.0.2', 5001)).toBe(true);
     });
 
     it('hasCert()/trusts(): read /etc/certs and the trust store', async () => {

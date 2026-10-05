@@ -169,6 +169,63 @@ describe('Firewall – stateless forwarding', () => {
         expect(fw._fwLog[0]).toContain('DROP');
     });
 
+    it('drop sends nothing back to the sender', () => {
+        const fw = new Firewall();
+        linkFw(fw);
+        fw.rules = [rule({ protocol: 'tcp', dstPort: '23', action: 'deny' })];
+        sendAtoB(fw, ipv4Frame({ protocol: 6, dstPort: 23 }));
+        expect(drain(fw._port0)).toBeNull();
+    });
+
+    it('reject answers a blocked TCP SYN with RST+ACK from the destination', () => {
+        const fw = new Firewall();
+        linkFw(fw);
+        fw.rules = [rule({ protocol: 'tcp', dstPort: '23', action: 'reject' })];
+        sendAtoB(fw, ipv4Frame({ protocol: 6, srcPort: 40000, dstPort: 23 }));
+        expect(drain(fw._port1)).toBeNull();
+        const back = drain(fw._port0);
+        expect(back).not.toBeNull();
+        expect([...back.dstMac]).toEqual([...MAC_A]);
+        expect([...back.srcMac]).toEqual([...MAC_B]);
+        const ip = IPv4Packet.fromBytes(back.payload);
+        expect(ip.src.toString()).toBe(HOST_B);
+        expect(ip.dst.toString()).toBe(HOST_A);
+        const tcp = TCPPacket.fromBytes(ip.payload);
+        expect(tcp.srcPort).toBe(23);
+        expect(tcp.dstPort).toBe(40000);
+        expect(tcp.flags).toBe(TCPPacket.FLAG_RST | TCPPacket.FLAG_ACK);
+        expect(tcp.ack).toBe(2); // SYN seq=1 consumes one
+        expect(fw._fwLog[0]).toContain('REJECT');
+    });
+
+    it('reject answers blocked UDP and ping with ICMP unreachable (administratively prohibited)', () => {
+        const fw = new Firewall();
+        linkFw(fw);
+        fw.defaultPolicy = 'reject';
+        fw.rules = [];
+        for (const protocol of [17, 1]) {
+            sendAtoB(fw, ipv4Frame({ protocol, dstPort: 53 }));
+            const ip = IPv4Packet.fromBytes(drain(fw._port0).payload);
+            expect(ip.protocol).toBe(1);
+            expect(ip.dst.toString()).toBe(HOST_A);
+            expect([ip.payload[0], ip.payload[1]]).toEqual([3, 13]);
+        }
+    });
+
+    it('counts hits per rule and for the default policy', () => {
+        const fw = new Firewall();
+        linkFw(fw);
+        const r1 = rule({ protocol: 'tcp', dstPort: '80', action: 'allow' });
+        fw.rules = [r1];
+        fw.defaultPolicy = 'deny';
+        sendAtoB(fw, ipv4Frame({ protocol: 6, dstPort: 80 }));
+        sendAtoB(fw, ipv4Frame({ protocol: 6, dstPort: 80 }));
+        sendAtoB(fw, ipv4Frame({ protocol: 6, dstPort: 22 }));
+        expect(fw._hits.get(r1.id)).toBe(2);
+        expect(fw._hits.get(-1)).toBe(1);
+        expect(JSON.stringify(fw.toJSON())).not.toContain('hits');
+    });
+
     it('matches IP version independently for IPv4 vs IPv6', () => {
         const fw = new Firewall();
         linkFw(fw);

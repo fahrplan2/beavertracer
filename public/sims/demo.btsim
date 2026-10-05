@@ -845,6 +845,30 @@
       "showTitle": false
     },
     {
+      "kind": "TextBox",
+      "name": "Textfeld",
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "showTitle": false,
+      "id": 36,
+      "x": 9,
+      "y": 360,
+      "text": "# Einfaches Beispiel — Zwei Netze, ein Router\n\n## Aufbau\n**Netzwerk A:** PC 1 (192.168.0.11) und PC 2 (192.168.0.12) an Switch 1\n**Netzwerk B:** PC 3 (192.168.1.11) und PC 4 (192.168.1.12) an Switch 2\n**Router 1** verbindet beide Netze (192.168.0.1 / 192.168.1.1) und ist das Standard-Gateway der PCs\n\n## Ausprobieren\nSimulation starten, dann auf PC 1 das Terminal öffnen\n**Ping im selben Netz:** ping 192.168.0.12\n**Ping ins andere Netz:** ping 192.168.1.11 — die Pakete laufen über den Router\n**Pakete ansehen:** Verfolgung öffnen, Switch 1 auswählen und ARP und ICMP beobachten\n"
+    },
+    {
+      "kind": "TextBox",
+      "name": "Textfeld",
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "showTitle": false,
+      "id": 37,
+      "x": 9,
+      "y": 650,
+      "text": "# Simple Example — Two Networks, One Router\n\n## Setup\n**Network A:** PC 1 (192.168.0.11) and PC 2 (192.168.0.12) on Switch 1\n**Network B:** PC 3 (192.168.1.11) and PC 4 (192.168.1.12) on Switch 2\n**Router 1** connects both networks (192.168.0.1 / 192.168.1.1) and is the PCs' default gateway\n\n## Try it out\nStart the simulation, then open the terminal on PC 1\n**Ping within the network:** ping 192.168.0.12\n**Ping the other network:** ping 192.168.1.11 — the packets travel through the router\n**Look at the packets:** open Trace, select Switch 1 and watch ARP and ICMP\n"
+    },
+    {
       "kind": "Link",
       "id": 20,
       "a": 9,
