@@ -171,11 +171,11 @@ export async function openTcpTransport(os, ip, port) {
  * @param {any} os `ctx.os`
  * @param {IPAddress} ip
  * @param {number} port
- * @param {string} _host  reserved for future SNI / hostname verification
+ * @param {string} host  URL host; the server certificate must be issued for it
  * @param {{ insecure?: boolean }} [opts]  `insecure` skips the cert trust check (curl -k)
  * @returns {Promise<{ close: () => void, peerCert: any, transport: { send: (b: Uint8Array) => any, recv: () => Promise<Uint8Array|null> } }>}
  */
-export async function openTlsTransport(os, ip, port, _host, opts = {}) {
+export async function openTlsTransport(os, ip, port, host, opts = {}) {
     const { TlsSession, TlsHandshakeError } = await import("./TlsSession.js");
     /** @type {any} */ let simTimer;
     /** @type {any} */ let SimTimer;
@@ -192,6 +192,7 @@ export async function openTlsTransport(os, ip, port, _host, opts = {}) {
         timeoutMs: SimTimer?.HTTP_CLIENT_TIMEOUT_MS ?? 10_000,
         sleepFn: simTimer ? (ms) => simTimer.sleep(ms) : undefined,
         now: () => os?.clock?.nowMs?.() ?? Date.now(),
+        serverName: host,
     });
 
     try {

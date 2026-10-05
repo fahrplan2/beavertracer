@@ -14,7 +14,6 @@ import { Firewall } from "./sim/Firewall.js";
 import { WifiMedium } from "./net/WifiMedium.js";
 import { simTimer } from "./lib/SimTimer.js";
 import { t } from "./i18n/index.js";
-import { StaticPageRouter } from "./StaticPageRouter.js";
 import { PCapController } from "./tracer/PCapControler.js";
 import { UILib } from "./lib/UILib.js";
 import { SimDialog } from "./lib/SimDialog.js";
@@ -22,7 +21,7 @@ import { buildLanguagePicker } from "./lib/LanguagePicker.js";
 import { choosePanelPlacement, segmentToRects } from "./lib/panelPlacement.js";
 import { WelcomeDialog } from "./lib/WelcomeDialog.js";
 import { LessonsPanel } from "./lib/LessonsPanel.js";
-import { resetPathToRoot, buildUrl, clearParams } from "./lib/AppUrl.js";
+import { buildUrl, clearParams } from "./lib/AppUrl.js";
 import { version } from "./lib/version.js";
 import { isTauri } from "./tauri.js";
 import { Linux } from "./sim/Linux.js";
@@ -114,7 +113,7 @@ export class SimControl {
     /** @type {HTMLElement|null} */
     movementBoundary = null;
 
-    /** @type {"edit"|"run"|"trace"|"page"} */
+    /** @type {"edit"|"run"|"trace"} */
     mode = "edit";
 
     /** @type {"select"|"place-computer"|"place-tablet"|"place-switch"|"place-router"|"place-homerouter"|"place-ap"|"place-firewall"|"place-text"|"place-rect"|"link"|"delete"} */
@@ -174,9 +173,6 @@ export class SimControl {
 
     /** @type {HTMLDivElement|null} */
     _tracerBody = null;
-
-    /** @type {HTMLDivElement|null} */
-    _pageBody = null;
 
     /** @type {Map<number, HTMLElement>} */
     _objEls = new Map();
@@ -245,12 +241,6 @@ export class SimControl {
 
     /** @type {number} */
     _rafLastTs = performance.now();
-
-    /** @type {StaticPageRouter|null} */
-    _staticRouter = null;
-
-    /** @type {HTMLDivElement|null} */
-    _pageContent = null;
 
     /** @type {boolean} */
     embedded = false;
@@ -599,35 +589,6 @@ export class SimControl {
 
         this.pcapViewer.setMount(tracerbody);
 
-        // Page tab
-        const pagebody = document.createElement("div");
-        pagebody.className = "page tab-content";
-        pagebody.id = "page";
-        root.appendChild(pagebody);
-        this._pageBody = pagebody;
-
-        // create inner container for static pages
-        const pageContent = document.createElement("div");
-        pageContent.className = "page-content";
-        pagebody.appendChild(pageContent);
-        this._pageContent = pageContent;
-
-        // mount router once; we keep it mounted even when tab hidden
-        this._currentRoute = "";
-        this._staticRouter = new StaticPageRouter({
-            fallbackLocale: "en",
-            onRoute: ({ route }) => {
-                this._currentRoute = route;
-                // whenever we are on a static page route, switch UI to about tab
-                if (this.mode !== "page") {
-                    this.mode = "page";
-                    this.isPaused = true;
-                }
-                this._invalidateUI();
-            },
-        });
-        this._staticRouter.mount(pageContent, { initial: window.location.pathname });
-
         // Lessons panel (docked right column, independent of mode)
         const lessonsPanel = document.createElement("div");
         lessonsPanel.className = "sim-lessons-panel";
@@ -936,14 +897,6 @@ export class SimControl {
         }
         this._invalidateUI();
         this.scheduleNextStep();
-    }
-
-    /** @param {string} path */
-    navigateTo(path) {
-        this.pause();
-        this.mode = "page";
-        this._invalidateUI();
-        this._staticRouter?.navigate(path, { replace: true });
     }
 
     // ── Scene management ──────────────────────────────────────────────────────
@@ -1293,7 +1246,6 @@ export class SimControl {
                 label: t("sim.edit"),
                 icon: "fa-pencil",
                 onClick: () => {
-                    if (!this.embedded) resetPathToRoot();
                     this._enterEditMode();
                 },
             });
@@ -1305,7 +1257,6 @@ export class SimControl {
             label: t("sim.run"),
             icon: "fa-play",
             onClick: () => {
-                if (!this.embedded) resetPathToRoot();
                 if (this.mode === "edit") this._resetEditTools();
                 if (this.mode === "trace") {
                     this._leaveTraceMode();
@@ -1332,7 +1283,6 @@ export class SimControl {
             label: t("sim.trace"),
             icon: "fa-magnifying-glass",
             onClick: () => {
-                if (!this.embedded) resetPathToRoot();
                 if (this.mode === "edit") this._resetEditTools();
                 this._enterTraceMode();
             },
@@ -1524,28 +1474,18 @@ export class SimControl {
                 label: t("sim.help"),
                 iconOnly: true,
                 icon: "fa-circle-question",
-                onClick: () => {
-                    this.pause();
-                    this.mode = "page";
-                    this._invalidateUI();
-                    this._staticRouter?.navigate("/help", { replace: true });
-                },
+                onClick: () => WelcomeDialog.show(this, { view: "/help" }),
             });
-            helpBtn.dataset.role = "mode-help";
+            helpBtn.dataset.role = "help";
             gCommon.appendChild(helpBtn);
 
             const aboutBtn = UILib.iconbutton({
                 label: t("sim.about"),
                 iconOnly: true,
                 icon: "fa-circle-info",
-                onClick: () => {
-                    this.pause();
-                    this.mode = "page";
-                    this._invalidateUI();
-                    this._staticRouter?.navigate("/about", { replace: true });
-                },
+                onClick: () => WelcomeDialog.show(this, { view: "/about" }),
             });
-            aboutBtn.dataset.role = "mode-about";
+            aboutBtn.dataset.role = "about";
             gCommon.appendChild(aboutBtn);
         }
 
@@ -1817,7 +1757,6 @@ export class SimControl {
         const isSim = (this.mode === "edit" || this.mode === "run");
         this._simBody?.classList.toggle("active", isSim);
         this._tracerBody?.classList.toggle("active", this.mode === "trace");
-        this._pageBody?.classList.toggle("active", this.mode === "page");
 
         // sidebar only in edit
         this._sidebar?.classList.toggle("hidden", this.mode !== "edit");
@@ -1835,9 +1774,6 @@ export class SimControl {
             setActive("mode-edit", this.mode === "edit");
             setActive("mode-run", this.mode === "run");
             setActive("mode-trace", this.mode === "trace");
-            setActive("mode-help",      this.mode === "page" && this._currentRoute === "/help");
-            setActive("mode-about",     this.mode === "page" && this._currentRoute === "/about");
-            setActive("mode-downloads", this.mode === "page" && this._currentRoute === "/downloads");
             setActive("lessons-toggle", this.lessonsOpen);
 
             // --- active state for pause
@@ -2792,23 +2728,5 @@ export class SimControl {
         toast.textContent = msg;
         this.nodesLayer?.appendChild(toast);
         setTimeout(() => toast.remove(), 3500);
-    }
-
-    _syncInitialModeFromUrl() {
-        const router = this._staticRouter;
-        if (!router) return;
-
-        // normalize path: strip ? # and trailing slash
-        let p = window.location.pathname || "/";
-        if (p.length > 1) p = p.replace(/\/+$/g, "");
-        // (pathname already excludes ?/#, but keep it defensive)
-        p = p.split("?")[0].split("#")[0];
-
-        const routes = router.getRoutes();
-        if (routes.includes(p)) {
-            this.mode = "page";
-            this.isPaused = true;
-            router.navigate(p, { replace: true });
-        }
     }
 }

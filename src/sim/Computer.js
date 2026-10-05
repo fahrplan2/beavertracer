@@ -87,7 +87,7 @@ export class Computer extends SimulatedObject {
         obj._applyBaseJSON(n);
 
         if (n.net) obj.os.net = IPStack.fromJSON(n.net);
-        if (n.fs) obj.os.fs = VirtualFileSystem.fromJSON(n.fs);
+        if (n.fs) { obj.os.fs = VirtualFileSystem.fromJSON(n.fs); obj.os.reloadCertStore(); }
         if (n.dns) obj.os.dns.setServer(n.dns);
 
         if (n.installedApps?.length) obj.os._applyInstalledApps(n.installedApps);

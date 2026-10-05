@@ -1,8 +1,12 @@
 ## Version 0.3.0
 
-- added networking lesson system
-- overhauld design
-- added a STUN Server
+- New interactive networking course (chapters 0–7, German and English)
+- Redesigned UI with optional dark mode and a reworked welcome dialog
+- Sequence diagrams for TCP in lessons
+- Deterministic packet loss on links (every n-th packet)
+- New STUN server and NAT traversal for the softphone
+- TCP fixes: duplicate ACKs, fast retransmit, shorter retransmission timeout
+- Fixes for mail relay, DHCP, DNS tools and NAT with traceroute
 
 ## Version 0.2.3
 

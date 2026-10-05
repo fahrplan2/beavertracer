@@ -11,6 +11,12 @@ import { renderSeqDiagram } from "./lessons-seq-diagram.mjs";
 const SRC_DIR = "lessons";
 const OUT_DIR = "public/lessons";
 
+// Courses checked by a human. All other languages are machine translations and
+// get a notice with a "report an error" mail link at the top of every page.
+const REVIEWED_LANGS = new Set(["de", "en"]);
+const REPORT_EMAIL = "info@beavertracer.eu";
+const SITE_URL = "https://www.beavertracer.eu";
+
 // ── Quiz pre-processing ────────────────────────────────────────
 
 function escHtml(str) {
@@ -348,6 +354,8 @@ const CHROME_KEYS = {
   "lessons.task.check": "Check task",
   "lessons.task.pass": "Correct!",
   "lessons.task.fail": "Not quite — try again.",
+  "lessons.aiNotice.text": "This page was translated by AI and has not been checked by a human. It may contain errors.",
+  "lessons.aiNotice.report": "Report an error",
 };
 
 function loadLocaleInfo(localesDir) {
@@ -751,6 +759,17 @@ function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI
     const prefix = numLabel(node.num);
     // Inject <span class="lesson-num"> after the opening <h1 ...> tag
     body = body.replace(/(<h1[^>]*>)/, `$1<span class="lesson-num">${prefix}</span> `);
+  }
+
+  // ── AI translation notice (after the H1) ───────────────────────
+  if (!REVIEWED_LANGS.has(lang)) {
+    const page = path.basename(srcFile, ".md");
+    const url = `${SITE_URL}/lessons/${lang}/${page}.html`;
+    const mailto = `mailto:${REPORT_EMAIL}?subject=${encodeURIComponent(`BeaverTracer translation error [${lang}] ${page}`)}` +
+      `&body=${encodeURIComponent(`${url}\n\n`)}`;
+    const notice = `<div class="callout callout-ai"><p>${escHtml(chrome["lessons.aiNotice.text"])} ` +
+      `<a href="${escHtml(mailto)}">${escHtml(chrome["lessons.aiNotice.report"])}</a></p></div>\n`;
+    body = /<\/h1>/.test(body) ? body.replace(/(<\/h1>\s*)/, `$1${notice}`) : notice + body;
   }
 
   // ── Prev / Next navigation ─────────────────────────────────────

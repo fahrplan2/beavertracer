@@ -8,12 +8,25 @@ import { Tour } from "./Tour.js";
 import { LessonsPanel } from "./LessonsPanel.js";
 import { buildChapterOverview } from "./ChapterOverview.js";
 import { addScrollHints } from "./scrollHints.js";
+import { loadPage, pageRoute } from "./StaticPages.js";
+
+/**
+ * Info pages shown as sub-views (see StaticPages.js); routes without an
+ * entry here (e.g. /license) get a generic icon and their route as title.
+ * @type {Record<string, { icon: string, title: () => string }>}
+ */
+const PAGE_VIEWS = {
+    "/help":      { icon: "fa-circle-question", title: () => t("sim.help") },
+    "/about":     { icon: "fa-circle-info",     title: () => t("sim.about") },
+    "/downloads": { icon: "fa-download",        title: () => t("sim.downloads") },
+};
 
 export class WelcomeDialog {
     /**
      * @param {import("../SimControl.js").SimControl} sim
-     * @param {{ view?: "chapters" }} [opts] open straight on a sub-view
-     *   (e.g. the lessons panel's "overview" button); "Back" then closes
+     * @param {{ view?: string }} [opts] open straight on a sub-view:
+     *   "chapters" (the lessons panel's "overview" button) or a page route
+     *   like "/help" (toolbar buttons); "Back" then leads to the start page
      * @returns {Promise<void>}
      */
     static show(sim, { view } = {}) {
@@ -29,9 +42,9 @@ export class WelcomeDialog {
             dlg.setAttribute("aria-label", "Beaver Tracer");
 
             dlg.appendChild(WelcomeDialog._buildHeader(close));
-            const { body, showNews, showChapters } = WelcomeDialog._buildBody(sim, close);
+            const { body, showNews, showChapters, showPage } = WelcomeDialog._buildBody(sim, close);
             dlg.appendChild(body);
-            dlg.appendChild(WelcomeDialog._buildFooter(sim, close, showNews));
+            dlg.appendChild(WelcomeDialog._buildFooter(sim, showNews, showPage));
 
             backdrop.addEventListener("click", (ev) => {
                 if (ev.target === backdrop) close();
@@ -60,7 +73,9 @@ export class WelcomeDialog {
                 }
             });
 
+            const page = view ? pageRoute(view) : null;
             if (view === "chapters") showChapters(null);
+            else if (page) showPage(page, null);
             else /** @type {HTMLElement|null} */ (dlg.querySelector(".welcome-learn-primary") ?? dlg.querySelector(".welcome-sim-item"))?.focus();
         });
     }
@@ -80,6 +95,7 @@ export class WelcomeDialog {
         logo.height = 52;
 
         const titleBlock = document.createElement("div");
+        titleBlock.className = "welcome-title-block";
 
         const title = document.createElement("h1");
         title.className = "welcome-title";
@@ -123,8 +139,13 @@ export class WelcomeDialog {
 
         titleBlock.appendChild(title);
         titleBlock.appendChild(subtitle);
+        // Sub-views put their "[←] Title" here instead of logo and title.
+        const sub = document.createElement("div");
+        sub.className = "welcome-header-sub";
+
         header.appendChild(logo);
         header.appendChild(titleBlock);
+        header.appendChild(sub);
         header.appendChild(headerRight);
         return header;
     }
@@ -135,7 +156,7 @@ export class WelcomeDialog {
      * the chapter overview replace the two columns in place.
      * @param {import("../SimControl.js").SimControl} sim
      * @param {(action?: () => void, opts?: { keepLessons?: boolean }) => void} close
-     * @returns {{ body: HTMLElement, showNews: (returnFocus: HTMLElement) => void, showChapters: (returnFocus: HTMLElement|null) => void }}
+     * @returns {{ body: HTMLElement, showNews: (returnFocus: HTMLElement) => void, showChapters: (returnFocus: HTMLElement|null) => void, showPage: (route: string, returnFocus: HTMLElement|null) => void }}
      */
     static _buildBody(sim, close) {
         const body = document.createElement("div");
@@ -172,12 +193,12 @@ export class WelcomeDialog {
             backBtn.title = t("welcome.back");
             backBtn.setAttribute("aria-label", t("welcome.back"));
             const back = () => {
-                // Opened straight on this view (no start page behind it): close.
-                if (!opener) { close(); return; }
                 view.hidden = true;
                 home.hidden = false;
                 body.closest(".welcome-dlg")?.classList.remove("welcome-dlg--subview");
-                opener?.focus();
+                // Opened straight on this view: no button to return to, so
+                // focus lands where it would on a fresh start page.
+                (opener ?? /** @type {HTMLElement|null} */ (home.querySelector(".welcome-learn-primary:not(:disabled)") ?? home.querySelector(".welcome-sim-item")))?.focus();
             };
             backBtn.addEventListener("click", back);
             const h = document.createElement("h2");
@@ -189,20 +210,31 @@ export class WelcomeDialog {
             head.append(backBtn, h);
             const content = document.createElement("div");
             content.className = `welcome-subview-content ${contentClass}`;
-            view.append(head, content);
+            view.append(content);
             addScrollHints(content);
             views.push(view);
             /** @param {HTMLElement|null} returnFocus null = opened directly @param {HTMLElement} [focus] */
             const show = (returnFocus, focus) => {
                 opener = returnFocus;
-                // The footer (language, news, help …) only belongs to the start
-                // page; its room goes to the sub-view so the dialog keeps its size.
                 const dlg = body.closest(".welcome-dlg");
+                const header = /** @type {HTMLElement|null} */ (dlg?.querySelector(".welcome-header"));
                 const footer = /** @type {HTMLElement|null} */ (dlg?.querySelector(".welcome-footer"));
-                view.style.height = `${home.offsetHeight + (footer?.offsetHeight ?? 0)}px`;
+                // Switching between sub-views (a link from one info page to
+                // another): keep the size of the one being replaced.
+                const current = views.find((v) => !v.hidden);
+                // Otherwise the footer (language, news, help …) and the
+                // header's logo row only belong to the start page; their room
+                // goes to the sub-view so the dialog keeps its size.
+                const total = home.hidden ? 0
+                    : (header?.offsetHeight ?? 0) + home.offsetHeight + (footer?.offsetHeight ?? 0);
+                // "[←] Title" takes the logo row's place in the header.
+                dlg?.querySelector(".welcome-header-sub")?.replaceChildren(head);
+                dlg?.classList.add("welcome-dlg--subview");
+                view.style.height = home.hidden && current
+                    ? current.style.height
+                    : `${total - (header?.offsetHeight ?? 0)}px`;
                 for (const v of views) v.hidden = v !== view;
                 home.hidden = true;
-                dlg?.classList.add("welcome-dlg--subview");
                 (focus ?? backBtn).focus();
             };
             return { view, content, show, back };
@@ -237,10 +269,50 @@ export class WelcomeDialog {
             });
         };
 
+        // Info pages (help, about, …): one sub-view each, loaded on first
+        // show. Links between them switch views; in-page anchors (the help
+        // page's table of contents) scroll the view instead of the URL.
+        /** @type {Map<string, ReturnType<typeof subView> & { loaded?: boolean }>} */
+        const pages = new Map();
+        /** @param {string} route @param {HTMLElement|null} returnFocus */
+        const showPage = (route, returnFocus) => {
+            let page = pages.get(route);
+            if (!page) {
+                const meta = PAGE_VIEWS[route] ?? { icon: "fa-file-lines", title: () => route.slice(1) };
+                page = subView(meta.icon, meta.title(), `welcome-page-content welcome-page--${route.slice(1)}`);
+                pages.set(route, page);
+                body.appendChild(page.view);
+                page.content.addEventListener("click", (ev) => {
+                    const a = ev.target instanceof Element ? ev.target.closest("a[href]") : null;
+                    const href = a?.getAttribute("href");
+                    if (!a || !href || a.getAttribute("target") === "_blank") return;
+                    if (href.startsWith("#")) {
+                        ev.preventDefault();
+                        page?.content.querySelector(`[id="${CSS.escape(href.slice(1))}"]`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                        return;
+                    }
+                    const target = pageRoute(href);
+                    if (target) {
+                        ev.preventDefault();
+                        showPage(target, opener);
+                    }
+                });
+            }
+            page.show(returnFocus);
+            page.content.scrollTop = 0;
+            if (page.loaded) return;
+            page.loaded = true;
+            page.content.textContent = "…";
+            const content = page.content;
+            loadPage(route)
+                .then((html) => { content.innerHTML = html ?? "—"; })
+                .catch(() => { content.textContent = "—"; });
+        };
+
         body.append(home, ...views);
         /** @param {HTMLElement} returnFocus */
         const showNews = (returnFocus) => news.show(returnFocus);
-        return { body, showNews, showChapters };
+        return { body, showNews, showChapters, showPage };
     }
 
     /**
@@ -363,10 +435,10 @@ export class WelcomeDialog {
 
     /**
      * @param {import("../SimControl.js").SimControl} sim
-     * @param {(action?: () => void, opts?: { keepLessons?: boolean }) => void} close
      * @param {(returnFocus: HTMLElement) => void} showNews
+     * @param {(route: string, returnFocus: HTMLElement) => void} showPage
      */
-    static _buildFooter(sim, close, showNews) {
+    static _buildFooter(sim, showNews, showPage) {
         const footer = document.createElement("div");
         footer.className = "welcome-footer";
 
@@ -388,20 +460,12 @@ export class WelcomeDialog {
         const newsBtn = WelcomeDialog._footerBtn("fa-newspaper", t("welcome.news"), () => showNews(newsBtn));
         right.appendChild(newsBtn);
 
-        if (!isTauri()) {
-            right.appendChild(WelcomeDialog._footerBtn(
-                "fa-download", t("sim.downloads"),
-                () => close(() => sim.navigateTo("/downloads"))
-            ));
+        for (const route of ["/downloads", "/help", "/about"]) {
+            if (route === "/downloads" && isTauri()) continue;
+            const { icon, title } = PAGE_VIEWS[route];
+            const btn = WelcomeDialog._footerBtn(icon, title(), () => showPage(route, btn));
+            right.appendChild(btn);
         }
-        right.appendChild(WelcomeDialog._footerBtn(
-            "fa-circle-question", t("sim.help"),
-            () => close(() => sim.navigateTo("/help"))
-        ));
-        right.appendChild(WelcomeDialog._footerBtn(
-            "fa-circle-info", t("sim.about"),
-            () => close(() => sim.navigateTo("/about"))
-        ));
 
         footer.appendChild(left);
         footer.appendChild(right);

@@ -10,7 +10,7 @@
  *  - Untrusted certificate is rejected
  */
 import { describe, it, expect } from 'vitest';
-import { TlsSession, TlsHandshakeError, TlsCertUntrustedError, TlsCertExpiredError } from '../../src/net/TlsSession.js';
+import { TlsSession, TlsHandshakeError, TlsCertUntrustedError, TlsCertExpiredError, TlsCertNameMismatchError, certMatchesName } from '../../src/net/TlsSession.js';
 import { TlsCertificate, TlsTrustStore } from '../../src/net/models/TlsCertificate.js';
 
 // ── loopback wiring ────────────────────────────────────────────────────────
@@ -62,7 +62,7 @@ function makeQueues() {
  * Returns { client, server } after both handshakes complete.
  * @param {TlsCertificate} serverCert
  * @param {TlsTrustStore|null} [trustStore]
- * @param {{ clientNow?: () => number }} [opts] - inject the client's "virtual clock"
+ * @param {{ clientNow?: () => number, serverName?: string }} [opts] - inject the client's "virtual clock" / requested host
  */
 async function runHandshake(serverCert, trustStore = null, opts = {}) {
   const q = makeQueues();
@@ -75,6 +75,7 @@ async function runHandshake(serverCert, trustStore = null, opts = {}) {
     timeoutMs: 5000,
     sleepFn: (ms) => new Promise(r => setTimeout(r, ms)),
     now: opts.clientNow,
+    serverName: opts.serverName,
   });
 
   const server = new TlsSession({
@@ -263,6 +264,42 @@ describe('TlsSession', () => {
     const forged = await TlsCertificate.generate('Test CA', null, {});
 
     await expect(runHandshake(forged, trustStore)).rejects.toBeInstanceOf(TlsCertUntrustedError);
+  });
+
+  describe('hostname verification', () => {
+    it('accepts a trusted certificate issued for the requested name', async () => {
+      const ca   = await TlsCertificate.generate('Test CA', null, { isCA: true });
+      const cert = await TlsCertificate.generate('www.bank.de', ca);
+      const trustStore = new TlsTrustStore();
+      trustStore.add(ca);
+      const { client } = await runHandshake(cert, trustStore, { serverName: 'WWW.Bank.de' });
+      expect(client['_state']).toBe('ESTABLISHED');
+    });
+
+    it('rejects a trusted certificate issued for a different name', async () => {
+      const ca   = await TlsCertificate.generate('Test CA', null, { isCA: true });
+      const cert = await TlsCertificate.generate('angreifer.example', ca);
+      const trustStore = new TlsTrustStore();
+      trustStore.add(ca);
+      const err = await runHandshake(cert, trustStore, { serverName: 'www.bank.de' }).catch(e => e);
+      expect(err).toBeInstanceOf(TlsCertNameMismatchError);
+      expect(err).toBeInstanceOf(TlsCertUntrustedError);
+    });
+
+    it('skips the name check without a trust store (curl -k)', async () => {
+      const cert = await TlsCertificate.generate('angreifer.example');
+      const { client } = await runHandshake(cert, null, { serverName: 'www.bank.de' });
+      expect(client['_state']).toBe('ESTABLISHED');
+    });
+
+    it('certMatchesName handles exact names, IPs and one-label wildcards', () => {
+      expect(certMatchesName('CN=www.bank.de', 'www.bank.de')).toBe(true);
+      expect(certMatchesName('CN=192.0.2.80', '192.0.2.80')).toBe(true);
+      expect(certMatchesName('CN=*.bank.de', 'www.bank.de')).toBe(true);
+      expect(certMatchesName('CN=*.bank.de', 'a.b.bank.de')).toBe(false);
+      expect(certMatchesName('CN=*.bank.de', 'bank.de')).toBe(false);
+      expect(certMatchesName('CN=bank.de', 'www.bank.de')).toBe(false);
+    });
   });
 
   // ── certificate validity period (notBefore/notAfter) ────────────────────

@@ -1631,14 +1631,21 @@ sim-toolbar-langbtn {
 }
 
 .sim-langdialog-close {
+  /* same 32px square as the back button beside it */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
   background: transparent;
   border: none;
-  font-size: 1.125rem;
+  font-size: 1.75rem;
   line-height: 1;
   color: var(--muted);
   cursor: pointer;
-  padding: 2px 5px;
-  border-radius: var(--radius-sm);
+  padding: 0;
+  border-radius: var(--radius-md);
   transition: color 0.1s, background 0.1s;
 }
 
@@ -2238,66 +2245,97 @@ sim-toolbar-langbtn {
    Downloads page
    ========================================================= */
 
+/* Three equal cards side by side (wrapping on narrow screens); buttons sit
+   at the bottom, so cards with one or two downloads still line up. */
 .download-cards {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--pad-xl);
-  margin: 20px 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: var(--pad-lg);
+  margin: var(--pad-lg) 0;
 }
 
 .download-card {
-  flex: 1 1 200px;
   border: 1px solid var(--ui-border);
   border-radius: var(--radius-lg);
-  padding: var(--pad-xl);
-  background: var(--ui-card);
+  padding: var(--pad-lg);
+  background: var(--bg-strong);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--pad-sm);
 }
 
 .download-card-icon {
-  font-size: 2.25rem;
-  color: color-mix(in oklch, var(--primary), black 55%);
+  font-size: 1.75rem;
+  color: var(--text);
   line-height: 1;
 }
 
-.download-card-body h3 {
-  margin: 0 0 4px;
+.download-card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--pad-sm);
+}
+
+/* (doubled class: beats .about-container's h3 margin and link colour) */
+.download-card .download-card-body h3 {
+  margin: 0;
+  color: var(--text);
   font-size: 1rem;
 }
 
 .download-card-body p {
-  margin: 0 0 10px;
+  margin: 0 0 auto;
   font-size: 0.8125rem;
   color: var(--muted);
 }
 
-.download-btn {
-  display: inline-flex;
+.download-card .download-btn {
+  display: flex;
+  justify-content: center;
   align-items: center;
   gap: var(--pad-sm);
-  padding: var(--pad-md) var(--pad-lg);
+  padding: var(--pad-sm) var(--pad-lg);
   border-radius: var(--radius-md);
   font-size: 0.8125rem;
   font-weight: 600;
   text-decoration: none;
-  background: var(--primary);
-  color: var(--text);
-  border: 1px solid var(--primary-strong);
+  background: var(--accent);
+  color: var(--accent-text);
+  border: 1px solid var(--accent);
   cursor: pointer;
-  margin-right: 6px;
-  margin-bottom: 6px;
   transition: filter 0.1s;
 }
 
-.download-btn:hover {
-  filter: brightness(0.92);
+.download-card .download-btn:hover {
+  filter: brightness(1.1);
+  text-decoration: none;
 }
 
 .download-btn-secondary {
   background: var(--surface);
   border-color: var(--ui-border);
+}
+
+/* Not yet available (macOS): same card, muted, a label instead of a button */
+.download-card--soon {
+  background: transparent;
+  border-style: dashed;
+}
+
+.download-card--soon .download-card-icon {
+  color: var(--muted);
+}
+
+.download-soon {
+  margin-top: auto;
+  padding: var(--pad-sm) var(--pad-lg);
+  border: 1px dashed var(--ui-border-strong);
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-align: center;
 }
 
 .download-note {

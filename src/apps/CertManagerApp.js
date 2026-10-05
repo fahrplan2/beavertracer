@@ -9,6 +9,16 @@ import { SimDialog } from "../lib/SimDialog.js";
 import { CertClipboard } from "../lib/CertClipboard.js";
 import { t } from "../i18n/index.js";
 
+/**
+ * Public part of a certificate (no private key) — for the trust store and
+ * "copy without key". Marks hasPrivateKey false so the copy doesn't claim a
+ * key it doesn't carry.
+ * @param {TlsCertificate} cert
+ */
+function publicJSON(cert) {
+  return { ...cert.toJSON(), hasPrivateKey: false };
+}
+
 const CERT_DIR    = "/etc/certs";
 const TRUSTED_DIR = "/etc/certs/trusted";
 
@@ -401,7 +411,7 @@ export class CertManagerApp extends GenericProcess {
       const cert = await TlsCertificate.fromJSON(JSON.parse(fs.readFile(abs)));
       const name = abs.split("/").pop() ?? "cert.json";
       // Store only public data in the trust store (no private key)
-      fs.writeFile(TRUSTED_DIR + "/" + name, JSON.stringify(cert.toJSON(), null, 2));
+      fs.writeFile(TRUSTED_DIR + "/" + name, JSON.stringify(publicJSON(cert), null, 2));
       this.os.reloadCertStore();
       this._refreshT3();
     } catch { /* ignore invalid file */ }
@@ -605,7 +615,7 @@ export class CertManagerApp extends GenericProcess {
     const fs = this._fs;
     if (!fs) return;
     try {
-      fs.writeFile(TRUSTED_DIR + "/" + name, JSON.stringify(cert.toJSON(), null, 2));
+      fs.writeFile(TRUSTED_DIR + "/" + name, JSON.stringify(publicJSON(cert), null, 2));
       this.os.reloadCertStore();
     } catch { /* ignore */ }
   }
@@ -617,7 +627,7 @@ export class CertManagerApp extends GenericProcess {
    * @param {boolean} withKey
    */
   async _copyToClipboard(cert, withKey) {
-    CertClipboard.data         = withKey ? await cert.toSaveData() : cert.toJSON();
+    CertClipboard.data         = withKey ? await cert.toSaveData() : publicJSON(cert);
     CertClipboard.hasPrivateKey = withKey && cert.hasPrivateKey;
     CertClipboard.cn           = cnOf(cert.subject);
     this._updatePasteButtons();
@@ -630,7 +640,7 @@ export class CertManagerApp extends GenericProcess {
     const dir = target === "trusted" ? TRUSTED_DIR : CERT_DIR;
 
     const data = target === "trusted"
-      ? (() => { const d = /** @type {any} */ ({ ...CertClipboard.data }); delete d.privateKeyJwk; return d; })()
+      ? (() => { const d = /** @type {any} */ ({ ...CertClipboard.data }); delete d.privateKeyJwk; d.hasPrivateKey = false; return d; })()
       : CertClipboard.data;
 
     const name = this._pasteFilename(CertClipboard.cn, dir);

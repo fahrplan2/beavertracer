@@ -193,6 +193,43 @@ describe('CheckApi', () => {
         expect(await api.tcpOpen(1, '10.0.0.2', 5001)).toBe(false);
     });
 
+    it('hasCert()/trusts(): read /etc/certs and the trust store', async () => {
+        const { TlsCertificate } = await import('../../src/net/models/TlsCertificate.js');
+        const pc = makeComputer(1, '10.0.0.1');
+        const ca = await TlsCertificate.generate('Schul-CA', null, { isCA: true });
+        const leaf = await TlsCertificate.generate('www.biber-shop.de', ca);
+        pc.fs.mkdir('/etc/certs/trusted', { recursive: true });
+        pc.fs.writeFile('/etc/certs/shop.json', JSON.stringify(await leaf.toSaveData()));
+        pc.os.tls.certStore.add(ca);
+
+        const api = new CheckApi(fakeSimControl([pc]));
+        expect(await api.hasCert(1, 'www.biber-shop.de')).toBe(true);
+        expect(await api.hasCert(1, 'www.biber-shop.de', 'Schul-CA')).toBe(true);
+        expect(await api.hasCert(1, 'www.biber-shop.de', 'Andere CA')).toBe(false);
+        expect(await api.hasCert(1, 'www.biber-bank.de')).toBe(false);
+        expect(await api.trusts(1, 'Schul-CA')).toBe(true);
+        expect(await api.trusts(1, 'www.biber-shop.de')).toBe(false);
+    });
+
+    it('trusts(): CAs from a saved file system are loaded into the trust store', async () => {
+        const { TlsCertificate } = await import('../../src/net/models/TlsCertificate.js');
+        const ca = await TlsCertificate.generate('Biber Root CA', null, { isCA: true });
+        const pc = Computer.fromJSON({
+            kind: 'Computer', id: 3, name: 'PC3', x: 0, y: 0,
+            net: { name: 'PC', forwarding: false, interfaces: [{ name: 'eth0', ip: '10.0.0.3', prefixLength: 24, ip6: null, prefixLength6: 0, ip6LL: null }], routes: [] },
+            fs: { type: 'dir', name: '', ctime: 0, mtime: 0, children: [{ type: 'dir', name: 'etc', ctime: 0, mtime: 0, children: [
+                { type: 'dir', name: 'certs', ctime: 0, mtime: 0, children: [
+                    { type: 'dir', name: 'trusted', ctime: 0, mtime: 0, children: [
+                        { type: 'file', name: 'root.json', ctime: 0, mtime: 0, data: JSON.stringify({ ...ca.toJSON(), hasPrivateKey: false }) },
+                    ] },
+                ] },
+            ] }] },
+            dns: null,
+        });
+        await new Promise((r) => setTimeout(r, 50)); // trust store loads asynchronously
+        expect(await new CheckApi(fakeSimControl([pc])).trusts(3, 'Biber Root CA')).toBe(true);
+    });
+
     it('ip(): also works for tablets', async () => {
         const tab = Tablet.fromJSON({
             kind: 'Tablet', id: 7, name: 'Anna', x: 0, y: 0, ssid: 'Schule',

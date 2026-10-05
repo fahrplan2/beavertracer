@@ -5,6 +5,7 @@ import { IPAddress } from "../net/models/IPAddress.js";
 import { TerminalApp } from "../apps/TerminalApp.js";
 import { setTrafficSuppressed } from "../lib/CheckState.js";
 import { SimTimer, simTimer } from "../lib/SimTimer.js";
+import { parseHttpUrl, resolveHost, openTlsTransport, httpRequest } from "../net/HttpClient.js";
 
 /** Step interval (real ms) while checks run — the fastest speed preset, so a
  *  failing ping's simulated timeout passes in seconds rather than a minute. */
@@ -174,6 +175,34 @@ export class CheckApi {
         return computer.fs.exists(path);
     }
 
+    /**
+     * Does `deviceId` trust a certificate with common name `cn` (it sits in
+     * the device's trust store, /etc/certs/trusted)?
+     * @param {number} deviceId @param {string} cn
+     */
+    async trusts(deviceId, cn) {
+        const store = this._computer(deviceId).os?.tls?.certStore;
+        return !!store?.trustedCAs.some((/** @type {any} */ c) => c.subject === `CN=${cn}`);
+    }
+
+    /**
+     * Is there a certificate for `cn` with its private key in `deviceId`'s
+     * /etc/certs — optionally issued (signed) by the CA `issuerCn`?
+     * @param {number} deviceId @param {string} cn @param {string} [issuerCn]
+     */
+    async hasCert(deviceId, cn, issuerCn) {
+        const fs = this._computer(deviceId).fs;
+        let names = [];
+        try { names = fs.readdir("/etc/certs"); } catch { return false; }
+        return names.filter((/** @type {string} */ n) => n.endsWith(".json")).some((/** @type {string} */ n) => {
+            try {
+                const c = JSON.parse(fs.readFile(`/etc/certs/${n}`));
+                return c.subject === `CN=${cn}` && c.hasPrivateKey
+                    && (!issuerCn || c.issuer === `CN=${issuerCn}`);
+            } catch { return false; }
+        });
+    }
+
     // ── Active checks (real simulated traffic) ──────────────────────────
 
     /**
@@ -238,6 +267,28 @@ export class CheckApi {
         } catch {
             return false;
         }
+    }
+
+    /**
+     * True if `fromId` can fetch `url` over HTTPS like a browser would: the
+     * TLS handshake succeeds with full certificate checks (trusted, valid,
+     * issued for the host name) and the server answers with a status < 400.
+     * @param {number} fromId @param {string} url
+     */
+    async httpsOk(fromId, url) {
+        const os = this._computer(fromId).os;
+        const u = parseHttpUrl(String(url));
+        if (!u.ok || u.scheme !== "https") return false;
+        const attempt = (async () => {
+            const ip = await resolveHost(os, u.host);
+            const conn = await openTlsTransport(os, ip, u.port, u.host);
+            try {
+                const res = await httpRequest({ transport: conn.transport, method: "GET", hostHeader: u.host, path: u.path });
+                return res.statusCode < 400;
+            } finally { conn.close(); }
+        })().catch(() => false);
+        const timeout = new Promise((resolve) => simTimer.schedule(() => resolve(false), SimTimer.HTTP_CLIENT_TIMEOUT_MS));
+        return /** @type {boolean} */ (await Promise.race([attempt, timeout]));
     }
 
     /**

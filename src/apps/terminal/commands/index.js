@@ -62,6 +62,7 @@ import { grep } from "./text/grep.js";
 import { head } from "./text/head.js";
 import { tail } from "./text/tail.js";
 import { wc } from "./text/wc.js";
+import { sha256sum } from "./text/sha256sum.js";
 import { sort } from "./text/sort.js";
 import { uniq } from "./text/uniq.js";
 import { cut } from "./text/cut.js";
@@ -137,6 +138,7 @@ export function registerBuiltins(app) {
         head,
         tail,
         wc,
+        sha256sum,
         sort,
         uniq,
         cut,

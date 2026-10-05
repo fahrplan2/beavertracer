@@ -105,14 +105,21 @@
 }
 
 .welcome-close-btn {
+  /* same 32px square as the back button beside it */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
   background: transparent;
   border: none;
-  font-size: 1.125rem;
+  font-size: 1.75rem;
   line-height: 1;
   color: var(--muted);
   cursor: pointer;
-  padding: 2px 5px;
-  border-radius: var(--radius-sm);
+  padding: 0;
+  border-radius: var(--radius-md);
   transition: color 0.1s, background 0.1s;
 }
 
@@ -186,11 +193,29 @@
   min-height: 0;
 }
 
-/* "[←] Title" — the back arrow sits right before the sub-view's title */
+/* "[←] Title" — the back arrow sits right before the sub-view's title. It
+   lives in the header (see .welcome-header-sub), replacing logo and title. */
 .welcome-subview-head {
   display: flex;
   align-items: center;
   gap: var(--pad-md);
+}
+
+.welcome-subview-head .welcome-path-title {
+  margin: 0;
+  font-size: 1.125rem;
+  color: var(--text);
+}
+
+.welcome-header-sub,
+.welcome-dlg--subview .welcome-logo,
+.welcome-dlg--subview .welcome-title-block,
+.welcome-dlg--subview .welcome-ver-block {
+  display: none;
+}
+
+.welcome-dlg--subview .welcome-header-sub {
+  display: block;
 }
 
 .welcome-subview-head .welcome-back-btn {
@@ -363,10 +388,6 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: var(--pad-sm) var(--pad-lg);
-  border: 1px solid var(--ui-border);
-  border-radius: var(--radius-md);
-  background: var(--bg-strong);
 }
 
 .welcome-news-content .minimarkdown-h2 {
@@ -392,6 +413,41 @@
   font-size: 0.8125rem;
   color: var(--muted);
   line-height: 1.5;
+}
+
+/* Info pages (help, about, downloads — see StaticPages.js). The sub-view
+   heading already names the page, so the page's own title is dropped.
+   (ar/fa pages wrap everything in <div dir="rtl">, hence the second form.) */
+.welcome-page-content .about-container > h2:first-child,
+.welcome-page-content .about-container > [dir] > h2:first-child {
+  display: none;
+}
+
+.welcome-page-content .about-container > .subtitle:nth-child(2),
+.welcome-page-content .about-container > [dir] > .subtitle:nth-child(2) {
+  margin-top: var(--pad-sm);
+}
+
+/* About is the exception: its title ("Beaver Tracer") isn't the sub-view's
+   ("About"), so it stays — with the logo the header now leaves out. */
+.welcome-page--about .about-container > h2:first-child,
+.welcome-page--about .about-container > [dir] > h2:first-child {
+  display: flex;
+  align-items: center;
+  gap: var(--pad-md);
+}
+
+.welcome-page--about .about-container h2:first-child::before {
+  content: "";
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  background: url("/beaver-icon.svg") center / contain no-repeat;
+}
+
+.welcome-page--about .about-container > .subtitle:nth-child(2),
+.welcome-page--about .about-container > [dir] > .subtitle:nth-child(2) {
+  margin-top: -0.5rem;
 }
 
 /* Chapter overview (see ChapterOverview.js): laid out like the start page —

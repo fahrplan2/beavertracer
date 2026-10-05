@@ -262,9 +262,8 @@ textarea:focus {
   display: contents;
 }
 
-/* ABOUT + TRACER: normal document flow, spanning the full width below the
+/* TRACER: normal document flow, spanning the full width below the
    toolbar (both grid columns of the sim-root grid). */
-.page.tab-content.active,
 .analyzer.tab-content.active {
   display: block;
   grid-column: 1 / -1;
@@ -272,28 +271,9 @@ textarea:focus {
 }
 
 /* Leave the lessons column to the lessons panel when it's docked open,
-   instead of the trace/about tab spanning underneath it. */
-.sim-root.lessons-open .page.tab-content.active,
+   instead of the trace tab spanning underneath it. */
 .sim-root.lessons-open .analyzer.tab-content.active {
   grid-column: 1 / 3;
-}
-
-
-.page {
-  overflow-y: auto;
-  width: 100%;
-}
-
-.page .page-content {
-  display: flex;
-  justify-content: center;   
-  padding: 24px 16px;        
-  box-sizing: border-box;
-  width: 100%;
-}
-.page .page-container {
-  width: 100%;
-  max-width: 700px;
 }
 
 :lang(ar),

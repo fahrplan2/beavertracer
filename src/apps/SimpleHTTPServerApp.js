@@ -227,18 +227,25 @@ export class SimpleHTTPServerApp extends LoggedProcess {
   icon = "fa-server";
   badge = "HTTP";
 
+  /** Resolves once the certPath restored from /etc/httpd.conf is loaded. @type {Promise<void>|null} */
+  _certLoadPromise = null;
+
   run() {
     this.root.classList.add("app", "app-simple-http-server");
     this._loadConfig();
+    if (this.certPath) this._certLoadPromise = this._loadCertFromPath(this.certPath);
     setTimeout(() => this._tryAutostart(), 0);
   }
 
-  _tryAutostart() {
+  async _tryAutostart() {
     try {
       const fs = this.os.fs;
       if (!fs) return;
       const json = JSON.parse(fs.readFile("/etc/httpd.conf"));
       if (json.autostart !== true) return;
+      // Without the certificate, _start() would silently skip the HTTPS
+      // listener of a saved HTTPS server (httpsEnabled && !this._cert).
+      if (this._certLoadPromise) await this._certLoadPromise;
       this._start();
     } catch { }
   }
@@ -763,12 +770,15 @@ export class SimpleHTTPServerApp extends LoggedProcess {
       );
     } else {
       const cn = (/** @type {string} */ s) => s.replace(/^CN=/, "");
+      // Same CN in several files (e.g. a renewed certificate) — the file name tells them apart.
+      entries.sort((a, b) => a.name.localeCompare(b.name));
       sel.replaceChildren(
         ...entries.map(e => UI.el("option", {
           attrs: { value: e.path },
-          text: cn(e.cert.subject),
+          text: `${cn(e.cert.subject)} (${e.name})`,
         })),
       );
+      if (this.certPath && entries.some(e => e.path === this.certPath)) sel.value = this.certPath;
     }
   }
 

@@ -10,7 +10,7 @@ import beaverPage from "./assets/about-beaver.html?raw";
 import { t } from "../i18n/index.js";
 import { IPAddress } from "../net/models/IPAddress.js";
 import { nowStamp, encodeUTF8, decodeUTF8 } from "../lib/helpers.js";
-import { TlsSession, TlsCertUntrustedError, TlsCertExpiredError } from "../net/TlsSession.js";
+import { TlsSession, TlsCertUntrustedError, TlsCertExpiredError, TlsCertNameMismatchError } from "../net/TlsSession.js";
 
 /**
  * @param {Uint8Array} data
@@ -934,6 +934,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
         timeoutMs:  timeout,
         sleepFn:    (ms) => simTimer.sleep(ms),
         now:        () => this.os.clock.nowMs(),
+        serverName: host,
       });
       this._activeTls = tls;
 
@@ -944,7 +945,9 @@ export class SparktailHTTPClientApp extends LoggedProcess {
         this._setLockState(bypassCert ? "insecure" : "secure");
         this._appendLog(t("app.sparktail.log.tlsOk", { time: nowStamp(), host }));
       } catch (e) {
-        if (e instanceof TlsCertUntrustedError) {
+        if (e instanceof TlsCertNameMismatchError) {
+          this._showCertErrorPage(tls.peerCert, url, "nameMismatch", host);
+        } else if (e instanceof TlsCertUntrustedError) {
           this._showCertErrorPage(tls.peerCert, url, "untrusted");
         } else if (e instanceof TlsCertExpiredError) {
           this._showCertErrorPage(tls.peerCert, url, e.reason);
@@ -1167,20 +1170,23 @@ export class SparktailHTTPClientApp extends LoggedProcess {
   /**
    * @param {import("../net/models/TlsCertificate.js").TlsCertificate|null} cert
    * @param {string} url
-   * @param {"untrusted"|"expired"|"notYetValid"} [reason]
+   * @param {"untrusted"|"expired"|"notYetValid"|"nameMismatch"} [reason]
+   * @param {string} [host]
    */
-  _showCertErrorPage(cert, url, reason = "untrusted") {
+  _showCertErrorPage(cert, url, reason = "untrusted", host = "") {
     this._setIframePolicy(true);
     const subject = cert?.subject ?? "?";
     const [titleKey, detailKey] = reason === "expired"
       ? ["app.sparktail.tls.certExpired.title",      "app.sparktail.tls.certExpired.detail"]
       : reason === "notYetValid"
       ? ["app.sparktail.tls.certNotYetValid.title",  "app.sparktail.tls.certNotYetValid.detail"]
+      : reason === "nameMismatch"
+      ? ["app.sparktail.tls.certNameMismatch.title", "app.sparktail.tls.certNameMismatch.detail"]
       : ["app.sparktail.tls.certError.title",        "app.sparktail.tls.certError.detail"];
     if (this.previewFrame) {
       this.previewFrame.srcdoc = certErrorPage(cert, url, {
         title:       t(titleKey),
-        detail:      t(detailKey, { subject }),
+        detail:      t(detailKey, { subject, host }),
         subject:     t("app.sparktail.tls.certPopup.subject"),
         issuer:      t("app.sparktail.tls.certPopup.issuer"),
         fingerprint: t("app.sparktail.tls.certPopup.fingerprint"),
@@ -1345,6 +1351,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
         timeoutMs: timeout,
         sleepFn: (ms) => simTimer.sleep(ms),
         now: () => this.os.clock.nowMs(),
+        serverName: /** @type {string} */ (host),
       });
       try {
         await withTimeout(tls.handshake(), timeout, "tls");

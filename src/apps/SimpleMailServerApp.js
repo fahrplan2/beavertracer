@@ -1212,9 +1212,10 @@ export class SimpleMailServerApp extends LoggedProcess {
     if (entries.length === 0) {
       sel.appendChild(UI.el("option", { attrs: { value: "" }, text: t("app.simplemailserver.tls.noCerts") || "(no certificates)" }));
     } else {
+      entries.sort((a, b) => a.name.localeCompare(b.name));
       for (const e of entries) {
         const cn = (/** @type {string} */ s) => s.replace(/.*CN=([^,]+).*/i, "$1");
-        sel.appendChild(UI.el("option", { attrs: { value: e.path }, text: cn(e.cert.subject) }));
+        sel.appendChild(UI.el("option", { attrs: { value: e.path }, text: `${cn(e.cert.subject)} (${e.name})` }));
       }
       if (this.certPath) sel.value = this.certPath;
     }

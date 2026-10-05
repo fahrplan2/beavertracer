@@ -115,6 +115,9 @@
    five callouts above so it reads as its own "before you start" category. */
 .lesson-article .callout-goal    { border-left-color: #7c3aed; background: color-mix(in oklch, #7c3aed 12%, transparent); }
 /* ":::tip Merksatz" — optional heading line */
+/* AI translation notice on machine-translated courses (vite-plugin-lessons.mjs). */
+.lesson-article .callout-ai      { border-left-color: #64748b; background: color-mix(in oklch, #64748b 12%, transparent); font-size: 0.92em; }
+.lesson-article .callout-ai a    { color: inherit; font-weight: 600; }
 .lesson-article .callout-title   { margin: 0 0 4px; font-weight: 700; }
 /* ── Table of contents ───────────────────────────────────────── */
 .lesson-article .lesson-toc { margin: 0 0 16px; padding: 10px 12px; border: 1px solid var(--ui-border-strong); border-radius: var(--radius-sm); }
