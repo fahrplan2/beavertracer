@@ -6,6 +6,7 @@ import { IPv4Packet } from "../net/pdu/IPv4Packet.js";
 import { IPv6Packet } from "../net/pdu/IPv6Packet.js";
 import { TCPPacket } from "../net/pdu/TCPPacket.js";
 import { UDPPacket } from "../net/pdu/UDPPacket.js";
+import { ICMPPacket } from "../net/pdu/ICMPPacket.js";
 import { IPAddress } from "../net/models/IPAddress.js";
 import { SimulatedObject } from "./SimulatedObject.js";
 import { UILib } from "../lib/UILib.js";
@@ -163,6 +164,54 @@ function matchPort(port, spec) {
     return port === Number(s);
 }
 
+// ── Reject ────────────────────────────────────────────────────────────────
+
+/**
+ * The answer a "reject" rule sends back instead of the blocked IPv4 packet,
+ * as if it came from the destination: a TCP RST for TCP (like iptables
+ * --reject-with tcp-reset), otherwise ICMP Destination Unreachable, code 13
+ * "communication administratively prohibited". null when no answer may be
+ * sent (RST or ICMP error in, broadcast/multicast, IPv6) — then the packet
+ * is just dropped.
+ * @param {EthernetFrame} frame
+ * @returns {EthernetFrame|null}
+ */
+export function buildRejectFrame(frame) {
+    if (frame.etherType !== 0x0800) return null;
+    let ip;
+    try { ip = IPv4Packet.fromBytes(frame.payload); } catch { return null; }
+    if ((frame.dstMac[0] & 1) !== 0) return null;               // broadcast / multicast frame
+    const dstNum = /** @type {number} */ (ip.dst.getNumber()) >>> 0;
+    if (dstNum === 0xffffffff || (dstNum >>> 28) === 0xe) return null;
+
+    let payload;
+    let protocol;
+    if (ip.protocol === 6) {
+        let tcp;
+        try { tcp = TCPPacket.fromBytes(ip.payload); } catch { return null; }
+        if (tcp.flags & TCPPacket.FLAG_RST) return null;
+        // RFC 9293 §3.10.7.1: answer an ACK with RST seq=its ack; otherwise RST+ACK acknowledging it.
+        const hasAck = (tcp.flags & TCPPacket.FLAG_ACK) !== 0;
+        const segLen = tcp.payload.length + ((tcp.flags & TCPPacket.FLAG_SYN) ? 1 : 0) + ((tcp.flags & TCPPacket.FLAG_FIN) ? 1 : 0);
+        const rst = new TCPPacket({
+            srcPort: tcp.dstPort, dstPort: tcp.srcPort,
+            seq: hasAck ? tcp.ack : 0,
+            ack: hasAck ? 0 : (tcp.seq + segLen) >>> 0,
+            flags: hasAck ? TCPPacket.FLAG_RST : (TCPPacket.FLAG_RST | TCPPacket.FLAG_ACK),
+            window: 0,
+        });
+        payload = rst.pack({ srcIp: ip.dst, dstIp: ip.src });
+        protocol = 6;
+    } else {
+        if (ip.protocol === 1 && ip.payload[0] !== 8) return null; // only echo requests get an ICMP error
+        const quoted = ip.pack().slice(0, ip.ihl * 4 + Math.min(ip.payload.length, 8));
+        payload = new ICMPPacket({ type: 3, code: 13, payload: quoted }).pack();
+        protocol = 1;
+    }
+    const reply = new IPv4Packet({ src: ip.dst, dst: ip.src, protocol, ttl: 64, payload });
+    return new EthernetFrame({ srcMac: frame.dstMac, dstMac: frame.srcMac, etherType: 0x0800, payload: reply.pack() });
+}
+
 // ── Rule ──────────────────────────────────────────────────────────────────
 
 let _ruleIdCtr = 1;
@@ -178,7 +227,7 @@ let _ruleIdCtr = 1;
  *   srcPort: string,
  *   dstIp: string,
  *   dstPort: string,
- *   action: "allow"|"deny",
+ *   action: "allow"|"deny"|"reject",
  * }} FWRule
  */
 
@@ -203,8 +252,13 @@ export class Firewall extends SimulatedObject {
     /** @type {FWRule[]} */
     rules = [defaultRule()];
 
-    /** @type {"allow"|"deny"} */
+    /** @type {"allow"|"deny"|"reject"} */
     defaultPolicy = "allow";
+
+    /** Packets each rule decided (rule id → count; -1 = default policy). Runtime only, not saved. @type {Map<number, number>} */
+    _hits = new Map();
+    /** Hit-count cells of the rendered rule table (rule id → cell; -1 = default policy). @type {Map<number, HTMLElement>} */
+    _hitCells = new Map();
 
     /** Global stateful mode: allowed connections are tracked so return traffic passes without a matching rule. */
     statefulMode = false;
@@ -294,11 +348,14 @@ export class Firewall extends SimulatedObject {
             }
 
             let allow;
+            /** @type {"allow"|"deny"|"reject"} */
+            let verdict = "allow";
             if (this.statefulMode && this._isTrackable(info.proto) && this._touchState(info)) {
                 allow = true;
                 stateChanged = true;
             } else {
-                allow = this._shouldAllow(info, dir);
+                verdict = this._decide(info, dir);
+                allow = verdict === "allow";
                 if (allow && this.statefulMode && this._isTrackable(info.proto)) {
                     this._createState(info, dir);
                     stateChanged = true;
@@ -310,8 +367,10 @@ export class Firewall extends SimulatedObject {
                 toPort.send(frame);
             } else {
                 this._stats.dropped++;
+                const reply = verdict === "reject" ? buildRejectFrame(frame) : null;
+                if (reply) fromPort.send(reply);
                 this._appendLog(
-                    `DROP ${dir} ${info.srcIp}${info.srcPort != null ? `:${info.srcPort}` : ""} → ` +
+                    `${reply ? "REJECT" : "DROP"} ${dir} ${info.srcIp}${info.srcPort != null ? `:${info.srcPort}` : ""} → ` +
                     `${info.dstIp}${info.dstPort != null ? `:${info.dstPort}` : ""} ` +
                     `proto=${info.proto}`
                 );
@@ -369,13 +428,39 @@ export class Firewall extends SimulatedObject {
      * @returns {boolean}
      */
     _shouldAllow(info, direction) {
+        return this._decide(info, direction) === "allow";
+    }
+
+    /**
+     * First matching rule's action, else the default policy; counts the hit.
+     * @param {PacketInfo} info
+     * @param {"AtoB"|"BtoA"} direction
+     * @returns {"allow"|"deny"|"reject"}
+     */
+    _decide(info, direction) {
         for (const rule of this.rules) {
             if (!rule.enabled) continue;
             if (this._matchRule(rule, info, direction)) {
-                return rule.action === "allow";
+                this._countHit(rule.id);
+                return rule.action;
             }
         }
-        return this.defaultPolicy === "allow";
+        this._countHit(-1);
+        return this.defaultPolicy;
+    }
+
+    /** @param {number} id rule id, -1 = default policy */
+    _countHit(id) {
+        const n = (this._hits.get(id) ?? 0) + 1;
+        this._hits.set(id, n);
+        const cell = this._hitCells.get(id);
+        if (cell) cell.textContent = this._hitText(id);
+    }
+
+    /** @param {number} id rule id, -1 = default policy (labelled, it stands outside the table) */
+    _hitText(id) {
+        const n = String(this._hits.get(id) ?? 0);
+        return id === -1 ? `${t("firewall.col.hits")}: ${n}` : n;
     }
 
     /**
@@ -426,15 +511,17 @@ export class Firewall extends SimulatedObject {
         policyRow.style.marginBottom = "6px";
         const policyLabel = UILib.label(t("firewall.defaultpolicy"));
         const policySel = /** @type {HTMLSelectElement} */ (UILib.el("select", { className: "fw-select" }));
-        for (const [val, lbl] of [["allow", t("firewall.policy.allow")], ["deny", t("firewall.policy.deny")]]) {
+        for (const [val, lbl] of [["allow", t("firewall.policy.allow")], ["deny", t("firewall.policy.deny")], ["reject", t("firewall.policy.reject")]]) {
             const o = UILib.el("option", { text: lbl, attrs: { value: val } });
             policySel.appendChild(o);
         }
         policySel.value = this.defaultPolicy;
         policySel.addEventListener("change", () => {
-            this.defaultPolicy = /** @type {"allow"|"deny"} */ (policySel.value);
+            this.defaultPolicy = /** @type {"allow"|"deny"|"reject"} */ (policySel.value);
         });
-        policyRow.append(policyLabel, policySel);
+        const policyHits = UILib.el("span", { className: "fw-policy-hits", text: this._hitText(-1) });
+        this._hitCells.set(-1, policyHits);
+        policyRow.append(policyLabel, policySel, policyHits);
 
         // mode: stateless / stateful
         const modeLabel = UILib.label(t("firewall.mode"));
@@ -576,7 +663,7 @@ export class Firewall extends SimulatedObject {
         const htr   = document.createElement("tr");
         for (const key of ["","firewall.col.enabled","firewall.col.direction","firewall.col.ipversion",
                             "firewall.col.protocol","firewall.col.srcip","firewall.col.srcport",
-                            "firewall.col.dstip","firewall.col.dstport","firewall.col.action",""]) {
+                            "firewall.col.dstip","firewall.col.dstport","firewall.col.action","firewall.col.hits",""]) {
             const th = document.createElement("th");
             th.textContent = key ? t(key) : "";
             htr.appendChild(th);
@@ -585,6 +672,7 @@ export class Firewall extends SimulatedObject {
         table.appendChild(thead);
 
         const tbody = document.createElement("tbody");
+        for (const id of [...this._hitCells.keys()]) if (id !== -1) this._hitCells.delete(id);
         for (const rule of this.rules) {
             tbody.appendChild(this._buildRuleRow(rule));
         }
@@ -671,11 +759,17 @@ export class Firewall extends SimulatedObject {
 
         // action
         const actSel = this._select([
-            ["allow", t("firewall.action.allow")],
-            ["deny",  t("firewall.action.deny")],
+            ["allow",  t("firewall.action.allow")],
+            ["deny",   t("firewall.action.deny")],
+            ["reject", t("firewall.action.reject")],
         ], rule.action, v => { rule.action = /** @type {any} */ (v); tr.dataset.action = v; });
         tr.dataset.action = rule.action;
         tr.appendChild(this._td(actSel));
+
+        // hits
+        const hits = UILib.el("span", { className: "fw-hits", text: this._hitText(rule.id) });
+        this._hitCells.set(rule.id, hits);
+        tr.appendChild(this._td(hits));
 
         // delete
         const delBtn = UILib.button("✕", null, { className: "fw-del-rule" });
@@ -750,10 +844,11 @@ export class Firewall extends SimulatedObject {
     static fromJSON(n) {
         const obj = new Firewall(n.name ?? t("firewall.title"));
         obj._applyBaseJSON(n);
-        obj.defaultPolicy = n.defaultPolicy === "deny" ? "deny" : "allow";
+        obj.defaultPolicy = n.defaultPolicy === "deny" || n.defaultPolicy === "reject" ? n.defaultPolicy : "allow";
         obj.statefulMode = n.statefulMode === true;
         if (Array.isArray(n.rules)) {
             obj.rules = n.rules.map(/** @param {any} r */ r => ({ ...defaultRule(), ...r, id: _ruleIdCtr++ }));
+            for (const r of obj.rules) if (!["allow", "deny", "reject"].includes(r.action)) r.action = "allow";
         }
         return obj;
     }

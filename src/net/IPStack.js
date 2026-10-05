@@ -1039,6 +1039,30 @@ export class IPStack extends Observable {
                 break;
             }
 
+            case 3: { // Destination Unreachable — from a router (no route / no ARP answer) or a rejecting firewall
+                const q = icmp.payload;
+                if (!q || q.length < 8) break;
+                const origIhl = (q[0] & 0x0f) * 4;
+                if (q.length < origIhl + 8 || q[9] !== 1) break; // only our own echo requests are tracked
+
+                const origDst = IPAddress.fromUInt8(q.slice(16, 20));
+                const origId  = (q[origIhl + 4] << 8) | q[origIhl + 5];
+                const origSeq = (q[origIhl + 6] << 8) | q[origIhl + 7];
+
+                const key = this._icmpEchoKey(origDst, origId, origSeq);
+                const pending = this._pendingEcho.get(key);
+                if (!pending) break;
+
+                simTimer.cancel(pending.timerId);
+                this._pendingEcho.delete(key);
+
+                const err = new Error("unreachable");
+                /** @type {any} */ (err).from = ip_src;
+                /** @type {any} */ (err).code = icmp.code;
+                pending.reject(err);
+                break;
+            }
+
             default:
                 // other types optional
                 break;

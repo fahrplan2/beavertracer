@@ -3,6 +3,7 @@
 import { t } from "../../../../i18n/index.js";
 import { IPAddress } from "../../../../net/models/IPAddress.js";
 import { sleepAbortable } from "../lib/abort.js";
+import { simTimer, SimTimer } from "../../../../lib/SimTimer.js";
 import { CommandError } from "../lib/errors.js";
 
 // ── limits ────────────────────────────────────────────────────────────────────
@@ -10,7 +11,10 @@ import { CommandError } from "../lib/errors.js";
 const MAX_PORTS = 1000;
 const MAX_HOSTS = 256; // /24
 const CONCURRENCY = 20;
-const PROBE_TIMEOUT_MS = 1500;
+// Simulated ms (not real time): a probe through firewalls and routers needs a
+// few sim ticks, which at slow sim speeds would exceed any fixed real timeout
+// and wrongly report open ports as "filtered". Same budget as a ping reply.
+const PROBE_TIMEOUT_MS = SimTimer.PING_TIMEOUT_MS;
 
 // ── service name table ────────────────────────────────────────────────────────
 
@@ -111,18 +115,18 @@ async function probePort(ctx, ip, port) {
     try {
         const connectPromise = ctx.os.net.connectTCPConn(ip, port);
         const timeoutPromise = new Promise((_, reject) => {
-            timeoutId.id = setTimeout(() => reject(new Error("filtered")), PROBE_TIMEOUT_MS);
+            timeoutId.id = simTimer.schedule(() => reject(new Error("filtered")), PROBE_TIMEOUT_MS);
         });
 
         const conn = await Promise.race([connectPromise, timeoutPromise]);
-        clearTimeout(timeoutId.id);
+        simTimer.cancel(timeoutId.id);
         key = conn?.key ?? null;
         if (key) {
             try { ctx.os.net.closeTCPConn(key); } catch {}
         }
         return "open";
     } catch (e) {
-        clearTimeout(timeoutId.id);
+        simTimer.cancel(timeoutId.id);
         if (key) { try { ctx.os.net.closeTCPConn(key); } catch {} }
         const msg = e instanceof Error ? e.message : String(e);
         if (msg === "filtered") return "filtered";
@@ -170,14 +174,19 @@ async function scanHost(ctx, ip, ports, openOnly) {
 /**
  * @param {{port:number, state:PortState}[]} results
  * @param {any} ctx
+ * @param {boolean} [showClosed] list closed ports too (explicit -p)
  */
-function printHostReport(results, ctx) {
-    const visible = results.filter(r => r.state !== "closed");
+function printHostReport(results, ctx, showClosed = false) {
+    // Like real nmap: closed ports of a broad scan are only summed up; with an
+    // explicit -p list every port is listed, so closed vs filtered is visible.
+    const visible = showClosed ? results : results.filter(r => r.state !== "closed");
     if (visible.length === 0) {
         ctx.println(t("app.terminal.commands.nmap.out.allClosed"));
         return;
     }
 
+    const hidden = results.length - visible.length;
+    if (hidden > 0) ctx.println(t("app.terminal.commands.nmap.out.notShown", { count: hidden }));
     ctx.println(t("app.terminal.commands.nmap.out.tableHeader"));
     for (const { port, state } of visible) {
         const svc = SERVICE[port] ?? "";
@@ -290,7 +299,7 @@ export const nmap = {
             ctx.println(t("app.terminal.commands.nmap.out.scanReport", { ip: ipStr }));
 
             const results = await scanHost(ctx, ip, ports, openOnly);
-            printHostReport(results, ctx);
+            printHostReport(results, ctx, portSpec != null && !openOnly);
         }
 
         ctx.println("");

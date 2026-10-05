@@ -8,6 +8,22 @@ import { simTimer, SimTimer } from "../../../../lib/SimTimer.js";
 import { IPAddress } from "../../../../net/models/IPAddress.js";
 
 /**
+ * Locale key describing an ICMP Destination Unreachable code (RFC 792 / RFC 1812).
+ * @param {number} code
+ */
+export function unreachableKey(code) {
+  switch (code) {
+    case 0: return "app.terminal.commands.ping.out.unreach.net";
+    case 1: return "app.terminal.commands.ping.out.unreach.host";
+    case 2: return "app.terminal.commands.ping.out.unreach.protocol";
+    case 3: return "app.terminal.commands.ping.out.unreach.port";
+    case 4: return "app.terminal.commands.ping.out.unreach.fragNeeded";
+    case 9: case 10: case 13: return "app.terminal.commands.ping.out.unreach.filtered";
+    default: return "app.terminal.commands.ping.out.unreach.other";
+  }
+}
+
+/**
  * Try to parse host as IPAddress.
  * For now: accept IPv4/IPv6 literals via IPAddress.fromString().
  * @param {string} host
@@ -200,7 +216,16 @@ export const ping = {
         );
       } catch (e) {
         if (ctx.signal.aborted) { interrupted = true; break; }
-        ctx.println(t("app.terminal.commands.ping.out.timeout", { seq }));
+        const err = /** @type {any} */ (e);
+        if (err?.message === "unreachable" || err?.message === "ttl-exceeded") {
+          // An ICMP error came back instead of a reply — say who sent it and why, like Linux ping.
+          const reason = err.message === "ttl-exceeded"
+            ? t("app.terminal.commands.ping.out.ttlExceeded")
+            : t(unreachableKey(err.code));
+          ctx.println(t("app.terminal.commands.ping.out.error", { from: String(err.from ?? "?"), seq, reason }));
+        } else {
+          ctx.println(t("app.terminal.commands.ping.out.timeout", { seq }));
+        }
       }
 
       if (infinite || seq < count) {

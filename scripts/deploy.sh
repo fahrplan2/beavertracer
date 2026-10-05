@@ -193,6 +193,7 @@ download_artifacts() {
   done
 }
 
+echo "Checking Tauri releases (stable: ${LATEST_STABLE:-none}, pre-release: ${LATEST_PRERELEASE:-none})..."
 download_artifacts "$LATEST_STABLE"
 download_artifacts "$LATEST_PRERELEASE"
 
@@ -214,6 +215,7 @@ write_release_index() {
     printf '\n  ]\n}\n'
   } > "$tmp"
   mv "$tmp" "${RELEASES_DIR}/index.json"
+  echo "Wrote ${RELEASES_DIR}/index.json ($(grep -c '"name"' "${RELEASES_DIR}/index.json" || true) files)."
 }
 
 write_release_index

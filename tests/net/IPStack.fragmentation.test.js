@@ -398,7 +398,7 @@ describe('ICMP ping integration (direct-wire)', () => {
         expect(result.bytes).toBe(PAYLOAD_SIZE + 8);
     });
 
-    it('ping with DF flag on oversized packet times out', async () => {
+    it('ping with DF flag on oversized packet fails with ICMP fragmentation needed', async () => {
         const { a } = makePair();
         const payload = new Uint8Array(9999);
 
@@ -406,9 +406,9 @@ describe('ICMP ping integration (direct-wire)', () => {
             timeoutMs: 100, // 20 simulated ticks
             identifier: 1, sequence: 1, payload,
             flags: 0x02, // DF bit
-        }).then(() => 'resolved').catch(e => e.message);
+        }).then(() => 'resolved').catch(e => `${e.message}/${e.code}`);
 
-        // Process initial microtasks (DF packet dropped, no reply sent)
+        // Process initial microtasks (DF packet dropped, ICMP 3/4 sent back)
         await flush(10);
 
         // Advance timer past the 20-tick timeout
@@ -417,6 +417,6 @@ describe('ICMP ping integration (direct-wire)', () => {
             await Promise.resolve();
         }
 
-        expect(await outcome).toBe('timeout');
+        expect(await outcome).toBe('unreachable/4');
     });
 });

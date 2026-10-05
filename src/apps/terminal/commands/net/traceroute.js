@@ -142,6 +142,9 @@ export const traceroute = {
 
       let reached = false;
 
+      /** Linux-style annotation when an ICMP Destination Unreachable came back (e.g. "!N"). */
+      let unreachMark = "";
+
       for (let p = 1; p <= probes; p++) {
         if (ctx.signal.aborted) throw new DOMException("Aborted", "AbortError");
 
@@ -179,6 +182,10 @@ export const traceroute = {
           if (any && typeof any === "object" && "from" in any) {
             hop = any.from;
             times.push(Math.max(0, Math.round(nowMs() - t0)));
+            // Destination Unreachable ends the trace like on Linux: !N net, !H host, !P protocol, !X filtered.
+            if (any.message === "unreachable") {
+              unreachMark = ({ 0: "!N", 1: "!H", 2: "!P", 9: "!X", 10: "!X", 13: "!X" })[/** @type {number} */ (any.code)] ?? `!<${any.code}>`;
+            }
           } else {
             times.push(null);
           }
@@ -188,10 +195,10 @@ export const traceroute = {
       }
 
       const hopStr = hop ? fmtIP(hop) : "*";
-      const parts = times.map((v) => (v == null ? "*" : `${v} ms`));
+      const parts = times.map((v) => (v == null ? "*" : `${v} ms${unreachMark ? ` ${unreachMark}` : ""}`));
       ctx.println(`${ttl.toString().padStart(2, " ")}  ${hopStr}  ${parts.join("  ")}`);
 
-      if (reached) break;
+      if (reached || unreachMark) break;
     }
   },
 };
