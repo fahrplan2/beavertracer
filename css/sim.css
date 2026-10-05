@@ -1242,6 +1242,19 @@
   background: color-mix(in oklch, var(--bg-strong), #ff4444 8%);
 }
 
+.fw-rules-table tr[data-action="reject"] {
+  background: color-mix(in oklch, var(--bg-strong), #ff9900 10%);
+}
+
+.fw-hits,
+.fw-policy-hits {
+  display: inline-block;
+  min-width: 2.5em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
 .fw-input {
   width: 130px;
 }
