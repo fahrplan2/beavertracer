@@ -2,8 +2,8 @@
 #
 # Builds:
 #  - on branch "development": typecheck + web build (dist/)
-#  - on tags v*.*.*        : web build + Tauri (Linux/Windows) + GitLab Release (stable)
-#  - on tags v*.*.*-<pre>  : web build + Tauri (Linux/Windows) + GitLab Release (pre-release)
+#  - on tags v*.*.*        : web build + Tauri (Linux/Windows/macOS) + GitLab Release (stable)
+#  - on tags v*.*.*-<pre>  : web build + Tauri (Linux/Windows/macOS) + GitLab Release (pre-release)
 #
 # Tag conventions (SemVer):
 #   v0.1.17          stable release
@@ -12,7 +12,8 @@
 # Einmalige Einrichtung:
 #  - Project Access Token mit Scope "api" als CI-Variable RELEASE_TOKEN hinterlegen
 #    (Settings → CI/CD → Variables)
-#  - Linux-Runner mit Docker-Executor nötig (für alle Jobs)
+#  - Linux-Runner mit Docker-Executor nötig (für alle Jobs außer tauri:macos)
+#  - Mac als Project-Runner mit Shell-Executor, Tag "macos", "Run untagged jobs" AUS
 
 stages:
   - check
@@ -165,6 +166,48 @@ tauri:windows:
     expire_in: 1 day
 
 
+# Tauri – macOS (Universal .dmg für Intel + Apple Silicon)
+# Läuft auf einem eigenen Mac als GitLab-Runner (Shell-Executor, Tag "macos").
+# Ist der Mac aus, wartet der Job einfach, bis er wieder online ist — er
+# blockiert nichts, weil kein anderer Job auf ihn wartet. Deshalb lädt er die
+# .dmg selbst in die Package Registry hoch; deploy.sh holt sie beim nächsten
+# Cron-Lauf ab.
+tauri:macos:
+  stage: build
+  tags:
+    - macos
+  rules:
+    - if: *rule-any-release
+  cache: []
+  before_script:
+    # Shell-Executor: Toolchain des Mac-Nutzers verwenden, nicht den
+    # projektlokalen CARGO_HOME der Docker-Jobs
+    - export CARGO_HOME="$HOME/.cargo"
+    # rustup aus Homebrew legt seine Proxies (rustc, cargo) hier ab
+    - export PATH="/opt/homebrew/opt/rustup/bin:$CARGO_HOME/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+    - node -v && cargo -V
+    - rustup target add aarch64-apple-darwin x86_64-apple-darwin
+    - npm ci
+  script:
+    - node scripts/set-tauri-version.mjs
+    - rm -rf src-tauri/target/universal-apple-darwin/release/bundle
+    - npm run tauri:mac
+    - VERSION="${CI_COMMIT_TAG#v}"
+    - |
+      for f in src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg; do
+        [ -f "$f" ] || continue
+        echo "Uploading $(basename "$f") ..."
+        curl --fail --silent \
+             --header "JOB-TOKEN: $CI_JOB_TOKEN" \
+             --upload-file "$f" \
+             "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/beavertracer/${VERSION}/$(basename "$f")"
+      done
+  artifacts:
+    name: tauri-macos
+    paths:
+      - src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+    expire_in: 1 day
+
 # ── release ───────────────────────────────────────────────────────────────────
 
 # Job 1: Artifacts in Package Registry hochladen, VERSION exportieren
@@ -231,6 +274,9 @@ release:stable:
         - name: "Windows Installer (.exe)"
           url: "$DL_BASE/beavertracer_${VERSION}_x64-setup.exe"
           link_type: package
+        - name: "macOS (.dmg)"
+          url: "$DL_BASE/beavertracer_${VERSION}_universal.dmg"
+          link_type: package
 
 # Job 2b: GitLab Release für Pre-release-Versionen (rc, beta, alpha, …)
 release:prerelease:
@@ -261,4 +307,7 @@ release:prerelease:
           link_type: package
         - name: "Windows Installer (.exe)"
           url: "$DL_BASE/beavertracer_${VERSION}_x64-setup.exe"
+          link_type: package
+        - name: "macOS (.dmg)"
+          url: "$DL_BASE/beavertracer_${VERSION}_universal.dmg"
           link_type: package
