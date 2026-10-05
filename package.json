@@ -16,13 +16,12 @@
   "name": "beavertracer",
   "description": "",
   "version": "0.3.1-dev.5.efa395a",
-  "main": "electron/main.cjs",
   "repository": {
     "type": "git",
     "url": "https://gitlab.lgsit.de/klec/networksim.git"
   },
   "author": "Christian Klein",
-  "license": "GPLv2",
+  "license": "GPL-2.0-or-later",
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.120.0",
     "@babel/parser": "^8.0.4",
@@ -31,14 +30,6 @@
     "typescript": "^7.0.2",
     "vite": "^8.2.2",
     "vitest": "^4.1.11"
-  },
-  "build": {
-    "appId": "eu.chklein.networksim",
-    "productName": "Netzwerksimulator",
-    "files": [
-      "dist/**",
-      "package.json"
-    ]
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.3.1",

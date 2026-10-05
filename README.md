@@ -44,13 +44,19 @@ Creates a production-ready bundle in the `dist/` directory:
 npm run build
 ```
 
-Creates a production-ready bundle with Tauri (read the Tauri docs for requirements; this pipeline is not yet fully automated):
+Creates a production-ready bundle with Tauri (read the Tauri docs for requirements):
 
 ```bash
 npm run tauri:dev      # local Tauri dev window
 npm run tauri:build    # production Tauri build
 npm run tauri:win      # cross-compile for Windows (requires cargo-xwin)
+npm run tauri:mac      # macOS universal .dmg (Intel + Apple Silicon, only on a Mac)
 ```
+
+`tauri:mac` needs a rustup toolchain with both targets
+(`rustup target add aarch64-apple-darwin x86_64-apple-darwin`). A Homebrew
+`rust` formula next to rustup shadows the rustup compilers and fails with
+`can't find crate for std` — use rustup only.
 
 ---
 
@@ -73,21 +79,20 @@ npm run preview
 
 ---
 
-## WebAssembly (Wiregasm)
+## WebAssembly (Wiregasm, v86)
 
-This project uses **@goodtools/wiregasm**, a WebAssembly module.
+This project uses two WebAssembly modules:
 
-During the build process, the following files are automatically copied to
-`public/wiregasm/`:
+* **@goodtools/wiregasm** — the packet dissector
+* **v86** — the emulator behind the "Linux" node type
 
-* `wiregasm.wasm`
-* `wiregasm.data`
-
-They are available at runtime under the following paths:
+When the dev server starts and during the build, a Vite plugin
+(see `vite.config.mjs`) copies their binaries from `node_modules` to `public/`:
 
 ```
 ./wiregasm/wiregasm.wasm
 ./wiregasm/wiregasm.data
+./v86/build/v86.wasm
 ```
 
 The server used **must** correctly set the following MIME types:
@@ -101,14 +106,19 @@ The server used **must** correctly set the following MIME types:
 
 ## License
 
-GPLv2
+Beaver Tracer is free software, licensed under the GNU General Public License,
+version 2 or (at your option) any later version (`GPL-2.0-or-later`).
+See [LICENSE](LICENSE).
 
 ---
 
 ## Credits
 
-- **Wiregasm** by Good-Tools — powers the packet capture engine
+- **Wiregasm** by Good-Tools — powers the packet capture engine (GPLv2)
+- **Wireshark** — the dissector technology behind Wiregasm (GPLv2)
 - **v86** — runs a real Linux kernel in the browser (the "Linux" node type) (BSD-2-Clause, https://github.com/copy/v86)
+- **xterm.js** — terminal of the Linux node (MIT)
+- **Alpine Linux** — the image booted by the Linux node; each package under its own open-source license
 - **Font Awesome Free** — icons (CC BY 4.0, © Fonticons, Inc.)
 - **Hack** font — © 2018 Source Foundry Authors (MIT)
 - **Noto Emoji** by Google — beaver app icon (Apache 2.0)
