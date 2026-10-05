@@ -16,7 +16,7 @@
 # =============================================================================
 set -euo pipefail
 
-REPO_URL="https://gitlab.lgsit.de/klec/networksim.git"
+REPO_URL="https://gitlab.lgsit.de/klec/beavertracer.git"
 WORKDIR="/root/networksim"
 WEBROOT="/var/www/networksim"
 

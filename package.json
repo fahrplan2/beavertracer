@@ -18,7 +18,7 @@
   "version": "0.3.1-dev.5.efa395a",
   "repository": {
     "type": "git",
-    "url": "https://gitlab.lgsit.de/klec/networksim.git"
+    "url": "https://gitlab.lgsit.de/klec/beavertracer.git"
   },
   "author": "Christian Klein",
   "license": "GPL-2.0-or-later",
