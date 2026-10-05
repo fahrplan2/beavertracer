@@ -8,9 +8,10 @@
 # Voraussetzungen auf dem Server:
 #   - Node.js, npm, git installiert
 #   - nginx als Webserver
-#   - GITLAB_DEPLOY_TOKEN als Umgebungsvariable gesetzt
-#     (Deploy Token mit Scope "read_package_registry",
-#      erstellen unter: GitLab → Settings → Repository → Deploy tokens)
+#   - Optional: GITLAB_DEPLOY_TOKEN (Umgebung oder Datei /root/.gitlab-deploy-token,
+#     chmod 600) — nur nötig, wenn das Projekt bzw. seine Package Registry
+#     nicht öffentlich ist. Deploy Token mit Scope "read_package_registry",
+#     erstellen unter: GitLab → Settings → Repository → Deploy tokens
 #
 # Wird per Cron alle 5 Minuten ausgeführt.
 # =============================================================================
@@ -163,6 +164,17 @@ LATEST_PRERELEASE="$(git tag | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+-[a-zA-Z]' | LC_
 RELEASES_DIR="${WEBROOT}/releases"
 mkdir -p "$RELEASES_DIR"
 
+# Deploy-Token (optional): aus der Umgebung (Cron) oder aus einer Datei.
+# Ohne Token wird anonym geladen — reicht bei öffentlicher Package Registry.
+DEPLOY_TOKEN_FILE="/root/.gitlab-deploy-token"
+if [[ -z "${GITLAB_DEPLOY_TOKEN:-}" && -r "$DEPLOY_TOKEN_FILE" ]]; then
+  GITLAB_DEPLOY_TOKEN="$(tr -d '[:space:]' < "$DEPLOY_TOKEN_FILE")"
+fi
+CURL_AUTH=()
+if [[ -n "${GITLAB_DEPLOY_TOKEN:-}" ]]; then
+  CURL_AUTH=(--header "DEPLOY-TOKEN: ${GITLAB_DEPLOY_TOKEN}")
+fi
+
 download_artifacts() {
   local TAG="$1"
   [[ -z "$TAG" ]] && return
@@ -182,7 +194,7 @@ download_artifacts() {
       # damit mv ein atomares Rename ist und nie eine halbe Datei sichtbar wird
       tmp="$(mktemp "${RELEASES_DIR}/.download.XXXXXX")"
       if curl --silent --fail \
-              --header "DEPLOY-TOKEN: ${GITLAB_DEPLOY_TOKEN}" \
+              ${CURL_AUTH[@]+"${CURL_AUTH[@]}"} \
               --output "$tmp" \
               "$url"; then
         mv "$tmp" "$dest"
