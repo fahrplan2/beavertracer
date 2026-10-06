@@ -1,6 +1,8 @@
 //@ts-check
 
 import { IPAddress } from "./models/IPAddress.js";
+import { TlsSession, TlsHandshakeError } from "./TlsSession.js";
+import { simTimer, SimTimer } from "../lib/SimTimer.js";
 
 /**
  * Transport-agnostic HTTP/1.1 client for the simulated network.
@@ -162,9 +164,7 @@ export async function openTcpTransport(os, ip, port) {
 
 /**
  * Like {@link openTcpTransport}, but the returned transport carries encrypted
- * TLS 1.2 application data. The TLS implementation (and `SimTimer`) is imported
- * lazily so plain-HTTP callers never pull it into their bundle - only a real
- * `https://` request pays for it. Throws {@link HttpError} `"tls"` on a failed
+ * TLS 1.2 application data. Throws {@link HttpError} `"tls"` on a failed
  * handshake (untrusted/expired cert, MITM, timeout), `"connect"` on the
  * underlying TCP failure.
  *
@@ -176,21 +176,14 @@ export async function openTcpTransport(os, ip, port) {
  * @returns {Promise<{ close: () => void, peerCert: any, transport: { send: (b: Uint8Array) => any, recv: () => Promise<Uint8Array|null> } }>}
  */
 export async function openTlsTransport(os, ip, port, host, opts = {}) {
-    const { TlsSession, TlsHandshakeError } = await import("./TlsSession.js");
-    /** @type {any} */ let simTimer;
-    /** @type {any} */ let SimTimer;
-    try {
-        ({ simTimer, SimTimer } = await import("../lib/SimTimer.js"));
-    } catch { /* not in a sim runtime - real timers below */ }
-
     const tcp = await openTcpTransport(os, ip, port);
     const tls = new TlsSession({
         send: tcp.transport.send,
         recv: tcp.transport.recv,
         isServer: false,
         trustStore: opts.insecure ? undefined : (os?.tls?.certStore ?? undefined),
-        timeoutMs: SimTimer?.HTTP_CLIENT_TIMEOUT_MS ?? 10_000,
-        sleepFn: simTimer ? (ms) => simTimer.sleep(ms) : undefined,
+        timeoutMs: SimTimer.HTTP_CLIENT_TIMEOUT_MS,
+        sleepFn: (ms) => simTimer.sleep(ms),
         now: () => os?.clock?.nowMs?.() ?? Date.now(),
         serverName: host,
     });
