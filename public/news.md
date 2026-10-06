@@ -1,3 +1,13 @@
+## Version 0.3.2
+
+- added more translations (by AI)
+
+## Version 0.3.1
+
+- added a downloadable version for MacOS
+- added chapters 8 & 9 in the networking course
+- minor design fixes
+
 ## Version 0.3.0
 
 - New interactive networking course (chapters 0–7, German and English)
