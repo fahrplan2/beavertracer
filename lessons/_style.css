@@ -268,7 +268,7 @@ body {
   color: var(--muted);
   font-weight: 400;
   font-variant-numeric: tabular-nums;
-  margin-right: 0.1em;
+  margin-inline-end: 0.1em;
 }
 
 /* ── Article typography ───────────────────────────────────────── */
@@ -287,12 +287,12 @@ body {
   font-family: "Font Awesome 7 Free", "Font Awesome 5 Free", "FontAwesome";
   font-weight: 900;
   font-size: 0.7em;
-  margin-left: 0.3em;
+  margin-inline-start: 0.3em;
   vertical-align: 0.1em;
 }
 
 .lesson-article ul,
-.lesson-article ol { padding-left: 1.5em; margin-bottom: 16px; }
+.lesson-article ol { padding-inline-start: 1.5em; margin-bottom: 16px; }
 .lesson-article li { margin-bottom: 4px; }
 
 
@@ -317,8 +317,8 @@ body {
 }
 .lesson-toc ul { list-style: none; padding: 0; margin: 0; }
 .lesson-toc li { margin-bottom: 4px; }
-.lesson-toc li li  { padding-left: 16px; }
-.lesson-toc li li li { padding-left: 32px; }
+.lesson-toc li li  { padding-inline-start: 16px; }
+.lesson-toc li li li { padding-inline-start: 32px; }
 .lesson-toc a  { color: var(--text); text-decoration: none; }
 .lesson-toc a:hover { color: var(--primary); }
 
@@ -345,6 +345,15 @@ body {
 }
 .lesson-article pre code { background: none; padding: 0; font-size: inherit; }
 
+/* Right-to-left lessons (ar, fa — dir="rtl" on the article only; header
+   and sidebar stay LTR). The rules here use logical properties, so bars
+   and indents flip by themselves; commands, addresses, bit patterns and
+   diagrams stay LTR islands so the bidi algorithm can't reorder them. */
+.lesson-article[dir="rtl"] code,
+.lesson-article[dir="rtl"] .bits { direction: ltr; unicode-bidi: isolate; }
+.lesson-article[dir="rtl"] pre { direction: ltr; text-align: left; }
+.lesson-article[dir="rtl"] .seq-scroll { direction: ltr; }
+
 /* ── Tables ───────────────────────────────────────────────────── */
 .lesson-article table {
   width: 100%;
@@ -355,7 +364,7 @@ body {
 .lesson-article th {
   background: var(--surface);
   font-weight: 600;
-  text-align: left;
+  text-align: start;
   padding: 10px 14px;
   border-bottom: 2px solid var(--border);
 }
@@ -398,12 +407,13 @@ body {
 /* ── OSI "Ampel" (:::osi N — 7 gestapelte Layer-Boxen) ───────────
    Floats beside the following paragraph(s) for text wrap. */
 .osi-ampel {
-  float: right;
+  float: inline-end;
   display: flex;
   flex-direction: column;
   gap: 3px;
   width: 176px;
-  margin: 4px 0 16px 20px;
+  margin-block: 4px 16px;
+  margin-inline: 20px 0;
   padding: 6px;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -470,12 +480,14 @@ body {
 
 /* ── Blockquote ───────────────────────────────────────────────── */
 .lesson-article blockquote {
-  border-left: 3px solid var(--primary);
+  border-inline-start: 3px solid var(--primary);
   padding: 10px 16px;
   margin: 16px 0;
   color: var(--muted);
   background: var(--surface);
-  border-radius: 0 var(--radius) var(--radius) 0;
+  border-radius: 0;
+  border-start-end-radius: var(--radius);
+  border-end-end-radius: var(--radius);
 }
 
 /* ── Callout boxes (:::note / :::tip / :::warning / :::danger) ── */
@@ -484,8 +496,10 @@ body {
   overflow: hidden;
   padding: 12px 16px;
   margin: 16px 0;
-  border-left: 4px solid;
-  border-radius: 0 var(--radius) var(--radius) 0;
+  border-inline-start: 4px solid;
+  border-radius: 0;
+  border-start-end-radius: var(--radius);
+  border-end-end-radius: var(--radius);
 }
 
 /* ":::tip Merksatz" — optional heading line */
@@ -496,7 +510,7 @@ body {
 
 .callout::after {
   position: absolute;
-  right: 14px;
+  inset-inline-end: 14px;
   top: 50%;
   transform: translateY(-50%);
   font-size: 3.5rem;
@@ -603,7 +617,7 @@ body {
   max-width: 48%;
 }
 .lesson-nav a:hover { border-color: var(--primary); }
-.lesson-nav-next { margin-left: auto; text-align: right; }
+.lesson-nav-next { margin-inline-start: auto; text-align: end; }
 
 /* ── Draft pages: hidden from sidebar/prev-next unless ?debug=1 ── */
 [data-draft="true"] { display: none; }
@@ -724,7 +738,7 @@ html[data-debug="true"] [data-draft="true"] { display: revert; }
   padding: 18px 22px;
   background: var(--quiz-card);
   border: 1px solid var(--border);
-  border-left: 4px solid var(--primary);
+  border-inline-start: 4px solid var(--primary);
   border-radius: var(--radius);
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.06);
 }
@@ -732,14 +746,14 @@ html[data-debug="true"] [data-draft="true"] { display: revert; }
    <code> in the question into separate columns. */
 .quiz-question {
   position: relative;
-  padding-left: calc(1.45em + 10px);
+  padding-inline-start: calc(1.45em + 10px);
   font-weight: 600;
   margin-bottom: 14px !important;
 }
 .quiz-question::before {
   content: "?";
   position: absolute;
-  left: 0;
+  inset-inline-start: 0;
   top: 0.1em;
   width: 1.45em;
   height: 1.45em;
@@ -790,8 +804,9 @@ html[data-debug="true"] [data-draft="true"] { display: revert; }
   position: relative;
   display: block;
   width: 100%;
-  text-align: left;
-  padding: 10px 14px 10px 44px;
+  text-align: start;
+  padding-block: 10px;
+  padding-inline: 44px 14px;
   border: 1px solid var(--quiz-line);
   border-radius: var(--radius);
   background: var(--quiz-card);
@@ -808,7 +823,7 @@ html[data-debug="true"] [data-draft="true"] { display: revert; }
 .quiz-option::before {
   content: "";
   position: absolute;
-  left: 14px;
+  inset-inline-start: 14px;
   top: 50%;
   transform: translateY(-50%);
   box-sizing: border-box;
@@ -914,7 +929,7 @@ html[data-debug="true"] [data-draft="true"] { display: revert; }
 .quiz-match-chip:hover { border-color: var(--primary); }
 .quiz-match-chip.dragging { opacity: 0.35; cursor: grabbing; }
 .quiz-match-dropzone.quiz-correct,
-.quiz-match-dropzone.quiz-incorrect { border-style: solid; padding-right: 30px; }
+.quiz-match-dropzone.quiz-incorrect { border-style: solid; padding-inline-end: 30px; }
 .quiz-match-dropzone.quiz-correct { border-color: var(--quiz-ok); background: color-mix(in oklch, var(--quiz-ok) 10%, var(--quiz-card)); }
 .quiz-match-dropzone.quiz-incorrect { border-color: var(--quiz-err); background: color-mix(in oklch, var(--quiz-err) 10%, var(--quiz-card)); }
 /* "not filled" reads as neutral, not as a wrong answer */
@@ -922,7 +937,7 @@ html[data-debug="true"] [data-draft="true"] { display: revert; }
 .quiz-match-dropzone.quiz-correct::after,
 .quiz-match-dropzone.quiz-incorrect::after {
   position: absolute;
-  right: 8px;
+  inset-inline-end: 8px;
   top: 50%;
   transform: translateY(-50%);
   width: 18px;

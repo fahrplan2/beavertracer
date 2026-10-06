@@ -1,5 +1,6 @@
 //@ts-check
 import { t, getLocale } from "../i18n/index.js";
+import { isRtlLocale } from "../i18n/rtl.js";
 import { SimDialog } from "./SimDialog.js";
 import { addScrollHints } from "./scrollHints.js";
 import { initQuizBlocks } from "./QuizInteractions.js";
@@ -326,6 +327,7 @@ export class LessonsPanel {
 
         const current = document.createElement("span");
         current.className = "sim-lessons-current";
+        current.dir = "auto";
 
         const resetBtn = iconBtn("sim-lessons-reset", "fa-rotate-left", t("lessons.sim.reset"));
         resetBtn.disabled = true;
@@ -502,6 +504,9 @@ export class LessonsPanel {
     async load(href) {
         const mount = this.simControl.lessonsMount;
         if (!mount) return;
+        // Only the lesson text follows the locale's writing direction — the
+        // panel header and the rest of the app stay LTR (see lessons-panel.css).
+        mount.dir = isRtlLocale(getLocale()) ? "rtl" : "ltr";
 
         try {
             if (!this._manifest) await this._loadManifest();

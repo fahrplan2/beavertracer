@@ -7,6 +7,7 @@ import path from "node:path";
 import MarkdownIt from "markdown-it";
 import markdownItContainer from "markdown-it-container";
 import { renderSeqDiagram } from "./lessons-seq-diagram.mjs";
+import { isRtlLocale } from "./src/i18n/rtl.js";
 
 const SRC_DIR = "lessons";
 const OUT_DIR = "public/lessons";
@@ -774,15 +775,17 @@ function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI
 
   // ── Prev / Next navigation ─────────────────────────────────────
   const navParts = [];
+  // Arrows point toward where the link sits: in RTL "back" is on the right.
+  const [backArrow, fwdArrow] = isRtlLocale(lang) ? ["→", "←"] : ["←", "→"];
   if (nav.prev) {
     const prevNum = nav.prev.num ? `${numLabel(nav.prev.num)} ` : "";
     const draftAttr = nav.prev.draft ? ' data-draft="true"' : "";
-    navParts.push(`<a href="${nav.prev.href}" class="lesson-nav-prev"${draftAttr}>← ${prevNum}${nav.prev.title}</a>`);
+    navParts.push(`<a href="${nav.prev.href}" class="lesson-nav-prev"${draftAttr}>${backArrow} ${prevNum}${nav.prev.title}</a>`);
   }
   if (nav.next) {
     const nextNum = nav.next.num ? `${numLabel(nav.next.num)} ` : "";
     const draftAttr = nav.next.draft ? ' data-draft="true"' : "";
-    navParts.push(`<a href="${nav.next.href}" class="lesson-nav-next"${draftAttr}>${nextNum}${nav.next.title} →</a>`);
+    navParts.push(`<a href="${nav.next.href}" class="lesson-nav-next"${draftAttr}>${nextNum}${nav.next.title} ${fwdArrow}</a>`);
   }
   if (navParts.length) {
     body += `\n<nav class="lesson-nav" aria-label="${escHtml(chrome["lessons.pageNav"])}">${navParts.join("")}</nav>`;
@@ -820,6 +823,7 @@ function renderLesson(srcFile, templateHtml, node, nav = {}, sidebar = "", quizI
       .replace(/\{\{body\}\}/g, body)
       .replace(/\{\{sidebar\}\}/g, sidebar)
       .replace(/\{\{lang\}\}/g, lang)
+      .replace(/\{\{dir\}\}/g, isRtlLocale(lang) ? "rtl" : "ltr")
   );
 
   return { html, title, bodyHtml: body, sim: parseSimDirective(fs.readFileSync(srcFile, "utf8")) };
