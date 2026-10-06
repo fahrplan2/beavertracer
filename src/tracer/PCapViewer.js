@@ -903,13 +903,69 @@ export class PCapViewer {
 
     const wrapper = document.createElement("div");
     wrapper.className = "pcapviewer-tree";
+    wrapper.setAttribute("role", "tree");
+    wrapper.setAttribute("aria-label", title.textContent);
     wrapper.appendChild(this.#buildTree(treeRoot));
     this.#treePane.appendChild(wrapper);
+
+    // Roving tabindex: exactly one row is reachable via Tab.
+    const first = /** @type {HTMLElement|null} */ (wrapper.querySelector(".pcapviewer-tree-node"));
+    if (first) first.tabIndex = 0;
+    wrapper.addEventListener("keydown", (ev) => this.#onTreeKey(ev, wrapper));
   }
 
-  /** @param {any[]|any} nodeOrArray @param {number} [depth] */
-  #buildTree(nodeOrArray, depth = 0) {
+  /**
+   * WAI-ARIA tree keyboard pattern: ↑/↓ move, →/← expand/collapse or go to
+   * child/parent, Home/End, Enter/Space toggle.
+   * @param {KeyboardEvent} ev @param {HTMLElement} wrapper
+   */
+  #onTreeKey(ev, wrapper) {
+    const row = /** @type {HTMLElement|null} */ (ev.target instanceof HTMLElement ? ev.target.closest(".pcapviewer-tree-node") : null);
+    if (!row) return;
+    const li = row.parentElement;
+    const expandable = row.hasAttribute("aria-expanded");
+    const expanded = row.getAttribute("aria-expanded") === "true";
+    // rows inside a collapsed subtree are display:none → no offsetParent
+    const visible = () => /** @type {HTMLElement[]} */ (
+      [...wrapper.querySelectorAll(".pcapviewer-tree-node")]).filter(r => r.offsetParent !== null);
+    /** @param {Element|null|undefined} el */
+    const focus = (el) => {
+      if (!(el instanceof HTMLElement)) return;
+      row.tabIndex = -1;
+      el.tabIndex = 0;
+      el.focus();
+    };
+
+    switch (ev.key) {
+      case "ArrowDown": { const v = visible(); focus(v[v.indexOf(row) + 1]); break; }
+      case "ArrowUp":   { const v = visible(); focus(v[v.indexOf(row) - 1]); break; }
+      case "Home":      focus(visible()[0]); break;
+      case "End":       focus(visible().at(-1)); break;
+      case "ArrowRight":
+        if (expandable && !expanded) row.click();
+        else if (expanded) focus(li?.querySelector(":scope > .pcapviewer-tree-children .pcapviewer-tree-node"));
+        break;
+      case "ArrowLeft":
+        if (expanded) row.click();
+        else focus(li?.parentElement?.closest("li")?.querySelector(":scope > .pcapviewer-tree-node"));
+        break;
+      case "Enter":
+      case " ":
+        if (expandable) row.click();
+        break;
+      default:
+        return;
+    }
+    ev.preventDefault();
+  }
+
+  /**
+   * @param {any[]|any} nodeOrArray @param {number} [depth]
+   * @param {[number, number]|null} [osi] OSI layers of the enclosing protocol (for the hex highlight colour)
+   */
+  #buildTree(nodeOrArray, depth = 0, osi = null) {
     const ul = document.createElement("ul");
+    ul.setAttribute("role", "none");
     const nodes = Array.isArray(nodeOrArray) ? nodeOrArray : [nodeOrArray];
 
     let protoIdx = 0;
@@ -929,7 +985,7 @@ export class PCapViewer {
       if (hideComputed && isComputed) {
         if (kids.length > 0) {
           // append children directly at this level
-          ul.appendChild(this.#buildTree(kids, depth));
+          ul.appendChild(this.#buildTree(kids, depth, osi));
         }
         // if it has no kids -> just skip it entirely
         continue;
@@ -937,8 +993,13 @@ export class PCapViewer {
 
       const layerIdx = depth === 0 ? protoIdx++ : -1;
 
+      const filter = String(n.filter ?? "");
+      const osiLayers = depth === 0 ? osiLayersFor(filter, insideTls) : null;
+      if (depth === 0 && /^(tls|ssl)$/i.test(filter)) insideTls = true;
+      const rowOsi = depth === 0 ? osiLayers : osi;
+
       // Build children first so we know if any survive after computed filtering
-      const childUl = kids.length > 0 ? this.#buildTree(kids, depth + 1) : null;
+      const childUl = kids.length > 0 ? this.#buildTree(kids, depth + 1, rowOsi) : null;
       const hasKids = !!childUl && childUl.children.length > 0;
 
       // ----- normal rendering below (your existing code) -----
@@ -946,12 +1007,17 @@ export class PCapViewer {
       const row = document.createElement("div");
 
       const start = Number(n.start ?? 0);
-      const length = Number(n.length ?? 0);
+      // The frame node (L1) carries no byte range, but stands for the whole
+      // frame on the wire → highlight everything (clamped to the frame size).
+      const length = depth === 0 && n.filter === "frame" && !(Number(n.length) > 0)
+        ? Number.MAX_SAFE_INTEGER
+        : Number(n.length ?? 0);
       const ds = Number(n.data_source_idx ?? 0);
 
-      const filter = String(n.filter ?? "");
-      const osiLayers = depth === 0 ? osiLayersFor(filter, insideTls) : null;
-      if (depth === 0 && /^(tls|ssl)$/i.test(filter)) insideTls = true;
+      li.setAttribute("role", "none");
+      row.setAttribute("role", "treeitem");
+      row.setAttribute("aria-level", String(depth + 1));
+      row.tabIndex = -1;
 
       row.className = "pcapviewer-tree-node" +
         (hasKids ? "" : " pcapviewer-tree-leaf") +
@@ -960,6 +1026,8 @@ export class PCapViewer {
       if (osiLayers) {
         row.style.setProperty("--osi-from", `var(--osi-l${osiLayers[0]})`);
         row.style.setProperty("--osi-to", `var(--osi-l${osiLayers[1]})`);
+        row.style.setProperty("--osi-bar-from", `var(--osi-bar-l${osiLayers[0]})`);
+        row.style.setProperty("--osi-bar-to", `var(--osi-bar-l${osiLayers[1]})`);
       }
 
       const twisty = document.createElement("div");
@@ -982,7 +1050,7 @@ export class PCapViewer {
         for (let l = from; l <= to; l++) names.push(t(`lessons.osi.l${l}`));
         const badge = document.createElement("span");
         badge.className = "pcapviewer-osi-badge";
-        badge.textContent = formatOsiLayers(osiLayers);
+        badge.textContent = `L${formatOsiLayers(osiLayers)}`;
         badge.title = from === to
           ? t("pcap.tree.osiLayer", { n: from, name: names[0] })
           : t("pcap.tree.osiLayers", { n: formatOsiLayers(osiLayers), name: names.join(" / ") });
@@ -1005,10 +1073,12 @@ export class PCapViewer {
           li.classList.add("pcapviewer-collapsed");
           twisty.textContent = "▸";
         }
+        row.setAttribute("aria-expanded", String(startOpen));
 
         const toggle = () => {
           const collapsedNow = li.classList.toggle("pcapviewer-collapsed");
           twisty.textContent = collapsedNow ? "▸" : "▾";
+          row.setAttribute("aria-expanded", String(!collapsedNow));
           if (layerIdx >= 0) {
             if (collapsedNow) this.#openLayers.delete(layerIdx);
             else this.#openLayers.add(layerIdx);
@@ -1020,8 +1090,10 @@ export class PCapViewer {
         twisty.textContent = "•";
       }
 
-      row.addEventListener("pointerenter", () => this.#highlightHexRange(start, length, ds));
+      row.addEventListener("pointerenter", () => this.#highlightHexRange(start, length, ds, rowOsi));
       row.addEventListener("pointerleave", () => this.#highlightHexRange(0, 0, ds));
+      row.addEventListener("focus", () => this.#highlightHexRange(start, length, ds, rowOsi));
+      row.addEventListener("blur", () => this.#highlightHexRange(0, 0, ds));
 
       ul.appendChild(li);
     }
@@ -1285,14 +1357,18 @@ export class PCapViewer {
       let asciiPart = "";
       for (let col = 0; col < COLS; col++) {
         const i = base + col;
-        if (col === 8) hexPart += `<span class="hex-gap"> </span>`;
+        // the gap carries the index of the byte after it, so it is highlighted
+        // when a range spans both halves of the row
+        if (col === 8) hexPart += `<span class="hex-gap" data-g="${i}"> </span>`;
         if (i < bytes.length) {
           const hex = bytes[i].toString(16).toUpperCase().padStart(2, "0");
-          hexPart += `<span class="pcapviewer-hexbyte" data-i="${i}">${hex}</span> `;
+          hexPart += `<span class="pcapviewer-hexbyte" data-i="${i}">${hex}</span>`;
           const c = bytes[i];
-          asciiPart += (c >= 32 && c < 127) ? String.fromCharCode(c) : `<span class="hex-ascii-dot">·</span>`;
+          asciiPart += (c >= 32 && c < 127)
+            ? `<span class="hex-char" data-a="${i}">${this.#escapeHtml(String.fromCharCode(c))}</span>`
+            : `<span class="hex-char hex-ascii-dot" data-a="${i}">·</span>`;
         } else {
-          hexPart += `<span class="hex-pad">   </span>`;
+          hexPart += `<span class="hex-pad"> </span>`;
           asciiPart += " ";
         }
       }
@@ -1307,8 +1383,11 @@ export class PCapViewer {
     this.#rawPane.innerHTML = html;
   }
 
-  /** @param {number} start @param {number} length @param {number} ds */
-  #highlightHexRange(start, length, ds) {
+  /**
+   * @param {number} start @param {number} length @param {number} ds
+   * @param {[number, number]|null} [osi] colour the range in this OSI layer's colour
+   */
+  #highlightHexRange(start, length, ds, osi = null) {
     if (!this.#rawPane) return;
     if (!this.#activeFrameBytes) return;       // only ds0 supported in this minimal version
     if (ds !== 0) return;
@@ -1321,10 +1400,19 @@ export class PCapViewer {
     // If no range -> nothing to highlight
     if (!(length > 0)) return;
 
+    if (osi) {
+      this.#rawPane.style.setProperty("--hl", `var(--osi-l${osi[0]})`);
+      this.#rawPane.style.setProperty("--hl-bar", `var(--osi-bar-l${osi[0]})`);
+    } else {
+      this.#rawPane.style.removeProperty("--hl");
+      this.#rawPane.style.removeProperty("--hl-bar");
+    }
+
     const end = Math.min(this.#activeFrameBytes.length, start + length);
     for (let i = start; i < end; i++) {
-      const el = this.#rawPane.querySelector(`.pcapviewer-hexbyte[data-i="${i}"]`);
-      if (el) el.classList.add("pcapviewer-hexbyte--hl");
+      for (const sel of [`[data-i="${i}"]`, `[data-a="${i}"]`, ...(i > start ? [`[data-g="${i}"]`] : [])]) {
+        this.#rawPane.querySelector(sel)?.classList.add("pcapviewer-hexbyte--hl");
+      }
     }
 
   }

@@ -19,8 +19,11 @@ describe("osiLayersFor", () => {
     expect(osiLayersFor("tcp", true)).toEqual([4, 4]);
   });
 
-  it("leaves the capture-metadata frame node and unknown protocols unmapped", () => {
-    expect(osiLayersFor("frame", false)).toBeNull();
+  it("maps the capture-metadata frame node to L1 (bits on the wire)", () => {
+    expect(osiLayersFor("frame", false)).toEqual([1, 1]);
+  });
+
+  it("leaves unknown protocols unmapped", () => {
     expect(osiLayersFor("whatever", false)).toBeNull();
   });
 });
