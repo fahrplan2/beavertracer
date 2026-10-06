@@ -1085,6 +1085,8 @@ export default {
   "pcap.status.active": "Active: {name} — {from}–{to} / {matched}",
   "pcap.status.active.nocapture": "Active: {name} (no capture loaded)",
   "pcap.status.nosession": "No active session",
+  "pcap.error.nowasm": "WebAssembly is not available in this browser, so the packet dissector cannot be loaded. A script blocker (e.g. NoScript) or a browser setting is probably blocking it for this site.",
+  "pcap.error.wiregasm": "The packet dissector could not be loaded: {error}",
   "pcap.tab.nocapture": "{name} (no capture)",
   "sim.tracing": "Tracing",
   "pcap.btn.follow": "Follow TCP Stream",

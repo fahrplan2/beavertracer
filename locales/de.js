@@ -946,6 +946,8 @@ export default {
   "pcap.status.active": "Aktiv: {name} — {from}–{to} / {matched}",
   "pcap.status.active.nocapture": "Aktiv: {name} (keine Aufnahme geladen)",
   "pcap.status.nosession": "Keine aktive Sitzung",
+  "pcap.error.nowasm": "WebAssembly ist in diesem Browser nicht verfügbar – die Paketanalyse kann nicht geladen werden. Ein Skript-Blocker (z. B. NoScript) oder eine Browser-Einstellung blockiert es vermutlich für diese Seite.",
+  "pcap.error.wiregasm": "Die Paketanalyse konnte nicht geladen werden: {error}",
   "pcap.tabs.title": "Traces:",
   "pcap.packet.select": "Paket auswählen…",
   "pcap.packet.nocapture": "Keine Aufnahme in dieser Sitzung geladen.",

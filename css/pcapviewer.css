@@ -1,5 +1,25 @@
 /* Root layout */
 .pcapviewer-root {
+  /* Theme-aware helpers (instead of hard-coded black alphas, which vanish in
+     dark mode). --pv-dim is secondary text that still clears 4.5:1. */
+  --pv-dim: color-mix(in oklch, var(--text), transparent 22%);
+  --pv-line: color-mix(in oklch, var(--text), transparent 72%);
+  --pv-hover: color-mix(in oklch, var(--text), transparent 90%);
+  --pv-head: color-mix(in oklch, var(--text), transparent 93%);
+
+  /* OSI colours for thin marks (bar, hex underline). The shared --osi-lN
+     rainbow is too light on a light background (≈1.1–1.5:1), so light mode
+     uses darker shades of the same hues; dark mode can use them as-is. */
+  --osi-bar-l1: oklch(from var(--osi-l1) 55% c h);
+  --osi-bar-l2: oklch(from var(--osi-l2) 54% c h);
+  --osi-bar-l3: oklch(from var(--osi-l3) 55% c h);
+  --osi-bar-l4: oklch(from var(--osi-l4) 53% c h);
+  --osi-bar-l5: oklch(from var(--osi-l5) 52% c h);
+  --osi-bar-l6: oklch(from var(--osi-l6) 52% c h);
+  --osi-bar-l7: oklch(from var(--osi-l7) 52% c h);
+  /* how much of the layer colour shows behind highlighted hex bytes */
+  --pv-hl-mix: 55%;
+
   display: grid;
   grid-template-rows: auto auto 1fr;
   box-sizing: border-box;
@@ -21,6 +41,9 @@
 .pcapviewer-filter {
   flex: 1;
   padding: 6px 8px;
+}
+.pcapviewer-filter::placeholder {
+  color: var(--pv-dim);
 }
 
 .pcapviewer-status {
@@ -55,6 +78,17 @@
 .pcapviewer-bottom.pcapviewer-hex-hidden .pcapviewer-pane--raw,
 .pcapviewer-bottom.pcapviewer-hex-hidden .pcapviewer-vsplitter {
   display: none;
+}
+
+[data-theme="dark"] .pcapviewer-root {
+  --osi-bar-l1: var(--osi-l1);
+  --osi-bar-l2: var(--osi-l2);
+  --osi-bar-l3: var(--osi-l3);
+  --osi-bar-l4: var(--osi-l4);
+  --osi-bar-l5: var(--osi-l5);
+  --osi-bar-l6: var(--osi-l6);
+  --osi-bar-l7: var(--osi-l7);
+  --pv-hl-mix: 70%;
 }
 
 /* Main layout */
@@ -94,6 +128,11 @@
   color: var(--muted);
   text-align: center;
   max-width: 220px;
+}
+.pcapviewer-wg-overlay.is-error .pcapviewer-wg-spinner { display: none; }
+.pcapviewer-wg-overlay.is-error .pcapviewer-wg-msg {
+  color: var(--text);
+  max-width: 360px;
 }
 
 /* Splitter */
@@ -172,7 +211,7 @@
 
 .pcapviewer-table th,
 .pcapviewer-table td {
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--pv-line);
   padding: 6px 8px;
   white-space: nowrap;
   overflow: hidden;
@@ -208,10 +247,11 @@
   font-weight: 600;
 }
 
-/* Don’t override Wiregasm bg colors; use outline for selection */
-.pcapviewer-row--selected {
-  outline: 2px solid rgba(0, 0, 0, 0.25);
-  outline-offset: -2px;
+/* Selection like Wireshark: solid blue bar with white text. Wireshark's
+   colouring rules arrive as inline styles on the <tr>, hence !important. */
+.pcapviewer-row.pcapviewer-row--selected {
+  background-color: #1f5fbf !important;
+  color: #ffffff !important;
 }
 
 /* Tree + raw share monospace like table */
@@ -242,13 +282,12 @@
 }
 
 .hex-row:hover {
-  background: color-mix(in oklch, var(--surface) 80%, var(--text) 5%);
+  background: var(--pv-hover);
 }
 
 .hex-offset {
-  color: var(--accent);
+  color: var(--pv-dim);
   user-select: none;
-  opacity: 0.7;
   min-width: 3em;
   flex-shrink: 0;
 }
@@ -266,22 +305,22 @@
 
 .hex-pad {
   display: inline-block;
-  width: 1.8em;
+  width: 3ch; /* = one .pcapviewer-hexbyte incl. padding */
   visibility: hidden;
 }
 
 .hex-ascii {
-  color: var(--muted);
+  color: var(--pv-dim);
   user-select: none;
   white-space: pre;
-  border-left: 1px solid var(--border, #ddd);
+  border-left: 1px solid var(--pv-line);
   padding-left: 0.6em;
   min-width: 10em;
   flex-shrink: 0;
 }
 
 .hex-ascii-dot {
-  opacity: 0.35;
+  opacity: 0.6;
 }
 
 /* Tree */
@@ -302,31 +341,46 @@
   gap: var(--pad-sm);
   padding: 4px 6px;
   border-radius: 6px;
-  cursor: default;
+  cursor: pointer;
   user-select: none;
+  /* hover = overlay layer on top of whatever background the row has */
+  --pv-row-hover: transparent;
+  background-image: linear-gradient(var(--pv-row-hover), var(--pv-row-hover));
+}
+.pcapviewer-tree-leaf { cursor: default; }
+
+/* only on real hover devices — on touch, :hover sticks after a tap */
+@media (hover: hover) {
+  .pcapviewer-tree-node:hover { --pv-row-hover: var(--pv-hover); }
 }
 
-.pcapviewer-tree-node:hover {
-  background: rgba(0, 0, 0, 0.06);
+.pcapviewer-tree-node:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 
+/* Protocol header rows: neutral, so the OSI colour is the only colour and
+   carries the meaning. */
 .pcapviewer-tree-proto {
   font-weight: 600;
-  background: color-mix(in oklch, var(--surface, #fff) 80%, var(--text, #000) 8%);
+  background-color: var(--pv-head);
   border-radius: var(--radius-sm);
-  border-left: 3px solid transparent;
-  margin-bottom: 1px;
-}
-.pcapviewer-tree-proto:hover {
-  background: color-mix(in oklch, var(--surface, #fff) 70%, var(--text, #000) 12%);
+  border-left: 5px solid transparent;
+  margin-bottom: 2px;
 }
 
-/* OSI-Layer-Kennzeichnung (siehe OSI_LAYER_BY_FILTER in PCapViewer.js).
-   --osi-from/--osi-to are set per row; for a layer range ("2/3", "5–7") the
-   bar and badge blend from the lower to the upper layer's colour. */
+/* OSI-Layer-Kennzeichnung (siehe OSI_LAYER_BY_FILTER in osiLayers.js).
+   --osi-from/--osi-to (rainbow) and --osi-bar-from/--osi-bar-to (contrast
+   shades) are set per row; for a layer range ("2/3", "5–7") tint, bar and
+   badge blend from the lower to the upper layer's colour. */
 .pcapviewer-tree-proto.pcapviewer-osi {
+  background-image:
+    linear-gradient(var(--pv-row-hover), var(--pv-row-hover)),
+    linear-gradient(to right,
+      color-mix(in oklch, var(--osi-from), transparent 78%),
+      color-mix(in oklch, var(--osi-to), transparent 78%));
   /* only the left border has a width, so the image only shows there */
-  border-image: linear-gradient(to bottom, var(--osi-from), var(--osi-to)) 1;
+  border-image: linear-gradient(to bottom, var(--osi-bar-from), var(--osi-bar-to)) 1;
 }
 
 .pcapviewer-osi-badge {
@@ -334,15 +388,16 @@
   flex: none;
   align-items: center;
   justify-content: center;
-  min-width: 15px;
-  height: 15px;
-  padding: 0 4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
   margin-left: 6px;
-  border-radius: 8px;
-  font-size: 0.66rem;
+  border-radius: 9px;
+  font-size: 0.75rem;
   font-weight: 700;
   color: var(--osi-text);
   background: linear-gradient(to right, var(--osi-from), var(--osi-to));
+  box-shadow: inset 0 0 0 1px var(--osi-bar-from);
   cursor: default;
 }
 
@@ -350,7 +405,6 @@
   width: 16px;
   text-align: center;
   opacity: 0.85;
-  cursor: pointer;
 }
 
 .pcapviewer-tree-content {
@@ -364,23 +418,16 @@
   min-width: 0;
   white-space: pre-wrap;
   word-break: break-word;
-  cursor: pointer;
 }
 
 .pcapviewer-tree-children {
   margin-left: 10px;
-  border-left: 1px solid rgba(0, 0, 0, 0.12);
+  border-left: 1px solid var(--pv-line);
   padding-left: 10px;
 }
 
 .pcapviewer-tree-leaf .pcapviewer-tree-twisty {
-  opacity: 0.25;
-  cursor: default;
-}
-
-.pcapviewer-selected {
-  background: rgba(0, 0, 0, 0.10);
-  outline: 1px solid rgba(0, 0, 0, 0.12);
+  opacity: 0.4;
 }
 
 /* Collapse rule: class sits on LI */
@@ -531,11 +578,19 @@
   overflow: auto;
 }
 
-.pcapviewer-hexbyte--hl {
-  background: color-mix(in oklch, var(--accent) 25%, transparent);
-  border-radius: 2px;
-  outline: 1px solid color-mix(in oklch, var(--accent) 60%, transparent);
-  outline-offset: -1px;
+/* Hex/ASCII highlight in the hovered layer's OSI colour (--hl / --hl-bar,
+   set on the raw pane; accent for nodes without a layer, e.g. "Frame").
+   Bytes carry their own spacing (padding, no text spaces), so adjacent
+   highlighted bytes form one continuous band; the underline in the
+   contrast shade keeps the range visible (≥3:1) in both themes. */
+.pcapviewer-hexbyte {
+  padding: 0 0.5ch;
+}
+.pcapviewer-hexbyte--hl,
+.hex-gap.pcapviewer-hexbyte--hl,
+.hex-char.pcapviewer-hexbyte--hl {
+  background: color-mix(in oklch, var(--hl, var(--accent)), transparent var(--pv-hl-mix));
+  box-shadow: inset 0 -2px 0 var(--hl-bar, var(--accent));
 }
 
 

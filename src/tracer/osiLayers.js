@@ -8,8 +8,9 @@
  *
  * Several protocols don't map 1:1 onto OSI — these are deliberate (didactic)
  * judgment calls, not bugs:
- *  - "frame" (Wireshark's synthetic capture-metadata node) gets no layer: it is
- *    not a physical-layer transmission, and BeaverTracer doesn't simulate L1.
+ *  - "frame" (Wireshark's synthetic capture-metadata node) → L1: it describes the
+ *    frame as bits on the wire ("103 bytes on wire (824 bits)"), even though
+ *    BeaverTracer doesn't simulate the physical layer itself.
  *  - ARP → 2/3: no IP header, but resolves IP addresses for L2 delivery.
  *  - TLS → 4/5: sits on top of TCP and manages a secured session.
  *  - Application protocols carried inside TLS (HTTPS, …) → 5–7, the classic
@@ -25,6 +26,8 @@
  * @type {Record<string, number|[number, number]>}
  */
 const OSI_LAYER_BY_FILTER = {
+  // Bitübertragungsschicht (L1)
+  frame: 1,
   // Sicherungsschicht (L2)
   eth: 2, vlan: 2, stp: 2, lldp: 2, lacp: 2,
   arp: [2, 3],

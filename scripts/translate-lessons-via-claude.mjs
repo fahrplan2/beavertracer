@@ -30,12 +30,20 @@
  * parity test). A translation that fails the check is retried and, if it still
  * fails, not written; the page stays "changed" and is retried on the next run.
  *
+ * --batch sends all pages through the Message Batches API (half price, results
+ * usually within an hour, at most 24 h). The script waits for the batch; the
+ * pending batch is recorded in lessons/_translation/batch.json, so an
+ * interrupted run picks it up again with the next --batch call. Pages that the
+ * batch could not deliver (refusal, wrong structure, errors) are retried
+ * directly, at normal price, with the usual retry loop and model fallback.
+ *
  * Usage:
  *   node scripts/translate-lessons-via-claude.mjs --status            # what's out of date (no API calls)
  *   node scripts/translate-lessons-via-claude.mjs --adopt --target en # mark existing translations as in sync
  *   node scripts/translate-lessons-via-claude.mjs --target en         # sync one language
  *   node scripts/translate-lessons-via-claude.mjs --target fr,es      # sync several
  *   node scripts/translate-lessons-via-claude.mjs --all               # sync every language in scripts/locales.mjs
+ *   node scripts/translate-lessons-via-claude.mjs --all --batch       # same via the Batches API (half price)
  *
  * Run with --help for all options.
  */
@@ -68,12 +76,16 @@ Modes:
                        after fixing a translation by hand to match a German change.
   --dry-run            Show what would be translated, without calling the API
   --force              Re-translate selected pages from scratch (ignores state)
+  --batch              Translate via the Message Batches API (half price, slower).
+                       Waits for the batch; if interrupted, run --batch again to
+                       collect the results of the pending batch first.
+  --cancel-batch       Cancel the pending batch and forget it
 
 Filters:
   --only <files>       Comma-separated lesson files (e.g. 01-einfuehrung.md)
 
 API:
-  --model <id>         Claude model (default: claude-opus-5-5)
+  --model <id>         Claude model (default: claude-sonnet-5-5)
   --effort <level>     low | medium | high | xhigh | max (default: high)
   --concurrency <n>    Parallel requests per language (default: 4)
   --help               Show this help
@@ -111,8 +123,9 @@ const BASE_DIR = path.join(STATE_DIR, "base");
 const GLOSSARY_FILE = path.join(STATE_DIR, "glossary.json");
 const GLOSSARY_DIR = path.join(STATE_DIR, "glossary");
 const LOCALES_DIR = path.join(ROOT, "locales");
+const BATCH_FILE = path.join(STATE_DIR, "batch.json");
 
-const MODEL = args.model || "claude-opus-5-5";
+const MODEL = args.model || "claude-sonnet-5-5";
 const EFFORT = args.effort || "high";
 const CONCURRENCY = Math.max(1, Number(args.concurrency) || 4);
 const STATUS = Boolean(args.status);
@@ -120,6 +133,9 @@ const ADOPT = Boolean(args.adopt);
 const DRY_RUN = Boolean(args["dry-run"]);
 const FORCE = Boolean(args.force);
 const GLOSSARY_ONLY = Boolean(args.glossary);
+const BATCH = Boolean(args.batch);
+const CANCEL_BATCH = Boolean(args["cancel-batch"]);
+const BATCH_POLL_MS = 60_000;
 const ONLY = args.only ? new Set(String(args.only).split(",").map((s) => s.trim()).filter(Boolean)) : null;
 
 const LANG_NAMES = Object.fromEntries([...LOCALES.map((l) => [l.code, l.name]), ["en", "English"]]);
@@ -262,6 +278,7 @@ async function completeGlossary(lang, targetName) {
         messages: [{ role: "user", content: `German term<TAB>English term:\n${list}` }],
       })
       .finalMessage();
+    addUsage(msg.usage);
     if (msg.stop_reason !== "end_turn") throw new Error(`glossary: stop_reason=${msg.stop_reason}`);
     const text = stripFences(msg.content.filter((b) => b.type === "text").map((b) => b.text).join(""));
     const parsed = JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1));
@@ -432,12 +449,63 @@ function stripFences(text) {
   return text.replace(/^```[a-z]*\n/i, "").replace(/\n```\s*$/i, "").trim();
 }
 
+// Approximate list prices in $ per million tokens (cache write = 5-minute cache).
+const PRICES = {
+  "claude-sonnet-5-5": { input: 2, output: 10, cacheWrite: 2.5, cacheRead: 0.2 },
+  "claude-opus-5-5": { input: 4, output: 20, cacheWrite: 5, cacheRead: 0.2 },
+};
+const usage = {
+  direct: { input: 0, output: 0, cacheWrite: 0, cacheRead: 0 },
+  batch: { input: 0, output: 0, cacheWrite: 0, cacheRead: 0 },
+};
+
+function addUsage(u, batch = false) {
+  if (!u) return;
+  const t = batch ? usage.batch : usage.direct;
+  t.input += u.input_tokens ?? 0;
+  t.output += u.output_tokens ?? 0;
+  t.cacheWrite += u.cache_creation_input_tokens ?? 0;
+  t.cacheRead += u.cache_read_input_tokens ?? 0;
+}
+
+function printUsage() {
+  const price = PRICES[MODEL];
+  let total = 0;
+  for (const [kind, t] of Object.entries(usage)) {
+    if (!t.input && !t.output) continue;
+    let cost = "";
+    if (price) {
+      const usd = ((t.input * price.input + t.output * price.output + t.cacheWrite * price.cacheWrite + t.cacheRead * price.cacheRead) / 1e6)
+        * (kind === "batch" ? 0.5 : 1);
+      total += usd;
+      cost = `, ≈ $${usd.toFixed(2)}`;
+    }
+    console.log(
+      `${c.gray}usage ${kind}: ${t.input} in, ${t.cacheWrite} cache write, ${t.cacheRead} cache read, ${t.output} out${cost}${c.reset}`
+    );
+  }
+  if (total) console.log(`${c.gray}estimated cost: ≈ $${total.toFixed(2)} (${MODEL} list prices)${c.reset}`);
+}
+
+/**
+ * Check one response: complete, non-empty, and matching the German page's skeleton.
+ * @returns {{ text?: string, error?: string, problems?: string[] }}
+ */
+function checkResult(msg, newSource) {
+  if (msg.stop_reason === "refusal") return { error: `refused (${msg.stop_details?.category ?? "no category"})` };
+  if (msg.stop_reason === "max_tokens") return { error: "response truncated (max_tokens)" };
+  const text = stripFences(msg.content.filter((b) => b.type === "text").map((b) => b.text).join(""));
+  if (!text) return { error: `empty response (stop_reason=${msg.stop_reason})` };
+  const problems = skeletonDiff(skeleton(newSource), skeleton(text));
+  if (problems.length) return { error: `structure differs from German page: ${problems.join("; ")}`, problems };
+  return { text };
+}
+
 /**
  * Ask Claude, check the result against the German skeleton, feed mismatches back and retry.
  * @param {string} system @param {string} userContent @param {string} newSource
  */
 async function translate(system, userContent, newSource, retries = 3) {
-  const want = skeleton(newSource);
   /** @type {import("@anthropic-ai/sdk").default.Beta.BetaMessageParam[]} */
   const messages = [{ role: "user", content: userContent }];
   let lastErr = "no attempt";
@@ -456,30 +524,19 @@ async function translate(system, userContent, newSource, retries = 3) {
         messages,
       })
       .finalMessage();
+    addUsage(msg.usage);
 
-    if (msg.stop_reason === "refusal") {
-      lastErr = `refused (${msg.stop_details?.category ?? "no category"})`;
-      continue;
-    }
-    if (msg.stop_reason === "max_tokens") {
-      lastErr = "response truncated (max_tokens)";
-      continue;
-    }
-    const text = stripFences(msg.content.filter((b) => b.type === "text").map((b) => b.text).join(""));
-    if (!text) {
-      lastErr = `empty response (stop_reason=${msg.stop_reason})`;
-      continue;
-    }
-    const problems = skeletonDiff(want, skeleton(text));
-    if (problems.length === 0) return text;
+    const result = checkResult(msg, newSource);
+    if (result.text) return result.text;
+    lastErr = result.error;
+    if (!result.problems) continue;
 
-    lastErr = `structure differs from German page: ${problems.join("; ")}`;
     messages.push(
       { role: "assistant", content: msg.content },
       {
         role: "user",
         content:
-          `Your translation does not match the structure of the German page:\n- ${problems.join("\n- ")}\n` +
+          `Your translation does not match the structure of the German page:\n- ${result.problems.join("\n- ")}\n` +
           `Directives, check:/url= lines, quiz markers, blanks, match pairs and link targets must be identical ` +
           `to the German page. Return the complete corrected file.`,
       }
@@ -494,6 +551,150 @@ async function pool(items, n, fn) {
   await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => {
     while (next < items.length) await fn(items[next++]);
   }));
+}
+
+// ── pages ────────────────────────────────────────────────────────────────────
+
+/**
+ * Prompt for one page. baseHash names the German text the existing translation
+ * was made from (update mode); null translates the page in full.
+ * @param {string} lang @param {string} file @param {string | null} baseHash
+ */
+function pageJob(lang, file, baseHash, state) {
+  const targetName = LANG_NAMES[lang];
+  const newSource = readLesson(SOURCE, file);
+  const newHash = sha(newSource);
+  // English reference, only if it is up to date with the current German page.
+  const reference = lang !== PIVOT && state[PIVOT]?.[file] === newHash ? readLesson(PIVOT, file) : undefined;
+  const oldSource = baseHash ? loadBase(baseHash) : null;
+  if (oldSource !== null) {
+    return {
+      mode: "update", newSource, newHash, reference,
+      prompt: updatePrompt({ targetName, oldSource, newSource, current: readLesson(lang, file), reference }),
+    };
+  }
+  return { mode: "translate", newSource, newHash, reference, prompt: fullPrompt({ targetName, source: newSource, reference }) };
+}
+
+/** The base a page is updated from, or null for a full translation. */
+const updateBase = (it) => (it.status === "changed" && !FORCE ? it.baseHash : null);
+
+function writePage(lang, file, text, newSource, state) {
+  fs.mkdirSync(path.join(LESSONS, lang), { recursive: true });
+  fs.writeFileSync(path.join(LESSONS, lang, file), text + "\n", "utf8");
+  storeBase(newSource);
+  (state[lang] ??= {})[file] = sha(newSource);
+  saveState(state); // after every page, so an aborted run loses nothing
+}
+
+/** Translate one page directly (streaming, with retries and model fallback). @returns {Promise<boolean>} */
+async function translatePage(lang, file, baseHash, state, note = "") {
+  const job = pageJob(lang, file, baseHash, state);
+  const label = `${job.mode.padEnd(9)} ${BATCH ? lang + "/" : ""}${file}`; // batch retries mix languages
+  try {
+    const text = await translate(systemPrompt(lang, LANG_NAMES[lang]), job.prompt, job.newSource);
+    writePage(lang, file, text, job.newSource, state);
+    console.log(`  ${c.green}✓${c.reset} ${label}${job.reference ? c.gray + " (en ref)" + c.reset : ""}${note}`);
+    return true;
+  } catch (e) {
+    console.log(`  ${c.red}✗${c.reset} ${label}: ${e.message}`);
+    return false;
+  }
+}
+
+// ── batch ────────────────────────────────────────────────────────────────────
+
+/** Submit one batch for the given pages and record it in batch.json. */
+async function submitBatch(work, state) {
+  const systems = new Map();
+  const jobs = {};
+  const requests = work.map(({ lang, it }, i) => {
+    if (!systems.has(lang)) systems.set(lang, systemPrompt(lang, LANG_NAMES[lang]));
+    const baseHash = updateBase(it);
+    const job = pageJob(lang, it.file, baseHash, state);
+    const id = `p${i}`; // custom_id allows only [A-Za-z0-9_-]
+    jobs[id] = { lang, file: it.file, baseHash, newHash: job.newHash };
+    return {
+      custom_id: id,
+      params: {
+        model: MODEL,
+        max_tokens: 64000,
+        thinking: { type: "adaptive" },
+        output_config: { effort: EFFORT },
+        // No server-side fallbacks here — the Batches API rejects them; refusals are retried directly.
+        system: [{ type: "text", text: systems.get(lang), cache_control: { type: "ephemeral" } }],
+        messages: [{ role: "user", content: job.prompt }],
+      },
+    };
+  });
+  const batch = await client.messages.batches.create({ requests });
+  fs.writeFileSync(
+    BATCH_FILE,
+    JSON.stringify({ id: batch.id, model: MODEL, effort: EFFORT, created: new Date().toISOString(), jobs }, null, 2) + "\n",
+    "utf8"
+  );
+  console.log(
+    `\n${c.cyan}batch ${batch.id}${c.reset}: ${requests.length} page(s) submitted. ` +
+    `Ctrl-C is safe — run again with --batch to collect the results.`
+  );
+}
+
+/** Wait for the pending batch, write its results, retry failed pages directly. @returns {Promise<number>} failed pages */
+async function collectBatch(state) {
+  const saved = JSON.parse(fs.readFileSync(BATCH_FILE, "utf8"));
+  const total = Object.keys(saved.jobs).length;
+  let batch, lastLine = "";
+  for (;;) {
+    batch = await client.messages.batches.retrieve(saved.id);
+    if (batch.processing_status === "ended") break;
+    const n = batch.request_counts;
+    const line = `batch ${saved.id}: ${total - n.processing}/${total} done, waiting…`;
+    if (line !== lastLine) console.log(`${c.gray}${line}${c.reset}`);
+    lastLine = line;
+    await new Promise((r) => setTimeout(r, BATCH_POLL_MS));
+  }
+
+  console.log(`\nbatch ${saved.id} ended:`);
+  /** @type {{ job: any, reason: string }[]} */
+  const retry = [];
+  let ok = 0;
+  for await (const r of await client.messages.batches.results(saved.id)) {
+    const job = saved.jobs[r.custom_id];
+    if (!job) continue;
+    const newSource = readLesson(SOURCE, job.file);
+    if (sha(newSource) !== job.newHash) {
+      console.log(`  ${c.yellow}skip${c.reset} ${job.lang}/${job.file}: German page changed since the batch was submitted`);
+      continue;
+    }
+    let reason;
+    if (r.result.type === "succeeded") {
+      addUsage(r.result.message.usage, true);
+      const result = checkResult(r.result.message, newSource);
+      if (result.text) {
+        writePage(job.lang, job.file, result.text, newSource, state);
+        ok++;
+        continue;
+      }
+      reason = result.error;
+    } else if (r.result.type === "errored") {
+      reason = `error: ${r.result.error?.error?.message ?? r.result.error?.error?.type ?? "unknown"}`;
+    } else {
+      reason = r.result.type; // canceled | expired
+    }
+    retry.push({ job, reason });
+  }
+  saveState(state);
+  fs.unlinkSync(BATCH_FILE);
+  console.log(`  ${c.green}✓${c.reset} ${ok} page(s) written`);
+
+  if (!retry.length) return 0;
+  console.log(`  ${retry.length} page(s) not delivered by the batch — retrying directly:`);
+  let failed = 0;
+  await pool(retry, CONCURRENCY, async ({ job, reason }) => {
+    const done = await translatePage(job.lang, job.file, job.baseHash, state, `${c.gray} (batch: ${reason})${c.reset}`);
+    if (!done) failed++;
+  });
+  return failed;
 }
 
 // ── main ─────────────────────────────────────────────────────────────────────
@@ -529,10 +730,35 @@ async function main() {
 
   checkUiGlossary();
   const state = loadState();
-  const needsApi = !STATUS && !ADOPT && !DRY_RUN;
+  const needsApi = CANCEL_BATCH || (!STATUS && !ADOPT && !DRY_RUN);
   if (needsApi) client = new Anthropic();
 
   let failed = 0;
+
+  const pending = fs.existsSync(BATCH_FILE) ? JSON.parse(fs.readFileSync(BATCH_FILE, "utf8")) : null;
+  if (CANCEL_BATCH) {
+    if (!pending) return console.log("No pending batch.");
+    await client.messages.batches.cancel(pending.id);
+    fs.unlinkSync(BATCH_FILE);
+    return console.log(`Batch ${pending.id} canceled.`);
+  }
+  if (pending) {
+    const n = Object.keys(pending.jobs).length;
+    if (STATUS || DRY_RUN) {
+      console.log(`${c.yellow}Pending batch ${pending.id} (${n} page(s), submitted ${pending.created}).${c.reset}`);
+    } else if (!BATCH) {
+      console.error(
+        `Batch ${pending.id} (${n} page(s)) is still pending. Run with --batch to collect it, ` +
+        `or --cancel-batch to drop it.`
+      );
+      process.exit(1);
+    } else {
+      failed += await collectBatch(state);
+    }
+  }
+
+  /** Pages to send in one batch, collected over all languages. @type {{ lang: string, it: any }[]} */
+  const work = [];
 
   for (const lang of langs) {
     const targetName = LANG_NAMES[lang];
@@ -603,38 +829,27 @@ async function main() {
       continue;
     }
 
-    fs.mkdirSync(path.join(LESSONS, lang), { recursive: true });
-    const system = systemPrompt(lang, targetName);
+    if (BATCH) {
+      for (const it of todo) work.push({ lang, it });
+      if (todo.length) console.log(`  ${todo.length} page(s) queued for the batch`);
+      continue;
+    }
 
     await pool(todo, CONCURRENCY, async (it) => {
-      const newSource = readLesson(SOURCE, it.file);
-      const newHash = sha(newSource);
-      // English reference, only if it is up to date with the current German page.
-      const reference = lang !== PIVOT && state[PIVOT]?.[it.file] === newHash ? readLesson(PIVOT, it.file) : undefined;
-      const oldSource = it.status === "changed" && !FORCE ? loadBase(it.baseHash) : null;
-
-      let mode = "translate", prompt;
-      if (oldSource !== null) {
-        mode = "update";
-        prompt = updatePrompt({ targetName, oldSource, newSource, current: readLesson(lang, it.file), reference });
-      } else {
-        prompt = fullPrompt({ targetName, source: newSource, reference });
-      }
-
-      try {
-        const result = await translate(system, prompt, newSource);
-        fs.writeFileSync(path.join(LESSONS, lang, it.file), result + "\n", "utf8");
-        storeBase(newSource);
-        (state[lang] ??= {})[it.file] = newHash;
-        saveState(state); // after every page, so an aborted run loses nothing
-        console.log(`  ${c.green}✓${c.reset} ${mode.padEnd(9)} ${it.file}${reference ? c.gray + " (en ref)" + c.reset : ""}`);
-      } catch (e) {
-        failed++;
-        console.log(`  ${c.red}✗${c.reset} ${mode.padEnd(9)} ${it.file}: ${e.message}`);
-      }
+      if (!(await translatePage(lang, it.file, updateBase(it), state))) failed++;
     });
   }
 
+  // English pages first, as a batch of their own: they are the reference for all other languages.
+  const enWork = work.filter((w) => w.lang === PIVOT);
+  const restWork = work.filter((w) => w.lang !== PIVOT);
+  for (const part of enWork.length && restWork.length ? [enWork, restWork] : [work]) {
+    if (!part.length) continue;
+    await submitBatch(part, state);
+    failed += await collectBatch(state);
+  }
+
+  if (!STATUS && !DRY_RUN && !ADOPT) printUsage();
   if (!STATUS && !DRY_RUN) saveState(state);
   if (failed > 0) {
     console.log(`\n${failed} page(s) failed — they stay marked as out of date and are retried on the next run.`);
