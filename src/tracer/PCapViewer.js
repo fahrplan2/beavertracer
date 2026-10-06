@@ -38,7 +38,6 @@ import { osiLayersFor, formatOsiLayers } from "./osiLayers.js";
  *   skip: number;
  *   filter: string;
  *   selectedNo: number|null;
- *   selectedTreeEl: HTMLElement|null;
  *   hasCapture: boolean;
  *   pendingAutoSelect: boolean;
  *   pcapPath: string;
@@ -183,7 +182,6 @@ export class PCapViewer {
       skip: 0,
       filter: (this.#opt.initialFilter ?? "").trim(),
       selectedNo: null,
-      selectedTreeEl: null,
       hasCapture: false,
       pendingAutoSelect: this.#opt.autoSelectFirst ?? true,
       pcapPath: `/uploads/${safe}.pcap`,
@@ -287,7 +285,7 @@ export class PCapViewer {
     if (this.#activeName === name && this.#filterEl) this.#filterEl.value = s.filter;
 
     this.#setStatus(t("pcap.status.loading.wiregasm"));
-    await this.#initWiregasm();
+    if (!await this.#initWiregasm()) return;
     if (!stillLatest()) return;         // ✅ stale completion -> ignore
 
     this.#setStatus(t("pcap.status.loading.pcap"));
@@ -297,7 +295,6 @@ export class PCapViewer {
     // reset session state
     s.skip = 0;
     s.selectedNo = null;
-    s.selectedTreeEl = null;
     s.hasCapture = true;
 
     if (this.#activeName !== name) {
@@ -614,6 +611,9 @@ export class PCapViewer {
   // ======================================================================
 
   async #makeWgPromise() {
+    // Script blockers (e.g. NoScript on an untrusted origin) or browser settings
+    // can remove the WebAssembly global entirely; wiregasm would just abort.
+    if (typeof WebAssembly === "undefined") throw new Error("pcap.error.nowasm");
     const locateWasm = this.#opt.locateWasm ?? "/wiregasm/wiregasm.wasm";
     const locateData = this.#opt.locateData ?? "/wiregasm/wiregasm.data";
     const { default: loadWiregasm } = await import("@goodtools/wiregasm/dist/wiregasm");
@@ -626,8 +626,9 @@ export class PCapViewer {
     });
   }
 
+  /** @returns {Promise<boolean>} false if wiregasm could not be loaded (error is shown) */
   async #initWiregasm() {
-    if (this.#wg && this.#wgInited) return;
+    if (this.#wg && this.#wgInited) return true;
     if (!this.#wgPromise) this.#wgPromise = this.#makeWgPromise();
 
     this.#showWgOverlay(t("pcap.status.loading.wiregasm"));
@@ -637,8 +638,17 @@ export class PCapViewer {
         this.#wg.init();
         this.#wgInited = true;
       }
-    } finally {
       this.#hideWgOverlay();
+      return true;
+    } catch (e) {
+      console.error("[PCapViewer] wiregasm init failed:", e);
+      this.#wgPromise = null; // allow a retry on the next load
+      const msg = e instanceof Error && e.message === "pcap.error.nowasm"
+        ? t("pcap.error.nowasm")
+        : t("pcap.error.wiregasm", { error: e instanceof Error ? e.message : String(e) });
+      this.#showWgError(msg);
+      this.#setStatus(msg);
+      return false;
     }
   }
 
@@ -657,11 +667,18 @@ export class PCapViewer {
     if (!this.#loadingOverlay) return;
     const msgEl = this.#loadingOverlay.querySelector(".pcapviewer-wg-msg");
     if (msgEl) msgEl.textContent = msg;
+    this.#loadingOverlay.classList.remove("is-error");
     this.#loadingOverlay.classList.add("is-visible");
   }
 
+  /** @param {string} msg */
+  #showWgError(msg) {
+    this.#showWgOverlay(msg);
+    this.#loadingOverlay?.classList.add("is-error");
+  }
+
   #hideWgOverlay() {
-    this.#loadingOverlay?.classList.remove("is-visible");
+    this.#loadingOverlay?.classList.remove("is-visible", "is-error");
   }
 
   /** @param {SessionState} s @param {Uint8Array} pcapBytes */
@@ -884,8 +901,6 @@ export class PCapViewer {
       return;
     }
 
-    if (s) s.selectedTreeEl = null;
-
     const wrapper = document.createElement("div");
     wrapper.className = "pcapviewer-tree";
     wrapper.appendChild(this.#buildTree(treeRoot));
@@ -1000,25 +1015,13 @@ export class PCapViewer {
           }
         };
 
-        twisty.addEventListener("click", (ev) => { ev.stopPropagation(); toggle(); });
-        label.addEventListener("click", (ev) => { ev.stopPropagation(); toggle(); });
+        row.addEventListener("click", (ev) => { ev.stopPropagation(); toggle(); });
       } else {
         twisty.textContent = "•";
       }
 
-      // hover/click highlight stays as you have it:
       row.addEventListener("pointerenter", () => this.#highlightHexRange(start, length, ds));
       row.addEventListener("pointerleave", () => this.#highlightHexRange(0, 0, ds));
-      row.addEventListener("click", (ev) => {
-        ev.stopPropagation();
-        if (!(length > 0)) return;
-        this.#highlightHexRange(start, length, ds);
-        const s = this.#active();
-        if (!s) return;
-        s.selectedTreeEl?.classList.remove("pcapviewer-selected");
-        row.classList.add("pcapviewer-selected");
-        s.selectedTreeEl = row;
-      });
 
       ul.appendChild(li);
     }

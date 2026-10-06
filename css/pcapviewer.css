@@ -95,6 +95,11 @@
   text-align: center;
   max-width: 220px;
 }
+.pcapviewer-wg-overlay.is-error .pcapviewer-wg-spinner { display: none; }
+.pcapviewer-wg-overlay.is-error .pcapviewer-wg-msg {
+  color: var(--text);
+  max-width: 360px;
+}
 
 /* Splitter */
 .pcapviewer-splitter {
@@ -306,8 +311,11 @@
   user-select: none;
 }
 
-.pcapviewer-tree-node:hover {
-  background: rgba(0, 0, 0, 0.06);
+/* only on real hover devices — on touch, :hover sticks after a tap */
+@media (hover: hover) {
+  .pcapviewer-tree-node:hover {
+    background: rgba(0, 0, 0, 0.06);
+  }
 }
 
 .pcapviewer-tree-proto {
@@ -317,8 +325,10 @@
   border-left: 3px solid transparent;
   margin-bottom: 1px;
 }
-.pcapviewer-tree-proto:hover {
-  background: color-mix(in oklch, var(--surface, #fff) 70%, var(--text, #000) 12%);
+@media (hover: hover) {
+  .pcapviewer-tree-proto:hover {
+    background: color-mix(in oklch, var(--surface, #fff) 70%, var(--text, #000) 12%);
+  }
 }
 
 /* OSI-Layer-Kennzeichnung (siehe OSI_LAYER_BY_FILTER in PCapViewer.js).
@@ -376,11 +386,6 @@
 .pcapviewer-tree-leaf .pcapviewer-tree-twisty {
   opacity: 0.25;
   cursor: default;
-}
-
-.pcapviewer-selected {
-  background: rgba(0, 0, 0, 0.10);
-  outline: 1px solid rgba(0, 0, 0, 0.12);
 }
 
 /* Collapse rule: class sits on LI */
