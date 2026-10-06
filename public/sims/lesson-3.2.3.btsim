@@ -1,7 +1,7 @@
 {
   "_info": "BeaverTracer Lektion 3.2.3 — Fehlersuche: Ben im falschen VLAN, Trunk am OG ohne VLAN 20",
   "version": 6,
-  "tick": 100,
+  "tick": 400,
   "objects": [
     {
       "kind": "Switch",

@@ -1,6 +1,6 @@
 {
   "version": 4,
-  "tick": 100,
+  "tick": 400,
   "objects": [
     {
       "kind": "TextBox",

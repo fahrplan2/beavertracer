@@ -811,11 +811,11 @@ export class HomeRouter extends SimulatedObject {
     /** @param {string} macKey @returns {{ipNum:number,ipBytes:Uint8Array,expiresAt:number}|null} */
     _dhcpAllocOrReuse(macKey) {
         const ex = this._dhcpLeases.get(macKey);
-        if (ex && ex.expiresAt > Date.now()) return ex;
+        if (ex && ex.expiresAt > simTimer.nowMs) return ex;
 
         for (let ip = this._dhcpRangeStart; ip <= this._dhcpRangeEnd; ip = (ip+1)>>>0) {
             if (!this._dhcpAllocated.has(ip)) {
-                const tmp = { ipNum: ip, ipBytes: IPNumberToUint8(ip), expiresAt: Date.now() + 60_000 };
+                const tmp = { ipNum: ip, ipBytes: IPNumberToUint8(ip), expiresAt: simTimer.nowMs + 60_000 };
                 this._dhcpLeases.set(macKey, tmp);
                 this._dhcpAllocated.add(ip);
                 return tmp;
@@ -829,13 +829,13 @@ export class HomeRouter extends SimulatedObject {
         const prev = this._dhcpLeases.get(macKey);
         if (prev && prev.ipNum !== ipNum) this._dhcpAllocated.delete(prev.ipNum);
         this._dhcpAllocated.add(ipNum);
-        const lease = { ipNum, ipBytes: IPNumberToUint8(ipNum), expiresAt: Date.now() + this._dhcpLeaseTime * 1000 };
+        const lease = { ipNum, ipBytes: IPNumberToUint8(ipNum), expiresAt: simTimer.nowMs + this._dhcpLeaseTime * 1000 };
         this._dhcpLeases.set(macKey, lease);
         return lease;
     }
 
     _dhcpCleanup() {
-        const now = Date.now();
+        const now = simTimer.nowMs;
         for (const [mac, lease] of this._dhcpLeases) {
             if (lease.expiresAt <= now) { this._dhcpLeases.delete(mac); this._dhcpAllocated.delete(lease.ipNum); }
         }
@@ -1238,7 +1238,7 @@ export class HomeRouter extends SimulatedObject {
             clientIpNum: ipNum(pkt.src),
             clientPort: udp.srcPort,
             origId: dns.id,
-            expiresAt: Date.now() + 5000,
+            expiresAt: simTimer.nowMs + 5000,
         });
 
         // Build relay query with new ID
@@ -1264,7 +1264,7 @@ export class HomeRouter extends SimulatedObject {
         try { dns = DNSPacket.fromBytes(udp.payload); } catch { return; }
 
         // Cleanup expired entries
-        const now = Date.now();
+        const now = simTimer.nowMs;
         for (const [id, e] of this._dnsRelayTable) { if (e.expiresAt < now) this._dnsRelayTable.delete(id); }
 
         const pending = this._dnsRelayTable.get(dns.id);

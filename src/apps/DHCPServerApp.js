@@ -3,6 +3,7 @@
 import { LoggedProcess } from "./lib/LoggedProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
 import { Disposer } from "../lib/Disposer.js";
+import { simTimer } from "../lib/SimTimer.js";
 import { t } from "../i18n/index.js";
 
 import { nowStamp, hexPreview, MACToNumber, assertLenU8 } from "../lib/helpers.js";
@@ -326,7 +327,7 @@ export class DHCPServerApp extends LoggedProcess {
   _renderLeases() {
     if (!this.leasesBody) return;
     this._cleanupExpiredLeases();
-    const now = Date.now();
+    const now = simTimer.nowMs;
 
     /** @type {HTMLElement[]} */
     const rows = [];
@@ -823,11 +824,11 @@ export class DHCPServerApp extends LoggedProcess {
   /** @param {string} macKey @param {number} rangeStartN @param {number} rangeEndN */
   _allocateOrReuse(macKey, rangeStartN, rangeEndN) {
     const existing = this.leases.get(macKey);
-    if (existing && existing.expiresAt > Date.now()) return existing;
+    if (existing && existing.expiresAt > simTimer.nowMs) return existing;
 
     for (let ip = rangeStartN; ip <= rangeEndN; ip = (ip + 1) >>> 0) {
       if (!this.allocated.has(ip)) {
-        const tmp = { ipNum: ip >>> 0, ipBytes: v4u32ToU8(ip), expiresAt: Date.now() + 60_000 };
+        const tmp = { ipNum: ip >>> 0, ipBytes: v4u32ToU8(ip), expiresAt: simTimer.nowMs + 60_000 };
         this.leases.set(macKey, tmp);
         this.allocated.add(ip);
         return tmp;
@@ -842,7 +843,7 @@ export class DHCPServerApp extends LoggedProcess {
     if (prev && prev.ipNum !== ipNum) this.allocated.delete(prev.ipNum);
 
     this.allocated.add(ipNum);
-    const lease = { ipNum: ipNum >>> 0, ipBytes: v4u32ToU8(ipNum), expiresAt: Date.now() + this.cfg.leaseTime * 1000 };
+    const lease = { ipNum: ipNum >>> 0, ipBytes: v4u32ToU8(ipNum), expiresAt: simTimer.nowMs + this.cfg.leaseTime * 1000 };
     this.leases.set(macKey, lease);
     return lease;
   }
@@ -855,7 +856,7 @@ export class DHCPServerApp extends LoggedProcess {
   }
 
   _cleanupExpiredLeases() {
-    const now = Date.now();
+    const now = simTimer.nowMs;
     for (const [mac, lease] of this.leases.entries()) {
       if (lease.expiresAt <= now) {
         this.leases.delete(mac);

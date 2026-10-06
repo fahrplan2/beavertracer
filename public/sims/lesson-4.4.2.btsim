@@ -1,7 +1,7 @@
 {
   "_info": "BeaverTracer Lektion 4.4.2 — Schulnetz 192.168.10.0/24 in /26 aufgeteilt, PCs noch nicht eingerichtet",
   "version": 6,
-  "tick": 100,
+  "tick": 400,
   "objects": [
     {
       "kind": "Router",

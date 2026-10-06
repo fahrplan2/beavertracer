@@ -1,7 +1,7 @@
 {
   "_info": "BeaverTracer Lektion 4.1 — Firma A (192.168.0.0/24) und Firma B (172.16.0.0/24), Switches direkt verbunden",
   "version": 6,
-  "tick": 100,
+  "tick": 400,
   "objects": [
     {
       "kind": "Switch",

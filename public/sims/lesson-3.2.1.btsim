@@ -1,7 +1,7 @@
 {
   "_info": "BeaverTracer Lektion 3.2.1 — Verwaltung und Schüler an einem Switch, noch ohne VLANs",
   "version": 6,
-  "tick": 100,
+  "tick": 400,
   "objects": [
     {
       "kind": "Switch",

@@ -1,7 +1,7 @@
 {
   "_info": "BeaverTracer Lektion 3.3.1 — Schul-PC und Access Point (SSID Schule), Tablet Anna noch ohne SSID",
   "version": 6,
-  "tick": 100,
+  "tick": 400,
   "objects": [
     {
       "kind": "Switch",

@@ -1,7 +1,7 @@
 {
   "_info": "BeaverTracer Lektion 4.3.1 — Firma A und B über einen Router verbunden, Gateways eingetragen",
   "version": 6,
-  "tick": 100,
+  "tick": 400,
   "objects": [
     {
       "kind": "Switch",

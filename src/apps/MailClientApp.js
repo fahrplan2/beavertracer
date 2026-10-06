@@ -5,7 +5,7 @@ import { UILib as UI } from "./lib/UILib.js";
 import { Disposer } from "../lib/Disposer.js";
 import { t } from "../i18n/index.js";
 import { IPAddress } from "../net/models/IPAddress.js";
-import { simTimer } from "../lib/SimTimer.js";
+import { simTimer, SimTimer } from "../lib/SimTimer.js";
 import { TlsSession } from "../net/TlsSession.js";
 import { nowStamp } from "../lib/helpers.js";
 
@@ -58,16 +58,17 @@ function parseMbox(mbox) {
 }
 
 /**
+ * Promise wrapper with simulation-time timeout (scales with sim speed, pauses with the simulation).
  * @template T
  * @param {Promise<T>} p
- * @param {number} ms
+ * @param {number} ms  simulated milliseconds
  * @param {string} label
  * @returns {Promise<T>}
  */
 function withTimeout(p, ms, label) {
   return new Promise((resolve, reject) => {
-    const t = setTimeout(() => reject(new Error(`Timeout: ${label} (${ms}ms)`)), Math.max(1, ms | 0));
-    p.then(v => { clearTimeout(t); resolve(v); }, e => { clearTimeout(t); reject(e); });
+    const id = simTimer.schedule(() => reject(new Error(`Timeout: ${label} (${ms}ms)`)), ms);
+    p.then(v => { simTimer.cancel(id); resolve(v); }, e => { simTimer.cancel(id); reject(e); });
   });
 }
 
@@ -738,7 +739,7 @@ export class MailClientApp extends LoggedProcess {
       isServer:   false,
       cert:       undefined,
       trustStore: this.os.tls?.certStore ?? null,
-      timeoutMs:  15000,
+      timeoutMs:  SimTimer.MAIL_CLIENT_TIMEOUT_MS,
       sleepFn:    (ms) => simTimer.sleep(ms),
       now:        () => this.os.clock.nowMs(),
     });
@@ -762,7 +763,7 @@ export class MailClientApp extends LoggedProcess {
       isServer:   false,
       cert:       undefined,
       trustStore: this.os.tls?.certStore ?? null,
-      timeoutMs:  15000,
+      timeoutMs:  SimTimer.MAIL_CLIENT_TIMEOUT_MS,
       sleepFn:    (ms) => simTimer.sleep(ms),
       now:        () => this.os.clock.nowMs(),
     });
@@ -794,7 +795,7 @@ export class MailClientApp extends LoggedProcess {
 
     let ip;
     try {
-      ip = await withTimeout(resolveHost(host, n => this.os.dns.resolve(n)), 10000, "DNS");
+      ip = await withTimeout(resolveHost(host, n => this.os.dns.resolve(n)), SimTimer.DNS_RESOLVE_TIMEOUT_MS, "DNS");
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       this._log(`DNS-Fehler: ${msg}`);
@@ -805,7 +806,7 @@ export class MailClientApp extends LoggedProcess {
 
     let connKey;
     try {
-      const conn = await withTimeout(this.os.net.connectTCPConn(ip, port), 10000, "TCP connect");
+      const conn = await withTimeout(this.os.net.connectTCPConn(ip, port), SimTimer.TCP_CONNECT_TIMEOUT_MS, "TCP connect");
       connKey = conn?.key;
       if (typeof connKey !== "string" || !connKey) throw new Error("Kein Verbindungsschlüssel");
     } catch (e) {
@@ -849,7 +850,7 @@ export class MailClientApp extends LoggedProcess {
    * @param {string} pass
    */
   async _fetchPOP3(tr, user, pass) {
-    const TO = 15000;
+    const TO = SimTimer.MAIL_CLIENT_TIMEOUT_MS;
     const st  = { buf: new Uint8Array(0) };
 
     /** @param {string} l */
@@ -915,7 +916,7 @@ export class MailClientApp extends LoggedProcess {
    * @param {string} pass
    */
   async _fetchIMAP(tr, user, pass) {
-    const TO = 15000;
+    const TO = SimTimer.MAIL_CLIENT_TIMEOUT_MS;
     const st  = { buf: new Uint8Array(0) };
 
     let seq = 1;
@@ -1041,7 +1042,7 @@ export class MailClientApp extends LoggedProcess {
 
     let ip;
     try {
-      ip = await withTimeout(resolveHost(smtpHost, n => this.os.dns.resolve(n)), 10000, "DNS");
+      ip = await withTimeout(resolveHost(smtpHost, n => this.os.dns.resolve(n)), SimTimer.DNS_RESOLVE_TIMEOUT_MS, "DNS");
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       this._log(`DNS-Fehler: ${msg}`); this._setStatus(`DNS-Fehler: ${msg}`);
@@ -1050,7 +1051,7 @@ export class MailClientApp extends LoggedProcess {
 
     let connKey;
     try {
-      const conn = await withTimeout(this.os.net.connectTCPConn(ip, smtpPort), 10000, "TCP");
+      const conn = await withTimeout(this.os.net.connectTCPConn(ip, smtpPort), SimTimer.TCP_CONNECT_TIMEOUT_MS, "TCP");
       connKey = conn?.key;
       if (typeof connKey !== "string" || !connKey) throw new Error("Kein Verbindungsschlüssel");
     } catch (e) {
@@ -1109,7 +1110,7 @@ export class MailClientApp extends LoggedProcess {
    * @param {"off"|"starttls"|"implicit"} [tlsMode]
    */
   async _doSmtp(tr, from, to, cc, bcc, allRcpt, subject, body, user, pass, tlsMode = "off") {
-    const TO = 15000;
+    const TO = SimTimer.MAIL_CLIENT_TIMEOUT_MS;
     const st  = { buf: new Uint8Array(0) };
 
     /** @param {string} l */

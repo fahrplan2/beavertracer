@@ -1,7 +1,7 @@
 {
   "_info": "BeaverTracer Lektion 4.6.3 — Router kündigt 2001:db8:1::/64 an, Anna und Ben holen sich ihre IPv6-Adresse per SLAAC",
   "version": 6,
-  "tick": 100,
+  "tick": 400,
   "objects": [
     {
       "kind": "Router",
