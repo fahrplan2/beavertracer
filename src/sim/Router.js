@@ -2202,7 +2202,7 @@ export class Router extends SimulatedObject {
         const renderLeases = () => {
             this._pd6CleanupExpired();
             tbody.innerHTML = "";
-            const now = Date.now();
+            const now = simTimer.nowMs;
             if (this._pd6Leases.size === 0) {
                 const td = UILib.el("td", { text: t("router.pd6.leases.empty"), className: "router-muted-cell" });
                 td.setAttribute("colspan", "3");
@@ -2447,7 +2447,7 @@ export class Router extends SimulatedObject {
     /** @param {string} duidKey */
     _pd6AllocOrReuse(duidKey) {
         const ex = this._pd6Leases.get(duidKey);
-        if (ex && ex.expiresAt > Date.now()) return ex;
+        if (ex && ex.expiresAt > simTimer.nowMs) return ex;
         if (!this._pd6Pool) return null;
         const poolBytes = _pd6MaskPrefix(this._pd6Pool.toUInt8(), this._pd6PoolLength);
         const subnetBits = this._pd6DelegatedLength - this._pd6PoolLength;
@@ -2459,7 +2459,7 @@ export class Router extends SimulatedObject {
             if (this._pd6Allocated.has(index)) continue;
             const prefix16bytes = _pd6BuildDelegatedPrefix(poolBytes, this._pd6PoolLength, this._pd6DelegatedLength, index);
             this._pd6Allocated.add(index);
-            const lease = { prefix16bytes, prefixLen: this._pd6DelegatedLength, index, expiresAt: Date.now() + 60_000, ifIndex: -1, clientLL: /** @type {IPAddress|null} */ (null) };
+            const lease = { prefix16bytes, prefixLen: this._pd6DelegatedLength, index, expiresAt: simTimer.nowMs + 60_000, ifIndex: -1, clientLL: /** @type {IPAddress|null} */ (null) };
             this._pd6Leases.set(duidKey, lease);
             return lease;
         }
@@ -2475,7 +2475,7 @@ export class Router extends SimulatedObject {
         const prev = this._pd6Leases.get(duidKey);
         if (prev) {
             const oldIfIndex = prev.ifIndex, oldLL = prev.clientLL;
-            prev.expiresAt = Date.now() + this._pd6LeaseTime * 1000;
+            prev.expiresAt = simTimer.nowMs + this._pd6LeaseTime * 1000;
             prev.ifIndex   = ifIndex;
             prev.clientLL  = clientLL;
             // Alte Route entfernen, neue installieren
@@ -2488,7 +2488,7 @@ export class Router extends SimulatedObject {
         }
         const lease = this._pd6AllocOrReuse(duidKey);
         if (!lease) return null;
-        lease.expiresAt = Date.now() + this._pd6LeaseTime * 1000;
+        lease.expiresAt = simTimer.nowMs + this._pd6LeaseTime * 1000;
         lease.ifIndex   = ifIndex;
         lease.clientLL  = clientLL;
         this._pd6InstallRoute(lease);
@@ -2512,7 +2512,7 @@ export class Router extends SimulatedObject {
     }
 
     _pd6CleanupExpired() {
-        const now = Date.now();
+        const now = simTimer.nowMs;
         for (const [duid, lease] of this._pd6Leases) {
             if (lease.expiresAt <= now) {
                 this._pd6RemoveRoute(lease);

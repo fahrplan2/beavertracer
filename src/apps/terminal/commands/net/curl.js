@@ -2,6 +2,7 @@
 
 import { t } from "../../../../i18n/index.js";
 import { CommandError } from "../lib/errors.js";
+import { abortable } from "../lib/abort.js";
 import {
     normalizeUrl,
     parseHttpUrl,
@@ -58,8 +59,9 @@ export const curl = {
         // ── DNS resolve ────────────────────────────────────────────────────
         let ip;
         try {
-            ip = await resolveHost(ctx.os, host);
+            ip = await abortable(resolveHost(ctx.os, host), ctx.signal);
         } catch {
+            ctx.signal.throwIfAborted();
             throw new CommandError(t("app.terminal.commands.curl.err.resolve", { host }));
         }
 
@@ -68,10 +70,15 @@ export const curl = {
 
         let conn;
         try {
-            conn = scheme === "https"
-                ? await openTlsTransport(ctx.os, ip, port, host, { insecure })
-                : await openTcpTransport(ctx.os, ip, port);
+            conn = await abortable(
+                /** @type {Promise<{ close: () => void, transport: any }>} */ (scheme === "https"
+                    ? openTlsTransport(ctx.os, ip, port, host, { insecure })
+                    : openTcpTransport(ctx.os, ip, port)),
+                ctx.signal,
+                (late) => late.close(),
+            );
         } catch (e) {
+            ctx.signal.throwIfAborted();
             if (e instanceof HttpError && e.kind === "tls")
                 throw new CommandError(t("app.terminal.commands.curl.err.tls", { reason: e.message }));
             throw new CommandError(t("app.terminal.commands.curl.err.connect", { reason: e instanceof Error ? e.message : String(e) }));

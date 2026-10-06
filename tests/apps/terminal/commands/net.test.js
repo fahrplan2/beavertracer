@@ -6,6 +6,7 @@ import { curl } from '../../../../src/apps/terminal/commands/net/curl.js';
 import { wget } from '../../../../src/apps/terminal/commands/net/wget.js';
 import { arp } from '../../../../src/apps/terminal/commands/net/arp.js';
 import { route } from '../../../../src/apps/terminal/commands/net/route.js';
+import { nmap } from '../../../../src/apps/terminal/commands/net/nmap.js';
 import { IPAddress } from '../../../../src/net/models/IPAddress.js';
 import { CommandError } from '../../../../src/apps/terminal/commands/lib/errors.js';
 import { TlsSession } from '../../../../src/net/TlsSession.js';
@@ -125,7 +126,7 @@ function makeCtx(os) {
     cwd: '/home',
     env: {},
     onInterrupt: () => {},
-    signal: { aborted: false },
+    signal: new AbortController().signal,
     println: (s = '') => out.push(s),
     stdout: { print: (s = '') => out.push(s), println: (s = '') => out.push(s) },
     stderr: { print: (s = '') => err.push(s), println: (s = '') => err.push(s) },
@@ -361,5 +362,35 @@ describe('route', () => {
     const rows = out.slice(1).map((l) => l.trim().split(/\s+/));
     expect(rows[0].slice(0, 4)).toEqual(['192.168.0.0', '255.255.255.0', '0.0.0.0', 'eth0']);
     expect(rows[1].slice(0, 4)).toEqual(['0.0.0.0', '0.0.0.0', '192.168.0.1', 'eth0']);
+  });
+});
+
+describe('nmap', () => {
+  it('stops at once on Ctrl+C even while a probe is still connecting (pending ARP)', async () => {
+    const ac = new AbortController();
+    const closed = [];
+    /** @type {((c: any) => void)[]} */
+    const pendingConnects = [];
+    const out = [];
+    const ctx = /** @type {any} */ ({
+      signal: ac.signal,
+      println: (/** @type {string} */ l) => out.push(l),
+      os: {
+        net: {
+          connectTCPConn: () => new Promise((resolve) => { pendingConnects.push(resolve); }),
+          closeTCPConn: (/** @type {string} */ k) => closed.push(k),
+        },
+      },
+    });
+
+    const run = nmap.run(ctx, ['-p', '80', '10.0.0.99']);
+    await Promise.resolve();
+    ac.abort();
+    await expect(run).rejects.toMatchObject({ name: 'AbortError' });
+
+    // A connect that succeeds after Ctrl+C must not leak an open connection.
+    pendingConnects.forEach((r) => r({ key: 'late' }));
+    await Promise.resolve(); await Promise.resolve();
+    expect(closed).toEqual(['late']);
   });
 });

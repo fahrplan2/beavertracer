@@ -36,18 +36,19 @@ function unquoteFromLines(s) {
 }
 
 /**
- * Promise wrapper with timeout in ms.
+ * Promise wrapper with simulation-time timeout.
+ * Uses simTimer so the timeout scales with sim speed and pauses with the simulation.
  * @template T
  * @param {Promise<T>} p
- * @param {number} ms
+ * @param {number} ms  simulated milliseconds
  * @param {string} label
  */
 function withTimeout(p, ms, label) {
   return new Promise((resolve, reject) => {
-    const tmr = setTimeout(() => reject(new Error(`timeout ${label} (${ms}ms)`)), Math.max(1, ms | 0));
+    const id = simTimer.schedule(() => reject(new Error(`timeout ${label} (${ms}ms)`)), ms);
     p.then(
-      (v) => { clearTimeout(tmr); resolve(v); },
-      (e) => { clearTimeout(tmr); reject(e); }
+      (v) => { simTimer.cancel(id); resolve(v); },
+      (e) => { simTimer.cancel(id); reject(e); }
     );
   });
 }

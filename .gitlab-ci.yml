@@ -153,6 +153,10 @@ tauri:windows:
   script:
     - node scripts/set-tauri-version.mjs
     - ln -sf "$(which makensis)" /usr/local/bin/makensis.exe
+    # Tauri-CLI ≥ 2.12 bindet Win\RestartManager.nsh ein, das erst ab NSIS 3.09
+    # mitgeliefert wird — Bookworm hat 3.08. Header aus dem NSIS-Repo nachrüsten.
+    - curl -sSfL -o /usr/share/nsis/Include/Win/RestartManager.nsh
+        https://raw.githubusercontent.com/kichik/nsis/v311/Include/Win/RestartManager.nsh
     - rustup target add x86_64-pc-windows-msvc
     - cargo install cargo-xwin
     # Bundle-Output aus dem Cargo-Cache leeren, sonst sammeln sich hier

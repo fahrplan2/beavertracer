@@ -3,7 +3,7 @@
   "version": 5,
   "appVersion": "0.1.25-dev.20.d13371f",
   "savedAt": "2026-06-15T19:23:40.649Z",
-  "tick": 0,
+  "tick": 400,
   "objects": [
     {
       "kind": "TextBox",

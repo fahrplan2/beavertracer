@@ -35,7 +35,7 @@
 .lesson-article h3 { font-size: 1.05rem; margin: 20px 0 6px; }
 .lesson-article h4 { font-size: 1rem;   margin: 16px 0 6px; }
 .lesson-article p  { margin: 0 0 12px; }
-.lesson-article ul, .lesson-article ol { margin: 0 0 12px; padding-left: 1.4em; }
+.lesson-article ul, .lesson-article ol { margin: 0 0 12px; padding-inline-start: 1.4em; }
 .lesson-article li { margin-bottom: 4px; }
 /* var(--primary) itself is a pale accent tone (meant for backgrounds/tints,
    ~81% lightness in this app's theme) — too low-contrast for text/borders.
@@ -45,7 +45,7 @@
 .lesson-article blockquote {
   margin: 0 0 12px;
   padding: 6px 12px;
-  border-left: 3px solid var(--ui-border-strong);
+  border-inline-start: 3px solid var(--ui-border-strong);
   border-radius: var(--radius-sm);
   background: color-mix(in oklch, var(--text) 4%, transparent);
   color: var(--text);
@@ -69,8 +69,21 @@
 /* display:block + overflow lets wide tables (e.g. the OSI table) scroll
    sideways inside the narrow panel instead of being cut off. */
 .lesson-article table { display: block; overflow-x: auto; max-width: 100%; border-collapse: collapse; margin: 0 0 12px; font-size: 0.9em; }
-.lesson-article th, .lesson-article td { border: 1px solid var(--ui-border-strong); padding: 4px 8px; text-align: left; }
+.lesson-article th, .lesson-article td { border: 1px solid var(--ui-border-strong); padding: 4px 8px; text-align: start; }
 .lesson-article .lesson-num { opacity: 0.65; font-weight: 400; }
+
+/* ── Right-to-left lessons (ar, fa — LessonsPanel sets dir="rtl" on the
+   content only; the app chrome stays LTR). Everything above uses logical
+   properties, so bars/indents flip by themselves. Commands, addresses,
+   bit patterns and diagrams stay LTR islands — "ping 10.0.0.1" must not
+   be reordered by the bidi algorithm. */
+.lesson-article[dir="rtl"] code,
+.lesson-article[dir="rtl"] .bits { direction: ltr; unicode-bidi: isolate; }
+.lesson-article[dir="rtl"] pre { direction: ltr; text-align: left; }
+.lesson-article[dir="rtl"] .seq-scroll { direction: ltr; }
+/* "← Back / Next →": back points toward the start of the line */
+.lesson-article[dir="rtl"] .lesson-nav-btn .fa-arrow-left,
+.lesson-article[dir="rtl"] .lesson-nav-btn .fa-arrow-right { transform: scaleX(-1); }
 
 /* ── Bit colouring in the IP/subnetting lessons ([[n|…]] [[e|…]] [[h|…]]) ──
    Tinted background + coloured underline: readable in light and dark. */
@@ -97,7 +110,7 @@
   margin: 0 0 12px;
   padding: 10px 12px;
   border-radius: var(--radius-sm);
-  border-left: 3px solid var(--ui-border-strong);
+  border-inline-start: 3px solid var(--ui-border-strong);
 }
 /* -soft variants are theme-aware pastel tints (mix toward white in light
    mode, toward the dark background in dark mode) already defined for
@@ -105,23 +118,23 @@
    itself is too low-chroma/pale in this app's theme to read as "blue" here
    (same reason --lesson-accent exists for buttons/links), so callout-note
    uses that fixed accent instead of --primary-soft/-strong. */
-.lesson-article .callout-note    { border-left-color: var(--lesson-accent); background: color-mix(in oklch, var(--lesson-accent) 12%, transparent); }
-.lesson-article .callout-tip     { border-left-color: var(--ok, #2e9b4f);      background: var(--ok-soft, #d3f5df); }
-.lesson-article .callout-warning { border-left-color: var(--warning, #c98a1a); background: var(--warning-soft, #fdecc8); }
-.lesson-article .callout-danger  { border-left-color: var(--danger, #c0392b); background: var(--danger-soft, #fbdad7); }
+.lesson-article .callout-note    { border-inline-start-color: var(--lesson-accent); background: color-mix(in oklch, var(--lesson-accent) 12%, transparent); }
+.lesson-article .callout-tip     { border-inline-start-color: var(--ok, #2e9b4f);      background: var(--ok-soft, #d3f5df); }
+.lesson-article .callout-warning { border-inline-start-color: var(--warning, #c98a1a); background: var(--warning-soft, #fdecc8); }
+.lesson-article .callout-danger  { border-inline-start-color: var(--danger, #c0392b); background: var(--danger-soft, #fbdad7); }
 /* ":::draft" — construction-site orange. */
-.lesson-article .callout-draft   { border-left-color: var(--warning, #c98a1a); background: var(--warning-soft, #fdecc8); }
+.lesson-article .callout-draft   { border-inline-start-color: var(--warning, #c98a1a); background: var(--warning-soft, #fdecc8); }
 /* ":::goal" — for "Lernziel" blurbs. Deliberately purple: distinct from all
    five callouts above so it reads as its own "before you start" category. */
-.lesson-article .callout-goal    { border-left-color: #7c3aed; background: color-mix(in oklch, #7c3aed 12%, transparent); }
+.lesson-article .callout-goal    { border-inline-start-color: #7c3aed; background: color-mix(in oklch, #7c3aed 12%, transparent); }
 /* ":::tip Merksatz" — optional heading line */
 /* AI translation notice on machine-translated courses (vite-plugin-lessons.mjs). */
-.lesson-article .callout-ai      { border-left-color: #64748b; background: color-mix(in oklch, #64748b 12%, transparent); font-size: 0.92em; }
+.lesson-article .callout-ai      { border-inline-start-color: #64748b; background: color-mix(in oklch, #64748b 12%, transparent); font-size: 0.92em; }
 .lesson-article .callout-ai a    { color: inherit; font-weight: 600; }
 .lesson-article .callout-title   { margin: 0 0 4px; font-weight: 700; }
 /* ── Table of contents ───────────────────────────────────────── */
 .lesson-article .lesson-toc { margin: 0 0 16px; padding: 10px 12px; border: 1px solid var(--ui-border-strong); border-radius: var(--radius-sm); }
-.lesson-article .lesson-toc ul { list-style: none; padding-left: 0.2em; margin: 4px 0 0; }
+.lesson-article .lesson-toc ul { list-style: none; padding-inline-start: 0.2em; margin: 4px 0 0; }
 .lesson-article .lesson-toc a { text-decoration: none; }
 
 /* ── OSI "traffic light" (:::osi N) ─────────────────────────────
@@ -129,12 +142,13 @@
    rainbow colour, all other layers as grey boxes, so the whole picture
    stands out from the text. Same look as lessons/_style.css. */
 .lesson-article .osi-ampel {
-  float: right;
+  float: inline-end;
   display: flex;
   flex-direction: column;
   gap: 3px;
   width: 168px;
-  margin: 2px 0 12px 16px;
+  margin-block: 2px 12px;
+  margin-inline: 16px 0;
   padding: 6px;
   border: 1px solid var(--ui-border);
   border-radius: var(--radius-md);
@@ -230,7 +244,7 @@
   border-top: 1px solid var(--ui-border-strong);
 }
 .lesson-article .lesson-nav a { text-decoration: none; font-size: 0.9em; }
-.lesson-article .lesson-nav-next { margin-left: auto; text-align: right; }
+.lesson-article .lesson-nav-next { margin-inline-start: auto; text-align: end; }
 
 /* ── Prev/overview/next button rows (in-app panel, see LessonsPanel._buildNavRow) ── */
 .lesson-article .lesson-nav-row {
@@ -285,17 +299,17 @@ html[data-debug="true"] .lesson-article [data-draft="true"] { display: revert; }
   padding: 12px 14px;
   background: var(--quiz-card);
   border: 1px solid var(--ui-border);
-  border-left: 3px solid var(--lesson-accent);
+  border-inline-start: 3px solid var(--lesson-accent);
   border-radius: var(--radius-sm);
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.06);
 }
 /* Badge is positioned, not a flex item — a flex row would split inline
    <code> in the question into separate columns. */
-.lesson-article .quiz-question { position: relative; margin: 0 0 10px; padding-left: calc(1.4em + 8px); font-weight: 600; }
+.lesson-article .quiz-question { position: relative; margin: 0 0 10px; padding-inline-start: calc(1.4em + 8px); font-weight: 600; }
 .lesson-article .quiz-question::before {
   content: "?";
   position: absolute;
-  left: 0;
+  inset-inline-start: 0;
   top: 0.1em;
   width: 1.4em;
   height: 1.4em;
@@ -345,8 +359,9 @@ html[data-debug="true"] .lesson-article [data-draft="true"] { display: revert; }
   display: block;
   width: 100%;
   font: inherit;
-  text-align: left;
-  padding: 7px 12px 7px 38px;
+  text-align: start;
+  padding-block: 7px;
+  padding-inline: 38px 12px;
   border: 1px solid var(--ui-border-strong);
   border-radius: var(--radius-sm);
   background: var(--quiz-card);
@@ -362,7 +377,7 @@ html[data-debug="true"] .lesson-article [data-draft="true"] { display: revert; }
 .lesson-article .quiz-option::before {
   content: "";
   position: absolute;
-  left: 12px;
+  inset-inline-start: 12px;
   top: 50%;
   transform: translateY(-50%);
   box-sizing: border-box;
@@ -444,7 +459,7 @@ html[data-debug="true"] .lesson-article [data-draft="true"] { display: revert; }
   background: color-mix(in oklch, var(--lesson-accent) 8%, var(--quiz-card));
 }
 .lesson-article .quiz-match-dropzone.quiz-correct,
-.lesson-article .quiz-match-dropzone.quiz-incorrect { border-style: solid; padding-right: 26px; }
+.lesson-article .quiz-match-dropzone.quiz-incorrect { border-style: solid; padding-inline-end: 26px; }
 .lesson-article .quiz-match-dropzone.quiz-correct { border-color: var(--quiz-ok); background: color-mix(in oklch, var(--quiz-ok) 10%, var(--quiz-card)); }
 .lesson-article .quiz-match-dropzone.quiz-incorrect { border-color: var(--quiz-err); background: color-mix(in oklch, var(--quiz-err) 10%, var(--quiz-card)); }
 /* "not filled" reads as neutral, not as a wrong answer */
@@ -452,7 +467,7 @@ html[data-debug="true"] .lesson-article [data-draft="true"] { display: revert; }
 .lesson-article .quiz-match-dropzone.quiz-correct::after,
 .lesson-article .quiz-match-dropzone.quiz-incorrect::after {
   position: absolute;
-  right: 6px;
+  inset-inline-end: 6px;
   top: 50%;
   transform: translateY(-50%);
   width: 16px;

@@ -1,7 +1,7 @@
 {
   "_info": "BeaverTracer Lektion 3.4 — drei Switches im Ring, STP aus",
   "version": 6,
-  "tick": 100,
+  "tick": 400,
   "objects": [
     {
       "kind": "Switch",

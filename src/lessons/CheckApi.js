@@ -7,7 +7,7 @@ import { setTrafficSuppressed } from "../lib/CheckState.js";
 import { SimTimer, simTimer } from "../lib/SimTimer.js";
 import { parseHttpUrl, resolveHost, openTlsTransport, httpRequest } from "../net/HttpClient.js";
 
-/** Step interval (real ms) while checks run — the fastest speed preset, so a
+/** Step interval (real ms) while checks run — faster than any speed preset, so a
  *  failing ping's simulated timeout passes in seconds rather than a minute. */
 const CHECK_TICK_MS = 20;
 

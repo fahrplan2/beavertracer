@@ -3,6 +3,7 @@
 import { IPAddress } from "../../../../net/models/IPAddress.js";
 import { t } from "../../../../i18n/index.js";
 import { CommandError } from "../lib/errors.js";
+import { abortable } from "../lib/abort.js";
 
 /** @param {string} s */
 function encodeUTF8(s) {
@@ -66,16 +67,19 @@ export const telnet = {
     let ip = null;
     try { ip = IPAddress.fromString(host); } catch { /* not a literal */ }
     if (!ip) {
-      try { ip = await ctx.os.dns.resolveIP(host); } catch { /* ignore */ }
+      try { ip = await abortable(ctx.os.dns.resolveIP(host), ctx.signal); } catch { /* ignore */ }
+      ctx.signal.throwIfAborted();
     }
     if (!ip) throw new CommandError(t("app.terminal.commands.telnet.err.resolve", { host }));
 
     // connect
     let ck;
     try {
-      const conn = await ctx.os.net.connectTCPConn(ip, port);
+      const conn = await abortable(ctx.os.net.connectTCPConn(ip, port), ctx.signal,
+        (c) => { if (c?.key) { try { ctx.os.net.closeTCPConn(c.key); } catch { /* ignore */ } } });
       ck = conn?.key ?? null;
     } catch (e) {
+      ctx.signal.throwIfAborted();
       throw new CommandError(t("app.terminal.commands.telnet.err.connect", { reason: e instanceof Error ? e.message : String(e) }));
     }
     if (!ck) throw new CommandError(t("app.terminal.commands.telnet.err.connect", { reason: "no connection key" }));

@@ -3,6 +3,7 @@
 import { LoggedProcess } from "./lib/LoggedProcess.js";
 import { UILib as UI } from "./lib/UILib.js";
 import { Disposer } from "../lib/Disposer.js";
+import { simTimer } from "../lib/SimTimer.js";
 import { t } from "../i18n/index.js";
 import { nowStamp, hexPreview } from "../lib/helpers.js";
 import { IPAddress } from "../net/models/IPAddress.js";
@@ -682,7 +683,7 @@ export class DHCPv6ServerApp extends LoggedProcess {
    */
   _allocateOrReuse(duidKey) {
     const existing = this._leases.get(duidKey);
-    if (existing && existing.expiresAt > Date.now()) return existing;
+    if (existing && existing.expiresAt > simTimer.nowMs) return existing;
 
     const prefixBytes = maskPrefix(this.cfg.prefix.toUInt8(), this.cfg.prefixLength);
 
@@ -694,7 +695,7 @@ export class DHCPv6ServerApp extends LoggedProcess {
 
       const ip6bytes = buildAddress(prefixBytes, index);
       this._allocated.add(index);
-      const lease = { ip6bytes, index, expiresAt: Date.now() + 60_000 };
+      const lease = { ip6bytes, index, expiresAt: simTimer.nowMs + 60_000 };
       this._leases.set(duidKey, lease);
       return lease;
     }
@@ -710,17 +711,17 @@ export class DHCPv6ServerApp extends LoggedProcess {
     if (!prev) {
       const lease = this._allocateOrReuse(duidKey);
       if (lease) {
-        lease.expiresAt = Date.now() + this.cfg.leaseTime * 1000;
+        lease.expiresAt = simTimer.nowMs + this.cfg.leaseTime * 1000;
         return lease;
       }
       return { ip6bytes: new Uint8Array(16), index: 0, expiresAt: 0 };
     }
-    prev.expiresAt = Date.now() + this.cfg.leaseTime * 1000;
+    prev.expiresAt = simTimer.nowMs + this.cfg.leaseTime * 1000;
     return prev;
   }
 
   _cleanupExpiredLeases() {
-    const now = Date.now();
+    const now = simTimer.nowMs;
     for (const [duid, lease] of this._leases.entries()) {
       if (lease.expiresAt <= now) {
         this._allocated.delete(lease.index);
@@ -746,7 +747,7 @@ export class DHCPv6ServerApp extends LoggedProcess {
   _renderLeases() {
     if (!this.leasesBody) return;
     this._cleanupExpiredLeases();
-    const now = Date.now();
+    const now = simTimer.nowMs;
 
     /** @type {HTMLElement[]} */
     const rows = [];

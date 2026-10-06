@@ -1,7 +1,7 @@
 {
  "_info": "BeaverTracer Lektion 1.3 \u2014 Der Webseitenaufruf",
  "version": 5,
- "tick": 100,
+ "tick": 400,
  "objects": [
   {
    "kind": "Computer",

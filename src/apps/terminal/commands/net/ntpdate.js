@@ -2,6 +2,7 @@
 
 import { t } from "../../../../i18n/index.js";
 import { CommandError } from "../lib/errors.js";
+import { abortable } from "../lib/abort.js";
 import { simTimer, SimTimer } from "../../../../lib/SimTimer.js";
 
 import { NTPPacket } from "../../../../net/pdu/NTPPacket.js";
@@ -59,7 +60,7 @@ export const ntpdate = {
     } catch {
       const dns = ctx.os?.dns;
       if (dns?.resolve) {
-        const r = await dns.resolve(host);
+        const r = await abortable(dns.resolve(host), ctx.signal);
         if (r instanceof IPAddress) serverIp = r;
         else if (typeof r === "string") { try { serverIp = IPAddress.fromString(r); } catch {} }
       }

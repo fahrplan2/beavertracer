@@ -93,6 +93,8 @@ export class SimTimer {
     static HTTP_SERVER_TIMEOUT_MS   = 10_000;  // 2000 ticks
     /** Same as HTTP_SERVER_TIMEOUT_MS, client side (Sparktail). */
     static HTTP_CLIENT_TIMEOUT_MS   = 10_000;  // 2000 ticks
+    /** Per-line read timeout of the mail client (SMTP/POP3/IMAP replies). */
+    static MAIL_CLIENT_TIMEOUT_MS   = 10_000;  // 2000 ticks
 
     /** STP Hello interval (IEEE default: 2 s). */
     static STP_HELLO_MS             =    500;  // 100 ticks  → 10 s @ 1×,  2 s @ 8×
@@ -182,6 +184,10 @@ export class SimTimer {
 
     /** Current total tick count since simulation start. */
     get currentTick() { return this.#tickCount; }
+
+    /** Simulated milliseconds since simulation start — use instead of Date.now()
+     *  for expiry times (leases, caches) so they follow sim speed and pause. */
+    get nowMs() { return this.#tickCount * SimTimer.SIM_MS_PER_TICK; }
 
     /** Convert simulated milliseconds to ticks (minimum 1). */
     /** @param {number} simMs */

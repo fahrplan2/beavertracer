@@ -680,7 +680,7 @@ export class IPStack extends Observable {
 
     /**
      * @param {IPAddress} dstIp
-     * @param {{timeoutMs?: number, payload?: Uint8Array, identifier?: number, sequence?: number, ttl?: number, flags?: number}} [opt]
+     * @param {{timeoutMs?: number, payload?: Uint8Array, identifier?: number, sequence?: number, ttl?: number, flags?: number, signal?: AbortSignal}} [opt]
      * @returns {Promise<{bytes:number, ttl:number, timeMs:number, identifier:number, sequence:number}>}
      */
     async icmpEcho(dstIp, opt = {}) {
@@ -694,11 +694,13 @@ export class IPStack extends Observable {
 
         return new Promise((resolve, reject) => {
             const timerId = simTimer.schedule(() => {
+                const pending = this._pendingEcho.get(key);
                 this._pendingEcho.delete(key);
-                reject(new Error("timeout"));
+                (pending?.reject ?? reject)(new Error("timeout"));
             }, timeoutSimMs);
 
             this._pendingEcho.set(key, { resolve, reject, timerId, t0 });
+            this._abortEchoOn(opt.signal, this._pendingEcho, key);
 
             const icmp = new ICMPPacket({
                 type: 8,
@@ -723,6 +725,32 @@ export class IPStack extends Observable {
             const t1 = (typeof performance !== "undefined" ? performance.now() : Date.now());
             return { ...r, timeMs: Math.max(0, Math.round(t1 - t0)) };
         });
+    }
+
+    /**
+     * Cancel a pending echo when `signal` aborts (Ctrl+C): stop the timeout
+     * timer and reject right away instead of waiting for ARP/the timeout.
+     * @param {AbortSignal|undefined} signal
+     * @param {Map<string, any>} pendingMap
+     * @param {string} key
+     */
+    _abortEchoOn(signal, pendingMap, key) {
+        if (!signal) return;
+        const onAbort = () => {
+            const pending = pendingMap.get(key);
+            if (!pending) return;
+            simTimer.cancel(pending.timerId);
+            pendingMap.delete(key);
+            pending.reject(new DOMException("Aborted", "AbortError"));
+        };
+        if (signal.aborted) { onAbort(); return; }
+        signal.addEventListener("abort", onAbort, { once: true });
+        // Drop the listener once the echo settles some other way.
+        const entry = pendingMap.get(key);
+        const done = () => signal.removeEventListener("abort", onAbort);
+        const { resolve, reject } = entry;
+        entry.resolve = (/** @type {any} */ v) => { done(); resolve(v); };
+        entry.reject = (/** @type {any} */ e) => { done(); reject(e); };
     }
 
     /**
@@ -1687,7 +1715,7 @@ export class IPStack extends Observable {
     /**
      * Send an ICMPv6 Echo Request and wait for the reply (ping6).
      * @param {IPAddress} dstIp
-     * @param {{timeoutMs?:number, payload?:Uint8Array, identifier?:number, sequence?:number, ttl?:number}} [opt]
+     * @param {{timeoutMs?:number, payload?:Uint8Array, identifier?:number, sequence?:number, ttl?:number, signal?:AbortSignal}} [opt]
      * @returns {Promise<{bytes:number, ttl:number, timeMs:number, identifier:number, sequence:number}>}
      */
     async icmpv6Echo(dstIp, opt = {}) {
@@ -1702,11 +1730,13 @@ export class IPStack extends Observable {
 
         return new Promise((resolve, reject) => {
             const timerId = simTimer.schedule(() => {
+                const pending = this._pendingEcho6.get(key);
                 this._pendingEcho6.delete(key);
-                reject(new Error("timeout"));
+                (pending?.reject ?? reject)(new Error("timeout"));
             }, timeoutSimMs);
 
             this._pendingEcho6.set(key, { resolve, reject, timerId, t0 });
+            this._abortEchoOn(opt.signal, this._pendingEcho6, key);
 
             const icmpBytes = ICMPv6Packet.buildEchoRequest(identifier, sequence, payload)
                 .pack(srcIp, dstIp);

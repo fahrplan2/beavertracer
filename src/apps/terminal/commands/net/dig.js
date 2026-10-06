@@ -3,6 +3,7 @@
 import { t } from "../../../../i18n/index.js";
 import { nowMs } from "../lib/time.js";
 import { CommandError } from "../lib/errors.js";
+import { abortable } from "../lib/abort.js";
 import { simTimer, SimTimer } from "../../../../lib/SimTimer.js";
 
 import { DNSPacket } from "../../../../net/pdu/DNSPacket.js";
@@ -217,7 +218,7 @@ export const dig = {
 
       const dns = ctx.os?.dns;
       if (dns?.resolve) {
-        const r = await dns.resolve(host);
+        const r = await abortable(dns.resolve(host), ctx.signal);
 
         if (r instanceof IPAddress) return r;
 

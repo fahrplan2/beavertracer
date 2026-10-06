@@ -59,6 +59,33 @@ const PLACE_TOOL_NAME_KEY = /** @type {Record<string, string>} */ ({
     "place-firewall":   "firewall.title",
 });
 
+/** Speed toolbar presets: real ms per tick, in factor-4 steps around 1× = 400 ms.
+ *  16× is below Link's 35 ms animation cutoff on purpose: it is for quick
+ *  queries whose packets are inspected in the tracer, not on the canvas. */
+const SPEED_PRESETS = [
+    { label: "1/4×", ms: 1600 },
+    { label: "1×",   ms: 400  },
+    { label: "4×",   ms: 100  },
+    { label: "16×",  ms: 25   },
+];
+
+/** Real ms per tick at 1×; also the fallback for missing/invalid stored ticks. */
+const DEFAULT_TICK_MS = 400;
+
+/**
+ * Snap a stored tick to the nearest speed preset (by ratio), so old files and
+ * hand-edited values always map to a selectable speed; invalid → 1×.
+ * @param {unknown} ms
+ */
+function snapTick(ms) {
+    if (typeof ms !== "number" || !(ms > 0)) return DEFAULT_TICK_MS;
+    let best = SPEED_PRESETS[0].ms;
+    for (const { ms: p } of SPEED_PRESETS) {
+        if (Math.abs(Math.log(ms / p)) < Math.abs(Math.log(ms / best))) best = p;
+    }
+    return best;
+}
+
 export class SimControl {
 
     // ── Fields ───────────────────────────────────────────────────────────────
@@ -76,7 +103,7 @@ export class SimControl {
     pcapViewer;
 
     /** @type {number} simulation speed (time it takes to do one tick in ms) */
-    static tick = 100;
+    static tick = DEFAULT_TICK_MS;
 
     /** @type {number} ID of the simulation step */
     tickId = 0;
@@ -650,6 +677,7 @@ export class SimControl {
         for (let i = 0; i < this.simobjects.length; i++) {
             const x = this.simobjects[i];
             if (x instanceof Link) {
+                x.setStepMs(SimControl.tick);
                 x.step1();
             }
         }
@@ -1094,7 +1122,7 @@ export class SimControl {
         this._clearScene();
 
         // restore tick
-        if (typeof state.tick === "number") SimControl.tick = state.tick;
+        SimControl.tick = snapTick(state.tick);
 
         /** @type {Map<number, SimulatedObject>} */
         const byId = new Map();
@@ -1156,7 +1184,7 @@ export class SimControl {
     new() {
         this._clearScene();
         SimulatedObject.idnumber = 0;
-        SimControl.tick = 100;
+        SimControl.tick = DEFAULT_TICK_MS;
         this.isPaused = true;
 
         for (const el of this._objEls.values()) el.remove();
@@ -1303,17 +1331,10 @@ export class SimControl {
         pauseBtn.dataset.role = "pause";
         gSpeeds.appendChild(pauseBtn);
 
-        const speeds = [
-            { label: "0.5×", ms: 500 },
-            { label: "1×",   ms: 100 },
-            { label: "4×",   ms: 40  },
-            { label: "8×",   ms: 20  },
-        ];
-
         const speedGrid = document.createElement("div");
         speedGrid.className = "sim-speed-grid";
 
-        for (const s of speeds) {
+        for (const s of SPEED_PRESETS) {
             const b = UILib.iconbutton({
                 label: s.label,
                 onClick: () => this.setTick(s.ms),
@@ -1780,8 +1801,7 @@ export class SimControl {
             setActive("pause", this.mode === "run" && this.isPaused);
 
             // --- active state for speed buttons
-            const speedRoles = [500, 100, 40, 20];
-            for (const ms of speedRoles) {
+            for (const { ms } of SPEED_PRESETS) {
                 setActive(`speed-${ms}`, this.mode === "run" && !this.isPaused && SimControl.tick === ms);
             }
 

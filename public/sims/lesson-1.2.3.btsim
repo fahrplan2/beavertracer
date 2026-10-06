@@ -3,7 +3,7 @@
   "version": 6,
   "appVersion": "0.2.1-dev.62.3f72c14",
   "savedAt": "2026-10-03T15:43:36.375Z",
-  "tick": 100,
+  "tick": 400,
   "objects": [
     {
       "kind": "Computer",

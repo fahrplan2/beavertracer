@@ -3,6 +3,7 @@
 import { t } from "../../../../i18n/index.js";
 import { nowStamp } from "../../../../lib/helpers.js";
 import { CommandError } from "../lib/errors.js";
+import { abortable } from "../lib/abort.js";
 import {
     normalizeUrl,
     parseHttpUrl,
@@ -99,18 +100,24 @@ export const wget = {
 
             let ip;
             try {
-                ip = await resolveHost(ctx.os, host);
+                ip = await abortable(resolveHost(ctx.os, host), ctx.signal);
             } catch {
+                ctx.signal.throwIfAborted();
                 throw new CommandError(t("app.terminal.commands.wget.err.resolve", { host }));
             }
             log(t("app.terminal.commands.wget.log.connecting", { host, ip: ip.toString(), port }));
 
             let conn;
             try {
-                conn = scheme === "https"
-                    ? await openTlsTransport(ctx.os, ip, port, host, { insecure })
-                    : await openTcpTransport(ctx.os, ip, port);
+                conn = await abortable(
+                    /** @type {Promise<{ close: () => void, transport: any }>} */ (scheme === "https"
+                        ? openTlsTransport(ctx.os, ip, port, host, { insecure })
+                        : openTcpTransport(ctx.os, ip, port)),
+                    ctx.signal,
+                    (late) => late.close(),
+                );
             } catch (e) {
+                ctx.signal.throwIfAborted();
                 if (e instanceof HttpError && e.kind === "tls")
                     throw new CommandError(t("app.terminal.commands.wget.err.tls", { reason: e.message }));
                 throw new CommandError(t("app.terminal.commands.wget.err.connect", { reason: e instanceof Error ? e.message : String(e) }));

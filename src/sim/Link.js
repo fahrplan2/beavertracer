@@ -35,7 +35,7 @@ export class Link extends SimulatedObject {
   portBKey;
 
   /** @type {number} */
-  _stepMs = 200;
+  _stepMs = 400;
 
   /** @type {number} */
   _pad = 8;

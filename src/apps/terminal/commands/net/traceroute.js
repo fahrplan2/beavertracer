@@ -3,7 +3,7 @@
 import { t } from "../../../../i18n/index.js";
 import { ipNumberToString, ipStringToNumber } from "../lib/ip.js";
 import { nowMs } from "../lib/time.js";
-import { sleepAbortable } from "../lib/abort.js";
+import { sleepAbortable, abortable } from "../lib/abort.js";
 import { CommandError } from "../lib/errors.js";
 import { IPAddress } from "../../../../net/models/IPAddress.js";
 import { SimTimer } from "../../../../lib/SimTimer.js";
@@ -110,7 +110,7 @@ export const traceroute = {
     const ipf = ctx.os.net;
     if (!ipf?.icmpEcho) throw new CommandError(t("app.terminal.commands.traceroute.err.noNetworkDriver"));
 
-    const dstIp = await resolveHostToIp(ctx, host);
+    const dstIp = await abortable(resolveHostToIp(ctx, host), ctx.signal);
     if (!dstIp) throw new CommandError(t("app.terminal.commands.traceroute.err.cannotResolve", { host }));
 
     const echoFn = dstIp.isV4()
@@ -158,6 +158,7 @@ export const traceroute = {
             sequence: ((ttl << 8) | p) & 0xffff,
             payload,
             ttl,
+            signal: ctx.signal,
           });
 
           const dt = Math.max(0, Math.round(res.timeMs ?? (nowMs() - t0)));

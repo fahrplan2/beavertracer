@@ -3,7 +3,7 @@
 import { t } from "../../../../i18n/index.js";
 import { nowMs } from "../lib/time.js";
 import { CommandError } from "../lib/errors.js";
-import { sleepAbortable } from "../lib/abort.js";
+import { sleepAbortable, abortable } from "../lib/abort.js";
 import { simTimer, SimTimer } from "../../../../lib/SimTimer.js";
 import { IPAddress } from "../../../../net/models/IPAddress.js";
 
@@ -149,10 +149,11 @@ export const ping = {
     if (!dstIp) {
       const dns = ctx.os?.dns;
       if (dns?.resolveIP) {
-        try { dstIp = await dns.resolveIP(host); } catch { /* ignore */ }
+        try { dstIp = await abortable(dns.resolveIP(host), ctx.signal); } catch { /* ignore */ }
       } else if (dns?.resolve) {
-        try { dstIp = resolvedToIp(await dns.resolve(host)); } catch { /* ignore */ }
+        try { dstIp = resolvedToIp(await abortable(dns.resolve(host), ctx.signal)); } catch { /* ignore */ }
       }
+      ctx.signal.throwIfAborted();
     }
 
     if (!dstIp) throw new CommandError(t("app.terminal.commands.ping.err.cannotResolve", { host }));
@@ -191,6 +192,7 @@ export const ping = {
           sequence: seq & 0xffff,
           payload,
           flags: dontFragment ? 0x02 : 0,
+          signal: ctx.signal,
         });
 
         if (ctx.signal.aborted) throw new DOMException("Aborted", "AbortError");

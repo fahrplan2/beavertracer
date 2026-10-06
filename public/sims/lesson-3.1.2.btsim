@@ -1,7 +1,7 @@
 {
   "_info": "BeaverTracer Lektion 3.1.2 — Anna, Ben und Clara am Switch (Ports 1–3)",
   "version": 6,
-  "tick": 100,
+  "tick": 400,
   "objects": [
     {
       "kind": "Switch",

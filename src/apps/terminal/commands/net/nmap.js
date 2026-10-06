@@ -2,7 +2,7 @@
 
 import { t } from "../../../../i18n/index.js";
 import { IPAddress } from "../../../../net/models/IPAddress.js";
-import { sleepAbortable } from "../lib/abort.js";
+import { sleepAbortable, abortable } from "../lib/abort.js";
 import { simTimer, SimTimer } from "../../../../lib/SimTimer.js";
 import { CommandError } from "../lib/errors.js";
 
@@ -111,27 +111,44 @@ function expandCIDR(cidr) {
 async function probePort(ctx, ip, port) {
     let key = /** @type {string|null} */ (null);
     const timeoutId = { id: /** @type {any} */ (null) };
+    /** @type {(() => void)|null} */
+    let onAbort = null;
+    /** @type {Promise<any>|null} */
+    let connectPromise = null;
 
     try {
-        const connectPromise = ctx.os.net.connectTCPConn(ip, port);
+        connectPromise = ctx.os.net.connectTCPConn(ip, port);
         const timeoutPromise = new Promise((_, reject) => {
             timeoutId.id = simTimer.schedule(() => reject(new Error("filtered")), PROBE_TIMEOUT_MS);
         });
+        // Ctrl+C must not wait for the probe timeout (e.g. a pending ARP).
+        const abortPromise = new Promise((_, reject) => {
+            onAbort = () => reject(new DOMException("Aborted", "AbortError"));
+            if (ctx.signal.aborted) onAbort();
+            else ctx.signal.addEventListener("abort", onAbort, { once: true });
+        });
 
-        const conn = await Promise.race([connectPromise, timeoutPromise]);
-        simTimer.cancel(timeoutId.id);
+        const conn = await Promise.race([connectPromise, timeoutPromise, abortPromise]);
         key = conn?.key ?? null;
         if (key) {
             try { ctx.os.net.closeTCPConn(key); } catch {}
         }
         return "open";
     } catch (e) {
-        simTimer.cancel(timeoutId.id);
         if (key) { try { ctx.os.net.closeTCPConn(key); } catch {} }
+        // The connect may still succeed after we gave up - close it then.
+        connectPromise?.then(
+            (c) => { if (c?.key) { try { ctx.os.net.closeTCPConn(c.key); } catch {} } },
+            () => {},
+        );
+        if (e instanceof DOMException && e.name === "AbortError") throw e;
         const msg = e instanceof Error ? e.message : String(e);
         if (msg === "filtered") return "filtered";
         // RST / connect failed → closed
         return "closed";
+    } finally {
+        simTimer.cancel(timeoutId.id);
+        if (onAbort) ctx.signal.removeEventListener("abort", onAbort);
     }
 }
 
@@ -153,6 +170,7 @@ async function scanHost(ctx, ip, ports, openOnly) {
 
         const batch = ports.slice(i, i + CONCURRENCY);
         const settled = await Promise.allSettled(batch.map(p => probePort(ctx, ip, p)));
+        if (ctx.signal.aborted) throw new DOMException("Aborted", "AbortError");
 
         for (let j = 0; j < batch.length; j++) {
             const s = settled[j];
@@ -279,7 +297,8 @@ export const nmap = {
                 let ip = /** @type {IPAddress|null} */ (null);
                 try { ip = IPAddress.fromString(target); } catch {}
                 if (!ip) {
-                    try { ip = await ctx.os.dns.resolveIP(target); } catch {}
+                    try { ip = await abortable(ctx.os.dns.resolveIP(target), ctx.signal); } catch {}
+                    ctx.signal.throwIfAborted();
                 }
                 if (!ip) throw new CommandError(t("app.terminal.commands.nmap.err.cannotResolve", { host: target }));
                 hosts.push(ip);

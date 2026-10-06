@@ -1,7 +1,7 @@
 {
   "_info": "BeaverTracer Lektion 4.3.2 — Fehlersuche: Clara ohne Gateway, David mit falschem Gateway",
   "version": 6,
-  "tick": 100,
+  "tick": 400,
   "objects": [
     {
       "kind": "Switch",

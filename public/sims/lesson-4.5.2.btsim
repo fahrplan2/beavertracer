@@ -1,7 +1,7 @@
 {
   "_info": "BeaverTracer Lektion 4.5.2 — zwei Router mit Zwischennetz, Router A kennt Firma B noch nicht, Router B kennt Firma A",
   "version": 6,
-  "tick": 100,
+  "tick": 400,
   "objects": [
     {
       "kind": "Switch",
