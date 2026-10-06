@@ -44,3 +44,6 @@ results/
 
 # Miscellaneous / scratch files
 /misc/
+
+# Pending lesson translation batch (scripts/translate-lessons-via-claude.mjs --batch)
+lessons/_translation/batch.json
