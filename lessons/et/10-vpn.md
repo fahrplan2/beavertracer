@@ -1,0 +1,4 @@
+# Virtuaalne privaatvõrk (VPN)
+
+:::draft
+:::
