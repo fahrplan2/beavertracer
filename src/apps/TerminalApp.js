@@ -786,10 +786,15 @@ export class TerminalApp extends GenericProcess {
         this.busy = true;
         this._renderScreen();
 
-        this.currentAbort = new AbortController();
+        const abort = new AbortController();
+        this.currentAbort = abort;
         this.interruptHandlers = [];
 
         void this._handleLine(line).finally(() => {
+            // A command that ignored Ctrl+C may finish long after the prompt
+            // came back - by then a newer command may be running, whose busy
+            // state must not be cleared by this stale one.
+            if (this.currentAbort !== abort) return;
             this.busy = false;
             this._renderScreen();
         });

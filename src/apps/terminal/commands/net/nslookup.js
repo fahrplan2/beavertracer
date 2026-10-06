@@ -2,6 +2,7 @@
 
 import { t } from "../../../../i18n/index.js";
 import { CommandError } from "../lib/errors.js";
+import { abortable } from "../lib/abort.js";
 import { IPAddress } from "../../../../net/models/IPAddress.js";
 
 const SUPPORTED_TYPES = new Set(["A", "AAAA", "MX", "NS"]);
@@ -61,20 +62,20 @@ export const nslookup = {
     ctx.println("");
 
     if (typeStr === "MX") {
-      const rrs = await dns.resolveMX(name);
+      const rrs = await abortable(dns.resolveMX(name), ctx.signal);
       if (!rrs.length) { ctx.println(t("app.terminal.commands.nslookup.err.notFound", { name })); return; }
       for (const rr of rrs) ctx.println(t("app.terminal.commands.nslookup.out.mx", { name, pref: rr.preference, exchange: rr.exchange }));
       return;
     }
 
     if (typeStr === "NS") {
-      const rrs = await dns.resolveNS(name);
+      const rrs = await abortable(dns.resolveNS(name), ctx.signal);
       if (!rrs.length) { ctx.println(t("app.terminal.commands.nslookup.err.notFound", { name })); return; }
       for (const rr of rrs) ctx.println(t("app.terminal.commands.nslookup.out.ns", { name, host: rr.host }));
       return;
     }
 
-    const ips = typeStr === "AAAA" ? await dns.resolveAAAA(name) : await dns.resolveA_IP(name);
+    const ips = await abortable(typeStr === "AAAA" ? dns.resolveAAAA(name) : dns.resolveA_IP(name), ctx.signal);
     if (!ips.length) {
       // No answer at all is not the same as "name doesn't exist" (NXDOMAIN)
       if (dns.lastQueryTimedOut) throw new CommandError(t("app.terminal.commands.nslookup.err.timeout"));

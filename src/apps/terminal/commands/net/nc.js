@@ -3,6 +3,7 @@
 import { IPAddress } from "../../../../net/models/IPAddress.js";
 import { t } from "../../../../i18n/index.js";
 import { CommandError } from "../lib/errors.js";
+import { abortable } from "../lib/abort.js";
 
 // ── encoding helpers ──────────────────────────────────────────────────────────
 
@@ -81,14 +82,17 @@ async function bidir(ctx, { send, recv, close }) {
 async function ncTcpConnect(ctx, host, port) {
     let ip = /** @type {IPAddress|null} */ (null);
     try { ip = IPAddress.fromString(host); } catch {}
-    if (!ip) try { ip = await ctx.os.dns.resolveIP(host); } catch {}
+    if (!ip) try { ip = await abortable(ctx.os.dns.resolveIP(host), ctx.signal); } catch {}
+    ctx.signal.throwIfAborted();
     if (!ip) throw new CommandError(t("app.terminal.commands.nc.err.resolve", { host }));
 
     let key = /** @type {string|null} */ (null);
     try {
-        const conn = await ctx.os.net.connectTCPConn(ip, port);
+        const conn = await abortable(ctx.os.net.connectTCPConn(ip, port), ctx.signal,
+            (c) => { if (c?.key) { try { ctx.os.net.closeTCPConn(c.key); } catch {} } });
         key = conn?.key ?? null;
     } catch (e) {
+        ctx.signal.throwIfAborted();
         throw new CommandError(t("app.terminal.commands.nc.err.connect", { reason: e instanceof Error ? e.message : String(e) }));
     }
     if (!key) throw new CommandError(t("app.terminal.commands.nc.err.nokey"));
@@ -131,6 +135,7 @@ async function ncTcpListen(ctx, port) {
         ctx.os.net.closeTCPServerSocket(ref); ref = null;
     } catch (e) {
         cleanup();
+        ctx.signal.throwIfAborted(); // Ctrl+C closed the listening socket
         throw new CommandError(t("app.terminal.commands.nc.err.accept", { reason: e instanceof Error ? e.message : String(e) }));
     }
 
@@ -153,7 +158,8 @@ async function ncTcpListen(ctx, port) {
 async function ncUdpConnect(ctx, host, port) {
     let ip = /** @type {IPAddress|null} */ (null);
     try { ip = IPAddress.fromString(host); } catch {}
-    if (!ip) try { ip = await ctx.os.dns.resolveIP(host); } catch {}
+    if (!ip) try { ip = await abortable(ctx.os.dns.resolveIP(host), ctx.signal); } catch {}
+    ctx.signal.throwIfAborted();
     if (!ip) throw new CommandError(t("app.terminal.commands.nc.err.resolve", { host }));
 
     const localPort = 10000 + Math.floor(Math.random() * 40000);
