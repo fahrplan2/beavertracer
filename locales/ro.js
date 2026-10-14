@@ -2135,5 +2135,6 @@ export default {
   "game.ft.send": "Trimite",
   "game.ft.detail": "Transmisii: {scores}",
   "game.ft.victory": "Toate legăturile radio funcționează!",
-  "game.ft.solution": "O soluție: {mode}, {baud} Bd, {levels} niveluri → {rate}"
+  "game.ft.solution": "O soluție: {mode}, {baud} Bd, {levels} niveluri → {rate}",
+  "welcome.games.title": "Sau exersează jucând"
 };

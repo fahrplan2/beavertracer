@@ -2135,5 +2135,6 @@ export default {
   "game.ft.send": "Αποστολή",
   "game.ft.detail": "Εργασίες: {scores}",
   "game.ft.victory": "Όλες οι ραδιοφωνικές ζεύξεις λειτουργούν!",
-  "game.ft.solution": "Μια λύση: {mode}, {baud} Bd, {levels} επίπεδα → {rate}"
+  "game.ft.solution": "Μια λύση: {mode}, {baud} Bd, {levels} επίπεδα → {rate}",
+  "welcome.games.title": "Ή εξασκηθείτε παίζοντας"
 };

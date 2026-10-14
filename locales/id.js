@@ -2135,5 +2135,6 @@ export default {
   "game.ft.send": "Kirim",
   "game.ft.detail": "Pekerjaan: {scores}",
   "game.ft.victory": "Semua tautan radio berjalan!",
-  "game.ft.solution": "Salah satu solusi: {mode}, {baud} Bd, {levels} level → {rate}"
+  "game.ft.solution": "Salah satu solusi: {mode}, {baud} Bd, {levels} level → {rate}",
+  "welcome.games.title": "Atau berlatih dengan bermain"
 };

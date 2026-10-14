@@ -2135,5 +2135,6 @@ export default {
   "game.ft.send": "Изпрати",
   "game.ft.detail": "Работи: {scores}",
   "game.ft.victory": "Всички радио връзки работят!",
-  "game.ft.solution": "Едно решение: {mode}, {baud} Bd, {levels} нива → {rate}"
+  "game.ft.solution": "Едно решение: {mode}, {baud} Bd, {levels} нива → {rate}",
+  "welcome.games.title": "Или практикувайте, като играете"
 };

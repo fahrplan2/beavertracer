@@ -2135,5 +2135,6 @@ export default {
   "game.ft.send": "Lähetä",
   "game.ft.detail": "Toimistot: {scores}",
   "game.ft.victory": "Kaikki radiolinkit toimivat!",
-  "game.ft.solution": "Yksi ratkaisu: {mode}, {baud} Bd, {levels} tasoa → {rate}"
+  "game.ft.solution": "Yksi ratkaisu: {mode}, {baud} Bd, {levels} tasoa → {rate}",
+  "welcome.games.title": "Tai harjoittele pelaamisen kautta"
 };

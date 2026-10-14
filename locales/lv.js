@@ -2135,5 +2135,6 @@ export default {
   "game.ft.send": "Sūtīt",
   "game.ft.detail": "Darbi: {scores}",
   "game.ft.victory": "Visi radioraidījumi darbojas!",
-  "game.ft.solution": "Viens risinājums: {mode}, {baud} Bd, {levels} līmeņi → {rate}"
+  "game.ft.solution": "Viens risinājums: {mode}, {baud} Bd, {levels} līmeņi → {rate}",
+  "welcome.games.title": "Vai trenējieties, spēlējot"
 };

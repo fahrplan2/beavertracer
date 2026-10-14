@@ -2134,5 +2134,6 @@ export default {
   "pcap.error.nowasm": "WebAssembly no està disponible en aquest navegador, per tant el disseccionador de paquets no es pot carregar. Probablement un bloqueador de scripts (com NoScript) o una configuració del navegador l'està bloquejant per a aquest lloc.",
   "pcap.error.wiregasm": "El disseccionador de paquets no s'ha pogut carregar: {error}",
   "welcome.learn.games": "Jocs",
-  "welcome.learn.games.desc": "Resol entrades i juga a jocs de xarxa — amb punts, insígnies i codis de finalització."
+  "welcome.learn.games.desc": "Resol entrades i juga a jocs de xarxa — amb punts, insígnies i codis de finalització.",
+  "welcome.games.title": "O practica jugant"
 };

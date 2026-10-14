@@ -2135,5 +2135,6 @@ export default {
   "game.ft.send": "Pošlji",
   "game.ft.detail": "Gapovi: {scores}",
   "game.ft.victory": "Vse radiozveze delujejo!",
-  "game.ft.solution": "Ena rešitev: {mode}, {baud} Bd, {levels} ravni → {rate}"
+  "game.ft.solution": "Ena rešitev: {mode}, {baud} Bd, {levels} ravni → {rate}",
+  "welcome.games.title": "Ali vadite z igranjem"
 };

@@ -2134,5 +2134,6 @@ export default {
   "pcap.error.nowasm": "WebAssembly nije dostupan u ovom pregledniku, tako da se analizator paketa ne može učitati. Blokator skripti (npr. NoScript) ili postavka preglednika verovatno ga blokira za ovu stranicu.",
   "pcap.error.wiregasm": "Analizator paketa nije mogao biti učitan: {error}",
   "welcome.learn.games": "Igre",
-  "welcome.learn.games.desc": "Rešavajte tikete i igrajte mrežne igre — sa bodovima, značkama i kodovima završetka."
+  "welcome.learn.games.desc": "Rešavajte tikete i igrajte mrežne igre — sa bodovima, značkama i kodovima završetka.",
+  "welcome.games.title": "Ili vežbajte igranjem"
 };

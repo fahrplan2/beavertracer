@@ -2135,5 +2135,6 @@ export default {
   "pcap.error.nowasm": "WebAssembly nie jest dostępne w tej przeglądarce, więc analizator pakietów nie może być załadowany. Blokada skryptów (np. NoScript) lub ustawienia przeglądarki prawdopodobnie go blokują dla tej witryny.",
   "pcap.error.wiregasm": "Analizator pakietów nie mógł być załadowany: {error}",
   "welcome.learn.games": "Gry",
-  "welcome.learn.games.desc": "Rozwiązuj zgłoszenia i graj w gry sieciowe — z punktami, odznaczeniami i kodami ukończenia."
+  "welcome.learn.games.desc": "Rozwiązuj zgłoszenia i graj w gry sieciowe — z punktami, odznaczeniami i kodami ukończenia.",
+  "welcome.games.title": "Lub ćwicz grając"
 };

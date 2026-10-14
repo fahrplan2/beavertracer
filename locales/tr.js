@@ -2135,5 +2135,6 @@ export default {
   "pcap.error.nowasm": "WebAssembly bu tarayıcıda kullanılamıyor, bu nedenle paket ayırıcı yüklenemiyor. Bir komut dosyası bloklayıcı (örn. NoScript) veya tarayıcı ayarı bu siteye ilişkin olarak bunu engelliyor olabilir.",
   "pcap.error.wiregasm": "Paket ayırıcı yüklenemedi: {error}",
   "welcome.learn.games": "Oyunlar",
-  "welcome.learn.games.desc": "Biletleri çözün ve ağ oyunları oynayın — puanlar, rozetler ve tamamlama kodları ile."
+  "welcome.learn.games.desc": "Biletleri çözün ve ağ oyunları oynayın — puanlar, rozetler ve tamamlama kodları ile.",
+  "welcome.games.title": "Veya oynayarak pratik yapın"
 };

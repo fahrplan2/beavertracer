@@ -2135,5 +2135,6 @@ export default {
   "pcap.error.nowasm": "WebAssembly är inte tillgängligt i den här webbläsaren, så paketdissekatorn kan inte laddas. En skriptblocker (t.ex. NoScript) eller en webbläsarinställning blockerar den förmodligen för den här webbplatsen.",
   "pcap.error.wiregasm": "Paketdissekatorn kunde inte laddas: {error}",
   "welcome.learn.games": "Spel",
-  "welcome.learn.games.desc": "Lösa ärenden och spela nätverksspel — med poäng, märken och slutförandekoder."
+  "welcome.learn.games.desc": "Lösa ärenden och spela nätverksspel — med poäng, märken och slutförandekoder.",
+  "welcome.games.title": "Eller öva genom att spela"
 };

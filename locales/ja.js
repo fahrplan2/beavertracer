@@ -2135,5 +2135,6 @@ export default {
   "pcap.error.nowasm": "このブラウザでは WebAssembly が利用できないため、パケット分析器を読み込むことができません。スクリプトブロッカー (NoScript など) またはブラウザ設定がこのサイトでそれをブロックしている可能性があります。",
   "pcap.error.wiregasm": "パケット分析器を読み込めませんでした: {error}",
   "welcome.learn.games": "ゲーム",
-  "welcome.learn.games.desc": "チケットを解決し、ネットワークゲームをプレイします — ポイント、バッジ、完了コード付き。"
+  "welcome.learn.games.desc": "チケットを解決し、ネットワークゲームをプレイします — ポイント、バッジ、完了コード付き。",
+  "welcome.games.title": "ゲームをプレイして練習する"
 };

@@ -2134,5 +2134,6 @@ export default {
   "game.ft.send": "Küldés",
   "game.ft.detail": "Feladatok: {scores}",
   "game.ft.victory": "Minden rádióösszeköttetés működik!",
-  "game.ft.solution": "Egy megoldás: {mode}, {baud} Bd, {levels} szint → {rate}"
+  "game.ft.solution": "Egy megoldás: {mode}, {baud} Bd, {levels} szint → {rate}",
+  "welcome.games.title": "Vagy gyakorolj játékokkal"
 };

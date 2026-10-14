@@ -2135,5 +2135,6 @@ export default {
   "game.ft.send": "Siųsti",
   "game.ft.detail": "Darbai: {scores}",
   "game.ft.victory": "Visos radijo linijos veikia!",
-  "game.ft.solution": "Vienas iš sprendimų: {mode}, {baud} Bd, {levels} lygiai → {rate}"
+  "game.ft.solution": "Vienas iš sprendimų: {mode}, {baud} Bd, {levels} lygiai → {rate}",
+  "welcome.games.title": "Arba praktikuokitės žaidžiant"
 };

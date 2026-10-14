@@ -2135,5 +2135,6 @@ export default {
   "game.ft.send": "Send",
   "game.ft.detail": "Jobs: {scores}",
   "game.ft.victory": "Alle radiolinks er kørende!",
-  "game.ft.solution": "En løsning: {mode}, {baud} Bd, {levels} niveauer → {rate}"
+  "game.ft.solution": "En løsning: {mode}, {baud} Bd, {levels} niveauer → {rate}",
+  "welcome.games.title": "Eller øv dig ved at spille"
 };

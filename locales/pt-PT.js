@@ -2140,5 +2140,6 @@ export default {
   "game.ft.send": "Enviar",
   "game.ft.detail": "Trabalhos: {scores}",
   "game.ft.victory": "Todas as ligações de rádio estão em funcionamento!",
-  "game.ft.solution": "Uma solução: {mode}, {baud} Bd, {levels} níveis → {rate}"
+  "game.ft.solution": "Uma solução: {mode}, {baud} Bd, {levels} níveis → {rate}",
+  "welcome.games.title": "Ou pratique jogando"
 };

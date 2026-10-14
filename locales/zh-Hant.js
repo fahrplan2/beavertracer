@@ -2134,5 +2134,6 @@ export default {
   "pcap.error.nowasm": "此瀏覽器不支援 WebAssembly，因此無法載入封包解析器。指令碼封鎖程式（例如 NoScript）或瀏覽器設定可能正在為此網站封鎖它。",
   "pcap.error.wiregasm": "無法載入封包解析器：{error}",
   "welcome.learn.games": "遊戲",
-  "welcome.learn.games.desc": "解決工單並玩網路遊戲——有積分、徽章和完成代碼。"
+  "welcome.learn.games.desc": "解決工單並玩網路遊戲——有積分、徽章和完成代碼。",
+  "welcome.games.title": "或透過遊戲練習"
 };

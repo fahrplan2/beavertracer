@@ -2135,5 +2135,6 @@ export default {
   "pcap.error.nowasm": "WebAssembly is niet beschikbaar in deze browser, dus de pakketanalyzer kan niet worden geladen. Een scriptblocker (bijv. NoScript) of een browserinstelling blokkeert dit waarschijnlijk voor deze site.",
   "pcap.error.wiregasm": "De pakketanalyzer kon niet worden geladen: {error}",
   "welcome.learn.games": "Spellen",
-  "welcome.learn.games.desc": "Los tickets op en speel netwerkspellen — met punten, badges en voltooiingscodes."
+  "welcome.learn.games.desc": "Los tickets op en speel netwerkspellen — met punten, badges en voltooiingscodes.",
+  "welcome.games.title": "Of oefen door te spelen"
 };

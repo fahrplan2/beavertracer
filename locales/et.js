@@ -2135,5 +2135,6 @@ export default {
   "game.ft.send": "Saada",
   "game.ft.detail": "Tööd: {scores}",
   "game.ft.victory": "Kõik raadioühendused töötavad!",
-  "game.ft.solution": "Üks lahendus: {mode}, {baud} Bd, {levels} taset → {rate}"
+  "game.ft.solution": "Üks lahendus: {mode}, {baud} Bd, {levels} taset → {rate}",
+  "welcome.games.title": "Või harjuta mängimise kaudu"
 };

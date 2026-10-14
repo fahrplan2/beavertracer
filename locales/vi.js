@@ -2135,5 +2135,6 @@ export default {
   "pcap.error.nowasm": "WebAssembly không khả dụng trong trình duyệt này, vì vậy trình phân tích gói không thể được tải. Một trình chặn tập lệnh (ví dụ NoScript) hoặc cài đặt trình duyệt có thể đang chặn nó cho trang web này.",
   "pcap.error.wiregasm": "Trình phân tích gói không thể được tải: {error}",
   "welcome.learn.games": "Trò chơi",
-  "welcome.learn.games.desc": "Giải quyết vé và chơi các trò chơi mạng — với điểm, huy hiệu và mã hoàn thành."
+  "welcome.learn.games.desc": "Giải quyết vé và chơi các trò chơi mạng — với điểm, huy hiệu và mã hoàn thành.",
+  "welcome.games.title": "Hoặc thực hành bằng cách chơi"
 };

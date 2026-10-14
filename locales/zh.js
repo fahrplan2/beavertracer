@@ -2135,5 +2135,6 @@ export default {
   "pcap.error.nowasm": "此浏览器不支持 WebAssembly，因此无法加载数据包分析工具。脚本拦截器（例如 NoScript）或浏览器设置可能阻止了该网站的加载。",
   "pcap.error.wiregasm": "无法加载数据包分析工具：{error}",
   "welcome.learn.games": "游戏",
-  "welcome.learn.games.desc": "完成任务并玩网络游戏——赚取积分、徽章和完成代码。"
+  "welcome.learn.games.desc": "完成任务并玩网络游戏——赚取积分、徽章和完成代码。",
+  "welcome.games.title": "或通过游戏练习"
 };

@@ -2135,5 +2135,6 @@ export default {
   "game.ft.send": "Poslat",
   "game.ft.detail": "Úlohy: {scores}",
   "game.ft.victory": "Všechny radiové spoje jsou v provozu!",
-  "game.ft.solution": "Jedno řešení: {mode}, {baud} Bd, {levels} úrovní → {rate}"
+  "game.ft.solution": "Jedno řešení: {mode}, {baud} Bd, {levels} úrovní → {rate}",
+  "welcome.games.title": "Nebo se trénujte hraním"
 };

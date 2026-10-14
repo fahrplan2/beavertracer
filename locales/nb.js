@@ -2134,5 +2134,6 @@ export default {
   "pcap.error.nowasm": "WebAssembly er ikke tilgjengelig i denne nettleseren, så paketanalysatoren kan ikke lastes. En skriptblokkerer (f.eks. NoScript) eller en nettleserinnstilling blokkerer sannsynligvis den for dette nettstedet.",
   "pcap.error.wiregasm": "Paketanalysatoren kunne ikke lastes: {error}",
   "welcome.learn.games": "Spill",
-  "welcome.learn.games.desc": "Løs billetter og spill nettverksspill — med poeng, merker og fullføringskoder."
+  "welcome.learn.games.desc": "Løs billetter og spill nettverksspill — med poeng, merker og fullføringskoder.",
+  "welcome.games.title": "Eller øv deg ved å spille"
 };

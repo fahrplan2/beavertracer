@@ -2134,5 +2134,6 @@ export default {
   "pcap.error.nowasm": "WebAssembly nuk është e disponueshme në këtë shfletues, kështu që ndarësi i paketave nuk mund të ngarkohet. Një bllokues i skripteve (p.sh. NoScript) ose një rregullim i shfletuesit me siguri e bllokon atë për këtë sajt.",
   "pcap.error.wiregasm": "Ndarësi i paketave nuk mund të ngarkohet: {error}",
   "welcome.learn.games": "Lojëra",
-  "welcome.learn.games.desc": "Zgjidhni biletat dhe luani lojëra rrjeti — me pikë, çelvat dhe kode përfundimi."
+  "welcome.learn.games.desc": "Zgjidhni biletat dhe luani lojëra rrjeti — me pikë, çelvat dhe kode përfundimi.",
+  "welcome.games.title": "Ose praktikoni duke luajtur"
 };

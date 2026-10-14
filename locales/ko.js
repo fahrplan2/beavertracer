@@ -2135,5 +2135,6 @@ export default {
   "pcap.error.nowasm": "이 브라우저에서는 WebAssembly를 사용할 수 없어서 패킷 분석기를 로드할 수 없습니다. 스크립트 차단기(예: NoScript) 또는 브라우저 설정이 이 사이트에서 이를 차단하고 있을 수 있습니다.",
   "pcap.error.wiregasm": "패킷 분석기를 로드할 수 없습니다: {error}",
   "welcome.learn.games": "게임",
-  "welcome.learn.games.desc": "티켓을 해결하고 네트워크 게임을 플레이하세요 — 포인트, 배지 및 완료 코드와 함께."
+  "welcome.learn.games.desc": "티켓을 해결하고 네트워크 게임을 플레이하세요 — 포인트, 배지 및 완료 코드와 함께.",
+  "welcome.games.title": "또는 게임을 통해 연습하기"
 };

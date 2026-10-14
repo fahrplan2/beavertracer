@@ -2142,5 +2142,6 @@ export default {
   "game.ft.send": "Enviar",
   "game.ft.detail": "Trabajos: {scores}",
   "game.ft.victory": "¡Todos los radioenlaces están en funcionamiento!",
-  "game.ft.solution": "Una solución: {mode}, {baud} Bd, {levels} niveles → {rate}"
+  "game.ft.solution": "Una solución: {mode}, {baud} Bd, {levels} niveles → {rate}",
+  "welcome.games.title": "O practica jugando"
 };
