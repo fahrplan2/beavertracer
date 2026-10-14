@@ -88,7 +88,7 @@ describe("GameCatalog", () => {
     });
 
     it("the hub only offers the arcade intermezzos for now", () => {
-        expect(INTERMEZZOS.map((g) => g.id)).toEqual(["routing", "vlsm", "belt", "guard"]);
+        expect(INTERMEZZOS.map((g) => g.id)).toEqual(["routing", "vlsm", "belt", "guard", "campus", "radio"]);
         expect(BADGES.map((b) => b.id)).not.toContain("bits");
     });
 

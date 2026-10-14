@@ -349,15 +349,28 @@ export class WelcomeDialog {
         overview.disabled = true;
         const overviewDesc = /** @type {HTMLElement} */ (overview.querySelector(".welcome-item-desc"));
 
-        // The game: tickets and arcade games — opens on top, the course stays as it is.
-        const games = WelcomeDialog._simItem("fa-gamepad", t("welcome.learn.games"), t("welcome.learn.games.desc"),
-            () => close(() => GameHub.show(sim), { keepLessons: true }));
-        games.classList.add("welcome-learn-secondary");
-
         const list = document.createElement("div");
         list.className = "welcome-sim-list";
-        list.append(primary, overview, games);
-        col.append(list, meta);
+        list.append(primary, overview);
+
+        // The game gets its own block below the course — a different way in,
+        // not a third course entry. Opens on top; the course stays as it is.
+        const games = WelcomeDialog._simItem("fa-gamepad", t("welcome.learn.games"), t("welcome.learn.games.desc"),
+            () => close(() => GameHub.show(sim), { keepLessons: true }));
+        games.classList.add("welcome-games-item");
+        const gamesBlock = document.createElement("div");
+        gamesBlock.className = "welcome-games";
+        const gamesTitle = document.createElement("p");
+        gamesTitle.className = "welcome-games-title";
+        gamesTitle.textContent = t("welcome.games.title");
+        gamesBlock.append(gamesTitle, games);
+
+        // One grid row for all of it: the column is a 3-row subgrid (title,
+        // description, buttons) shared with "Build freely".
+        const body = document.createElement("div");
+        body.className = "welcome-learn-body";
+        body.append(list, meta, gamesBlock);
+        col.append(body);
 
         const panel = sim.lessonsPanel;
         /** @param {string} href */

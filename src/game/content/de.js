@@ -29,6 +29,16 @@ export default {
             desc: "Dienst am Empfang: Wer darf in den Serverraum, ans Admin-Konto, in den Noten-Ordner? Stempel richtig — nach Hausordnung.",
             kc: "Datensicherheit: Zutritts-, Zugangs- und Zugriffskontrolle",
         },
+        campus: {
+            title: "Campus-Planer",
+            desc: "Plane das Netz: Kabel, Glasfaser, WLAN oder LoRaWAN — es muss laufen und ins Budget passen.",
+            kc: "Übertragungsmedien, strukturierte Verkabelung, LAN/WAN, LoRaWAN",
+        },
+        radio: {
+            title: "Funk-Tuner",
+            desc: "Stell Symbolrate, Stufen und Betriebsart so ein, dass die Funkstrecke schnell genug und fehlerfrei läuft.",
+            kc: "Nachricht/Information/Signal, Bandbreite, Symbolrate, Bitrate, Betriebsarten",
+        },
         binary: {
             title: "Binär-Blitz",
             desc: "Schalte die richtigen Bits ein — erst mit Hilfe, dann ohne. Zum Schluss liest du Binärzahlen.",
@@ -399,6 +409,8 @@ export default {
         space: { title: "Platzsparer", desc: "Adressraum-Tetris mit mindestens 90 Punkten" },
         belt: { title: "Fließband-Profi", desc: "Paket-Förderband mit mindestens 90 Punkten" },
         gate: { title: "Schlüsselmeister", desc: "Türsteher mit mindestens 90 Punkten" },
+        campus: { title: "Netzplaner", desc: "Campus-Planer mit mindestens 90 Punkten" },
+        radio: { title: "Funkprofi", desc: "Funk-Tuner mit mindestens 90 Punkten" },
         bits: { title: "Bit-Meister", desc: "Binär-Blitz mit mindestens 90 Punkten" },
         masks: { title: "Masken-Profi", desc: "Masken-Training mit mindestens 90 Punkten" },
         guard: { title: "Torwächter", desc: "„Wer darf rein?“ mit mindestens 90 Punkten" },
@@ -516,6 +528,106 @@ export default {
                 "Daten kommen dazu: Wer darf welche Ordner lesen oder ändern?",
                 "Genau hinsehen: Ablaufdatum und Uhrzeit zählen jetzt.",
                 "Großer Andrang: alle Regeln, viele Leute.",
+            ],
+        },
+        campus: {
+            intro: `<p>Herr Biber gibt dir Bauprojekte: Räume, Gebäude und Geräte müssen ans Netz. Für jede <strong>Verbindung</strong> wählst du das <strong>Medium</strong> — ab Projekt 3 bei Kabeln auch den <strong>Bereich der strukturierten Verkabelung</strong>.</p>
+                <ul>
+                    <li>Was jedes Medium kann und kostet, steht im <strong>Datenblatt</strong>.</li>
+                    <li>Bei der <strong>Inbetriebnahme</strong> zeigt sich, ob alles läuft. Du hast pro Projekt 3 Versuche.</li>
+                    <li>Das Netz muss ins <strong>Budget</strong> passen. Je näher du an der günstigsten Lösung bist, desto mehr Punkte.</li>
+                </ul>`,
+            media: {
+                tp: { name: "Twisted Pair", spec: "Kupferkabel. Bis 100 m, bis 10 Gbit/s. Störanfällig bei starken elektromagnetischen Feldern. 20 € + 2 €/m." },
+                fiber: { name: "Glasfaser", spec: "Lichtwellenleiter. Bis 2 km auf dem eigenen Gelände, sehr hohe Datenraten, unempfindlich gegen Störungen. 300 € + 8 €/m." },
+                wlan: { name: "WLAN", spec: "Funk für mobile Geräte. Bis 50 m, bis 500 Mbit/s (geteilt), braucht Stromanschluss. 250 € pro Access Point." },
+                lora: { name: "LoRaWAN", spec: "Funk über Kilometer (bis 5 km) mit sehr wenig Strom — aber nur winzige Datenmengen (Sensoren). 40 € pro Sensor-Funkmodul." },
+                wan: { name: "WAN-Leitung", spec: "Leitung vom Provider. Die einzige Möglichkeit, über fremden Grund (Straßen, andere Grundstücke) zu kommen. 900 €." },
+            },
+            areas: { primary: "Primärbereich", secondary: "Sekundärbereich", tertiary: "Tertiärbereich" },
+            areaHelp: "Primär: zwischen Gebäuden · Sekundär: zwischen Stockwerken · Tertiär: vom Etagenverteiler zur Dose",
+            reasons: {
+                tpLength: "Twisted Pair schafft nur 100 m.",
+                tpSpeed: "Twisted Pair schafft höchstens 10 Gbit/s.",
+                emv: "In der Werkhalle stören die Maschinen Kupferkabel.",
+                mobile: "Mobile Geräte hängen nicht am Kabel.",
+                battery: "Der Sensor läuft auf Batterie — vor Ort gibt es keinen Kabelanschluss.",
+                public: "Über fremden Grund darfst du keine eigenen Leitungen verlegen.",
+                fiberLength: "Für eigene Glasfaser ist die Strecke zu lang.",
+                wlanRange: "WLAN reicht nur etwa 50 m.",
+                wlanSpeed: "WLAN schafft die nötige Datenrate nicht.",
+                wlanPower: "Ein WLAN-Modul würde die Batterie in Tagen leeren.",
+                loraData: "LoRaWAN überträgt nur winzige Datenmengen.",
+                loraRange: "So weit reicht LoRaWAN nicht.",
+                wanLocal: "Eine Providerleitung braucht man nur über fremden Grund — hier ist es dein eigenes Gelände.",
+                area: "Falscher Bereich der strukturierten Verkabelung.",
+                missing: "Noch kein Medium gewählt.",
+            },
+            levels: [
+                {
+                    title: "Klassenraum 1.12",
+                    desc: "Ein neuer Klassenraum bekommt Netz: Lehrer-PC, Drucker, Beamer und ein Wagen mit Tablets.",
+                    nodes: ["Switch im Raum", "Lehrer-PC", "Drucker", "Tablet-Wagen", "Beamer"],
+                    links: ["Lehrer-PC", "Drucker", "Tablets der Klasse", "Beamer"],
+                },
+                {
+                    title: "Werkstatt und Serverraum",
+                    desc: "Der Kern-Switch braucht Anschlüsse zu Server, Werkhalle, Werkstatt-Büro und für Gäste im Foyer.",
+                    nodes: ["Kern-Switch", "Server", "CNC-Maschine (Werkhalle)", "Büro-PC Werkstatt", "Gäste im Foyer"],
+                    links: ["Server", "CNC-Maschine in der Werkhalle", "Büro-PC Werkstatt", "Smartphones der Gäste"],
+                },
+                {
+                    title: "Das Schulgelände",
+                    desc: "Jetzt geht es um strukturierte Verkabelung: Gebäude, Stockwerke und Räume.",
+                    nodes: ["Gebäudeverteiler", "Turnhalle", "Etagenverteiler OG", "Dose Raum 2.07", "Tablets Turnhalle"],
+                    links: ["Hauptgebäude ↔ Turnhalle", "Gebäudeverteiler ↔ Etagenverteiler OG", "Etagenverteiler ↔ Dose Raum 2.07", "Tablets in der Turnhalle"],
+                },
+                {
+                    title: "Garten, Sportplatz, Hausmeister",
+                    desc: "Messwerte von draußen, das Hausmeisterhaus und eine Kamera am Eingang.",
+                    nodes: ["Hauptgebäude", "Sensoren Schulgarten", "Wetterstation Sportplatz", "Hausmeisterhaus", "Kamera Eingang"],
+                    links: ["Bodenfeuchte-Sensoren im Schulgarten", "Wetterstation am Sportplatz", "Hausmeisterhaus ↔ Hauptgebäude", "Kamera am Eingang"],
+                },
+                {
+                    title: "Die Außenstelle",
+                    desc: "Die Musikschule 12 km entfernt wird angebunden — und braucht selbst ein Netz.",
+                    nodes: ["Hauptschule", "Firewall", "Außenstelle Haus A", "Außenstelle Haus B", "PC-Raum Haus A", "Lehrer-Laptops"],
+                    links: ["Hauptschule ↔ Außenstelle (12 km)", "Switch ↔ Firewall", "Haus A ↔ Haus B", "Etagenverteiler ↔ PC-Raum", "Lehrer-Laptops in Haus B"],
+                },
+            ],
+        },
+        radio: {
+            intro: `<p>Die Schule richtet Funkstrecken ein. Für jeden <strong>Funkauftrag</strong> stellst du drei Dinge ein:</p>
+                <ul>
+                    <li><strong>Betriebsart</strong>: Simplex (nur eine Richtung), Halbduplex (abwechselnd) oder Vollduplex (gleichzeitig).</li>
+                    <li><strong>Symbolrate</strong> in Baud: Wie viele Symbole pro Sekunde gesendet werden.</li>
+                    <li><strong>Stufen</strong> pro Symbol: Je mehr Stufen, desto mehr Bit trägt ein Symbol.</li>
+                </ul>
+                <p>Das Oszilloskop zeigt dir live, wie das <strong>Signal</strong> aussieht. Wenn alles passt, drück <strong>Senden</strong>.</p>`,
+            sheet: [
+                "Bitrate = Symbolrate × Bit pro Symbol. Ein Symbol mit M Stufen trägt log₂(M) Bit.",
+                "Ein Kanal mit der Bandbreite B schafft höchstens 2 · B Symbole pro Sekunde.",
+                "Vollduplex auf einem Kanal: Die Bandbreite wird auf beide Richtungen aufgeteilt — je Richtung nur noch B Symbole pro Sekunde.",
+                "Mehr Stufen liegen enger beieinander. Bei starkem Rauschen kippen Symbole in die Nachbarstufe.",
+            ],
+            modes: { simplex: "Simplex", half: "Halbduplex", full: "Vollduplex" },
+            noise: { low: "gering", medium: "mittel", high: "stark" },
+            info: "Information",
+            message: "Nachricht",
+            signal: "Signal",
+            reasons: {
+                mode: "Die Betriebsart passt nicht zum Einsatz.",
+                bandwidth: "Die Symbolrate ist zu hoch für die Bandbreite — die Symbole verschwimmen.",
+                noise: "Zu viele Stufen für dieses Rauschen — Symbole kippen, es kommen Bitfehler an.",
+                slow: "Die Bitrate reicht nicht.",
+            },
+            missions: [
+                { title: "Wetterstation", desc: "Die Wetterstation auf dem Dach schickt ihre Messwerte ins Sekretariat. Antworten muss dort niemand.", text: "18 °C, kein Regen" },
+                { title: "Hausmeister-Funk", desc: "Die Hausmeister sprechen über Funkgeräte miteinander — wer redet, drückt die Taste.", text: "Bin gleich im Keller" },
+                { title: "Schultelefon", desc: "Ein Funktelefon für das Sekretariat. Beide sollen gleichzeitig sprechen können.", text: "Hallo, Sekretariat?" },
+                { title: "Kellersensor", desc: "Ein Wassermelder im Keller funkt nur Alarme nach oben. Neben der Heizung rauscht es stark.", text: "Wasser!" },
+                { title: "Videostrecke", desc: "Ein Kamerabild aus der Sporthalle geht live auf die Leinwand in der Aula.", text: "Live-Bild" },
+                { title: "Gegensprechanlage", desc: "Die Sprechanlage am Eingang: Besucher und Sekretariat reden gleichzeitig.", text: "Wer ist da?" },
             ],
         },
         binary: {

@@ -25,6 +25,16 @@ export default {
             desc: "Front desk duty: who may enter the server room, use the admin account, open the grades folder? Stamp right — by the house rules.",
             kc: "Data security: physical, system and data access control",
         },
+        campus: {
+            title: "Campus Planner",
+            desc: "Plan the network: copper, fibre, Wi-Fi or LoRaWAN — it has to work and fit the budget.",
+            kc: "Transmission media, structured cabling, LAN/WAN, LoRaWAN",
+        },
+        radio: {
+            title: "Radio Tuner",
+            desc: "Set symbol rate, levels and transmission mode so the radio link is fast enough and error-free.",
+            kc: "Message/information/signal, bandwidth, symbol rate, bit rate, transmission modes",
+        },
         binary: {
             title: "Binary Blitz",
             desc: "Switch on the right bits — first with help, then without. Finally you read binary numbers.",
@@ -395,6 +405,8 @@ export default {
         space: { title: "Space saver", desc: "Address Space Tetris with at least 90 points" },
         belt: { title: "Belt pro", desc: "Packet Belt with at least 90 points" },
         gate: { title: "Key master", desc: "Gatekeeper with at least 90 points" },
+        campus: { title: "Network planner", desc: "Campus Planner with at least 90 points" },
+        radio: { title: "Radio pro", desc: "Radio Tuner with at least 90 points" },
         bits: { title: "Bit master", desc: "Binary Blitz with at least 90 points" },
         masks: { title: "Mask pro", desc: "Mask Training with at least 90 points" },
         guard: { title: "Gatekeeper", desc: "“Who gets in?” with at least 90 points" },
@@ -512,6 +524,106 @@ export default {
                 "Data joins in: who may read or change which folders?",
                 "Look closely: expiry dates and the time now count.",
                 "Rush hour: all rules, lots of people.",
+            ],
+        },
+        campus: {
+            intro: `<p>Mr Biber hands you building projects: rooms, buildings and devices need to be connected. For every <strong>link</strong> you choose the <strong>medium</strong> — from project 3 on, for cables also the <strong>area of structured cabling</strong>.</p>
+                <ul>
+                    <li>What each medium can do and costs is in the <strong>data sheet</strong>.</li>
+                    <li><strong>Commissioning</strong> shows whether everything works. You have 3 attempts per project.</li>
+                    <li>The network has to fit the <strong>budget</strong>. The closer you get to the cheapest solution, the more points.</li>
+                </ul>`,
+            media: {
+                tp: { name: "Twisted pair", spec: "Copper cable. Up to 100 m, up to 10 Gbit/s. Sensitive to strong electromagnetic fields. €20 + €2/m." },
+                fiber: { name: "Fibre", spec: "Optical fibre. Up to 2 km on your own site, very high data rates, immune to interference. €300 + €8/m." },
+                wlan: { name: "Wi-Fi", spec: "Radio for mobile devices. Up to 50 m, up to 500 Mbit/s (shared), needs mains power. €250 per access point." },
+                lora: { name: "LoRaWAN", spec: "Radio over kilometres (up to 5 km) on very little power — but only tiny amounts of data (sensors). €40 per sensor radio." },
+                wan: { name: "WAN line", spec: "A line from a provider. The only way across ground that isn't yours (roads, other properties). €900." },
+            },
+            areas: { primary: "Primary area", secondary: "Secondary area", tertiary: "Tertiary area" },
+            areaHelp: "Primary: between buildings · Secondary: between floors · Tertiary: floor distributor to socket",
+            reasons: {
+                tpLength: "Twisted pair only reaches 100 m.",
+                tpSpeed: "Twisted pair carries at most 10 Gbit/s.",
+                emv: "The machines in the workshop disturb copper cables.",
+                mobile: "Mobile devices aren't on a cable.",
+                battery: "The sensor runs on a battery — there's no cable connection on site.",
+                public: "You may not lay your own lines across ground that isn't yours.",
+                fiberLength: "The distance is too long for your own fibre.",
+                wlanRange: "Wi-Fi only reaches about 50 m.",
+                wlanSpeed: "Wi-Fi can't deliver the data rate needed.",
+                wlanPower: "A Wi-Fi module would drain the battery within days.",
+                loraData: "LoRaWAN only carries tiny amounts of data.",
+                loraRange: "LoRaWAN doesn't reach that far.",
+                wanLocal: "You only need a provider line across other people's ground — this is your own site.",
+                area: "Wrong area of structured cabling.",
+                missing: "No medium chosen yet.",
+            },
+            levels: [
+                {
+                    title: "Classroom 1.12",
+                    desc: "A new classroom gets connected: teacher PC, printer, projector and a trolley of tablets.",
+                    nodes: ["Switch in the room", "Teacher PC", "Printer", "Tablet trolley", "Projector"],
+                    links: ["Teacher PC", "Printer", "The class's tablets", "Projector"],
+                },
+                {
+                    title: "Workshop and server room",
+                    desc: "The core switch needs connections to the server, the workshop hall, the workshop office and for guests in the foyer.",
+                    nodes: ["Core switch", "Server", "CNC machine (workshop hall)", "Workshop office PC", "Guests in the foyer"],
+                    links: ["Server", "CNC machine in the workshop hall", "Workshop office PC", "Guests' smartphones"],
+                },
+                {
+                    title: "The school site",
+                    desc: "Now it's about structured cabling: buildings, floors and rooms.",
+                    nodes: ["Building distributor", "Sports hall", "Floor distributor 1st floor", "Socket room 2.07", "Tablets sports hall"],
+                    links: ["Main building ↔ sports hall", "Building distributor ↔ floor distributor", "Floor distributor ↔ socket room 2.07", "Tablets in the sports hall"],
+                },
+                {
+                    title: "Garden, sports field, caretaker",
+                    desc: "Readings from outdoors, the caretaker's house and a camera at the entrance.",
+                    nodes: ["Main building", "Sensors school garden", "Weather station sports field", "Caretaker's house", "Camera entrance"],
+                    links: ["Soil moisture sensors in the school garden", "Weather station at the sports field", "Caretaker's house ↔ main building", "Camera at the entrance"],
+                },
+                {
+                    title: "The branch site",
+                    desc: "The music school 12 km away gets connected — and needs a network of its own.",
+                    nodes: ["Main school", "Firewall", "Branch building A", "Branch building B", "PC room building A", "Teacher laptops"],
+                    links: ["Main school ↔ branch (12 km)", "Switch ↔ firewall", "Building A ↔ building B", "Floor distributor ↔ PC room", "Teacher laptops in building B"],
+                },
+            ],
+        },
+        radio: {
+            intro: `<p>The school is setting up radio links. For every <strong>radio job</strong> you set three things:</p>
+                <ul>
+                    <li><strong>Transmission mode</strong>: simplex (one direction only), half duplex (taking turns) or full duplex (simultaneous).</li>
+                    <li><strong>Symbol rate</strong> in baud: how many symbols are sent per second.</li>
+                    <li><strong>Levels</strong> per symbol: the more levels, the more bits a symbol carries.</li>
+                </ul>
+                <p>The oscilloscope shows you live what the <strong>signal</strong> looks like. When everything fits, press <strong>Send</strong>.</p>`,
+            sheet: [
+                "Bit rate = symbol rate × bits per symbol. A symbol with M levels carries log₂(M) bits.",
+                "A channel with bandwidth B carries at most 2 · B symbols per second.",
+                "Full duplex on one channel: the bandwidth is split between both directions — only B symbols per second each way.",
+                "More levels sit closer together. With strong noise, symbols flip into the neighbouring level.",
+            ],
+            modes: { simplex: "Simplex", half: "Half duplex", full: "Full duplex" },
+            noise: { low: "low", medium: "medium", high: "strong" },
+            info: "Information",
+            message: "Message",
+            signal: "Signal",
+            reasons: {
+                mode: "The transmission mode doesn't fit the job.",
+                bandwidth: "The symbol rate is too high for the bandwidth — the symbols blur.",
+                noise: "Too many levels for this noise — symbols flip, bit errors arrive.",
+                slow: "The bit rate isn't enough.",
+            },
+            missions: [
+                { title: "Weather station", desc: "The weather station on the roof sends its readings to the school office. Nobody needs to reply.", text: "18 °C, no rain" },
+                { title: "Caretakers' radio", desc: "The caretakers talk to each other on radios — whoever speaks presses the button.", text: "Off to the basement" },
+                { title: "School phone", desc: "A cordless phone for the school office. Both sides should be able to talk at the same time.", text: "Hello, school office?" },
+                { title: "Basement sensor", desc: "A water sensor in the basement only radios alarms upstairs. Next to the boiler there's a lot of noise.", text: "Water!" },
+                { title: "Video link", desc: "A camera picture from the sports hall goes live onto the screen in the assembly hall.", text: "Live picture" },
+                { title: "Intercom", desc: "The intercom at the entrance: visitor and school office talk at the same time.", text: "Who's there?" },
             ],
         },
         binary: {

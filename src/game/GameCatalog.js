@@ -10,7 +10,7 @@
 import { fmt, gameContent } from "./content.js";
 
 /**
- * @typedef {{ id: string, no: number, icon: string, kind: "rounds"|"routing"|"vlsm"|"belt"|"guard" }} Intermezzo  routing/vlsm/belt/guard = arcade games with their own view
+ * @typedef {{ id: string, no: number, icon: string, kind: "rounds"|"routing"|"vlsm"|"belt"|"guard"|"campus"|"radio" }} Intermezzo  everything but "rounds" = arcade games with their own view
  * @typedef {{ fn: string, args: (string|number)[] }} TicketCheck
  * @typedef {{ id: string, no: number, act: number, prio: "low"|"medium"|"high", lesson: string, sim: string, checks: TicketCheck[], answer: number }} Ticket
  */
@@ -25,6 +25,8 @@ export const ALL_INTERMEZZOS = [
     { id: "vlsm", no: 7, icon: "fa-cubes-stacked", kind: "vlsm" },
     { id: "belt", no: 8, icon: "fa-dolly", kind: "belt" },
     { id: "guard", no: 9, icon: "fa-user-shield", kind: "guard" },
+    { id: "campus", no: 10, icon: "fa-map-location-dot", kind: "campus" },
+    { id: "radio", no: 11, icon: "fa-satellite-dish", kind: "radio" },
     { id: "binary", no: 1, icon: "fa-toggle-on", kind: "rounds" },
     { id: "mask", no: 2, icon: "fa-masks-theater", kind: "rounds" },
     { id: "access", no: 3, icon: "fa-door-closed", kind: "rounds" },
@@ -157,6 +159,8 @@ const ALL_BADGES = [
     { id: "space", icon: "fa-cubes-stacked", text: "space", game: "vlsm", earned: (s) => best(s, "vlsm") >= 90 },
     { id: "belt", icon: "fa-dolly", text: "belt", game: "belt", earned: (s) => best(s, "belt") >= 90 },
     { id: "gate", icon: "fa-user-shield", text: "gate", game: "guard", earned: (s) => best(s, "guard") >= 90 },
+    { id: "campus", icon: "fa-map-location-dot", text: "campus", game: "campus", earned: (s) => best(s, "campus") >= 90 },
+    { id: "radio", icon: "fa-satellite-dish", text: "radio", game: "radio", earned: (s) => best(s, "radio") >= 90 },
     { id: "bits", icon: "fa-toggle-on", text: "bits", game: "binary", earned: (s) => best(s, "binary") >= 90 },
     { id: "masks", icon: "fa-masks-theater", text: "masks", game: "mask", earned: (s) => best(s, "mask") >= 90 },
     { id: "guard", icon: "fa-shield-halved", text: "guard", game: "access", earned: (s) => best(s, "access") >= 90 },
