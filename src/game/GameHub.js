@@ -19,6 +19,8 @@ import { RoutingRushView } from "./RoutingRushView.js";
 import { VlsmView } from "./VlsmView.js";
 import { BinaryBeltView } from "./BinaryBeltView.js";
 import { GuardView } from "./GuardView.js";
+import { CampusView } from "./CampusView.js";
+import { RadioView } from "./RadioView.js";
 import { runTicket, ticketLabel } from "./TicketRunner.js";
 import { button, codeChip, copyText, el, esc, icon, starsFor, starsHtml } from "./ui.js";
 
@@ -73,7 +75,10 @@ export class GameHub {
         this.body = el("div", "game-body");
         this.dlg.append(this.header, this.nav, this.body);
         this.backdrop.append(this.dlg);
-        this._onKey = (/** @type {KeyboardEvent} */ ev) => { if (ev.key === "Escape") this.close(); };
+        // Escape that just left browser fullscreen shouldn't also close the hub.
+        this._onKey = (/** @type {KeyboardEvent} */ ev) => { if (ev.key === "Escape" && !document.fullscreenElement) this.close(); };
+        this._onFullscreen = () => this._renderHeader();
+        document.addEventListener("fullscreenchange", this._onFullscreen);
         this.backdrop.addEventListener("click", (ev) => { if (ev.target === this.backdrop) this.close(); });
         this._unsub = gameState.onChange(() => this._renderHeader());
     }
@@ -89,8 +94,10 @@ export class GameHub {
 
     close() {
         this._stopGame();
+        if (document.fullscreenElement === this.backdrop) void document.exitFullscreen().catch(() => {});
         this.backdrop.remove();
         document.removeEventListener("keydown", this._onKey);
+        document.removeEventListener("fullscreenchange", this._onFullscreen);
         this._unsub();
         if (openHub === this) openHub = null;
     }
@@ -98,6 +105,17 @@ export class GameHub {
     _stopGame() {
         this.activeGame?.dispose();
         this.activeGame = null;
+        // Back in the hub: normal dialog size again.
+        this.dlg.classList.remove("game-dlg--full");
+    }
+
+    /** Browser fullscreen for the whole game window (where the browser allows it). */
+    async _toggleFullscreen() {
+        try {
+            if (document.fullscreenElement) await document.exitFullscreen();
+            else await this.backdrop.requestFullscreen();
+        } catch { /* not allowed here — the game still fills the app window */ }
+        this._renderHeader();
     }
 
     // ── Header ───────────────────────────────────────────────────────
@@ -122,6 +140,14 @@ export class GameHub {
                     ? t("game.player.xpNext", { xp, n: rank.next - xp, rank: esc(rankTitle(rank.index + 1)) })
                     : t("game.player.xpTop", { xp })}</p>
             </div>` : ""}`;
+        if (document.fullscreenEnabled) {
+            const full = !!document.fullscreenElement;
+            const fs = button("game-fullscreen", icon(full ? "fa-compress" : "fa-expand"));
+            fs.title = t(full ? "game.fullscreenExit" : "game.fullscreen");
+            fs.setAttribute("aria-label", fs.title);
+            fs.addEventListener("click", () => void this._toggleFullscreen());
+            this.header.append(fs);
+        }
         const close = button("game-close", "×");
         close.title = t("game.close");
         close.setAttribute("aria-label", close.title);
@@ -239,7 +265,7 @@ export class GameHub {
             const high = gameState.data.high[g.id];
             const arcade = g.kind !== "rounds";
             const card = button("game-card game-card--intermezzo" + (r ? " is-done" : "") + (arcade ? " game-card--arcade" : ""), `
-                <span class="game-card-top"><span class="game-card-icon">${icon(g.icon)}</span>${arcade ? `<span class="game-tag">${t("game.intermezzos.arcade")}</span>` : ""}</span>
+                <span class="game-card-top"><span class="game-card-icon">${icon(g.icon)}</span>${arcade ? `<span class="game-tag">${t(g.kind === "campus" || g.kind === "radio" ? "game.intermezzos.planning" : "game.intermezzos.arcade")}</span>` : ""}</span>
                 <span class="game-card-title">${esc(tx.title)}</span>
                 <span class="game-card-desc">${esc(tx.desc)}</span>
                 <span class="game-card-kc">${icon("fa-bookmark")} ${esc(tx.kc)}</span>
@@ -260,6 +286,8 @@ export class GameHub {
         const tx = intermezzoText(id);
         this._stopGame();
         this.nav.hidden = true;
+        // Intermezzos get the whole app window — the plans and playfields need the room.
+        this.dlg.classList.add("game-dlg--full");
         const host = el("div", "game-section");
         this.body.replaceChildren(host);
         const onExit = () => this._showTab("intermezzos");
@@ -273,6 +301,8 @@ export class GameHub {
             const view = meta.kind === "vlsm" ? new VlsmView(host, arcadeOpts)
                 : meta.kind === "belt" ? new BinaryBeltView(host, arcadeOpts)
                 : meta.kind === "guard" ? new GuardView(host, arcadeOpts)
+                : meta.kind === "campus" ? new CampusView(host, arcadeOpts)
+                : meta.kind === "radio" ? new RadioView(host, arcadeOpts)
                 : new RoutingRushView(host, arcadeOpts);
             this.activeGame = view;
             view.start();
