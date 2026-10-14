@@ -10,6 +10,7 @@ import { buildChapterOverview } from "./ChapterOverview.js";
 import { addScrollHints } from "./scrollHints.js";
 import { downloadInfo, loadPage, pageRoute } from "./StaticPages.js";
 import { initDownloadsPage } from "./DownloadIndex.js";
+import { GameHub } from "../game/GameHub.js";
 
 /**
  * Info pages shown as sub-views (see StaticPages.js); routes without an
@@ -348,9 +349,14 @@ export class WelcomeDialog {
         overview.disabled = true;
         const overviewDesc = /** @type {HTMLElement} */ (overview.querySelector(".welcome-item-desc"));
 
+        // The game: tickets and arcade games — opens on top, the course stays as it is.
+        const games = WelcomeDialog._simItem("fa-gamepad", t("welcome.learn.games"), t("welcome.learn.games.desc"),
+            () => close(() => GameHub.show(sim), { keepLessons: true }));
+        games.classList.add("welcome-learn-secondary");
+
         const list = document.createElement("div");
         list.className = "welcome-sim-list";
-        list.append(primary, overview);
+        list.append(primary, overview, games);
         col.append(list, meta);
 
         const panel = sim.lessonsPanel;
