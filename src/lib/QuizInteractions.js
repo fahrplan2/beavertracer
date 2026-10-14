@@ -239,6 +239,8 @@ if (typeof document !== "undefined") {
       summary.className = "quiz-evaluate-summary " + (correct === total ? "quiz-summary-ok" : "quiz-summary-err");
     }
     if (total > 0) {
+      // For listeners outside the quiz (the in-app game awards XP for it).
+      btn.dispatchEvent(new CustomEvent("quiz-evaluated", { bubbles: true, detail: { ids, correct, total } }));
       btn.dataset.originalLabel = btn.textContent || "";
       btn.textContent = document.body.dataset.quizRetry || btn.dataset.originalLabel || "";
       btn.dataset.mode = "retry";
