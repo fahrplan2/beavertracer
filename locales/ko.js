@@ -1771,6 +1771,7 @@ export default {
   "lessons.sim.resetConfirm": "시뮬레이션을 이 페이지의 시작으로 초기화하시겠습니까? 변경사항이 손실됩니다.",
   "pcap.tree.osiLayers": "OSI 계층 {n} — {name}",
   "welcome.learn.title": "배우기",
+  "welcome.games.title": "게임",
   "welcome.learn.desc": "대화형 강의: 네트워크를 단계별로 구축하고, 관찰하고, 이해하세요.",
   "welcome.learn.chapters": "{count}개 챕터 사용 가능",
   "welcome.learn.start": "강의 시작",
@@ -1823,7 +1824,7 @@ export default {
   "game.toolbar": "게임",
   "game.toolbarTitle": "학교 네트워크 미션: 티켓, 인터메조 및 완료 코드",
   "game.title": "학교 네트워크 미션",
-  "game.subtitle": "네트워킹 · 고등학교 · 주제 12.4",
+  "game.subtitle": "놀이로 네트워크를 탐험하세요",
   "game.fullscreen": "전체 화면",
   "game.fullscreenExit": "전체 화면 종료",
   "game.close": "닫기",
@@ -2136,5 +2137,4 @@ export default {
   "pcap.error.wiregasm": "패킷 분석기를 로드할 수 없습니다: {error}",
   "welcome.learn.games": "게임",
   "welcome.learn.games.desc": "티켓을 해결하고 네트워크 게임을 플레이하세요 — 포인트, 배지 및 완료 코드와 함께.",
-  "welcome.games.title": "또는 게임을 통해 연습하기"
 };

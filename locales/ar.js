@@ -1771,6 +1771,7 @@ export default {
   "lessons.sim.resetConfirm": "إعادة تعيين المحاكاة إلى بداية هذه الصفحة؟ سيتم فقدان التغييرات الخاصة بك.",
   "pcap.tree.osiLayers": "طبقات OSI {n} — {name}",
   "welcome.learn.title": "تعلم",
+  "welcome.games.title": "العب",
   "welcome.learn.desc": "الدورة التفاعلية: بناء ومراقبة وفهم الشبكات خطوة بخطوة.",
   "welcome.learn.chapters": "{count} فصول متاحة",
   "welcome.learn.start": "ابدأ الدورة",
@@ -1823,7 +1824,7 @@ export default {
   "game.toolbar": "الألعاب",
   "game.toolbarTitle": "شبكة مدرسة المهام: التذاكر والفواصل وأكواد الإنجاز",
   "game.title": "شبكة مدرسة المهام",
-  "game.subtitle": "الشبكات · الثانوية العليا · الموضوع 12.4",
+  "game.subtitle": "اكتشف الشبكات باللعب",
   "game.fullscreen": "ملء الشاشة",
   "game.fullscreenExit": "الخروج من ملء الشاشة",
   "game.close": "إغلاق",
@@ -2136,5 +2137,4 @@ export default {
   "pcap.error.wiregasm": "لم يتمكن من تحميل محلل الحزم: {error}",
   "welcome.learn.games": "الألعاب",
   "welcome.learn.games.desc": "حل التذاكر والعب ألعاب الشبكة — مع النقاط والشارات ورموز الإنجاز.",
-  "welcome.games.title": "أو تدرب من خلال اللعب"
 };

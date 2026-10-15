@@ -1771,6 +1771,7 @@ export default {
   "lessons.sim.resetConfirm": "Återställ simuleringen till början av denna sida? Dina ändringar går förlorade.",
   "pcap.tree.osiLayers": "OSI-lager {n} — {name}",
   "welcome.learn.title": "Lär dig",
+  "welcome.games.title": "Spela",
   "welcome.learn.desc": "Den interaktiva kursen: bygg, observera och förstå nätverk steg för steg.",
   "welcome.learn.chapters": "{count} kapitel tillgängliga",
   "welcome.learn.start": "Starta kursen",
@@ -1823,7 +1824,7 @@ export default {
   "game.toolbar": "Spel",
   "game.toolbarTitle": "Mission Skolnät: ärenden, intermezzos och slutförandekoder",
   "game.title": "Mission Skolnät",
-  "game.subtitle": "Nätverk · gymnasium · område 12.4",
+  "game.subtitle": "Upptäck nätverk genom lek",
   "game.fullscreen": "Helskärm",
   "game.fullscreenExit": "Avsluta helskärm",
   "game.close": "Stäng",
@@ -2136,5 +2137,4 @@ export default {
   "pcap.error.wiregasm": "Paketdissekatorn kunde inte laddas: {error}",
   "welcome.learn.games": "Spel",
   "welcome.learn.games.desc": "Lösa ärenden och spela nätverksspel — med poäng, märken och slutförandekoder.",
-  "welcome.games.title": "Eller öva genom att spela"
 };

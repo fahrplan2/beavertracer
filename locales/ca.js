@@ -1770,6 +1770,7 @@ export default {
   "lessons.sim.resetConfirm": "Reiniciar la simulació al començament d'aquesta pàgina? Els teus canvis es perdran.",
   "pcap.tree.osiLayers": "Capes OSI {n} — {name}",
   "welcome.learn.title": "Aprendre",
+  "welcome.games.title": "Jugar",
   "welcome.learn.desc": "El curs interactiu: construeix, observa i comprèn xarxes pas a pas.",
   "welcome.learn.chapters": "{count} capítols disponibles",
   "welcome.learn.start": "Comença el curs",
@@ -1822,7 +1823,7 @@ export default {
   "game.toolbar": "Jocs",
   "game.toolbarTitle": "Missió Xarxa Escolar: tiquets, intermezzos i codis de completació",
   "game.title": "Missió Xarxa Escolar",
-  "game.subtitle": "Xarxes · educació secundària · tema 12.4",
+  "game.subtitle": "Descobreix les xarxes jugant",
   "game.fullscreen": "Pantalla completa",
   "game.fullscreenExit": "Sortir de pantalla completa",
   "game.close": "Tancar",
@@ -2135,5 +2136,4 @@ export default {
   "pcap.error.wiregasm": "El disseccionador de paquets no s'ha pogut carregar: {error}",
   "welcome.learn.games": "Jocs",
   "welcome.learn.games.desc": "Resol entrades i juga a jocs de xarxa — amb punts, insígnies i codis de finalització.",
-  "welcome.games.title": "O practica jugant"
 };

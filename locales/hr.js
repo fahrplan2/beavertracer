@@ -1771,6 +1771,7 @@ export default {
   "lessons.sim.resetConfirm": "Resetiraj simulaciju na početak ove stranice? Vaše izmjene će biti izgubljene.",
   "pcap.tree.osiLayers": "OSI slojevi {n} — {name}",
   "welcome.learn.title": "Učenje",
+  "welcome.games.title": "Igranje",
   "welcome.learn.desc": "Interaktivni tečaj: gradite, promatrajte i razumijte mreže korak po korak.",
   "welcome.learn.chapters": "{count} poglavlja dostupno",
   "welcome.learn.start": "Započni tečaj",
@@ -1823,7 +1824,7 @@ export default {
   "game.toolbar": "Igre",
   "game.toolbarTitle": "Manja misija za školsku mrežu: zahtjevi, intermezzo i kodovi završetka",
   "game.title": "Manja misija za školsku mrežu",
-  "game.subtitle": "Umrežavanje · viša srednja · tema 12.4",
+  "game.subtitle": "Otkrij mreže kroz igru",
   "game.fullscreen": "Prikaz preko cijelog ekrana",
   "game.fullscreenExit": "Izlaz iz prikaza preko cijelog ekrana",
   "game.close": "Zatvori",
@@ -2136,5 +2137,4 @@ export default {
   "game.ft.detail": "Poslovi: {scores}",
   "game.ft.victory": "Sve radijske veze su u pogonu!",
   "game.ft.solution": "Jedno rješenje: {mode}, {baud} Bd, {levels} razina → {rate}",
-  "welcome.games.title": "Ili vježbajte igranjem"
 };

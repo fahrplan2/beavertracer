@@ -1771,6 +1771,7 @@ export default {
   "lessons.sim.resetConfirm": "Reset simulasi ke awal halaman ini? Perubahan Anda akan hilang.",
   "pcap.tree.osiLayers": "Lapisan OSI {n} — {name}",
   "welcome.learn.title": "Pelajari",
+  "welcome.games.title": "Bermain",
   "welcome.learn.desc": "Kursus interaktif: bangun, amati, dan pahami jaringan langkah demi langkah.",
   "welcome.learn.chapters": "{count} bab tersedia",
   "welcome.learn.start": "Mulai kursus",
@@ -1823,7 +1824,7 @@ export default {
   "game.toolbar": "Permainan",
   "game.toolbarTitle": "Jaringan Sekolah Misi: tiket, intermezzo dan kode penyelesaian",
   "game.title": "Jaringan Sekolah Misi",
-  "game.subtitle": "Jaringan · sekolah menengah atas · topik 12.4",
+  "game.subtitle": "Jelajahi jaringan sambil bermain",
   "game.close": "Tutup",
   "game.tabs.label": "Bagian",
   "game.tab.tickets": "Tiket",
@@ -2136,5 +2137,4 @@ export default {
   "game.ft.detail": "Pekerjaan: {scores}",
   "game.ft.victory": "Semua tautan radio berjalan!",
   "game.ft.solution": "Salah satu solusi: {mode}, {baud} Bd, {levels} level → {rate}",
-  "welcome.games.title": "Atau berlatih dengan bermain"
 };

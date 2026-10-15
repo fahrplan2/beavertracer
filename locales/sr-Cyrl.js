@@ -1770,6 +1770,7 @@ export default {
   "lessons.sim.resetConfirm": "Ресетуј симулацију на почетак ове странице? Ваше измене ће бити изгубљене.",
   "pcap.tree.osiLayers": "OSI слојеви {n} — {name}",
   "welcome.learn.title": "Учи",
+  "welcome.games.title": "Играј",
   "welcome.learn.desc": "Интерактивни курс: прави, посматрај и разуми мреже корак по корак.",
   "welcome.learn.chapters": "{count} поглавља доступно",
   "welcome.learn.start": "Започните курс",
@@ -1822,7 +1823,7 @@ export default {
   "game.toolbar": "Игре",
   "game.toolbarTitle": "Мисија Школска мрежа: тикети, интермеца и кодови завршетка",
   "game.title": "Мисија Школска мрежа",
-  "game.subtitle": "Умреживање · средња школа · тема 12.4",
+  "game.subtitle": "Откриј мреже кроз игру",
   "game.fullscreen": "Преко целог екрана",
   "game.fullscreenExit": "Напусти преко целог екрана",
   "game.close": "Затвори",
@@ -2135,5 +2136,4 @@ export default {
   "pcap.error.wiregasm": "Разлагач пакета се не може учитати: {error}",
   "welcome.learn.games": "Игре",
   "welcome.learn.games.desc": "Решавајте тикете и играјте мреже игре — са поенима, значкама и кодовима завршетка.",
-  "welcome.games.title": "Или вежбајте играјући"
 };

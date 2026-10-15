@@ -1770,6 +1770,7 @@ export default {
   "lessons.sim.resetConfirm": "Vynulovať simuláciu na začiatok tejto stránky? Vaše zmeny budú stratené.",
   "pcap.tree.osiLayers": "OSI vrstvy {n} — {name}",
   "welcome.learn.title": "Učenie",
+  "welcome.games.title": "Hranie",
   "welcome.learn.desc": "Interaktívny kurz: budujte, pozorujte a pochopte siete krok za krokom.",
   "welcome.learn.chapters": "K dispozícii je {count} kapitol",
   "welcome.learn.start": "Spustiť kurz",
@@ -1822,7 +1823,7 @@ export default {
   "game.toolbar": "Hry",
   "game.toolbarTitle": "Misia Školná sieť: lístky, intermezzo a kódy dokončenia",
   "game.title": "Misia Školná sieť",
-  "game.subtitle": "Sieťovanie · stredné vzdelanie · téma 12.4",
+  "game.subtitle": "Objavuj siete hrou",
   "game.fullscreen": "Celá obrazovka",
   "game.fullscreenExit": "Ukončiť celú obrazovku",
   "game.close": "Zavrieť",
@@ -2135,5 +2136,4 @@ export default {
   "game.ft.detail": "Úlohy: {scores}",
   "game.ft.victory": "Všetky rádiové odkazy fungujú!",
   "game.ft.solution": "Jedno riešenie: {mode}, {baud} Bd, {levels} úrovní → {rate}",
-  "welcome.games.title": "Alebo si precvičite hraním"
 };

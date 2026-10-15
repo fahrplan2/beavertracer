@@ -1776,6 +1776,7 @@ export default {
   "lessons.sim.resetConfirm": "Repor a simulação para o início desta página? As suas alterações serão perdidas.",
   "pcap.tree.osiLayers": "Camadas OSI {n} — {name}",
   "welcome.learn.title": "Aprender",
+  "welcome.games.title": "Jogar",
   "welcome.learn.desc": "O curso interativo: construir, observar e compreender redes passo a passo.",
   "welcome.learn.chapters": "{count} capítulos disponíveis",
   "welcome.learn.start": "Iniciar o curso",
@@ -1828,7 +1829,7 @@ export default {
   "game.toolbar": "Jogos",
   "game.toolbarTitle": "Mission School Network: tickets, intermezzos e códigos de conclusão",
   "game.title": "Mission School Network",
-  "game.subtitle": "Redes · ensino secundário · tema 12.4",
+  "game.subtitle": "Descobre as redes a jogar",
   "game.fullscreen": "Ecrã completo",
   "game.fullscreenExit": "Sair do ecrã completo",
   "game.close": "Fechar",
@@ -2141,5 +2142,4 @@ export default {
   "game.ft.detail": "Trabalhos: {scores}",
   "game.ft.victory": "Todas as ligações de rádio estão em funcionamento!",
   "game.ft.solution": "Uma solução: {mode}, {baud} Bd, {levels} níveis → {rate}",
-  "welcome.games.title": "Ou pratique jogando"
 };

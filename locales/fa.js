@@ -1771,6 +1771,7 @@ export default {
   "lessons.sim.resetConfirm": "شبیه‌سازی را به ابتدای این صفحه بازنشانی کنید؟ تغییرات شما حذف خواهند شد.",
   "pcap.tree.osiLayers": "لایه‌های OSI {n} — {name}",
   "welcome.learn.title": "یادگیری",
+  "welcome.games.title": "بازی",
   "welcome.learn.desc": "دوره تعاملی: شبکه‌ها را مرحله به مرحله بسازید، مشاهده کنید و درک کنید.",
   "welcome.learn.chapters": "{count} فصل در دسترس",
   "welcome.learn.start": "شروع دوره",
@@ -1823,7 +1824,7 @@ export default {
   "game.toolbar": "بازی‌ها",
   "game.toolbarTitle": "شبکه مدرسه ماموریت: درخواست‌ها، واسطه‌ها و کدهای تکمیل",
   "game.title": "شبکه مدرسه ماموریت",
-  "game.subtitle": "شبکه‌کاری · دوره متوسطه‌ی بالاتر · موضوع ۱۲.۴",
+  "game.subtitle": "شبکه‌ها را با بازی کشف کن",
   "game.fullscreen": "تمام‌صفحه",
   "game.fullscreenExit": "خروج از تمام‌صفحه",
   "game.close": "بستن",
@@ -2136,5 +2137,4 @@ export default {
   "pcap.error.wiregasm": "dissector بسته‌ها نمی‌تواند بارگذاری شود: {error}",
   "welcome.learn.games": "بازی‌ها",
   "welcome.learn.games.desc": "تیکت‌ها را حل کنید و در بازی‌های شبکه بازی کنید — با امتیازات، نشان‌ها و کدهای تکمیل.",
-  "welcome.games.title": "یا با بازی تمرین کنید"
 };

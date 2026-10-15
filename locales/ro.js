@@ -1771,6 +1771,7 @@ export default {
   "lessons.sim.resetConfirm": "Resetează simularea la începutul acestei pagini? Modificările tale vor fi pierdute.",
   "pcap.tree.osiLayers": "Straturi OSI {n} — {name}",
   "welcome.learn.title": "Învață",
+  "welcome.games.title": "Joacă",
   "welcome.learn.desc": "Cursul interactiv: construiește, observă și înțelege rețelele pas cu pas.",
   "welcome.learn.chapters": "{count} capitole disponibile",
   "welcome.learn.start": "Pornește cursul",
@@ -1823,7 +1824,7 @@ export default {
   "game.toolbar": "Jocuri",
   "game.toolbarTitle": "Misiunea Rețea Școlii: bilete, intermezzuri și coduri de finalizare",
   "game.title": "Misiunea Rețea Școlii",
-  "game.subtitle": "Rețele · învățământ secundar superior · tema 12.4",
+  "game.subtitle": "Descoperă rețelele prin joc",
   "game.fullscreen": "Ecran complet",
   "game.fullscreenExit": "Ieși din ecran complet",
   "game.close": "Închide",
@@ -2136,5 +2137,4 @@ export default {
   "game.ft.detail": "Transmisii: {scores}",
   "game.ft.victory": "Toate legăturile radio funcționează!",
   "game.ft.solution": "O soluție: {mode}, {baud} Bd, {levels} niveluri → {rate}",
-  "welcome.games.title": "Sau exersează jucând"
 };

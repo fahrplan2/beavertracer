@@ -1771,6 +1771,7 @@ export default {
   "lessons.sim.resetConfirm": "Nulstil simuleringen til starten af denne side? Dine ændringer vil gå tabt.",
   "pcap.tree.osiLayers": "OSI-lag {n} — {name}",
   "welcome.learn.title": "Lær",
+  "welcome.games.title": "Spil",
   "welcome.learn.desc": "Det interaktive kursus: byg, observer og forstå netværk trin for trin.",
   "welcome.learn.chapters": "{count} kapitler tilgængelige",
   "welcome.learn.start": "Start kurset",
@@ -1823,7 +1824,7 @@ export default {
   "game.toolbar": "Spil",
   "game.toolbarTitle": "Mission Skolenetværk: billetter, intermezzos og færdiggørelseskoder",
   "game.title": "Mission Skolenetværk",
-  "game.subtitle": "Netværk · øvre sekundær · emne 12.4",
+  "game.subtitle": "Opdag netværk gennem leg",
   "game.fullscreen": "Fuldskærm",
   "game.fullscreenExit": "Afslut fuldskærm",
   "game.close": "Luk",
@@ -2136,5 +2137,4 @@ export default {
   "game.ft.detail": "Jobs: {scores}",
   "game.ft.victory": "Alle radiolinks er kørende!",
   "game.ft.solution": "En løsning: {mode}, {baud} Bd, {levels} niveauer → {rate}",
-  "welcome.games.title": "Eller øv dig ved at spille"
 };

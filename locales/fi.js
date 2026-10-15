@@ -1771,6 +1771,7 @@ export default {
   "lessons.sim.resetConfirm": "Palautetaanko simulaatio tämän sivun alkuun? Muutoksesi menetetään.",
   "pcap.tree.osiLayers": "OSI-kerrokset {n} — {name}",
   "welcome.learn.title": "Opi",
+  "welcome.games.title": "Pelaa",
   "welcome.learn.desc": "Interaktiivinen kurssi: rakenna, havainnoi ja ymmärrä verkot askel askeleelta.",
   "welcome.learn.chapters": "{count} lukua saatavilla",
   "welcome.learn.start": "Aloita kurssi",
@@ -1823,7 +1824,7 @@ export default {
   "game.toolbar": "Pelit",
   "game.toolbarTitle": "Mission School Network: liput, välipelit ja valmistumiskoodit",
   "game.title": "Mission School Network",
-  "game.subtitle": "Verkko · lukio · aihe 12.4",
+  "game.subtitle": "Tutustu verkkoihin pelaamalla",
   "game.fullscreen": "Koko näyttö",
   "game.fullscreenExit": "Poistu koko näytöstä",
   "game.close": "Sulje",
@@ -2136,5 +2137,4 @@ export default {
   "game.ft.detail": "Toimistot: {scores}",
   "game.ft.victory": "Kaikki radiolinkit toimivat!",
   "game.ft.solution": "Yksi ratkaisu: {mode}, {baud} Bd, {levels} tasoa → {rate}",
-  "welcome.games.title": "Tai harjoittele pelaamisen kautta"
 };

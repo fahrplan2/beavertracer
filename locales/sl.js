@@ -1771,6 +1771,7 @@ export default {
   "lessons.sim.resetConfirm": "Ponastavi simulacijo na začetek te strani? Tvoje spremembe bodo izgubljene.",
   "pcap.tree.osiLayers": "Plasti OSI {n} — {name}",
   "welcome.learn.title": "Učenje",
+  "welcome.games.title": "Igranje",
   "welcome.learn.desc": "Interaktivni tečaj: gradimo, opazujemo in razumemo omrežja korak za korakom.",
   "welcome.learn.chapters": "{count} poglavij na voljo",
   "welcome.learn.start": "Začni tečaj",
@@ -1823,7 +1824,7 @@ export default {
   "game.toolbar": "Igre",
   "game.toolbarTitle": "Školska omrežna misija: vstopnice, intermezzoji in kodi za dokončanje",
   "game.title": "Školska omrežna misija",
-  "game.subtitle": "Omreženja · srednja šola · tema 12.4",
+  "game.subtitle": "Odkrij omrežja skozi igro",
   "game.fullscreen": "Celozaslonski način",
   "game.fullscreenExit": "Zapusti celozaslonski način",
   "game.close": "Zapri",
@@ -2136,5 +2137,4 @@ export default {
   "game.ft.detail": "Gapovi: {scores}",
   "game.ft.victory": "Vse radiozveze delujejo!",
   "game.ft.solution": "Ena rešitev: {mode}, {baud} Bd, {levels} ravni → {rate}",
-  "welcome.games.title": "Ali vadite z igranjem"
 };

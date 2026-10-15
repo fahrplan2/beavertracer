@@ -1771,6 +1771,7 @@ export default {
   "lessons.sim.resetConfirm": "要将模拟器重置到本页的开始吗？您的更改将丢失。",
   "pcap.tree.osiLayers": "OSI 第 {n} 层 — {name}",
   "welcome.learn.title": "学习",
+  "welcome.games.title": "游戏",
   "welcome.learn.desc": "交互式课程：逐步构建、观察和理解网络。",
   "welcome.learn.chapters": "{count} 个章节可用",
   "welcome.learn.start": "开始课程",
@@ -1823,7 +1824,7 @@ export default {
   "game.toolbar": "游戏",
   "game.toolbarTitle": "学校网络任务：工单、中场休息和完成代码",
   "game.title": "学校网络任务",
-  "game.subtitle": "网络 · 高中 · 主题 12.4",
+  "game.subtitle": "在游戏中探索网络",
   "game.fullscreen": "全屏",
   "game.fullscreenExit": "退出全屏",
   "game.close": "关闭",
@@ -2136,5 +2137,4 @@ export default {
   "pcap.error.wiregasm": "无法加载数据包分析工具：{error}",
   "welcome.learn.games": "游戏",
   "welcome.learn.games.desc": "完成任务并玩网络游戏——赚取积分、徽章和完成代码。",
-  "welcome.games.title": "或通过游戏练习"
 };

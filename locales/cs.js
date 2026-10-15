@@ -1771,6 +1771,7 @@ export default {
   "lessons.sim.resetConfirm": "Obnovit simulaci na začátek této stránky? Vaše změny budou ztraceny.",
   "pcap.tree.osiLayers": "Vrstvy OSI {n} — {name}",
   "welcome.learn.title": "Učit se",
+  "welcome.games.title": "Hrát si",
   "welcome.learn.desc": "Interaktivní kurz: budujte, pozorujte a rozumějte sítím krok za krokem.",
   "welcome.learn.chapters": "{count} kapitol dostupných",
   "welcome.learn.start": "Začít kurz",
@@ -1823,7 +1824,7 @@ export default {
   "game.toolbar": "Hry",
   "game.toolbarTitle": "Mission School Network: tikety, mezihra a kódy dokončení",
   "game.title": "Mission School Network",
-  "game.subtitle": "Sítě · střední škola · téma 12.4",
+  "game.subtitle": "Objevuj sítě hrou",
   "game.fullscreen": "Celá obrazovka",
   "game.fullscreenExit": "Opustit celou obrazovku",
   "game.close": "Zavřít",
@@ -2136,5 +2137,4 @@ export default {
   "game.ft.detail": "Úlohy: {scores}",
   "game.ft.victory": "Všechny radiové spoje jsou v provozu!",
   "game.ft.solution": "Jedno řešení: {mode}, {baud} Bd, {levels} úrovní → {rate}",
-  "welcome.games.title": "Nebo se trénujte hraním"
 };

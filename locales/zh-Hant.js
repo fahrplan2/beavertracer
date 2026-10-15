@@ -1770,6 +1770,7 @@ export default {
   "lessons.sim.resetConfirm": "將模擬器重置到本頁的開始？您的更改將遺失。",
   "pcap.tree.osiLayers": "OSI 層 {n} — {name}",
   "welcome.learn.title": "學習",
+  "welcome.games.title": "遊戲",
   "welcome.learn.desc": "互動式課程：逐步構建、觀察和理解網絡。",
   "welcome.learn.chapters": "提供 {count} 個章節",
   "welcome.learn.start": "開始課程",
@@ -1822,7 +1823,7 @@ export default {
   "game.toolbar": "遊戲",
   "game.toolbarTitle": "任務學校網路：工單、插曲和完成代碼",
   "game.title": "任務學校網路",
-  "game.subtitle": "網路· 高中· 主題 12.4",
+  "game.subtitle": "在遊戲中探索網路",
   "game.fullscreen": "全螢幕",
   "game.fullscreenExit": "退出全螢幕",
   "game.close": "關閉",
@@ -2135,5 +2136,4 @@ export default {
   "pcap.error.wiregasm": "無法載入封包解析器：{error}",
   "welcome.learn.games": "遊戲",
   "welcome.learn.games.desc": "解決工單並玩網路遊戲——有積分、徽章和完成代碼。",
-  "welcome.games.title": "或透過遊戲練習"
 };
