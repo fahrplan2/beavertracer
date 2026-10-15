@@ -1778,6 +1778,7 @@ export default {
   "lessons.sim.resetConfirm": "¿Reiniciar la simulación al inicio de esta página? Tus cambios se perderán.",
   "pcap.tree.osiLayers": "Capas OSI {n} — {name}",
   "welcome.learn.title": "Aprender",
+  "welcome.games.title": "Jugar",
   "welcome.learn.desc": "El curso interactivo: construye, observa y comprende redes paso a paso.",
   "welcome.learn.chapters": "{count} capítulos disponibles",
   "welcome.learn.start": "Iniciar el curso",
@@ -1830,7 +1831,7 @@ export default {
   "game.toolbar": "Juegos",
   "game.toolbarTitle": "Misión Escuela de Redes: tickets, intermezzos y códigos de finalización",
   "game.title": "Misión Escuela de Redes",
-  "game.subtitle": "Redes · enseñanza secundaria superior · tema 12.4",
+  "game.subtitle": "Descubre las redes jugando",
   "game.close": "Cerrar",
   "game.tabs.label": "Secciones",
   "game.tab.tickets": "Tickets",
@@ -2143,5 +2144,4 @@ export default {
   "game.ft.detail": "Trabajos: {scores}",
   "game.ft.victory": "¡Todos los radioenlaces están en funcionamiento!",
   "game.ft.solution": "Una solución: {mode}, {baud} Bd, {levels} niveles → {rate}",
-  "welcome.games.title": "O practica jugando"
 };

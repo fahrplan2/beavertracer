@@ -1771,6 +1771,7 @@ export default {
   "lessons.sim.resetConfirm": "Atstatyti simuliaciją į šio puslapio pradžią? Jūsų pakeitimai bus prarasti.",
   "pcap.tree.osiLayers": "OSI sluoksniai {n} — {name}",
   "welcome.learn.title": "Mokytis",
+  "welcome.games.title": "Žaisti",
   "welcome.learn.desc": "Interaktyvus kursas: kurkite, stebėkite ir supraskite tinklus žingsnis po žingsnio.",
   "welcome.learn.chapters": "Galima {count} skyriai",
   "welcome.learn.start": "Pradėti kursą",
@@ -1823,7 +1824,7 @@ export default {
   "game.toolbar": "Žaidimai",
   "game.toolbarTitle": "Misija Mokyklos tinklas: bilietai, interludio ir užbaigimo kodai",
   "game.title": "Misija Mokyklos tinklas",
-  "game.subtitle": "Tinklavimas · vidurinė mokykla · tema 12.4",
+  "game.subtitle": "Atrask tinklus žaidžiant",
   "game.fullscreen": "Visas ekranas",
   "game.fullscreenExit": "Išeiti iš viso ekrano",
   "game.close": "Uždaryti",
@@ -2136,5 +2137,4 @@ export default {
   "game.ft.detail": "Darbai: {scores}",
   "game.ft.victory": "Visos radijo linijos veikia!",
   "game.ft.solution": "Vienas iš sprendimų: {mode}, {baud} Bd, {levels} lygiai → {rate}",
-  "welcome.games.title": "Arba praktikuokitės žaidžiant"
 };

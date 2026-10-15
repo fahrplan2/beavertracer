@@ -1771,6 +1771,7 @@ export default {
   "lessons.sim.resetConfirm": "Скинути симуляцію на початок цієї сторінки? Ваші зміни будуть втрачені.",
   "pcap.tree.osiLayers": "Рівні OSI {n} — {name}",
   "welcome.learn.title": "Навчання",
+  "welcome.games.title": "Ігри",
   "welcome.learn.desc": "Інтерактивний курс: створюйте, спостерігайте й розумійте мережі крок за кроком.",
   "welcome.learn.chapters": "{count} розділів доступно",
   "welcome.learn.start": "Почати курс",
@@ -1823,7 +1824,7 @@ export default {
   "game.toolbar": "Ігри",
   "game.toolbarTitle": "Mission School Network: квитки, інтермецо та коди завершення",
   "game.title": "Mission School Network",
-  "game.subtitle": "Мережі · старша школа · тема 12.4",
+  "game.subtitle": "Відкривай мережі граючи",
   "game.fullscreen": "На весь екран",
   "game.fullscreenExit": "Вийти з повноекранного режиму",
   "game.close": "Закрити",
@@ -2136,5 +2137,4 @@ export default {
   "pcap.error.wiregasm": "Аналізатор пакетів не вдалося завантажити: {error}",
   "welcome.learn.games": "Ігри",
   "welcome.learn.games.desc": "Вирішуйте завдання та грайте в мережеві ігри — з очками, значками та кодами завершення.",
-  "welcome.games.title": "Або практикуйтесь, граючи"
 };

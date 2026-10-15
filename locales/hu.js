@@ -1770,6 +1770,7 @@ export default {
   "lessons.sim.resetConfirm": "Vissza szeretné állítani a szimulációt az oldal kezdetéhez? A módosítások elvesznek.",
   "pcap.tree.osiLayers": "OSI rétegek {n} — {name}",
   "welcome.learn.title": "Tanulás",
+  "welcome.games.title": "Játék",
   "welcome.learn.desc": "Az interaktív tanfolyam: hálózatokat építsen, figyelje meg és értse meg lépésről lépésre.",
   "welcome.learn.chapters": "{count} fejezet érhető el",
   "welcome.learn.start": "Tanfolyam indítása",
@@ -1822,7 +1823,7 @@ export default {
   "game.toolbar": "Játékok",
   "game.toolbarTitle": "Mission School Network: jegyek, közjátékok és befejezési kódok",
   "game.title": "Mission School Network",
-  "game.subtitle": "Hálózatkezelés · felső középfokú · téma 12.4",
+  "game.subtitle": "Fedezd fel a hálózatokat játékosan",
   "game.fullscreen": "Teljes képernyő",
   "game.fullscreenExit": "Teljes képernyő bezárása",
   "game.close": "Bezárás",
@@ -2135,5 +2136,4 @@ export default {
   "game.ft.detail": "Feladatok: {scores}",
   "game.ft.victory": "Minden rádióösszeköttetés működik!",
   "game.ft.solution": "Egy megoldás: {mode}, {baud} Bd, {levels} szint → {rate}",
-  "welcome.games.title": "Vagy gyakorolj játékokkal"
 };

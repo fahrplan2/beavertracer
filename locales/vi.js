@@ -1771,6 +1771,7 @@ export default {
   "lessons.sim.resetConfirm": "Đặt lại mô phỏng về trạng thái ban đầu của trang này? Những thay đổi của bạn sẽ bị mất.",
   "pcap.tree.osiLayers": "Các lớp OSI {n} — {name}",
   "welcome.learn.title": "Học tập",
+  "welcome.games.title": "Trò chơi",
   "welcome.learn.desc": "Khóa học tương tác: xây dựng, quan sát và hiểu các mạng từng bước.",
   "welcome.learn.chapters": "{count} chương có sẵn",
   "welcome.learn.start": "Bắt đầu khóa học",
@@ -1823,7 +1824,7 @@ export default {
   "game.toolbar": "Trò chơi",
   "game.toolbarTitle": "Mạng Trường Học Nhiệm vụ: vé, phần xen kẽ và mã hoàn thành",
   "game.title": "Mạng Trường Học Nhiệm vụ",
-  "game.subtitle": "Mạng · trung học · chủ đề 12.4",
+  "game.subtitle": "Khám phá mạng máy tính qua trò chơi",
   "game.fullscreen": "Toàn màn hình",
   "game.fullscreenExit": "Thoát toàn màn hình",
   "game.close": "Đóng",
@@ -2136,5 +2137,4 @@ export default {
   "pcap.error.wiregasm": "Trình phân tích gói không thể được tải: {error}",
   "welcome.learn.games": "Trò chơi",
   "welcome.learn.games.desc": "Giải quyết vé và chơi các trò chơi mạng — với điểm, huy hiệu và mã hoàn thành.",
-  "welcome.games.title": "Hoặc thực hành bằng cách chơi"
 };

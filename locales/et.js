@@ -1771,6 +1771,7 @@ export default {
   "lessons.sim.resetConfirm": "Kas lähtestada simulatsioon selle lehe algusesse? Teie muudatused lähevad kaotsi.",
   "pcap.tree.osiLayers": "OSI kihid {n} — {name}",
   "welcome.learn.title": "Õpi",
+  "welcome.games.title": "Mängi",
   "welcome.learn.desc": "Interaktiivne kursus: ehita, jälgi ja mõista võrke samm-sammult.",
   "welcome.learn.chapters": "{count} peatükki saadaval",
   "welcome.learn.start": "Alusta kursust",
@@ -1823,7 +1824,7 @@ export default {
   "game.toolbar": "Mängud",
   "game.toolbarTitle": "Mission School Network: piletid, vahepala ja lõpetamiskoodid",
   "game.title": "Mission School Network",
-  "game.subtitle": "Võrgundus · keskkool · teema 12.4",
+  "game.subtitle": "Avasta võrke mängides",
   "game.fullscreen": "Täisekraan",
   "game.fullscreenExit": "Väljumine täisekraanist",
   "game.close": "Sulgemine",
@@ -2136,5 +2137,4 @@ export default {
   "game.ft.detail": "Tööd: {scores}",
   "game.ft.victory": "Kõik raadioühendused töötavad!",
   "game.ft.solution": "Üks lahendus: {mode}, {baud} Bd, {levels} taset → {rate}",
-  "welcome.games.title": "Või harjuta mängimise kaudu"
 };

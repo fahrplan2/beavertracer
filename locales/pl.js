@@ -1771,6 +1771,7 @@ export default {
   "lessons.sim.resetConfirm": "Zresetować symulację do początkowego stanu tej strony? Twoje zmiany będą utracone.",
   "pcap.tree.osiLayers": "Warstwy OSI {n} — {name}",
   "welcome.learn.title": "Nauka",
+  "welcome.games.title": "Granie",
   "welcome.learn.desc": "Interaktywny kurs: buduj, obserwuj i rozumiej sieci krok po kroku.",
   "welcome.learn.chapters": "Dostępnych {count} rozdziałów",
   "welcome.learn.start": "Rozpocznij kurs",
@@ -1823,7 +1824,7 @@ export default {
   "game.toolbar": "Gry",
   "game.toolbarTitle": "Misja Sieć Szkoły: zgłoszenia, intermezza i kody ukończenia",
   "game.title": "Misja Sieć Szkoły",
-  "game.subtitle": "Sieci · szkoła ponadpodstawowa · temat 12.4",
+  "game.subtitle": "Odkrywaj sieci przez zabawę",
   "game.fullscreen": "Pełny ekran",
   "game.fullscreenExit": "Wyjdź z pełnego ekranu",
   "game.close": "Zamknij",
@@ -2136,5 +2137,4 @@ export default {
   "pcap.error.wiregasm": "Analizator pakietów nie mógł być załadowany: {error}",
   "welcome.learn.games": "Gry",
   "welcome.learn.games.desc": "Rozwiązuj zgłoszenia i graj w gry sieciowe — z punktami, odznaczeniami i kodami ukończenia.",
-  "welcome.games.title": "Lub ćwicz grając"
 };

@@ -1771,6 +1771,7 @@ export default {
   "lessons.sim.resetConfirm": "Simülasyonu bu sayfanın başına sıfırla? Değişiklikleriniz kaybolacak.",
   "pcap.tree.osiLayers": "OSI katmanları {n} — {name}",
   "welcome.learn.title": "Öğren",
+  "welcome.games.title": "Oyna",
   "welcome.learn.desc": "Etkileşimli kurs: Ağları adım adım oluşturun, gözlemleyin ve anlayın.",
   "welcome.learn.chapters": "{count} bölüm mevcut",
   "welcome.learn.start": "Kursu başlat",
@@ -1823,7 +1824,7 @@ export default {
   "game.toolbar": "Oyunlar",
   "game.toolbarTitle": "Görev Okul Ağı: biletler, ara bölümler ve tamamlama kodları",
   "game.title": "Görev Okul Ağı",
-  "game.subtitle": "Ağ Oluşturma · orta öğretim · konu 12.4",
+  "game.subtitle": "Ağları oynayarak keşfet",
   "game.fullscreen": "Tam ekran",
   "game.fullscreenExit": "Tam ekrandan çık",
   "game.close": "Kapat",
@@ -2136,5 +2137,4 @@ export default {
   "pcap.error.wiregasm": "Paket ayırıcı yüklenemedi: {error}",
   "welcome.learn.games": "Oyunlar",
   "welcome.learn.games.desc": "Biletleri çözün ve ağ oyunları oynayın — puanlar, rozetler ve tamamlama kodları ile.",
-  "welcome.games.title": "Veya oynayarak pratik yapın"
 };

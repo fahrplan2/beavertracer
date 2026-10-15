@@ -1771,6 +1771,7 @@ export default {
   "lessons.sim.resetConfirm": "シミュレーションをこのページの開始時の状態にリセットしますか? 変更内容は失われます。",
   "pcap.tree.osiLayers": "OSI レイヤー {n} — {name}",
   "welcome.learn.title": "学習",
+  "welcome.games.title": "ゲーム",
   "welcome.learn.desc": "インタラクティブコース:ネットワークをステップバイステップで構築、観察、理解します。",
   "welcome.learn.chapters": "{count} チャプター利用可能",
   "welcome.learn.start": "コースを開始",
@@ -1823,7 +1824,7 @@ export default {
   "game.toolbar": "ゲーム",
   "game.toolbarTitle": "Mission School Network: チケット、幕間、修了コード",
   "game.title": "Mission School Network",
-  "game.subtitle": "ネットワーク · 後期中等教育 · トピック 12.4",
+  "game.subtitle": "遊びながらネットワークを学ぼう",
   "game.fullscreen": "フルスクリーン",
   "game.fullscreenExit": "フルスクリーンを終了",
   "game.close": "閉じる",
@@ -2136,5 +2137,4 @@ export default {
   "pcap.error.wiregasm": "パケット分析器を読み込めませんでした: {error}",
   "welcome.learn.games": "ゲーム",
   "welcome.learn.games.desc": "チケットを解決し、ネットワークゲームをプレイします — ポイント、バッジ、完了コード付き。",
-  "welcome.games.title": "ゲームをプレイして練習する"
 };

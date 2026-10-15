@@ -1771,6 +1771,7 @@ export default {
   "lessons.sim.resetConfirm": "Нулирай симулацията на началото на тази страница? Твоите промени ще бъдат загубени.",
   "pcap.tree.osiLayers": "OSI слоеве {n} — {name}",
   "welcome.learn.title": "Научи се",
+  "welcome.games.title": "Играй",
   "welcome.learn.desc": "Интерактивният курс: изграждай, наблюдавай и разбирай мрежите стъпка по стъпка.",
   "welcome.learn.chapters": "{count} глави достъпни",
   "welcome.learn.start": "Начни курса",
@@ -1823,7 +1824,7 @@ export default {
   "game.toolbar": "Игри",
   "game.toolbarTitle": "Mission School Network: билети, интермеца и кодове за завършване",
   "game.title": "Mission School Network",
-  "game.subtitle": "Мрежи · гимназия · тема 12.4",
+  "game.subtitle": "Открий мрежите чрез игра",
   "game.fullscreen": "Пълен екран",
   "game.fullscreenExit": "Излез от пълен екран",
   "game.close": "Затвори",
@@ -2136,5 +2137,4 @@ export default {
   "game.ft.detail": "Работи: {scores}",
   "game.ft.victory": "Всички радио връзки работят!",
   "game.ft.solution": "Едно решение: {mode}, {baud} Bd, {levels} нива → {rate}",
-  "welcome.games.title": "Или практикувайте, като играете"
 };

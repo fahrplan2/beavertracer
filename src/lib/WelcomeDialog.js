@@ -353,17 +353,22 @@ export class WelcomeDialog {
         list.className = "welcome-sim-list";
         list.append(primary, overview);
 
-        // The game gets its own block below the course — a different way in,
-        // not a third course entry. Opens on top; the course stays as it is.
-        const games = WelcomeDialog._simItem("fa-gamepad", t("welcome.learn.games"), t("welcome.learn.games.desc"),
+        // The game gets its own section below the course, headed like
+        // "Learn" — a different way in, not a third course entry. Opens on
+        // top; the course stays as it is.
+        const games = WelcomeDialog._simItem("fa-trophy", t("game.title"), t("game.subtitle"),
             () => close(() => GameHub.show(sim), { keepLessons: true }));
         games.classList.add("welcome-games-item");
-        const gamesBlock = document.createElement("div");
+        const gamesBlock = document.createElement("section");
         gamesBlock.className = "welcome-games";
-        const gamesTitle = document.createElement("p");
-        gamesTitle.className = "welcome-games-title";
-        gamesTitle.textContent = t("welcome.games.title");
-        gamesBlock.append(gamesTitle, games);
+        const gamesTitle = document.createElement("h2");
+        gamesTitle.className = "welcome-path-title";
+        gamesTitle.innerHTML = `<i class="fa-solid fa-gamepad" aria-hidden="true"></i> `;
+        gamesTitle.appendChild(document.createTextNode(t("welcome.games.title")));
+        const gamesDesc = document.createElement("p");
+        gamesDesc.className = "welcome-path-desc";
+        gamesDesc.textContent = t("welcome.learn.games.desc");
+        gamesBlock.append(gamesTitle, gamesDesc, games);
 
         // One grid row for all of it: the column is a 3-row subgrid (title,
         // description, buttons) shared with "Build freely".

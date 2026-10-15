@@ -1771,6 +1771,7 @@ export default {
   "lessons.sim.resetConfirm": "Επαναφέρετε την προσομοίωση στην αρχή αυτής της σελίδας; Οι αλλαγές σας θα χαθούν.",
   "pcap.tree.osiLayers": "Στρώματα OSI {n} — {name}",
   "welcome.learn.title": "Μάθηση",
+  "welcome.games.title": "Παιχνίδι",
   "welcome.learn.desc": "Το διαδραστικό μάθημα: δημιουργήστε, παρατηρήστε και κατανοήστε δίκτυα βήμα προς βήμα.",
   "welcome.learn.chapters": "{count} κεφάλαια διαθέσιμα",
   "welcome.learn.start": "Ξεκινήστε το μάθημα",
@@ -1823,7 +1824,7 @@ export default {
   "game.toolbar": "Παιχνίδια",
   "game.toolbarTitle": "Mission School Network: εισιτήρια, ενδιάμεσα και κώδικες ολοκλήρωσης",
   "game.title": "Mission School Network",
-  "game.subtitle": "Δικτύωση · ανώτερη δευτεροβάθμια · θέμα 12.4",
+  "game.subtitle": "Ανακάλυψε τα δίκτυα παίζοντας",
   "game.fullscreen": "Πλήρης οθόνη",
   "game.fullscreenExit": "Έξοδος από πλήρη οθόνη",
   "game.close": "Κλείσιμο",
@@ -2136,5 +2137,4 @@ export default {
   "game.ft.detail": "Εργασίες: {scores}",
   "game.ft.victory": "Όλες οι ραδιοφωνικές ζεύξεις λειτουργούν!",
   "game.ft.solution": "Μια λύση: {mode}, {baud} Bd, {levels} επίπεδα → {rate}",
-  "welcome.games.title": "Ή εξασκηθείτε παίζοντας"
 };

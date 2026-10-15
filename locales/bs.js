@@ -1771,6 +1771,7 @@ export default {
   "lessons.sim.resetConfirm": "Resetuj simulaciju na početak ove stranice? Tvoje izmene će biti izgubljene.",
   "pcap.tree.osiLayers": "OSI slojevi {n} — {name}",
   "welcome.learn.title": "Nauči",
+  "welcome.games.title": "Igraj",
   "welcome.learn.desc": "Interaktivni kurs: gradi, posmatrај i razumej mreže korak po korak.",
   "welcome.learn.chapters": "{count} poglavlja dostupno",
   "welcome.learn.start": "Počni kurs",
@@ -1823,7 +1824,7 @@ export default {
   "game.toolbar": "Igre",
   "game.toolbarTitle": "Mission School Network: kartice, intermecai i kodovi završetka",
   "game.title": "Mission School Network",
-  "game.subtitle": "Umrežavanje · viša srednja · tema 12.4",
+  "game.subtitle": "Otkrij mreže kroz igru",
   "game.fullscreen": "Prikaz preko cijelog ekrana",
   "game.fullscreenExit": "Izlaz iz prikaza preko cijelog ekrana",
   "game.close": "Zatvori",
@@ -2136,5 +2137,4 @@ export default {
   "game.ft.detail": "Poslovi: {scores}",
   "game.ft.victory": "Sve radio veze rade!",
   "game.ft.solution": "Jedno rešenje: {mode}, {baud} Bd, {levels} nivoa → {rate}",
-  "welcome.games.title": "Ili vježbajte igranjem"
 };

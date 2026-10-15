@@ -1770,6 +1770,7 @@ export default {
   "lessons.sim.resetConfirm": "Ta rivendosni simulimin në fillimin e kësaj faqeje? Ndryshimet tuaja do të humben.",
   "pcap.tree.osiLayers": "Shtresat OSI {n} — {name}",
   "welcome.learn.title": "Mëso",
+  "welcome.games.title": "Luaj",
   "welcome.learn.desc": "Kursi interaktiv: ndërto, vëzhgo dhe kuptoni rrjetet hap pas hapi.",
   "welcome.learn.chapters": "{count} kapituj në dispozicion",
   "welcome.learn.start": "Fillo kursin",
@@ -1822,7 +1823,7 @@ export default {
   "game.toolbar": "Lojrat",
   "game.toolbarTitle": "Rrjeti i Shkolës së Misionit: biletat, intermezot dhe kodet e përfundimit",
   "game.title": "Rrjeti i Shkolës së Misionit",
-  "game.subtitle": "Rrjetëzim · shkolla e dytë e sipërme · tema 12.4",
+  "game.subtitle": "Zbulo rrjetet duke luajtur",
   "game.fullscreen": "Ekran i plotë",
   "game.fullscreenExit": "Dilni nga ekrani i plotë",
   "game.close": "Mbyllni",
@@ -2135,5 +2136,4 @@ export default {
   "pcap.error.wiregasm": "Ndarësi i paketave nuk mund të ngarkohet: {error}",
   "welcome.learn.games": "Lojëra",
   "welcome.learn.games.desc": "Zgjidhni biletat dhe luani lojëra rrjeti — me pikë, çelvat dhe kode përfundimi.",
-  "welcome.games.title": "Ose praktikoni duke luajtur"
 };

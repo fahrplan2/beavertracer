@@ -1770,6 +1770,7 @@ export default {
   "lessons.sim.resetConfirm": "Resetovati simulaciju na početak ove stranice? Vaše izmene će biti izgubljene.",
   "pcap.tree.osiLayers": "OSI slojevi {n} — {name}",
   "welcome.learn.title": "Učenje",
+  "welcome.games.title": "Igranje",
   "welcome.learn.desc": "Interaktivni kurs: gradite, posmatrajte i razumejte mreže korak po korak.",
   "welcome.learn.chapters": "{count} poglavlja dostupna",
   "welcome.learn.start": "Započni kurs",
@@ -1822,7 +1823,7 @@ export default {
   "game.toolbar": "Igre",
   "game.toolbarTitle": "Mission School Network: tiketi, intermeca i kodovi završetka",
   "game.title": "Mission School Network",
-  "game.subtitle": "Umrežavanje · srednja škola · tema 12.4",
+  "game.subtitle": "Otkrij mreže kroz igru",
   "game.fullscreen": "Prikaz preko cijelog ekrana",
   "game.fullscreenExit": "Izlaz iz prikaza preko cijelog ekrana",
   "game.close": "Zatvori",
@@ -2135,5 +2136,4 @@ export default {
   "pcap.error.wiregasm": "Analizator paketa nije mogao biti učitan: {error}",
   "welcome.learn.games": "Igre",
   "welcome.learn.games.desc": "Rešavajte tikete i igrajte mrežne igre — sa bodovima, značkama i kodovima završetka.",
-  "welcome.games.title": "Ili vežbajte igranjem"
 };

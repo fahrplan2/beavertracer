@@ -1770,6 +1770,7 @@ export default {
   "lessons.sim.resetConfirm": "Tilbakestill simulasjonen til starten av denne siden? Endringene dine vil bli tapt.",
   "pcap.tree.osiLayers": "OSI-lag {n} — {name}",
   "welcome.learn.title": "Lær",
+  "welcome.games.title": "Spill",
   "welcome.learn.desc": "Det interaktive kurset: bygg, observer og forstå nettverk steg for steg.",
   "welcome.learn.chapters": "{count} kapitler tilgjengelig",
   "welcome.learn.start": "Start kurset",
@@ -1822,7 +1823,7 @@ export default {
   "game.toolbar": "Spill",
   "game.toolbarTitle": "Oppdrag Skolenettverk: billetter, intermezzos og fullføringskoder",
   "game.title": "Oppdrag Skolenettverk",
-  "game.subtitle": "Nettverk · videregående · tema 12.4",
+  "game.subtitle": "Utforsk nettverk gjennom lek",
   "game.fullscreen": "Fullskjerm",
   "game.fullscreenExit": "Avslutt fullskjerm",
   "game.close": "Lukk",
@@ -2135,5 +2136,4 @@ export default {
   "pcap.error.wiregasm": "Paketanalysatoren kunne ikke lastes: {error}",
   "welcome.learn.games": "Spill",
   "welcome.learn.games.desc": "Løs billetter og spill nettverksspill — med poeng, merker og fullføringskoder.",
-  "welcome.games.title": "Eller øv deg ved å spille"
 };

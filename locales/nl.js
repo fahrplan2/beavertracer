@@ -1771,6 +1771,7 @@ export default {
   "lessons.sim.resetConfirm": "De simulatie opnieuw instellen op het begin van deze pagina? Uw wijzigingen gaan verloren.",
   "pcap.tree.osiLayers": "OSI-lagen {n} — {name}",
   "welcome.learn.title": "Leren",
+  "welcome.games.title": "Spelen",
   "welcome.learn.desc": "De interactieve cursus: bouw, observeer en begrijp netwerken stap voor stap.",
   "welcome.learn.chapters": "{count} hoofdstukken beschikbaar",
   "welcome.learn.start": "Start de cursus",
@@ -1823,7 +1824,7 @@ export default {
   "game.toolbar": "Games",
   "game.toolbarTitle": "Mission School Network: tickets, intermezzos en voltooiingscodes",
   "game.title": "Mission School Network",
-  "game.subtitle": "Netwerken · voortgezet onderwijs · onderwerp 12.4",
+  "game.subtitle": "Ontdek netwerken al spelend",
   "game.fullscreen": "Volledig scherm",
   "game.fullscreenExit": "Volledig scherm afsluiten",
   "game.close": "Sluiten",
@@ -2136,5 +2137,4 @@ export default {
   "pcap.error.wiregasm": "De pakketanalyzer kon niet worden geladen: {error}",
   "welcome.learn.games": "Spellen",
   "welcome.learn.games.desc": "Los tickets op en speel netwerkspellen — met punten, badges en voltooiingscodes.",
-  "welcome.games.title": "Of oefen door te spelen"
 };

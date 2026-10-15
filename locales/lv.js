@@ -1771,6 +1771,7 @@ export default {
   "lessons.sim.resetConfirm": "Atiestatīt simulāciju uz šīs lapas sākumu? Jūsu izmaiņas tiks zaudētas.",
   "pcap.tree.osiLayers": "OSI slāņi {n} — {name}",
   "welcome.learn.title": "Mācīties",
+  "welcome.games.title": "Spēlēt",
   "welcome.learn.desc": "Interaktīvais kurss: konstruējiet, novērojiet un izprotiet tīklus soli pa solim.",
   "welcome.learn.chapters": "{count} pieejamas nodaļas",
   "welcome.learn.start": "Sākt kursu",
@@ -1823,7 +1824,7 @@ export default {
   "game.toolbar": "Spēles",
   "game.toolbarTitle": "Misija Skolas tīkls: biļetes, starpsummas un pabeigšanas kodi",
   "game.title": "Misija Skolas tīkls",
-  "game.subtitle": "Tīklošana · vidusskola · tēma 12.4",
+  "game.subtitle": "Atklāj tīklus spēlējot",
   "game.fullscreen": "Pilnekrāns",
   "game.fullscreenExit": "Iziet no pilnekrāna",
   "game.close": "Aizvērt",
@@ -2136,5 +2137,4 @@ export default {
   "game.ft.detail": "Darbi: {scores}",
   "game.ft.victory": "Visi radioraidījumi darbojas!",
   "game.ft.solution": "Viens risinājums: {mode}, {baud} Bd, {levels} līmeņi → {rate}",
-  "welcome.games.title": "Vai trenējieties, spēlējot"
 };

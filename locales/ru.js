@@ -1771,6 +1771,7 @@ export default {
   "lessons.sim.resetConfirm": "Сбросить симуляцию в начало этой страницы? Ваши изменения будут потеряны.",
   "pcap.tree.osiLayers": "OSI уровни {n} — {name}",
   "welcome.learn.title": "Обучение",
+  "welcome.games.title": "Игры",
   "welcome.learn.desc": "Интерактивный курс: строите, наблюдаете и разбираетесь в сетях пошагово.",
   "welcome.learn.chapters": "{count} глав доступно",
   "welcome.learn.start": "Начать курс",
@@ -1823,7 +1824,7 @@ export default {
   "game.toolbar": "Игры",
   "game.toolbarTitle": "Mission School Network: задачи, интермеццо и коды завершения",
   "game.title": "Mission School Network",
-  "game.subtitle": "Сетевые технологии · средняя школа · тема 12.4",
+  "game.subtitle": "Открывай сети в игре",
   "game.fullscreen": "Полный экран",
   "game.fullscreenExit": "Выход из полного экрана",
   "game.close": "Закрыть",
@@ -2136,5 +2137,4 @@ export default {
   "game.ft.detail": "Работы: {scores}",
   "game.ft.victory": "Все радиоканалы работают!",
   "game.ft.solution": "Один из вариантов: {mode}, {baud} Бд, {levels} уровней → {rate}",
-  "welcome.games.title": "Или потренируйтесь, играя"
 };
