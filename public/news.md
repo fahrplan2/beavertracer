@@ -1,3 +1,7 @@
+## Version 0.3.3
+
+- added Malti and Soomaali
+
 ## Version 0.3.2
 
 - added more translations (by AI)

@@ -139,6 +139,8 @@ const BATCH_POLL_MS = 60_000;
 const ONLY = args.only ? new Set(String(args.only).split(",").map((s) => s.trim()).filter(Boolean)) : null;
 
 const LANG_NAMES = Object.fromEntries([...LOCALES.map((l) => [l.code, l.name]), ["en", "English"]]);
+/** Extra per-language instructions from scripts/locales.mjs (`notes`). */
+const LANG_NOTES = Object.fromEntries(LOCALES.filter((l) => l.notes).map((l) => [l.code, l.notes]));
 
 const c = { reset: "\x1b[0m", red: "\x1b[31m", green: "\x1b[32m", yellow: "\x1b[33m", cyan: "\x1b[36m", gray: "\x1b[90m" };
 
@@ -274,7 +276,8 @@ async function completeGlossary(lang, targetName) {
           `for orientation) give the term a ${targetName} networking textbook for that age group would use. ` +
           `Keep the grammatical form (singular noun etc.); for UI-like terms ("Run mode", "tab", "workspace") use ` +
           `the usual software wording in ${targetName}. Answer with one JSON object mapping each German term ` +
-          `exactly as given to its ${targetName} term, nothing else.`,
+          `exactly as given to its ${targetName} term, nothing else.` +
+          (LANG_NOTES[lang] ? ` ${LANG_NOTES[lang]} For such terms, give the English term from the list.` : ""),
         messages: [{ role: "user", content: `German term<TAB>English term:\n${list}` }],
       })
       .finalMessage();
@@ -371,7 +374,7 @@ You translate lesson files written in a custom Markdown dialect from German to $
 
 Rules — CONTENT:
 - Translate all prose, headings, list items, table cell text, and callout text naturally and accurately.
-- Keep TCP/IP and networking terminology accurate and consistent with how it is normally taught in ${targetName}.
+- Keep TCP/IP and networking terminology accurate and consistent with how it is normally taught in ${targetName}.${LANG_NOTES[lang] ? `\n- ${LANG_NOTES[lang]}` : ""}
 - Address the student informally (the German original uses "du"), as appropriate in ${targetName}.
 - Use sentence case for headings unless ${targetName} conventions say otherwise.
 - Do NOT translate proper nouns/product names: BeaverTracer, Wireshark, Wiregasm, Font Awesome.

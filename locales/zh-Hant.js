@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇹🇼 繁體中文 (translated by AI)", order: 39 };
+export const meta = { name: "🇹🇼 繁體中文 (translated by AI)", order: 41 };
 
 export default {
   "app.generic.title": "通用應用程式",
