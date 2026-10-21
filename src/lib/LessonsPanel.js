@@ -41,6 +41,13 @@ export class LessonsPanel {
         /** @type {string|null} href of the currently displayed lesson, e.g. "01-einfuehrung.html" */
         this._currentHref = null;
 
+        /**
+         * Content shown instead of a lesson page (a game ticket, see
+         * showExternal()) — null while a regular lesson is shown.
+         * @type {{ label: string, simUrl: string }|null}
+         */
+        this._external = null;
+
         /** @type {LessonManifest|null} */
         this._manifest = null;
 
@@ -137,6 +144,8 @@ export class LessonsPanel {
      * Without one, the course continues where the student left off.
      */
     async ensureLoaded() {
+        // Re-opening the panel while external content is shown keeps it.
+        if (this._external) return;
         if (!this._currentHref) {
             try {
                 await this._loadManifest();
@@ -159,11 +168,47 @@ export class LessonsPanel {
      */
     async open(href) {
         this._currentHref = href;
+        this._external = null;
         await this.simControl.toggleLessonsPanel(true);
     }
 
     /** True once a page has been chosen (the panel can show something on its own). */
-    get hasPage() { return this._currentHref !== null; }
+    get hasPage() { return this._currentHref !== null || this._external !== null; }
+
+    /** True while showExternal() content is shown instead of a lesson. */
+    get showsExternal() { return this._external !== null; }
+
+    /**
+     * Shows content that isn't a lesson page — e.g. a game ticket — in the
+     * panel, with its own start simulation (loaded like a lesson's, so the
+     * reset button and the "adopt" button work the same way). Leaving it
+     * via the overview or any lesson link returns to the course.
+     * @param {{ label: string, content: HTMLElement, simUrl: string }} opts
+     * @returns {Promise<boolean>} false if the user cancelled (unsaved work)
+     */
+    async showExternal({ label, content, simUrl }) {
+        const mount = this.simControl.lessonsMount;
+        if (!mount || !await this.claimScene()) return false;
+        if (!this._manifest) await this._loadManifest().catch(() => null);
+        this._external = { label, simUrl };
+        mount.dir = "ltr";
+        mount.replaceChildren(content);
+        mount.scrollTop = 0;
+        if (this._currentLabel) {
+            this._currentLabel.textContent = label;
+            this._currentLabel.title = label;
+        }
+        for (const btn of [this._prevBtn, this._nextBtn]) {
+            if (!btn) continue;
+            btn.disabled = true;
+            btn.dataset.lessonTarget = "";
+        }
+        clearParams(["lesson"]);
+        await this._loadLessonSim({ source: "", sim: { url: simUrl } });
+        if (!this.simControl.lessonsOpen) await this.simControl.toggleLessonsPanel(true);
+        this.simControl._invalidateUI(); // toolbar: "Games" instead of "Lessons" is active
+        return true;
+    }
 
     /** @returns {string|null} href of the page shown in the panel */
     get currentHref() { return this._currentHref; }
@@ -452,13 +497,14 @@ export class LessonsPanel {
 
     /** Restores the current page's simulation to its start state. @returns {Promise<void>} */
     async resetSim() {
-        if (!this._currentHref || !this.simControl.lessonScene) return;
+        if (!this.hasPage || !this.simControl.lessonScene) return;
         if (!await SimDialog.confirm(t("lessons.sim.resetConfirm"))) return;
-        await this._loadLessonSim(this._simSourceFor(this._currentHref));
+        if (this._external) await this._loadLessonSim({ source: "", sim: { url: this._external.simUrl } });
+        else if (this._currentHref) await this._loadLessonSim(this._simSourceFor(this._currentHref));
     }
 
     _updateResetBtn() {
-        if (this._resetBtn) this._resetBtn.disabled = !this._currentHref || !this.simControl.lessonScene;
+        if (this._resetBtn) this._resetBtn.disabled = !this.hasPage || !this.simControl.lessonScene;
     }
 
     /**
@@ -515,6 +561,10 @@ export class LessonsPanel {
             const data = await this._fetchLessonJson(`/lessons/${getLocale()}/${jsonHref}`);
 
             this._currentHref = href;
+            if (this._external) {
+                this._external = null;
+                this.simControl._invalidateUI();
+            }
             mount.innerHTML = data.bodyHtml;
             // The body's own text-link prev/next (built for the standalone
             // site) is replaced by the header buttons and the row below.
@@ -595,6 +645,8 @@ export class LessonsPanel {
         try {
             const results = await this.checkApi.runChecks(checks);
             const allOk = results.length > 0 && results.every((r) => r.ok);
+            // For listeners outside the panel (the game awards XP for it).
+            block.dispatchEvent(new CustomEvent("lesson-task-checked", { bubbles: true, detail: { href: this._currentHref, allOk } }));
 
             const summary = btn.nextElementSibling;
             if (summary instanceof HTMLElement) {

@@ -32,7 +32,7 @@ function stripFences(text) {
   return text.replace(/^```[a-z]*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
 }
 
-async function translateChunk(html, targetLanguage) {
+async function translateChunk(html, targetLanguage, notes) {
   const msg = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
     max_tokens: 8192,
@@ -49,6 +49,7 @@ async function translateChunk(html, targetLanguage) {
           `- Keep {VERSION} placeholder unchanged\n` +
           `- Use informal address forms (e.g. "du" in German, "tu" in French) — this is a secondary school learning tool\n` +
           `- Use sentence case for headings (only capitalise the first word and proper nouns) — do NOT copy English title case\n` +
+          (notes ? `- ${notes}\n` : "") +
           `- Return ONLY the raw HTML — no explanation, no markdown code fences, no \`\`\`html\n\n` +
           `HTML:\n${html}`,
       },
@@ -60,18 +61,18 @@ async function translateChunk(html, targetLanguage) {
   return stripFences(raw).trim();
 }
 
-async function translateHtml(html, targetLanguage) {
+async function translateHtml(html, targetLanguage, notes) {
   // Split at <hr> boundaries so each section stays well within token limits
   // regardless of how large the page grows in the future.
   const HR_RE = /\n{1,2}<hr>\n{1,2}/g;
   const sections = html.split(HR_RE);
   if (sections.length === 1) {
-    return translateChunk(html, targetLanguage);
+    return translateChunk(html, targetLanguage, notes);
   }
   const translated = [];
   for (const section of sections) {
     const trimmed = section.trim();
-    if (trimmed) translated.push(await translateChunk(trimmed, targetLanguage));
+    if (trimmed) translated.push(await translateChunk(trimmed, targetLanguage, notes));
   }
   return translated.join("\n\n<hr>\n\n");
 }
@@ -89,7 +90,7 @@ for (const page of ["about", "help", "downloads"]) {
 
     process.stdout.write(`  …     ${page} → ${locale.name} `);
     try {
-      let translated = await translateHtml(src, locale.name);
+      let translated = await translateHtml(src, locale.name, locale.notes);
       if (locale.rtl) {
         translated = `<div dir="rtl">\n${translated}\n</div>`;
       }

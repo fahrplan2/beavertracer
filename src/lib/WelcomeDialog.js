@@ -10,6 +10,7 @@ import { buildChapterOverview } from "./ChapterOverview.js";
 import { addScrollHints } from "./scrollHints.js";
 import { downloadInfo, loadPage, pageRoute } from "./StaticPages.js";
 import { initDownloadsPage } from "./DownloadIndex.js";
+import { GameHub } from "../game/GameHub.js";
 
 /**
  * Info pages shown as sub-views (see StaticPages.js); routes without an
@@ -351,7 +352,29 @@ export class WelcomeDialog {
         const list = document.createElement("div");
         list.className = "welcome-sim-list";
         list.append(primary, overview);
-        col.append(list, meta);
+
+        // The game gets its own section below the course, headed like
+        // "Learn" — a different way in, not a third course entry. Opens on
+        // top; the course stays as it is.
+        const games = WelcomeDialog._simItem("fa-trophy", t("game.title"), t("game.subtitle"),
+            () => close(() => GameHub.show(sim), { keepLessons: true }));
+        const gamesBlock = document.createElement("section");
+        gamesBlock.className = "welcome-games";
+        const gamesTitle = document.createElement("h2");
+        gamesTitle.className = "welcome-path-title";
+        gamesTitle.innerHTML = `<i class="fa-solid fa-gamepad" aria-hidden="true"></i> `;
+        gamesTitle.appendChild(document.createTextNode(t("welcome.games.title")));
+        const gamesDesc = document.createElement("p");
+        gamesDesc.className = "welcome-path-desc";
+        gamesDesc.textContent = t("welcome.learn.games.desc");
+        gamesBlock.append(gamesTitle, gamesDesc, games);
+
+        // One grid row for all of it: the column is a 3-row subgrid (title,
+        // description, buttons) shared with "Build freely".
+        const body = document.createElement("div");
+        body.className = "welcome-learn-body";
+        body.append(list, meta, gamesBlock);
+        col.append(body);
 
         const panel = sim.lessonsPanel;
         /** @param {string} href */

@@ -13,6 +13,7 @@
  *   --model    claude-haiku-4-5-20251001 (default, fast & cheap)
  *   --batch    40 (default)
  *   --update   true|false (default: true — only translate missing keys)
+ *   --notes    Extra instructions for this language (appended to the system prompt)
  */
 
 import fs from "node:fs/promises";
@@ -34,6 +35,9 @@ const SYSTEM_PROMPT =
   "No explanations, no markdown fences, just the raw JSON object. " +
   "IMPORTANT: If a translated string contains double-quote characters (\"), you MUST escape them as \\\" in the JSON output. " +
   'For the key "lang.name", return the native language name with its flag emoji (e.g. "🇩🇪 Deutsch").';
+
+/** Extra per-language instructions (--notes), appended to SYSTEM_PROMPT. */
+let langNotes = "";
 
 function parseArgs(argv) {
   const args = {};
@@ -216,13 +220,14 @@ function extractJson(text) {
 }
 
 async function translateBatch({ client, model, maxTokens, sourceLang, targetLang, pairs }, retries = 3) {
+  const system = langNotes ? `${SYSTEM_PROMPT} ${langNotes}` : SYSTEM_PROMPT;
   let lastErr;
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       const msg = await client.messages.create({
         model,
         max_tokens: maxTokens,
-        system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
+        system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
         messages: [
           {
             role: "user",
@@ -374,6 +379,7 @@ Required:
   --in <file>          Source locale file (e.g. locales/en.js)
   --out <file>         Target locale file (e.g. locales/de.js)
   --target <language>  Target language name (e.g. German, French, Japanese)
+  --notes <text>       Extra instructions for this language
 
 Options:
   --source <language>  Source language name (default: English)
@@ -398,6 +404,7 @@ async function main() {
   const outFile = args.out || args.output;
   const targetLang = args.target;
   const sourceLang = args.source || "English";
+  if (typeof args.notes === "string") langNotes = args.notes;
 
   if (!inFile || !outFile || !targetLang) {
     console.error("Missing required args. Run with --help for usage.");
