@@ -1,7 +1,7 @@
 //@ts-check
 // Plays one quiz-style intermezzo (see minigames.js) inside a host element:
 // intro, rounds with instant feedback and an explanation after every
-// answer, then the result with score, completion code and new badges.
+// answer, then the result with score and new badges.
 
 import { t } from "../i18n/index.js";
 import { answersMatch } from "./minigames.js";

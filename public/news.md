@@ -1,3 +1,14 @@
+## Version 0.4.0
+
+- New: "Mission School Network": join the IT team of the Beaver School and solve
+  12 support tickets in four acts (switching, VLANs, subnetting, routing, DHCP,
+  DNS, ports, HTTP, mail, NAT, TLS and firewalls), each in a real simulation
+- 6 mini-games in between: Routing Rush, Address Space Tetris, Packet Belt,
+  Gatekeeper, Campus Planner and Radio Tuner
+- XP, ranks and badges; progress can be downloaded as a file (.btgames) that
+  teachers can open in the game
+- Games are available from the welcome dialog
+
 ## Version 0.3.3
 
 - added Malti and Soomaali

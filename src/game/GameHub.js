@@ -1,17 +1,17 @@
 //@ts-check
 // The game's hub: a modal opened from the toolbar. Shows the player's rank
 // and XP, the tickets (missions in the simulation), the intermezzos
-// (mini-games), badges, the player's completion codes, and a teacher view
-// to check handed-in codes. Everything stays in this browser.
+// (mini-games), badges, the player's save file (.btgames) to hand in, and a
+// teacher view that opens handed-in save files. Everything stays in this
+// browser.
 
 import { t } from "../i18n/index.js";
 import { SimDialog } from "../lib/SimDialog.js";
 import {
     ACTS, ALL_INTERMEZZOS, BADGES, INTERMEZZOS, TICKETS,
-    actText, badgeText, gameTitle, intermezzoText, rankFor, rankTitle, ticketText,
+    actText, badgeText, intermezzoText, rankFor, rankTitle, ticketText, totalXp,
 } from "./GameCatalog.js";
-import { gameState } from "./GameState.js";
-import { verifyCode } from "./CompletionCode.js";
+import { gameState, parseSaveFile } from "./GameState.js";
 import { gameContent } from "./content.js";
 import { MINIGAMES } from "./minigames.js";
 import { RoundGame } from "./RoundGame.js";
@@ -22,21 +22,66 @@ import { GuardView } from "./GuardView.js";
 import { CampusView } from "./CampusView.js";
 import { RadioView } from "./RadioView.js";
 import { runTicket, ticketLabel } from "./TicketRunner.js";
-import { button, codeChip, copyText, el, esc, icon, starsFor, starsHtml } from "./ui.js";
+import { button, downloadText, el, esc, icon, starsFor, starsHtml } from "./ui.js";
 
-/** @typedef {"tickets"|"intermezzos"|"badges"|"codes"|"more"|"teacher"} HubTab */
+/** @typedef {"tickets"|"intermezzos"|"badges"|"progress"|"more"|"teacher"} HubTab */
 
 const TABS = /** @type {{ id: HubTab, icon: string }[]} */ ([
     { id: "tickets", icon: "fa-ticket" },
     { id: "intermezzos", icon: "fa-puzzle-piece" },
     { id: "badges", icon: "fa-medal" },
-    { id: "codes", icon: "fa-key" },
+    { id: "progress", icon: "fa-file-arrow-down" },
     { id: "more", icon: "fa-ellipsis" },
 ]);
 
 /** @param {Date} d */
 function fmtDate(d) {
     return d.toLocaleDateString(document.documentElement.lang || undefined, { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+/** Everything that gets a score, in the order the hub shows it. @returns {{ id: string, title: string }[]} */
+function allTasks() {
+    return [
+        ...TICKETS.map((tk) => ({ id: tk.id, title: `${t("game.ticket.label", { no: ticketLabel(tk) })}: ${ticketText(tk.id).title}` })),
+        ...INTERMEZZOS.map((g) => ({ id: g.id, title: intermezzoText(g.id).title })),
+    ];
+}
+
+/**
+ * Task, points, date — for the player's own progress and the teacher view.
+ * @param {import("./GameState.js").GameData} data
+ * @param {{ open?: boolean }} [opts] open = also list tasks not done yet
+ */
+function resultsTable(data, { open = false } = {}) {
+    const table = el("table", "game-table");
+    table.innerHTML = `<thead><tr><th>${t("game.progress.task")}</th><th>${t("game.progress.points")}</th><th>${t("game.progress.date")}</th></tr></thead>`;
+    const tbody = el("tbody");
+    for (const g of allTasks()) {
+        const r = data.results[g.id];
+        if (!r && !open) continue;
+        tbody.append(el("tr", r ? "" : "game-muted", r
+            ? `<td>${esc(g.title)}</td><td>${r.best}</td><td>${fmtDate(new Date(r.day))}</td>`
+            : `<td>${esc(g.title)}</td><td>–</td><td></td>`));
+    }
+    table.append(tbody);
+    return table;
+}
+
+/**
+ * Asks for one or more files and hands over their text.
+ * @param {{ multiple?: boolean }} opts
+ * @param {(files: { name: string, text: string }[]) => void} onLoad
+ */
+function pickFiles({ multiple = false }, onLoad) {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".btgames,.json";
+    input.multiple = multiple;
+    input.addEventListener("change", async () => {
+        const files = [...(input.files ?? [])];
+        if (files.length) onLoad(await Promise.all(files.map(async (f) => ({ name: f.name, text: await f.text() }))));
+    });
+    input.click();
 }
 
 /** @type {GameHub|null} */
@@ -105,8 +150,9 @@ export class GameHub {
     _stopGame() {
         this.activeGame?.dispose();
         this.activeGame = null;
-        // Back in the hub: normal dialog size again.
+        // Back in the hub: normal dialog size and colours again.
         this.dlg.classList.remove("game-dlg--full");
+        delete this.dlg.dataset.rainbow;
     }
 
     /** Browser fullscreen for the whole game window (where the browser allows it). */
@@ -176,7 +222,7 @@ export class GameHub {
             case "tickets": return this._renderTickets();
             case "intermezzos": return this._renderIntermezzos();
             case "badges": return this._renderBadges();
-            case "codes": return this._renderCodes();
+            case "progress": return this._renderProgress();
             case "more": return this._renderMore();
             case "teacher": return this._renderTeacher();
         }
@@ -193,7 +239,7 @@ export class GameHub {
             <ul class="game-welcome-list">
                 <li>${icon("fa-bolt")}<span>${t("game.welcome.xp")}</span></li>
                 <li>${icon("fa-book-open")}<span>${t("game.welcome.course")}</span></li>
-                <li>${icon("fa-key")}<span>${t("game.welcome.codes")}</span></li>
+                <li>${icon("fa-file-arrow-down")}<span>${t("game.welcome.file")}</span></li>
             </ul>`;
         const form = /** @type {HTMLFormElement} */ (el("form", "game-name-form"));
         form.innerHTML = `
@@ -240,7 +286,7 @@ export class GameHub {
                     <span class="game-card-title">${esc(tx.title)}</span>
                     <span class="game-card-desc">${t("game.ticket.from", { from: esc(tx.from) })}</span>
                     <span class="game-card-kc">${icon("fa-bookmark")} ${esc(tx.kc)} · ${t("game.tickets.lesson", { lesson: tk.lesson })}</span>
-                    <span class="game-card-status">${r ? `<span class="game-stars">${starsHtml(starsFor(r.best))}</span> ${t("game.status.points", { n: r.best })}` : `${icon("fa-circle", "fa-regular")} ${t("game.status.open")}`}</span>`);
+                    <span class="game-card-status">${r ? `<span class="game-stars">${starsHtml(starsFor(r.best), { solidEmpty: true })}</span> ${t("game.status.points", { n: r.best })}` : `${icon("fa-circle", "fa-regular")} ${t("game.status.open")}`}</span>`);
                 card.addEventListener("click", () => {
                     this.close();
                     void runTicket(this.sim, tk, { openHub: () => GameHub.show(this.sim, { tab: "tickets" }) });
@@ -259,19 +305,20 @@ export class GameHub {
         const wrap = el("div", "game-section");
         wrap.append(el("p", "game-lead", t("game.intermezzos.lead")));
         const grid = el("div", "game-cards");
-        for (const g of INTERMEZZOS) {
+        for (const [i, g] of INTERMEZZOS.entries()) {
             const tx = intermezzoText(g.id);
             const r = gameState.data.results[g.id];
             const high = gameState.data.high[g.id];
             const arcade = g.kind !== "rounds";
-            const card = button("game-card game-card--intermezzo" + (r ? " is-done" : "") + (arcade ? " game-card--arcade" : ""), `
+            const card = button("game-card game-card--intermezzo" + (r ? " is-done" : ""), `
                 <span class="game-card-top"><span class="game-card-icon">${icon(g.icon)}</span>${arcade ? `<span class="game-tag">${t(g.kind === "campus" || g.kind === "radio" ? "game.intermezzos.planning" : "game.intermezzos.arcade")}</span>` : ""}</span>
                 <span class="game-card-title">${esc(tx.title)}</span>
                 <span class="game-card-desc">${esc(tx.desc)}</span>
                 <span class="game-card-kc">${icon("fa-bookmark")} ${esc(tx.kc)}</span>
                 <span class="game-card-status">${r
-                    ? `<span class="game-stars">${starsHtml(starsFor(r.best))}</span> ${t("game.status.best", { n: r.best })}${high ? ` · ${t("game.status.highscore", { points: high })}` : ""}`
+                    ? `<span class="game-stars">${starsHtml(starsFor(r.best), { solidEmpty: true })}</span> ${t("game.status.best", { n: r.best })}${high ? ` · ${t("game.status.highscore", { points: high })}` : ""}`
                     : `${icon("fa-circle", "fa-regular")} ${t("game.status.notPlayed")}`}</span>`);
+            card.dataset.rainbow = String(i % 6);
             card.addEventListener("click", () => this._playIntermezzo(g.id));
             grid.append(card);
         }
@@ -288,6 +335,9 @@ export class GameHub {
         this.nav.hidden = true;
         // Intermezzos get the whole app window — the plans and playfields need the room.
         this.dlg.classList.add("game-dlg--full");
+        // The game keeps the rainbow colour of its card.
+        const index = INTERMEZZOS.findIndex((g) => g.id === id);
+        if (index >= 0) this.dlg.dataset.rainbow = String(index % 6);
         const host = el("div", "game-section");
         this.body.replaceChildren(host);
         const onExit = () => this._showTab("intermezzos");
@@ -339,43 +389,16 @@ export class GameHub {
         this.body.replaceChildren(wrap);
     }
 
-    // ── Codes ────────────────────────────────────────────────────────
+    // ── Progress: the save file to hand in ───────────────────────────
 
-    _renderCodes() {
+    _renderProgress() {
         const wrap = el("div", "game-section");
-        const done = [
-            ...ALL_INTERMEZZOS.map((g) => ({ id: g.id, title: intermezzoText(g.id).title })),
-            ...TICKETS.map((tk) => ({ id: tk.id, title: `${t("game.ticket.label", { no: ticketLabel(tk) })}: ${ticketText(tk.id).title}` })),
-        ].filter((g) => gameState.data.results[g.id]);
-        if (done.length === 0) {
-            wrap.append(el("p", "game-lead", t("game.codes.empty")));
-            this.body.replaceChildren(wrap);
-            return;
-        }
-        wrap.append(el("p", "game-lead", t("game.codes.lead", { name: `<strong>${esc(gameState.name)}</strong>` })));
-        const table = el("table", "game-table");
-        table.innerHTML = `<thead><tr><th>${t("game.codes.task")}</th><th>${t("game.codes.points")}</th><th>${t("game.codes.date")}</th><th>${t("game.codes.code")}</th></tr></thead>`;
-        const tbody = el("tbody");
-        /** @type {string[]} */
-        const lines = [t("game.codes.nameLine", { name: gameState.name })];
-        for (const g of done) {
-            const r = gameState.data.results[g.id];
-            const code = gameState.codeFor(g.id) ?? "";
-            lines.push(t("game.codes.line", { title: g.title, points: r.best, code }));
-            const tr = el("tr", "", `<td>${esc(g.title)}</td><td>${r.best}</td><td>${fmtDate(new Date(r.day))}</td><td></td>`);
-            /** @type {HTMLElement} */ (tr.lastElementChild).append(codeChip(code));
-            tbody.append(tr);
-        }
-        table.append(tbody);
-        wrap.append(table);
-        const all = button("game-btn", `${icon("fa-copy", "fa-regular")} ${t("game.codes.copyAll")}`);
-        const pre = el("pre", "game-codes-text");
-        pre.textContent = lines.join("\n");
-        all.addEventListener("click", async () => {
-            const ok = await copyText(pre.textContent ?? "", pre);
-            all.innerHTML = ok ? `${icon("fa-check")} ${t("game.copied")}` : t("game.selected");
-        });
-        wrap.append(all, pre);
+        wrap.append(el("p", "game-lead", t("game.progress.lead")));
+        const dl = button("game-btn game-btn-primary game-progress-download", `${icon("fa-file-arrow-down")} ${t("game.progress.download")}`);
+        dl.addEventListener("click", () => downloadText(gameState.fileName(), gameState.exportFile()));
+        wrap.append(dl);
+        if (Object.keys(gameState.data.results).length === 0) wrap.append(el("p", "game-muted", t("game.progress.empty")));
+        else wrap.append(resultsTable(gameState.data));
         this.body.replaceChildren(wrap);
     }
 
@@ -387,29 +410,17 @@ export class GameHub {
         const move = el("section", "game-more-block");
         move.append(el("h3", "", `${icon("fa-right-left")} ${t("game.more.move.title")}`));
         move.append(el("p", "game-muted", t("game.more.move.text")));
-        const exp = /** @type {HTMLTextAreaElement} */ (el("textarea", "game-textarea"));
-        exp.readOnly = true;
-        exp.rows = 3;
-        exp.value = gameState.exportSave();
-        const copy = button("game-btn game-btn-small", `${icon("fa-copy", "fa-regular")} ${t("game.copy")}`);
-        copy.addEventListener("click", async () => {
-            exp.select();
-            const ok = await copyText(exp.value);
-            copy.innerHTML = ok ? `${icon("fa-check")} ${t("game.copied")}` : t("game.selected");
-        });
-        move.append(exp, copy);
-
-        const imp = /** @type {HTMLTextAreaElement} */ (el("textarea", "game-textarea"));
-        imp.rows = 3;
-        imp.placeholder = t("game.more.move.placeholder");
         const impBtn = button("game-btn game-btn-small", `${icon("fa-file-import")} ${t("game.more.move.load")}`);
-        impBtn.addEventListener("click", async () => {
-            if (!imp.value.trim()) return;
+        impBtn.addEventListener("click", () => pickFiles({}, async ([file]) => {
+            if (!parseSaveFile(file.text)) {
+                await SimDialog.alert(t("game.more.move.invalid"));
+                return;
+            }
             if (gameState.hasPlayer && !await SimDialog.confirm(t("game.more.move.replaceConfirm"))) return;
-            if (gameState.importSave(imp.value)) this._showTab("tickets");
-            else await SimDialog.alert(t("game.more.move.invalid"));
-        });
-        move.append(el("p", "game-muted game-small", t("game.more.move.loadIntro")), imp, impBtn);
+            gameState.importFile(file.text);
+            this._showTab("tickets");
+        }));
+        move.append(impBtn);
         wrap.append(move);
 
         const reset = el("section", "game-more-block");
@@ -435,49 +446,51 @@ export class GameHub {
         this.body.replaceChildren(wrap);
     }
 
+    // ── Teacher: open handed-in save files ───────────────────────────
+
     _renderTeacher() {
         this.nav.hidden = !gameState.hasPlayer;
         const wrap = el("div", "game-section");
         wrap.append(el("h3", "", `${icon("fa-chalkboard-user")} ${t("game.teacher.title")}`));
         wrap.append(el("p", "game-lead", t("game.teacher.lead")));
-        const ta = /** @type {HTMLTextAreaElement} */ (el("textarea", "game-textarea game-textarea--tall"));
-        ta.rows = 6;
-        ta.placeholder = t("game.teacher.placeholder");
-        const btn = button("game-btn game-btn-primary", `${icon("fa-magnifying-glass")} ${t("game.teacher.check")}`);
+        const btn = button("game-btn game-btn-primary", `${icon("fa-folder-open")} ${t("game.teacher.open")}`);
         const out = el("div", "game-teacher-out");
-        btn.addEventListener("click", () => {
-            out.replaceChildren();
-            const rows = ta.value.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-            if (rows.length === 0) return;
-            const table = el("table", "game-table");
-            table.innerHTML = `<thead><tr><th>${t("game.teacher.name")}</th><th>${t("game.codes.task")}</th><th>${t("game.codes.points")}</th><th>${t("game.codes.date")}</th><th>${t("game.teacher.result")}</th></tr></thead>`;
-            const tbody = el("tbody");
-            for (const line of rows) {
-                const m = line.match(/^(.*?)[\s;,:|\t]+([0-9A-Za-z]{4}-?[0-9A-Za-z]{4}-?[0-9A-Za-z]{4})\s*$/);
-                const tr = el("tr");
-                if (!m) {
-                    tr.innerHTML = `<td colspan="4">${esc(line)}</td><td class="is-err">${t("game.teacher.unparsed")}</td>`;
-                } else {
-                    const name = m[1].trim();
-                    const res = verifyCode(m[2], name);
-                    const title = res.valid ? gameTitle(res.gameNo ?? 0) ?? t("game.teacher.unknownGame", { no: res.gameNo ?? 0 }) : "";
-                    tr.innerHTML = res.valid
-                        ? `<td>${esc(name)}</td><td>${esc(title)}</td><td>${res.score}</td><td>${res.date ? fmtDate(res.date) : ""}</td><td class="is-ok">${icon("fa-circle-check")} ${t("game.teacher.valid")}</td>`
-                        : `<td>${esc(name)}</td><td colspan="3" class="game-muted">${esc(m[2])}</td><td class="is-err">${icon("fa-circle-xmark")} ${t("game.teacher.invalid")}</td>`;
-                }
-                tbody.append(tr);
-            }
-            table.append(tbody);
-            out.append(table);
-        });
-        wrap.append(ta, btn, out);
-        wrap.append(el("p", "game-muted game-small", `${icon("fa-circle-info")} ${t("game.teacher.note")}`));
+        btn.addEventListener("click", () => pickFiles({ multiple: true }, (files) => this._showSaveFiles(out, files)));
+        wrap.append(btn, out);
         if (!gameState.hasPlayer) {
             const back = button("game-link", `${icon("fa-arrow-left")} ${t("game.teacher.back")}`);
             back.addEventListener("click", () => this._showWelcome());
             wrap.append(back);
         }
         this.body.replaceChildren(wrap);
-        ta.focus();
+    }
+
+    /**
+     * One collapsible entry per student: the summary line, and the task
+     * table when opened.
+     * @param {HTMLElement} out
+     * @param {{ name: string, text: string }[]} files
+     */
+    _showSaveFiles(out, files) {
+        out.replaceChildren();
+        const saves = files.map((f) => ({ file: f.name, save: parseSaveFile(f.text) }));
+        saves.sort((a, b) => (a.save?.data.name ?? "").localeCompare(b.save?.data.name ?? ""));
+        for (const { file, save } of saves) {
+            if (!save) {
+                out.append(el("p", "game-teacher-err", `${icon("fa-circle-xmark")} ${t("game.teacher.invalid", { file: esc(file) })}`));
+                continue;
+            }
+            const { data, exported } = save;
+            const xp = totalXp(data);
+            const tickets = TICKETS.filter((tk) => data.results[tk.id]).length;
+            const games = INTERMEZZOS.filter((g) => data.results[g.id]).length;
+            const item = el("details", "game-teacher-student");
+            item.append(el("summary", "", `<strong>${esc(data.name)}</strong> · ${esc(rankTitle(rankFor(xp).index))} · ${t("game.teacher.summary", {
+                xp, tickets, ticketsTotal: TICKETS.length, games, gamesTotal: INTERMEZZOS.length,
+                badges: BADGES.filter((b) => b.earned(data)).length, date: exported ? fmtDate(exported) : "–",
+            })}`));
+            item.append(resultsTable(data, { open: true }));
+            out.append(item);
+        }
     }
 }

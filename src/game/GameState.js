@@ -1,12 +1,12 @@
 //@ts-check
 // The player's game progress — kept only in this browser's localStorage,
 // never sent anywhere. Teachers learn about results solely through the
-// completion codes students hand in (CompletionCode.js).
+// save file (.btgames) students download and hand in.
 
-import { checksum, makeCode } from "./CompletionCode.js";
-import { ALL_INTERMEZZOS, BADGES, TICKETS, totalXp } from "./GameCatalog.js";
+import { BADGES, totalXp } from "./GameCatalog.js";
 
 const STORAGE_KEY = "bt.game";
+const FILE_FORMAT = "beavertracer-game";
 
 /**
  * @typedef {{ best: number, day: number, noHints?: boolean }} GameResult  day = Date.getTime() of the best run
@@ -42,13 +42,27 @@ function sanitize(raw) {
     return data;
 }
 
-/** All numbers a game id can have in a code. @param {string} id */
-export function gameNo(id) {
-    return ALL_INTERMEZZOS.find((g) => g.id === id)?.no ?? TICKETS.find((t) => t.id === id)?.no ?? 0;
+/**
+ * Reads a save file (.btgames). Used for loading it on another PC and for
+ * the teacher view.
+ * @param {string} text
+ * @returns {{ data: GameData, exported: Date|null }|null} null = not a save file
+ */
+export function parseSaveFile(text) {
+    try {
+        const raw = JSON.parse(text);
+        if (raw?.format !== FILE_FORMAT) return null;
+        const data = sanitize(raw.game);
+        if (!data.name) return null;
+        const exported = new Date(raw.exported);
+        return { data, exported: Number.isNaN(exported.getTime()) ? null : exported };
+    } catch {
+        return null;
+    }
 }
 
 /**
- * @typedef {{ xpBefore: number, xpAfter: number, newBest: boolean, code: string, newBadges: import("./GameCatalog.js").Badge[] }} RecordOutcome
+ * @typedef {{ xpBefore: number, xpAfter: number, newBest: boolean, newBadges: import("./GameCatalog.js").Badge[] }} RecordOutcome
  */
 
 export class GameState {
@@ -111,19 +125,8 @@ export class GameState {
     }
 
     /**
-     * Completion code for a finished game, from its best run.
-     * @param {string} id
-     * @returns {string|null}
-     */
-    codeFor(id) {
-        const r = this.data.results[id];
-        if (!r || !this.hasPlayer) return null;
-        return makeCode({ gameNo: gameNo(id), score: r.best, name: this.data.name, date: new Date(r.day) });
-    }
-
-    /**
      * Records a finished intermezzo/ticket run. Only a better score replaces
-     * the stored one (and its date, so the code shows when it was reached).
+     * the stored one (and its date, so the save file shows when it was reached).
      * @param {string} id
      * @param {number} score 0–100
      * @param {{ noHints?: boolean }} [extra]
@@ -142,7 +145,6 @@ export class GameState {
             xpBefore,
             xpAfter: this.xp,
             newBest,
-            code: this.codeFor(id) ?? "",
             newBadges: this.earnedBadges().filter((b) => !badgesBefore.has(b.id)),
         };
     }
@@ -163,37 +165,41 @@ export class GameState {
         return { gained, newBadges: this.earnedBadges().filter((b) => !badgesBefore.has(b.id)) };
     }
 
-    // ── Moving to another PC ─────────────────────────────────────────
+    // ── Save file: hand in to the teacher, move to another PC ────────
 
-    /** A text block the student can paste on another PC. @returns {string} */
-    exportSave() {
-        const json = JSON.stringify(this.data);
-        const b64 = btoa(String.fromCharCode(...new TextEncoder().encode(json)));
-        return `BTGAME1:${checksum(b64)}:${b64}`;
+    /** Contents of the .btgames file. @returns {string} */
+    exportFile() {
+        return JSON.stringify({
+            _info: "Game progress from BeaverTracer (Mission School Network). Teachers can open it in the game under \"For teachers\": https://beavertracer.eu/",
+            format: FILE_FORMAT,
+            v: 1,
+            exported: new Date().toISOString(),
+            game: this.data,
+        }, null, 2);
+    }
+
+    /** e.g. "lena-schmidt.btgames" */
+    fileName() {
+        const slug = this.data.name.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/ß/g, "ss").toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+        return `${slug || "game"}.btgames`;
     }
 
     /**
-     * @param {string} text from exportSave()
-     * @returns {boolean} false if it isn't a save
+     * @param {string} text contents of a .btgames file
+     * @returns {boolean} false if it isn't a save file
      */
-    importSave(text) {
-        const m = String(text).replace(/\s/g, "").match(/^BTGAME1:([0-9a-f]{8}):([A-Za-z0-9+/=]+)$/);
-        if (!m || checksum(m[2]) !== m[1]) return false;
-        try {
-            const bytes = Uint8Array.from(atob(m[2]), (c) => c.charCodeAt(0));
-            const data = sanitize(JSON.parse(new TextDecoder().decode(bytes)));
-            if (!data.name) return false;
-            this.data = data;
-            this._save();
-            return true;
-        } catch {
-            return false;
-        }
+    importFile(text) {
+        const parsed = parseSaveFile(text);
+        if (!parsed) return false;
+        this.data = parsed.data;
+        this._save();
+        return true;
     }
 
     /**
      * Arcade highscore (points) — separate from the 0–100 score that gives
-     * XP and the completion code.
+     * XP.
      * @param {string} id @param {number} points
      * @returns {{ best: number, isNew: boolean }}
      */

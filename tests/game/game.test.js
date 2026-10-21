@@ -1,9 +1,8 @@
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
-import { makeCode, verifyCode, decodeCode, normalizeName } from "../../src/game/CompletionCode.js";
-import { GameState } from "../../src/game/GameState.js";
-import { ALL_INTERMEZZOS, INTERMEZZOS, TICKETS, BADGES, RANK_XP, rankFor, gameTitle, ticketText, badgeText } from "../../src/game/GameCatalog.js";
+import { GameState, parseSaveFile } from "../../src/game/GameState.js";
+import { ALL_INTERMEZZOS, INTERMEZZOS, TICKETS, BADGES, RANK_XP, rankFor, ticketText, badgeText } from "../../src/game/GameCatalog.js";
 import { gameContent } from "../../src/game/content.js";
 import { MINIGAMES, answersMatch, binarySum } from "../../src/game/minigames.js";
 
@@ -28,41 +27,11 @@ function memoryStorage() {
     return { getItem: (k) => m.get(k) ?? null, setItem: (k, v) => m.set(k, v), removeItem: (k) => m.delete(k) };
 }
 
-describe("CompletionCode", () => {
-    it("round-trips game, score and date and is bound to the name", () => {
-        const date = new Date(2026, 9, 14);
-        const code = makeCode({ gameNo: 22, score: 87, name: "Lena Schmidt", date });
-        expect(code).toMatch(/^[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}$/);
-        const res = verifyCode(code, "lena  schmidt");
-        expect(res.valid).toBe(true);
-        expect(res.gameNo).toBe(22);
-        expect(res.score).toBe(87);
-        expect(res.date?.toDateString()).toBe(date.toDateString());
-        expect(verifyCode(code, "Max Mustermann").valid).toBe(false);
-    });
-
-    it("forgives typing slips but rejects a changed character", () => {
-        const code = makeCode({ gameNo: 1, score: 100, name: "Jörg", date: new Date(2026, 0, 5) });
-        expect(verifyCode(code.toLowerCase().replace(/-/g, ""), "jorg").valid).toBe(true);
-        const chars = code.split("");
-        const i = chars.findIndex((c) => c !== "-");
-        chars[i] = chars[i] === "A" ? "B" : "A";
-        expect(verifyCode(chars.join(""), "Jörg").valid).toBe(false);
-        expect(decodeCode("not a code")).toBeNull();
-    });
-
-    it("normalizes names", () => {
-        expect(normalizeName("  Müller-Lüdenscheidt, Jörg ")).toBe("mullerludenscheidtjorg");
-        expect(normalizeName("Straße")).toBe("strasse");
-    });
-});
-
 describe("GameCatalog", () => {
-    it("has unique game numbers that fit into 7 bits", () => {
+    it("has unique game numbers", () => {
         const nos = [...ALL_INTERMEZZOS.map((g) => g.no), ...TICKETS.map((t) => t.no)];
         expect(new Set(nos).size).toBe(nos.length);
-        expect(nos.every((n) => n > 0 && n < 128)).toBe(true);
-        for (const n of nos) expect(gameTitle(n), String(n)).toBeTruthy();
+        expect(nos.every((n) => n > 0)).toBe(true);
     });
 
     it("has unique ids", () => {
@@ -114,7 +83,7 @@ describe("GameState", () => {
         expect(better.xpAfter).toBe(95);
         const rush = s.record("routing", 92);
         expect(rush.newBadges.map((b) => b.id)).toContain("router");
-        expect(verifyCode(better.code, "Ben").score).toBe(95);
+        expect(s.data.results.binary.best).toBe(95);
     });
 
     it("course XP counts only once per block", () => {
@@ -124,21 +93,23 @@ describe("GameState", () => {
         expect(s.xp).toBe(5);
     });
 
-    it("persists, exports and imports", () => {
+    it("persists, exports and imports the save file", () => {
         const storage = memoryStorage();
         const s = new GameState(storage);
         s.setName("Clara");
         s.record("t-dns", 80, { noHints: true });
         expect(new GameState(storage).data.results["t-dns"].best).toBe(80);
 
-        const save = s.exportSave();
+        const file = s.exportFile();
+        expect(s.fileName()).toBe("clara.btgames");
         const other = new GameState(memoryStorage());
-        expect(other.importSave(save)).toBe(true);
+        expect(other.importFile(file)).toBe(true);
         expect(other.name).toBe("Clara");
         expect(other.earnedBadges().map((b) => b.id)).toContain("nohints");
+        expect(parseSaveFile(file)?.exported).toBeInstanceOf(Date);
 
-        const tampered = save.replace(/:(.)/, (_m, c) => `:${c === "0" ? "1" : "0"}`);
-        expect(new GameState(memoryStorage()).importSave(tampered)).toBe(false);
+        expect(new GameState(memoryStorage()).importFile("not a file")).toBe(false);
+        expect(parseSaveFile(JSON.stringify({ format: "something-else", game: { name: "Clara" } }))).toBeNull();
     });
 });
 

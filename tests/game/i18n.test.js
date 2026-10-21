@@ -16,7 +16,7 @@ const sources = fs.readdirSync(GAME_DIR).filter((f) => f.endsWith(".js")).map((f
 const DYNAMIC = {
     "game.prio.": ["low", "medium", "high"],
     "game.round.placeholder.": ["ip", "bin", "num"],
-    "game.tab.": ["tickets", "intermezzos", "badges", "codes", "more"],
+    "game.tab.": ["tickets", "intermezzos", "badges", "progress", "more"],
     "game.result.cheer.": ["great", "good", "ok", "low"],
     "game.vl.review.": ["small", "waste", "timeout", "full"],
     "game.bb.review.": ["set", "read"],

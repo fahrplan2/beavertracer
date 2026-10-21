@@ -4,8 +4,8 @@
 // simulations, checks, which answer is right). The words come from
 // content/<lang>.js via the *Text() helpers below.
 //
-// `no` is baked into completion codes (CompletionCode.js): never renumber
-// or reuse a number, only add new ones.
+// `no` is the game's fixed number (tickets show it as #1000 + no × 37):
+// never renumber or reuse a number, only add new ones.
 
 import { fmt, gameContent } from "./content.js";
 
@@ -16,8 +16,8 @@ import { fmt, gameContent } from "./content.js";
  */
 
 /**
- * Every intermezzo that ever existed — completion codes and old results
- * keep working for all of them.
+ * Every intermezzo that ever existed — old results keep working for all
+ * of them.
  * @type {Intermezzo[]}
  */
 export const ALL_INTERMEZZOS = [
@@ -208,18 +208,6 @@ export function badgeText(b) {
 /** @param {number} index */
 export function rankTitle(index) {
     return gameContent().ranks[index] ?? "";
-}
-
-/**
- * Title of a game by its code number (teacher view).
- * @param {number} no
- * @returns {string|null}
- */
-export function gameTitle(no) {
-    const g = ALL_INTERMEZZOS.find((x) => x.no === no);
-    if (g) return intermezzoText(g.id).title;
-    const t = TICKETS.find((x) => x.no === no);
-    return t ? ticketText(t.id).title : null;
 }
 
 /**
