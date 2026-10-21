@@ -150,8 +150,9 @@ export class GameHub {
     _stopGame() {
         this.activeGame?.dispose();
         this.activeGame = null;
-        // Back in the hub: normal dialog size again.
+        // Back in the hub: normal dialog size and colours again.
         this.dlg.classList.remove("game-dlg--full");
+        delete this.dlg.dataset.rainbow;
     }
 
     /** Browser fullscreen for the whole game window (where the browser allows it). */
@@ -304,7 +305,7 @@ export class GameHub {
         const wrap = el("div", "game-section");
         wrap.append(el("p", "game-lead", t("game.intermezzos.lead")));
         const grid = el("div", "game-cards");
-        for (const g of INTERMEZZOS) {
+        for (const [i, g] of INTERMEZZOS.entries()) {
             const tx = intermezzoText(g.id);
             const r = gameState.data.results[g.id];
             const high = gameState.data.high[g.id];
@@ -317,6 +318,7 @@ export class GameHub {
                 <span class="game-card-status">${r
                     ? `<span class="game-stars">${starsHtml(starsFor(r.best), { solidEmpty: true })}</span> ${t("game.status.best", { n: r.best })}${high ? ` · ${t("game.status.highscore", { points: high })}` : ""}`
                     : `${icon("fa-circle", "fa-regular")} ${t("game.status.notPlayed")}`}</span>`);
+            card.dataset.rainbow = String(i % 6);
             card.addEventListener("click", () => this._playIntermezzo(g.id));
             grid.append(card);
         }
@@ -333,6 +335,9 @@ export class GameHub {
         this.nav.hidden = true;
         // Intermezzos get the whole app window — the plans and playfields need the room.
         this.dlg.classList.add("game-dlg--full");
+        // The game keeps the rainbow colour of its card.
+        const index = INTERMEZZOS.findIndex((g) => g.id === id);
+        if (index >= 0) this.dlg.dataset.rainbow = String(index % 6);
         const host = el("div", "game-section");
         this.body.replaceChildren(host);
         const onExit = () => this._showTab("intermezzos");
