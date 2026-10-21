@@ -1,5 +1,5 @@
 //@ts-check
-export const meta = { name: "🇦🇱 Shqip (translated by AI)", order: 24 };
+export const meta = { name: "🇦🇱 Shqip (translated by AI)", order: 25 };
 
 export default {
   "app.generic.title": "Aplikacioni Gernic",

@@ -60,6 +60,7 @@ for (const t of LOCALES) {
     "--in", INPUT,
     "--out", `locales/${t.code}.js`,
     "--target", t.name,
+    ...(t.notes ? ["--notes", t.notes] : []),
     ...passThrough,
   ];
 

@@ -1,0 +1,334 @@
+<h2>Għajnuna</h2>
+<p class="subtitle">Kif tuża BeaverTracer</p>
+
+<hr>
+
+<nav class="help-toc">
+  <strong>Kontenut</strong>
+  <ol>
+    <li><a href="#modes">It-Tliet Modi</a></li>
+    <li><a href="#edit">Modalità ta' Editjar — Binja ta' Network</a></li>
+    <li><a href="#devices">Apparat</a></li>
+    <li><a href="#panels">Pannelli tal-Apparat</a></li>
+    <li><a href="#run">Modalità ta' Tħaddim — Tħaddim tas-Simulazzjoni</a></li>
+    <li><a href="#trace">Modalità ta' Trace — Analiżi tal-Packets</a></li>
+    <li><a href="#project">Ħfظ u Tagħbija</a></li>
+  </ol>
+</nav>
+
+<hr>
+
+<h3 id="modes">It-tliet modi</h3>
+<p>
+  Beaver Tracer għandu tliet modi. Tibdel bejniethom billi tuża l-buttuni fil-toolbar ta' fuq.
+</p>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-pencil"></i></td>
+    <td><strong>Edit</strong></td>
+    <td>Iddesinnja n-network tiegħek — poġġi l-devices, konnettjihom, ikkonfigurihom.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-play"></i></td>
+    <td><strong>Run</strong></td>
+    <td>Ibda s-simulazzjoni u ara t-traffic jiċċirkola permezz tan-network tiegħek.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-magnifying-glass"></i></td>
+    <td><strong>Trace</strong></td>
+    <td>Aqbad u inspettja l-packets li jivvjaġġaw fuq in-network tiegħek.</td>
+  </tr>
+</table>
+
+<hr>
+
+<h3 id="edit">Modalità ta' modifika — Bini ta' network</h3>
+<p>
+  Fil-modalità ta' modifika, toolbar jidher fuq in-naħa tax-xellug tal-iskrin.
+  Agħżel għodda billi tikklikkja fuqha, imbagħad użaha fuq il-canvas.
+</p>
+
+<h4>Għodod</h4>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-arrow-pointer"></i></td>
+    <td><strong>Agħżel</strong></td>
+    <td>Agħfas fuq device biex tiftaħ il-panel tiegħu. Idraq device biex itmovvuha.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-link"></i></td>
+    <td><strong>Link</strong></td>
+    <td>Qabbel żewġ devices b'cable (ara hawn taħt).</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-font"></i></td>
+    <td><strong>Test</strong></td>
+    <td>Poġġi etiketta ta' test fuq il-canvas biex tannoта d-dijagramma tiegħek.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-square"></i></td>
+    <td><strong>Rettangolu</strong></td>
+    <td>Ġbid rettangolu fuq il-canvas biex gupp viżwalment devices.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-ban"></i></td>
+    <td><strong>Ħassar</strong></td>
+    <td>Agħfas fuq device jew cable biex taħsarha.</td>
+  </tr>
+</table>
+
+<p>
+  <strong>Għarfien:</strong> Agħfas dritt fuq kwalunkwe post fuq il-canvas biex ikkanċella l-għodda attwali
+  u terġa lura għal <i class="fas fa-arrow-pointer"></i> Agħżel.
+</p>
+
+<h4>Poġġi device</h4>
+<ol>
+  <li>Agħfas button ta' device fit-toolbar tax-xellug (eż. <i class="fas fa-desktop"></i> Computer).</li>
+  <li>Preview isegwi l-cursor tal-mouse tiegħek.</li>
+  <li>Agħfas fuq il-canvas biex tpoġġi l-device.</li>
+</ol>
+
+<h4>Qabbel żewġ devices</h4>
+<ol>
+  <li>Agħfas l-għodda <i class="fas fa-link"></i> <strong>Link</strong>.</li>
+  <li>Agħfas l-ewwel device — port picker jidher. Agħżel port.</li>
+  <li>Mowwi l-mouse tiegħek għat-tieni device u agħfas fuqu — agħżel port hemm ukoll.</li>
+  <li>Il-cable tinħoloq awtomatikament.</li>
+</ol>
+<p>
+  Ports li diġà qed jintużaw jintwraw bħala disabilitati u ma jistgħux jintgħażlu.
+</p>
+
+<h4>Mowwi device</h4>
+<p>
+  Fil-modalità ta' <i class="fas fa-arrow-pointer"></i> Agħżel, agħfas u idraq kwalunkwe device biex terġa poġġih fuq il-canvas.
+</p>
+
+<h4>Ħassar device jew cable</h4>
+<ol>
+  <li>Agħfas l-għodda <i class="fas fa-ban"></i> <strong>Ħassar</strong>.</li>
+  <li>Agħfas fuq il-device jew cable li trid taħsarha.</li>
+</ol>
+<p>
+  Meta taħsarr device, il-cables kollha konnessi għalih jitħassru awtomatikament.
+</p>
+
+<hr>
+
+<h3 id="devices">Apparati</h3>
+<p>
+  Dawn apparati huma disponibbli fit-toolbar tax-xellug waqt il-modalità Edit:
+</p>
+
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-desktop"></i></td>
+    <td><strong>Computer</strong></td>
+    <td>
+      Kompjuter b'interface ta' network wired. Tista' tħarreġ applikazzjonijiet fuqu
+      (eż. web browser jew ping tool) u tikkonfigura l-IP address tiegħu.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-tablet-screen-button"></i></td>
+    <td><strong>Tablet</strong></td>
+    <td>
+      Bħal Computer, imma tikkonnettja permezz ta' Wi-Fi minflok cable.
+      Uża dan flimkien ma' Access Point jew Home Router.
+    </td>
+  </tr>
+  <tr>
+    <td>SW</td>
+    <td><strong>Switch</strong></td>
+    <td>
+      Tikkonnettja apparati multipli fl-istess network segment.
+      Iforwarda frames ibbażata fuq MAC addresses.
+      Tappoġġja VLANs u Spanning Tree Protocol (STP).
+    </td>
+  </tr>
+  <tr>
+    <td>RT</td>
+    <td><strong>Router</strong></td>
+    <td>
+      Tikkonnettja networks differenti u iforwarda packets bejniethom.
+      Tappoġġja static routes, OSPF, BGP, u IP tunnels (VPN).
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-house-signal"></i></td>
+    <td><strong>Home Router</strong></td>
+    <td>
+      Router kombinat, DHCP server, NAT gateway u Wi-Fi access point —
+      simili għal tipikali home internet router.
+      Konnettjaha ma' Router (bħala WAN) u ma' Computers jew Tablets (bħala LAN/Wi-Fi).
+      Tappoġġja port forwarding rules.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-wifi"></i></td>
+    <td><strong>Access Point</strong></td>
+    <td>
+      Testendi network wired b'connessjoni Wi-Fi.
+      Konnettja l-wired port tiegħu ma' Switch jew Router, imbagħad konnettja Tablets magħha wireless.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-shield-halved"></i></td>
+    <td><strong>Firewall</strong></td>
+    <td>
+      Tafiltra traffic bejn network segments ibbażata fuq rules konfigurabbli.
+      Il-panel juri s-rule set u live log ta' packets matched.
+    </td>
+  </tr>
+</table>
+
+<hr>
+
+<h3 id="panels">Pannelli tal-apparat</h3>
+<p>
+  Ikklikkja xi apparat fuq il-canvas biex tiftaħ il-<strong>panel</strong> tiegħu — finestra ta' konfigurazzjoni
+  li tidher fuq il-lemin tal-iskrin.
+  Ikklikkja l-apparat mill-ġdid (jew il-buttuna <strong>×</strong> fil-header tal-panel) biex tagħlaqha.
+</p>
+
+<h4>Iċċanja l-isem ta' apparat</h4>
+<p>
+  Ikklikkja l-buttuna <i class="fas fa-pen"></i> ħdejn l-isem tal-apparat fil-header tal-panel
+  biex tagħtieha isem personalizzat (eż. "Office-PC" jew "Core-Router").
+</p>
+
+<h4>Tabs tar-router</h4>
+<p>
+  Panel ta' Router għandu t-tabs li ġejjin:
+</p>
+<ul>
+  <li><strong>Interfaces</strong> — konfigura indirizzi IP fuq kull port</li>
+  <li><strong>Routing table IPv4</strong> — ara u editja routes IPv4 (statiku u imtellma)</li>
+  <li><strong>Routing table IPv6</strong> — ara u editja routes IPv6</li>
+  <li><strong>OSPF</strong> — konfigura u monitorja OSPF dynamic routing</li>
+  <li><strong>BGP</strong> — konfigura BGP neighbours u ara t-table BGP</li>
+  <li><strong>VPN</strong> — issettja IP tunnels bejn routers</li>
+</ul>
+
+<h4>Tabs tal-switch</h4>
+<p>
+  Panel ta' Switch għandu tabs għat-<strong>Switch Address Table (SAT)</strong> tiegħu, il-konfigurazzjoni ta' <strong>VLAN</strong>,
+  u s-settings tal-<strong>Spanning Tree Protocol (STP)</strong>.
+</p>
+
+<h4>Tabs tal-Home Router</h4>
+<p>
+  Panel ta' Home Router għandu t-tabs li ġejjin:
+</p>
+<ul>
+  <li><strong>Status</strong> — sommarju tal-istatus WAN/LAN attwali u clients konnessi</li>
+  <li><strong>WAN</strong> — konfigura l-uplink (static IP jew DHCP)</li>
+  <li><strong>LAN</strong> — konfigura s-subnet LAN u l-indirizz IP</li>
+  <li><strong>DHCP</strong> — ara l-leases attivi u konfigura l-pool DHCP</li>
+  <li><strong>WiFi</strong> — konfigura l-access point integrat (SSID, password)</li>
+  <li><strong>NAT</strong> — ara t-table tal-konnessjoni NAT attiva</li>
+  <li><strong>Port Forwarding</strong> — iddefiniċi regoli biex iwakkla ports inċomming lejn hosts LAN</li>
+</ul>
+
+<h4>Tabs tal-Firewall</h4>
+<p>
+  Panel ta' Firewall għandu tab <strong>Rules</strong> biex jimmaniġġja regoli tal-filter u
+  tab <strong>Log</strong> li juri liema packets ġew permessi jew dropped.
+</p>
+
+<h4>Computer u Tablet</h4>
+<p>
+  Computers u Tablets għandhom sistema operattiva simulata sħiħa ġewwa l-panel tagħhom.
+  Tista' tiftaħ apps mill-desktop, tikonfigura network settings, u taħdem instructions.
+</p>
+
+<hr>
+
+<h3 id="run">Modalità Run — Avvio della simulazione</h3>
+<p>
+  Passa alla modalità <i class="fas fa-play"></i> <strong>Run</strong> per avviare la simulazione.
+  La rete diventa attiva: i dispositivi scambiano packets, vengono assegnati i DHCP leases,
+  le routing tables si aggiornano, e così via.
+</p>
+
+<h4>Controlli di velocità</h4>
+<p>
+  Usa i pulsanti di velocità nella barra degli strumenti superiore per controllare la velocità di esecuzione della simulazione:
+</p>
+<table class="help-table">
+  <tr><td><strong>1/4×</strong></td><td>Lento — buono per osservare i singoli passaggi</td></tr>
+  <tr><td><strong>1×</strong></td><td>Velocità normale</td></tr>
+  <tr><td><strong>4×</strong></td><td>Veloce</td></tr>
+  <tr><td><strong>16×</strong></td><td>Molto veloce</td></tr>
+</table>
+
+<h4>Pausa e reset</h4>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-pause"></i></td>
+    <td><strong>Pausa</strong></td>
+    <td>Congela la simulazione nello stato attuale.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-arrow-rotate-left"></i></td>
+    <td><strong>Reset</strong></td>
+    <td>Riavvia la simulazione dall'inizio (tutto lo stato dinamico viene cancellato).</td>
+  </tr>
+</table>
+
+<p>
+  <strong>Nota:</strong> Non puoi modificare la topology della rete mentre sei in modalità Run.
+  Torna prima alla modalità <i class="fas fa-pencil"></i> Edit.
+</p>
+
+<hr>
+
+<h3 id="trace">Trace Mode — Analizzar Packets</h3>
+<p>
+  Ibdel għal <i class="fas fa-magnifying-glass"></i> <strong>Trace</strong> mode biex tiftaħ l-
+  analyser ta' packets integrat — simili għal Wireshark.
+</p>
+<p>
+  Fuq, agħżel id-<strong>device</strong> u l-<strong>port</strong> li trid taqbad minnha.
+  Il-packets kollha li jgħaddu minn dak il-port huma rrekordjati u murija f'lista.
+</p>
+<p>
+  Ikklikkja fuq kwalunkwe packet fil-lista biex tara d-dettalji sħaħ tiegħu:
+  il-protocol layers, il-header fields, u l-payload — eżattament kif għodda professjonali ta' network jippresentawhom.
+</p>
+<p>
+  Il-capture jibda' awtomatikament waqt li l-simulazzjoni qed taħdem.
+  Tista' tibdel bejn Trace mode u Run mode fi kwalunkwe ħin mingħajr ma titlef id-data meqbuda.
+</p>
+
+<hr>
+
+<h3 id="project">Salvataġġ u tagħbija</h3>
+<p>
+  Id-disinn tal-network tiegħek jista' jiġi salvat bħala file u jinġabar mill-ġdid aktar tard.
+  Uża l-buttuni fil-toolbar ta' fuq (viżibbli fil-Edit mode):
+</p>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-file"></i></td>
+    <td><strong>New</strong></td>
+    <td>Ibda b'kanvas vojta. Kwalunkwe bidla mhux salvata se tinqalad.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-file-arrow-up"></i></td>
+    <td><strong>Load</strong></td>
+    <td>Iftaħ file ta' simulazzjoni salvat qablu.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-file-arrow-down"></i></td>
+    <td><strong>Save</strong></td>
+    <td>DownloadIl-simulazzjoni attwali bħala file fuq il-kompjuter tiegħek.</td>
+  </tr>
+</table>
+
+<hr>
+
+<p class="footer">
+  Għandek problemi? Iċċekkja li n-network tiegħek huwa konness korrettament u li l-apparati kollha għandhom IP addresses validi kkonfigurati.
+</p>
