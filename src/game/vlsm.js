@@ -123,7 +123,7 @@ export function requestCredit({ placedPrefix, minPrefix, tooSmallTries }) {
     return 0.5;
 }
 
-/** 0–100 for XP and the completion code. @param {number} credit sum of requestCredit() */
+/** 0–100 for XP. @param {number} credit sum of requestCredit() */
 export function vlsmScore(credit) {
     return Math.round((100 * credit) / TOTAL_REQUESTS);
 }

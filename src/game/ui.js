@@ -1,6 +1,6 @@
 //@ts-check
-// Small UI pieces shared by the game views: the result card with the
-// completion code, and toasts for XP/badges earned in the regular course.
+// Small UI pieces shared by the game views: the result card, the save file
+// download, and toasts for XP/badges earned in the regular course.
 
 import { t } from "../i18n/index.js";
 import { badgeText, rankFor, rankTitle } from "./GameCatalog.js";
@@ -35,51 +35,25 @@ export function starsFor(score) {
     return score >= 90 ? 3 : score >= 70 ? 2 : score >= 50 ? 1 : 0;
 }
 
-/** @param {number} n */
-export function starsHtml(n) {
-    return [0, 1, 2].map((i) => icon("fa-star", i < n ? "fa-solid" : "fa-regular")).join("");
+/**
+ * @param {number} n
+ * @param {{ solidEmpty?: boolean }} [opts] solidEmpty = missing stars filled but greyed (hub cards)
+ */
+export function starsHtml(n, { solidEmpty = false } = {}) {
+    return [0, 1, 2].map((i) => icon("fa-star", i < n ? "fa-solid" : solidEmpty ? "fa-solid game-star-empty" : "fa-regular")).join("");
 }
 
 /**
- * Copies text, falling back to selecting it when the clipboard API is
- * unavailable (plain http, older browsers).
- * @param {string} text @param {HTMLElement} [selectEl]
- * @returns {Promise<boolean>}
+ * Offers a text file for download (same way the simulation is saved).
+ * @param {string} filename @param {string} text
  */
-export async function copyText(text, selectEl) {
-    try {
-        await navigator.clipboard.writeText(text);
-        return true;
-    } catch {
-        if (selectEl) {
-            const range = document.createRange();
-            range.selectNodeContents(selectEl);
-            const sel = window.getSelection();
-            sel?.removeAllRanges();
-            sel?.addRange(range);
-        }
-        return false;
-    }
-}
-
-/**
- * A code with a copy button.
- * @param {string} code
- */
-export function codeChip(code) {
-    const wrap = el("span", "game-code");
-    const text = el("code", "game-code-text");
-    text.textContent = code;
-    const btn = button("game-code-copy", icon("fa-copy", "fa-regular"));
-    btn.title = t("game.code.copy");
-    btn.setAttribute("aria-label", btn.title);
-    btn.addEventListener("click", async () => {
-        const ok = await copyText(code, text);
-        btn.innerHTML = icon(ok ? "fa-check" : "fa-i-cursor");
-        setTimeout(() => { btn.innerHTML = icon("fa-copy", "fa-regular"); }, 1500);
-    });
-    wrap.append(text, btn);
-    return wrap;
+export function downloadText(filename, text) {
+    const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
 }
 
 /**
@@ -113,11 +87,6 @@ export function renderOutcome({ title, score, detail, outcome, headline }) {
     }
     for (const b of outcome.newBadges) {
         box.append(el("p", "game-result-badge", `${icon(b.icon)} ${t("game.result.badge", { title: `<strong>${esc(badgeText(b).title)}</strong>` })}`));
-    }
-    if (outcome.code) {
-        const codeRow = el("div", "game-result-code");
-        codeRow.append(el("span", "", t("game.result.code")), codeChip(outcome.code));
-        box.append(codeRow);
     }
     return box;
 }

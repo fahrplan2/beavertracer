@@ -350,22 +350,9 @@
   gap: var(--pad-md);
 }
 
-.welcome-games .welcome-path-title i {
-  color: var(--learn-accent);
-}
-
-.welcome-sim-item.welcome-games-item {
-  border-inline-start: 4px solid var(--learn-accent);
-  background: color-mix(in oklch, var(--learn-accent), var(--bg-strong) 90%);
-}
-
-.welcome-sim-item.welcome-games-item:hover {
-  background: color-mix(in oklch, var(--learn-accent), var(--bg-strong) 82%);
-}
-
-.welcome-games-item .welcome-item-icon {
-  color: var(--learn-accent);
-  font-size: 1.25rem;
+/* Blue like the other icons, not the course accent of the column */
+.welcome-path--learn .welcome-games .welcome-path-title i {
+  color: var(--blue);
 }
 
 /* "Build freely" list */

@@ -1,7 +1,7 @@
 //@ts-check
 // A helpdesk ticket: shown in the lessons panel next to its simulation.
 // The student repairs the network, lets the checks verify it, answers one
-// question about the cause and gets a score and completion code.
+// question about the cause and gets a score.
 //
 // Scoring: start at 100; each hint −10, each failed check run −5 (at most
 // −20), a wrong answer to the cause question −10. Solving always gives at

@@ -358,7 +358,6 @@ export class WelcomeDialog {
         // top; the course stays as it is.
         const games = WelcomeDialog._simItem("fa-trophy", t("game.title"), t("game.subtitle"),
             () => close(() => GameHub.show(sim), { keepLessons: true }));
-        games.classList.add("welcome-games-item");
         const gamesBlock = document.createElement("section");
         gamesBlock.className = "welcome-games";
         const gamesTitle = document.createElement("h2");

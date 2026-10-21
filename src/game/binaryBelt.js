@@ -63,7 +63,7 @@ export function beltPoints(levelIndex, progress, combo) {
     return (base + Math.round(base * Math.max(0, 1 - progress))) * beltMultiplier(combo);
 }
 
-/** 0–100 for XP and the completion code. @param {number} delivered */
+/** 0–100 for XP. @param {number} delivered */
 export function beltScore(delivered) {
     return Math.round((100 * delivered) / TOTAL_BELT_PACKETS);
 }

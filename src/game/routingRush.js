@@ -172,7 +172,7 @@ export function packetPoints(levelIndex, progress, combo) {
 export const LEVEL_BONUS_PER_LIFE = 50;
 
 /**
- * The 0–100 score for XP and the completion code: share of all packets of
+ * The 0–100 score for XP: share of all packets of
  * the whole game that were routed correctly.
  * @param {number} correct
  */

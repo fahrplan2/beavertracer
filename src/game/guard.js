@@ -136,7 +136,7 @@ export function stampPoints(levelIndex, secondsTaken, combo) {
     return Math.round((base + base * speed) * Math.min(4, 1 + Math.floor(combo / 4)));
 }
 
-/** 0–100 for XP and the completion code. @param {number} correct */
+/** 0–100 for XP. @param {number} correct */
 export function guardScore(correct) {
     return Math.round((100 * correct) / TOTAL_GUARD_REQUESTS);
 }
