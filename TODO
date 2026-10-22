@@ -1,15 +1,3 @@
-Router + traceroute: ICMP-Fehlermeldungen
-- Ist: Router ohne passende Route verwirft das Paket stillschweigend.
-  traceroute zeigt dann schon beim ersten Router nur "* *" (z.B. Lektion 4.5.2,
-  Router A ohne Route nach 172.16.0.0/24), ping meldet nur Timeouts.
-- Soll: Router schickt ICMP Destination Unreachable (Network Unreachable,
-  Typ 3 Code 0) an den Absender; bei TTL-Ablauf weiterhin Time Exceeded.
-- traceroute: Unreachable anzeigen (z.B. "!N" wie unter Linux) und abbrechen,
-  statt bis Hop 30 "*" zu drucken. ping: "Ziel nicht erreichbar" melden.
-- Danach Lektionen prüfen: 4.5.2 (Schritt vor dem Eintragen der Route),
-  4.5.3 (Rückroute fehlt: Router B würde Clara Unreachable melden ->
-  Tipps zu traceroute anpassen).
-
 ping bei IPv6: falsche Paketgröße in der ersten Zeile
 - Ist: "PING 2001:db8:… 56(84) Bytes Daten." — 84 = 56 Daten + 8 ICMP + 20 IPv4-Kopf.
 - Soll: IPv6-Kopf ist 40 Byte -> 56(104), oder wie Linux-ping bei IPv6 nur
@@ -21,3 +9,78 @@ QUIC / HTTP/3 simulieren (später)
 - QUIC (RFC 9000) über UDP 443 mit eingebauter Verschlüsselung; HTTP/3 (RFC 9114)
   darauf. Danach in 6.6 bei QUIC das :fa-flask:-Symbol ergänzen und ggf. eine
   Vergleichsseite TCP+TLS vs. QUIC (weniger Round-Trips beim Verbindungsaufbau).
+
+Zwei BeaverTracer-Instanzen per WebRTC verbinden (Idee, 2026-10-22)
+- Machbarkeit geprüft, noch nichts gebaut. Kern: neues Objekt "RemoteBridge"
+  (SimulatedObject mit einem EthernetPort, Vorbild: entfernte CompanionBridge,
+  Commit f95d219). Rohe Ethernet-Frames (port.getNextOutgoingFrame() /
+  port.recieve()) über einen DataChannel mit ordered:false, maxRetransmits:0
+  (verhält sich wie ein Kabel). Mitschnitt/Wireshark funktioniert auf beiden Seiten.
+- Takt: Jede Instanz tickt unabhängig (1 Tick = 5 Sim-ms, Timeouts in Ticks).
+  Unterschiedliche Geschwindigkeit/Pause/Schrittmodus -> falsche Timeouts.
+  Stufe 1: Geschwindigkeit, Pause und Schrittmodus abgleichen.
+  Stufe 2: Lockstep (Tick N erst nach "N-1 fertig" der Gegenseite, passt zu step1/step2).
+- Signaling ohne Server: Offer A->B und Answer B->A, also zwei Übertragungen.
+  Rohes SDP ~500-1500 Zeichen, reduziert (ufrag, pwd, Fingerabdruck, Kandidaten)
+  ~80-130 Byte = ~110-180 Zeichen Base64. Abtippen unzumutbar -> Kopieren/Einfügen
+  oder QR-Code (Webcam).
+- Signaling-Server (bequem, Raumcode): ~100-200 Zeilen, alles im Arbeitsspeicher,
+  Räume nach 2-5 min löschen. Aufwand v.a. Betrieb (Prozess, TLS, Neustart) -
+  statischer Webspace reicht nicht. Missbrauchsschutz: max. ~2 KB/Nachricht,
+  striktes Format, Code einmalig + 6+ Ziffern, Rate-Limit pro IP, Obergrenze für
+  offene Räume, Bestätigung "Verbunden mit … annehmen?", keine Logs (DSGVO).
+- NAT/Schulnetz: im LAN reichen Host-Kandidaten, aber mDNS (*.local) bzw.
+  WLAN-Client-Isolation können den Aufbau verhindern. Über das Internet STUN,
+  ggf. TURN (coturn). TURN ist das eigentliche Missbrauchsrisiko -> nur
+  kurzlebige Zugangsdaten (REST API mit geteiltem Geheimnis).
+- Plattformen: Web und Tauri macOS/Windows ok. Tauri Linux (WebKitGTK): WebRTC
+  in vielen Distros abgeschaltet -> testen; sonst Rust-Seite (webrtc-rs) + IPC.
+- Doppelte MACs/IPs, wenn beide dieselbe Projektdatei laden -> warnen oder MACs
+  neu würfeln. Verbindung wird nicht gespeichert (nach Laden "getrennt").
+- Aufwand grob: Bridge + Kopieren/Einfügen-UI 1-2 Tage, Abgleich ~0,5 Tag,
+  Lockstep 1-2 Tage, Signaling-Server ~0,5-1 Tag.
+- Vorschlag: Prototyp erst nur bei ?debug=1, im Schul-LAN und unter Tauri Linux testen.
+- Ziel (Nutzer, 2026-10-22): serverseitig als Container, z.B. signal.beavertracer.eu.
+  Entwurf: docker-compose mit zwei Diensten
+  * signal: kleiner Node-Dienst (Räume im RAM, Raumcode, TTL, Rate-Limit), hinter
+    vorhandenem Reverse-Proxy (TLS) auf 443. Gibt auch kurzlebige TURN-Zugangsdaten
+    aus (HMAC mit geteiltem Geheimnis, coturn "use-auth-secret").
+    CORS/Origin: beavertracer.eu + Tauri-Origins (tauri://localhost, http://tauri.localhost).
+  * coturn (offizielles Image coturn/coturn, network_mode: host): STUN sofort,
+    TURN-Relay erst bei Bedarf. Ports: 3478 UDP/TCP, 5349 TCP (TURNS), kleiner
+    UDP-Relay-Bereich (z.B. 49160-49200). TURN über TLS auf 443 kollidiert mit dem
+    Webserver -> eigene IP oder 5349 (Schul-Firewalls lassen 5349 evtl. nicht durch).
+  STUN vs. TURN: im selben LAN keins nötig (aber mDNS/WLAN-Isolation/VLANs können
+  stören, NAT-Hairpinning am Schulrouter oft nicht möglich); Internet: STUN reicht
+  meist (Faustregel ~10-20 % brauchen TURN: symmetrisches NAT, CGNAT, UDP gesperrt).
+  Last durch TURN gering (wenige KB/s pro Paar). Fehlgeschlagene ICE-Aufbauten
+  ohne IPs zählen, um zu entscheiden, ob TURN nötig ist.
+  Code im Repo z.B. unter server/signal/ (Dockerfile), Image in GitLab CI bauen.
+- Entscheidung (Nutzer, 2026-10-22): Brücke nur in der Web-Version
+  (www.beavertracer.eu). In Tauri wird das Objekt geladen (Projektdateien bleiben
+  kompatibel), zeigt aber den Hinweis, dass die Offline-Version das nicht
+  unterstützt (Erkennung über isTauri() aus src/tauri.js). Damit entfallen
+  Tauri-Origins im CORS und das WebKitGTK-Problem unter Linux; CORS nur
+  https://www.beavertracer.eu (+ localhost für npm run dev).
+- Server-Umgebung (Nutzer, 2026-10-22): Nginx Proxy Manager (NPM) davor, Web-Container
+  baut per Cron mit scripts/deploy.sh (git pull, npm ci, build, nginx, systemctl).
+  Plan: Signaling-Dienst im selben Container mitlaufen lassen (Node + Repo sind
+  schon da): Code unter server/signal/, systemd-Unit, deploy.sh startet ihn nach
+  dem Build neu. Variante 1: lokaler nginx leitet www.beavertracer.eu/signal/ an den
+  Dienst weiter -> gleiche Herkunft, kein CORS, kein neues Zertifikat.
+  Variante 2: signal.beavertracer.eu als eigener NPM-Proxy-Host (Websockets-Support an).
+  coturn passt nicht hinter NPM (UDP-Relay-Portbereich) -> eigener Container mit
+  Host-Netz bzw. direkten Portfreigaben; anfangs nur STUN auf 3478 ohne TLS.
+- Stand 2026-10-22: Variante 1 gewählt. Signaling-Dienst gebaut (server/signal/,
+  Tests tests/server/signal.test.js, deploy.sh Schritt 6b). Offen: einmalige
+  Einrichtung auf dem Server (README dort), coturn, Client-Seite (RemoteBridge,
+  im Dev per Vite-Proxy /signal -> localhost:8787).
+- Stand 2026-10-22 (2): Client gebaut: src/sim/RemoteBridge.js (Schicht 2, nur bei
+  ?debug=1 in der Werkzeugleiste, Laden immer), src/lib/RemoteSession.js (WebRTC,
+  Kanäle "eth" unzuverlässig + "ctl" zuverlässig, nicht-trickle ICE),
+  src/lib/SignalClient.js. Tempo/Pause-Abgleich Stufe 1 (Host gewinnt beim Verbinden).
+  Getestet: Unit-Tests mit Fake-RTC + echtem Signaling-Server, dazu headless
+  Chromium mit echtem WebRTC (SDP ~590 Zeichen) und echter Oberfläche.
+  Offen: Server einrichten, coturn, Warnung bei doppelten MACs, Ping über zwei
+  Instanzen im Browser ausprobieren, ~37 weitere Sprachen (nur de/en),
+  Freigabe ohne ?debug=1, Lockstep (Stufe 2) falls nötig.

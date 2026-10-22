@@ -2640,3 +2640,53 @@ sim-toolbar-langbtn {
   margin: 0;
   font-family: var(--font-mono);
 }
+
+/* ── Remote Bridge (WebRTC link to another instance) ────────────────────────── */
+/* Fixed width = the panel's min-width: the panel sizes to its content, and the
+   long hint texts would otherwise stretch it to one line (and make it jump
+   between states). */
+.remote-bridge-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pad-md);
+  padding: var(--pad-md);
+  width: 600px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.remote-bridge-hint {
+  margin: 0;
+  font-size: 0.85em;
+  color: var(--muted);
+}
+
+.remote-bridge-status {
+  align-self: flex-start;
+  font-size: 0.85em;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+}
+.remote-bridge-status--on    { background: var(--ok-tint);      color: var(--ok-strong); }
+.remote-bridge-status--busy  { background: var(--warning-tint); color: var(--warning-strong); }
+.remote-bridge-status--error { background: var(--danger-tint);  color: var(--danger-strong); }
+.remote-bridge-status--off   { background: color-mix(in oklch, var(--text), transparent 90%); color: var(--muted); }
+
+.remote-bridge-join {
+  display: flex;
+  gap: var(--pad-sm);
+}
+.remote-bridge-code-input {
+  width: 9ch;
+  font-family: var(--font-mono);
+}
+
+.remote-bridge-code {
+  font-family: var(--font-mono);
+  font-size: 2em;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-align: center;
+  user-select: all;
+}
