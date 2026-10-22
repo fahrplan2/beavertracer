@@ -20,6 +20,7 @@ set -euo pipefail
 REPO_URL="https://gitlab.lgsit.de/klec/beavertracer.git"
 WORKDIR="/root/networksim"
 WEBROOT="/var/www/networksim"
+SIGNAL_DIR="/opt/beavertracer-signal"
 
 # GitLab Package Registry für Tauri-Releases
 GITLAB_PROJECT_ID="546"
@@ -124,6 +125,15 @@ if $DEPLOY; then
   mkdir -p "$WEBROOT"
   find "$WEBROOT" -mindepth 1 -maxdepth 1 ! -name 'releases' -exec rm -rf {} +
   cp -r dist/* "$WEBROOT/"
+
+  # 6b. Signaling-Dienst der WebRTC-Brücke (nur wenn eingerichtet, siehe
+  #     server/signal/README.md). Ein Fehler hier soll das Web-Deploy nicht abbrechen.
+  if [[ -f /etc/systemd/system/beavertracer-signal.service ]]; then
+    echo "Updating signaling service..."
+    mkdir -p "$SIGNAL_DIR"
+    cp server/signal/server.mjs server/signal/nginx-signal.conf "$SIGNAL_DIR/"
+    systemctl restart beavertracer-signal || echo "WARNING: beavertracer-signal restart failed"
+  fi
 
   # 7. Aktuellen Stand für Deploy-State merken
   DEPLOYED_HEAD="$(git rev-parse HEAD)"

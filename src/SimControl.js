@@ -25,6 +25,7 @@ import { buildUrl, clearParams } from "./lib/AppUrl.js";
 import { version } from "./lib/version.js";
 import { isTauri } from "./tauri.js";
 import { Linux } from "./sim/Linux.js";
+import { RemoteBridge } from "./sim/RemoteBridge.js";
 import { migrateCertSignatures } from "./lib/CertMigration.js";
 
 /**
@@ -46,6 +47,7 @@ const PLACE_TOOL_CTOR = /** @type {Record<string, new(...args: any[]) => Simulat
     "place-text":              TextBox,
     "place-rect":              RectOverlay,
     "place-linux":             Linux,
+    "place-remote-bridge":     RemoteBridge,
 });
 
 /** Maps place-tool id → i18n name key (undefined = no default name) */
@@ -57,6 +59,7 @@ const PLACE_TOOL_NAME_KEY = /** @type {Record<string, string>} */ ({
     "place-homerouter": "homerouter.title",
     "place-ap":         "ap.title",
     "place-firewall":   "firewall.title",
+    "place-remote-bridge": "sim.tool.remotebridge",
 });
 
 /** Speed toolbar presets: real ms per tick, in factor-4 steps around 1× = 400 ms.
@@ -1088,6 +1091,7 @@ export class SimControl {
             ["HomeRouter", HomeRouter],
             ["Firewall", Firewall],
             ["Linux", Linux],
+            ["RemoteBridge", RemoteBridge],
             // Link handled separately
         ];
         const REGISTRY = new Map(registryEntries);
@@ -1615,6 +1619,7 @@ export class SimControl {
             ["place-text", t("sim.tool.textbox"), "fa-font"],
             ["place-rect", t("sim.tool.rectangle"), "fa-square"],
             ...(this.debug ? [["place-linux", "Linux PC", "fa-linux", "fab"]] : []),
+            ...(this.debug ? [["place-remote-bridge", t("sim.tool.remotebridge"), "fa-tower-broadcast"]] : []),
             ["delete", t("sim.tool.delete"), "fa-ban"],
         ];
 

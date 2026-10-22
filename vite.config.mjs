@@ -200,6 +200,14 @@ export default defineConfig({
   },
 
 
+  // Remote Bridge signaling — in production nginx forwards /signal/ to the
+  // service; for `npm run dev` start it with `node server/signal/server.mjs`.
+  server: {
+    proxy: {
+      "/signal": "http://127.0.0.1:8787",
+    },
+  },
+
   resolve: {
     alias: {
       ws: path.resolve(__dirname, "shimws.js"),

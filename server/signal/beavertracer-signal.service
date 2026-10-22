@@ -1,0 +1,22 @@
+[Unit]
+Description=BeaverTracer WebRTC signaling
+After=network.target
+
+[Service]
+# deploy.sh copies server.mjs here after each build
+ExecStart=/usr/bin/env node /opt/beavertracer-signal/server.mjs
+Environment=PORT=8787 HOST=127.0.0.1
+# Optional overrides: STUN_URLS, TURN_URLS, TURN_SECRET, TURN_TTL
+EnvironmentFile=-/etc/beavertracer-signal.env
+Restart=on-failure
+RestartSec=2
+
+DynamicUser=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+MemoryMax=128M
+
+[Install]
+WantedBy=multi-user.target
