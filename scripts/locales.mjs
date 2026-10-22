@@ -3,7 +3,16 @@
  * Used by translate-all-i18n-via-claude.mjs and translate-pages-via-claude.mjs.
  *
  * rtl: true for right-to-left languages (affects page wrapping in translate-pages).
+ * notes: extra instructions for this language, passed to every translate script
+ *        (UI strings, lessons incl. glossary, static pages).
  */
+
+/** For languages where networking is usually taught with the English terms. */
+const KEEP_TERMS_ENGLISH =
+  "Keep networking and IT technical terms in English (e.g. router, switch, IP address, subnet mask, " +
+  "gateway, packet, port, firewall, DNS server, MAC address, VLAN) — do not coin or use native-language " +
+  "equivalents for them. Translate only the surrounding text and everyday words.";
+
 export const LOCALES = [
   { code: "de",      name: "German" },
   { code: "es",      name: "Spanish" },
@@ -43,4 +52,6 @@ export const LOCALES = [
   { code: "nb",      name: "Norwegian Bokmål" },
   { code: "sq",      name: "Albanian" },
   { code: "ca",      name: "Catalan" },
+  { code: "mt",      name: "Maltese", notes: KEEP_TERMS_ENGLISH },
+  { code: "so",      name: "Somali",  notes: KEEP_TERMS_ENGLISH },
 ];

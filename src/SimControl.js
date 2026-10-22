@@ -21,6 +21,8 @@ import { buildLanguagePicker } from "./lib/LanguagePicker.js";
 import { choosePanelPlacement, segmentToRects } from "./lib/panelPlacement.js";
 import { WelcomeDialog } from "./lib/WelcomeDialog.js";
 import { LessonsPanel } from "./lib/LessonsPanel.js";
+import { GameHub } from "./game/GameHub.js";
+import { initCourseXp } from "./game/CourseXp.js";
 import { buildUrl, clearParams } from "./lib/AppUrl.js";
 import { version } from "./lib/version.js";
 import { isTauri } from "./tauri.js";
@@ -347,6 +349,7 @@ export class SimControl {
 
         this._mount();          // build DOM once
         this.lessonsPanel = new LessonsPanel(this);
+        if (!this.embedded) initCourseXp(this);
         this._syncSceneDOM();   // render current objects
         this._updateUI();       // set active states
 
@@ -1551,6 +1554,15 @@ export class SimControl {
             });
             lessonsBtn.dataset.role = "lessons-toggle";
             gLessons.appendChild(lessonsBtn);
+
+            const gameBtn = UILib.iconbutton({
+                label: t("game.toolbar"),
+                icon: "fa-gamepad",
+                onClick: () => GameHub.show(this),
+            });
+            gameBtn.title = t("game.toolbarTitle");
+            gameBtn.dataset.role = "game";
+            gLessons.appendChild(gameBtn);
         }
     }
 
@@ -1800,7 +1812,10 @@ export class SimControl {
             setActive("mode-edit", this.mode === "edit");
             setActive("mode-run", this.mode === "run");
             setActive("mode-trace", this.mode === "trace");
-            setActive("lessons-toggle", this.lessonsOpen);
+            // The panel shows either the course or a game ticket — highlight whichever it is.
+            const showsTicket = !!this.lessonsPanel?.showsExternal;
+            setActive("lessons-toggle", this.lessonsOpen && !showsTicket);
+            setActive("game", this.lessonsOpen && showsTicket);
 
             // --- active state for pause
             setActive("pause", this.mode === "run" && this.isPaused);

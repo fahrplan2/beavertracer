@@ -5,6 +5,7 @@ import { SimControl } from "./SimControl.js";
 import { WelcomeDialog } from "./lib/WelcomeDialog.js";
 import { readBootParams, resetPathToRoot } from "./lib/AppUrl.js";
 import { pageRoute } from "./lib/StaticPages.js";
+import { GameHub } from "./game/GameHub.js";
 
 // Read every recognized query param in one pass, before anything else
 // (i18n's own URL handling) touches location.search — see AppUrl.js for
@@ -15,6 +16,10 @@ const bootParams = readBootParams();
 // open the welcome dialog on that page, with the URL back on "/".
 const startPage = pageRoute(window.location.pathname);
 if (startPage) resetPathToRoot();
+
+// /games opens the game hub straight away (link for class), URL back on "/".
+const startGames = /^\/games\/?$/i.test(window.location.pathname);
+if (startGames) resetPathToRoot();
 
 /**
  * If ?sim=<url> is present, fetch that JSON.
@@ -67,6 +72,8 @@ initLocale(bootParams.lang).then(async () => {
     // showing the welcome dialog.
     if (lesson && !embedded) {
         await sim.lessonsPanel?.open(lesson);
+    } else if (startGames && !embedded) {
+        GameHub.show(sim);
     } else if (startPage && !embedded) {
         WelcomeDialog.show(sim, { view: startPage });
     } else if (!simParam && !embedded) {

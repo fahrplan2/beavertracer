@@ -1,0 +1,334 @@
+<h2>Caasimad</h2>
+<p class="subtitle">Sida loo isticmaalo BeaverTracer</p>
+
+<hr>
+
+<nav class="help-toc">
+  <strong>Waxyaabaha</strong>
+  <ol>
+    <li><a href="#modes">Saddexda Mode</a></li>
+    <li><a href="#edit">Edit Mode — Dhisida Network</a></li>
+    <li><a href="#devices">Devices</a></li>
+    <li><a href="#panels">Device Panels</a></li>
+    <li><a href="#run">Run Mode — Socodka Simulation</a></li>
+    <li><a href="#trace">Trace Mode — Falanqaynta Packets</a></li>
+    <li><a href="#project">Kaydinta iyo Gelida</a></li>
+  </ol>
+</nav>
+
+<hr>
+
+<h3 id="modes">Saddexda hab</h3>
+<p>
+  BeaverTracer wuxuu leeyahay saddex hab. Waxaad u beddeli kartaa iyaga isku-duweysa isticmaalka buttada toolbar-ka sare.
+</p>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-pencil"></i></td>
+    <td><strong>Edit</strong></td>
+    <td>Naqdo shabakaddaada — dhig devices, isku xidhidh, iyaga habayn.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-play"></i></td>
+    <td><strong>Run</strong></td>
+    <td>Bilow simulation-ka oo daawee traffic-ka dabagalkiisa shabakaddaada.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-magnifying-glass"></i></td>
+    <td><strong>Trace</strong></td>
+    <td>Qaado oo baarro packets-ka socdaalka shabakaddaada.</td>
+  </tr>
+</table>
+
+<hr>
+
+<h3 id="edit">Режим редактирования — постройка сети</h3>
+<p>
+  В режиме редактирования на левой стороне экрана появляется панель инструментов.
+  Выберите инструмент, щелкнув по нему, а затем используйте его на холсте.
+</p>
+
+<h4>Инструменты</h4>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-arrow-pointer"></i></td>
+    <td><strong>Выбрать</strong></td>
+    <td>Щелкните устройство, чтобы открыть его панель. Перетащите устройство, чтобы переместить его.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-link"></i></td>
+    <td><strong>Ссылка</strong></td>
+    <td>Соедините два устройства кабелем (см. ниже).</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-font"></i></td>
+    <td><strong>Текст</strong></td>
+    <td>Поместите текстовую метку на холст для аннотации вашей диаграммы.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-square"></i></td>
+    <td><strong>Прямоугольник</strong></td>
+    <td>Нарисуйте прямоугольник на холсте, чтобы визуально сгруппировать устройства.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-ban"></i></td>
+    <td><strong>Удалить</strong></td>
+    <td>Щелкните устройство или кабель, чтобы удалить его.</td>
+  </tr>
+</table>
+
+<p>
+  <strong>Совет:</strong> Щелкните правой кнопкой мыши в любом месте холста, чтобы отменить текущий инструмент
+  и вернуться к <i class="fas fa-arrow-pointer"></i> Выбрать.
+</p>
+
+<h4>Размещение устройства</h4>
+<ol>
+  <li>Щелкните кнопку устройства на левой панели инструментов (например, <i class="fas fa-desktop"></i> Компьютер).</li>
+  <li>Предпросмотр следует за курсором мыши.</li>
+  <li>Щелкните на холсте, чтобы разместить устройство.</li>
+</ol>
+
+<h4>Соединение двух устройств</h4>
+<ol>
+  <li>Щелкните инструмент <i class="fas fa-link"></i> <strong>Ссылка</strong>.</li>
+  <li>Щелкните первое устройство — появится средство выбора port. Выберите port.</li>
+  <li>Переместите мышь на второе устройство и щелкните его — выберите port там тоже.</li>
+  <li>Кабель создается автоматически.</li>
+</ol>
+<p>
+  Ports, которые уже используются, отображаются как отключенные и не могут быть выбраны.
+</p>
+
+<h4>Перемещение устройства</h4>
+<p>
+  В режиме <i class="fas fa-arrow-pointer"></i> Выбрать щелкните и перетащите любое устройство, чтобы переместить его на холсте.
+</p>
+
+<h4>Удаление устройства или кабеля</h4>
+<ol>
+  <li>Щелкните инструмент <i class="fas fa-ban"></i> <strong>Удалить</strong>.</li>
+  <li>Щелкните устройство или кабель, который вы хотите удалить.</li>
+</ol>
+<p>
+  При удалении устройства все подключенные к нему кабели автоматически удаляются.
+</p>
+
+<hr>
+
+<h3 id="devices">Devices</h3>
+<p>
+  Devices yadu ayaa lagu heli karo toolbar bidix inta lagu jiro Edit mode:
+</p>
+
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-desktop"></i></td>
+    <td><strong>Computer</strong></td>
+    <td>
+      Computer leh network interface wired ah. Waxaad ku run kartaa apps-yada
+      (tusaale ahaan web browser ama ping tool) iyo configure kartaa IP address-keeda.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-tablet-screen-button"></i></td>
+    <td><strong>Tablet</strong></td>
+    <td>
+      Sida Computer, balse waxay ku xidhdho Wi-Fi halka ay cable adeegsato.
+      Isticmaal iyada oo la mid ah Access Point ama Home Router.
+    </td>
+  </tr>
+  <tr>
+    <td>SW</td>
+    <td><strong>Switch</strong></td>
+    <td>
+      Waxa ay isku xidhdho devices badan oo segment network isku mid ah.
+      Forwards frames saldhig ah MAC addresses.
+      Supports VLANs iyo Spanning Tree Protocol (STP).
+    </td>
+  </tr>
+  <tr>
+    <td>RT</td>
+    <td><strong>Router</strong></td>
+    <td>
+      Waxa ay isku xidhdho networks kala duwan iyo forwards packets iyaga dhexdooda.
+      Supports static routes, OSPF, BGP, iyo IP tunnels (VPN).
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-house-signal"></i></td>
+    <td><strong>Home Router</strong></td>
+    <td>
+      Router isku mid ah, DHCP server, NAT gateway iyo Wi-Fi access point —
+      caadi ah sida home internet router.
+      Isku xidh Router-ka (sida WAN) iyo Computer ama Tablets (sida LAN/Wi-Fi).
+      Supports port forwarding rules.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-wifi"></i></td>
+    <td><strong>Access Point</strong></td>
+    <td>
+      Waxa ay ballaariyo network wired ah leh Wi-Fi connection.
+      Xidh wired port-keeda Switch ama Router, dabadeedna xidh Tablets iyada oo wireless ah.
+    </td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-shield-halved"></i></td>
+    <td><strong>Firewall</strong></td>
+    <td>
+      Filters traffic iyada iyada u dhexeysa network segments saldhig ah rules caddaynta leh.
+      Panel-ku waxa ay muujiso rule set iyo live log oo packets la taaban ay.
+    </td>
+  </tr>
+</table>
+
+<hr>
+
+<h3 id="panels">Gaashaanbarka waaxiga</h3>
+<p>
+  Dhig waax kasta oo jira canvas-ka si aad u furisho <strong>gaashaanbar</strong> — daaqad
+  habeynta oo muuqata dhinaca midig ee shaashada.
+  Dhig waaxga mar labaad (ama <strong>×</strong> batinka ku jira madaxa gaashaanbar) si aad u xidho.
+</p>
+
+<h4>Waax magacaabista</h4>
+<p>
+  Dhig <i class="fas fa-pen"></i> batinka ku jira magaca waaxga gaashaanbar madaxa
+  si aad magac khaas ah siiso (tusaale ahaan "Office-PC" ama "Core-Router").
+</p>
+
+<h4>Router tabs</h4>
+<p>
+  Router gaashaanbar waxaa leh tabs soo socda:
+</p>
+<ul>
+  <li><strong>Interfaces</strong> — habeyn IP addresses oo ku jira qof kasta port</li>
+  <li><strong>Routing table IPv4</strong> — daawad iyo edis IPv4 routes (static iyo aqoon la'</li>
+  <li><strong>Routing table IPv6</strong> — daawad iyo edis IPv6 routes</li>
+  <li><strong>OSPF</strong> — habeyn iyo daawad OSPF dynamic routing</li>
+  <li><strong>BGP</strong> — habeyn BGP neighbours iyo daawad BGP table</li>
+  <li><strong>VPN</strong> — habeyn IP tunnels oo u dhexeeya routers</li>
+</ul>
+
+<h4>Switch tabs</h4>
+<p>
+  Switch gaashaanbar waxaa leh tabs <strong>Switch Address Table (SAT)</strong>, <strong>VLAN</strong>
+  habeynta, iyo <strong>Spanning Tree Protocol (STP)</strong> settings.
+</p>
+
+<h4>Home Router tabs</h4>
+<p>
+  Home Router gaashaanbar waxaa leh tabs soo socda:
+</p>
+<ul>
+  <li><strong>Status</strong> — muuqaal dhedig WAN/LAN state iyo clients ku xidhan</li>
+  <li><strong>WAN</strong> — habeyn uplink (static IP ama DHCP)</li>
+  <li><strong>LAN</strong> — habeyn LAN subnet iyo IP address</li>
+  <li><strong>DHCP</strong> — daawad leases firfircoon iyo habeyn DHCP pool</li>
+  <li><strong>WiFi</strong> — habeyn access point ku jira (SSID, password)</li>
+  <li><strong>NAT</strong> — daawad NAT connection table firfircoon</li>
+  <li><strong>Port Forwarding</strong> — qeexid qawaaidka lagu fujiyo ports gudaha LAN hosts</li>
+</ul>
+
+<h4>Firewall tabs</h4>
+<p>
+  Firewall gaashaanbar waxaa leh <strong>Rules</strong> tab si aad u maareeyso filter rules iyo
+  <strong>Log</strong> tab muuqaya packets waxa lagu ogolaadday ama tuuray.
+</p>
+
+<h4>Computer iyo Tablet</h4>
+<p>
+  Computers iyo Tablets waxaa ku jira simulated operating system buuxa gaashaanbar gudahooda.
+  Waxaad furin kartaa apps desktop ka, habeyn network settings, iyo amarro furin.
+</p>
+
+<hr>
+
+<h3 id="run">Hore darbeedka — Fulainta Simulation-ka</h3>
+<p>
+  Iska bedel <i class="fas fa-play"></i> <strong>Fulin</strong> hore si aad u bilowdo simulation-ka.
+  Network-ka wuxuu nool noqonaa: qalabka waxay isku wareejiyaan packets, DHCP leases waxaa la siin karaa,
+  routing tables waxay cusboonaadinayaan, iyo iyo kaloo.
+</p>
+
+<h4>Kontrolka caqliga</h4>
+<p>
+  Isticmaal buutoogyada caqliga ee toolbar-ka sare si aad u xakamiso tirada simulation-ka iska tuurta:
+</p>
+<table class="help-table">
+  <tr><td><strong>1/4×</strong></td><td>Gaabsan — waxay wanaagsan tahay eegida tillaabooyinka kala gooni ah</td></tr>
+  <tr><td><strong>1×</strong></td><td>Caqliyada caadi</td></tr>
+  <tr><td><strong>4×</strong></td><td>Degdeg</td></tr>
+  <tr><td><strong>16×</strong></td><td>Degdeg aad u badan</td></tr>
+</table>
+
+<h4>Jooga iyo dib u billow</h4>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-pause"></i></td>
+    <td><strong>Jooga</strong></td>
+    <td>Jabjab simulation-ka xaaladdii hadda jirta.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-arrow-rotate-left"></i></td>
+    <td><strong>Dib u billow</strong></td>
+    <td>Dib u fulin simulation-ka bilawga ah (dhammaan xaalada firfircoon waxaa la nadiifiyey).</td>
+  </tr>
+</table>
+
+<p>
+  <strong>Ogsiin:</strong> Ma karaan aad tababarto network topology intaad jirta Run mode.
+  Iska bedel hore <i class="fas fa-pencil"></i> Edit mode marka hore.
+</p>
+
+<hr>
+
+<h3 id="trace">Trace Mode — Analysing Packets</h3>
+<p>
+  Switch to <i class="fas fa-magnifying-glass"></i> <strong>Trace</strong> mode si aad u furato
+  built-in packet analyser — oo la mid ah Wireshark.
+</p>
+<p>
+  Sare, dooro <strong>device</strong> iyo <strong>port</strong> aad dooneyso inaad ka qaadato.
+  Dhammaan packets ee maraya port taas waxaa lagu kaydiyaa oo lagu tusaa liiska.
+</p>
+<p>
+  Click packet kasta oo jira liiska si aad u aragtid fahaminteedu buubuuta:
+  protocol layers, header fields, iyo payload — sidii tool xirfadeed oo network ah ay tusaan lahayd.
+</p>
+<p>
+  Capture-ka wuxuu socda oo isugu taal habka simulation markii uu socdo.
+  Waxaad iska dhex bedelan kartaa Trace mode iyo Run mode waqti kasta oo aan luminin captured data.
+</p>
+
+<hr>
+
+<h3 id="project">Kaydin iyo gelitaanka</h3>
+<p>
+  Nidaamka network-iga waxaa lagu kaydhin karaa faylka lagu dib gelitaan karaa dib mar kale.
+  Isticmaal buttada ku yaal toolbar-ka sare (ku muuqda Edit mode):
+</p>
+<table class="help-table">
+  <tr>
+    <td><i class="fas fa-file"></i></td>
+    <td><strong>Cusub</strong></td>
+    <td>Bilow canvas madhan. Isbedelka la kaydin waaye ayaa lumici doona.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-file-arrow-up"></i></td>
+    <td><strong>Gelitaan</strong></td>
+    <td>Fur faylka simulation-ka hore ee la kaydiyey.</td>
+  </tr>
+  <tr>
+    <td><i class="fas fa-file-arrow-down"></i></td>
+    <td><strong>Kaydin</strong></td>
+    <td>Ku raji faylka simulation-ka hadda jira computer-kaaga.</td>
+  </tr>
+</table>
+
+<hr>
+
+<p class="footer">
+  Waxaa lagaa cabsanayaa? Hubi in network-iga si sahiih ah loo xidho oo in ay dhammaan devisyada IP addresses oo sax ah lagu qaabayn.
+</p>

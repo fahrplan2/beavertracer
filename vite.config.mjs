@@ -177,7 +177,7 @@ export default defineConfig({
               .filter((e) => e.isDirectory() && !e.name.startsWith("_"))
               .map((e) => `/lessons/${e.name}/`)
           : [];
-        return ["/", ...langs];
+        return ["/", "/games", ...langs];
       })(),
     }),
   ],

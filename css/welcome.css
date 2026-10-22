@@ -333,6 +333,28 @@
   color: var(--learn-accent);
 }
 
+.welcome-learn-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pad-sm);
+}
+
+/* The game: its own section below the course entries, headed like "Learn"
+   (reuses .welcome-path-title/-desc, but stacks instead of the subgrid) */
+.welcome-games {
+  margin-top: var(--pad-lg);
+  padding-top: var(--pad-lg);
+  border-top: 1px solid var(--ui-border-strong);
+  display: flex;
+  flex-direction: column;
+  gap: var(--pad-md);
+}
+
+/* Blue like the other icons, not the course accent of the column */
+.welcome-path--learn .welcome-games .welcome-path-title i {
+  color: var(--blue);
+}
+
 /* "Build freely" list */
 
 .welcome-sim-list {
