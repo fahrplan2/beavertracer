@@ -242,7 +242,7 @@ export class MulticastChatApp extends GenericProcess {
         if (!this._logEl) return;
         const ircCls = { sys: "irc-system", err: "irc-error", self: "irc-mine", peer: "" }[cls] ?? "";
         const line = UI.el("div", { className: ("irc-line" + (ircCls ? " " + ircCls : "")), text: `[${nowStamp()}] ${text}` });
-        this._logEl.appendChild(line);
-        this._logEl.scrollTop = this._logEl.scrollHeight;
+        const logEl = this._logEl;
+        UI.followScroll(logEl, () => logEl.appendChild(line));
     }
 }

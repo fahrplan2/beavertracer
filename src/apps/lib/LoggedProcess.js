@@ -1,6 +1,7 @@
 //@ts-check
 
 import { GenericProcess } from "../GenericProcess.js";
+import { UILib } from "./UILib.js";
 
 /**
  * Base class for apps that display a scrolling text log.
@@ -39,11 +40,13 @@ export class LoggedProcess extends GenericProcess {
       ? this.log.slice(-this._LOG_MAX_LINES)
       : this.log;
     const text = lines.join("\n");
-    if (this.logEl instanceof HTMLTextAreaElement) {
-      this.logEl.value = text;
-    } else {
-      this.logEl.textContent = text;
-    }
-    this.logEl.scrollTop = this.logEl.scrollHeight;
+    const logEl = this.logEl;
+    UILib.followScroll(logEl, () => {
+      if (logEl instanceof HTMLTextAreaElement) {
+        logEl.value = text;
+      } else {
+        logEl.textContent = text;
+      }
+    });
   }
 }

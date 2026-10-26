@@ -631,11 +631,11 @@ export class Router extends SimulatedObject {
 
     _startLinkPolling() {
         this._updateAllTabStatuses();
-        this._pollTimer.start(() => {
+        this._pollTimer.start(() => UILib.preserveScroll(this._panelBody, () => {
             this._updateAllTabStatuses();
             this._pollRefreshRoutes();
             if (this._lldpTableHost && this._lldpEnabled) this._renderLLDPSection();
-        }, 1000);
+        }), 1000);
     }
 
     _pollRefreshRoutes() {
@@ -1575,8 +1575,8 @@ export class Router extends SimulatedObject {
     _renderRIPCombinedLog() {
         if (!this._ripCombinedLogEl) return;
         const combined = [...this.rip.log, ...this.ripng.log].sort().slice(-200);
-        this._ripCombinedLogEl.value = combined.join("\n");
-        this._ripCombinedLogEl.scrollTop = this._ripCombinedLogEl.scrollHeight;
+        const ripCombinedLogEl = this._ripCombinedLogEl;
+        UILib.followScroll(ripCombinedLogEl, () => { ripCombinedLogEl.value = combined.join("\n"); });
     }
 
     /* ----------------------------- BGP tab ----------------------------- */
@@ -1812,8 +1812,8 @@ export class Router extends SimulatedObject {
         if (!this._bgpLogEl) return;
         const lines = this.bgp.log;
         const max   = 200;
-        this._bgpLogEl.value = (lines.length > max ? lines.slice(-max) : lines).join("\n");
-        this._bgpLogEl.scrollTop = this._bgpLogEl.scrollHeight;
+        const bgpLogEl = this._bgpLogEl;
+        UILib.followScroll(bgpLogEl, () => { bgpLogEl.value = (lines.length > max ? lines.slice(-max) : lines).join("\n"); });
     }
 
     /* ----------------------------- OSPF tab ----------------------------- */
@@ -2058,8 +2058,8 @@ export class Router extends SimulatedObject {
         if (!this._ospfLogEl) return;
         const lines = this.ospf.log;
         const max   = 200;
-        this._ospfLogEl.value = (lines.length > max ? lines.slice(-max) : lines).join("\n");
-        this._ospfLogEl.scrollTop = this._ospfLogEl.scrollHeight;
+        const ospfLogEl = this._ospfLogEl;
+        UILib.followScroll(ospfLogEl, () => { ospfLogEl.value = (lines.length > max ? lines.slice(-max) : lines).join("\n"); });
     }
 
     /* ----------------------------- VPN tab ----------------------------- */
@@ -2276,7 +2276,7 @@ export class Router extends SimulatedObject {
 
         const tid = window.setInterval(() => {
             if (!this._panelBody?.contains(host)) { window.clearInterval(tid); return; }
-            renderLeases();
+            UILib.preserveScroll(this._panelBody, renderLeases);
         }, 2000);
     }
 
@@ -2343,7 +2343,7 @@ export class Router extends SimulatedObject {
 
         const tid = window.setInterval(() => {
             if (!this._panelBody?.contains(host)) { window.clearInterval(tid); return; }
-            renderStatus();
+            UILib.preserveScroll(this._panelBody, renderStatus);
         }, 2000);
     }
 
@@ -2909,13 +2909,13 @@ export class Router extends SimulatedObject {
         scroll.appendChild(table);
         host.appendChild(UILib.wrapWithScrollHints(scroll));
         this._vrrpPollTimer.stop();
-        this._vrrpPollTimer.start(() => this._renderVRRPStatus(), 500);
+        this._vrrpPollTimer.start(() => UILib.preserveScroll(this._panelBody, () => this._renderVRRPStatus()), 500);
     }
 
     _renderVRRPLog() {
         if (!this._vrrpLogEl) return;
-        this._vrrpLogEl.value = this.vrrp.log.join("\n");
-        this._vrrpLogEl.scrollTop = this._vrrpLogEl.scrollHeight;
+        const vrrpLogEl = this._vrrpLogEl;
+        UILib.followScroll(vrrpLogEl, () => { vrrpLogEl.value = this.vrrp.log.join("\n"); });
     }
 
     destroy() {

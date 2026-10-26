@@ -1828,7 +1828,7 @@ export class HomeRouter extends SimulatedObject {
     }
 
     _startPoll() {
-        this._pollTimer.start(() => this._updateStatusPanel(), 2000);
+        this._pollTimer.start(() => UILib.preserveScroll(this._panelBody, () => this._updateStatusPanel()), 2000);
     }
 
     _stopPoll() {

@@ -198,10 +198,12 @@ export class SimpleIRCClientApp extends GenericProcess {
 
     if (k === this.activeBuffer) {
       if (this.messagesEl) {
-        this.messagesEl.appendChild(UI.el("div", { className: "irc-line" + (cls ? " " + cls : ""), text }));
-        while (this.messagesEl.childElementCount > 1000)
-          this.messagesEl.removeChild(/** @type {Node} */(this.messagesEl.firstElementChild));
-        this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
+        const messagesEl = this.messagesEl;
+        UI.followScroll(messagesEl, () => {
+          messagesEl.appendChild(UI.el("div", { className: "irc-line" + (cls ? " " + cls : ""), text }));
+          while (messagesEl.childElementCount > 1000)
+            messagesEl.removeChild(/** @type {Node} */(messagesEl.firstElementChild));
+        });
       }
     } else {
       buf.unread++;
