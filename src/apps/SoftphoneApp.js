@@ -953,11 +953,11 @@ export class SoftphoneApp extends GenericProcess {
     this._logLines.push(line);
     if (this._logLines.length > 400) this._logLines.splice(0, this._logLines.length - 400);
     if (!this._logEl) return;
-    this._logEl.appendChild(UI.el("div", {
+    const logEl = this._logEl;
+    UI.followScroll(logEl, () => logEl.appendChild(UI.el("div", {
       className: `sp-log-line ${SoftphoneApp._LOG_CLS[cls] ?? ""}`,
       text: line.text,
-    }));
-    this._logEl.scrollTop = this._logEl.scrollHeight;
+    })));
   }
 
   /** Rebuild the log view from history (called after the UI is (re)built). */

@@ -593,7 +593,7 @@ export class Firewall extends SimulatedObject {
     }
 
     _startPoll() {
-        this._pollTimer.start(() => this._renderStateTable(), 1000);
+        this._pollTimer.start(() => UILib.preserveScroll(this._panelBody, () => this._renderStateTable()), 1000);
     }
 
     _stopPoll() {
@@ -824,8 +824,8 @@ export class Firewall extends SimulatedObject {
         if (!this._logEl) return;
         const lines = this._fwLog;
         const max   = 200;
-        this._logEl.value = (lines.length > max ? lines.slice(-max) : lines).join("\n");
-        this._logEl.scrollTop = this._logEl.scrollHeight;
+        const logEl = this._logEl;
+        UILib.followScroll(logEl, () => { logEl.value = (lines.length > max ? lines.slice(-max) : lines).join("\n"); });
     }
 
     // ── Persistence ───────────────────────────────────────────────────────

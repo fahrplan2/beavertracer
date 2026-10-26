@@ -445,6 +445,54 @@ export class UILib {
   }
 
   /**
+   * Runs `render` (which typically clears and rebuilds `host`) and restores the
+   * scroll positions afterwards — of scroll containers inside `host` (matched by
+   * their child-index path, so rebuilt containers are found again) and of all
+   * ancestors. Use for periodically refreshed tables.
+   * @param {HTMLElement|null|undefined} host  without a host, `render` just runs
+   * @param {() => void} render
+   */
+  static preserveScroll(host, render) {
+    if (!host) { render(); return; }
+    /** @type {[number[], number, number][]} */
+    const inner = [];
+    const walk = (/** @type {Element} */ el, /** @type {number[]} */ path) => {
+      if (el.scrollTop > 0 || el.scrollLeft > 0) inner.push([path, el.scrollTop, el.scrollLeft]);
+      for (let i = 0; i < el.children.length; i++) walk(el.children[i], [...path, i]);
+    };
+    walk(host, []);
+    /** @type {[Element, number][]} */
+    const outer = [];
+    for (let el = host.parentElement; el; el = el.parentElement) {
+      if (el.scrollTop > 0) outer.push([el, el.scrollTop]);
+    }
+
+    render();
+
+    for (const [path, top, left] of inner) {
+      /** @type {Element|undefined} */
+      let el = host;
+      for (const i of path) el = el?.children[i];
+      if (el) { el.scrollTop = top; el.scrollLeft = left; }
+    }
+    for (const [el, top] of outer) el.scrollTop = top;
+  }
+
+  /**
+   * Runs `update` (which changes the content of the log/chat element `el`) and
+   * keeps following the end only if the user was already at the bottom;
+   * otherwise the previous scroll position is kept so older lines stay readable.
+   * @param {HTMLElement} el
+   * @param {() => void} [update]
+   */
+  static followScroll(el, update) {
+    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 4;
+    const top = el.scrollTop;
+    update?.();
+    el.scrollTop = atBottom ? el.scrollHeight : top;
+  }
+
+  /**
    * Wraps a .sim-table-scroll element in a hint-outer div and attaches
    * ▲/▼ scroll indicators that appear when content overflows.
    * Returns the outer wrapper — append that to the DOM instead of scrollWrap.
