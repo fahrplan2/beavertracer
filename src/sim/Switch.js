@@ -987,6 +987,24 @@ export class Switch extends SimulatedObject {
     _renderSTPSection() {
         if (!this._stpSection || !this._stpModeSelect) return;
 
+        // Rebuilding the section resets scroll positions (table + window body) — remember them
+        const oldTableScroll = /** @type {HTMLElement|null} */ (this._stpSection.querySelector(".sim-table-scroll"))?.scrollTop ?? 0;
+        /** @type {[HTMLElement, number][]} */
+        const ancestorScroll = [];
+        for (let el = this._stpSection.parentElement; el; el = el.parentElement) {
+            if (el.scrollTop > 0) ancestorScroll.push([el, el.scrollTop]);
+        }
+
+        this._renderSTPSectionContent();
+
+        const newTableScroll = /** @type {HTMLElement|null} */ (this._stpSection.querySelector(".sim-table-scroll"));
+        if (newTableScroll) newTableScroll.scrollTop = oldTableScroll;
+        for (const [el, top] of ancestorScroll) el.scrollTop = top;
+    }
+
+    _renderSTPSectionContent() {
+        if (!this._stpSection) return;
+
         this._stpSection.innerHTML = "";
 
         const mode = this.backplane.stpMode;
