@@ -360,7 +360,7 @@ const CHROME_KEYS = {
 };
 
 function loadLocaleInfo(localesDir) {
-  /** @type {Record<string, { name: string, noLessons: string | null, quiz: { placeholder: string, evaluate: string, resultOne: string, resultOther: string, retry: string }, osiLabels: string[] }>} */
+  /** @type {Record<string, { name: string, fun: boolean, noLessons: string | null, quiz: { placeholder: string, evaluate: string, resultOne: string, resultOther: string, retry: string }, osiLabels: string[] }>} */
   const info = {};
   if (!fs.existsSync(localesDir)) return info;
 
@@ -371,11 +371,21 @@ function loadLocaleInfo(localesDir) {
     return mat ? mat[1].replace(/\\n/g, "\n").replace(/\\"/g, '"').replace(/\\\\/g, "\\") : null;
   }
 
-  for (const file of fs.readdirSync(localesDir)) {
+  // April fools' locales (locales/fun/) translate only part of the UI; their
+  // `meta.base` locale's file is appended so extractKey() falls back to it.
+  const funDir = path.join(localesDir, "fun");
+  const files = [
+    ...fs.readdirSync(localesDir).map((f) => path.join(localesDir, f)),
+    ...(fs.existsSync(funDir) ? fs.readdirSync(funDir).map((f) => path.join(funDir, f)) : []),
+  ];
+
+  for (const file of files) {
     if (!file.endsWith(".js")) continue;
-    const code = file.slice(0, -3);
+    const code = path.basename(file, ".js");
     try {
-      const src = fs.readFileSync(path.join(localesDir, file), "utf8");
+      let src = fs.readFileSync(file, "utf8");
+      const baseMat = path.dirname(file) === funDir ? src.match(/meta\s*=\s*\{[^}]*base\s*:\s*"([^"]+)"/) : null;
+      if (baseMat) src += "\n" + fs.readFileSync(path.join(localesDir, `${baseMat[1]}.js`), "utf8");
 
       const nameMat = src.match(/meta\s*=\s*\{[^}]*name\s*:\s*"([^"]+)"/);
       const rawName = nameMat ? nameMat[1] : code;
@@ -385,6 +395,7 @@ function loadLocaleInfo(localesDir) {
 
       info[code] = {
         name,
+        fun: path.dirname(file) === funDir,
         noLessons,
         quiz: {
           placeholder: extractKey(src, "lessons.quiz.placeholder") ?? "…",
@@ -864,10 +875,11 @@ function generateLangStub(lang, rootTemplateHtml, info, fallbackMsg) {
 /**
  * @param {string[]} langs
  * @param {string} rootTemplateHtml
- * @param {Record<string, { name: string, noLessons: string | null }>} localeInfo
+ * @param {Record<string, { name: string, noLessons: string | null, fun?: boolean }>} localeInfo
  */
 function generateRootIndex(langs, rootTemplateHtml, localeInfo) {
   const items = langs
+    .filter((l) => !localeInfo[l]?.fun) // April fools' courses stay out of the public list
     .map((l) => {
       const name = localeInfo[l]?.name ?? l.toUpperCase();
       return `<li><a href="${l}/">${name}</a></li>`;

@@ -1,5 +1,5 @@
 //@ts-check
-import { getLocale } from "../i18n/index.js";
+import { getContentLocale } from "../i18n/index.js";
 import { version } from "./version.js";
 
 /**
@@ -110,7 +110,7 @@ async function resolvePartials(html, baseUrl) {
 
 /** @param {string} baseUrl */
 async function loadLocalized(baseUrl) {
-  const candidates = buildCandidates(baseUrl, getLocale());
+  const candidates = buildCandidates(baseUrl, getContentLocale());
   const cacheKey = candidates.join("|");
   const cached = cache.get(cacheKey);
   if (cached !== undefined) return cached;

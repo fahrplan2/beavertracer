@@ -3,8 +3,8 @@ import { clearParams } from "../lib/AppUrl.js";
 
 /**
  * @typedef {Record<string, string>} TranslationDict
- * @typedef {{ key: string, label: string }} LocaleDescriptor
- * @typedef {{ name: string, order?: number }} LocaleMeta
+ * @typedef {{ key: string, label: string, fun: boolean }} LocaleDescriptor
+ * @typedef {{ name: string, order?: number, base?: string, lessons?: boolean }} LocaleMeta
  */
 
 /**
@@ -19,7 +19,7 @@ const dicts = {};
  */
 
 const dictModules = /** @type {Record<string, () => Promise<{ default: TranslationDict }>>} */ (
-  import.meta.glob("../../locales/*.js")
+  import.meta.glob(["../../locales/*.js", "../../locales/fun/*.js"])
 );
 
 /**
@@ -28,7 +28,34 @@ const dictModules = /** @type {Record<string, () => Promise<{ default: Translati
  * @type {Record<string, () => Promise<LocaleMeta>>}
  */
 
-const metaModules = import.meta.glob("../../locales/*.js", { import: "meta" });
+const metaModules = /** @type {Record<string, () => Promise<LocaleMeta>>} */ (
+  import.meta.glob(["../../locales/*.js", "../../locales/fun/*.js"], { import: "meta" })
+);
+
+/**
+ * April fools' locales (Hessian, Bavarian, Klingon, ...) live in locales/fun/.
+ * They only translate part of the UI and name a `meta.base` locale that fills
+ * the gaps and provides lessons, pages and game content (`meta.lessons: true`
+ * if the locale has its own lessons/<code>/ course). They are listed in
+ * the language picker only with ?april1st=yes, but stay loadable otherwise
+ * (?lang=tlh, or a saved choice) so a picked joke language survives reloads.
+ */
+const FUN_DIR = "/locales/fun/";
+
+/**
+ * Base locale per fun locale, filled when the locale is loaded.
+ * @type {Record<string, string>}
+ */
+const funBase = {};
+
+/**
+ * Fun locales that have their own lesson course, filled when loaded.
+ * @type {Set<string>}
+ */
+const funLessons = new Set();
+
+/** Whether fun locales are offered in the language picker. */
+let showFunLocales = false;
 
 /** @type {string} */
 let fallback = "en";
@@ -67,6 +94,13 @@ async function loadLocaleDict(loc) {
   if (!path) return null;
 
   const mod = await dictModules[path]();
+  if (path.includes(FUN_DIR)) {
+    const meta = await metaModules[path]();
+    const base = meta?.base ?? fallback;
+    funBase[loc] = base;
+    if (meta?.lessons) funLessons.add(loc);
+    await loadLocaleDict(base);
+  }
   dicts[loc] = mod.default ?? {};
   return dicts[loc];
 }
@@ -79,7 +113,7 @@ async function loadLocaleDict(loc) {
 export async function getLocales() {
   const paths = Object.keys(metaModules);
 
-  /** @type {{ key: string; label: string; order: number }[]} */
+  /** @type {{ key: string; label: string; order: number; fun: boolean }[]} */
   const out = [];
 
   await Promise.all(
@@ -88,6 +122,8 @@ export async function getLocales() {
       if (!m) return;
 
       const code = m[1];
+      const fun = p.includes(FUN_DIR);
+      if (fun && !showFunLocales) return;
 
       try {
         const meta = await metaModules[p]();
@@ -98,9 +134,9 @@ export async function getLocales() {
         const order =
           meta && typeof meta.order === "number" ? meta.order : 9999;
 
-        out.push({ key: code, label, order });
+        out.push({ key: code, label, order, fun });
       } catch {
-        out.push({ key: code, label: code, order: 9999 });
+        out.push({ key: code, label: code, order: 9999, fun });
       }
     })
   );
@@ -112,7 +148,7 @@ export async function getLocales() {
   });
 
   // Strip `order` before returning
-  return out.map(({ key, label }) => ({ key, label }));
+  return out.map(({ key, label, fun }) => ({ key, label, fun }));
 }
 
 
@@ -160,6 +196,24 @@ export function getLocale() {
 }
 
 /**
+ * Returns the locale whose content (lessons, static pages, game content)
+ * should be shown: the active locale itself, or for a fun locale its base.
+ * @returns {string}
+ */
+export function getContentLocale() {
+  return funBase[locale] ?? locale;
+}
+
+/**
+ * Returns the locale whose lesson course (lessons/<code>/) should be shown:
+ * like getContentLocale(), but a fun locale with its own course keeps it.
+ * @returns {string}
+ */
+export function getLessonLocale() {
+  return funLessons.has(locale) ? locale : getContentLocale();
+}
+
+/**
  * Subscribes to locale changes.
  * Returns an unsubscribe function.
  * @param {(loc: string) => void} fn
@@ -192,8 +246,9 @@ function format(template, params) {
  */
 export function t(key, params) {
   const primaryDict = dicts[locale] ?? dicts[fallback] ?? {};
+  const baseDict = dicts[funBase[locale]] ?? {};
   const fallbackDict = dicts[fallback] ?? {};
-  const template = primaryDict[key] ?? fallbackDict[key] ?? `[[${key}]]`;
+  const template = primaryDict[key] ?? baseDict[key] ?? fallbackDict[key] ?? `[[${key}]]`;
   return format(template, params);
 }
 
@@ -206,9 +261,12 @@ export function t(key, params) {
  * 3) default "de"
  * Lazily loads the required dictionaries.
  * @param {string|null} [urlLang]
+ * @param {boolean} [april1st] offer the fun locales in the language picker (?april1st=yes)
  * @returns {Promise<void>}
  */
-export async function initLocale(urlLang = null) {
+export async function initLocale(urlLang = null, april1st = false) {
+  showFunLocales = april1st;
+
   // Always load fallback first
   await loadLocaleDict(fallback);
 

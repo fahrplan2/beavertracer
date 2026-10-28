@@ -1,5 +1,5 @@
 //@ts-check
-import { t, getLocale } from "../i18n/index.js";
+import { t, getLessonLocale } from "../i18n/index.js";
 import { isRtlLocale } from "../i18n/rtl.js";
 import { SimDialog } from "./SimDialog.js";
 import { addScrollHints } from "./scrollHints.js";
@@ -228,7 +228,7 @@ export class LessonsPanel {
     /** @returns {string|null} */
     _readLast() {
         try {
-            const last = JSON.parse(localStorage.getItem(PROGRESS_STORAGE_KEY) || "{}")?.[getLocale()]?.last;
+            const last = JSON.parse(localStorage.getItem(PROGRESS_STORAGE_KEY) || "{}")?.[getLessonLocale()]?.last;
             return typeof last === "string" ? last : null;
         } catch {
             return null;
@@ -239,7 +239,7 @@ export class LessonsPanel {
     _rememberLast(href) {
         try {
             const all = JSON.parse(localStorage.getItem(PROGRESS_STORAGE_KEY) || "{}") || {};
-            all[getLocale()] = { last: href };
+            all[getLessonLocale()] = { last: href };
             localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(all));
         } catch { /* storage blocked — "continue" just isn't offered */ }
     }
@@ -278,7 +278,7 @@ export class LessonsPanel {
      */
     async _loadManifest() {
         if (this._manifest) return this._manifest;
-        const manifest = await this._fetchLessonJson(`/lessons/${getLocale()}/index.json`);
+        const manifest = await this._fetchLessonJson(`/lessons/${getLessonLocale()}/index.json`);
         this._manifest = manifest;
         return manifest;
     }
@@ -552,13 +552,13 @@ export class LessonsPanel {
         if (!mount) return;
         // Only the lesson text follows the locale's writing direction — the
         // panel header and the rest of the app stay LTR (see lessons-panel.css).
-        mount.dir = isRtlLocale(getLocale()) ? "rtl" : "ltr";
+        mount.dir = isRtlLocale(getLessonLocale()) ? "rtl" : "ltr";
 
         try {
             if (!this._manifest) await this._loadManifest();
 
             const jsonHref = href.replace(/\.html$/, ".json");
-            const data = await this._fetchLessonJson(`/lessons/${getLocale()}/${jsonHref}`);
+            const data = await this._fetchLessonJson(`/lessons/${getLessonLocale()}/${jsonHref}`);
 
             this._currentHref = href;
             if (this._external) {

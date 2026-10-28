@@ -46,7 +46,7 @@ async function resolveStartupSim() {
 
 //******************* MAIN ENTRY POINT ************************/
 
-initLocale(bootParams.lang).then(async () => {
+initLocale(bootParams.lang, bootParams.april1st).then(async () => {
     const simRoot = /** @type {HTMLElement} */ (document.getElementById("simcontrol"));
     const { embed: embedded, editable, debug, sim: simParam, lesson } = bootParams;
     const sim = new SimControl(simRoot, { embedded, editable, debug });

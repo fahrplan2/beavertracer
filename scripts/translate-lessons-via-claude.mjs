@@ -53,7 +53,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
-import { LOCALES } from "./locales.mjs";
+import { LOCALES, FUN_LOCALES } from "./locales.mjs";
 import { skeleton, skeletonDiff, UNTRANSLATED } from "./lesson-skeleton.mjs";
 
 const HELP_TEXT = `
@@ -63,7 +63,8 @@ Keeps lessons/<lang>/ in sync with lessons/de/ (authoritative).
 
 Selecting languages:
   --target <codes>     Comma-separated target locales (e.g. en or fr,es)
-  --all                All locales from scripts/locales.mjs (English first)
+  --all                All locales from scripts/locales.mjs (English first;
+                       not the April fools' FUN_LOCALES — name those with --target)
                        Without --target/--all: every lessons/<lang>/ that is
                        already a translation (has more than the placeholder page)
 
@@ -139,8 +140,12 @@ const BATCH_POLL_MS = 60_000;
 const ONLY = args.only ? new Set(String(args.only).split(",").map((s) => s.trim()).filter(Boolean)) : null;
 
 const LANG_NAMES = Object.fromEntries([...LOCALES.map((l) => [l.code, l.name]), ["en", "English"]]);
+/** April fools' locales: only with --target, their UI strings live in locales/fun/. */
+const FUN_NAMES = Object.fromEntries(FUN_LOCALES.map((l) => [l.code, l.name]));
+const FUN_BASE = Object.fromEntries(FUN_LOCALES.map((l) => [l.code, l.base]));
+const ALL_NAMES = { ...LANG_NAMES, ...FUN_NAMES };
 /** Extra per-language instructions from scripts/locales.mjs (`notes`). */
-const LANG_NOTES = Object.fromEntries(LOCALES.filter((l) => l.notes).map((l) => [l.code, l.notes]));
+const LANG_NOTES = Object.fromEntries([...LOCALES, ...FUN_LOCALES].filter((l) => l.notes).map((l) => [l.code, l.notes]));
 
 const c = { reset: "\x1b[0m", red: "\x1b[31m", green: "\x1b[32m", yellow: "\x1b[33m", cyan: "\x1b[36m", gray: "\x1b[90m" };
 
@@ -223,7 +228,13 @@ const GLOSSARY = fs.existsSync(GLOSSARY_FILE)
 
 /** @returns {Map<string, string>} key -> string, from a locales/<code>.js file */
 function loadLocaleStrings(code) {
-  const p = path.join(LOCALES_DIR, `${code}.js`);
+  // A fun locale only translates part of the UI; the app shows its base locale for the rest.
+  if (FUN_BASE[code]) return new Map([...loadLocaleStrings(FUN_BASE[code]), ...readLocaleFile(path.join(LOCALES_DIR, "fun", `${code}.js`))]);
+  return readLocaleFile(path.join(LOCALES_DIR, `${code}.js`));
+}
+
+/** @returns {Map<string, string>} */
+function readLocaleFile(p) {
   const map = new Map();
   if (!fs.existsSync(p)) return map;
   const src = fs.readFileSync(p, "utf8");
@@ -247,6 +258,8 @@ const glossaryPath = (lang) => path.join(GLOSSARY_DIR, `${lang}.json`);
 /** Stored term translations for one language (English comes from glossary.json itself). */
 function loadTerms(lang) {
   if (lang === PIVOT) return { ...(GLOSSARY.terms ?? {}) };
+  // A German dialect keeps the German technical terms.
+  if (FUN_BASE[lang] === SOURCE) return Object.fromEntries(Object.keys(GLOSSARY.terms ?? {}).map((t) => [t, t]));
   const p = glossaryPath(lang);
   return fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, "utf8")) : {};
 }
@@ -258,7 +271,7 @@ const missingTerms = (lang) => {
 
 /** Translate glossary terms not yet in glossary/<lang>.json; drops terms removed from glossary.json. */
 async function completeGlossary(lang, targetName) {
-  if (lang === PIVOT) return;
+  if (lang === PIVOT || FUN_BASE[lang] === SOURCE) return;
   const terms = GLOSSARY.terms ?? {};
   const have = loadTerms(lang);
   const missing = Object.keys(terms).filter((t) => !have[t]);
@@ -564,7 +577,7 @@ async function pool(items, n, fn) {
  * @param {string} lang @param {string} file @param {string | null} baseHash
  */
 function pageJob(lang, file, baseHash, state) {
-  const targetName = LANG_NAMES[lang];
+  const targetName = ALL_NAMES[lang];
   const newSource = readLesson(SOURCE, file);
   const newHash = sha(newSource);
   // English reference, only if it is up to date with the current German page.
@@ -595,7 +608,7 @@ async function translatePage(lang, file, baseHash, state, note = "") {
   const job = pageJob(lang, file, baseHash, state);
   const label = `${job.mode.padEnd(9)} ${BATCH ? lang + "/" : ""}${file}`; // batch retries mix languages
   try {
-    const text = await translate(systemPrompt(lang, LANG_NAMES[lang]), job.prompt, job.newSource);
+    const text = await translate(systemPrompt(lang, ALL_NAMES[lang]), job.prompt, job.newSource);
     writePage(lang, file, text, job.newSource, state);
     console.log(`  ${c.green}✓${c.reset} ${label}${job.reference ? c.gray + " (en ref)" + c.reset : ""}${note}`);
     return true;
@@ -612,7 +625,7 @@ async function submitBatch(work, state) {
   const systems = new Map();
   const jobs = {};
   const requests = work.map(({ lang, it }, i) => {
-    if (!systems.has(lang)) systems.set(lang, systemPrompt(lang, LANG_NAMES[lang]));
+    if (!systems.has(lang)) systems.set(lang, systemPrompt(lang, ALL_NAMES[lang]));
     const baseHash = updateBase(it);
     const job = pageJob(lang, it.file, baseHash, state);
     const id = `p${i}`; // custom_id allows only [A-Za-z0-9_-]
@@ -721,7 +734,7 @@ const STATUS_COLOR = { ok: c.gray, changed: c.yellow, new: c.cyan, untracked: c.
 async function main() {
   const langs = selectLanguages();
   for (const l of langs) {
-    if (!LANG_NAMES[l]) {
+    if (!ALL_NAMES[l]) {
       console.error(`Unknown locale "${l}" (not in scripts/locales.mjs).`);
       process.exit(1);
     }
@@ -764,7 +777,7 @@ async function main() {
   const work = [];
 
   for (const lang of langs) {
-    const targetName = LANG_NAMES[lang];
+    const targetName = ALL_NAMES[lang];
     const items = plan(lang, state);
     const counts = Object.fromEntries(["ok", "changed", "new", "untracked", "orphan"].map((s) => [s, items.filter((i) => i.status === s).length]));
     console.log(

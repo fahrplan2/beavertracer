@@ -3,7 +3,7 @@
 // language. Languages without their own content file fall back to English,
 // like the app's interface strings do.
 
-import { getLocale } from "../i18n/index.js";
+import { getContentLocale } from "../i18n/index.js";
 
 /** @typedef {typeof import("./content/de.js").default} GameContent */
 
@@ -19,7 +19,7 @@ export const CONTENT_LANGS = Object.keys(BY_LANG);
  * @param {string} [locale]
  * @returns {GameContent}
  */
-export function gameContent(locale = getLocale()) {
+export function gameContent(locale = getContentLocale()) {
     return BY_LANG[locale] ?? BY_LANG.en ?? BY_LANG.de;
 }
 

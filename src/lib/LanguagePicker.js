@@ -6,7 +6,8 @@ const FEATURED = new Set(["de", "en"]);
 
 /**
  * Language chooser: the main languages (de/en) as framed buttons, then all
- * AI-translated languages as a compact list under their own label. Used by
+ * AI-translated languages as a compact list under their own label, and with
+ * ?april1st=yes the joke languages (locales/fun/) in a list of their own. Used by
  * the toolbar's language dialog and inline in the welcome dialog. No filter
  * field: in four columns every language fits on one screen. Picking a language reloads the
  * page; picking the current one calls `onCancel`.
@@ -38,6 +39,9 @@ export async function buildLanguagePicker(sim, onCancel) {
     const list = document.createElement("div");
     list.className = "sim-langlist";
 
+    const funList = document.createElement("div");
+    funList.className = "sim-langlist";
+
     const entries = locales.map((loc) => {
         const parts = loc.label.split(" ");
         return {
@@ -47,7 +51,7 @@ export async function buildLanguagePicker(sim, onCancel) {
             name: parts.slice(1).join(" ").replace(/\s*\(translated by AI\)\s*$/g, "").trim(),
         };
     });
-    const others = entries.filter((e) => !FEATURED.has(e.loc.key));
+    const others = entries.filter((e) => !FEATURED.has(e.loc.key) && !e.loc.fun);
     const allAI = others.length > 0 && others.every((e) => e.isAI);
     // Mark single entries with "*" only when the list mixes AI and human translations.
     const hasAI = others.some((e) => e.isAI);
@@ -69,7 +73,7 @@ export async function buildLanguagePicker(sim, onCancel) {
 
         btn.append(flagEl, nameEl);
         btn.addEventListener("click", makeClickHandler(loc));
-        (isCard ? featured : list).appendChild(btn);
+        (isCard ? featured : loc.fun ? funList : list).appendChild(btn);
     }
 
     /** @type {HTMLElement[]} */
@@ -81,7 +85,13 @@ export async function buildLanguagePicker(sim, onCancel) {
         parts.push(label);
     }
     parts.push(list);
+    if (funList.childElementCount > 0) {
+        const label = document.createElement("p");
+        label.className = "sim-langdialog-note";
+        label.textContent = "🎉 1. April";
+        parts.push(label, funList);
+    }
     /** @type {HTMLElement|null} */
-    const active = featured.querySelector(".active") ?? list.querySelector(".active");
+    const active = featured.querySelector(".active") ?? list.querySelector(".active") ?? funList.querySelector(".active");
     return { active, parts };
 }

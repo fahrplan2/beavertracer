@@ -2,7 +2,7 @@
 
 /**
  * Single place for reading/writing the app's query-string state
- * (?sim=, ?embed=, ?editable=, ?debug=, ?lang=, ?lesson=). Before this
+ * (?sim=, ?embed=, ?editable=, ?debug=, ?lang=, ?lesson=, ?april1st=). Before this
  * existed, main.js, i18n/index.js and SimControl.js each read
  * `location.search` and called history.pushState/replaceState independently,
  * with no shared knowledge of what params existed — main.js even had to
@@ -20,6 +20,7 @@
  *   debug: boolean,
  *   lang: string|null,
  *   lesson: string|null,
+ *   april1st: boolean,
  * }} BootParams
  */
 
@@ -38,6 +39,8 @@ export function readBootParams() {
         debug: params.get("debug") === "1",
         lang: params.get("lang"),
         lesson: params.get("lesson"),
+        // Offers the joke languages (locales/fun/) in the language picker.
+        april1st: ["yes", "1", "true"].includes(params.get("april1st") ?? ""),
     };
 }
 

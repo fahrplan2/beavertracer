@@ -55,3 +55,26 @@ export const LOCALES = [
   { code: "mt",      name: "Maltese", notes: KEEP_TERMS_ENGLISH },
   { code: "so",      name: "Somali",  notes: KEEP_TERMS_ENGLISH },
 ];
+
+/**
+ * April fools' locales (locales/fun/<code>.js, shown with ?april1st=yes) that
+ * have their own lesson course. `base` is the locale the app falls back to for
+ * untranslated UI strings. Not part of --all in the translate scripts; name
+ * them with --target.
+ */
+export const FUN_LOCALES = [
+  {
+    code: "de-HE",
+    name: "Hessian dialect (Hessisch, as spoken around Frankfurt am Main)",
+    base: "de",
+    notes:
+      "This is a just-for-fun April fools' version of the course. Write it the way people around Frankfurt " +
+      "actually talk: \"isch\", \"net\", \"des\", \"mer\", \"aach\", \"emol\", \"gugge\", \"ebbes\", \"uff\", " +
+      "dropped final -n (\"mache\", \"gugge\"), \"gell?\", \"Ei gude!\", and the odd \"Ei verbibbsch!\" or " +
+      "Äbbelwoi reference where it fits naturally — charming, not overdone, still easy to read for any German speaker. " +
+      "Keep the technical content exactly as correct as the original. Keep standard German networking terms " +
+      "(Router, Switch, IP-Adresse, Subnetzmaske, Gateway, Paket, Port, Netzwerk …) recognizable — at most a light " +
+      "dialect touch, never replace them with invented words. Quiz answers that the student has to type must stay " +
+      "exactly as in the German original.",
+  },
+];
