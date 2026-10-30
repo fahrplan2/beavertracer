@@ -674,3 +674,159 @@ describe('checksum', () => {
     expectValidChecksum(/** @type {any} */ (rst));
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Persist timer / zero-window probes (RFC 9293 §3.8.6.1, RFC 1122 §4.2.2.17)
+// and receiver window updates (RFC 9293 §3.8.6.2.2)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('persist timer and window updates', () => {
+  /**
+   * Like makeLoopback(), but segments are queued and only delivered by pump().
+   * This mirrors a real link (no re-entrant ACK while the sender is still
+   * inside _flushSend), so bulk transfers behave as on the wire.
+   */
+  function makeQueuedLoopback() {
+    /** @type {Array<{from:'client'|'server', tcp:TCPPacket, tick:number}>} */
+    const log = [];
+    /** @type {Array<() => void>} */
+    const queue = [];
+    /** @type {{ drop: boolean }} */
+    const ctl = { drop: false };
+    const client = new TcpEngine({
+      ipSend: ({ dst, src, payload }) => {
+        log.push({ from: 'client', tcp: TCPPacket.fromBytes(payload), tick: simTimer.currentTick });
+        if (!ctl.drop) queue.push(() => server.handle({ src, dst, payload }));
+      },
+      resolveSrcIp: () => CLIENT_IP,
+    });
+    const server = new TcpEngine({
+      ipSend: ({ dst, src, payload }) => {
+        log.push({ from: 'server', tcp: TCPPacket.fromBytes(payload), tick: simTimer.currentTick });
+        if (!ctl.drop) queue.push(() => client.handle({ src, dst, payload }));
+      },
+      resolveSrcIp: () => SERVER_IP,
+    });
+    const pump = () => { let n = 0; while (queue.length && n++ < 100_000) queue.shift()?.(); };
+    /** @param {number} ticks */
+    const run = (ticks) => { for (let i = 0; i < ticks; i++) { simTimer.tick(); pump(); } };
+    return { client, server, log, pump, run, ctl };
+  }
+
+  const TOTAL = 10_000;
+  const RCV_CAP = 4096;
+
+  /** Connect, shrink the server's receive buffer, send TOTAL bytes the server doesn't read. */
+  async function setupStalled() {
+    const lb = makeQueuedLoopback();
+    const { client, server, pump, run } = lb;
+    server.openServer(BIND_ALL, SERVER_PORT);
+    const ap = server.accept(SERVER_PORT);
+    const cp = client.connect(SERVER_IP, SERVER_PORT);
+    pump();
+    const clientConn = await cp;
+    const serverKey = (await ap) ?? '';
+    const serverConn = /** @type {any} */ (server.conns.get(serverKey));
+    serverConn.rcvCap = RCV_CAP;
+
+    const data = new Uint8Array(TOTAL);
+    for (let i = 0; i < TOTAL; i++) data[i] = (i * 7 + 3) & 0xff;
+    client.send(clientConn.key, data);
+    pump();
+    run(5);
+    return { ...lb, clientConn, serverConn, serverKey, data };
+  }
+
+  it('sender sees rwnd=0, then sends 1-byte probes at SND.NXT with exponential backoff', async () => {
+    const { log, run, clientConn, serverConn } = await setupStalled();
+
+    expect(clientConn.sndWnd).toBe(0);
+    expect(clientConn.sendQBytes).toBeGreaterThan(0);
+    expect(clientConn.outQ.length).toBe(0);           // everything in flight was ACKed
+    expect(clientConn.persistTimerId).not.toBeNull(); // persist timer armed, not RTO
+    expect(clientConn.rtoTimerId).toBeNull();
+
+    const sndNxt = clientConn.myacc >>> 0;
+    const logStart = log.length;
+
+    // Run long enough for more than TCP_MAX_REXMIT probes (backoff caps at TCP_MAX_RTO_MS).
+    run(SimTimer.toTicks(5 * 60_000));
+
+    const probes = log.slice(logStart).filter(e => e.from === 'client' && e.tcp.payload.length > 0);
+    expect(probes.length).toBeGreaterThan(SimTimer.TCP_MAX_REXMIT);
+    // Every probe is the same single byte at the old SND.NXT (re-sent while refused).
+    for (const p of probes) {
+      expect(p.tcp.payload.length).toBe(1);
+      expect(p.tcp.seq >>> 0).toBe(sndNxt);
+    }
+    expect(clientConn.myacc >>> 0).toBe((sndNxt + 1) >>> 0); // probe byte counted in SND.NXT
+    expect(clientConn.outQ.length).toBe(1);
+    expect(clientConn.outQ[0].probe).toBe(true);
+
+    // Interval doubles (base = RTO 600 ms) and is capped at TCP_MAX_RTO_MS.
+    const gaps = probes.slice(1).map((p, i) => p.tick - probes[i].tick);
+    expect(gaps[0]).toBe(SimTimer.toTicks(2 * clientConn.rtoMs));
+    expect(gaps[1]).toBe(gaps[0] * 2);
+    expect(gaps[2]).toBe(gaps[1] * 2);
+    expect(Math.max(...gaps)).toBe(SimTimer.toTicks(SimTimer.TCP_MAX_RTO_MS));
+
+    // The receiver refused each probe with a zero-window ACK; connection stays up.
+    const zeroAcks = log.slice(logStart).filter(e => e.from === 'server' && e.tcp.window === 0);
+    expect(zeroAcks.length).toBeGreaterThanOrEqual(probes.length);
+    expect(clientConn.state).toBe('ESTABLISHED');
+    expect(serverConn.state).toBe('ESTABLISHED');
+    expect(clientConn.dupAckCount).toBe(0); // probe answers are not duplicate ACKs
+  });
+
+  it('receiver sends a window update on recv() and the remaining data arrives intact', async () => {
+    const { server, log, pump, run, clientConn, serverKey, data } = await setupStalled();
+    run(SimTimer.toTicks(3000)); // a few probes
+    expect(clientConn.sndWnd).toBe(0);
+
+    // First recv() frees one segment worth of buffer → immediate window update.
+    const logStart = log.length;
+    const first = await server.recv(serverKey);
+    const update = log.slice(logStart).find(e => e.from === 'server');
+    expect(update).toBeDefined();
+    expect(update?.tcp.payload.length).toBe(0);
+    expect(update?.tcp.hasFlag(TCPPacket.FLAG_ACK)).toBe(true);
+    expect(update?.tcp.window).toBeGreaterThan(0);
+
+    pump();
+    const serverConn = /** @type {any} */ (server.conns.get(serverKey));
+    const chunks = [first ?? new Uint8Array()];
+    let got = chunks[0].length;
+    let ticksWaited = 0;
+    // Read only what is buffered (recv() then resolves at once); let the
+    // simulation run when the buffer is empty.
+    for (let guard = 0; got < TOTAL && guard < 20_000; guard++) {
+      if (serverConn.in.length === 0) { ticksWaited++; run(1); continue; }
+      const c = (await server.recv(serverKey)) ?? new Uint8Array();
+      pump();
+      chunks.push(c);
+      got += c.length;
+    }
+
+    const out = new Uint8Array(got);
+    let off = 0;
+    for (const c of chunks) { out.set(c, off); off += c.length; }
+    expect(got).toBe(TOTAL);
+    expect(out).toEqual(data);
+    // Driven by window updates, not by waiting for the next probe.
+    expect(ticksWaited).toBeLessThan(SimTimer.toTicks(clientConn.rtoMs));
+
+    run(SimTimer.toTicks(2000));
+    expect(clientConn.persistTimerId).toBeNull();
+    expect(clientConn.sendQBytes).toBe(0);
+    expect(clientConn.outQ.length).toBe(0);
+    expect(clientConn.state).toBe('ESTABLISHED');
+  });
+
+  it('aborts only after TCP_MAX_REXMIT unanswered probes', async () => {
+    const { run, ctl, clientConn } = await setupStalled();
+    expect(clientConn.persistTimerId).not.toBeNull();
+    ctl.drop = true; // peer goes silent
+    run(SimTimer.toTicks(10 * 60_000));
+    expect(clientConn.state).toBe('CLOSED');
+  });
+});

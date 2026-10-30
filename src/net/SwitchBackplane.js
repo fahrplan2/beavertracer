@@ -5,6 +5,10 @@ import { IPAddress } from "./models/IPAddress.js";
 import { EthernetPort } from "./EthernetPort.js";
 import { Observable } from "../lib/Observeable.js";
 import { EthernetFrame } from "../net/pdu/EthernetFrame.js";
+import { IPv4Packet } from "../net/pdu/IPv4Packet.js";
+import { IPv6Packet } from "../net/pdu/IPv6Packet.js";
+import { ICMPv6Packet } from "../net/pdu/ICMPv6Packet.js";
+import { onesComplementChecksum } from "../net/util/checksumUtils.js";
 import { STPBPDU, RSTP_FLAG_TC, RSTP_FLAG_PROPOSAL, RSTP_FLAG_LEARNING, RSTP_FLAG_FORWARDING, RSTP_FLAG_AGREEMENT, RSTP_PORT_ROLE } from "../net/pdu/STPBPDU.js";
 import { simTimer, SimTimer } from "../lib/SimTimer.js";
 import { LLDPDaemon } from "./LLDPDaemon.js";
@@ -1036,12 +1040,15 @@ export class SwitchBackplane extends Observable {
     _processMLD(portIdx, frame) {
         if (frame.etherType !== 0x86DD) return -1;
         const ip6 = frame.payload;
-        if (!ip6 || ip6.length < 64) return -1; // 40-byte IPv6 hdr + 24-byte MLD
-        if (ip6[6] !== 58) return -1; // nextHeader ≠ ICMPv6
-        const mldType = ip6[40]; // ICMPv6 type
+        // MLD normally follows a Hop-by-Hop header with Router Alert (RFC 2710 §3)
+        const ul = IPv6Packet.upperLayer(ip6);
+        if (!ul || ul.nextHeader !== 58) return -1; // upper layer ≠ ICMPv6
+        const off = ul.offset;
+        if (ip6.length < off + 24) return -1; // 24-byte MLD message
+        const mldType = ip6[off]; // ICMPv6 type
         if (mldType !== 0x82 && mldType !== 0x83 && mldType !== 0x84) return -1;
 
-        const g = ip6.slice(48, 64); // multicast group address (16 bytes, at ICMPv6 byte 8)
+        const g = ip6.slice(off + 8, off + 24); // multicast group address (16 bytes, at ICMPv6 byte 8)
         const groupMac = new Uint8Array([0x33, 0x33, g[12], g[13], g[14], g[15]]);
         const groupKey = MACToNumber(groupMac);
         const groupIp = IPAddress.fromUInt8(g).toString();
@@ -1095,54 +1102,42 @@ export class SwitchBackplane extends Observable {
         }
     }
 
-    /** Build an IGMPv2 General Query Ethernet frame (src IP = 0.0.0.0, dst = 224.0.0.1). */
+    /**
+     * Build an IGMPv2 General Query Ethernet frame (src IP = 0.0.0.0 as allowed for
+     * snooping queriers by RFC 4541 §2.1.1, dst = 224.0.0.1). RFC 2236 §2: TTL 1,
+     * Router Alert option (RFC 2113), checksum over the 8-byte IGMP message.
+     */
     _buildIGMPQueryFrame() {
         const igmp = new Uint8Array(8);
         igmp[0] = 0x11; // Membership Query
         igmp[1] = 100;  // Max Resp Time = 10.0 s (in units of 0.1 s)
-        // checksum over [0x11, 0x64, 0, 0, 0, 0, 0, 0]
-        let cs = 0;
-        for (let i = 0; i < 8; i += 2) cs += (igmp[i] << 8) | igmp[i + 1];
-        while (cs >> 16) cs = (cs & 0xffff) + (cs >> 16);
-        cs = (~cs) & 0xffff;
+        // group address 0.0.0.0 = General Query
+        const cs = onesComplementChecksum([igmp]);
         igmp[2] = (cs >> 8) & 0xff; igmp[3] = cs & 0xff;
 
-        // Minimal IPv4 header (20 bytes): src=0.0.0.0, dst=224.0.0.1, proto=IGMP, TTL=1
-        const ip = new Uint8Array(28);
-        ip[0] = 0x45; ip[3] = 28; ip[8] = 1; ip[9] = 2;
-        ip[16] = 224; ip[17] = 0; ip[18] = 0; ip[19] = 1;
-        ip.set(igmp, 20);
+        const ip = new IPv4Packet({
+            src: IPAddress.fromString("0.0.0.0"),
+            dst: IPAddress.fromString("224.0.0.1"),
+            protocol: 2,
+            ttl: 1,
+            identification: 0,
+            options: new Uint8Array([0x94, 0x04, 0x00, 0x00]), // Router Alert
+            payload: igmp,
+        });
 
         const srcMac = bigintToMac(this.bridgeId);
         return new EthernetFrame({
             dstMac: new Uint8Array([0x01, 0x00, 0x5e, 0x00, 0x00, 0x01]),
             srcMac,
             etherType: 0x0800,
-            payload: ip,
+            payload: ip.pack(),
         });
     }
 
     /**
-     * Compute ICMPv6 checksum over the IPv6 pseudo-header (RFC 2460 §8.1).
-     * @param {Uint8Array} src16 @param {Uint8Array} dst16 @param {Uint8Array} icmpBytes
-     * @returns {number}
+     * Build an MLDv1 General Query Ethernet frame (src = switch EUI-64 LL, dst = ff02::1).
+     * RFC 2710 §3: hop limit 1, Hop-by-Hop header with Router Alert (RFC 2711, value 0).
      */
-    _icmpv6Checksum(src16, dst16, icmpBytes) {
-        let sum = 0;
-        for (let i = 0; i < 16; i += 2) sum += (src16[i] << 8) | src16[i + 1];
-        for (let i = 0; i < 16; i += 2) sum += (dst16[i] << 8) | dst16[i + 1];
-        const len = icmpBytes.length;
-        sum += (len >> 16) & 0xffff;
-        sum += len & 0xffff;
-        sum += 58; // next header = ICMPv6
-        for (let i = 0; i < icmpBytes.length; i += 2) {
-            sum += (icmpBytes[i] << 8) | (i + 1 < icmpBytes.length ? icmpBytes[i + 1] : 0);
-        }
-        while (sum >> 16) sum = (sum & 0xffff) + (sum >> 16);
-        return (~sum) & 0xffff;
-    }
-
-    /** Build an MLDv1 General Query Ethernet frame (src = switch EUI-64 LL, dst = ff02::1). */
     _buildMLDQueryFrame() {
         const mac = bigintToMac(this.bridgeId);
 
@@ -1153,32 +1148,28 @@ export class SwitchBackplane extends Observable {
         src16[9]  = mac[1]; src16[10] = mac[2];
         src16[11] = 0xff;   src16[12] = 0xfe;
         src16[13] = mac[3]; src16[14] = mac[4]; src16[15] = mac[5];
+        const src = IPAddress.fromUInt8(src16);
+        const dst = IPAddress.fromString("ff02::1");
 
-        const dst16 = new Uint8Array([0xff, 0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x01]);
+        // MLD body (20 bytes after the 4-byte ICMPv6 header):
+        // max resp delay = 10000 ms, reserved, group address :: (General Query)
+        const body = new Uint8Array(20);
+        body[0] = 0x27; body[1] = 0x10;
+        const icmp = new ICMPv6Packet({ type: 0x82, code: 0, body }).pack(src, dst);
 
-        // ICMPv6 MLD General Query (24 bytes): 4-byte header + 20-byte MLD body
-        const icmp = new Uint8Array(24);
-        icmp[0] = 0x82;             // type: MLD Query
-        icmp[4] = 0x27; icmp[5] = 0x10; // max resp delay = 10000 ms
-        // group address = :: (16 zero bytes, General Query)
-        const cs = this._icmpv6Checksum(src16, dst16, icmp);
-        icmp[2] = (cs >> 8) & 0xff; icmp[3] = cs & 0xff;
-
-        // IPv6 header (40 bytes)
-        const ip6 = new Uint8Array(40 + 24);
-        ip6[0] = 0x60;                // version=6
-        ip6[4] = 0; ip6[5] = 24;      // payload length
-        ip6[6] = 58;                  // next header = ICMPv6
-        ip6[7] = 1;                   // hop limit
-        ip6.set(src16, 8);
-        ip6.set(dst16, 24);
-        ip6.set(icmp, 40);
+        const ip6 = new IPv6Packet({
+            src, dst,
+            nextHeader: 58,
+            hopLimit: 1,
+            hopByHop: IPv6Packet.routerAlertOptions(0),
+            payload: icmp,
+        });
 
         return new EthernetFrame({
             dstMac: new Uint8Array([0x33, 0x33, 0x00, 0x00, 0x00, 0x01]),
             srcMac: mac,
             etherType: 0x86DD,
-            payload: ip6,
+            payload: ip6.pack(),
         });
     }
 

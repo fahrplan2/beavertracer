@@ -336,10 +336,36 @@ export class TcpEngine {
     const conn = this.conns.get(key);
     if (!conn) throw new Error(`recv: Connection not found: ${key}`);
 
-    if (conn.in.length > 0) return Promise.resolve(conn.in.shift() ?? null);
+    if (conn.in.length > 0) {
+      const chunk = conn.in.shift() ?? null;
+      this._maybeSendWindowUpdate(conn);
+      return Promise.resolve(chunk);
+    }
     if (conn.eof) return Promise.resolve(null);
 
     return new Promise((resolve) => conn.waiters.push(resolve));
+  }
+
+  /**
+   * Window update after the application consumed buffered data
+   * (RFC 9293 §3.8.6.2.2, receiver-side SWS avoidance; RFC 1122 §4.2.2.17).
+   * Without it a peer that saw rwnd=0 would only learn about the reopened
+   * window through its next zero-window probe. To avoid silly-window
+   * updates, a pure ACK is sent only once the offered window has grown by
+   * at least min(RCV.BUFF/2, MSS) since the last advertisement — which also
+   * covers reopening a closed window.
+   * @param {TCPSocket} conn
+   */
+  _maybeSendWindowUpdate(conn) {
+    if (conn.eof) return; // peer has sent FIN — it won't send more data
+    if (conn.state !== "ESTABLISHED" && conn.state !== "FIN-WAIT-1" && conn.state !== "FIN-WAIT-2") return;
+    if (conn.lastWndSent < 0) return; // nothing advertised after the handshake yet
+
+    const wnd = this._calcRcvWnd(conn);
+    const cap = conn.rcvCap ?? (256 * 1024);
+    const mss = (conn.mss ?? this.defaultMSS) | 0;
+    const threshold = Math.max(1, Math.min(Math.floor(cap / 2), mss));
+    if (wnd - (conn.lastWndSent >>> 0) >= threshold) this._sendAckOnly(conn);
   }
 
   /**
@@ -367,6 +393,7 @@ export class TcpEngine {
    */
   _flushSend(conn) {
     if (conn.state !== "ESTABLISHED" && conn.state !== "CLOSE-WAIT") return;
+    this._releaseProbe(conn);
     if (!conn.sendQ || conn.sendQ.length === 0) {
       if (conn.pendingClose) { conn.pendingClose = false; this._sendFin(conn); }
       return;
@@ -420,6 +447,131 @@ export class TcpEngine {
       conn.pendingClose = false;
       this._sendFin(conn);
     }
+
+    this._updatePersist(conn);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Persist timer / zero-window probes (RFC 9293 §3.8.6.1, RFC 1122 §4.2.2.17)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Start or stop the persist timer depending on the current send state.
+   * Persist mode: the peer advertises SND.WND = 0, data is waiting, and
+   * nothing but (at most) an earlier probe byte is outstanding. Regular
+   * outstanding data stays covered by the RTO timer instead.
+   * @param {TCPSocket} conn
+   */
+  _updatePersist(conn) {
+    const open = conn.state === "ESTABLISHED" || conn.state === "CLOSE-WAIT";
+    const onlyProbes = conn.outQ.every((seg) => seg.probe);
+    const probeOut = conn.outQ.length > 0 && onlyProbes;
+    const persist = open && (conn.sndWnd >>> 0) === 0 && onlyProbes &&
+                    ((conn.sendQBytes ?? 0) > 0 || probeOut);
+
+    if (persist) {
+      if (conn.persistTimerId !== null) return;
+      this._cancelRto(conn); // the probe byte is retransmitted by the persist timer
+      this._schedulePersist(conn);
+      return;
+    }
+
+    this._releaseProbe(conn);
+    if (conn.persistTimerId !== null) {
+      this._cancelPersist(conn);
+      // A still-unacked probe byte is ordinary outstanding data from now on.
+      if (conn.outQ.length > 0 && conn.rtoTimerId === null) this._scheduleRto(conn);
+    }
+    conn.persistBackoff = 0;
+  }
+
+  /**
+   * The window has reopened while a probe byte is still unacknowledged: the
+   * peer refused it, so it is now the hole at SND.UNA. Re-send it at once
+   * (before any new data) and treat it as ordinary data from here on — RTO
+   * covers it — instead of letting the receiver wait a full RTO for it.
+   * @param {TCPSocket} conn
+   */
+  _releaseProbe(conn) {
+    if ((conn.sndWnd >>> 0) === 0) return;
+    const seg = conn.outQ[0];
+    if (!seg?.probe) return;
+    seg.probe = false;
+    this._sendRaw(conn, {
+      seq: seg.seq,
+      ack: conn.theiracc >>> 0,
+      flags: seg.flags | TCPPacket.FLAG_ACK,
+      payload: seg.payload,
+    });
+  }
+
+  /**
+   * Arm the persist timer: current RTO, doubled per probe sent, capped.
+   * @param {TCPSocket} conn
+   */
+  _schedulePersist(conn) {
+    if (conn.persistTimerId !== null) simTimer.cancel(conn.persistTimerId);
+    const ms = Math.min(conn.rtoMs * (2 ** conn.persistBackoff), SimTimer.TCP_MAX_RTO_MS);
+    conn.persistTimerId = simTimer.schedule(() => this._firePersist(conn), ms);
+  }
+
+  /** @param {TCPSocket} conn */
+  _cancelPersist(conn) {
+    if (conn.persistTimerId !== null) { simTimer.cancel(conn.persistTimerId); conn.persistTimerId = null; }
+  }
+
+  /**
+   * Persist timer expired: send a zero-window probe — one byte of real data
+   * at SND.NXT (Wireshark: "TCP ZeroWindowProbe"). The byte is queued in
+   * outQ like any data and SND.NXT advances; while the peer keeps refusing it
+   * (ACK = the probe's seq, window 0) the same byte is re-sent on each expiry.
+   * Per RFC 9293 the connection is never aborted while probes are being
+   * answered — only after TCP_MAX_REXMIT probes in a row went unanswered.
+   * @param {TCPSocket} conn
+   */
+  _firePersist(conn) {
+    conn.persistTimerId = null;
+    if (conn.state !== "ESTABLISHED" && conn.state !== "CLOSE-WAIT") return;
+    if ((conn.sndWnd >>> 0) !== 0) { this._flushSend(conn); return; }
+
+    if (conn.persistUnanswered >= SimTimer.TCP_MAX_REXMIT) {
+      this._destroy(conn, "connection timed out");
+      return;
+    }
+
+    const probe = conn.outQ.find((seg) => seg.probe);
+    const head = conn.sendQ[0];
+    if (!probe && !head) { this._updatePersist(conn); return; }
+
+    // Count before sending: over a synchronous loopback the peer's answer
+    // (which resets the counter and may re-arm the timer) arrives inside _sendRaw.
+    conn.persistUnanswered++;
+    conn.persistBackoff++;
+
+    if (probe) {
+      probe.rexmit++;
+      this._sendRaw(conn, {
+        seq: probe.seq,
+        ack: conn.theiracc >>> 0,
+        flags: probe.flags | TCPPacket.FLAG_ACK,
+        payload: probe.payload,
+      });
+    } else if (head) {
+      const payload = head.subarray(0, 1);
+      const endOfWrite = head.length === 1;
+      if (endOfWrite) conn.sendQ.shift();
+      else conn.sendQ[0] = head.subarray(1);
+      conn.sendQBytes = Math.max(0, (conn.sendQBytes ?? 0) - 1);
+
+      const seq = conn.myacc >>> 0;
+      const flags = endOfWrite ? (TCPPacket.FLAG_PSH | TCPPacket.FLAG_ACK) : TCPPacket.FLAG_ACK;
+      conn.outQ.push({ seq, end: u32(seq + 1), flags, payload, rexmit: 0, probe: true });
+      conn.myacc = u32(seq + 1);
+      this._sendRaw(conn, { seq, ack: conn.theiracc >>> 0, flags, payload });
+    }
+
+    if (/** @type {string} */ (conn.state) === "CLOSED") return; // loopback reply may have reset the connection
+    this._updatePersist(conn); // re-arm with the next backoff step (no-op if already re-armed)
   }
 
   /**
@@ -631,6 +783,9 @@ export class TcpEngine {
       return;
     }
 
+    // Any segment from the peer proves it is alive (persist-timer abort guard).
+    conn.persistUnanswered = 0;
+
     // Update peer advertised window
     const prevSndWnd = conn.sndWnd >>> 0;
     conn.sndWnd = (tcp.window >>> 0);
@@ -649,6 +804,8 @@ export class TcpEngine {
 
     if (conn.sendQBytes > 0 && ((conn.sndWnd >>> 0) !== prevSndWnd || ack)) {
       this._flushSend(conn);
+    } else {
+      this._updatePersist(conn);
     }
 
     // TIME-WAIT: ignore payload/state changes, but re-ACK
@@ -903,7 +1060,10 @@ export class TcpEngine {
 
     if (!removedAny) {
       // Duplicate ACK: ackNo didn't advance and there is outstanding data
-      if (conn.outQ.length > 0 && (ackNo >>> 0) === sndUnaBefore) {
+      // An ACK answering a zero-window probe (window still 0) is not a
+      // duplicate ACK in the RFC 5681 sense — it must not trigger Fast Retransmit.
+      if (conn.outQ.length > 0 && (ackNo >>> 0) === sndUnaBefore &&
+          (conn.sndWnd >>> 0) !== 0 && !conn.outQ[0].probe) {
         conn.dupAckCount++;
         if (conn.dupAckCount === 3) {
           // Fast Retransmit: enter Fast Recovery
@@ -972,6 +1132,7 @@ export class TcpEngine {
   _scheduleRto(conn) {
     if (conn.rtoTimerId !== null) { simTimer.cancel(conn.rtoTimerId); conn.rtoTimerId = null; }
     if (conn.outQ.length === 0) return;
+    if (conn.persistTimerId !== null) return; // probe byte is owned by the persist timer
     conn.rtoTimerId = simTimer.schedule(() => this._fireRto(conn), conn.rtoMs);
   }
 
@@ -1005,7 +1166,7 @@ export class TcpEngine {
     conn.cwnd = mss;
     conn.dupAckCount = 0;
 
-    conn.rtoMs = Math.min(conn.rtoMs * 2, 60_000);
+    conn.rtoMs = Math.min(conn.rtoMs * 2, SimTimer.TCP_MAX_RTO_MS);
 
     const isBareSyn =
       (seg.flags & TCPPacket.FLAG_SYN) !== 0 &&
@@ -1047,6 +1208,7 @@ export class TcpEngine {
    */
   _destroy(conn, reason) {
     this._cancelRto(conn);
+    this._cancelPersist(conn);
     if (conn.timeWaitTimerId !== null) { simTimer.cancel(conn.timeWaitTimerId); conn.timeWaitTimerId = null; }
 
     while (conn.waiters.length) conn.waiters.shift()?.(null);
@@ -1350,7 +1512,7 @@ export class TCPSocket {
   // Outgoing retransmission buffer + RTO timer state
   // ---------------------------------------------------------------------------
 
-  /** @type {Array<{seq:number, end:number, flags:number, payload:Uint8Array, rexmit:number}>} */
+  /** @type {Array<{seq:number, end:number, flags:number, payload:Uint8Array, rexmit:number, probe?:boolean}>} */
   outQ = [];
 
   /** @type {number} current RTO in simulated ms */
@@ -1358,6 +1520,19 @@ export class TCPSocket {
 
   /** @type {number|null} simTimer id for pending RTO retransmit */
   rtoTimerId = null;
+
+  // ---------------------------------------------------------------------------
+  // Persist timer (zero-window probing)
+  // ---------------------------------------------------------------------------
+
+  /** @type {number|null} simTimer id for the pending zero-window probe */
+  persistTimerId = null;
+
+  /** number of probes sent in the current persist episode (exponential backoff) */
+  persistBackoff = 0;
+
+  /** probes sent since the peer last answered anything — abort guard */
+  persistUnanswered = 0;
 
   // ---------------------------------------------------------------------------
   // TIME-WAIT

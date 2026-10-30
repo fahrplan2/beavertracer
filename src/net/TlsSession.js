@@ -314,8 +314,23 @@ export class TlsSession {
     /** @type {Uint8Array|null} */ this._encryptFixedIV = null;  // 4 bytes (RFC 5288)
     /** @type {Uint8Array|null} */ this._decryptFixedIV = null;  // 4 bytes
     /** @type {Uint8Array|null} */ this._masterSecret = null;    // 48 bytes
+    // Record sequence numbers (RFC 5246 §6.1): reset to 0 by ChangeCipherSpec,
+    // so the Finished message is record #0 of each direction and the first
+    // ApplicationData record is #1.
     this._sendSeq = 0;
     this._recvSeq = 0;
+    // Connection-state switch (RFC 5246 §7.1): the write side becomes
+    // encrypted once we *sent* ChangeCipherSpec, the read side once we
+    // *received* one.
+    this._writeCipherActive = false;
+    this._readCipherActive = false;
+    // Encrypted writes are serialised so record order == sequence order.
+    /** @type {Promise<void>} */ this._writeChain = Promise.resolve();
+    this._pendingWrites = 0;
+    // close() is synchronous (callers close TCP right after it), but AES-GCM
+    // via WebCrypto is async — so an encrypted close_notify for the next
+    // sequence number is kept ready in advance.
+    /** @type {{ seq: number, bytes: Uint8Array }|null} */ this._closeNotify = null;
 
     // Handshake transcript (accumulated HS message bytes, without record framing)
     /** @type {Uint8Array} */ this._transcript = new Uint8Array(0);
@@ -332,11 +347,13 @@ export class TlsSession {
       } else {
         await this._clientHandshake();
       }
+      await this._prepareCloseNotify();
       this._state = "ESTABLISHED";
     } catch (e) {
       this._state = "CLOSED";
       if (e instanceof TlsHandshakeError) {
-        try { this._sendRaw(TlsRecord.buildAlert(2, 42)); } catch { /* ignore */ }
+        // Once our ChangeCipherSpec is out, alerts go under the new keys too.
+        try { await this._sendRecord(TLS_CT.ALERT, new Uint8Array([2, 42])); } catch { /* ignore */ }
       }
       throw e;
     }
@@ -349,20 +366,7 @@ export class TlsSession {
    */
   async send(plaintext) {
     if (this._state !== "ESTABLISHED") throw new Error("TLS session not established");
-    const seq = this._sendSeq++;
-    // explicit nonce = seq as 8-byte big-endian (deterministic, avoids reuse)
-    const explicitNonce = seqToBytes8(seq);
-    const nonce = concat(/** @type {Uint8Array} */ (this._encryptFixedIV), explicitNonce);
-    const aad = buildAAD(seq, TLS_CT.APP_DATA, plaintext.length);
-    const cipher = await crypto.subtle.encrypt(
-      { name: "AES-GCM", iv: nonce, additionalData: aad },
-      /** @type {CryptoKey} */ (this._encryptKey),
-      plaintext,
-    );
-    // prepend explicit nonce so the peer can reconstruct the full nonce
-    this._sendRaw(TlsRecord.buildApplicationData(
-      concat(explicitNonce, new Uint8Array(cipher)),
-    ));
+    await this._sendRecord(TLS_CT.APP_DATA, plaintext, true);
   }
 
   /**
@@ -373,24 +377,10 @@ export class TlsSession {
   async recv() {
     if (this._state === "CLOSED") return null;
     while (true) {
-      const record = await this._readRecord();
+      const record = await this._readRecord(); // already decrypted
       if (record === null) { this._state = "CLOSED"; return null; }
 
-      if (record.contentType === TLS_CT.APP_DATA) {
-        // first 8 bytes are the explicit nonce
-        const explicitNonce = record.payload.slice(0, 8);
-        const ciphertext    = record.payload.slice(8);
-        const seq = this._recvSeq++;
-        const nonce = concat(/** @type {Uint8Array} */ (this._decryptFixedIV), explicitNonce);
-        const plaintextLen = ciphertext.length - 16; // minus 16-byte GCM tag
-        const aad = buildAAD(seq, TLS_CT.APP_DATA, plaintextLen);
-        const plain = await crypto.subtle.decrypt(
-          { name: "AES-GCM", iv: nonce, additionalData: aad },
-          /** @type {CryptoKey} */ (this._decryptKey),
-          ciphertext,
-        );
-        return new Uint8Array(plain);
-      }
+      if (record.contentType === TLS_CT.APP_DATA) return record.payload;
 
       if (record.contentType === TLS_CT.ALERT) {
         this._state = "CLOSED";
@@ -403,7 +393,111 @@ export class TlsSession {
   close() {
     if (this._state === "CLOSED") return;
     this._state = "CLOSED";
-    try { this._sendRaw(TlsRecord.buildAlert(1, 0)); } catch { /* ignore */ }
+    const alert = new Uint8Array([1, 0]);
+    try {
+      if (!this._writeCipherActive) {
+        this._sendRaw(new TlsRecord(TLS_CT.ALERT, alert).pack());
+      } else if (this._pendingWrites === 0 && this._closeNotify?.seq === this._sendSeq) {
+        // fast path: pre-encrypted close_notify, sent synchronously
+        this._sendSeq++;
+        this._sendRaw(this._closeNotify.bytes);
+      } else {
+        // writes still in flight — queue behind them (best effort)
+        this._sendRecord(TLS_CT.ALERT, alert).catch(() => { /* ignore */ });
+      }
+    } catch { /* ignore */ }
+    this._closeNotify = null;
+  }
+
+  // ── record protection (RFC 5246 §6.2.3.3, RFC 5288 §3) ───────────────────
+
+  /**
+   * Encrypt one record under the current write state with sequence number seq.
+   * Wire payload = explicit_nonce(8) || AES-GCM(ciphertext || tag(16)).
+   * @param {number} contentType
+   * @param {Uint8Array} plaintext
+   * @param {number} seq
+   */
+  async _encryptRecord(contentType, plaintext, seq) {
+    // explicit nonce = seq as 8-byte big-endian (deterministic, avoids reuse)
+    const explicitNonce = seqToBytes8(seq);
+    const nonce = concat(/** @type {Uint8Array} */ (this._encryptFixedIV), explicitNonce);
+    const aad = buildAAD(seq, contentType, plaintext.length);
+    const cipher = await crypto.subtle.encrypt(
+      { name: "AES-GCM", iv: /** @type {Uint8Array<ArrayBuffer>} */ (nonce), additionalData: aad },
+      /** @type {CryptoKey} */ (this._encryptKey),
+      /** @type {Uint8Array<ArrayBuffer>} */ (plaintext),
+    );
+    return new TlsRecord(contentType, concat(explicitNonce, new Uint8Array(cipher))).pack();
+  }
+
+  /**
+   * Send one record: in the clear before our ChangeCipherSpec, AES-GCM
+   * protected afterwards. Encrypted writes are queued so that sequence
+   * numbers are assigned (and records hit the wire) in call order.
+   * @param {number} contentType
+   * @param {Uint8Array} plaintext
+   * @param {boolean} [refreshCloseNotify] re-arm the pre-encrypted close_notify afterwards
+   */
+  _sendRecord(contentType, plaintext, refreshCloseNotify = false) {
+    if (!this._writeCipherActive) {
+      this._sendRaw(new TlsRecord(contentType, /** @type {Uint8Array<ArrayBuffer>} */ (plaintext)).pack());
+      return Promise.resolve();
+    }
+    this._pendingWrites++;
+    const job = this._writeChain.then(async () => {
+      try {
+        const bytes = await this._encryptRecord(contentType, plaintext, this._sendSeq++);
+        this._sendRaw(bytes);
+        if (refreshCloseNotify && this._state !== "CLOSED") await this._prepareCloseNotify();
+      } finally {
+        this._pendingWrites--;
+      }
+    });
+    this._writeChain = job.catch(() => { /* keep the chain alive */ });
+    return job;
+  }
+
+  /** Pre-encrypt close_notify for the next write sequence number. */
+  async _prepareCloseNotify() {
+    if (!this._writeCipherActive) { this._closeNotify = null; return; }
+    const seq = this._sendSeq;
+    const bytes = await this._encryptRecord(TLS_CT.ALERT, new Uint8Array([1, 0]), seq);
+    this._closeNotify = { seq, bytes };
+  }
+
+  /** Send ChangeCipherSpec and switch the write side to the new keys (seq := 0). */
+  _sendChangeCipherSpec() {
+    this._sendRaw(TlsRecord.buildChangeCipherSpec());
+    this._writeCipherActive = true;
+    this._sendSeq = 0;
+  }
+
+  /**
+   * Decrypt one protected record (read sequence number = this._recvSeq++).
+   * @param {TlsRecord} record
+   * @returns {Promise<TlsRecord>}
+   */
+  async _decryptRecord(record) {
+    if (record.payload.length < 8 + 16) {
+      throw new TlsHandshakeError("Protected record too short (decode_error)");
+    }
+    const explicitNonce = record.payload.slice(0, 8);
+    const ciphertext    = record.payload.slice(8);
+    const seq = this._recvSeq++;
+    const nonce = concat(/** @type {Uint8Array} */ (this._decryptFixedIV), explicitNonce);
+    const aad = buildAAD(seq, record.contentType, ciphertext.length - 16); // minus GCM tag
+    let plain;
+    try {
+      plain = await crypto.subtle.decrypt(
+        { name: "AES-GCM", iv: /** @type {Uint8Array<ArrayBuffer>} */ (nonce), additionalData: aad },
+        /** @type {CryptoKey} */ (this._decryptKey),
+        ciphertext,
+      );
+    } catch {
+      throw new TlsHandshakeError("Record authentication failed (bad_record_mac)");
+    }
+    return new TlsRecord(record.contentType, new Uint8Array(plain));
   }
 
   // ── handshake – client side ───────────────────────────────────────────────
@@ -493,12 +587,14 @@ export class TlsSession {
     await this._deriveKeys();
 
     // 7. Compute client verify_data from transcript so far, send ChangeCipherSpec + Finished
+    //    Finished is the first record under the new keys (RFC 5246 §7.4.9):
+    //    Handshake content type, AES-GCM protected, write seq 0.
     const clientVerifyData = await this._makeVerifyData("client");
-    const clientFinishedRecord = TlsRecord.buildFinished(clientVerifyData);
-    this._sendRaw(TlsRecord.buildChangeCipherSpec());
-    this._sendRaw(clientFinishedRecord);
-    // append client Finished to transcript so server Finished can be verified
-    this._appendTranscript(clientFinishedRecord.slice(5));
+    const clientFinishedMsg = this._buildHsBytes(TLS_HT.FINISHED, clientVerifyData);
+    this._sendChangeCipherSpec();
+    await this._sendRecord(TLS_CT.HANDSHAKE, clientFinishedMsg);
+    // append the *plaintext* Finished message so server Finished can be verified
+    this._appendTranscript(clientFinishedMsg);
 
     // 8. Read server ChangeCipherSpec
     await this._readExpectedRecord(TLS_CT.CHANGE_CIPHER_SPEC);
@@ -598,8 +694,8 @@ export class TlsSession {
 
     // 9. Send ChangeCipherSpec + Finished
     const serverVerifyData = await this._makeVerifyData("server");
-    this._sendRaw(TlsRecord.buildChangeCipherSpec());
-    this._sendRaw(TlsRecord.buildFinished(serverVerifyData));
+    this._sendChangeCipherSpec();
+    await this._sendRecord(TLS_CT.HANDSHAKE, this._buildHsBytes(TLS_HT.FINISHED, serverVerifyData));
   }
 
   // ── key derivation ────────────────────────────────────────────────────────
@@ -680,10 +776,28 @@ export class TlsSession {
   }
 
   /**
-   * Read exactly one TLS record from the TCP stream. Returns null on EOF.
+   * Read one TLS record and, once the peer's ChangeCipherSpec has been
+   * received, decrypt it (read seq 0 = peer Finished, then ApplicationData /
+   * Alerts from seq 1). Returns null on EOF.
    * @returns {Promise<TlsRecord|null>}
    */
   async _readRecord() {
+    const rec = await this._readRawRecord();
+    if (rec === null) return null;
+    if (rec.contentType === TLS_CT.CHANGE_CIPHER_SPEC) {
+      if (this._decryptKey) { this._readCipherActive = true; this._recvSeq = 0; }
+      return rec;
+    }
+    if (!this._readCipherActive) return rec;
+    return this._decryptRecord(rec);
+  }
+
+  /**
+   * Read exactly one raw (possibly encrypted) TLS record from the TCP stream.
+   * Returns null on EOF.
+   * @returns {Promise<TlsRecord|null>}
+   */
+  async _readRawRecord() {
     if (!await this._fillBuf(5)) return null;
 
     const contentType = this._recvBuf[0];

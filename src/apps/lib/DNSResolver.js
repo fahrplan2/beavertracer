@@ -352,19 +352,23 @@ export class DNSResolver {
     const nsHosts = this._extractNSHosts(resp);
     if (nsHosts.length === 0) return resp;
 
+    // Final answer from below the referral: data, NXDOMAIN or authoritative NODATA (RFC 1034 §5.3.3)
+    /** @param {DNSPacket|null} sub */
+    const isFinal = (sub) => !!sub && ((sub.answers?.length ?? 0) > 0 || sub.rcode === 3 || sub.aa === 1);
+
     for (const nsHost of nsHosts) {
       const nsNorm = this._normalizeName(nsHost);
 
       const nsAResp = await this._queryRecursive(nsNorm, DNSPacket.TYPE_A, serverIp, port, depth - 1, visited);
       for (const nsIp of this._extractAasNumbers(nsAResp)) {
         const sub = await this._queryRecursive(nameNorm, qtype, new IPAddress(4, nsIp >>> 0), port, depth - 1, visited);
-        if (sub && ((sub.answers?.length ?? 0) > 0)) return sub;
+        if (isFinal(sub)) return sub;
       }
 
       const nsAAAAResp = await this._queryRecursive(nsNorm, DNSPacket.TYPE_AAAA, serverIp, port, depth - 1, visited);
       for (const nsIp6 of this._extractAAAA(nsAAAAResp)) {
         const sub = await this._queryRecursive(nameNorm, qtype, nsIp6, port, depth - 1, visited);
-        if (sub && ((sub.answers?.length ?? 0) > 0)) return sub;
+        if (isFinal(sub)) return sub;
       }
     }
 

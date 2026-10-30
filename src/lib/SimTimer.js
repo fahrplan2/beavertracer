@@ -85,6 +85,10 @@ export class SimTimer {
      *  Linux we use 200 ms — 1 s is ~20 s of real time at normal sim speed,
      *  far too long to watch a retransmission happen. */
     static TCP_MIN_RTO_MS           = 200;   //  40 ticks
+    /** Upper bound for the exponentially backed-off RTO and for the persist
+     *  timer between zero-window probes (RFC 6298 §2.5 allows ≥ 60 s; RFC
+     *  1122 §4.2.2.17 wants the probe interval to grow exponentially). */
+    static TCP_MAX_RTO_MS           = 60_000;  // 12000 ticks
     /** Per-chunk read timeout while a server waits for (more of) an HTTP
      *  request. Wraps TcpEngine.recv(), which has no timeout of its own and
      *  blocks until TCP actually delivers data — so like TCP_CONNECT_TIMEOUT_MS

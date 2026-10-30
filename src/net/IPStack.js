@@ -14,6 +14,10 @@ import { IPAddress } from "./models/IPAddress.js";
 import { ICMPv6Packet } from "../net/pdu/ICMPv6Packet.js";
 import { GREPacket } from "../net/pdu/GREPacket.js";
 import { write32BE } from "../net/util/byteUtils.js";
+import { onesComplementChecksum } from "../net/util/checksumUtils.js";
+
+/** IPv4 Router Alert option (RFC 2113), required on IGMP messages (RFC 2236 §2). */
+const IGMP_ROUTER_ALERT = new Uint8Array([0x94, 0x04, 0x00, 0x00]);
 
 class TunnelConfig {
     /** @type {string} */
@@ -1166,13 +1170,20 @@ export class IPStack extends Observable {
      * @param {number} nextHeader
      * @param {Uint8Array} payload
      * @param {IPAddress|null} [src]
+     * @param {object} [opts]
+     * @param {number} [opts.hopLimit] default 255
+     * @param {Uint8Array|null} [opts.hopByHop] Hop-by-Hop option bytes (e.g. Router Alert for MLD)
      */
-    async sendOnInterfaceV6(ifIndex, dst, nextHeader, payload, src = null) {
+    async sendOnInterfaceV6(ifIndex, dst, nextHeader, payload, src = null, opts = {}) {
         const iface = this.interfaces[ifIndex];
         if (!iface) return;
         const srcIp = src ?? iface.ip6LL ?? iface.ip6;
         if (!srcIp) return;
-        const pkt = new IPv6Packet({ dst, src: srcIp, nextHeader, payload, hopLimit: 255 });
+        const pkt = new IPv6Packet({
+            dst, src: srcIp, nextHeader, payload,
+            hopLimit: opts.hopLimit ?? 255,
+            hopByHop: opts.hopByHop ?? null,
+        });
         const dstBytes = dst.toUInt8();
         let dstMac;
         if (dstBytes[0] === 0xff) {
@@ -1194,12 +1205,13 @@ export class IPStack extends Observable {
      * @param {Uint8Array} payload
      * @param {IPAddress|null} [src]
      * @param {number} [ttl] 1 for link-local protocols (OSPF, IGMP); VRRP needs 255 (RFC 5798 §5.1.1.3)
+     * @param {Uint8Array} [options] raw IPv4 options (e.g. Router Alert for IGMP)
      */
-    async sendOnInterface(ifIndex, dst, proto, payload, src = null, ttl = 1) {
+    async sendOnInterface(ifIndex, dst, proto, payload, src = null, ttl = 1, options = undefined) {
         const iface = this.interfaces[ifIndex];
         if (!iface) return;
         const srcIp = src ?? iface.ip;
-        const pkt = new IPv4Packet({ dst, src: srcIp, protocol: proto, payload, ttl });
+        const pkt = new IPv4Packet({ dst, src: srcIp, protocol: proto, payload, ttl, options });
         const dstNum = this._v4n(dst);
         let dstMac;
         if ((dstNum >>> 28) === 0xe) {
@@ -1232,9 +1244,15 @@ export class IPStack extends Observable {
         const g = groupIp.toUInt8();
         const payload = new Uint8Array(8);
         payload[0] = igmpType;
-        // bytes 1-3: max-resp / checksum — left 0 (simulator doesn't validate checksums)
+        // byte 1: Max Resp Time = 0 (only meaningful in queries)
         payload[4] = g[0]; payload[5] = g[1]; payload[6] = g[2]; payload[7] = g[3];
-        this.sendOnInterface(ifIdx, groupIp, 2, payload);
+        // RFC 2236 §2.3: one's complement checksum over the 8-byte IGMP message
+        const cs = onesComplementChecksum([payload]);
+        payload[2] = (cs >> 8) & 0xff; payload[3] = cs & 0xff;
+        // RFC 2236 §2: Leave goes to all-routers (224.0.0.2), Report to the group itself
+        const dst = igmpType === 0x17 ? IPAddress.fromString("224.0.0.2") : groupIp;
+        // TTL 1 + Router Alert option (RFC 2113: 94 04 00 00) → IHL 6
+        this.sendOnInterface(ifIdx, dst, 2, payload, null, 1, IGMP_ROUTER_ALERT);
     }
 
     /**
@@ -1250,13 +1268,20 @@ export class IPStack extends Observable {
 
         const ifIdx = this.interfaces.findIndex(i => i.ip6LL && !this._isZero(i.ip6LL));
         if (ifIdx < 0) return;
-        const g = groupIpv6.toUInt8(); // 16 bytes
-        const payload = new Uint8Array(24);
-        payload[0] = mldType;
-        // bytes 2-3: checksum — left 0 (simulator doesn't validate checksums)
-        // bytes 4-7: max response delay + reserved = 0
-        payload.set(g, 8); // group address at MLD byte 8
-        this.sendOnInterfaceV6(ifIdx, groupIpv6, 58, payload, this.interfaces[ifIdx].ip6LL);
+        const src = /** @type {IPAddress} */ (this.interfaces[ifIdx].ip6LL);
+        // RFC 2710 §3: Done goes to all-routers (ff02::2), Report to the group itself
+        const dst = mldType === 0x84 ? IPAddress.fromString("ff02::2") : groupIpv6;
+        const body = new Uint8Array(20);
+        // body bytes 0-3: max response delay + reserved = 0
+        body.set(groupIpv6.toUInt8(), 4); // group address at MLD byte 8
+        // ICMPv6 checksum over pseudo-header (upper-layer length = MLD message,
+        // next header 58 — RFC 8200 §8.1, excludes the Hop-by-Hop header)
+        const payload = new ICMPv6Packet({ type: mldType, code: 0, body }).pack(src, dst);
+        // RFC 2710 §3: hop limit 1, link-local source, Router Alert (RFC 2711, value 0 = MLD)
+        this.sendOnInterfaceV6(ifIdx, dst, 58, payload, src, {
+            hopLimit: 1,
+            hopByHop: IPv6Packet.routerAlertOptions(0),
+        });
     }
 
     /**

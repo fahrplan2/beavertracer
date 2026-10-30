@@ -21,6 +21,15 @@ export class IPv6Packet {
   payload;
 
   /**
+   * Hop-by-Hop Options header (RFC 8200 §4.3) option bytes, or null when the
+   * packet carries no HbH header. When set, the wire format is
+   * base header (Next Header = 0) + HbH {nextHeader, hdrExtLen, options} + payload,
+   * and `nextHeader` keeps naming the upper-layer protocol.
+   * @type {Uint8Array|null}
+   */
+  hopByHop;
+
+  /**
    * IPv6 packet (fixed 40-byte header + payload)
    *
    * Layout:
@@ -32,7 +41,9 @@ export class IPv6Packet {
    *  24..39 dst IPv6
    *  40..   payload
    *
-   * Note: This is the base IPv6 header only (no extension headers).
+   * Extension headers: only a single Hop-by-Hop Options header directly in
+   * front of the upper layer is supported (see `hopByHop`). Other extension
+   * headers stay inside the payload.
    *
    * @param {object} [opts]
    * @param {number} [opts.version] default 6
@@ -44,6 +55,7 @@ export class IPv6Packet {
    * @param {IPAddress} [opts.src] source IPv6
    * @param {IPAddress} [opts.dst] destination IPv6
    * @param {Uint8Array} [opts.payload] payload bytes (default empty)
+   * @param {Uint8Array|null} [opts.hopByHop] Hop-by-Hop option bytes (padded to 6 + 8n)
    */
   constructor(opts = {}) {
     this.version = (opts.version ?? 6) & 0x0f;
@@ -62,7 +74,39 @@ export class IPv6Packet {
 
     this.payload = opts.payload ? opts.payload : new Uint8Array(0);
 
+    this.hopByHop = opts.hopByHop ?? null;
+
     this._validate();
+  }
+
+  /**
+   * Hop-by-Hop option bytes carrying a Router Alert option (RFC 2711) with the
+   * given value, padded with PadN to 6 bytes: 05 02 vv vv 01 00.
+   * @param {number} value 0 = MLD, 1 = RSVP, 2 = Active Networks
+   * @returns {Uint8Array}
+   */
+  static routerAlertOptions(value = 0) {
+    return new Uint8Array([0x05, 0x02, (value >> 8) & 0xff, value & 0xff, 0x01, 0x00]);
+  }
+
+  /**
+   * Offset of the upper-layer header inside raw IPv6 bytes and its protocol
+   * number, skipping a leading Hop-by-Hop Options header. Returns null when
+   * the bytes are too short.
+   * @param {Uint8Array} bytes raw IPv6 packet
+   * @returns {{ offset: number, nextHeader: number }|null}
+   */
+  static upperLayer(bytes) {
+    if (!bytes || bytes.length < 40) return null;
+    let nh = bytes[6];
+    let off = 40;
+    if (nh === 0) {
+      if (bytes.length < off + 8) return null;
+      nh = bytes[off];
+      off += (bytes[off + 1] + 1) * 8;
+      if (bytes.length < off) return null;
+    }
+    return { offset: off, nextHeader: nh };
   }
 
   /**
@@ -100,18 +144,32 @@ export class IPv6Packet {
       throw new Error("IPv6 packet truncated (payload incomplete)");
     }
 
-    const payload = bytes.slice(40, totalLen);
+    let upperNextHeader = nextHeader;
+    let payloadStart = 40;
+    /** @type {Uint8Array|null} */
+    let hopByHop = null;
+    if (nextHeader === 0) { // Hop-by-Hop Options header (RFC 8200 §4.3)
+      if (totalLen < 48) throw new Error("IPv6 Hop-by-Hop header truncated");
+      const hbhLen = (bytes[41] + 1) * 8;
+      if (totalLen < 40 + hbhLen) throw new Error("IPv6 Hop-by-Hop header truncated");
+      upperNextHeader = bytes[40];
+      hopByHop = bytes.slice(42, 40 + hbhLen);
+      payloadStart = 40 + hbhLen;
+    }
+
+    const payload = bytes.slice(payloadStart, totalLen);
 
     return new IPv6Packet({
       version,
       trafficClass,
       flowLabel,
       payloadLength,
-      nextHeader,
+      nextHeader: upperNextHeader,
       hopLimit,
       src,
       dst,
-      payload
+      payload,
+      hopByHop
     });
   }
 
@@ -126,13 +184,14 @@ export class IPv6Packet {
     if (!(this.payload instanceof Uint8Array)) {
       throw new Error("payload must be Uint8Array");
     }
-    if (this.payload.length > 0xffff) {
+    const hbhLen = this.hopByHop ? 2 + this.hopByHop.length : 0;
+    if (this.payload.length + hbhLen > 0xffff) {
       throw new Error("payload too large for IPv6 base header (max 65535, jumbograms not supported)");
     }
 
-    this.payloadLength = this.payload.length & 0xffff;
+    this.payloadLength = (hbhLen + this.payload.length) & 0xffff;
 
-    const out = new Uint8Array(40 + this.payload.length);
+    const out = new Uint8Array(40 + hbhLen + this.payload.length);
 
     // version(4), trafficClass(8), flowLabel(20)
     out[0] = ((this.version & 0x0f) << 4) | ((this.trafficClass >> 4) & 0x0f);
@@ -144,15 +203,22 @@ export class IPv6Packet {
     write16BE(out, 4, this.payloadLength);
 
     // next header + hop limit
-    out[6] = this.nextHeader & 0xff;
+    out[6] = this.hopByHop ? 0 : (this.nextHeader & 0xff);
     out[7] = this.hopLimit & 0xff;
 
     // src/dst
     out.set(this.src.toUInt8(), 8);
     out.set(this.dst.toUInt8(), 24);
 
+    // Hop-by-Hop Options header: Next Header, Hdr Ext Len (8-octet units, excl. first 8)
+    if (this.hopByHop) {
+      out[40] = this.nextHeader & 0xff;
+      out[41] = (hbhLen / 8 - 1) & 0xff;
+      out.set(this.hopByHop, 42);
+    }
+
     // payload
-    if (this.payload.length > 0) out.set(this.payload, 40);
+    if (this.payload.length > 0) out.set(this.payload, 40 + hbhLen);
 
     return out;
   }
@@ -180,6 +246,12 @@ export class IPv6Packet {
 
     if (!(this.payload instanceof Uint8Array)) {
       throw new Error("payload must be Uint8Array");
+    }
+    if (this.hopByHop !== null) {
+      if (!(this.hopByHop instanceof Uint8Array)) throw new Error("hopByHop must be Uint8Array or null");
+      if ((this.hopByHop.length + 2) % 8 !== 0 || this.hopByHop.length + 2 > 2048) {
+        throw new Error("hopByHop options must be 6 + 8n bytes (padded)");
+      }
     }
   }
 }

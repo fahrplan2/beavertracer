@@ -271,6 +271,10 @@ export class TlsRecord {
   }
 
   /**
+   * Plaintext Finished record — for illustration/tests only. On the wire,
+   * Finished follows ChangeCipherSpec and is therefore always AES-GCM
+   * protected (RFC 5246 §7.4.9); TlsSession encrypts the handshake message
+   * itself instead of using this builder.
    * @param {Uint8Array} verifyData - 12 bytes
    * @returns {Uint8Array}
    */
