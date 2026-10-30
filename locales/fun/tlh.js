@@ -11,10 +11,9 @@ export default {
   "os.back": "yIchegh",
   "os.notitle": "pong pagh",
   "os.untitled": "pong pagh",
-  "os.apps.done": "Qapla'!",
-  "os.apps.remove": "yIQaw'",
-  "os.apps.library.addlabel": "yIchel",
-  "os.apps.library.install": "+ yIchel",
+  "app.software.install": "yIchel",
+  "app.software.uninstall": "yIQaw'",
+  "app.software.open": "yIpoSmoH",
 
   "panel.close": "yISoQmoH",
   "panel.rename": "pong chu'",
