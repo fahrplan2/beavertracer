@@ -29,8 +29,8 @@ const STP_DEST_MAC = new Uint8Array([0x01, 0x80, 0xc2, 0x00, 0x00, 0x00]);
 const STP_LLC = new Uint8Array([0x42, 0x42, 0x03]); // DSAP/SSAP/UI
 
 /** IEEE 802.1D flags byte bits (classic STP Config BPDU) */
-const STP_FLAG_TC  = 0x80; // Topology Change
-const STP_FLAG_TCA = 0x01; // Topology Change Acknowledgment
+const STP_FLAG_TC  = 0x01; // Topology Change (bit 1)
+const STP_FLAG_TCA = 0x80; // Topology Change Acknowledgment (bit 8)
 
 /**
  * Compare STP tuples (lower is better):
@@ -249,6 +249,14 @@ export class SwitchBackplane extends Observable {
     _rstpProposing = [];
 
     /**
+     * True while an RSTP port talks to a legacy 802.1D neighbour (IEEE 802.1w
+     * Port Protocol Migration): it then sends Config/TCN BPDUs instead of RST BPDUs
+     * and moves to Forwarding by timers only. Cleared when the link goes down.
+     * @type {Array<boolean>}
+     */
+    _rstpStpCompat = [];
+
+    /**
      * Backward-compat getter: true when port is in FORWARDING state.
      * @returns {Array<boolean>}
      */
@@ -287,6 +295,7 @@ export class SwitchBackplane extends Observable {
         this._stpTcaOnPort     = this.ports.map(() => false);
         this._rstpMissedHellos = this.ports.map(() => 0);
         this._rstpProposing    = this.ports.map(() => false);
+        this._rstpStpCompat    = this.ports.map(() => false);
         this.stpPortLinkedLast = this.ports.map(p => p.isLinked());
     }
 
@@ -381,6 +390,7 @@ export class SwitchBackplane extends Observable {
 
         this._initStpArrays();
         this._resetStpToSelfRoot();
+        for (const p of this.ports) p.discardQueuedData();
 
         this.stpPortLinkedLast = this.ports.map(p => p.isLinked());
 
@@ -395,6 +405,7 @@ export class SwitchBackplane extends Observable {
         this._initStpArrays();
         this._initRstpArrays();
         this._resetStpToSelfRoot();
+        for (const p of this.ports) p.discardQueuedData();
 
         this.stpPortLinkedLast = this.ports.map(p => p.isLinked());
 
@@ -422,6 +433,7 @@ export class SwitchBackplane extends Observable {
         this._stpTcaOnPort     = this.ports.map(() => false);
         this._rstpMissedHellos = this.ports.map(() => 0);
         this._rstpProposing    = this.ports.map(() => false);
+        this._rstpStpCompat    = this.ports.map(() => false);
 
         // root resets to self
         this.stpRootId   = this.stpBridgeIdVal;
@@ -504,6 +516,7 @@ export class SwitchBackplane extends Observable {
         this._stpTcaOnPort.push(false);
         this._rstpMissedHellos.push(0);
         this._rstpProposing.push(false);
+        this._rstpStpCompat.push(false);
         this.stpPortLinkedLast.push(port.isLinked());
     }
 
@@ -830,6 +843,18 @@ export class SwitchBackplane extends Observable {
                 this.stpPortRole[m]  = this.stpPortRole[rep];
             }
         }
+    }
+
+    /**
+     * Drop data frames still queued on a logical port that stopped forwarding
+     * (and on all its LAG members), so a blocked port cannot keep feeding a loop
+     * from its egress queue. Queued BPDUs are kept.
+     * @param {number} portIdx logical STP port
+     */
+    _stpDiscardQueued(portIdx) {
+        const gid = this.portLagId[portIdx] ?? -1;
+        const g = gid >= 0 ? this.lagGroups.find(g => g.id === gid) : null;
+        for (const m of g ? g.members : [portIdx]) this.ports[m]?.discardQueuedData();
     }
 
     // ---------------------------------------------------------------------------
@@ -1213,6 +1238,7 @@ export class SwitchBackplane extends Observable {
         this.stpPortRole       = this.ports.map(() => "alternate");
         this._rstpMissedHellos = this.ports.map(() => 0);
         this._rstpProposing    = this.ports.map(() => false);
+        this._rstpStpCompat    = this.ports.map(() => false);
     }
 
     _resetStpToSelfRoot() {
@@ -1370,6 +1396,7 @@ export class SwitchBackplane extends Observable {
                 }
                 this.stpPortState[portIdx] = STP_STATE.BLOCKING;
             }
+            this._stpDiscardQueued(portIdx);
             return;
         }
 
@@ -1587,9 +1614,9 @@ export class SwitchBackplane extends Observable {
             const gid = this.portLagId[i] ?? -1;
             if (gid >= 0) {
                 const g = this.lagGroups.find(g => g.id === gid);
-                if (g) for (const m of g.members) { if (this.ports[m]?.isLinked()) this.ports[m].send(f); }
+                if (g) for (const m of g.members) { if (this.ports[m]?.isLinked()) this.ports[m].send(f, true); }
             } else {
-                if (this.ports[i].isLinked()) this.ports[i].send(f);
+                if (this.ports[i].isLinked()) this.ports[i].send(f, true);
             }
         }
     }
@@ -1620,6 +1647,23 @@ export class SwitchBackplane extends Observable {
             ? 0
             : Math.min(this._stpRootPortMessageAge + 256, 20 * 256 - 256);
 
+        if (this._rstpStpCompat[logicalPortIdx]) {
+            // Legacy neighbour ignores RST BPDUs: send a Config BPDU instead.
+            // As in 802.1D only designated ports send them (no Proposal/Agreement).
+            if (((flags >> 2) & 0x03) !== RSTP_PORT_ROLE.DESIGNATED) return;
+            const stpFlags = ((flags & RSTP_FLAG_TC) ? STP_FLAG_TC : 0) |
+                             (this._stpTcaOnPort[logicalPortIdx] ? STP_FLAG_TCA : 0);
+            this._stpTcaOnPort[logicalPortIdx] = false;
+            const payload = this._packConfigBpduPayload(
+                ri, cost >>> 0, ourBridgeIdBytes, this._makePortId(logicalPortIdx), messageAge, stpFlags);
+            const f = new EthernetFrame({ dstMac: STP_DEST_MAC, srcMac, etherType: 0, payload });
+            f.vlan = null;
+            f.useLengthField = true;
+            f.length = payload.length;
+            this.ports[portIdx].send(f, true);
+            return;
+        }
+
         const bpdu = new STPBPDU({
             protocolId: 0x0000,
             protocolVersion: 2,
@@ -1644,7 +1688,7 @@ export class SwitchBackplane extends Observable {
         f.vlan = null;
         f.useLengthField = true;
         f.length = payload.length;
-        this.ports[portIdx].send(f);
+        this.ports[portIdx].send(f, true);
     }
 
     /**
@@ -1798,6 +1842,7 @@ export class SwitchBackplane extends Observable {
         }
         this.stpPortState[portIdx] = STP_STATE.DISCARDING;
         this._rstpProposing[portIdx] = false;
+        this._stpDiscardQueued(portIdx);
     }
 
     /**
@@ -1809,6 +1854,25 @@ export class SwitchBackplane extends Observable {
         const cur = this.stpPortState[portIdx];
         if (cur === STP_STATE.FORWARDING || cur === STP_STATE.LEARNING) return;
 
+        if (this._rstpStpCompat[portIdx]) {
+            // Legacy neighbour cannot answer a Proposal: like 802.1D, spend a full
+            // ForwardDelay in Discarding before Learning (2 × ForwardDelay in total)
+            if (this._stpPortTimers[portIdx] != null) return; // already waiting
+            this._stpPortTimers[portIdx] = simTimer.schedule(() => {
+                this._stpPortTimers[portIdx] = null;
+                if (this.stpPortState[portIdx] !== STP_STATE.DISCARDING) return;
+                this._rstpStartLearning(portIdx);
+            }, SimTimer.STP_FORWARD_DELAY_MS);
+            return;
+        }
+        this._rstpStartLearning(portIdx);
+    }
+
+    /**
+     * Learning for one ForwardDelay, then Forwarding.
+     * @param {number} portIdx
+     */
+    _rstpStartLearning(portIdx) {
         this.stpPortState[portIdx] = STP_STATE.LEARNING;
         if (this._stpPortTimers[portIdx] != null) {
             simTimer.cancel(/** @type {number} */ (this._stpPortTimers[portIdx]));
@@ -1818,6 +1882,22 @@ export class SwitchBackplane extends Observable {
             if (this.stpPortState[portIdx] !== STP_STATE.LEARNING) return;
             this._rstpImmedFwd(portIdx);
         }, SimTimer.STP_FORWARD_DELAY_MS);
+    }
+
+    /**
+     * Switch a port to STP compatibility after receiving a legacy 802.1D BPDU.
+     * A port still in Learning restarts with the slower 802.1D timing, and a
+     * Config BPDU goes out right away so the neighbour learns about us.
+     * @param {number} portIdx logical STP port
+     */
+    _rstpEnterStpCompat(portIdx) {
+        if (this._rstpStpCompat[portIdx]) return;
+        this._rstpStpCompat[portIdx] = true;
+        if (this.stpPortState[portIdx] === STP_STATE.LEARNING) {
+            this._rstpSetDiscarding(portIdx);
+            this._rstpStartFwd(portIdx);
+        }
+        this._stpForceEmit = true;
     }
 
     /**
@@ -1930,6 +2010,8 @@ export class SwitchBackplane extends Observable {
      */
     _rstpTriggerTc() {
         this.sat.clear();
+        // Legacy 802.1D bridge upstream: announce the change with TCN BPDUs until TCA
+        if (this.stpRootPort !== null && this._rstpStpCompat[this.stpRootPort]) this._stpStartTcn();
         this._stpTcActive = true;
         if (this._stpTcTimer != null) simTimer.cancel(this._stpTcTimer);
         // tcWhile = Hello Time + 1 s ≈ 3 Hello periods
@@ -2015,7 +2097,8 @@ export class SwitchBackplane extends Observable {
     }
 
     _stpSendTcnNow() {
-        if (!this._stpTcnPending || this.stpRootPort === null || !this.stpEnabled) {
+        if (!this._stpTcnPending || this.stpRootPort === null || !this.stpEnabled ||
+            (this.stpMode === 'rstp' && !this._rstpStpCompat[this.stpRootPort])) {
             this._stpStopTcn();
             return;
         }
@@ -2055,7 +2138,7 @@ export class SwitchBackplane extends Observable {
         f.vlan = null;
         f.useLengthField = true;
         f.length = payload.length;
-        this.ports[portIdx].send(f);
+        this.ports[portIdx].send(f, true);
     }
 
     // ---------------------------------------------------------------------------
@@ -2082,6 +2165,7 @@ export class SwitchBackplane extends Observable {
             const rep = this._lagRepresentative(i);
             if (!this._stpIsLinked(rep)) {
                 this.stpRxBest[rep] = null;
+                this._rstpStpCompat[rep] = false;
             }
         }
 
@@ -2117,6 +2201,23 @@ export class SwitchBackplane extends Observable {
                     const bpdu = this._unpackBpdu(frame.payload);
                     // All STP state is on the logical port (LAG representative).
                     const stpPort = this._lagRepresentative(i);
+
+                    // Legacy 802.1D BPDU on an RSTP bridge: switch this port to STP compatibility
+                    if (bpdu && this.stpMode === 'rstp' && (bpdu.bpduType === 0x00 || bpdu.bpduType === 0x80)) {
+                        this._rstpEnterStpCompat(stpPort);
+                        if (bpdu.bpduType === 0x80) {
+                            // TCN: acknowledge with TCA in our next Config BPDU and propagate the TC
+                            if (this.stpPortRole[stpPort] === "designated") {
+                                this._stpTcaOnPort[stpPort] = true;
+                                this._rstpHandleTcReceived(stpPort);
+                            }
+                        } else {
+                            if (stpPort === this.stpRootPort && bpdu.isTca) this._stpStopTcn();
+                            // Config BPDU TC/TCA bits match the RST BPDU bits; Proposal/Agreement are never set
+                            this._handleRstBpdu(stpPort, bpdu);
+                        }
+                        continue;
+                    }
 
                     // TCN BPDU: received on a designated port, relay toward root
                     if (bpdu && bpdu.bpduType === 0x80) {
