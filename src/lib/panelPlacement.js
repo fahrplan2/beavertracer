@@ -70,6 +70,70 @@ function candidatePositions(bounds, w, h) {
     ].map((p) => ({ x: Math.max(left, Math.min(p.x, right)), y: Math.max(top, Math.min(p.y, bottom)) }));
 }
 
+/** Clearance kept between a panel placed near its device and anything it must not cover. */
+const CLEARANCE = 12;
+
+/** Raster cell size (px) for the free-spot search; blockers are rounded outward to it. */
+const CELL = 4;
+
+/**
+ * The free `w`×`h` spot in `bounds` closest to `anchor` (the device's icon)
+ * that keeps CLEARANCE to every rect in `blockers`, or null if none exists.
+ * Every position on a CELL grid is checked: blockers are rasterised once into
+ * a summed-area table, so each check is O(1). Ties go to the spot most
+ * centred on the anchor.
+ * @param {Rect} bounds @param {number} w @param {number} h @param {Rect} anchor @param {Rect[]} blockers
+ * @returns {Rect|null}
+ */
+function closestFreeSpot(bounds, w, h, anchor, blockers) {
+    const cols = Math.floor(bounds.w / CELL), rows = Math.floor(bounds.h / CELL);
+    const cw = Math.ceil(w / CELL), ch = Math.ceil(h / CELL);
+    const m = Math.ceil(MARGIN / CELL);
+    if (cols - 2 * m < cw || rows - 2 * m < ch) return null;
+
+    const occ = new Uint8Array(cols * rows);
+    for (const r of blockers) {
+        const x0 = Math.max(0, Math.floor((r.x - CLEARANCE - bounds.x) / CELL));
+        const x1 = Math.min(cols, Math.ceil((r.x + r.w + CLEARANCE - bounds.x) / CELL));
+        const y0 = Math.max(0, Math.floor((r.y - CLEARANCE - bounds.y) / CELL));
+        const y1 = Math.min(rows, Math.ceil((r.y + r.h + CLEARANCE - bounds.y) / CELL));
+        for (let y = y0; y < y1; y++) occ.fill(1, y * cols + x0, y * cols + Math.max(x0, x1));
+    }
+    // sat[(y)*(cols+1)+x] = occupied cells in [0,x)×[0,y)
+    const W = cols + 1;
+    const sat = new Int32Array(W * (rows + 1));
+    for (let y = 0; y < rows; y++) {
+        let rowSum = 0;
+        for (let x = 0; x < cols; x++) {
+            rowSum += occ[y * cols + x];
+            sat[(y + 1) * W + x + 1] = sat[y * W + x + 1] + rowSum;
+        }
+    }
+
+    const acx = anchor.x + anchor.w / 2, acy = anchor.y + anchor.h / 2;
+    /** @type {Rect|null} */
+    let best = null;
+    let bestGap = Infinity, bestOff = Infinity;
+    for (let y = m; y + ch <= rows - m; y++) {
+        for (let x = m; x + cw <= cols - m; x++) {
+            if (sat[(y + ch) * W + x + cw] - sat[y * W + x + cw] - sat[(y + ch) * W + x] + sat[y * W + x] !== 0) continue;
+            const rect = { x: bounds.x + x * CELL, y: bounds.y + y * CELL, w, h };
+            const gap = distanceBetween(anchor, rect);
+            if (gap > bestGap) continue;
+            const off = Math.hypot(rect.x + w / 2 - acx, rect.y + h / 2 - acy);
+            if (gap < bestGap || off < bestOff) { best = rect; bestGap = gap; bestOff = off; }
+        }
+    }
+    return best;
+}
+
+/** Gap between two rects (0 if they touch or overlap). @param {Rect} a @param {Rect} b */
+function distanceBetween(a, b) {
+    const dx = Math.max(b.x - (a.x + a.w), 0, a.x - (b.x + b.w));
+    const dy = Math.max(b.y - (a.y + a.h), 0, a.y - (b.y + b.h));
+    return Math.hypot(dx, dy);
+}
+
 /**
  * Smallest move that brings `content` fully inside one of the free strips
  * `view` leaves around `panel` (left/right/above/below it) without moving it
@@ -99,14 +163,18 @@ function shiftIntoFreeStrip(content, panel, view, avoid) {
 }
 
 /**
- * Picks where a device panel opens so it covers as little as possible. Every
- * corner/edge position at every allowed size is ranked by, in this order:
+ * Picks where a device panel opens so it covers as little as possible. The
+ * candidates, at every allowed size, are the free spot closest to `anchor`
+ * (the device's icon, if given) plus the corners and edge centres; they are
+ * ranked by, in this order:
  *  1. it doesn't cover the network — either as is, or after panning the
  *     canvas by `shift` so the network fits next to the panel;
  *  2. it covers as little of the other open panels (`avoid`) as possible;
  *  3. it needs no (or as little as possible) panning;
  *  4. it is as large as possible — a resizable panel shrinks to 85 %
- *     (never below `minSize`) before the canvas gets panned.
+ *     (never below `minSize`) before the canvas gets panned;
+ *  5. it is as close as possible to `anchor` — otherwise a roomy canvas
+ *     would put every panel in the same corner.
  * If no position keeps the network free, the one covering least of it wins.
  *
  * All rects share one coordinate system (e.g. the panel layer's). `bounds` is
@@ -120,10 +188,11 @@ function shiftIntoFreeStrip(content, panel, view, avoid) {
  *   minSize?: {w: number, h: number}|null,
  *   obstacles: Rect[],
  *   avoid?: Rect[],
+ *   anchor?: Rect|null,
  * }} opts
  * @returns {Rect & { shift: {dx: number, dy: number} }}
  */
-export function choosePanelPlacement({ bounds, view, size, minSize, obstacles, avoid = [] }) {
+export function choosePanelPlacement({ bounds, view, size, minSize, obstacles, avoid = [], anchor = null }) {
     const sizes = (minSize ? SCALES : [1]).map((s) => ({
         w: Math.round(Math.max(minSize?.w ?? 0, size.w * s)),
         h: Math.round(Math.max(minSize?.h ?? 0, size.h * s)),
@@ -136,6 +205,8 @@ export function choosePanelPlacement({ bounds, view, size, minSize, obstacles, a
     /** @type {{ rect: Rect, shift: {dx: number, dy: number}|null, covered: number, panels: number, sizeIdx: number }[]} */
     const options = [];
     sizes.forEach(({ w, h }, sizeIdx) => {
+        const near = anchor ? closestFreeSpot(bounds, w, h, anchor, [...obstacles, ...avoid]) : null;
+        if (near) options.push({ rect: near, shift: { dx: 0, dy: 0 }, covered: 0, panels: 0, sizeIdx });
         for (const p of candidatePositions(bounds, w, h)) {
             const rect = { x: p.x, y: p.y, w, h };
             const covered = cost(rect, obstacles);
@@ -151,7 +222,8 @@ export function choosePanelPlacement({ bounds, view, size, minSize, obstacles, a
         (a.shift ? 0 : a.covered - b.covered) ||
         a.panels - b.panels ||
         dist(a.shift) - dist(b.shift) ||
-        a.sizeIdx - b.sizeIdx);
+        a.sizeIdx - b.sizeIdx ||
+        (anchor ? distanceBetween(anchor, a.rect) - distanceBetween(anchor, b.rect) : 0));
 
     const best = options[0];
     return { ...best.rect, shift: best.shift ?? { dx: 0, dy: 0 } };
