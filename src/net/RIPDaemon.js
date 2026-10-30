@@ -15,6 +15,8 @@ import {
 const UPDATE_MS =  5_000;
 const EXPIRE_MS = 30_000;
 const DELETE_MS = 20_000;
+/** Delay before a triggered update (RFC 2453 §3.10.1: 1–5 s, scaled like UPDATE_MS). */
+const TRIGGER_MS =   500;
 
 // ── IPv4 helpers ────────────────────────────────────────────────────────────
 
@@ -93,6 +95,7 @@ export class RIPDaemon {
         this._running = false;
         /** @type {number|null} */ this._socketPort  = null;
         /** @type {number|null} */ this._updateTimer = null;
+        /** @type {number|null} */ this._triggerTimer = null;
 
         /** @type {Map<string, any>} */
         this._routes = new Map();
@@ -123,6 +126,7 @@ export class RIPDaemon {
         if (!this._running && this._socketPort == null) return;
         this._running = false;
         if (this._updateTimer != null) { simTimer.cancel(this._updateTimer); this._updateTimer = null; }
+        if (this._triggerTimer != null) { simTimer.cancel(this._triggerTimer); this._triggerTimer = null; }
         if (this._socketPort != null) {
             try { this._net.closeUDPSocket(this._socketPort); } catch {}
             this._socketPort = null;
@@ -155,6 +159,18 @@ export class RIPDaemon {
             this._sendAllUpdates();
             this._scheduleUpdate(UPDATE_MS);
         }, Math.max(1, delayMs));
+    }
+
+    /**
+     * Schedule one triggered update after a route was poisoned (RFC 2453 §3.10.1).
+     * Several changes within TRIGGER_MS are coalesced; the regular timer is untouched.
+     */
+    _triggerUpdate() {
+        if (!this._running || this._triggerTimer != null) return;
+        this._triggerTimer = simTimer.schedule(() => {
+            this._triggerTimer = null;
+            if (this._running) this._sendAllUpdates();
+        }, TRIGGER_MS);
     }
 
     _sendAllUpdates() {
@@ -206,8 +222,9 @@ export class RIPDaemon {
                     nexthop: new Uint8Array(4), metric: 1,
                 }));
             }
+            // Poisoned routes (metric 16) are advertised until garbage collection (RFC 2453 §3.8)
             for (const [, r] of this._routes) {
-                if (r.learnedIfIndex === ifIndex || r.metric >= RIP_INFINITY) continue;
+                if (r.learnedIfIndex === ifIndex) continue;
                 entries.push(new RIPEntry({
                     ip:      u32ToU8((ipToU32(r.dst) & prefixToMask(r.prefix)) >>> 0),
                     mask:    u32ToU8(prefixToMask(r.prefix)),
@@ -228,7 +245,7 @@ export class RIPDaemon {
                 }));
             }
             for (const [, r] of this._routes) {
-                if (r.learnedIfIndex === ifIndex || r.metric >= RIPNG_INFINITY) continue;
+                if (r.learnedIfIndex === ifIndex) continue;
                 entries.push(new RIPngEntry({
                     prefix: maskPrefix6(r.dst.toUInt8(), r.prefix),
                     prefixLen: r.prefix, metric: Math.min(r.metric, RIPNG_INFINITY),
@@ -263,21 +280,12 @@ export class RIPDaemon {
             if (ifIndex < 0) return;
             for (const e of pkt.entries) {
                 if (e.afi !== RIP_AFI_IP) continue;
-                const received = e.metric >>> 0;
-                if (received >= RIP_INFINITY) {
-                    const key = this._entryKey4(e); if (key) this._expireRoute(key);
-                    continue;
-                }
-                const metric = Math.min(received + 1, RIP_INFINITY);
+                const metric = Math.min((e.metric >>> 0) + 1, RIP_INFINITY);
                 const dst32  = (u8ToU32(e.ip) & u8ToU32(e.mask)) >>> 0;
                 const prefix = maskToPrefix(u8ToU32(e.mask));
                 const dst    = u32ToIp(dst32);
-                const key    = `${dst}/${prefix}`;
                 if (this._isConnected4(dst32, prefix)) continue;
-                const existing = this._routes.get(key);
-                if (!existing || metric < existing.metric ||
-                    (metric === existing.metric && existing.learnedIfIndex === ifIndex))
-                    this._learnRoute(key, dst, prefix, srcIp, metric, ifIndex);
+                this._processEntry(`${dst}/${prefix}`, dst, prefix, srcIp, metric, ifIndex);
             }
         } else {
             const srcIp = msg.src instanceof IPAddress ? msg.src : null;
@@ -297,18 +305,41 @@ export class RIPDaemon {
                 const prefBytes = maskPrefix6(new Uint8Array(e.prefix), e.prefixLen);
                 const dst       = IPAddress.fromUInt8(prefBytes);
                 const key       = `${dst}/${e.prefixLen}`;
-                if (received >= RIPNG_INFINITY) { this._expireRoute(key); continue; }
                 const metric = Math.min(received + 1, RIPNG_INFINITY);
                 if (isLinkLocal6(dst) || this._isConnected6(prefBytes, e.prefixLen)) continue;
-                const existing = this._routes.get(key);
-                if (!existing || metric < existing.metric ||
-                    (metric === existing.metric && existing.learnedIfIndex === ifIndex))
-                    this._learnRoute(key, dst, e.prefixLen, nexthop, metric, ifIndex);
+                this._processEntry(key, dst, e.prefixLen, nexthop, metric, ifIndex);
             }
         }
     }
 
     // ── route management ──────────────────────────────────────────────────
+
+    /**
+     * Apply one received route entry (RFC 2453 §3.9.2).
+     * `metric` already includes the +1 hop and is capped at infinity.
+     * @param {string} key
+     * @param {IPAddress} dst
+     * @param {number} prefix
+     * @param {IPAddress} nexthop  advertising router (or RIPng next-hop RTE)
+     * @param {number} metric
+     * @param {number} ifIndex
+     */
+    _processEntry(key, dst, prefix, nexthop, metric, ifIndex) {
+        const existing = this._routes.get(key);
+        if (!existing || existing.metric >= this._infinity) {
+            // No usable route yet: only a reachable metric creates (or revives) one
+            if (metric < this._infinity) this._learnRoute(key, dst, prefix, nexthop, metric, ifIndex);
+            return;
+        }
+        const fromCurrentGateway = existing.nexthop.toString() === nexthop.toString();
+        if (fromCurrentGateway) {
+            // Same gateway: always take its metric — refresh, worsen, or poison the route
+            if (metric >= this._infinity) this._expireRoute(key);
+            else this._learnRoute(key, dst, prefix, nexthop, metric, ifIndex);
+        } else if (metric < existing.metric) {
+            this._learnRoute(key, dst, prefix, nexthop, metric, ifIndex);
+        }
+    }
 
     /**
      * @param {string} key
@@ -352,6 +383,7 @@ export class RIPDaemon {
         this._log(`[${this._name}] abgelaufen ${r.dst}/${r.prefix}`);
         const deleteTimer = simTimer.schedule(() => { this._routes.delete(key); }, DELETE_MS);
         this._routes.set(key, { ...r, metric: this._infinity, expireTimer: null, deleteTimer });
+        this._triggerUpdate();
     }
 
     _clearAllRoutes() {
@@ -404,14 +436,6 @@ export class RIPDaemon {
     _directedBcast(ip, prefix) {
         const mask = prefixToMask(prefix);
         return u32ToIp(((ipToU32(ip) & mask) | (~mask >>> 0)) >>> 0);
-    }
-
-    /** @param {RIPEntry} e @returns {string|null} */
-    _entryKey4(e) {
-        try {
-            const dst32  = (u8ToU32(e.ip) & u8ToU32(e.mask)) >>> 0;
-            return `${u32ToIp(dst32)}/${maskToPrefix(u8ToU32(e.mask))}`;
-        } catch { return null; }
     }
 
     /** @param {Uint8Array} prefBytes @param {number} prefLen @returns {boolean} */

@@ -844,3 +844,96 @@ describe('BGPDaemon – Hold Time', () => {
         daemon.stop();
     });
 });
+
+// ── BGPDaemon – iBGP (RFC 4271 §5.1.2, §9.2) ─────────────────────────────────
+
+describe('BGPDaemon – iBGP', () => {
+    /** AS 65001 with one eBGP peer (.2, AS 65002) and two iBGP peers (.3, .4). */
+    function makeRouter() {
+        const stack = makeStack([{ ip: '10.0.0.1', prefix: 24 }]);
+        /** @type {Array<{key: string, msg: Uint8Array}>} */
+        const sent = [];
+        stack.sendTCPConn = (key, msg) => { sent.push({ key, msg }); };
+        const daemon = new BGPDaemon(stack);
+        daemon.localAS = 65001;
+        daemon.start();
+        for (const [ip, remoteAS] of [['10.0.0.2', 65002], ['10.0.0.3', 65001], ['10.0.0.4', 65001]]) {
+            daemon.addPeer({ ip, remoteAS });
+            const s = daemon.getSession(ip);
+            if (!s) throw new Error('no session');
+            s.state = 'Established';
+            s._localIP = IPAddress.fromString('10.0.0.1');
+            s._connKey = ip;
+        }
+        /** @param {string} key */
+        const updatesTo = key => sent.filter(e => e.key === key)
+            .map(e => parseMessage(e.msg))
+            .filter(m => m?.type === BGP_MSG_UPDATE)
+            .map(m => parseUpdate(/** @type {any} */ (m).body));
+        return { daemon, sent, updatesTo };
+    }
+
+    const pfx = (s, len) => [{ dst: IPAddress.fromString(s), prefLen: len }];
+    const attrs = (asPath, nh) => ({ asPath, nextHop: IPAddress.fromString(nh), localPref: 100, med: 0 });
+
+    it('does not prepend the own AS towards iBGP peers', () => {
+        const { daemon, updatesTo } = makeRouter();
+        daemon._learnPrefixes(pfx('192.168.0.0', 24), attrs([65002], '10.0.0.2'), '10.0.0.2', 0);
+        for (const peer of ['10.0.0.3', '10.0.0.4']) {
+            const u = updatesTo(peer).find(u => u.nlri.length > 0);
+            expect(u?.attrs.asPath).toEqual([65002]);
+        }
+        daemon.stop();
+    });
+
+    it('prepends the own AS towards eBGP peers', () => {
+        const { daemon, updatesTo } = makeRouter();
+        daemon._learnPrefixes(pfx('172.16.0.0', 16), attrs([], '10.0.0.3'), '10.0.0.3', 0);
+        const u = updatesTo('10.0.0.2').find(u => u.nlri.length > 0);
+        expect(u?.attrs.asPath).toEqual([65001]);
+        daemon.stop();
+    });
+
+    it('does not pass iBGP-learned routes to other iBGP peers (split horizon)', () => {
+        const { daemon, updatesTo } = makeRouter();
+        daemon._learnPrefixes(pfx('172.16.0.0', 16), attrs([], '10.0.0.3'), '10.0.0.3', 0);
+        expect(updatesTo('10.0.0.4')).toHaveLength(0);
+        daemon.stop();
+    });
+
+    it('withdraws from iBGP peers when the best path moves to an iBGP-learned route', () => {
+        const { daemon, updatesTo } = makeRouter();
+        daemon._learnPrefixes(pfx('192.168.0.0', 24), attrs([65002], '10.0.0.2'), '10.0.0.2', 0);
+        daemon._learnPrefixes(pfx('192.168.0.0', 24), attrs([65003, 65002], '10.0.0.3'), '10.0.0.3', 0);
+        daemon._withdrawPrefixes(pfx('192.168.0.0', 24), '10.0.0.2');
+        const last = updatesTo('10.0.0.4').at(-1);
+        expect(last?.withdrawn.map(p => `${p.dst}/${p.prefLen}`)).toEqual(['192.168.0.0/24']);
+        daemon.stop();
+    });
+
+    it('an iBGP peer accepts the UPDATE (no false AS-path loop)', () => {
+        const a = makeRouter();
+        a.daemon._learnPrefixes(pfx('192.168.0.0', 24), attrs([65002], '10.0.0.2'), '10.0.0.2', 0);
+        const msg = a.sent.find(e => e.key === '10.0.0.3')?.msg;
+        if (!msg) throw new Error('nothing sent');
+
+        const b = makeRouter();  // plays 10.0.0.3, same AS; receives from its iBGP peer .4
+        b.daemon.getSession('10.0.0.4')?._handleUpdate(/** @type {any} */ (parseMessage(msg)).body);
+        expect(b.daemon._learned.has('192.168.0.0/24')).toBe(true);
+        a.daemon.stop(); b.daemon.stop();
+    });
+});
+
+describe('BGPPacket – empty AS_PATH', () => {
+    it('encodes an empty AS_PATH as attribute length 0 and parses it back', () => {
+        const msg = buildUpdate({
+            withdrawn: [], nextHop: IPAddress.fromString('10.0.0.1'),
+            asPath: [], localPref: 100, med: 0,
+            nlri: [{ dst: IPAddress.fromString('10.1.0.0'), prefLen: 16 }],
+        });
+        const body = /** @type {any} */ (parseMessage(msg)).body;
+        // withdrawn len (2) + attr len (2) + ORIGIN (4) → AS_PATH header at offset 8
+        expect(Array.from(body.subarray(8, 11))).toEqual([0x40, 2, 0]);
+        expect(parseUpdate(body).attrs.asPath).toEqual([]);
+    });
+});

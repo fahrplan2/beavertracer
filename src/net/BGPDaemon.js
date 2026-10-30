@@ -47,6 +47,21 @@ class BGPSession {
         /** Prefix keys (e.g. "10.6.0.0/24") announced to this peer as own connected routes. */
         /** @type {Set<string>} */
         this._announcedConnected = new Set();
+
+        /** Prefix keys of learned routes currently advertised to this peer. */
+        /** @type {Set<string>} */
+        this._advertisedLearned = new Set();
+    }
+
+    /** iBGP session: peer lives in our own AS. */
+    get isIbgp() { return this.cfg.remoteAS === this._daemon.localAS; }
+
+    /**
+     * AS_PATH as sent to this peer: own AS prepended only towards eBGP (RFC 4271 §5.1.2).
+     * @param {number[]} asPath
+     */
+    _outboundAsPath(asPath) {
+        return this.isIbgp ? asPath : [this._daemon.localAS, ...asPath];
     }
 
     start() {
@@ -228,11 +243,12 @@ class BGPSession {
         if (!this._localIP || !this._connKey) return;
         const prefixes = this._daemon._connectedPrefixes();
         this._announcedConnected = new Set(prefixes.map(p => `${p.dst}/${p.prefLen}`));
+        this._advertisedLearned = new Set();
         if (prefixes.length === 0) return;
         const localIPv6 = this._daemon._localIPv6For(this._localIP);
         this._daemon._sendFamilyUpdate(
             this._connKey, this._localIP, localIPv6,
-            [this._daemon.localAS], prefixes, [],
+            this._outboundAsPath([]), prefixes, [],
         );
         this._daemon._log(`[BGP] ${this.cfg.ip}: ${prefixes.length} Präfixe gesendet`);
     }
@@ -256,7 +272,7 @@ class BGPSession {
         const localIPv6 = this._daemon._localIPv6For(this._localIP);
         this._daemon._sendFamilyUpdate(
             /** @type {string} */ (this._connKey), this._localIP, localIPv6,
-            [this._daemon.localAS], toAnnounce, toWithdraw,
+            this._outboundAsPath([]), toAnnounce, toWithdraw,
         );
 
         for (const p of toAnnounce) this._announcedConnected.add(`${p.dst}/${p.prefLen}`);
@@ -622,32 +638,52 @@ export class BGPDaemon {
     }
 
     /**
+     * May a route learned from `fromPeer` be advertised on `session`?
+     * iBGP split horizon: routes learned via iBGP are not passed to other iBGP peers (RFC 4271 §9.2).
+     * @param {string} fromPeer
+     * @param {BGPSession} session
+     */
+    _mayAdvertise(fromPeer, session) {
+        if (session.cfg.ip === fromPeer) return false;
+        const src = this.peers.find(p => p.ip === fromPeer);
+        return !(src?.remoteAS === this.localAS && session.isIbgp);
+    }
+
+    /**
      * Re-advertise a newly learned route to all other established peers.
+     * Peers that must not get it (split horizon) but still hold an older
+     * advertisement of the prefix receive a withdrawal instead.
      * @param {{ dst: IPAddress, prefLen: number, asPath: number[], localPref: number, med: number }} entry
      * @param {string} fromPeer
      */
     _propagateLearnedRoute(entry, fromPeer) {
-        const asPath = [this.localAS, ...entry.asPath];
+        const key = `${entry.dst}/${entry.prefLen}`;
         const prefix = [{ dst: entry.dst, prefLen: entry.prefLen }];
         for (const [peerIp, session] of this._sessions) {
-            if (peerIp === fromPeer) continue;
             if (session.state !== "Established" || !session._localIP || !session._connKey) continue;
             const localIPv6 = this._localIPv6For(session._localIP);
-            this._sendFamilyUpdate(session._connKey, session._localIP, localIPv6, asPath, prefix, []);
-            this._log(`[BGP] ${entry.dst}/${entry.prefLen} propagiert → ${peerIp}`);
+            if (this._mayAdvertise(fromPeer, session)) {
+                this._sendFamilyUpdate(session._connKey, session._localIP, localIPv6, session._outboundAsPath(entry.asPath), prefix, []);
+                session._advertisedLearned.add(key);
+                this._log(`[BGP] ${entry.dst}/${entry.prefLen} propagiert → ${peerIp}`);
+            } else if (session._advertisedLearned.delete(key)) {
+                this._sendFamilyUpdate(session._connKey, session._localIP, localIPv6, [], [], prefix);
+            }
         }
     }
 
     /**
-     * Send withdrawal for a prefix to all other established peers.
+     * Send withdrawal for a prefix to all established peers it was advertised to.
      * @param {IPAddress} dst
      * @param {number} prefLen
      * @param {string} fromPeer
      */
     _propagateWithdrawal(dst, prefLen, fromPeer) {
+        const key = `${dst}/${prefLen}`;
         const prefix = [{ dst, prefLen }];
         for (const [peerIp, session] of this._sessions) {
             if (peerIp === fromPeer) continue;
+            if (!session._advertisedLearned.delete(key)) continue;
             if (session.state !== "Established" || !session._localIP || !session._connKey) continue;
             const localIPv6 = this._localIPv6For(session._localIP);
             this._sendFamilyUpdate(session._connKey, session._localIP, localIPv6, [], [], prefix);
@@ -664,13 +700,13 @@ export class BGPDaemon {
         const localIPv6 = this._localIPv6For(session._localIP);
         let sent = 0;
         for (const entry of this._learned.values()) {
-            if (entry.fromPeer === session.cfg.ip) continue;
+            if (!this._mayAdvertise(entry.fromPeer, session)) continue;
             if (entry.asPath.includes(this.localAS)) continue;
-            const asPath = [this.localAS, ...entry.asPath];
             this._sendFamilyUpdate(
                 /** @type {string} */ (session._connKey), session._localIP, localIPv6,
-                asPath, [{ dst: entry.dst, prefLen: entry.prefLen }], [],
+                session._outboundAsPath(entry.asPath), [{ dst: entry.dst, prefLen: entry.prefLen }], [],
             );
+            session._advertisedLearned.add(`${entry.dst}/${entry.prefLen}`);
             sent++;
         }
         if (sent > 0) this._log(`[BGP] ${session.cfg.ip}: ${sent} gelernte Routen gesendet`);
