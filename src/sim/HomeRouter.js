@@ -9,7 +9,6 @@ import { ArpPacket } from "../net/pdu/ArpPacket.js";
 import { IPv4Packet } from "../net/pdu/IPv4Packet.js";
 import { ICMPPacket } from "../net/pdu/ICMPPacket.js";
 import { UDPPacket } from "../net/pdu/UDPPacket.js";
-import { TCPPacket } from "../net/pdu/TCPPacket.js";
 import { DHCPPacket } from "../net/pdu/DHCPPacket.js";
 import { DHCPv6Packet } from "../net/pdu/DHCPv6Packet.js";
 import { IPv6Packet } from "../net/pdu/IPv6Packet.js";
@@ -287,43 +286,43 @@ export class HomeRouter extends SimulatedObject {
             if (dstNum !== this._wanIp && dstNum !== 0xFFFFFFFF) return;
 
             const proto = pkt.protocol;
-            if (proto === 17) {
-                const udp = UDPPacket.fromBytes(pkt.payload);
-                // WAN DHCP responses
-                if (udp.srcPort === 67 && udp.dstPort === 68) {
-                    this._handleWanDhcpResponse(udp.payload);
-                    return;
-                }
-                // DNS relay response (our relay port = 5353)
-                if (udp.srcPort === 53 && udp.dstPort === 5353) {
-                    this._handleDnsRelayResponse(pkt, udp);
-                    return;
+            // Non-first fragment: carries no L4 header. NatEngine maps it via
+            // (src, dst, proto, id) to the LAN host of its first fragment (RFC 3022 §4.1).
+            if (pkt.fragmentOffset !== 0) {
+                const origSrc = this._nat.natInbound(pkt);
+                if (origSrc) void this._forwardToLan(pkt, origSrc);
+                return;
+            }
+            const isFirstFrag = (pkt.flags & 0x01) !== 0;
+            if (proto === 17 || proto === 6) {
+                // Ports are in the first 4 bytes — also in a first fragment, whose
+                // UDP length exceeds the fragment and so can't be parsed as a whole.
+                if (pkt.payload.length < 4) return;
+                const dstPort = (pkt.payload[2] << 8) | pkt.payload[3];
+                if (proto === 17 && !isFirstFrag) {
+                    let udp;
+                    try { udp = UDPPacket.fromBytes(pkt.payload); } catch { return; }
+                    // WAN DHCP responses
+                    if (udp.srcPort === 67 && udp.dstPort === 68) {
+                        this._handleWanDhcpResponse(udp.payload);
+                        return;
+                    }
+                    // DNS relay response (our relay port = 5353)
+                    if (udp.srcPort === 53 && udp.dstPort === 5353) {
+                        this._handleDnsRelayResponse(pkt, udp);
+                        return;
+                    }
                 }
                 // Port forwarding (DNAT) check before stateful un-NAT
-                const pfRuleUdp = this._matchPortRule(17, udp.dstPort);
-                if (pfRuleUdp) {
-                    if (this._nat.dnat(pkt, pfRuleUdp.lanIp, pfRuleUdp.lanPort)) {
-                        this._nat.installDnatSession(17, pfRuleUdp.wanPort, pfRuleUdp.lanIp, pfRuleUdp.lanPort);
-                        void this._forwardToLan(pkt, pfRuleUdp.lanIp);
+                const pfRule = this._matchPortRule(proto, dstPort);
+                if (pfRule) {
+                    if (this._nat.dnat(pkt, pfRule.lanIp, pfRule.lanPort)) {
+                        this._nat.installDnatSession(proto, pfRule.wanPort, pfRule.lanIp, pfRule.lanPort);
+                        void this._forwardToLan(pkt, pfRule.lanIp);
                     }
                     return;
                 }
                 // Regular inbound NAT (TCP/UDP response)
-                const origSrc = this._nat.natInbound(pkt);
-                if (origSrc) void this._forwardToLan(pkt, origSrc);
-            } else if (proto === 6) {
-                // Port forwarding (DNAT) check before stateful un-NAT
-                try {
-                    const tcp = TCPPacket.fromBytes(pkt.payload);
-                    const pfRuleTcp = this._matchPortRule(6, tcp.dstPort);
-                    if (pfRuleTcp) {
-                        if (this._nat.dnat(pkt, pfRuleTcp.lanIp, pfRuleTcp.lanPort)) {
-                            this._nat.installDnatSession(6, pfRuleTcp.wanPort, pfRuleTcp.lanIp, pfRuleTcp.lanPort);
-                            void this._forwardToLan(pkt, pfRuleTcp.lanIp);
-                        }
-                        return;
-                    }
-                } catch {}
                 const origSrc = this._nat.natInbound(pkt);
                 if (origSrc) void this._forwardToLan(pkt, origSrc);
             } else if (proto === 1) {
@@ -476,9 +475,11 @@ export class HomeRouter extends SimulatedObject {
 
         const isMyLl     = dst.every((b, i) => b === myLl[i]);
         const isMyGlb    = !!myGlb && dst.every((b, i) => b === myGlb[i]);
-        const isSolNode  = dst[0] === 0xff && dst[1] === 0x02 &&
-            dst[11] === 0x00 && dst[12] === 0x01 && dst[13] === 0xff &&
-            dst[14] === myLl[14] && dst[15] === myLl[15];
+        // Solicited-node multicast ff02::1:ffXX:XXXX (RFC 4291 §2.7.1)
+        const isSolFor   = (/** @type {Uint8Array} */ a) => dst[0] === 0xff && dst[1] === 0x02 &&
+            dst[11] === 0x01 && dst[12] === 0xff &&
+            dst[13] === a[13] && dst[14] === a[14] && dst[15] === a[15];
+        const isSolNode  = isSolFor(myLl) || (!!myGlb && isSolFor(myGlb));
         const isMcast    = dst[0] === 0xff;
 
         const forUs = isMyLl || isMyGlb || isSolNode || isMcast;
@@ -493,10 +494,15 @@ export class HomeRouter extends SimulatedObject {
                         const isGlb = !!myGlb && targetB.every((b, i) => b === myGlb[i]);
                         if (isLl || isGlb) {
                             const replyFrom = IPAddress.fromUInt8(isGlb ? myGlb : myLl);
-                            const na = ICMPv6Packet.buildNA(replyFrom, this._lanMac, true);
-                            const naBytes = na.pack(replyFrom, ipv6.src);
-                            const rep6 = new IPv6Packet({ src: replyFrom, dst: ipv6.src, nextHeader: 58, hopLimit: 255, payload: naBytes });
-                            srcPort.send(new EthernetFrame({ dstMac: srcMac, srcMac: this._lanMac, etherType: 0x86DD, payload: rep6.pack() }));
+                            // RFC 4861 §7.2.4: a DAD probe (src ::) is answered to all-nodes
+                            // (ff02::1) with S=0; R=1 since we are a router.
+                            const isDadProbe = ipv6.src.toUInt8().every(b => b === 0);
+                            const naDst    = isDadProbe ? IPAddress.fromString("ff02::1") : ipv6.src;
+                            const naDstMac = isDadProbe ? new Uint8Array([0x33, 0x33, 0, 0, 0, 1]) : srcMac;
+                            const na = ICMPv6Packet.buildNA(replyFrom, this._lanMac, !isDadProbe, { router: true });
+                            const naBytes = na.pack(replyFrom, naDst);
+                            const rep6 = new IPv6Packet({ src: replyFrom, dst: naDst, nextHeader: 58, hopLimit: 255, payload: naBytes });
+                            srcPort.send(new EthernetFrame({ dstMac: naDstMac, srcMac: this._lanMac, etherType: 0x86DD, payload: rep6.pack() }));
                         }
                     }
                 } else if (icmp.type === 136) {
@@ -517,10 +523,58 @@ export class HomeRouter extends SimulatedObject {
     /** @param {IPv4Packet} pkt */
     async _routeLanToWan(pkt) {
         if (!this._wanIp) return;
+        // Routing, next-hop and MTU decision BEFORE NAT (RFC 1191, RFC 5508): the
+        // ICMP errors they produce must quote the original LAN header and reach
+        // the LAN host. After NAT, _wanStack would address them to our own WAN IP.
+        const out = this._wanStack._resolveOutgoing(pkt.dst);
+        if (!out || out.interfIndex < 0) { this._lanStack._sendICMPError(pkt, 3, 0); return; } // net unreachable
+        const mtu = this._wanMtu();
+        const size = pkt.pack().length;
+        if (size > mtu && (pkt.flags & 0x02)) { // DF set → Fragmentation Needed with next-hop MTU
+            this._lanStack._sendICMPFragNeeded(pkt, mtu);
+            return;
+        }
+        if (!out.route.tunnel) {
+            const wanIf = this._wanStack.interfaces[out.interfIndex];
+            const nh = ipNum(out.route.nexthop) === 0 ? pkt.dst : out.route.nexthop;
+            const mac = await wanIf.resolveNeighbor(nh);
+            if (mac == null) { this._lanStack._sendICMPError(pkt, 3, 1); return; } // host unreachable
+        }
         const ok = this._nat.natOutbound(this._wanIp, pkt);
         if (!ok) return;
-        // IPStack handles TTL decrement, ARP resolution, fragmentation, and sending
-        await this._wanStack.route(pkt, false, 0);
+        // Fragment against the real WAN link MTU (the internal bridge interface
+        // of _wanStack only knows 1500); IPStack does TTL decrement and sending.
+        const parts = size > mtu ? this._fragmentV4(pkt, mtu) : [pkt];
+        for (const p of parts) await this._wanStack.route(p, false, 0);
+    }
+
+    /** Effective MTU towards the WAN: interface override, else the WAN link's MTU. */
+    _wanMtu() {
+        return this._wanStack.interfaces[0]?.mtuOverride ?? this.wan0.linkref?.mtu ?? 1500;
+    }
+
+    /**
+     * Split an IPv4 packet into fragments of at most `mtu` bytes (RFC 791 §3.2),
+     * keeping identification and continuing an existing fragment offset.
+     * @param {IPv4Packet} pkt @param {number} mtu @returns {IPv4Packet[]}
+     */
+    _fragmentV4(pkt, mtu) {
+        const hdrLen = pkt.ihl * 4;
+        const maxPayload = Math.floor((mtu - hdrLen) / 8) * 8;
+        if (maxPayload <= 0) return [];
+        const parts = [];
+        for (let pos = 0; pos < pkt.payload.length; pos += maxPayload) {
+            const isLast = pos + maxPayload >= pkt.payload.length;
+            parts.push(new IPv4Packet({
+                src: pkt.src, dst: pkt.dst, protocol: pkt.protocol, ttl: pkt.ttl,
+                dscp: pkt.dscp, ecn: pkt.ecn,
+                identification: pkt.identification,
+                flags: isLast ? pkt.flags : (pkt.flags | 0x01),
+                fragmentOffset: pkt.fragmentOffset + pos / 8,
+                payload: pkt.payload.slice(pos, pos + maxPayload),
+            }));
+        }
+        return parts;
     }
 
     // ── WAN stack configuration ───────────────────────────────────────────
@@ -999,9 +1053,10 @@ export class HomeRouter extends SimulatedObject {
         const dstB = ipv6.dst.toUInt8();
 
         const isMyLl    = dstB.every((b, i) => b === myLl[i]);
+        // Solicited-node multicast ff02::1:ffXX:XXXX (RFC 4291 §2.7.1)
         const isSolNode = dstB[0] === 0xff && dstB[1] === 0x02 &&
-            dstB[11] === 0x00 && dstB[12] === 0x01 && dstB[13] === 0xff &&
-            dstB[14] === myLl[14] && dstB[15] === myLl[15];
+            dstB[11] === 0x01 && dstB[12] === 0xff &&
+            dstB[13] === myLl[13] && dstB[14] === myLl[14] && dstB[15] === myLl[15];
         const isAllNodes = dstB[0] === 0xff && dstB[1] === 0x02 && dstB[15] === 0x01;
         const isForLan   = this._isInLanPrefix(dstB);
 
@@ -1021,10 +1076,14 @@ export class HomeRouter extends SimulatedObject {
                     const target = icmp.ndpTarget;
                     if (target && target.toUInt8().every((b, i) => b === myLl[i])) {
                         const srcIp = IPAddress.fromUInt8(myLl);
-                        const na = ICMPv6Packet.buildNA(srcIp, this._wanMac, true);
-                        const naBytes = na.pack(srcIp, ipv6.src);
-                        const rep6 = new IPv6Packet({ src: srcIp, dst: ipv6.src, nextHeader: 58, hopLimit: 255, payload: naBytes });
-                        this.wan0.send(new EthernetFrame({ dstMac: frame.srcMac, srcMac: this._wanMac, etherType: 0x86DD, payload: rep6.pack() }));
+                        // RFC 4861 §7.2.4: a DAD probe (src ::) is answered to all-nodes with S=0
+                        const isDadProbe = ipv6.src.toUInt8().every(b => b === 0);
+                        const naDst    = isDadProbe ? IPAddress.fromString("ff02::1") : ipv6.src;
+                        const naDstMac = isDadProbe ? new Uint8Array([0x33, 0x33, 0, 0, 0, 1]) : frame.srcMac;
+                        const na = ICMPv6Packet.buildNA(srcIp, this._wanMac, !isDadProbe, { router: true });
+                        const naBytes = na.pack(srcIp, naDst);
+                        const rep6 = new IPv6Packet({ src: srcIp, dst: naDst, nextHeader: 58, hopLimit: 255, payload: naBytes });
+                        this.wan0.send(new EthernetFrame({ dstMac: naDstMac, srcMac: this._wanMac, etherType: 0x86DD, payload: rep6.pack() }));
                     }
                 } else if (icmp.type === 136) {
                     // NA → populate WAN NDP cache

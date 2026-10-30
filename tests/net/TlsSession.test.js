@@ -533,3 +533,43 @@ describe('TlsSession', () => {
     });
   });
 });
+
+describe('ClientHello server_name extension (RFC 6066 §3)', () => {
+  /** @param {Uint8Array} rec */
+  function extensions(rec) {
+    // record(5) + hs header(4) + version(2) + random(32) + sid len(1) + suites(4) + comp(2)
+    const off = 5 + 4 + 2 + 32 + 1 + 4 + 2;
+    const len = (rec[off] << 8) | rec[off + 1];
+    /** @type {Map<number, Uint8Array>} */
+    const out = new Map();
+    for (let p = off + 2; p < off + 2 + len;) {
+      const type = (rec[p] << 8) | rec[p + 1];
+      const l = (rec[p + 2] << 8) | rec[p + 3];
+      out.set(type, rec.slice(p + 4, p + 4 + l));
+      p += 4 + l;
+    }
+    return out;
+  }
+
+  it('carries the host name', () => {
+    const ch = TlsRecord.buildClientHello(new Uint8Array(32), 'www.Biberbank.de.');
+    const sni = extensions(ch).get(0x0000);
+    expect(sni).toBeDefined();
+    const s = /** @type {Uint8Array} */ (sni);
+    expect(s[2]).toBe(0x00); // host_name
+    expect(new TextDecoder().decode(s.slice(5))).toBe('www.biberbank.de');
+    expect((s[0] << 8) | s[1]).toBe(s.length - 2);
+  });
+
+  it('is omitted for IP literals and empty names', () => {
+    expect(extensions(TlsRecord.buildClientHello(new Uint8Array(32), '192.168.0.20')).has(0)).toBe(false);
+    expect(extensions(TlsRecord.buildClientHello(new Uint8Array(32), '2001:db8::1')).has(0)).toBe(false);
+    expect(extensions(TlsRecord.buildClientHello(new Uint8Array(32))).has(0)).toBe(false);
+  });
+
+  it('handshake still succeeds with SNI present', async () => {
+    const cert = await TlsCertificate.generate('server.local');
+    const { client } = await runHandshake(cert, null, { serverName: 'server.local' });
+    expect(client['_state']).toBe('ESTABLISHED');
+  });
+});

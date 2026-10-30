@@ -1858,8 +1858,9 @@ export class SimpleMailServerApp extends LoggedProcess {
         }
         const msg = normalizeCRLF(msgs[n - 1]);
         const bytes = encodeUTF8(msg).length;
+        // RFC 9051 §4.3: the closing ")" follows the literal's last octet directly
         send(`* ${n} FETCH (BODY[] {${bytes}}`);
-        tr.send(encodeUTF8(msg + "\r\n"));
+        tr.send(encodeUTF8(msg));
         send(`)`);
         send(`${tag} OK FETCH completed`);
         continue;

@@ -455,6 +455,12 @@ describe('SimpleMailServerApp', () => {
       const lines = await client.readUntil(l => l.startsWith('A3 OK'));
       const content = lines.join('\n');
       expect(content).toContain('Fetch body content');
+      // RFC 9051 §4.3: ")" follows the literal's last octet directly — nothing in between
+      const raw = lines.join('\r\n');
+      const hdr = /\{(\d+)\}\r\n/.exec(raw);
+      expect(hdr).not.toBeNull();
+      const afterLiteral = raw.slice(/** @type {any} */ (hdr).index + hdr[0].length + Number(hdr[1]));
+      expect(afterLiteral.startsWith(')')).toBe(true);
     });
 
     it('SEARCH ALL returns sequence numbers for all messages', async () => {

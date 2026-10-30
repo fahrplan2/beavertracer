@@ -164,6 +164,14 @@ export class SwitchBackplane extends Observable {
      */
     sat = new Map();
 
+    /**
+     * simTimer tick at which each SAT entry was last learned, for 802.1D fast
+     * aging during a topology change. Key: `${vid}|${mac}` ("-" when VLANs are off).
+     * Entries missing here count as old.
+     * @type {Map<string, number>}
+     */
+    _satLearnTick = new Map();
+
     // -------------------- STP identity --------------------
     /** @type {bigint} */
     bridgeId;
@@ -1197,6 +1205,49 @@ export class SwitchBackplane extends Observable {
     }
 
     // ---------------------------------------------------------------------------
+    // SAT aging helpers
+    // ---------------------------------------------------------------------------
+
+    /**
+     * IEEE 802.1D-1998 §8.3.5 / §7.9.2: while a topology change is in progress the
+     * filtering database uses the short aging time (Forward Delay): drop every
+     * entry not learned within the last Forward Delay.
+     */
+    _satFastAge() {
+        const now = simTimer.currentTick;
+        const maxAge = SimTimer.toTicks(SimTimer.STP_FORWARD_DELAY_MS);
+        const old = (/** @type {string} */ k) => {
+            const t = this._satLearnTick.get(k);
+            if (t == null || now - t > maxAge) { this._satLearnTick.delete(k); return true; }
+            return false;
+        };
+        if (!this.vlanEnabled) {
+            for (const key of [...this.sat.keys()]) if (old(`-|${key}`)) this.sat.delete(key);
+            return;
+        }
+        for (const [vid, vlanMap] of this.sat) {
+            if (!(vlanMap instanceof Map)) continue;
+            for (const key of [...vlanMap.keys()]) if (old(`${vid}|${key}`)) vlanMap.delete(key);
+        }
+    }
+
+    /**
+     * Remove all SAT entries that point to a logical port (802.1D-2004 §17.30
+     * fdbFlush: a port leaving Root/Designated role forgets what it learned).
+     * @param {number} portIdx logical port (LAG representative)
+     */
+    _satFlushPort(portIdx) {
+        if (!this.vlanEnabled) {
+            for (const [key, p] of [...this.sat]) if (p === portIdx) this.sat.delete(key);
+            return;
+        }
+        for (const vlanMap of this.sat.values()) {
+            if (!(vlanMap instanceof Map)) continue;
+            for (const [key, p] of [...vlanMap]) if (p === portIdx) vlanMap.delete(key);
+        }
+    }
+
+    // ---------------------------------------------------------------------------
     // STP helpers
     // ---------------------------------------------------------------------------
 
@@ -1427,6 +1478,7 @@ export class SwitchBackplane extends Observable {
                 this._emitRstBpdus();
             } else {
                 this._stpCheckAging();
+                if (this._stpTcActive) this._satFastAge();
                 this._emitBPDUs();
             }
             this._stpStartHello();
@@ -1494,6 +1546,10 @@ export class SwitchBackplane extends Observable {
         this.stpRootId   = best.rootId;
         this.stpRootCost = bestPort == null ? 0 : best.cost;
         this.stpRootPort = bestPort;
+
+        // Only the root owns a TC timer; a TC flag copied from a former root port
+        // must not stick once we became root ourselves (802.1D-1998 §8.6.14).
+        if (bestPort === null && this._stpTcTimer == null) this._stpTcActive = false;
 
         // Update messageAge from root port info (non-root bridges add ~1 s per hop)
         if (this.stpRootPort !== null && this.stpRxBest[this.stpRootPort]) {
@@ -1828,8 +1884,12 @@ export class SwitchBackplane extends Observable {
             simTimer.cancel(/** @type {number} */ (this._stpPortTimers[portIdx]));
             this._stpPortTimers[portIdx] = null;
         }
-        if (cur === STP_STATE.FORWARDING || cur === STP_STATE.LEARNING) {
-            this._rstpTriggerTc();
+        // 802.1D-2004 §17.29.3 / §17.30: only a port that becomes Forwarding raises
+        // a TC; a port that stops forwarding just flushes what it learned (fdbFlush).
+        const role = this.stpPortRole[portIdx];
+        if ((cur === STP_STATE.FORWARDING || cur === STP_STATE.LEARNING) &&
+            role !== "root" && role !== "designated") {
+            this._satFlushPort(portIdx);
         }
         this.stpPortState[portIdx] = STP_STATE.DISCARDING;
         this._rstpProposing[portIdx] = false;
@@ -1935,7 +1995,12 @@ export class SwitchBackplane extends Observable {
         };
 
         const prev = this.stpRxBest[portIdx];
-        if (!prev || compareTuple(rx, prev) < 0) {
+        const cmp = prev ? compareTuple(rx, prev) : -1;
+        // 802.1D-2004 §17.21.8 rcvInfo: SuperiorDesignatedInfo replaces the stored
+        // port priority vector — this includes worse info from the same designated
+        // bridge/port (root lost, cost rose), which must not wait for info aging.
+        const sameSender = !!prev && prev.bridgeId === rx.bridgeId && prev.portId === rx.portId;
+        if (cmp < 0 || (cmp > 0 && sameSender)) {
             this.stpRxBest[portIdx] = rx;
             this._stpRxBestTick[portIdx] = simTimer.currentTick;
             this._rstpMissedHellos[portIdx] = 0;
@@ -1946,7 +2011,8 @@ export class SwitchBackplane extends Observable {
             if (bpdu.isProposal && this.stpRootPort === portIdx) {
                 this._rstpHandleProposal(portIdx);
             }
-        } else if (prev && compareTuple(rx, prev) === 0) {
+        } else if (cmp === 0) {
+            this.stpRxBest[portIdx] = rx; // refresh messageAge
             this._stpRxBestTick[portIdx] = simTimer.currentTick;
             this._rstpMissedHellos[portIdx] = 0;
 
@@ -2050,27 +2116,30 @@ export class SwitchBackplane extends Observable {
     // ---------------------------------------------------------------------------
 
     /**
-     * Trigger a topology change.
-     * Activates the TC bit in Config BPDUs for maxAge + forwardDelay, flushes the
-     * MAC table, and — for non-root bridges — starts sending TCN BPDUs upstream.
+     * Topology change detected (IEEE 802.1D-1998 §8.6.14).
+     * Non-root bridge: report it with TCN BPDUs on the root port until TCA; the TC
+     * flag itself is only set by the root and relayed downstream (see Config BPDU
+     * receive). Root bridge: set TC in its Config BPDUs for MaxAge + ForwardDelay.
+     * In both cases the local MAC table is flushed so stale entries cannot
+     * black-hole traffic.
      */
     _stpTriggerTc() {
         if (!this.stpEnabled) return;
 
-        // Flush MAC table so stale entries don't cause black holes
         this.sat.clear();
+
+        if (this.stpRootPort !== null) {
+            this._stpStartTcn();
+            return;
+        }
 
         if (this._stpTcTimer != null) simTimer.cancel(this._stpTcTimer);
         this._stpTcActive = true;
         this._stpTcTimer = simTimer.schedule(() => {
-            this._stpTcActive = false;
             this._stpTcTimer = null;
+            // a bridge that is no longer root mirrors its root port's TC flag instead
+            if (this.stpRootPort === null) this._stpTcActive = false;
         }, SimTimer.STP_MAX_AGE_MS + SimTimer.STP_FORWARD_DELAY_MS);
-
-        if (this.stpRootPort !== null) {
-            // Non-root bridge: send TCN BPDUs up the root port until TCA received
-            this._stpStartTcn();
-        }
     }
 
     _stpStopTc() {
@@ -2220,6 +2289,8 @@ export class SwitchBackplane extends Observable {
                                 this._stpStartTcn();
                                 this.sat.clear();
                             }
+                            // 802.1D-1998 §8.6.15: acknowledge right away with a TCA Config BPDU
+                            this._emitBPDUs();
                         }
                         continue;
                     }
@@ -2232,14 +2303,6 @@ export class SwitchBackplane extends Observable {
 
                     // Config BPDU (classic STP only)
                     if (bpdu && bpdu.bpduType === 0x00 && this.stpMode === 'stp') {
-                        if (bpdu.flags & STP_FLAG_TC) {
-                            this.sat.clear();
-                        }
-
-                        if (stpPort === this.stpRootPort && (bpdu.flags & STP_FLAG_TCA)) {
-                            this._stpStopTcn();
-                        }
-
                         const rx = {
                             rootId:     this._bridgeIdBytesToBigInt(bpdu.rootId),
                             cost:       bpdu.rootPathCost >>> 0,
@@ -2249,27 +2312,38 @@ export class SwitchBackplane extends Observable {
                         };
 
                         const prev = this.stpRxBest[stpPort];
-                        if (!prev || compareTuple(rx, prev) < 0) {
+                        const cmp = prev ? compareTuple(rx, prev) : -1;
+                        // 802.1D-1998 §8.6.2.2 supersedes_port_info: better info, or any
+                        // info from the port's current designated bridge/port (even if
+                        // worse — e.g. the root failed or its cost rose) replaces it.
+                        const sameSender = !!prev && prev.bridgeId === rx.bridgeId && prev.portId === rx.portId;
+                        if (cmp < 0 || (cmp > 0 && sameSender)) {
                             this.stpRxBest[stpPort] = rx;
                             this._stpRxBestTick[stpPort] = simTimer.currentTick;
                             this._recomputeStpAndMaybeEmit();
-                        } else if (prev && compareTuple(rx, prev) === 0) {
+                        } else if (cmp === 0) {
+                            this.stpRxBest[stpPort] = rx; // refresh messageAge
                             this._stpRxBestTick[stpPort] = simTimer.currentTick;
+                        }
+
+                        // 802.1D-1998 §8.6.2.3: the root port's BPDU carries the root's
+                        // Topology Change flag; copy it into our own Config BPDUs and use
+                        // the short aging time while it is set.
+                        if (stpPort === this.stpRootPort) {
+                            if (bpdu.flags & STP_FLAG_TCA) this._stpStopTcn();
+                            if (this._stpTcTimer != null) { simTimer.cancel(this._stpTcTimer); this._stpTcTimer = null; }
+                            this._stpTcActive = !!(bpdu.flags & STP_FLAG_TC);
+                            if (this._stpTcActive) this._satFastAge();
                         }
                     }
 
                     continue; // do not forward BPDUs as data
                 }
 
-                // After BPDU handling, enforce STP on ingress for DATA frames.
-                // For LAG members, look up the representative's state.
-                if (this.stpEnabled) {
-                    const ps = this.stpPortState[this._lagRepresentative(i)];
-                    if (ps === STP_STATE.BLOCKING || ps === STP_STATE.LISTENING || ps === STP_STATE.DISCARDING) continue;
-                }
-
-                // ---------------- Data forwarding ----------------
-                const stpLearningOnly = this.stpEnabled && this.stpPortState[this._lagRepresentative(i)] === STP_STATE.LEARNING;
+                // ---------------- Link-local control protocols ----------------
+                // LLDP (IEEE 802.1AB §7.1) and LACP (802.1AX §6.2) run per physical
+                // port regardless of the STP port state, and like every frame to a
+                // Bridge Group Address they are consumed here and never forwarded.
 
                 // LLDP: intercept before Bridge Group Address drop (01:80:C2:00:00:0E is in that range)
                 if (this.lldpEnabled && this._isLLDPFrame(frame)) {
@@ -2286,6 +2360,16 @@ export class SwitchBackplane extends Observable {
                 // Bridge Group Address (01:80:c2:00:00:00–0f): terminate at bridge, never forward
                 if (this._isBridgeGroupAddress(frame)) continue;
 
+                // After control-frame handling, enforce STP on ingress for DATA frames.
+                // For LAG members, look up the representative's state.
+                if (this.stpEnabled) {
+                    const ps = this.stpPortState[this._lagRepresentative(i)];
+                    if (ps === STP_STATE.BLOCKING || ps === STP_STATE.LISTENING || ps === STP_STATE.DISCARDING) continue;
+                }
+
+                // ---------------- Data forwarding ----------------
+                const stpLearningOnly = this.stpEnabled && this.stpPortState[this._lagRepresentative(i)] === STP_STATE.LEARNING;
+
                 // VLAN DISABLED
                 if (!this.vlanEnabled) {
                     // Learn source MAC globally (IEEE 802.1D §7.8: never learn multicast source MACs)
@@ -2293,6 +2377,7 @@ export class SwitchBackplane extends Observable {
                     if (!(frame.srcMac[0] & 0x01)) {
                         const srcKey = MACToNumber(frame.srcMac);
                         this.sat.set(srcKey, this._lagRepresentative(i));
+                        this._satLearnTick.set(`-|${srcKey}`, simTimer.currentTick);
                     }
 
                     if (stpLearningOnly) continue;
@@ -2387,6 +2472,7 @@ export class SwitchBackplane extends Observable {
                         this.sat.set(vid, vlanMap);
                     }
                     vlanMap.set(srcKey, this._lagRepresentative(i));
+                    this._satLearnTick.set(`${vid}|${srcKey}`, simTimer.currentTick);
                 }
 
                 if (stpLearningOnly) continue;

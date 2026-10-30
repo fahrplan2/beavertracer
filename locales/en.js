@@ -168,6 +168,7 @@ export default {
   "app.simplehttpserver.http.400.title": "400 Bad Request",
   "app.simplehttpserver.http.400.details": "Header end not found or header > 64KiB.",
   "app.simplehttpserver.http.400.invalidRequestLine": "Invalid request line:\n{reqLine}",
+  "app.simplehttpserver.http.400.host": "HTTP/1.1 requests need exactly one Host header (e.g. \"Host: www.example.com\").",
   "app.simplehttpserver.http.405.title": "405 Method Not Allowed",
   "app.simplehttpserver.http.405.details": "Only GET/HEAD are supported.\nYou sent: {method}",
   "app.simplehttpserver.http.404.title": "404 Not Found",

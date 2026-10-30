@@ -720,6 +720,10 @@ export class TcpEngine {
       const listen = this.sockets.get(localPort);
       const isListening = !!listen && listen.state === "LISTEN";
 
+      // RFC 9293 §3.10.7.1/§3.10.7.2: an incoming RST is always dropped
+      // here — never answer a RST with a RST.
+      if (rst) return;
+
       // New inbound SYN to LISTEN => normal accept path
       if (syn && !ack && isListening) {
         conn = new TCPSocket();
@@ -768,18 +772,40 @@ export class TcpEngine {
         return;
       }
 
-      // Port closed => RST for SYN or segments carrying ACK (RFC 793 §3.4: never RST a RST)
-      if (!isListening) {
-        if (!rst && (syn || ack)) {
-          this._sendRstForSegment(localIP, localPort, remoteIP, remotePort, tcp);
-        }
+      if (isListening) {
+        // RFC 9293 §3.10.7.2 (LISTEN): an ACK — also a SYN+ACK — cannot
+        // belong to anything this listener sent: <SEQ=SEG.ACK><CTL=RST>.
+        // Anything else (no SYN, no ACK) is dropped silently.
+        if (ack) this._sendRstForSegment(localIP, localPort, remoteIP, remotePort, tcp);
+        return;
       }
+
+      // RFC 9293 §3.10.7.1 (CLOSED): every segment except a RST — SYN, ACK,
+      // FIN, plain data — is answered with a RST.
+      this._sendRstForSegment(localIP, localPort, remoteIP, remotePort, tcp);
       return;
     }
 
-    // 1) RST: immediate teardown
+    // 1) RST (RFC 9293 §3.10.7.3/§3.10.7.4, RFC 5961 §3.2)
     if (rst) {
-      this._destroy(conn, "RST");
+      if (conn.state === "SYN-SENT") {
+        // Only acceptable if it acknowledges our SYN (SND.UNA < SEG.ACK <= SND.NXT).
+        if (ack && (tcp.ack >>> 0) === (conn.myacc >>> 0)) this._destroy(conn, "RST");
+        return;
+      }
+      // Synchronized states: tear down only on an exact match SEG.SEQ == RCV.NXT.
+      // Inside the receive window → challenge ACK (a genuine peer answers it
+      // with a correctly numbered RST); outside → ignore (blind-reset defence).
+      const rcvNxt = conn.theiracc >>> 0;
+      const segSeq = tcp.seq >>> 0;
+      if (segSeq === rcvNxt) {
+        this._destroy(conn, "RST");
+        return;
+      }
+      const rcvWnd = this._calcRcvWnd(conn);
+      if (rcvWnd > 0 && seqGT(segSeq, rcvNxt) && seqLT(segSeq, u32(rcvNxt + rcvWnd))) {
+        this._sendAckOnly(conn, true);
+      }
       return;
     }
 
@@ -799,7 +825,13 @@ export class TcpEngine {
 
       const okAck = seqGE(ackNo, sndUna) && seqLE(ackNo, sndNxt);
 
-      if (okAck) this._onAck(conn, ackNo, inTs?.tsecr ?? null);
+      // RFC 5681 §2: a *duplicate ACK* carries no data, no SYN/FIN and leaves
+      // the advertised window unchanged (ACK == SND.UNA and outstanding data
+      // are checked in _onAck). Data segments of the reverse direction or
+      // window updates that happen to repeat SND.UNA are no loss signal.
+      const dupCandidate = (tcp.payload?.length ?? 0) === 0 && !syn && !fin &&
+                           (tcp.window >>> 0) === prevSndWnd;
+      if (okAck) this._onAck(conn, ackNo, inTs?.tsecr ?? null, dupCandidate);
     }
 
     if (conn.sendQBytes > 0 && ((conn.sndWnd >>> 0) !== prevSndWnd || ack)) {
@@ -851,18 +883,26 @@ export class TcpEngine {
 
     // Server handshake: SYN-RECEIVED -> ESTABLISHED on final ACK
     if (conn.state === "SYN-RECEIVED") {
-      if (ack && (tcp.ack >>> 0) === (conn.myacc >>> 0)) {
-        conn.state = "ESTABLISHED";
-        conn.cwnd = conn.mss; // reset to 1 MSS; _onAck may have grown cwnd for the SYN-ACK seq
-
-        const listen = this.sockets.get(conn.port);
-        if (listen && listen.state === "LISTEN") {
-          const w = listen.acceptWaiters.shift();
-          if (w) w(conn);
-          else listen.acceptQueue.push(conn);
-        }
+      if (!ack) return;
+      if ((tcp.ack >>> 0) !== (conn.myacc >>> 0)) {
+        // RFC 9293 §3.10.7.4: unacceptable ACK in SYN-RECEIVED → <SEQ=SEG.ACK><CTL=RST>
+        this._sendRstForSegment(conn.localIP, conn.port, conn.peerIP, conn.peerPort, tcp);
+        return;
       }
-      return;
+      conn.state = "ESTABLISHED";
+      conn.cwnd = conn.mss; // reset to 1 MSS; _onAck may have grown cwnd for the SYN-ACK seq
+
+      const listen = this.sockets.get(conn.port);
+      if (listen && listen.state === "LISTEN") {
+        const w = listen.acceptWaiters.shift();
+        if (w) w(conn);
+        else listen.acceptQueue.push(conn);
+      }
+      // RFC 9293 §3.10.7.4 continues with the segment text and FIN in
+      // ESTABLISHED: if the bare handshake ACK was lost, the first data
+      // segment completes the handshake and its payload must not be dropped.
+      // A bare handshake ACK ends here (it must not provoke an ACK of its own).
+      if ((tcp.payload?.length ?? 0) === 0 && !fin) return;
     }
 
     // FIN-WAIT-1: our FIN ACKed → FIN-WAIT-2 (or TIME-WAIT if their FIN already consumed)
@@ -971,15 +1011,16 @@ export class TcpEngine {
    * Build and transmit a TCP packet (no outQ involvement).
    * Automatically appends TS option when conn.tsEnabled.
    * @param {TCPSocket} conn
-   * @param {{seq:number, ack:number, flags:number, window?:number, options?:Uint8Array, payload:Uint8Array}} seg
+   * @param {{seq:number, ack:number, flags:number, window?:number, options?:Uint8Array, payload:Uint8Array, rawOptions?:boolean}} seg
+   *   rawOptions: send `options` verbatim (no automatic Timestamp option)
    */
-  _sendRaw(conn, { seq, ack, flags, window, options, payload }) {
+  _sendRaw(conn, { seq, ack, flags, window, options, payload, rawOptions = false }) {
     const tcpBytes = new TCPPacket({
       srcPort: conn.port,
       dstPort: conn.peerPort,
       seq, ack, flags,
       window: (window ?? this._calcRcvWnd(conn)) | 0,
-      options: this._buildSegmentOptions(conn, options),
+      options: rawOptions ? (options ?? new Uint8Array(0)) : this._buildSegmentOptions(conn, options),
       payload,
     }).pack({ srcIp: conn.localIP, dstIp: conn.peerIP });
     this._ipSend({ dst: conn.peerIP, src: conn.localIP, protocol: 6, payload: tcpBytes });
@@ -1045,8 +1086,10 @@ export class TcpEngine {
    * @param {TCPSocket} conn
    * @param {number} ackNo
    * @param {number|null} [tsecr] TSecr from peer's Timestamp option for RTT measurement
+   * @param {boolean} [dupCandidate] segment qualifies as a duplicate ACK if it doesn't
+   *   advance SND.UNA (no data, no SYN/FIN, unchanged window — RFC 5681 §2)
    */
-  _onAck(conn, ackNo, tsecr = null) {
+  _onAck(conn, ackNo, tsecr = null, dupCandidate = true) {
     const sndUnaBefore = (conn.outQ.length > 0) ? (conn.outQ[0].seq >>> 0) : (conn.myacc >>> 0);
 
     let removedAny = false;
@@ -1062,14 +1105,16 @@ export class TcpEngine {
       // Duplicate ACK: ackNo didn't advance and there is outstanding data
       // An ACK answering a zero-window probe (window still 0) is not a
       // duplicate ACK in the RFC 5681 sense — it must not trigger Fast Retransmit.
-      if (conn.outQ.length > 0 && (ackNo >>> 0) === sndUnaBefore &&
+      if (dupCandidate && conn.outQ.length > 0 && (ackNo >>> 0) === sndUnaBefore &&
           (conn.sndWnd >>> 0) !== 0 && !conn.outQ[0].probe) {
         conn.dupAckCount++;
         if (conn.dupAckCount === 3) {
-          // Fast Retransmit: enter Fast Recovery
+          // Fast Retransmit: enter Fast Recovery (RFC 5681 §3.2 steps 2-3)
           const mss = conn.mss | 0;
-          conn.ssthresh = Math.max(Math.floor(Math.min(conn.cwnd >>> 0, conn.sndWnd >>> 0) / 2), 2 * mss);
+          const flightSize = seqDist(sndUnaBefore, conn.myacc >>> 0);
+          conn.ssthresh = Math.max(Math.floor(flightSize / 2), 2 * mss);
           conn.cwnd = conn.ssthresh + 3 * mss;
+          conn.inFastRecovery = true;
           this._retransmitOldest(conn);
         } else if (conn.dupAckCount > 3) {
           // Fast Recovery: inflate cwnd per additional dupACK
@@ -1092,7 +1137,12 @@ export class TcpEngine {
 
     const mss = conn.mss | 0;
 
-    if ((conn.cwnd >>> 0) < (conn.ssthresh >>> 0)) {
+    if (conn.inFastRecovery) {
+      // RFC 5681 §3.2 step 6: the first ACK of new data ends Fast Recovery —
+      // "deflate" the window inflated by the duplicate ACKs back to ssthresh.
+      conn.inFastRecovery = false;
+      conn.cwnd = conn.ssthresh >>> 0;
+    } else if ((conn.cwnd >>> 0) < (conn.ssthresh >>> 0)) {
       // Slow Start: cwnd grows by one MSS per ACK (doubles each RTT)
       conn.cwnd = (conn.cwnd >>> 0) + Math.min(mss, bytesAcked);
     } else {
@@ -1160,11 +1210,18 @@ export class TcpEngine {
       return;
     }
 
-    // Congestion control: timeout → back to Slow Start
+    // Congestion control: timeout → back to Slow Start (RFC 5681 §3.1 eq. 4:
+    // ssthresh = max(FlightSize/2, 2·MSS), held constant on repeated timeouts
+    // of the same segment).
     const mss = conn.mss | 0;
-    conn.ssthresh = Math.max(Math.floor(conn.cwnd / 2), 2 * mss);
+    if (seg.rexmit === 1) {
+      const sndUna = conn.outQ[0].seq >>> 0;
+      const flightSize = seqDist(sndUna, conn.myacc >>> 0);
+      conn.ssthresh = Math.max(Math.floor(flightSize / 2), 2 * mss);
+    }
     conn.cwnd = mss;
     conn.dupAckCount = 0;
+    conn.inFastRecovery = false;
 
     conn.rtoMs = Math.min(conn.rtoMs * 2, SimTimer.TCP_MAX_RTO_MS);
 
@@ -1173,13 +1230,24 @@ export class TcpEngine {
       (seg.flags & TCPPacket.FLAG_ACK) === 0 &&
       conn.state === "SYN-SENT";
 
+    const isSynAck =
+      (seg.flags & TCPPacket.FLAG_SYN) !== 0 &&
+      (seg.flags & TCPPacket.FLAG_ACK) !== 0;
+
     const flags = isBareSyn ? seg.flags : (seg.flags | TCPPacket.FLAG_ACK);
     const ackNo = isBareSyn ? 0 : (conn.theiracc >>> 0);
 
-    // For SYN retransmits rebuild SYN options (MSS+TS); for data use _sendRaw auto-TS.
-    const retxOptions = isBareSyn
-      ? TcpEngine._buildSynOptions(conn.mss, simTimer.currentTick >>> 0, 0)
-      : undefined;
+    // A retransmitted SYN / SYN-ACK carries the same options as the original
+    // (MSS, plus TS if offered/negotiated) with a fresh TSval; data segments
+    // get the Timestamp appended automatically by _sendRaw.
+    let retxOptions;
+    if (isBareSyn) {
+      retxOptions = TcpEngine._buildSynOptions(this.defaultMSS, simTimer.currentTick >>> 0, 0);
+    } else if (isSynAck) {
+      retxOptions = conn.tsEnabled
+        ? TcpEngine._buildSynOptions(this.defaultMSS, simTimer.currentTick >>> 0, conn.tsRecent >>> 0)
+        : TcpEngine._buildMssOption(this.defaultMSS);
+    }
 
     this._sendRaw(conn, {
       seq: seg.seq,
@@ -1187,6 +1255,7 @@ export class TcpEngine {
       flags,
       options: retxOptions,
       payload: seg.payload,
+      rawOptions: isBareSyn || isSynAck,
     });
 
     conn.rtoTimerId = simTimer.schedule(() => this._fireRto(conn), conn.rtoMs);
@@ -1471,6 +1540,9 @@ export class TCPSocket {
 
   /** duplicate ACK counter for Fast Retransmit */
   dupAckCount = 0;
+
+  /** in Fast Recovery (RFC 5681 §3.2) between Fast Retransmit and the next new ACK */
+  inFastRecovery = false;
 
   // ---------------------------------------------------------------------------
   // Sender flow control (respect peer window)

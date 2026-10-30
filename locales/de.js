@@ -169,6 +169,7 @@ export default {
   "app.simplehttpserver.http.400.title": "400 Ungültige Anfrage",
   "app.simplehttpserver.http.400.details": "Header-Ende nicht gefunden oder Header > 64KiB.",
   "app.simplehttpserver.http.400.invalidRequestLine": "Ungültige Anforderungszeile:\n{reqLine}",
+  "app.simplehttpserver.http.400.host": "HTTP/1.1-Anfragen brauchen genau eine Host-Kopfzeile (z. B. „Host: www.example.com“).",
   "app.simplehttpserver.http.405.title": "405 Methode nicht zulässig",
   "app.simplehttpserver.http.405.details": "Nur GET/HEAD werden unterstützt.\nSie haben gesendet: {method}",
   "app.simplehttpserver.http.404.title": "404 Nicht gefunden",

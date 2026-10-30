@@ -6,15 +6,30 @@ import { encodeUTF8 } from "../lib/helpers.js";
 
 // ── error types ────────────────────────────────────────────────────────────
 
+/** TLS AlertDescription values used by this implementation (RFC 5246 §7.2). */
+export const TLS_ALERT = Object.freeze({
+  CLOSE_NOTIFY: 0,
+  HANDSHAKE_FAILURE: 40,
+  BAD_CERTIFICATE: 42,
+  DECRYPT_ERROR: 51,
+});
+
 export class TlsHandshakeError extends Error {
-  /** @param {string} msg */
-  constructor(msg) { super(msg); this.name = "TlsHandshakeError"; }
+  /**
+   * @param {string} msg
+   * @param {number} [alert] fatal AlertDescription sent to the peer
+   */
+  constructor(msg, alert = TLS_ALERT.HANDSHAKE_FAILURE) {
+    super(msg);
+    this.name = "TlsHandshakeError";
+    this.alert = alert;
+  }
 }
 
 export class TlsCertUntrustedError extends TlsHandshakeError {
   /** @param {string} subject */
   constructor(subject) {
-    super(`Certificate not trusted: ${subject}`);
+    super(`Certificate not trusted: ${subject}`, TLS_ALERT.BAD_CERTIFICATE);
     this.name = "TlsCertUntrustedError";
     this.subject = subject;
   }
@@ -28,7 +43,7 @@ export class TlsCertExpiredError extends TlsHandshakeError {
   constructor(subject, reason = "expired") {
     super(reason === "notYetValid"
       ? `Certificate not yet valid: ${subject}`
-      : `Certificate expired: ${subject}`);
+      : `Certificate expired: ${subject}`, TLS_ALERT.BAD_CERTIFICATE);
     this.name = "TlsCertExpiredError";
     this.subject = subject;
     this.reason = reason;
@@ -37,8 +52,24 @@ export class TlsCertExpiredError extends TlsHandshakeError {
 
 export class TlsSignatureError extends TlsHandshakeError {
   constructor() {
-    super("ServerKeyExchange signature invalid — possible MITM attack");
+    super("ServerKeyExchange signature invalid — possible MITM attack", TLS_ALERT.DECRYPT_ERROR);
     this.name = "TlsSignatureError";
+  }
+}
+
+/**
+ * ECDHE_ECDSA requires an authenticated server: a Certificate message and a
+ * signed ServerKeyExchange (RFC 8422 §2.1, §5.4). Missing either one is a
+ * fatal handshake_failure — an unsigned ECDH key could come from anyone.
+ */
+export class TlsMissingAuthError extends TlsHandshakeError {
+  /** @param {"certificate"|"signature"} what */
+  constructor(what) {
+    super(what === "certificate"
+      ? "Server sent no certificate — ECDHE_ECDSA requires one"
+      : "ServerKeyExchange is not signed — possible MITM attack");
+    this.name = "TlsMissingAuthError";
+    this.missing = what;
   }
 }
 
@@ -67,19 +98,29 @@ export class TlsCertNameMismatchError extends TlsCertUntrustedError {
 // ── helpers ────────────────────────────────────────────────────────────────
 
 /**
- * Does the certificate subject (CN) cover the name the client asked for?
+ * Does the certificate cover the name the client asked for?
+ * RFC 6125 §6.4.4: if the certificate carries subjectAltName entries, only
+ * those are checked; the subject CN is just the fallback for certificates
+ * without any (e.g. legacy v1 certificates).
  * Case-insensitive; a "*." wildcard covers exactly one leftmost label.
  * @param {string} subject  e.g. "CN=www.example.org"
  * @param {string} serverName
+ * @param {string[]} [altNames] subjectAltName dNSName/iPAddress entries
  */
-export function certMatchesName(subject, serverName) {
-  const cn = subject.replace(/^CN=/i, "").trim().toLowerCase();
+export function certMatchesName(subject, serverName, altNames = []) {
   const name = serverName.trim().toLowerCase().replace(/\.$/, "").replace(/^\[|\]$/g, "");
-  if (!cn || !name) return false;
-  if (cn === name) return true;
-  if (cn.startsWith("*.")) {
+  if (!name) return false;
+  const candidates = altNames.length > 0 ? altNames : [subject.replace(/^CN=/i, "")];
+  return candidates.some(c => nameMatches(c.trim().toLowerCase(), name));
+}
+
+/** @param {string} pattern @param {string} name */
+function nameMatches(pattern, name) {
+  if (!pattern) return false;
+  if (pattern === name) return true;
+  if (pattern.startsWith("*.")) {
     const dot = name.indexOf(".");
-    return dot > 0 && name.slice(dot + 1) === cn.slice(2);
+    return dot > 0 && name.slice(dot + 1) === pattern.slice(2);
   }
   return false;
 }
@@ -220,29 +261,90 @@ function extractCertSig(certDer) {
 }
 
 /**
- * Extract { notBefore, notAfter } (epoch ms) from the Validity SEQUENCE inside
- * a Certificate's TBSCertificate — see TlsCertificate._buildTbsBytes() for the
- * matching encoder. Walks the TBS children positionally (serial, signature
- * algId, issuer, validity, ...) since that's the fixed order this simulator
- * always produces. Returns null if the structure doesn't match.
+ * Walk a Certificate's TBSCertificate in the layout TlsCertificate
+ * produces (see TlsCertificate._buildTbsBytes()) — both the current v3
+ * layout ([0] version … [3] extensions) and the legacy v1 one.
+ * Validity times are decimal epoch-ms strings (simulator convention).
+ * Returns null if the structure doesn't match.
  * @param {Uint8Array} certDer
- * @returns {{ notBefore: number, notAfter: number }|null}
+ * @returns {{ version: number, issuerCN: string, subjectCN: string,
+ *   notBefore: number, notAfter: number, publicKeyRaw: Uint8Array|null,
+ *   isCA: boolean, altNames: string[]|null }|null}
  */
-function extractValidity(certDer) {
+function parseTbs(certDer) {
   try {
-    const outer   = derNextElement(certDer, 0);
-    const tbs     = derNextElement(certDer, outer.contentStart);
-    const serial  = derNextElement(certDer, tbs.contentStart);
-    const algId   = derNextElement(certDer, serial.end);
-    const issuer  = derNextElement(certDer, algId.end);
-    const validity = derNextElement(certDer, issuer.end);
-    const notBeforeEl = derNextElement(certDer, validity.contentStart);
-    const notAfterEl  = derNextElement(certDer, notBeforeEl.end);
     const dec = new TextDecoder();
-    const notBefore = Number(dec.decode(certDer.slice(notBeforeEl.contentStart, notBeforeEl.end)));
-    const notAfter  = Number(dec.decode(certDer.slice(notAfterEl.contentStart,  notAfterEl.end)));
+    const outer = derNextElement(certDer, 0);
+    const tbs   = derNextElement(certDer, outer.contentStart);
+    let off = tbs.contentStart;
+    let version = 1;
+    if (certDer[off] === 0xA0) {                       // [0] EXPLICIT Version
+      const v = derNextElement(certDer, off);
+      const int = derNextElement(certDer, v.contentStart);
+      version = certDer[int.end - 1] + 1;
+      off = v.end;
+    }
+    const serial   = derNextElement(certDer, off);
+    const algId    = derNextElement(certDer, serial.end);
+    const issuer   = derNextElement(certDer, algId.end);
+    const validity = derNextElement(certDer, issuer.end);
+    const subject  = derNextElement(certDer, validity.end);
+    const spki     = derNextElement(certDer, subject.end);
+    if (spki.end > tbs.end) return null;
+
+    /** Name with a single CN: SEQUENCE { SET { SEQUENCE { OID, UTF8String } } } */
+    const cnOf = (/** @type {{ contentStart: number }} */ name) => {
+      const set = derNextElement(certDer, name.contentStart);
+      const atv = derNextElement(certDer, set.contentStart);
+      const oid = derNextElement(certDer, atv.contentStart);
+      const val = derNextElement(certDer, oid.end);
+      return dec.decode(certDer.slice(val.contentStart, val.end));
+    };
+    const nb = derNextElement(certDer, validity.contentStart);
+    const na = derNextElement(certDer, nb.end);
+    const notBefore = Number(dec.decode(certDer.slice(nb.contentStart, nb.end)));
+    const notAfter  = Number(dec.decode(certDer.slice(na.contentStart, na.end)));
     if (!Number.isFinite(notBefore) || !Number.isFinite(notAfter)) return null;
-    return { notBefore, notAfter };
+
+    // SubjectPublicKeyInfo: SEQUENCE { AlgorithmIdentifier, BIT STRING }
+    const spkiAlg = derNextElement(certDer, spki.contentStart);
+    const keyBits = derNextElement(certDer, spkiAlg.end);
+    const keyBytes = certDer.slice(keyBits.contentStart + 1, keyBits.end);
+    const publicKeyRaw = keyBytes.length === 65 && keyBytes[0] === 0x04 ? keyBytes : null;
+
+    let isCA = false;
+    /** @type {string[]|null} */
+    let altNames = null;
+    if (version === 3 && spki.end < tbs.end && certDer[spki.end] === 0xA3) {
+      const extsWrap = derNextElement(certDer, spki.end);
+      const exts = derNextElement(certDer, extsWrap.contentStart);
+      for (let e = exts.contentStart; e < exts.end;) {
+        const ext = derNextElement(certDer, e);
+        const oid = derNextElement(certDer, ext.contentStart);
+        let valEl = derNextElement(certDer, oid.end);
+        if (certDer[valEl.start] === 0x01) valEl = derNextElement(certDer, valEl.end); // critical flag
+        const oidHex = Array.from(certDer.slice(oid.contentStart, oid.end)).join(",");
+        const inner = derNextElement(certDer, valEl.contentStart);     // OCTET STRING content
+        if (oidHex === "85,29,19") {                                    // basicConstraints
+          if (inner.contentStart < inner.end && certDer[inner.contentStart] === 0x01) {
+            const b = derNextElement(certDer, inner.contentStart);
+            isCA = certDer[b.contentStart] !== 0x00;
+          }
+        } else if (oidHex === "85,29,17") {                             // subjectAltName
+          altNames = [];
+          for (let g = inner.contentStart; g < inner.end;) {
+            const gn = derNextElement(certDer, g);
+            const bytes = certDer.slice(gn.contentStart, gn.end);
+            if (certDer[g] === 0x82) altNames.push(dec.decode(bytes));            // dNSName
+            else if (certDer[g] === 0x87 && bytes.length === 4) altNames.push(Array.from(bytes).join(".")); // iPAddress
+            g = gn.end;
+          }
+        }
+        e = ext.end;
+      }
+    }
+    return { version, issuerCN: cnOf(issuer), subjectCN: cnOf(subject),
+      notBefore, notAfter, publicKeyRaw, isCA, altNames };
   } catch {
     return null;
   }
@@ -353,7 +455,8 @@ export class TlsSession {
       this._state = "CLOSED";
       if (e instanceof TlsHandshakeError) {
         // Once our ChangeCipherSpec is out, alerts go under the new keys too.
-        try { await this._sendRecord(TLS_CT.ALERT, new Uint8Array([2, 42])); } catch { /* ignore */ }
+        // RFC 5246 §7.2: fatal alert; plaintext before our ChangeCipherSpec.
+        try { await this._sendRecord(TLS_CT.ALERT, new Uint8Array([2, e.alert ?? TLS_ALERT.HANDSHAKE_FAILURE])); } catch { /* ignore */ }
       }
       throw e;
     }
@@ -495,7 +598,7 @@ export class TlsSession {
         ciphertext,
       );
     } catch {
-      throw new TlsHandshakeError("Record authentication failed (bad_record_mac)");
+      throw new TlsHandshakeError("Record authentication failed (bad_record_mac)", 20);
     }
     return new TlsRecord(record.contentType, new Uint8Array(plain));
   }
@@ -512,7 +615,7 @@ export class TlsSession {
     );
 
     // 2. Send ClientHello, append HS bytes to transcript
-    const chRecord = TlsRecord.buildClientHello(this._clientRandom);
+    const chRecord = TlsRecord.buildClientHello(this._clientRandom, this._serverName);
     this._sendRaw(chRecord);
     this._appendTranscript(chRecord.slice(5));
 
@@ -539,10 +642,11 @@ export class TlsSession {
             if (status === "expired" || status === "notYetValid") {
               throw new TlsCertExpiredError(peerCert.subject, status);
             }
-            if (!await this._trustStore.isTrusted(peerCert, peerCert.chain)) {
+            if (!await this._trustStore.isTrusted(peerCert, peerCert.chain, { nowMs: this._now() })) {
               throw new TlsCertUntrustedError(peerCert.subject);
             }
-            if (this._serverName && !certMatchesName(peerCert.subject, this._serverName)) {
+            if (this._serverName
+                && !certMatchesName(peerCert.subject, this._serverName, peerCert.subjectAltNames())) {
               throw new TlsCertNameMismatchError(peerCert.subject, this._serverName);
             }
           }
@@ -556,23 +660,26 @@ export class TlsSession {
 
     if (!skeBody) throw new TlsHandshakeError("No ServerKeyExchange received");
 
-    // 4. Parse ServerKeyExchange and verify signature
+    // 4. Parse ServerKeyExchange and verify signature. For ECDHE_ECDSA both
+    //    the server certificate and the signature are mandatory (RFC 8422
+    //    §5.4) — even without a trust store (curl -k), which only skips the
+    //    *certificate* checks, never the proof of key possession.
+    if (!peerCert?.publicKey) throw new TlsMissingAuthError("certificate");
     const { ecdhPubKeyBytes, ecParams, signature } = TlsRecord.parseServerKeyExchange(skeBody);
+    if (!signature) throw new TlsMissingAuthError("signature");
 
-    if (signature && peerCert?.publicKey) {
-      const toSign = concat(
-        /** @type {Uint8Array} */ (this._clientRandom),
-        /** @type {Uint8Array} */ (this._serverRandom),
-        ecParams,
-      );
-      const valid = await crypto.subtle.verify(
-        { name: "ECDSA", hash: "SHA-256" },
-        peerCert.publicKey,
-        /** @type {Uint8Array<ArrayBuffer>} */ (signature),
-        toSign,
-      );
-      if (!valid) throw new TlsSignatureError();
-    }
+    const toSign = concat(
+      /** @type {Uint8Array} */ (this._clientRandom),
+      /** @type {Uint8Array} */ (this._serverRandom),
+      ecParams,
+    );
+    const sigValid = await crypto.subtle.verify(
+      { name: "ECDSA", hash: "SHA-256" },
+      peerCert.publicKey,
+      /** @type {Uint8Array<ArrayBuffer>} */ (signature),
+      toSign,
+    );
+    if (!sigValid) throw new TlsSignatureError();
 
     // 5. Send ClientKeyExchange, append HS bytes to transcript
     this._peerEcdhPubKey = await importEcdhPubKey(/** @type {Uint8Array<ArrayBuffer>} */ (ecdhPubKeyBytes));
@@ -923,7 +1030,7 @@ export class TlsSession {
     }
     for (let i = 0; i < received.length; i++) {
       if (received[i] !== expected[i]) {
-        throw new TlsHandshakeError("Finished verify_data mismatch — handshake integrity check failed");
+        throw new TlsHandshakeError("Finished verify_data mismatch — handshake integrity check failed", TLS_ALERT.DECRYPT_ERROR);
       }
     }
   }
@@ -985,53 +1092,34 @@ export class TlsSession {
 
   /** @param {Uint8Array<ArrayBuffer>} der */
   async _parseSingleCertDer(der) {
-    // Scan for OID 2.5.4.3 (55 04 03) → extract following UTF8String (CN)
-    const cns = [];
-    for (let i = 0; i + 5 < der.length; i++) {
-      if (der[i] === 0x55 && der[i + 1] === 0x04 && der[i + 2] === 0x03) {
-        const tagOff = i + 3;
-        if (der[tagOff] === 0x0C && tagOff + 2 < der.length) {
-          const strLen = der[tagOff + 1];
-          if (tagOff + 2 + strLen <= der.length) {
-            cns.push(new TextDecoder().decode(der.slice(tagOff + 2, tagOff + 2 + strLen)));
-          }
-        }
-      }
-    }
-    // toDer() writes issuerDn first, subjectDn second
-    const issuerCN  = cns[0] ?? "";
-    const subjectCN = cns[1] ?? cns[0] ?? "";
-
+    const p = parseTbs(der);
     const stub = new TlsCertificate();
-    stub.subject    = subjectCN ? `CN=${subjectCN}` : "";
-    stub.issuer     = issuerCN  ? `CN=${issuerCN}`  : stub.subject;
+    stub.subject    = p?.subjectCN ? `CN=${p.subjectCN}` : "";
+    stub.issuer     = p?.issuerCN  ? `CN=${p.issuerCN}`  : stub.subject;
     stub.selfSigned = stub.subject === stub.issuer;
-    // Real validity period from the wire (see extractValidity()); if the DER
-    // can't be parsed for some reason, fall back to "valid for a year" rather
-    // than failing the whole handshake over a cosmetic field.
-    const validity = extractValidity(der);
-    stub.notBefore  = validity?.notBefore ?? 0;
-    stub.notAfter   = validity?.notAfter  ?? (this._now() + 365 * 24 * 3600 * 1000);
+    // Real validity period from the wire; if the DER can't be parsed, the
+    // cert has no subject/key either and fails the trust/signature checks.
+    stub.notBefore  = p?.notBefore ?? 0;
+    stub.notAfter   = p?.notAfter  ?? 0;
+    // cA is only believed when it is signed into the cert (v3 basicConstraints);
+    // a legacy v1 cert never counts as CA on the wire (RFC 5280 §6.1.4(k)).
+    stub.x509Version   = p?.version === 3 ? 3 : 1;
+    stub.isCA          = p?.version === 3 && p.isCA;
+    stub._wireAltNames = p?.altNames ?? [];
 
-    // Extract the real ECDSA-P256 public key from SubjectPublicKeyInfo.
-    // toDer() encodes it as BIT STRING (0x03) with content [0x00, 0x04, ...64 bytes].
-    // A P-256 uncompressed key is always 65 bytes → BIT STRING content = 66 bytes (0x42).
-    for (let i = 0; i + 67 <= der.length; i++) {
-      if (der[i] === 0x03 && der[i + 1] === 0x42 && der[i + 2] === 0x00 && der[i + 3] === 0x04) {
-        const rawPubKey = der.slice(i + 3, i + 3 + 65); // 0x04 || x || y (skip 0x00 unused-bits byte)
-        try {
-          stub.publicKey = await crypto.subtle.importKey(
-            "raw", rawPubKey,
-            { name: "ECDSA", namedCurve: "P-256" },
-            true, ["verify"],
-          );
-          stub.publicKeyRaw = rawPubKey;
-          // Derive publicKeyId from first 16 bytes of key material
-          stub.publicKeyId = Array.from(rawPubKey.slice(1, 17))
-            .map(b => b.toString(16).padStart(2, "0")).join("");
-        } catch { /* not a valid key, skip */ }
-        break;
-      }
+    if (p?.publicKeyRaw) {
+      const rawPubKey = /** @type {Uint8Array<ArrayBuffer>} */ (p.publicKeyRaw);
+      try {
+        stub.publicKey = await crypto.subtle.importKey(
+          "raw", rawPubKey,
+          { name: "ECDSA", namedCurve: "P-256" },
+          true, ["verify"],
+        );
+        stub.publicKeyRaw = rawPubKey;
+        // Derive publicKeyId from first 16 bytes of key material
+        stub.publicKeyId = Array.from(rawPubKey.slice(1, 17))
+          .map(b => b.toString(16).padStart(2, "0")).join("");
+      } catch { /* not a valid key, skip */ }
     }
 
     // Fallback publicKeyId from SHA-256 of DER (for certs with placeholder keys)

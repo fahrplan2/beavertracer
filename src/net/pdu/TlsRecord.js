@@ -108,9 +108,25 @@ export class TlsRecord {
 
   /**
    * @param {Uint8Array} clientRandom - 32 bytes
+   * @param {string} [serverName] DNS name for the SNI extension (omitted for IP literals)
    * @returns {Uint8Array}
    */
-  static buildClientHello(clientRandom) {
+  static buildClientHello(clientRandom, serverName = "") {
+    // server_name extension (RFC 6066 §3): host_name only — IP literals are not allowed
+    const host = serverName.trim().replace(/\.$/, "");
+    const isIpLiteral = /^\d{1,3}(\.\d{1,3}){3}$/.test(host) || host.includes(":");
+    let sni = new Uint8Array(0);
+    if (host && !isIpLiteral) {
+      const name = new TextEncoder().encode(host.toLowerCase());
+      sni = new Uint8Array(9 + name.length);
+      write16BE(sni, 0, 0x0000);              // extension type: server_name
+      write16BE(sni, 2, 5 + name.length);     // extension data length
+      write16BE(sni, 4, 3 + name.length);     // server_name_list length
+      sni[6] = 0x00;                          // name_type: host_name
+      write16BE(sni, 7, name.length);         // host_name length
+      sni.set(name, 9);
+    }
+
     // supported_groups extension: secp256r1 (0x0017)
     const supportedGroups = new Uint8Array([
       0x00, 0x0A,             // extension type: supported_groups
@@ -135,7 +151,7 @@ export class TlsRecord {
       0x04, 0x03,             // ecdsa_secp256r1_sha256
     ]);
 
-    const extensions = concat(supportedGroups, ecPointFormats, sigAlgs);
+    const extensions = concat(sni, supportedGroups, ecPointFormats, sigAlgs);
     const extLenBuf = new Uint8Array(2);
     write16BE(extLenBuf, 0, extensions.length);
 
@@ -197,9 +213,12 @@ export class TlsRecord {
 
   /**
    * ECDH ServerKeyExchange: curve=secp256r1, public key (65 bytes uncompressed),
-   * optionally followed by an ECDSA signature over clientRandom||serverRandom||ecParams||key.
+   * followed by the ECDSA signature over clientRandom||serverRandom||ecParams.
+   * For ECDHE_ECDSA the signature is mandatory (RFC 8422 §5.4) — there is
+   * deliberately no unsigned variant; clients abort with handshake_failure
+   * if it is missing (see TlsSession._clientHandshake()).
    * @param {Uint8Array} ecdhPubKeyBytes - 65 bytes (0x04 || x || y)
-   * @param {Uint8Array} [signature] - DER-encoded ECDSA signature (variable length)
+   * @param {Uint8Array} signature - ECDSA signature as produced by WebCrypto (P1363, 64 bytes)
    * @returns {Uint8Array}
    */
   static buildServerKeyExchange(ecdhPubKeyBytes, signature) {
@@ -211,10 +230,7 @@ export class TlsRecord {
     params.set(ecdhPubKeyBytes, 4);
 
     if (!signature || signature.length === 0) {
-      // No signature: [sig_scheme:2=0x0000][sig_len:2=0x0000]
-      const body = new Uint8Array(params.length + 4);
-      body.set(params, 0);
-      return handshakeRecord(handshakeMsg(TLS_HT.SERVER_KEY_EXCHANGE, body));
+      throw new Error("ServerKeyExchange requires a signature (ECDHE_ECDSA, RFC 8422 §5.4)");
     }
 
     // [sig_scheme:2=ecdsa_secp256r1_sha256][sig_len:2][sig_bytes]

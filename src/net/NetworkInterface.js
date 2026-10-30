@@ -78,6 +78,9 @@ export class NetworkInterface extends Observable {
     /** @type {Set<string>} ip keys of addresses currently undergoing DAD */
     _dadPending = new Set();
 
+    /** Set by IPStack when forwarding is enabled — sets the R flag in NAs (RFC 4861 §4.4). */
+    isRouter = false;
+
     /** @type {Set<string>} ip keys where a DAD conflict was detected */
     _dadConflicts = new Set();
 
@@ -402,6 +405,13 @@ export class NetworkInterface extends Observable {
 
         const spaKey = this._ipKey(spa);
 
+        // RFC 826 merge step: refresh an existing entry for the sender first, whoever the
+        // target is — this is what makes a gratuitous ARP (RFC 5227 §3, e.g. after a VRRP
+        // failover) update the caches. ARP probes (sender 0.0.0.0) carry no binding.
+        if (spaKey !== "0.0.0.0" && this.neighborCache.has(spaKey)) {
+            this.neighborCache.set(spaKey, packet.sha);
+        }
+
         // ARP request
         if (packet.oper === 1) {
             const tpaKey = this._ipKey(tpa);
@@ -466,10 +476,14 @@ export class NetworkInterface extends Observable {
             const target = icmp6.ndpTarget;
             if (!target) return;
             const key = this._ipKey(target);
+            // RFC 4861 §7.2.4: an NS from the unspecified address is a DAD probe
+            const isDadProbe = ipv6.src.toUInt8().every(b => b === 0);
 
-            // Another node probing our tentative address → DAD conflict
+            // RFC 4862 §5.4.3: NS for our tentative address. Only a probe from ::
+            // (another node running DAD) is a duplicate; any other NS for a
+            // tentative address is silently ignored (never answered).
             if (this._dadPending.has(key)) {
-                this._dadConflicts.add(key);
+                if (isDadProbe) this._dadConflicts.add(key);
                 return;
             }
 
@@ -478,7 +492,8 @@ export class NetworkInterface extends Observable {
                 (this.ip6   && key === this._ipKey(this.ip6))   ||
                 this.virtualIPs.has(key);
             if (shouldRespond) {
-                const srcMac = icmp6.getLinkLayerAddress();
+                // RFC 4861 §7.1.1: a probe from :: carries no SLLA and must not create a cache entry
+                const srcMac = isDadProbe ? null : icmp6.getLinkLayerAddress();
                 if (srcMac) this.neighborCache.set(this._ipKey(ipv6.src), srcMac);
                 const virtualMac = this.virtualIPs.get(key);
                 if (virtualMac) {
@@ -718,7 +733,10 @@ export class NetworkInterface extends Observable {
         const srcIp = this.ip6LL ?? this.ip6;
         if (!srcIp) return;
         const naTarget = solicitedTarget ?? srcIp;
-        const na = ICMPv6Packet.buildNA(naTarget, this.mac, true);
+        // RFC 4861 §7.2.4: reply to a DAD probe (src ::) goes to all-nodes with S=0
+        const toAllNodes = this._isUnspecified(dstIp);
+        if (toAllNodes) { dstIp = IPAddress.fromString("ff02::1"); dstMac = null; }
+        const na = ICMPv6Packet.buildNA(naTarget, this.mac, !toAllNodes, { router: this.isRouter });
         const ipv6 = new IPv6Packet({
             src: srcIp,
             dst: dstIp,
@@ -748,7 +766,9 @@ export class NetworkInterface extends Observable {
     _doNDPNeighborAdvertisementVirtual(dstIp, dstMac, target, virtualMac) {
         const srcIp = this.ip6LL ?? this.ip6;
         if (!srcIp) return;
-        const na = ICMPv6Packet.buildNA(target, virtualMac, true);
+        const toAllNodes = this._isUnspecified(dstIp);
+        if (toAllNodes) { dstIp = IPAddress.fromString("ff02::1"); dstMac = null; }
+        const na = ICMPv6Packet.buildNA(target, virtualMac, !toAllNodes, { router: this.isRouter });
         const ipv6 = new IPv6Packet({
             src: srcIp,
             dst: dstIp,
@@ -764,6 +784,14 @@ export class NetworkInterface extends Observable {
             payload: ipv6.pack(),
         });
         this.port.send(frame);
+    }
+
+    /**
+     * @param {IPAddress} ip
+     * @returns {boolean} true for the IPv6 unspecified address ::
+     */
+    _isUnspecified(ip) {
+        return !ip.isV4() && ip.toUInt8().every(b => b === 0);
     }
 
     /**

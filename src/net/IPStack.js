@@ -91,7 +91,18 @@ export class IPStack extends Observable {
     /** @type {TunnelConfig[]} */
     tunnels = [];
 
-    forwarding = false;
+    _forwarding = false;
+
+    /** IP forwarding (router mode). Mirrored to each interface's isRouter (NA R flag, RFC 4861 §4.4). */
+    get forwarding() { return this._forwarding; }
+    set forwarding(v) {
+        this._forwarding = !!v;
+        this._syncRouterFlag();
+    }
+
+    _syncRouterFlag() {
+        for (const itf of this.interfaces) itf.isRouter = this._forwarding;
+    }
 
     /** @type {Map<string,any>} */
     _pendingEcho = new Map();
@@ -392,6 +403,7 @@ export class IPStack extends Observable {
 
         this.interfaces.push(interf);
         interf.subscribe(this);
+        interf.isRouter = this._forwarding;
 
         this._updateAutoRoutes();
     }
@@ -413,6 +425,7 @@ export class IPStack extends Observable {
         parent._subInterfaces.set(vid, sub);
         this.interfaces.push(sub);
         sub.subscribe(this);
+        sub.isRouter = this._forwarding;
 
         this._updateAutoRoutes();
     }
@@ -952,44 +965,61 @@ export class IPStack extends Observable {
     }
 
     /**
-     * Send an ICMPv6 error message in response to an incoming IPv6 packet.
+     * Send an ICMPv6 error message in response to an incoming IPv6 packet (RFC 4443).
      * @param {IPv6Packet} original
      * @param {number} type
      * @param {number} code
-     * @param {number} [pointer] For Type 4 (Parameter Problem): byte offset of the offending field.
+     * @param {number} [field] 32-bit field after the header: pointer (Type 4), MTU (Type 2), else 0.
+     * @param {number} [recvIfIndex] interface the original arrived on — used to reach a link-local source
      */
-    _sendICMPv6Error(original, type, code, pointer = 0) {
+    _sendICMPv6Error(original, type, code, field = 0, recvIfIndex = -1) {
         if (!(original instanceof IPv6Packet)) return;
 
         const src = original.src;
-        if (this._isZero(src)) return;
+        // RFC 4443 §2.4(e.6): never to the unspecified or a multicast source
+        if (this._isZero(src) || src.toUInt8()[0] === 0xff) return;
 
-        // Don't reply to ICMPv6 error messages, only to echo requests (type 128)
+        // RFC 4443 §2.4(e.1): never in response to an ICMPv6 error message (types 0–127)
         if (original.nextHeader === 58) {
             const icmpType = original.payload?.[0];
-            if (icmpType !== 128) return;
+            if (icmpType === undefined || icmpType < 128) return;
         }
 
-        // Don't reply to multicast destinations
-        if (src.toUInt8()[0] === 0xff) return;
+        // RFC 4443 §2.4(e.3): not for packets sent to a multicast destination —
+        // except Packet Too Big and Parameter Problem Code 2.
+        if (original.dst.toUInt8()[0] === 0xff && !(type === 2 || (type === 4 && code === 2))) return;
 
-        // Body: 4-byte field (unused for Type 1/3; pointer for Type 4) + original packet (max 1232 bytes)
+        // Body: 4-byte field + as much of the original as fits into 1280 bytes total
+        // (40 IPv6 + 8 ICMPv6 header → max. 1232 quoted bytes, RFC 4443 §2.4(c))
         const origBytes = original.pack();
         const quotedLen = Math.min(origBytes.length, 1232);
         const body = new Uint8Array(4 + quotedLen);
-        write32BE(body, 0, pointer);
+        write32BE(body, 0, field);
         body.set(origBytes.slice(0, quotedLen), 4);
 
-        const mySrc = this._pickSrcIpV6(src);
+        const viaIf = this._isLinkLocal6(src) ? recvIfIndex : -1;
+        const viaItf = viaIf >= 0 ? this.interfaces[viaIf] : null;
+        const mySrc = (viaItf?.ip6LL && !this._isZero(viaItf.ip6LL)) ? viaItf.ip6LL : this._pickSrcIpV6(src);
+        if (this._isZero(mySrc)) return;
         const icmpBytes = new ICMPv6Packet({ type, code, body }).pack(mySrc, src);
 
-        this.send6({ dst: src, src: mySrc, nextHeader: 58, payload: icmpBytes });
+        const pkt = new IPv6Packet({ dst: src, src: mySrc, nextHeader: 58, hopLimit: 64, payload: icmpBytes });
+        this.routeV6(pkt, true, viaIf).catch(console.error);
+    }
+
+    /**
+     * @param {IPAddress} ip
+     * @returns {boolean} true for fe80::/10
+     */
+    _isLinkLocal6(ip) {
+        const b = ip.toUInt8();
+        return b.length === 16 && b[0] === 0xfe && (b[1] & 0xc0) === 0x80;
     }
 
     /**
      * @param {IPv4Packet} packet
      */
-    _handleICMP(packet) {
+    _handleICMP(packet, recvIfIndex = -1) {
         const icmp = ICMPPacket.fromBytes(packet.payload);
         const ip_src = packet.src;
         const ip_dst = packet.dst;
@@ -1026,11 +1056,21 @@ export class IPStack extends Observable {
             case 8: { // Echo request
                 if (icmp.code != 0) throw new Error("ICMP-Code not understood");
 
+                // RFC 1122 §3.2.2.6: echo requests to a broadcast address MAY be silently discarded
                 if (this._isLimitedBroadcast(ip_dst) || this._findDirectedBroadcastInterface(ip_dst) !== -1) return;
+
+                // The reply's source must be a unicast address: for a multicast request use
+                // the receiving interface's address (undefined → send() picks one).
+                /** @type {IPAddress|undefined} */
+                let replySrc = ip_dst;
+                if ((this._v4n(ip_dst) >>> 28) === 0xe) {
+                    const rItf = recvIfIndex >= 0 ? this.interfaces[recvIfIndex] : null;
+                    replySrc = (rItf?.ip?.isV4() && !this._isZero(rItf.ip)) ? rItf.ip : undefined;
+                }
 
                 this.send({
                     dst: ip_src,
-                    src: ip_dst,
+                    src: replySrc,
                     protocol: 1,
                     payload: new ICMPPacket({
                         type: 0,
@@ -1117,7 +1157,7 @@ export class IPStack extends Observable {
 
         switch (packet.protocol) {
             case 1:
-                this._handleICMP(packet);
+                this._handleICMP(packet, recvIfIndex);
                 break;
             case 2: {
                 // IGMPv2 General Query (0x11) → re-report all joined groups so the switch
@@ -1467,6 +1507,7 @@ export class IPStack extends Observable {
     }
 
     update() {
+        this._syncRouterFlag();
         // Detect ip6 changes (SLAAC activation or manual DAD completion) and sync routes/RA timers
         for (let i = 0; i < this.interfaces.length; i++) {
             const current = this.interfaces[i].ip6?.toString() ?? null;
@@ -1529,10 +1570,11 @@ export class IPStack extends Observable {
         }
 
         // RFC 4007: link-local addresses are interface-scoped.
-        // When dst is fe80::/10, resolve the interface via recvIfIndex (reply path)
-        // or by searching the neighbor cache (locally-generated traffic).
-        const dstBytes = dst.toUInt8();
-        if (dstBytes[0] === 0xfe && (dstBytes[1] & 0xc0) === 0x80) {
+        // RFC 4291 §2.5.6: routers must not forward packets with a link-local destination.
+        // Locally generated traffic resolves the interface via recvIfIndex (reply path)
+        // or by searching the neighbor cache.
+        if (this._isLinkLocal6(dst)) {
+            if (!internal) return; // not ours, never forwarded
             let ifIdx = recvIfIndex >= 0 ? recvIfIndex : -1;
             if (ifIdx < 0) {
                 const key = dst.toString();
@@ -1541,11 +1583,6 @@ export class IPStack extends Observable {
                 }
             }
             if (ifIdx >= 0) {
-                if (!internal && !this.forwarding) return;
-                if (!internal) {
-                    if (packet.hopLimit <= 1) { this._sendICMPv6Error(packet, 3, 0); return; }
-                    packet.hopLimit -= 1;
-                }
                 const mac = await this.interfaces[ifIdx].resolveNeighbor(dst);
                 if (mac == null) return;
                 this.interfaces[ifIdx].sendFrame(mac, 0x86DD, packet.pack());
@@ -1556,31 +1593,47 @@ export class IPStack extends Observable {
 
         const out = this._resolveOutgoing(dst);
         if (!out) {
-            if (!internal) this._sendICMPv6Error(packet, 1, 0); // No route to destination (RFC 4443 §3.1)
+            if (!internal && this.forwarding) this._sendICMPv6Error(packet, 1, 0, 0, recvIfIndex); // No route (RFC 4443 §3.1)
             return;
         }
 
         if (out.interfIndex === -1) {
-            this.acceptV6(packet);
+            this.acceptV6(packet, recvIfIndex);
             return;
         }
 
         if (!internal && !this.forwarding) return;
 
         if (!internal) {
+            // RFC 4443 §3.1 / RFC 4007 §9: a link-local source must not leave its link
+            // → Destination Unreachable Code 2 (beyond scope of source address).
+            if (this._isLinkLocal6(packet.src) && out.interfIndex !== recvIfIndex) {
+                this._sendICMPv6Error(packet, 1, 2, 0, recvIfIndex);
+                return;
+            }
             if (packet.hopLimit <= 1) {
-                this._sendICMPv6Error(packet, 3, 0);
+                this._sendICMPv6Error(packet, 3, 0, 0, recvIfIndex);
                 return;
             }
             packet.hopLimit -= 1;
         }
 
         const interf = this.interfaces[out.interfIndex];
+        const bytes = packet.pack();
+
+        // RFC 8200 §5: routers never fragment IPv6 — send Packet Too Big (RFC 4443 §3.2)
+        // with the MTU of the outgoing link.
+        const mtu = interf.getMtu();
+        if (!internal && bytes.length > mtu) {
+            this._sendICMPv6Error(packet, 2, 0, mtu, recvIfIndex);
+            return;
+        }
+
         const nh = this._isZero(out.route.nexthop) ? dst : out.route.nexthop;
 
         const mac = await interf.resolveNeighbor(nh);
         if (mac == null) return;
-        interf.sendFrame(mac, 0x86DD, packet.pack());
+        interf.sendFrame(mac, 0x86DD, bytes);
     }
 
     /**
@@ -1598,7 +1651,7 @@ export class IPStack extends Observable {
                     this._rawProtoHandlers.get(packet.nextHeader)?.(/** @type {any} */ (packet), recvIfIndex);
                 } else {
                     // RFC 4443 §3.4: Type 4 Code 1 – unrecognized Next Header; pointer = offset 6
-                    this._sendICMPv6Error(packet, 4, 1, 6);
+                    this._sendICMPv6Error(packet, 4, 1, 6, recvIfIndex);
                 }
         }
     }
@@ -1628,10 +1681,24 @@ export class IPStack extends Observable {
                 break;
             }
             case 128: { // Echo Request → send Reply
+                if (this._isZero(srcIp) || srcIp.toUInt8()[0] === 0xff) break;
+                // RFC 4443 §4.2: a reply to a multicast request uses a unicast address of the
+                // receiving interface (link-local for link-local-scoped groups).
+                let replySrc = dstIp;
+                const dstB = dstIp.toUInt8();
+                if (dstB[0] === 0xff) {
+                    const rItf = recvIfIndex >= 0 ? this.interfaces[recvIfIndex] : null;
+                    const ll  = rItf?.ip6LL && !this._isZero(rItf.ip6LL) ? rItf.ip6LL : null;
+                    const glb = rItf?.ip6   && !this._isZero(rItf.ip6)   ? rItf.ip6   : null;
+                    const linkScope = (dstB[1] & 0x0f) <= 2 || this._isLinkLocal6(srcIp);
+                    replySrc = (linkScope ? (ll ?? glb) : (glb ?? ll)) ?? this._pickSrcIpV6(srcIp);
+                    if (this._isZero(replySrc)) break;
+                }
                 const replyBytes = ICMPv6Packet.buildEchoReply(
                     icmp6.identifier, icmp6.sequence, icmp6.echoPayload
-                ).pack(dstIp, srcIp);
-                this.send6({ dst: srcIp, src: dstIp, nextHeader: 58, payload: replyBytes });
+                ).pack(replySrc, srcIp);
+                const reply = new IPv6Packet({ dst: srcIp, src: replySrc, nextHeader: 58, hopLimit: 64, payload: replyBytes });
+                this.routeV6(reply, true, this._isLinkLocal6(srcIp) ? recvIfIndex : -1).catch(console.error);
                 break;
             }
             case 129: { // Echo Reply → resolve pending ping6
@@ -2119,6 +2186,7 @@ export class IPStack extends Observable {
             stack.addRoute(dst, prefixLength, interf, nexthop);
         }
 
+        stack._syncRouterFlag();
         return stack;
     }
 }

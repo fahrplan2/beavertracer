@@ -300,6 +300,32 @@ describe('SimpleHTTPServerApp', () => {
       sendPost(c, '/index.html');
       const resp = await readResponse(c);
       expect(resp.status).toBe(405);
+      expect(resp.headers['allow']).toBe('GET, HEAD'); // RFC 9110 §15.5.6
+    });
+  });
+
+  // ── Host header (RFC 9112 §3.2) ──────────────────────────────────────────────
+
+  describe('Host header', () => {
+    it('rejects an HTTP/1.1 request without Host with 400', async () => {
+      const c = vnet.connect();
+      c.send(enc.encode('GET /index.html HTTP/1.1\r\n\r\n'));
+      const resp = await readResponse(c);
+      expect(resp.status).toBe(400);
+    });
+
+    it('rejects an HTTP/1.1 request with two Host headers with 400', async () => {
+      const c = vnet.connect();
+      c.send(enc.encode('GET /index.html HTTP/1.1\r\nHost: a\r\nHost: b\r\n\r\n'));
+      const resp = await readResponse(c);
+      expect(resp.status).toBe(400);
+    });
+
+    it('accepts an HTTP/1.0 request without Host', async () => {
+      const c = vnet.connect();
+      c.send(enc.encode('GET /index.html HTTP/1.0\r\n\r\n'));
+      const resp = await readResponse(c);
+      expect(resp.status).toBe(200);
     });
   });
 

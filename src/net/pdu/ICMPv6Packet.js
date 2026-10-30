@@ -145,6 +145,10 @@ export class ICMPv6Packet {
   }
   /** Solicited flag (NA) */
   get ndpSolicited() { return (this.ndpFlags & 0x40000000) !== 0; }
+  /** Router flag (NA) */
+  get ndpRouter() { return (this.ndpFlags & 0x80000000) !== 0; }
+  /** Override flag (NA) */
+  get ndpOverride() { return (this.ndpFlags & 0x20000000) !== 0; }
 
   /**
    * Build Neighbor Solicitation (type 135).
@@ -257,12 +261,18 @@ export class ICMPv6Packet {
    * body: flags(4) + target(16) + TLLA option(8)
    * @param {IPAddress} target
    * @param {Uint8Array} targetMac
-   * @param {boolean} [solicited]
+   * @param {boolean} [solicited]  S flag (RFC 4861 §4.4); must be 0 for NAs sent to a multicast address
+   * @param {{router?: boolean, override?: boolean}} [opts]
+   *        router: R flag — set when the sender is a router (forwarding enabled)
+   *        override: O flag (default true); false for anycast/proxy NAs
    * @returns {ICMPv6Packet}
    */
-  static buildNA(target, targetMac, solicited = true) {
+  static buildNA(target, targetMac, solicited = true, opts = {}) {
     const body = new Uint8Array(28);
-    const flags = (solicited ? 0x40000000 : 0) | 0x20000000; // S | O
+    const override = opts.override ?? true;
+    const flags = ((opts.router ? 0x80000000 : 0) |
+                   (solicited   ? 0x40000000 : 0) |
+                   (override    ? 0x20000000 : 0)) >>> 0; // R | S | O
     write32BE(body, 0, flags);
     body.set(target.toUInt8(), 4);  // bytes 4-19: target
     body[20] = 2; body[21] = 1;     // TLLA option: type=2, length=1

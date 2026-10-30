@@ -46,7 +46,7 @@ describe('TlsCertificate', () => {
     const der = cert.toDer();
 
     // Manually walk the same DER structure TlsSession._parseSingleCertDer() parses:
-    // Certificate > TBSCertificate > (serial, algId, issuer, validity, ...)
+    // Certificate > TBSCertificate > ([0] version, serial, algId, issuer, validity, ...)
     /** @param {Uint8Array} data @param {number} offset */
     const nextElement = (data, offset) => {
       let off = offset + 1;
@@ -58,7 +58,9 @@ describe('TlsCertificate', () => {
     };
     const outer = nextElement(der, 0);
     const tbs = nextElement(der, outer.contentStart);
-    const serial = nextElement(der, tbs.contentStart);
+    const version = nextElement(der, tbs.contentStart);
+    expect(der[version.start]).toBe(0xA0);
+    const serial = nextElement(der, version.end);
     const algId = nextElement(der, serial.end);
     const issuer = nextElement(der, algId.end);
     const validity = nextElement(der, issuer.end);

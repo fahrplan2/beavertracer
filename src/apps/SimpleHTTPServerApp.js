@@ -662,7 +662,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     const lines = headerText.split("\r\n");
     const reqLine = lines[0] || "";
 
-    const m = /^([A-Z]+)\s+(\S+)\s+HTTP\/1\.[01]$/.exec(reqLine);
+    const m = /^([A-Z]+)\s+(\S+)\s+HTTP\/1\.([01])$/.exec(reqLine);
     if (!m) {
       const body = internalHtml(
         t("app.simplehttpserver.http.400.title"),
@@ -684,6 +684,26 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     const method = m[1];
     const target = m[2];
 
+    // RFC 9112 §3.2: an HTTP/1.1 request needs exactly one Host header, otherwise 400
+    const hostCount = lines.slice(1).filter(l => /^host\s*:/i.test(l)).length;
+    if (m[3] === "1" && hostCount !== 1) {
+      const body = internalHtml(
+        t("app.simplehttpserver.http.400.title"),
+        t("app.simplehttpserver.http.400.host")
+      );
+      const resp = buildResponse(400, "Bad Request", {
+        "Date": new Date().toUTCString(),
+        "Server": "SimpleHTTPServer/1.0",
+        "Content-Type": "text/html; charset=utf-8",
+        "Content-Length": String(body.length),
+        "Connection": "close",
+      }, body);
+
+      await io.send(resp);
+      io.close();
+      return;
+    }
+
     if (method !== "GET" && method !== "HEAD") {
       const body = internalHtml(
         t("app.simplehttpserver.http.405.title"),
@@ -691,6 +711,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
       );
       const resp = buildResponse(405, "Method Not Allowed", {
         "Date": new Date().toUTCString(),
+        "Allow": "GET, HEAD", // RFC 9110 §15.5.6: MUST list the supported methods
         "Server": "SimpleHTTPServer/1.0",
         "Content-Type": "text/html; charset=utf-8",
         "Content-Length": String(body.length),

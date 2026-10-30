@@ -388,7 +388,8 @@ describe('NatEngine – natInbound', () => {
             payload: udp.pack({ srcIp: src, dstIp: dst }),
         });
         expect(nat.natInbound(firstFrag)).toBe(ipn(LAN_IP));
-        expect(nat._fragIn.get(777)).toBe(ipn(LAN_IP));
+        const fragKey = `${ipn(REMOTE_IP)}:${ipn(WAN_IP)}:17:777`;
+        expect(nat._fragIn.get(fragKey)?.lanIpNum).toBe(ipn(LAN_IP));
 
         const lastFrag = new IPv4Packet({
             src, dst, protocol: 17,
@@ -401,7 +402,7 @@ describe('NatEngine – natInbound', () => {
         expect(lanIp).toBe(ipn(LAN_IP));
         expect(lastFrag.dst.toString()).toBe(LAN_IP);
         // Last fragment (MF=0) must clear the reassembly mapping
-        expect(nat._fragIn.has(777)).toBe(false);
+        expect(nat._fragIn.has(fragKey)).toBe(false);
     });
 
     it('drops a non-first fragment with an unknown identification', () => {
@@ -437,7 +438,7 @@ describe('NatEngine – getEntries / clear', () => {
         const nat = new NatEngine();
         nat.natOutbound(wanIpNum(), makeUdpPacket(4000));
         nat.natOutbound(wanIpNum(), makeIcmpPacket(0x1234));
-        nat._fragIn.set(1, ipn(LAN_IP));
+        nat._fragIn.set('1:2:17:1', { lanIpNum: ipn(LAN_IP), lastSeenTick: 0 });
 
         nat.clear();
 
