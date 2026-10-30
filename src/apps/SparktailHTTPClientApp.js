@@ -531,7 +531,10 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     /** @type {HTMLButtonElement} */
     const go = UI.button(t("app.sparktail.button.go"), () => this._goFromUI(), { primary: true });
     /** @type {HTMLButtonElement} */
-    const stop = UI.button(t("app.sparktail.button.stop"), () => this._stop(), { icon: "fa-stop" });
+    // icon only, like back/forward/reload; the label stays as tooltip and for screen readers
+    const stop = UI.button("", () => this._stop(), { title: t("app.sparktail.button.stop") });
+    stop.replaceChildren(UI.el("i", { className: "fas fa-stop" }));
+    stop.setAttribute("aria-label", t("app.sparktail.button.stop"));
     this.goBtn = go;
     this.stopBtn = stop;
 
