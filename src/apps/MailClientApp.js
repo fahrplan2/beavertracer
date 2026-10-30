@@ -291,6 +291,8 @@ export class MailClientApp extends LoggedProcess {
   /** @type {"inbox"|"sent"|"compose"|"config"|"log"} */ tab = "inbox";
   // ── UI refs ───────────────────────────────────────────────────
   /** @type {HTMLButtonElement|null} */ fetchBtn = null;
+  /** @type {HTMLButtonElement|null} */ composeBtn = null;
+  /** @type {HTMLButtonElement|null} */ configBtn = null;
   /** @type {HTMLElement|null} */       statusEl = null;
 
   /** @type {HTMLElement|null} */ inboxPanel = null;
@@ -346,7 +348,7 @@ export class MailClientApp extends LoggedProcess {
 
   onUnmount() {
     this.disposer.dispose();
-    this.fetchBtn = null; this.statusEl = null;
+    this.fetchBtn = null; this.composeBtn = null; this.configBtn = null; this.statusEl = null;
     this.inboxPanel = null; this.inboxListEl = null; this.inboxPreviewEl = null;
     this.sentPanel = null;  this.sentListEl = null;  this.sentPreviewEl = null;
     this.composePanel = null; this.toEl = null; this.ccEl = null;
@@ -449,18 +451,21 @@ export class MailClientApp extends LoggedProcess {
     this.fetchBtn = fetchBtn;
 
     const configBtn = iconBtn("fa-gear", t("app.mailclient.button.config") || "Konfiguration",
-      () => this._switchTab("config"), {});
+      () => { this._fillConfigForm(); this._switchTab("config"); }, {});
+    this.composeBtn = composeBtn;
+    this.configBtn = configBtn;
 
-    const toolbar = UI.el("div", { className: "mailclient-toolbar", children: [composeBtn, fetchBtn, configBtn] });
+    // Toolbar holds actions; config (last) is pushed to the right by CSS.
+    const toolbar = UI.el("div", { className: "mailclient-toolbar", children: [fetchBtn, composeBtn, configBtn] });
 
     // ── Tabs ─────────────────────────────────────────────────
+    // Only the folders and the log are tabs. Compose and config are opened
+    // from the toolbar and show with no tab active.
     const { bar: tabBar, setActive: setTabActive } = UI.tabGroup([
       { id: "inbox",   icon: "fa-inbox",         label: t("app.mailclient.tab.inbox")   || "Posteingang" },
       { id: "sent",    icon: "fa-paper-plane",   label: t("app.mailclient.tab.sent")    || "Gesendet" },
-      { id: "compose", icon: "fa-pen-to-square", label: t("app.mailclient.tab.compose") || "Verfassen" },
-      { id: "config",  icon: "fa-gear",          label: t("app.mailclient.tab.config")  || "Konfiguration" },
       { id: "log",     icon: "fa-list",          label: t("app.mailclient.tab.log")     || "Protokoll" },
-    ], (id) => this._switchTab(/** @type {"inbox"|"sent"|"compose"|"config"|"log"} */ (id)));
+    ], (id) => this._switchTab(/** @type {"inbox"|"sent"|"log"} */ (id)));
     this._setTabActive = setTabActive;
 
     // ── Inbox panel ──────────────────────────────────────────
@@ -501,7 +506,6 @@ export class MailClientApp extends LoggedProcess {
     const discardBtn = iconBtn("fa-xmark",        t("app.mailclient.button.discard") || "Verwerfen", () => { this._clearCompose(); this._switchTab("inbox"); }, {});
 
     const composePanel = UI.el("div", { className: "mailclient-compose-panel panel", children: [
-      UI.el("h4", { text: t("app.mailclient.compose.title") || "Neue Nachricht" }),
       UI.row(t("app.mailclient.label.to")      || "An",      toIn),
       UI.row("CC",                                            ccIn),
       UI.row("BCC",                                           bccIn),
@@ -554,6 +558,11 @@ export class MailClientApp extends LoggedProcess {
       this._switchTab("inbox");
     }, { primary: true });
 
+    const cfgDiscardBtn = iconBtn("fa-xmark", t("app.mailclient.button.discard") || "Verwerfen", () => {
+      this._fillConfigForm();
+      this._switchTab("inbox");
+    }, {});
+
     this.cfgProtoSel   = cfgProtoSel;
     this.cfgHostIn     = cfgHostIn;
     this.cfgPortIn     = cfgPortIn;
@@ -584,7 +593,7 @@ export class MailClientApp extends LoggedProcess {
           UI.row(t("app.mailclient.config.smtpTls")  || "Verschlüsselung",  cfgSmtpTlsIn),
         ]}),
       ]}),
-      UI.buttonRow([cfgSaveBtn]),
+      UI.buttonRow([cfgSaveBtn, cfgDiscardBtn]),
     ] });
     this.configPanel = configPanel;
 
@@ -595,7 +604,7 @@ export class MailClientApp extends LoggedProcess {
     this.logPanel = logPanel;
 
     // ── Status bar ───────────────────────────────────────────
-    const statusEl = UI.el("div", { className: "mailclient-status msg" });
+    const statusEl = UI.el("div", { className: "mailclient-status" });
     this.statusEl = statusEl;
 
     // ── Assemble ─────────────────────────────────────────────
@@ -605,6 +614,20 @@ export class MailClientApp extends LoggedProcess {
     logPanel.classList.add("hidden");
     const root = UI.panel([toolbar, tabBar, inboxPanel, sentPanel, composePanel, configPanel, logPanel, statusEl]);
     this.root.replaceChildren(root);
+  }
+
+  /** Reset the config form to the saved this.cfg. */
+  _fillConfigForm() {
+    if (this.cfgProtoSel)   this.cfgProtoSel.value   = this.cfg.protocol;
+    if (this.cfgHostIn)     this.cfgHostIn.value     = this.cfg.host;
+    if (this.cfgPortIn)     this.cfgPortIn.value     = this.cfg.port;
+    if (this.cfgUserIn)     this.cfgUserIn.value     = this.cfg.user;
+    if (this.cfgPassIn)     this.cfgPassIn.value     = this.cfg.pass;
+    if (this.cfgDomainIn)   this.cfgDomainIn.value   = this.cfg.domain;
+    if (this.cfgTlsIn)      this.cfgTlsIn.checked    = !!this.cfg.tls;
+    if (this.cfgSmtpHostIn) this.cfgSmtpHostIn.value = this.cfg.smtpHost;
+    if (this.cfgSmtpPortIn) this.cfgSmtpPortIn.value = this.cfg.smtpPort;
+    if (this.cfgSmtpTlsIn)  this.cfgSmtpTlsIn.value  = this.cfg.smtpTls;
   }
 
   // ── Tab switching ─────────────────────────────────────────────
@@ -618,6 +641,11 @@ export class MailClientApp extends LoggedProcess {
     this.configPanel?.classList.toggle("hidden",  tab !== "config");
     this.logPanel?.classList.toggle("hidden",     tab !== "log");
     this._setTabActive?.(tab);
+    // compose/config have no tab; their toolbar button shows they're open
+    for (const [btn, id] of /** @type {const} */ ([[this.composeBtn, "compose"], [this.configBtn, "config"]])) {
+      btn?.classList.toggle("is-active", tab === id);
+      btn?.setAttribute("aria-pressed", String(tab === id));
+    }
   }
 
   // ── Mail list rendering ───────────────────────────────────────

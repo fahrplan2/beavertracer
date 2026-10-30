@@ -57,6 +57,27 @@
   opacity: 0.8;
 }
 
+/* One-line status above the log: drop the shared .msg min-height, never
+   shrink when the log fills the pane, and cut off instead of wrapping. */
+.app-simple-mail-server .log-pane > .msg.mail-status {
+  flex: 0 0 auto;
+  min-height: 0;
+  max-height: none;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.app-simple-mail-server .mail-hint {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.75rem;
+  opacity: 0.8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* =========================================================
    Mail Client App
    ========================================================= */
@@ -95,6 +116,13 @@
 
 .app-mail-client .mailclient-toolbar .btn:last-child {
   margin-left: auto;
+}
+
+/* Toolbar button whose view (compose/config) is open */
+.app-mail-client .mailclient-toolbar .btn.is-active {
+  background: color-mix(in oklch, var(--primary), transparent 78%);
+  border-color: var(--ui-border-strong);
+  font-weight: 600;
 }
 
 /* Folder panels */
@@ -187,6 +215,23 @@
   margin-top: var(--pad-sm);
 }
 
+/* Compose header fields: label and input on one line ("An: ______") */
+.app-mail-client .mailclient-compose-panel .form-row {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--pad-md);
+  margin-bottom: var(--pad-sm);
+}
+
+.app-mail-client .mailclient-compose-panel .form-label {
+  flex: 0 0 4.5em;
+}
+
+.app-mail-client .mailclient-compose-panel .form-control {
+  flex: 1;
+  min-width: 0;
+}
+
 .app-mail-client .mailclient-compose-body {
   flex: 1;
   min-height: 100px;
@@ -209,6 +254,7 @@
 .app-mail-client .mailclient-log {
   flex: 1;
   min-height: 0;
+  max-height: none;   /* .msg caps at 240px; the log should fill its tab */
   overflow-y: auto;
   font-size: 0.75rem;
   font-family: var(--font-mono);
@@ -216,12 +262,16 @@
   word-break: break-all;
 }
 
-/* Status bar */
+/* Status bar: a plain muted line, same look as Sparktail's */
 .app-mail-client .mailclient-status {
-  font-size: 0.8125rem;
-  margin-top: 5px;
-  padding: 3px var(--pad-sm);
-  opacity: 0.75;
+  flex: 0 0 auto;
+  padding: var(--pad-sm) 10px 0;
+  color: var(--muted);
+  font-family: ui-sans-serif, system-ui;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Config panel */
