@@ -182,6 +182,10 @@
   grid-area: nodes;
   position: relative;
   overflow: visible;
+  /* Panels may be pushed past the right/bottom edge to get them out of the
+     way; cut them off there so they don't cover the lessons panel. Left
+     stays open for the sidebar column (see .sim-panel-bounds). */
+  clip-path: inset(0 0 0 -100vw);
   pointer-events: none;
   z-index: 11;
 }
