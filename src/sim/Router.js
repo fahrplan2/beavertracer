@@ -3003,7 +3003,7 @@ export class Router extends SimulatedObject {
             if (!iface.port?.isLinked?.()) continue;
             if (!iface.mac) continue;
             const payload = LLDPDaemon.encode(iface.mac, iface.name, this.name);
-            iface.sendFrame(LLDPDaemon.DEST_MAC, LLDPDaemon.ETHERTYPE, payload);
+            iface.sendFrame(LLDPDaemon.DEST_MAC, LLDPDaemon.ETHERTYPE, payload, true);
         }
     }
 

@@ -536,8 +536,9 @@ export class NetworkInterface extends Observable {
      * @param {Uint8Array} dstMac
      * @param {Number} etherType
      * @param {Uint8Array} payload
+     * @param {boolean} [priority] control frame (e.g. LLDP): sent ahead of queued data
      */
-    sendFrame(dstMac, etherType, payload) {
+    sendFrame(dstMac, etherType, payload, priority = false) {
         const frame = new EthernetFrame({
             dstMac: dstMac,
             srcMac: this.mac,
@@ -552,7 +553,7 @@ export class NetworkInterface extends Observable {
             return;
         }
 
-        this.port.send(frame);
+        this.port.send(frame, priority);
     }
 
     // -------------------------------------------------------------------------
@@ -946,8 +947,9 @@ export class VLANSubInterface extends NetworkInterface {
      * @param {Uint8Array} dstMac
      * @param {number} etherType
      * @param {Uint8Array} payload
+     * @param {boolean} [priority] control frame (e.g. LLDP): sent ahead of queued data
      */
-    sendFrame(dstMac, etherType, payload) {
+    sendFrame(dstMac, etherType, payload, priority = false) {
         if (isEqualUint8(dstMac, this.mac)) {
             // Loopback: inject into own virtual port buffer
             const inner = new EthernetFrame({ dstMac, srcMac: this.mac, etherType, payload });
@@ -957,6 +959,6 @@ export class VLANSubInterface extends NetworkInterface {
         }
         const frame = new EthernetFrame({ dstMac, srcMac: this.mac, etherType, payload });
         frame.vlan = { vid: this.vid };
-        this._parentIface.port.send(frame);
+        this._parentIface.port.send(frame, priority);
     }
 }

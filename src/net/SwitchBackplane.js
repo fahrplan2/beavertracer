@@ -359,7 +359,7 @@ export class SwitchBackplane extends Observable {
                 etherType: LLDPDaemon.ETHERTYPE,
                 payload,
             });
-            this.ports[i].send(frame);
+            this.ports[i].send(frame, true);
         }
     }
 
@@ -711,7 +711,7 @@ export class SwitchBackplane extends Observable {
             etherType: SwitchBackplane.LACP_ETHERTYPE,
             payload,
         });
-        this.ports[portIdx].send(frame);
+        this.ports[portIdx].send(frame, true);
     }
 
     /**
