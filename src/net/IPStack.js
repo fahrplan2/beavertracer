@@ -1193,12 +1193,13 @@ export class IPStack extends Observable {
      * @param {number} proto
      * @param {Uint8Array} payload
      * @param {IPAddress|null} [src]
+     * @param {number} [ttl] 1 for link-local protocols (OSPF, IGMP); VRRP needs 255 (RFC 5798 §5.1.1.3)
      */
-    async sendOnInterface(ifIndex, dst, proto, payload, src = null) {
+    async sendOnInterface(ifIndex, dst, proto, payload, src = null, ttl = 1) {
         const iface = this.interfaces[ifIndex];
         if (!iface) return;
         const srcIp = src ?? iface.ip;
-        const pkt = new IPv4Packet({ dst, src: srcIp, protocol: proto, payload, ttl: 1 });
+        const pkt = new IPv4Packet({ dst, src: srcIp, protocol: proto, payload, ttl });
         const dstNum = this._v4n(dst);
         let dstMac;
         if ((dstNum >>> 28) === 0xe) {

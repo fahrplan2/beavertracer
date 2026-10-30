@@ -82,8 +82,8 @@ function tick(n) {
 function makeHelloBytes({ routerId, areaId = 0, neighbors = [], dr = 0, bdr = 0 }) {
     const hello = new OspfHello({
         networkMask:    0xffffff00,
-        helloInterval:  0,   // matches Math.trunc(OSPF_HELLO_MS / 1000) = 0
-        deadInterval:   2,   // matches Math.trunc(OSPF_DEAD_MS  / 1000) = 2
+        helloInterval:  10,  // RFC 2328 default carried on the wire
+        deadInterval:   40,
         routerPriority: 1,
         dr, bdr, neighbors,
     });
@@ -158,6 +158,17 @@ describe('Hello transmission', () => {
         expect(pkt.header.areaId).toBe(0);
         daemon.stop();
     });
+
+    it('Hello carries non-zero whole-second intervals (RFC 2328 A.3.2)', () => {
+        const stack  = makeStack([{ ip: '10.0.0.1', prefix: 24 }]);
+        const daemon = new OSPFDaemon(stack);
+        daemon.setEnabled(true);
+        tick(1);
+        const pkt = OspfPacket.fromBytes(stack._sent[0].payload);
+        expect(pkt.body.helloInterval).toBe(10);
+        expect(pkt.body.deadInterval).toBe(40);
+        daemon.stop();
+    });
 });
 
 // ── Neighbor state machine (direct injection) ─────────────────────────────────
@@ -196,7 +207,7 @@ describe('neighbor state machine', () => {
     });
 
     it('ignores a Hello with a wrong network mask', () => {
-        const hello = new OspfHello({ networkMask: 0xffff0000, helloInterval: 0, deadInterval: 2 });
+        const hello = new OspfHello({ networkMask: 0xffff0000, helloInterval: 10, deadInterval: 40 });
         const hdr   = new OspfHeader({ type: OSPF_TYPE_HELLO, length: 0, routerId: NBR_RID, areaId: 0 });
         const bytes = new OspfPacket({ header: hdr, body: hello }).pack();
         daemon._handleOSPF({ src: IPAddress.fromString('10.0.0.2'), payload: bytes }, 0);
@@ -204,7 +215,7 @@ describe('neighbor state machine', () => {
     });
 
     it('ignores a Hello with a mismatched dead interval', () => {
-        const hello = new OspfHello({ networkMask: 0xffffff00, helloInterval: 0, deadInterval: 99 });
+        const hello = new OspfHello({ networkMask: 0xffffff00, helloInterval: 10, deadInterval: 99 });
         const hdr   = new OspfHeader({ type: OSPF_TYPE_HELLO, length: 0, routerId: NBR_RID, areaId: 0 });
         const bytes = new OspfPacket({ header: hdr, body: hello }).pack();
         daemon._handleOSPF({ src: IPAddress.fromString('10.0.0.2'), payload: bytes }, 0);

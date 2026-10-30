@@ -734,7 +734,7 @@ export class SwitchBackplane extends Observable {
         buf[12] = (groupId >> 8) & 0xFF; buf[13] = groupId & 0xFF; // key
         buf[14] = 0x80; buf[15] = 0x00;        // port priority 32768
         buf[16] = ((portIdx + 1) >> 8) & 0xFF; buf[17] = (portIdx + 1) & 0xFF; // port
-        buf[18] = 0x3D; // state: Activity|Timeout|Aggregation|Sync|Collecting|Distributing (no Defaulted/Expired)
+        buf[18] = 0x3F; // state: Activity|Timeout|Aggregation|Sync|Collecting|Distributing (no Defaulted/Expired)
         // [19-21] reserved
 
         // Partner TLV (type=2, len=20)
@@ -751,14 +751,14 @@ export class SwitchBackplane extends Observable {
         }
         // [39-41] reserved; partner zeros if unknown
 
-        // Collector TLV (type=3, len=16)
-        buf[44] = 0x03; buf[45] = 0x10;
-        // max delay = 0, rest reserved — all zero
+        // Collector TLV (type=3, len=16) — IEEE 802.1AX §6.4.2.3
+        buf[42] = 0x03; buf[43] = 0x10;
+        // [44-45] max delay = 0, [46-57] reserved — all zero
 
         // Terminator TLV (type=0, len=0)
-        buf[62] = 0x00; buf[63] = 0x00;
+        buf[58] = 0x00; buf[59] = 0x00;
 
-        // [64-109] padding — already zero
+        // [60-109] reserved — already zero
         return buf;
     }
 

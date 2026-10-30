@@ -526,7 +526,7 @@ export class TcpEngine {
       flags,
       window: 0,
       payload: new Uint8Array(),
-    }).pack();
+    }).pack({ srcIp: localIP, dstIp: remoteIP });
 
     this._ipSend({
       dst: remoteIP,
@@ -824,7 +824,7 @@ export class TcpEngine {
       window: (window ?? this._calcRcvWnd(conn)) | 0,
       options: this._buildSegmentOptions(conn, options),
       payload,
-    }).pack();
+    }).pack({ srcIp: conn.localIP, dstIp: conn.peerIP });
     this._ipSend({ dst: conn.peerIP, src: conn.localIP, protocol: 6, payload: tcpBytes });
   }
 

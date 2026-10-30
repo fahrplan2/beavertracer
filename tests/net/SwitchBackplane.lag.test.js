@@ -592,7 +592,7 @@ describe('LACP – frame encoding', () => {
         expect((buf[12] << 8) | buf[13]).toBe(5);   // key = groupId
         expect(buf[14]).toBe(0x80); expect(buf[15]).toBe(0x00); // port priority 32768
         expect((buf[16] << 8) | buf[17]).toBe(4);   // port = portIdx + 1
-        expect(buf[18]).toBe(0x3D);                 // state flags
+        expect(buf[18]).toBe(0x3F);                 // state flags (incl. short Timeout bit 0x02)
     });
 
     it('encodes partner TLV as zeroes when partner is null', () => {
@@ -625,10 +625,12 @@ describe('LACP – frame encoding', () => {
     it('encodes collector and terminator TLVs', () => {
         const bp = makeBP();
         const buf = bp._encodeLACPDU(ACTOR_MAC, GROUP_ID, PORT_IDX, null);
-        expect(buf[44]).toBe(0x03); // collector TLV type
-        expect(buf[45]).toBe(0x10); // collector TLV length = 16
-        expect(buf[62]).toBe(0x00); // terminator type
-        expect(buf[63]).toBe(0x00); // terminator length
+        // IEEE 802.1AX §6.4.2.3: collector directly follows the partner TLV (2 + 20 + 20 = 42)
+        expect(buf[42]).toBe(0x03); // collector TLV type
+        expect(buf[43]).toBe(0x10); // collector TLV length = 16
+        expect(buf[58]).toBe(0x00); // terminator type
+        expect(buf[59]).toBe(0x00); // terminator length
+        for (let i = 60; i < 110; i++) expect(buf[i]).toBe(0); // reserved
     });
 });
 
@@ -668,7 +670,7 @@ describe('LACP – frame decoding', () => {
         expect(info.key).toBe(5);
         expect(info.portPriority).toBe(32768);
         expect(info.port).toBe(4); // portIdx + 1
-        expect(info.state).toBe(0x3D);
+        expect(info.state).toBe(0x3F);
     });
 });
 

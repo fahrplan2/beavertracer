@@ -135,7 +135,8 @@ class BGPSession {
                 if (parsed.type === BGP_MSG_OPEN) {
                     const od = parseOpen(parsed.body);
                     peerAS = od.myAS;
-                    this._holdTime = Math.min(SimTimer.BGP_HOLDTIME_MS, od.holdTime > 0 ? od.holdTime : SimTimer.BGP_HOLDTIME_MS);
+                    // RFC 4271 §4.2: Hold Time is in seconds; the smaller of both sides wins (0 = no hold timer)
+                    this._holdTime = Math.min(SimTimer.BGP_HOLDTIME_MS, od.holdTime * 1000);
                     this.state = "OpenConfirm";
                 } else if (parsed.type === BGP_MSG_NOTIFICATION) {
                     this._daemon._log(`[BGP] ${this.cfg.ip}: NOTIFICATION empfangen`);
@@ -215,7 +216,7 @@ class BGPSession {
 
     async _sendOpen() {
         const rid = this._daemon._routerIdIP();
-        const msg = buildOpen(this._daemon.localAS, SimTimer.BGP_HOLDTIME_MS, rid);
+        const msg = buildOpen(this._daemon.localAS, Math.round(SimTimer.BGP_HOLDTIME_MS / 1000), rid);
         this._daemon._net.sendTCPConn(this._connKey, msg);
     }
 
@@ -345,7 +346,7 @@ class BGPSession {
                 this._checkConnectedPrefixes();
                 this._scheduleKeepalive();
             }
-        }, SimTimer.BGP_KEEPALIVE_MS);
+        }, this._holdTime > 0 ? Math.min(SimTimer.BGP_KEEPALIVE_MS, this._holdTime / 3) : SimTimer.BGP_KEEPALIVE_MS);
     }
 
     _resetHoldTimer() {

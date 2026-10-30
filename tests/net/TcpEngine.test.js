@@ -17,6 +17,7 @@ import { TcpEngine } from '../../src/net/TcpEngine.js';
 import { TCPPacket } from '../../src/net/pdu/TCPPacket.js';
 import { IPAddress } from '../../src/net/models/IPAddress.js';
 import { simTimer, SimTimer } from '../../src/lib/SimTimer.js';
+import { computeIPv4PseudoChecksum } from '../../src/net/util/checksumUtils.js';
 
 /** @param {TCPPacket} tcp */
 function parseTsOption(tcp) {
@@ -625,5 +626,51 @@ describe('congestion control', () => {
     // ssthresh and cwnd must have been updated
     expect(clientConn.ssthresh).toBeLessThan(65535);
     expect(clientConn.dupAckCount).toBe(3);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Checksum (RFC 9293 §3.1)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('checksum', () => {
+  /** Wire both engines like makeLoopback(), but keep the raw segment bytes. */
+  function makeRawLoopback() {
+    /** @type {Array<{src:IPAddress, dst:IPAddress, bytes:Uint8Array}>} */
+    const raw = [];
+    const client = new TcpEngine({
+      ipSend: ({ dst, src, payload }) => { raw.push({ src, dst, bytes: payload }); server.handle({ src, dst, payload }); },
+      resolveSrcIp: () => CLIENT_IP,
+    });
+    const server = new TcpEngine({
+      ipSend: ({ dst, src, payload }) => { raw.push({ src, dst, bytes: payload }); client.handle({ src, dst, payload }); },
+      resolveSrcIp: () => SERVER_IP,
+    });
+    return { client, server, raw };
+  }
+
+  /** @param {{src:IPAddress, dst:IPAddress, bytes:Uint8Array}} seg */
+  function expectValidChecksum(seg) {
+    const stored = (seg.bytes[16] << 8) | seg.bytes[17];
+    const zeroed = seg.bytes.slice();
+    zeroed[16] = 0; zeroed[17] = 0;
+    expect(stored).not.toBe(0);
+    expect(stored).toBe(computeIPv4PseudoChecksum(zeroed, seg.src.toUInt8(), seg.dst.toUInt8(), 6));
+  }
+
+  it('every handshake and data segment carries a valid pseudo-header checksum', async () => {
+    const { client, server, raw } = makeRawLoopback();
+    const { clientKey } = await connect(client, server);
+    client.send(clientKey, new TextEncoder().encode('hello'));
+    expect(raw.length).toBeGreaterThanOrEqual(4);
+    raw.forEach(expectValidChecksum);
+  });
+
+  it('RST for a closed port carries a valid checksum', async () => {
+    const { client, raw } = makeRawLoopback();
+    await client.connect(SERVER_IP, 9).catch(() => {});
+    const rst = raw.find(s => TCPPacket.fromBytes(s.bytes).hasFlag(TCPPacket.FLAG_RST));
+    expect(rst).toBeDefined();
+    expectValidChecksum(/** @type {any} */ (rst));
   });
 });

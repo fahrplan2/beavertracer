@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { BGPDaemon } from '../../src/net/BGPDaemon.js';
 import { IPAddress } from '../../src/net/models/IPAddress.js';
+import { SimTimer } from '../../src/lib/SimTimer.js';
 import {
     buildOpen, buildKeepalive, buildNotification, buildUpdate,
     parseMessage, parseOpen, parseUpdate,
@@ -817,5 +818,29 @@ describe('BGPDaemon – _handleUpdate MP_REACH_NLRI', () => {
         expect(stack._routes.some(r => r.dst === '2001:db8:cafe::')).toBe(false);
 
         d.stop();
+    });
+});
+
+// ── BGPDaemon – Hold Time on the wire ────────────────────────────────────────
+
+describe('BGPDaemon – Hold Time', () => {
+    it('OPEN carries the hold time in seconds (RFC 4271 §4.2)', async () => {
+        const stack  = makeStack([{ ip: '10.0.0.1', prefix: 24 }]);
+        /** @type {Uint8Array[]} */
+        const sent = [];
+        stack.sendTCPConn = (_key, msg) => { sent.push(msg); };
+        const daemon = new BGPDaemon(stack);
+        daemon.localAS = 65001;
+        daemon.start();
+        daemon.addPeer({ ip: '10.0.0.2', remoteAS: 65002 });
+        const session = daemon.getSession('10.0.0.2');
+        if (!session) throw new Error('no session');
+        session._connKey = 'k';
+
+        await session._sendOpen();
+        const od = parseOpen(parseMessage(sent[0])?.body ?? new Uint8Array());
+        expect(od.holdTime).toBe(SimTimer.BGP_HOLDTIME_MS / 1000);
+        expect(od.holdTime).toBeGreaterThanOrEqual(3);
+        daemon.stop();
     });
 });

@@ -15,6 +15,12 @@ import {
     LsaHeader, RouterLSA, RouterLink, NetworkLSA, SummaryLSA, Lsa, LsaRequest,
 } from "./pdu/OSPFPacket.js";
 
+// HelloInterval/RouterDeadInterval as written on the wire (whole seconds, RFC 2328 A.3.2).
+// The real timers are simulation-scaled (SimTimer.OSPF_HELLO_MS/OSPF_DEAD_MS) and too short
+// to encode, so — like the STP BPDU timers — the packets carry the RFC defaults instead.
+const OSPF_WIRE_HELLO_S = 10;
+const OSPF_WIRE_DEAD_S  = 40;
+
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 /** @param {IPAddress} ip @returns {number} */
@@ -365,8 +371,8 @@ export class OSPFDaemon {
 
         const helloBody = new OspfHello({
             networkMask:    mask32,
-            helloInterval:  SimTimer.OSPF_HELLO_MS / 1000,
-            deadInterval:   SimTimer.OSPF_DEAD_MS  / 1000,
+            helloInterval:  OSPF_WIRE_HELLO_S,
+            deadInterval:   OSPF_WIRE_DEAD_S,
             routerPriority: 1,
             dr:  oif.dr,
             bdr: oif.bdr,
@@ -398,11 +404,9 @@ export class OSPFDaemon {
         // RFC §10.5 parameter validation — discard on mismatch
         const iface = this._net.interfaces[ifIndex];
         const expectedMask  = prefixToMask32(iface.prefixLength ?? 0);
-        const expectedHello = Math.trunc(SimTimer.OSPF_HELLO_MS / 1000);
-        const expectedDead  = Math.trunc(SimTimer.OSPF_DEAD_MS  / 1000);
-        if (hello.networkMask   !== expectedMask)  return;
-        if (hello.helloInterval !== expectedHello) return;
-        if (hello.deadInterval  !== expectedDead)  return;
+        if (hello.networkMask   !== expectedMask)      return;
+        if (hello.helloInterval !== OSPF_WIRE_HELLO_S) return;
+        if (hello.deadInterval  !== OSPF_WIRE_DEAD_S)  return;
 
         const rid = hdr.routerId;
         let nb = oif.neighbors.get(rid);
