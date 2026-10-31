@@ -6,15 +6,30 @@ import { encodeUTF8 } from "../lib/helpers.js";
 
 // ── error types ────────────────────────────────────────────────────────────
 
+/** TLS AlertDescription values used by this implementation (RFC 5246 §7.2). */
+export const TLS_ALERT = Object.freeze({
+  CLOSE_NOTIFY: 0,
+  HANDSHAKE_FAILURE: 40,
+  BAD_CERTIFICATE: 42,
+  DECRYPT_ERROR: 51,
+});
+
 export class TlsHandshakeError extends Error {
-  /** @param {string} msg */
-  constructor(msg) { super(msg); this.name = "TlsHandshakeError"; }
+  /**
+   * @param {string} msg
+   * @param {number} [alert] fatal AlertDescription sent to the peer
+   */
+  constructor(msg, alert = TLS_ALERT.HANDSHAKE_FAILURE) {
+    super(msg);
+    this.name = "TlsHandshakeError";
+    this.alert = alert;
+  }
 }
 
 export class TlsCertUntrustedError extends TlsHandshakeError {
   /** @param {string} subject */
   constructor(subject) {
-    super(`Certificate not trusted: ${subject}`);
+    super(`Certificate not trusted: ${subject}`, TLS_ALERT.BAD_CERTIFICATE);
     this.name = "TlsCertUntrustedError";
     this.subject = subject;
   }
@@ -28,7 +43,7 @@ export class TlsCertExpiredError extends TlsHandshakeError {
   constructor(subject, reason = "expired") {
     super(reason === "notYetValid"
       ? `Certificate not yet valid: ${subject}`
-      : `Certificate expired: ${subject}`);
+      : `Certificate expired: ${subject}`, TLS_ALERT.BAD_CERTIFICATE);
     this.name = "TlsCertExpiredError";
     this.subject = subject;
     this.reason = reason;
@@ -37,8 +52,24 @@ export class TlsCertExpiredError extends TlsHandshakeError {
 
 export class TlsSignatureError extends TlsHandshakeError {
   constructor() {
-    super("ServerKeyExchange signature invalid — possible MITM attack");
+    super("ServerKeyExchange signature invalid — possible MITM attack", TLS_ALERT.DECRYPT_ERROR);
     this.name = "TlsSignatureError";
+  }
+}
+
+/**
+ * ECDHE_ECDSA requires an authenticated server: a Certificate message and a
+ * signed ServerKeyExchange (RFC 8422 §2.1, §5.4). Missing either one is a
+ * fatal handshake_failure — an unsigned ECDH key could come from anyone.
+ */
+export class TlsMissingAuthError extends TlsHandshakeError {
+  /** @param {"certificate"|"signature"} what */
+  constructor(what) {
+    super(what === "certificate"
+      ? "Server sent no certificate — ECDHE_ECDSA requires one"
+      : "ServerKeyExchange is not signed — possible MITM attack");
+    this.name = "TlsMissingAuthError";
+    this.missing = what;
   }
 }
 
@@ -67,19 +98,29 @@ export class TlsCertNameMismatchError extends TlsCertUntrustedError {
 // ── helpers ────────────────────────────────────────────────────────────────
 
 /**
- * Does the certificate subject (CN) cover the name the client asked for?
+ * Does the certificate cover the name the client asked for?
+ * RFC 6125 §6.4.4: if the certificate carries subjectAltName entries, only
+ * those are checked; the subject CN is just the fallback for certificates
+ * without any (e.g. legacy v1 certificates).
  * Case-insensitive; a "*." wildcard covers exactly one leftmost label.
  * @param {string} subject  e.g. "CN=www.example.org"
  * @param {string} serverName
+ * @param {string[]} [altNames] subjectAltName dNSName/iPAddress entries
  */
-export function certMatchesName(subject, serverName) {
-  const cn = subject.replace(/^CN=/i, "").trim().toLowerCase();
+export function certMatchesName(subject, serverName, altNames = []) {
   const name = serverName.trim().toLowerCase().replace(/\.$/, "").replace(/^\[|\]$/g, "");
-  if (!cn || !name) return false;
-  if (cn === name) return true;
-  if (cn.startsWith("*.")) {
+  if (!name) return false;
+  const candidates = altNames.length > 0 ? altNames : [subject.replace(/^CN=/i, "")];
+  return candidates.some(c => nameMatches(c.trim().toLowerCase(), name));
+}
+
+/** @param {string} pattern @param {string} name */
+function nameMatches(pattern, name) {
+  if (!pattern) return false;
+  if (pattern === name) return true;
+  if (pattern.startsWith("*.")) {
     const dot = name.indexOf(".");
-    return dot > 0 && name.slice(dot + 1) === cn.slice(2);
+    return dot > 0 && name.slice(dot + 1) === pattern.slice(2);
   }
   return false;
 }
@@ -220,29 +261,90 @@ function extractCertSig(certDer) {
 }
 
 /**
- * Extract { notBefore, notAfter } (epoch ms) from the Validity SEQUENCE inside
- * a Certificate's TBSCertificate — see TlsCertificate._buildTbsBytes() for the
- * matching encoder. Walks the TBS children positionally (serial, signature
- * algId, issuer, validity, ...) since that's the fixed order this simulator
- * always produces. Returns null if the structure doesn't match.
+ * Walk a Certificate's TBSCertificate in the layout TlsCertificate
+ * produces (see TlsCertificate._buildTbsBytes()) — both the current v3
+ * layout ([0] version … [3] extensions) and the legacy v1 one.
+ * Validity times are decimal epoch-ms strings (simulator convention).
+ * Returns null if the structure doesn't match.
  * @param {Uint8Array} certDer
- * @returns {{ notBefore: number, notAfter: number }|null}
+ * @returns {{ version: number, issuerCN: string, subjectCN: string,
+ *   notBefore: number, notAfter: number, publicKeyRaw: Uint8Array|null,
+ *   isCA: boolean, altNames: string[]|null }|null}
  */
-function extractValidity(certDer) {
+function parseTbs(certDer) {
   try {
-    const outer   = derNextElement(certDer, 0);
-    const tbs     = derNextElement(certDer, outer.contentStart);
-    const serial  = derNextElement(certDer, tbs.contentStart);
-    const algId   = derNextElement(certDer, serial.end);
-    const issuer  = derNextElement(certDer, algId.end);
-    const validity = derNextElement(certDer, issuer.end);
-    const notBeforeEl = derNextElement(certDer, validity.contentStart);
-    const notAfterEl  = derNextElement(certDer, notBeforeEl.end);
     const dec = new TextDecoder();
-    const notBefore = Number(dec.decode(certDer.slice(notBeforeEl.contentStart, notBeforeEl.end)));
-    const notAfter  = Number(dec.decode(certDer.slice(notAfterEl.contentStart,  notAfterEl.end)));
+    const outer = derNextElement(certDer, 0);
+    const tbs   = derNextElement(certDer, outer.contentStart);
+    let off = tbs.contentStart;
+    let version = 1;
+    if (certDer[off] === 0xA0) {                       // [0] EXPLICIT Version
+      const v = derNextElement(certDer, off);
+      const int = derNextElement(certDer, v.contentStart);
+      version = certDer[int.end - 1] + 1;
+      off = v.end;
+    }
+    const serial   = derNextElement(certDer, off);
+    const algId    = derNextElement(certDer, serial.end);
+    const issuer   = derNextElement(certDer, algId.end);
+    const validity = derNextElement(certDer, issuer.end);
+    const subject  = derNextElement(certDer, validity.end);
+    const spki     = derNextElement(certDer, subject.end);
+    if (spki.end > tbs.end) return null;
+
+    /** Name with a single CN: SEQUENCE { SET { SEQUENCE { OID, UTF8String } } } */
+    const cnOf = (/** @type {{ contentStart: number }} */ name) => {
+      const set = derNextElement(certDer, name.contentStart);
+      const atv = derNextElement(certDer, set.contentStart);
+      const oid = derNextElement(certDer, atv.contentStart);
+      const val = derNextElement(certDer, oid.end);
+      return dec.decode(certDer.slice(val.contentStart, val.end));
+    };
+    const nb = derNextElement(certDer, validity.contentStart);
+    const na = derNextElement(certDer, nb.end);
+    const notBefore = Number(dec.decode(certDer.slice(nb.contentStart, nb.end)));
+    const notAfter  = Number(dec.decode(certDer.slice(na.contentStart, na.end)));
     if (!Number.isFinite(notBefore) || !Number.isFinite(notAfter)) return null;
-    return { notBefore, notAfter };
+
+    // SubjectPublicKeyInfo: SEQUENCE { AlgorithmIdentifier, BIT STRING }
+    const spkiAlg = derNextElement(certDer, spki.contentStart);
+    const keyBits = derNextElement(certDer, spkiAlg.end);
+    const keyBytes = certDer.slice(keyBits.contentStart + 1, keyBits.end);
+    const publicKeyRaw = keyBytes.length === 65 && keyBytes[0] === 0x04 ? keyBytes : null;
+
+    let isCA = false;
+    /** @type {string[]|null} */
+    let altNames = null;
+    if (version === 3 && spki.end < tbs.end && certDer[spki.end] === 0xA3) {
+      const extsWrap = derNextElement(certDer, spki.end);
+      const exts = derNextElement(certDer, extsWrap.contentStart);
+      for (let e = exts.contentStart; e < exts.end;) {
+        const ext = derNextElement(certDer, e);
+        const oid = derNextElement(certDer, ext.contentStart);
+        let valEl = derNextElement(certDer, oid.end);
+        if (certDer[valEl.start] === 0x01) valEl = derNextElement(certDer, valEl.end); // critical flag
+        const oidHex = Array.from(certDer.slice(oid.contentStart, oid.end)).join(",");
+        const inner = derNextElement(certDer, valEl.contentStart);     // OCTET STRING content
+        if (oidHex === "85,29,19") {                                    // basicConstraints
+          if (inner.contentStart < inner.end && certDer[inner.contentStart] === 0x01) {
+            const b = derNextElement(certDer, inner.contentStart);
+            isCA = certDer[b.contentStart] !== 0x00;
+          }
+        } else if (oidHex === "85,29,17") {                             // subjectAltName
+          altNames = [];
+          for (let g = inner.contentStart; g < inner.end;) {
+            const gn = derNextElement(certDer, g);
+            const bytes = certDer.slice(gn.contentStart, gn.end);
+            if (certDer[g] === 0x82) altNames.push(dec.decode(bytes));            // dNSName
+            else if (certDer[g] === 0x87 && bytes.length === 4) altNames.push(Array.from(bytes).join(".")); // iPAddress
+            g = gn.end;
+          }
+        }
+        e = ext.end;
+      }
+    }
+    return { version, issuerCN: cnOf(issuer), subjectCN: cnOf(subject),
+      notBefore, notAfter, publicKeyRaw, isCA, altNames };
   } catch {
     return null;
   }
@@ -314,8 +416,23 @@ export class TlsSession {
     /** @type {Uint8Array|null} */ this._encryptFixedIV = null;  // 4 bytes (RFC 5288)
     /** @type {Uint8Array|null} */ this._decryptFixedIV = null;  // 4 bytes
     /** @type {Uint8Array|null} */ this._masterSecret = null;    // 48 bytes
+    // Record sequence numbers (RFC 5246 §6.1): reset to 0 by ChangeCipherSpec,
+    // so the Finished message is record #0 of each direction and the first
+    // ApplicationData record is #1.
     this._sendSeq = 0;
     this._recvSeq = 0;
+    // Connection-state switch (RFC 5246 §7.1): the write side becomes
+    // encrypted once we *sent* ChangeCipherSpec, the read side once we
+    // *received* one.
+    this._writeCipherActive = false;
+    this._readCipherActive = false;
+    // Encrypted writes are serialised so record order == sequence order.
+    /** @type {Promise<void>} */ this._writeChain = Promise.resolve();
+    this._pendingWrites = 0;
+    // close() is synchronous (callers close TCP right after it), but AES-GCM
+    // via WebCrypto is async — so an encrypted close_notify for the next
+    // sequence number is kept ready in advance.
+    /** @type {{ seq: number, bytes: Uint8Array }|null} */ this._closeNotify = null;
 
     // Handshake transcript (accumulated HS message bytes, without record framing)
     /** @type {Uint8Array} */ this._transcript = new Uint8Array(0);
@@ -332,11 +449,14 @@ export class TlsSession {
       } else {
         await this._clientHandshake();
       }
+      await this._prepareCloseNotify();
       this._state = "ESTABLISHED";
     } catch (e) {
       this._state = "CLOSED";
       if (e instanceof TlsHandshakeError) {
-        try { this._sendRaw(TlsRecord.buildAlert(2, 42)); } catch { /* ignore */ }
+        // Once our ChangeCipherSpec is out, alerts go under the new keys too.
+        // RFC 5246 §7.2: fatal alert; plaintext before our ChangeCipherSpec.
+        try { await this._sendRecord(TLS_CT.ALERT, new Uint8Array([2, e.alert ?? TLS_ALERT.HANDSHAKE_FAILURE])); } catch { /* ignore */ }
       }
       throw e;
     }
@@ -349,20 +469,7 @@ export class TlsSession {
    */
   async send(plaintext) {
     if (this._state !== "ESTABLISHED") throw new Error("TLS session not established");
-    const seq = this._sendSeq++;
-    // explicit nonce = seq as 8-byte big-endian (deterministic, avoids reuse)
-    const explicitNonce = seqToBytes8(seq);
-    const nonce = concat(/** @type {Uint8Array} */ (this._encryptFixedIV), explicitNonce);
-    const aad = buildAAD(seq, TLS_CT.APP_DATA, plaintext.length);
-    const cipher = await crypto.subtle.encrypt(
-      { name: "AES-GCM", iv: nonce, additionalData: aad },
-      /** @type {CryptoKey} */ (this._encryptKey),
-      plaintext,
-    );
-    // prepend explicit nonce so the peer can reconstruct the full nonce
-    this._sendRaw(TlsRecord.buildApplicationData(
-      concat(explicitNonce, new Uint8Array(cipher)),
-    ));
+    await this._sendRecord(TLS_CT.APP_DATA, plaintext, true);
   }
 
   /**
@@ -373,24 +480,10 @@ export class TlsSession {
   async recv() {
     if (this._state === "CLOSED") return null;
     while (true) {
-      const record = await this._readRecord();
+      const record = await this._readRecord(); // already decrypted
       if (record === null) { this._state = "CLOSED"; return null; }
 
-      if (record.contentType === TLS_CT.APP_DATA) {
-        // first 8 bytes are the explicit nonce
-        const explicitNonce = record.payload.slice(0, 8);
-        const ciphertext    = record.payload.slice(8);
-        const seq = this._recvSeq++;
-        const nonce = concat(/** @type {Uint8Array} */ (this._decryptFixedIV), explicitNonce);
-        const plaintextLen = ciphertext.length - 16; // minus 16-byte GCM tag
-        const aad = buildAAD(seq, TLS_CT.APP_DATA, plaintextLen);
-        const plain = await crypto.subtle.decrypt(
-          { name: "AES-GCM", iv: nonce, additionalData: aad },
-          /** @type {CryptoKey} */ (this._decryptKey),
-          ciphertext,
-        );
-        return new Uint8Array(plain);
-      }
+      if (record.contentType === TLS_CT.APP_DATA) return record.payload;
 
       if (record.contentType === TLS_CT.ALERT) {
         this._state = "CLOSED";
@@ -403,7 +496,111 @@ export class TlsSession {
   close() {
     if (this._state === "CLOSED") return;
     this._state = "CLOSED";
-    try { this._sendRaw(TlsRecord.buildAlert(1, 0)); } catch { /* ignore */ }
+    const alert = new Uint8Array([1, 0]);
+    try {
+      if (!this._writeCipherActive) {
+        this._sendRaw(new TlsRecord(TLS_CT.ALERT, alert).pack());
+      } else if (this._pendingWrites === 0 && this._closeNotify?.seq === this._sendSeq) {
+        // fast path: pre-encrypted close_notify, sent synchronously
+        this._sendSeq++;
+        this._sendRaw(this._closeNotify.bytes);
+      } else {
+        // writes still in flight — queue behind them (best effort)
+        this._sendRecord(TLS_CT.ALERT, alert).catch(() => { /* ignore */ });
+      }
+    } catch { /* ignore */ }
+    this._closeNotify = null;
+  }
+
+  // ── record protection (RFC 5246 §6.2.3.3, RFC 5288 §3) ───────────────────
+
+  /**
+   * Encrypt one record under the current write state with sequence number seq.
+   * Wire payload = explicit_nonce(8) || AES-GCM(ciphertext || tag(16)).
+   * @param {number} contentType
+   * @param {Uint8Array} plaintext
+   * @param {number} seq
+   */
+  async _encryptRecord(contentType, plaintext, seq) {
+    // explicit nonce = seq as 8-byte big-endian (deterministic, avoids reuse)
+    const explicitNonce = seqToBytes8(seq);
+    const nonce = concat(/** @type {Uint8Array} */ (this._encryptFixedIV), explicitNonce);
+    const aad = buildAAD(seq, contentType, plaintext.length);
+    const cipher = await crypto.subtle.encrypt(
+      { name: "AES-GCM", iv: /** @type {Uint8Array<ArrayBuffer>} */ (nonce), additionalData: aad },
+      /** @type {CryptoKey} */ (this._encryptKey),
+      /** @type {Uint8Array<ArrayBuffer>} */ (plaintext),
+    );
+    return new TlsRecord(contentType, concat(explicitNonce, new Uint8Array(cipher))).pack();
+  }
+
+  /**
+   * Send one record: in the clear before our ChangeCipherSpec, AES-GCM
+   * protected afterwards. Encrypted writes are queued so that sequence
+   * numbers are assigned (and records hit the wire) in call order.
+   * @param {number} contentType
+   * @param {Uint8Array} plaintext
+   * @param {boolean} [refreshCloseNotify] re-arm the pre-encrypted close_notify afterwards
+   */
+  _sendRecord(contentType, plaintext, refreshCloseNotify = false) {
+    if (!this._writeCipherActive) {
+      this._sendRaw(new TlsRecord(contentType, /** @type {Uint8Array<ArrayBuffer>} */ (plaintext)).pack());
+      return Promise.resolve();
+    }
+    this._pendingWrites++;
+    const job = this._writeChain.then(async () => {
+      try {
+        const bytes = await this._encryptRecord(contentType, plaintext, this._sendSeq++);
+        this._sendRaw(bytes);
+        if (refreshCloseNotify && this._state !== "CLOSED") await this._prepareCloseNotify();
+      } finally {
+        this._pendingWrites--;
+      }
+    });
+    this._writeChain = job.catch(() => { /* keep the chain alive */ });
+    return job;
+  }
+
+  /** Pre-encrypt close_notify for the next write sequence number. */
+  async _prepareCloseNotify() {
+    if (!this._writeCipherActive) { this._closeNotify = null; return; }
+    const seq = this._sendSeq;
+    const bytes = await this._encryptRecord(TLS_CT.ALERT, new Uint8Array([1, 0]), seq);
+    this._closeNotify = { seq, bytes };
+  }
+
+  /** Send ChangeCipherSpec and switch the write side to the new keys (seq := 0). */
+  _sendChangeCipherSpec() {
+    this._sendRaw(TlsRecord.buildChangeCipherSpec());
+    this._writeCipherActive = true;
+    this._sendSeq = 0;
+  }
+
+  /**
+   * Decrypt one protected record (read sequence number = this._recvSeq++).
+   * @param {TlsRecord} record
+   * @returns {Promise<TlsRecord>}
+   */
+  async _decryptRecord(record) {
+    if (record.payload.length < 8 + 16) {
+      throw new TlsHandshakeError("Protected record too short (decode_error)");
+    }
+    const explicitNonce = record.payload.slice(0, 8);
+    const ciphertext    = record.payload.slice(8);
+    const seq = this._recvSeq++;
+    const nonce = concat(/** @type {Uint8Array} */ (this._decryptFixedIV), explicitNonce);
+    const aad = buildAAD(seq, record.contentType, ciphertext.length - 16); // minus GCM tag
+    let plain;
+    try {
+      plain = await crypto.subtle.decrypt(
+        { name: "AES-GCM", iv: /** @type {Uint8Array<ArrayBuffer>} */ (nonce), additionalData: aad },
+        /** @type {CryptoKey} */ (this._decryptKey),
+        ciphertext,
+      );
+    } catch {
+      throw new TlsHandshakeError("Record authentication failed (bad_record_mac)", 20);
+    }
+    return new TlsRecord(record.contentType, new Uint8Array(plain));
   }
 
   // ── handshake – client side ───────────────────────────────────────────────
@@ -418,7 +615,7 @@ export class TlsSession {
     );
 
     // 2. Send ClientHello, append HS bytes to transcript
-    const chRecord = TlsRecord.buildClientHello(this._clientRandom);
+    const chRecord = TlsRecord.buildClientHello(this._clientRandom, this._serverName);
     this._sendRaw(chRecord);
     this._appendTranscript(chRecord.slice(5));
 
@@ -445,10 +642,11 @@ export class TlsSession {
             if (status === "expired" || status === "notYetValid") {
               throw new TlsCertExpiredError(peerCert.subject, status);
             }
-            if (!await this._trustStore.isTrusted(peerCert, peerCert.chain)) {
+            if (!await this._trustStore.isTrusted(peerCert, peerCert.chain, { nowMs: this._now() })) {
               throw new TlsCertUntrustedError(peerCert.subject);
             }
-            if (this._serverName && !certMatchesName(peerCert.subject, this._serverName)) {
+            if (this._serverName
+                && !certMatchesName(peerCert.subject, this._serverName, peerCert.subjectAltNames())) {
               throw new TlsCertNameMismatchError(peerCert.subject, this._serverName);
             }
           }
@@ -462,23 +660,26 @@ export class TlsSession {
 
     if (!skeBody) throw new TlsHandshakeError("No ServerKeyExchange received");
 
-    // 4. Parse ServerKeyExchange and verify signature
+    // 4. Parse ServerKeyExchange and verify signature. For ECDHE_ECDSA both
+    //    the server certificate and the signature are mandatory (RFC 8422
+    //    §5.4) — even without a trust store (curl -k), which only skips the
+    //    *certificate* checks, never the proof of key possession.
+    if (!peerCert?.publicKey) throw new TlsMissingAuthError("certificate");
     const { ecdhPubKeyBytes, ecParams, signature } = TlsRecord.parseServerKeyExchange(skeBody);
+    if (!signature) throw new TlsMissingAuthError("signature");
 
-    if (signature && peerCert?.publicKey) {
-      const toSign = concat(
-        /** @type {Uint8Array} */ (this._clientRandom),
-        /** @type {Uint8Array} */ (this._serverRandom),
-        ecParams,
-      );
-      const valid = await crypto.subtle.verify(
-        { name: "ECDSA", hash: "SHA-256" },
-        peerCert.publicKey,
-        /** @type {Uint8Array<ArrayBuffer>} */ (signature),
-        toSign,
-      );
-      if (!valid) throw new TlsSignatureError();
-    }
+    const toSign = concat(
+      /** @type {Uint8Array} */ (this._clientRandom),
+      /** @type {Uint8Array} */ (this._serverRandom),
+      ecParams,
+    );
+    const sigValid = await crypto.subtle.verify(
+      { name: "ECDSA", hash: "SHA-256" },
+      peerCert.publicKey,
+      /** @type {Uint8Array<ArrayBuffer>} */ (signature),
+      toSign,
+    );
+    if (!sigValid) throw new TlsSignatureError();
 
     // 5. Send ClientKeyExchange, append HS bytes to transcript
     this._peerEcdhPubKey = await importEcdhPubKey(/** @type {Uint8Array<ArrayBuffer>} */ (ecdhPubKeyBytes));
@@ -493,12 +694,14 @@ export class TlsSession {
     await this._deriveKeys();
 
     // 7. Compute client verify_data from transcript so far, send ChangeCipherSpec + Finished
+    //    Finished is the first record under the new keys (RFC 5246 §7.4.9):
+    //    Handshake content type, AES-GCM protected, write seq 0.
     const clientVerifyData = await this._makeVerifyData("client");
-    const clientFinishedRecord = TlsRecord.buildFinished(clientVerifyData);
-    this._sendRaw(TlsRecord.buildChangeCipherSpec());
-    this._sendRaw(clientFinishedRecord);
-    // append client Finished to transcript so server Finished can be verified
-    this._appendTranscript(clientFinishedRecord.slice(5));
+    const clientFinishedMsg = this._buildHsBytes(TLS_HT.FINISHED, clientVerifyData);
+    this._sendChangeCipherSpec();
+    await this._sendRecord(TLS_CT.HANDSHAKE, clientFinishedMsg);
+    // append the *plaintext* Finished message so server Finished can be verified
+    this._appendTranscript(clientFinishedMsg);
 
     // 8. Read server ChangeCipherSpec
     await this._readExpectedRecord(TLS_CT.CHANGE_CIPHER_SPEC);
@@ -598,8 +801,8 @@ export class TlsSession {
 
     // 9. Send ChangeCipherSpec + Finished
     const serverVerifyData = await this._makeVerifyData("server");
-    this._sendRaw(TlsRecord.buildChangeCipherSpec());
-    this._sendRaw(TlsRecord.buildFinished(serverVerifyData));
+    this._sendChangeCipherSpec();
+    await this._sendRecord(TLS_CT.HANDSHAKE, this._buildHsBytes(TLS_HT.FINISHED, serverVerifyData));
   }
 
   // ── key derivation ────────────────────────────────────────────────────────
@@ -680,10 +883,28 @@ export class TlsSession {
   }
 
   /**
-   * Read exactly one TLS record from the TCP stream. Returns null on EOF.
+   * Read one TLS record and, once the peer's ChangeCipherSpec has been
+   * received, decrypt it (read seq 0 = peer Finished, then ApplicationData /
+   * Alerts from seq 1). Returns null on EOF.
    * @returns {Promise<TlsRecord|null>}
    */
   async _readRecord() {
+    const rec = await this._readRawRecord();
+    if (rec === null) return null;
+    if (rec.contentType === TLS_CT.CHANGE_CIPHER_SPEC) {
+      if (this._decryptKey) { this._readCipherActive = true; this._recvSeq = 0; }
+      return rec;
+    }
+    if (!this._readCipherActive) return rec;
+    return this._decryptRecord(rec);
+  }
+
+  /**
+   * Read exactly one raw (possibly encrypted) TLS record from the TCP stream.
+   * Returns null on EOF.
+   * @returns {Promise<TlsRecord|null>}
+   */
+  async _readRawRecord() {
     if (!await this._fillBuf(5)) return null;
 
     const contentType = this._recvBuf[0];
@@ -809,7 +1030,7 @@ export class TlsSession {
     }
     for (let i = 0; i < received.length; i++) {
       if (received[i] !== expected[i]) {
-        throw new TlsHandshakeError("Finished verify_data mismatch — handshake integrity check failed");
+        throw new TlsHandshakeError("Finished verify_data mismatch — handshake integrity check failed", TLS_ALERT.DECRYPT_ERROR);
       }
     }
   }
@@ -871,53 +1092,34 @@ export class TlsSession {
 
   /** @param {Uint8Array<ArrayBuffer>} der */
   async _parseSingleCertDer(der) {
-    // Scan for OID 2.5.4.3 (55 04 03) → extract following UTF8String (CN)
-    const cns = [];
-    for (let i = 0; i + 5 < der.length; i++) {
-      if (der[i] === 0x55 && der[i + 1] === 0x04 && der[i + 2] === 0x03) {
-        const tagOff = i + 3;
-        if (der[tagOff] === 0x0C && tagOff + 2 < der.length) {
-          const strLen = der[tagOff + 1];
-          if (tagOff + 2 + strLen <= der.length) {
-            cns.push(new TextDecoder().decode(der.slice(tagOff + 2, tagOff + 2 + strLen)));
-          }
-        }
-      }
-    }
-    // toDer() writes issuerDn first, subjectDn second
-    const issuerCN  = cns[0] ?? "";
-    const subjectCN = cns[1] ?? cns[0] ?? "";
-
+    const p = parseTbs(der);
     const stub = new TlsCertificate();
-    stub.subject    = subjectCN ? `CN=${subjectCN}` : "";
-    stub.issuer     = issuerCN  ? `CN=${issuerCN}`  : stub.subject;
+    stub.subject    = p?.subjectCN ? `CN=${p.subjectCN}` : "";
+    stub.issuer     = p?.issuerCN  ? `CN=${p.issuerCN}`  : stub.subject;
     stub.selfSigned = stub.subject === stub.issuer;
-    // Real validity period from the wire (see extractValidity()); if the DER
-    // can't be parsed for some reason, fall back to "valid for a year" rather
-    // than failing the whole handshake over a cosmetic field.
-    const validity = extractValidity(der);
-    stub.notBefore  = validity?.notBefore ?? 0;
-    stub.notAfter   = validity?.notAfter  ?? (this._now() + 365 * 24 * 3600 * 1000);
+    // Real validity period from the wire; if the DER can't be parsed, the
+    // cert has no subject/key either and fails the trust/signature checks.
+    stub.notBefore  = p?.notBefore ?? 0;
+    stub.notAfter   = p?.notAfter  ?? 0;
+    // cA is only believed when it is signed into the cert (v3 basicConstraints);
+    // a legacy v1 cert never counts as CA on the wire (RFC 5280 §6.1.4(k)).
+    stub.x509Version   = p?.version === 3 ? 3 : 1;
+    stub.isCA          = p?.version === 3 && p.isCA;
+    stub._wireAltNames = p?.altNames ?? [];
 
-    // Extract the real ECDSA-P256 public key from SubjectPublicKeyInfo.
-    // toDer() encodes it as BIT STRING (0x03) with content [0x00, 0x04, ...64 bytes].
-    // A P-256 uncompressed key is always 65 bytes → BIT STRING content = 66 bytes (0x42).
-    for (let i = 0; i + 67 <= der.length; i++) {
-      if (der[i] === 0x03 && der[i + 1] === 0x42 && der[i + 2] === 0x00 && der[i + 3] === 0x04) {
-        const rawPubKey = der.slice(i + 3, i + 3 + 65); // 0x04 || x || y (skip 0x00 unused-bits byte)
-        try {
-          stub.publicKey = await crypto.subtle.importKey(
-            "raw", rawPubKey,
-            { name: "ECDSA", namedCurve: "P-256" },
-            true, ["verify"],
-          );
-          stub.publicKeyRaw = rawPubKey;
-          // Derive publicKeyId from first 16 bytes of key material
-          stub.publicKeyId = Array.from(rawPubKey.slice(1, 17))
-            .map(b => b.toString(16).padStart(2, "0")).join("");
-        } catch { /* not a valid key, skip */ }
-        break;
-      }
+    if (p?.publicKeyRaw) {
+      const rawPubKey = /** @type {Uint8Array<ArrayBuffer>} */ (p.publicKeyRaw);
+      try {
+        stub.publicKey = await crypto.subtle.importKey(
+          "raw", rawPubKey,
+          { name: "ECDSA", namedCurve: "P-256" },
+          true, ["verify"],
+        );
+        stub.publicKeyRaw = rawPubKey;
+        // Derive publicKeyId from first 16 bytes of key material
+        stub.publicKeyId = Array.from(rawPubKey.slice(1, 17))
+          .map(b => b.toString(16).padStart(2, "0")).join("");
+      } catch { /* not a valid key, skip */ }
     }
 
     // Fallback publicKeyId from SHA-256 of DER (for certs with placeholder keys)

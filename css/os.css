@@ -45,7 +45,7 @@
 }
 
 /* Icon tile derived from primary */
-.menu button:not(.menu-remove-btn)::before {
+.menu button::before {
     content: "";
     width: 62px;
     height: 62px;
@@ -63,7 +63,9 @@
 .menu button i {
     position: absolute;
 
-    width: 40px;
+    /* FA's own fixed width (1.25em) — a narrower box made wide glyphs like
+       fa-box-open overflow to the right and look off-centre */
+    width: 1.25em;
     height: 40px;
 
     top: 21px;            /* same centering as before */
@@ -117,18 +119,42 @@
     z-index: 1;
 }
 
-.menu button:not(.menu-remove-btn):hover {
+.menu button:hover {
     background: color-mix(in oklch, var(--primary), white 90%);
 }
 
-.menu button:not(.menu-remove-btn):active {
+.menu button:active {
     transform: scale(0.96);
     background: color-mix(in oklch, var(--primary), white 85%);
 }
 
-.menu button:not(.menu-remove-btn):focus-visible {
+.menu button:focus-visible {
     outline: 2px solid var(--primary-strong);
     outline-offset: 4px;
+}
+
+/* Dark mode: the light tile recipe (white gloss, primary-soft → primary)
+   turns muddy on a dark ground and the white hover swallows the label —
+   use a dark tile with the icon in the accent colour instead. */
+[data-theme="dark"] .menu button::before {
+    background: linear-gradient(135deg,
+        color-mix(in oklch, var(--primary), var(--bg2) 62%),
+        color-mix(in oklch, var(--primary), var(--bg1) 80%));
+    box-shadow: var(--shadow-soft),
+        inset 0 1px 0 color-mix(in oklch, var(--primary), transparent 65%);
+}
+
+[data-theme="dark"] .menu button i {
+    color: var(--primary);
+    filter: none;
+}
+
+[data-theme="dark"] .menu button:hover {
+    background: color-mix(in oklch, var(--primary), transparent 88%);
+}
+
+[data-theme="dark"] .menu button:active {
+    background: color-mix(in oklch, var(--primary), transparent 82%);
 }
 
 /* ------- Window frame (matches menu) ------- */
@@ -223,11 +249,11 @@
 
 
 /* =========================================================
-   APP MANAGEMENT (edit mode + library)
+   MENU WRAPPER
    ========================================================= */
 
 .os-root {
-    position: relative; /* anchor for the library overlay */
+    position: relative;
 }
 
 .os-menu-wrapper {
@@ -235,265 +261,5 @@
     flex-direction: column;
     height: 100%;
     overflow-y: auto;
-}
-
-.os-menu-footer {
-    position: sticky;
-    bottom: 0;
-    margin-top: auto;
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    padding: 6px var(--pad-lg) 12px;
-    border-top: 1px solid color-mix(in oklch, var(--text), transparent 88%);
-    background: var(--bg1);
-}
-
-.menu-manage-btn {
-    background: none;
-    border: none;
-    color: var(--text);
-    font-size: 0.8125rem;
-    font-weight: 600;
-    cursor: pointer;
-    padding: 4px 8px;
-    border-radius: var(--radius-sm);
-    transition: background 0.15s;
-}
-
-.menu-manage-btn:hover {
-    background: color-mix(in oklch, var(--text), transparent 90%);
-}
-
-/* Edit-mode tile states (classes added to the tile button itself) */
-.menu-tile-in-edit {
-    pointer-events: none;
-}
-
-.menu-tile-locked {
-    opacity: 0.45;
-}
-
-/* Container for main grid + edit overlay */
-.menu-grid-container {
-    position: relative;
-}
-
-/* Overlay grid: same CSS as .menu, positioned over it, passes clicks through */
-.menu-edit-overlay {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-}
-
-/* Each overlay cell mirrors one tile button in size and grid position */
-.menu-edit-cell {
-    position: relative;
-    width: 110px;
-    height: 118px;
-    justify-self: start;
-}
-
-/* X remove button — needs .menu-edit-overlay prefix for specificity (0,2,0)   */
-/* so it beats .menu button rules (0,1,1) on position/width/height/border-radius */
-/* 62px tile centred in 110px → right edge at 86px → right:12px, top:-4px       */
-.menu-edit-overlay .menu-remove-btn {
-    position: absolute;
-    top: -4px;
-    right: 12px;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: color-mix(in oklch, #ff3b30, white 30%);
-    border: 2px solid var(--bg);
-    color: #fff;
-    font-size: 14px;
-    font-weight: 700;
-    line-height: 1;
-    cursor: pointer;
-    z-index: 2;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    pointer-events: auto;
-    transition: transform 0.1s;
-    flex-direction: row;
-    justify-self: auto;
-}
-
-.menu-edit-overlay .menu-remove-btn::before {
-    content: "×";
-}
-
-.menu-edit-overlay .menu-remove-btn:hover {
-    transform: scale(1.15);
-}
-
-/* [+] add tile — same grid position, muted appearance */
-.menu button.menu-add-tile::before {
-    background:
-        color-mix(in oklch, var(--surface-strong), var(--text) 10%);
-    box-shadow: none;
-    border: 2px dashed color-mix(in oklch, var(--text), transparent 55%);
-    box-sizing: border-box;
-}
-
-.menu button.menu-add-tile {
-    opacity: 0.65;
-}
-
-.menu button.menu-add-tile:hover {
-    opacity: 1;
-    background: color-mix(in oklch, var(--primary), white 90%);
-}
-
-/* ---- App Library (bottom sheet overlay) ---- */
-
-.app-library-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.4);
-    display: flex;
-    align-items: flex-end;
-    z-index: 50;
-    backdrop-filter: blur(2px);
-}
-
-.app-library {
-    background: var(--bg);
-    width: 100%;
-    max-height: 75%;
-    overflow-y: auto;
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    padding: 0 var(--pad-lg) var(--pad-lg);
-}
-
-.app-library-header {
-    position: sticky;
-    top: 0;
-    background: var(--bg);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: var(--pad-md) 0;
-    border-bottom: 1px solid color-mix(in oklch, var(--text), transparent 88%);
-    font-weight: 700;
-    font-size: 0.9375rem;
-    margin-bottom: var(--pad-md);
-    z-index: 1;
-}
-
-.app-library-close {
-    background: color-mix(in oklch, var(--surface-strong), var(--text) 10%);
-    border: none;
-    border-radius: 50%;
-    width: 26px;
-    height: 26px;
-    cursor: pointer;
-    font-size: 0.75rem;
-    color: var(--muted);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.15s;
-    flex-shrink: 0;
-}
-
-.app-library-close:hover {
-    background: color-mix(in oklch, var(--surface-strong), var(--text) 20%);
-}
-
-.app-library-section {
-    margin-bottom: var(--pad-lg);
-}
-
-.app-library-heading {
-    font-size: 0.6875rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--muted);
-    margin-bottom: var(--pad-sm);
-}
-
-.app-library-list {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.app-library-row {
-    display: flex;
-    align-items: center;
-    gap: var(--pad-md);
-    padding: 3px 0;
-}
-
-.app-library-tile {
-    width: 40px;
-    height: 40px;
-    flex-shrink: 0;
-    border-radius: 10px;
-    border: none;
-    background:
-        radial-gradient(10px 10px at 30% 25%, rgba(255,255,255,0.75), transparent 60%),
-        linear-gradient(135deg, var(--primary-soft), var(--primary));
-    box-shadow: var(--shadow-soft);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: transform 0.1s, box-shadow 0.1s;
-}
-
-.app-library-tile i {
-    font-size: 1.1rem;
-    color: currentColor;
-    opacity: 0.95;
-    filter: drop-shadow(0 1px 0 rgba(255,255,255,0.3));
-    pointer-events: none;
-}
-
-.app-library-tile:hover {
-    transform: scale(1.06);
-    box-shadow: var(--shadow);
-}
-
-.app-library-name {
-    flex: 1;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--text);
-    line-height: 1.2;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    min-width: 0;
-}
-
-.app-library-add-btn {
-    flex-shrink: 0;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: var(--text);
-    background: none;
-    border: 1.5px solid var(--primary);
-    cursor: pointer;
-    padding: 3px 10px;
-    border-radius: var(--radius-sm);
-    white-space: nowrap;
-    transition: background 0.12s;
-}
-
-.app-library-add-btn:hover {
-    background: color-mix(in oklch, var(--primary), white 85%);
-}
-
-.app-library-empty {
-    color: var(--muted);
-    font-size: 0.875rem;
-    text-align: center;
-    padding: var(--pad-lg) 0;
 }
 

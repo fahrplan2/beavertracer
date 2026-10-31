@@ -155,6 +155,8 @@ export class STPBPDU {
    * Pack BPDU payload into bytes.
    * - For bpduType 0x80 (TCN): 4 bytes
    * - For bpduType 0x00 (Config): 35 bytes
+   * - For bpduType 0x02 (RST): 36 bytes — Config layout + Version 1 Length (0),
+   *   IEEE 802.1D-2004 §9.3.3
    *
    * @returns {Uint8Array}
    */
@@ -170,8 +172,8 @@ export class STPBPDU {
       return out;
     }
 
-    // Configuration BPDU
-    const out = new Uint8Array(35);
+    // Configuration BPDU (RST BPDU adds the Version 1 Length byte at offset 35, always 0)
+    const out = new Uint8Array(this.bpduType === 0x02 ? 36 : 35);
 
     write16BE(out, 0, this.protocolId);
     out[2] = this.protocolVersion & 0xff;

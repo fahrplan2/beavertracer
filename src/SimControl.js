@@ -870,6 +870,7 @@ export class SimControl {
             minSize: obj.panelResizable && !userSized ? { w: obj.panelMinWidth, h: obj.panelMinHeight } : null,
             obstacles,
             avoid,
+            anchor: obj.iconEl ? rel(obj.iconEl.getBoundingClientRect()) : null,
         });
 
         obj.px = place.x;

@@ -7,6 +7,8 @@ import { SimDialog } from '../lib/SimDialog.js';
 import { makeWindow, bringToFront } from '../lib/windowmanager.js';
 import { SimControl } from '../SimControl.js';
 
+/** How much of a device panel (px) must stay inside the sim area when it is pushed past an edge. */
+const PANEL_KEEP_VISIBLE = 100;
 
 /**
  * @typedef {{
@@ -282,13 +284,12 @@ export class SimulatedObject {
                 // panel can be dragged into the area the sidebar leaves empty
                 // outside edit mode.
                 boundary: () => this.simcontrol.panelBounds ?? this.simcontrol.movementBoundary,
+                // may be pushed partly out of the way, past the edges
+                keepVisible: PANEL_KEEP_VISIBLE,
                 onDragEnd: ({ x, y }) => {
                     this.px = x;
                     this.py = y;
                     this._panelUserPlaced = true;
-                    // The panel layer doesn't clip, so pull the panel back in
-                    // if it was dragged past the right/bottom edge.
-                    this._clampPanelToViewport();
                 }
             });
         }
@@ -368,12 +369,13 @@ export class SimulatedObject {
         const b = boundary.getBoundingClientRect();
         const p = this.panelEl.getBoundingClientRect();
 
-        let dx = 0, dy = 0;
-
-        if (p.right  > b.right)  dx = b.right  - p.right;
-        if (p.bottom > b.bottom) dy = b.bottom - p.bottom;
-        if (p.left + dx < b.left) dx = b.left - p.left;
-        if (p.top  + dy < b.top)  dy = b.top  - p.top;
+        // Same rule as dragging (keepVisible): the panel may stick out past
+        // the left/right/bottom edge as long as enough of it stays inside to
+        // grab it again; the header never goes above the top.
+        const k = PANEL_KEEP_VISIBLE;
+        const left = Math.min(Math.max(p.left, b.left - p.width + k), b.right - k);
+        const top = Math.min(Math.max(p.top, b.top), b.bottom - k);
+        const dx = left - p.left, dy = top - p.top;
 
         if (dx !== 0 || dy !== 0) {
             this.px += dx;

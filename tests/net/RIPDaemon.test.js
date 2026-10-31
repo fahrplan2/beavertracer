@@ -438,7 +438,7 @@ describe('RIPDaemon – _buildEntries split-horizon', () => {
         daemon.stop();
     });
 
-    it('excludes expired (infinity) routes', () => {
+    it('advertises expired routes with metric 16 until garbage collection (RFC 2453 §3.8)', () => {
         const stack  = makeStack([
             { ip: '10.0.0.1',    prefix: 24 },
             { ip: '192.168.1.1', prefix: 24 },
@@ -447,9 +447,8 @@ describe('RIPDaemon – _buildEntries split-horizon', () => {
         daemon.start();
         daemon._learnRoute('172.16.0.0/16', IPAddress.fromString('172.16.0.0'), 16, IPAddress.fromString('192.168.1.2'), 3, 1);
         daemon._expireRoute('172.16.0.0/16'); // metric → 16
-        const entries = daemon._buildEntries(0);
-        const has172  = entries.some(e => e.ip?.[0] === 172);
-        expect(has172).toBe(false);
+        const e172 = daemon._buildEntries(0).find(e => e.ip?.[0] === 172);
+        expect(e172?.metric).toBe(RIP_INFINITY);
         daemon.stop();
     });
 });
@@ -504,5 +503,82 @@ describe('RIPDaemon – persistence', () => {
         const daemon = new RIPDaemon(makeStack([]));
         daemon.enabled = true;
         expect(daemon.toJSON().enabled).toBe(true);
+    });
+});
+
+// ── RIPDaemon – RFC 2453 §3.9.2 metric handling ───────────────────────────────
+
+describe('RIPDaemon – RFC 2453 §3.9.2', () => {
+    const NET = [192, 168, 0, 0], MASK = [255, 255, 255, 0], KEY = '192.168.0.0/24';
+    const twoNeighbours = () => makeStack([{ ip: '10.0.0.1', prefix: 24 }]);
+
+    it('does not install a new route received with metric 15 (15 + 1 = infinity)', () => {
+        const stack  = twoNeighbours();
+        const daemon = new RIPDaemon(stack);
+        daemon.start();
+        daemon._handleMsg(ripMsg('10.0.0.2', [ripEntry(NET, MASK, 15)]));
+        expect(daemon._routes.has(KEY)).toBe(false);
+        expect(stack._routes).toHaveLength(0);
+        daemon.stop();
+    });
+
+    it('poisons the route when the current gateway reports metric 15', () => {
+        const stack  = twoNeighbours();
+        const daemon = new RIPDaemon(stack);
+        daemon.start();
+        daemon._handleMsg(ripMsg('10.0.0.2', [ripEntry(NET, MASK, 2)]));
+        daemon._handleMsg(ripMsg('10.0.0.2', [ripEntry(NET, MASK, 15)]));
+        expect(daemon._routes.get(KEY)?.metric).toBe(RIP_INFINITY);
+        expect(stack._routes).toHaveLength(0);
+        tick(20_000 / 5 + 1);  // garbage collection
+        expect(daemon._routes.has(KEY)).toBe(false);
+        daemon.stop();
+    });
+
+    it('ignores metric 16 from a router that is not the current gateway', () => {
+        const stack  = twoNeighbours();
+        const daemon = new RIPDaemon(stack);
+        daemon.start();
+        daemon._handleMsg(ripMsg('10.0.0.2', [ripEntry(NET, MASK, 2)]));
+        daemon._handleMsg(ripMsg('10.0.0.3', [ripEntry(NET, MASK, RIP_INFINITY)]));
+        expect(daemon._routes.get(KEY)?.metric).toBe(3);
+        expect(daemon._routes.get(KEY)?.nexthop.toString()).toBe('10.0.0.2');
+        daemon.stop();
+    });
+
+    it('takes a worse metric from the current gateway', () => {
+        const stack  = twoNeighbours();
+        const daemon = new RIPDaemon(stack);
+        daemon.start();
+        daemon._handleMsg(ripMsg('10.0.0.2', [ripEntry(NET, MASK, 2)]));
+        daemon._handleMsg(ripMsg('10.0.0.2', [ripEntry(NET, MASK, 5)]));
+        expect(daemon._routes.get(KEY)?.metric).toBe(6);
+        daemon.stop();
+    });
+
+    it('ignores a worse metric from another router', () => {
+        const stack  = twoNeighbours();
+        const daemon = new RIPDaemon(stack);
+        daemon.start();
+        daemon._handleMsg(ripMsg('10.0.0.2', [ripEntry(NET, MASK, 2)]));
+        daemon._handleMsg(ripMsg('10.0.0.3', [ripEntry(NET, MASK, 5)]));
+        expect(daemon._routes.get(KEY)?.metric).toBe(3);
+        expect(daemon._routes.get(KEY)?.nexthop.toString()).toBe('10.0.0.2');
+        daemon.stop();
+    });
+
+    it('sends a triggered update with metric 16 soon after a route is poisoned', () => {
+        const stack  = makeStack([{ ip: '10.0.0.1', prefix: 24 }, { ip: '192.168.1.1', prefix: 24 }]);
+        const daemon = new RIPDaemon(stack);
+        daemon.start();
+        tick(1);  // initial update
+        daemon._handleMsg(ripMsg('10.0.0.2', [ripEntry([172, 16, 0, 0], [255, 255, 0, 0], 2)]));
+        stack._sent.length = 0;
+        daemon._handleMsg(ripMsg('10.0.0.2', [ripEntry([172, 16, 0, 0], [255, 255, 0, 0], RIP_INFINITY)]));
+        tick(500 / 5 + 1);  // TRIGGER_MS, well before the next regular update (5 s)
+        const toLan = stack._sent.filter(m => m.dst === '192.168.1.255')
+            .flatMap(m => RIPPacket.fromBytes(m.payload).entries);
+        expect(toLan.find(e => e.ip[0] === 172)?.metric).toBe(RIP_INFINITY);
+        daemon.stop();
     });
 });

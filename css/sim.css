@@ -182,6 +182,10 @@
   grid-area: nodes;
   position: relative;
   overflow: visible;
+  /* Panels may be pushed past the right/bottom edge to get them out of the
+     way; cut them off there so they don't cover the lessons panel. Left
+     stays open for the sidebar column (see .sim-panel-bounds). */
+  clip-path: inset(0 0 0 -100vw);
   pointer-events: none;
   z-index: 11;
 }
@@ -2027,9 +2031,13 @@ sim-toolbar-langbtn {
 .ui-tabbar {
   display: flex;
   flex-wrap: wrap;          /* never clip tabs when there are many (e.g. 8+ router interfaces) */
-  gap: 6px 2px;             /* row-gap compensates for .ui-tab's -2px bottom margin when wrapped */
+  gap: 4px 2px;
   padding: 0 4px;
-  border-bottom: 2px solid var(--ui-border-strong);
+  /* The base line is an inset shadow, not a border: it paints underneath the
+     tabs, so the active tab's underline covers it, while the tabs stay inside
+     the box. (A -2px tab margin overlapping a real border overflowed the box
+     by 2px, and with overflow-y: auto that showed a scrollbar on every bar.) */
+  box-shadow: inset 0 -2px 0 var(--ui-border-strong);
   flex-shrink: 0;
   max-height: 40vh;         /* extreme counts: cap height and scroll inside the bar */
   overflow-y: auto;
@@ -2043,7 +2051,6 @@ sim-toolbar-langbtn {
   border: 1px solid var(--ui-border);
   border-bottom: 3px solid transparent;
   border-radius: 6px 6px 0 0;
-  margin-bottom: -2px;
   background: transparent;
   color: var(--text);
   font-size: 0.875rem;

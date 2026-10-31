@@ -455,6 +455,12 @@ describe('SimpleMailServerApp', () => {
       const lines = await client.readUntil(l => l.startsWith('A3 OK'));
       const content = lines.join('\n');
       expect(content).toContain('Fetch body content');
+      // RFC 9051 §4.3: ")" follows the literal's last octet directly — nothing in between
+      const raw = lines.join('\r\n');
+      const hdr = /\{(\d+)\}\r\n/.exec(raw);
+      expect(hdr).not.toBeNull();
+      const afterLiteral = raw.slice(/** @type {any} */ (hdr).index + hdr[0].length + Number(hdr[1]));
+      expect(afterLiteral.startsWith(')')).toBe(true);
     });
 
     it('SEARCH ALL returns sequence numbers for all messages', async () => {
@@ -760,5 +766,68 @@ describe('SimpleMailServerApp – TLS certificate persistence', () => {
     expect(app.serverRef.imaps).not.toBeNull();
 
     app._stop();
+  });
+
+  it('_applyCert() persists the chosen certPath without needing a Start', async () => {
+    const fs = makeMockFS();
+    await writeTestCert(fs);
+
+    const app = new SimpleMailServerApp(makeOS(makeVirtualTCPNet().net, fs));
+    app._loadConfig();
+    app.certSelectEl = /** @type {any} */ ({ value: certPath });
+    await app._applyCert();
+
+    expect(JSON.parse(fs.readFile('/etc/mail.conf')).tls.certPath).toBe(certPath);
+  });
+});
+
+describe('SimpleMailServerApp – config saving', () => {
+  it('_saveConfig() keeps autostart when a user is added while running', () => {
+    const fs = makeMockFS();
+    const app = new SimpleMailServerApp(makeOS(makeVirtualTCPNet().net, fs));
+    app._loadConfig();
+    app._start();
+    expect(JSON.parse(fs.readFile('/etc/mail.conf')).autostart).toBe(true);
+
+    app.userEl = /** @type {any} */ ({ value: 'bob' });
+    app.passEl = /** @type {any} */ ({ value: 'pw' });
+    app._addOrUpdateUser();
+
+    const cfg = JSON.parse(fs.readFile('/etc/mail.conf'));
+    expect(cfg.users.map((u) => u.user)).toContain('bob');
+    expect(cfg.autostart).toBe(true);
+
+    app._stop();
+  });
+
+  it('_saveConfigFromUI() writes the edited form values, not the previous state', () => {
+    const fs = makeMockFS();
+    const app = new SimpleMailServerApp(makeOS(makeVirtualTCPNet().net, fs));
+    app._loadConfig();
+    app.domainEl = /** @type {any} */ ({ value: 'Mail.Test' });
+    app.smtpEl = /** @type {any} */ ({ value: '2525' });
+    app.pop3El = /** @type {any} */ ({ value: '110' });
+    app.imapEl = /** @type {any} */ ({ value: '143' });
+
+    app._saveConfigFromUI();
+
+    const cfg = JSON.parse(fs.readFile('/etc/mail.conf'));
+    expect(cfg.mailDomain).toBe('mail.test');
+    expect(cfg.ports.smtp).toBe(2525);
+  });
+
+  it('_saveConfigFromUI() rejects invalid ports and leaves the file untouched', () => {
+    const fs = makeMockFS();
+    const app = new SimpleMailServerApp(makeOS(makeVirtualTCPNet().net, fs));
+    app._loadConfig();
+    const before = fs.readFile('/etc/mail.conf');
+    app.domainEl = /** @type {any} */ ({ value: 'example.local' });
+    app.smtpEl = /** @type {any} */ ({ value: '99999' });
+    app.pop3El = /** @type {any} */ ({ value: '110' });
+    app.imapEl = /** @type {any} */ ({ value: '143' });
+
+    app._saveConfigFromUI();
+
+    expect(fs.readFile('/etc/mail.conf')).toBe(before);
   });
 });

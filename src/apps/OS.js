@@ -33,6 +33,7 @@ import { STUNServerApp } from "./STUNServerApp.js";
 import { BitcoinNodeApp } from "./BitcoinNodeApp.js";
 import { UILib } from "../lib/UILib.js";
 import { ExplorerApp } from "./ExplorerApp.js";
+import { SoftwareApp } from "./SoftwareApp.js";
 
 /** @typedef {{ id: string, Class: new (...args: any[]) => any, mandatory: boolean, category: string, icon: string, labelKey: string }} AppRegistryEntry */
 
@@ -42,6 +43,7 @@ const APP_REGISTRY = [
     { id: "TerminalApp",            Class: TerminalApp,            mandatory: true,  category: "system", icon: "fa-terminal",      labelKey: "app.terminal.title" },
     { id: "ExplorerApp",            Class: ExplorerApp,            mandatory: true,  category: "system", icon: "fa-folder-open",   labelKey: "app.explorer.title" },
     { id: "TextEditorApp",          Class: TextEditorApp,          mandatory: true,  category: "system", icon: "fa-file-pen",      labelKey: "app.texteditor.title" },
+    { id: "SoftwareApp",            Class: SoftwareApp,            mandatory: true,  category: "system", icon: "fa-box-open",      labelKey: "app.software.title" },
     { id: "CertManagerApp",         Class: CertManagerApp,         mandatory: false,  category: "system", icon: "fa-shield-halved", labelKey: "app.certmanager.title" },
     { id: "ClockApp",               Class: ClockApp,               mandatory: false,  category: "system", icon: "fa-clock",         labelKey: "app.clock.title" },
     { id: "SparktailHTTPClientApp", Class: SparktailHTTPClientApp, mandatory: false, category: "client", icon: "fa-globe",         labelKey: "app.sparktail.title" },
@@ -126,12 +128,6 @@ export class OS {
 
     /** @type {Set<string>} installed app IDs; empty = all apps (default/legacy) */
     _installedApps = new Set();
-
-    /** @type {boolean} */
-    _appEditMode = false;
-
-    /** @type {boolean} */
-    _showLibrary = false;
 
     /** @type {HTMLElement|null} */
     host = null;
@@ -361,10 +357,6 @@ export class OS {
         const view = this._getActiveView();
         this.root.replaceChildren(view.ui);
 
-        if (this._showLibrary && this.focusID === 0) {
-            this.root.appendChild(this._renderLibraryOverlay());
-        }
-
         if (view.pid !== 0) {
             const app = this._getFocusedApp();
             if (app && view.appRoot) {
@@ -385,203 +377,50 @@ export class OS {
         const wrapper = document.createElement("div");
         wrapper.classList.add("os-menu-wrapper");
 
-        const gridContainer = document.createElement("div");
-        gridContainer.className = "menu-grid-container";
-        wrapper.appendChild(gridContainer);
-
         const grid = document.createElement("div");
         grid.classList.add("menu");
-        gridContainer.appendChild(grid);
+        wrapper.appendChild(grid);
 
         for (const item of this._menuItems) {
-            const app = this.runningApps.find(a => a.pid === item.pid);
-            const isMandatory = app?._mandatory ?? false;
-
-            const btn = UILib.iconbutton({
+            grid.appendChild(UILib.iconbutton({
                 label: item.title,
                 icon: item.icon,
                 badge: item.badge,
                 onClick: () => this.focus(item.pid),
-            });
-
-            if (this._appEditMode) {
-                btn.classList.add("menu-tile-in-edit");
-                if (isMandatory) btn.classList.add("menu-tile-locked");
-            }
-
-            grid.appendChild(btn);
+            }));
         }
-
-        if (this._appEditMode) {
-            const addTile = UILib.iconbutton({
-                label: t("os.apps.library.addlabel"),
-                icon: "fa-plus",
-                className: "menu-add-tile",
-                onClick: () => { this._showLibrary = true; this.render(); },
-            });
-            grid.appendChild(addTile);
-
-            // Second grid laid over the first — ⊗ remove buttons live here
-            // so the tile buttons below are never touched and their ::before layout is intact.
-            const overlay = document.createElement("div");
-            overlay.className = "menu menu-edit-overlay";
-            overlay.setAttribute("aria-hidden", "true");
-            gridContainer.appendChild(overlay);
-
-            for (const item of this._menuItems) {
-                const app = this.runningApps.find(a => a.pid === item.pid);
-                const isMandatory = app?._mandatory ?? false;
-
-                const cell = document.createElement("div");
-                cell.className = "menu-edit-cell";
-
-                if (!isMandatory) {
-                    const removeBtn = document.createElement("button");
-                    removeBtn.className = "menu-remove-btn";
-                    removeBtn.setAttribute("aria-label", t("os.apps.remove"));
-                    removeBtn.onclick = () => this._uninstallApp(item.pid);
-                    cell.appendChild(removeBtn);
-                }
-
-                overlay.appendChild(cell);
-            }
-
-            // empty cell to cover the [+] add tile position
-            const addCell = document.createElement("div");
-            addCell.className = "menu-edit-cell";
-            overlay.appendChild(addCell);
-        }
-
-        const footer = document.createElement("div");
-        footer.className = "os-menu-footer";
-
-        if (this._appEditMode) {
-            const doneBtn = document.createElement("button");
-            doneBtn.className = "menu-manage-btn";
-            doneBtn.textContent = t("os.apps.done");
-            doneBtn.onclick = () => { this._appEditMode = false; this._showLibrary = false; this.render(); };
-            footer.appendChild(doneBtn);
-        } else {
-            const manageBtn = document.createElement("button");
-            manageBtn.className = "menu-manage-btn";
-            manageBtn.textContent = t("os.apps.manage");
-            manageBtn.onclick = () => { this._appEditMode = true; this.render(); };
-            footer.appendChild(manageBtn);
-        }
-
-        wrapper.appendChild(footer);
 
         return wrapper;
     }
 
-    /** @returns {HTMLElement} */
-    _renderLibraryOverlay() {
-        const installedIds = new Set(this.runningApps.map(a => a._appId).filter(Boolean));
-
-        const overlay = document.createElement("div");
-        overlay.className = "app-library-overlay";
-        overlay.onclick = (e) => {
-            if (e.target === overlay) { this._showLibrary = false; this.render(); }
-        };
-
-        const panel = document.createElement("div");
-        panel.className = "app-library";
-
-        const header = document.createElement("div");
-        header.className = "app-library-header";
-        const titleEl = document.createElement("span");
-        titleEl.textContent = t("os.apps.library.title");
-        const closeBtn = document.createElement("button");
-        closeBtn.className = "app-library-close";
-        closeBtn.textContent = "✕";
-        closeBtn.onclick = () => { this._showLibrary = false; this.render(); };
-        header.appendChild(titleEl);
-        header.appendChild(closeBtn);
-        panel.appendChild(header);
-
-        const categories = [
-            { key: "system", label: t("os.apps.category.system") },
-            { key: "client", label: t("os.apps.category.client") },
-            { key: "server", label: t("os.apps.category.server") },
-        ];
-
-        let hasAny = false;
-        for (const cat of categories) {
-            const apps = APP_REGISTRY.filter(
-                e => e.category === cat.key && !e.mandatory && !installedIds.has(e.id)
-            );
-            if (apps.length === 0) continue;
-            hasAny = true;
-
-            const section = document.createElement("div");
-            section.className = "app-library-section";
-
-            const heading = document.createElement("div");
-            heading.className = "app-library-heading";
-            heading.textContent = cat.label;
-            section.appendChild(heading);
-
-            const libGrid = document.createElement("div");
-            libGrid.className = "app-library-list";
-
-            for (const entry of apps) {
-                const row = document.createElement("div");
-                row.className = "app-library-row";
-
-                const tile = document.createElement("button");
-                tile.className = "app-library-tile";
-                tile.onclick = () => this._installApp(entry.id);
-                const iconEl = document.createElement("i");
-                iconEl.classList.add("fas", entry.icon);
-                tile.appendChild(iconEl);
-                row.appendChild(tile);
-
-                const nameEl = document.createElement("div");
-                nameEl.className = "app-library-name";
-                nameEl.textContent = t(entry.labelKey);
-                row.appendChild(nameEl);
-
-                const addBtn = document.createElement("button");
-                addBtn.className = "app-library-add-btn";
-                addBtn.textContent = t("os.apps.library.install");
-                addBtn.onclick = () => this._installApp(entry.id);
-                row.appendChild(addBtn);
-
-                libGrid.appendChild(row);
-            }
-
-            section.appendChild(libGrid);
-            panel.appendChild(section);
-        }
-
-        if (!hasAny) {
-            const empty = document.createElement("div");
-            empty.className = "app-library-empty";
-            empty.textContent = t("os.apps.library.empty");
-            panel.appendChild(empty);
-        }
-
-        overlay.appendChild(panel);
-        return overlay;
+    /**
+     * All optional (non-mandatory) apps with their install state — used by SoftwareApp.
+     * @returns {Array<AppRegistryEntry & { pid: number|null }>} pid of the running instance, null if not installed
+     */
+    getAppCatalog() {
+        return APP_REGISTRY.filter(e => !e.mandatory).map(e => ({
+            ...e,
+            pid: this.runningApps.find(a => a._appId === e.id)?.pid ?? null,
+        }));
     }
 
-    /** @param {number} pid */
-    _uninstallApp(pid) {
-        const app = this.runningApps.find(a => a.pid === pid);
+    /** @param {string} appId */
+    uninstallApp(appId) {
+        const app = this.runningApps.find(a => a._appId === appId);
         if (!app || app._mandatory) return;
         if (this._installedApps.size === 0) {
             for (const a of this.runningApps) {
                 if (a._appId) this._installedApps.add(a._appId);
             }
         }
-        if (app._appId) this._installedApps.delete(app._appId);
-        this.exit(pid);
+        this._installedApps.delete(appId);
+        this.exit(app.pid);
     }
 
     /** @param {string} appId */
-    _installApp(appId) {
+    installApp(appId) {
         const entry = APP_REGISTRY.find(e => e.id === appId);
-        if (!entry) return;
+        if (!entry || this.runningApps.some(a => a._appId === appId)) return;
         if (this._installedApps.size === 0) {
             for (const a of this.runningApps) {
                 if (a._appId) this._installedApps.add(a._appId);

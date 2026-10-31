@@ -336,10 +336,36 @@ export class TcpEngine {
     const conn = this.conns.get(key);
     if (!conn) throw new Error(`recv: Connection not found: ${key}`);
 
-    if (conn.in.length > 0) return Promise.resolve(conn.in.shift() ?? null);
+    if (conn.in.length > 0) {
+      const chunk = conn.in.shift() ?? null;
+      this._maybeSendWindowUpdate(conn);
+      return Promise.resolve(chunk);
+    }
     if (conn.eof) return Promise.resolve(null);
 
     return new Promise((resolve) => conn.waiters.push(resolve));
+  }
+
+  /**
+   * Window update after the application consumed buffered data
+   * (RFC 9293 §3.8.6.2.2, receiver-side SWS avoidance; RFC 1122 §4.2.2.17).
+   * Without it a peer that saw rwnd=0 would only learn about the reopened
+   * window through its next zero-window probe. To avoid silly-window
+   * updates, a pure ACK is sent only once the offered window has grown by
+   * at least min(RCV.BUFF/2, MSS) since the last advertisement — which also
+   * covers reopening a closed window.
+   * @param {TCPSocket} conn
+   */
+  _maybeSendWindowUpdate(conn) {
+    if (conn.eof) return; // peer has sent FIN — it won't send more data
+    if (conn.state !== "ESTABLISHED" && conn.state !== "FIN-WAIT-1" && conn.state !== "FIN-WAIT-2") return;
+    if (conn.lastWndSent < 0) return; // nothing advertised after the handshake yet
+
+    const wnd = this._calcRcvWnd(conn);
+    const cap = conn.rcvCap ?? (256 * 1024);
+    const mss = (conn.mss ?? this.defaultMSS) | 0;
+    const threshold = Math.max(1, Math.min(Math.floor(cap / 2), mss));
+    if (wnd - (conn.lastWndSent >>> 0) >= threshold) this._sendAckOnly(conn);
   }
 
   /**
@@ -367,6 +393,7 @@ export class TcpEngine {
    */
   _flushSend(conn) {
     if (conn.state !== "ESTABLISHED" && conn.state !== "CLOSE-WAIT") return;
+    this._releaseProbe(conn);
     if (!conn.sendQ || conn.sendQ.length === 0) {
       if (conn.pendingClose) { conn.pendingClose = false; this._sendFin(conn); }
       return;
@@ -420,6 +447,131 @@ export class TcpEngine {
       conn.pendingClose = false;
       this._sendFin(conn);
     }
+
+    this._updatePersist(conn);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Persist timer / zero-window probes (RFC 9293 §3.8.6.1, RFC 1122 §4.2.2.17)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Start or stop the persist timer depending on the current send state.
+   * Persist mode: the peer advertises SND.WND = 0, data is waiting, and
+   * nothing but (at most) an earlier probe byte is outstanding. Regular
+   * outstanding data stays covered by the RTO timer instead.
+   * @param {TCPSocket} conn
+   */
+  _updatePersist(conn) {
+    const open = conn.state === "ESTABLISHED" || conn.state === "CLOSE-WAIT";
+    const onlyProbes = conn.outQ.every((seg) => seg.probe);
+    const probeOut = conn.outQ.length > 0 && onlyProbes;
+    const persist = open && (conn.sndWnd >>> 0) === 0 && onlyProbes &&
+                    ((conn.sendQBytes ?? 0) > 0 || probeOut);
+
+    if (persist) {
+      if (conn.persistTimerId !== null) return;
+      this._cancelRto(conn); // the probe byte is retransmitted by the persist timer
+      this._schedulePersist(conn);
+      return;
+    }
+
+    this._releaseProbe(conn);
+    if (conn.persistTimerId !== null) {
+      this._cancelPersist(conn);
+      // A still-unacked probe byte is ordinary outstanding data from now on.
+      if (conn.outQ.length > 0 && conn.rtoTimerId === null) this._scheduleRto(conn);
+    }
+    conn.persistBackoff = 0;
+  }
+
+  /**
+   * The window has reopened while a probe byte is still unacknowledged: the
+   * peer refused it, so it is now the hole at SND.UNA. Re-send it at once
+   * (before any new data) and treat it as ordinary data from here on — RTO
+   * covers it — instead of letting the receiver wait a full RTO for it.
+   * @param {TCPSocket} conn
+   */
+  _releaseProbe(conn) {
+    if ((conn.sndWnd >>> 0) === 0) return;
+    const seg = conn.outQ[0];
+    if (!seg?.probe) return;
+    seg.probe = false;
+    this._sendRaw(conn, {
+      seq: seg.seq,
+      ack: conn.theiracc >>> 0,
+      flags: seg.flags | TCPPacket.FLAG_ACK,
+      payload: seg.payload,
+    });
+  }
+
+  /**
+   * Arm the persist timer: current RTO, doubled per probe sent, capped.
+   * @param {TCPSocket} conn
+   */
+  _schedulePersist(conn) {
+    if (conn.persistTimerId !== null) simTimer.cancel(conn.persistTimerId);
+    const ms = Math.min(conn.rtoMs * (2 ** conn.persistBackoff), SimTimer.TCP_MAX_RTO_MS);
+    conn.persistTimerId = simTimer.schedule(() => this._firePersist(conn), ms);
+  }
+
+  /** @param {TCPSocket} conn */
+  _cancelPersist(conn) {
+    if (conn.persistTimerId !== null) { simTimer.cancel(conn.persistTimerId); conn.persistTimerId = null; }
+  }
+
+  /**
+   * Persist timer expired: send a zero-window probe — one byte of real data
+   * at SND.NXT (Wireshark: "TCP ZeroWindowProbe"). The byte is queued in
+   * outQ like any data and SND.NXT advances; while the peer keeps refusing it
+   * (ACK = the probe's seq, window 0) the same byte is re-sent on each expiry.
+   * Per RFC 9293 the connection is never aborted while probes are being
+   * answered — only after TCP_MAX_REXMIT probes in a row went unanswered.
+   * @param {TCPSocket} conn
+   */
+  _firePersist(conn) {
+    conn.persistTimerId = null;
+    if (conn.state !== "ESTABLISHED" && conn.state !== "CLOSE-WAIT") return;
+    if ((conn.sndWnd >>> 0) !== 0) { this._flushSend(conn); return; }
+
+    if (conn.persistUnanswered >= SimTimer.TCP_MAX_REXMIT) {
+      this._destroy(conn, "connection timed out");
+      return;
+    }
+
+    const probe = conn.outQ.find((seg) => seg.probe);
+    const head = conn.sendQ[0];
+    if (!probe && !head) { this._updatePersist(conn); return; }
+
+    // Count before sending: over a synchronous loopback the peer's answer
+    // (which resets the counter and may re-arm the timer) arrives inside _sendRaw.
+    conn.persistUnanswered++;
+    conn.persistBackoff++;
+
+    if (probe) {
+      probe.rexmit++;
+      this._sendRaw(conn, {
+        seq: probe.seq,
+        ack: conn.theiracc >>> 0,
+        flags: probe.flags | TCPPacket.FLAG_ACK,
+        payload: probe.payload,
+      });
+    } else if (head) {
+      const payload = head.subarray(0, 1);
+      const endOfWrite = head.length === 1;
+      if (endOfWrite) conn.sendQ.shift();
+      else conn.sendQ[0] = head.subarray(1);
+      conn.sendQBytes = Math.max(0, (conn.sendQBytes ?? 0) - 1);
+
+      const seq = conn.myacc >>> 0;
+      const flags = endOfWrite ? (TCPPacket.FLAG_PSH | TCPPacket.FLAG_ACK) : TCPPacket.FLAG_ACK;
+      conn.outQ.push({ seq, end: u32(seq + 1), flags, payload, rexmit: 0, probe: true });
+      conn.myacc = u32(seq + 1);
+      this._sendRaw(conn, { seq, ack: conn.theiracc >>> 0, flags, payload });
+    }
+
+    if (/** @type {string} */ (conn.state) === "CLOSED") return; // loopback reply may have reset the connection
+    this._updatePersist(conn); // re-arm with the next backoff step (no-op if already re-armed)
   }
 
   /**
@@ -526,7 +678,7 @@ export class TcpEngine {
       flags,
       window: 0,
       payload: new Uint8Array(),
-    }).pack();
+    }).pack({ srcIp: localIP, dstIp: remoteIP });
 
     this._ipSend({
       dst: remoteIP,
@@ -567,6 +719,10 @@ export class TcpEngine {
     if (!conn) {
       const listen = this.sockets.get(localPort);
       const isListening = !!listen && listen.state === "LISTEN";
+
+      // RFC 9293 §3.10.7.1/§3.10.7.2: an incoming RST is always dropped
+      // here — never answer a RST with a RST.
+      if (rst) return;
 
       // New inbound SYN to LISTEN => normal accept path
       if (syn && !ack && isListening) {
@@ -616,20 +772,45 @@ export class TcpEngine {
         return;
       }
 
-      // Port closed => RST for SYN or segments carrying ACK (RFC 793 §3.4: never RST a RST)
-      if (!isListening) {
-        if (!rst && (syn || ack)) {
-          this._sendRstForSegment(localIP, localPort, remoteIP, remotePort, tcp);
-        }
+      if (isListening) {
+        // RFC 9293 §3.10.7.2 (LISTEN): an ACK — also a SYN+ACK — cannot
+        // belong to anything this listener sent: <SEQ=SEG.ACK><CTL=RST>.
+        // Anything else (no SYN, no ACK) is dropped silently.
+        if (ack) this._sendRstForSegment(localIP, localPort, remoteIP, remotePort, tcp);
+        return;
+      }
+
+      // RFC 9293 §3.10.7.1 (CLOSED): every segment except a RST — SYN, ACK,
+      // FIN, plain data — is answered with a RST.
+      this._sendRstForSegment(localIP, localPort, remoteIP, remotePort, tcp);
+      return;
+    }
+
+    // 1) RST (RFC 9293 §3.10.7.3/§3.10.7.4, RFC 5961 §3.2)
+    if (rst) {
+      if (conn.state === "SYN-SENT") {
+        // Only acceptable if it acknowledges our SYN (SND.UNA < SEG.ACK <= SND.NXT).
+        if (ack && (tcp.ack >>> 0) === (conn.myacc >>> 0)) this._destroy(conn, "RST");
+        return;
+      }
+      // Synchronized states: tear down only on an exact match SEG.SEQ == RCV.NXT.
+      // Inside the receive window → challenge ACK (a genuine peer answers it
+      // with a correctly numbered RST); outside → ignore (blind-reset defence).
+      const rcvNxt = conn.theiracc >>> 0;
+      const segSeq = tcp.seq >>> 0;
+      if (segSeq === rcvNxt) {
+        this._destroy(conn, "RST");
+        return;
+      }
+      const rcvWnd = this._calcRcvWnd(conn);
+      if (rcvWnd > 0 && seqGT(segSeq, rcvNxt) && seqLT(segSeq, u32(rcvNxt + rcvWnd))) {
+        this._sendAckOnly(conn, true);
       }
       return;
     }
 
-    // 1) RST: immediate teardown
-    if (rst) {
-      this._destroy(conn, "RST");
-      return;
-    }
+    // Any segment from the peer proves it is alive (persist-timer abort guard).
+    conn.persistUnanswered = 0;
 
     // Update peer advertised window
     const prevSndWnd = conn.sndWnd >>> 0;
@@ -644,11 +825,19 @@ export class TcpEngine {
 
       const okAck = seqGE(ackNo, sndUna) && seqLE(ackNo, sndNxt);
 
-      if (okAck) this._onAck(conn, ackNo, inTs?.tsecr ?? null);
+      // RFC 5681 §2: a *duplicate ACK* carries no data, no SYN/FIN and leaves
+      // the advertised window unchanged (ACK == SND.UNA and outstanding data
+      // are checked in _onAck). Data segments of the reverse direction or
+      // window updates that happen to repeat SND.UNA are no loss signal.
+      const dupCandidate = (tcp.payload?.length ?? 0) === 0 && !syn && !fin &&
+                           (tcp.window >>> 0) === prevSndWnd;
+      if (okAck) this._onAck(conn, ackNo, inTs?.tsecr ?? null, dupCandidate);
     }
 
     if (conn.sendQBytes > 0 && ((conn.sndWnd >>> 0) !== prevSndWnd || ack)) {
       this._flushSend(conn);
+    } else {
+      this._updatePersist(conn);
     }
 
     // TIME-WAIT: ignore payload/state changes, but re-ACK
@@ -694,18 +883,26 @@ export class TcpEngine {
 
     // Server handshake: SYN-RECEIVED -> ESTABLISHED on final ACK
     if (conn.state === "SYN-RECEIVED") {
-      if (ack && (tcp.ack >>> 0) === (conn.myacc >>> 0)) {
-        conn.state = "ESTABLISHED";
-        conn.cwnd = conn.mss; // reset to 1 MSS; _onAck may have grown cwnd for the SYN-ACK seq
-
-        const listen = this.sockets.get(conn.port);
-        if (listen && listen.state === "LISTEN") {
-          const w = listen.acceptWaiters.shift();
-          if (w) w(conn);
-          else listen.acceptQueue.push(conn);
-        }
+      if (!ack) return;
+      if ((tcp.ack >>> 0) !== (conn.myacc >>> 0)) {
+        // RFC 9293 §3.10.7.4: unacceptable ACK in SYN-RECEIVED → <SEQ=SEG.ACK><CTL=RST>
+        this._sendRstForSegment(conn.localIP, conn.port, conn.peerIP, conn.peerPort, tcp);
+        return;
       }
-      return;
+      conn.state = "ESTABLISHED";
+      conn.cwnd = conn.mss; // reset to 1 MSS; _onAck may have grown cwnd for the SYN-ACK seq
+
+      const listen = this.sockets.get(conn.port);
+      if (listen && listen.state === "LISTEN") {
+        const w = listen.acceptWaiters.shift();
+        if (w) w(conn);
+        else listen.acceptQueue.push(conn);
+      }
+      // RFC 9293 §3.10.7.4 continues with the segment text and FIN in
+      // ESTABLISHED: if the bare handshake ACK was lost, the first data
+      // segment completes the handshake and its payload must not be dropped.
+      // A bare handshake ACK ends here (it must not provoke an ACK of its own).
+      if ((tcp.payload?.length ?? 0) === 0 && !fin) return;
     }
 
     // FIN-WAIT-1: our FIN ACKed → FIN-WAIT-2 (or TIME-WAIT if their FIN already consumed)
@@ -814,17 +1011,18 @@ export class TcpEngine {
    * Build and transmit a TCP packet (no outQ involvement).
    * Automatically appends TS option when conn.tsEnabled.
    * @param {TCPSocket} conn
-   * @param {{seq:number, ack:number, flags:number, window?:number, options?:Uint8Array, payload:Uint8Array}} seg
+   * @param {{seq:number, ack:number, flags:number, window?:number, options?:Uint8Array, payload:Uint8Array, rawOptions?:boolean}} seg
+   *   rawOptions: send `options` verbatim (no automatic Timestamp option)
    */
-  _sendRaw(conn, { seq, ack, flags, window, options, payload }) {
+  _sendRaw(conn, { seq, ack, flags, window, options, payload, rawOptions = false }) {
     const tcpBytes = new TCPPacket({
       srcPort: conn.port,
       dstPort: conn.peerPort,
       seq, ack, flags,
       window: (window ?? this._calcRcvWnd(conn)) | 0,
-      options: this._buildSegmentOptions(conn, options),
+      options: rawOptions ? (options ?? new Uint8Array(0)) : this._buildSegmentOptions(conn, options),
       payload,
-    }).pack();
+    }).pack({ srcIp: conn.localIP, dstIp: conn.peerIP });
     this._ipSend({ dst: conn.peerIP, src: conn.localIP, protocol: 6, payload: tcpBytes });
   }
 
@@ -888,8 +1086,10 @@ export class TcpEngine {
    * @param {TCPSocket} conn
    * @param {number} ackNo
    * @param {number|null} [tsecr] TSecr from peer's Timestamp option for RTT measurement
+   * @param {boolean} [dupCandidate] segment qualifies as a duplicate ACK if it doesn't
+   *   advance SND.UNA (no data, no SYN/FIN, unchanged window — RFC 5681 §2)
    */
-  _onAck(conn, ackNo, tsecr = null) {
+  _onAck(conn, ackNo, tsecr = null, dupCandidate = true) {
     const sndUnaBefore = (conn.outQ.length > 0) ? (conn.outQ[0].seq >>> 0) : (conn.myacc >>> 0);
 
     let removedAny = false;
@@ -903,13 +1103,18 @@ export class TcpEngine {
 
     if (!removedAny) {
       // Duplicate ACK: ackNo didn't advance and there is outstanding data
-      if (conn.outQ.length > 0 && (ackNo >>> 0) === sndUnaBefore) {
+      // An ACK answering a zero-window probe (window still 0) is not a
+      // duplicate ACK in the RFC 5681 sense — it must not trigger Fast Retransmit.
+      if (dupCandidate && conn.outQ.length > 0 && (ackNo >>> 0) === sndUnaBefore &&
+          (conn.sndWnd >>> 0) !== 0 && !conn.outQ[0].probe) {
         conn.dupAckCount++;
         if (conn.dupAckCount === 3) {
-          // Fast Retransmit: enter Fast Recovery
+          // Fast Retransmit: enter Fast Recovery (RFC 5681 §3.2 steps 2-3)
           const mss = conn.mss | 0;
-          conn.ssthresh = Math.max(Math.floor(Math.min(conn.cwnd >>> 0, conn.sndWnd >>> 0) / 2), 2 * mss);
+          const flightSize = seqDist(sndUnaBefore, conn.myacc >>> 0);
+          conn.ssthresh = Math.max(Math.floor(flightSize / 2), 2 * mss);
           conn.cwnd = conn.ssthresh + 3 * mss;
+          conn.inFastRecovery = true;
           this._retransmitOldest(conn);
         } else if (conn.dupAckCount > 3) {
           // Fast Recovery: inflate cwnd per additional dupACK
@@ -932,7 +1137,12 @@ export class TcpEngine {
 
     const mss = conn.mss | 0;
 
-    if ((conn.cwnd >>> 0) < (conn.ssthresh >>> 0)) {
+    if (conn.inFastRecovery) {
+      // RFC 5681 §3.2 step 6: the first ACK of new data ends Fast Recovery —
+      // "deflate" the window inflated by the duplicate ACKs back to ssthresh.
+      conn.inFastRecovery = false;
+      conn.cwnd = conn.ssthresh >>> 0;
+    } else if ((conn.cwnd >>> 0) < (conn.ssthresh >>> 0)) {
       // Slow Start: cwnd grows by one MSS per ACK (doubles each RTT)
       conn.cwnd = (conn.cwnd >>> 0) + Math.min(mss, bytesAcked);
     } else {
@@ -972,6 +1182,7 @@ export class TcpEngine {
   _scheduleRto(conn) {
     if (conn.rtoTimerId !== null) { simTimer.cancel(conn.rtoTimerId); conn.rtoTimerId = null; }
     if (conn.outQ.length === 0) return;
+    if (conn.persistTimerId !== null) return; // probe byte is owned by the persist timer
     conn.rtoTimerId = simTimer.schedule(() => this._fireRto(conn), conn.rtoMs);
   }
 
@@ -999,26 +1210,44 @@ export class TcpEngine {
       return;
     }
 
-    // Congestion control: timeout → back to Slow Start
+    // Congestion control: timeout → back to Slow Start (RFC 5681 §3.1 eq. 4:
+    // ssthresh = max(FlightSize/2, 2·MSS), held constant on repeated timeouts
+    // of the same segment).
     const mss = conn.mss | 0;
-    conn.ssthresh = Math.max(Math.floor(conn.cwnd / 2), 2 * mss);
+    if (seg.rexmit === 1) {
+      const sndUna = conn.outQ[0].seq >>> 0;
+      const flightSize = seqDist(sndUna, conn.myacc >>> 0);
+      conn.ssthresh = Math.max(Math.floor(flightSize / 2), 2 * mss);
+    }
     conn.cwnd = mss;
     conn.dupAckCount = 0;
+    conn.inFastRecovery = false;
 
-    conn.rtoMs = Math.min(conn.rtoMs * 2, 60_000);
+    conn.rtoMs = Math.min(conn.rtoMs * 2, SimTimer.TCP_MAX_RTO_MS);
 
     const isBareSyn =
       (seg.flags & TCPPacket.FLAG_SYN) !== 0 &&
       (seg.flags & TCPPacket.FLAG_ACK) === 0 &&
       conn.state === "SYN-SENT";
 
+    const isSynAck =
+      (seg.flags & TCPPacket.FLAG_SYN) !== 0 &&
+      (seg.flags & TCPPacket.FLAG_ACK) !== 0;
+
     const flags = isBareSyn ? seg.flags : (seg.flags | TCPPacket.FLAG_ACK);
     const ackNo = isBareSyn ? 0 : (conn.theiracc >>> 0);
 
-    // For SYN retransmits rebuild SYN options (MSS+TS); for data use _sendRaw auto-TS.
-    const retxOptions = isBareSyn
-      ? TcpEngine._buildSynOptions(conn.mss, simTimer.currentTick >>> 0, 0)
-      : undefined;
+    // A retransmitted SYN / SYN-ACK carries the same options as the original
+    // (MSS, plus TS if offered/negotiated) with a fresh TSval; data segments
+    // get the Timestamp appended automatically by _sendRaw.
+    let retxOptions;
+    if (isBareSyn) {
+      retxOptions = TcpEngine._buildSynOptions(this.defaultMSS, simTimer.currentTick >>> 0, 0);
+    } else if (isSynAck) {
+      retxOptions = conn.tsEnabled
+        ? TcpEngine._buildSynOptions(this.defaultMSS, simTimer.currentTick >>> 0, conn.tsRecent >>> 0)
+        : TcpEngine._buildMssOption(this.defaultMSS);
+    }
 
     this._sendRaw(conn, {
       seq: seg.seq,
@@ -1026,6 +1255,7 @@ export class TcpEngine {
       flags,
       options: retxOptions,
       payload: seg.payload,
+      rawOptions: isBareSyn || isSynAck,
     });
 
     conn.rtoTimerId = simTimer.schedule(() => this._fireRto(conn), conn.rtoMs);
@@ -1047,6 +1277,7 @@ export class TcpEngine {
    */
   _destroy(conn, reason) {
     this._cancelRto(conn);
+    this._cancelPersist(conn);
     if (conn.timeWaitTimerId !== null) { simTimer.cancel(conn.timeWaitTimerId); conn.timeWaitTimerId = null; }
 
     while (conn.waiters.length) conn.waiters.shift()?.(null);
@@ -1310,6 +1541,9 @@ export class TCPSocket {
   /** duplicate ACK counter for Fast Retransmit */
   dupAckCount = 0;
 
+  /** in Fast Recovery (RFC 5681 §3.2) between Fast Retransmit and the next new ACK */
+  inFastRecovery = false;
+
   // ---------------------------------------------------------------------------
   // Sender flow control (respect peer window)
   // ---------------------------------------------------------------------------
@@ -1350,7 +1584,7 @@ export class TCPSocket {
   // Outgoing retransmission buffer + RTO timer state
   // ---------------------------------------------------------------------------
 
-  /** @type {Array<{seq:number, end:number, flags:number, payload:Uint8Array, rexmit:number}>} */
+  /** @type {Array<{seq:number, end:number, flags:number, payload:Uint8Array, rexmit:number, probe?:boolean}>} */
   outQ = [];
 
   /** @type {number} current RTO in simulated ms */
@@ -1358,6 +1592,19 @@ export class TCPSocket {
 
   /** @type {number|null} simTimer id for pending RTO retransmit */
   rtoTimerId = null;
+
+  // ---------------------------------------------------------------------------
+  // Persist timer (zero-window probing)
+  // ---------------------------------------------------------------------------
+
+  /** @type {number|null} simTimer id for the pending zero-window probe */
+  persistTimerId = null;
+
+  /** number of probes sent in the current persist episode (exponential backoff) */
+  persistBackoff = 0;
+
+  /** probes sent since the peer last answered anything — abort guard */
+  persistUnanswered = 0;
 
   // ---------------------------------------------------------------------------
   // TIME-WAIT

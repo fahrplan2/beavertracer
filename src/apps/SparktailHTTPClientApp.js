@@ -5,12 +5,15 @@ import { UILib as UI } from "./lib/UILib.js";
 import { Disposer } from "../lib/Disposer.js";
 import { SimTimer, simTimer } from "../lib/SimTimer.js";
 
-import startPage from "./assets/about-start.html?raw";
+import startPageTemplate from "./assets/about-start.html?raw";
+import logoSvg from "./assets/sparktail-logo.svg?raw";
 import beaverPage from "./assets/about-beaver.html?raw";
 import { t } from "../i18n/index.js";
 import { IPAddress } from "../net/models/IPAddress.js";
 import { nowStamp, encodeUTF8, decodeUTF8 } from "../lib/helpers.js";
 import { TlsSession, TlsCertUntrustedError, TlsCertExpiredError, TlsCertNameMismatchError } from "../net/TlsSession.js";
+
+const startPage = startPageTemplate.replace("<!--SPARKTAIL_LOGO-->", logoSvg);
 
 /**
  * @param {Uint8Array} data
@@ -221,13 +224,14 @@ function internalErrorPage(title, detail) {
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,-apple-system,sans-serif;background:#f9f9fa;display:flex;justify-content:center;padding:48px 20px;min-height:100%}
 .c{max-width:460px;width:100%}
-.ico{position:relative;display:inline-block;font-size:2.5rem;margin-bottom:20px;line-height:1}
-.ico-x{position:absolute;bottom:-4px;right:-10px;font-size:1.1rem;line-height:1}
+.ico{position:relative;display:inline-block;margin-bottom:20px;line-height:1}
+.ico svg{display:block;width:56px;height:56px}
+.ico-x{position:absolute;bottom:-2px;right:-6px;font-size:1.1rem;line-height:1}
 h1{font-size:1.15rem;font-weight:600;color:#15141a;margin-bottom:12px}
 .d{color:#5b5b66;font-size:.875rem;line-height:1.65;white-space:pre-wrap}
 </style></head>
 <body><div class="c">
-<div class="ico">🦫<span class="ico-x">❌</span></div>
+<div class="ico">${logoSvg}<span class="ico-x">❌</span></div>
 <h1>${esc(title)}</h1>
 <p class="d">${esc(detail)}</p>
 </div></body></html>`;
@@ -255,8 +259,9 @@ function certErrorPage(cert, url, i18n) {
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,-apple-system,sans-serif;background:#f9f9fa;display:flex;justify-content:center;padding:48px 20px;min-height:100%;color:#15141a}
 .c{max-width:500px;width:100%}
-.ico{position:relative;display:inline-block;font-size:2.5rem;margin-bottom:20px;line-height:1}
-.ico-x{position:absolute;bottom:-4px;right:-10px;font-size:1.1rem;line-height:1}
+.ico{position:relative;display:inline-block;margin-bottom:20px;line-height:1}
+.ico svg{display:block;width:56px;height:56px}
+.ico-x{position:absolute;bottom:-2px;right:-6px;font-size:1.1rem;line-height:1}
 h1{font-size:1.15rem;font-weight:600;margin-bottom:12px}
 .d{color:#5b5b66;font-size:.875rem;line-height:1.65;margin-bottom:20px}
 .cert-box{background:#fff;border:1px solid #ddd;border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:.8rem}
@@ -268,7 +273,7 @@ h1{font-size:1.15rem;font-weight:600;margin-bottom:12px}
 .proceed:hover{background:#d8d8da}
 </style></head>
 <body><div class="c">
-<div class="ico">🦫<span class="ico-x">❌</span></div>
+<div class="ico">${logoSvg}<span class="ico-x">❌</span></div>
 <h1>${esc(i18n.title)}</h1>
 <p class="d">${esc(i18n.detail)}</p>
 <div class="cert-box">
@@ -531,7 +536,10 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     /** @type {HTMLButtonElement} */
     const go = UI.button(t("app.sparktail.button.go"), () => this._goFromUI(), { primary: true });
     /** @type {HTMLButtonElement} */
-    const stop = UI.button(t("app.sparktail.button.stop"), () => this._stop(), { icon: "fa-stop" });
+    // icon only, like back/forward/reload; the label stays as tooltip and for screen readers
+    const stop = UI.button("", () => this._stop(), { title: t("app.sparktail.button.stop") });
+    stop.replaceChildren(UI.el("i", { className: "fas fa-stop" }));
+    stop.setAttribute("aria-label", t("app.sparktail.button.stop"));
     this.goBtn = go;
     this.stopBtn = stop;
 

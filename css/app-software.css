@@ -1,0 +1,79 @@
+/* ── Software app (install / uninstall optional apps) ── */
+
+.software-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.software-heading {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: var(--pad-sm);
+}
+
+.software-row {
+  display: flex;
+  align-items: center;
+  gap: var(--pad-md);
+  padding: 3px 0;
+}
+
+.software-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  background: color-mix(in oklch, var(--surface-strong), var(--text) 10%);
+  color: var(--muted);
+}
+
+/* installed apps get the same coloured tile as in the start menu */
+.software-row.is-installed .software-icon {
+  background:
+    radial-gradient(10px 10px at 30% 25%, rgba(255, 255, 255, 0.75), transparent 60%),
+    linear-gradient(135deg, var(--primary-soft), var(--primary));
+  box-shadow: var(--shadow-soft);
+  color: var(--text);
+}
+
+[data-theme="dark"] .software-row.is-installed .software-icon {
+  background: linear-gradient(135deg,
+    color-mix(in oklch, var(--primary), var(--bg2) 62%),
+    color-mix(in oklch, var(--primary), var(--bg1) 80%));
+  box-shadow: var(--shadow-soft),
+    inset 0 1px 0 color-mix(in oklch, var(--primary), transparent 65%);
+  color: var(--primary);
+}
+
+.software-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.software-actions {
+  display: flex;
+  gap: var(--pad-sm);
+  flex-shrink: 0;
+}
+
+/* Generic .btn stacks icon over label, which would make Install taller than
+   Open / Uninstall — keep the icon inline. Shared min-width lines them up. */
+.software-actions .btn {
+  flex-direction: row;
+  gap: 5px;
+  min-width: 8.5em;
+  justify-content: center;
+}

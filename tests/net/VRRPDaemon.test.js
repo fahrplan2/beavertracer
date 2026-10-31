@@ -30,8 +30,8 @@ function makeStack(ifaces) {
         _protoHandlers: protoHandlers,
         registerProtoHandler:   (proto, fn) => protoHandlers.set(proto, fn),
         unregisterProtoHandler: (proto)     => protoHandlers.delete(proto),
-        sendOnInterface: async (ifIndex, dst, proto, payload) => {
-            sent.push({ ifIndex, dst: dst.toString(), proto, payload: new Uint8Array(payload) });
+        sendOnInterface: async (ifIndex, dst, proto, payload, src = null, ttl = 1) => {
+            sent.push({ ifIndex, dst: dst.toString(), proto, ttl, payload: new Uint8Array(payload) });
         },
     };
     return stack;
@@ -196,6 +196,7 @@ describe('VRRPDaemon – solo router', () => {
         const lastSent = stack._sent.at(-1);
         expect(lastSent.proto).toBe(112);
         expect(lastSent.dst).toBe('224.0.0.18');
+        expect(lastSent.ttl).toBe(255);  // RFC 5798 §5.1.1.3
     });
 
     it('sends gratuitous ARP on becoming MASTER', () => {

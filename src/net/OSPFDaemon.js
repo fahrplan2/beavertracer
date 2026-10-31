@@ -9,11 +9,17 @@ import {
     LSA_TYPE_ROUTER, LSA_TYPE_NETWORK, LSA_TYPE_SUMMARY,
     LINK_TYPE_P2P, LINK_TYPE_TRANSIT, LINK_TYPE_STUB,
     DBD_FLAG_I, DBD_FLAG_M, DBD_FLAG_MS,
-    LSA_INIT_SEQ, LSA_MAX_AGE, LSA_MAX_SEQ,
+    LSA_INIT_SEQ, LSA_MAX_AGE, LSA_MAX_SEQ, LSA_MAX_AGE_DIFF,
     ospfChecksum,
     OspfPacket, OspfHeader, OspfHello, OspfDBD, OspfLSR, OspfLSU, OspfLSAck,
     LsaHeader, RouterLSA, RouterLink, NetworkLSA, SummaryLSA, Lsa, LsaRequest,
 } from "./pdu/OSPFPacket.js";
+
+// HelloInterval/RouterDeadInterval as written on the wire (whole seconds, RFC 2328 A.3.2).
+// The real timers are simulation-scaled (SimTimer.OSPF_HELLO_MS/OSPF_DEAD_MS) and too short
+// to encode, so — like the STP BPDU timers — the packets carry the RFC defaults instead.
+const OSPF_WIRE_HELLO_S = 10;
+const OSPF_WIRE_DEAD_S  = 40;
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -41,6 +47,22 @@ function mask32ToPrefix(mask32) {
 function seqNewer(a, b) {
     const diff = (a - b) | 0;
     return diff > 0;
+}
+
+/**
+ * Compare two instances of the same LSA (RFC 2328 §13.1).
+ * @param {{seqNum:number, checksum:number, age:number}} a
+ * @param {{seqNum:number, checksum:number, age:number}} b
+ * @returns {number} 1 if a is newer, -1 if b is newer, 0 if same instance
+ */
+function compareLsaInstances(a, b) {
+    const d = (a.seqNum - b.seqNum) | 0;
+    if (d !== 0) return d > 0 ? 1 : -1;
+    if (a.checksum !== b.checksum) return a.checksum > b.checksum ? 1 : -1;
+    const aMax = a.age >= LSA_MAX_AGE, bMax = b.age >= LSA_MAX_AGE;
+    if (aMax !== bMax) return aMax ? 1 : -1;
+    if (Math.abs(a.age - b.age) > LSA_MAX_AGE_DIFF) return a.age < b.age ? 1 : -1;
+    return 0;
 }
 
 // ── typedefs ─────────────────────────────────────────────────────────────────
@@ -83,6 +105,7 @@ function seqNewer(a, b) {
  *   body: RouterLSA|NetworkLSA|SummaryLSA,
  *   rawBytes: Uint8Array,
  *   ageTimer: number|null,
+ *   flushing?: boolean,
  * }} LsaEntry
  */
 
@@ -365,8 +388,8 @@ export class OSPFDaemon {
 
         const helloBody = new OspfHello({
             networkMask:    mask32,
-            helloInterval:  SimTimer.OSPF_HELLO_MS / 1000,
-            deadInterval:   SimTimer.OSPF_DEAD_MS  / 1000,
+            helloInterval:  OSPF_WIRE_HELLO_S,
+            deadInterval:   OSPF_WIRE_DEAD_S,
             routerPriority: 1,
             dr:  oif.dr,
             bdr: oif.bdr,
@@ -398,11 +421,9 @@ export class OSPFDaemon {
         // RFC §10.5 parameter validation — discard on mismatch
         const iface = this._net.interfaces[ifIndex];
         const expectedMask  = prefixToMask32(iface.prefixLength ?? 0);
-        const expectedHello = Math.trunc(SimTimer.OSPF_HELLO_MS / 1000);
-        const expectedDead  = Math.trunc(SimTimer.OSPF_DEAD_MS  / 1000);
-        if (hello.networkMask   !== expectedMask)  return;
-        if (hello.helloInterval !== expectedHello) return;
-        if (hello.deadInterval  !== expectedDead)  return;
+        if (hello.networkMask   !== expectedMask)      return;
+        if (hello.helloInterval !== OSPF_WIRE_HELLO_S) return;
+        if (hello.deadInterval  !== OSPF_WIRE_DEAD_S)  return;
 
         const rid = hdr.routerId;
         let nb = oif.neighbors.get(rid);
@@ -838,39 +859,57 @@ export class OSPFDaemon {
                 lsa.header.type !== LSA_TYPE_NETWORK &&
                 lsa.header.type !== LSA_TYPE_SUMMARY) continue;
 
-            // Self-originated LSA with a newer seq: re-originate to reclaim ownership (RFC §13.4)
-            if (lsa.header.advertisingRouter === this._myRouterId) {
-                if (lsa.header.type === LSA_TYPE_ROUTER) {
-                    this._originateRouterLSA(oif.areaId, true);
-                } else if (lsa.header.type === LSA_TYPE_NETWORK) {
-                    const ifIdx = this._ifaceForNetworkLsaLsId(lsa.header.lsId);
-                    if (ifIdx >= 0) this._originateNetworkLSA(ifIdx, true);
-                }
-                // Own Summary-LSAs: let _reconcileSummaryLSAs handle them
-                continue;
-            }
-
             const key      = lsa.key;
+            const areaId   = oif.areaId;
             const existing = lsdb.get(key);
+            const isMaxAge = lsa.header.age >= LSA_MAX_AGE;
+            lsa.pack();   // make sure header.checksum is populated for §13.1 comparison
 
-            if (existing && !seqNewer(lsa.header.seqNum, existing.header.seqNum)) {
-                // Not newer — send ACK but don't install
+            // §13 step 4: MaxAge LSA we don't have and nobody is exchanging → ack and discard
+            if (isMaxAge && !existing && !this._anyNeighborExchanging(areaId)) {
                 ackHeaders.push(lsa.header);
                 continue;
             }
 
-            // Install into area LSDB
-            const rawBytes = lsa.pack();
-            if (existing?.ageTimer != null) simTimer.cancel(existing.ageTimer);
-            const areaId   = oif.areaId;
-            const ageTimer = simTimer.schedule(() => this._expireLsa(key, areaId), LSA_MAX_AGE * 1000);
+            const cmp = existing ? compareLsaInstances(lsa.header, existing.header) : 1;
 
-            lsdb.set(key, { header: lsa.header, body: lsa.body, rawBytes, ageTimer });
-            ackHeaders.push(lsa.header);
-            changed = true;
+            if (cmp > 0) {
+                // §13 step 5 / §13.4: received instance is newer than ours
+                if (lsa.header.advertisingRouter === this._myRouterId) {
+                    this._handleNewerSelfOriginated(lsa, areaId);
+                    ackHeaders.push(lsa.header);
+                    continue;
+                }
 
-            // Flood within area (not the incoming interface)
-            this._floodLSA(lsa, ifIndex, oif.areaId);
+                // Install into area LSDB
+                const rawBytes = lsa.pack();
+                if (existing?.ageTimer != null) simTimer.cancel(existing.ageTimer);
+                const ageTimer = simTimer.schedule(() => this._expireLsa(key, areaId), LSA_MAX_AGE * 1000);
+                lsdb.set(key, { header: lsa.header, body: lsa.body, rawBytes, ageTimer, flushing: isMaxAge });
+                changed = true;
+
+                // Flood within area (§13.3 rules for the receiving interface)
+                const floodedBack = this._floodLSA(lsa, ifIndex, areaId, hdr.routerId);
+                // §13.5: flooding back out the receiving interface is an implied ack
+                if (!floodedBack) ackHeaders.push(lsa.header);
+
+                // MaxAge (flush): remove once acknowledged everywhere (§14)
+                if (isMaxAge) this._maybeRemoveMaxAge(key, areaId);
+            } else if (cmp === 0) {
+                // §13 step 7: duplicate — implied ack if on that neighbor's retransmission list
+                const un = nb?.unackedLSUs.get(key);
+                if (nb && un) {
+                    if (un.timerId != null) simTimer.cancel(un.timerId);
+                    nb.unackedLSUs.delete(key);
+                    if (existing?.flushing) this._maybeRemoveMaxAge(key, areaId);
+                }
+                ackHeaders.push(lsa.header);
+            } else if (existing) {
+                // §13 step 8: our copy is newer — send it back to the neighbor, no ack
+                if (existing.header.age >= LSA_MAX_AGE && existing.header.seqNum === LSA_MAX_SEQ) continue;
+                const back = new Lsa({ header: existing.header, body: existing.body });
+                this._sendOSPF(ifIndex, src, OSPF_TYPE_LSU, new OspfLSU({ lsas: [back] }));
+            }
         }
 
         // Send ACK
@@ -917,6 +956,7 @@ export class OSPFDaemon {
             if (entry) {
                 if (entry.timerId != null) simTimer.cancel(entry.timerId);
                 nb.unackedLSUs.delete(ackHdr.key);
+                this._maybeRemoveMaxAge(ackHdr.key, oif.areaId);
             }
         }
     }
@@ -1130,21 +1170,37 @@ export class OSPFDaemon {
 
     /**
      * Flood an LSA within an area. RFC 2328 §13.3.
-     *   DR/BDR  → AllSPFRouters (224.0.0.5)
-     *   DR-Other → AllDRouters   (224.0.0.6)
+     *   Point-to-point          → AllSPFRouters (224.0.0.5)
+     *   Broadcast, we're DR/BDR → AllSPFRouters (224.0.0.5)
+     *   Broadcast, DR-Other     → AllDRouters   (224.0.0.6)
+     * On the receiving interface the LSA is only flooded back if we are DR and
+     * the sender is neither DR nor BDR (§13.3 steps 3/4).
      * @param {Lsa} lsa
      * @param {number} fromIfIndex  incoming interface index (-1 for self-originated)
      * @param {number} areaId       only flood on interfaces in this area
+     * @param {number} [fromRouterId] Router-ID of the neighbor the LSA came from
+     * @returns {boolean} true if the LSA was flooded back out the receiving interface
      */
-    _floodLSA(lsa, fromIfIndex, areaId) {
+    _floodLSA(lsa, fromIfIndex, areaId, fromRouterId = 0) {
         const rawBytes = lsa.pack();
+        let floodedBack = false;
         for (const [ifIndex, oif] of this._ifaces) {
-            if (ifIndex === fromIfIndex) continue;
             if (oif.areaId !== areaId) continue;
-            const fullNeighbors = [...oif.neighbors.values()].filter(nb => nb.state === "Full");
-            if (fullNeighbors.length === 0) continue;
+            const isRxIface = ifIndex === fromIfIndex;
+            // §13.3 step 1c: never flood back to the neighbor we received it from
+            const targets = [...oif.neighbors.values()].filter(nb =>
+                nb.state === "Full" && !(isRxIface && nb.routerId === fromRouterId));
+            if (targets.length === 0) continue;
 
-            const dst = (oif.state === "DR" || oif.state === "BDR")
+            const isP2P = this.p2pInterfaces.has(`eth${ifIndex}`);
+            if (isRxIface) {
+                if (isP2P) continue;
+                if (fromRouterId === oif.dr || fromRouterId === oif.bdr) continue;  // step 3
+                if (oif.state !== "DR") continue;                                     // step 4 (BDR / DR-Other)
+                floodedBack = true;
+            }
+
+            const dst = (isP2P || oif.state === "DR" || oif.state === "BDR")
                 ? IPAddress.fromString(OSPF_ALL_SPF)
                 : IPAddress.fromString(OSPF_ALL_DR);
 
@@ -1154,10 +1210,99 @@ export class OSPFDaemon {
             this._sendOSPF(ifIndex, dst, OSPF_TYPE_LSU, new OspfLSU({ lsas: [txLsa] }));
 
             // Track per-neighbor so each ACK can cancel the retransmit timer
-            for (const nb of fullNeighbors) {
+            for (const nb of targets) {
                 this._trackUnacked(nb, ifIndex, lsa.key, rawBytes);
             }
         }
+        return floodedBack;
+    }
+
+    /** @param {number} areaId @returns {boolean} any neighbor in Exchange/Loading in this area */
+    _anyNeighborExchanging(areaId) {
+        for (const [, oif] of this._ifaces) {
+            if (oif.areaId !== areaId) continue;
+            for (const nb of oif.neighbors.values()) {
+                if (nb.state === "Exchange" || nb.state === "Loading") return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Remove a flushed (MaxAge) LSA from the LSDB once it is on no retransmission
+     * list and no neighbor is in Exchange/Loading (RFC 2328 §14).
+     * @param {string} key @param {number} areaId
+     */
+    _maybeRemoveMaxAge(key, areaId) {
+        const lsdb  = this._lsdbFor(areaId);
+        const entry = lsdb.get(key);
+        if (!entry?.flushing || entry.header.age < LSA_MAX_AGE) return;
+        for (const [, oif] of this._ifaces) {
+            if (oif.areaId !== areaId) continue;
+            for (const nb of oif.neighbors.values()) {
+                if (nb.unackedLSUs.has(key)) return;   // ACK / retransmit drop will retry
+            }
+        }
+        if (this._anyNeighborExchanging(areaId)) {
+            simTimer.schedule(() => { if (this._running) this._maybeRemoveMaxAge(key, areaId); },
+                SimTimer.OSPF_RXMT_MS);
+            return;
+        }
+        if (entry.ageTimer != null) simTimer.cancel(entry.ageTimer);
+        lsdb.delete(key);
+        this._scheduleSPF();
+    }
+
+    /**
+     * RFC 2328 §13.4: received a self-originated LSA that is newer than our copy.
+     * Re-originate with seq = received + 1 if still valid, otherwise flush it.
+     * @param {Lsa} lsa @param {number} areaId
+     */
+    _handleNewerSelfOriginated(lsa, areaId) {
+        const key    = lsa.key;
+        const seqKey = `${areaId}-${key}`;
+        const cur    = this._ownLsaSeq.get(seqKey);
+        const lsdb   = this._lsdbFor(areaId);
+        const existing = lsdb.get(key);
+        const bumpSeq = () => {
+            if (cur === undefined || seqNewer(lsa.header.seqNum, cur))
+                this._ownLsaSeq.set(seqKey, lsa.header.seqNum >>> 0);
+        };
+
+        if (lsa.header.type === LSA_TYPE_ROUTER && lsa.header.lsId === this._myRouterId) {
+            bumpSeq();
+            this._originateRouterLSA(areaId, true);
+            return;
+        }
+        if (lsa.header.type === LSA_TYPE_NETWORK) {
+            const ifIdx = this._ifaceForNetworkLsaLsId(lsa.header.lsId);
+            const oif   = ifIdx >= 0 ? this._ifaces.get(ifIdx) : undefined;
+            if (oif && oif.areaId === areaId && oif.state === "DR" &&
+                !this.p2pInterfaces.has(`eth${ifIdx}`)) {
+                bumpSeq();
+                this._originateNetworkLSA(ifIdx, true);
+                return;
+            }
+        }
+        if (lsa.header.type === LSA_TYPE_SUMMARY && existing && !existing.flushing &&
+            existing.body instanceof SummaryLSA) {
+            bumpSeq();
+            const { networkMask, metric } = existing.body;
+            if (existing.ageTimer != null) simTimer.cancel(existing.ageTimer);
+            lsdb.delete(key);   // force _originateSummaryLSA past its "unchanged" shortcut
+            this._originateSummaryLSA(areaId, lsa.header.lsId, networkMask, metric);
+            return;
+        }
+
+        // No longer valid: flush the received instance (MaxAge) from the area
+        const hdr = new LsaHeader({ ...lsa.header, age: LSA_MAX_AGE });
+        const maxAgeLsa = new Lsa({ header: hdr, body: lsa.body });
+        const rawBytes  = maxAgeLsa.pack();
+        if (existing?.ageTimer != null) simTimer.cancel(existing.ageTimer);
+        lsdb.set(key, { header: hdr, body: lsa.body, rawBytes, ageTimer: null, flushing: true });
+        this._ownLsaSeq.delete(seqKey);
+        this._floodLSA(maxAgeLsa, -1, areaId);
+        this._maybeRemoveMaxAge(key, areaId);
     }
 
     /**
@@ -1185,8 +1330,12 @@ export class OSPFDaemon {
      * @param {string} lsaKey
      */
     _retransmitLSU(nb, ifIndex, lsaKey) {
-        if (nb.state !== "Full") { nb.unackedLSUs.delete(lsaKey); return; }
         const areaId    = this._ifaces.get(ifIndex)?.areaId ?? 0;
+        if (nb.state !== "Full") {
+            nb.unackedLSUs.delete(lsaKey);
+            this._maybeRemoveMaxAge(lsaKey, areaId);
+            return;
+        }
         const lsdbEntry = this._lsdbFor(areaId).get(lsaKey);
         if (!lsdbEntry) { nb.unackedLSUs.delete(lsaKey); return; }
 
@@ -1218,7 +1367,8 @@ export class OSPFDaemon {
      * @returns {{ reach: Map<number,{ifIndex:number,nexthop:IPAddress,cost:number}>, intraRoutes: {dst:IPAddress,prefix:number,ifIndex:number,nexthop:IPAddress,cost:number}[] }}
      */
     _runSPFArea(areaId) {
-        const lsdb  = this._lsdbFor(areaId);
+        // MaxAge LSAs being flushed are not used for SPF (RFC 2328 §16)
+        const lsdb  = new Map([...this._lsdbFor(areaId)].filter(([, e]) => !e.flushing));
         const myId  = this._myRouterId;
 
         /** @type {Map<number, number>} routerId �� cost */

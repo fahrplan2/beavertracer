@@ -34,6 +34,7 @@ export const OSPF_OPTIONS_E    = 0x02;  // External routing capable
 export const LSA_INIT_SEQ      = 0x80000001;
 export const LSA_MAX_SEQ       = 0x7fffffff;
 export const LSA_MAX_AGE       = 3600;
+export const LSA_MAX_AGE_DIFF  = 900;   // MaxAgeDiff (RFC 2328 App. B, §13.1)
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -229,7 +230,7 @@ export class LsaHeader {
     /** @param {Uint8Array} data @param {number} off @returns {LsaHeader} */
     static readFrom(data, off = 0) {
         if (data.length - off < 20) throw new Error("LSA header too short");
-        return new LsaHeader({
+        const hdr = new LsaHeader({
             age:               read16BE(data, off),
             options:           data[off + 2],
             type:              data[off + 3],
@@ -238,6 +239,9 @@ export class LsaHeader {
             seqNum:            read32BE(data, off + 12),
             length:            read16BE(data, off + 18),
         });
+        // Keep the wire checksum: needed for instance comparison (RFC 2328 §13.1)
+        hdr.checksum = read16BE(data, off + 16);
+        return hdr;
     }
 }
 

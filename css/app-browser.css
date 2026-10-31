@@ -14,11 +14,17 @@
   display: flex;
   align-items: center;
   gap: var(--pad-md);
-  padding: 10px;
+  padding: var(--pad-sm) 10px;
 
   background: linear-gradient(180deg, var(--bg1), var(--bg2));
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
+}
+
+/* Same height for all chrome buttons (glyph labels like ⟳ otherwise vary) */
+.app-sparktail-http .sparktail-chrome .btn {
+  height: 34px;
+  justify-content: center;
 }
 
 /* Address bar */
@@ -26,7 +32,7 @@
   flex: 1;
   min-width: 120px;
 
-  padding: 10px 14px;
+  padding: 7px 14px;
   border-radius: 999px;
 
   background: white;

@@ -272,7 +272,7 @@ function parseMbox(mbox) {
 
 /**
  * @typedef {{user:string,password:string}} UserRow
- * @typedef {{mailDomain:string, ports:{smtp:number,pop3:number,imap:number}, tls?:{enabled:boolean,smtps:number,pop3s:number,imaps:number,certPath:string}, users:UserRow[]}} MailConfig
+ * @typedef {{autostart?:boolean, mailDomain:string, ports:{smtp:number,pop3:number,imap:number}, tls?:{enabled:boolean,smtps:number,pop3s:number,imaps:number,certPath:string}, users:UserRow[]}} MailConfig
  * @typedef {{send:(d:Uint8Array)=>void, recv:()=>Promise<Uint8Array|null>, close:()=>void}} MailTransport
  */
 
@@ -331,12 +331,14 @@ export class SimpleMailServerApp extends LoggedProcess {
   /** @type {HTMLInputElement|null} */ imapsEl = null;
   /** @type {HTMLSelectElement|null} */ certSelectEl = null;
   /** @type {HTMLElement|null} */      certInfoEl = null;
+  /** @type {HTMLButtonElement|null} */ certApplyBtn = null;
 
   /** @type {HTMLInputElement|null} */ userEl = null;
   /** @type {HTMLInputElement|null} */ passEl = null;
 
   /** @type {HTMLButtonElement|null} */ startBtn = null;
   /** @type {HTMLButtonElement|null} */ stopBtn = null;
+  /** @type {HTMLElement|null} */      hintEl = null;
 
   run() {
     this.root.classList.add("app", "app-simple-mail-server");
@@ -429,6 +431,16 @@ export class SimpleMailServerApp extends LoggedProcess {
     this.usersEl.replaceChildren(wrap);
   }
 
+  /**
+   * Log a message caused by a UI action and also show it in the toolbar,
+   * so it's visible without switching to the log tab.
+   * @param {string} line
+   */
+  _notify(line) {
+    this._appendLog(line);
+    if (this.hintEl) this.hintEl.textContent = line;
+  }
+
   _syncUI() {
     const r = this.running;
     /** @param {HTMLInputElement|null} el */
@@ -442,6 +454,7 @@ export class SimpleMailServerApp extends LoggedProcess {
     dis(this.pop3sEl);
     dis(this.imapsEl);
     if (this.certSelectEl) this.certSelectEl.disabled = r;
+    if (this.certApplyBtn) this.certApplyBtn.disabled = r;
 
     if (this.startBtn) this.startBtn.disabled = r;
     if (this.stopBtn) this.stopBtn.disabled = !r;
@@ -523,7 +536,16 @@ export class SimpleMailServerApp extends LoggedProcess {
 
     this._ensureDirs();
 
+    // autostart is owned by _start()/_stop() via _writeAutostart(); keep
+    // whatever is on disk so adding a user while running doesn't drop it.
+    let autostart = false;
+    try {
+      const raw = readTextFile(fs, this.configPath);
+      if (raw?.trim()) autostart = JSON.parse(raw).autostart === true;
+    } catch { }
+
     const cfg = /** @type {MailConfig} */ ({
+      autostart,
       mailDomain: this.mailDomain,
       ports: { smtp: this.portSMTP, pop3: this.portPOP3, imap: this.portIMAP },
       tls: { enabled: this.tlsEnabled, smtps: this.portSMTPS, pop3s: this.portPOP3S, imaps: this.portIMAPS, certPath: this.certPath },
@@ -977,6 +999,9 @@ export class SimpleMailServerApp extends LoggedProcess {
     this.startBtn = start;
     this.stopBtn = stop;
 
+    const hint = UI.el("div", { className: "mail-hint" });
+    this.hintEl = hint;
+
     const userInput = UI.input({ placeholder: t("app.simplemailserver.placeholder.user") || "user", value: "" });
     const passInput = UI.input({ placeholder: t("app.simplemailserver.placeholder.password") || "password", value: "" });
     this.userEl = userInput;
@@ -990,7 +1015,7 @@ export class SimpleMailServerApp extends LoggedProcess {
     const usersBox = UI.el("div", { className: "user-list-container" });
     this.usersEl = usersBox;
 
-    const status = UI.el("div", { className: "msg" });
+    const status = UI.el("div", { className: "msg mail-status" });
 
     const logBox = UI.el("div", { className: "msg" });
     this.logEl = logBox;
@@ -1015,13 +1040,14 @@ export class SimpleMailServerApp extends LoggedProcess {
       t("app.simplemailserver.tls.applyCert") || "Use",
       () => this._applyCert(), { primary: true, icon: "fa-check" }
     );
+    this.certApplyBtn = certApplyBtn;
 
     const serverPane = UI.el("div", { children: [
       UI.row(t("app.simplemailserver.label.domain") || "Maildomain", domainInput),
       UI.row(t("app.simplemailserver.label.smtpPort") || "SMTP port", smtpInput),
       UI.row(t("app.simplemailserver.label.pop3Port") || "POP3 port", pop3Input),
       UI.row(t("app.simplemailserver.label.imapPort") || "IMAP port", imapInput),
-      UI.buttonRow([UI.button(t("app.simplemailserver.button.saveConfig") || "Save config", () => this._saveConfig(), {})]),
+      UI.buttonRow([UI.button(t("app.simplemailserver.button.saveConfig") || "Save config", () => this._saveConfigFromUI(), {})]),
     ]});
 
     const mailboxPane = UI.el("div", { children: [
@@ -1054,7 +1080,7 @@ export class SimpleMailServerApp extends LoggedProcess {
     ]);
 
     const panel = UI.panel([
-      UI.el("div", { className: "app-toolbar", children: [UI.buttonRow([start, stop])] }),
+      UI.el("div", { className: "app-toolbar", children: [UI.buttonRow([start, stop]), hint] }),
       tabBar,
       serverPane,
       mailboxPane,
@@ -1069,11 +1095,14 @@ export class SimpleMailServerApp extends LoggedProcess {
     this._refreshCertList();
 
     this.disposer.interval(() => {
-      status.textContent =
-        `${t("app.simplemailserver.status.running") || "running"}: ${this.running}\n` +
-        `${t("app.simplemailserver.status.domain") || "maildomain"}: ${this.mailDomain}\n` +
-        `${t("app.simplemailserver.status.ports") || "ports"}: smtp=${this.portSMTP} pop3=${this.portPOP3} imap=${this.portIMAP}\n` +
-        `${t("app.simplemailserver.status.users") || "users"}: ${this.users.length}\n`;
+      const text = [
+        `${t("app.simplemailserver.status.running") || "running"}: ${this.running}`,
+        `${t("app.simplemailserver.status.domain") || "maildomain"}: ${this.mailDomain}`,
+        `${t("app.simplemailserver.status.ports") || "ports"}: smtp=${this.portSMTP} pop3=${this.portPOP3} imap=${this.portIMAP}`,
+        `${t("app.simplemailserver.status.users") || "users"}: ${this.users.length}`,
+      ].join("  ·  ");
+      // the full text stays available on hover when the line is cut off
+      if (status.textContent !== text) { status.textContent = text; status.title = text; }
     }, 300);
   }
 
@@ -1092,12 +1121,14 @@ export class SimpleMailServerApp extends LoggedProcess {
     this.imapsEl = null;
     this.certSelectEl = null;
     this.certInfoEl = null;
+    this.certApplyBtn = null;
 
     this.userEl = null;
     this.passEl = null;
 
     this.startBtn = null;
     this.stopBtn = null;
+    this.hintEl = null;
     super.onUnmount();
   }
 
@@ -1109,16 +1140,16 @@ export class SimpleMailServerApp extends LoggedProcess {
   _addOrUpdateUser() {
     const user = (this.userEl?.value ?? "").trim();
     const pass = (this.passEl?.value ?? "").trim();
-    if (!user) { this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.userMissing") || "user missing"}`); return; }
-    if (!pass) { this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.passwordMissing") || "password missing"}`); return; }
+    if (!user) { this._notify(`[${nowStamp()}] ${t("app.simplemailserver.log.userMissing") || "user missing"}`); return; }
+    if (!pass) { this._notify(`[${nowStamp()}] ${t("app.simplemailserver.log.passwordMissing") || "password missing"}`); return; }
 
     const existing = this._findUser(user);
     if (existing) {
       existing.password = pass;
-      this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.userUpdated") || "updated user"} ${user}`);
+      this._notify(`[${nowStamp()}] ${t("app.simplemailserver.log.userUpdated") || "updated user"} ${user}`);
     } else {
       this.users.push({ user, password: pass });
-      this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.userAdded") || "added user"} ${user}`);
+      this._notify(`[${nowStamp()}] ${t("app.simplemailserver.log.userAdded") || "added user"} ${user}`);
     }
     this._renderUsers();
     this._saveConfig();
@@ -1126,7 +1157,7 @@ export class SimpleMailServerApp extends LoggedProcess {
 
   _deleteUser() {
     const user = (this.userEl?.value ?? "").trim();
-    if (!user) { this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.userMissing") || "user missing"}`); return; }
+    if (!user) { this._notify(`[${nowStamp()}] ${t("app.simplemailserver.log.userMissing") || "user missing"}`); return; }
     this._deleteUserByName(user);
   }
 
@@ -1135,11 +1166,11 @@ export class SimpleMailServerApp extends LoggedProcess {
     const before = this.users.length;
     this.users = this.users.filter((u) => u.user.toLowerCase() !== user.toLowerCase());
     if (this.users.length !== before) {
-      this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.userDeleted") || "deleted user"} ${user}`);
+      this._notify(`[${nowStamp()}] ${t("app.simplemailserver.log.userDeleted") || "deleted user"} ${user}`);
       this._renderUsers();
       this._saveConfig();
     } else {
-      this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.userNotFound") || "user not found"} ${user}`);
+      this._notify(`[${nowStamp()}] ${t("app.simplemailserver.log.userNotFound") || "user not found"} ${user}`);
     }
   }
 
@@ -1153,10 +1184,10 @@ export class SimpleMailServerApp extends LoggedProcess {
         const p = `${this.queueRoot}/${name}`;
         try { fs.unlink(p); } catch { /* ignore */ }
       }
-      this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.queueCleared") || "cleared queue"} (${items.length} files)`);
+      this._notify(`[${nowStamp()}] ${t("app.simplemailserver.log.queueCleared") || "cleared queue"} (${items.length} files)`);
     } catch (e) {
       const reason = (e instanceof Error ? e.message : String(e));
-      this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.clearQueueFailed") || "clear queue failed"}: ${reason}`);
+      this._notify(`[${nowStamp()}] ${t("app.simplemailserver.log.clearQueueFailed") || "clear queue failed"}: ${reason}`);
     }
   }
 
@@ -1167,13 +1198,13 @@ export class SimpleMailServerApp extends LoggedProcess {
       this._seedUser(user);
       return;
     }
-    this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.seedNeedUser") || "seed: enter a user or use the per-user Seed button"}`);
+    this._notify(`[${nowStamp()}] ${t("app.simplemailserver.log.seedNeedUser") || "seed: enter a user or use the per-user Seed button"}`);
   }
 
   /** Seed a test mail for a specific user @param {string} user */
   _seedUser(user) {
     const u = this._findUser(user);
-    if (!u) { this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.seedNoSuchUser") || "seed: no such user"} ${user}`); return; }
+    if (!u) { this._notify(`[${nowStamp()}] ${t("app.simplemailserver.log.seedNoSuchUser") || "seed: no such user"} ${user}`); return; }
 
     const msg =
       `From: test@${this.mailDomain}\r\n` +
@@ -1186,7 +1217,7 @@ export class SimpleMailServerApp extends LoggedProcess {
       `this is a seeded test message.\r\n`;
 
     this._storeLocal(u.user, msg);
-    this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.seeded") || "seeded test mail"} -> ${u.user}`);
+    this._notify(`[${nowStamp()}] ${t("app.simplemailserver.log.seeded") || "seeded test mail"} -> ${u.user}`);
     this._renderUsers();
   }
 
@@ -1231,11 +1262,13 @@ export class SimpleMailServerApp extends LoggedProcess {
     }
     const expiry = new Date(this._cert.notAfter).toLocaleDateString();
     const status = this._cert.validityStatus(this.os.clock ? this.os.clock.nowMs() : Date.now());
-    const statusSuffix = status === "expired" ? " (expired)" : status === "notYetValid" ? " (not yet valid)" : "";
+    const statusSuffix =
+      status === "expired" ? ` (${t("app.simplemailserver.tls.certExpired")})` :
+      status === "notYetValid" ? ` (${t("app.simplemailserver.tls.certNotYetValid")})` : "";
     this.certInfoEl.textContent = [
-      `Subject: ${this._cert.subject}`,
-      `Fingerprint: ${this._cert.fingerprint()}`,
-      `Expires: ${expiry}${statusSuffix}`,
+      t("app.simplemailserver.tls.certSubject", { subject: this._cert.subject }),
+      t("app.simplemailserver.tls.certFingerprint", { fp: this._cert.fingerprint() }),
+      t("app.simplemailserver.tls.certExpiry", { date: expiry }) + statusSuffix,
     ].join(" | ");
   }
 
@@ -1262,11 +1295,16 @@ export class SimpleMailServerApp extends LoggedProcess {
     await this._reloadCertFromPath(path);
     if (this._cert) {
       this.certPath = path;
+      this._saveConfig();
     }
     this._updateCertInfo();
   }
 
-  _startFromUI() {
+  /**
+   * Validate the Server/TLS form fields and copy them into the persisted
+   * state. Returns false (and tells the user why) on invalid input.
+   */
+  _applyFormToState() {
     const domain = (this.domainEl?.value ?? "").trim().toLowerCase();
     const smtp = Number((this.smtpEl?.value ?? "").trim());
     const pop3 = Number((this.pop3El?.value ?? "").trim());
@@ -1279,18 +1317,14 @@ export class SimpleMailServerApp extends LoggedProcess {
     /** @param {number} p */
     const okPort = (p) => Number.isInteger(p) && p >= 1 && p <= 65535;
 
-    if (!domain) { this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.invalidDomain") || "invalid maildomain"}`); return; }
+    if (!domain) { this._notify(`[${nowStamp()}] ${t("app.simplemailserver.log.invalidDomain") || "invalid maildomain"}`); return false; }
     if (!okPort(smtp) || !okPort(pop3) || !okPort(imap)) {
-      this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.invalidPorts") || "invalid ports"} (smtp=${smtp} pop3=${pop3} imap=${imap})`);
-      return;
+      this._notify(`[${nowStamp()}] ${t("app.simplemailserver.log.invalidPorts") || "invalid ports"} (smtp=${smtp} pop3=${pop3} imap=${imap})`);
+      return false;
     }
     if (tlsOn && (!okPort(smtps) || !okPort(pop3s) || !okPort(imaps))) {
-      this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.invalidPorts") || "invalid ports"} (smtps=${smtps} pop3s=${pop3s} imaps=${imaps})`);
-      return;
-    }
-    if (tlsOn && !this._cert) {
-      this._appendLog(`[${nowStamp()}] ${t("app.simplemailserver.log.tlsNoCert") || "TLS is enabled but no certificate is loaded — select and apply a certificate first"}`);
-      return;
+      this._notify(`[${nowStamp()}] ${t("app.simplemailserver.log.invalidPorts") || "invalid ports"} (smtps=${smtps} pop3s=${pop3s} imaps=${imaps})`);
+      return false;
     }
 
     this.mailDomain = domain;
@@ -1301,6 +1335,24 @@ export class SimpleMailServerApp extends LoggedProcess {
     this.portSMTPS = okPort(smtps) ? smtps : this.portSMTPS;
     this.portPOP3S = okPort(pop3s) ? pop3s : this.portPOP3S;
     this.portIMAPS = okPort(imaps) ? imaps : this.portIMAPS;
+    return true;
+  }
+
+  _saveConfigFromUI() {
+    // the form is locked while running, so it already matches the state
+    if (!this.running && !this._applyFormToState()) return;
+    this._saveConfig();
+    // _saveConfig() logged success or failure; surface that line too
+    if (this.hintEl) this.hintEl.textContent = this.log[this.log.length - 1] ?? "";
+  }
+
+  _startFromUI() {
+    const tlsOn = this.tlsEnabledEl?.checked ?? false;
+    if (tlsOn && !this._cert) {
+      this._notify(`[${nowStamp()}] ${t("app.simplemailserver.log.tlsNoCert") || "TLS is enabled but no certificate is loaded — select and apply a certificate first"}`);
+      return;
+    }
+    if (!this._applyFormToState()) return;
     this._saveConfig();
 
     this._start();
@@ -1858,8 +1910,9 @@ export class SimpleMailServerApp extends LoggedProcess {
         }
         const msg = normalizeCRLF(msgs[n - 1]);
         const bytes = encodeUTF8(msg).length;
+        // RFC 9051 §4.3: the closing ")" follows the literal's last octet directly
         send(`* ${n} FETCH (BODY[] {${bytes}}`);
-        tr.send(encodeUTF8(msg + "\r\n"));
+        tr.send(encodeUTF8(msg));
         send(`)`);
         send(`${tag} OK FETCH completed`);
         continue;

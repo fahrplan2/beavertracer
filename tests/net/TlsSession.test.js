@@ -12,6 +12,7 @@
 import { describe, it, expect } from 'vitest';
 import { TlsSession, TlsHandshakeError, TlsCertUntrustedError, TlsCertExpiredError, TlsCertNameMismatchError, certMatchesName } from '../../src/net/TlsSession.js';
 import { TlsCertificate, TlsTrustStore } from '../../src/net/models/TlsCertificate.js';
+import { TlsRecord } from '../../src/net/pdu/TlsRecord.js';
 
 // ── loopback wiring ────────────────────────────────────────────────────────
 
@@ -190,12 +191,13 @@ describe('TlsSession', () => {
     // total payload = 8 + 21 = 29 bytes
     expect(payload.length).toBe(8 + 5 + 16);
 
-    // The explicit nonce must be the sequence number (0) as 8-byte big-endian
+    // The explicit nonce is the sequence number as 8-byte big-endian.
+    // Seq 0 under the new keys was the Finished message, so ApplicationData starts at 1.
     const explicitNonce = payload.slice(0, 8);
-    expect(Array.from(explicitNonce)).toEqual([0, 0, 0, 0, 0, 0, 0, 0]);
+    expect(Array.from(explicitNonce)).toEqual([0, 0, 0, 0, 0, 0, 0, 1]);
   });
 
-  it('second APP_DATA record has explicit nonce = 1', async () => {
+  it('second APP_DATA record has explicit nonce = 2', async () => {
     const cert = await TlsCertificate.generate('server.local');
     const q = makeQueues();
     const capturedRecords = [];
@@ -229,8 +231,8 @@ describe('TlsSession', () => {
 
     const nonce0 = capturedRecords[0].slice(5, 13); // first record explicit nonce
     const nonce1 = capturedRecords[1].slice(5, 13); // second record explicit nonce
-    expect(Array.from(nonce0)).toEqual([0, 0, 0, 0, 0, 0, 0, 0]);
-    expect(Array.from(nonce1)).toEqual([0, 0, 0, 0, 0, 0, 0, 1]);
+    expect(Array.from(nonce0)).toEqual([0, 0, 0, 0, 0, 0, 0, 1]);
+    expect(Array.from(nonce1)).toEqual([0, 0, 0, 0, 0, 0, 0, 2]);
   });
 
   it('rejects untrusted certificate when trust store is provided', async () => {
@@ -377,5 +379,197 @@ describe('TlsSession', () => {
     expect(serverMs).not.toBeNull();
     expect(Array.from(clientMs)).toEqual(Array.from(serverMs));
     expect(clientMs.length).toBe(48); // RFC 5246: master_secret is always 48 bytes
+  });
+  // ── Finished / Alerts under the negotiated cipher (RFC 5246 §7.1, §7.4.9) ──
+
+  describe('records after ChangeCipherSpec are encrypted', () => {
+    /**
+     * Loopback handshake that records every byte written by each side and
+     * optionally lets a test rewrite outgoing chunks.
+     * @param {{ tamperC2S?: (d: Uint8Array) => Uint8Array, tamperS2C?: (d: Uint8Array) => Uint8Array, timeoutMs?: number }} [opts]
+     */
+    async function runCaptured(opts = {}) {
+      const cert = await TlsCertificate.generate('server.local');
+      const q = makeQueues();
+      const wire = { c2s: [], s2c: [] };
+      const mk = (isServer) => new TlsSession({
+        send: (d) => {
+          const out = (isServer ? opts.tamperS2C : opts.tamperC2S)?.(d.slice()) ?? d;
+          (isServer ? wire.s2c : wire.c2s).push(out.slice());
+          (isServer ? q.serverSend : q.clientSend)(out);
+        },
+        recv: isServer ? q.serverRecv : q.clientRecv,
+        isServer,
+        cert: isServer ? cert : undefined,
+        timeoutMs: opts.timeoutMs ?? 5000,
+        sleepFn: (ms) => new Promise(r => setTimeout(r, ms)),
+      });
+      const client = mk(false);
+      const server = mk(true);
+      return { client, server, wire };
+    }
+
+    /** @param {Uint8Array[]} chunks */
+    function records(chunks) {
+      const all = new Uint8Array(chunks.reduce((n, c) => n + c.length, 0));
+      let off = 0;
+      for (const c of chunks) { all.set(c, off); off += c.length; }
+      return TlsRecord.parseRecords(all).records;
+    }
+
+    /** @param {TlsRecord[]} recs */
+    function recordAfterCcs(recs) {
+      const i = recs.findIndex(r => r.contentType === 0x14);
+      expect(i).toBeGreaterThanOrEqual(0);
+      return recs[i + 1];
+    }
+
+    it('client and server Finished are AES-GCM records with seq 0, not readable plaintext', async () => {
+      const { client, server, wire } = await runCaptured();
+      await Promise.all([client.handshake(), server.handshake()]);
+      expect(client['_state']).toBe('ESTABLISHED');
+      expect(server['_state']).toBe('ESTABLISHED');
+
+      for (const dir of ['c2s', 's2c']) {
+        const fin = recordAfterCcs(records(wire[dir]));
+        expect(fin.contentType).toBe(22);                 // Handshake content type
+        // explicit_nonce(8) || ciphertext(4 + 12) || tag(16)
+        expect(fin.payload.length).toBe(8 + 16 + 16);
+        expect(Array.from(fin.payload.slice(0, 8))).toEqual([0, 0, 0, 0, 0, 0, 0, 0]);
+        // not a plaintext Finished header (type 20, length 12)
+        expect(Array.from(fin.payload.slice(0, 4))).not.toEqual([20, 0, 0, 12]);
+        expect(Array.from(fin.payload.slice(8, 12))).not.toEqual([20, 0, 0, 12]);
+      }
+    });
+
+    it('encrypted client Finished decrypts with seq 0 / AAD(type 22, len 16) to the plaintext message', async () => {
+      const { client, server, wire } = await runCaptured();
+      await Promise.all([client.handshake(), server.handshake()]);
+
+      const fin = recordAfterCcs(records(wire.c2s));
+      const nonce = new Uint8Array(12);
+      nonce.set(server['_decryptFixedIV'], 0);
+      nonce.set(fin.payload.slice(0, 8), 4);
+      const aad = new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0, 22, 3, 3, 0, 16]);
+      const plain = new Uint8Array(await crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv: nonce, additionalData: aad },
+        server['_decryptKey'], fin.payload.slice(8),
+      ));
+      expect(Array.from(plain.slice(0, 4))).toEqual([20, 0, 0, 12]);
+      expect(plain.length).toBe(16);
+    });
+
+    it('application data round-trips in both directions after encrypted Finished', async () => {
+      const { client, server } = await runCaptured();
+      await Promise.all([client.handshake(), server.handshake()]);
+      await client.send(new TextEncoder().encode('ping'));
+      expect(new TextDecoder().decode(await server.recv())).toBe('ping');
+      await server.send(new TextEncoder().encode('pong'));
+      expect(new TextDecoder().decode(await client.recv())).toBe('pong');
+      expect(client['_sendSeq']).toBe(2);
+      expect(server['_recvSeq']).toBe(2);
+    });
+
+    it('rejects a tampered (encrypted) client Finished', async () => {
+      let seenCcs = false;
+      const { client, server } = await runCaptured({
+        timeoutMs: 300,
+        tamperC2S: (d) => {
+          if (seenCcs && d[0] === 22) { d[d.length - 1] ^= 0xff; seenCcs = false; }
+          if (d[0] === 0x14) seenCcs = true;
+          return d;
+        },
+      });
+      const [c, s] = await Promise.allSettled([client.handshake(), server.handshake()]);
+      expect(s.status).toBe('rejected');
+      expect(/** @type {PromiseRejectedResult} */ (s).reason).toBeInstanceOf(TlsHandshakeError);
+      expect(c.status).toBe('rejected');
+    });
+
+    it('client sends an encrypted fatal alert when the server Finished is bad', async () => {
+      let seenCcs = false;
+      const { client, server, wire } = await runCaptured({
+        tamperS2C: (d) => {
+          if (seenCcs && d[0] === 22) { d[d.length - 1] ^= 0xff; seenCcs = false; }
+          if (d[0] === 0x14) seenCcs = true;
+          return d;
+        },
+      });
+      const [c] = await Promise.allSettled([client.handshake(), server.handshake()]);
+      expect(c.status).toBe('rejected');
+      const recs = records(wire.c2s);
+      const alert = recs[recs.length - 1];
+      expect(alert.contentType).toBe(21);
+      expect(alert.payload.length).toBe(8 + 2 + 16);                       // protected, not [2, 42]
+      expect(Array.from(alert.payload.slice(0, 8))).toEqual([0, 0, 0, 0, 0, 0, 0, 1]);
+    });
+
+    it('close_notify after the handshake is encrypted with the next sequence number', async () => {
+      const { client, server, wire } = await runCaptured();
+      await Promise.all([client.handshake(), server.handshake()]);
+      await client.send(new TextEncoder().encode('bye'));
+      expect(new TextDecoder().decode(await server.recv())).toBe('bye');
+
+      const before = records(wire.c2s).length;
+      client.close();                                   // synchronous, as callers use it
+      const recs = records(wire.c2s);
+      expect(recs.length).toBe(before + 1);
+      const alert = recs[recs.length - 1];
+      expect(alert.contentType).toBe(21);
+      expect(alert.payload.length).toBe(8 + 2 + 16);
+      expect(Array.from(alert.payload.slice(0, 8))).toEqual([0, 0, 0, 0, 0, 0, 0, 2]);
+      expect(await server.recv()).toBeNull();           // decrypts and treats as close
+    });
+
+    it('close_notify right after the handshake uses seq 1', async () => {
+      const { client, server, wire } = await runCaptured();
+      await Promise.all([client.handshake(), server.handshake()]);
+      server.close();
+      const recs = records(wire.s2c);
+      const alert = recs[recs.length - 1];
+      expect(alert.contentType).toBe(21);
+      expect(Array.from(alert.payload.slice(0, 8))).toEqual([0, 0, 0, 0, 0, 0, 0, 1]);
+      expect(await client.recv()).toBeNull();
+    });
+  });
+});
+
+describe('ClientHello server_name extension (RFC 6066 §3)', () => {
+  /** @param {Uint8Array} rec */
+  function extensions(rec) {
+    // record(5) + hs header(4) + version(2) + random(32) + sid len(1) + suites(4) + comp(2)
+    const off = 5 + 4 + 2 + 32 + 1 + 4 + 2;
+    const len = (rec[off] << 8) | rec[off + 1];
+    /** @type {Map<number, Uint8Array>} */
+    const out = new Map();
+    for (let p = off + 2; p < off + 2 + len;) {
+      const type = (rec[p] << 8) | rec[p + 1];
+      const l = (rec[p + 2] << 8) | rec[p + 3];
+      out.set(type, rec.slice(p + 4, p + 4 + l));
+      p += 4 + l;
+    }
+    return out;
+  }
+
+  it('carries the host name', () => {
+    const ch = TlsRecord.buildClientHello(new Uint8Array(32), 'www.Biberbank.de.');
+    const sni = extensions(ch).get(0x0000);
+    expect(sni).toBeDefined();
+    const s = /** @type {Uint8Array} */ (sni);
+    expect(s[2]).toBe(0x00); // host_name
+    expect(new TextDecoder().decode(s.slice(5))).toBe('www.biberbank.de');
+    expect((s[0] << 8) | s[1]).toBe(s.length - 2);
+  });
+
+  it('is omitted for IP literals and empty names', () => {
+    expect(extensions(TlsRecord.buildClientHello(new Uint8Array(32), '192.168.0.20')).has(0)).toBe(false);
+    expect(extensions(TlsRecord.buildClientHello(new Uint8Array(32), '2001:db8::1')).has(0)).toBe(false);
+    expect(extensions(TlsRecord.buildClientHello(new Uint8Array(32))).has(0)).toBe(false);
+  });
+
+  it('handshake still succeeds with SNI present', async () => {
+    const cert = await TlsCertificate.generate('server.local');
+    const { client } = await runHandshake(cert, null, { serverName: 'server.local' });
+    expect(client['_state']).toBe('ESTABLISHED');
   });
 });

@@ -6,6 +6,7 @@ vi.mock('../../src/net/EthernetLink.js', () => ({ EthernetLink: class EthernetLi
 
 import { SwitchBackplane } from '../../src/net/SwitchBackplane.js';
 import { EthernetFrame } from '../../src/net/pdu/EthernetFrame.js';
+import { onesComplementChecksum, computeIPv6PseudoChecksum } from '../../src/net/util/checksumUtils.js';
 import { simTimer } from '../../src/lib/SimTimer.js';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -254,8 +255,21 @@ describe('IGMP Querier – _buildIGMPQueryFrame', () => {
     it('sets IGMP type byte 0x11 (General Query)', () => {
         const bp = makeBP();
         const frame = bp['_buildIGMPQueryFrame']();
-        // payload: 20-byte IP header then IGMP; type at payload[20]
-        expect(frame.payload[20]).toBe(0x11);
+        // payload: 24-byte IP header (IHL 6, Router Alert) then IGMP; type at payload[24]
+        expect(frame.payload[24]).toBe(0x11);
+    });
+
+    it('carries TTL 1, Router Alert option and valid IP/IGMP checksums (RFC 2236 §2)', () => {
+        const bp = makeBP();
+        const ip = bp['_buildIGMPQueryFrame']().payload;
+        expect(ip[0]).toBe(0x46);                         // IPv4, IHL 6
+        expect(ip[8]).toBe(1);                            // TTL
+        expect(ip[9]).toBe(2);                            // IGMP
+        expect(Array.from(ip.slice(20, 24))).toEqual([0x94, 0x04, 0x00, 0x00]);
+        expect((ip[2] << 8) | ip[3]).toBe(32);            // total length
+        expect(onesComplementChecksum([ip.slice(0, 24)])).toBe(0);
+        expect(Array.from(ip.slice(24, 32))).toEqual([0x11, 0x64, 0xee, 0x9b, 0, 0, 0, 0]);
+        expect(onesComplementChecksum([ip.slice(24, 32)])).toBe(0);
     });
 });
 
@@ -278,8 +292,22 @@ describe('IGMP Querier – _buildMLDQueryFrame', () => {
     it('sets ICMPv6 type byte 0x82 (MLD Query)', () => {
         const bp = makeBP();
         const frame = bp['_buildMLDQueryFrame']();
-        // payload: 40-byte IPv6 header then ICMPv6; type at payload[40]
-        expect(frame.payload[40]).toBe(0x82);
+        // payload: 40-byte IPv6 header + 8-byte Hop-by-Hop header, then ICMPv6
+        expect(frame.payload[48]).toBe(0x82);
+    });
+
+    it('has hop limit 1, Hop-by-Hop Router Alert and a valid ICMPv6 checksum (RFC 2710 §3)', () => {
+        const bp = makeBP();
+        const ip6 = bp['_buildMLDQueryFrame']().payload;
+        expect(ip6.length).toBe(40 + 8 + 24);
+        expect((ip6[4] << 8) | ip6[5]).toBe(32);          // payload length incl. HbH
+        expect(ip6[6]).toBe(0);                           // Next Header = Hop-by-Hop
+        expect(ip6[7]).toBe(1);                           // hop limit
+        expect(Array.from(ip6.slice(8, 10))).toEqual([0xfe, 0x80]); // link-local source
+        expect(Array.from(ip6.slice(40, 48))).toEqual([58, 0, 0x05, 0x02, 0x00, 0x00, 0x01, 0x00]);
+        const mld = ip6.slice(48);
+        expect(computeIPv6PseudoChecksum(mld, ip6.slice(8, 24), ip6.slice(24, 40), 58)).toBe(0);
+        expect((mld[4] << 8) | mld[5]).toBe(10000);       // max resp delay
     });
 });
 

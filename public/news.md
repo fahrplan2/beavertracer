@@ -1,29 +1,31 @@
-## Version 0.4.0
+## Version 0.4.1 (2026-10-31)
 
-- New: "Mission School Network": join the IT team of the Beaver School and solve
-  12 support tickets in four acts (switching, VLANs, subnetting, routing, DHCP,
-  DNS, ports, HTTP, mail, NAT, TLS and firewalls), each in a real simulation
-- 6 mini-games in between: Routing Rush, Address Space Tetris, Packet Belt,
-  Gatekeeper, Campus Planner and Radio Tuner
-- XP, ranks and badges; progress can be downloaded as a file (.btgames) that
-  teachers can open in the game
+- UI fixes and improvements
+- minor fixes in the network stack
+- computer: new software installation process
+
+## Version 0.4.0 (2026-10-21)
+
+- New: "Mission School Network": join the IT team of the Beaver School and solve 12 support tickets in four acts (switching, VLANs, subnetting, routing, DHCP, DNS, ports, HTTP, mail, NAT, TLS and firewalls), each in a real simulation 
+- 6 mini-games in between: Routing Rush, Address Space Tetris, Packet Belt, Gatekeeper, Campus Planner and Radio Tuner
+- XP, ranks and badges; progress can be downloaded as a file (.btgames) that teachers can open in the game
 - Games are available from the welcome dialog
 
-## Version 0.3.3
+## Version 0.3.3 (2026-05-21)
 
-- added Malti and Soomaali
+- added Malti and Soomaali (translations by AI)
 
-## Version 0.3.2
+## Version 0.3.2 (2026-05-15)
 
 - added more translations (by AI)
 
-## Version 0.3.1
+## Version 0.3.1 (2026-10-05)
 
 - added a downloadable version for MacOS
 - added chapters 8 & 9 in the networking course
 - minor design fixes
 
-## Version 0.3.0
+## Version 0.3.0 (2026-10-05)
 
 - New interactive networking course (chapters 0–7, German and English)
 - Redesigned UI with optional dark mode and a reworked welcome dialog
@@ -33,55 +35,55 @@
 - TCP fixes: duplicate ACKs, fast retransmit, shorter retransmission timeout
 - Fixes for mail relay, DHCP, DNS tools and NAT with traceroute
 
-## Version 0.2.3
+## Version 0.2.3 (2026-08-30)
 
 - added a simple SIP server and a VOIP client
 
-## Version 0.2.2
+## Version 0.2.2 (2026-08-23)
 
 - added ability to simulate random packet loss on connections
 
-## Version 0.2.1
+## Version 0.2.1 (2026-08-22)
 
 - New apps: Clock and NTP client/server
 - TLS certificates now expire based on the simulated clock instead of never
 - minor bug fixes
 
-## Version 0.2.0
-
+## Version 0.2.0 (2026-08-01)
+ 
 - Interactive lessons added directly in the app
 - Hex view in the tracer is now off by default
 
-## Version 0.1.27
+## Version 0.1.27 (2026-07-28)
 
 - minor bug fixes and features
 
-## Version 0.1.26
+## Version 0.1.26 (2026-06-28)
 
 - added statefull firewall behavior
 
-## Version 0.1.25
+## Version 0.1.25 (2026-06-17)
 
 - added ability to deactivate EthernetLinks
 
-## Version 0.1.24
+## Version 0.1.24 (2026-06-09)
 
 - renamed Laptop to Tablet and PC to Computer
 - added "follow TCP stream" option to the tracer
 
-## Version 0.1.23
+## Version 0.1.23 (2026-05-31)
 
 - animation performance issues fixed
 - loading of tracing window should be faster now
 
-## Version 0.1.22
+## Version 0.1.22 (2026-05-25)
 
 - Examples added.
 
-## Version 0.1.21
+## Version 0.1.21 (2026-05-23)
 
 - Tour added.
 
-## Version 0.1.20
+## Version 0.1.20 (2026-05-21)
 
 - Welcome Dialog added. This dialog will be in English only but will provide you from now on the latest release notes directly at the start.

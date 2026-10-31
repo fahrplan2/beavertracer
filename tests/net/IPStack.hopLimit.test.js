@@ -17,13 +17,60 @@ import { IPv4Packet } from '../../src/net/pdu/IPv4Packet.js';
 import { IPAddress } from '../../src/net/models/IPAddress.js';
 
 describe('IPStack.routeV6 – Hop Limit handling', () => {
-    it('drops a forwarded packet arriving with Hop Limit 0 (link-local branch) instead of wrapping to 255', async () => {
-        const stack = new IPStack(1, 'R');
-        stack.configureInterface(0, { ip: '10.0.0.1', prefixLength: 24 });
+    /** Router with eth0 (2001:db8:1::1/64) and eth1 (2001:db8:2::1/64). */
+    function mkRouter() {
+        const stack = new IPStack(2, 'R');
+        ['2001:db8:1::1', '2001:db8:2::1'].forEach((a, i) => {
+            stack.interfaces[i].ip6 = IPAddress.fromString(a);
+            stack.interfaces[i].prefixLength6 = 64;
+        });
+        stack._updateAutoRoutes();
         stack.forwarding = true;
+        return stack;
+    }
 
+    it('drops a forwarded packet arriving with Hop Limit 0 instead of wrapping to 255', async () => {
+        const stack = mkRouter();
         const spy = vi.spyOn(stack, '_sendICMPv6Error').mockImplementation(() => {});
-        const sendFrameSpy = vi.spyOn(stack.interfaces[0], 'sendFrame');
+        const sendFrameSpy = vi.spyOn(stack.interfaces[1], 'sendFrame');
+
+        const packet = new IPv6Packet({
+            src: IPAddress.fromString('2001:db8:1::10'),
+            dst: IPAddress.fromString('2001:db8:2::10'),
+            hopLimit: 0,
+            nextHeader: 59,
+        });
+
+        await stack.routeV6(packet, false, 0);
+
+        expect(spy).toHaveBeenCalledWith(packet, 3, 0, 0, 0);
+        expect(sendFrameSpy).not.toHaveBeenCalled();
+        expect(packet.hopLimit).toBe(0); // must not wrap to 255
+    });
+
+    it('drops a forwarded packet arriving with Hop Limit 1 after decrementing to 0', async () => {
+        const stack = mkRouter();
+        const spy = vi.spyOn(stack, '_sendICMPv6Error').mockImplementation(() => {});
+        const sendFrameSpy = vi.spyOn(stack.interfaces[1], 'sendFrame');
+
+        const packet = new IPv6Packet({
+            src: IPAddress.fromString('2001:db8:1::10'),
+            dst: IPAddress.fromString('2001:db8:2::10'),
+            hopLimit: 1,
+            nextHeader: 59,
+        });
+
+        await stack.routeV6(packet, false, 0);
+
+        expect(spy).toHaveBeenCalledWith(packet, 3, 0, 0, 0);
+        expect(sendFrameSpy).not.toHaveBeenCalled();
+    });
+
+    it('never forwards a packet with a link-local destination (RFC 4291 §2.5.6)', async () => {
+        const stack = mkRouter();
+        const spy = vi.spyOn(stack, '_sendICMPv6Error').mockImplementation(() => {});
+        const sf0 = vi.spyOn(stack.interfaces[0], 'sendFrame');
+        const sf1 = vi.spyOn(stack.interfaces[1], 'sendFrame');
 
         const packet = new IPv6Packet({
             src: IPAddress.fromString('fe80::1'),
@@ -34,30 +81,9 @@ describe('IPStack.routeV6 – Hop Limit handling', () => {
 
         await stack.routeV6(packet, false, 0);
 
-        expect(spy).toHaveBeenCalledWith(packet, 3, 0);
-        expect(sendFrameSpy).not.toHaveBeenCalled();
-        expect(packet.hopLimit).toBe(0); // must not wrap to 255
-    });
-
-    it('drops a forwarded packet arriving with Hop Limit 1 after decrementing to 0', async () => {
-        const stack = new IPStack(1, 'R');
-        stack.configureInterface(0, { ip: '10.0.0.1', prefixLength: 24 });
-        stack.forwarding = true;
-
-        const spy = vi.spyOn(stack, '_sendICMPv6Error').mockImplementation(() => {});
-        const sendFrameSpy = vi.spyOn(stack.interfaces[0], 'sendFrame');
-
-        const packet = new IPv6Packet({
-            src: IPAddress.fromString('fe80::1'),
-            dst: IPAddress.fromString('fe80::2'),
-            hopLimit: 1,
-            nextHeader: 59,
-        });
-
-        await stack.routeV6(packet, false, 0);
-
-        expect(spy).toHaveBeenCalledWith(packet, 3, 0);
-        expect(sendFrameSpy).not.toHaveBeenCalled();
+        expect(spy).not.toHaveBeenCalled();
+        expect(sf0).not.toHaveBeenCalled();
+        expect(sf1).not.toHaveBeenCalled();
     });
 });
 

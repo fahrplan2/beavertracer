@@ -29,6 +29,8 @@ const T1_MS = SimTimer.SIP_T1_MS;        // base round-trip estimate (sim ms)
 const T2_MS = SimTimer.SIP_T2_MS;        // non-INVITE retransmit cap
 const TIMER_BF_MS = SimTimer.SIP_TIMEOUT_MS;  // INVITE Timer B / non-INVITE Timer F
 const TIMER_H_MS = SimTimer.SIP_TIMEOUT_MS;   // INVITE server: wait-for-ACK
+const TIMER_D_MS = SimTimer.SIP_TIMEOUT_MS;   // INVITE client Completed: absorb retransmitted non-2xx finals (≥32 s over UDP)
+const TIMER_M_MS = SimTimer.SIP_TIMEOUT_MS;   // INVITE client Accepted: re-ACK retransmitted 2xx (RFC 6026 Timer M = 64·T1)
 
 const MAX_FORWARDS = 70;
 
@@ -69,7 +71,16 @@ function token(n, rng) {
  * @property {string} inviteBranch
  * @property {string|null} ackBranch            (UAS) branch key of a 2xx awaiting ACK
  * @property {SIPMessage|null} pendingInvite    the inbound INVITE awaiting answer/reject (UAS)
+ * @property {boolean} [cancelPending]          (UAC) hung up before any 1xx: CANCEL goes out once one arrives (§9.1)
  * @property {Set<number>} timers
+ */
+
+/**
+ * @typedef {Object} AckInfo
+ * @property {SIPMessage} message
+ * @property {Uint8Array} bytes
+ * @property {string} ip
+ * @property {number} port
  */
 
 export class SipStack {
@@ -95,14 +106,24 @@ export class SipStack {
     this._calls = new Map();
 
     /**
-     * Client transactions keyed by top-Via branch.
+     * Client transactions keyed by top-Via branch + CSeq method (RFC 3261
+     * §17.1.3 — a CANCEL shares the INVITE's branch, so the branch alone is
+     * ambiguous).
+     *
+     * `state` follows §17.1.1 / §17.1.2: "calling"/"trying" → "proceeding"
+     * (after a 1xx) → "completed" (INVITE: non-2xx final, ACK sent, Timer D)
+     * or "accepted" (INVITE: 2xx, RFC 6026 Timer M). Non-INVITE transactions
+     * are removed on their final response.
      * @type {Map<string, {
      *   method: string, callId: string|null, bytes: Uint8Array,
      *   dstIp: string, dstPort: number, intervalMs: number,
      *   isInvite: boolean, timerId: number|null, timeoutId: number|null,
-     *   onFinal: ((msg: SIPMessage) => void)|null,
+     *   state: "calling"|"proceeding"|"completed"|"accepted",
+     *   onFinal: ((msg: SIPMessage) => (AckInfo|void))|null,
      *   onProvisional: ((msg: SIPMessage) => void)|null,
      *   onTimeout: (() => void)|null,
+     *   buildAck: ((resp: SIPMessage) => AckInfo)|null,
+     *   ack: AckInfo|null,
      *   gotResponse: boolean,
      * }>}
      */
@@ -283,6 +304,11 @@ export class SipStack {
     this._sendNewClientTx(msg, branch, peerIp, peerPort, {
       isInvite: true,
       onProvisional: (resp) => {
+        if (c.state === "ended") {
+          // hung up before any provisional: now the CANCEL may go out (§9.1)
+          if (c.cancelPending) { c.cancelPending = false; this._sendCancel(c); }
+          return;
+        }
         if (resp.statusCode === 100) return;
         c.state = "ringing";
         const toTag = SIPMessage.tagOf(resp.getHeader("To") ?? "");
@@ -291,6 +317,9 @@ export class SipStack {
       },
       onFinal: (resp) => this._onInviteFinal(c, resp),
       onTimeout: () => this._endCall(c, "timeout"),
+      // ACK for a non-2xx final is part of the INVITE transaction: same branch,
+      // same path as the INVITE (§17.1.1.3); re-sent for every retransmitted final.
+      buildAck: (resp) => this._buildAck(c, resp, c.inviteBranch),
     });
     return callId;
   }
@@ -300,7 +329,6 @@ export class SipStack {
    * @param {SIPMessage} resp
    */
   _onInviteFinal(c, resp) {
-    if (c.state === "ended") return;
     const code = resp.statusCode;
     if (code >= 200 && code < 300) {
       const toTag = SIPMessage.tagOf(resp.getHeader("To") ?? "");
@@ -311,16 +339,26 @@ export class SipStack {
         const hp = SipStack._hostPort(contact);
         if (hp) { c.targetIp = hp.ip; c.targetPort = hp.port; }
       }
+      // ACK for a 2xx is its own transaction with a fresh branch, sent direct to the peer's Contact.
+      const ack = this._buildAck(c, resp, this._newBranch());
+      this._transmitAck(ack);
+      if (c.state === "ended") {
+        // CANCEL lost the race against the 200: the dialog exists at the far
+        // end, so confirm it and tear it down right away (§9.1 / §15).
+        c.cancelPending = false;
+        this._sendBye(c);
+        return ack;
+      }
       c.remoteSdp = resp.body.length ? resp.bodyText : null;
       c.state = "in-call";
-      // ACK for a 2xx is its own transaction with a fresh branch, sent direct to the peer's Contact.
-      this._sendAck(c, resp, this._newBranch());
       this._emit("answered", c.callId, { sdp: c.remoteSdp });
-    } else if (code === 401 || code === 407) {
-      this._sendAck(c, resp, c.inviteBranch); // ACK non-2xx uses the INVITE branch
+      return ack;
+    }
+    // non-2xx: the INVITE transaction has already sent the ACK
+    if (c.state === "ended") return;
+    if (code === 401 || code === 407) {
       this._endCall(c, "auth-required");
     } else {
-      this._sendAck(c, resp, c.inviteBranch);
       const reason = code === 486 ? "busy"
         : code === 487 ? "canceled"
         : code === 603 ? "declined"
@@ -340,9 +378,15 @@ export class SipStack {
     if (!c || c.state === "ended") return;
 
     if (c.role === "uac" && (c.state === "calling" || c.state === "ringing")) {
-      this._sendCancel(c);
-      // The 487 to the INVITE and its ACK finish teardown; mark intent now.
+      // The INVITE client transaction stays alive: the 487 (or a racing 200)
+      // still has to be ACKed. A CANCEL may only be sent once a provisional
+      // response has arrived (§9.1) — otherwise it waits for the first 1xx.
+      // End locally first: a synchronous transport may deliver the 487 before
+      // _sendCancel() returns, and that must not re-label the call "canceled".
       this._endCall(c, "hangup");
+      const tx = this._clientTx.get(SipStack._txKey(c.inviteBranch, "INVITE"));
+      if (tx && tx.state === "proceeding") this._sendCancel(c);
+      else if (tx && tx.state === "calling") c.cancelPending = true;
       return;
     }
     if (c.role === "uas" && c.pendingInvite) {
@@ -412,27 +456,81 @@ export class SipStack {
   _onResponse(resp, srcIp, srcPort) {
     const branch = resp.topViaBranch;
     if (!branch) return;
-    const tx = this._clientTx.get(branch);
+    // match on branch AND CSeq method (§17.1.3): the 200 to a CANCEL carries
+    // the INVITE's branch but must not be taken for the INVITE's 2xx.
+    const key = SipStack._txKey(branch, resp.cseq?.method ?? "");
+    const tx = this._clientTx.get(key);
     if (!tx) return;
 
     const code = resp.statusCode;
     if (code < 200) {
+      if (tx.state === "completed" || tx.state === "accepted") return;
       tx.gotResponse = true;
-      // stop INVITE retransmission on the first provisional (RFC 3261 §17.1.1.2)
-      if (tx.isInvite && tx.timerId != null) { this._timer.cancel(tx.timerId); tx.timerId = null; }
+      if (tx.isInvite && tx.state === "calling") {
+        // Calling → Proceeding (§17.1.1.2): stop retransmitting, and Timer B no
+        // longer applies — the callee may ring for as long as it likes.
+        tx.state = "proceeding";
+        if (tx.timerId != null) { this._timer.cancel(tx.timerId); tx.timerId = null; }
+        if (tx.timeoutId != null) { this._timer.cancel(tx.timeoutId); tx.timeoutId = null; }
+      } else if (!tx.isInvite) {
+        tx.state = "proceeding";
+      }
       tx.onProvisional?.(resp);
       return;
     }
 
     // final response
+    if (!tx.isInvite) {
+      tx.gotResponse = true;
+      this._stopTx(tx);
+      this._clientTx.delete(key);
+      tx.onFinal?.(resp);
+      return;
+    }
+
+    if (code >= 300) {
+      if (tx.state === "completed") {
+        // retransmitted final: our ACK was lost → ACK again (§17.1.1.2)
+        if (tx.ack) this._transmitAck(tx.ack);
+        return;
+      }
+      if (tx.state === "accepted") return;
+      tx.gotResponse = true;
+      this._stopTx(tx);
+      tx.state = "completed";
+      tx.ack = tx.buildAck ? tx.buildAck(resp) : null;
+      if (tx.ack) this._transmitAck(tx.ack);
+      tx.timeoutId = this._timer.schedule(() => {
+        if (this._clientTx.get(key) === tx) this._clientTx.delete(key);
+      }, TIMER_D_MS);
+      tx.onFinal?.(resp);
+      return;
+    }
+
+    // 2xx
+    if (tx.state === "accepted") {
+      // retransmitted 2xx: the ACK went missing → re-send it (§13.2.2.4)
+      if (tx.ack) this._transmitAck(tx.ack);
+      return;
+    }
+    if (tx.state === "completed") return;
     tx.gotResponse = true;
+    this._stopTx(tx);
+    tx.state = "accepted";
+    tx.timeoutId = this._timer.schedule(() => {
+      if (this._clientTx.get(key) === tx) this._clientTx.delete(key);
+    }, TIMER_M_MS);
+    tx.ack = tx.onFinal?.(resp) ?? null;
+  }
+
+  /** Cancel a client transaction's retransmit timer and Timer B/F/D/M. */
+  _stopTx(/** @type {{ timerId: number|null, timeoutId: number|null }} */ tx) {
     if (tx.timerId != null) { this._timer.cancel(tx.timerId); tx.timerId = null; }
     if (tx.timeoutId != null) { this._timer.cancel(tx.timeoutId); tx.timeoutId = null; }
-    // A non-INVITE transaction is done; an INVITE transaction is done for
-    // retransmit purposes too (ACK is generated separately).
-    this._clientTx.delete(branch);
-    tx.onFinal?.(resp);
   }
+
+  /** @param {string} branch @param {string} method */
+  static _txKey(branch, method) { return `${branch} ${String(method).toUpperCase()}`; }
 
   /** @param {SIPMessage} req @param {string} srcIp @param {number} srcPort */
   _onRequest(req, srcIp, srcPort) {
@@ -463,6 +561,18 @@ export class SipStack {
     const existing = this._calls.get(callId);
 
     if (method === "INVITE") {
+      const br = req.topViaBranch;
+      if (existing && existing.role === "uas" && br && br === existing.inviteBranch) {
+        // Retransmission of the INVITE we are already handling (§17.2.1):
+        // repeat the last response instead of treating it as a new call or a
+        // re-INVITE.
+        const stx = this._serverTx.get(br);
+        if (stx) this._transport.send(stx.bytes, stx.dstIp, stx.dstPort);
+        else if (existing.pendingInvite && existing.state === "ringing") {
+          this._respondToInvite(existing, existing.pendingInvite, 180, "Ringing");
+        }
+        return;
+      }
       if (existing && existing.role === "uac" && existing.state !== "in-call") {
         // Our own outgoing INVITE has spiralled back to us: this is what a
         // registrar/proxy does when a UA dials its own AOR — the Request-URI
@@ -612,12 +722,13 @@ export class SipStack {
   }
 
   /**
-   * ACK for a received INVITE response.
+   * Build the ACK for a received INVITE final response.
    * @param {SipCall} c
    * @param {SIPMessage} resp   the response being acknowledged
    * @param {string} branch
+   * @returns {AckInfo}
    */
-  _sendAck(c, resp, branch) {
+  _buildAck(c, resp, branch) {
     const target = (resp.statusCode >= 200 && resp.statusCode < 300) ? c.remoteTarget : c.remoteUri;
     const ack = SIPMessage.request("ACK", target, [
       ["Via", `${this._viaSentBy()};branch=${branch}`],
@@ -625,29 +736,50 @@ export class SipStack {
       ["From", resp.getHeader("From") ?? `${this._nameAddr()};tag=${c.localTag}`],
       ["To", resp.getHeader("To") ?? `<${c.remoteUri}>`],
       ["Call-ID", c.callId],
-      ["CSeq", `${c.localSeq} ACK`],
+      // the ACK's CSeq number is the INVITE's (§17.1.1.3 / §13.2.2.4)
+      ["CSeq", `${resp.cseq?.seq ?? c.localSeq} ACK`],
     ]);
     // 2xx ACK goes straight to the peer's Contact; a non-2xx ACK belongs to the
     // INVITE transaction and follows the same path the INVITE took.
     const is2xx = resp.statusCode >= 200 && resp.statusCode < 300;
     const ip = is2xx ? c.targetIp : c.peerIp;
     const port = is2xx ? c.targetPort : c.peerPort;
-    this._emit("signaling", { dir: "tx", message: ack, peerIp: ip, peerPort: port });
-    this._transport.send(ack.pack(), ip, port);
+    return { message: ack, bytes: ack.pack(), ip, port };
+  }
+
+  /** @param {AckInfo} ack */
+  _transmitAck(ack) {
+    this._emit("signaling", { dir: "tx", message: ack.message, peerIp: ack.ip, peerPort: ack.port });
+    this._transport.send(ack.bytes, ack.ip, ack.port);
   }
 
   /** @param {SipCall} c */
   _sendCancel(c) {
     const cancel = SIPMessage.request("CANCEL", c.remoteUri, [
-      ["Via", `${this._viaSentBy()};branch=${c.inviteBranch}`], // same branch as the INVITE
+      // same top Via (incl. branch) as the INVITE (§9.1)
+      ["Via", `${this._viaSentBy()};branch=${c.inviteBranch};rport`],
       ["Max-Forwards", String(MAX_FORWARDS)],
       ["From", `${this._nameAddr()};tag=${c.localTag}`],
       ["To", `<${c.remoteUri}>`],
       ["Call-ID", c.callId],
       ["CSeq", `1 CANCEL`],
     ]);
-    this._emit("signaling", { dir: "tx", message: cancel, peerIp: c.peerIp, peerPort: c.peerPort });
-    this._transport.send(cancel.pack(), c.peerIp, c.peerPort);
+    // CANCEL is a non-INVITE client transaction of its own (retransmitted, Timer F)
+    this._sendNewClientTx(cancel, c.inviteBranch, c.peerIp, c.peerPort, {
+      isInvite: false,
+      onFinal: () => { /* the INVITE's 487 (or a racing 2xx) does the rest */ },
+      onTimeout: () => { /* best effort */ },
+    });
+    // §9.1: if no final response to the INVITE arrives within 64·T1 of the
+    // CANCEL, the INVITE client transaction is considered destroyed.
+    const key = SipStack._txKey(c.inviteBranch, "INVITE");
+    const itx = this._clientTx.get(key);
+    if (itx && itx.state === "proceeding") {
+      if (itx.timeoutId != null) this._timer.cancel(itx.timeoutId);
+      itx.timeoutId = this._timer.schedule(() => {
+        if (this._clientTx.get(key) === itx && itx.state === "proceeding") this._clientTx.delete(key);
+      }, TIMER_BF_MS);
+    }
   }
 
   /** @param {SipCall} c */
@@ -683,8 +815,9 @@ export class SipStack {
    * @param {object} h
    * @param {boolean} h.isInvite
    * @param {(msg: SIPMessage) => void} [h.onProvisional]
-   * @param {(msg: SIPMessage) => void} [h.onFinal]
+   * @param {(msg: SIPMessage) => (AckInfo|void)} [h.onFinal]
    * @param {() => void} [h.onTimeout]
+   * @param {(resp: SIPMessage) => AckInfo} [h.buildAck]  INVITE only: ACK for a non-2xx final
    */
   _sendNewClientTx(msg, branch, dstIp, dstPort, h) {
     if (!msg.getHeader("User-Agent")) msg.setHeader("User-Agent", this._userAgent);
@@ -697,17 +830,22 @@ export class SipStack {
       isInvite: h.isInvite,
       timerId: /** @type {number|null} */ (null),
       timeoutId: /** @type {number|null} */ (null),
+      state: /** @type {"calling"|"proceeding"|"completed"|"accepted"} */ ("calling"),
       onFinal: h.onFinal ?? null, onProvisional: h.onProvisional ?? null,
       onTimeout: h.onTimeout ?? null, gotResponse: false,
+      buildAck: h.buildAck ?? null, ack: /** @type {AckInfo|null} */ (null),
     };
-    this._clientTx.set(branch, tx);
+    const key = SipStack._txKey(branch, msg.method ?? "");
+    this._clientTx.set(key, tx);
     // register before sending: a transport that delivers synchronously can
     // bounce a response back into _onResponse before send() returns.
-    this._armClientRetransmit(branch);
-    // absolute Timer B (INVITE) / Timer F (non-INVITE): give up after 64·T1.
+    this._armClientRetransmit(key);
+    // Timer B (INVITE, until the first 1xx) / Timer F (non-INVITE): give up after 64·T1.
     tx.timeoutId = this._timer.schedule(() => {
-      if (!this._clientTx.has(branch)) return;
-      this._clientTx.delete(branch);
+      tx.timeoutId = null;
+      if (this._clientTx.get(key) !== tx) return;
+      if (tx.state === "completed" || tx.state === "accepted") return;
+      this._clientTx.delete(key);
       if (tx.timerId != null) this._timer.cancel(tx.timerId);
       tx.onTimeout?.();
     }, TIMER_BF_MS);
@@ -716,18 +854,22 @@ export class SipStack {
     this._transport.send(bytes, dstIp, dstPort);
   }
 
-  /** @param {string} branch */
-  _armClientRetransmit(branch) {
-    const tx = this._clientTx.get(branch);
+  /** @param {string} key  client transaction key (branch + method) */
+  _armClientRetransmit(key) {
+    const tx = this._clientTx.get(key);
     if (!tx) return;
     tx.timerId = this._timer.schedule(() => {
-      const t = this._clientTx.get(branch);
-      if (!t) return;
+      const t = this._clientTx.get(key);
+      if (!t || t !== tx) return;
+      t.timerId = null;
+      // INVITE retransmits only while Calling; non-INVITE until final
+      if (t.state === "completed" || t.state === "accepted") return;
+      if (t.isInvite && t.state !== "calling") return;
       // INVITE: keep doubling; non-INVITE: double but cap at T2. Timer B/F
       // (scheduled in _sendNewClientTx) is what actually ends the transaction.
       t.intervalMs = t.isInvite ? t.intervalMs * 2 : Math.min(t.intervalMs * 2, T2_MS);
       this._transport.send(t.bytes, t.dstIp, t.dstPort);
-      this._armClientRetransmit(branch);
+      this._armClientRetransmit(key);
     }, tx.intervalMs);
   }
 
@@ -779,14 +921,9 @@ export class SipStack {
     c.state = "ended";
     for (const id of c.timers) this._timer.cancel(id);
     c.timers.clear();
-    // drop any transactions tied to this call
-    for (const [branch, tx] of this._clientTx) {
-      if (tx.callId === c.callId) {
-        if (tx.timerId != null) this._timer.cancel(tx.timerId);
-        if (tx.timeoutId != null) this._timer.cancel(tx.timeoutId);
-        this._clientTx.delete(branch);
-      }
-    }
+    // Client transactions are NOT dropped here: they end on their own timers
+    // (B/F/D/M). A pending INVITE must still ACK its 487 / racing 2xx, a
+    // CANCEL or BYE must still be retransmitted under loss.
     if (c.ackBranch) {
       const stx = this._serverTx.get(c.ackBranch);
       if (stx?.timerId != null) this._timer.cancel(stx.timerId);

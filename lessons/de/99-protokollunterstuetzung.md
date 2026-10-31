@@ -112,7 +112,7 @@ BeaverTracer ist ein Netzwerksimulator für den Unterricht. Er modelliert eine b
 <tr>
   <td>NAT / PAT</td><td>RFC 3022</td>
   <td><span class="badge badge-mostly">Größtenteils</span></td>
-  <td>Zustandsbehaftetes SNAT (LAN → WAN) für TCP, UDP und ICMP Echo: Quell-IP und Port/Identifier werden auf die WAN-IP umgeschrieben, Portbereich 10000–60000. Stateless DNAT (Port Forwarding) für TCP und UDP: eingehende Verbindungen auf konfigurierbare LAN-Ziele weitergeleitet; Rückpfad wird automatisch in der SNAT-Tabelle vorinstalliert. Fragmentierte Pakete werden per IPv4-Identification-Feld verfolgt. Nur IPv4 — kein NAT64, kein NPTv6.</td>
+  <td>Zustandsbehaftetes SNAT (LAN → WAN) für TCP, UDP und ICMP Echo: Quell-IP und Port/Identifier werden auf die WAN-IP umgeschrieben, Portbereich 10000–60000. Stateless DNAT (Port Forwarding) für TCP und UDP: eingehende Verbindungen auf konfigurierbare LAN-Ziele weitergeleitet; Rückpfad wird automatisch in der SNAT-Tabelle vorinstalliert. Bei fragmentierten Paketen wird das Erst-Fragment anhand seiner Ports übersetzt (L4-Prüfsumme inkrementell angepasst, RFC 1624); Folgefragmente werden über Quelle, Ziel, Protokoll und Identification zugeordnet. ICMP-Fehler werden samt eingebettetem Header zurückübersetzt (RFC 5508). Nur IPv4 — kein NAT64, kein NPTv6.</td>
 </tr>
 </tbody>
 </table>
