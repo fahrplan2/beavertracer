@@ -148,10 +148,10 @@
   z-index: 200;
   width: 300px;
 
-  background: var(--surface);
+  background: var(--bg-strong);
   border: 1px solid var(--border, #ccc);
   border-radius: 10px;
-  box-shadow: 0 4px 20px rgba(0,0,0,.25);
+  box-shadow: var(--shadow);
   padding: var(--pad-lg) 14px;
   font-size: 0.78125rem;
   line-height: 1.45;
@@ -210,6 +210,24 @@
   }
 }
 
+/* settings popup: opens at the right, below the gear button */
+.app-sparktail-http .sparktail-settings-popup {
+  left: auto;
+  right: 4px;
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--pad-sm);
+}
+
+.app-sparktail-http .sparktail-settings-popup[hidden] {
+  display: none;
+}
+
+.app-sparktail-http .sparktail-settings-popup .form-row {
+  margin-bottom: 0;
+}
+
 /* tab row: tabs left, protocol choice right */
 .app-sparktail-http .sparktail-tab-row {
   display: flex;
@@ -224,8 +242,6 @@
 }
 
 .app-sparktail-http .sparktail-proto {
-  flex: 0 0 auto;
-  width: auto;
-  max-width: 100%;
+  width: 100%;
   padding: var(--pad-xs) var(--pad-sm);
 }

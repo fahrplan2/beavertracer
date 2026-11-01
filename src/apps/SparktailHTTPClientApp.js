@@ -674,6 +674,8 @@ export class SparktailHTTPClientApp extends LoggedProcess {
 
   /** @type {HTMLElement|null} */ _lockEl = null;
   /** @type {HTMLElement|null} */ _certPopupEl = null;
+  /** @type {HTMLElement|null} */ _settingsPopupEl = null;
+  /** @type {HTMLButtonElement|null} */ _settingsBtn = null;
   /** @type {import("../net/models/TlsCertificate.js").TlsCertificate|null} */ _serverCert = null;
   /** @type {boolean} */ _certTrusted = false;
 
@@ -766,7 +768,10 @@ export class SparktailHTTPClientApp extends LoggedProcess {
       { id: "headers", label: t("app.sparktail.tab.headers") },
     ], (id) => { this.tab = /** @type {any} */ (id); this._renderTab(); });
     this._setTabActive = setTabActive;
-    // protocol choice: Auto behaves like real browsers (HTTP/2 via ALPN for https)
+    const tabRow = UI.el("div", { className: "sparktail-tab-row", children: [tabBar] });
+
+    // Settings popup (gear next to Stop): HTTP version + disconnect
+    // protocol choice: Auto behaves like real browsers (HTTP/2 via ALPN, HTTP/3 after Alt-Svc / DNS)
     const protoSel = UI.select(PROTOCOL_MODES.map(m => ({ value: m, label: t(`app.sparktail.proto.${m}`) })), {
       value: this.protocolMode,
       className: ["input", "sparktail-proto"],
@@ -774,7 +779,20 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     });
     protoSel.title = t("app.sparktail.proto.title");
     this.protoEl = protoSel;
-    const tabRow = UI.el("div", { className: "sparktail-tab-row", children: [tabBar, protoSel] });
+    const settingsPopupEl = UI.el("div", {
+      className: ["sparktail-cert-popup", "sparktail-settings-popup"],
+      children: [
+        UI.el("div", { className: "cert-popup-title", text: t("app.sparktail.button.settings") }),
+        UI.row(t("app.sparktail.settings.httpVersion"), protoSel),
+        UI.button(t("app.sparktail.settings.disconnect"), () => this._disconnectAll(), { icon: "fa-link-slash" }),
+      ],
+    });
+    settingsPopupEl.hidden = true;
+    this._settingsPopupEl = settingsPopupEl;
+    const settingsBtn = UI.button("", () => this._toggleSettingsPopup(), { title: t("app.sparktail.button.settings") });
+    settingsBtn.replaceChildren(UI.el("i", { className: "fas fa-gear" }));
+    settingsBtn.setAttribute("aria-label", t("app.sparktail.button.settings"));
+    this._settingsBtn = settingsBtn;
 
     // Content areas
     const iframe = /** @type {HTMLIFrameElement} */ (UI.el("iframe", {
@@ -814,10 +832,12 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     chromeBar.appendChild(urlInput);
     chromeBar.appendChild(go);
     chromeBar.appendChild(stop);
+    chromeBar.appendChild(settingsBtn);
     chromeBar.appendChild(throbber);
 
     const panel = UI.panel([chromeBar, tabRow, content, status]);
     panel.appendChild(certPopupEl);
+    panel.appendChild(settingsPopupEl);
     this.root.replaceChildren(panel);
 
     // Listen for internal page navigation (about:start links)
@@ -875,6 +895,8 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     this.protoEl = null;
     this._lockEl = null;
     this._certPopupEl = null;
+    this._settingsPopupEl = null;
+    this._settingsBtn = null;
     this._serverCert = null;
     super.onUnmount();
   }
@@ -1764,6 +1786,36 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     };
     // defer so this click event doesn't immediately close it
     setTimeout(() => document.addEventListener("click", onOutside, true), 0);
+  }
+
+  _toggleSettingsPopup() {
+    const pop = this._settingsPopupEl;
+    if (!pop) return;
+    if (!pop.hidden) { pop.hidden = true; return; }
+    this._hideCertPopup();
+    pop.hidden = false;
+    const onOutside = (/** @type {MouseEvent} */ e) => {
+      const target = /** @type {Node} */ (e.target);
+      if (this._settingsPopupEl?.contains(target) || this._settingsBtn?.contains(target)) return;
+      if (this._settingsPopupEl) this._settingsPopupEl.hidden = true;
+      document.removeEventListener("click", onOutside, true);
+    };
+    // defer so this click event doesn't immediately close it
+    setTimeout(() => document.addEventListener("click", onOutside, true), 0);
+  }
+
+  /**
+   * Close every open connection and forget what was learned about HTTP/3
+   * (Alt-Svc, DNS HTTPS records, failed QUIC attempts) — the next page load
+   * starts from scratch, with fresh handshakes to watch in the trace.
+   */
+  _disconnectAll() {
+    this._closePool();
+    this._altSvc.clear();
+    this._h3Broken.clear();
+    this._httpsRrChecked.clear();
+    this._appendLog(t("app.sparktail.log.disconnected", { time: nowStamp() }));
+    this._setStatus(t("app.sparktail.status.disconnected"));
   }
 
   _hideCertPopup() {

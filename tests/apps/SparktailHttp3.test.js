@@ -112,6 +112,21 @@ describe('Sparktail HTTP/3', () => {
     expect(await browser._doGet('https://10.0.0.1/a.png', never)).toBeNull();
   }, 20_000);
 
+  it('"Disconnect" closes all connections and forgets HTTP/3 knowledge', async () => {
+    const { stats } = await setup({ http3Enabled: true });
+    await browser._doGet('https://10.0.0.1/a.png', never);   // learns Alt-Svc
+    expect(browser._pooledConns().length).toBe(1);
+    browser._h3Broken.set('https://x:443', 1e15);
+    browser._disconnectAll();
+    expect(browser._pooledConns().length).toBe(0);
+    expect(browser._altSvc.size).toBe(0);
+    expect(browser._h3Broken.size).toBe(0);
+    // next request starts over: new TCP connection with handshake
+    const before = stats.connects;
+    await browser._doGet('https://10.0.0.1/b.png', never);
+    expect(stats.connects).toBe(before + 1);
+  });
+
   it('Alt-Svc parsing: other hosts are ignored, "clear" forgets', () => {
     browser = new SparktailHTTPClientApp(/** @type {any} */ ({ net: {}, fs: makeFS({}), clock: { nowMs: () => 0 } }));
     browser._noteAltSvc('https://a.lan:443', 'h3="other.lan:443"');
