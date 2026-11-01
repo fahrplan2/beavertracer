@@ -1,6 +1,6 @@
 {
   "_info": "This file was created by BeaverTracer, a network simulation tool. Open it with the BeaverTracer app or at https://beavertracer.eu/",
-  "version": 5,
+  "version": 7,
   "appVersion": "0.1.25-dev.20.d13371f",
   "savedAt": "2026-06-15T19:23:40.649Z",
   "tick": 400,

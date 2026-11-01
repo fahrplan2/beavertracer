@@ -70,6 +70,8 @@ export class DNSResolver {
   /** @type {boolean} */ cacheEnabled;
   /** True if the last lookup got no answer at all (server unreachable/silent). @type {boolean} */
   lastQueryTimedOut = false;
+  /** RCODE of the last response (0 NOERROR, 3 NXDOMAIN, …), null without one. @type {number|null} */
+  lastRcode = null;
   /** @type {number} */ maxDepth;
 
   /** @type {number} */ negativeCacheSec;
@@ -160,6 +162,27 @@ export class DNSResolver {
     }
     const a = await this.resolveA_IP(name);
     return a.length ? a[0] : null;
+  }
+
+  /**
+   * Resolve HTTPS records (RFC 9460), following CNAMEs.
+   * @param {string} name
+   * @returns {Promise<Array<{priority:number, target:string, params:Record<string, any>, ttl:number}>>}
+   */
+  async resolveHTTPS(name) {
+    if (!this._isConfigured()) return [];
+    const resp = await this._query(name, DNSPacket.TYPE_HTTPS);
+    if (!resp) return [];
+    /** @type {Array<{priority:number, target:string, params:Record<string, any>, ttl:number}>} */
+    const out = [];
+    for (const rr of (resp.answers ?? [])) {
+      if ((rr.type & 0xffff) !== DNSPacket.TYPE_HTTPS) continue;
+      const d = rr.data;
+      if (!d || typeof d !== "object" || d instanceof Uint8Array) continue;
+      out.push({ priority: d.priority, target: d.target, params: d.params ?? {}, ttl: (rr.ttl ?? 0) >>> 0 });
+    }
+    out.sort((a, b) => a.priority - b.priority);
+    return out;
   }
 
   /**
@@ -297,6 +320,7 @@ export class DNSResolver {
     const resp = await this._queryRecursive(n, qtype & 0xffff, /** @type {IPAddress} */ (this.serverIp), this.port | 0, this.maxDepth, visited);
     // Lets callers (nslookup) tell "no server answered" apart from NXDOMAIN.
     this.lastQueryTimedOut = resp == null;
+    this.lastRcode = resp ? resp.rcode : null;
     return resp;
   }
 
@@ -506,6 +530,14 @@ export class DNSResolver {
 
   /** @param {*} resp */
   _pickCacheTTLSeconds(resp) {
+    // negative answer (NXDOMAIN / NODATA): min(SOA TTL, SOA MINIMUM), RFC 2308 §5
+    if ((resp.answers?.length ?? 0) === 0) {
+      const soa = (resp.authorities ?? []).find((/** @type {any} */ rr) => (rr.type & 0xffff) === DNSPacket.TYPE_SOA);
+      if (soa) {
+        const min = Math.min((soa.ttl ?? 0) >>> 0, (soa.data?.minimum ?? Infinity) >>> 0);
+        return Math.max(1, Math.min(this.maxCacheSec, min));
+      }
+    }
     const /** @type {any[]} */ all = []
       .concat(resp.answers ?? [])
       .concat(resp.authorities ?? [])

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { choosePanelPlacement, segmentToRects } from "../../src/lib/panelPlacement.js";
+import { choosePanelPlacement, segmentToRects, cascadePlacement, CASCADE_STEP } from "../../src/lib/panelPlacement.js";
 
 /** @param {{x:number,y:number,w:number,h:number}} a @param {{x:number,y:number,w:number,h:number}} b */
 /** Gap between two rects. @param {{x:number,y:number,w:number,h:number}} a @param {{x:number,y:number,w:number,h:number}} b */
@@ -79,5 +79,63 @@ describe("choosePanelPlacement", () => {
     expect(p.y).toBeGreaterThanOrEqual(0);
     expect(p.x + p.w).toBeLessThanOrEqual(1000);
     expect(p.y + p.h).toBeLessThanOrEqual(800);
+  });
+
+  it("dense network: opens right beside its device without panning or covering the icon", () => {
+    // devices everywhere — no spot is free anywhere
+    /** @type {{x:number,y:number,w:number,h:number}[]} */
+    const obstacles = [];
+    for (let x = 20; x < 980; x += 160) for (let y = 20; y < 780; y += 130) obstacles.push({ x, y, w: 110, h: 70 });
+    const pc = obstacles[17];
+    const p = choosePanelPlacement({ bounds, view, size: { w: 600, h: 540 }, minSize: { w: 320, h: 300 }, obstacles, anchor: pc });
+    expect(p.shift).toEqual({ dx: 0, dy: 0 });
+    expect(overlaps(p, pc)).toBe(false);
+    expect(gap(p, pc)).toBeLessThan(40);
+    expect([p.w, p.h]).toEqual([600, 540]); // full size, no shrinking in the fallback
+  });
+
+  it("dense network at the right edge: falls back to the left of the device", () => {
+    const obstacles = [];
+    for (let x = 20; x < 980; x += 160) for (let y = 20; y < 780; y += 130) obstacles.push({ x, y, w: 110, h: 70 });
+    const pc = { x: 860, y: 300, w: 110, h: 70 };
+    obstacles.push(pc);
+    const p = choosePanelPlacement({ bounds, view, size: { w: 600, h: 540 }, obstacles, anchor: pc });
+    expect(overlaps(p, pc)).toBe(false);
+    expect(p.x + p.w).toBeLessThanOrEqual(pc.x);
+    expect(p.shift).toEqual({ dx: 0, dy: 0 });
+  });
+
+  it("covering another panel is accepted before covering the network", () => {
+    const pc = { x: 100, y: 100, w: 110, h: 70 };
+    const other = { x: 300, y: 50, w: 650, h: 700 }; // open panel fills the free area
+    const p = choosePanelPlacement({ bounds, view, size: { w: 600, h: 540 }, obstacles: [pc, { x: 60, y: 600, w: 110, h: 70 }], avoid: [other], anchor: pc });
+    expect(overlaps(p, pc)).toBe(false);
+    expect(p.shift).toEqual({ dx: 0, dy: 0 });
+  });
+});
+
+describe("cascadePlacement", () => {
+  it("keeps a position that no other panel uses", () => {
+    const r = { x: 100, y: 100, w: 400, h: 300 };
+    expect(cascadePlacement(r, [{ x: 300, y: 100, w: 400, h: 300 }], bounds)).toEqual(r);
+  });
+
+  it("offsets by one title bar when another panel sits at the same spot", () => {
+    const r = { x: 100, y: 100, w: 400, h: 300 };
+    const c = cascadePlacement(r, [{ x: 103, y: 98, w: 400, h: 300 }], bounds);
+    expect([c.x, c.y]).toEqual([100 + CASCADE_STEP, 100 + CASCADE_STEP]);
+  });
+
+  it("keeps stepping while the next spot is also taken", () => {
+    const r = { x: 100, y: 100, w: 400, h: 300 };
+    const others = [0, 1, 2].map(i => ({ x: 100 + i * CASCADE_STEP, y: 100 + i * CASCADE_STEP, w: 400, h: 300 }));
+    const c = cascadePlacement(r, others, bounds);
+    expect([c.x, c.y]).toEqual([100 + 3 * CASCADE_STEP, 100 + 3 * CASCADE_STEP]);
+  });
+
+  it("wraps to the top-left corner instead of leaving the bounds", () => {
+    const r = { x: 580, y: 480, w: 400, h: 300 };
+    const c = cascadePlacement(r, [{ ...r }], bounds);
+    expect([c.x, c.y]).toEqual([12, 12]);
   });
 });

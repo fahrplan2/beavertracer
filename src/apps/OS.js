@@ -489,6 +489,9 @@ export class OS {
         const content = document.createElement("div");
         content.classList.add("os-frame-content");
         content.appendChild(appRoot);
+        // ▲/▼ while there is more to scroll (overlay scrollbars are invisible);
+        // the app root is what scrolls (.app in css/apps.css)
+        UILib.attachScrollArrows(appRoot, content);
 
         frame.appendChild(bar);
         frame.appendChild(content);

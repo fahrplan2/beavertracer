@@ -1,18 +1,58 @@
 //@ts-check
 
-import { TlsRecord, TLS_CT, TLS_HT } from "./pdu/TlsRecord.js";
+import {
+  TlsRecord, TLS_CT, TLS_HT, TLS_EXT, TlsDecodeError, encodeAlpn, decodeAlpn,
+  TLS_CIPHER, TLS_VERSION, GROUP_SECP256R1, SIG_ECDSA_P256_SHA256, DOWNGRADE_TLS12, HRR_RANDOM,
+} from "./pdu/TlsRecord.js";
 import { TlsCertificate, TlsTrustStore } from "./models/TlsCertificate.js";
 import { encodeUTF8 } from "../lib/helpers.js";
 
+/**
+ * How TLS talks to QUIC (RFC 9001 §4): handshake bytes per encryption level
+ * out, traffic secrets out, transport parameters in the ClientHello /
+ * EncryptedExtensions, and alerts as connection errors.
+ * @typedef {{
+ *   sendCrypto: (level: "initial"|"handshake", data: Uint8Array) => void,
+ *   onSecret: (level: "handshake"|"app", dir: "read"|"write", secret: Uint8Array) => void,
+ *   onAlert?: (alert: number, reason: string) => void,
+ *   transportParams: Uint8Array,
+ * }} QuicTlsBinding
+ */
+
 // ── error types ────────────────────────────────────────────────────────────
 
-/** TLS AlertDescription values used by this implementation (RFC 5246 §7.2). */
+/** TLS AlertDescription values used by this implementation (RFC 5246 §7.2, RFC 6066 §3). */
 export const TLS_ALERT = Object.freeze({
   CLOSE_NOTIFY: 0,
+  UNEXPECTED_MESSAGE: 10,
+  PROTOCOL_VERSION: 70,
   HANDSHAKE_FAILURE: 40,
   BAD_CERTIFICATE: 42,
+  DECODE_ERROR: 50,
   DECRYPT_ERROR: 51,
+  ILLEGAL_PARAMETER: 47,
+  UNSUPPORTED_EXTENSION: 110,
+  MISSING_EXTENSION: 109,
+  UNRECOGNIZED_NAME: 112,
+  NO_APPLICATION_PROTOCOL: 120,
 });
+
+/** Readable names for AlertDescription codes (RFC 5246 §7.2, RFC 6066 §3). */
+const TLS_ALERT_NAMES = Object.freeze({
+  0: "close_notify", 10: "unexpected_message", 20: "bad_record_mac",
+  22: "record_overflow", 40: "handshake_failure", 42: "bad_certificate",
+  43: "unsupported_certificate", 44: "certificate_revoked", 45: "certificate_expired",
+  46: "certificate_unknown", 47: "illegal_parameter", 48: "unknown_ca",
+  49: "access_denied", 50: "decode_error", 51: "decrypt_error",
+  70: "protocol_version", 71: "insufficient_security", 80: "internal_error",
+  90: "user_canceled", 109: "missing_extension", 110: "unsupported_extension", 112: "unrecognized_name",
+  120: "no_application_protocol",
+});
+
+/** @param {number} code */
+export function tlsAlertName(code) {
+  return /** @type {Record<number, string>} */ (TLS_ALERT_NAMES)[code] ?? `alert_${code}`;
+}
 
 export class TlsHandshakeError extends Error {
   /**
@@ -23,6 +63,26 @@ export class TlsHandshakeError extends Error {
     super(msg);
     this.name = "TlsHandshakeError";
     this.alert = alert;
+  }
+}
+
+/**
+ * The peer aborted the handshake with an alert. Unlike other handshake
+ * errors this one is never answered with an alert of our own (RFC 5246
+ * §7.2.2: both sides just close the connection).
+ */
+export class TlsAlertReceivedError extends TlsHandshakeError {
+  /**
+   * @param {number} level 1 = warning, 2 = fatal
+   * @param {number} description AlertDescription code
+   */
+  constructor(level, description) {
+    super(description === TLS_ALERT.CLOSE_NOTIFY
+      ? "Peer closed the connection during the handshake (close_notify)"
+      : `Peer aborted the handshake: ${tlsAlertName(description)} (${description})`, description);
+    this.name = "TlsAlertReceivedError";
+    this.level = level;
+    this.description = description;
   }
 }
 
@@ -135,6 +195,109 @@ function concat(...parts) {
   return out;
 }
 
+// ── TLS 1.3 key schedule (RFC 8446 §7.1) and ECDSA encoding ─────────────────
+
+/** @param {Uint8Array} data */
+async function sha256(data) {
+  return new Uint8Array(await crypto.subtle.digest("SHA-256", /** @type {Uint8Array<ArrayBuffer>} */ (data)));
+}
+
+/** @param {Uint8Array} key @param {Uint8Array} data */
+async function hmacSha256(key, data) {
+  const k = await crypto.subtle.importKey("raw", /** @type {Uint8Array<ArrayBuffer>} */ (key.length ? key : new Uint8Array(32)),
+    { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  return new Uint8Array(await crypto.subtle.sign("HMAC", k, /** @type {Uint8Array<ArrayBuffer>} */ (data)));
+}
+
+/** HKDF-Extract (RFC 5869 §2.2). @param {Uint8Array} salt @param {Uint8Array} ikm */
+export function hkdfExtract(salt, ikm) {
+  return hmacSha256(salt, ikm);
+}
+
+/** HKDF-Expand (RFC 5869 §2.3). @param {Uint8Array} prk @param {Uint8Array} info @param {number} length */
+export async function hkdfExpand(prk, info, length) {
+  const out = new Uint8Array(length);
+  let t = new Uint8Array(0);
+  for (let i = 1, off = 0; off < length; i++) {
+    t = await hmacSha256(prk, concat(t, info, Uint8Array.of(i)));
+    out.set(t.subarray(0, Math.min(t.length, length - off)), off);
+    off += t.length;
+  }
+  return out;
+}
+
+/**
+ * HKDF-Expand-Label (RFC 8446 §7.1): info = length || "tls13 " + label || context.
+ * @param {Uint8Array} secret @param {string} label @param {Uint8Array} context @param {number} length
+ */
+export function hkdfExpandLabel(secret, label, context, length) {
+  const l = new TextEncoder().encode("tls13 " + label);
+  const info = concat(Uint8Array.of((length >>> 8) & 0xff, length & 0xff, l.length), l, Uint8Array.of(context.length), context);
+  return hkdfExpand(secret, info, length);
+}
+
+/** Derive-Secret with an already computed transcript hash. @param {Uint8Array} secret @param {string} label @param {Uint8Array} hash */
+function deriveSecret(secret, label, hash) {
+  return hkdfExpandLabel(secret, label, hash, 32);
+}
+
+const EMPTY_HASH_PROMISE = sha256(new Uint8Array(0));
+
+/** @param {Uint8Array} b */
+function trimInt(b) {
+  let i = 0;
+  while (i < b.length - 1 && b[i] === 0) i++;
+  const v = b.subarray(i);
+  return v[0] & 0x80 ? concat(Uint8Array.of(0), v) : v;
+}
+
+/**
+ * WebCrypto ECDSA signature (r || s, 64 bytes) -> DER Ecdsa-Sig-Value, as
+ * TLS carries it on the wire (RFC 8446 §4.2.3, RFC 8422 §5.4).
+ * @param {Uint8Array} raw
+ */
+export function ecdsaRawToDer(raw) {
+  const r = trimInt(raw.subarray(0, 32)), s = trimInt(raw.subarray(32, 64));
+  const seq = concat(Uint8Array.of(0x02, r.length), r, Uint8Array.of(0x02, s.length), s);
+  return concat(Uint8Array.of(0x30, seq.length), seq);
+}
+
+/**
+ * DER Ecdsa-Sig-Value -> r || s (64 bytes) for WebCrypto. A 64-byte input
+ * is taken as raw already (older BeaverTracer peers sent that).
+ * @param {Uint8Array} sig
+ * @returns {Uint8Array|null}
+ */
+export function ecdsaDerToRaw(sig) {
+  if (sig.length === 64 && sig[0] !== 0x30) return sig;
+  if (sig.length < 8 || sig[0] !== 0x30 || sig[1] !== sig.length - 2) return sig.length === 64 ? sig : null;
+  let off = 2;
+  const out = new Uint8Array(64);
+  for (const at of [0, 32]) {
+    if (sig[off] !== 0x02) return null;
+    const len = sig[off + 1];
+    let v = sig.subarray(off + 2, off + 2 + len);
+    off += 2 + len;
+    while (v.length > 32 && v[0] === 0) v = v.subarray(1);
+    if (v.length > 32) return null;
+    out.set(v, at + 32 - v.length);
+  }
+  return off === sig.length ? out : null;
+}
+
+/** Content signed in a TLS 1.3 CertificateVerify (RFC 8446 §4.4.3). @param {"server"|"client"} who @param {Uint8Array} hash */
+function certVerifyContent(who, hash) {
+  return concat(new Uint8Array(64).fill(0x20), new TextEncoder().encode(`TLS 1.3, ${who} CertificateVerify`), Uint8Array.of(0), hash);
+}
+
+/** @param {Uint8Array} a @param {Uint8Array} b */
+function bytesEqual(a, b) {
+  if (a.length !== b.length) return false;
+  let d = 0;
+  for (let i = 0; i < a.length; i++) d |= a[i] ^ b[i];
+  return d === 0;
+}
+
 /**
  * TLS 1.2 PRF — P_SHA256 expansion (RFC 5246 §5).
  * @param {Uint8Array} secret
@@ -242,8 +405,10 @@ function extractTbsDer(certDer) {
 }
 
 /**
- * Extract the raw signature bytes from the Certificate's signatureValue BIT STRING.
- * The BIT STRING content is [0x00 (unused bits), sig...]; we return just the sig bytes.
+ * Extract the certificate signature from the signatureValue BIT STRING as
+ * P1363 (r || s, 64 bytes for P-256), the form WebCrypto verifies.
+ * The BIT STRING holds a DER Ecdsa-Sig-Value SEQUENCE { INTEGER r, INTEGER s }
+ * (RFC 3279); bare 64-byte r || s (older simulator builds) is accepted too.
  * Returns null if not parseable or if the signature is the zero placeholder.
  * @param {Uint8Array} certDer
  * @returns {Uint8Array|null}
@@ -255,21 +420,55 @@ function extractCertSig(certDer) {
   const sigBit = derNextElement(certDer, sigAlg.end);
   // BIT STRING content: 0x00 (unused bits) + signature bytes
   const sigBytes = certDer.slice(sigBit.contentStart + 1, sigBit.end);
-  // P1363 P-256 signatures are exactly 64 bytes; zero placeholder is 71 bytes
+  if (sigBytes[0] === 0x30) {
+    try {
+      const seq = derNextElement(sigBytes, 0);
+      const r = derNextElement(sigBytes, seq.contentStart);
+      const sv = derNextElement(sigBytes, r.end);
+      if (sigBytes[r.start] !== 0x02 || sigBytes[sv.start] !== 0x02 || sv.end !== seq.end || seq.end !== sigBytes.length) return null;
+      /** INTEGER content → 32 bytes big-endian (strip sign byte, left-pad) */
+      const fixed = (/** @type {{contentStart:number,end:number}} */ el) => {
+        let v = sigBytes.slice(el.contentStart, el.end);
+        while (v.length > 32 && v[0] === 0) v = v.slice(1);
+        if (v.length > 32) return null;
+        const out = new Uint8Array(32); out.set(v, 32 - v.length); return out;
+      };
+      const rb = fixed(r), sb = fixed(sv);
+      if (!rb || !sb) return null;
+      const out = new Uint8Array(64); out.set(rb, 0); out.set(sb, 32);
+      return out;
+    } catch { return null; }
+  }
+  // legacy: bare P1363 (64 bytes); the zero placeholder is 71 bytes
   if (sigBytes.length !== 64) return null;
   return sigBytes;
+}
+
+/**
+ * Validity time to epoch ms: the simulator writes decimal epoch-ms; real
+ * X.509 uses UTCTime "YYMMDDHHMMSSZ" or GeneralizedTime "YYYYMMDDHHMMSSZ"
+ * (RFC 5280 §4.1.2.5).
+ * @param {string} s
+ */
+function derTimeMs(s) {
+  const m = /^(\d{2}|\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})Z$/.exec(s);
+  if (!m) return Number(s);
+  let year = Number(m[1]);
+  if (m[1].length === 2) year += year >= 50 ? 1900 : 2000;
+  return Date.UTC(year, Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5]), Number(m[6]));
 }
 
 /**
  * Walk a Certificate's TBSCertificate in the layout TlsCertificate
  * produces (see TlsCertificate._buildTbsBytes()) — both the current v3
  * layout ([0] version … [3] extensions) and the legacy v1 one.
- * Validity times are decimal epoch-ms strings (simulator convention).
+ * Validity times are UTCTime/GeneralizedTime, or decimal epoch-ms strings in
+ * certificates from before strict X.509 (strictTime false).
  * Returns null if the structure doesn't match.
  * @param {Uint8Array} certDer
  * @returns {{ version: number, issuerCN: string, subjectCN: string,
  *   notBefore: number, notAfter: number, publicKeyRaw: Uint8Array|null,
- *   isCA: boolean, altNames: string[]|null }|null}
+ *   isCA: boolean, altNames: string[]|null, strictTime: boolean }|null}
  */
 function parseTbs(certDer) {
   try {
@@ -302,9 +501,10 @@ function parseTbs(certDer) {
     };
     const nb = derNextElement(certDer, validity.contentStart);
     const na = derNextElement(certDer, nb.end);
-    const notBefore = Number(dec.decode(certDer.slice(nb.contentStart, nb.end)));
-    const notAfter  = Number(dec.decode(certDer.slice(na.contentStart, na.end)));
+    const notBefore = derTimeMs(dec.decode(certDer.slice(nb.contentStart, nb.end)));
+    const notAfter  = derTimeMs(dec.decode(certDer.slice(na.contentStart, na.end)));
     if (!Number.isFinite(notBefore) || !Number.isFinite(notAfter)) return null;
+    const strictTime = /Z$/.test(dec.decode(certDer.slice(nb.contentStart, nb.end)));
 
     // SubjectPublicKeyInfo: SEQUENCE { AlgorithmIdentifier, BIT STRING }
     const spkiAlg = derNextElement(certDer, spki.contentStart);
@@ -344,7 +544,7 @@ function parseTbs(certDer) {
       }
     }
     return { version, issuerCN: cnOf(issuer), subjectCN: cnOf(subject),
-      notBefore, notAfter, publicKeyRaw, isCA, altNames };
+      notBefore, notAfter, publicKeyRaw, isCA, altNames, strictTime };
   } catch {
     return null;
   }
@@ -353,7 +553,10 @@ function parseTbs(certDer) {
 // ── TlsSession ─────────────────────────────────────────────────────────────
 
 /**
- * TLS 1.2 session wrapper — works over any bidirectional byte stream.
+ * TLS session (1.2: RFC 5246/5288, 1.3: RFC 8446) — works over any
+ * bidirectional byte stream. TLS 1.3 is 1-RTT with secp256r1 and
+ * TLS_AES_128_GCM_SHA256; no HelloRetryRequest, PSK/resumption, 0-RTT,
+ * KeyUpdate or client certificates.
  *
  * Usage:
  *   const tls = new TlsSession({ send, recv, isServer: false, trustStore });
@@ -377,9 +580,15 @@ export class TlsSession {
    *   sleepFn?: (ms: number) => Promise<void>,
    *   now?: () => number,
    *   serverName?: string,
-   * }} opts
+   *   selectCert?: (sni: string) => TlsCertificate|null,
+   *   alpn?: string[],
+   *   versions?: Array<"1.2"|"1.3">,
+   *   quic?: QuicTlsBinding,
+   *   keyLog?: (line: string) => void,
+   * }} opts  keyLog: receives the session secrets in NSS key log format
+   *   (what SSLKEYLOGFILE writes), so Wireshark can decrypt the capture
    */
-  constructor({ send, recv, isServer, cert, trustStore, timeoutMs = 400, sleepFn, now, serverName }) {
+  constructor({ send, recv, isServer, cert, trustStore, timeoutMs = 400, sleepFn, now, serverName, selectCert, alpn, versions, quic, keyLog }) {
     this._sendRaw = send;
     this._recvRaw = recv;
     this._isServer = isServer;
@@ -394,6 +603,45 @@ export class TlsSession {
     // Name the client wants to reach (URL host). When set together with a
     // trust store, the peer certificate's CN must match it.
     this._serverName = serverName ?? "";
+    // Server side, name-based virtual hosting: picks the certificate from the
+    // ClientHello's server_name ("" when the client sent none). Takes
+    // precedence over `cert`; returning null aborts with unrecognized_name.
+    this._selectCert = selectCert ?? null;
+    /** Server side: host_name from the client's SNI extension, "" if absent. */
+    this.sni = "";
+    // ALPN (RFC 7301): client side the offered protocols (most preferred
+    // first), server side the supported ones in the server's preference order.
+    this._alpnList = alpn ?? [];
+    /** Negotiated application protocol ("h2", "http/1.1"), "" without ALPN. */
+    this.alpn = "";
+    // Protocol versions: a client offers TLS 1.3 next to 1.2 by default (like
+    // real clients); a server speaks 1.2 unless 1.3 is switched on.
+    this._versions = versions ?? (isServer ? ["1.2"] : ["1.3", "1.2"]);
+    /** Negotiated version, "TLS 1.2" or "TLS 1.3" ("" before the handshake). */
+    this.version = "";
+    // TLS 1.3 state
+    this._v13 = false;
+    /** Handshake bytes not yet forming a complete message (TLS 1.3 flights). */
+    this._hsBuf = new Uint8Array(0);
+    /** @type {Uint8Array} */ this._legacySessionId = new Uint8Array(0);
+    /** @type {Uint8Array|null} */ this._hsSecretC = null;
+    /** @type {Uint8Array|null} */ this._hsSecretS = null;
+
+    // QUIC mode (RFC 9001): handshake messages travel in CRYPTO frames per
+    // encryption level instead of records, and the traffic secrets go to
+    // QUIC for packet protection. Always TLS 1.3, ALPN mandatory.
+    /** @type {QuicTlsBinding|null} */
+    this._quic = quic ?? null;
+    /** @type {((line: string) => void)|null} */
+    this._keyLog = keyLog ?? null;
+    if (this._quic) this._versions = ["1.3"];
+    /** @type {Record<"initial"|"handshake", Uint8Array>} */
+    this._quicIn = { initial: new Uint8Array(0), handshake: new Uint8Array(0) };
+    /** @type {"initial"|"handshake"|"app"} */ this._quicReadLevel = "initial";
+    /** @type {"initial"|"handshake"|"app"} */ this._quicWriteLevel = "initial";
+    /** @type {(() => void)|null} */ this._quicWaiter = null;
+    /** QUIC: the peer's quic_transport_parameters extension body. @type {Uint8Array|null} */
+    this.peerTransportParams = null;
 
     /** @type {"INIT"|"HANDSHAKE"|"ESTABLISHED"|"CLOSED"} */
     this._state = "INIT";
@@ -438,6 +686,23 @@ export class TlsSession {
     /** @type {Uint8Array} */ this._transcript = new Uint8Array(0);
   }
 
+  /** IANA name of the negotiated cipher suite ("" before the handshake). */
+  get cipherSuite() {
+    return this.version === "TLS 1.3" ? "TLS_AES_128_GCM_SHA256"
+      : this.version === "TLS 1.2" ? "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256" : "";
+  }
+
+  /**
+   * QUIC: hand over CRYPTO frame data (in order) received at `level`.
+   * @param {"initial"|"handshake"} level @param {Uint8Array} data
+   */
+  provideCrypto(level, data) {
+    this._quicIn[level] = concat(this._quicIn[level], data);
+    const w = this._quicWaiter;
+    this._quicWaiter = null;
+    w?.();
+  }
+
   // ── public API ────────────────────────────────────────────────────────────
 
   /** Run the TLS 1.2 handshake. Throws TlsHandshakeError on failure. */
@@ -453,7 +718,10 @@ export class TlsSession {
       this._state = "ESTABLISHED";
     } catch (e) {
       this._state = "CLOSED";
-      if (e instanceof TlsHandshakeError) {
+      if (this._quic && e instanceof TlsHandshakeError) {
+        // QUIC reports TLS alerts as CONNECTION_CLOSE 0x100 + alert (RFC 9001 §4.8)
+        if (!(e instanceof TlsAlertReceivedError)) this._quic.onAlert?.(e.alert ?? TLS_ALERT.HANDSHAKE_FAILURE, e.message);
+      } else if (e instanceof TlsHandshakeError && !(e instanceof TlsAlertReceivedError)) {
         // Once our ChangeCipherSpec is out, alerts go under the new keys too.
         // RFC 5246 §7.2: fatal alert; plaintext before our ChangeCipherSpec.
         try { await this._sendRecord(TLS_CT.ALERT, new Uint8Array([2, e.alert ?? TLS_ALERT.HANDSHAKE_FAILURE])); } catch { /* ignore */ }
@@ -522,6 +790,7 @@ export class TlsSession {
    * @param {number} seq
    */
   async _encryptRecord(contentType, plaintext, seq) {
+    if (this._v13) return this._encryptRecord13(contentType, plaintext, seq);
     // explicit nonce = seq as 8-byte big-endian (deterministic, avoids reuse)
     const explicitNonce = seqToBytes8(seq);
     const nonce = concat(/** @type {Uint8Array} */ (this._encryptFixedIV), explicitNonce);
@@ -582,6 +851,7 @@ export class TlsSession {
    * @returns {Promise<TlsRecord>}
    */
   async _decryptRecord(record) {
+    if (this._v13) return this._decryptRecord13(record);
     if (record.payload.length < 8 + 16) {
       throw new TlsHandshakeError("Protected record too short (decode_error)");
     }
@@ -603,6 +873,378 @@ export class TlsSession {
     return new TlsRecord(record.contentType, new Uint8Array(plain));
   }
 
+  // ── TLS 1.3 record protection (RFC 8446 §5.2, §5.3) ────────────────────────
+
+  /** Per-record nonce: static IV XOR 64-bit sequence number. @param {Uint8Array} iv @param {number} seq */
+  _nonce13(iv, seq) {
+    const n = iv.slice();
+    const sb = seqToBytes8(seq);
+    for (let i = 0; i < 8; i++) n[4 + i] ^= sb[i];
+    return n;
+  }
+
+  /**
+   * TLSInnerPlaintext = content || real type; the outer record always says
+   * application_data, the AAD is the record header.
+   * @param {number} contentType @param {Uint8Array} plaintext @param {number} seq
+   */
+  async _encryptRecord13(contentType, plaintext, seq) {
+    const inner = concat(plaintext, Uint8Array.of(contentType));
+    const len = inner.length + 16;
+    const aad = Uint8Array.of(TLS_CT.APP_DATA, 0x03, 0x03, (len >>> 8) & 0xff, len & 0xff);
+    const cipher = await crypto.subtle.encrypt(
+      { name: "AES-GCM", iv: /** @type {Uint8Array<ArrayBuffer>} */ (this._nonce13(/** @type {Uint8Array} */ (this._encryptFixedIV), seq)), additionalData: aad },
+      /** @type {CryptoKey} */ (this._encryptKey),
+      /** @type {Uint8Array<ArrayBuffer>} */ (inner),
+    );
+    return new TlsRecord(TLS_CT.APP_DATA, new Uint8Array(cipher)).pack();
+  }
+
+  /** @param {TlsRecord} record */
+  async _decryptRecord13(record) {
+    if (record.contentType !== TLS_CT.APP_DATA) {
+      throw new TlsHandshakeError("Unprotected record after key exchange", TLS_ALERT.UNEXPECTED_MESSAGE);
+    }
+    if (record.payload.length < 17) throw new TlsHandshakeError("Protected record too short", TLS_ALERT.DECODE_ERROR);
+    const len = record.payload.length;
+    const aad = Uint8Array.of(TLS_CT.APP_DATA, 0x03, 0x03, (len >>> 8) & 0xff, len & 0xff);
+    const seq = this._recvSeq++;
+    let plain;
+    try {
+      plain = new Uint8Array(await crypto.subtle.decrypt(
+        { name: "AES-GCM", iv: /** @type {Uint8Array<ArrayBuffer>} */ (this._nonce13(/** @type {Uint8Array} */ (this._decryptFixedIV), seq)), additionalData: aad },
+        /** @type {CryptoKey} */ (this._decryptKey),
+        /** @type {Uint8Array<ArrayBuffer>} */ (record.payload),
+      ));
+    } catch {
+      throw new TlsHandshakeError("Record authentication failed (bad_record_mac)", 20);
+    }
+    // strip zero padding; the last non-zero byte is the real content type
+    let end = plain.length - 1;
+    while (end >= 0 && plain[end] === 0) end--;
+    if (end < 0) throw new TlsHandshakeError("Inner plaintext without content type", TLS_ALERT.UNEXPECTED_MESSAGE);
+    return new TlsRecord(plain[end], plain.slice(0, end));
+  }
+
+  /**
+   * Install traffic keys derived from a TLS 1.3 traffic secret (§7.3); the
+   * sequence number of that direction starts again at 0.
+   * @param {"read"|"write"} dir @param {Uint8Array} secret
+   */
+  async _install13(dir, secret) {
+    if (this._quic) {
+      // QUIC derives its own packet keys from the secret (RFC 9001 §5.1)
+      const cur = dir === "write" ? this._quicWriteLevel : this._quicReadLevel;
+      const level = cur === "initial" ? "handshake" : "app";
+      if (dir === "write") this._quicWriteLevel = level; else this._quicReadLevel = level;
+      this._quic.onSecret(level, dir, secret);
+      return;
+    }
+    const keyBytes = await hkdfExpandLabel(secret, "key", new Uint8Array(0), 16);
+    const iv = await hkdfExpandLabel(secret, "iv", new Uint8Array(0), 12);
+    const key = await crypto.subtle.importKey("raw", /** @type {Uint8Array<ArrayBuffer>} */ (keyBytes), { name: "AES-GCM" }, false,
+      [dir === "write" ? "encrypt" : "decrypt"]);
+    if (dir === "write") {
+      await this._writeChain;  // earlier records keep the old keys
+      this._encryptKey = key; this._encryptFixedIV = iv; this._sendSeq = 0; this._writeCipherActive = true;
+    } else {
+      this._decryptKey = key; this._decryptFixedIV = iv; this._recvSeq = 0; this._readCipherActive = true;
+    }
+  }
+
+  /**
+   * Key schedule up to the handshake traffic secrets (§7.1), from the ECDHE
+   * shared secret and the transcript ClientHello..ServerHello.
+   * @param {Uint8Array} shared
+   */
+  async _deriveHandshake13(shared) {
+    const zeros = new Uint8Array(32);
+    const early = await hkdfExtract(zeros, zeros);
+    const derived = await deriveSecret(early, "derived", await EMPTY_HASH_PROMISE);
+    const hs = await hkdfExtract(derived, shared);
+    const th = await sha256(this._transcript);
+    this._hsSecretC = await deriveSecret(hs, "c hs traffic", th);
+    this._hsSecretS = await deriveSecret(hs, "s hs traffic", th);
+    this._logSecret("CLIENT_HANDSHAKE_TRAFFIC_SECRET", this._hsSecretC);
+    this._logSecret("SERVER_HANDSHAKE_TRAFFIC_SECRET", this._hsSecretS);
+    const derived2 = await deriveSecret(hs, "derived", await EMPTY_HASH_PROMISE);
+    this._masterSecret = await hkdfExtract(derived2, zeros);
+  }
+
+  /** Application traffic secrets from the transcript up to the server Finished. */
+  async _deriveApplication13() {
+    const th = await sha256(this._transcript);
+    const master = /** @type {Uint8Array} */ (this._masterSecret);
+    const app = {
+      client: await deriveSecret(master, "c ap traffic", th),
+      server: await deriveSecret(master, "s ap traffic", th),
+    };
+    this._logSecret("CLIENT_TRAFFIC_SECRET_0", app.client);
+    this._logSecret("SERVER_TRAFFIC_SECRET_0", app.server);
+    return app;
+  }
+
+  /**
+   * One line of the NSS key log format (SSLKEYLOGFILE), keyed by the client
+   * random: `<LABEL> <client_random hex> <secret hex>`.
+   * @param {string} label @param {Uint8Array|null} secret
+   */
+  _logSecret(label, secret) {
+    if (!this._keyLog || !secret || !this._clientRandom) return;
+    const hex = (/** @type {Uint8Array} */ b) => Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
+    try { this._keyLog(`${label} ${hex(this._clientRandom)} ${hex(secret)}`); } catch { /* logging must never break TLS */ }
+  }
+
+  /** Finished verify_data (§4.4.4) over the current transcript. @param {Uint8Array} baseKey */
+  async _finished13(baseKey) {
+    const finishedKey = await hkdfExpandLabel(baseKey, "finished", new Uint8Array(0), 32);
+    return hmacSha256(finishedKey, await sha256(this._transcript));
+  }
+
+  /**
+   * Next handshake message of a TLS 1.3 flight. Messages may share a record
+   * or span several; ChangeCipherSpec records (middlebox compatibility,
+   * §D.4) are skipped. The message is appended to the transcript.
+   * @returns {Promise<{ type: number, body: Uint8Array }>}
+   */
+  async _nextHs13() {
+    if (this._quic) return this._nextQuicHs();
+    while (true) {
+      if (this._hsBuf.length >= 4) {
+        const len = (this._hsBuf[1] << 16) | (this._hsBuf[2] << 8) | this._hsBuf[3];
+        if (this._hsBuf.length >= 4 + len) {
+          const raw = this._hsBuf.slice(0, 4 + len);
+          this._hsBuf = this._hsBuf.slice(4 + len);
+          this._appendTranscript(raw);
+          return { type: raw[0], body: raw.slice(4) };
+        }
+      }
+      const rec = await this._readRecordTimeout();
+      if (rec === null) throw new TlsHandshakeError("Connection closed during handshake");
+      if (rec.contentType === TLS_CT.CHANGE_CIPHER_SPEC) continue;
+      if (rec.contentType !== TLS_CT.HANDSHAKE) {
+        throw new TlsHandshakeError("Unexpected record during handshake", TLS_ALERT.UNEXPECTED_MESSAGE);
+      }
+      this._hsBuf = concat(this._hsBuf, rec.payload);
+    }
+  }
+
+  /** QUIC mode: next handshake message from the CRYPTO data of the current read level. */
+  async _nextQuicHs() {
+    while (true) {
+      const level = /** @type {"initial"|"handshake"} */ (this._quicReadLevel);
+      const buf = this._quicIn[level];
+      if (buf.length >= 4) {
+        const len = (buf[1] << 16) | (buf[2] << 8) | buf[3];
+        if (buf.length >= 4 + len) {
+          const raw = buf.slice(0, 4 + len);
+          this._quicIn[level] = buf.slice(4 + len);
+          this._appendTranscript(raw);
+          return { type: raw[0], body: raw.slice(4) };
+        }
+      }
+      let timedOut = false;
+      await new Promise((resolve) => {
+        this._quicWaiter = () => resolve(undefined);
+        this._sleep(this._timeoutMs).then(() => { timedOut = true; resolve(undefined); });
+      });
+      if (timedOut && this._quicWaiter) throw new TlsHandshakeError("Handshake timeout");
+    }
+  }
+
+  /** Send one handshake message: QUIC CRYPTO data or a (protected) record. @param {Uint8Array} msg */
+  async _sendHs13(msg) {
+    if (this._quic) {
+      this._quic.sendCrypto(/** @type {"initial"|"handshake"} */ (this._quicWriteLevel), msg);
+      return;
+    }
+    await this._sendRecord(TLS_CT.HANDSHAKE, msg);
+  }
+
+  /** @param {number} type */
+  async _expectHs13(type) {
+    const m = await this._nextHs13();
+    if (m.type !== type) throw new TlsHandshakeError(`Unexpected handshake message ${m.type}`, TLS_ALERT.UNEXPECTED_MESSAGE);
+    return m;
+  }
+
+  /**
+   * Certificate checks shared by TLS 1.2 and 1.3: validity on the host's
+   * clock, trust chain, name. Only with a trust store (curl -k skips them).
+   * @param {TlsCertificate|null} peerCert
+   */
+  async _checkPeerCert(peerCert) {
+    if (!peerCert || !this._trustStore) return;
+    const status = peerCert.validityStatus(this._now());
+    if (status === "expired" || status === "notYetValid") {
+      throw new TlsCertExpiredError(peerCert.subject, status);
+    }
+    if (!await this._trustStore.isTrusted(peerCert, peerCert.chain, { nowMs: this._now() })) {
+      throw new TlsCertUntrustedError(peerCert.subject);
+    }
+    if (this._serverName
+        && !certMatchesName(peerCert.subject, this._serverName, peerCert.subjectAltNames())) {
+      throw new TlsCertNameMismatchError(peerCert.subject, this._serverName);
+    }
+  }
+
+  /** @returns {Promise<Uint8Array>} our ECDH public key as uncompressed point */
+  async _ownEcdhPub() {
+    return new Uint8Array(await crypto.subtle.exportKey("raw", /** @type {CryptoKeyPair} */ (this._ecdhKeyPair).publicKey));
+  }
+
+  /** @param {Uint8Array} peerPub */
+  async _ecdhShared(peerPub) {
+    let key;
+    try {
+      key = await importEcdhPubKey(/** @type {Uint8Array<ArrayBuffer>} */ (peerPub));
+    } catch {
+      throw new TlsHandshakeError("Invalid key share", TLS_ALERT.ILLEGAL_PARAMETER);
+    }
+    return new Uint8Array(await crypto.subtle.deriveBits(
+      { name: "ECDH", public: key }, /** @type {CryptoKeyPair} */ (this._ecdhKeyPair).privateKey, 256));
+  }
+
+  /**
+   * Client side of the TLS 1.3 handshake after the ServerHello (§2, 1-RTT):
+   * read EncryptedExtensions, Certificate, CertificateVerify, Finished under
+   * the server handshake key, answer with Finished, switch to traffic keys.
+   * @param {{ random: Uint8Array, sessionId: Uint8Array, cipherSuite: number, extensions: Map<number, Uint8Array> }} sh
+   */
+  async _clientHandshake13(sh) {
+    this._v13 = true;
+    this.version = "TLS 1.3";
+    if (bytesEqual(sh.random, HRR_RANDOM)) {
+      throw new TlsHandshakeError("HelloRetryRequest is not supported", TLS_ALERT.HANDSHAKE_FAILURE);
+    }
+    if (sh.cipherSuite !== TLS_CIPHER.TLS_AES_128_GCM_SHA256) {
+      throw new TlsHandshakeError("Server chose a cipher suite we did not offer", TLS_ALERT.ILLEGAL_PARAMETER);
+    }
+    if (!bytesEqual(sh.sessionId, this._legacySessionId)) {
+      throw new TlsHandshakeError("legacy_session_id not echoed", TLS_ALERT.ILLEGAL_PARAMETER);
+    }
+    const ks = sh.extensions.get(TLS_EXT.KEY_SHARE);
+    if (!ks || ks.length < 4 || ((ks[0] << 8) | ks[1]) !== GROUP_SECP256R1 || ((ks[2] << 8) | ks[3]) !== ks.length - 4) {
+      throw new TlsHandshakeError("ServerHello key_share missing or not secp256r1", TLS_ALERT.ILLEGAL_PARAMETER);
+    }
+    await this._deriveHandshake13(await this._ecdhShared(ks.slice(4)));
+    await this._install13("read", /** @type {Uint8Array} */ (this._hsSecretS));
+    await this._install13("write", /** @type {Uint8Array} */ (this._hsSecretC));
+
+    // EncryptedExtensions: everything not needed for the key exchange (§4.3.1)
+    const ee = await this._expectHs13(TLS_HT.ENCRYPTED_EXTENSIONS);
+    /** @type {Map<number, Uint8Array>} */
+    const eeExts = new Map();
+    for (let off = 2; off + 4 <= ee.body.length;) {
+      const type = (ee.body[off] << 8) | ee.body[off + 1];
+      const len = (ee.body[off + 2] << 8) | ee.body[off + 3];
+      eeExts.set(type, ee.body.slice(off + 4, off + 4 + len));
+      off += 4 + len;
+    }
+    this._acceptAlpnExtension(eeExts.get(TLS_EXT.ALPN));
+    if (this._quic) {
+      if (!this.alpn) throw new TlsHandshakeError("QUIC requires ALPN", TLS_ALERT.NO_APPLICATION_PROTOCOL);
+      const tp = eeExts.get(TLS_EXT.QUIC_TRANSPORT_PARAMETERS);
+      if (!tp) throw new TlsHandshakeError("quic_transport_parameters missing", TLS_ALERT.MISSING_EXTENSION);
+      this.peerTransportParams = tp;
+    }
+
+    const certMsg = await this._nextHs13();
+    if (certMsg.type !== TLS_HT.CERTIFICATE) {
+      throw new TlsHandshakeError(certMsg.type === 13
+        ? "Client certificates are not supported"
+        : "Server sent no certificate", TLS_ALERT.HANDSHAKE_FAILURE);
+    }
+    let certList;
+    try { certList = TlsRecord.certificate13To12(certMsg.body); } catch (e) {
+      throw new TlsHandshakeError(e instanceof Error ? e.message : String(e), TLS_ALERT.DECODE_ERROR);
+    }
+    const peerCert = await this._parseCertFromMessage(/** @type {Uint8Array<ArrayBuffer>} */ (certList));
+    this.peerCert = peerCert;
+    await this._checkPeerCert(peerCert);
+    if (!peerCert?.publicKey) throw new TlsMissingAuthError("certificate");
+    const thCert = await sha256(this._transcript);
+
+    // CertificateVerify: proof of possession of the certificate key
+    const cv = await this._expectHs13(TLS_HT.CERTIFICATE_VERIFY);
+    const scheme = (cv.body[0] << 8) | cv.body[1];
+    const sigLen = (cv.body[2] << 8) | cv.body[3];
+    const sig = scheme === SIG_ECDSA_P256_SHA256 ? ecdsaDerToRaw(cv.body.slice(4, 4 + sigLen)) : null;
+    if (!sig) throw new TlsSignatureError();
+    const ok = await crypto.subtle.verify({ name: "ECDSA", hash: "SHA-256" }, peerCert.publicKey,
+      /** @type {Uint8Array<ArrayBuffer>} */ (sig), /** @type {Uint8Array<ArrayBuffer>} */ (certVerifyContent("server", thCert)));
+    if (!ok) throw new TlsSignatureError();
+
+    const expected = await this._finished13(/** @type {Uint8Array} */ (this._hsSecretS));
+    const fin = await this._expectHs13(TLS_HT.FINISHED);
+    this._verifyFinished(/** @type {Uint8Array<ArrayBuffer>} */ (fin.body), expected);
+    if (this._hsBuf.length) throw new TlsHandshakeError("Data after server Finished", TLS_ALERT.UNEXPECTED_MESSAGE);
+    const app = await this._deriveApplication13();
+
+    // our Finished, preceded by a compatibility ChangeCipherSpec (§D.4, not in QUIC)
+    if (!this._quic) this._sendRaw(TlsRecord.buildChangeCipherSpec());
+    const myFin = this._buildHsBytes(TLS_HT.FINISHED, await this._finished13(/** @type {Uint8Array} */ (this._hsSecretC)));
+    await this._sendHs13(myFin);
+    this._appendTranscript(myFin);
+
+    await this._install13("read", app.server);
+    await this._install13("write", app.client);
+  }
+
+  /**
+   * Server side of the TLS 1.3 handshake (§2, 1-RTT, no HelloRetryRequest).
+   * @param {ReturnType<typeof TlsRecord.parseClientHello>} hello
+   * @param {TlsCertificate} cert
+   * @param {{ type: number, data: Uint8Array }[]} eeExtensions server_name ack / ALPN
+   */
+  async _serverHandshake13(hello, cert, eeExtensions) {
+    this._v13 = true;
+    this.version = "TLS 1.3";
+    if (!hello.cipherSuites.includes(TLS_CIPHER.TLS_AES_128_GCM_SHA256)) {
+      throw new TlsHandshakeError("No common TLS 1.3 cipher suite", TLS_ALERT.HANDSHAKE_FAILURE);
+    }
+    if (!hello.signatureAlgorithms.includes(SIG_ECDSA_P256_SHA256)) {
+      throw new TlsHandshakeError("Client does not accept ecdsa_secp256r1_sha256", TLS_ALERT.HANDSHAKE_FAILURE);
+    }
+    const share = hello.keyShares.get(GROUP_SECP256R1);
+    if (!share) {
+      throw new TlsHandshakeError("No secp256r1 key share (HelloRetryRequest is not supported)", TLS_ALERT.HANDSHAKE_FAILURE);
+    }
+
+    this._ecdhKeyPair = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"]);
+    const shared = await this._ecdhShared(share);
+    this._serverRandom = crypto.getRandomValues(new Uint8Array(32));
+
+    const sh = TlsRecord.buildServerHello13(this._serverRandom, hello.sessionId, await this._ownEcdhPub());
+    if (this._quic) this._quic.sendCrypto("initial", sh);
+    else this._sendRaw(TlsRecord.handshakeRecordOf(sh));
+    this._appendTranscript(sh);
+    await this._deriveHandshake13(shared);
+    if (hello.sessionId.length > 0 && !this._quic) this._sendRaw(TlsRecord.buildChangeCipherSpec()); // §D.4
+    await this._install13("write", /** @type {Uint8Array} */ (this._hsSecretS));
+    await this._install13("read", /** @type {Uint8Array} */ (this._hsSecretC));
+
+    // encrypted flight: EncryptedExtensions, Certificate, CertificateVerify, Finished
+    const send = async (/** @type {Uint8Array} */ msg) => {
+      this._appendTranscript(msg);
+      await this._sendHs13(msg);
+    };
+    await send(TlsRecord.buildEncryptedExtensions(eeExtensions));
+    await send(TlsRecord.buildCertificate13([cert.toDer(), ...cert.chain.map(c => c.toDer())]));
+    const sigRaw = new Uint8Array(await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, /** @type {CryptoKey} */ (cert.privateKey),
+      /** @type {Uint8Array<ArrayBuffer>} */ (certVerifyContent("server", await sha256(this._transcript)))));
+    await send(TlsRecord.buildCertificateVerify(ecdsaRawToDer(sigRaw)));
+    await send(this._buildHsBytes(TLS_HT.FINISHED, await this._finished13(/** @type {Uint8Array} */ (this._hsSecretS))));
+
+    const app = await this._deriveApplication13();
+    const expected = await this._finished13(/** @type {Uint8Array} */ (this._hsSecretC));
+    await this._install13("write", app.server);
+
+    const fin = await this._expectHs13(TLS_HT.FINISHED);
+    this._verifyFinished(/** @type {Uint8Array<ArrayBuffer>} */ (fin.body), expected);
+    await this._install13("read", app.client);
+  }
+
   // ── handshake – client side ───────────────────────────────────────────────
 
   async _clientHandshake() {
@@ -614,8 +1256,33 @@ export class TlsSession {
       { name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"],
     );
 
-    // 2. Send ClientHello, append HS bytes to transcript
-    const chRecord = TlsRecord.buildClientHello(this._clientRandom, this._serverName);
+    // 2. Send ClientHello, append HS bytes to transcript. Offering TLS 1.3
+    //    adds our key share and a legacy_session_id (compatibility mode).
+    if (this._quic) {
+      // QUIC: no compatibility mode (empty legacy_session_id, RFC 9001 §8.4), TLS 1.3 only
+      const ch = TlsRecord.buildClientHello(this._clientRandom, this._serverName, this._alpnList, {
+        keyShare: await this._ownEcdhPub(), sessionId: new Uint8Array(0), only13: true,
+        extra: [{ type: TLS_EXT.QUIC_TRANSPORT_PARAMETERS, data: this._quic.transportParams }],
+      }).slice(5);
+      this._quic.sendCrypto("initial", ch);
+      this._appendTranscript(ch);
+      const shMsg = await this._nextQuicHs();
+      if (shMsg.type !== TLS_HT.SERVER_HELLO) throw new TlsHandshakeError("Expected ServerHello", TLS_ALERT.UNEXPECTED_MESSAGE);
+      let sh;
+      try { sh = TlsRecord.parseServerHello(shMsg.body); } catch (e) {
+        throw new TlsHandshakeError(e instanceof Error ? e.message : String(e), TLS_ALERT.DECODE_ERROR);
+      }
+      const sv = sh.extensions.get(TLS_EXT.SUPPORTED_VERSIONS);
+      if (!sv || ((sv[0] << 8) | sv[1]) !== TLS_VERSION.TLS13) {
+        throw new TlsHandshakeError("QUIC requires TLS 1.3", TLS_ALERT.PROTOCOL_VERSION);
+      }
+      return this._clientHandshake13(sh);
+    }
+
+    const offer13 = this._versions.includes("1.3");
+    if (offer13) this._legacySessionId = crypto.getRandomValues(new Uint8Array(32));
+    const chRecord = TlsRecord.buildClientHello(this._clientRandom, this._serverName, this._alpnList,
+      offer13 ? { keyShare: await this._ownEcdhPub(), sessionId: this._legacySessionId } : {});
     this._sendRaw(chRecord);
     this._appendTranscript(chRecord.slice(5));
 
@@ -633,23 +1300,32 @@ export class TlsSession {
       const msgs = this._parseHandshakeMessages(record.payload);
       for (const msg of msgs) {
         if (msg.type === TLS_HT.SERVER_HELLO) {
-          this._serverRandom = msg.body.slice(2, 34);
+          let sh;
+          try { sh = TlsRecord.parseServerHello(msg.body); } catch (e) {
+            throw new TlsHandshakeError(e instanceof Error ? e.message : String(e), TLS_ALERT.DECODE_ERROR);
+          }
+          // TLS 1.3 is selected by supported_versions, never by legacy_version (§4.2.1)
+          const sv = sh.extensions.get(TLS_EXT.SUPPORTED_VERSIONS);
+          if (sv) {
+            if (!offer13 || sv.length !== 2 || ((sv[0] << 8) | sv[1]) !== TLS_VERSION.TLS13) {
+              throw new TlsHandshakeError("Server selected an unoffered version", TLS_ALERT.ILLEGAL_PARAMETER);
+            }
+            return this._clientHandshake13(sh);
+          }
+          if (!this._versions.includes("1.2")) {
+            throw new TlsHandshakeError("Server does not support TLS 1.3", TLS_ALERT.PROTOCOL_VERSION);
+          }
+          // downgrade protection (§4.1.3): a 1.3 server only picks 1.2 if we did not offer 1.3
+          if (offer13 && bytesEqual(sh.random.slice(24), DOWNGRADE_TLS12)) {
+            throw new TlsHandshakeError("Downgrade to TLS 1.2 detected", TLS_ALERT.ILLEGAL_PARAMETER);
+          }
+          this.version = "TLS 1.2";
+          this._serverRandom = sh.random;
+          this._acceptServerAlpn(msg.body);
         } else if (msg.type === TLS_HT.CERTIFICATE) {
           peerCert = await this._parseCertFromMessage(msg.body);
           this.peerCert = peerCert;
-          if (peerCert && this._trustStore) {
-            const status = peerCert.validityStatus(this._now());
-            if (status === "expired" || status === "notYetValid") {
-              throw new TlsCertExpiredError(peerCert.subject, status);
-            }
-            if (!await this._trustStore.isTrusted(peerCert, peerCert.chain, { nowMs: this._now() })) {
-              throw new TlsCertUntrustedError(peerCert.subject);
-            }
-            if (this._serverName
-                && !certMatchesName(peerCert.subject, this._serverName, peerCert.subjectAltNames())) {
-              throw new TlsCertNameMismatchError(peerCert.subject, this._serverName);
-            }
-          }
+          await this._checkPeerCert(peerCert);
         } else if (msg.type === TLS_HT.SERVER_KEY_EXCHANGE) {
           skeBody = msg.body;
         }
@@ -673,10 +1349,13 @@ export class TlsSession {
       /** @type {Uint8Array} */ (this._serverRandom),
       ecParams,
     );
+    // on the wire the signature is DER-encoded (RFC 8422 §5.4); WebCrypto wants r || s
+    const rawSig = ecdsaDerToRaw(signature);
+    if (!rawSig) throw new TlsSignatureError();
     const sigValid = await crypto.subtle.verify(
       { name: "ECDSA", hash: "SHA-256" },
       peerCert.publicKey,
-      /** @type {Uint8Array<ArrayBuffer>} */ (signature),
+      /** @type {Uint8Array<ArrayBuffer>} */ (rawSig),
       toSign,
     );
     if (!sigValid) throw new TlsSignatureError();
@@ -712,27 +1391,135 @@ export class TlsSession {
     this._verifyFinished(serverFinishedMsg.body, expectedServerVerifyData);
   }
 
+  /**
+   * Client side: take the protocol the server selected via ALPN. It must be
+   * exactly one of the protocols we offered (RFC 7301 §3.2).
+   * @param {Uint8Array} shBody ServerHello body
+   */
+  _acceptServerAlpn(shBody) {
+    let sh;
+    try {
+      sh = TlsRecord.parseServerHello(shBody);
+    } catch (e) {
+      if (e instanceof TlsDecodeError) throw new TlsHandshakeError(e.message, TLS_ALERT.DECODE_ERROR);
+      throw e;
+    }
+    this._acceptAlpnExtension(sh.extensions.get(TLS_EXT.ALPN));
+  }
+
+  /**
+   * Validate the server's ALPN answer (ServerHello in 1.2, EncryptedExtensions in 1.3).
+   * @param {Uint8Array|undefined} ext
+   */
+  _acceptAlpnExtension(ext) {
+    if (!ext) return;
+    if (this._alpnList.length === 0) {
+      throw new TlsHandshakeError("Server sent ALPN although none was offered", TLS_ALERT.UNSUPPORTED_EXTENSION);
+    }
+    let list;
+    try { list = decodeAlpn(ext); } catch { throw new TlsHandshakeError("Malformed ALPN in ServerHello", TLS_ALERT.DECODE_ERROR); }
+    if (list.length !== 1 || !this._alpnList.includes(list[0])) {
+      throw new TlsHandshakeError(`Server selected unoffered protocol '${list.join(",")}'`, TLS_ALERT.ILLEGAL_PARAMETER);
+    }
+    this.alpn = list[0];
+  }
+
   // ── handshake – server side ───────────────────────────────────────────────
 
   async _serverHandshake() {
-    if (!this._cert) throw new TlsHandshakeError("Server cert required");
-    if (!this._cert.privateKey) throw new TlsHandshakeError("Server cert has no private key");
+    if (!this._cert && !this._selectCert) throw new TlsHandshakeError("Server cert required");
 
     this._transcript = new Uint8Array(0);
 
     // 1. Read ClientHello, append to transcript
-    const chRecord = await this._readRecordTimeout();
-    if (chRecord === null || chRecord.contentType !== TLS_CT.HANDSHAKE) {
-      throw new TlsHandshakeError("Expected ClientHello");
+    /** @type {{ type: number, body: Uint8Array }|undefined} */
+    let ch;
+    if (this._quic) {
+      ch = await this._nextQuicHs();
+      if (ch.type !== TLS_HT.CLIENT_HELLO) throw new TlsHandshakeError("Expected ClientHello", TLS_ALERT.UNEXPECTED_MESSAGE);
+    } else {
+      const chRecord = await this._readRecordTimeout();
+      if (chRecord === null || chRecord.contentType !== TLS_CT.HANDSHAKE) {
+        throw new TlsHandshakeError("Expected ClientHello");
+      }
+      this._appendTranscript(chRecord.payload);
+      const chMsgs = this._parseHandshakeMessages(chRecord.payload);
+      ch = chMsgs.find(m => m.type === TLS_HT.CLIENT_HELLO);
     }
-    this._appendTranscript(chRecord.payload);
-    const chMsgs = this._parseHandshakeMessages(chRecord.payload);
-    const ch = chMsgs.find(m => m.type === TLS_HT.CLIENT_HELLO);
     if (!ch) throw new TlsHandshakeError("Expected ClientHello");
-    this._clientRandom = ch.body.slice(2, 34);
+    let hello;
+    try {
+      hello = TlsRecord.parseClientHello(ch.body);
+    } catch (e) {
+      if (e instanceof TlsDecodeError) throw new TlsHandshakeError(e.message, TLS_ALERT.DECODE_ERROR);
+      throw e;
+    }
+    this._clientRandom = hello.random;
+    this.sni = hello.serverName;
 
-    // 2. Generate server random + ECDH keypair
+    // Certificate selection by SNI (RFC 6066 §3) — must happen before the
+    // Certificate message, which is why SNI exists: the Host header is not
+    // readable yet at this point.
+    /** @type {{ type: number, data: Uint8Array }[]} */
+    const shExtensions = [];
+    if (this._selectCert) {
+      const chosen = this._selectCert(this.sni);
+      if (!chosen) {
+        throw new TlsHandshakeError(`No certificate for '${this.sni}'`, TLS_ALERT.UNRECOGNIZED_NAME);
+      }
+      this._cert = chosen;
+      // The server used the name -> acknowledge with an empty server_name
+      // extension. Only allowed when the client offered it (RFC 5246 §7.4.1.4).
+      if (hello.extensions.has(TLS_EXT.SERVER_NAME)) {
+        shExtensions.push({ type: TLS_EXT.SERVER_NAME, data: new Uint8Array(0) });
+      }
+    }
+    const cert = /** @type {TlsCertificate} */ (this._cert);
+    if (!cert.privateKey) throw new TlsHandshakeError("Server cert has no private key");
+
+    // ALPN (RFC 7301 §3.2): the server picks by its own preference among the
+    // client's offers; no overlap is fatal. A server without ALPN support
+    // ignores the extension (the client then falls back to HTTP/1.1).
+    if (hello.extensions.has(TLS_EXT.ALPN) && this._alpnList.length > 0) {
+      const chosen = this._alpnList.find(p => hello.alpn.includes(p));
+      if (!chosen) {
+        throw new TlsHandshakeError(`No common application protocol (client offers ${hello.alpn.join(", ")})`,
+          TLS_ALERT.NO_APPLICATION_PROTOCOL);
+      }
+      this.alpn = chosen;
+      shExtensions.push({ type: TLS_EXT.ALPN, data: encodeAlpn([chosen]) });
+    }
+
+    if (this._quic) {
+      // RFC 9001 §8.1/§8.2: ALPN and transport parameters are mandatory
+      if (!this.alpn) throw new TlsHandshakeError("QUIC requires ALPN", TLS_ALERT.NO_APPLICATION_PROTOCOL);
+      const tp = hello.extensions.get(TLS_EXT.QUIC_TRANSPORT_PARAMETERS);
+      if (!tp) throw new TlsHandshakeError("quic_transport_parameters missing", TLS_ALERT.MISSING_EXTENSION);
+      this.peerTransportParams = tp;
+      shExtensions.push({ type: TLS_EXT.QUIC_TRANSPORT_PARAMETERS, data: this._quic.transportParams });
+    }
+
+    // Version (RFC 8446 §4.2.1): TLS 1.3 when both sides support it; the
+    // extensions chosen above then travel in EncryptedExtensions.
+    const can13 = this._versions.includes("1.3");
+    if (can13 && hello.versions.includes(TLS_VERSION.TLS13)) {
+      return this._serverHandshake13(hello, cert, shExtensions);
+    }
+    if (!this._versions.includes("1.2")) {
+      throw new TlsHandshakeError("Client does not support TLS 1.3", TLS_ALERT.PROTOCOL_VERSION);
+    }
+    this.version = "TLS 1.2";
+    // Secure renegotiation (RFC 5746): we never renegotiate, but announce that
+    // with an empty renegotiation_info when the client asks (extension or
+    // TLS_EMPTY_RENEGOTIATION_INFO_SCSV) — OpenSSL refuses servers without it.
+    if (hello.extensions.has(TLS_EXT.RENEGOTIATION_INFO) || hello.cipherSuites.includes(0x00FF)) {
+      shExtensions.push({ type: TLS_EXT.RENEGOTIATION_INFO, data: Uint8Array.of(0) });
+    }
+
+    // 2. Generate server random + ECDH keypair. A TLS 1.3 capable server
+    //    marks a 1.2 handshake in the random (downgrade protection, §4.1.3).
     this._serverRandom = crypto.getRandomValues(new Uint8Array(32));
+    if (can13) this._serverRandom.set(DOWNGRADE_TLS12, 24);
     this._ecdhKeyPair = await crypto.subtle.generateKey(
       { name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"],
     );
@@ -753,17 +1540,17 @@ export class TlsSession {
     );
     const sigBuf = await crypto.subtle.sign(
       { name: "ECDSA", hash: "SHA-256" },
-      this._cert.privateKey,
+      cert.privateKey,
       toSign,
     );
-    const signature = new Uint8Array(sigBuf);
+    const signature = ecdsaRawToDer(new Uint8Array(sigBuf)); // DER on the wire (RFC 8422 §5.4)
 
     // 4. Send ServerHello, Certificate, ServerKeyExchange, ServerHelloDone
     //    Append each HS message to transcript
     const sessionId = crypto.getRandomValues(new Uint8Array(4));
-    const shRecord   = TlsRecord.buildServerHello(this._serverRandom, sessionId);
-    const chainDers  = this._cert.chain.map(c => c.toDer());
-    const certRecord = TlsRecord.buildCertificate([this._cert.toDer(), ...chainDers]);
+    const shRecord   = TlsRecord.buildServerHello(this._serverRandom, sessionId, shExtensions);
+    const chainDers  = cert.chain.map(c => c.toDer());
+    const certRecord = TlsRecord.buildCertificate([cert.toDer(), ...chainDers]);
     const skeRecord  = TlsRecord.buildServerKeyExchange(serverPubRaw, signature);
     const shdRecord  = TlsRecord.buildServerHelloDone();
 
@@ -826,6 +1613,7 @@ export class TlsSession {
       48,
     );
     this._masterSecret = masterSecret;
+    this._logSecret("CLIENT_RANDOM", masterSecret); // TLS 1.2: the master secret
 
     // key_block = PRF(master_secret, "key expansion", ServerRandom || ClientRandom, 40)
     // Layout (RFC 5246 §6.3 + RFC 5288):
@@ -892,7 +1680,8 @@ export class TlsSession {
     const rec = await this._readRawRecord();
     if (rec === null) return null;
     if (rec.contentType === TLS_CT.CHANGE_CIPHER_SPEC) {
-      if (this._decryptKey) { this._readCipherActive = true; this._recvSeq = 0; }
+      // TLS 1.2 switches the read keys here; in 1.3 it is a no-op (§D.4)
+      if (this._decryptKey && !this._v13) { this._readCipherActive = true; this._recvSeq = 0; }
       return rec;
     }
     if (!this._readCipherActive) return rec;
@@ -918,10 +1707,27 @@ export class TlsSession {
   }
 
   /**
-   * Like _readRecord but with a timeout. Throws TlsHandshakeError on timeout.
+   * Next handshake-phase record, with a timeout. Alerts are consumed here:
+   * a fatal one (or close_notify) aborts the handshake with
+   * {@link TlsAlertReceivedError}, a warning is skipped.
+   * Throws TlsHandshakeError on timeout.
    * @returns {Promise<TlsRecord|null>}
    */
   async _readRecordTimeout() {
+    while (true) {
+      const rec = await this._readOneRecordTimeout();
+      if (rec === null || rec.contentType !== TLS_CT.ALERT) return rec;
+      if (rec.payload.length !== 2) throw new TlsHandshakeError("Malformed alert", TLS_ALERT.DECODE_ERROR);
+      const [level, description] = rec.payload;
+      if (level === 2 || description === TLS_ALERT.CLOSE_NOTIFY) {
+        throw new TlsAlertReceivedError(level, description);
+      }
+      // warning alert (e.g. unrecognized_name as warning, RFC 6066 §3): ignore
+    }
+  }
+
+  /** @returns {Promise<TlsRecord|null>} */
+  _readOneRecordTimeout() {
     return new Promise((resolve, reject) => {
       let done = false;
       this._sleep(this._timeoutMs).then(() => {
@@ -1065,7 +1871,7 @@ export class TlsSession {
     const leaf = entries[0].cert;
     leaf.chain = entries.slice(1).map(e => e.cert);
 
-    // Verify certificate signatures (only for certs with real P1363 signatures)
+    // Verify certificate signatures (only for certs with a real ECDSA signature)
     for (let i = 0; i < entries.length; i++) {
       const { cert, der } = entries[i];
       const sig = extractCertSig(der);
@@ -1105,6 +1911,7 @@ export class TlsSession {
     // a legacy v1 cert never counts as CA on the wire (RFC 5280 §6.1.4(k)).
     stub.x509Version   = p?.version === 3 ? 3 : 1;
     stub.isCA          = p?.version === 3 && p.isCA;
+    stub.strictX509    = p?.strictTime ?? true;
     stub._wireAltNames = p?.altNames ?? [];
 
     if (p?.publicKeyRaw) {

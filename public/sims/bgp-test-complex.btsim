@@ -1,5 +1,5 @@
 {
-  "version": 4,
+  "version": 7,
   "tick": 400,
   "objects": [
     {
@@ -549,7 +549,7 @@
       }
     },
     {
-      "kind": "PC",
+      "kind": "Computer",
       "id": 23,
       "name": "PC-R6",
       "x": 30,
@@ -586,7 +586,7 @@
       }
     },
     {
-      "kind": "PC",
+      "kind": "Computer",
       "id": 24,
       "name": "PC-R10",
       "x": 1070,

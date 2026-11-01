@@ -183,6 +183,18 @@ export class Router extends SimulatedObject {
 
   // ── DHCPv6-PD server ──────────────────────────────────────────────────────
   _pd6Enabled = false;
+
+  /**
+   * BGP: announce the DHCPv6-PD pool as one aggregate (like a provider
+   * announcing its customer address space), so the delegated home prefixes
+   * are reachable from other ASes.
+   * @returns {Array<{ dst: IPAddress, prefLen: number }>}
+   */
+  _pd6Origins() {
+    if (!this._pd6Enabled || !this._pd6Pool?.isV6()) return [];
+    const bytes = _pd6MaskPrefix(/** @type {Uint8Array} */ (this._pd6Pool.getNumber()), this._pd6PoolLength);
+    return [{ dst: IPAddress.fromUInt8(bytes), prefLen: this._pd6PoolLength }];
+  }
   /** @type {IPAddress|null} */ _pd6Pool = null;
   _pd6PoolLength = 48;
   _pd6DelegatedLength = 56;
@@ -225,6 +237,7 @@ export class Router extends SimulatedObject {
         this.rip   = new RIPDaemon(this.net, 4);
         this.ripng = new RIPDaemon(this.net, 6);
         this.bgp   = new BGPDaemon(this.net);
+        this.bgp.extraOrigins = () => this._pd6Origins();
         this.ospf  = new OSPFDaemon(this.net);
         this.vrrp  = new VRRPDaemon(this.net);
 
@@ -268,6 +281,7 @@ export class Router extends SimulatedObject {
         obj.ripng = new RIPDaemon(obj.net, 6);
         if (n.ripng) obj.ripng.applyJSON(n.ripng);
         obj.bgp   = new BGPDaemon(obj.net);
+        obj.bgp.extraOrigins = () => obj._pd6Origins();
         if (n.bgp)   obj.bgp.applyJSON(n.bgp);
         obj.ospf  = new OSPFDaemon(obj.net);
         if (n.ospf)  obj.ospf.applyJSON(n.ospf);

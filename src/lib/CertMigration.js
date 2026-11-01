@@ -86,3 +86,84 @@ export async function migrateCertSignatures(state) {
 
   return { state, fixed, unresolved };
 }
+
+/**
+ * v6 → v7 save-file migration: certificates switch to strict X.509 (v3,
+ * validity as UTCTime/GeneralizedTime) so real tools — Wireshark in the PCAP
+ * viewer — parse them without "malformed" errors.
+ *
+ * Every saved certificate (and the chain copies embedded in it) whose
+ * issuer's private key is somewhere in the same file is upgraded and signed
+ * again. Identical copies (e.g. a CA in /etc/certs/trusted and in a leaf's
+ * chain) get the identical upgraded result. Certificates without a reachable
+ * issuer key keep their old encoding — they keep working (fromJSON reads the
+ * legacy layout), so nothing needs to be reported.
+ *
+ * @param {any} state
+ * @returns {Promise<{ state: any, upgraded: number }>}
+ */
+export async function upgradeCertEncodings(state) {
+  /** @type {{ fileNode: any, json: any }[]} */
+  const certFiles = [];
+  /** @param {any} node */
+  const walk = (node) => {
+    if (!node || typeof node !== "object") return;
+    if (node.type === "file" && typeof node.data === "string") {
+      try {
+        const json = JSON.parse(node.data);
+        if (json && typeof json.subject === "string" && typeof json.issuer === "string"
+          && typeof json.notBefore === "number" && "certSignatureHex" in json) {
+          certFiles.push({ fileNode: node, json });
+        }
+      } catch { /* not a cert file */ }
+      return;
+    }
+    for (const child of Array.isArray(node) ? node : Object.values(node)) walk(child);
+  };
+  walk(state);
+  if (certFiles.length === 0) return { state, upgraded: 0 };
+
+  /** @type {Map<string, CryptoKey>} */
+  const keys = new Map();
+  for (const { json } of certFiles) {
+    if (!json.privateKeyJwk || !json.publicKeyId || keys.has(json.publicKeyId)) continue;
+    try {
+      keys.set(json.publicKeyId, await crypto.subtle.importKey(
+        "jwk", json.privateKeyJwk, { name: "ECDSA", namedCurve: "P-256" }, true, ["sign"]));
+    } catch { /* skip */ }
+  }
+
+  /** old certSignatureHex → upgraded public fields (shared by all copies) @type {Map<string, any>} */
+  const done = new Map();
+  let upgraded = 0;
+
+  /** Upgrade one cert JSON in place (chain first). @param {any} json @returns {Promise<boolean>} changed */
+  const upgrade = async (json) => {
+    let changed = false;
+    if (Array.isArray(json.chain)) for (const c of json.chain) changed = (await upgrade(c)) || changed;
+    if (json.x509Version === 3 && json.strictX509 === true) return changed;
+    const oldSig = json.certSignatureHex;
+    let fields = oldSig ? done.get(oldSig) : undefined;
+    if (!fields) {
+      const signerId = json.selfSigned ? json.publicKeyId : json.chain?.[0]?.publicKeyId;
+      const key = signerId ? keys.get(signerId) : undefined;
+      if (!key) return changed;
+      const cert = await TlsCertificate.fromJSON(json);
+      await cert.upgradeEncoding(key);
+      const j = /** @type {any} */ (cert.toJSON());
+      fields = { x509Version: j.x509Version, strictX509: j.strictX509, notBefore: j.notBefore,
+        notAfter: j.notAfter, certSignatureHex: j.certSignatureHex };
+      if (oldSig) done.set(oldSig, fields);
+      upgraded++;
+    }
+    Object.assign(json, fields);
+    return true;
+  };
+
+  for (const { fileNode, json } of certFiles) {
+    try {
+      if (await upgrade(json)) fileNode.data = JSON.stringify(json, null, 2);
+    } catch { /* leave as is */ }
+  }
+  return { state, upgraded };
+}

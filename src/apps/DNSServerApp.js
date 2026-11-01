@@ -8,6 +8,7 @@ import { DNSPacket } from "./../net/pdu/DNSPacket.js";
 import { IPAddress } from "../net/models/IPAddress.js";
 import { nowStamp } from "../lib/helpers.js";
 import { DNSResolver } from "./lib/DNSResolver.js";
+import { parseSvcParams } from "../net/pdu/Svcb.js";
 
 /** @param {*} name */
 function normalizeName(name) {
@@ -171,8 +172,8 @@ export class DNSServerApp extends LoggedProcess {
   /** @type {DNSResolver|null} */
   _resolver = null;
 
-  /** @type {{a:any[], aaaa:any[], cname:any[], mx:any[], ns:any[], mode:string, forwarderIp:string}} */
-  cfg = { a: [], aaaa: [], cname: [], mx: [], ns: [], mode: "authoritative", forwarderIp: "" };
+  /** @type {{a:any[], aaaa:any[], cname:any[], mx:any[], ns:any[], https:any[], mode:string, forwarderIp:string}} */
+  cfg = { a: [], aaaa: [], cname: [], mx: [], ns: [], https: [], mode: "authoritative", forwarderIp: "" };
 
   /** @type {HTMLButtonElement|null} */
   startBtn = null;
@@ -191,6 +192,8 @@ export class DNSServerApp extends LoggedProcess {
   mxEditor = null;
   /** @type {{root:HTMLElement,getRows:()=>any[],setRows:(rows:any[])=>void}|null} */
   nsEditor = null;
+  /** @type {{root:HTMLElement,getRows:()=>any[],setRows:(rows:any[])=>void}|null} */
+  httpsEditor = null;
 
   /** @type {HTMLSelectElement|null} */
   modeSelect = null;
@@ -222,6 +225,7 @@ export class DNSServerApp extends LoggedProcess {
         cname:      Array.isArray(obj.cname) ? obj.cname : [],
         mx:         Array.isArray(obj.mx)    ? obj.mx    : [],
         ns:         Array.isArray(obj.ns)    ? obj.ns    : [],
+        https:      Array.isArray(obj.https) ? obj.https : [],
         mode,
         forwarderIp: typeof obj.forwarderIp === "string" ? obj.forwarderIp : "",
       };
@@ -298,6 +302,19 @@ export class DNSServerApp extends LoggedProcess {
       () => ({ name: "", host: "", ttl: 300 })
     );
 
+    // HTTPS records (RFC 9460): tell browsers about HTTP/3, ports, addresses
+    this.httpsEditor = createTableEditor(
+      [
+        { key: "name", label: "Name", type: "text", placeholder: "www.example.com" },
+        { key: "priority", label: t("app.dnsd.https.col.priority"), type: "number", placeholder: "1", widthPx: 70 },
+        { key: "target", label: t("app.dnsd.https.col.target"), type: "text", placeholder: ".", widthPx: 120 },
+        { key: "params", label: t("app.dnsd.https.col.params"), type: "text", placeholder: "alpn=h3,h2 port=443" },
+        { key: "ttl", label: "TTL", type: "number", placeholder: "300", widthPx: 90 },
+      ],
+      onEdit,
+      () => ({ name: "", priority: 1, target: ".", params: "alpn=h3,h2", ttl: 300 })
+    );
+
     const start = UI.button(t("app.dnsd.button.start"), () => { this._rebuildConfigFromUI(); this._start(); }, { primary: true, icon: "fa-play" });
     const stop = UI.button(t("app.dnsd.button.stop"), () => this._stop(), { icon: "fa-stop" });
     const save = UI.button(t("app.dnsd.button.save"), () => this._saveConfigNow());
@@ -343,6 +360,7 @@ export class DNSServerApp extends LoggedProcess {
       { id: "cname",    label: "CNAME",                     pane: this.cnameEditor.root },
       { id: "mx",       label: "MX",                        pane: this.mxEditor.root    },
       { id: "ns",       label: "NS",                        pane: this.nsEditor.root    },
+      { id: "https",    label: "HTTPS",                     pane: this.httpsEditor.root },
       { id: "log",      label: t("app.dnsd.label.log"),      pane: logPane              },
       { id: "settings", label: t("app.dnsd.label.settings"), pane: settingsPane         },
     ]);
@@ -355,6 +373,7 @@ export class DNSServerApp extends LoggedProcess {
       this.cnameEditor.root,
       this.mxEditor.root,
       this.nsEditor.root,
+      this.httpsEditor.root,
       logPane,
       settingsPane,
       UI.buttonRow([save]),
@@ -409,6 +428,7 @@ export class DNSServerApp extends LoggedProcess {
         cname:      Array.isArray(obj.cname) ? obj.cname : [],
         mx:         Array.isArray(obj.mx)    ? obj.mx    : [],
         ns:         Array.isArray(obj.ns)    ? obj.ns    : [],
+        https:      Array.isArray(obj.https) ? obj.https : [],
         mode,
         forwarderIp: typeof obj.forwarderIp === "string" ? obj.forwarderIp : "",
       };
@@ -418,6 +438,7 @@ export class DNSServerApp extends LoggedProcess {
       this.cnameEditor?.setRows(this.cfg.cname);
       this.mxEditor?.setRows(this.cfg.mx);
       this.nsEditor?.setRows(this.cfg.ns);
+      this.httpsEditor?.setRows(this.cfg.https);
       if (this.modeSelect) {
         this.modeSelect.value = this.cfg.mode;
         if (this.rootDnsRow) this.rootDnsRow.style.display = this.cfg.mode === "recursive" ? "" : "none";
@@ -437,6 +458,7 @@ export class DNSServerApp extends LoggedProcess {
     const cnameRows = this.cnameEditor?.getRows() ?? [];
     const mxRows    = this.mxEditor?.getRows()    ?? [];
     const nsRows    = this.nsEditor?.getRows()    ?? [];
+    const httpsRows = this.httpsEditor?.getRows() ?? [];
 
     /** @type {{name:string, ip:string, ttl:number}[]} */
     const a = [];
@@ -494,9 +516,32 @@ export class DNSServerApp extends LoggedProcess {
       ns.push({ name, host, ttl: Number.isFinite(ttl) ? Math.max(0, ttl | 0) : 300 });
     }
 
+    /** @type {{name:string, priority:number, target:string, params:string, ttl:number}[]} */
+    const https = [];
+    for (const r of httpsRows) {
+      const name = normalizeName(r.name);
+      if (!name) continue;
+      const priority = Number(r.priority ?? 1);
+      const target = String(r.target ?? "").trim() || ".";
+      const params = String(r.params ?? "").trim();
+      const ttl = Number(r.ttl ?? 300);
+      try {
+        parseSvcParams(params);
+      } catch (e) {
+        this._appendLog(`[${nowStamp()}] HTTPS ${name}: ${e instanceof Error ? e.message : String(e)} — record ignored`);
+        continue;
+      }
+      https.push({
+        name,
+        priority: Number.isFinite(priority) ? Math.max(0, Math.min(65535, priority | 0)) : 1,
+        target, params,
+        ttl: Number.isFinite(ttl) ? Math.max(0, ttl | 0) : 300,
+      });
+    }
+
     const mode = (this.modeSelect?.value === "recursive") ? "recursive" : "authoritative";
     const forwarderIp = this.forwarderInput?.value.trim() ?? "";
-    this.cfg = { a, aaaa, cname, mx, ns, mode, forwarderIp };
+    this.cfg = { a, aaaa, cname, mx, ns, https, mode, forwarderIp };
   }
 
   _scheduleSave() {
@@ -611,6 +656,7 @@ export class DNSServerApp extends LoggedProcess {
     for (const r of this.cfg.cname) if (normalizeName(r.name) === n) return true;
     for (const r of this.cfg.mx)    if (normalizeName(r.name) === n) return true;
     for (const r of this.cfg.ns)    if (normalizeName(r.name) === n) return true;
+    for (const r of this.cfg.https ?? []) if (normalizeName(r.name) === n) return true;
     // For in-addr.arpa PTR queries, name "exists" if we have a matching A record
     const ptrIp = this._reverseArpaToIPv4(n);
     if (ptrIp) {
@@ -695,7 +741,7 @@ export class DNSServerApp extends LoggedProcess {
       if (nsHosts.has(n)) continue; // glue
       addData(n);
     }
-    for (const r of [...this.cfg.cname, ...this.cfg.mx]) addData(normalizeName(r.name));
+    for (const r of [...this.cfg.cname, ...this.cfg.mx, ...(this.cfg.https ?? [])]) addData(normalizeName(r.name));
 
     for (const r of this.cfg.a) {
       if (nsHosts.has(normalizeName(r.name))) continue;
@@ -765,7 +811,7 @@ export class DNSServerApp extends LoggedProcess {
   _nameExistsInZone(qname, zone) {
     if (qname === zone || this._nameExists(qname)) return true;
     const suffix = "." + qname;
-    for (const list of [this.cfg.a, this.cfg.aaaa, this.cfg.cname, this.cfg.mx, this.cfg.ns]) {
+    for (const list of [this.cfg.a, this.cfg.aaaa, this.cfg.cname, this.cfg.mx, this.cfg.ns, this.cfg.https ?? []]) {
       for (const r of list) if (normalizeName(r.name).endsWith(suffix)) return true;
     }
     return false;
@@ -818,6 +864,10 @@ export class DNSServerApp extends LoggedProcess {
     } else {
       const ctx = this._classify(qname);
       const answers = this._lookup(qname, qtype);
+      // The zone apex owns the SOA record (RFC 1035 §3.3.13)
+      if (ctx.kind === "auth" && qname === ctx.zone && (qtype === DNSPacket.TYPE_SOA || qtype === 255)) {
+        answers.push(this._buildSOAForZone(ctx.zone));
+      }
 
       if (answers.length > 0) {
         for (const rr of answers) resp.answers.push(rr);
@@ -927,6 +977,21 @@ export class DNSServerApp extends LoggedProcess {
         const ip = parseIPv6(r.ip);
         if (!ip) continue;
         out.push(mkRR({ name: r.name, type: DNSPacket.TYPE_AAAA, ttl: r.ttl ?? 60, data: ip }));
+      }
+    }
+
+    // HTTPS (RFC 9460) — service parameters for https:// on this name
+    if (qtype === DNSPacket.TYPE_HTTPS || qtype === 255) {
+      const recs = (this.cfg.https ?? []).filter(r => normalizeName(r.name) === qname)
+        .sort((x, y) => (x.priority ?? 1) - (y.priority ?? 1));
+      for (const r of recs) {
+        let params;
+        try { params = parseSvcParams(r.params ?? ""); } catch { continue; }
+        const target = String(r.target ?? ".").trim();
+        out.push(mkRR({
+          name: r.name, type: DNSPacket.TYPE_HTTPS, ttl: r.ttl ?? 300,
+          data: { priority: r.priority ?? 1, target: target === "." || !target ? "." : normalizeName(target), params: (r.priority ?? 1) === 0 ? {} : params },
+        }));
       }
     }
 

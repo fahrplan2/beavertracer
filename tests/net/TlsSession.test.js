@@ -10,9 +10,9 @@
  *  - Untrusted certificate is rejected
  */
 import { describe, it, expect } from 'vitest';
-import { TlsSession, TlsHandshakeError, TlsCertUntrustedError, TlsCertExpiredError, TlsCertNameMismatchError, certMatchesName } from '../../src/net/TlsSession.js';
+import { TlsSession, TlsHandshakeError, TlsAlertReceivedError, tlsAlertName, TlsCertUntrustedError, TlsCertExpiredError, TlsCertNameMismatchError, certMatchesName } from '../../src/net/TlsSession.js';
 import { TlsCertificate, TlsTrustStore } from '../../src/net/models/TlsCertificate.js';
-import { TlsRecord } from '../../src/net/pdu/TlsRecord.js';
+import { TlsRecord, TLS_EXT, TlsDecodeError, encodeAlpn, decodeAlpn } from '../../src/net/pdu/TlsRecord.js';
 
 // ── loopback wiring ────────────────────────────────────────────────────────
 
@@ -63,7 +63,8 @@ function makeQueues() {
  * Returns { client, server } after both handshakes complete.
  * @param {TlsCertificate} serverCert
  * @param {TlsTrustStore|null} [trustStore]
- * @param {{ clientNow?: () => number, serverName?: string }} [opts] - inject the client's "virtual clock" / requested host
+ * @param {{ clientNow?: () => number, serverName?: string, selectCert?: (sni: string) => TlsCertificate|null }} [opts]
+ *   inject the client's "virtual clock" / requested host / the server's SNI-based cert selection
  */
 async function runHandshake(serverCert, trustStore = null, opts = {}) {
   const q = makeQueues();
@@ -84,6 +85,7 @@ async function runHandshake(serverCert, trustStore = null, opts = {}) {
     recv: q.serverRecv,
     isServer: true,
     cert: serverCert,
+    selectCert: opts.selectCert,
     timeoutMs: 5000,
     sleepFn: (ms) => new Promise(r => setTimeout(r, ms)),
   });
@@ -571,5 +573,298 @@ describe('ClientHello server_name extension (RFC 6066 §3)', () => {
     const cert = await TlsCertificate.generate('server.local');
     const { client } = await runHandshake(cert, null, { serverName: 'server.local' });
     expect(client['_state']).toBe('ESTABLISHED');
+  });
+});
+
+describe('ClientHello parsing (RFC 5246 §7.4.1.2)', () => {
+  /** ClientHello handshake body: strip record header (5) and handshake header (4). */
+  const chBody = (/** @type {Uint8Array} */ rec) => rec.slice(9);
+
+  it('round-trips random, cipher suite and SNI', () => {
+    const random = new Uint8Array(32).map((_, i) => i);
+    const ch = TlsRecord.parseClientHello(chBody(TlsRecord.buildClientHello(random, 'Shop.LAN.')));
+    expect(ch.version).toBe(0x0303);
+    expect(Array.from(ch.random)).toEqual(Array.from(random));
+    expect(ch.cipherSuites).toEqual([0xC02B]);
+    expect(ch.serverName).toBe('shop.lan');
+    expect(ch.extensions.has(TLS_EXT.SERVER_NAME)).toBe(true);
+    expect(ch.extensions.has(TLS_EXT.SUPPORTED_GROUPS)).toBe(true);
+  });
+
+  it('yields an empty serverName without SNI', () => {
+    const ch = TlsRecord.parseClientHello(chBody(TlsRecord.buildClientHello(new Uint8Array(32), '10.0.0.1')));
+    expect(ch.serverName).toBe('');
+    expect(ch.extensions.has(TLS_EXT.SERVER_NAME)).toBe(false);
+  });
+
+  it('accepts a ClientHello without any extensions block', () => {
+    const body = chBody(TlsRecord.buildClientHello(new Uint8Array(32)));
+    // version(2) random(32) sid(1) suites(2+2) comp(1+1) = 41 bytes before extensions
+    const ch = TlsRecord.parseClientHello(body.slice(0, 41));
+    expect(ch.extensions.size).toBe(0);
+    expect(ch.serverName).toBe('');
+  });
+
+  it('rejects truncated and inconsistent messages', () => {
+    const body = chBody(TlsRecord.buildClientHello(new Uint8Array(32), 'a.lan'));
+    expect(() => TlsRecord.parseClientHello(body.slice(0, 20))).toThrow(TlsDecodeError);
+    expect(() => TlsRecord.parseClientHello(body.slice(0, body.length - 1))).toThrow(TlsDecodeError);
+    const bad = body.slice();
+    bad[41] = 0xff; // extensions length far too large
+    expect(() => TlsRecord.parseClientHello(bad)).toThrow(TlsDecodeError);
+  });
+
+  it('rejects duplicate extensions', () => {
+    const body = chBody(TlsRecord.buildClientHello(new Uint8Array(32)));
+    const head = body.slice(0, 41);
+    const ext = new Uint8Array([0x00, 0x0B, 0x00, 0x02, 0x01, 0x00]); // ec_point_formats
+    const dup = new Uint8Array(head.length + 2 + ext.length * 2);
+    dup.set(head, 0);
+    dup[41] = 0; dup[42] = ext.length * 2;
+    dup.set(ext, 43); dup.set(ext, 43 + ext.length);
+    expect(() => TlsRecord.parseClientHello(dup)).toThrow(TlsDecodeError);
+  });
+});
+
+describe('Server certificate selection by SNI (RFC 6066 §3)', () => {
+  /** Extensions of the first ServerHello found in the server→client bytes. */
+  function serverHelloExtensions(/** @type {Uint8Array[]} */ chunks) {
+    for (const c of chunks) {
+      const { records } = TlsRecord.parseRecords(/** @type {any} */ (c));
+      for (const r of records) {
+        if (r.contentType !== 0x16 || r.payload[0] !== 0x02) continue;
+        const b = r.payload.slice(4);
+        let off = 34;
+        off += 1 + b[off];  // session_id
+        off += 2 + 1;       // cipher + compression
+        /** @type {number[]} */
+        const types = [];
+        if (off >= b.length) return types;
+        const end = off + 2 + ((b[off] << 8) | b[off + 1]);
+        for (off += 2; off < end;) {
+          types.push((b[off] << 8) | b[off + 1]);
+          off += 4 + ((b[off + 2] << 8) | b[off + 3]);
+        }
+        return types;
+      }
+    }
+    return null;
+  }
+
+  async function handshakeWith(/** @type {any} */ selectCert, /** @type {string} */ serverName) {
+    const q = makeQueues();
+    /** @type {Uint8Array[]} */
+    const s2c = [];
+    const client = new TlsSession({
+      send: q.clientSend, recv: q.clientRecv, isServer: false,
+      timeoutMs: 5000, serverName,
+    });
+    const server = new TlsSession({
+      send: (d) => { s2c.push(d); q.serverSend(d); }, recv: q.serverRecv, isServer: true,
+      selectCert, timeoutMs: 5000,
+    });
+    const results = await Promise.allSettled([client.handshake(), server.handshake()]);
+    return { client, server, s2c, results };
+  }
+
+  it('picks the certificate matching the requested name', async () => {
+    const a = await TlsCertificate.generate('a.lan');
+    const b = await TlsCertificate.generate('b.lan');
+    /** @type {string[]} */
+    const asked = [];
+    const certs = new Map([['a.lan', a], ['b.lan', b]]);
+    const { client, server, s2c } = await handshakeWith((/** @type {string} */ sni) => {
+      asked.push(sni);
+      return certs.get(sni) ?? a;
+    }, 'B.lan');
+    expect(asked).toEqual(['b.lan']);
+    expect(server.sni).toBe('b.lan');
+    expect(client.peerCert?.subject).toBe('CN=b.lan');
+    expect(serverHelloExtensions(s2c)).toEqual([TLS_EXT.SERVER_NAME]);
+  });
+
+  it('falls back without SNI and sends no server_name extension', async () => {
+    const def = await TlsCertificate.generate('default.lan');
+    const { client, server, s2c } = await handshakeWith(() => def, '192.168.0.20');
+    expect(server.sni).toBe('');
+    expect(client.peerCert?.subject).toBe('CN=default.lan');
+    expect(serverHelloExtensions(s2c)).toEqual([]);
+  });
+
+  it('fixed cert (no selectCert) ignores SNI and does not acknowledge it', async () => {
+    const cert = await TlsCertificate.generate('server.local');
+    const q = makeQueues();
+    /** @type {Uint8Array[]} */
+    const s2c = [];
+    const client = new TlsSession({ send: q.clientSend, recv: q.clientRecv, isServer: false, timeoutMs: 5000, serverName: 'other.lan' });
+    const server = new TlsSession({ send: (d) => { s2c.push(d); q.serverSend(d); }, recv: q.serverRecv, isServer: true, cert, timeoutMs: 5000 });
+    await Promise.all([client.handshake(), server.handshake()]);
+    expect(server.sni).toBe('other.lan');
+    expect(serverHelloExtensions(s2c)).toEqual([]);
+  });
+
+  it('aborts with unrecognized_name when no certificate is available', async () => {
+    const { server, s2c, results } = await handshakeWith(() => null, 'x.lan');
+    expect(results[1].status).toBe('rejected');
+    // the client fails fast on the fatal alert instead of running into its timeout
+    expect(results[0].status).toBe('rejected');
+    const clientErr = /** @type {PromiseRejectedResult} */ (results[0]).reason;
+    expect(clientErr).toBeInstanceOf(TlsAlertReceivedError);
+    expect(clientErr.description).toBe(112);
+    expect(clientErr.message).toContain('unrecognized_name');
+    expect(server['_state']).toBe('CLOSED');
+    const alerts = s2c.flatMap(c => TlsRecord.parseRecords(/** @type {any} */ (c)).records)
+      .filter(r => r.contentType === 0x15);
+    expect(alerts.length).toBe(1);
+    expect(Array.from(alerts[0].payload)).toEqual([2, 112]);
+  });
+});
+
+describe('Receiving alerts during the handshake (RFC 5246 §7.2)', () => {
+  /**
+   * Feed a hand-made byte stream to one side; collect what it sends back.
+   * @param {boolean} isServer
+   * @param {Uint8Array[]} incoming
+   */
+  async function against(isServer, incoming) {
+    /** @type {Uint8Array[]} */
+    const sent = [];
+    const queue = [...incoming];
+    const tls = new TlsSession({
+      send: (d) => sent.push(d),
+      recv: async () => queue.shift() ?? new Promise(() => {}), // then silence
+      isServer,
+      cert: isServer ? await TlsCertificate.generate('s.lan') : undefined,
+      timeoutMs: 5000,
+    });
+    const err = await tls.handshake().then(() => null, (e) => e);
+    return { err, sent, tls };
+  }
+  const alert = (/** @type {number} */ level, /** @type {number} */ desc) =>
+    new TlsRecord(0x15, new Uint8Array([level, desc])).pack();
+  const alertsIn = (/** @type {Uint8Array[]} */ chunks) =>
+    chunks.flatMap(c => TlsRecord.parseRecords(/** @type {any} */ (c)).records).filter(r => r.contentType === 0x15);
+
+  it('client: fatal alert aborts immediately and is not answered', async () => {
+    const { err, sent, tls } = await against(false, [alert(2, 40)]);
+    expect(err).toBeInstanceOf(TlsAlertReceivedError);
+    expect(err).toBeInstanceOf(TlsHandshakeError); // existing catch sites keep working
+    expect(err.level).toBe(2);
+    expect(err.description).toBe(40);
+    expect(err.message).toContain('handshake_failure');
+    expect(tls['_state']).toBe('CLOSED');
+    expect(alertsIn(sent)).toEqual([]); // only our ClientHello went out
+  });
+
+  it('server: fatal alert instead of ClientHello aborts', async () => {
+    const { err, sent } = await against(true, [alert(2, 70)]);
+    expect(err).toBeInstanceOf(TlsAlertReceivedError);
+    expect(err.message).toContain('protocol_version');
+    expect(sent).toEqual([]);
+  });
+
+  it('close_notify during the handshake counts as abort', async () => {
+    const { err } = await against(true, [alert(1, 0)]);
+    expect(err).toBeInstanceOf(TlsAlertReceivedError);
+    expect(err.message).toContain('close_notify');
+  });
+
+  it('a warning alert is skipped and the handshake continues', async () => {
+    const q = makeQueues();
+    const cert = await TlsCertificate.generate('server.local');
+    const client = new TlsSession({ send: q.clientSend, recv: q.clientRecv, isServer: false, timeoutMs: 5000 });
+    const server = new TlsSession({ send: q.serverSend, recv: q.serverRecv, isServer: true, cert, timeoutMs: 5000 });
+    q.serverSend(alert(1, 112)); // warning-level unrecognized_name before the ServerHello
+    await Promise.all([client.handshake(), server.handshake()]);
+    expect(client['_state']).toBe('ESTABLISHED');
+  });
+
+  it('malformed alert -> decode_error', async () => {
+    const bad = new TlsRecord(0x15, new Uint8Array([2])).pack();
+    const { err, sent } = await against(true, [bad]);
+    expect(err).toBeInstanceOf(TlsHandshakeError);
+    expect(err).not.toBeInstanceOf(TlsAlertReceivedError);
+    expect(alertsIn(sent).map(r => Array.from(r.payload))).toEqual([[2, 50]]);
+  });
+
+  it('server learns quickly when the client rejects its certificate', async () => {
+    const q = makeQueues();
+    const cert = await TlsCertificate.generate('server.local');
+    const client = new TlsSession({
+      send: q.clientSend, recv: q.clientRecv, isServer: false,
+      trustStore: new TlsTrustStore(), timeoutMs: 5000,
+    });
+    const server = new TlsSession({ send: q.serverSend, recv: q.serverRecv, isServer: true, cert, timeoutMs: 5000 });
+    const [c, s] = await Promise.allSettled([client.handshake(), server.handshake()]);
+    expect(/** @type {PromiseRejectedResult} */ (c).reason).toBeInstanceOf(TlsCertUntrustedError);
+    const serverErr = /** @type {PromiseRejectedResult} */ (s).reason;
+    expect(serverErr).toBeInstanceOf(TlsAlertReceivedError);
+    expect(serverErr.description).toBe(42); // bad_certificate
+  });
+
+  it('tlsAlertName covers known and unknown codes', () => {
+    expect(tlsAlertName(112)).toBe('unrecognized_name');
+    expect(tlsAlertName(250)).toBe('alert_250');
+  });
+});
+
+describe('ALPN (RFC 7301)', () => {
+  /**
+   * @param {string[]|undefined} clientAlpn
+   * @param {string[]|undefined} serverAlpn
+   */
+  async function negotiate(clientAlpn, serverAlpn) {
+    const q = makeQueues();
+    const cert = await TlsCertificate.generate('server.local');
+    const client = new TlsSession({ send: q.clientSend, recv: q.clientRecv, isServer: false, timeoutMs: 5000, alpn: clientAlpn });
+    const server = new TlsSession({ send: q.serverSend, recv: q.serverRecv, isServer: true, cert, timeoutMs: 5000, alpn: serverAlpn });
+    const [c, s] = await Promise.allSettled([client.handshake(), server.handshake()]);
+    return { client, server, c, s };
+  }
+
+  it('encode/decode round-trip and malformed lists', () => {
+    expect(decodeAlpn(encodeAlpn(['h2', 'http/1.1']))).toEqual(['h2', 'http/1.1']);
+    expect(Array.from(encodeAlpn(['h2']))).toEqual([0, 3, 2, 0x68, 0x32]);
+    expect(() => decodeAlpn(new Uint8Array([0, 0]))).toThrow(TlsDecodeError);
+    expect(() => decodeAlpn(new Uint8Array([0, 2, 0, 0]))).toThrow(TlsDecodeError);
+    expect(() => decodeAlpn(new Uint8Array([0, 3, 5, 0x68, 0x32]))).toThrow(TlsDecodeError);
+  });
+
+  it('ClientHello carries the offer, parser reads it back', () => {
+    const ch = TlsRecord.buildClientHello(new Uint8Array(32), 'a.lan', ['h2', 'http/1.1']);
+    expect(TlsRecord.parseClientHello(ch.slice(9)).alpn).toEqual(['h2', 'http/1.1']);
+    expect(TlsRecord.parseClientHello(TlsRecord.buildClientHello(new Uint8Array(32)).slice(9)).alpn).toEqual([]);
+  });
+
+  it('server picks by its own preference', async () => {
+    const { client, server } = await negotiate(['http/1.1', 'h2'], ['h2', 'http/1.1']);
+    expect(server.alpn).toBe('h2');
+    expect(client.alpn).toBe('h2');
+  });
+
+  it('falls back to http/1.1 when the server does not speak h2', async () => {
+    const { client } = await negotiate(['h2', 'http/1.1'], ['http/1.1']);
+    expect(client.alpn).toBe('http/1.1');
+  });
+
+  it('a server without ALPN ignores the offer', async () => {
+    const { client, server, c } = await negotiate(['h2', 'http/1.1'], undefined);
+    expect(c.status).toBe('fulfilled');
+    expect(client.alpn).toBe('');
+    expect(server.alpn).toBe('');
+  });
+
+  it('no common protocol -> no_application_protocol', async () => {
+    const { c, s } = await negotiate(['h2'], ['http/1.1']);
+    expect(s.status).toBe('rejected');
+    const err = /** @type {PromiseRejectedResult} */ (c).reason;
+    expect(err).toBeInstanceOf(TlsAlertReceivedError);
+    expect(err.description).toBe(120);
+  });
+
+  it('client without ALPN gets none back', async () => {
+    const { client, server } = await negotiate(undefined, ['h2', 'http/1.1']);
+    expect(client.alpn).toBe('');
+    expect(server.alpn).toBe('');
   });
 });

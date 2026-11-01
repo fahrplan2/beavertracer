@@ -5,6 +5,9 @@
 /** Gap kept between the panel and the edge of the area / the content. */
 const MARGIN = 12;
 
+/** Cascade offset: one panel title bar (css .sim-panel-header height). */
+export const CASCADE_STEP = 38;
+
 /** Shrink steps tried for resizable panels (down to 85 % of the original size). */
 const SCALES = [1, 0.85];
 
@@ -163,6 +166,53 @@ function shiftIntoFreeStrip(content, panel, view, avoid) {
 }
 
 /**
+ * Placement for a panel whose device icon (`anchor`) is known:
+ *  1. the free spot closest to the device (network and other panels free);
+ *  2. else the closest spot that keeps only the network free;
+ *  3. else right next to the device (right, left, below, above), never on the
+ *     icon itself and covering as little of the network as possible — the
+ *     user moves it aside if needed. The canvas is never panned here.
+ * A resizable panel (`minSize`) may shrink to 85 % in steps 1–2 only.
+ * @param {{ bounds: Rect, size: {w: number, h: number}, minSize?: {w: number, h: number}|null,
+ *           obstacles: Rect[], avoid: Rect[], anchor: Rect }} o
+ * @returns {Rect & { shift: {dx: number, dy: number} }}
+ */
+function placeNearDevice({ bounds, size, minSize, obstacles, avoid, anchor }) {
+    const noShift = { dx: 0, dy: 0 };
+    const sizes = (minSize ? SCALES : [1]).map((s) => ({
+        w: Math.round(Math.max(minSize?.w ?? 0, size.w * s)),
+        h: Math.round(Math.max(minSize?.h ?? 0, size.h * s)),
+    }));
+    for (const blockers of [[...obstacles, ...avoid], obstacles]) {
+        for (const { w, h } of sizes) {
+            const spot = closestFreeSpot(bounds, w, h, anchor, blockers);
+            if (spot) return { ...spot, shift: noShift };
+        }
+    }
+
+    // no free spot: open beside the device at full size
+    const { w, h } = size;
+    const clampX = (/** @type {number} */ x) => Math.max(bounds.x + MARGIN, Math.min(x, bounds.x + bounds.w - w - MARGIN));
+    const clampY = (/** @type {number} */ y) => Math.max(bounds.y + MARGIN, Math.min(y, bounds.y + bounds.h - h - MARGIN));
+    const sides = [
+        { x: anchor.x + anchor.w + CLEARANCE, y: anchor.y },        // right
+        { x: anchor.x - w - CLEARANCE, y: anchor.y },               // left
+        { x: anchor.x, y: anchor.y + anchor.h + CLEARANCE },        // below
+        { x: anchor.x, y: anchor.y - h - CLEARANCE },               // above
+    ].map((p, order) => {
+        const rect = { x: clampX(p.x), y: clampY(p.y), w, h };
+        return {
+            rect, order,
+            onIcon: overlapArea(rect, anchor) > 0 ? 1 : 0,
+            covered: obstacles.reduce((sum, o) => sum + overlapArea(rect, o), 0),
+            panels: avoid.reduce((sum, o) => sum + overlapArea(rect, o), 0),
+        };
+    });
+    sides.sort((a, b) => a.onIcon - b.onIcon || a.covered - b.covered || a.panels - b.panels || a.order - b.order);
+    return { ...sides[0].rect, shift: noShift };
+}
+
+/**
  * Picks where a device panel opens so it covers as little as possible. The
  * candidates, at every allowed size, are the free spot closest to `anchor`
  * (the device's icon, if given) plus the corners and edge centres; they are
@@ -176,6 +226,8 @@ function shiftIntoFreeStrip(content, panel, view, avoid) {
  *  5. it is as close as possible to `anchor` — otherwise a roomy canvas
  *     would put every panel in the same corner.
  * If no position keeps the network free, the one covering least of it wins.
+ * With a known device icon (`anchor`) see placeNearDevice() instead: no
+ * panning, the panel opens beside its device when nothing is free.
  *
  * All rects share one coordinate system (e.g. the panel layer's). `bounds` is
  * the area the panel may occupy, `view` the visible canvas (for panning the
@@ -193,6 +245,7 @@ function shiftIntoFreeStrip(content, panel, view, avoid) {
  * @returns {Rect & { shift: {dx: number, dy: number} }}
  */
 export function choosePanelPlacement({ bounds, view, size, minSize, obstacles, avoid = [], anchor = null }) {
+    if (anchor) return placeNearDevice({ bounds, size, minSize, obstacles, avoid, anchor });
     const sizes = (minSize ? SCALES : [1]).map((s) => ({
         w: Math.round(Math.max(minSize?.w ?? 0, size.w * s)),
         h: Math.round(Math.max(minSize?.h ?? 0, size.h * s)),
@@ -227,4 +280,30 @@ export function choosePanelPlacement({ bounds, view, size, minSize, obstacles, a
 
     const best = options[0];
     return { ...best.rect, shift: best.shift ?? { dx: 0, dy: 0 } };
+}
+
+/**
+ * Windows-95-style cascade: if another open panel already sits at (almost)
+ * the same position, move the new one down and right by one title bar so
+ * both titles stay visible — otherwise the new panel looks like the old one.
+ * Wraps to the top-left corner of `bounds` when it would leave them.
+ * @param {Rect} rect the chosen position
+ * @param {Rect[]} others open panels
+ * @param {Rect} bounds
+ * @param {number} [step]
+ * @param {number} [tolerance] px counted as "the same position"
+ * @returns {Rect}
+ */
+export function cascadePlacement(rect, others, bounds, step = CASCADE_STEP, tolerance = 8) {
+    let r = { ...rect };
+    for (let i = 0; i < 30; i++) {
+        if (!others.some((o) => Math.abs(o.x - r.x) <= tolerance && Math.abs(o.y - r.y) <= tolerance)) return r;
+        let x = r.x + step, y = r.y + step;
+        if (x + r.w > bounds.x + bounds.w - MARGIN || y + r.h > bounds.y + bounds.h - MARGIN) {
+            x = bounds.x + MARGIN;
+            y = bounds.y + MARGIN;
+        }
+        r = { ...r, x, y };
+    }
+    return r;
 }

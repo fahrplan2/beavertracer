@@ -1,3 +1,10 @@
+## Version 0.4.2 (2026-11-01)
+
+- fixed TLS 1.2, added TLS 1.3
+- added HTTP/2 and HTTP/3 (also QUIC)
+- Sparktail can now log session keys, which can be used in the tracer window to decode encrypted HTTPS sessions
+- minor UI fixes
+
 ## Version 0.4.1 (2026-10-31)
 
 - UI fixes and improvements

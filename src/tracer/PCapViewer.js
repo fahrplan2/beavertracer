@@ -5,6 +5,7 @@ import { SimControl } from "../SimControl.js";
 import { t } from "../i18n/index.js";
 import { makeDraggable } from "../lib/dragabble.js";
 import { osiLayersFor, formatOsiLayers } from "./osiLayers.js";
+import { KEYLOG_PATH, readKeyLog } from "../lib/keyLog.js";
 
 /** @typedef {any} WiregasmModule */
 /** @typedef {any} DissectSession */
@@ -94,7 +95,13 @@ export class PCapViewer {
   /** @type {HTMLButtonElement|null} */ #prevBtn = null;
   /** @type {HTMLButtonElement|null} */ #nextBtn = null;
   /** @type {HTMLButtonElement|null} */ #followBtn = null;
-  /** @type {HTMLButtonElement|null} */ #hexToggleBtn = null;
+  /** @type {HTMLButtonElement|null} */ #settingsBtn = null;
+  /** @type {HTMLElement|null} */ #settingsPopup = null;
+  /** @type {HTMLInputElement|null} */ #hexCheck = null;
+  /** @type {HTMLInputElement|null} */ #reassembleCheck = null;
+  /** @type {HTMLSelectElement|null} */ #keySel = null;
+  /** @type {HTMLElement|null} */ #keyInfo = null;
+  /** @type {AbortController|null} */ #settingsAbort = null;
 
   // UI state
   /** @type {number} */ #filterTimer = 0;
@@ -102,6 +109,23 @@ export class PCapViewer {
   // of the tracer for newcomers; it's one click (or a drag on the existing
   // splitter, which still works normally) away when actually needed.
   /** @type {boolean} */ #hexHidden = true;
+  /**
+   * Wireshark's "Allow subdissector to reassemble TCP streams". Off by
+   * default: every packet then shows only the bytes it really carries,
+   * instead of the last segment showing the whole reassembled message.
+   * @type {boolean}
+   */
+  #reassemble = (() => { try { return localStorage.getItem("pcap_reassemble") === "1"; } catch { return false; } })();
+
+  /**
+   * Device whose key log (KEYLOG_PATH) is used to decrypt TLS/QUIC, or null.
+   * Like Wireshark's "(Pre)-Master-Secret log filename"; read again on every
+   * dissection, so keys of new connections are picked up.
+   * @type {number|null}
+   */
+  #keyDeviceId = null;
+  /** key log text currently loaded into Wireshark @type {string} */ #keyLogLoaded = "";
+  /** @type {number} */ #keyLogSeq = 0;
 
   // Splitters (ratios + listener lifetime)
   /** @type {number|null} */ #hSplitRatio = null;
@@ -322,6 +346,8 @@ export class PCapViewer {
 
   destroy() {
     if (this.#filterTimer) window.clearTimeout(this.#filterTimer);
+    this.#settingsAbort?.abort();
+    this.#settingsAbort = null;
 
     this.#tabPickerAbort?.abort();
     this.#tabPickerAbort = null;
@@ -356,7 +382,16 @@ export class PCapViewer {
       <div class="pcapviewer-toolbar">
         <input class="pcapviewer-filter" placeholder="${t("pcap.filter.placeholder")}" />
         <span class="pcapviewer-status"></span>
-        <button type="button" class="pcapviewer-hex-toggle" title="${t("pcap.btn.showhex")}"><i class="fas fa-code"></i></button>
+        <button type="button" class="pcapviewer-hex-toggle pcapviewer-settings-btn" title="${t("pcap.settings.title")}" aria-label="${t("pcap.settings.title")}"><i class="fas fa-gear"></i></button>
+        <div class="pcapviewer-settings-popup" hidden>
+          <div class="pcapviewer-settings-title">${t("pcap.settings.title")}</div>
+          <label class="pcapviewer-settings-row"><input type="checkbox" class="pcapviewer-set-hex"> ${t("pcap.settings.hex")}</label>
+          <label class="pcapviewer-settings-row"><input type="checkbox" class="pcapviewer-set-reassemble"> ${t("pcap.settings.reassemble")}</label>
+          <label class="pcapviewer-settings-row pcapviewer-settings-keys">${t("pcap.settings.keylog")}
+            <select class="pcapviewer-set-keys input"></select>
+          </label>
+          <div class="pcapviewer-settings-info"></div>
+        </div>
       </div>
 
       <div class="pcapviewer-layout">
@@ -413,25 +448,147 @@ export class PCapViewer {
     this.#loadingOverlay = /** @type {HTMLElement} */ (root.querySelector(".pcapviewer-wg-overlay"));
     this.#treePane = /** @type {HTMLElement} */ (root.querySelector(".pcapviewer-treepane"));
     this.#rawPane = /** @type {HTMLElement} */ (root.querySelector(".pcapviewer-rawpane"));
-    this.#hexToggleBtn = /** @type {HTMLButtonElement} */ (root.querySelector(".pcapviewer-hex-toggle"));
+    this.#settingsBtn = /** @type {HTMLButtonElement} */ (root.querySelector(".pcapviewer-settings-btn"));
+    this.#settingsPopup = /** @type {HTMLElement} */ (root.querySelector(".pcapviewer-settings-popup"));
+    this.#hexCheck = /** @type {HTMLInputElement} */ (root.querySelector(".pcapviewer-set-hex"));
+    this.#reassembleCheck = /** @type {HTMLInputElement} */ (root.querySelector(".pcapviewer-set-reassemble"));
+    this.#keySel = /** @type {HTMLSelectElement} */ (root.querySelector(".pcapviewer-set-keys"));
+    this.#keyInfo = /** @type {HTMLElement} */ (root.querySelector(".pcapviewer-settings-info"));
+    this.#reassembleCheck.checked = this.#reassemble;
     this.#applyHexHidden();
+    this.#renderKeyOptions();
+  }
+
+  // ── settings popup ─────────────────────────────────────────────────────
+
+  /** Devices with a file system (candidates for the key log). @returns {{ id: number, name: string, fs: any }[]} */
+  #keyLogDevices() {
+    const objs = /** @type {any[]} */ (this.#opt.simControl?.simobjects ?? []);
+    return objs.filter(o => o && o.fs && typeof o.id === "number")
+      .map(o => ({ id: o.id, name: String(o.name ?? o.id), fs: o.fs }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  #renderKeyOptions() {
+    const sel = this.#keySel;
+    if (!sel) return;
+    const devices = this.#keyLogDevices();
+    if (this.#keyDeviceId !== null && !devices.some(d => d.id === this.#keyDeviceId)) this.#keyDeviceId = null;
+    sel.replaceChildren(new Option(t("pcap.settings.keylog.none"), ""),
+      ...devices.map(d => new Option(d.name, String(d.id))));
+    sel.value = this.#keyDeviceId === null ? "" : String(this.#keyDeviceId);
+    this.#renderKeyInfo();
+  }
+
+  #renderKeyInfo() {
+    if (!this.#keyInfo) return;
+    if (this.#keyDeviceId === null) { this.#keyInfo.textContent = ""; return; }
+    const lines = this.#readKeyLogText().split("\n").filter(l => l.trim() && !l.startsWith("#")).length;
+    this.#keyInfo.textContent = lines
+      ? t("pcap.settings.keylog.count", { path: KEYLOG_PATH, count: lines })
+      : t("pcap.settings.keylog.missing", { path: KEYLOG_PATH });
+  }
+
+  #readKeyLogText() {
+    if (this.#keyDeviceId === null) return "";
+    const dev = this.#keyLogDevices().find(d => d.id === this.#keyDeviceId);
+    return dev ? readKeyLog(dev.fs) : "";
+  }
+
+  /**
+   * Load the chosen device's key log into Wireshark (tls.keylog_file, which
+   * QUIC uses too). A changed key log gets a new file name, so Wireshark
+   * reads it again. Call before dissecting.
+   */
+  #applyKeyLogPref() {
+    if (!this.#wg || !this.#wgInited) return;
+    const text = this.#readKeyLogText();
+    if (text === this.#keyLogLoaded) return;
+    try {
+      let path = "";
+      if (text) {
+        this.#wg.FS.mkdirTree("/keys");
+        path = `/keys/sslkeys-${++this.#keyLogSeq}.log`;
+        this.#wg.FS.writeFile(path, text);
+      }
+      this.#wg.setPref("tls", "keylog_file", path);
+      this.#wg.applyPreferences();
+      this.#keyLogLoaded = text;
+      this.#renderKeyInfo();
+    } catch (e) {
+      console.warn("[PCapViewer] could not load key log:", e);
+    }
+  }
+
+  #toggleSettings() {
+    const pop = this.#settingsPopup;
+    if (!pop) return;
+    pop.hidden = !pop.hidden;
+    this.#settingsBtn?.classList.toggle("active", !pop.hidden);
+    this.#settingsAbort?.abort();
+    this.#settingsAbort = null;
+    if (pop.hidden) return;
+    this.#renderKeyOptions();
+    const ac = new AbortController();
+    this.#settingsAbort = ac;
+    document.addEventListener("pointerdown", (ev) => {
+      const target = /** @type {Node} */ (ev.target);
+      if (pop.contains(target) || this.#settingsBtn?.contains(target)) return;
+      this.#toggleSettings();
+    }, { signal: ac.signal, capture: true });
+  }
+
+  /** Push the reassembly switch into Wireshark's preferences. */
+  #applyReassemblePref() {
+    if (!this.#wg || !this.#wgInited) return;
+    try {
+      this.#wg.setPref("tcp", "desegment_tcp_streams", this.#reassemble ? "TRUE" : "FALSE");
+      this.#wg.applyPreferences();
+    } catch (e) {
+      console.warn("[PCapViewer] could not set TCP reassembly preference:", e);
+    }
+  }
+
+  /** Dissect the active capture again (after a preference change), keeping the selection. */
+  #redissectActive() {
+    const s = this.#active();
+    if (!s?.pcapBytes || !this.#wg || !this.#wgInited) return;
+    this.#loadPcapBytesIntoSession(s, s.pcapBytes);
+    this.#loadAndRenderFramesForActive();
+    if (typeof s.selectedNo === "number") {
+      this.#loadAndRenderFrameDetailsForActive(s.selectedNo);
+      this.#highlightSelectedRow(s.selectedNo);
+    }
   }
 
   #applyHexHidden() {
     const bottom = /** @type {HTMLElement|null} */ (this.#root?.querySelector(".pcapviewer-bottom"));
     bottom?.classList.toggle("pcapviewer-hex-hidden", this.#hexHidden);
-    this.#hexToggleBtn?.classList.toggle("active", !this.#hexHidden);
-    if (this.#hexToggleBtn) {
-      this.#hexToggleBtn.title = this.#hexHidden ? t("pcap.btn.showhex") : t("pcap.btn.hidehex");
-    }
+    if (this.#hexCheck) this.#hexCheck.checked = !this.#hexHidden;
   }
 
   #wireUI() {
     if (!this.#root) return;
 
-    this.#hexToggleBtn?.addEventListener("click", () => {
-      this.#hexHidden = !this.#hexHidden;
+    this.#settingsBtn?.addEventListener("click", () => this.#toggleSettings());
+
+    this.#hexCheck?.addEventListener("change", () => {
+      this.#hexHidden = !this.#hexCheck?.checked;
       this.#applyHexHidden();
+    });
+
+    this.#reassembleCheck?.addEventListener("change", () => {
+      this.#reassemble = !!this.#reassembleCheck?.checked;
+      try { localStorage.setItem("pcap_reassemble", this.#reassemble ? "1" : "0"); } catch { /* storage blocked */ }
+      this.#applyReassemblePref();
+      this.#redissectActive();
+    });
+
+    this.#keySel?.addEventListener("change", () => {
+      const v = this.#keySel?.value ?? "";
+      this.#keyDeviceId = v === "" ? null : Number(v);
+      this.#renderKeyInfo();
+      this.#redissectActive();
     });
 
     this.#filterEl?.addEventListener("input", () => {
@@ -637,6 +794,7 @@ export class PCapViewer {
       if (!this.#wgInited) {
         this.#wg.init();
         this.#wgInited = true;
+        this.#applyReassemblePref();
       }
       this.#hideWgOverlay();
       return true;
@@ -695,6 +853,7 @@ export class PCapViewer {
     for (const other of this.#sessions.values()) {
       if (other.sess) { try { other.sess.delete(); } catch { } other.sess = null; }
     }
+    this.#applyKeyLogPref();
     s.sess = new this.#wg.DissectSession(s.pcapPath);
 
     const ret = s.sess.load();
@@ -994,8 +1153,8 @@ export class PCapViewer {
       const layerIdx = depth === 0 ? protoIdx++ : -1;
 
       const filter = String(n.filter ?? "");
-      const osiLayers = depth === 0 ? osiLayersFor(filter, insideTls) : null;
-      if (depth === 0 && /^(tls|ssl)$/i.test(filter)) insideTls = true;
+      const osiLayers = depth === 0 ? osiLayersFor(filter, insideTls, String(n.label ?? "")) : null;
+      if (depth === 0 && /^(tls|ssl|quic)$/i.test(filter)) insideTls = true;
       const rowOsi = depth === 0 ? osiLayers : osi;
 
       // Build children first so we know if any survive after computed filtering

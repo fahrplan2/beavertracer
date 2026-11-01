@@ -174,6 +174,30 @@
     min-height: 0;
 }
 
+/* ▲/▼ scroll arrows over the app (UILib.attachScrollArrows). A whole app
+   window needs a stronger cue than a table: taller fade in the OS background
+   colours (not --surface) and a larger arrow in the accent colour. */
+.scroll-arrows-host {
+    position: relative;
+}
+.scroll-arrows-host > .router-scroll-hint {
+    font-size: 18px;
+    color: var(--primary);
+    text-shadow: 0 0 6px var(--bg2);
+}
+.scroll-arrows-host > .router-scroll-hint--top {
+    padding: 6px 0 18px;
+    background: linear-gradient(var(--bg1) 45%, transparent);
+}
+.scroll-arrows-host > .router-scroll-hint--bottom {
+    position: absolute;
+    left: 0;
+    right: 0;
+    padding: 18px 0 6px;
+    background: linear-gradient(transparent, var(--bg2) 55%);
+    z-index: 2;
+}
+
 /* Title bar: subtle surface + accent */
 .os-frame-bar {
     display: flex;

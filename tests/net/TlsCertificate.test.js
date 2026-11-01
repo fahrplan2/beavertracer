@@ -12,7 +12,7 @@ import { TlsCertificate } from '../../src/net/models/TlsCertificate.js';
 
 describe('TlsCertificate', () => {
   it('stamps notBefore from Date.now() by default', async () => {
-    const before = Date.now();
+    const before = Math.floor(Date.now() / 1000) * 1000;   // whole seconds (X.509)
     const cert = await TlsCertificate.generate('server.local');
     const after = Date.now();
     expect(cert.notBefore).toBeGreaterThanOrEqual(before);
@@ -67,11 +67,23 @@ describe('TlsCertificate', () => {
     const notBeforeEl = nextElement(der, validity.contentStart);
     const notAfterEl = nextElement(der, notBeforeEl.end);
     const dec = new TextDecoder();
-    const notBefore = Number(dec.decode(der.slice(notBeforeEl.contentStart, notBeforeEl.end)));
-    const notAfter = Number(dec.decode(der.slice(notAfterEl.contentStart, notAfterEl.end)));
+    // RFC 5280 §4.1.2.5: UTCTime up to 2049, GeneralizedTime from 2050
+    expect(der[notBeforeEl.start]).toBe(0x17);
+    expect(dec.decode(der.slice(notBeforeEl.contentStart, notBeforeEl.end))).toBe('260101000000Z');
+    expect(der[notAfterEl.start]).toBe(0x17);
+    expect(dec.decode(der.slice(notAfterEl.contentStart, notAfterEl.end))).toBe('270101000000Z');
+    const notBefore = Date.UTC(2026, 0, 1), notAfter = Date.UTC(2027, 0, 1);
 
     expect(notBefore).toBe(cert.notBefore);
     expect(notAfter).toBe(cert.notAfter);
+  });
+
+  it('GeneralizedTime from 2050, whole seconds', async () => {
+    const cert = await TlsCertificate.generate('server.local', null, { nowMs: Date.UTC(2049, 11, 31, 23, 59, 59, 999), validityDays: 1 });
+    expect(cert.notBefore % 1000).toBe(0);
+    const txt = new TextDecoder().decode(cert.toDer());
+    expect(txt).toContain('491231235959Z');
+    expect(txt).toContain('20500101235959Z');
   });
 
   it('validity period is covered by the certificate signature (tampering invalidates it)', async () => {

@@ -393,6 +393,15 @@ export class BGPDaemon {
     constructor(net) {
         this._net = net;
 
+        /**
+         * Further own prefixes to originate besides the connected networks,
+         * e.g. a router's DHCPv6-PD pool: the customer prefixes delegated
+         * from it live behind other routers and would otherwise be
+         * unreachable from outside this AS. Set by the owning router.
+         * @type {(() => Array<{ dst: IPAddress, prefLen: number }>)|null}
+         */
+        this.extraOrigins = null;
+
         this.enabled  = false;
         this.localAS  = 0;
         /** @type {string} Router-ID as dotted-decimal string */
@@ -800,6 +809,9 @@ export class BGPDaemon {
                     }
                 }
             }
+        }
+        for (const p of this.extraOrigins?.() ?? []) {
+            if (!result.some(r => r.prefLen === p.prefLen && r.dst.toString() === p.dst.toString())) result.push(p);
         }
         return result;
     }

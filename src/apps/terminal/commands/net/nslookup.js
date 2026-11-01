@@ -5,7 +5,9 @@ import { CommandError } from "../lib/errors.js";
 import { abortable } from "../lib/abort.js";
 import { IPAddress } from "../../../../net/models/IPAddress.js";
 
-const SUPPORTED_TYPES = new Set(["A", "AAAA", "MX", "NS"]);
+import { formatSvcb } from "../../../../net/pdu/Svcb.js";
+
+const SUPPORTED_TYPES = new Set(["A", "AAAA", "MX", "NS", "HTTPS"]);
 
 /** @type {import("../types.js").Command} */
 export const nslookup = {
@@ -61,16 +63,33 @@ export const nslookup = {
     ctx.println(t("app.terminal.commands.nslookup.out.address", { address: `${serverIp.toString()}#53` }));
     ctx.println("");
 
+    // Like BIND's nslookup: NXDOMAIN ("name does not exist") is not the same
+    // as NODATA ("name exists, but has no record of this type", RFC 2308)
+    const notFound = () => {
+      if (dns.lastQueryTimedOut) throw new CommandError(t("app.terminal.commands.nslookup.err.timeout"));
+      ctx.println(dns.lastRcode === 0
+        ? t("app.terminal.commands.nslookup.err.noAnswer", { name })
+        : t("app.terminal.commands.nslookup.err.notFound", { name }));
+    };
+
+    if (typeStr === "HTTPS") {
+      const rrs = await abortable(dns.resolveHTTPS(name), ctx.signal);
+      if (!rrs.length) { notFound(); return; }
+      ctx.println(t("app.terminal.commands.nslookup.out.nonAuth"));
+      for (const rr of rrs) ctx.println(`${name}\trdata_65 = ${formatSvcb(rr)}`);
+      return;
+    }
+
     if (typeStr === "MX") {
       const rrs = await abortable(dns.resolveMX(name), ctx.signal);
-      if (!rrs.length) { ctx.println(t("app.terminal.commands.nslookup.err.notFound", { name })); return; }
+      if (!rrs.length) { notFound(); return; }
       for (const rr of rrs) ctx.println(t("app.terminal.commands.nslookup.out.mx", { name, pref: rr.preference, exchange: rr.exchange }));
       return;
     }
 
     if (typeStr === "NS") {
       const rrs = await abortable(dns.resolveNS(name), ctx.signal);
-      if (!rrs.length) { ctx.println(t("app.terminal.commands.nslookup.err.notFound", { name })); return; }
+      if (!rrs.length) { notFound(); return; }
       for (const rr of rrs) ctx.println(t("app.terminal.commands.nslookup.out.ns", { name, host: rr.host }));
       return;
     }
@@ -78,8 +97,7 @@ export const nslookup = {
     const ips = await abortable(typeStr === "AAAA" ? dns.resolveAAAA(name) : dns.resolveA_IP(name), ctx.signal);
     if (!ips.length) {
       // No answer at all is not the same as "name doesn't exist" (NXDOMAIN)
-      if (dns.lastQueryTimedOut) throw new CommandError(t("app.terminal.commands.nslookup.err.timeout"));
-      ctx.println(t("app.terminal.commands.nslookup.err.notFound", { name }));
+      notFound();
       return;
     }
 

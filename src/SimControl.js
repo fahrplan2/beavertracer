@@ -18,7 +18,7 @@ import { PCapController } from "./tracer/PCapControler.js";
 import { UILib } from "./lib/UILib.js";
 import { SimDialog } from "./lib/SimDialog.js";
 import { buildLanguagePicker } from "./lib/LanguagePicker.js";
-import { choosePanelPlacement, segmentToRects } from "./lib/panelPlacement.js";
+import { choosePanelPlacement, segmentToRects, cascadePlacement } from "./lib/panelPlacement.js";
 import { WelcomeDialog } from "./lib/WelcomeDialog.js";
 import { LessonsPanel } from "./lib/LessonsPanel.js";
 import { GameHub } from "./game/GameHub.js";
@@ -28,7 +28,7 @@ import { version } from "./lib/version.js";
 import { isTauri } from "./tauri.js";
 import { Linux } from "./sim/Linux.js";
 import { RemoteBridge } from "./sim/RemoteBridge.js";
-import { migrateCertSignatures } from "./lib/CertMigration.js";
+import { migrateCertSignatures, upgradeCertEncodings } from "./lib/CertMigration.js";
 
 /**
  * @typedef {Object} PortDescriptor
@@ -863,15 +863,21 @@ export class SimControl {
             .filter((o) => o !== obj && o instanceof SimulatedObject && o.panelOpen && o.panelEl)
             .map((o) => rel(/** @type {HTMLElement} */ (o.panelEl).getBoundingClientRect()));
 
-        const place = choosePanelPlacement({
-            bounds: rel(boundsEl.getBoundingClientRect()),
+        const bounds = rel(boundsEl.getBoundingClientRect());
+        const chosen = choosePanelPlacement({
+            bounds,
             view: rel(viewEl.getBoundingClientRect()),
             size,
-            minSize: obj.panelResizable && !userSized ? { w: obj.panelMinWidth, h: obj.panelMinHeight } : null,
+            // always open at full size — shrinking makes a scaled OS screen
+            // look zoomed out
+            minSize: null,
             obstacles,
             avoid,
             anchor: obj.iconEl ? rel(obj.iconEl.getBoundingClientRect()) : null,
         });
+        // exactly on top of another panel? offset it like a cascade so the
+        // new window is recognisable as a new one
+        const place = { ...chosen, ...cascadePlacement(chosen, avoid, bounds) };
 
         obj.px = place.x;
         obj.py = place.y;
@@ -1071,7 +1077,7 @@ export class SimControl {
 
     toJSON() {
         return {
-            version: 6,
+            version: 7,
             appVersion: version(),
             savedAt: new Date().toISOString(),
             tick: SimControl.tick,
@@ -1125,6 +1131,13 @@ export class SimControl {
             const result = await migrateCertSignatures(state);
             state = result.state;
             if (result.unresolved > 0) SimDialog.alert(t("sim.certMigration.unresolved", { count: result.unresolved }));
+        }
+
+        // v6 → v7: certificates use strict X.509 (UTCTime validity, DER
+        // signature) — re-signed where the issuer's key is in the file;
+        // the others keep the legacy encoding and still work.
+        if ((state.version ?? 0) <= 6) {
+            state = (await upgradeCertEncodings(state)).state;
         }
 
         this._clearScene();

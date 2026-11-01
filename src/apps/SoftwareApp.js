@@ -65,13 +65,13 @@ export class SoftwareApp extends GenericProcess {
 
     this.root.replaceChildren(UI.panel(sections));
     const scroller = this._scroller();
-    if (scroller) scroller.scrollTop = this._scrollTop;
+    scroller.scrollTop = this._scrollTop;
     this._scrollTop = 0;
   }
 
-  /** @returns {HTMLElement|null} the OS frame element that scrolls this app */
+  /** @returns {HTMLElement} the element that scrolls this app (.app has overflow-y: auto, css/apps.css) */
   _scroller() {
-    return /** @type {HTMLElement|null} */ (this.root.closest(".os-frame-content"));
+    return this.root;
   }
 
   /**
@@ -80,7 +80,7 @@ export class SoftwareApp extends GenericProcess {
    * @param {() => void} fn
    */
   _keepScroll(fn) {
-    this._scrollTop = this._scroller()?.scrollTop ?? 0;
+    this._scrollTop = this._scroller().scrollTop;
     fn();
   }
 

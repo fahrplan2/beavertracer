@@ -3,6 +3,7 @@
 import { IPAddress } from "./models/IPAddress.js";
 import { TlsSession, TlsHandshakeError } from "./TlsSession.js";
 import { simTimer, SimTimer } from "../lib/SimTimer.js";
+import { Http2Connection, Http2Error, h2ErrorName } from "./Http2.js";
 
 /**
  * Transport-agnostic HTTP/1.1 client for the simulated network.
@@ -172,8 +173,11 @@ export async function openTcpTransport(os, ip, port) {
  * @param {IPAddress} ip
  * @param {number} port
  * @param {string} host  URL host; the server certificate must be issued for it
- * @param {{ insecure?: boolean }} [opts]  `insecure` skips the cert trust check (curl -k)
- * @returns {Promise<{ close: () => void, peerCert: any, transport: { send: (b: Uint8Array) => any, recv: () => Promise<Uint8Array|null> } }>}
+ * @param {{ insecure?: boolean, alpn?: string[], versions?: Array<"1.2"|"1.3"> }} [opts]  `insecure` skips the cert trust check (curl -k);
+ *        `alpn` = offered application protocols (RFC 7301), e.g. ["h2", "http/1.1"];
+ *        `versions` = offered TLS versions (default 1.3 and 1.2)
+ * @returns {Promise<{ close: () => void, peerCert: any, alpn: string, version: string, cipherSuite: string,
+ *                     transport: { send: (b: Uint8Array) => any, recv: () => Promise<Uint8Array|null> } }>}
  */
 export async function openTlsTransport(os, ip, port, host, opts = {}) {
     const tcp = await openTcpTransport(os, ip, port);
@@ -186,6 +190,8 @@ export async function openTlsTransport(os, ip, port, host, opts = {}) {
         sleepFn: (ms) => simTimer.sleep(ms),
         now: () => os?.clock?.nowMs?.() ?? Date.now(),
         serverName: host,
+        alpn: opts.alpn,
+        versions: opts.versions,
     });
 
     try {
@@ -200,6 +206,9 @@ export async function openTlsTransport(os, ip, port, host, opts = {}) {
 
     return {
         peerCert: tls.peerCert,
+        alpn: tls.alpn,
+        version: tls.version,
+        cipherSuite: tls.cipherSuite,
         close: () => { try { tls.close(); } catch { /* ignore */ } tcp.close(); },
         transport: {
             send: (b) => tls.send(/** @type {Uint8Array<ArrayBuffer>} */ (b)),
@@ -457,4 +466,114 @@ export async function httpRequest(opts) {
     }
 
     return res;
+}
+
+/**
+ * One request over HTTP/2 (RFC 9113) on `transport`: after ALPN "h2" on TLS,
+ * or h2c with prior knowledge on plain TCP. Opens the HTTP/2 connection,
+ * sends the request on stream 1 and ends the connection with GOAWAY.
+ * The result has the same shape as {@link httpRequest}; the status line is
+ * "HTTP/2 <code>" (HTTP/2 has no reason phrase).
+ *
+ * @param {{
+ *   transport: { send: (b: Uint8Array) => any, recv: () => Promise<Uint8Array|null> },
+ *   method: string,
+ *   scheme: "http"|"https",
+ *   authority: string,
+ *   path: string,
+ *   headers?: string[],
+ *   body?: Uint8Array | null,
+ *   contentType?: string | null,
+ *   userAgent?: string,
+ *   accept?: string,
+ *   onRequestLine?: (line: string) => void,
+ * }} opts
+ * @returns {Promise<HttpResponse>}
+ */
+export async function http2Request(opts) {
+    const {
+        transport, method, scheme, authority, path,
+        headers = [], body = null, contentType = null,
+        userAgent = "sim-http/1.0", accept = "*/*", onRequestLine,
+    } = opts;
+
+    const fields = requestFields({ headers, body, contentType, userAgent, accept });
+
+    if (onRequestLine) {
+        // curl shows the request in HTTP/1-like notation, Host for :authority
+        onRequestLine(`${method} ${path} HTTP/2`);
+        onRequestLine(`Host: ${authority}`);
+        for (const [n, v] of fields) onRequestLine(`${n}: ${v}`);
+        onRequestLine("");
+    }
+
+    const conn = new Http2Connection({ send: transport.send, recv: transport.recv, isServer: false });
+    conn.start();
+    try {
+        return await muxRequest(conn, "HTTP/2", { method, scheme, authority, path, fields, body });
+    } finally {
+        conn.goaway();
+    }
+}
+
+/**
+ * One request over an established HTTP/3 connection (see QuicTransport
+ * connectHttp3). Same result shape as {@link httpRequest}, status line
+ * "HTTP/3 <code>".
+ * @param {Omit<Parameters<typeof http2Request>[0], "transport"> & { h3: import("./Http3.js").Http3Connection }} opts
+ * @returns {Promise<HttpResponse>}
+ */
+export async function http3Request(opts) {
+    const { h3, method, scheme, authority, path, body = null, onRequestLine } = opts;
+    const fields = requestFields(opts);
+    if (onRequestLine) {
+        onRequestLine(`${method} ${path} HTTP/3`);
+        onRequestLine(`Host: ${authority}`);
+        for (const [n, v] of fields) onRequestLine(`${n}: ${v}`);
+        onRequestLine("");
+    }
+    return muxRequest(h3, "HTTP/3", { method, scheme, authority, path, fields, body });
+}
+
+/**
+ * Header fields of an HTTP/2 or HTTP/3 request (lower-case names).
+ * @param {{ headers?: string[], body?: Uint8Array|null, contentType?: string|null, userAgent?: string, accept?: string }} o
+ * @returns {Array<[string, string]>}
+ */
+function requestFields(o) {
+    /** @type {Array<[string, string]>} */
+    const fields = [["user-agent", o.userAgent ?? "sim-http/1.0"], ["accept", o.accept ?? "*/*"]];
+    for (const h of o.headers ?? []) {
+        const k = h.indexOf(":");
+        if (k > 0) fields.push([h.slice(0, k).trim().toLowerCase(), h.slice(k + 1).trim()]);
+    }
+    if (o.body && o.contentType && !fields.some(([n]) => n === "content-type")) fields.push(["content-type", o.contentType]);
+    if (o.body) fields.push(["content-length", String(o.body.length)]);
+    return fields;
+}
+
+/**
+ * @param {{ request: (r: any) => Promise<{ status: number, headers: Array<[string, string]>, body: Uint8Array }> }} mux
+ * @param {string} version "HTTP/2" | "HTTP/3"
+ * @param {{ method: string, scheme: string, authority: string, path: string, fields: Array<[string, string]>, body: Uint8Array|null }} r
+ * @returns {Promise<HttpResponse>}
+ */
+async function muxRequest(mux, version, r) {
+    try {
+        const res = await mux.request({ method: r.method, scheme: r.scheme, authority: r.authority, path: r.path, headers: r.fields, body: r.body });
+        const headerLines = res.headers.map(([n, v]) => `${n}: ${v}`);
+        /** @type {Record<string, string>} */
+        const hdrs = {};
+        for (const [n, v] of res.headers) hdrs[n] = hdrs[n] ? `${hdrs[n]}, ${v}` : v;
+        const statusLine = `${version} ${res.status}`;
+        return {
+            statusLine, statusCode: res.status, reason: "",
+            headers: hdrs, headerText: [statusLine, ...headerLines].join("\r\n"), headerLines,
+            body: res.body, truncated: false,
+        };
+    } catch (e) {
+        const msg = e instanceof Http2Error ? `HTTP/2 ${h2ErrorName(e.code)}: ${e.message}`
+            : e instanceof Error ? `${version}: ${e.message}` : String(e);
+        throw new HttpError("headers", msg);
+    }
 }

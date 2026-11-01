@@ -12,6 +12,10 @@ import { t } from "../i18n/index.js";
 import { IPAddress } from "../net/models/IPAddress.js";
 import { nowStamp, encodeUTF8, decodeUTF8 } from "../lib/helpers.js";
 import { TlsSession, TlsCertUntrustedError, TlsCertExpiredError, TlsCertNameMismatchError } from "../net/TlsSession.js";
+import { Http2Connection } from "../net/Http2.js";
+import { connectHttp3 } from "../net/QuicTransport.js";
+import { KEYLOG_PATH, appendKeyLogLine } from "../lib/keyLog.js";
+import { formatSvcb } from "../net/pdu/Svcb.js";
 
 const startPage = startPageTemplate.replace("<!--SPARKTAIL_LOGO-->", logoSvg);
 
@@ -312,7 +316,7 @@ function normalizeUrlInput(input) {
 }
 
 // Helper: buffered TCP reader on top of recvTCPConn (stream semantics)
-class TcpBufferedReader {
+export class TcpBufferedReader {
   /**
    * @param {{
    *   recv: () => Promise<Uint8Array|null>,
@@ -330,6 +334,22 @@ class TcpBufferedReader {
 
     /** @type {boolean} */
     this.closed = false;
+
+    /** recv() started while the connection sat idle (see watchIdle). @type {Promise<Uint8Array|null>|null} */
+    this._pending = null;
+  }
+
+  /**
+   * Keep one recv() outstanding while the connection is idle in the pool, so
+   * a close by the server (keep-alive timeout) is noticed: `onEnd` runs when
+   * that read reports EOF. Data arriving meanwhile is kept for the next read.
+   * @param {() => void} onEnd
+   */
+  watchIdle(onEnd) {
+    if (this.closed || this._pending) return;
+    const p = this._recv();
+    this._pending = p;
+    p.then((chunk) => { if (chunk == null && this._pending === p) onEnd(); }, () => { /* reported on next read */ });
   }
 
   /** @param {Uint8Array} chunk */
@@ -346,7 +366,9 @@ class TcpBufferedReader {
     if (this.closed) return;
     if (this._isCancelled()) throw new Error(t("app.sparktail.err.cancelled"));
 
-    const chunk = await withTimeout(this._recv(), this._timeoutMs, t("app.sparktail.label.recv"));
+    const p = this._pending ?? this._recv();
+    this._pending = null;
+    const chunk = await withTimeout(p, this._timeoutMs, t("app.sparktail.label.recv"));
     if (chunk == null) {
       this.closed = true;
       return;
@@ -417,6 +439,147 @@ class TcpBufferedReader {
   }
 }
 
+/**
+ * May the connection carry another request after this response?
+ * RFC 9112 §9.3: HTTP/1.1 persists unless "Connection: close"; HTTP/1.0 only
+ * with "keep-alive". The body must also be delimited by Content-Length or
+ * chunked coding, otherwise its end is the connection close (§6.3).
+ * @param {string} statusLine
+ * @param {Record<string,string>} headers lower-case names
+ */
+export function isReusableResponse(statusLine, headers) {
+  const tokens = (headers["connection"] || "").toLowerCase().split(",").map(x => x.trim());
+  if (tokens.includes("close")) return false;
+  const http11 = /^HTTP\/1\.1\s/.test(statusLine);
+  if (!http11 && !tokens.includes("keep-alive")) return false;
+  const te = (headers["transfer-encoding"] || "").toLowerCase();
+  return te.includes("chunked") || /^\d+$/.test((headers["content-length"] || "").trim());
+}
+
+/**
+ * Read one HTTP/1.x response (status line, headers, body) from `r`.
+ * @param {TcpBufferedReader} r
+ * @param {number} bodyLimit
+ * @param {string} [method]
+ * @returns {Promise<{ statusLine: string, statusCode: number, reason: string, headerText: string,
+ *                     headers: Record<string,string>, body: Uint8Array, reusable: boolean }>}
+ */
+export async function readHttpResponse(r, bodyLimit, method = "GET") {
+  const headerBlock = await r.readUntil(encodeUTF8("\r\n\r\n"), 2 * 1024 * 1024);
+  const headerText = decodeUTF8(headerBlock.subarray(0, headerBlock.length - 4));
+  const firstLineEnd = headerText.indexOf("\r\n");
+  const statusLine = firstLineEnd >= 0 ? headerText.slice(0, firstLineEnd) : headerText;
+
+  const m = /^HTTP\/\d+\.\d+\s+(\d{3})\s*(.*)$/.exec(statusLine);
+  const statusCode = m ? Number(m[1]) : 0;
+  const reason = m ? (m[2] || "").trim() : "";
+  const headers = parseHeaders(headerText);
+
+  const te = (headers["transfer-encoding"] || "").toLowerCase();
+  const cl = headers["content-length"];
+  /** @type {Uint8Array} */
+  let body = new Uint8Array(0);
+
+  // RFC 9112 §6.3: no body for HEAD, 1xx, 204, 304 whatever the headers say
+  const noBody = method === "HEAD" || statusCode === 204 || statusCode === 304 || (statusCode >= 100 && statusCode < 200);
+  if (noBody) {
+    // nothing to read
+  } else if (te.includes("chunked")) {
+    /** @type {Uint8Array[]} */
+    const out = [];
+    let total = 0;
+
+    while (true) {
+      const line = decodeUTF8(await r.readLine(64 * 1024)).trim();
+      const semi = line.indexOf(";");
+      const hex = (semi >= 0 ? line.slice(0, semi) : line).trim();
+
+      if (!/^[0-9a-fA-F]+$/.test(hex)) {
+        throw new Error(t("app.sparktail.err.chunkedInvalidChunkSize", { line }));
+      }
+      const size = parseInt(hex, 16);
+      if (!Number.isFinite(size) || size < 0) {
+        throw new Error(t("app.sparktail.err.chunkedInvalidSize", { hex }));
+      }
+
+      if (size === 0) {
+        // Trailer headers until empty line
+        while ((await r.readLine(64 * 1024)).length !== 0) { /* skip trailer */ }
+        break;
+      }
+
+      const chunk = await r.readExactly(size);
+      out.push(chunk);
+      total += chunk.length;
+      if (total > bodyLimit) throw new Error(t("app.sparktail.err.bodyLimitExceeded", { bodyLimit }));
+
+      const crlf = await r.readExactly(2);
+      if (crlf[0] !== 13 || crlf[1] !== 10) throw new Error(t("app.sparktail.err.chunkedMissingCrlf"));
+    }
+
+    body = concatChunks(out);
+  } else if (cl && /^\d+$/.test(cl.trim())) {
+    const want = Number(cl.trim());
+    if (!Number.isFinite(want) || want < 0) throw new Error(t("app.sparktail.err.invalidContentLength"));
+    if (want > bodyLimit) throw new Error(t("app.sparktail.err.bodyLimitExceeded", { bodyLimit }));
+    body = await r.readExactly(want);
+  } else {
+    // Fallback: no length known. Read until close.
+    body = await r.readToClose(bodyLimit + 256 * 1024);
+    if (body.length > bodyLimit) throw new Error(t("app.sparktail.err.bodyLimitExceeded", { bodyLimit }));
+  }
+
+  // copy: the reader hands out views into its buffer
+  return { statusLine, statusCode, reason, headerText, headers, body: body.slice(), reusable: isReusableResponse(statusLine, headers) };
+}
+
+/**
+ * A browser connection: HTTP/1.1 (one request at a time, keep-alive) or
+ * HTTP/2 (`h2` set: shared, requests multiplexed as streams).
+ * @typedef {{
+ *   origin: string,
+ *   key: string,
+ *   tls: TlsSession|null,
+ *   send: (d: Uint8Array) => void|Promise<void>,
+ *   reader: TcpBufferedReader,
+ *   h2: Http2Connection|null,
+ *   h3: import("../net/Http3.js").Http3Connection|null,
+ *   mux: any,
+ *   closeH3: (() => void)|null,
+ *   quicDone: Promise<void>|null,
+ *   proto: string,
+ *   tlsVersion: string,
+ *   peerCert: import("../net/models/TlsCertificate.js").TlsCertificate|null,
+ *   bypass: boolean,
+ *   requests: number,
+ *   closing: boolean,
+ * }} BrowserConn
+ *
+ * @typedef {{ statusLine: string, statusCode: number, reason: string, headerText: string,
+ *             headers: Record<string,string>, body: Uint8Array, reusable: boolean, streamId: number }} BrowserResponse
+ */
+
+/** Parallel HTTP/1.1 connections per origin, as in common browsers. */
+const MAX_CONNS_PER_ORIGIN = 6;
+
+/**
+ * "auto": HTTP/2 via ALPN for https and HTTP/3 after an Alt-Svc announcement
+ * (like browsers); "h2" over http:// is h2c with prior knowledge; "h3" tries
+ * QUIC right away without fallback.
+ */
+const PROTOCOL_MODES = /** @type {const} */ (["auto", "http1", "h2", "h3"]);
+
+/** After a failed QUIC attempt, stay on TCP for this long (sim ms). */
+const H3_BROKEN_MS = 5 * 60_000;
+
+const CONF_PATH = "/etc/sparktail.conf";
+
+
+/** @param {string} scheme @param {string} host @param {number} port */
+function originKey(scheme, host, port) {
+  return `${scheme}://${host.toLowerCase()}:${port}`;
+}
+
 export class SparktailHTTPClientApp extends LoggedProcess {
   get title() {
     return t("app.sparktail.title");
@@ -435,6 +598,36 @@ export class SparktailHTTPClientApp extends LoggedProcess {
 
   /** @type {string|null} */
   connKey = null;
+
+  /** Idle HTTP/1.1 keep-alive connections per pool key (origin + trust mode). @type {Map<string, BrowserConn[]>} */
+  _pool = new Map();
+
+  /** Shared HTTP/2 connections per pool key. @type {Map<string, BrowserConn>} */
+  _h2 = new Map();
+
+  /** Connections being opened that may turn out to be HTTP/2. @type {Map<string, Promise<BrowserConn>>} */
+  _opening = new Map();
+
+  /** @type {"auto"|"http1"|"h2"|"h3"} */
+  protocolMode = "auto";
+
+  /** Write TLS/QUIC session secrets to KEYLOG_PATH (off by default, like SSLKEYLOGFILE). */
+  keyLogEnabled = false;
+
+  /** Alt-Svc announcements (RFC 7838): origin -> HTTP/3 port and expiry. @type {Map<string, { port: number, expires: number }>} */
+  _altSvc = new Map();
+
+  /** Origins where QUIC failed recently (UDP blocked?): origin -> retry time. @type {Map<string, number>} */
+  _h3Broken = new Map();
+
+  /** When the DNS HTTPS record of an origin may be asked again (sim ms). @type {Map<string, number>} */
+  _httpsRrChecked = new Map();
+
+  /** TLS version and HTTP version of the current page, for the lock popup. */
+  _connInfo = "";
+
+  /** @type {HTMLSelectElement|null} */
+  protoEl = null;
 
   /** @type {HTMLInputElement|null} */
   urlEl = null;
@@ -486,6 +679,8 @@ export class SparktailHTTPClientApp extends LoggedProcess {
 
   /** @type {HTMLElement|null} */ _lockEl = null;
   /** @type {HTMLElement|null} */ _certPopupEl = null;
+  /** @type {HTMLElement|null} */ _settingsPopupEl = null;
+  /** @type {HTMLButtonElement|null} */ _settingsBtn = null;
   /** @type {import("../net/models/TlsCertificate.js").TlsCertificate|null} */ _serverCert = null;
   /** @type {boolean} */ _certTrusted = false;
 
@@ -497,6 +692,49 @@ export class SparktailHTTPClientApp extends LoggedProcess {
 
   run() {
     this.root.classList.add("app", "app-sparktail-http");
+    this._loadConfig();
+  }
+
+  _loadConfig() {
+    try {
+      const json = JSON.parse(this.os.fs?.readFile(CONF_PATH) ?? "");
+      if (PROTOCOL_MODES.includes(json.protocol)) this.protocolMode = json.protocol;
+      this.keyLogEnabled = json.keyLog === true;
+    } catch { /* defaults */ }
+  }
+
+  _saveConfig() {
+    try {
+      this.os.fs?.writeFile(CONF_PATH, JSON.stringify({ protocol: this.protocolMode, keyLog: this.keyLogEnabled }, null, 2) + "\n");
+    } catch { /* ignore */ }
+  }
+
+  /** @param {boolean} on */
+  _setKeyLog(on) {
+    if (on === this.keyLogEnabled) return;
+    this.keyLogEnabled = on;
+    this._saveConfig();
+    this._appendLog(t(on ? "app.sparktail.log.keyLogOn" : "app.sparktail.log.keyLogOff", { time: nowStamp(), path: KEYLOG_PATH }));
+  }
+
+  /**
+   * Key log sink for new TLS/QUIC sessions, or undefined when switched off.
+   * Appends one NSS key log line per secret.
+   * @returns {((line: string) => void)|undefined}
+   */
+  _keyLogSink() {
+    if (!this.keyLogEnabled) return undefined;
+    return (line) => appendKeyLogLine(this.os.fs, line);
+  }
+
+  /** @param {string} mode */
+  _setProtocolMode(mode) {
+    if (!PROTOCOL_MODES.includes(/** @type {any} */ (mode)) || mode === this.protocolMode) return;
+    this.protocolMode = /** @type {any} */ (mode);
+    this._saveConfig();
+    // connections negotiated under the old setting must not be reused
+    this._closePool();
+    this._appendLog(t("app.sparktail.log.protocolMode", { time: nowStamp(), mode: t(`app.sparktail.proto.${mode}`) }));
   }
 
   /**
@@ -558,6 +796,38 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     this._setTabActive = setTabActive;
     const tabRow = UI.el("div", { className: "sparktail-tab-row", children: [tabBar] });
 
+    // Settings popup (gear next to Stop): HTTP version + disconnect
+    // protocol choice: Auto behaves like real browsers (HTTP/2 via ALPN, HTTP/3 after Alt-Svc / DNS)
+    const protoSel = UI.select(PROTOCOL_MODES.map(m => ({ value: m, label: t(`app.sparktail.proto.${m}`) })), {
+      value: this.protocolMode,
+      className: ["input", "sparktail-proto"],
+      onChange: (v) => this._setProtocolMode(v),
+    });
+    protoSel.title = t("app.sparktail.proto.title");
+    this.protoEl = protoSel;
+    const settingsPopupEl = UI.el("div", {
+      className: ["sparktail-cert-popup", "sparktail-settings-popup"],
+      children: [
+        UI.el("div", { className: "cert-popup-title", text: t("app.sparktail.button.settings") }),
+        UI.row(t("app.sparktail.settings.httpVersion"), protoSel),
+        UI.row(t("app.sparktail.settings.keyLog"), /** @type {HTMLInputElement} */ (UI.el("input", {
+          attrs: { type: "checkbox", title: KEYLOG_PATH },
+          init: (el) => {
+            const cb = /** @type {HTMLInputElement} */ (el);
+            cb.checked = this.keyLogEnabled;
+            cb.addEventListener("change", () => this._setKeyLog(cb.checked));
+          },
+        }))),
+        UI.button(t("app.sparktail.settings.disconnect"), () => this._disconnectAll(), { icon: "fa-link-slash" }),
+      ],
+    });
+    settingsPopupEl.hidden = true;
+    this._settingsPopupEl = settingsPopupEl;
+    const settingsBtn = UI.button("", () => this._toggleSettingsPopup(), { title: t("app.sparktail.button.settings") });
+    settingsBtn.replaceChildren(UI.el("i", { className: "fas fa-gear" }));
+    settingsBtn.setAttribute("aria-label", t("app.sparktail.button.settings"));
+    this._settingsBtn = settingsBtn;
+
     // Content areas
     const iframe = /** @type {HTMLIFrameElement} */ (UI.el("iframe", {
       className: "sparktail-preview",
@@ -596,10 +866,12 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     chromeBar.appendChild(urlInput);
     chromeBar.appendChild(go);
     chromeBar.appendChild(stop);
+    chromeBar.appendChild(settingsBtn);
     chromeBar.appendChild(throbber);
 
     const panel = UI.panel([chromeBar, tabRow, content, status]);
     panel.appendChild(certPopupEl);
+    panel.appendChild(settingsPopupEl);
     this.root.replaceChildren(panel);
 
     // Listen for internal page navigation (about:start links)
@@ -654,15 +926,416 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     this.previewFrame = null;
     this.sourceEl = null;
     this.headersEl = null;
+    this.protoEl = null;
     this._lockEl = null;
     this._certPopupEl = null;
+    this._settingsPopupEl = null;
+    this._settingsBtn = null;
     this._serverCert = null;
     super.onUnmount();
   }
 
   destroy() {
     this._stop();
+    this._closePool();
     super.destroy();
+  }
+
+  // ── connection pool: HTTP/1.1 keep-alive and shared HTTP/2 ─────────────────
+
+  /** @param {BrowserConn} conn */
+  _closeConn(conn) {
+    conn.closing = true;
+    if (conn.h3) { try { conn.closeH3?.(); } catch { /* ignore */ } return; }
+    if (conn.h2) { try { conn.h2.goaway(); } catch { /* ignore */ } }
+    if (conn.tls) { try { conn.tls.close(); } catch { /* ignore */ } }
+    try { this.os.net.closeTCPConn(conn.key); } catch { /* ignore */ }
+  }
+
+  /**
+   * Connections opened with "proceed anyway" live in their own pool slot, so
+   * a later normal navigation runs the certificate check again.
+   * @param {string} origin @param {boolean} bypass
+   */
+  _poolKey(origin, bypass) {
+    return bypass ? `${origin} (insecure)` : origin;
+  }
+
+  /** All pooled connections (idle HTTP/1.1 and shared HTTP/2). @returns {BrowserConn[]} */
+  _pooledConns() {
+    return [...[...this._pool.values()].flat(), ...this._h2.values()];
+  }
+
+  /**
+   * Park an idle HTTP/1.1 connection for reuse. When the server closes it
+   * later (keep-alive timeout), it is dropped and our side is closed as well.
+   * @param {BrowserConn} conn
+   */
+  _poolPut(conn) {
+    const key = this._poolKey(conn.origin, conn.bypass);
+    const list = this._pool.get(key) ?? [];
+    if (list.includes(conn)) return;
+    if (list.length >= MAX_CONNS_PER_ORIGIN) { this._closeConn(conn); return; }
+    list.push(conn);
+    this._pool.set(key, list);
+    conn.reader.watchIdle(() => {
+      const l = this._pool.get(key);
+      const i = l ? l.indexOf(conn) : -1;
+      if (!l || i < 0) return;
+      l.splice(i, 1);
+      if (l.length === 0) this._pool.delete(key);
+      this._closeConn(conn);
+      this._appendLog(t("app.sparktail.log.connClosedByServer", { time: nowStamp(), origin: conn.origin, count: conn.requests }));
+    });
+  }
+
+  /**
+   * Share a multiplexed connection (HTTP/2 or HTTP/3) for its origin until
+   * it ends (GOAWAY from the server, idle timeout, transport close).
+   * @param {BrowserConn} conn
+   */
+  _registerShared(conn) {
+    const key = this._poolKey(conn.origin, conn.bypass);
+    this._h2.set(key, conn);
+    const drop = () => {
+      if (this._h2.get(key) !== conn) return;
+      this._h2.delete(key);
+      if (!conn.closing) {
+        this._appendLog(t("app.sparktail.log.connClosedByServer", { time: nowStamp(), origin: conn.origin, count: conn.requests }));
+      }
+      this._closeConn(conn);
+    };
+    if (conn.h2) {
+      const h2 = conn.h2;
+      h2.onGoaway = () => { if (h2.activeStreams === 0) drop(); else h2.onIdle = drop; };
+      h2.done.then(drop);
+    } else if (conn.quicDone) {
+      conn.quicDone.then(drop);
+    }
+  }
+
+  /**
+   * Remember an Alt-Svc announcement (RFC 7838 §3): `h3=":443"; ma=86400`.
+   * Only same-host alternatives are used; "clear" forgets them.
+   * @param {string} origin @param {string|undefined} value
+   */
+  _noteAltSvc(origin, value) {
+    if (!value || !origin.startsWith("https://")) return;
+    if (value.trim().toLowerCase() === "clear") { this._altSvc.delete(origin); return; }
+    for (const entry of value.split(",")) {
+      const m = /^\s*h3\s*=\s*"([^"]*)"(.*)$/i.exec(entry);
+      if (!m) continue;
+      const hp = /^([^:]*):(\d+)$/.exec(m[1]);
+      if (!hp || (hp[1] && hp[1].toLowerCase() !== new URL(origin).hostname.toLowerCase())) continue;
+      const ma = /;\s*ma\s*=\s*(\d+)/i.exec(m[2]);
+      const maxAge = ma ? Number(ma[1]) : 86400;
+      const known = this._altSvc.has(origin);
+      this._altSvc.set(origin, { port: Number(hp[2]), expires: this._now() + maxAge * 1000 });
+      if (!known) this._appendLog(t("app.sparktail.log.altSvc", { time: nowStamp(), origin, port: hp[2] }));
+      return;
+    }
+  }
+
+  /**
+   * DNS HTTPS record (RFC 9460): like browsers, ask once per origin (until
+   * the record's TTL runs out) whether the server announces HTTP/3 in DNS —
+   * then QUIC is possible on the very first visit, without a TCP round trip
+   * for Alt-Svc. Only ServiceMode records for the same name are used.
+   * @param {string} scheme @param {string} host @param {string} origin @param {number} port
+   */
+  async _learnHttpsRecord(scheme, host, origin, port) {
+    if (scheme !== "https" || this.protocolMode !== "auto") return;
+    const now = this._now();
+    const alt = this._altSvc.get(origin);
+    if (alt && alt.expires > now) return;
+    if ((this._httpsRrChecked.get(origin) ?? 0) > now) return;
+    if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host) || host.includes(":")) return; // IP literal: no DNS
+    const dns = this.os.dns;
+    if (!dns?.resolveHTTPS) return;
+    /** @type {Array<{priority:number, target:string, params:Record<string, any>, ttl:number}>} */
+    let rrs = [];
+    try {
+      rrs = await withTimeout(dns.resolveHTTPS(host), SimTimer.DNS_RESOLVE_TIMEOUT_MS, t("app.sparktail.label.dns"));
+    } catch { /* no record: Alt-Svc remains the way to find HTTP/3 */ }
+    const same = (/** @type {string} */ n) => n === "." || n.replace(/\.$/, "").toLowerCase() === host.toLowerCase();
+    const rr = rrs.find(r => r.priority > 0 && same(r.target));
+    this._httpsRrChecked.set(origin, now + Math.max(30, rr?.ttl ?? 60) * 1000);
+    if (!rr) return;
+    this._appendLog(t("app.sparktail.log.httpsRR", { time: nowStamp(), host, rr: formatSvcb(rr) }));
+    if (!(rr.params.alpn ?? []).includes("h3")) return;
+    this._altSvc.set(origin, { port: rr.params.port ?? port, expires: now + Math.max(1, rr.ttl) * 1000 });
+  }
+
+  /** Simulated time of this host (falls back to the browser clock). */
+  _now() {
+    return this.os.clock?.nowMs?.() ?? Date.now();
+  }
+
+  /**
+   * HTTP/3 port to try for this origin, or null: "h3" mode always (port of
+   * the URL), "auto" after an unexpired Alt-Svc and no recent QUIC failure.
+   * @param {string} scheme @param {string} origin @param {number} port
+   */
+  _h3PortFor(scheme, origin, port) {
+    if (scheme !== "https") return null;
+    if (this.protocolMode === "h3") return port;
+    if (this.protocolMode !== "auto") return null;
+    const alt = this._altSvc.get(origin);
+    if (!alt || alt.expires < this._now()) return null;
+    if ((this._h3Broken.get(origin) ?? 0) > this._now()) return null;
+    return alt.port;
+  }
+
+  /**
+   * Open QUIC + HTTP/3. Throws with `stage` = "h3".
+   * @param {{ host: string, ip: IPAddress, bypass: boolean }} o @param {string} origin @param {number} port
+   * @returns {Promise<BrowserConn>}
+   */
+  async _openH3Conn(o, origin, port) {
+    this._appendLog(t("app.sparktail.log.h3Try", { time: nowStamp(), origin, port }));
+    let c;
+    try {
+      c = await connectHttp3(this.os, { ip: o.ip, port, host: o.host, insecure: o.bypass, keyLog: this._keyLogSink() });
+    } catch (e) {
+      throw Object.assign(e instanceof Error ? e : new Error(String(e)), { stage: "h3" });
+    }
+    const tls = c.quic.tls;
+    this._appendLog(t("app.sparktail.log.tlsOk", { time: nowStamp(), host: o.host }) + ` [${tls.version}, ${tls.cipherSuite}, QUIC]`);
+    this._appendLog(t("app.sparktail.log.protocol", { time: nowStamp(), origin, proto: "HTTP/3 (QUIC)" }));
+    return {
+      origin, key: `quic:${c.localPort}`, tls: null, send: () => {},
+      reader: new TcpBufferedReader({ recv: async () => null, isCancelled: () => true, timeoutMs: 0 }),
+      h2: null, h3: c.h3, mux: c.h3, closeH3: c.close, quicDone: c.quic.done,
+      proto: "HTTP/3 (QUIC)", tlsVersion: tls.version, peerCert: tls.peerCert, bypass: o.bypass, requests: 0, closing: false,
+    };
+  }
+
+  /**
+   * Get a connection for a request: a shared HTTP/2 one, an idle HTTP/1.1
+   * one, or a new one. While a connection that may become HTTP/2 is being
+   * opened, further requests wait for it instead of opening their own.
+   * @param {{ scheme: string, host: string, port: number, ip: IPAddress,
+   *           bypass: boolean, isCancelled: () => boolean }} o
+   * @returns {Promise<{ conn: BrowserConn, reused: boolean }>}
+   */
+  async _acquire(o) {
+    const origin = originKey(o.scheme, o.host, o.port);
+    const key = this._poolKey(origin, o.bypass);
+    if (!this._h2.get(key)?.mux?.usable && !this._pool.get(key)?.length) {
+      await this._learnHttpsRecord(o.scheme, o.host, origin, o.port);
+    }
+    for (;;) {
+      const shared = this._h2.get(key);
+      if (shared?.mux?.usable) return { conn: shared, reused: true };
+      const idle = this._pool.get(key)?.pop();
+      if (idle) {
+        if (this._pool.get(key)?.length === 0) this._pool.delete(key);
+        return { conn: idle, reused: true };
+      }
+      const pending = this._opening.get(key);
+      if (!pending) break;
+      const c = await pending.catch(() => null);
+      if (!c?.mux) break;    // it became HTTP/1.1: open our own connection
+    }
+    const mayBeH2 = this.protocolMode !== "http1" && (o.scheme === "https" || this.protocolMode === "h2");
+    const h3Port = this._h3PortFor(o.scheme, origin, o.port);
+    const p = h3Port === null ? this._openConn(o) : this._openH3Conn(o, origin, h3Port).catch((e) => {
+      if (this.protocolMode === "h3") throw e;
+      // like browsers: QUIC failed (UDP blocked?) -> remember and use TCP
+      this._h3Broken.set(origin, this._now() + H3_BROKEN_MS);
+      this._appendLog(t("app.sparktail.log.h3Fallback", { time: nowStamp(), origin, reason: e instanceof Error ? e.message : String(e) }));
+      return this._openConn(o);
+    });
+    if (mayBeH2) this._opening.set(key, p);
+    try {
+      const conn = await p;
+      if (conn.mux) this._registerShared(conn);
+      return { conn, reused: false };
+    } finally {
+      if (this._opening.get(key) === p) this._opening.delete(key);
+    }
+  }
+
+  /**
+   * Done with a connection after a response.
+   * @param {BrowserConn} conn @param {boolean} reusable
+   */
+  _release(conn, reusable) {
+    if (conn.mux) {
+      if (!conn.mux.usable && conn.mux.activeStreams === 0) this._closeConn(conn);
+      return;
+    }
+    if (reusable) this._poolPut(conn);
+    else this._closeConn(conn);
+  }
+
+  _closePool() {
+    for (const conn of this._pooledConns()) this._closeConn(conn);
+    this._pool.clear();
+    this._h2.clear();
+  }
+
+  /**
+   * Open a TCP connection (plus TLS for https) and pick the protocol:
+   * ALPN decides for https, the protocol setting for http (h2c only with
+   * "HTTP/2"). Throws an Error with `stage` = "connect" | "tls" | "proto";
+   * for "tls" also `tls` (for the peer cert).
+   * @param {{ scheme: string, host: string, port: number, ip: IPAddress,
+   *           bypass: boolean, isCancelled: () => boolean }} o  bypass: "proceed anyway", no certificate check
+   * @returns {Promise<BrowserConn>}
+   */
+  async _openConn(o) {
+    const timeout = this._timeoutMs();
+    const mode = this.protocolMode;
+    /** @type {string|undefined} */
+    let key;
+    try {
+      const conn = await withTimeout(this.os.net.connectTCPConn(o.ip, o.port), SimTimer.TCP_CONNECT_TIMEOUT_MS, t("app.sparktail.label.connect"));
+      key = conn?.key;
+      if (typeof key !== "string" || !key) throw new Error(t("app.sparktail.err.noConnKey"));
+    } catch (e) {
+      throw Object.assign(e instanceof Error ? e : new Error(String(e)), { stage: "connect" });
+    }
+    const k = key;
+
+    /** @type {(d: Uint8Array) => void|Promise<void>} */
+    let send = (d) => this.os.net.sendTCPConn(k, d);
+    /** @type {() => Promise<Uint8Array|null>} */
+    let recv = () => this.os.net.recvTCPConn(k);
+    /** @type {TlsSession|null} */
+    let tls = null;
+    let useH2 = o.scheme === "http" && mode === "h2";
+    let proto = useH2 ? "HTTP/2 (h2c, prior knowledge)" : "HTTP/1.1";
+
+    if (o.scheme === "https") {
+      // ALPN offer (RFC 7301), most preferred first
+      const alpn = mode === "http1" ? ["http/1.1"] : mode === "h2" ? ["h2"] : ["h2", "http/1.1"];
+      tls = new TlsSession({
+        send, recv, isServer: false,
+        trustStore: o.bypass ? undefined : (this.os.tls?.certStore ?? undefined),
+        timeoutMs: timeout,
+        sleepFn: (ms) => simTimer.sleep(ms),
+        now: () => this.os.clock.nowMs(),
+        serverName: o.host,
+        alpn,
+        keyLog: this._keyLogSink(),
+      });
+      try {
+        await withTimeout(tls.handshake(), timeout, t("app.sparktail.label.tlsHandshake"));
+      } catch (e) {
+        try { tls.close(); } catch { /* ignore */ }
+        try { this.os.net.closeTCPConn(k); } catch { /* ignore */ }
+        throw Object.assign(e instanceof Error ? e : new Error(String(e)), { stage: "tls", tls });
+      }
+      useH2 = tls.alpn === "h2";
+      this._appendLog(t("app.sparktail.log.tlsOk", { time: nowStamp(), host: o.host }) + ` [${tls.version}, ${tls.cipherSuite}]`);
+      if (mode === "h2" && !useH2) {
+        try { tls.close(); } catch { /* ignore */ }
+        try { this.os.net.closeTCPConn(k); } catch { /* ignore */ }
+        throw Object.assign(new Error(t("app.sparktail.err.noHttp2")), { stage: "proto" });
+      }
+      proto = useH2 ? "HTTP/2 (ALPN h2)" : tls.alpn ? `HTTP/1.1 (ALPN ${tls.alpn})` : "HTTP/1.1";
+      const session = tls;
+      send = (d) => session.send(/** @type {Uint8Array<ArrayBuffer>} */ (d));
+      recv = () => session.recv();
+    }
+
+    /** @type {Http2Connection|null} */
+    let h2 = null;
+    if (useH2) {
+      h2 = new Http2Connection({ send, recv, isServer: false });
+      h2.start();
+    }
+    const origin = originKey(o.scheme, o.host, o.port);
+    this._appendLog(t("app.sparktail.log.protocol", { time: nowStamp(), origin, proto }));
+
+    return {
+      origin,
+      key: k,
+      tls,
+      send,
+      // HTTP/2 owns the transport; the reader is only used for HTTP/1.1
+      reader: new TcpBufferedReader({ recv: h2 ? async () => null : recv, isCancelled: o.isCancelled, timeoutMs: timeout }),
+      h2,
+      h3: null,
+      mux: h2,
+      closeH3: null,
+      quicDone: null,
+      proto,
+      tlsVersion: tls?.version ?? "",
+      peerCert: tls?.peerCert ?? null,
+      bypass: o.bypass,
+      requests: 0,
+      closing: false,
+    };
+  }
+
+  /**
+   * One GET on `conn`, HTTP/1.1 or HTTP/2. Throws an Error with
+   * `stale: true` when a reused connection turned out to be gone before
+   * anything was received (the caller may retry on a fresh connection).
+   * @param {BrowserConn} conn
+   * @param {{ path: string, hostHeader: string, scheme: string, accept: string,
+   *           bodyLimit: number, isCancelled: () => boolean, reused: boolean,
+   *           onSent?: (info: { bytes: Uint8Array|null, streamId: number, version: string }) => void }} r
+   * @returns {Promise<BrowserResponse>}
+   */
+  async _exchange(conn, r) {
+    if (conn.mux) {
+      const mux = conn.mux;
+      const version = conn.h3 ? "HTTP/3" : "HTTP/2";
+      try {
+        const p = mux.request({
+          scheme: r.scheme, authority: r.hostHeader, path: r.path,
+          headers: [["user-agent", "Sparktail/1.0"], ["accept", r.accept]],
+        });
+        r.onSent?.({ bytes: null, streamId: mux.lastStreamId, version });
+        /** @type {import("../net/Http2.js").Http2Response} */
+        const res = await withTimeout(p, this._timeoutMs(), t("app.sparktail.label.recv"));
+        conn.requests++;
+        if (res.body.length > r.bodyLimit) throw new Error(t("app.sparktail.err.bodyLimitExceeded", { bodyLimit: r.bodyLimit }));
+        /** @type {Record<string,string>} */
+        const headers = {};
+        for (const [n, v] of res.headers) headers[n] = headers[n] ? `${headers[n]}, ${v}` : v;
+        const statusLine = `${version} ${res.status}`;
+        if (!conn.h3) this._noteAltSvc(conn.origin, headers["alt-svc"]);
+        return {
+          statusLine, statusCode: res.status, reason: "",
+          headerText: [statusLine, ...res.headers.map(([n, v]) => `${n}: ${v}`)].join("\r\n"),
+          headers, body: res.body, reusable: mux.usable, streamId: res.streamId,
+        };
+      } catch (e) {
+        // refused before processing (GOAWAY, closed connection): safe to retry
+        if (/** @type {any} */ (e)?.retryable) throw Object.assign(new Error(/** @type {Error} */ (e).message), { stale: true });
+        throw e;
+      }
+    }
+
+    const req =
+      `GET ${r.path} HTTP/1.1\r\n` +
+      `Host: ${r.hostHeader}\r\n` +
+      `User-Agent: Sparktail/1.0\r\n` +
+      `Accept: ${r.accept}\r\n` +
+      `Connection: keep-alive\r\n` +
+      `\r\n`;
+    const bytes = encodeUTF8(req);
+    conn.reader._isCancelled = r.isCancelled;
+    try {
+      await conn.send(bytes);
+    } catch (e) {
+      throw Object.assign(e instanceof Error ? e : new Error(String(e)), { stale: r.reused, stage: "send" });
+    }
+    r.onSent?.({ bytes, streamId: 0, version: "HTTP/1.1" });
+    try {
+      const res = await readHttpResponse(conn.reader, r.bodyLimit);
+      conn.requests++;
+      this._noteAltSvc(conn.origin, res.headers["alt-svc"]);
+      return { ...res, streamId: 0 };
+    } catch (e) {
+      // nothing received on a reused connection: the server had closed it
+      const stale = r.reused && conn.reader.closed && conn.reader.buf.length === 0;
+      throw Object.assign(e instanceof Error ? e : new Error(String(e)), { stale });
+    }
   }
 
   /** @param {string} text */
@@ -751,6 +1424,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
   }
 
   _stop() {
+    this._closePool();
     const tls = this._activeTls;
     this._activeTls = null;
     if (tls) { try { tls.close(); } catch { /* ignore */ } }
@@ -858,7 +1532,6 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     }
 
     const { scheme, host, port, path } = parsed;
-    const timeout = this._timeoutMs();
     const bodyLimit = 1_048_576;
 
     /** @type {(name:string)=>Promise<import("../net/models/IPAddress.js").IPAddress|null>} */
@@ -902,107 +1575,10 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     }
 
 
-    /** @type {string|null} */
-    let key = null;
-
-    try {
-      const conn = await withTimeout(this.os.net.connectTCPConn(dstIP, /** @type {number} */ (port)), SimTimer.TCP_CONNECT_TIMEOUT_MS, t("app.sparktail.label.connect"));
-      key = conn?.key;
-      if (typeof key !== "string" || !key) throw new Error(t("app.sparktail.err.noConnKey"));
-      this.connKey = key;
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      this._appendLog(t("app.sparktail.log.connectError", { time: nowStamp(), ip: dstIP.toString(), port, msg }));
-      this._showInternalPage(
-        t("app.sparktail.page.socketError.title"),
-        t("app.sparktail.page.socketError.body", { host, port, msg })
-      );
-      this.loading = false;
-      this.connKey = null;
-      this._syncUI();
-      this._setStatus(t("app.sparktail.status.socketError", { host, port }));
-      return;
-    }
-
-    // sendFn / recvFn — rebind to TLS for https
-    let sendFn = /** @type {(d:Uint8Array<ArrayBufferLike>)=>void|Promise<void>} */
-      (data) => this.os.net.sendTCPConn(key, data);
-    let recvFn = /** @type {()=>Promise<Uint8Array|null>} */
-      () => this.os.net.recvTCPConn(key);
-
-    if (scheme === "https") {
-      this._appendLog(t("app.sparktail.log.tlsHandshaking", { time: nowStamp(), host }));
-      this._setStatus(t("app.sparktail.status.tlsHandshaking"));
-
-      const tls = new TlsSession({
-        send:       sendFn,
-        recv:       recvFn,
-        isServer:   false,
-        trustStore: bypassCert ? undefined : (this.os.tls?.certStore ?? undefined),
-        timeoutMs:  timeout,
-        sleepFn:    (ms) => simTimer.sleep(ms),
-        now:        () => this.os.clock.nowMs(),
-        serverName: host,
-      });
-      this._activeTls = tls;
-
-      try {
-        await withTimeout(tls.handshake(), timeout, t("app.sparktail.label.tlsHandshake"));
-        this._serverCert = tls.peerCert;
-        this._certTrusted = !bypassCert;
-        this._setLockState(bypassCert ? "insecure" : "secure");
-        this._appendLog(t("app.sparktail.log.tlsOk", { time: nowStamp(), host }));
-      } catch (e) {
-        if (e instanceof TlsCertNameMismatchError) {
-          this._showCertErrorPage(tls.peerCert, url, "nameMismatch", host);
-        } else if (e instanceof TlsCertUntrustedError) {
-          this._showCertErrorPage(tls.peerCert, url, "untrusted");
-        } else if (e instanceof TlsCertExpiredError) {
-          this._showCertErrorPage(tls.peerCert, url, e.reason);
-        } else {
-          const reason = e instanceof Error ? e.message : String(e);
-          this._appendLog(t("app.sparktail.log.tlsFailed", { time: nowStamp(), reason }));
-          this._showInternalPage(t("app.sparktail.page.tlsError.title"), reason);
-          this._setStatus(t("app.sparktail.status.tlsFailed"));
-        }
-        this._stop();
-        return;
-      }
-
-      sendFn = (data) => tls.send(/** @type {Uint8Array<ArrayBuffer>} */ (data));
-      recvFn = () => tls.recv();
-    }
-
     const defaultPort = scheme === "https" ? 443 : 80;
     const hostHeader = /** @type {string} */ (host).includes(":")
       ? `[${host}]${port !== defaultPort ? `:${port}` : ""}`
       : `${host}${port !== defaultPort ? `:${port}` : ""}`;
-    const request =
-      `GET ${path} HTTP/1.1\r\n` +
-      `Host: ${hostHeader}\r\n` +
-      `User-Agent: Sparktail/1.0\r\n` +
-      `Accept: text/html, text/plain, */*\r\n` +
-      `Connection: close\r\n` +
-      `\r\n`;
-
-    const reqBytes = encodeUTF8(request);
-    try {
-      await sendFn(reqBytes);
-      this._appendLog(t("app.sparktail.log.request", {
-        time: nowStamp(),
-        host,
-        port,
-        path,
-        len: reqBytes.length,
-        hex: hexPreview(reqBytes),
-      }));
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      this._appendLog(t("app.sparktail.log.sendError", { time: nowStamp(), msg }));
-      this._showInternalPage(t("app.sparktail.page.sendError.title"), msg);
-      this._stop();
-      return;
-    }
 
     /** @type {string} */
     let headerText = "";
@@ -1014,95 +1590,113 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     let statusCode = 0;
     /** @type {string} */
     let reason = "";
+    let protoLabel = "";
 
-    try {
-      const r = new TcpBufferedReader({
-        recv: recvFn,
-        isCancelled: () => !this.loading || this.requestSeq !== seq || this.connKey !== key,
-        timeoutMs: timeout,
-      });
+    const openArgs = {
+      scheme: /** @type {string} */ (scheme), host: /** @type {string} */ (host), port: /** @type {number} */ (port), ip: dstIP,
+      // a connection opened with "proceed anyway" is only reused for the same decision
+      bypass: bypassCert,
+      isCancelled: () => !this.loading || this.requestSeq !== seq,
+    };
 
-      // 1) Read headers
-      const headerSep = encodeUTF8("\r\n\r\n");
-      const headerBlock = await r.readUntil(headerSep, 2 * 1024 * 1024);
-      const headerBytes = headerBlock.subarray(0, headerBlock.length - 4);
-
-      headerText = decodeUTF8(headerBytes);
-      const firstLineEnd = headerText.indexOf("\r\n");
-      const statusLine = firstLineEnd >= 0 ? headerText.slice(0, firstLineEnd) : headerText;
-
-      const m = /^HTTP\/\d+\.\d+\s+(\d{3})\s*(.*)$/.exec(statusLine);
-      statusCode = m ? Number(m[1]) : 0;
-      reason = m ? (m[2] || "").trim() : "";
-
-      headers = parseHeaders(headerText);
-      if (this.headersEl) this.headersEl.value = headerText;
-
-      // 2) Read body depending on headers
-      const te = (headers["transfer-encoding"] || "").toLowerCase();
-      const cl = headers["content-length"];
-
-      if (te.includes("chunked")) {
-        /** @type {Uint8Array[]} */
-        const out = [];
-        let total = 0;
-
-        while (true) {
-          const lineBytes = await r.readLine(64 * 1024);
-          const line = decodeUTF8(lineBytes).trim();
-          const semi = line.indexOf(";");
-          const hex = (semi >= 0 ? line.slice(0, semi) : line).trim();
-
-          if (!/^[0-9a-fA-F]+$/.test(hex)) {
-            throw new Error(t("app.sparktail.err.chunkedInvalidChunkSize", { line }));
-          }
-          const size = parseInt(hex, 16);
-          if (!Number.isFinite(size) || size < 0) {
-            throw new Error(t("app.sparktail.err.chunkedInvalidSize", { hex }));
-          }
-
-          if (size === 0) {
-            // Trailer headers until empty line
-            while (true) {
-              const tline = await r.readLine(64 * 1024);
-              if (tline.length === 0) break;
-            }
-            break;
-          }
-
-          const chunk = await r.readExactly(size);
-          out.push(chunk);
-          total += chunk.length;
-          if (total > bodyLimit) throw new Error(t("app.sparktail.err.bodyLimitExceeded", { bodyLimit }));
-
-          const crlf = await r.readExactly(2);
-          if (crlf[0] !== 13 || crlf[1] !== 10) throw new Error(t("app.sparktail.err.chunkedMissingCrlf"));
-        }
-
-        bodyBytes = concatChunks(out);
-      } else if (cl && /^\d+$/.test(cl.trim())) {
-        const want = Number(cl.trim());
-        if (!Number.isFinite(want) || want < 0) throw new Error(t("app.sparktail.err.invalidContentLength"));
-        if (want > bodyLimit) throw new Error(t("app.sparktail.err.bodyLimitExceeded", { bodyLimit }));
-
-        bodyBytes = await r.readExactly(want);
-      } else {
-        // Fallback: no length known. Read until close.
-        bodyBytes = await r.readToClose(bodyLimit + 256 * 1024);
-        if (bodyBytes.length > bodyLimit) throw new Error(t("app.sparktail.err.bodyLimitExceeded", { bodyLimit }));
+    // At most two rounds: a reused connection the server has meanwhile
+    // closed fails before any response byte — then retry on a fresh one.
+    for (let attempt = 0; ; attempt++) {
+      /** @type {BrowserConn} */
+      let c;
+      let reused = false;
+      if (scheme === "https" && attempt === 0) {
+        this._setStatus(t("app.sparktail.status.tlsHandshaking"));
       }
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      this._appendLog(t("app.sparktail.log.recvError", { time: nowStamp(), msg }));
-      this._showInternalPage(t("app.sparktail.page.recvError.title"), msg);
-      this._stop();
-      return;
-    } finally {
-      const tls = this._activeTls;
-      this._activeTls = null;
-      if (tls) { try { tls.close(); } catch { /* ignore */ } }
-      if (key) { try { this.os.net.closeTCPConn(key); } catch { /* ignore */ } }
-      if (this.connKey === key) this.connKey = null;
+      try {
+        ({ conn: c, reused } = await this._acquire(openArgs));
+      } catch (e) {
+        const err = /** @type {any} */ (e);
+        const msg = e instanceof Error ? e.message : String(e);
+        if (err?.stage === "tls") {
+          const tls = /** @type {TlsSession} */ (err.tls);
+          if (e instanceof TlsCertNameMismatchError) {
+            this._showCertErrorPage(tls.peerCert, url, "nameMismatch", host);
+          } else if (e instanceof TlsCertUntrustedError) {
+            this._showCertErrorPage(tls.peerCert, url, "untrusted");
+          } else if (e instanceof TlsCertExpiredError) {
+            this._showCertErrorPage(tls.peerCert, url, e.reason);
+          } else {
+            this._appendLog(t("app.sparktail.log.tlsFailed", { time: nowStamp(), reason: msg }));
+            this._showInternalPage(t("app.sparktail.page.tlsError.title"), msg);
+            this._setStatus(t("app.sparktail.status.tlsFailed"));
+          }
+          this._stop();
+          return;
+        }
+        if (err?.stage === "proto") {
+          this._appendLog(t("app.sparktail.log.tlsFailed", { time: nowStamp(), reason: msg }));
+          this._showInternalPage(t("app.sparktail.page.tlsError.title"), msg);
+          this._setStatus(t("app.sparktail.status.tlsFailed"));
+          this._stop();
+          return;
+        }
+        this._appendLog(t("app.sparktail.log.connectError", { time: nowStamp(), ip: dstIP.toString(), port, msg }));
+        this._showInternalPage(
+          t("app.sparktail.page.socketError.title"),
+          t("app.sparktail.page.socketError.body", { host, port, msg })
+        );
+        this.loading = false;
+        this.connKey = null;
+        this._syncUI();
+        this._setStatus(t("app.sparktail.status.socketError", { host, port }));
+        return;
+      }
+
+      if (reused) {
+        this._appendLog(t("app.sparktail.log.connReused", { time: nowStamp(), origin: c.origin, count: c.requests }));
+      }
+      if (scheme === "https") {
+        this._connInfo = [c.tlsVersion, c.h3 ? "HTTP/3 (QUIC)" : c.h2 ? "HTTP/2" : "HTTP/1.1"].filter(Boolean).join(", ");
+        this._serverCert = c.peerCert;
+        this._certTrusted = !c.bypass;
+        this._setLockState(c.bypass ? "insecure" : "secure");
+      }
+
+      // an HTTP/2 connection is shared: Stop must not tear it down
+      this.connKey = c.mux ? null : c.key;
+      this._activeTls = c.mux ? null : c.tls;
+      const conn = c;
+
+      try {
+        const res = await this._exchange(conn, {
+          path: /** @type {string} */ (path), hostHeader, scheme: /** @type {string} */ (scheme),
+          accept: "text/html, text/plain, */*", bodyLimit, reused,
+          isCancelled: () => !this.loading || this.requestSeq !== seq || (!conn.mux && this.connKey !== conn.key),
+          onSent: ({ bytes, streamId, version }) => this._appendLog(bytes
+            ? t("app.sparktail.log.request", { time: nowStamp(), host, port, path, len: bytes.length, hex: hexPreview(bytes) })
+            : t(version === "HTTP/3" ? "app.sparktail.log.requestH3" : "app.sparktail.log.requestH2", { time: nowStamp(), host, port, path, stream: streamId })),
+        });
+        ({ headerText, headers, statusCode, reason } = res);
+        bodyBytes = res.body;
+        protoLabel = conn.h3 ? "HTTP/3" : conn.h2 ? "HTTP/2" : "HTTP/1.1";
+        if (this.headersEl) this.headersEl.value = headerText;
+        this._activeTls = null;
+        if (this.connKey === conn.key) this.connKey = null;
+        this._release(conn, res.reusable);
+        break;
+      } catch (e) {
+        const err = /** @type {any} */ (e);
+        this._activeTls = null;
+        if (this.connKey === conn.key) this.connKey = null;
+        if (conn.mux) { if (!conn.mux.usable) this._closeConn(conn); }
+        else this._closeConn(conn);
+        if (err?.stale && attempt === 0) {
+          this._appendLog(t("app.sparktail.log.connStale", { time: nowStamp(), origin: conn.origin }));
+          continue;
+        }
+        const msg = e instanceof Error ? e.message : String(e);
+        const sendFailed = err?.stage === "send";
+        this._appendLog(t(sendFailed ? "app.sparktail.log.sendError" : "app.sparktail.log.recvError", { time: nowStamp(), msg }));
+        this._showInternalPage(t(sendFailed ? "app.sparktail.page.sendError.title" : "app.sparktail.page.recvError.title"), msg);
+        this._stop();
+        return;
+      }
     }
 
     // If cancelled, stop quietly
@@ -1131,7 +1725,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
       if (this.sourceEl) this.sourceEl.value = bodyText;
 
       const ct = headers["content-type"] || t("app.sparktail.value.unknown");
-      this._setStatus(t("app.sparktail.status.httpSummary", { statusCode, reason, bytes: bodyBytes.length, ct }));
+      this._setStatus(`${t("app.sparktail.status.httpSummary", { statusCode, reason, bytes: bodyBytes.length, ct })} · ${protoLabel}`);
 
       this.loading = false;
       this._syncUI();
@@ -1143,7 +1737,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     if (this.previewFrame) {
       if (isHtml(headers)) {
         const isCancelled = () => !this.loading || this.requestSeq !== seq;
-        const inlined = await this._inlineResources(bodyText, url, isCancelled);
+        const inlined = await this._inlineResources(bodyText, url, isCancelled, bypassCert);
         if (isCancelled()) return;
         this._setIframePolicy(true); // allow our injected nav script to run
         this.previewFrame.srcdoc = inlined;
@@ -1159,7 +1753,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
 
     const ct = headers["content-type"] || t("app.sparktail.value.unknown");
     this._appendLog(t("app.sparktail.log.httpOk", { time: nowStamp(), statusCode, reason, bytes: bodyBytes.length }));
-    this._setStatus(t("app.sparktail.status.httpSummary", { statusCode, reason, bytes: bodyBytes.length, ct }));
+    this._setStatus(`${t("app.sparktail.status.httpSummary", { statusCode, reason, bytes: bodyBytes.length, ct })} · ${protoLabel}`);
 
     this.loading = false;
     this._syncUI();
@@ -1229,6 +1823,36 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     setTimeout(() => document.addEventListener("click", onOutside, true), 0);
   }
 
+  _toggleSettingsPopup() {
+    const pop = this._settingsPopupEl;
+    if (!pop) return;
+    if (!pop.hidden) { pop.hidden = true; return; }
+    this._hideCertPopup();
+    pop.hidden = false;
+    const onOutside = (/** @type {MouseEvent} */ e) => {
+      const target = /** @type {Node} */ (e.target);
+      if (this._settingsPopupEl?.contains(target) || this._settingsBtn?.contains(target)) return;
+      if (this._settingsPopupEl) this._settingsPopupEl.hidden = true;
+      document.removeEventListener("click", onOutside, true);
+    };
+    // defer so this click event doesn't immediately close it
+    setTimeout(() => document.addEventListener("click", onOutside, true), 0);
+  }
+
+  /**
+   * Close every open connection and forget what was learned about HTTP/3
+   * (Alt-Svc, DNS HTTPS records, failed QUIC attempts) — the next page load
+   * starts from scratch, with fresh handshakes to watch in the trace.
+   */
+  _disconnectAll() {
+    this._closePool();
+    this._altSvc.clear();
+    this._h3Broken.clear();
+    this._httpsRrChecked.clear();
+    this._appendLog(t("app.sparktail.log.disconnected", { time: nowStamp() }));
+    this._setStatus(t("app.sparktail.status.disconnected"));
+  }
+
   _hideCertPopup() {
     if (!this._certPopupEl) return;
     this._certPopupEl.hidden = true;
@@ -1276,6 +1900,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
       row(t("app.sparktail.tls.certPopup.issuer"),      cert.issuer + selfSignedSuffix),
       row(t("app.sparktail.tls.certPopup.fingerprint"), cert.fingerprint()),
       row(t("app.sparktail.tls.certPopup.expiry"),      expiry),
+      this._connInfo ? row(t("app.sparktail.tls.certPopup.connection"), this._connInfo) : null,
     ].filter((x) => x != null);
     this._certPopupEl.replaceChildren(...children);
   }
@@ -1315,119 +1940,74 @@ export class SparktailHTTPClientApp extends LoggedProcess {
 
   /**
    * Fetch a URL through the simulated network without touching UI state.
+   * Uses the connection pool, so a page's images and stylesheets travel over
+   * the connection(s) the page came on — multiplexed with HTTP/2.
    * Returns null on any error or cancellation.
    * @param {string} url
    * @param {() => boolean} isCancelled
+   * @param {boolean} [bypass] the page was opened with "proceed anyway"
    * @returns {Promise<{statusCode: number, headers: Record<string,string>, body: Uint8Array}|null>}
    */
-  async _doGet(url, isCancelled) {
+  async _doGet(url, isCancelled, bypass = false) {
     const parsed = parseHttpUrl(url);
     if (!parsed.ok) return null;
-    const { scheme, host, port, path } = parsed;
-    const timeout = this._timeoutMs();
+    const scheme = /** @type {string} */ (parsed.scheme);
+    const host = /** @type {string} */ (parsed.host);
+    const port = /** @type {number} */ (parsed.port);
+    const path = /** @type {string} */ (parsed.path);
+    const defaultPort = scheme === "https" ? 443 : 80;
+    const hostHeader = `${host.includes(":") ? `[${host}]` : host}${port !== defaultPort ? `:${port}` : ""}`;
 
     let dstIP;
     try {
       dstIP = await withTimeout(
-        resolveHostToIP(/** @type {string} */ (host), (n) => this.os.dns.resolveIP(n)),
+        resolveHostToIP(host, (n) => this.os.dns.resolveIP(n)),
         SimTimer.DNS_RESOLVE_TIMEOUT_MS, "dns"
       );
     } catch { return null; }
     if (!dstIP || isCancelled()) return null;
 
-    /** @type {string|undefined} */
-    let key;
-    try {
-      const conn = await withTimeout(
-        this.os.net.connectTCPConn(dstIP, /** @type {number} */ (port)),
-        SimTimer.TCP_CONNECT_TIMEOUT_MS, "connect"
-      );
-      key = conn?.key;
-      if (typeof key !== "string" || !key) return null;
-    } catch { return null; }
-    if (isCancelled()) { try { this.os.net.closeTCPConn(key); } catch {} return null; }
-
-    let sendFn = /** @type {(d: Uint8Array) => void|Promise<void>} */ (d) => this.os.net.sendTCPConn(key, d);
-    let recvFn = /** @type {() => Promise<Uint8Array|null>} */ () => this.os.net.recvTCPConn(key);
-
-    /** @type {import("../net/TlsSession.js").TlsSession|null} */
-    let tls = null;
-    if (scheme === "https") {
-      tls = new TlsSession({
-        send: sendFn, recv: recvFn, isServer: false,
-        trustStore: this.os.tls?.certStore ?? null,
-        timeoutMs: timeout,
-        sleepFn: (ms) => simTimer.sleep(ms),
-        now: () => this.os.clock.nowMs(),
-        serverName: /** @type {string} */ (host),
-      });
+    for (let attempt = 0; attempt < 2; attempt++) {
+      let acquired;
       try {
-        await withTimeout(tls.handshake(), timeout, "tls");
-      } catch {
-        try { tls.close(); } catch {}
-        try { this.os.net.closeTCPConn(key); } catch {}
-        return null;
+        acquired = await this._acquire({ scheme, host, port, ip: dstIP, bypass, isCancelled });
+      } catch { return null; }
+      const { conn, reused } = acquired;
+      if (isCancelled()) { if (!conn.mux) this._release(conn, true); return null; }
+      this._appendLog(reused
+        ? t("app.sparktail.log.resourceReused", { time: nowStamp(), url, count: conn.requests })
+        : t("app.sparktail.log.resourceNewConn", { time: nowStamp(), url }));
+      try {
+        const res = await this._exchange(conn, {
+          path, hostHeader, scheme, accept: "*/*", bodyLimit: 1_048_576, isCancelled, reused,
+        });
+        this._release(conn, res.reusable && !isCancelled());
+        return { statusCode: res.statusCode, headers: res.headers, body: res.body };
+      } catch (e) {
+        if (!conn.mux) this._closeConn(conn);
+        else if (!conn.mux.usable) this._closeConn(conn);
+        if (!(/** @type {any} */ (e))?.stale || isCancelled()) return null;
+        // the server closed the idle connection meanwhile: one fresh attempt
+        this._appendLog(t("app.sparktail.log.connStale", { time: nowStamp(), origin: conn.origin }));
       }
-      sendFn = (d) => /** @type {any} */ (tls).send(/** @type {any} */ (d));
-      recvFn = () => /** @type {any} */ (tls).recv();
     }
-
-    try {
-      const defaultPort = scheme === "https" ? 443 : 80;
-      const hostHdr = /** @type {string} */ (host).includes(":") ? `[${host}]` : host;
-      const portSuffix = port !== defaultPort ? `:${port}` : "";
-      const req = `GET ${path} HTTP/1.1\r\nHost: ${hostHdr}${portSuffix}\r\nUser-Agent: Sparktail/1.0\r\nConnection: close\r\n\r\n`;
-      await sendFn(encodeUTF8(req));
-
-      const r = new TcpBufferedReader({ recv: recvFn, isCancelled, timeoutMs: timeout });
-      const headerBlock = await r.readUntil(encodeUTF8("\r\n\r\n"), 2 * 1024 * 1024);
-      const headerText = decodeUTF8(headerBlock.subarray(0, headerBlock.length - 4));
-      const m = /^HTTP\/\d+\.\d+\s+(\d{3})/.exec(headerText);
-      const statusCode = m ? Number(m[1]) : 0;
-      const headers = parseHeaders(headerText);
-
-      const bodyLimit = 1_048_576;
-      const te = (headers["transfer-encoding"] || "").toLowerCase();
-      const cl = headers["content-length"];
-      /** @type {Uint8Array} */
-      let body;
-
-      if (te.includes("chunked")) {
-        const out = [];
-        while (true) {
-          const lineBytes = await r.readLine(64 * 1024);
-          const hex = decodeUTF8(lineBytes).trim().split(";")[0].trim();
-          if (!hex) break;
-          const size = parseInt(hex, 16);
-          if (!Number.isFinite(size) || size <= 0) break;
-          out.push(await r.readExactly(size));
-          await r.readExactly(2);
-        }
-        body = concatChunks(out);
-      } else if (cl && /^\d+$/.test(cl.trim())) {
-        body = await r.readExactly(Number(cl.trim()));
-      } else {
-        body = await r.readToClose(bodyLimit);
-      }
-
-      return { statusCode, headers, body };
-    } catch { return null; }
-    finally {
-      try { if (tls) tls.close(); } catch {}
-      try { this.os.net.closeTCPConn(key); } catch {}
-    }
+    return null;
   }
 
   /**
    * Inline sub-resources into an HTML string before putting it into the iframe:
    * - <img src="..."> → data URI
    * - <link rel="stylesheet" href="..."> → <style> with the CSS text
+   * Like a real browser, the resources load in parallel (at most
+   * MAX_CONNS_PER_ORIGIN at a time): over HTTP/1.1 that means several
+   * connections, over HTTP/2 several streams on one connection.
    * @param {string} html
    * @param {string} baseUrl
    * @param {() => boolean} isCancelled
+   * @param {boolean} [bypass] the page was opened with "proceed anyway"
    * @returns {Promise<string>}
    */
-  async _inlineResources(html, baseUrl, isCancelled) {
+  async _inlineResources(html, baseUrl, isCancelled, bypass = false) {
     const doc = new DOMParser().parseFromString(html, "text/html");
 
     /** @param {string} href @returns {string|null} */
@@ -1445,30 +2025,41 @@ export class SparktailHTTPClientApp extends LoggedProcess {
       return btoa(bin);
     };
 
+    /** @type {Array<() => Promise<void>>} */
+    const tasks = [];
     for (const img of doc.querySelectorAll("img[src]")) {
-      if (isCancelled()) return html;
       const src = img.getAttribute("src");
       if (!src || src.startsWith("data:")) continue;
       const abs = resolve(src);
       if (!abs) continue;
-      const res = await this._doGet(abs, isCancelled);
-      if (!res || res.statusCode !== 200 || isCancelled()) continue;
-      const ct = (res.headers["content-type"] || "image/*").split(";")[0].trim();
-      img.setAttribute("src", `data:${ct};base64,${toBase64(res.body)}`);
+      tasks.push(async () => {
+        const res = await this._doGet(abs, isCancelled, bypass);
+        if (!res || res.statusCode !== 200 || isCancelled()) return;
+        const ct = (res.headers["content-type"] || "image/*").split(";")[0].trim();
+        img.setAttribute("src", `data:${ct};base64,${toBase64(res.body)}`);
+      });
     }
-
     for (const link of doc.querySelectorAll('link[rel="stylesheet"][href]')) {
-      if (isCancelled()) return html;
       const href = link.getAttribute("href");
       if (!href) continue;
       const abs = resolve(href);
       if (!abs) continue;
-      const res = await this._doGet(abs, isCancelled);
-      if (!res || res.statusCode !== 200 || isCancelled()) continue;
-      const style = doc.createElement("style");
-      style.textContent = decodeUTF8(res.body);
-      link.replaceWith(style);
+      tasks.push(async () => {
+        const res = await this._doGet(abs, isCancelled, bypass);
+        if (!res || res.statusCode !== 200 || isCancelled()) return;
+        const style = doc.createElement("style");
+        style.textContent = decodeUTF8(res.body);
+        link.replaceWith(style);
+      });
     }
+
+    // run with limited parallelism
+    let nextTask = 0;
+    const worker = async () => {
+      while (nextTask < tasks.length && !isCancelled()) await tasks[nextTask++]();
+    };
+    await Promise.all(Array.from({ length: Math.min(MAX_CONNS_PER_ORIGIN, tasks.length) }, worker));
+    if (isCancelled()) return html;
 
     for (const el of doc.querySelectorAll("iframe, object, embed")) {
       const placeholder = doc.createElement("div");
