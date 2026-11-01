@@ -18,7 +18,7 @@ import { PCapController } from "./tracer/PCapControler.js";
 import { UILib } from "./lib/UILib.js";
 import { SimDialog } from "./lib/SimDialog.js";
 import { buildLanguagePicker } from "./lib/LanguagePicker.js";
-import { choosePanelPlacement, segmentToRects } from "./lib/panelPlacement.js";
+import { choosePanelPlacement, segmentToRects, cascadePlacement } from "./lib/panelPlacement.js";
 import { WelcomeDialog } from "./lib/WelcomeDialog.js";
 import { LessonsPanel } from "./lib/LessonsPanel.js";
 import { GameHub } from "./game/GameHub.js";
@@ -863,15 +863,21 @@ export class SimControl {
             .filter((o) => o !== obj && o instanceof SimulatedObject && o.panelOpen && o.panelEl)
             .map((o) => rel(/** @type {HTMLElement} */ (o.panelEl).getBoundingClientRect()));
 
-        const place = choosePanelPlacement({
-            bounds: rel(boundsEl.getBoundingClientRect()),
+        const bounds = rel(boundsEl.getBoundingClientRect());
+        const chosen = choosePanelPlacement({
+            bounds,
             view: rel(viewEl.getBoundingClientRect()),
             size,
-            minSize: obj.panelResizable && !userSized ? { w: obj.panelMinWidth, h: obj.panelMinHeight } : null,
+            // always open at full size — shrinking makes a scaled OS screen
+            // look zoomed out
+            minSize: null,
             obstacles,
             avoid,
             anchor: obj.iconEl ? rel(obj.iconEl.getBoundingClientRect()) : null,
         });
+        // exactly on top of another panel? offset it like a cascade so the
+        // new window is recognisable as a new one
+        const place = { ...chosen, ...cascadePlacement(chosen, avoid, bounds) };
 
         obj.px = place.x;
         obj.py = place.y;
