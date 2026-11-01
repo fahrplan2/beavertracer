@@ -34,6 +34,7 @@ import { BitcoinNodeApp } from "./BitcoinNodeApp.js";
 import { UILib } from "../lib/UILib.js";
 import { ExplorerApp } from "./ExplorerApp.js";
 import { SoftwareApp } from "./SoftwareApp.js";
+import { addScrollHints } from "../lib/scrollHints.js";
 
 /** @typedef {{ id: string, Class: new (...args: any[]) => any, mandatory: boolean, category: string, icon: string, labelKey: string }} AppRegistryEntry */
 
@@ -489,6 +490,11 @@ export class OS {
         const content = document.createElement("div");
         content.classList.add("os-frame-content");
         content.appendChild(appRoot);
+        // fade the edges while there is more to scroll (overlay scrollbars are
+        // invisible). Apps with the .app class scroll themselves (css/apps.css),
+        // others overflow into the frame — hint both, only the scrolling one fades.
+        addScrollHints(appRoot);
+        addScrollHints(content);
 
         frame.appendChild(bar);
         frame.appendChild(content);
