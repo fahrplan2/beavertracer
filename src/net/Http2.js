@@ -146,6 +146,39 @@ function unpad(flags, payload, hasPriority, streamId) {
  *             reset: (code: number) => void }} Http2Responder
  */
 
+/**
+ * Field validation shared by HTTP/2 and HTTP/3 (RFC 9113 §8.2/§8.3, RFC 9114
+ * §4.2/§4.3). Returns a problem description for a malformed message, or null.
+ * @param {Array<[string, string]>} fields
+ * @param {"request"|"response"} kind
+ */
+export function validateHttpFields(fields, kind) {
+  let regularSeen = false;
+  /** @type {Record<string, number>} */
+  const pseudo = {};
+  for (const [n, v] of fields) {
+    if (n !== n.toLowerCase()) return `upper-case field name '${n}'`;
+    if (n.startsWith(":")) {
+      if (regularSeen) return `pseudo-header '${n}' after regular fields`;
+      const allowed = kind === "request" ? [":method", ":scheme", ":authority", ":path"] : [":status"];
+      if (!allowed.includes(n)) return `unknown pseudo-header '${n}'`;
+      if (pseudo[n]) return `duplicate '${n}'`;
+      pseudo[n] = 1;
+    } else {
+      regularSeen = true;
+      if (CONNECTION_SPECIFIC.has(n)) return `connection-specific field '${n}'`;
+      if (n === "te" && v !== "trailers") return "TE other than 'trailers'";
+    }
+  }
+  if (kind === "request") {
+    for (const p of [":method", ":scheme", ":path"]) if (!pseudo[p]) return `missing '${p}'`;
+    if (fields.find(([n]) => n === ":path")?.[1] === "") return "empty ':path'";
+  } else if (!pseudo[":status"]) {
+    return "missing ':status'";
+  }
+  return null;
+}
+
 // ── connection ───────────────────────────────────────────────────────────────
 
 export class Http2Connection {
@@ -787,36 +820,11 @@ export class Http2Connection {
   }
 
   /**
-   * Field validation (RFC 9113 §8.2, §8.3). Returns a problem description
-   * for a malformed message, or null.
    * @param {Array<[string, string]>} fields
    * @param {"request"|"response"} kind
    */
   _validateFields(fields, kind) {
-    let regularSeen = false;
-    /** @type {Record<string, number>} */
-    const pseudo = {};
-    for (const [n, v] of fields) {
-      if (n !== n.toLowerCase()) return `upper-case field name '${n}'`;
-      if (n.startsWith(":")) {
-        if (regularSeen) return `pseudo-header '${n}' after regular fields`;
-        const allowed = kind === "request" ? [":method", ":scheme", ":authority", ":path"] : [":status"];
-        if (!allowed.includes(n)) return `unknown pseudo-header '${n}'`;
-        if (pseudo[n]) return `duplicate '${n}'`;
-        pseudo[n] = 1;
-      } else {
-        regularSeen = true;
-        if (CONNECTION_SPECIFIC.has(n)) return `connection-specific field '${n}'`;
-        if (n === "te" && v !== "trailers") return "TE other than 'trailers'";
-      }
-    }
-    if (kind === "request") {
-      for (const p of [":method", ":scheme", ":path"]) if (!pseudo[p]) return `missing '${p}'`;
-      if (fields.find(([n]) => n === ":path")?.[1] === "") return "empty ':path'";
-    } else if (!pseudo[":status"]) {
-      return "missing ':status'";
-    }
-    return null;
+    return validateHttpFields(fields, kind);
   }
 
   /** Both directions of a stream are done or the remote side finished. @param {Stream} s */
