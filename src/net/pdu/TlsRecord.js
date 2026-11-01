@@ -33,6 +33,7 @@ export const TLS_EXT = Object.freeze({
   SUPPORTED_VERSIONS:   0x002B, // RFC 8446 §4.2.1
   KEY_SHARE:            0x0033, // RFC 8446 §4.2.8
   RENEGOTIATION_INFO:   0xFF01, // RFC 5746
+  QUIC_TRANSPORT_PARAMETERS: 0x0039, // RFC 9001 §8.2
 });
 
 /** Malformed handshake message — maps to the fatal decode_error alert. */
@@ -239,9 +240,12 @@ export class TlsRecord {
    * @param {Uint8Array} clientRandom - 32 bytes
    * @param {string} [serverName] DNS name for the SNI extension (omitted for IP literals)
    * @param {string[]} [alpn] offered application protocols, most preferred first (RFC 7301)
-   * @param {{ keyShare?: Uint8Array, sessionId?: Uint8Array }} [tls13]
+   * @param {{ keyShare?: Uint8Array, sessionId?: Uint8Array, only13?: boolean,
+   *           extra?: { type: number, data: Uint8Array }[] }} [tls13]
    *   offer TLS 1.3 as well: our secp256r1 key share (65-byte point) and a
-   *   legacy_session_id for middlebox compatibility mode (RFC 8446 §D.4)
+   *   legacy_session_id for middlebox compatibility mode (RFC 8446 §D.4);
+   *   `only13` drops TLS 1.2 (QUIC, RFC 9001 §4.2), `extra` adds extensions
+   *   such as quic_transport_parameters
    * @returns {Uint8Array}
    */
   static buildClientHello(clientRandom, serverName = "", alpn = [], tls13 = {}) {
@@ -297,7 +301,8 @@ export class TlsRecord {
     // and our key share, so the server can answer in a single round trip
     let tls13Ext = new Uint8Array(0);
     if (tls13.keyShare) {
-      const versions = extension(TLS_EXT.SUPPORTED_VERSIONS, Uint8Array.of(4, 0x03, 0x04, 0x03, 0x03));
+      const versions = extension(TLS_EXT.SUPPORTED_VERSIONS,
+        tls13.only13 ? Uint8Array.of(2, 0x03, 0x04) : Uint8Array.of(4, 0x03, 0x04, 0x03, 0x03));
       const entry = new Uint8Array(4 + tls13.keyShare.length);
       write16BE(entry, 0, GROUP_SECP256R1);
       write16BE(entry, 2, tls13.keyShare.length);
@@ -305,7 +310,8 @@ export class TlsRecord {
       const shares = new Uint8Array(2 + entry.length);
       write16BE(shares, 0, entry.length);
       shares.set(entry, 2);
-      tls13Ext = concat(versions, extension(TLS_EXT.KEY_SHARE, shares));
+      tls13Ext = concat(versions, extension(TLS_EXT.KEY_SHARE, shares),
+        ...(tls13.extra ?? []).map(e => extension(e.type, e.data)));
     }
 
     const extensions = concat(sni, supportedGroups, ecPointFormats, sigAlgs, alpnExt, tls13Ext);
@@ -318,7 +324,9 @@ export class TlsRecord {
       ...(tls13.keyShare
         ? [
             Uint8Array.of(tls13.sessionId?.length ?? 0), tls13.sessionId ?? new Uint8Array(0),
-            Uint8Array.of(0x00, 0x04, 0x13, 0x01, CIPHER_HI, CIPHER_LO),  // TLS 1.3 suite first
+            tls13.only13
+              ? Uint8Array.of(0x00, 0x02, 0x13, 0x01)
+              : Uint8Array.of(0x00, 0x04, 0x13, 0x01, CIPHER_HI, CIPHER_LO),  // TLS 1.3 suite first
           ]
         : [
             new Uint8Array([0x00]),                               // session_id length = 0

@@ -7,6 +7,18 @@ import {
 import { TlsCertificate, TlsTrustStore } from "./models/TlsCertificate.js";
 import { encodeUTF8 } from "../lib/helpers.js";
 
+/**
+ * How TLS talks to QUIC (RFC 9001 §4): handshake bytes per encryption level
+ * out, traffic secrets out, transport parameters in the ClientHello /
+ * EncryptedExtensions, and alerts as connection errors.
+ * @typedef {{
+ *   sendCrypto: (level: "initial"|"handshake", data: Uint8Array) => void,
+ *   onSecret: (level: "handshake"|"app", dir: "read"|"write", secret: Uint8Array) => void,
+ *   onAlert?: (alert: number, reason: string) => void,
+ *   transportParams: Uint8Array,
+ * }} QuicTlsBinding
+ */
+
 // ── error types ────────────────────────────────────────────────────────────
 
 /** TLS AlertDescription values used by this implementation (RFC 5246 §7.2, RFC 6066 §3). */
@@ -20,6 +32,7 @@ export const TLS_ALERT = Object.freeze({
   DECRYPT_ERROR: 51,
   ILLEGAL_PARAMETER: 47,
   UNSUPPORTED_EXTENSION: 110,
+  MISSING_EXTENSION: 109,
   UNRECOGNIZED_NAME: 112,
   NO_APPLICATION_PROTOCOL: 120,
 });
@@ -32,7 +45,7 @@ const TLS_ALERT_NAMES = Object.freeze({
   46: "certificate_unknown", 47: "illegal_parameter", 48: "unknown_ca",
   49: "access_denied", 50: "decode_error", 51: "decrypt_error",
   70: "protocol_version", 71: "insufficient_security", 80: "internal_error",
-  90: "user_canceled", 110: "unsupported_extension", 112: "unrecognized_name",
+  90: "user_canceled", 109: "missing_extension", 110: "unsupported_extension", 112: "unrecognized_name",
   120: "no_application_protocol",
 });
 
@@ -547,9 +560,10 @@ export class TlsSession {
    *   selectCert?: (sni: string) => TlsCertificate|null,
    *   alpn?: string[],
    *   versions?: Array<"1.2"|"1.3">,
+   *   quic?: QuicTlsBinding,
    * }} opts
    */
-  constructor({ send, recv, isServer, cert, trustStore, timeoutMs = 400, sleepFn, now, serverName, selectCert, alpn, versions }) {
+  constructor({ send, recv, isServer, cert, trustStore, timeoutMs = 400, sleepFn, now, serverName, selectCert, alpn, versions, quic }) {
     this._sendRaw = send;
     this._recvRaw = recv;
     this._isServer = isServer;
@@ -587,6 +601,20 @@ export class TlsSession {
     /** @type {Uint8Array} */ this._legacySessionId = new Uint8Array(0);
     /** @type {Uint8Array|null} */ this._hsSecretC = null;
     /** @type {Uint8Array|null} */ this._hsSecretS = null;
+
+    // QUIC mode (RFC 9001): handshake messages travel in CRYPTO frames per
+    // encryption level instead of records, and the traffic secrets go to
+    // QUIC for packet protection. Always TLS 1.3, ALPN mandatory.
+    /** @type {QuicTlsBinding|null} */
+    this._quic = quic ?? null;
+    if (this._quic) this._versions = ["1.3"];
+    /** @type {Record<"initial"|"handshake", Uint8Array>} */
+    this._quicIn = { initial: new Uint8Array(0), handshake: new Uint8Array(0) };
+    /** @type {"initial"|"handshake"|"app"} */ this._quicReadLevel = "initial";
+    /** @type {"initial"|"handshake"|"app"} */ this._quicWriteLevel = "initial";
+    /** @type {(() => void)|null} */ this._quicWaiter = null;
+    /** QUIC: the peer's quic_transport_parameters extension body. @type {Uint8Array|null} */
+    this.peerTransportParams = null;
 
     /** @type {"INIT"|"HANDSHAKE"|"ESTABLISHED"|"CLOSED"} */
     this._state = "INIT";
@@ -637,6 +665,17 @@ export class TlsSession {
       : this.version === "TLS 1.2" ? "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256" : "";
   }
 
+  /**
+   * QUIC: hand over CRYPTO frame data (in order) received at `level`.
+   * @param {"initial"|"handshake"} level @param {Uint8Array} data
+   */
+  provideCrypto(level, data) {
+    this._quicIn[level] = concat(this._quicIn[level], data);
+    const w = this._quicWaiter;
+    this._quicWaiter = null;
+    w?.();
+  }
+
   // ── public API ────────────────────────────────────────────────────────────
 
   /** Run the TLS 1.2 handshake. Throws TlsHandshakeError on failure. */
@@ -652,7 +691,10 @@ export class TlsSession {
       this._state = "ESTABLISHED";
     } catch (e) {
       this._state = "CLOSED";
-      if (e instanceof TlsHandshakeError && !(e instanceof TlsAlertReceivedError)) {
+      if (this._quic && e instanceof TlsHandshakeError) {
+        // QUIC reports TLS alerts as CONNECTION_CLOSE 0x100 + alert (RFC 9001 §4.8)
+        if (!(e instanceof TlsAlertReceivedError)) this._quic.onAlert?.(e.alert ?? TLS_ALERT.HANDSHAKE_FAILURE, e.message);
+      } else if (e instanceof TlsHandshakeError && !(e instanceof TlsAlertReceivedError)) {
         // Once our ChangeCipherSpec is out, alerts go under the new keys too.
         // RFC 5246 §7.2: fatal alert; plaintext before our ChangeCipherSpec.
         try { await this._sendRecord(TLS_CT.ALERT, new Uint8Array([2, e.alert ?? TLS_ALERT.HANDSHAKE_FAILURE])); } catch { /* ignore */ }
@@ -863,6 +905,14 @@ export class TlsSession {
    * @param {"read"|"write"} dir @param {Uint8Array} secret
    */
   async _install13(dir, secret) {
+    if (this._quic) {
+      // QUIC derives its own packet keys from the secret (RFC 9001 §5.1)
+      const cur = dir === "write" ? this._quicWriteLevel : this._quicReadLevel;
+      const level = cur === "initial" ? "handshake" : "app";
+      if (dir === "write") this._quicWriteLevel = level; else this._quicReadLevel = level;
+      this._quic.onSecret(level, dir, secret);
+      return;
+    }
     const keyBytes = await hkdfExpandLabel(secret, "key", new Uint8Array(0), 16);
     const iv = await hkdfExpandLabel(secret, "iv", new Uint8Array(0), 12);
     const key = await crypto.subtle.importKey("raw", /** @type {Uint8Array<ArrayBuffer>} */ (keyBytes), { name: "AES-GCM" }, false,
@@ -915,6 +965,7 @@ export class TlsSession {
    * @returns {Promise<{ type: number, body: Uint8Array }>}
    */
   async _nextHs13() {
+    if (this._quic) return this._nextQuicHs();
     while (true) {
       if (this._hsBuf.length >= 4) {
         const len = (this._hsBuf[1] << 16) | (this._hsBuf[2] << 8) | this._hsBuf[3];
@@ -933,6 +984,38 @@ export class TlsSession {
       }
       this._hsBuf = concat(this._hsBuf, rec.payload);
     }
+  }
+
+  /** QUIC mode: next handshake message from the CRYPTO data of the current read level. */
+  async _nextQuicHs() {
+    while (true) {
+      const level = /** @type {"initial"|"handshake"} */ (this._quicReadLevel);
+      const buf = this._quicIn[level];
+      if (buf.length >= 4) {
+        const len = (buf[1] << 16) | (buf[2] << 8) | buf[3];
+        if (buf.length >= 4 + len) {
+          const raw = buf.slice(0, 4 + len);
+          this._quicIn[level] = buf.slice(4 + len);
+          this._appendTranscript(raw);
+          return { type: raw[0], body: raw.slice(4) };
+        }
+      }
+      let timedOut = false;
+      await new Promise((resolve) => {
+        this._quicWaiter = () => resolve(undefined);
+        this._sleep(this._timeoutMs).then(() => { timedOut = true; resolve(undefined); });
+      });
+      if (timedOut && this._quicWaiter) throw new TlsHandshakeError("Handshake timeout");
+    }
+  }
+
+  /** Send one handshake message: QUIC CRYPTO data or a (protected) record. @param {Uint8Array} msg */
+  async _sendHs13(msg) {
+    if (this._quic) {
+      this._quic.sendCrypto(/** @type {"initial"|"handshake"} */ (this._quicWriteLevel), msg);
+      return;
+    }
+    await this._sendRecord(TLS_CT.HANDSHAKE, msg);
   }
 
   /** @param {number} type */
@@ -1016,6 +1099,12 @@ export class TlsSession {
       off += 4 + len;
     }
     this._acceptAlpnExtension(eeExts.get(TLS_EXT.ALPN));
+    if (this._quic) {
+      if (!this.alpn) throw new TlsHandshakeError("QUIC requires ALPN", TLS_ALERT.NO_APPLICATION_PROTOCOL);
+      const tp = eeExts.get(TLS_EXT.QUIC_TRANSPORT_PARAMETERS);
+      if (!tp) throw new TlsHandshakeError("quic_transport_parameters missing", TLS_ALERT.MISSING_EXTENSION);
+      this.peerTransportParams = tp;
+    }
 
     const certMsg = await this._nextHs13();
     if (certMsg.type !== TLS_HT.CERTIFICATE) {
@@ -1049,10 +1138,10 @@ export class TlsSession {
     if (this._hsBuf.length) throw new TlsHandshakeError("Data after server Finished", TLS_ALERT.UNEXPECTED_MESSAGE);
     const app = await this._deriveApplication13();
 
-    // our Finished, preceded by a compatibility ChangeCipherSpec (§D.4)
-    this._sendRaw(TlsRecord.buildChangeCipherSpec());
+    // our Finished, preceded by a compatibility ChangeCipherSpec (§D.4, not in QUIC)
+    if (!this._quic) this._sendRaw(TlsRecord.buildChangeCipherSpec());
     const myFin = this._buildHsBytes(TLS_HT.FINISHED, await this._finished13(/** @type {Uint8Array} */ (this._hsSecretC)));
-    await this._sendRecord(TLS_CT.HANDSHAKE, myFin);
+    await this._sendHs13(myFin);
     this._appendTranscript(myFin);
 
     await this._install13("read", app.server);
@@ -1084,17 +1173,18 @@ export class TlsSession {
     this._serverRandom = crypto.getRandomValues(new Uint8Array(32));
 
     const sh = TlsRecord.buildServerHello13(this._serverRandom, hello.sessionId, await this._ownEcdhPub());
-    this._sendRaw(TlsRecord.handshakeRecordOf(sh));
+    if (this._quic) this._quic.sendCrypto("initial", sh);
+    else this._sendRaw(TlsRecord.handshakeRecordOf(sh));
     this._appendTranscript(sh);
     await this._deriveHandshake13(shared);
-    if (hello.sessionId.length > 0) this._sendRaw(TlsRecord.buildChangeCipherSpec()); // §D.4
+    if (hello.sessionId.length > 0 && !this._quic) this._sendRaw(TlsRecord.buildChangeCipherSpec()); // §D.4
     await this._install13("write", /** @type {Uint8Array} */ (this._hsSecretS));
     await this._install13("read", /** @type {Uint8Array} */ (this._hsSecretC));
 
     // encrypted flight: EncryptedExtensions, Certificate, CertificateVerify, Finished
     const send = async (/** @type {Uint8Array} */ msg) => {
       this._appendTranscript(msg);
-      await this._sendRecord(TLS_CT.HANDSHAKE, msg);
+      await this._sendHs13(msg);
     };
     await send(TlsRecord.buildEncryptedExtensions(eeExtensions));
     await send(TlsRecord.buildCertificate13([cert.toDer(), ...cert.chain.map(c => c.toDer())]));
@@ -1125,6 +1215,27 @@ export class TlsSession {
 
     // 2. Send ClientHello, append HS bytes to transcript. Offering TLS 1.3
     //    adds our key share and a legacy_session_id (compatibility mode).
+    if (this._quic) {
+      // QUIC: no compatibility mode (empty legacy_session_id, RFC 9001 §8.4), TLS 1.3 only
+      const ch = TlsRecord.buildClientHello(this._clientRandom, this._serverName, this._alpnList, {
+        keyShare: await this._ownEcdhPub(), sessionId: new Uint8Array(0), only13: true,
+        extra: [{ type: TLS_EXT.QUIC_TRANSPORT_PARAMETERS, data: this._quic.transportParams }],
+      }).slice(5);
+      this._quic.sendCrypto("initial", ch);
+      this._appendTranscript(ch);
+      const shMsg = await this._nextQuicHs();
+      if (shMsg.type !== TLS_HT.SERVER_HELLO) throw new TlsHandshakeError("Expected ServerHello", TLS_ALERT.UNEXPECTED_MESSAGE);
+      let sh;
+      try { sh = TlsRecord.parseServerHello(shMsg.body); } catch (e) {
+        throw new TlsHandshakeError(e instanceof Error ? e.message : String(e), TLS_ALERT.DECODE_ERROR);
+      }
+      const sv = sh.extensions.get(TLS_EXT.SUPPORTED_VERSIONS);
+      if (!sv || ((sv[0] << 8) | sv[1]) !== TLS_VERSION.TLS13) {
+        throw new TlsHandshakeError("QUIC requires TLS 1.3", TLS_ALERT.PROTOCOL_VERSION);
+      }
+      return this._clientHandshake13(sh);
+    }
+
     const offer13 = this._versions.includes("1.3");
     if (offer13) this._legacySessionId = crypto.getRandomValues(new Uint8Array(32));
     const chRecord = TlsRecord.buildClientHello(this._clientRandom, this._serverName, this._alpnList,
@@ -1278,13 +1389,20 @@ export class TlsSession {
     this._transcript = new Uint8Array(0);
 
     // 1. Read ClientHello, append to transcript
-    const chRecord = await this._readRecordTimeout();
-    if (chRecord === null || chRecord.contentType !== TLS_CT.HANDSHAKE) {
-      throw new TlsHandshakeError("Expected ClientHello");
+    /** @type {{ type: number, body: Uint8Array }|undefined} */
+    let ch;
+    if (this._quic) {
+      ch = await this._nextQuicHs();
+      if (ch.type !== TLS_HT.CLIENT_HELLO) throw new TlsHandshakeError("Expected ClientHello", TLS_ALERT.UNEXPECTED_MESSAGE);
+    } else {
+      const chRecord = await this._readRecordTimeout();
+      if (chRecord === null || chRecord.contentType !== TLS_CT.HANDSHAKE) {
+        throw new TlsHandshakeError("Expected ClientHello");
+      }
+      this._appendTranscript(chRecord.payload);
+      const chMsgs = this._parseHandshakeMessages(chRecord.payload);
+      ch = chMsgs.find(m => m.type === TLS_HT.CLIENT_HELLO);
     }
-    this._appendTranscript(chRecord.payload);
-    const chMsgs = this._parseHandshakeMessages(chRecord.payload);
-    const ch = chMsgs.find(m => m.type === TLS_HT.CLIENT_HELLO);
     if (!ch) throw new TlsHandshakeError("Expected ClientHello");
     let hello;
     try {
@@ -1327,6 +1445,15 @@ export class TlsSession {
       }
       this.alpn = chosen;
       shExtensions.push({ type: TLS_EXT.ALPN, data: encodeAlpn([chosen]) });
+    }
+
+    if (this._quic) {
+      // RFC 9001 §8.1/§8.2: ALPN and transport parameters are mandatory
+      if (!this.alpn) throw new TlsHandshakeError("QUIC requires ALPN", TLS_ALERT.NO_APPLICATION_PROTOCOL);
+      const tp = hello.extensions.get(TLS_EXT.QUIC_TRANSPORT_PARAMETERS);
+      if (!tp) throw new TlsHandshakeError("quic_transport_parameters missing", TLS_ALERT.MISSING_EXTENSION);
+      this.peerTransportParams = tp;
+      shExtensions.push({ type: TLS_EXT.QUIC_TRANSPORT_PARAMETERS, data: this._quic.transportParams });
     }
 
     // Version (RFC 8446 §4.2.1): TLS 1.3 when both sides support it; the
