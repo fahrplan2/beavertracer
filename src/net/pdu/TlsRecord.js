@@ -19,6 +19,50 @@ export const TLS_HT = {
   FINISHED:           0x14,
 };
 
+/** Extension types used by this implementation (IANA TLS ExtensionType registry). */
+export const TLS_EXT = Object.freeze({
+  SERVER_NAME:          0x0000, // RFC 6066 §3
+  SUPPORTED_GROUPS:     0x000A,
+  EC_POINT_FORMATS:     0x000B,
+  SIGNATURE_ALGORITHMS: 0x000D,
+});
+
+/** Malformed handshake message — maps to the fatal decode_error alert. */
+export class TlsDecodeError extends Error {
+  /** @param {string} msg */
+  constructor(msg) {
+    super(msg);
+    this.name = "TlsDecodeError";
+  }
+}
+
+/**
+ * Extract the host_name from a server_name extension body (RFC 6066 §3).
+ * Returns "" when the list carries no host_name entry. The name is
+ * normalised (lower case, no trailing dot) so callers can compare directly.
+ * @param {Uint8Array} data
+ */
+function parseServerNameExtension(data) {
+  if (data.length < 2) throw new TlsDecodeError("server_name extension truncated");
+  const listLen = read16BE(data, 0);
+  if (2 + listLen !== data.length) throw new TlsDecodeError("server_name list length mismatch");
+  let off = 2;
+  let hostName = "";
+  while (off < data.length) {
+    if (off + 3 > data.length) throw new TlsDecodeError("server_name entry truncated");
+    const nameType = data[off];
+    const len = read16BE(data, off + 1);
+    off += 3;
+    if (off + len > data.length) throw new TlsDecodeError("server_name entry truncated");
+    // RFC 6066: at most one name per type; only host_name (0) is defined
+    if (nameType === 0x00 && !hostName) {
+      hostName = new TextDecoder().decode(data.slice(off, off + len));
+    }
+    off += len;
+  }
+  return hostName.toLowerCase().replace(/\.$/, "");
+}
+
 // TLS 1.2 version (0x0303) used in record headers and Hello messages
 const VER_MAJOR = 0x03;
 const VER_MINOR = 0x03;
@@ -169,12 +213,96 @@ export class TlsRecord {
   }
 
   /**
+   * Parse a ClientHello handshake body (without the 4-byte handshake header).
+   * RFC 5246 §7.4.1.2; extensions are optional (absent in very old clients).
+   * Throws {@link TlsDecodeError} on any length inconsistency.
+   * @param {Uint8Array} body
+   * @returns {{ version: number, random: Uint8Array, sessionId: Uint8Array,
+   *             cipherSuites: number[], extensions: Map<number, Uint8Array>,
+   *             serverName: string }}
+   */
+  static parseClientHello(body) {
+    let off = 0;
+    /** @param {number} n */
+    const need = (n) => {
+      if (off + n > body.length) throw new TlsDecodeError("ClientHello truncated");
+    };
+
+    need(2 + 32);
+    const version = read16BE(body, 0);
+    const random = body.slice(2, 34);
+    off = 34;
+
+    need(1);
+    const sidLen = body[off++];
+    if (sidLen > 32) throw new TlsDecodeError("ClientHello session_id too long");
+    need(sidLen);
+    const sessionId = body.slice(off, off + sidLen);
+    off += sidLen;
+
+    need(2);
+    const csLen = read16BE(body, off); off += 2;
+    if (csLen < 2 || csLen % 2 !== 0) throw new TlsDecodeError("ClientHello cipher_suites malformed");
+    need(csLen);
+    const cipherSuites = [];
+    for (let i = 0; i < csLen; i += 2) cipherSuites.push(read16BE(body, off + i));
+    off += csLen;
+
+    need(1);
+    const compLen = body[off++];
+    if (compLen < 1) throw new TlsDecodeError("ClientHello compression_methods empty");
+    need(compLen);
+    off += compLen;
+
+    /** @type {Map<number, Uint8Array>} */
+    const extensions = new Map();
+    if (off < body.length) {
+      need(2);
+      const extLen = read16BE(body, off); off += 2;
+      need(extLen);
+      const end = off + extLen;
+      if (end !== body.length) throw new TlsDecodeError("ClientHello trailing bytes");
+      while (off < end) {
+        if (off + 4 > end) throw new TlsDecodeError("ClientHello extension header truncated");
+        const type = read16BE(body, off);
+        const len  = read16BE(body, off + 2);
+        off += 4;
+        if (off + len > end) throw new TlsDecodeError("ClientHello extension truncated");
+        // RFC 5246 §7.4.1.4: at most one extension of each type
+        if (extensions.has(type)) throw new TlsDecodeError("ClientHello duplicate extension");
+        extensions.set(type, body.slice(off, off + len));
+        off += len;
+      }
+    }
+
+    const sniExt = extensions.get(TLS_EXT.SERVER_NAME);
+    const serverName = sniExt ? parseServerNameExtension(sniExt) : "";
+
+    return { version, random, sessionId, cipherSuites, extensions, serverName };
+  }
+
+  /**
    * @param {Uint8Array} serverRandom - 32 bytes
    * @param {Uint8Array} sessionId
+   * @param {{ type: number, data: Uint8Array }[]} [extensions] only ones the client offered (RFC 5246 §7.4.1.4)
    * @returns {Uint8Array}
    */
-  static buildServerHello(serverRandom, sessionId) {
+  static buildServerHello(serverRandom, sessionId, extensions = []) {
     const sid = sessionId.length > 0 ? sessionId : new Uint8Array(0);
+    let extBlock = new Uint8Array(0);
+    if (extensions.length > 0) {
+      const parts = extensions.map(({ type, data }) => {
+        const e = new Uint8Array(4 + data.length);
+        write16BE(e, 0, type);
+        write16BE(e, 2, data.length);
+        e.set(data, 4);
+        return e;
+      });
+      const all = concat(...parts);
+      extBlock = new Uint8Array(2 + all.length);
+      write16BE(extBlock, 0, all.length);
+      extBlock.set(all, 2);
+    }
     const body = concat(
       new Uint8Array([VER_MAJOR, VER_MINOR]),
       serverRandom,
@@ -182,6 +310,7 @@ export class TlsRecord {
       sid,
       new Uint8Array([CIPHER_HI, CIPHER_LO]),  // chosen cipher
       new Uint8Array([0x00]),                   // compression: null
+      extBlock,
     );
     return handshakeRecord(handshakeMsg(TLS_HT.SERVER_HELLO, body));
   }

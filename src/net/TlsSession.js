@@ -1,17 +1,19 @@
 //@ts-check
 
-import { TlsRecord, TLS_CT, TLS_HT } from "./pdu/TlsRecord.js";
+import { TlsRecord, TLS_CT, TLS_HT, TLS_EXT, TlsDecodeError } from "./pdu/TlsRecord.js";
 import { TlsCertificate, TlsTrustStore } from "./models/TlsCertificate.js";
 import { encodeUTF8 } from "../lib/helpers.js";
 
 // ── error types ────────────────────────────────────────────────────────────
 
-/** TLS AlertDescription values used by this implementation (RFC 5246 §7.2). */
+/** TLS AlertDescription values used by this implementation (RFC 5246 §7.2, RFC 6066 §3). */
 export const TLS_ALERT = Object.freeze({
   CLOSE_NOTIFY: 0,
   HANDSHAKE_FAILURE: 40,
   BAD_CERTIFICATE: 42,
+  DECODE_ERROR: 50,
   DECRYPT_ERROR: 51,
+  UNRECOGNIZED_NAME: 112,
 });
 
 export class TlsHandshakeError extends Error {
@@ -377,9 +379,10 @@ export class TlsSession {
    *   sleepFn?: (ms: number) => Promise<void>,
    *   now?: () => number,
    *   serverName?: string,
+   *   selectCert?: (sni: string) => TlsCertificate|null,
    * }} opts
    */
-  constructor({ send, recv, isServer, cert, trustStore, timeoutMs = 400, sleepFn, now, serverName }) {
+  constructor({ send, recv, isServer, cert, trustStore, timeoutMs = 400, sleepFn, now, serverName, selectCert }) {
     this._sendRaw = send;
     this._recvRaw = recv;
     this._isServer = isServer;
@@ -394,6 +397,12 @@ export class TlsSession {
     // Name the client wants to reach (URL host). When set together with a
     // trust store, the peer certificate's CN must match it.
     this._serverName = serverName ?? "";
+    // Server side, name-based virtual hosting: picks the certificate from the
+    // ClientHello's server_name ("" when the client sent none). Takes
+    // precedence over `cert`; returning null aborts with unrecognized_name.
+    this._selectCert = selectCert ?? null;
+    /** Server side: host_name from the client's SNI extension, "" if absent. */
+    this.sni = "";
 
     /** @type {"INIT"|"HANDSHAKE"|"ESTABLISHED"|"CLOSED"} */
     this._state = "INIT";
@@ -715,8 +724,7 @@ export class TlsSession {
   // ── handshake – server side ───────────────────────────────────────────────
 
   async _serverHandshake() {
-    if (!this._cert) throw new TlsHandshakeError("Server cert required");
-    if (!this._cert.privateKey) throw new TlsHandshakeError("Server cert has no private key");
+    if (!this._cert && !this._selectCert) throw new TlsHandshakeError("Server cert required");
 
     this._transcript = new Uint8Array(0);
 
@@ -729,7 +737,35 @@ export class TlsSession {
     const chMsgs = this._parseHandshakeMessages(chRecord.payload);
     const ch = chMsgs.find(m => m.type === TLS_HT.CLIENT_HELLO);
     if (!ch) throw new TlsHandshakeError("Expected ClientHello");
-    this._clientRandom = ch.body.slice(2, 34);
+    let hello;
+    try {
+      hello = TlsRecord.parseClientHello(ch.body);
+    } catch (e) {
+      if (e instanceof TlsDecodeError) throw new TlsHandshakeError(e.message, TLS_ALERT.DECODE_ERROR);
+      throw e;
+    }
+    this._clientRandom = hello.random;
+    this.sni = hello.serverName;
+
+    // Certificate selection by SNI (RFC 6066 §3) — must happen before the
+    // Certificate message, which is why SNI exists: the Host header is not
+    // readable yet at this point.
+    /** @type {{ type: number, data: Uint8Array }[]} */
+    const shExtensions = [];
+    if (this._selectCert) {
+      const chosen = this._selectCert(this.sni);
+      if (!chosen) {
+        throw new TlsHandshakeError(`No certificate for '${this.sni}'`, TLS_ALERT.UNRECOGNIZED_NAME);
+      }
+      this._cert = chosen;
+      // The server used the name -> acknowledge with an empty server_name
+      // extension. Only allowed when the client offered it (RFC 5246 §7.4.1.4).
+      if (hello.extensions.has(TLS_EXT.SERVER_NAME)) {
+        shExtensions.push({ type: TLS_EXT.SERVER_NAME, data: new Uint8Array(0) });
+      }
+    }
+    const cert = /** @type {TlsCertificate} */ (this._cert);
+    if (!cert.privateKey) throw new TlsHandshakeError("Server cert has no private key");
 
     // 2. Generate server random + ECDH keypair
     this._serverRandom = crypto.getRandomValues(new Uint8Array(32));
@@ -753,7 +789,7 @@ export class TlsSession {
     );
     const sigBuf = await crypto.subtle.sign(
       { name: "ECDSA", hash: "SHA-256" },
-      this._cert.privateKey,
+      cert.privateKey,
       toSign,
     );
     const signature = new Uint8Array(sigBuf);
@@ -761,9 +797,9 @@ export class TlsSession {
     // 4. Send ServerHello, Certificate, ServerKeyExchange, ServerHelloDone
     //    Append each HS message to transcript
     const sessionId = crypto.getRandomValues(new Uint8Array(4));
-    const shRecord   = TlsRecord.buildServerHello(this._serverRandom, sessionId);
-    const chainDers  = this._cert.chain.map(c => c.toDer());
-    const certRecord = TlsRecord.buildCertificate([this._cert.toDer(), ...chainDers]);
+    const shRecord   = TlsRecord.buildServerHello(this._serverRandom, sessionId, shExtensions);
+    const chainDers  = cert.chain.map(c => c.toDer());
+    const certRecord = TlsRecord.buildCertificate([cert.toDer(), ...chainDers]);
     const skeRecord  = TlsRecord.buildServerKeyExchange(serverPubRaw, signature);
     const shdRecord  = TlsRecord.buildServerHelloDone();
 
