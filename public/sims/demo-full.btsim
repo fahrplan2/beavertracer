@@ -1,6 +1,6 @@
 {
   "_info": "This file was created by BeaverTracer, a network simulation tool. Open it with the BeaverTracer app or at https://beavertracer.eu/",
-  "version": 5,
+  "version": 6,
   "appVersion": "0.1.20-dev.141.54597b9",
   "savedAt": "2026-06-09T21:47:31.311Z",
   "tick": 100,
@@ -14,7 +14,7 @@
       "px": 230.5,
       "py": 171.5,
       "panelOpen": false,
-      "text": "# Internet-Demo — Ein vereinfachtes simuliertes Internet\n\n  ## Features\n  **Backbone:** Router BB1–BB5 — eBGP-Mesh (AS65100–65104)\n  **ISPs:** ISP-Alpha (AS65001), ISP-Beta (AS65002), ISP-Gamma (AS65003) — per BGP ans Backbone angebunden\n  **Heimnetze:** 4 Heimrouter mit DHCP, WiFi-SSIDs und NAT — Laptops verbinden sich per WLAN\n  **Rechenzentren:** DC-Alpha (www.example.com), DC-Beta (www.betanet.de + E-Mail), DC-Gamma (DNS ns1/ns2)\n  **Dual Stack:** Backbone, ISPs und Server sind vollständig IPv4/IPv6-fähig — Heimrouter beziehen\n  ein IPv6-Präfix per DHCPv6-PD; Heimgeräte konfigurieren sich automatisch per SLAAC\n\n  ## Ausprobieren\n  Simulation starten und warten, bis die automatischen Routingprotokolle konvergiert sind (ca. 10 Sekunden)\n  **Ping:** Terminal auf einem Heim-PC → ping www.example.com\n  **Webseite:** Webseite öffnen: www.example.com\n",
+      "text": "# Internet-Demo — Ein vereinfachtes simuliertes Internet\n\n  ## Features\n  **Backbone:** Router BB1–BB5 — eBGP-Mesh (AS65100–65104)\n  **ISPs:** ISP-Alpha (AS65001), ISP-Beta (AS65002), ISP-Gamma (AS65003) — per BGP ans Backbone angebunden\n  **Heimnetze:** 4 Heimrouter mit DHCP, WLAN und NAT\n  **Rechenzentren:** DC-Alpha (TLD-Nameserver .com/.de), DC-Beta (www.betanet.de + E-Mail), DC-Gamma (www.example.com)\n  **DNS:** Root → TLD (.com, .de) → Nameserver der Firmen; die DNS-Server der Provider lösen rekursiv auf\n  **HTTPS:** www.example.com mit TLS 1.3, HTTP/2 und HTTP/3 (QUIC) — www.betanet.de klassisch mit TLS 1.2 und HTTP/1.1\n  **Dual Stack:** Backbone, ISPs und Server sprechen IPv4 und IPv6\n\n  ## Ausprobieren\n  Simulation starten und ca. 10 Sekunden warten, bis das Routing steht\n  **Ping:** Terminal auf einem Heim-PC → ping www.example.com\n  **Webseite:** Browser → https://www.example.com und https://www.betanet.de\n  **DNS:** Terminal → dig www.example.com HTTPS\n",
       "showTitle": false
     },
     {
@@ -26,7 +26,7 @@
       "px": 200,
       "py": 200,
       "panelOpen": false,
-      "w": 1911,
+      "w": 2273,
       "h": 307,
       "color": "#555555",
       "opacity": 0.08
@@ -68,7 +68,7 @@
       "px": 200,
       "py": 200,
       "panelOpen": false,
-      "w": 418,
+      "w": 778,
       "h": 480,
       "color": "#aa44aa",
       "opacity": 0.07
@@ -132,7 +132,7 @@
     {
       "kind": "RectOverlay",
       "id": 10,
-      "name": "DC-Alpha",
+      "name": "DC-Alpha — TLD-DNS (.com, .de)",
       "x": 267.5989961842744,
       "y": 230.50420567750353,
       "px": 200,
@@ -1251,6 +1251,30 @@
                 "binary": false,
                 "ctime": 1780330322365,
                 "mtime": 1780330322365
+              },
+              {
+                "type": "dir",
+                "name": "certs",
+                "ctime": 0,
+                "mtime": 0,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "trusted",
+                    "ctime": 0,
+                    "mtime": 0,
+                    "children": [
+                      {
+                        "type": "file",
+                        "name": "beaver-demo-root-ca.json",
+                        "binary": false,
+                        "ctime": 0,
+                        "mtime": 0,
+                        "data": "{\n  \"subject\": \"CN=Beaver Demo Root CA\",\n  \"issuer\": \"CN=Beaver Demo Root CA\",\n  \"publicKeyId\": \"e7dbeb818ec7d9e6c422d3402c5e1831\",\n  \"publicKeyRaw\": \"04e7dbeb818ec7d9e6c422d3402c5e183112e9ce36f75b69e629f27a2f6b323b30e3f3a4038cb70cb74b1d6b090e10ebd154237650dafba780b53ea2c46ae16a3f\",\n  \"certSignatureHex\": \"5000caff85b6fc63810ae07c9f7a8c1fcd79fc4f98f5ba02f40ff8ee057b408f923eef79302812c69d7c5874abf96165bd1d4219f4891ae6368165fe45745b44\",\n  \"serialNumber\": 1489920651,\n  \"notBefore\": 1790812800000,\n  \"notAfter\": 2109110400000,\n  \"selfSigned\": true,\n  \"isCA\": true,\n  \"x509Version\": 3,\n  \"hasPrivateKey\": false,\n  \"chain\": []\n}\n"
+                      }
+                    ]
+                  }
+                ]
               }
             ]
           },
@@ -1361,6 +1385,30 @@
                 "binary": false,
                 "ctime": 1780330322413,
                 "mtime": 1780330322413
+              },
+              {
+                "type": "dir",
+                "name": "certs",
+                "ctime": 0,
+                "mtime": 0,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "trusted",
+                    "ctime": 0,
+                    "mtime": 0,
+                    "children": [
+                      {
+                        "type": "file",
+                        "name": "beaver-demo-root-ca.json",
+                        "binary": false,
+                        "ctime": 0,
+                        "mtime": 0,
+                        "data": "{\n  \"subject\": \"CN=Beaver Demo Root CA\",\n  \"issuer\": \"CN=Beaver Demo Root CA\",\n  \"publicKeyId\": \"e7dbeb818ec7d9e6c422d3402c5e1831\",\n  \"publicKeyRaw\": \"04e7dbeb818ec7d9e6c422d3402c5e183112e9ce36f75b69e629f27a2f6b323b30e3f3a4038cb70cb74b1d6b090e10ebd154237650dafba780b53ea2c46ae16a3f\",\n  \"certSignatureHex\": \"5000caff85b6fc63810ae07c9f7a8c1fcd79fc4f98f5ba02f40ff8ee057b408f923eef79302812c69d7c5874abf96165bd1d4219f4891ae6368165fe45745b44\",\n  \"serialNumber\": 1489920651,\n  \"notBefore\": 1790812800000,\n  \"notAfter\": 2109110400000,\n  \"selfSigned\": true,\n  \"isCA\": true,\n  \"x509Version\": 3,\n  \"hasPrivateKey\": false,\n  \"chain\": []\n}\n"
+                      }
+                    ]
+                  }
+                ]
               }
             ]
           },
@@ -1472,6 +1520,30 @@
                 "binary": false,
                 "ctime": 1780330322431,
                 "mtime": 1780330322431
+              },
+              {
+                "type": "dir",
+                "name": "certs",
+                "ctime": 0,
+                "mtime": 0,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "trusted",
+                    "ctime": 0,
+                    "mtime": 0,
+                    "children": [
+                      {
+                        "type": "file",
+                        "name": "beaver-demo-root-ca.json",
+                        "binary": false,
+                        "ctime": 0,
+                        "mtime": 0,
+                        "data": "{\n  \"subject\": \"CN=Beaver Demo Root CA\",\n  \"issuer\": \"CN=Beaver Demo Root CA\",\n  \"publicKeyId\": \"e7dbeb818ec7d9e6c422d3402c5e1831\",\n  \"publicKeyRaw\": \"04e7dbeb818ec7d9e6c422d3402c5e183112e9ce36f75b69e629f27a2f6b323b30e3f3a4038cb70cb74b1d6b090e10ebd154237650dafba780b53ea2c46ae16a3f\",\n  \"certSignatureHex\": \"5000caff85b6fc63810ae07c9f7a8c1fcd79fc4f98f5ba02f40ff8ee057b408f923eef79302812c69d7c5874abf96165bd1d4219f4891ae6368165fe45745b44\",\n  \"serialNumber\": 1489920651,\n  \"notBefore\": 1790812800000,\n  \"notAfter\": 2109110400000,\n  \"selfSigned\": true,\n  \"isCA\": true,\n  \"x509Version\": 3,\n  \"hasPrivateKey\": false,\n  \"chain\": []\n}\n"
+                      }
+                    ]
+                  }
+                ]
               }
             ]
           },
@@ -1582,6 +1654,30 @@
                 "binary": false,
                 "ctime": 1780330322445,
                 "mtime": 1780330322445
+              },
+              {
+                "type": "dir",
+                "name": "certs",
+                "ctime": 0,
+                "mtime": 0,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "trusted",
+                    "ctime": 0,
+                    "mtime": 0,
+                    "children": [
+                      {
+                        "type": "file",
+                        "name": "beaver-demo-root-ca.json",
+                        "binary": false,
+                        "ctime": 0,
+                        "mtime": 0,
+                        "data": "{\n  \"subject\": \"CN=Beaver Demo Root CA\",\n  \"issuer\": \"CN=Beaver Demo Root CA\",\n  \"publicKeyId\": \"e7dbeb818ec7d9e6c422d3402c5e1831\",\n  \"publicKeyRaw\": \"04e7dbeb818ec7d9e6c422d3402c5e183112e9ce36f75b69e629f27a2f6b323b30e3f3a4038cb70cb74b1d6b090e10ebd154237650dafba780b53ea2c46ae16a3f\",\n  \"certSignatureHex\": \"5000caff85b6fc63810ae07c9f7a8c1fcd79fc4f98f5ba02f40ff8ee057b408f923eef79302812c69d7c5874abf96165bd1d4219f4891ae6368165fe45745b44\",\n  \"serialNumber\": 1489920651,\n  \"notBefore\": 1790812800000,\n  \"notAfter\": 2109110400000,\n  \"selfSigned\": true,\n  \"isCA\": true,\n  \"x509Version\": 3,\n  \"hasPrivateKey\": false,\n  \"chain\": []\n}\n"
+                      }
+                    ]
+                  }
+                ]
               }
             ]
           },
@@ -1693,6 +1789,30 @@
                 "binary": false,
                 "ctime": 1780330322458,
                 "mtime": 1780330322458
+              },
+              {
+                "type": "dir",
+                "name": "certs",
+                "ctime": 0,
+                "mtime": 0,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "trusted",
+                    "ctime": 0,
+                    "mtime": 0,
+                    "children": [
+                      {
+                        "type": "file",
+                        "name": "beaver-demo-root-ca.json",
+                        "binary": false,
+                        "ctime": 0,
+                        "mtime": 0,
+                        "data": "{\n  \"subject\": \"CN=Beaver Demo Root CA\",\n  \"issuer\": \"CN=Beaver Demo Root CA\",\n  \"publicKeyId\": \"e7dbeb818ec7d9e6c422d3402c5e1831\",\n  \"publicKeyRaw\": \"04e7dbeb818ec7d9e6c422d3402c5e183112e9ce36f75b69e629f27a2f6b323b30e3f3a4038cb70cb74b1d6b090e10ebd154237650dafba780b53ea2c46ae16a3f\",\n  \"certSignatureHex\": \"5000caff85b6fc63810ae07c9f7a8c1fcd79fc4f98f5ba02f40ff8ee057b408f923eef79302812c69d7c5874abf96165bd1d4219f4891ae6368165fe45745b44\",\n  \"serialNumber\": 1489920651,\n  \"notBefore\": 1790812800000,\n  \"notAfter\": 2109110400000,\n  \"selfSigned\": true,\n  \"isCA\": true,\n  \"x509Version\": 3,\n  \"hasPrivateKey\": false,\n  \"chain\": []\n}\n"
+                      }
+                    ]
+                  }
+                ]
               }
             ]
           },
@@ -1803,6 +1923,30 @@
                 "binary": false,
                 "ctime": 1780330322466,
                 "mtime": 1780330322466
+              },
+              {
+                "type": "dir",
+                "name": "certs",
+                "ctime": 0,
+                "mtime": 0,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "trusted",
+                    "ctime": 0,
+                    "mtime": 0,
+                    "children": [
+                      {
+                        "type": "file",
+                        "name": "beaver-demo-root-ca.json",
+                        "binary": false,
+                        "ctime": 0,
+                        "mtime": 0,
+                        "data": "{\n  \"subject\": \"CN=Beaver Demo Root CA\",\n  \"issuer\": \"CN=Beaver Demo Root CA\",\n  \"publicKeyId\": \"e7dbeb818ec7d9e6c422d3402c5e1831\",\n  \"publicKeyRaw\": \"04e7dbeb818ec7d9e6c422d3402c5e183112e9ce36f75b69e629f27a2f6b323b30e3f3a4038cb70cb74b1d6b090e10ebd154237650dafba780b53ea2c46ae16a3f\",\n  \"certSignatureHex\": \"5000caff85b6fc63810ae07c9f7a8c1fcd79fc4f98f5ba02f40ff8ee057b408f923eef79302812c69d7c5874abf96165bd1d4219f4891ae6368165fe45745b44\",\n  \"serialNumber\": 1489920651,\n  \"notBefore\": 1790812800000,\n  \"notAfter\": 2109110400000,\n  \"selfSigned\": true,\n  \"isCA\": true,\n  \"x509Version\": 3,\n  \"hasPrivateKey\": false,\n  \"chain\": []\n}\n"
+                      }
+                    ]
+                  }
+                ]
               }
             ]
           },
@@ -1914,6 +2058,30 @@
                 "binary": false,
                 "ctime": 1780330322475,
                 "mtime": 1780330322475
+              },
+              {
+                "type": "dir",
+                "name": "certs",
+                "ctime": 0,
+                "mtime": 0,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "trusted",
+                    "ctime": 0,
+                    "mtime": 0,
+                    "children": [
+                      {
+                        "type": "file",
+                        "name": "beaver-demo-root-ca.json",
+                        "binary": false,
+                        "ctime": 0,
+                        "mtime": 0,
+                        "data": "{\n  \"subject\": \"CN=Beaver Demo Root CA\",\n  \"issuer\": \"CN=Beaver Demo Root CA\",\n  \"publicKeyId\": \"e7dbeb818ec7d9e6c422d3402c5e1831\",\n  \"publicKeyRaw\": \"04e7dbeb818ec7d9e6c422d3402c5e183112e9ce36f75b69e629f27a2f6b323b30e3f3a4038cb70cb74b1d6b090e10ebd154237650dafba780b53ea2c46ae16a3f\",\n  \"certSignatureHex\": \"5000caff85b6fc63810ae07c9f7a8c1fcd79fc4f98f5ba02f40ff8ee057b408f923eef79302812c69d7c5874abf96165bd1d4219f4891ae6368165fe45745b44\",\n  \"serialNumber\": 1489920651,\n  \"notBefore\": 1790812800000,\n  \"notAfter\": 2109110400000,\n  \"selfSigned\": true,\n  \"isCA\": true,\n  \"x509Version\": 3,\n  \"hasPrivateKey\": false,\n  \"chain\": []\n}\n"
+                      }
+                    ]
+                  }
+                ]
               }
             ]
           },
@@ -2024,6 +2192,30 @@
                 "binary": false,
                 "ctime": 1780330322483,
                 "mtime": 1780330322483
+              },
+              {
+                "type": "dir",
+                "name": "certs",
+                "ctime": 0,
+                "mtime": 0,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "trusted",
+                    "ctime": 0,
+                    "mtime": 0,
+                    "children": [
+                      {
+                        "type": "file",
+                        "name": "beaver-demo-root-ca.json",
+                        "binary": false,
+                        "ctime": 0,
+                        "mtime": 0,
+                        "data": "{\n  \"subject\": \"CN=Beaver Demo Root CA\",\n  \"issuer\": \"CN=Beaver Demo Root CA\",\n  \"publicKeyId\": \"e7dbeb818ec7d9e6c422d3402c5e1831\",\n  \"publicKeyRaw\": \"04e7dbeb818ec7d9e6c422d3402c5e183112e9ce36f75b69e629f27a2f6b323b30e3f3a4038cb70cb74b1d6b090e10ebd154237650dafba780b53ea2c46ae16a3f\",\n  \"certSignatureHex\": \"5000caff85b6fc63810ae07c9f7a8c1fcd79fc4f98f5ba02f40ff8ee057b408f923eef79302812c69d7c5874abf96165bd1d4219f4891ae6368165fe45745b44\",\n  \"serialNumber\": 1489920651,\n  \"notBefore\": 1790812800000,\n  \"notAfter\": 2109110400000,\n  \"selfSigned\": true,\n  \"isCA\": true,\n  \"x509Version\": 3,\n  \"hasPrivateKey\": false,\n  \"chain\": []\n}\n"
+                      }
+                    ]
+                  }
+                ]
               }
             ]
           },
@@ -2213,8 +2405,8 @@
       "kind": "Computer",
       "id": 600,
       "name": "www.example.com",
-      "x": 477.94009646787003,
-      "y": 318.565975027899,
+      "x": 1972.0,
+      "y": 319.0,
       "px": 508,
       "py": 254.5,
       "panelOpen": false,
@@ -2224,9 +2416,9 @@
         "interfaces": [
           {
             "name": "eth0",
-            "ip": "185.1.1.10",
+            "ip": "185.3.1.10",
             "prefixLength": 24,
-            "ip6": "2001:db8:1:1::10",
+            "ip6": "2001:db8:3:1::10",
             "prefixLength6": 64,
             "ip6LL": "fe80::a802:b7ff:fed2:7e1",
             "slaac": false,
@@ -2239,13 +2431,13 @@
             "dst": "0.0.0.0",
             "prefixLength": 0,
             "interf": 0,
-            "nexthop": "185.1.1.1"
+            "nexthop": "185.3.1.1"
           },
           {
             "dst": "::",
             "prefixLength": 0,
             "interf": 0,
-            "nexthop": "2001:db8:1:1::1"
+            "nexthop": "2001:db8:3:1::1"
           }
         ]
       },
@@ -2264,18 +2456,10 @@
               {
                 "type": "file",
                 "name": "httpd.conf",
-                "data": "{\n  \"port\": 80,\n  \"docRoot\": \"/var/www/\",\n  \"httpsEnabled\": false,\n  \"httpsPort\": 443,\n  \"certPath\": \"\",\n  \"autostart\": true\n}\n",
+                "data": "{\n  \"port\": 80,\n  \"docRoot\": \"/var/www/\",\n  \"keepAlive\": true,\n  \"tls13Enabled\": true,\n  \"http2Enabled\": true,\n  \"h2cEnabled\": false,\n  \"http3Enabled\": true,\n  \"httpsEnabled\": true,\n  \"httpsPort\": 443,\n  \"certPath\": \"/etc/certs/www.example.com.json\",\n  \"vhostsEnabled\": false,\n  \"vhosts\": [],\n  \"autostart\": true\n}\n",
                 "binary": false,
                 "ctime": 0,
                 "mtime": 1781041212924
-              },
-              {
-                "type": "file",
-                "name": "mail.conf",
-                "data": "{\n  \"mailDomain\": \"example.local\",\n  \"ports\": {\n    \"smtp\": 25,\n    \"pop3\": 110,\n    \"imap\": 143\n  },\n  \"users\": []\n}",
-                "binary": false,
-                "ctime": 1780330322489,
-                "mtime": 1780330322489
               },
               {
                 "type": "file",
@@ -2284,6 +2468,22 @@
                 "binary": false,
                 "ctime": 1780330322490,
                 "mtime": 1780330322490
+              },
+              {
+                "type": "dir",
+                "name": "certs",
+                "ctime": 0,
+                "mtime": 0,
+                "children": [
+                  {
+                    "type": "file",
+                    "name": "www.example.com.json",
+                    "binary": false,
+                    "ctime": 0,
+                    "mtime": 0,
+                    "data": "{\n  \"subject\": \"CN=www.example.com\",\n  \"issuer\": \"CN=Beaver Demo Root CA\",\n  \"publicKeyId\": \"da4100d1f9dd22b7a3fd718ff9763fd0\",\n  \"publicKeyRaw\": \"04da4100d1f9dd22b7a3fd718ff9763fd00c6dc1eabd5d4ab665850542751a5a9aa982f6801a5c1051bef27c50ec35230475e4130f97ad983e1849e879a04f35b6\",\n  \"certSignatureHex\": \"89e752d8affc3526506627e7d2a3392f8a3b9b8250313917413b5c542664e6391482430d2c9716c70862c1efa3702406c9e8ebaac537b6a30e1f0cd795b6040b\",\n  \"serialNumber\": 2055882830,\n  \"notBefore\": 1790812800000,\n  \"notAfter\": 2109110400000,\n  \"selfSigned\": false,\n  \"isCA\": false,\n  \"x509Version\": 3,\n  \"hasPrivateKey\": true,\n  \"chain\": [\n    {\n      \"subject\": \"CN=Beaver Demo Root CA\",\n      \"issuer\": \"CN=Beaver Demo Root CA\",\n      \"publicKeyId\": \"e7dbeb818ec7d9e6c422d3402c5e1831\",\n      \"publicKeyRaw\": \"04e7dbeb818ec7d9e6c422d3402c5e183112e9ce36f75b69e629f27a2f6b323b30e3f3a4038cb70cb74b1d6b090e10ebd154237650dafba780b53ea2c46ae16a3f\",\n      \"certSignatureHex\": \"5000caff85b6fc63810ae07c9f7a8c1fcd79fc4f98f5ba02f40ff8ee057b408f923eef79302812c69d7c5874abf96165bd1d4219f4891ae6368165fe45745b44\",\n      \"serialNumber\": 1489920651,\n      \"notBefore\": 1790812800000,\n      \"notAfter\": 2109110400000,\n      \"selfSigned\": true,\n      \"isCA\": true,\n      \"x509Version\": 3,\n      \"hasPrivateKey\": true,\n      \"chain\": []\n    }\n  ],\n  \"privateKeyJwk\": {\n    \"key_ops\": [\n      \"sign\"\n    ],\n    \"ext\": true,\n    \"kty\": \"EC\",\n    \"x\": \"2kEA0fndIrej_XGP-XY_0Axtweq9XUq2ZYUFQnUaWpo\",\n    \"y\": \"qYL2gBpcEFG-8nxQ7DUjBHXkEw-XrZg-GEnoeaBPNbY\",\n    \"crv\": \"P-256\",\n    \"d\": \"bEKUg_0rBiI3apKq3wSkVCqP1Q_l2fRadn9FZSppv_U\"\n  },\n  \"publicKeyJwk\": {\n    \"key_ops\": [\n      \"verify\"\n    ],\n    \"ext\": true,\n    \"kty\": \"EC\",\n    \"x\": \"2kEA0fndIrej_XGP-XY_0Axtweq9XUq2ZYUFQnUaWpo\",\n    \"y\": \"qYL2gBpcEFG-8nxQ7DUjBHXkEw-XrZg-GEnoeaBPNbY\",\n    \"crv\": \"P-256\"\n  }\n}\n"
+                  }
+                ]
               }
             ]
           },
@@ -2302,7 +2502,7 @@
                   {
                     "type": "file",
                     "name": "index.html",
-                    "data": "<!DOCTYPE html>\n  <html lang=\"de\">\n  <head>\n    <meta charset=\"utf-8\">\n    <title>Example Corp</title>\n    <style>\n      *{margin:0;padding:0;box-sizing:border-box}\n      body{font-family:Arial,sans-serif;color:#333;font-size:14px}\n      header{background:#1a3a5c;color:#fff;padding:12px 16px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}\n      header h1{font-size:1.3em}\n      header p{opacity:.75;font-size:.82em}\n      .hero{background:linear-gradient(135deg,#1a3a5c,#2a5298);color:#fff;padding:24px 16px;text-align:center}\n      .hero h2{font-size:1.3em;margin-bottom:8px}\n      .features{display:flex;flex-direction:column;gap:10px;padding:16px;background:#f5f7fa}\n      .card{background:#fff;border-radius:8px;padding:14px;box-shadow:0 2px 6px rgba(0,0,0,.1)}\n      .card h3{color:#2a5298;margin-bottom:5px;font-size:.92em}\n      .card p{font-size:.85em;line-height:1.5}\n      .info{background:#e8f0fe;padding:9px 16px;font-size:.76em;color:#555;border-top:3px solid #2a5298}\n      footer{background:#1a3a5c;color:#aaa;padding:9px 16px;font-size:.75em}\n    </style>\n  </head>\n  <body>\n    <header>\n      <h1>Example Corp</h1>\n      <p>Cloud &amp; Hosting seit 2026</p>\n    </header>\n    <div class=\"hero\">\n      <h2>Willkommen bei Example Corp - <br> Ihr zuverlässiger Hosting-Partner</h2>\n    </div>\n    <div class=\"features\">\n      <div class=\"card\">\n        <h3>Rechenzentrum DC-Alpha</h3>\n        <p>DC-Alpha im Backbone (AS65001) &mdash; weltweit über BGP erreichbar.</p>\n      </div>\n    </div>\n    <div class=\"info\">IPv4: 185.1.1.10 &nbsp;|&nbsp; IPv6: 2001:db8:1:1::10 &nbsp;|&nbsp; AS65001</div>\n    <footer>&copy; 2026 Example Corp</footer>\n  </body>\n  </html>\n",
+                    "data": "<!DOCTYPE html>\n  <html lang=\"de\">\n  <head>\n    <meta charset=\"utf-8\">\n    <title>Example Corp</title>\n    <style>\n      *{margin:0;padding:0;box-sizing:border-box}\n      body{font-family:Arial,sans-serif;color:#333;font-size:14px}\n      header{background:#1a3a5c;color:#fff;padding:12px 16px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}\n      header h1{font-size:1.3em}\n      header p{opacity:.75;font-size:.82em}\n      .hero{background:linear-gradient(135deg,#1a3a5c,#2a5298);color:#fff;padding:24px 16px;text-align:center}\n      .hero h2{font-size:1.3em;margin-bottom:8px}\n      .features{display:flex;flex-direction:column;gap:10px;padding:16px;background:#f5f7fa}\n      .card{background:#fff;border-radius:8px;padding:14px;box-shadow:0 2px 6px rgba(0,0,0,.1)}\n      .card h3{color:#2a5298;margin-bottom:5px;font-size:.92em}\n      .card p{font-size:.85em;line-height:1.5}\n      .info{background:#e8f0fe;padding:9px 16px;font-size:.76em;color:#555;border-top:3px solid #2a5298}\n      footer{background:#1a3a5c;color:#aaa;padding:9px 16px;font-size:.75em}\n    </style>\n  </head>\n  <body>\n    <header>\n      <h1>Example Corp</h1>\n      <p>Cloud &amp; Hosting seit 2026</p>\n    </header>\n    <div class=\"hero\">\n      <h2>Willkommen bei Example Corp - <br> Ihr zuverlässiger Hosting-Partner</h2>\n    </div>\n    <div class=\"features\">\n      <div class=\"card\">\n        <h3>Rechenzentrum DC-Gamma</h3>\n        <p>DC-Gamma bei ISP-Gamma (AS65003) &mdash; weltweit über BGP erreichbar, per HTTPS mit HTTP/2 und HTTP/3 (QUIC).</p>\n      </div>\n    </div>\n    <div class=\"info\">IPv4: 185.3.1.10 &nbsp;|&nbsp; IPv6: 2001:db8:3:1::10 &nbsp;|&nbsp; AS65003</div>\n    <footer>&copy; 2026 Example Corp</footer>\n  </body>\n  </html>\n",
                     "binary": false,
                     "ctime": 0,
                     "mtime": 1781041638775
@@ -2343,118 +2543,6 @@
         "ExplorerApp",
         "TextEditorApp",
         "SimpleHTTPServerApp"
-      ]
-    },
-    {
-      "kind": "Computer",
-      "id": 601,
-      "name": "srv.example.com",
-      "x": 477.9659853200166,
-      "y": 236.34017929953728,
-      "px": 625,
-      "py": 254.5,
-      "panelOpen": false,
-      "net": {
-        "name": "srv.example.com",
-        "forwarding": false,
-        "interfaces": [
-          {
-            "name": "eth0",
-            "ip": "185.1.1.20",
-            "prefixLength": 24,
-            "ip6": "2001:db8:1:1::20",
-            "prefixLength6": 64,
-            "ip6LL": "fe80::a8c0:54ff:fe96:a273",
-            "slaac": false,
-            "raEnabled": false
-          }
-        ],
-        "tunnels": [],
-        "routes": [
-          {
-            "dst": "0.0.0.0",
-            "prefixLength": 0,
-            "interf": 0,
-            "nexthop": "185.1.1.1"
-          },
-          {
-            "dst": "::",
-            "prefixLength": 0,
-            "interf": 0,
-            "nexthop": "2001:db8:1:1::1"
-          }
-        ]
-      },
-      "fs": {
-        "type": "dir",
-        "name": "/",
-        "ctime": 0,
-        "mtime": 1780330322495,
-        "children": [
-          {
-            "type": "dir",
-            "name": "home",
-            "ctime": 0,
-            "mtime": 0,
-            "children": []
-          },
-          {
-            "type": "dir",
-            "name": "etc",
-            "ctime": 0,
-            "mtime": 1780330322496,
-            "children": [
-              {
-                "type": "file",
-                "name": "mail.conf",
-                "data": "{\n  \"mailDomain\": \"example.local\",\n  \"ports\": {\n    \"smtp\": 25,\n    \"pop3\": 110,\n    \"imap\": 143\n  },\n  \"users\": []\n}",
-                "binary": false,
-                "ctime": 1780330322495,
-                "mtime": 1780330322495
-              },
-              {
-                "type": "file",
-                "name": "bitcoin.conf",
-                "data": "{\n  \"walletAddr\": \"19ckQxk4LN4kwdAtX89aGheLqr\",\n  \"seedAddr\": \"\"\n}",
-                "binary": false,
-                "ctime": 1780330322496,
-                "mtime": 1780330322496
-              }
-            ]
-          },
-          {
-            "type": "dir",
-            "name": "var",
-            "ctime": 1780330322495,
-            "mtime": 1780330322495,
-            "children": [
-              {
-                "type": "dir",
-                "name": "mail",
-                "ctime": 1780330322495,
-                "mtime": 1780330322495,
-                "children": [
-                  {
-                    "type": "dir",
-                    "name": "queue",
-                    "ctime": 1780330322495,
-                    "mtime": 1780330322495,
-                    "children": []
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      },
-      "dns": null,
-      "dhcpMode": {},
-      "installedApps": [
-        "IPv4ConfigApp",
-        "TerminalApp",
-        "ExplorerApp",
-        "TextEditorApp",
-        "SimpleMailServerApp"
       ]
     },
     {
@@ -2512,7 +2600,7 @@
               {
                 "type": "file",
                 "name": "httpd.conf",
-                "data": "{\n  \"port\": 80,\n  \"docRoot\": \"/var/www/\",\n  \"httpsEnabled\": false,\n  \"httpsPort\": 443,\n  \"certPath\": \"\",\n  \"autostart\": true\n}\n",
+                "data": "{\n  \"port\": 80,\n  \"docRoot\": \"/var/www/\",\n  \"keepAlive\": true,\n  \"tls13Enabled\": false,\n  \"http2Enabled\": false,\n  \"h2cEnabled\": false,\n  \"http3Enabled\": false,\n  \"httpsEnabled\": true,\n  \"httpsPort\": 443,\n  \"certPath\": \"/etc/certs/www.betanet.de.json\",\n  \"vhostsEnabled\": false,\n  \"vhosts\": [],\n  \"autostart\": true\n}\n",
                 "binary": false,
                 "ctime": 0,
                 "mtime": 1781041212924
@@ -2532,6 +2620,22 @@
                 "binary": false,
                 "ctime": 1780330322503,
                 "mtime": 1780330322503
+              },
+              {
+                "type": "dir",
+                "name": "certs",
+                "ctime": 0,
+                "mtime": 0,
+                "children": [
+                  {
+                    "type": "file",
+                    "name": "www.betanet.de.json",
+                    "binary": false,
+                    "ctime": 0,
+                    "mtime": 0,
+                    "data": "{\n  \"subject\": \"CN=www.betanet.de\",\n  \"issuer\": \"CN=Beaver Demo Root CA\",\n  \"publicKeyId\": \"a22237b55ea3c363af22031299582344\",\n  \"publicKeyRaw\": \"04a22237b55ea3c363af220312995823449d528157420fa71baf5e2899617a548892828144a748ff86d54d4383367d10fd94fd4b92e248166cd3a9c1a92885a12c\",\n  \"certSignatureHex\": \"55c541afaac8b9738c2ee55ee09f033bd8c67dbd911acf53477e8a35d14472d53a5ba4dd56c9ecc8d215c8e68ca5711697839e8c1e564079f7b1be1c6c3c7b9d\",\n  \"serialNumber\": 847828001,\n  \"notBefore\": 1790812800000,\n  \"notAfter\": 2109110400000,\n  \"selfSigned\": false,\n  \"isCA\": false,\n  \"x509Version\": 3,\n  \"hasPrivateKey\": true,\n  \"chain\": [\n    {\n      \"subject\": \"CN=Beaver Demo Root CA\",\n      \"issuer\": \"CN=Beaver Demo Root CA\",\n      \"publicKeyId\": \"e7dbeb818ec7d9e6c422d3402c5e1831\",\n      \"publicKeyRaw\": \"04e7dbeb818ec7d9e6c422d3402c5e183112e9ce36f75b69e629f27a2f6b323b30e3f3a4038cb70cb74b1d6b090e10ebd154237650dafba780b53ea2c46ae16a3f\",\n      \"certSignatureHex\": \"5000caff85b6fc63810ae07c9f7a8c1fcd79fc4f98f5ba02f40ff8ee057b408f923eef79302812c69d7c5874abf96165bd1d4219f4891ae6368165fe45745b44\",\n      \"serialNumber\": 1489920651,\n      \"notBefore\": 1790812800000,\n      \"notAfter\": 2109110400000,\n      \"selfSigned\": true,\n      \"isCA\": true,\n      \"x509Version\": 3,\n      \"hasPrivateKey\": true,\n      \"chain\": []\n    }\n  ],\n  \"privateKeyJwk\": {\n    \"key_ops\": [\n      \"sign\"\n    ],\n    \"ext\": true,\n    \"kty\": \"EC\",\n    \"x\": \"oiI3tV6jw2OvIgMSmVgjRJ1SgVdCD6cbr14omWF6VIg\",\n    \"y\": \"koKBRKdI_4bVTUODNn0Q_ZT9S5LiSBZs06nBqSiFoSw\",\n    \"crv\": \"P-256\",\n    \"d\": \"p4bYJM7B5iZ5tYqAh-uvvevViehCzFFZuTjep63VXKo\"\n  },\n  \"publicKeyJwk\": {\n    \"key_ops\": [\n      \"verify\"\n    ],\n    \"ext\": true,\n    \"kty\": \"EC\",\n    \"x\": \"oiI3tV6jw2OvIgMSmVgjRJ1SgVdCD6cbr14omWF6VIg\",\n    \"y\": \"koKBRKdI_4bVTUODNn0Q_ZT9S5LiSBZs06nBqSiFoSw\",\n    \"crv\": \"P-256\"\n  }\n}\n"
+                  }
+                ]
               }
             ]
           },
@@ -2648,7 +2752,7 @@
               {
                 "type": "file",
                 "name": "mail.conf",
-                "data": "{\n  \"mailDomain\": \"example.local\",\n  \"ports\": {\n    \"smtp\": 25,\n    \"pop3\": 110,\n    \"imap\": 143\n  },\n  \"tls\": {\n    \"enabled\": false,\n    \"smtps\": 465,\n    \"pop3s\": 995,\n    \"imaps\": 993,\n    \"certPath\": \"\"\n  },\n  \"users\": [],\n  \"autostart\": true\n}\n",
+                "data": "{\n  \"mailDomain\": \"betanet.de\",\n  \"ports\": {\n    \"smtp\": 25,\n    \"pop3\": 110,\n    \"imap\": 143\n  },\n  \"tls\": {\n    \"enabled\": false,\n    \"smtps\": 465,\n    \"pop3s\": 995,\n    \"imaps\": 993,\n    \"certPath\": \"\"\n  },\n  \"users\": [],\n  \"autostart\": true\n}\n",
                 "binary": false,
                 "ctime": 0,
                 "mtime": 1781041212924
@@ -3228,7 +3332,7 @@
               {
                 "type": "file",
                 "name": "dnsd.conf",
-                "data": "{\n  \"a\": [\n    {\n      \"name\": \"ns1.com\",\n      \"ip\": \"185.1.1.30\",\n      \"ttl\": 300\n    },\n    {\n      \"name\": \"ns1.de\",\n      \"ip\": \"185.1.1.30\",\n      \"ttl\": 300\n    }\n  ],\n  \"aaaa\": [],\n  \"cname\": [],\n  \"mx\": [],\n  \"ns\": [\n    {\n      \"name\": \"com\",\n      \"host\": \"ns1.com\",\n      \"ttl\": 300\n    },\n    {\n      \"name\": \"de\",\n      \"host\": \"ns1.de\",\n      \"ttl\": 300\n    }\n  ],\n  \"mode\": \"authoritative\",\n  \"forwarderIp\": \"\",\n  \"autostart\": true\n}\n",
+                "data": "{\n  \"a\": [\n    {\n      \"name\": \"ns.nic.com\",\n      \"ip\": \"185.1.1.30\",\n      \"ttl\": 300\n    },\n    {\n      \"name\": \"ns.nic.de\",\n      \"ip\": \"185.1.1.31\",\n      \"ttl\": 300\n    }\n  ],\n  \"aaaa\": [],\n  \"cname\": [],\n  \"mx\": [],\n  \"ns\": [\n    {\n      \"name\": \"com\",\n      \"host\": \"ns.nic.com\",\n      \"ttl\": 3600\n    },\n    {\n      \"name\": \"de\",\n      \"host\": \"ns.nic.de\",\n      \"ttl\": 3600\n    }\n  ],\n  \"https\": [],\n  \"mode\": \"authoritative\",\n  \"forwarderIp\": \"\",\n  \"autostart\": true\n}\n",
                 "binary": false,
                 "ctime": 1781031896318,
                 "mtime": 1781041212924
@@ -3297,14 +3401,14 @@
     {
       "kind": "Computer",
       "id": 775,
-      "name": "DNS COM",
-      "x": 308.2309215324337,
-      "y": 322.5908592790856,
+      "name": "TLD-DNS .com",
+      "x": 478.0,
+      "y": 236.0,
       "px": 913,
       "py": 335.4166717529297,
       "panelOpen": false,
       "net": {
-        "name": "Computer 1",
+        "name": "ns.nic.com",
         "forwarding": false,
         "interfaces": [
           {
@@ -3358,7 +3462,7 @@
               {
                 "type": "file",
                 "name": "dnsd.conf",
-                "data": "{\n  \"a\": [\n    {\n      \"name\": \"www.example.com\",\n      \"ip\": \"185.1.1.10\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"example.com\",\n      \"ip\": \"185.1.1.10\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"www.betanet.de\",\n      \"ip\": \"185.2.1.10\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"betanet.de\",\n      \"ip\": \"185.2.1.10\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"mail.betanet.de\",\n      \"ip\": \"185.2.1.20\",\n      \"ttl\": 60\n    }\n  ],\n  \"aaaa\": [\n    {\n      \"name\": \"www.example.com\",\n      \"ip\": \"2001:db8:1:1::10\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"example.com\",\n      \"ip\": \"2001:db8:1:1::10\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"www.betanet.de\",\n      \"ip\": \"2001:db8:2:1::10\",\n      \"ttl\": 60\n    },\n    {\n      \"name\": \"betanet.de\",\n      \"ip\": \"2001:db8:2:1::10\",\n      \"ttl\": 60\n    }\n  ],\n  \"cname\": [],\n  \"mx\": [],\n  \"ns\": [],\n  \"mode\": \"authoritative\",\n  \"forwarderIp\": \"\",\n  \"autostart\": true\n}\n",
+                "data": "{\n  \"a\": [\n    {\n      \"name\": \"ns1.example.com\",\n      \"ip\": \"185.3.1.53\",\n      \"ttl\": 300\n    }\n  ],\n  \"aaaa\": [],\n  \"cname\": [],\n  \"mx\": [],\n  \"ns\": [\n    {\n      \"name\": \"example.com\",\n      \"host\": \"ns1.example.com\",\n      \"ttl\": 3600\n    }\n  ],\n  \"https\": [],\n  \"mode\": \"authoritative\",\n  \"forwarderIp\": \"\",\n  \"autostart\": true\n}\n",
                 "binary": false,
                 "ctime": 1781031874493,
                 "mtime": 1781041212924
@@ -3903,7 +4007,7 @@
       "px": 220,
       "py": 120,
       "panelOpen": false,
-      "text": "# Internet Demo — A Simplified Simulated Internet\n\n  ## Features\n  **Backbone:** Routers BB1–BB5 — eBGP mesh (AS65100–65104)\n  **ISPs:** ISP-Alpha (AS65001), ISP-Beta (AS65002), ISP-Gamma (AS65003) — BGP-peered with the backbone\n  **Home networks:** 4 home routers with DHCP, Wi-Fi SSIDs, and NAT — laptops connect wirelessly\n  **Data centers:** DC-Alpha (www.example.com), DC-Beta (www.betanet.de + e-mail), DC-Gamma (DNS ns1/ns2)\n  **Dual stack:** Backbone, ISPs, and servers are fully IPv4/IPv6 dual-stack — home routers obtain\n  an IPv6 prefix via DHCPv6-PD; home clients configure themselves via SLAAC\n\n  ## Try it out\n  Start the simulation and wait for the routing protocols to converge (~10 seconds)\n  **Ping:** Open a terminal on a home PC → ping www.example.com\n  **Website:** Open a website: www.example.com\n",
+      "text": "# Internet Demo — A Simplified Simulated Internet\n\n  ## Features\n  **Backbone:** Routers BB1–BB5 — eBGP mesh (AS65100–65104)\n  **ISPs:** ISP-Alpha (AS65001), ISP-Beta (AS65002), ISP-Gamma (AS65003) — BGP-peered with the backbone\n  **Home networks:** 4 home routers with DHCP, Wi-Fi and NAT\n  **Data centers:** DC-Alpha (TLD name servers .com/.de), DC-Beta (www.betanet.de + e-mail), DC-Gamma (www.example.com)\n  **DNS:** root → TLD (.com, .de) → the companies' name servers; the providers' DNS servers resolve recursively\n  **HTTPS:** www.example.com with TLS 1.3, HTTP/2 and HTTP/3 (QUIC) — www.betanet.de classic with TLS 1.2 and HTTP/1.1\n  **Dual stack:** backbone, ISPs and servers speak IPv4 and IPv6\n\n  ## Try it out\n  Start the simulation and wait ~10 seconds for routing to converge\n  **Ping:** Open a terminal on a home PC → ping www.example.com\n  **Website:** Browser → https://www.example.com and https://www.betanet.de\n  **DNS:** Terminal → dig www.example.com HTTPS\n",
       "showTitle": false
     },
     {
@@ -4052,22 +4156,6 @@
     },
     {
       "kind": "Link",
-      "id": 723,
-      "a": 500,
-      "b": 600,
-      "portA": "sw1",
-      "portB": "eth0"
-    },
-    {
-      "kind": "Link",
-      "id": 724,
-      "a": 500,
-      "b": 601,
-      "portA": "sw2",
-      "portB": "eth0"
-    },
-    {
-      "kind": "Link",
       "id": 725,
       "a": 501,
       "b": 602,
@@ -4201,6 +4289,545 @@
       "b": 303,
       "portA": "sw3",
       "portB": "wan0"
+    },
+    {
+      "kind": "Computer",
+      "id": 901,
+      "name": "TLD-DNS .de",
+      "x": 478.0,
+      "y": 319.0,
+      "px": 913,
+      "py": 335.4166717529297,
+      "panelOpen": false,
+      "net": {
+        "name": "ns.nic.de",
+        "forwarding": false,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "185.1.1.31",
+            "prefixLength": 24,
+            "ip6": null,
+            "prefixLength6": 0,
+            "ip6LL": "fe80::a839:0cff:fe8c:7d72",
+            "slaac": false,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": [
+          {
+            "dst": "0.0.0.0",
+            "prefixLength": 0,
+            "interf": 0,
+            "nexthop": "185.1.1.1"
+          }
+        ]
+      },
+      "fs": {
+        "type": "dir",
+        "name": "",
+        "ctime": 1781031786005,
+        "mtime": 1781031786005,
+        "children": [
+          {
+            "type": "dir",
+            "name": "etc",
+            "ctime": 1781031786005,
+            "mtime": 1781041212924,
+            "children": [
+              {
+                "type": "dir",
+                "name": "certs",
+                "ctime": 1781031786005,
+                "mtime": 1781031786005,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "trusted",
+                    "ctime": 1781031786005,
+                    "mtime": 1781031786005,
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "type": "file",
+                "name": "dnsd.conf",
+                "data": "{\n  \"a\": [\n    {\n      \"name\": \"ns1.betanet.de\",\n      \"ip\": \"185.2.1.53\",\n      \"ttl\": 300\n    }\n  ],\n  \"aaaa\": [],\n  \"cname\": [],\n  \"mx\": [],\n  \"ns\": [\n    {\n      \"name\": \"betanet.de\",\n      \"host\": \"ns1.betanet.de\",\n      \"ttl\": 3600\n    }\n  ],\n  \"https\": [],\n  \"mode\": \"authoritative\",\n  \"forwarderIp\": \"\",\n  \"autostart\": true\n}\n",
+                "binary": false,
+                "ctime": 1781031874493,
+                "mtime": 1781041212924
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "home",
+            "ctime": 1781031786005,
+            "mtime": 1781031786005,
+            "children": [
+              {
+                "type": "file",
+                "name": "notes.txt",
+                "data": "hello vfs\n",
+                "binary": false,
+                "ctime": 1781031786005,
+                "mtime": 1781031786005
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "bin",
+            "ctime": 1781031786005,
+            "mtime": 1781031786005,
+            "children": []
+          },
+          {
+            "type": "dir",
+            "name": "var",
+            "ctime": 1781031786005,
+            "mtime": 1781031786005,
+            "children": [
+              {
+                "type": "dir",
+                "name": "www",
+                "ctime": 1781031786005,
+                "mtime": 1781031786005,
+                "children": [
+                  {
+                    "type": "file",
+                    "name": "index.html",
+                    "data": "<!doctype html>\n<html>\n    <head>\n      <meta charset=\"utf-8\" />\n      <title>Hello from SimpleHTTPServer</title>\n    </head>\n    <body>\n      <h1>It works!</h1>\n    <p>Served from /var/www/index.html</p>\n    </body>\n</html>\n",
+                    "binary": false,
+                    "ctime": 1781031786005,
+                    "mtime": 1781031786005
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "dns": null,
+      "dhcpMode": {},
+      "installedApps": [
+        "IPv4ConfigApp",
+        "TerminalApp",
+        "ExplorerApp",
+        "TextEditorApp",
+        "DNSServerApp"
+      ]
+    },
+    {
+      "kind": "Link",
+      "id": 902,
+      "a": 500,
+      "b": 901,
+      "portA": "sw1",
+      "portB": "eth0"
+    },
+    {
+      "kind": "Computer",
+      "id": 903,
+      "name": "ns1.betanet.de",
+      "x": 1046.0,
+      "y": 318.0,
+      "px": 913,
+      "py": 335.4166717529297,
+      "panelOpen": false,
+      "net": {
+        "name": "ns1.betanet.de",
+        "forwarding": false,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "185.2.1.53",
+            "prefixLength": 24,
+            "ip6": "2001:db8:2:1::53",
+            "prefixLength6": 64,
+            "ip6LL": "fe80::a847:34ff:fe2c:d810",
+            "slaac": false,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": [
+          {
+            "dst": "0.0.0.0",
+            "prefixLength": 0,
+            "interf": 0,
+            "nexthop": "185.2.1.1"
+          },
+          {
+            "dst": "::",
+            "prefixLength": 0,
+            "interf": 0,
+            "nexthop": "2001:db8:2:1::1"
+          }
+        ]
+      },
+      "fs": {
+        "type": "dir",
+        "name": "",
+        "ctime": 1781031786005,
+        "mtime": 1781031786005,
+        "children": [
+          {
+            "type": "dir",
+            "name": "etc",
+            "ctime": 1781031786005,
+            "mtime": 1781041212924,
+            "children": [
+              {
+                "type": "dir",
+                "name": "certs",
+                "ctime": 1781031786005,
+                "mtime": 1781031786005,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "trusted",
+                    "ctime": 1781031786005,
+                    "mtime": 1781031786005,
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "type": "file",
+                "name": "dnsd.conf",
+                "data": "{\n  \"a\": [\n    {\n      \"name\": \"betanet.de\",\n      \"ip\": \"185.2.1.10\",\n      \"ttl\": 300\n    },\n    {\n      \"name\": \"www.betanet.de\",\n      \"ip\": \"185.2.1.10\",\n      \"ttl\": 300\n    },\n    {\n      \"name\": \"mail.betanet.de\",\n      \"ip\": \"185.2.1.20\",\n      \"ttl\": 300\n    },\n    {\n      \"name\": \"ns1.betanet.de\",\n      \"ip\": \"185.2.1.53\",\n      \"ttl\": 300\n    }\n  ],\n  \"aaaa\": [\n    {\n      \"name\": \"betanet.de\",\n      \"ip\": \"2001:db8:2:1::10\",\n      \"ttl\": 300\n    },\n    {\n      \"name\": \"www.betanet.de\",\n      \"ip\": \"2001:db8:2:1::10\",\n      \"ttl\": 300\n    },\n    {\n      \"name\": \"mail.betanet.de\",\n      \"ip\": \"2001:db8:2:1::20\",\n      \"ttl\": 300\n    }\n  ],\n  \"cname\": [],\n  \"mx\": [\n    {\n      \"name\": \"betanet.de\",\n      \"preference\": 10,\n      \"exchange\": \"mail.betanet.de\",\n      \"ttl\": 300\n    }\n  ],\n  \"ns\": [\n    {\n      \"name\": \"betanet.de\",\n      \"host\": \"ns1.betanet.de\",\n      \"ttl\": 3600\n    }\n  ],\n  \"https\": [],\n  \"mode\": \"authoritative\",\n  \"forwarderIp\": \"\",\n  \"autostart\": true\n}\n",
+                "binary": false,
+                "ctime": 1781031874493,
+                "mtime": 1781041212924
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "home",
+            "ctime": 1781031786005,
+            "mtime": 1781031786005,
+            "children": [
+              {
+                "type": "file",
+                "name": "notes.txt",
+                "data": "hello vfs\n",
+                "binary": false,
+                "ctime": 1781031786005,
+                "mtime": 1781031786005
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "bin",
+            "ctime": 1781031786005,
+            "mtime": 1781031786005,
+            "children": []
+          },
+          {
+            "type": "dir",
+            "name": "var",
+            "ctime": 1781031786005,
+            "mtime": 1781031786005,
+            "children": [
+              {
+                "type": "dir",
+                "name": "www",
+                "ctime": 1781031786005,
+                "mtime": 1781031786005,
+                "children": [
+                  {
+                    "type": "file",
+                    "name": "index.html",
+                    "data": "<!doctype html>\n<html>\n    <head>\n      <meta charset=\"utf-8\" />\n      <title>Hello from SimpleHTTPServer</title>\n    </head>\n    <body>\n      <h1>It works!</h1>\n    <p>Served from /var/www/index.html</p>\n    </body>\n</html>\n",
+                    "binary": false,
+                    "ctime": 1781031786005,
+                    "mtime": 1781031786005
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "dns": null,
+      "dhcpMode": {},
+      "installedApps": [
+        "IPv4ConfigApp",
+        "TerminalApp",
+        "ExplorerApp",
+        "TextEditorApp",
+        "DNSServerApp"
+      ]
+    },
+    {
+      "kind": "Link",
+      "id": 904,
+      "a": 501,
+      "b": 903,
+      "portA": "sw3",
+      "portB": "eth0"
+    },
+    {
+      "kind": "Switch",
+      "id": 905,
+      "name": "SW-DC-Gamma",
+      "x": 1796.0,
+      "y": 239.0,
+      "px": 1025,
+      "py": 500,
+      "panelOpen": false,
+      "vlanEnabled": false,
+      "stpEnabled": false,
+      "stpBridgePriority": 32768,
+      "vlanPorts": [
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        },
+        {
+          "vlanMode": "untagged",
+          "pvid": 1,
+          "allowedVlans": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "Link",
+      "id": 906,
+      "a": 202,
+      "b": 905,
+      "portA": "eth3",
+      "portB": "sw0"
+    },
+    {
+      "kind": "Link",
+      "id": 907,
+      "a": 905,
+      "b": 600,
+      "portA": "sw1",
+      "portB": "eth0"
+    },
+    {
+      "kind": "Computer",
+      "id": 908,
+      "name": "ns1.example.com",
+      "x": 1972.0,
+      "y": 236.0,
+      "px": 913,
+      "py": 335.4166717529297,
+      "panelOpen": false,
+      "net": {
+        "name": "ns1.example.com",
+        "forwarding": false,
+        "interfaces": [
+          {
+            "name": "eth0",
+            "ip": "185.3.1.53",
+            "prefixLength": 24,
+            "ip6": "2001:db8:3:1::53",
+            "prefixLength6": 64,
+            "ip6LL": "fe80::a80f:2fff:fe6f:770d",
+            "slaac": false,
+            "raEnabled": false
+          }
+        ],
+        "tunnels": [],
+        "routes": [
+          {
+            "dst": "0.0.0.0",
+            "prefixLength": 0,
+            "interf": 0,
+            "nexthop": "185.3.1.1"
+          },
+          {
+            "dst": "::",
+            "prefixLength": 0,
+            "interf": 0,
+            "nexthop": "2001:db8:3:1::1"
+          }
+        ]
+      },
+      "fs": {
+        "type": "dir",
+        "name": "",
+        "ctime": 1781031786005,
+        "mtime": 1781031786005,
+        "children": [
+          {
+            "type": "dir",
+            "name": "etc",
+            "ctime": 1781031786005,
+            "mtime": 1781041212924,
+            "children": [
+              {
+                "type": "dir",
+                "name": "certs",
+                "ctime": 1781031786005,
+                "mtime": 1781031786005,
+                "children": [
+                  {
+                    "type": "dir",
+                    "name": "trusted",
+                    "ctime": 1781031786005,
+                    "mtime": 1781031786005,
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "type": "file",
+                "name": "dnsd.conf",
+                "data": "{\n  \"a\": [\n    {\n      \"name\": \"example.com\",\n      \"ip\": \"185.3.1.10\",\n      \"ttl\": 300\n    },\n    {\n      \"name\": \"www.example.com\",\n      \"ip\": \"185.3.1.10\",\n      \"ttl\": 300\n    },\n    {\n      \"name\": \"ns1.example.com\",\n      \"ip\": \"185.3.1.53\",\n      \"ttl\": 300\n    }\n  ],\n  \"aaaa\": [\n    {\n      \"name\": \"example.com\",\n      \"ip\": \"2001:db8:3:1::10\",\n      \"ttl\": 300\n    },\n    {\n      \"name\": \"www.example.com\",\n      \"ip\": \"2001:db8:3:1::10\",\n      \"ttl\": 300\n    }\n  ],\n  \"cname\": [],\n  \"mx\": [],\n  \"ns\": [\n    {\n      \"name\": \"example.com\",\n      \"host\": \"ns1.example.com\",\n      \"ttl\": 3600\n    }\n  ],\n  \"https\": [\n    {\n      \"name\": \"www.example.com\",\n      \"priority\": 1,\n      \"target\": \".\",\n      \"params\": \"alpn=h3,h2\",\n      \"ttl\": 300\n    }\n  ],\n  \"mode\": \"authoritative\",\n  \"forwarderIp\": \"\",\n  \"autostart\": true\n}\n",
+                "binary": false,
+                "ctime": 1781031874493,
+                "mtime": 1781041212924
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "home",
+            "ctime": 1781031786005,
+            "mtime": 1781031786005,
+            "children": [
+              {
+                "type": "file",
+                "name": "notes.txt",
+                "data": "hello vfs\n",
+                "binary": false,
+                "ctime": 1781031786005,
+                "mtime": 1781031786005
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "name": "bin",
+            "ctime": 1781031786005,
+            "mtime": 1781031786005,
+            "children": []
+          },
+          {
+            "type": "dir",
+            "name": "var",
+            "ctime": 1781031786005,
+            "mtime": 1781031786005,
+            "children": [
+              {
+                "type": "dir",
+                "name": "www",
+                "ctime": 1781031786005,
+                "mtime": 1781031786005,
+                "children": [
+                  {
+                    "type": "file",
+                    "name": "index.html",
+                    "data": "<!doctype html>\n<html>\n    <head>\n      <meta charset=\"utf-8\" />\n      <title>Hello from SimpleHTTPServer</title>\n    </head>\n    <body>\n      <h1>It works!</h1>\n    <p>Served from /var/www/index.html</p>\n    </body>\n</html>\n",
+                    "binary": false,
+                    "ctime": 1781031786005,
+                    "mtime": 1781031786005
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "dns": null,
+      "dhcpMode": {},
+      "installedApps": [
+        "IPv4ConfigApp",
+        "TerminalApp",
+        "ExplorerApp",
+        "TextEditorApp",
+        "DNSServerApp"
+      ]
+    },
+    {
+      "kind": "Link",
+      "id": 909,
+      "a": 905,
+      "b": 908,
+      "portA": "sw2",
+      "portB": "eth0"
+    },
+    {
+      "kind": "RectOverlay",
+      "id": 910,
+      "name": "DC-Gamma",
+      "x": 1782.0,
+      "y": 231.0,
+      "px": 200,
+      "py": 200,
+      "panelOpen": false,
+      "w": 325,
+      "h": 223,
+      "color": "#7722cc",
+      "opacity": 0.09
+    },
+    {
+      "kind": "TextBox",
+      "id": 911,
+      "name": "Textfeld",
+      "x": 1791.0,
+      "y": 411.0,
+      "px": 220,
+      "py": 120,
+      "panelOpen": false,
+      "text": "## Datacenter 3",
+      "showTitle": false
     }
   ]
 }

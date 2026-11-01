@@ -245,18 +245,20 @@ describe('legacy certificates from lesson sims / save files', () => {
     expect(certs.length).toBeGreaterThanOrEqual(10);
   });
 
-  it('every stored certificate loads as legacy v1 and its stored signature still verifies', async () => {
+  it('every stored certificate keeps its layout (legacy v1 stays v1) and its signature still verifies', async () => {
     for (const c of certs) {
       const cert = await TlsCertificate.fromJSON(c.json);
-      expect(cert.x509Version, `${c.sim} ${c.file}`).toBe(1);
+      // lesson sims carry legacy v1 certs; newer sims (demo-full) carry v3
+      const expected = Number(c.json.x509Version) === 3 ? 3 : 1;
+      expect(cert.x509Version, `${c.sim} ${c.file}`).toBe(expected);
       const issuer = cert.selfSigned ? cert : cert.chain[0];
       const ok = await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' },
         /** @type {CryptoKey} */ (issuer.publicKey),
         /** @type {Uint8Array<ArrayBuffer>} */ (cert.certSignature),
         /** @type {Uint8Array<ArrayBuffer>} */ (cert._buildTbsBytes()));
       expect(ok, `${c.sim} ${c.file}`).toBe(true);
-      // round trip keeps the legacy layout
-      expect((await TlsCertificate.fromJSON(await cert.toSaveData())).x509Version).toBe(1);
+      // round trip keeps the layout
+      expect((await TlsCertificate.fromJSON(await cert.toSaveData())).x509Version).toBe(expected);
     }
   });
 
