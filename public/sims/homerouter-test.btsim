@@ -1,6 +1,6 @@
 {
   "_info": "This file was created by BeaverTracer, a network simulation tool. Open it with the BeaverTracer app or at https://beavertracer.eu/",
-  "version": 4,
+  "version": 7,
   "tick": 400,
   "objects": [
     {
@@ -58,7 +58,7 @@
       "opacity": 0.08
     },
     {
-      "kind": "PC",
+      "kind": "Computer",
       "id": 10,
       "name": "PC1",
       "x": 60,
@@ -129,7 +129,7 @@
       }
     },
     {
-      "kind": "PC",
+      "kind": "Computer",
       "id": 11,
       "name": "PC2",
       "x": 60,
@@ -200,7 +200,7 @@
       }
     },
     {
-      "kind": "Laptop",
+      "kind": "Tablet",
       "id": 12,
       "name": "Laptop",
       "x": 175,
@@ -589,7 +589,7 @@
       ]
     },
     {
-      "kind": "PC",
+      "kind": "Computer",
       "id": 60,
       "name": "Webserver",
       "x": 1090,

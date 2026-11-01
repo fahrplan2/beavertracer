@@ -1,5 +1,5 @@
 {
-  "version": 4,
+  "version": 7,
   "tick": 400,
   "objects": [
     {
@@ -129,7 +129,7 @@
       ]
     },
     {
-      "kind": "PC",
+      "kind": "Computer",
       "id": 20,
       "name": "PC0",
       "x": 490,
@@ -166,7 +166,7 @@
       "dns": null
     },
     {
-      "kind": "PC",
+      "kind": "Computer",
       "id": 21,
       "name": "PC1",
       "x": 10,
@@ -203,7 +203,7 @@
       "dns": null
     },
     {
-      "kind": "PC",
+      "kind": "Computer",
       "id": 22,
       "name": "PC2",
       "x": 700,
@@ -240,7 +240,7 @@
       "dns": null
     },
     {
-      "kind": "PC",
+      "kind": "Computer",
       "id": 23,
       "name": "PC3",
       "x": 10,
@@ -277,7 +277,7 @@
       "dns": null
     },
     {
-      "kind": "PC",
+      "kind": "Computer",
       "id": 24,
       "name": "PC4",
       "x": 700,
