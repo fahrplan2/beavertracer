@@ -95,6 +95,67 @@ function joinDocroot(docRoot, normPath) {
   return root + normPath.slice(1);
 }
 
+// ── virtual hosts ────────────────────────────────────────────────────────────
+
+/**
+ * @typedef {{ host: string, docRoot: string, certPath: string }} VirtualHost
+ */
+
+/**
+ * Canonical form for comparing host names: lower case, no trailing dot,
+ * no IPv6 brackets.
+ * @param {string} name
+ */
+export function normalizeHostName(name) {
+  return String(name ?? "").trim().toLowerCase().replace(/^\[|\]$/g, "").replace(/\.$/, "");
+}
+
+/**
+ * Host name from a Host header value (RFC 9110 §7.2: uri-host [":" port]).
+ * "[2001:db8::1]:8080" -> "2001:db8::1", "a.lan:80" -> "a.lan".
+ * @param {string} value
+ */
+export function hostFromHeader(value) {
+  const v = String(value ?? "").trim();
+  if (v.startsWith("[")) {
+    const close = v.indexOf("]");
+    return normalizeHostName(close > 0 ? v.slice(1, close) : v);
+  }
+  const colon = v.indexOf(":");
+  // a second colon means an unbracketed IPv6 literal: no port to strip
+  if (colon >= 0 && v.indexOf(":", colon + 1) < 0) return normalizeHostName(v.slice(0, colon));
+  return normalizeHostName(v);
+}
+
+/** DNS name (labels of letters, digits, hyphens) or an IPv4/IPv6 literal. */
+const VHOST_NAME_RE = /^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*$|^[0-9a-f:.]*:[0-9a-f:.]*$/;
+
+/**
+ * Validate and normalise a list of virtual hosts. Rows with an empty host
+ * are skipped silently (blank table rows); an invalid or duplicate name is
+ * reported so the caller can refuse to start.
+ * @param {any} list
+ * @returns {{ vhosts: VirtualHost[], invalid: string|null, duplicate: string|null }}
+ */
+export function sanitizeVhosts(list) {
+  /** @type {VirtualHost[]} */
+  const vhosts = [];
+  /** @type {string|null} */ let invalid = null;
+  /** @type {string|null} */ let duplicate = null;
+  for (const raw of Array.isArray(list) ? list : []) {
+    const host = normalizeHostName(raw?.host ?? "");
+    if (!host) continue;
+    if (!VHOST_NAME_RE.test(host)) { invalid ??= String(raw.host); continue; }
+    if (vhosts.some(v => v.host === host)) { duplicate ??= host; continue; }
+    const docRoot = typeof raw?.docRoot === "string" && raw.docRoot.trim()
+      ? raw.docRoot.trim()
+      : `/var/www/${host}/`;
+    const certPath = typeof raw?.certPath === "string" ? raw.certPath : "";
+    vhosts.push({ host, docRoot, certPath });
+  }
+  return { vhosts, invalid, duplicate };
+}
+
 /**
  * @param {number} status
  * @param {string} reason
@@ -198,6 +259,20 @@ export class SimpleHTTPServerApp extends LoggedProcess {
   /** @type {string} */
   certPath = "";
 
+  // ── virtual hosts ───────────────────────────────────────────────────────────
+
+  /** Name-based virtual hosting on (Host header / SNI pick the site). @type {boolean} */
+  vhostsEnabled = false;
+
+  /** @type {VirtualHost[]} */
+  vhosts = [];
+
+  /** Loaded per-vhost certificates, keyed by host. @type {Map<string, TlsCertificate>} */
+  _vhostCerts = new Map();
+
+  /** Settles once _vhostCerts reflects the current vhost list. @type {Promise<void>} */
+  _vhostCertsReady = Promise.resolve();
+
   // ── UI refs ─────────────────────────────────────────────────────────────────
 
   /** @type {HTMLInputElement|null} */
@@ -217,6 +292,18 @@ export class SimpleHTTPServerApp extends LoggedProcess {
 
   /** @type {HTMLElement|null} */
   _certInfoEl = null;
+
+  /** @type {HTMLInputElement|null} */
+  vhostsEnabledEl = null;
+
+  /** @type {HTMLTableSectionElement|null} */
+  _vhostTbody = null;
+
+  /** @type {HTMLButtonElement|null} */
+  _vhostAddBtn = null;
+
+  /** @type {Array<{ tr: HTMLElement, hostEl: HTMLInputElement, rootEl: HTMLInputElement, certEl: HTMLSelectElement, delBtn: HTMLButtonElement }>} */
+  _vhostRows = [];
 
   /** @type {HTMLButtonElement|null} */
   startBtn = null;
@@ -305,6 +392,34 @@ export class SimpleHTTPServerApp extends LoggedProcess {
       certInfo,
     ]});
 
+    // Virtual hosts tab
+    const vhostsEnabledInput = /** @type {HTMLInputElement} */ (UI.el("input", {
+      attrs: { type: "checkbox" },
+      init: (el) => { el.checked = this.vhostsEnabled; },
+    }));
+    this.vhostsEnabledEl = vhostsEnabledInput;
+
+    const { table: vhostTable, tbody: vhostTbody } = UI.tableWithBody([
+      t("app.simplehttpserver.vhost.col.host"),
+      t("app.simplehttpserver.vhost.col.docRoot"),
+      t("app.simplehttpserver.vhost.col.cert"),
+      "",
+    ], "tbl");
+    this._vhostTbody = vhostTbody;
+    this._vhostRows = [];
+    for (const v of this.vhosts) this._addVhostRow(v);
+
+    const addVhost = UI.button(t("app.simplehttpserver.vhost.button.add"),
+      () => this._addVhostRow({ host: "", docRoot: "", certPath: "" }), { icon: "fa-plus" });
+    this._vhostAddBtn = addVhost;
+
+    const vhostPane = UI.el("div", { className: "vhost-pane", children: [
+      UI.row(t("app.simplehttpserver.vhost.label.enabled"), vhostsEnabledInput),
+      UI.el("div", { className: "sim-table-scroll", children: [vhostTable] }),
+      UI.buttonRow([addVhost]),
+      UI.el("div", { className: "hint", text: t("app.simplehttpserver.vhost.hint") }),
+    ]});
+
     // Log tab
     const logBox = UI.el("div", { className: "msg" });
     this.logEl = logBox;
@@ -322,6 +437,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     const { bar: tabBar } = UI.tabbedPane([
       { id: "http",  label: "HTTP",  pane: httpPane },
       { id: "https", label: "HTTPS", pane: httpsPane, onShow: () => this._refreshCertList() },
+      { id: "vhosts", label: t("app.simplehttpserver.vhost.tab"), pane: vhostPane, onShow: () => this._refreshCertList() },
       { id: "log",   label: t("app.simplehttpserver.label.log"), pane: logPane },
     ]);
 
@@ -330,6 +446,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
       tabBar,
       httpPane,
       httpsPane,
+      vhostPane,
       logPane,
     ]);
 
@@ -349,6 +466,10 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     this.httpsPortEl   = null;
     this._certSelectEl = null;
     this._certInfoEl   = null;
+    this.vhostsEnabledEl = null;
+    this._vhostTbody   = null;
+    this._vhostAddBtn  = null;
+    this._vhostRows    = [];
     this.startBtn      = null;
     this.stopBtn       = null;
     super.onUnmount();
@@ -368,6 +489,47 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     if (this.httpsEnabledEl) this.httpsEnabledEl.disabled = r;
     if (this.httpsPortEl)   this.httpsPortEl.disabled    = r;
     if (this._certSelectEl) this._certSelectEl.disabled  = r;
+    if (this.vhostsEnabledEl) this.vhostsEnabledEl.disabled = r;
+    if (this._vhostAddBtn)  this._vhostAddBtn.disabled   = r;
+    for (const row of this._vhostRows) {
+      row.hostEl.disabled = r;
+      row.rootEl.disabled = r;
+      row.certEl.disabled = r;
+      row.delBtn.disabled = r;
+    }
+  }
+
+  /** @param {VirtualHost} v */
+  _addVhostRow(v) {
+    const tbody = this._vhostTbody;
+    if (!tbody) return;
+    const hostEl = UI.input({ placeholder: "www.example.lan", value: v.host });
+    const rootEl = UI.input({ placeholder: "/var/www/<host>/", value: v.docRoot });
+    const certEl = UI.select([{ value: "", label: t("app.simplehttpserver.vhost.cert.default") }], {});
+    // keep the saved choice even before the certificate list was read
+    if (v.certPath) {
+      certEl.appendChild(UI.el("option", { attrs: { value: v.certPath }, text: v.certPath }));
+      certEl.value = v.certPath;
+    }
+    const tr = UI.el("tr", {});
+    /** @type {{ tr: HTMLElement, hostEl: HTMLInputElement, rootEl: HTMLInputElement, certEl: HTMLSelectElement, delBtn: HTMLButtonElement }} */
+    const row = /** @type {any} */ ({ tr, hostEl, rootEl, certEl });
+    row.delBtn = UI.button("×", () => {
+      tr.remove();
+      this._vhostRows = this._vhostRows.filter(x => x !== row);
+    });
+    for (const c of [hostEl, rootEl, certEl, row.delBtn]) tr.appendChild(UI.td(c));
+    tbody.appendChild(tr);
+    this._vhostRows.push(row);
+  }
+
+  /** @returns {VirtualHost[]} */
+  _vhostsFromUI() {
+    return this._vhostRows.map(r => ({
+      host: r.hostEl.value,
+      docRoot: r.rootEl.value,
+      certPath: r.certEl.value,
+    }));
   }
 
   _timeoutMs() {
@@ -397,6 +559,20 @@ export class SimpleHTTPServerApp extends LoggedProcess {
         return;
       }
       this.httpsPort = httpsPort;
+    }
+
+    if (this.vhostsEnabledEl) {
+      const { vhosts, invalid, duplicate } = sanitizeVhosts(this._vhostsFromUI());
+      if (invalid != null) {
+        this._appendLog(t("app.simplehttpserver.log.vhostInvalid", { time: nowStamp(), host: invalid }));
+        return;
+      }
+      if (duplicate != null) {
+        this._appendLog(t("app.simplehttpserver.log.vhostDuplicate", { time: nowStamp(), host: duplicate }));
+        return;
+      }
+      this.vhostsEnabled = this.vhostsEnabledEl.checked;
+      this.vhosts = vhosts;
     }
 
     this.port         = port;
@@ -445,10 +621,51 @@ export class SimpleHTTPServerApp extends LoggedProcess {
 
   _ensureDocroot() {
     const fs = /** @type {any} */ (this.os.fs);
-    if (!fs) return;
-    try {
-      if (typeof fs.mkdir === "function") fs.mkdir(this.docRoot, { recursive: true });
-    } catch { /* ignore */ }
+    if (!fs || typeof fs.mkdir !== "function") return;
+    const roots = [this.docRoot, ...(this.vhostsEnabled ? this.vhosts.map(v => v.docRoot) : [])];
+    for (const root of roots) {
+      try { fs.mkdir(root, { recursive: true }); } catch { /* ignore */ }
+    }
+  }
+
+  /**
+   * Virtual host for a requested name, or null for the default host (also
+   * when virtual hosting is off or no name was given).
+   * @param {string} name
+   * @returns {VirtualHost|null}
+   */
+  _findVhost(name) {
+    if (!this.vhostsEnabled || !name) return null;
+    const n = normalizeHostName(name);
+    return this.vhosts.find(v => v.host === n) ?? null;
+  }
+
+  /**
+   * SNI-based certificate choice: the vhost's own certificate, else the
+   * default one (the client then reports a name mismatch, as real browsers do).
+   * @param {string} sni
+   */
+  _selectCertForSni(sni) {
+    const v = this._findVhost(sni);
+    return (v && this._vhostCerts.get(v.host)) || this._cert;
+  }
+
+  /** Load every vhost certificate; failures are logged and fall back to the default cert. */
+  async _loadVhostCerts() {
+    const fs = this.os.fs;
+    /** @type {Map<string, TlsCertificate>} */
+    const certs = new Map();
+    for (const v of this.vhosts) {
+      if (!v.certPath || !fs) continue;
+      try {
+        const cert = await TlsCertificate.fromJSON(JSON.parse(fs.readFile(v.certPath)));
+        if (!cert.hasPrivateKey) throw new Error("no private key");
+        certs.set(v.host, cert);
+      } catch {
+        this._appendLog(t("app.simplehttpserver.log.vhostCertError", { time: nowStamp(), host: v.host, path: v.certPath }));
+      }
+    }
+    this._vhostCerts = certs;
   }
 
   /** @param {string} path @returns {Uint8Array|null} */
@@ -493,6 +710,12 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     this._syncUI();
     const seq = ++this.runSeq;
     this._appendLog(t("app.simplehttpserver.log.listen", { time: nowStamp(), port: this.port, docRoot: this.docRoot }));
+    if (this.vhostsEnabled) {
+      for (const v of this.vhosts) {
+        this._appendLog(t("app.simplehttpserver.log.vhost", { time: nowStamp(), host: v.host, docRoot: v.docRoot }));
+      }
+      this._vhostCertsReady = this._loadVhostCerts();
+    }
     this._acceptLoop(seq, ref, false);
 
     // Start HTTPS listener if enabled
@@ -553,7 +776,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
   /**
    * @param {string} connKey
    * @param {boolean} isTls
-   * @returns {Promise<{send:(d:Uint8Array)=>void, recv:()=>Promise<Uint8Array|null>, close:()=>void}|null>}
+   * @returns {Promise<{send:(d:Uint8Array)=>void, recv:()=>Promise<Uint8Array|null>, close:()=>void, sni:string}|null>}
    */
   async _ioForConn(connKey, isTls) {
     const net = this.os.net;
@@ -563,6 +786,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
         send:  (data) => net.sendTCPConn(connKey, data),
         recv:  ()     => net.recvTCPConn(connKey),
         close: ()     => net.closeTCPConn(connKey),
+        sni:   "",
       };
     }
 
@@ -572,11 +796,14 @@ export class SimpleHTTPServerApp extends LoggedProcess {
       return null;
     }
 
+    if (this.vhostsEnabled) await this._vhostCertsReady;
     const tls = new TlsSession({
       send: (d) => net.sendTCPConn(connKey, d),
       recv: ()  => net.recvTCPConn(connKey),
       isServer:   true,
       cert:       this._cert,
+      // with virtual hosts the certificate follows the client's SNI
+      selectCert: this.vhostsEnabled ? (sni) => this._selectCertForSni(sni) : undefined,
       trustStore: this.os.tls?.certStore ?? null,
       timeoutMs:  this._timeoutMs(),
       sleepFn:    (ms) => simTimer.sleep(ms),
@@ -587,7 +814,9 @@ export class SimpleHTTPServerApp extends LoggedProcess {
       await tls.handshake();
       const info = net.getTCPConnInfo(connKey);
       const peer = info ? `${info.peerIP}:${info.peerPort}` : "?";
-      this._appendLog(t("app.simplehttpsserver.log.tlsOk", { time: nowStamp(), peer }));
+      this._appendLog(tls.sni
+        ? t("app.simplehttpsserver.log.tlsOkSni", { time: nowStamp(), peer, sni: tls.sni })
+        : t("app.simplehttpsserver.log.tlsOk", { time: nowStamp(), peer }));
     } catch (e) {
       const reason = e instanceof Error ? e.message : String(e);
       this._appendLog(t("app.simplehttpsserver.log.tlsFailed", { time: nowStamp(), reason }));
@@ -600,6 +829,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
       send:  /** @type {any} */ ((/** @type {any} */ d) => tls.send(d)),
       recv:  ()  => tls.recv(),
       close: ()  => { tls.close(); try { net.closeTCPConn(connKey); } catch { /* ignore */ } },
+      sni:   tls.sni,
     };
   }
 
@@ -641,20 +871,9 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     const idx = indexOfBytes(buf, headerNeedle);
 
     if (idx < 0) {
-      const body = internalHtml(
+      await this._sendError(io, 400, "Bad Request",
         t("app.simplehttpserver.http.400.title"),
-        t("app.simplehttpserver.http.400.details")
-      );
-      const resp = buildResponse(400, "Bad Request", {
-        "Date": new Date().toUTCString(),
-        "Server": "SimpleHTTPServer/1.0",
-        "Content-Type": "text/html; charset=utf-8",
-        "Content-Length": String(body.length),
-        "Connection": "close",
-      }, body);
-
-      await io.send(resp);
-      io.close();
+        t("app.simplehttpserver.http.400.details"));
       return;
     }
 
@@ -664,20 +883,9 @@ export class SimpleHTTPServerApp extends LoggedProcess {
 
     const m = /^([A-Z]+)\s+(\S+)\s+HTTP\/1\.([01])$/.exec(reqLine);
     if (!m) {
-      const body = internalHtml(
+      await this._sendError(io, 400, "Bad Request",
         t("app.simplehttpserver.http.400.title"),
-        t("app.simplehttpserver.http.400.invalidRequestLine", { reqLine })
-      );
-      const resp = buildResponse(400, "Bad Request", {
-        "Date": new Date().toUTCString(),
-        "Server": "SimpleHTTPServer/1.0",
-        "Content-Type": "text/html; charset=utf-8",
-        "Content-Length": String(body.length),
-        "Connection": "close",
-      }, body);
-
-      await io.send(resp);
-      io.close();
+        t("app.simplehttpserver.http.400.invalidRequestLine", { reqLine }));
       return;
     }
 
@@ -685,41 +893,36 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     const target = m[2];
 
     // RFC 9112 §3.2: an HTTP/1.1 request needs exactly one Host header, otherwise 400
-    const hostCount = lines.slice(1).filter(l => /^host\s*:/i.test(l)).length;
-    if (m[3] === "1" && hostCount !== 1) {
-      const body = internalHtml(
+    const hostLines = lines.slice(1).filter(l => /^host\s*:/i.test(l));
+    if (m[3] === "1" && hostLines.length !== 1) {
+      await this._sendError(io, 400, "Bad Request",
         t("app.simplehttpserver.http.400.title"),
-        t("app.simplehttpserver.http.400.host")
-      );
-      const resp = buildResponse(400, "Bad Request", {
-        "Date": new Date().toUTCString(),
-        "Server": "SimpleHTTPServer/1.0",
-        "Content-Type": "text/html; charset=utf-8",
-        "Content-Length": String(body.length),
-        "Connection": "close",
-      }, body);
+        t("app.simplehttpserver.http.400.host"));
+      return;
+    }
 
-      await io.send(resp);
-      io.close();
+    // Virtual host: chosen by the Host header; an HTTP/1.0 request without
+    // one falls back to the TLS server name.
+    const hostLine = hostLines[0];
+    const reqHost = hostLine ? hostFromHeader(hostLine.slice(hostLine.indexOf(":") + 1)) : "";
+    const vhost = this._findVhost(reqHost || io.sni);
+
+    // RFC 9110 §15.5.20: the TLS connection was set up for the SNI name (and
+    // its certificate); a request for a different site on it is misdirected.
+    if (isTls && this.vhostsEnabled && io.sni && reqHost && this._findVhost(io.sni) !== vhost) {
+      await this._sendError(io, 421, "Misdirected Request",
+        t("app.simplehttpserver.http.421.title"),
+        t("app.simplehttpserver.http.421.details", { sni: io.sni, host: reqHost }));
+      this._appendLog(t("app.simplehttpserver.log.misdirected", { time: nowStamp(), sni: io.sni, host: reqHost }));
       return;
     }
 
     if (method !== "GET" && method !== "HEAD") {
-      const body = internalHtml(
+      // RFC 9110 §15.5.6: MUST list the supported methods
+      await this._sendError(io, 405, "Method Not Allowed",
         t("app.simplehttpserver.http.405.title"),
-        t("app.simplehttpserver.http.405.details", { method })
-      );
-      const resp = buildResponse(405, "Method Not Allowed", {
-        "Date": new Date().toUTCString(),
-        "Allow": "GET, HEAD", // RFC 9110 §15.5.6: MUST list the supported methods
-        "Server": "SimpleHTTPServer/1.0",
-        "Content-Type": "text/html; charset=utf-8",
-        "Content-Length": String(body.length),
-        "Connection": "close",
-      }, body);
-
-      await io.send(resp);
-      io.close();
+        t("app.simplehttpserver.http.405.details", { method }),
+        { "Allow": "GET, HEAD" });
       this._appendLog(t("app.simplehttpserver.log.methodNotAllowed", { time: nowStamp(), method, target }));
       return;
     }
@@ -727,25 +930,18 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     let norm = normalizeUrlPath(target);
     if (norm.endsWith("/")) norm += "index.html";
 
-    const fsPath = joinDocroot(this.docRoot, norm);
+    const fsPath = joinDocroot(vhost ? vhost.docRoot : this.docRoot, norm);
     const data = this._readFileBytes(fsPath);
+    // log which site served the request once virtual hosting is on
+    const shown = this.vhostsEnabled
+      ? `[${vhost ? vhost.host : t("app.simplehttpserver.vhost.defaultTag")}] ${norm}`
+      : norm;
 
     if (data == null) {
-      const body = internalHtml(
+      await this._sendError(io, 404, "Not Found",
         t("app.simplehttpserver.http.404.title"),
-        t("app.simplehttpserver.http.404.details", { norm, fsPath })
-      );
-      const resp = buildResponse(404, "Not Found", {
-        "Date": new Date().toUTCString(),
-        "Server": "SimpleHTTPServer/1.0",
-        "Content-Type": "text/html; charset=utf-8",
-        "Content-Length": String(body.length),
-        "Connection": "close",
-      }, body);
-
-      await io.send(resp);
-      io.close();
-      this._appendLog(t("app.simplehttpserver.log.notFound", { time: nowStamp(), method, norm }));
+        t("app.simplehttpserver.http.404.details", { norm, fsPath }));
+      this._appendLog(t("app.simplehttpserver.log.notFound", { time: nowStamp(), method, norm: shown }));
       return;
     }
 
@@ -762,7 +958,30 @@ export class SimpleHTTPServerApp extends LoggedProcess {
 
     await io.send(resp);
     io.close();
-    this._appendLog(t("app.simplehttpserver.log.ok", { time: nowStamp(), method, norm, bytes: data.length }));
+    this._appendLog(t("app.simplehttpserver.log.ok", { time: nowStamp(), method, norm: shown, bytes: data.length }));
+  }
+
+  /**
+   * Send an HTML error page and close the connection.
+   * @param {{ send: (d: Uint8Array) => any, close: () => void }} io
+   * @param {number} status
+   * @param {string} reason
+   * @param {string} title
+   * @param {string} details
+   * @param {Record<string,string>} [extraHeaders]
+   */
+  async _sendError(io, status, reason, title, details, extraHeaders = {}) {
+    const body = internalHtml(title, details);
+    const resp = buildResponse(status, reason, {
+      "Date": new Date().toUTCString(),
+      ...extraHeaders,
+      "Server": "SimpleHTTPServer/1.0",
+      "Content-Type": "text/html; charset=utf-8",
+      "Content-Length": String(body.length),
+      "Connection": "close",
+    }, body);
+    await io.send(resp);
+    io.close();
   }
 
   // ── HTTPS cert helpers ──────────────────────────────────────────────────────
@@ -772,6 +991,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     if (!sel) return;
     const fs = this.os.fs;
     if (!fs) return;
+    const vhostSelects = this._vhostRows.map(r => r.certEl);
 
     /** @type {Array<{cert: TlsCertificate, path: string, name: string}>} */
     const entries = [];
@@ -800,6 +1020,22 @@ export class SimpleHTTPServerApp extends LoggedProcess {
         })),
       );
       if (this.certPath && entries.some(e => e.path === this.certPath)) sel.value = this.certPath;
+    }
+
+    // Virtual-host rows: "(default certificate)" plus every certificate with a
+    // private key. A saved path whose file is gone stays visible as-is.
+    const cn = (/** @type {string} */ s) => s.replace(/^CN=/, "");
+    for (const vs of vhostSelects) {
+      const current = vs.value;
+      const opts = [
+        UI.el("option", { attrs: { value: "" }, text: t("app.simplehttpserver.vhost.cert.default") }),
+        ...entries.map(e => UI.el("option", { attrs: { value: e.path }, text: `${cn(e.cert.subject)} (${e.name})` })),
+      ];
+      if (current && !entries.some(e => e.path === current)) {
+        opts.push(UI.el("option", { attrs: { value: current }, text: current }));
+      }
+      vs.replaceChildren(...opts);
+      vs.value = current;
     }
   }
 
@@ -847,6 +1083,8 @@ export class SimpleHTTPServerApp extends LoggedProcess {
       if (typeof json.httpsEnabled === "boolean") this.httpsEnabled = json.httpsEnabled;
       if (Number.isInteger(json.httpsPort) && json.httpsPort >= 1 && json.httpsPort <= 65535) this.httpsPort = json.httpsPort;
       if (typeof json.certPath === "string") this.certPath = json.certPath;
+      if (typeof json.vhostsEnabled === "boolean") this.vhostsEnabled = json.vhostsEnabled;
+      if (Array.isArray(json.vhosts)) this.vhosts = sanitizeVhosts(json.vhosts).vhosts;
     } catch { /* use defaults */ }
   }
 
@@ -860,6 +1098,8 @@ export class SimpleHTTPServerApp extends LoggedProcess {
         httpsEnabled: this.httpsEnabled,
         httpsPort: this.httpsPort,
         certPath: this.certPath,
+        vhostsEnabled: this.vhostsEnabled,
+        vhosts: this.vhosts,
       }, null, 2));
     } catch { /* ignore */ }
   }

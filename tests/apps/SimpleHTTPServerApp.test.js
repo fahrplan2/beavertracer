@@ -1,7 +1,9 @@
 //@ts-check
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { SimpleHTTPServerApp } from '../../src/apps/SimpleHTTPServerApp.js';
+import { SimpleHTTPServerApp, hostFromHeader, normalizeHostName, sanitizeVhosts } from '../../src/apps/SimpleHTTPServerApp.js';
+import { TlsSession } from '../../src/net/TlsSession.js';
+import { TlsCertificate } from '../../src/net/models/TlsCertificate.js';
 
 // ── Minimal DOM stub ──────────────────────────────────────────────────────────
 
@@ -92,6 +94,7 @@ function makeVirtualTCPNet() {
     sendTCPConn(ck, bytes) {
       conns.get(ck)?.toClient.push(bytes);
     },
+    getTCPConnInfo(_ck) { return null; },
     closeTCPConn(ck) {
       const c = conns.get(ck);
       if (!c) return;
@@ -358,5 +361,208 @@ describe('SimpleHTTPServerApp', () => {
       expect(r2.status).toBe(200);
       expect(r2.body).toBe(FILES['/var/www/page.txt']);
     });
+  });
+});
+
+// ── Virtual hosts ─────────────────────────────────────────────────────────────
+
+describe('virtual host helpers', () => {
+  it('hostFromHeader strips port, brackets, case and trailing dot', () => {
+    expect(hostFromHeader(' A.Lan:8080 ')).toBe('a.lan');
+    expect(hostFromHeader('a.lan.')).toBe('a.lan');
+    expect(hostFromHeader('[2001:DB8::1]:443')).toBe('2001:db8::1');
+    expect(hostFromHeader('2001:db8::1')).toBe('2001:db8::1');
+    expect(hostFromHeader('192.168.0.20:80')).toBe('192.168.0.20');
+    expect(normalizeHostName('[::1]')).toBe('::1');
+  });
+
+  it('sanitizeVhosts normalises, skips blanks, fills docRoot', () => {
+    const r = sanitizeVhosts([
+      { host: 'Shop.LAN', docRoot: '', certPath: '' },
+      { host: '  ', docRoot: '/x/' },
+      { host: 'blog.lan', docRoot: ' /srv/blog/ ', certPath: '/etc/certs/b.json' },
+    ]);
+    expect(r.invalid).toBeNull();
+    expect(r.duplicate).toBeNull();
+    expect(r.vhosts).toEqual([
+      { host: 'shop.lan', docRoot: '/var/www/shop.lan/', certPath: '' },
+      { host: 'blog.lan', docRoot: '/srv/blog/', certPath: '/etc/certs/b.json' },
+    ]);
+  });
+
+  it('sanitizeVhosts reports invalid and duplicate names', () => {
+    expect(sanitizeVhosts([{ host: 'bad name' }]).invalid).toBe('bad name');
+    expect(sanitizeVhosts([{ host: 'a.lan' }, { host: 'A.lan.' }]).duplicate).toBe('a.lan');
+    expect(sanitizeVhosts('nope').vhosts).toEqual([]);
+  });
+});
+
+describe('SimpleHTTPServerApp – virtual hosts (HTTP)', () => {
+  const FILES = {
+    '/var/www/index.html':   'DEFAULT',
+    '/var/www/a/index.html': 'SITE A',
+    '/var/www/b/index.html': 'SITE B',
+  };
+  /** @type {ReturnType<typeof makeVirtualTCPNet>} */
+  let vnet;
+  /** @type {SimpleHTTPServerApp} */
+  let server;
+
+  const get = async (/** @type {string} */ host) => {
+    const c = vnet.connect();
+    c.send(enc.encode(`GET / HTTP/1.1\r\nHost: ${host}\r\n\r\n`));
+    return readResponse(c);
+  };
+
+  /** @param {boolean} enabled */
+  function startWith(enabled) {
+    vnet = makeVirtualTCPNet();
+    server = new SimpleHTTPServerApp(makeOS(vnet.net, makeMockFS(FILES)));
+    server.vhostsEnabled = enabled;
+    server.vhosts = [
+      { host: 'a.lan', docRoot: '/var/www/a/', certPath: '' },
+      { host: 'b.lan', docRoot: '/var/www/b/', certPath: '' },
+    ];
+    server._start();
+  }
+
+  afterEach(() => server._stop());
+
+  it('disabled: the host name is ignored', async () => {
+    startWith(false);
+    expect((await get('a.lan')).body).toBe('DEFAULT');
+    expect((await get('b.lan')).body).toBe('DEFAULT');
+  });
+
+  it('enabled: Host header picks the document root (port and case ignored)', async () => {
+    startWith(true);
+    expect((await get('a.lan')).body).toBe('SITE A');
+    expect((await get('B.LAN:80')).body).toBe('SITE B');
+  });
+
+  it('enabled: unknown names and IP addresses get the default host', async () => {
+    startWith(true);
+    expect((await get('c.lan')).body).toBe('DEFAULT');
+    expect((await get('192.168.0.20')).body).toBe('DEFAULT');
+  });
+
+  it('enabled: HTTP/1.0 without Host gets the default host', async () => {
+    startWith(true);
+    const c = vnet.connect();
+    c.send(enc.encode('GET / HTTP/1.0\r\n\r\n'));
+    expect((await readResponse(c)).body).toBe('DEFAULT');
+  });
+});
+
+describe('SimpleHTTPServerApp – config', () => {
+  it('loads an old config without vhost fields unchanged', () => {
+    const fs = makeMockFS({ '/etc/httpd.conf': JSON.stringify({ port: 8080, docRoot: '/srv/' }) });
+    const app = new SimpleHTTPServerApp(makeOS(makeVirtualTCPNet().net, fs));
+    app._loadConfig();
+    expect(app.port).toBe(8080);
+    expect(app.vhostsEnabled).toBe(false);
+    expect(app.vhosts).toEqual([]);
+  });
+
+  it('round-trips vhosts through /etc/httpd.conf', () => {
+    /** @type {Record<string,string>} */
+    const files = {};
+    const fs = { ...makeMockFS(files), writeFile(/** @type {string} */ p, /** @type {string} */ d) { files[p] = d; } };
+    const app = new SimpleHTTPServerApp(makeOS(makeVirtualTCPNet().net, fs));
+    app.vhostsEnabled = true;
+    app.vhosts = [{ host: 'a.lan', docRoot: '/var/www/a/', certPath: '/etc/certs/a.json' }];
+    app._saveConfig();
+    const app2 = new SimpleHTTPServerApp(makeOS(makeVirtualTCPNet().net, fs));
+    app2._loadConfig();
+    expect(app2.vhostsEnabled).toBe(true);
+    expect(app2.vhosts).toEqual(app.vhosts);
+  });
+});
+
+describe('SimpleHTTPServerApp – virtual hosts (HTTPS / SNI)', () => {
+  /** @type {ReturnType<typeof makeVirtualTCPNet>} */
+  let vnet;
+  /** @type {SimpleHTTPServerApp} */
+  let server;
+  /** @type {TlsCertificate} */ let defCert;
+  /** @type {TlsCertificate} */ let aCert;
+
+  beforeEach(async () => {
+    defCert = await TlsCertificate.generate('default.lan');
+    aCert = await TlsCertificate.generate('a.lan');
+    const files = {
+      '/var/www/index.html':   'DEFAULT',
+      '/var/www/a/index.html': 'SITE A',
+      '/var/www/b/index.html': 'SITE B',
+      '/etc/certs/a.json':     JSON.stringify(await aCert.toSaveData()),
+    };
+    vnet = makeVirtualTCPNet();
+    server = new SimpleHTTPServerApp(makeOS(vnet.net, makeMockFS(files)));
+    server.httpsEnabled = true;
+    server._cert = defCert;
+    server.vhostsEnabled = true;
+    server.vhosts = [
+      { host: 'a.lan', docRoot: '/var/www/a/', certPath: '/etc/certs/a.json' },
+      { host: 'b.lan', docRoot: '/var/www/b/', certPath: '' },
+    ];
+    server._start();
+  });
+
+  afterEach(() => server._stop());
+
+  /**
+   * TLS connection to the HTTPS listener (ref 2), one GET, response text.
+   * @param {string} serverName SNI ('' or an IP: none)
+   * @param {string} host Host header
+   */
+  async function httpsGet(serverName, host) {
+    const conn = vnet.connect(2);
+    const tls = new TlsSession({
+      send: (d) => conn.send(d), recv: () => conn.recv(), isServer: false,
+      timeoutMs: 5000, serverName,
+    });
+    await tls.handshake();
+    await tls.send(enc.encode(`GET / HTTP/1.1\r\nHost: ${host}\r\n\r\n`));
+    /** @type {Uint8Array[]} */
+    const chunks = [];
+    let c;
+    while ((c = await tls.recv()) !== null) chunks.push(c);
+    const text = dec.decode(concat(chunks));
+    return {
+      subject: tls.peerCert?.subject,
+      status: Number(/^HTTP\/1\.1 (\d+)/.exec(text)?.[1] ?? 0),
+      body: text.slice(text.indexOf('\r\n\r\n') + 4),
+    };
+  }
+
+  it('SNI selects the vhost certificate and Host the content', async () => {
+    const r = await httpsGet('a.lan', 'a.lan');
+    expect(r.subject).toBe('CN=a.lan');
+    expect(r.status).toBe(200);
+    expect(r.body).toBe('SITE A');
+  });
+
+  it('vhost without own certificate gets the default certificate', async () => {
+    const r = await httpsGet('b.lan', 'b.lan');
+    expect(r.subject).toBe('CN=default.lan');
+    expect(r.body).toBe('SITE B');
+  });
+
+  it('without SNI (IP address) the Host header decides, default certificate', async () => {
+    const r = await httpsGet('192.168.0.20', 'a.lan');
+    expect(r.subject).toBe('CN=default.lan');
+    expect(r.status).toBe(200);
+    expect(r.body).toBe('SITE A');
+  });
+
+  it('SNI and Host of different sites -> 421 Misdirected Request', async () => {
+    const r = await httpsGet('a.lan', 'b.lan');
+    expect(r.status).toBe(421);
+  });
+
+  it('two unknown names both map to the default host -> no 421', async () => {
+    const r = await httpsGet('x.lan', 'y.lan');
+    expect(r.status).toBe(200);
+    expect(r.body).toBe('DEFAULT');
   });
 });
