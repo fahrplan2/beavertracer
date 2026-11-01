@@ -207,6 +207,15 @@ export class UILib {
    * @returns {HTMLDivElement}
    */
   static row(label, control) {
+    // Checkbox / radio: box first, text beside it, all inside a <label> so a
+    // click on the text toggles the box (the stacked layout only suits fields)
+    const c = /** @type {any} */ (control);
+    if (c?.tagName === "INPUT" && (c.type === "checkbox" || c.type === "radio")) {
+      return /** @type {HTMLDivElement} */ (/** @type {unknown} */ (UILib.el("label", {
+        className: ["form-row", "form-check"],
+        children: [control, UILib.el("span", { className: "form-label", text: label })],
+      })));
+    }
     /** @type {HTMLDivElement} */
     const r = UILib.el("div", {
       className: "form-row",

@@ -154,6 +154,27 @@ textarea.log {
   width: 100%;
 }
 
+/* UILib.row with a checkbox/radio: box left, text right, whole row clickable */
+.form-row.form-check {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--pad-sm);
+  cursor: pointer;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.form-row.form-check > input {
+  margin: 0;
+  flex: 0 0 auto;
+  cursor: inherit;
+}
+
+.form-row.form-check:has(> input:disabled) {
+  cursor: default;
+  opacity: 0.65;
+}
+
 .btn-row {
   display: flex;
   gap: var(--pad-sm);
