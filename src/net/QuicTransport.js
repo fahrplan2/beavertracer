@@ -33,7 +33,8 @@ function openEphemeralUdp(net) {
  * then fall back to TCP, as browsers do when UDP is blocked.
  * @param {any} os
  * @param {{ ip: IPAddress, port: number, host: string, insecure?: boolean, timeoutMs?: number,
- *           onPacket?: (dir: "in"|"out", level: string, pn: number, frames: string[]) => void }} o
+ *           onPacket?: (dir: "in"|"out", level: string, pn: number, frames: string[]) => void,
+ *           keyLog?: (line: string) => void }} o
  * @returns {Promise<{ quic: QuicConnection, h3: Http3Connection, close: () => void, localPort: number }>}
  */
 export async function connectHttp3(os, o) {
@@ -52,6 +53,7 @@ export async function connectHttp3(os, o) {
     trustStore: o.insecure ? undefined : (os.tls?.certStore ?? undefined),
     now: () => os.clock?.nowMs?.() ?? Date.now(),
     onPacket: o.onPacket,
+    keyLog: o.keyLog,
     sendDatagram: (b) => { if (open) net.sendUDPSocket(localPort, o.ip, o.port, b); },
   });
   // receive loop: everything arriving on our port belongs to this connection

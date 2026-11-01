@@ -107,6 +107,7 @@ export function makeFS(files) {
       if (p in files) return files[p];
       throw new Error('ENOENT');
     },
-    writeFile() {},
+    exists(/** @type {string} */ p) { return p in files; },
+    writeFile(/** @type {string} */ p, /** @type {string} */ d) { files[p] = d; },
   };
 }

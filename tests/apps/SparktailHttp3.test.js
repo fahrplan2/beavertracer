@@ -24,6 +24,7 @@ const { SimpleHTTPServerApp } = await import('../../src/apps/SimpleHTTPServerApp
 const { TlsCertificate } = await import('../../src/net/models/TlsCertificate.js');
 const { simTimer } = await import('../../src/lib/SimTimer.js');
 const { makeLinkedNet, makeFS } = await import('../support/linkedNet.js');
+const { KEYLOG_PATH } = await import('../../src/lib/keyLog.js');
 
 const dec = new TextDecoder();
 const FILES = { '/var/www/index.html': '<html></html>', '/var/www/a.png': 'A', '/var/www/b.png': 'B', '/var/www/c.css': 'C' };
@@ -137,5 +138,31 @@ describe('Sparktail HTTP/3', () => {
     expect(browser._altSvc.size).toBe(0);
     browser._noteAltSvc('http://a.lan:80', 'h3=":443"');
     expect(browser._altSvc.size).toBe(0);
+  });
+
+  it('"Log session keys": TLS and QUIC secrets go to /var/log/sslkeys.log, only when switched on', async () => {
+    await setup({ http3Enabled: true, tls13Enabled: true });
+    const fs = browser.os.fs;
+    await browser._doGet('https://10.0.0.1/a.png', never);
+    expect(fs.exists(KEYLOG_PATH)).toBe(false);           // off by default
+    browser._closePool();
+    browser._setKeyLog(true);
+    browser._altSvc.clear();
+    await browser._doGet('https://10.0.0.1/a.png', never); // TCP + TLS
+    const tcpLog = fs.readFile(KEYLOG_PATH);
+    expect(tcpLog).toMatch(/^(CLIENT_RANDOM|CLIENT_HANDSHAKE_TRAFFIC_SECRET) [0-9a-f]{64} [0-9a-f]+\n/);
+    browser._closePool();
+    await browser._doGet('https://10.0.0.1/b.png', never); // QUIC (Alt-Svc learnt)
+    expect(browser._pooledConns()[0].proto).toBe('HTTP/3 (QUIC)');
+    const all = fs.readFile(KEYLOG_PATH);
+    expect(all.startsWith(tcpLog)).toBe(true);           // appended
+    expect(all.slice(tcpLog.length)).toContain('CLIENT_TRAFFIC_SECRET_0 ');
+    // the setting is stored with the browser config
+    expect(JSON.parse(fs.readFile('/etc/sparktail.conf')).keyLog).toBe(true);
+    browser._setKeyLog(false);
+    browser._closePool();
+    browser._altSvc.clear();
+    await browser._doGet('https://10.0.0.1/c.css', never);
+    expect(fs.readFile(KEYLOG_PATH)).toBe(all);
   });
 });

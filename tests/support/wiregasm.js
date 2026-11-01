@@ -100,6 +100,16 @@ function pcapOfPackets(packets) {
  * @param {{ serverPort?: number, keylog?: string }} [o]
  */
 export async function dissectTcp(chunks, o = {}) {
+  const { pcap, count } = tcpPcap(chunks, o);
+  return dissectPcap(pcap, count, o.keylog);
+}
+
+/**
+ * The capture dissectTcp() feeds to Wireshark.
+ * @param {Array<{ dir: 'c2s'|'s2c', bytes: Uint8Array }>} chunks
+ * @param {{ serverPort?: number }} [o]
+ */
+export function tcpPcap(chunks, o = {}) {
   const C = [10, 0, 0, 2], S = [10, 0, 0, 1], cp = 50000, sp = o.serverPort ?? 443;
   let cseq = 1000, sseq = 5000;
   /** @param {boolean} c2s @param {number} flags @param {Buffer} data */
@@ -123,7 +133,7 @@ export async function dissectTcp(chunks, o = {}) {
       if (c2s) cseq += data.length; else sseq += data.length;
     }
   }
-  return dissectPcap(pcapOfPackets(packets), packets.length, o.keylog);
+  return { pcap: pcapOfPackets(packets), count: packets.length };
 }
 
 /**

@@ -14,6 +14,7 @@ import { nowStamp, encodeUTF8, decodeUTF8 } from "../lib/helpers.js";
 import { TlsSession, TlsCertUntrustedError, TlsCertExpiredError, TlsCertNameMismatchError } from "../net/TlsSession.js";
 import { Http2Connection } from "../net/Http2.js";
 import { connectHttp3 } from "../net/QuicTransport.js";
+import { KEYLOG_PATH, appendKeyLogLine } from "../lib/keyLog.js";
 import { formatSvcb } from "../net/pdu/Svcb.js";
 
 const startPage = startPageTemplate.replace("<!--SPARKTAIL_LOGO-->", logoSvg);
@@ -573,6 +574,7 @@ const H3_BROKEN_MS = 5 * 60_000;
 
 const CONF_PATH = "/etc/sparktail.conf";
 
+
 /** @param {string} scheme @param {string} host @param {number} port */
 function originKey(scheme, host, port) {
   return `${scheme}://${host.toLowerCase()}:${port}`;
@@ -608,6 +610,9 @@ export class SparktailHTTPClientApp extends LoggedProcess {
 
   /** @type {"auto"|"http1"|"h2"|"h3"} */
   protocolMode = "auto";
+
+  /** Write TLS/QUIC session secrets to KEYLOG_PATH (off by default, like SSLKEYLOGFILE). */
+  keyLogEnabled = false;
 
   /** Alt-Svc announcements (RFC 7838): origin -> HTTP/3 port and expiry. @type {Map<string, { port: number, expires: number }>} */
   _altSvc = new Map();
@@ -694,11 +699,32 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     try {
       const json = JSON.parse(this.os.fs?.readFile(CONF_PATH) ?? "");
       if (PROTOCOL_MODES.includes(json.protocol)) this.protocolMode = json.protocol;
+      this.keyLogEnabled = json.keyLog === true;
     } catch { /* defaults */ }
   }
 
   _saveConfig() {
-    try { this.os.fs?.writeFile(CONF_PATH, JSON.stringify({ protocol: this.protocolMode }, null, 2) + "\n"); } catch { /* ignore */ }
+    try {
+      this.os.fs?.writeFile(CONF_PATH, JSON.stringify({ protocol: this.protocolMode, keyLog: this.keyLogEnabled }, null, 2) + "\n");
+    } catch { /* ignore */ }
+  }
+
+  /** @param {boolean} on */
+  _setKeyLog(on) {
+    if (on === this.keyLogEnabled) return;
+    this.keyLogEnabled = on;
+    this._saveConfig();
+    this._appendLog(t(on ? "app.sparktail.log.keyLogOn" : "app.sparktail.log.keyLogOff", { time: nowStamp(), path: KEYLOG_PATH }));
+  }
+
+  /**
+   * Key log sink for new TLS/QUIC sessions, or undefined when switched off.
+   * Appends one NSS key log line per secret.
+   * @returns {((line: string) => void)|undefined}
+   */
+  _keyLogSink() {
+    if (!this.keyLogEnabled) return undefined;
+    return (line) => appendKeyLogLine(this.os.fs, line);
   }
 
   /** @param {string} mode */
@@ -784,6 +810,14 @@ export class SparktailHTTPClientApp extends LoggedProcess {
       children: [
         UI.el("div", { className: "cert-popup-title", text: t("app.sparktail.button.settings") }),
         UI.row(t("app.sparktail.settings.httpVersion"), protoSel),
+        UI.row(t("app.sparktail.settings.keyLog"), /** @type {HTMLInputElement} */ (UI.el("input", {
+          attrs: { type: "checkbox", title: KEYLOG_PATH },
+          init: (el) => {
+            const cb = /** @type {HTMLInputElement} */ (el);
+            cb.checked = this.keyLogEnabled;
+            cb.addEventListener("change", () => this._setKeyLog(cb.checked));
+          },
+        }))),
         UI.button(t("app.sparktail.settings.disconnect"), () => this._disconnectAll(), { icon: "fa-link-slash" }),
       ],
     });
@@ -1061,7 +1095,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     this._appendLog(t("app.sparktail.log.h3Try", { time: nowStamp(), origin, port }));
     let c;
     try {
-      c = await connectHttp3(this.os, { ip: o.ip, port, host: o.host, insecure: o.bypass });
+      c = await connectHttp3(this.os, { ip: o.ip, port, host: o.host, insecure: o.bypass, keyLog: this._keyLogSink() });
     } catch (e) {
       throw Object.assign(e instanceof Error ? e : new Error(String(e)), { stage: "h3" });
     }
@@ -1184,6 +1218,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
         now: () => this.os.clock.nowMs(),
         serverName: o.host,
         alpn,
+        keyLog: this._keyLogSink(),
       });
       try {
         await withTimeout(tls.handshake(), timeout, t("app.sparktail.label.tlsHandshake"));
