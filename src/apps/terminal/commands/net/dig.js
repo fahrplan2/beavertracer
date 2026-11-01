@@ -7,6 +7,7 @@ import { abortable } from "../lib/abort.js";
 import { simTimer, SimTimer } from "../../../../lib/SimTimer.js";
 
 import { DNSPacket } from "../../../../net/pdu/DNSPacket.js";
+import { formatSvcb } from "../../../../net/pdu/Svcb.js";
 import { IPAddress } from "../../../../net/models/IPAddress.js";
 
 /** @type {import("../types.js").Command} */
@@ -42,10 +43,13 @@ export const dig = {
       ["A", 1],
       ["NS", 2],
       ["CNAME", 5],
+      ["SOA", 6],
       ["PTR", 12],
       ["MX", 15],
       ["TXT", 16],
       ["AAAA", 28],
+      ["SVCB", 64],
+      ["HTTPS", 65],
       ["ANY", 255],
     ]);
 
@@ -71,6 +75,17 @@ export const dig = {
           return `${pref} ${ex}`;
         }
         return String(rr.data);
+      }
+      if (rr.type === DNSPacket.TYPE_AAAA && rr.data instanceof Uint8Array && rr.data.length === 16) {
+        return IPAddress.fromUInt8(rr.data).toString();
+      }
+      if (rr.type === DNSPacket.TYPE_SOA && rr.data && typeof rr.data === "object" && !(rr.data instanceof Uint8Array)) {
+        const d = rr.data;
+        return `${d.mname}. ${d.rname}. ${d.serial} ${d.refresh} ${d.retry} ${d.expire} ${d.minimum}`;
+      }
+      if ((rr.type === DNSPacket.TYPE_HTTPS || rr.type === DNSPacket.TYPE_SVCB)
+          && rr.data && typeof rr.data === "object" && !(rr.data instanceof Uint8Array)) {
+        return formatSvcb(rr.data);
       }
       if (rr.type === DNSPacket.TYPE_CNAME && typeof rr.data === "string") return rr.data;
       if (rr.type === DNSPacket.TYPE_PTR && typeof rr.data === "string") return rr.data;
@@ -406,7 +421,12 @@ export const dig = {
 
       ctx.println(`; <<>> dig (sim) <<>> ${name} ${typeToString(finalType)}`);
       ctx.println(`;; SERVER: ${serverIpText}#${port}`);
-      ctx.println(`;; QUERY ID: ${resp.id}  ;; rcode: ${resp.rcode}  ;; time: ${elapsedMs} ms`);
+      // status names as in real dig (RFC 1035 §4.1.1, RFC 6895 §2.3)
+      const RCODES = ["NOERROR", "FORMERR", "SERVFAIL", "NXDOMAIN", "NOTIMP", "REFUSED"];
+      const flags = [resp.qr && "qr", resp.aa && "aa", resp.tc && "tc", resp.rd && "rd", resp.ra && "ra"].filter(Boolean).join(" ");
+      ctx.println(`;; ->>HEADER<<- opcode: QUERY, status: ${RCODES[resp.rcode] ?? resp.rcode}, id: ${resp.id}`);
+      ctx.println(`;; flags: ${flags}; QUERY: ${resp.questions?.length ?? 0}, ANSWER: ${resp.answers?.length ?? 0}, AUTHORITY: ${resp.authorities?.length ?? 0}, ADDITIONAL: ${resp.additionals?.length ?? 0}`);
+      ctx.println(`;; Query time: ${elapsedMs} msec`);
       ctx.println("");
 
       ctx.println(";; QUESTION SECTION:");
