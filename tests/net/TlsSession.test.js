@@ -12,7 +12,7 @@
 import { describe, it, expect } from 'vitest';
 import { TlsSession, TlsHandshakeError, TlsAlertReceivedError, tlsAlertName, TlsCertUntrustedError, TlsCertExpiredError, TlsCertNameMismatchError, certMatchesName } from '../../src/net/TlsSession.js';
 import { TlsCertificate, TlsTrustStore } from '../../src/net/models/TlsCertificate.js';
-import { TlsRecord, TLS_EXT, TlsDecodeError } from '../../src/net/pdu/TlsRecord.js';
+import { TlsRecord, TLS_EXT, TlsDecodeError, encodeAlpn, decodeAlpn } from '../../src/net/pdu/TlsRecord.js';
 
 // ── loopback wiring ────────────────────────────────────────────────────────
 
@@ -805,5 +805,66 @@ describe('Receiving alerts during the handshake (RFC 5246 §7.2)', () => {
   it('tlsAlertName covers known and unknown codes', () => {
     expect(tlsAlertName(112)).toBe('unrecognized_name');
     expect(tlsAlertName(250)).toBe('alert_250');
+  });
+});
+
+describe('ALPN (RFC 7301)', () => {
+  /**
+   * @param {string[]|undefined} clientAlpn
+   * @param {string[]|undefined} serverAlpn
+   */
+  async function negotiate(clientAlpn, serverAlpn) {
+    const q = makeQueues();
+    const cert = await TlsCertificate.generate('server.local');
+    const client = new TlsSession({ send: q.clientSend, recv: q.clientRecv, isServer: false, timeoutMs: 5000, alpn: clientAlpn });
+    const server = new TlsSession({ send: q.serverSend, recv: q.serverRecv, isServer: true, cert, timeoutMs: 5000, alpn: serverAlpn });
+    const [c, s] = await Promise.allSettled([client.handshake(), server.handshake()]);
+    return { client, server, c, s };
+  }
+
+  it('encode/decode round-trip and malformed lists', () => {
+    expect(decodeAlpn(encodeAlpn(['h2', 'http/1.1']))).toEqual(['h2', 'http/1.1']);
+    expect(Array.from(encodeAlpn(['h2']))).toEqual([0, 3, 2, 0x68, 0x32]);
+    expect(() => decodeAlpn(new Uint8Array([0, 0]))).toThrow(TlsDecodeError);
+    expect(() => decodeAlpn(new Uint8Array([0, 2, 0, 0]))).toThrow(TlsDecodeError);
+    expect(() => decodeAlpn(new Uint8Array([0, 3, 5, 0x68, 0x32]))).toThrow(TlsDecodeError);
+  });
+
+  it('ClientHello carries the offer, parser reads it back', () => {
+    const ch = TlsRecord.buildClientHello(new Uint8Array(32), 'a.lan', ['h2', 'http/1.1']);
+    expect(TlsRecord.parseClientHello(ch.slice(9)).alpn).toEqual(['h2', 'http/1.1']);
+    expect(TlsRecord.parseClientHello(TlsRecord.buildClientHello(new Uint8Array(32)).slice(9)).alpn).toEqual([]);
+  });
+
+  it('server picks by its own preference', async () => {
+    const { client, server } = await negotiate(['http/1.1', 'h2'], ['h2', 'http/1.1']);
+    expect(server.alpn).toBe('h2');
+    expect(client.alpn).toBe('h2');
+  });
+
+  it('falls back to http/1.1 when the server does not speak h2', async () => {
+    const { client } = await negotiate(['h2', 'http/1.1'], ['http/1.1']);
+    expect(client.alpn).toBe('http/1.1');
+  });
+
+  it('a server without ALPN ignores the offer', async () => {
+    const { client, server, c } = await negotiate(['h2', 'http/1.1'], undefined);
+    expect(c.status).toBe('fulfilled');
+    expect(client.alpn).toBe('');
+    expect(server.alpn).toBe('');
+  });
+
+  it('no common protocol -> no_application_protocol', async () => {
+    const { c, s } = await negotiate(['h2'], ['http/1.1']);
+    expect(s.status).toBe('rejected');
+    const err = /** @type {PromiseRejectedResult} */ (c).reason;
+    expect(err).toBeInstanceOf(TlsAlertReceivedError);
+    expect(err.description).toBe(120);
+  });
+
+  it('client without ALPN gets none back', async () => {
+    const { client, server } = await negotiate(undefined, ['h2', 'http/1.1']);
+    expect(client.alpn).toBe('');
+    expect(server.alpn).toBe('');
   });
 });

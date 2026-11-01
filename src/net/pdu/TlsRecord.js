@@ -25,6 +25,7 @@ export const TLS_EXT = Object.freeze({
   SUPPORTED_GROUPS:     0x000A,
   EC_POINT_FORMATS:     0x000B,
   SIGNATURE_ALGORITHMS: 0x000D,
+  ALPN:                 0x0010, // RFC 7301
 });
 
 /** Malformed handshake message — maps to the fatal decode_error alert. */
@@ -61,6 +62,44 @@ function parseServerNameExtension(data) {
     off += len;
   }
   return hostName.toLowerCase().replace(/\.$/, "");
+}
+
+/**
+ * Encode an ALPN extension body: ProtocolNameList (RFC 7301 §3.1).
+ * @param {string[]} protocols e.g. ["h2", "http/1.1"]
+ */
+export function encodeAlpn(protocols) {
+  const names = protocols.map(p => new TextEncoder().encode(p))
+    .filter(n => n.length >= 1 && n.length <= 255);
+  let total = 0;
+  for (const n of names) total += 1 + n.length;
+  const out = new Uint8Array(2 + total);
+  write16BE(out, 0, total);
+  let off = 2;
+  for (const n of names) { out[off++] = n.length; out.set(n, off); off += n.length; }
+  return out;
+}
+
+/**
+ * Decode an ALPN extension body. Throws {@link TlsDecodeError} when malformed
+ * (empty list, empty name, inconsistent lengths).
+ * @param {Uint8Array} data
+ * @returns {string[]}
+ */
+export function decodeAlpn(data) {
+  if (data.length < 2) throw new TlsDecodeError("ALPN extension truncated");
+  const listLen = read16BE(data, 0);
+  if (listLen < 2 || 2 + listLen !== data.length) throw new TlsDecodeError("ALPN list length mismatch");
+  /** @type {string[]} */
+  const out = [];
+  let off = 2;
+  while (off < data.length) {
+    const len = data[off++];
+    if (len === 0 || off + len > data.length) throw new TlsDecodeError("ALPN protocol name malformed");
+    out.push(new TextDecoder().decode(data.slice(off, off + len)));
+    off += len;
+  }
+  return out;
 }
 
 // TLS 1.2 version (0x0303) used in record headers and Hello messages
@@ -153,9 +192,10 @@ export class TlsRecord {
   /**
    * @param {Uint8Array} clientRandom - 32 bytes
    * @param {string} [serverName] DNS name for the SNI extension (omitted for IP literals)
+   * @param {string[]} [alpn] offered application protocols, most preferred first (RFC 7301)
    * @returns {Uint8Array}
    */
-  static buildClientHello(clientRandom, serverName = "") {
+  static buildClientHello(clientRandom, serverName = "", alpn = []) {
     // server_name extension (RFC 6066 §3): host_name only — IP literals are not allowed
     const host = serverName.trim().replace(/\.$/, "");
     const isIpLiteral = /^\d{1,3}(\.\d{1,3}){3}$/.test(host) || host.includes(":");
@@ -195,7 +235,16 @@ export class TlsRecord {
       0x04, 0x03,             // ecdsa_secp256r1_sha256
     ]);
 
-    const extensions = concat(sni, supportedGroups, ecPointFormats, sigAlgs);
+    let alpnExt = new Uint8Array(0);
+    if (alpn.length > 0) {
+      const data = encodeAlpn(alpn);
+      alpnExt = new Uint8Array(4 + data.length);
+      write16BE(alpnExt, 0, TLS_EXT.ALPN);
+      write16BE(alpnExt, 2, data.length);
+      alpnExt.set(data, 4);
+    }
+
+    const extensions = concat(sni, supportedGroups, ecPointFormats, sigAlgs, alpnExt);
     const extLenBuf = new Uint8Array(2);
     write16BE(extLenBuf, 0, extensions.length);
 
@@ -219,7 +268,7 @@ export class TlsRecord {
    * @param {Uint8Array} body
    * @returns {{ version: number, random: Uint8Array, sessionId: Uint8Array,
    *             cipherSuites: number[], extensions: Map<number, Uint8Array>,
-   *             serverName: string }}
+   *             serverName: string, alpn: string[] }}
    */
   static parseClientHello(body) {
     let off = 0;
@@ -278,7 +327,45 @@ export class TlsRecord {
     const sniExt = extensions.get(TLS_EXT.SERVER_NAME);
     const serverName = sniExt ? parseServerNameExtension(sniExt) : "";
 
-    return { version, random, sessionId, cipherSuites, extensions, serverName };
+    const alpnExt = extensions.get(TLS_EXT.ALPN);
+    const alpn = alpnExt ? decodeAlpn(alpnExt) : [];
+
+    return { version, random, sessionId, cipherSuites, extensions, serverName, alpn };
+  }
+
+  /**
+   * Parse a ServerHello handshake body (without the 4-byte handshake header).
+   * @param {Uint8Array} body
+   * @returns {{ random: Uint8Array, cipherSuite: number, extensions: Map<number, Uint8Array> }}
+   */
+  static parseServerHello(body) {
+    if (body.length < 38) throw new TlsDecodeError("ServerHello truncated");
+    const random = body.slice(2, 34);
+    let off = 34;
+    const sidLen = body[off++];
+    if (off + sidLen + 3 > body.length) throw new TlsDecodeError("ServerHello truncated");
+    off += sidLen;
+    const cipherSuite = read16BE(body, off);
+    off += 3; // cipher suite + compression method
+    /** @type {Map<number, Uint8Array>} */
+    const extensions = new Map();
+    if (off < body.length) {
+      if (off + 2 > body.length) throw new TlsDecodeError("ServerHello extensions truncated");
+      const end = off + 2 + read16BE(body, off);
+      if (end !== body.length) throw new TlsDecodeError("ServerHello extensions length mismatch");
+      off += 2;
+      while (off < end) {
+        if (off + 4 > end) throw new TlsDecodeError("ServerHello extension truncated");
+        const type = read16BE(body, off);
+        const len = read16BE(body, off + 2);
+        off += 4;
+        if (off + len > end) throw new TlsDecodeError("ServerHello extension truncated");
+        if (extensions.has(type)) throw new TlsDecodeError("ServerHello duplicate extension");
+        extensions.set(type, body.slice(off, off + len));
+        off += len;
+      }
+    }
+    return { random, cipherSuite, extensions };
   }
 
   /**

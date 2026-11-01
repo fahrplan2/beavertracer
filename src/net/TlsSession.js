@@ -1,6 +1,6 @@
 //@ts-check
 
-import { TlsRecord, TLS_CT, TLS_HT, TLS_EXT, TlsDecodeError } from "./pdu/TlsRecord.js";
+import { TlsRecord, TLS_CT, TLS_HT, TLS_EXT, TlsDecodeError, encodeAlpn, decodeAlpn } from "./pdu/TlsRecord.js";
 import { TlsCertificate, TlsTrustStore } from "./models/TlsCertificate.js";
 import { encodeUTF8 } from "../lib/helpers.js";
 
@@ -13,7 +13,10 @@ export const TLS_ALERT = Object.freeze({
   BAD_CERTIFICATE: 42,
   DECODE_ERROR: 50,
   DECRYPT_ERROR: 51,
+  ILLEGAL_PARAMETER: 47,
+  UNSUPPORTED_EXTENSION: 110,
   UNRECOGNIZED_NAME: 112,
+  NO_APPLICATION_PROTOCOL: 120,
 });
 
 /** Readable names for AlertDescription codes (RFC 5246 §7.2, RFC 6066 §3). */
@@ -25,6 +28,7 @@ const TLS_ALERT_NAMES = Object.freeze({
   49: "access_denied", 50: "decode_error", 51: "decrypt_error",
   70: "protocol_version", 71: "insufficient_security", 80: "internal_error",
   90: "user_canceled", 110: "unsupported_extension", 112: "unrecognized_name",
+  120: "no_application_protocol",
 });
 
 /** @param {number} code */
@@ -416,9 +420,10 @@ export class TlsSession {
    *   now?: () => number,
    *   serverName?: string,
    *   selectCert?: (sni: string) => TlsCertificate|null,
+   *   alpn?: string[],
    * }} opts
    */
-  constructor({ send, recv, isServer, cert, trustStore, timeoutMs = 400, sleepFn, now, serverName, selectCert }) {
+  constructor({ send, recv, isServer, cert, trustStore, timeoutMs = 400, sleepFn, now, serverName, selectCert, alpn }) {
     this._sendRaw = send;
     this._recvRaw = recv;
     this._isServer = isServer;
@@ -439,6 +444,11 @@ export class TlsSession {
     this._selectCert = selectCert ?? null;
     /** Server side: host_name from the client's SNI extension, "" if absent. */
     this.sni = "";
+    // ALPN (RFC 7301): client side the offered protocols (most preferred
+    // first), server side the supported ones in the server's preference order.
+    this._alpnList = alpn ?? [];
+    /** Negotiated application protocol ("h2", "http/1.1"), "" without ALPN. */
+    this.alpn = "";
 
     /** @type {"INIT"|"HANDSHAKE"|"ESTABLISHED"|"CLOSED"} */
     this._state = "INIT";
@@ -660,7 +670,7 @@ export class TlsSession {
     );
 
     // 2. Send ClientHello, append HS bytes to transcript
-    const chRecord = TlsRecord.buildClientHello(this._clientRandom, this._serverName);
+    const chRecord = TlsRecord.buildClientHello(this._clientRandom, this._serverName, this._alpnList);
     this._sendRaw(chRecord);
     this._appendTranscript(chRecord.slice(5));
 
@@ -679,6 +689,7 @@ export class TlsSession {
       for (const msg of msgs) {
         if (msg.type === TLS_HT.SERVER_HELLO) {
           this._serverRandom = msg.body.slice(2, 34);
+          this._acceptServerAlpn(msg.body);
         } else if (msg.type === TLS_HT.CERTIFICATE) {
           peerCert = await this._parseCertFromMessage(msg.body);
           this.peerCert = peerCert;
@@ -757,6 +768,32 @@ export class TlsSession {
     this._verifyFinished(serverFinishedMsg.body, expectedServerVerifyData);
   }
 
+  /**
+   * Client side: take the protocol the server selected via ALPN. It must be
+   * exactly one of the protocols we offered (RFC 7301 §3.2).
+   * @param {Uint8Array} shBody ServerHello body
+   */
+  _acceptServerAlpn(shBody) {
+    let sh;
+    try {
+      sh = TlsRecord.parseServerHello(shBody);
+    } catch (e) {
+      if (e instanceof TlsDecodeError) throw new TlsHandshakeError(e.message, TLS_ALERT.DECODE_ERROR);
+      throw e;
+    }
+    const ext = sh.extensions.get(TLS_EXT.ALPN);
+    if (!ext) return;
+    if (this._alpnList.length === 0) {
+      throw new TlsHandshakeError("Server sent ALPN although none was offered", TLS_ALERT.UNSUPPORTED_EXTENSION);
+    }
+    let list;
+    try { list = decodeAlpn(ext); } catch { throw new TlsHandshakeError("Malformed ALPN in ServerHello", TLS_ALERT.DECODE_ERROR); }
+    if (list.length !== 1 || !this._alpnList.includes(list[0])) {
+      throw new TlsHandshakeError(`Server selected unoffered protocol '${list.join(",")}'`, TLS_ALERT.ILLEGAL_PARAMETER);
+    }
+    this.alpn = list[0];
+  }
+
   // ── handshake – server side ───────────────────────────────────────────────
 
   async _serverHandshake() {
@@ -802,6 +839,19 @@ export class TlsSession {
     }
     const cert = /** @type {TlsCertificate} */ (this._cert);
     if (!cert.privateKey) throw new TlsHandshakeError("Server cert has no private key");
+
+    // ALPN (RFC 7301 §3.2): the server picks by its own preference among the
+    // client's offers; no overlap is fatal. A server without ALPN support
+    // ignores the extension (the client then falls back to HTTP/1.1).
+    if (hello.extensions.has(TLS_EXT.ALPN) && this._alpnList.length > 0) {
+      const chosen = this._alpnList.find(p => hello.alpn.includes(p));
+      if (!chosen) {
+        throw new TlsHandshakeError(`No common application protocol (client offers ${hello.alpn.join(", ")})`,
+          TLS_ALERT.NO_APPLICATION_PROTOCOL);
+      }
+      this.alpn = chosen;
+      shExtensions.push({ type: TLS_EXT.ALPN, data: encodeAlpn([chosen]) });
+    }
 
     // 2. Generate server random + ECDH keypair
     this._serverRandom = crypto.getRandomValues(new Uint8Array(32));
