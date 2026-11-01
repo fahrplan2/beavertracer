@@ -87,4 +87,31 @@ describe('curl and HTTP/2', () => {
     await curl.run(ctx, ['-v', '--http2', 'http://10.0.0.1/']);
     expect(out.join('\n')).toContain('> GET / HTTP/1.1');
   });
+
+  it('-v reports TLS 1.3 when the server offers it, else TLS 1.2', async () => {
+    const { ctx, out } = await setup({ tls13Enabled: true });
+    await curl.run(ctx, ['-v', 'https://10.0.0.1/']);
+    expect(out.join('\n')).toContain('* SSL connection using TLSv1.3 / TLS_AES_128_GCM_SHA256');
+    const two = await setup({ tls13Enabled: false });
+    await curl.run(two.ctx, ['-v', 'https://10.0.0.1/']);
+    expect(two.out.join('\n')).toContain('* SSL connection using TLSv1.2 / TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256');
+  });
+
+  it('--tlsv1.3 fails against a TLS 1.2-only server, --tls-max 1.2 forces 1.2', async () => {
+    const { ctx } = await setup({ tls13Enabled: false });
+    await expect(curl.run(ctx, ['--tlsv1.3', 'https://10.0.0.1/'])).rejects.toBeInstanceOf(CommandError);
+    const s2 = await setup({ tls13Enabled: true });
+    await curl.run(s2.ctx, ['-v', '--tls-max', '1.2', 'https://10.0.0.1/']);
+    expect(s2.out.join('\n')).toContain('TLSv1.2');
+    await expect(curl.run(s2.ctx, ['--tlsv1.3', '--tls-max', '1.2', 'https://10.0.0.1/'])).rejects.toBeInstanceOf(CommandError);
+  });
+
+  it('HTTP/2 over TLS 1.3 works together', async () => {
+    const { ctx, out } = await setup({ tls13Enabled: true, http2Enabled: true });
+    await curl.run(ctx, ['-v', 'https://10.0.0.1/']);
+    const text = out.join('\n');
+    expect(text).toContain('TLSv1.3');
+    expect(text).toContain('< HTTP/2 200');
+    expect(text).toContain('hello h2');
+  });
 });

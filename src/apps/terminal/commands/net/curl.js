@@ -38,6 +38,8 @@ export const curl = {
         let url    = /** @type {string|null} */ (null);
         /** "auto" = like curl with nghttp2: offer h2 over TLS, HTTP/1.1 in clear text */
         let proto  = /** @type {"auto"|"http1.1"|"http2"|"prior"} */ ("auto");
+        /** TLS versions to offer: --tlsv1.3 sets the minimum, --tls-max the maximum */
+        let tlsMin = "1.2", tlsMax = "1.3";
 
         for (let i = 0; i < args.length; i++) {
             const a = args[i];
@@ -48,6 +50,9 @@ export const curl = {
             else if (a === "--http1.1") proto = "http1.1";
             else if (a === "--http2") proto = "http2";
             else if (a === "--http2-prior-knowledge") proto = "prior";
+            else if (a === "--tlsv1.2") tlsMin = "1.2";
+            else if (a === "--tlsv1.3") tlsMin = "1.3";
+            else if (a === "--tls-max" && i + 1 < args.length) tlsMax = args[++i];
             else if ((a === "-X" || a === "--request") && i + 1 < args.length) method = args[++i];
             else if ((a === "-d" || a === "--data")    && i + 1 < args.length) data   = args[++i];
             else if ((a === "-H" || a === "--header")  && i + 1 < args.length) extraHeaders.push(args[++i]);
@@ -79,12 +84,14 @@ export const curl = {
         // --http2-prior-knowledge only h2, otherwise both with h2 preferred
         const alpn = proto === "http1.1" ? ["http/1.1"] : proto === "prior" ? ["h2"] : ["h2", "http/1.1"];
         if (verbose && scheme === "https") ctx.println(`* ALPN: curl offers ${alpn.join(",")}`);
+        const versions = /** @type {Array<"1.2"|"1.3">} */ (["1.3", "1.2"].filter(v => v >= tlsMin && v <= tlsMax));
+        if (versions.length === 0) throw new CommandError(t("app.terminal.commands.curl.err.tlsVersion"));
 
         let conn;
         try {
             conn = await abortable(
-                /** @type {Promise<{ close: () => void, transport: any, alpn?: string }>} */ (scheme === "https"
-                    ? openTlsTransport(ctx.os, ip, port, host, { insecure, alpn })
+                /** @type {Promise<{ close: () => void, transport: any, alpn?: string, version?: string, cipherSuite?: string }>} */ (scheme === "https"
+                    ? openTlsTransport(ctx.os, ip, port, host, { insecure, alpn, versions })
                     : openTcpTransport(ctx.os, ip, port)),
                 ctx.signal,
                 (late) => late.close(),
@@ -97,7 +104,9 @@ export const curl = {
         }
         ctx.onInterrupt(() => conn.close());
 
-        if (verbose && scheme === "https") ctx.println("* TLS connection established");
+        if (verbose && scheme === "https") {
+            ctx.println(`* SSL connection using ${String(conn.version ?? "").replace("TLS ", "TLSv")} / ${conn.cipherSuite ?? ""}`);
+        }
 
         // HTTP/2 when the server accepted h2, or h2c when the user knows the
         // server speaks it (curl --http2 would try an h2c Upgrade on http://,

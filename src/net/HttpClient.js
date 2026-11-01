@@ -173,9 +173,11 @@ export async function openTcpTransport(os, ip, port) {
  * @param {IPAddress} ip
  * @param {number} port
  * @param {string} host  URL host; the server certificate must be issued for it
- * @param {{ insecure?: boolean, alpn?: string[] }} [opts]  `insecure` skips the cert trust check (curl -k);
- *        `alpn` = offered application protocols (RFC 7301), e.g. ["h2", "http/1.1"]
- * @returns {Promise<{ close: () => void, peerCert: any, alpn: string, transport: { send: (b: Uint8Array) => any, recv: () => Promise<Uint8Array|null> } }>}
+ * @param {{ insecure?: boolean, alpn?: string[], versions?: Array<"1.2"|"1.3"> }} [opts]  `insecure` skips the cert trust check (curl -k);
+ *        `alpn` = offered application protocols (RFC 7301), e.g. ["h2", "http/1.1"];
+ *        `versions` = offered TLS versions (default 1.3 and 1.2)
+ * @returns {Promise<{ close: () => void, peerCert: any, alpn: string, version: string, cipherSuite: string,
+ *                     transport: { send: (b: Uint8Array) => any, recv: () => Promise<Uint8Array|null> } }>}
  */
 export async function openTlsTransport(os, ip, port, host, opts = {}) {
     const tcp = await openTcpTransport(os, ip, port);
@@ -189,6 +191,7 @@ export async function openTlsTransport(os, ip, port, host, opts = {}) {
         now: () => os?.clock?.nowMs?.() ?? Date.now(),
         serverName: host,
         alpn: opts.alpn,
+        versions: opts.versions,
     });
 
     try {
@@ -204,6 +207,8 @@ export async function openTlsTransport(os, ip, port, host, opts = {}) {
     return {
         peerCert: tls.peerCert,
         alpn: tls.alpn,
+        version: tls.version,
+        cipherSuite: tls.cipherSuite,
         close: () => { try { tls.close(); } catch { /* ignore */ } tcp.close(); },
         transport: {
             send: (b) => tls.send(/** @type {Uint8Array<ArrayBuffer>} */ (b)),

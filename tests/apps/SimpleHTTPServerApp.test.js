@@ -805,6 +805,14 @@ describe('SimpleHTTPServerApp – HTTP/2', async () => {
     expect(r.body.length).toBe(0);
   });
 
+  it('TLS 1.3 only when switched on', async () => {
+    await start({ tls13Enabled: false });
+    expect((await tlsConnect(['http/1.1'])).version).toBe('TLS 1.2');
+    server._stop();
+    await start({ tls13Enabled: true });
+    expect((await tlsConnect(['http/1.1'])).version).toBe('TLS 1.3');
+  });
+
   it('HTTP/2 off: ALPN selects http/1.1', async () => {
     await start({ http2Enabled: false });
     const tls = await tlsConnect(['h2', 'http/1.1']);
@@ -840,16 +848,17 @@ describe('SimpleHTTPServerApp – HTTP/2', async () => {
     expect(other.status).toBe(421);
   });
 
-  it('http2Enabled / h2cEnabled are persisted', () => {
+  it('http2Enabled / h2cEnabled / tls13Enabled are persisted', () => {
     /** @type {Record<string,string>} */
     const files = {};
     const fs = { ...makeMockFS(files), writeFile(/** @type {string} */ p, /** @type {string} */ d) { files[p] = d; } };
     const app = new SimpleHTTPServerApp(makeOS(makeVirtualTCPNet().net, fs));
     app.http2Enabled = true;
     app.h2cEnabled = true;
+    app.tls13Enabled = true;
     app._saveConfig();
     const app2 = new SimpleHTTPServerApp(makeOS(makeVirtualTCPNet().net, fs));
     app2._loadConfig();
-    expect([app2.http2Enabled, app2.h2cEnabled]).toEqual([true, true]);
+    expect([app2.http2Enabled, app2.h2cEnabled, app2.tls13Enabled]).toEqual([true, true, true]);
   });
 });

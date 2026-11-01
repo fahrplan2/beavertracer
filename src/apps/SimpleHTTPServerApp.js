@@ -263,6 +263,9 @@ export class SimpleHTTPServerApp extends LoggedProcess {
   /** @type {TlsCertificate|null} */
   _cert = null;
 
+  /** Offer TLS 1.3 next to 1.2 (off: TLS 1.2 only, as described in lesson 8.3.2). @type {boolean} */
+  tls13Enabled = false;
+
   /** @type {string} */
   certPath = "";
 
@@ -304,6 +307,9 @@ export class SimpleHTTPServerApp extends LoggedProcess {
 
   /** @type {HTMLInputElement|null} */
   httpsPortEl = null;
+
+  /** @type {HTMLInputElement|null} */
+  tls13El = null;
 
   /** @type {HTMLSelectElement|null} */
   _certSelectEl = null;
@@ -406,6 +412,12 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     const httpsPortInput = UI.input({ placeholder: "443", value: String(this.httpsPort) });
     this.httpsPortEl = httpsPortInput;
 
+    const tls13Input = /** @type {HTMLInputElement} */ (UI.el("input", {
+      attrs: { type: "checkbox" },
+      init: (el) => { el.checked = this.tls13Enabled; },
+    }));
+    this.tls13El = tls13Input;
+
     const certSelect = UI.select([], {});
     this._certSelectEl = certSelect;
 
@@ -415,6 +427,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     const httpsPane = UI.el("div", { children: [
       UI.row(t("app.simplehttpserver.label.httpsEnabled"), httpsEnabledInput),
       UI.row(t("app.simplehttpserver.label.httpsPort"), httpsPortInput),
+      UI.row(t("app.simplehttpserver.label.tls13"), tls13Input),
       UI.row(t("app.simplehttpsserver.label.cert"), certSelect),
       UI.buttonRow([
         UI.button(t("app.simplehttpsserver.button.use"), () => this._applyCert(), { primary: true, icon: "fa-check" }),
@@ -510,6 +523,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     this.keepAliveEl   = null;
     this.httpsEnabledEl = null;
     this.httpsPortEl   = null;
+    this.tls13El       = null;
     this._certSelectEl = null;
     this._certInfoEl   = null;
     this.vhostsEnabledEl = null;
@@ -537,6 +551,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     if (this.keepAliveEl)   this.keepAliveEl.disabled    = r;
     if (this.httpsEnabledEl) this.httpsEnabledEl.disabled = r;
     if (this.httpsPortEl)   this.httpsPortEl.disabled    = r;
+    if (this.tls13El)       this.tls13El.disabled        = r;
     if (this._certSelectEl) this._certSelectEl.disabled  = r;
     if (this.vhostsEnabledEl) this.vhostsEnabledEl.disabled = r;
     if (this.http2EnabledEl) this.http2EnabledEl.disabled = r;
@@ -630,6 +645,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     this.docRoot      = rootStr || "/var/www/";
     this.httpsEnabled = httpsOn;
     if (this.keepAliveEl) this.keepAlive = this.keepAliveEl.checked;
+    if (this.tls13El) this.tls13Enabled = this.tls13El.checked;
     if (this.http2EnabledEl) this.http2Enabled = this.http2EnabledEl.checked;
     if (this.h2cEnabledEl) this.h2cEnabled = this.h2cEnabledEl.checked;
     if (this.http2Enabled && !this.httpsEnabled) {
@@ -864,6 +880,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
       selectCert: this.vhostsEnabled ? (sni) => this._selectCertForSni(sni) : undefined,
       // ALPN: offer h2 only when enabled; http/1.1 is always available
       alpn:       this.http2Enabled ? ["h2", "http/1.1"] : ["http/1.1"],
+      versions:   this.tls13Enabled ? ["1.3", "1.2"] : ["1.2"],
       trustStore: this.os.tls?.certStore ?? null,
       timeoutMs:  this._timeoutMs(),
       sleepFn:    (ms) => simTimer.sleep(ms),
@@ -874,9 +891,9 @@ export class SimpleHTTPServerApp extends LoggedProcess {
       await tls.handshake();
       const info = net.getTCPConnInfo(connKey);
       const peer = info ? `${info.peerIP}:${info.peerPort}` : "?";
-      this._appendLog(tls.sni
+      this._appendLog((tls.sni
         ? t("app.simplehttpsserver.log.tlsOkSni", { time: nowStamp(), peer, sni: tls.sni })
-        : t("app.simplehttpsserver.log.tlsOk", { time: nowStamp(), peer }));
+        : t("app.simplehttpsserver.log.tlsOk", { time: nowStamp(), peer })) + ` [${tls.version}]`);
     } catch (e) {
       const reason = e instanceof Error ? e.message : String(e);
       this._appendLog(t("app.simplehttpsserver.log.tlsFailed", { time: nowStamp(), reason }));
@@ -1320,6 +1337,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
       if (Number.isInteger(json.port) && json.port >= 1 && json.port <= 65535) this.port = json.port;
       if (typeof json.docRoot === "string" && json.docRoot) this.docRoot = json.docRoot;
       if (typeof json.keepAlive === "boolean") this.keepAlive = json.keepAlive;
+      if (typeof json.tls13Enabled === "boolean") this.tls13Enabled = json.tls13Enabled;
       if (typeof json.http2Enabled === "boolean") this.http2Enabled = json.http2Enabled;
       if (typeof json.h2cEnabled === "boolean") this.h2cEnabled = json.h2cEnabled;
       if (typeof json.httpsEnabled === "boolean") this.httpsEnabled = json.httpsEnabled;
@@ -1338,6 +1356,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
         port: this.port,
         docRoot: this.docRoot,
         keepAlive: this.keepAlive,
+        tls13Enabled: this.tls13Enabled,
         http2Enabled: this.http2Enabled,
         h2cEnabled: this.h2cEnabled,
         httpsEnabled: this.httpsEnabled,

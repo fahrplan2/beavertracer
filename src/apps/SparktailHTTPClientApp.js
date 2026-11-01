@@ -541,6 +541,7 @@ export async function readHttpResponse(r, bodyLimit, method = "GET") {
  *   reader: TcpBufferedReader,
  *   h2: Http2Connection|null,
  *   proto: string,
+ *   tlsVersion: string,
  *   peerCert: import("../net/models/TlsCertificate.js").TlsCertificate|null,
  *   bypass: boolean,
  *   requests: number,
@@ -594,6 +595,9 @@ export class SparktailHTTPClientApp extends LoggedProcess {
 
   /** @type {"auto"|"http1"|"h2"} */
   protocolMode = "auto";
+
+  /** TLS version and HTTP version of the current page, for the lock popup. */
+  _connInfo = "";
 
   /** @type {HTMLSelectElement|null} */
   protoEl = null;
@@ -1034,6 +1038,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
         throw Object.assign(e instanceof Error ? e : new Error(String(e)), { stage: "tls", tls });
       }
       useH2 = tls.alpn === "h2";
+      this._appendLog(t("app.sparktail.log.tlsOk", { time: nowStamp(), host: o.host }) + ` [${tls.version}, ${tls.cipherSuite}]`);
       if (mode === "h2" && !useH2) {
         try { tls.close(); } catch { /* ignore */ }
         try { this.os.net.closeTCPConn(k); } catch { /* ignore */ }
@@ -1063,6 +1068,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
       reader: new TcpBufferedReader({ recv: h2 ? async () => null : recv, isCancelled: o.isCancelled, timeoutMs: timeout }),
       h2,
       proto,
+      tlsVersion: tls?.version ?? "",
       peerCert: tls?.peerCert ?? null,
       bypass: o.bypass,
       requests: 0,
@@ -1446,10 +1452,9 @@ export class SparktailHTTPClientApp extends LoggedProcess {
 
       if (reused) {
         this._appendLog(t("app.sparktail.log.connReused", { time: nowStamp(), origin: c.origin, count: c.requests }));
-      } else if (scheme === "https") {
-        this._appendLog(t("app.sparktail.log.tlsOk", { time: nowStamp(), host }));
       }
       if (scheme === "https") {
+        this._connInfo = [c.tlsVersion, c.h2 ? "HTTP/2" : "HTTP/1.1"].filter(Boolean).join(", ");
         this._serverCert = c.peerCert;
         this._certTrusted = !c.bypass;
         this._setLockState(c.bypass ? "insecure" : "secure");
@@ -1667,6 +1672,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
       row(t("app.sparktail.tls.certPopup.issuer"),      cert.issuer + selfSignedSuffix),
       row(t("app.sparktail.tls.certPopup.fingerprint"), cert.fingerprint()),
       row(t("app.sparktail.tls.certPopup.expiry"),      expiry),
+      this._connInfo ? row(t("app.sparktail.tls.certPopup.connection"), this._connInfo) : null,
     ].filter((x) => x != null);
     this._certPopupEl.replaceChildren(...children);
   }

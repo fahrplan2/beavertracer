@@ -132,4 +132,12 @@ describe('Sparktail HTTP/2', () => {
     again._loadConfig();
     expect(again.protocolMode).toBe('http1');
   });
+
+  it('records the TLS version of the connection (TLS 1.3 when the server offers it)', async () => {
+    await setup({ http2Enabled: true, tls13Enabled: true });
+    await browser._doGet('https://10.0.0.1/a.png', never);
+    expect(browser._pooledConns()[0].tlsVersion).toBe('TLS 1.3');
+    await browser._fetchUrl('https://10.0.0.1/b.png');
+    expect(browser._connInfo).toBe('TLS 1.3, HTTP/2');
+  });
 });
