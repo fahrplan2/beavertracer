@@ -1,5 +1,7 @@
 //@ts-check
 
+import { IPAddress } from '../../src/net/models/IPAddress.js';
+
 /**
  * In-memory TCP network shared by a client app and a server app in tests.
  * Every connection has a server-side ("sN") and a client-side ("cN") key;
@@ -40,8 +42,11 @@ export function makeLinkedNet() {
   const stats = { connects: 0, udpSent: 0, udpDropped: 0 };
   /** @type {Map<number, ReturnType<typeof makeQueue>>} */
   const udp = new Map();
-  /** Set to true to simulate a firewall that drops all UDP. */
-  const control = { blockUdp: false };
+  /**
+   * blockUdp: simulate a firewall that drops all UDP.
+   * udpSrc: source address reported for every datagram (one shared host namespace).
+   */
+  const control = { blockUdp: false, udpSrc: '10.0.0.2' };
 
   const net = {
     openTCPServerSocket(/** @type {any} */ _ip, /** @type {number} */ port) {
@@ -85,7 +90,7 @@ export function makeLinkedNet() {
     sendUDPSocket(/** @type {number} */ port, /** @type {any} */ _dst, /** @type {number} */ dstPort, /** @type {Uint8Array} */ data) {
       stats.udpSent++;
       if (control.blockUdp) { stats.udpDropped++; return Promise.resolve(); }
-      udp.get(dstPort)?.push({ src: { toString: () => '10.0.0.2' }, srcPort: port, payload: data.slice() });
+      udp.get(dstPort)?.push({ src: IPAddress.fromString(control.udpSrc), srcPort: port, payload: data.slice() });
       return Promise.resolve();
     },
     recvUDPSocket(/** @type {number} */ port) { return udp.get(port)?.next() ?? Promise.resolve(null); },

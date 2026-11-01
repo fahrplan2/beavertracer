@@ -24,9 +24,10 @@ async function wiregasm() {
 }
 
 /**
- * @param {Array<{ dir: 'c2s'|'s2c', bytes: Uint8Array }>} datagrams client 10.0.0.2:50000 <-> server 10.0.0.1:443
+ * @param {Array<{ dir: 'c2s'|'s2c', bytes: Uint8Array }>} datagrams client 10.0.0.2:50000 <-> server 10.0.0.1:<serverPort>
+ * @param {number} serverPort
  */
-function pcapOf(datagrams) {
+function pcapOf(datagrams, serverPort) {
   const parts = [];
   const gh = Buffer.alloc(24);
   gh.writeUInt32LE(0xa1b2c3d4, 0); gh.writeUInt16LE(2, 4); gh.writeUInt16LE(4, 6);
@@ -35,7 +36,7 @@ function pcapOf(datagrams) {
   datagrams.forEach((d, i) => {
     const c2s = d.dir === 'c2s';
     const udp = Buffer.alloc(8 + d.bytes.length);
-    udp.writeUInt16BE(c2s ? 50000 : 443, 0); udp.writeUInt16BE(c2s ? 443 : 50000, 2);
+    udp.writeUInt16BE(c2s ? 50000 : serverPort, 0); udp.writeUInt16BE(c2s ? serverPort : 50000, 2);
     udp.writeUInt16BE(udp.length, 4);
     Buffer.from(d.bytes).copy(udp, 8);
     const ip = Buffer.alloc(20);
@@ -57,12 +58,13 @@ let fileNo = 0;
 
 /**
  * @param {Array<{ dir: 'c2s'|'s2c', bytes: Uint8Array }>} datagrams
+ * @param {{ serverPort?: number }} [o] default 443 (QUIC); 53 for DNS
  * @returns {Promise<{ frames: string[][], summary: string[] }>}
  */
-export async function dissectUdp(datagrams) {
+export async function dissectUdp(datagrams, o = {}) {
   const wg = await wiregasm();
   const path = `/uploads/t${fileNo++}.pcap`;
-  wg.FS.writeFile(path, pcapOf(datagrams));
+  wg.FS.writeFile(path, pcapOf(datagrams, o.serverPort ?? 443));
   const sess = new wg.DissectSession(path);
   try {
     const ret = sess.load();

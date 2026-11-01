@@ -161,9 +161,9 @@ BeaverTracer ist ein Netzwerksimulator für den Unterricht. Er modelliert eine b
 <thead><tr><th>Protokoll</th><th>RFC</th><th>Unterstützung</th><th>Anmerkungen &amp; Grenzen</th></tr></thead>
 <tbody>
 <tr>
-  <td>DNS</td><td>RFC 1035, RFC 1123, RFC 3596</td>
+  <td>DNS</td><td>RFC 1035, RFC 1123, RFC 2308, RFC 3596, RFC 9460</td>
   <td><span class="badge badge-mostly">Größtenteils</span></td>
-  <td><strong>Record-Typen:</strong> A, AAAA, CNAME, MX, NS, PTR, SOA, TXT. <strong>Modi:</strong> Autoritativ (Zonendaten) und Rekursiv (Forwarder). Name-Compression beim Parsen; keine Compression beim Packen von Antworten. Kein DNSSEC, kein EDNS0, kein AXFR/IXFR, kein SRV/CAA/TLSA, kein Caching.</td>
+  <td><strong>Record-Typen:</strong> A, AAAA, CNAME, MX, NS, PTR, SOA, TXT sowie <strong>HTTPS/SVCB</strong> (RFC 9460: <code>alpn</code>, <code>port</code>, <code>ipv4hint</code>/<code>ipv6hint</code>, <code>no-default-alpn</code>, <code>mandatory</code>) — Sparktail erkennt daran HTTP/3 schon beim ersten Besuch. <strong>Modi:</strong> Autoritativ (Zonendaten) und Rekursiv (Forwarder). <strong>Negative Antworten:</strong> NXDOMAIN und NODATA, jeweils mit SOA im Authority-Teil (RFC 2308); SOA-Abfragen an der Zonenspitze werden beantwortet. Der Resolver der Rechner speichert Antworten nach TTL, negative für min(SOA-TTL, MINIMUM). <code>dig</code> zeigt Status, Flags und alle Abschnitte wie das Original; <code>nslookup</code> unterscheidet „No answer“ (NODATA) von NXDOMAIN. Name-Compression beim Parsen; keine Compression beim Packen von Antworten. Kein DNSSEC, kein EDNS0, kein AXFR/IXFR, kein SRV/CAA/TLSA, kein Caching im DNS-Server selbst; HTTPS-Einträgen im AliasMode (Priorität 0) folgt Sparktail nicht.</td>
 </tr>
 <tr>
   <td>DHCP (v4)</td><td>RFC 2131, RFC 2132</td>

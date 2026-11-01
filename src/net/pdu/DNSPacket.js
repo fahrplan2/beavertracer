@@ -1,6 +1,7 @@
 //@ts-check
 
 import { read16BE, read32BE, write16BE, write32BE } from "../util/byteUtils.js";
+import { encodeSvcb, decodeSvcb } from "./Svcb.js";
 
 /**
  * @typedef {Object} DNSQuestion
@@ -26,7 +27,8 @@ import { read16BE, read32BE, write16BE, write32BE } from "../util/byteUtils.js";
  * - When packing, this implementation does NOT compress names (simpler, still valid).
  *
  * Records supported in decode/encode:
- * - A (1), AAAA (28), CNAME (5), NS (2), PTR (12), SOA (6), TXT (16), MX (15)
+ * - A (1), AAAA (28), CNAME (5), NS (2), PTR (12), SOA (6), TXT (16), MX (15),
+ *   SVCB (64) and HTTPS (65) (RFC 9460, see Svcb.js)
  * - Other types are kept as raw rdata bytes (Uint8Array).
  */
 export class DNSPacket {
@@ -112,6 +114,8 @@ export class DNSPacket {
   static TYPE_MX = 15;
   static TYPE_TXT = 16;
   static TYPE_AAAA = 28;
+  static TYPE_SVCB = 64;
+  static TYPE_HTTPS = 65;
 
   /**
    * Parse DNS message from bytes (UDP payload typically).
@@ -314,6 +318,13 @@ export class DNSPacket {
       const nameRes = DNSPacket._readName(fullMsg, rdataOffset + 2);
       return { preference: pref, exchange: nameRes.name };
     }
+    if (type === DNSPacket.TYPE_SVCB || type === DNSPacket.TYPE_HTTPS) {
+      try {
+        return decodeSvcb(rdataBytes, (b, o) => DNSPacket._readName(b, o));
+      } catch {
+        return new Uint8Array(rdataBytes);
+      }
+    }
     if (type === DNSPacket.TYPE_SOA) {
       // SOA RDATA: MNAME + RNAME + SERIAL + REFRESH + RETRY + EXPIRE + MINIMUM
       const mnameRes = DNSPacket._readName(fullMsg, rdataOffset);
@@ -408,6 +419,11 @@ export class DNSPacket {
       write16BE(out, 0, pref);
       out.set(nameBytes, 2);
       return out;
+    }
+
+    if (type === DNSPacket.TYPE_SVCB || type === DNSPacket.TYPE_HTTPS) {
+      if (data instanceof Uint8Array) return data;
+      return encodeSvcb(data, (n) => DNSPacket._writeName(n));
     }
 
     if (type === DNSPacket.TYPE_SOA) {

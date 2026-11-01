@@ -14,6 +14,7 @@ import { nowStamp, encodeUTF8, decodeUTF8 } from "../lib/helpers.js";
 import { TlsSession, TlsCertUntrustedError, TlsCertExpiredError, TlsCertNameMismatchError } from "../net/TlsSession.js";
 import { Http2Connection } from "../net/Http2.js";
 import { connectHttp3 } from "../net/QuicTransport.js";
+import { formatSvcb } from "../net/pdu/Svcb.js";
 
 const startPage = startPageTemplate.replace("<!--SPARKTAIL_LOGO-->", logoSvg);
 
@@ -614,6 +615,9 @@ export class SparktailHTTPClientApp extends LoggedProcess {
   /** Origins where QUIC failed recently (UDP blocked?): origin -> retry time. @type {Map<string, number>} */
   _h3Broken = new Map();
 
+  /** When the DNS HTTPS record of an origin may be asked again (sim ms). @type {Map<string, number>} */
+  _httpsRrChecked = new Map();
+
   /** TLS version and HTTP version of the current page, for the lock popup. */
   _connInfo = "";
 
@@ -976,6 +980,36 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     }
   }
 
+  /**
+   * DNS HTTPS record (RFC 9460): like browsers, ask once per origin (until
+   * the record's TTL runs out) whether the server announces HTTP/3 in DNS —
+   * then QUIC is possible on the very first visit, without a TCP round trip
+   * for Alt-Svc. Only ServiceMode records for the same name are used.
+   * @param {string} scheme @param {string} host @param {string} origin @param {number} port
+   */
+  async _learnHttpsRecord(scheme, host, origin, port) {
+    if (scheme !== "https" || this.protocolMode !== "auto") return;
+    const now = this._now();
+    const alt = this._altSvc.get(origin);
+    if (alt && alt.expires > now) return;
+    if ((this._httpsRrChecked.get(origin) ?? 0) > now) return;
+    if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host) || host.includes(":")) return; // IP literal: no DNS
+    const dns = this.os.dns;
+    if (!dns?.resolveHTTPS) return;
+    /** @type {Array<{priority:number, target:string, params:Record<string, any>, ttl:number}>} */
+    let rrs = [];
+    try {
+      rrs = await withTimeout(dns.resolveHTTPS(host), SimTimer.DNS_RESOLVE_TIMEOUT_MS, t("app.sparktail.label.dns"));
+    } catch { /* no record: Alt-Svc remains the way to find HTTP/3 */ }
+    const same = (/** @type {string} */ n) => n === "." || n.replace(/\.$/, "").toLowerCase() === host.toLowerCase();
+    const rr = rrs.find(r => r.priority > 0 && same(r.target));
+    this._httpsRrChecked.set(origin, now + Math.max(30, rr?.ttl ?? 60) * 1000);
+    if (!rr) return;
+    this._appendLog(t("app.sparktail.log.httpsRR", { time: nowStamp(), host, rr: formatSvcb(rr) }));
+    if (!(rr.params.alpn ?? []).includes("h3")) return;
+    this._altSvc.set(origin, { port: rr.params.port ?? port, expires: now + Math.max(1, rr.ttl) * 1000 });
+  }
+
   /** Simulated time of this host (falls back to the browser clock). */
   _now() {
     return this.os.clock?.nowMs?.() ?? Date.now();
@@ -1031,6 +1065,9 @@ export class SparktailHTTPClientApp extends LoggedProcess {
   async _acquire(o) {
     const origin = originKey(o.scheme, o.host, o.port);
     const key = this._poolKey(origin, o.bypass);
+    if (!this._h2.get(key)?.mux?.usable && !this._pool.get(key)?.length) {
+      await this._learnHttpsRecord(o.scheme, o.host, origin, o.port);
+    }
     for (;;) {
       const shared = this._h2.get(key);
       if (shared?.mux?.usable) return { conn: shared, reused: true };
