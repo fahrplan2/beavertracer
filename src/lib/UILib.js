@@ -1,5 +1,8 @@
 //@ts-check
 
+/** @type {WeakMap<HTMLElement, {top: HTMLElement, bottom: HTMLElement, update: () => void}>} hints per scroller, see attachScrollArrows */
+const scrollArrows = new WeakMap();
+
 /**
  * Helper class to build common DOM elements — shared by the simulator and OS apps.
  */
@@ -490,6 +493,36 @@ export class UILib {
     const top = el.scrollTop;
     update?.();
     el.scrollTop = atBottom ? el.scrollHeight : top;
+  }
+
+  /**
+   * ▲/▼ scroll indicators (same look as wrapWithScrollHints) for a scroller
+   * whose children the caller replaces freely: both hints sit absolutely in
+   * `host`, a non-scrolling, position: relative ancestor of `scroller`.
+   * The scroller may outlive its host (an app root re-framed on every OS
+   * render), so listeners are attached once and the hints just move over.
+   * @param {HTMLElement} scroller element with overflow-y: auto
+   * @param {HTMLElement} host
+   */
+  static attachScrollArrows(scroller, host) {
+    let entry = scrollArrows.get(scroller);
+    if (!entry) {
+      const top = UILib.el("div", { className: "router-scroll-hint router-scroll-hint--top", attrs: { "aria-hidden": "true" }, text: "▲" });
+      const bottom = UILib.el("div", { className: "router-scroll-hint router-scroll-hint--bottom", attrs: { "aria-hidden": "true" }, text: "▼" });
+      const update = () => {
+        const canScroll = scroller.scrollHeight > scroller.clientHeight + 2;
+        top.classList.toggle("is-visible", canScroll && scroller.scrollTop > 4);
+        bottom.classList.toggle("is-visible", canScroll && scroller.scrollTop + scroller.clientHeight < scroller.scrollHeight - 4);
+      };
+      scroller.addEventListener("scroll", update, { passive: true });
+      new ResizeObserver(update).observe(scroller);
+      new MutationObserver(() => requestAnimationFrame(update)).observe(scroller, { childList: true, subtree: true });
+      entry = { top, bottom, update };
+      scrollArrows.set(scroller, entry);
+    }
+    host.classList.add("scroll-arrows-host");
+    host.append(entry.top, entry.bottom);
+    requestAnimationFrame(entry.update);
   }
 
   /**
