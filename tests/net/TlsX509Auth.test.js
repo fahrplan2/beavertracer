@@ -304,7 +304,7 @@ async function asLegacy(cert, issuerKey, v) {
   const json = /** @type {any} */ (await cert.toSaveData());
   delete json.strictX509;
   if (v === 1) delete json.x509Version;
-  json.notBefore += 123;                       // old certs carried milliseconds
+  json.notBefore -= 877;                       // old certs carried milliseconds (stay in the past)
   const legacy = await TlsCertificate.fromJSON(json);
   await legacy.resignWith(issuerKey);
   return legacy;
