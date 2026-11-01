@@ -10,6 +10,7 @@ import {
     openTcpTransport,
     openTlsTransport,
     httpRequest,
+    http2Request,
     HttpError,
     utf8Encode,
     utf8Decode,
@@ -25,6 +26,7 @@ export const curl = {
             { labelKey: "app.terminal.commands.curl.tldr.ex.get",     cmd: "curl http://192.168.1.1" },
             { labelKey: "app.terminal.commands.curl.tldr.ex.head",    cmd: "curl -I http://192.168.1.1" },
             { labelKey: "app.terminal.commands.curl.tldr.ex.verbose", cmd: "curl -v http://192.168.1.1" },
+            { labelKey: "app.terminal.commands.curl.tldr.ex.http2",   cmd: "curl -v --http2 https://www.example.lan" },
         ],
     },
     run: async (ctx, args) => {
@@ -34,6 +36,8 @@ export const curl = {
         let data   = /** @type {string|null} */ (null);
         const extraHeaders = /** @type {string[]} */ ([]);
         let url    = /** @type {string|null} */ (null);
+        /** "auto" = like curl with nghttp2: offer h2 over TLS, HTTP/1.1 in clear text */
+        let proto  = /** @type {"auto"|"http1.1"|"http2"|"prior"} */ ("auto");
 
         for (let i = 0; i < args.length; i++) {
             const a = args[i];
@@ -41,6 +45,9 @@ export const curl = {
             else if (a === "-v") verbose = true;
             else if (a === "-k" || a === "--insecure") insecure = true;
             else if (a === "-s") { /* silent — no-op */ }
+            else if (a === "--http1.1") proto = "http1.1";
+            else if (a === "--http2") proto = "http2";
+            else if (a === "--http2-prior-knowledge") proto = "prior";
             else if ((a === "-X" || a === "--request") && i + 1 < args.length) method = args[++i];
             else if ((a === "-d" || a === "--data")    && i + 1 < args.length) data   = args[++i];
             else if ((a === "-H" || a === "--header")  && i + 1 < args.length) extraHeaders.push(args[++i]);
@@ -68,11 +75,16 @@ export const curl = {
         // ── connect (TCP, or TLS for https) ───────────────────────────────
         if (verbose) ctx.println(`* Connecting to ${ip}:${port}…`);
 
+        // ALPN offer (RFC 7301): --http1.1 offers only http/1.1,
+        // --http2-prior-knowledge only h2, otherwise both with h2 preferred
+        const alpn = proto === "http1.1" ? ["http/1.1"] : proto === "prior" ? ["h2"] : ["h2", "http/1.1"];
+        if (verbose && scheme === "https") ctx.println(`* ALPN: curl offers ${alpn.join(",")}`);
+
         let conn;
         try {
             conn = await abortable(
-                /** @type {Promise<{ close: () => void, transport: any }>} */ (scheme === "https"
-                    ? openTlsTransport(ctx.os, ip, port, host, { insecure })
+                /** @type {Promise<{ close: () => void, transport: any, alpn?: string }>} */ (scheme === "https"
+                    ? openTlsTransport(ctx.os, ip, port, host, { insecure, alpn })
                     : openTcpTransport(ctx.os, ip, port)),
                 ctx.signal,
                 (late) => late.close(),
@@ -87,6 +99,19 @@ export const curl = {
 
         if (verbose && scheme === "https") ctx.println("* TLS connection established");
 
+        // HTTP/2 when the server accepted h2, or h2c when the user knows the
+        // server speaks it (curl --http2 would try an h2c Upgrade on http://,
+        // which this simulation does not implement: it stays on HTTP/1.1)
+        const useH2 = scheme === "https" ? conn.alpn === "h2" : proto === "prior";
+        if (verbose) {
+            if (scheme === "https") {
+                ctx.println(conn.alpn
+                    ? `* ALPN: server accepted ${conn.alpn}`
+                    : "* ALPN: server did not agree on a protocol. Uses default.");
+            }
+            if (useH2) ctx.println("* using HTTP/2");
+        }
+
         const defaultPort = scheme === "https" ? 443 : 80;
         const hostBare = host.includes(":") && !host.startsWith("[") ? `[${host}]` : host;
         const hostHeader = port !== defaultPort ? `${hostBare}:${port}` : hostBare;
@@ -94,7 +119,18 @@ export const curl = {
         // ── request / response ─────────────────────────────────────────────
         let res;
         try {
-            res = await httpRequest({
+            res = useH2 ? await http2Request({
+                transport: conn.transport,
+                method,
+                scheme,
+                authority: hostHeader,
+                path,
+                headers: extraHeaders,
+                body: data != null ? utf8Encode(data) : null,
+                contentType: data != null ? "application/x-www-form-urlencoded" : null,
+                userAgent: "curl/1.0",
+                onRequestLine: verbose ? (line) => ctx.println(line ? `> ${line}` : ">") : undefined,
+            }) : await httpRequest({
                 transport: conn.transport,
                 method,
                 hostHeader,

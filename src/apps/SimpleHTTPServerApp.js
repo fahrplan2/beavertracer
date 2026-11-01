@@ -9,6 +9,7 @@ import { IPAddress } from "../net/models/IPAddress.js";
 import { nowStamp, encodeUTF8, decodeUTF8 } from "../lib/helpers.js";
 import { TlsSession } from "../net/TlsSession.js";
 import { TlsCertificate } from "../net/models/TlsCertificate.js";
+import { Http2Connection, Http2Error, h2ErrorName } from "../net/Http2.js";
 
 const CERT_DIR = "/etc/certs";
 
@@ -265,6 +266,14 @@ export class SimpleHTTPServerApp extends LoggedProcess {
   /** @type {string} */
   certPath = "";
 
+  // ── HTTP/2 ──────────────────────────────────────────────────────────────────
+
+  /** HTTP/2 over TLS, negotiated by ALPN "h2" (RFC 9113 §3.2). @type {boolean} */
+  http2Enabled = false;
+
+  /** HTTP/2 over plain TCP with prior knowledge ("h2c", RFC 9113 §3.3). @type {boolean} */
+  h2cEnabled = false;
+
   // ── virtual hosts ───────────────────────────────────────────────────────────
 
   /** Name-based virtual hosting on (Host header / SNI pick the site). @type {boolean} */
@@ -304,6 +313,12 @@ export class SimpleHTTPServerApp extends LoggedProcess {
 
   /** @type {HTMLInputElement|null} */
   vhostsEnabledEl = null;
+
+  /** @type {HTMLInputElement|null} */
+  http2EnabledEl = null;
+
+  /** @type {HTMLInputElement|null} */
+  h2cEnabledEl = null;
 
   /** @type {HTMLTableSectionElement|null} */
   _vhostTbody = null;
@@ -435,6 +450,19 @@ export class SimpleHTTPServerApp extends LoggedProcess {
       UI.el("div", { className: "hint", text: t("app.simplehttpserver.vhost.hint") }),
     ]});
 
+    // Protocols tab
+    const checkbox = (/** @type {boolean} */ checked) => /** @type {HTMLInputElement} */ (UI.el("input", {
+      attrs: { type: "checkbox" },
+      init: (el) => { el.checked = checked; },
+    }));
+    this.http2EnabledEl = checkbox(this.http2Enabled);
+    this.h2cEnabledEl = checkbox(this.h2cEnabled);
+    const protoPane = UI.el("div", { className: "proto-pane", children: [
+      UI.row(t("app.simplehttpserver.proto.label.h2"), this.http2EnabledEl),
+      UI.row(t("app.simplehttpserver.proto.label.h2c"), this.h2cEnabledEl),
+      UI.el("div", { className: "hint", text: t("app.simplehttpserver.proto.hint") }),
+    ]});
+
     // Log tab
     const logBox = UI.el("div", { className: "msg" });
     this.logEl = logBox;
@@ -453,6 +481,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
       { id: "http",  label: "HTTP",  pane: httpPane },
       { id: "https", label: "HTTPS", pane: httpsPane, onShow: () => this._refreshCertList() },
       { id: "vhosts", label: t("app.simplehttpserver.vhost.tab"), pane: vhostPane, onShow: () => this._refreshCertList() },
+      { id: "proto", label: t("app.simplehttpserver.proto.tab"), pane: protoPane },
       { id: "log",   label: t("app.simplehttpserver.label.log"), pane: logPane },
     ]);
 
@@ -462,6 +491,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
       httpPane,
       httpsPane,
       vhostPane,
+      protoPane,
       logPane,
     ]);
 
@@ -483,6 +513,8 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     this._certSelectEl = null;
     this._certInfoEl   = null;
     this.vhostsEnabledEl = null;
+    this.http2EnabledEl = null;
+    this.h2cEnabledEl  = null;
     this._vhostTbody   = null;
     this._vhostAddBtn  = null;
     this._vhostRows    = [];
@@ -507,6 +539,8 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     if (this.httpsPortEl)   this.httpsPortEl.disabled    = r;
     if (this._certSelectEl) this._certSelectEl.disabled  = r;
     if (this.vhostsEnabledEl) this.vhostsEnabledEl.disabled = r;
+    if (this.http2EnabledEl) this.http2EnabledEl.disabled = r;
+    if (this.h2cEnabledEl)  this.h2cEnabledEl.disabled   = r;
     if (this._vhostAddBtn)  this._vhostAddBtn.disabled   = r;
     for (const row of this._vhostRows) {
       row.hostEl.disabled = r;
@@ -596,6 +630,11 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     this.docRoot      = rootStr || "/var/www/";
     this.httpsEnabled = httpsOn;
     if (this.keepAliveEl) this.keepAlive = this.keepAliveEl.checked;
+    if (this.http2EnabledEl) this.http2Enabled = this.http2EnabledEl.checked;
+    if (this.h2cEnabledEl) this.h2cEnabled = this.h2cEnabledEl.checked;
+    if (this.http2Enabled && !this.httpsEnabled) {
+      this._appendLog(t("app.simplehttpserver.log.h2NeedsHttps", { time: nowStamp() }));
+    }
     this._saveConfig();
     this._start();
   }
@@ -794,7 +833,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
   /**
    * @param {string} connKey
    * @param {boolean} isTls
-   * @returns {Promise<{send:(d:Uint8Array)=>void, recv:()=>Promise<Uint8Array|null>, close:()=>void, sni:string}|null>}
+   * @returns {Promise<{send:(d:Uint8Array)=>void, recv:()=>Promise<Uint8Array|null>, close:()=>void, sni:string, alpn:string}|null>}
    */
   async _ioForConn(connKey, isTls) {
     const net = this.os.net;
@@ -805,6 +844,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
         recv:  ()     => net.recvTCPConn(connKey),
         close: ()     => net.closeTCPConn(connKey),
         sni:   "",
+        alpn:  "",
       };
     }
 
@@ -822,6 +862,8 @@ export class SimpleHTTPServerApp extends LoggedProcess {
       cert:       this._cert,
       // with virtual hosts the certificate follows the client's SNI
       selectCert: this.vhostsEnabled ? (sni) => this._selectCertForSni(sni) : undefined,
+      // ALPN: offer h2 only when enabled; http/1.1 is always available
+      alpn:       this.http2Enabled ? ["h2", "http/1.1"] : ["http/1.1"],
       trustStore: this.os.tls?.certStore ?? null,
       timeoutMs:  this._timeoutMs(),
       sleepFn:    (ms) => simTimer.sleep(ms),
@@ -848,6 +890,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
       recv:  ()  => tls.recv(),
       close: ()  => { tls.close(); try { net.closeTCPConn(connKey); } catch { /* ignore */ } },
       sni:   tls.sni,
+      alpn:  tls.alpn,
     };
   }
 
@@ -867,6 +910,8 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     const isActive = () => isTls
       ? (this.httpsRunning && this.httpsRunSeq === seq)
       : (this.running      && this.runSeq      === seq);
+
+    if (io.alpn === "h2") return this._serveHttp2(io, new Uint8Array(0), isTls, isActive);
 
     const headerNeedle = encodeUTF8("\r\n\r\n");
     const limit = 64 * 1024;
@@ -916,12 +961,81 @@ export class SimpleHTTPServerApp extends LoggedProcess {
 
       const headerText = decodeUTF8(buf.slice(0, idx));
       buf = buf.slice(idx + headerNeedle.length);
+
+      // h2c with prior knowledge: the client starts right away with the
+      // HTTP/2 preface "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n" (RFC 9113 §3.3)
+      if (first && !isTls && this.h2cEnabled && headerText === "PRI * HTTP/2.0") {
+        return this._serveHttp2(io, concatChunks([encodeUTF8(headerText + "\r\n\r\n"), buf]), false, isActive);
+      }
       served++;
 
       const keep = await this._serveRequest(io, headerText, isTls, served);
       if (!keep) return;  // _serveRequest has closed the connection
       if (!isActive()) { io.close(); return; }
     }
+  }
+
+  /**
+   * Serve an HTTP/2 connection. Requests arrive multiplexed as streams; each
+   * one goes through the same handling as HTTP/1.1. An idle connection (no
+   * open stream) is ended with GOAWAY after the keep-alive timeout.
+   * @param {{ send: (d: Uint8Array) => any, recv: () => Promise<Uint8Array|null>, close: () => void, sni: string }} io
+   * @param {Uint8Array} initial bytes already read (h2c preface)
+   * @param {boolean} isTls
+   * @param {() => boolean} isActive
+   */
+  async _serveHttp2(io, initial, isTls, isActive) {
+    let pending = initial.length > 0 ? initial : null;
+    let streams = 0;
+    /** @type {number|null} */
+    let idleTimer = null;
+    const stopIdle = () => { if (idleTimer !== null) { simTimer.cancel(idleTimer); idleTimer = null; } };
+
+    const conn = new Http2Connection({
+      send: (d) => io.send(d),
+      recv: () => {
+        if (pending) { const p = pending; pending = null; return Promise.resolve(p); }
+        return io.recv();
+      },
+      isServer: true,
+      onRequest: async (req, res) => {
+        streams++;
+        const r = this._resolveRequest({
+          method: req.method,
+          target: req.path,
+          reqHost: hostFromHeader(req.authority),
+          sni: io.sni,
+          isTls,
+          label: ` (h2, stream ${req.streamId})`,
+        });
+        // HTTP/2 has no reason phrase and no connection headers
+        const headers = /** @type {Array<[string, string]>} */ (Object.entries(r.headers));
+        await res.respond(r.status, headers, r.body);
+        if (!isActive()) conn.goaway();
+      },
+      onActive: stopIdle,
+      onIdle: () => {
+        stopIdle();
+        idleTimer = simTimer.schedule(() => {
+          idleTimer = null;
+          if (conn.activeStreams > 0 || conn.closed) return;
+          this._appendLog(t("app.simplehttpserver.log.h2Idle", { time: nowStamp(), count: streams }));
+          conn.goaway();
+          io.close();
+        }, SimTimer.HTTP_KEEPALIVE_TIMEOUT_MS);
+      },
+    });
+
+    this._appendLog(t("app.simplehttpserver.log.h2Start", { time: nowStamp(), mode: isTls ? "h2 (ALPN)" : "h2c" }));
+    conn.start();
+    conn.onIdle?.(); // no stream yet: start the idle timer
+    await conn.done;
+    stopIdle();
+    const err = conn.closeError;
+    if (err instanceof Http2Error && !err.remote) {
+      this._appendLog(t("app.simplehttpserver.log.h2Error", { time: nowStamp(), reason: `${h2ErrorName(err.code)}: ${err.message}` }));
+    }
+    try { io.close(); } catch { /* already closed */ }
   }
 
   /**
@@ -984,27 +1098,72 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     // one falls back to the TLS server name.
     const hostLine = hostLines[0];
     const reqHost = hostLine ? hostFromHeader(hostLine.slice(hostLine.indexOf(":") + 1)) : "";
-    const vhost = this._findVhost(reqHost || io.sni);
+
+    // with keep-alive, the log shows the request number on this connection
+    const res = this._resolveRequest({
+      method, target, reqHost, sni: io.sni, isTls,
+      label: this.keepAlive && served > 1 ? ` (#${served})` : "",
+    });
+    const persist = keep && !res.close;
+    const resp = buildResponse(res.status, res.reason, {
+      ...res.headers,
+      ...(persist ? connHeaders : { "Connection": "close" }),
+    }, res.body);
+    await io.send(resp);
+    if (!persist) io.close();
+    return persist;
+  }
+
+  /**
+   * Protocol-independent request handling shared by HTTP/1.1 and HTTP/2:
+   * virtual host, 421 check, method check, file lookup, logging.
+   * @param {{ method: string, target: string, reqHost: string, sni: string,
+   *           isTls: boolean, label: string }} r label: appended to the log entry
+   * @returns {{ status: number, reason: string, headers: Record<string,string>,
+   *             body: Uint8Array, close: boolean }} close: HTTP/1.1 must not reuse the connection
+   */
+  _resolveRequest(r) {
+    const { method, target, reqHost, sni, isTls, label } = r;
+    const head = method === "HEAD";
+    const vhost = this._findVhost(reqHost || sni);
+
+    /**
+     * @param {number} status @param {string} reason @param {string} title @param {string} details
+     * @param {Record<string,string>} [extra]
+     */
+    const errorPage = (status, reason, title, details, extra = {}) => {
+      const body = internalHtml(title, details);
+      return {
+        status, reason, close: false,
+        headers: {
+          "Date": new Date().toUTCString(),
+          ...extra,
+          "Server": "SimpleHTTPServer/1.0",
+          "Content-Type": "text/html; charset=utf-8",
+          "Content-Length": String(body.length),
+        },
+        // HEAD: headers only (RFC 9110 §9.3.2)
+        body: head ? new Uint8Array(0) : body,
+      };
+    };
 
     // RFC 9110 §15.5.20: the TLS connection was set up for the SNI name (and
     // its certificate); a request for a different site on it is misdirected.
-    if (isTls && this.vhostsEnabled && io.sni && reqHost && this._findVhost(io.sni) !== vhost) {
-      this._appendLog(t("app.simplehttpserver.log.misdirected", { time: nowStamp(), sni: io.sni, host: reqHost }));
-      await this._sendError(io, 421, "Misdirected Request",
+    if (isTls && this.vhostsEnabled && sni && reqHost && this._findVhost(sni) !== vhost) {
+      this._appendLog(t("app.simplehttpserver.log.misdirected", { time: nowStamp(), sni, host: reqHost }));
+      return errorPage(421, "Misdirected Request",
         t("app.simplehttpserver.http.421.title"),
-        t("app.simplehttpserver.http.421.details", { sni: io.sni, host: reqHost }),
-        connHeaders);
-      return keep;
+        t("app.simplehttpserver.http.421.details", { sni, host: reqHost }));
     }
 
     if (method !== "GET" && method !== "HEAD") {
-      // RFC 9110 §15.5.6: MUST list the supported methods
       this._appendLog(t("app.simplehttpserver.log.methodNotAllowed", { time: nowStamp(), method, target }));
-      await this._sendError(io, 405, "Method Not Allowed",
+      // RFC 9110 §15.5.6: MUST list the supported methods. The unread body
+      // makes the HTTP/1.1 connection unusable.
+      return { ...errorPage(405, "Method Not Allowed",
         t("app.simplehttpserver.http.405.title"),
         t("app.simplehttpserver.http.405.details", { method }),
-        { "Allow": "GET, HEAD", "Connection": "close" });
-      return false;
+        { "Allow": "GET, HEAD" }), close: true };
     }
 
     let norm = normalizeUrlPath(target);
@@ -1013,36 +1172,28 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     const fsPath = joinDocroot(vhost ? vhost.docRoot : this.docRoot, norm);
     const data = this._readFileBytes(fsPath);
     // log which site served the request once virtual hosting is on
-    const shown = this.vhostsEnabled
+    const shown = (this.vhostsEnabled
       ? `[${vhost ? vhost.host : t("app.simplehttpserver.vhost.defaultTag")}] ${norm}`
-      : norm;
-    // with keep-alive, the log shows the request number on this connection
-    const shownReq = this.keepAlive && served > 1 ? `${shown} (#${served})` : shown;
+      : norm) + label;
 
     if (data == null) {
-      this._appendLog(t("app.simplehttpserver.log.notFound", { time: nowStamp(), method, norm: shownReq }));
-      await this._sendError(io, 404, "Not Found",
+      this._appendLog(t("app.simplehttpserver.log.notFound", { time: nowStamp(), method, norm: shown }));
+      return errorPage(404, "Not Found",
         t("app.simplehttpserver.http.404.title"),
-        t("app.simplehttpserver.http.404.details", { norm, fsPath }),
-        connHeaders, method === "HEAD");
-      return keep;
+        t("app.simplehttpserver.http.404.details", { norm, fsPath }));
     }
 
-    const ct   = contentTypeOf(fsPath);
-    const body = (method === "HEAD") ? new Uint8Array(0) : data;
-
-    const resp = buildResponse(200, "OK", {
-      "Date": new Date().toUTCString(),
-      "Server": "SimpleHTTPServer/1.0",
-      "Content-Type": ct,
-      "Content-Length": String(data.length),
-      ...connHeaders,
-    }, body);
-
-    this._appendLog(t("app.simplehttpserver.log.ok", { time: nowStamp(), method, norm: shownReq, bytes: data.length }));
-    await io.send(resp);
-    if (!keep) io.close();
-    return keep;
+    this._appendLog(t("app.simplehttpserver.log.ok", { time: nowStamp(), method, norm: shown, bytes: data.length }));
+    return {
+      status: 200, reason: "OK", close: false,
+      headers: {
+        "Date": new Date().toUTCString(),
+        "Server": "SimpleHTTPServer/1.0",
+        "Content-Type": contentTypeOf(fsPath),
+        "Content-Length": String(data.length),
+      },
+      body: head ? new Uint8Array(0) : data,
+    };
   }
 
   /**
@@ -1169,6 +1320,8 @@ export class SimpleHTTPServerApp extends LoggedProcess {
       if (Number.isInteger(json.port) && json.port >= 1 && json.port <= 65535) this.port = json.port;
       if (typeof json.docRoot === "string" && json.docRoot) this.docRoot = json.docRoot;
       if (typeof json.keepAlive === "boolean") this.keepAlive = json.keepAlive;
+      if (typeof json.http2Enabled === "boolean") this.http2Enabled = json.http2Enabled;
+      if (typeof json.h2cEnabled === "boolean") this.h2cEnabled = json.h2cEnabled;
       if (typeof json.httpsEnabled === "boolean") this.httpsEnabled = json.httpsEnabled;
       if (Number.isInteger(json.httpsPort) && json.httpsPort >= 1 && json.httpsPort <= 65535) this.httpsPort = json.httpsPort;
       if (typeof json.certPath === "string") this.certPath = json.certPath;
@@ -1185,6 +1338,8 @@ export class SimpleHTTPServerApp extends LoggedProcess {
         port: this.port,
         docRoot: this.docRoot,
         keepAlive: this.keepAlive,
+        http2Enabled: this.http2Enabled,
+        h2cEnabled: this.h2cEnabled,
         httpsEnabled: this.httpsEnabled,
         httpsPort: this.httpsPort,
         certPath: this.certPath,

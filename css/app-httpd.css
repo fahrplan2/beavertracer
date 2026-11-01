@@ -55,7 +55,8 @@
   min-width: 0;
 }
 
-.app-simple-http-server .vhost-pane .hint {
+.app-simple-http-server .vhost-pane .hint,
+.app-simple-http-server .proto-pane .hint {
   margin-top: var(--pad-md);
   opacity: 0.8;
   white-space: normal;

@@ -727,3 +727,129 @@ describe('SimpleHTTPServerApp – keep-alive', () => {
     expect(app2.keepAlive).toBe(false);
   });
 });
+
+// ── HTTP/2 (ALPN h2 and h2c) ──────────────────────────────────────────────────
+
+describe('SimpleHTTPServerApp – HTTP/2', async () => {
+  const { Http2Connection } = await import('../../src/net/Http2.js');
+  const FILES = {
+    '/var/www/index.html':   'DEFAULT',
+    '/var/www/style.css':    'body{}',
+    '/var/www/a/index.html': 'SITE A',
+    '/var/www/b/index.html': 'SITE B',
+  };
+  /** @type {ReturnType<typeof makeVirtualTCPNet>} */
+  let vnet;
+  /** @type {SimpleHTTPServerApp} */
+  let server;
+  /** @type {TlsCertificate} */
+  let cert;
+
+  /** @param {Partial<SimpleHTTPServerApp>} cfg */
+  async function start(cfg) {
+    cert ??= await TlsCertificate.generate('server.lan');
+    vnet = makeVirtualTCPNet();
+    server = new SimpleHTTPServerApp(makeOS(vnet.net, makeMockFS(FILES)));
+    server.httpsEnabled = true;
+    server._cert = cert;
+    Object.assign(server, cfg);
+    server._start();
+  }
+  afterEach(() => server._stop());
+
+  /**
+   * TLS connection to the HTTPS listener offering the given ALPN list.
+   * @param {string[]} alpn @param {string} [serverName]
+   */
+  async function tlsConnect(alpn, serverName = 'server.lan') {
+    const conn = vnet.connect(2);
+    const tls = new TlsSession({
+      send: (d) => conn.send(d), recv: () => conn.recv(), isServer: false,
+      timeoutMs: 5000, serverName, alpn,
+    });
+    await tls.handshake();
+    return tls;
+  }
+
+  /** @param {{ send: any, recv: any }} t */
+  function h2Client(t) {
+    const c = new Http2Connection({ send: (d) => t.send(d), recv: () => t.recv(), isServer: false });
+    c.start();
+    return c;
+  }
+
+  it('negotiates h2 via ALPN and serves multiplexed requests on one connection', async () => {
+    await start({ http2Enabled: true });
+    const tls = await tlsConnect(['h2', 'http/1.1']);
+    expect(tls.alpn).toBe('h2');
+    const c = h2Client(tls);
+    const [a, b, missing] = await Promise.all([
+      c.request({ scheme: 'https', authority: 'server.lan', path: '/' }),
+      c.request({ scheme: 'https', authority: 'server.lan', path: '/style.css' }),
+      c.request({ scheme: 'https', authority: 'server.lan', path: '/nope' }),
+    ]);
+    expect([a.status, dec.decode(a.body)]).toEqual([200, 'DEFAULT']);
+    expect(b.headers).toContainEqual(['content-type', 'text/css; charset=utf-8']);
+    expect(missing.status).toBe(404);
+    // no HTTP/1.1 connection headers in HTTP/2
+    expect(a.headers.some(([n]) => n === 'connection' || n === 'keep-alive')).toBe(false);
+    expect(server.log.some(l => /HTTP\/2|h2Start/.test(l))).toBe(true);
+  });
+
+  it('HEAD over h2 has headers but no body', async () => {
+    await start({ http2Enabled: true });
+    const c = h2Client(await tlsConnect(['h2']));
+    const r = await c.request({ method: 'HEAD', scheme: 'https', authority: 'server.lan', path: '/' });
+    expect(r.status).toBe(200);
+    expect(r.headers).toContainEqual(['content-length', '7']);
+    expect(r.body.length).toBe(0);
+  });
+
+  it('HTTP/2 off: ALPN selects http/1.1', async () => {
+    await start({ http2Enabled: false });
+    const tls = await tlsConnect(['h2', 'http/1.1']);
+    expect(tls.alpn).toBe('http/1.1');
+  });
+
+  it('h2c with prior knowledge on the HTTP port', async () => {
+    await start({ h2cEnabled: true });
+    const c = h2Client(vnet.connect(1));
+    const r = await c.request({ scheme: 'http', authority: 'server.lan', path: '/style.css' });
+    expect([r.status, dec.decode(r.body)]).toEqual([200, 'body{}']);
+  });
+
+  it('h2c off: the preface is a bad HTTP/1.1 request', async () => {
+    await start({ h2cEnabled: false });
+    const conn = vnet.connect(1);
+    conn.send(enc.encode('PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n'));
+    expect((await readResponse(conn)).status).toBe(400);
+  });
+
+  it(':authority selects the virtual host; SNI mismatch gives 421', async () => {
+    await start({
+      http2Enabled: true, vhostsEnabled: true,
+      vhosts: [
+        { host: 'a.lan', docRoot: '/var/www/a/', certPath: '' },
+        { host: 'b.lan', docRoot: '/var/www/b/', certPath: '' },
+      ],
+    });
+    const c = h2Client(await tlsConnect(['h2'], 'a.lan'));
+    const ok = await c.request({ scheme: 'https', authority: 'a.lan:443', path: '/' });
+    expect(dec.decode(ok.body)).toBe('SITE A');
+    const other = await c.request({ scheme: 'https', authority: 'b.lan', path: '/' });
+    expect(other.status).toBe(421);
+  });
+
+  it('http2Enabled / h2cEnabled are persisted', () => {
+    /** @type {Record<string,string>} */
+    const files = {};
+    const fs = { ...makeMockFS(files), writeFile(/** @type {string} */ p, /** @type {string} */ d) { files[p] = d; } };
+    const app = new SimpleHTTPServerApp(makeOS(makeVirtualTCPNet().net, fs));
+    app.http2Enabled = true;
+    app.h2cEnabled = true;
+    app._saveConfig();
+    const app2 = new SimpleHTTPServerApp(makeOS(makeVirtualTCPNet().net, fs));
+    app2._loadConfig();
+    expect([app2.http2Enabled, app2.h2cEnabled]).toEqual([true, true]);
+  });
+});

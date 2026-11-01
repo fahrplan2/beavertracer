@@ -209,3 +209,23 @@
     box-sizing: border-box;
   }
 }
+
+/* tab row: tabs left, protocol choice right */
+.app-sparktail-http .sparktail-tab-row {
+  display: flex;
+  align-items: center;
+  gap: var(--pad-sm);
+  flex-wrap: wrap;
+}
+
+.app-sparktail-http .sparktail-tab-row .ui-tabbar {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.app-sparktail-http .sparktail-proto {
+  flex: 0 0 auto;
+  width: auto;
+  max-width: 100%;
+  padding: var(--pad-xs) var(--pad-sm);
+}
