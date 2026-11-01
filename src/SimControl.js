@@ -28,7 +28,7 @@ import { version } from "./lib/version.js";
 import { isTauri } from "./tauri.js";
 import { Linux } from "./sim/Linux.js";
 import { RemoteBridge } from "./sim/RemoteBridge.js";
-import { migrateCertSignatures } from "./lib/CertMigration.js";
+import { migrateCertSignatures, upgradeCertEncodings } from "./lib/CertMigration.js";
 
 /**
  * @typedef {Object} PortDescriptor
@@ -1077,7 +1077,7 @@ export class SimControl {
 
     toJSON() {
         return {
-            version: 6,
+            version: 7,
             appVersion: version(),
             savedAt: new Date().toISOString(),
             tick: SimControl.tick,
@@ -1131,6 +1131,13 @@ export class SimControl {
             const result = await migrateCertSignatures(state);
             state = result.state;
             if (result.unresolved > 0) SimDialog.alert(t("sim.certMigration.unresolved", { count: result.unresolved }));
+        }
+
+        // v6 → v7: certificates use strict X.509 (UTCTime validity, DER
+        // signature) — re-signed where the issuer's key is in the file;
+        // the others keep the legacy encoding and still work.
+        if ((state.version ?? 0) <= 6) {
+            state = (await upgradeCertEncodings(state)).state;
         }
 
         this._clearScene();

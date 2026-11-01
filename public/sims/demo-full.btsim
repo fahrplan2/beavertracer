@@ -1,6 +1,6 @@
 {
   "_info": "This file was created by BeaverTracer, a network simulation tool. Open it with the BeaverTracer app or at https://beavertracer.eu/",
-  "version": 6,
+  "version": 7,
   "appVersion": "0.1.20-dev.141.54597b9",
   "savedAt": "2026-06-09T21:47:31.311Z",
   "tick": 100,
@@ -14,13 +14,13 @@
       "px": 230.5,
       "py": 171.5,
       "panelOpen": false,
-      "text": "# Internet-Demo — Ein vereinfachtes simuliertes Internet\n\n  ## Features\n  **Backbone:** Router BB1–BB5 — eBGP-Mesh (AS65100–65104)\n  **ISPs:** ISP-Alpha (AS65001), ISP-Beta (AS65002), ISP-Gamma (AS65003) — per BGP ans Backbone angebunden\n  **Heimnetze:** 4 Heimrouter mit DHCP, WLAN und NAT\n  **Rechenzentren:** DC-Alpha (TLD-Nameserver .com/.de), DC-Beta (www.betanet.de + E-Mail), DC-Gamma (www.example.com)\n  **DNS:** Root → TLD (.com, .de) → Nameserver der Firmen; die DNS-Server der Provider lösen rekursiv auf\n  **HTTPS:** www.example.com mit TLS 1.3, HTTP/2 und HTTP/3 (QUIC) — www.betanet.de klassisch mit TLS 1.2 und HTTP/1.1\n  **Dual Stack:** Backbone, ISPs und Server sprechen IPv4 und IPv6\n\n  ## Ausprobieren\n  Simulation starten und ca. 10 Sekunden warten, bis das Routing steht\n  **Ping:** Terminal auf einem Heim-PC → ping www.example.com\n  **Webseite:** Browser → https://www.example.com und https://www.betanet.de\n  **DNS:** Terminal → dig www.example.com HTTPS\n",
+      "text": "# Internet-Demo \u2014 Ein vereinfachtes simuliertes Internet\n\n  ## Features\n  **Backbone:** Router BB1\u2013BB5 \u2014 eBGP-Mesh (AS65100\u201365104)\n  **ISPs:** ISP-Alpha (AS65001), ISP-Beta (AS65002), ISP-Gamma (AS65003) \u2014 per BGP ans Backbone angebunden\n  **Heimnetze:** 4 Heimrouter mit DHCP, WLAN und NAT\n  **Rechenzentren:** DC-Alpha (TLD-Nameserver .com/.de), DC-Beta (www.betanet.de + E-Mail), DC-Gamma (www.example.com)\n  **DNS:** Root \u2192 TLD (.com, .de) \u2192 Nameserver der Firmen; die DNS-Server der Provider l\u00f6sen rekursiv auf\n  **HTTPS:** www.example.com mit TLS 1.3, HTTP/2 und HTTP/3 (QUIC) \u2014 www.betanet.de klassisch mit TLS 1.2 und HTTP/1.1\n  **Dual Stack:** Backbone, ISPs und Server sprechen IPv4 und IPv6\n\n  ## Ausprobieren\n  Simulation starten und ca. 10 Sekunden warten, bis das Routing steht\n  **Ping:** Terminal auf einem Heim-PC \u2192 ping www.example.com\n  **Webseite:** Browser \u2192 https://www.example.com und https://www.betanet.de\n  **DNS:** Terminal \u2192 dig www.example.com HTTPS\n",
       "showTitle": false
     },
     {
       "kind": "RectOverlay",
       "id": 2,
-      "name": "Backbone — BGP-Mesh (AS65100–65104)",
+      "name": "Backbone \u2014 BGP-Mesh (AS65100\u201365104)",
       "x": -145.1540069580078,
       "y": -84.9693227403839,
       "px": 200,
@@ -34,7 +34,7 @@
     {
       "kind": "RectOverlay",
       "id": 3,
-      "name": "ISP-Alpha (AS65001) — Multi-homed",
+      "name": "ISP-Alpha (AS65001) \u2014 Multi-homed",
       "x": -142.15088885214655,
       "y": 223.77379987875236,
       "px": 200,
@@ -62,7 +62,7 @@
     {
       "kind": "RectOverlay",
       "id": 5,
-      "name": "ISP-Gamma (AS65003) — Multi-homed",
+      "name": "ISP-Gamma (AS65003) \u2014 Multi-homed",
       "x": 1348.779201771356,
       "y": 224.57215526256684,
       "px": 200,
@@ -132,7 +132,7 @@
     {
       "kind": "RectOverlay",
       "id": 10,
-      "name": "DC-Alpha — TLD-DNS (.com, .de)",
+      "name": "DC-Alpha \u2014 TLD-DNS (.com, .de)",
       "x": 267.5989961842744,
       "y": 230.50420567750353,
       "px": 200,
@@ -1270,7 +1270,7 @@
                         "binary": false,
                         "ctime": 0,
                         "mtime": 0,
-                        "data": "{\n  \"subject\": \"CN=Beaver Demo Root CA\",\n  \"issuer\": \"CN=Beaver Demo Root CA\",\n  \"publicKeyId\": \"e7dbeb818ec7d9e6c422d3402c5e1831\",\n  \"publicKeyRaw\": \"04e7dbeb818ec7d9e6c422d3402c5e183112e9ce36f75b69e629f27a2f6b323b30e3f3a4038cb70cb74b1d6b090e10ebd154237650dafba780b53ea2c46ae16a3f\",\n  \"certSignatureHex\": \"5000caff85b6fc63810ae07c9f7a8c1fcd79fc4f98f5ba02f40ff8ee057b408f923eef79302812c69d7c5874abf96165bd1d4219f4891ae6368165fe45745b44\",\n  \"serialNumber\": 1489920651,\n  \"notBefore\": 1790812800000,\n  \"notAfter\": 2109110400000,\n  \"selfSigned\": true,\n  \"isCA\": true,\n  \"x509Version\": 3,\n  \"hasPrivateKey\": false,\n  \"chain\": []\n}\n"
+                        "data": "{\n  \"subject\": \"CN=Beaver Demo Root CA\",\n  \"issuer\": \"CN=Beaver Demo Root CA\",\n  \"publicKeyId\": \"6a35a34adffd0ebe727136c0c00a2eae\",\n  \"publicKeyRaw\": \"046a35a34adffd0ebe727136c0c00a2eae8063bec4de3c901273ef611dd86f3969589ac7163832612961d18f3ae5e366922b510e622eea97cb7b60d6ca0068d5d3\",\n  \"certSignatureHex\": \"a82be766f818d34cb9d0c9e0c8419709c76b36842c5ce1c460403dfe0ad78a8ef068c76339039612152182b4ae2d151efcf59893b31c9c0cb2d99f0fba6f603c\",\n  \"serialNumber\": 1505310542,\n  \"notBefore\": 1790812800000,\n  \"notAfter\": 2109110400000,\n  \"selfSigned\": true,\n  \"isCA\": true,\n  \"x509Version\": 3,\n  \"strictX509\": true,\n  \"hasPrivateKey\": true,\n  \"chain\": []\n}"
                       }
                     ]
                   }
@@ -1404,7 +1404,7 @@
                         "binary": false,
                         "ctime": 0,
                         "mtime": 0,
-                        "data": "{\n  \"subject\": \"CN=Beaver Demo Root CA\",\n  \"issuer\": \"CN=Beaver Demo Root CA\",\n  \"publicKeyId\": \"e7dbeb818ec7d9e6c422d3402c5e1831\",\n  \"publicKeyRaw\": \"04e7dbeb818ec7d9e6c422d3402c5e183112e9ce36f75b69e629f27a2f6b323b30e3f3a4038cb70cb74b1d6b090e10ebd154237650dafba780b53ea2c46ae16a3f\",\n  \"certSignatureHex\": \"5000caff85b6fc63810ae07c9f7a8c1fcd79fc4f98f5ba02f40ff8ee057b408f923eef79302812c69d7c5874abf96165bd1d4219f4891ae6368165fe45745b44\",\n  \"serialNumber\": 1489920651,\n  \"notBefore\": 1790812800000,\n  \"notAfter\": 2109110400000,\n  \"selfSigned\": true,\n  \"isCA\": true,\n  \"x509Version\": 3,\n  \"hasPrivateKey\": false,\n  \"chain\": []\n}\n"
+                        "data": "{\n  \"subject\": \"CN=Beaver Demo Root CA\",\n  \"issuer\": \"CN=Beaver Demo Root CA\",\n  \"publicKeyId\": \"6a35a34adffd0ebe727136c0c00a2eae\",\n  \"publicKeyRaw\": \"046a35a34adffd0ebe727136c0c00a2eae8063bec4de3c901273ef611dd86f3969589ac7163832612961d18f3ae5e366922b510e622eea97cb7b60d6ca0068d5d3\",\n  \"certSignatureHex\": \"a82be766f818d34cb9d0c9e0c8419709c76b36842c5ce1c460403dfe0ad78a8ef068c76339039612152182b4ae2d151efcf59893b31c9c0cb2d99f0fba6f603c\",\n  \"serialNumber\": 1505310542,\n  \"notBefore\": 1790812800000,\n  \"notAfter\": 2109110400000,\n  \"selfSigned\": true,\n  \"isCA\": true,\n  \"x509Version\": 3,\n  \"strictX509\": true,\n  \"hasPrivateKey\": true,\n  \"chain\": []\n}"
                       }
                     ]
                   }
@@ -1539,7 +1539,7 @@
                         "binary": false,
                         "ctime": 0,
                         "mtime": 0,
-                        "data": "{\n  \"subject\": \"CN=Beaver Demo Root CA\",\n  \"issuer\": \"CN=Beaver Demo Root CA\",\n  \"publicKeyId\": \"e7dbeb818ec7d9e6c422d3402c5e1831\",\n  \"publicKeyRaw\": \"04e7dbeb818ec7d9e6c422d3402c5e183112e9ce36f75b69e629f27a2f6b323b30e3f3a4038cb70cb74b1d6b090e10ebd154237650dafba780b53ea2c46ae16a3f\",\n  \"certSignatureHex\": \"5000caff85b6fc63810ae07c9f7a8c1fcd79fc4f98f5ba02f40ff8ee057b408f923eef79302812c69d7c5874abf96165bd1d4219f4891ae6368165fe45745b44\",\n  \"serialNumber\": 1489920651,\n  \"notBefore\": 1790812800000,\n  \"notAfter\": 2109110400000,\n  \"selfSigned\": true,\n  \"isCA\": true,\n  \"x509Version\": 3,\n  \"hasPrivateKey\": false,\n  \"chain\": []\n}\n"
+                        "data": "{\n  \"subject\": \"CN=Beaver Demo Root CA\",\n  \"issuer\": \"CN=Beaver Demo Root CA\",\n  \"publicKeyId\": \"6a35a34adffd0ebe727136c0c00a2eae\",\n  \"publicKeyRaw\": \"046a35a34adffd0ebe727136c0c00a2eae8063bec4de3c901273ef611dd86f3969589ac7163832612961d18f3ae5e366922b510e622eea97cb7b60d6ca0068d5d3\",\n  \"certSignatureHex\": \"a82be766f818d34cb9d0c9e0c8419709c76b36842c5ce1c460403dfe0ad78a8ef068c76339039612152182b4ae2d151efcf59893b31c9c0cb2d99f0fba6f603c\",\n  \"serialNumber\": 1505310542,\n  \"notBefore\": 1790812800000,\n  \"notAfter\": 2109110400000,\n  \"selfSigned\": true,\n  \"isCA\": true,\n  \"x509Version\": 3,\n  \"strictX509\": true,\n  \"hasPrivateKey\": true,\n  \"chain\": []\n}"
                       }
                     ]
                   }
@@ -1673,7 +1673,7 @@
                         "binary": false,
                         "ctime": 0,
                         "mtime": 0,
-                        "data": "{\n  \"subject\": \"CN=Beaver Demo Root CA\",\n  \"issuer\": \"CN=Beaver Demo Root CA\",\n  \"publicKeyId\": \"e7dbeb818ec7d9e6c422d3402c5e1831\",\n  \"publicKeyRaw\": \"04e7dbeb818ec7d9e6c422d3402c5e183112e9ce36f75b69e629f27a2f6b323b30e3f3a4038cb70cb74b1d6b090e10ebd154237650dafba780b53ea2c46ae16a3f\",\n  \"certSignatureHex\": \"5000caff85b6fc63810ae07c9f7a8c1fcd79fc4f98f5ba02f40ff8ee057b408f923eef79302812c69d7c5874abf96165bd1d4219f4891ae6368165fe45745b44\",\n  \"serialNumber\": 1489920651,\n  \"notBefore\": 1790812800000,\n  \"notAfter\": 2109110400000,\n  \"selfSigned\": true,\n  \"isCA\": true,\n  \"x509Version\": 3,\n  \"hasPrivateKey\": false,\n  \"chain\": []\n}\n"
+                        "data": "{\n  \"subject\": \"CN=Beaver Demo Root CA\",\n  \"issuer\": \"CN=Beaver Demo Root CA\",\n  \"publicKeyId\": \"6a35a34adffd0ebe727136c0c00a2eae\",\n  \"publicKeyRaw\": \"046a35a34adffd0ebe727136c0c00a2eae8063bec4de3c901273ef611dd86f3969589ac7163832612961d18f3ae5e366922b510e622eea97cb7b60d6ca0068d5d3\",\n  \"certSignatureHex\": \"a82be766f818d34cb9d0c9e0c8419709c76b36842c5ce1c460403dfe0ad78a8ef068c76339039612152182b4ae2d151efcf59893b31c9c0cb2d99f0fba6f603c\",\n  \"serialNumber\": 1505310542,\n  \"notBefore\": 1790812800000,\n  \"notAfter\": 2109110400000,\n  \"selfSigned\": true,\n  \"isCA\": true,\n  \"x509Version\": 3,\n  \"strictX509\": true,\n  \"hasPrivateKey\": true,\n  \"chain\": []\n}"
                       }
                     ]
                   }
@@ -1808,7 +1808,7 @@
                         "binary": false,
                         "ctime": 0,
                         "mtime": 0,
-                        "data": "{\n  \"subject\": \"CN=Beaver Demo Root CA\",\n  \"issuer\": \"CN=Beaver Demo Root CA\",\n  \"publicKeyId\": \"e7dbeb818ec7d9e6c422d3402c5e1831\",\n  \"publicKeyRaw\": \"04e7dbeb818ec7d9e6c422d3402c5e183112e9ce36f75b69e629f27a2f6b323b30e3f3a4038cb70cb74b1d6b090e10ebd154237650dafba780b53ea2c46ae16a3f\",\n  \"certSignatureHex\": \"5000caff85b6fc63810ae07c9f7a8c1fcd79fc4f98f5ba02f40ff8ee057b408f923eef79302812c69d7c5874abf96165bd1d4219f4891ae6368165fe45745b44\",\n  \"serialNumber\": 1489920651,\n  \"notBefore\": 1790812800000,\n  \"notAfter\": 2109110400000,\n  \"selfSigned\": true,\n  \"isCA\": true,\n  \"x509Version\": 3,\n  \"hasPrivateKey\": false,\n  \"chain\": []\n}\n"
+                        "data": "{\n  \"subject\": \"CN=Beaver Demo Root CA\",\n  \"issuer\": \"CN=Beaver Demo Root CA\",\n  \"publicKeyId\": \"6a35a34adffd0ebe727136c0c00a2eae\",\n  \"publicKeyRaw\": \"046a35a34adffd0ebe727136c0c00a2eae8063bec4de3c901273ef611dd86f3969589ac7163832612961d18f3ae5e366922b510e622eea97cb7b60d6ca0068d5d3\",\n  \"certSignatureHex\": \"a82be766f818d34cb9d0c9e0c8419709c76b36842c5ce1c460403dfe0ad78a8ef068c76339039612152182b4ae2d151efcf59893b31c9c0cb2d99f0fba6f603c\",\n  \"serialNumber\": 1505310542,\n  \"notBefore\": 1790812800000,\n  \"notAfter\": 2109110400000,\n  \"selfSigned\": true,\n  \"isCA\": true,\n  \"x509Version\": 3,\n  \"strictX509\": true,\n  \"hasPrivateKey\": true,\n  \"chain\": []\n}"
                       }
                     ]
                   }
@@ -1942,7 +1942,7 @@
                         "binary": false,
                         "ctime": 0,
                         "mtime": 0,
-                        "data": "{\n  \"subject\": \"CN=Beaver Demo Root CA\",\n  \"issuer\": \"CN=Beaver Demo Root CA\",\n  \"publicKeyId\": \"e7dbeb818ec7d9e6c422d3402c5e1831\",\n  \"publicKeyRaw\": \"04e7dbeb818ec7d9e6c422d3402c5e183112e9ce36f75b69e629f27a2f6b323b30e3f3a4038cb70cb74b1d6b090e10ebd154237650dafba780b53ea2c46ae16a3f\",\n  \"certSignatureHex\": \"5000caff85b6fc63810ae07c9f7a8c1fcd79fc4f98f5ba02f40ff8ee057b408f923eef79302812c69d7c5874abf96165bd1d4219f4891ae6368165fe45745b44\",\n  \"serialNumber\": 1489920651,\n  \"notBefore\": 1790812800000,\n  \"notAfter\": 2109110400000,\n  \"selfSigned\": true,\n  \"isCA\": true,\n  \"x509Version\": 3,\n  \"hasPrivateKey\": false,\n  \"chain\": []\n}\n"
+                        "data": "{\n  \"subject\": \"CN=Beaver Demo Root CA\",\n  \"issuer\": \"CN=Beaver Demo Root CA\",\n  \"publicKeyId\": \"6a35a34adffd0ebe727136c0c00a2eae\",\n  \"publicKeyRaw\": \"046a35a34adffd0ebe727136c0c00a2eae8063bec4de3c901273ef611dd86f3969589ac7163832612961d18f3ae5e366922b510e622eea97cb7b60d6ca0068d5d3\",\n  \"certSignatureHex\": \"a82be766f818d34cb9d0c9e0c8419709c76b36842c5ce1c460403dfe0ad78a8ef068c76339039612152182b4ae2d151efcf59893b31c9c0cb2d99f0fba6f603c\",\n  \"serialNumber\": 1505310542,\n  \"notBefore\": 1790812800000,\n  \"notAfter\": 2109110400000,\n  \"selfSigned\": true,\n  \"isCA\": true,\n  \"x509Version\": 3,\n  \"strictX509\": true,\n  \"hasPrivateKey\": true,\n  \"chain\": []\n}"
                       }
                     ]
                   }
@@ -2077,7 +2077,7 @@
                         "binary": false,
                         "ctime": 0,
                         "mtime": 0,
-                        "data": "{\n  \"subject\": \"CN=Beaver Demo Root CA\",\n  \"issuer\": \"CN=Beaver Demo Root CA\",\n  \"publicKeyId\": \"e7dbeb818ec7d9e6c422d3402c5e1831\",\n  \"publicKeyRaw\": \"04e7dbeb818ec7d9e6c422d3402c5e183112e9ce36f75b69e629f27a2f6b323b30e3f3a4038cb70cb74b1d6b090e10ebd154237650dafba780b53ea2c46ae16a3f\",\n  \"certSignatureHex\": \"5000caff85b6fc63810ae07c9f7a8c1fcd79fc4f98f5ba02f40ff8ee057b408f923eef79302812c69d7c5874abf96165bd1d4219f4891ae6368165fe45745b44\",\n  \"serialNumber\": 1489920651,\n  \"notBefore\": 1790812800000,\n  \"notAfter\": 2109110400000,\n  \"selfSigned\": true,\n  \"isCA\": true,\n  \"x509Version\": 3,\n  \"hasPrivateKey\": false,\n  \"chain\": []\n}\n"
+                        "data": "{\n  \"subject\": \"CN=Beaver Demo Root CA\",\n  \"issuer\": \"CN=Beaver Demo Root CA\",\n  \"publicKeyId\": \"6a35a34adffd0ebe727136c0c00a2eae\",\n  \"publicKeyRaw\": \"046a35a34adffd0ebe727136c0c00a2eae8063bec4de3c901273ef611dd86f3969589ac7163832612961d18f3ae5e366922b510e622eea97cb7b60d6ca0068d5d3\",\n  \"certSignatureHex\": \"a82be766f818d34cb9d0c9e0c8419709c76b36842c5ce1c460403dfe0ad78a8ef068c76339039612152182b4ae2d151efcf59893b31c9c0cb2d99f0fba6f603c\",\n  \"serialNumber\": 1505310542,\n  \"notBefore\": 1790812800000,\n  \"notAfter\": 2109110400000,\n  \"selfSigned\": true,\n  \"isCA\": true,\n  \"x509Version\": 3,\n  \"strictX509\": true,\n  \"hasPrivateKey\": true,\n  \"chain\": []\n}"
                       }
                     ]
                   }
@@ -2211,7 +2211,7 @@
                         "binary": false,
                         "ctime": 0,
                         "mtime": 0,
-                        "data": "{\n  \"subject\": \"CN=Beaver Demo Root CA\",\n  \"issuer\": \"CN=Beaver Demo Root CA\",\n  \"publicKeyId\": \"e7dbeb818ec7d9e6c422d3402c5e1831\",\n  \"publicKeyRaw\": \"04e7dbeb818ec7d9e6c422d3402c5e183112e9ce36f75b69e629f27a2f6b323b30e3f3a4038cb70cb74b1d6b090e10ebd154237650dafba780b53ea2c46ae16a3f\",\n  \"certSignatureHex\": \"5000caff85b6fc63810ae07c9f7a8c1fcd79fc4f98f5ba02f40ff8ee057b408f923eef79302812c69d7c5874abf96165bd1d4219f4891ae6368165fe45745b44\",\n  \"serialNumber\": 1489920651,\n  \"notBefore\": 1790812800000,\n  \"notAfter\": 2109110400000,\n  \"selfSigned\": true,\n  \"isCA\": true,\n  \"x509Version\": 3,\n  \"hasPrivateKey\": false,\n  \"chain\": []\n}\n"
+                        "data": "{\n  \"subject\": \"CN=Beaver Demo Root CA\",\n  \"issuer\": \"CN=Beaver Demo Root CA\",\n  \"publicKeyId\": \"6a35a34adffd0ebe727136c0c00a2eae\",\n  \"publicKeyRaw\": \"046a35a34adffd0ebe727136c0c00a2eae8063bec4de3c901273ef611dd86f3969589ac7163832612961d18f3ae5e366922b510e622eea97cb7b60d6ca0068d5d3\",\n  \"certSignatureHex\": \"a82be766f818d34cb9d0c9e0c8419709c76b36842c5ce1c460403dfe0ad78a8ef068c76339039612152182b4ae2d151efcf59893b31c9c0cb2d99f0fba6f603c\",\n  \"serialNumber\": 1505310542,\n  \"notBefore\": 1790812800000,\n  \"notAfter\": 2109110400000,\n  \"selfSigned\": true,\n  \"isCA\": true,\n  \"x509Version\": 3,\n  \"strictX509\": true,\n  \"hasPrivateKey\": true,\n  \"chain\": []\n}"
                       }
                     ]
                   }
@@ -2405,8 +2405,8 @@
       "kind": "Computer",
       "id": 600,
       "name": "www.example.com",
-      "x": 1972.0,
-      "y": 319.0,
+      "x": 1972,
+      "y": 319,
       "px": 508,
       "py": 254.5,
       "panelOpen": false,
@@ -2481,7 +2481,7 @@
                     "binary": false,
                     "ctime": 0,
                     "mtime": 0,
-                    "data": "{\n  \"subject\": \"CN=www.example.com\",\n  \"issuer\": \"CN=Beaver Demo Root CA\",\n  \"publicKeyId\": \"da4100d1f9dd22b7a3fd718ff9763fd0\",\n  \"publicKeyRaw\": \"04da4100d1f9dd22b7a3fd718ff9763fd00c6dc1eabd5d4ab665850542751a5a9aa982f6801a5c1051bef27c50ec35230475e4130f97ad983e1849e879a04f35b6\",\n  \"certSignatureHex\": \"89e752d8affc3526506627e7d2a3392f8a3b9b8250313917413b5c542664e6391482430d2c9716c70862c1efa3702406c9e8ebaac537b6a30e1f0cd795b6040b\",\n  \"serialNumber\": 2055882830,\n  \"notBefore\": 1790812800000,\n  \"notAfter\": 2109110400000,\n  \"selfSigned\": false,\n  \"isCA\": false,\n  \"x509Version\": 3,\n  \"hasPrivateKey\": true,\n  \"chain\": [\n    {\n      \"subject\": \"CN=Beaver Demo Root CA\",\n      \"issuer\": \"CN=Beaver Demo Root CA\",\n      \"publicKeyId\": \"e7dbeb818ec7d9e6c422d3402c5e1831\",\n      \"publicKeyRaw\": \"04e7dbeb818ec7d9e6c422d3402c5e183112e9ce36f75b69e629f27a2f6b323b30e3f3a4038cb70cb74b1d6b090e10ebd154237650dafba780b53ea2c46ae16a3f\",\n      \"certSignatureHex\": \"5000caff85b6fc63810ae07c9f7a8c1fcd79fc4f98f5ba02f40ff8ee057b408f923eef79302812c69d7c5874abf96165bd1d4219f4891ae6368165fe45745b44\",\n      \"serialNumber\": 1489920651,\n      \"notBefore\": 1790812800000,\n      \"notAfter\": 2109110400000,\n      \"selfSigned\": true,\n      \"isCA\": true,\n      \"x509Version\": 3,\n      \"hasPrivateKey\": true,\n      \"chain\": []\n    }\n  ],\n  \"privateKeyJwk\": {\n    \"key_ops\": [\n      \"sign\"\n    ],\n    \"ext\": true,\n    \"kty\": \"EC\",\n    \"x\": \"2kEA0fndIrej_XGP-XY_0Axtweq9XUq2ZYUFQnUaWpo\",\n    \"y\": \"qYL2gBpcEFG-8nxQ7DUjBHXkEw-XrZg-GEnoeaBPNbY\",\n    \"crv\": \"P-256\",\n    \"d\": \"bEKUg_0rBiI3apKq3wSkVCqP1Q_l2fRadn9FZSppv_U\"\n  },\n  \"publicKeyJwk\": {\n    \"key_ops\": [\n      \"verify\"\n    ],\n    \"ext\": true,\n    \"kty\": \"EC\",\n    \"x\": \"2kEA0fndIrej_XGP-XY_0Axtweq9XUq2ZYUFQnUaWpo\",\n    \"y\": \"qYL2gBpcEFG-8nxQ7DUjBHXkEw-XrZg-GEnoeaBPNbY\",\n    \"crv\": \"P-256\"\n  }\n}\n"
+                    "data": "{\n  \"subject\": \"CN=www.example.com\",\n  \"issuer\": \"CN=Beaver Demo Root CA\",\n  \"publicKeyId\": \"da4100d1f9dd22b7a3fd718ff9763fd0\",\n  \"publicKeyRaw\": \"04da4100d1f9dd22b7a3fd718ff9763fd00c6dc1eabd5d4ab665850542751a5a9aa982f6801a5c1051bef27c50ec35230475e4130f97ad983e1849e879a04f35b6\",\n  \"certSignatureHex\": \"32d9cafd22d8c636b6cce680a88e2102f6b5abbec5614897bd853c97518ad644f7259265a7789f53a615cf6a0bc4e3951c62963d29d606394432ce04e849991d\",\n  \"serialNumber\": 2055882830,\n  \"notBefore\": 1790812800000,\n  \"notAfter\": 2109110400000,\n  \"selfSigned\": false,\n  \"isCA\": false,\n  \"x509Version\": 3,\n  \"strictX509\": true,\n  \"hasPrivateKey\": true,\n  \"chain\": [\n    {\n      \"subject\": \"CN=Beaver Demo Root CA\",\n      \"issuer\": \"CN=Beaver Demo Root CA\",\n      \"publicKeyId\": \"6a35a34adffd0ebe727136c0c00a2eae\",\n      \"publicKeyRaw\": \"046a35a34adffd0ebe727136c0c00a2eae8063bec4de3c901273ef611dd86f3969589ac7163832612961d18f3ae5e366922b510e622eea97cb7b60d6ca0068d5d3\",\n      \"certSignatureHex\": \"a82be766f818d34cb9d0c9e0c8419709c76b36842c5ce1c460403dfe0ad78a8ef068c76339039612152182b4ae2d151efcf59893b31c9c0cb2d99f0fba6f603c\",\n      \"serialNumber\": 1505310542,\n      \"notBefore\": 1790812800000,\n      \"notAfter\": 2109110400000,\n      \"selfSigned\": true,\n      \"isCA\": true,\n      \"x509Version\": 3,\n      \"strictX509\": true,\n      \"hasPrivateKey\": true,\n      \"chain\": []\n    }\n  ],\n  \"privateKeyJwk\": {\n    \"key_ops\": [\n      \"sign\"\n    ],\n    \"ext\": true,\n    \"kty\": \"EC\",\n    \"x\": \"2kEA0fndIrej_XGP-XY_0Axtweq9XUq2ZYUFQnUaWpo\",\n    \"y\": \"qYL2gBpcEFG-8nxQ7DUjBHXkEw-XrZg-GEnoeaBPNbY\",\n    \"crv\": \"P-256\",\n    \"d\": \"bEKUg_0rBiI3apKq3wSkVCqP1Q_l2fRadn9FZSppv_U\"\n  },\n  \"publicKeyJwk\": {\n    \"key_ops\": [\n      \"verify\"\n    ],\n    \"ext\": true,\n    \"kty\": \"EC\",\n    \"x\": \"2kEA0fndIrej_XGP-XY_0Axtweq9XUq2ZYUFQnUaWpo\",\n    \"y\": \"qYL2gBpcEFG-8nxQ7DUjBHXkEw-XrZg-GEnoeaBPNbY\",\n    \"crv\": \"P-256\"\n  }\n}"
                   }
                 ]
               }
@@ -2502,7 +2502,7 @@
                   {
                     "type": "file",
                     "name": "index.html",
-                    "data": "<!DOCTYPE html>\n  <html lang=\"de\">\n  <head>\n    <meta charset=\"utf-8\">\n    <title>Example Corp</title>\n    <style>\n      *{margin:0;padding:0;box-sizing:border-box}\n      body{font-family:Arial,sans-serif;color:#333;font-size:14px}\n      header{background:#1a3a5c;color:#fff;padding:12px 16px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}\n      header h1{font-size:1.3em}\n      header p{opacity:.75;font-size:.82em}\n      .hero{background:linear-gradient(135deg,#1a3a5c,#2a5298);color:#fff;padding:24px 16px;text-align:center}\n      .hero h2{font-size:1.3em;margin-bottom:8px}\n      .features{display:flex;flex-direction:column;gap:10px;padding:16px;background:#f5f7fa}\n      .card{background:#fff;border-radius:8px;padding:14px;box-shadow:0 2px 6px rgba(0,0,0,.1)}\n      .card h3{color:#2a5298;margin-bottom:5px;font-size:.92em}\n      .card p{font-size:.85em;line-height:1.5}\n      .info{background:#e8f0fe;padding:9px 16px;font-size:.76em;color:#555;border-top:3px solid #2a5298}\n      footer{background:#1a3a5c;color:#aaa;padding:9px 16px;font-size:.75em}\n    </style>\n  </head>\n  <body>\n    <header>\n      <h1>Example Corp</h1>\n      <p>Cloud &amp; Hosting seit 2026</p>\n    </header>\n    <div class=\"hero\">\n      <h2>Willkommen bei Example Corp - <br> Ihr zuverlässiger Hosting-Partner</h2>\n    </div>\n    <div class=\"features\">\n      <div class=\"card\">\n        <h3>Rechenzentrum DC-Gamma</h3>\n        <p>DC-Gamma bei ISP-Gamma (AS65003) &mdash; weltweit über BGP erreichbar, per HTTPS mit HTTP/2 und HTTP/3 (QUIC).</p>\n      </div>\n    </div>\n    <div class=\"info\">IPv4: 185.3.1.10 &nbsp;|&nbsp; IPv6: 2001:db8:3:1::10 &nbsp;|&nbsp; AS65003</div>\n    <footer>&copy; 2026 Example Corp</footer>\n  </body>\n  </html>\n",
+                    "data": "<!DOCTYPE html>\n  <html lang=\"de\">\n  <head>\n    <meta charset=\"utf-8\">\n    <title>Example Corp</title>\n    <style>\n      *{margin:0;padding:0;box-sizing:border-box}\n      body{font-family:Arial,sans-serif;color:#333;font-size:14px}\n      header{background:#1a3a5c;color:#fff;padding:12px 16px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}\n      header h1{font-size:1.3em}\n      header p{opacity:.75;font-size:.82em}\n      .hero{background:linear-gradient(135deg,#1a3a5c,#2a5298);color:#fff;padding:24px 16px;text-align:center}\n      .hero h2{font-size:1.3em;margin-bottom:8px}\n      .features{display:flex;flex-direction:column;gap:10px;padding:16px;background:#f5f7fa}\n      .card{background:#fff;border-radius:8px;padding:14px;box-shadow:0 2px 6px rgba(0,0,0,.1)}\n      .card h3{color:#2a5298;margin-bottom:5px;font-size:.92em}\n      .card p{font-size:.85em;line-height:1.5}\n      .info{background:#e8f0fe;padding:9px 16px;font-size:.76em;color:#555;border-top:3px solid #2a5298}\n      footer{background:#1a3a5c;color:#aaa;padding:9px 16px;font-size:.75em}\n    </style>\n  </head>\n  <body>\n    <header>\n      <h1>Example Corp</h1>\n      <p>Cloud &amp; Hosting seit 2026</p>\n    </header>\n    <div class=\"hero\">\n      <h2>Willkommen bei Example Corp - <br> Ihr zuverl\u00e4ssiger Hosting-Partner</h2>\n    </div>\n    <div class=\"features\">\n      <div class=\"card\">\n        <h3>Rechenzentrum DC-Gamma</h3>\n        <p>DC-Gamma bei ISP-Gamma (AS65003) &mdash; weltweit \u00fcber BGP erreichbar, per HTTPS mit HTTP/2 und HTTP/3 (QUIC).</p>\n      </div>\n    </div>\n    <div class=\"info\">IPv4: 185.3.1.10 &nbsp;|&nbsp; IPv6: 2001:db8:3:1::10 &nbsp;|&nbsp; AS65003</div>\n    <footer>&copy; 2026 Example Corp</footer>\n  </body>\n  </html>\n",
                     "binary": false,
                     "ctime": 0,
                     "mtime": 1781041638775
@@ -2633,7 +2633,7 @@
                     "binary": false,
                     "ctime": 0,
                     "mtime": 0,
-                    "data": "{\n  \"subject\": \"CN=www.betanet.de\",\n  \"issuer\": \"CN=Beaver Demo Root CA\",\n  \"publicKeyId\": \"a22237b55ea3c363af22031299582344\",\n  \"publicKeyRaw\": \"04a22237b55ea3c363af220312995823449d528157420fa71baf5e2899617a548892828144a748ff86d54d4383367d10fd94fd4b92e248166cd3a9c1a92885a12c\",\n  \"certSignatureHex\": \"55c541afaac8b9738c2ee55ee09f033bd8c67dbd911acf53477e8a35d14472d53a5ba4dd56c9ecc8d215c8e68ca5711697839e8c1e564079f7b1be1c6c3c7b9d\",\n  \"serialNumber\": 847828001,\n  \"notBefore\": 1790812800000,\n  \"notAfter\": 2109110400000,\n  \"selfSigned\": false,\n  \"isCA\": false,\n  \"x509Version\": 3,\n  \"hasPrivateKey\": true,\n  \"chain\": [\n    {\n      \"subject\": \"CN=Beaver Demo Root CA\",\n      \"issuer\": \"CN=Beaver Demo Root CA\",\n      \"publicKeyId\": \"e7dbeb818ec7d9e6c422d3402c5e1831\",\n      \"publicKeyRaw\": \"04e7dbeb818ec7d9e6c422d3402c5e183112e9ce36f75b69e629f27a2f6b323b30e3f3a4038cb70cb74b1d6b090e10ebd154237650dafba780b53ea2c46ae16a3f\",\n      \"certSignatureHex\": \"5000caff85b6fc63810ae07c9f7a8c1fcd79fc4f98f5ba02f40ff8ee057b408f923eef79302812c69d7c5874abf96165bd1d4219f4891ae6368165fe45745b44\",\n      \"serialNumber\": 1489920651,\n      \"notBefore\": 1790812800000,\n      \"notAfter\": 2109110400000,\n      \"selfSigned\": true,\n      \"isCA\": true,\n      \"x509Version\": 3,\n      \"hasPrivateKey\": true,\n      \"chain\": []\n    }\n  ],\n  \"privateKeyJwk\": {\n    \"key_ops\": [\n      \"sign\"\n    ],\n    \"ext\": true,\n    \"kty\": \"EC\",\n    \"x\": \"oiI3tV6jw2OvIgMSmVgjRJ1SgVdCD6cbr14omWF6VIg\",\n    \"y\": \"koKBRKdI_4bVTUODNn0Q_ZT9S5LiSBZs06nBqSiFoSw\",\n    \"crv\": \"P-256\",\n    \"d\": \"p4bYJM7B5iZ5tYqAh-uvvevViehCzFFZuTjep63VXKo\"\n  },\n  \"publicKeyJwk\": {\n    \"key_ops\": [\n      \"verify\"\n    ],\n    \"ext\": true,\n    \"kty\": \"EC\",\n    \"x\": \"oiI3tV6jw2OvIgMSmVgjRJ1SgVdCD6cbr14omWF6VIg\",\n    \"y\": \"koKBRKdI_4bVTUODNn0Q_ZT9S5LiSBZs06nBqSiFoSw\",\n    \"crv\": \"P-256\"\n  }\n}\n"
+                    "data": "{\n  \"subject\": \"CN=www.betanet.de\",\n  \"issuer\": \"CN=Beaver Demo Root CA\",\n  \"publicKeyId\": \"a22237b55ea3c363af22031299582344\",\n  \"publicKeyRaw\": \"04a22237b55ea3c363af220312995823449d528157420fa71baf5e2899617a548892828144a748ff86d54d4383367d10fd94fd4b92e248166cd3a9c1a92885a12c\",\n  \"certSignatureHex\": \"6457b4946bb485a4986f99c4c34a9a6cd7531f913b215e2744239dd516a7fbaf98d90b193464a663c4fcaced55761bb60c6e3b9dfa35cfd14c9cbd353de36d41\",\n  \"serialNumber\": 847828001,\n  \"notBefore\": 1790812800000,\n  \"notAfter\": 2109110400000,\n  \"selfSigned\": false,\n  \"isCA\": false,\n  \"x509Version\": 3,\n  \"strictX509\": true,\n  \"hasPrivateKey\": true,\n  \"chain\": [\n    {\n      \"subject\": \"CN=Beaver Demo Root CA\",\n      \"issuer\": \"CN=Beaver Demo Root CA\",\n      \"publicKeyId\": \"6a35a34adffd0ebe727136c0c00a2eae\",\n      \"publicKeyRaw\": \"046a35a34adffd0ebe727136c0c00a2eae8063bec4de3c901273ef611dd86f3969589ac7163832612961d18f3ae5e366922b510e622eea97cb7b60d6ca0068d5d3\",\n      \"certSignatureHex\": \"a82be766f818d34cb9d0c9e0c8419709c76b36842c5ce1c460403dfe0ad78a8ef068c76339039612152182b4ae2d151efcf59893b31c9c0cb2d99f0fba6f603c\",\n      \"serialNumber\": 1505310542,\n      \"notBefore\": 1790812800000,\n      \"notAfter\": 2109110400000,\n      \"selfSigned\": true,\n      \"isCA\": true,\n      \"x509Version\": 3,\n      \"strictX509\": true,\n      \"hasPrivateKey\": true,\n      \"chain\": []\n    }\n  ],\n  \"privateKeyJwk\": {\n    \"key_ops\": [\n      \"sign\"\n    ],\n    \"ext\": true,\n    \"kty\": \"EC\",\n    \"x\": \"oiI3tV6jw2OvIgMSmVgjRJ1SgVdCD6cbr14omWF6VIg\",\n    \"y\": \"koKBRKdI_4bVTUODNn0Q_ZT9S5LiSBZs06nBqSiFoSw\",\n    \"crv\": \"P-256\",\n    \"d\": \"p4bYJM7B5iZ5tYqAh-uvvevViehCzFFZuTjep63VXKo\"\n  },\n  \"publicKeyJwk\": {\n    \"key_ops\": [\n      \"verify\"\n    ],\n    \"ext\": true,\n    \"kty\": \"EC\",\n    \"x\": \"oiI3tV6jw2OvIgMSmVgjRJ1SgVdCD6cbr14omWF6VIg\",\n    \"y\": \"koKBRKdI_4bVTUODNn0Q_ZT9S5LiSBZs06nBqSiFoSw\",\n    \"crv\": \"P-256\"\n  }\n}"
                   }
                 ]
               }
@@ -2654,7 +2654,7 @@
                   {
                     "type": "file",
                     "name": "index.html",
-                    "data": "<!DOCTYPE html>\n<html lang=\"de\">\n<head>\n  <meta charset=\"utf-8\">\n  <title>BetaNet GmbH</title>\n  <style>\n    *{margin:0;padding:0;box-sizing:border-box}\n    body{font-family:Arial,sans-serif;color:#222;font-size:14px}\n    header{background:#0a5c2f;color:#fff;padding:12px 16px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}\n    header h1{font-size:1.3em}\n    header p{opacity:.75;font-size:.82em}\n    nav{background:#0e8a46;white-space:nowrap;overflow-x:auto}\n    nav a{display:inline-block;color:#fff;padding:8px 12px;text-decoration:none;font-size:.85em}\n    nav a:hover{background:#0a5c2f}\n    .hero{background:linear-gradient(135deg,#0a5c2f,#0e8a46);color:#fff;padding:24px 16px}\n    .hero h2{font-size:1.3em;margin-bottom:8px}\n    .hero p{opacity:.85;font-size:.88em}\n    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px;background:#f0faf4}\n    .card{background:#fff;border-radius:8px;padding:12px;box-shadow:0 2px 6px rgba(0,0,0,.08);border-left:4px solid #0e8a46}\n    .card h3{color:#0a5c2f;margin-bottom:5px;font-size:.88em}\n    .card p{font-size:.82em;line-height:1.5}\n    .info{background:#d4edda;padding:9px 16px;font-size:.76em;color:#444;border-top:3px solid #0e8a46}\n    footer{background:#0a5c2f;color:#aaa;padding:9px 16px;font-size:.75em}\n  </style>\n</head>\n<body>\n  <header>\n    <h1>BetaNet GmbH</h1>\n    <p>Internet-Provider &middot; AS65002</p>\n  </header>\n  <nav>\n    <a href=\"/\">Start</a>\n    <a href=\"#\">Privatkunden</a>\n    <a href=\"#\">Business</a>\n    <a href=\"#\">Netzwerk</a>\n    <a href=\"#\">Support</a>\n  </nav>\n  <div class=\"hero\">\n    <h2>Schnelles Internet für alle</h2>\n    <p>BetaNet betreibt ein eigenes AS (AS65002) und ist über den BGP-Backbone verbunden.</p>\n  </div>\n  <div class=\"grid\">\n    <div class=\"card\">\n      <h3>Breitband-Anschlüsse</h3>\n      <p>Für Privat- und Geschäftskunden &mdash; IPv4 und IPv6 inklusive.</p>\n    </div>\n    <div class=\"card\">\n      <h3>E-Mail-Dienste</h3>\n      <p>alice, bob, admin &nbsp;|&nbsp; <a href=\"mailto:support@betanet.de\">support@betanet.de</a></p>\n    </div>\n    <div class=\"card\">\n      <h3>Rechenzentrum DC-Beta</h3>\n      <p>Server im eigenen DC, direkt im AS65002 geroutet.</p>\n    </div>\n    <div class=\"card\">\n      <h3>BGP-Netz</h3>\n      <p>Backbone-Router BB3 &mdash; global erreichbar über AS65002.</p>\n    </div>\n  </div>\n  <div class=\"info\">IPv4: 185.2.1.10 &nbsp;|&nbsp; IPv6: 2001:db8:2:1::10 &nbsp;|&nbsp; AS65002</div>\n  <footer>&copy; 2026 BetaNet GmbH &nbsp;&middot;&nbsp; Alle Rechte vorbehalten</footer>\n</body>\n</html>",
+                    "data": "<!DOCTYPE html>\n<html lang=\"de\">\n<head>\n  <meta charset=\"utf-8\">\n  <title>BetaNet GmbH</title>\n  <style>\n    *{margin:0;padding:0;box-sizing:border-box}\n    body{font-family:Arial,sans-serif;color:#222;font-size:14px}\n    header{background:#0a5c2f;color:#fff;padding:12px 16px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}\n    header h1{font-size:1.3em}\n    header p{opacity:.75;font-size:.82em}\n    nav{background:#0e8a46;white-space:nowrap;overflow-x:auto}\n    nav a{display:inline-block;color:#fff;padding:8px 12px;text-decoration:none;font-size:.85em}\n    nav a:hover{background:#0a5c2f}\n    .hero{background:linear-gradient(135deg,#0a5c2f,#0e8a46);color:#fff;padding:24px 16px}\n    .hero h2{font-size:1.3em;margin-bottom:8px}\n    .hero p{opacity:.85;font-size:.88em}\n    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px;background:#f0faf4}\n    .card{background:#fff;border-radius:8px;padding:12px;box-shadow:0 2px 6px rgba(0,0,0,.08);border-left:4px solid #0e8a46}\n    .card h3{color:#0a5c2f;margin-bottom:5px;font-size:.88em}\n    .card p{font-size:.82em;line-height:1.5}\n    .info{background:#d4edda;padding:9px 16px;font-size:.76em;color:#444;border-top:3px solid #0e8a46}\n    footer{background:#0a5c2f;color:#aaa;padding:9px 16px;font-size:.75em}\n  </style>\n</head>\n<body>\n  <header>\n    <h1>BetaNet GmbH</h1>\n    <p>Internet-Provider &middot; AS65002</p>\n  </header>\n  <nav>\n    <a href=\"/\">Start</a>\n    <a href=\"#\">Privatkunden</a>\n    <a href=\"#\">Business</a>\n    <a href=\"#\">Netzwerk</a>\n    <a href=\"#\">Support</a>\n  </nav>\n  <div class=\"hero\">\n    <h2>Schnelles Internet f\u00fcr alle</h2>\n    <p>BetaNet betreibt ein eigenes AS (AS65002) und ist \u00fcber den BGP-Backbone verbunden.</p>\n  </div>\n  <div class=\"grid\">\n    <div class=\"card\">\n      <h3>Breitband-Anschl\u00fcsse</h3>\n      <p>F\u00fcr Privat- und Gesch\u00e4ftskunden &mdash; IPv4 und IPv6 inklusive.</p>\n    </div>\n    <div class=\"card\">\n      <h3>E-Mail-Dienste</h3>\n      <p>alice, bob, admin &nbsp;|&nbsp; <a href=\"mailto:support@betanet.de\">support@betanet.de</a></p>\n    </div>\n    <div class=\"card\">\n      <h3>Rechenzentrum DC-Beta</h3>\n      <p>Server im eigenen DC, direkt im AS65002 geroutet.</p>\n    </div>\n    <div class=\"card\">\n      <h3>BGP-Netz</h3>\n      <p>Backbone-Router BB3 &mdash; global erreichbar \u00fcber AS65002.</p>\n    </div>\n  </div>\n  <div class=\"info\">IPv4: 185.2.1.10 &nbsp;|&nbsp; IPv6: 2001:db8:2:1::10 &nbsp;|&nbsp; AS65002</div>\n  <footer>&copy; 2026 BetaNet GmbH &nbsp;&middot;&nbsp; Alle Rechte vorbehalten</footer>\n</body>\n</html>",
                     "binary": false,
                     "ctime": 0,
                     "mtime": 0
@@ -3402,8 +3402,8 @@
       "kind": "Computer",
       "id": 775,
       "name": "TLD-DNS .com",
-      "x": 478.0,
-      "y": 236.0,
+      "x": 478,
+      "y": 236,
       "px": 913,
       "py": 335.4166717529297,
       "panelOpen": false,
@@ -4007,7 +4007,7 @@
       "px": 220,
       "py": 120,
       "panelOpen": false,
-      "text": "# Internet Demo — A Simplified Simulated Internet\n\n  ## Features\n  **Backbone:** Routers BB1–BB5 — eBGP mesh (AS65100–65104)\n  **ISPs:** ISP-Alpha (AS65001), ISP-Beta (AS65002), ISP-Gamma (AS65003) — BGP-peered with the backbone\n  **Home networks:** 4 home routers with DHCP, Wi-Fi and NAT\n  **Data centers:** DC-Alpha (TLD name servers .com/.de), DC-Beta (www.betanet.de + e-mail), DC-Gamma (www.example.com)\n  **DNS:** root → TLD (.com, .de) → the companies' name servers; the providers' DNS servers resolve recursively\n  **HTTPS:** www.example.com with TLS 1.3, HTTP/2 and HTTP/3 (QUIC) — www.betanet.de classic with TLS 1.2 and HTTP/1.1\n  **Dual stack:** backbone, ISPs and servers speak IPv4 and IPv6\n\n  ## Try it out\n  Start the simulation and wait ~10 seconds for routing to converge\n  **Ping:** Open a terminal on a home PC → ping www.example.com\n  **Website:** Browser → https://www.example.com and https://www.betanet.de\n  **DNS:** Terminal → dig www.example.com HTTPS\n",
+      "text": "# Internet Demo \u2014 A Simplified Simulated Internet\n\n  ## Features\n  **Backbone:** Routers BB1\u2013BB5 \u2014 eBGP mesh (AS65100\u201365104)\n  **ISPs:** ISP-Alpha (AS65001), ISP-Beta (AS65002), ISP-Gamma (AS65003) \u2014 BGP-peered with the backbone\n  **Home networks:** 4 home routers with DHCP, Wi-Fi and NAT\n  **Data centers:** DC-Alpha (TLD name servers .com/.de), DC-Beta (www.betanet.de + e-mail), DC-Gamma (www.example.com)\n  **DNS:** root \u2192 TLD (.com, .de) \u2192 the companies' name servers; the providers' DNS servers resolve recursively\n  **HTTPS:** www.example.com with TLS 1.3, HTTP/2 and HTTP/3 (QUIC) \u2014 www.betanet.de classic with TLS 1.2 and HTTP/1.1\n  **Dual stack:** backbone, ISPs and servers speak IPv4 and IPv6\n\n  ## Try it out\n  Start the simulation and wait ~10 seconds for routing to converge\n  **Ping:** Open a terminal on a home PC \u2192 ping www.example.com\n  **Website:** Browser \u2192 https://www.example.com and https://www.betanet.de\n  **DNS:** Terminal \u2192 dig www.example.com HTTPS\n",
       "showTitle": false
     },
     {
@@ -4294,8 +4294,8 @@
       "kind": "Computer",
       "id": 901,
       "name": "TLD-DNS .de",
-      "x": 478.0,
-      "y": 319.0,
+      "x": 478,
+      "y": 319,
       "px": 913,
       "py": 335.4166717529297,
       "panelOpen": false,
@@ -4432,8 +4432,8 @@
       "kind": "Computer",
       "id": 903,
       "name": "ns1.betanet.de",
-      "x": 1046.0,
-      "y": 318.0,
+      "x": 1046,
+      "y": 318,
       "px": 913,
       "py": 335.4166717529297,
       "panelOpen": false,
@@ -4576,8 +4576,8 @@
       "kind": "Switch",
       "id": 905,
       "name": "SW-DC-Gamma",
-      "x": 1796.0,
-      "y": 239.0,
+      "x": 1796,
+      "y": 239,
       "px": 1025,
       "py": 500,
       "panelOpen": false,
@@ -4663,8 +4663,8 @@
       "kind": "Computer",
       "id": 908,
       "name": "ns1.example.com",
-      "x": 1972.0,
-      "y": 236.0,
+      "x": 1972,
+      "y": 236,
       "px": 913,
       "py": 335.4166717529297,
       "panelOpen": false,
@@ -4807,8 +4807,8 @@
       "kind": "RectOverlay",
       "id": 910,
       "name": "DC-Gamma",
-      "x": 1782.0,
-      "y": 231.0,
+      "x": 1782,
+      "y": 231,
       "px": 200,
       "py": 200,
       "panelOpen": false,
@@ -4821,8 +4821,8 @@
       "kind": "TextBox",
       "id": 911,
       "name": "Textfeld",
-      "x": 1791.0,
-      "y": 411.0,
+      "x": 1791,
+      "y": 411,
       "px": 220,
       "py": 120,
       "panelOpen": false,

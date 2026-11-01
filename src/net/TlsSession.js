@@ -405,8 +405,10 @@ function extractTbsDer(certDer) {
 }
 
 /**
- * Extract the raw signature bytes from the Certificate's signatureValue BIT STRING.
- * The BIT STRING content is [0x00 (unused bits), sig...]; we return just the sig bytes.
+ * Extract the certificate signature from the signatureValue BIT STRING as
+ * P1363 (r || s, 64 bytes for P-256), the form WebCrypto verifies.
+ * The BIT STRING holds a DER Ecdsa-Sig-Value SEQUENCE { INTEGER r, INTEGER s }
+ * (RFC 3279); bare 64-byte r || s (older simulator builds) is accepted too.
  * Returns null if not parseable or if the signature is the zero placeholder.
  * @param {Uint8Array} certDer
  * @returns {Uint8Array|null}
@@ -418,7 +420,26 @@ function extractCertSig(certDer) {
   const sigBit = derNextElement(certDer, sigAlg.end);
   // BIT STRING content: 0x00 (unused bits) + signature bytes
   const sigBytes = certDer.slice(sigBit.contentStart + 1, sigBit.end);
-  // P1363 P-256 signatures are exactly 64 bytes; zero placeholder is 71 bytes
+  if (sigBytes[0] === 0x30) {
+    try {
+      const seq = derNextElement(sigBytes, 0);
+      const r = derNextElement(sigBytes, seq.contentStart);
+      const sv = derNextElement(sigBytes, r.end);
+      if (sigBytes[r.start] !== 0x02 || sigBytes[sv.start] !== 0x02 || sv.end !== seq.end || seq.end !== sigBytes.length) return null;
+      /** INTEGER content → 32 bytes big-endian (strip sign byte, left-pad) */
+      const fixed = (/** @type {{contentStart:number,end:number}} */ el) => {
+        let v = sigBytes.slice(el.contentStart, el.end);
+        while (v.length > 32 && v[0] === 0) v = v.slice(1);
+        if (v.length > 32) return null;
+        const out = new Uint8Array(32); out.set(v, 32 - v.length); return out;
+      };
+      const rb = fixed(r), sb = fixed(sv);
+      if (!rb || !sb) return null;
+      const out = new Uint8Array(64); out.set(rb, 0); out.set(sb, 32);
+      return out;
+    } catch { return null; }
+  }
+  // legacy: bare P1363 (64 bytes); the zero placeholder is 71 bytes
   if (sigBytes.length !== 64) return null;
   return sigBytes;
 }
@@ -441,12 +462,13 @@ function derTimeMs(s) {
  * Walk a Certificate's TBSCertificate in the layout TlsCertificate
  * produces (see TlsCertificate._buildTbsBytes()) — both the current v3
  * layout ([0] version … [3] extensions) and the legacy v1 one.
- * Validity times are decimal epoch-ms strings (simulator convention).
+ * Validity times are UTCTime/GeneralizedTime, or decimal epoch-ms strings in
+ * certificates from before strict X.509 (strictTime false).
  * Returns null if the structure doesn't match.
  * @param {Uint8Array} certDer
  * @returns {{ version: number, issuerCN: string, subjectCN: string,
  *   notBefore: number, notAfter: number, publicKeyRaw: Uint8Array|null,
- *   isCA: boolean, altNames: string[]|null }|null}
+ *   isCA: boolean, altNames: string[]|null, strictTime: boolean }|null}
  */
 function parseTbs(certDer) {
   try {
@@ -482,6 +504,7 @@ function parseTbs(certDer) {
     const notBefore = derTimeMs(dec.decode(certDer.slice(nb.contentStart, nb.end)));
     const notAfter  = derTimeMs(dec.decode(certDer.slice(na.contentStart, na.end)));
     if (!Number.isFinite(notBefore) || !Number.isFinite(notAfter)) return null;
+    const strictTime = /Z$/.test(dec.decode(certDer.slice(nb.contentStart, nb.end)));
 
     // SubjectPublicKeyInfo: SEQUENCE { AlgorithmIdentifier, BIT STRING }
     const spkiAlg = derNextElement(certDer, spki.contentStart);
@@ -521,7 +544,7 @@ function parseTbs(certDer) {
       }
     }
     return { version, issuerCN: cnOf(issuer), subjectCN: cnOf(subject),
-      notBefore, notAfter, publicKeyRaw, isCA, altNames };
+      notBefore, notAfter, publicKeyRaw, isCA, altNames, strictTime };
   } catch {
     return null;
   }
@@ -1848,7 +1871,7 @@ export class TlsSession {
     const leaf = entries[0].cert;
     leaf.chain = entries.slice(1).map(e => e.cert);
 
-    // Verify certificate signatures (only for certs with real P1363 signatures)
+    // Verify certificate signatures (only for certs with a real ECDSA signature)
     for (let i = 0; i < entries.length; i++) {
       const { cert, der } = entries[i];
       const sig = extractCertSig(der);
@@ -1888,6 +1911,7 @@ export class TlsSession {
     // a legacy v1 cert never counts as CA on the wire (RFC 5280 §6.1.4(k)).
     stub.x509Version   = p?.version === 3 ? 3 : 1;
     stub.isCA          = p?.version === 3 && p.isCA;
+    stub.strictX509    = p?.strictTime ?? true;
     stub._wireAltNames = p?.altNames ?? [];
 
     if (p?.publicKeyRaw) {

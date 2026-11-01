@@ -56,6 +56,9 @@ describe('Wireshark decrypts our traffic with an SSLKEYLOGFILE-style key log', (
     const dec = (await dissectTcp(chunks, { keylog })).frames.flat().join('\n');
     expect(dec).toContain('GET /secret.html HTTP/1.1');
     expect(dec).toContain('HTTP/1.1 200 OK');
+    // TLS 1.2 sends the certificate in clear: well-formed X.509 for Wireshark
+    expect(plain).toContain('utcTime: ');
+    expect(plain).not.toMatch(/Malformed|BER Error/);
   }, 30_000);
 
   it('TLS 1.3: four traffic secrets, HTTP visible only with the key log', async () => {
@@ -69,8 +72,12 @@ describe('Wireshark decrypts our traffic with an SSLKEYLOGFILE-style key log', (
     const dec = (await dissectTcp(chunks, { keylog })).frames.flat().join('\n');
     expect(dec).toContain('GET /secret.html HTTP/1.1');
     expect(dec).toContain('HTTP/1.1 200 OK');
-    // the certificate becomes readable too (it is encrypted in TLS 1.3)
+    // the certificate becomes readable too (it is encrypted in TLS 1.3) —
+    // and is well-formed X.509 for Wireshark
     expect(dec).toMatch(/Handshake Type: Certificate/);
+    expect(dec).toContain('utcTime: ');
+    expect(dec).toContain('dNSName: www.example.com');
+    expect(dec).not.toMatch(/Malformed|BER Error|Expert Info \(Warn/);
   }, 30_000);
 
   it('QUIC + HTTP/3: packets decrypted with the key log', async () => {

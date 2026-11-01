@@ -3,7 +3,7 @@
 /**
  * TLS server authentication — X.509 v3 encoding, CA constraints on the chain,
  * mandatory ServerKeyExchange signature (ECDHE_ECDSA), and compatibility
- * with legacy (v1-layout) certificates stored in save files / lesson sims.
+ * with legacy certificates (v1 layout / epoch-ms validity) from old save files.
  */
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
@@ -13,6 +13,7 @@ import {
 } from '../../src/net/TlsSession.js';
 import { TlsCertificate, TlsTrustStore } from '../../src/net/models/TlsCertificate.js';
 import { TlsRecord } from '../../src/net/pdu/TlsRecord.js';
+import { upgradeCertEncodings } from '../../src/lib/CertMigration.js';
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -218,9 +219,9 @@ describe('certificate chain: issuers must be valid CAs (RFC 5280 §6.1.4(k))', (
   });
 });
 
-// ── compatibility with certificates saved before the v3 layout ────────────
+// ── certificates shipped in the lesson sims ───────────────────────────────
 
-describe('legacy certificates from lesson sims / save files', () => {
+describe('certificates in the lesson sims', () => {
   const simDir = path.resolve(__dirname, '../../public/sims');
   /** @type {{ sim: string, file: string, host: string, json: any }[]} */
   const certs = [];
@@ -245,24 +246,21 @@ describe('legacy certificates from lesson sims / save files', () => {
     expect(certs.length).toBeGreaterThanOrEqual(10);
   });
 
-  it('every stored certificate keeps its layout (legacy v1 stays v1) and its signature still verifies', async () => {
+  it('every stored certificate is strict X.509 v3 and its signature verifies', async () => {
     for (const c of certs) {
       const cert = await TlsCertificate.fromJSON(c.json);
-      // lesson sims carry legacy v1 certs; newer sims (demo-full) carry v3
-      const expected = Number(c.json.x509Version) === 3 ? 3 : 1;
-      expect(cert.x509Version, `${c.sim} ${c.file}`).toBe(expected);
+      expect(cert.isCurrentEncoding, `${c.sim} ${c.file}`).toBe(true);
       const issuer = cert.selfSigned ? cert : cert.chain[0];
       const ok = await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' },
         /** @type {CryptoKey} */ (issuer.publicKey),
         /** @type {Uint8Array<ArrayBuffer>} */ (cert.certSignature),
         /** @type {Uint8Array<ArrayBuffer>} */ (cert._buildTbsBytes()));
       expect(ok, `${c.sim} ${c.file}`).toBe(true);
-      // round trip keeps the layout
-      expect((await TlsCertificate.fromJSON(await cert.toSaveData())).x509Version).toBe(expected);
+      expect((await TlsCertificate.fromJSON(await cert.toSaveData())).isCurrentEncoding).toBe(true);
     }
   });
 
-  it('lesson 8.3.3: legacy server cert + legacy trusted CA still give a working HTTPS handshake', async () => {
+  it('lesson 8.3.3: server cert + trusted Schul-CA give a working HTTPS handshake', async () => {
     const leaf = await TlsCertificate.fromJSON(find('lesson-8.3.3.btsim', 'CN=www.beaver-schule.de')?.json);
     const root = await TlsCertificate.fromJSON(find('lesson-8.3.3.btsim', 'CN=Schul-CA', false)?.json);
     const trust = new TlsTrustStore(); trust.add(root);
@@ -270,7 +268,7 @@ describe('legacy certificates from lesson sims / save files', () => {
     expect(r.client.status).toBe('fulfilled');
   });
 
-  it('lesson 8.3.3: a new v3 leaf issued by the legacy Schul-CA (CertManager) is trusted', async () => {
+  it('lesson 8.3.3: a new leaf issued by the Schul-CA (CertManager) is trusted', async () => {
     const ca = await TlsCertificate.fromJSON(find('lesson-8.3.3.btsim', 'CN=Schul-CA')?.json);
     expect(ca.isCA && ca.hasPrivateKey).toBe(true);
     const leaf = await TlsCertificate.generate('neu.beaver-schule.de', ca);
@@ -292,5 +290,80 @@ describe('legacy certificates from lesson sims / save files', () => {
     const forged = await TlsCertificate.generate('www.biberbank.de', attacker);
     const r = await handshake(forged, { trustStore: trust, serverName: 'www.biberbank.de' });
     expect(/** @type {any} */ (r.client).reason).toBeInstanceOf(TlsCertUntrustedError);
+  });
+});
+
+// ── certificates saved before strict X.509 ────────────────────────────────
+
+/**
+ * A certificate as older builds saved it: v1 layout, or v3 with epoch-ms
+ * validity — signed over those bytes.
+ * @param {TlsCertificate} cert @param {CryptoKey} issuerKey @param {1|3} v
+ */
+async function asLegacy(cert, issuerKey, v) {
+  const json = /** @type {any} */ (await cert.toSaveData());
+  delete json.strictX509;
+  if (v === 1) delete json.x509Version;
+  json.notBefore += 123;                       // old certs carried milliseconds
+  const legacy = await TlsCertificate.fromJSON(json);
+  await legacy.resignWith(issuerKey);
+  return legacy;
+}
+
+describe('legacy certificate encodings (old save files)', () => {
+  it('fromJSON keeps v1 / epoch-ms layouts, so stored signatures still verify', async () => {
+    const ca = await TlsCertificate.generate('Old CA', null, { isCA: true });
+    for (const v of /** @type {const} */ ([1, 3])) {
+      const leaf = await asLegacy(await TlsCertificate.generate('www.alt.de', ca), /** @type {CryptoKey} */ (ca.privateKey), v);
+      expect(leaf.isCurrentEncoding).toBe(false);
+      expect(leaf.x509Version).toBe(v);
+      const again = await TlsCertificate.fromJSON(await leaf.toSaveData());
+      expect(Buffer.from(again._buildTbsBytes())).toEqual(Buffer.from(leaf._buildTbsBytes()));
+      const trust = new TlsTrustStore(); trust.add(ca);
+      const r = await handshake(again, { trustStore: trust, serverName: 'www.alt.de' });
+      expect(r.client.status, `v${v}`).toBe('fulfilled');
+    }
+  });
+
+  it('the signature is a DER Ecdsa-Sig-Value on the wire', async () => {
+    const cert = await TlsCertificate.generate('server.local');
+    const der = cert.toDer();
+    const outer = el(der, 0), tbs = el(der, outer.contentStart), alg = el(der, tbs.end), bits = el(der, alg.end);
+    expect(der[bits.contentStart]).toBe(0x00);           // unused bits
+    expect(der[bits.contentStart + 1]).toBe(0x30);       // SEQUENCE { INTEGER r, INTEGER s }
+    expect(bits.end).toBe(der.length);
+  });
+
+  it('migration v6 → v7 upgrades certs whose issuer key is in the file, identical copies identically', async () => {
+    const ca = await TlsCertificate.generate('Schul-CA', null, { isCA: true });
+    const caKey = /** @type {CryptoKey} */ (ca.privateKey);
+    const legacyCa = await asLegacy(ca, caKey, 1);
+    legacyCa.privateKey = caKey;
+    const leaf = await asLegacy(await TlsCertificate.generate('www.schule.de', ca), caKey, 1);
+    leaf.chain = [legacyCa];
+    const extCa = await TlsCertificate.generate('Fremde CA', null, { isCA: true });
+    const foreign = await asLegacy(await TlsCertificate.generate('www.fremd.de', extCa), /** @type {CryptoKey} */ (extCa.privateKey), 3);
+    foreign.chain = [extCa];
+    const file = (/** @type {string} */ name, /** @type {any} */ json) => ({ type: 'file', name, data: JSON.stringify(json) });
+    const state = { version: 6, objects: [
+      { kind: 'Computer', fs: { children: [file('schul-ca.json', await legacyCa.toSaveData()), file('www.json', await leaf.toSaveData()),
+        file('fremd.json', await foreign.toSaveData())] } },
+      { kind: 'Computer', fs: { children: [file('trusted.json', legacyCa.toJSON())] } },
+    ] };
+    const { upgraded } = await upgradeCertEncodings(state);
+    expect(upgraded).toBe(2);                            // CA (all copies) + leaf
+    const [a, b, f] = state.objects[0].fs.children.map(n => JSON.parse(n.data));
+    const t = JSON.parse(state.objects[1].fs.children[0].data);
+    expect(a.strictX509 && b.strictX509 && t.strictX509).toBe(true);
+    expect(t.certSignatureHex).toBe(a.certSignatureHex);
+    expect(b.chain[0].certSignatureHex).toBe(a.certSignatureHex);
+    expect(b.notBefore % 1000).toBe(0);
+    expect(f.strictX509).toBe(false);                    // issuer key not in the file → unchanged
+    const trust = new TlsTrustStore(); trust.add(await TlsCertificate.fromJSON(t));
+    const r = await handshake(await TlsCertificate.fromJSON(b), { trustStore: trust, serverName: 'www.schule.de' });
+    expect(r.client.status).toBe('fulfilled');
+    const trust2 = new TlsTrustStore(); trust2.add(extCa);
+    const r2 = await handshake(await TlsCertificate.fromJSON(f), { trustStore: trust2, serverName: 'www.fremd.de' });
+    expect(r2.client.status).toBe('fulfilled');
   });
 });
