@@ -312,7 +312,7 @@ function normalizeUrlInput(input) {
 }
 
 // Helper: buffered TCP reader on top of recvTCPConn (stream semantics)
-class TcpBufferedReader {
+export class TcpBufferedReader {
   /**
    * @param {{
    *   recv: () => Promise<Uint8Array|null>,
@@ -330,6 +330,22 @@ class TcpBufferedReader {
 
     /** @type {boolean} */
     this.closed = false;
+
+    /** recv() started while the connection sat idle (see watchIdle). @type {Promise<Uint8Array|null>|null} */
+    this._pending = null;
+  }
+
+  /**
+   * Keep one recv() outstanding while the connection is idle in the pool, so
+   * a close by the server (keep-alive timeout) is noticed: `onEnd` runs when
+   * that read reports EOF. Data arriving meanwhile is kept for the next read.
+   * @param {() => void} onEnd
+   */
+  watchIdle(onEnd) {
+    if (this.closed || this._pending) return;
+    const p = this._recv();
+    this._pending = p;
+    p.then((chunk) => { if (chunk == null && this._pending === p) onEnd(); }, () => { /* reported on next read */ });
   }
 
   /** @param {Uint8Array} chunk */
@@ -346,7 +362,9 @@ class TcpBufferedReader {
     if (this.closed) return;
     if (this._isCancelled()) throw new Error(t("app.sparktail.err.cancelled"));
 
-    const chunk = await withTimeout(this._recv(), this._timeoutMs, t("app.sparktail.label.recv"));
+    const p = this._pending ?? this._recv();
+    this._pending = null;
+    const chunk = await withTimeout(p, this._timeoutMs, t("app.sparktail.label.recv"));
     if (chunk == null) {
       this.closed = true;
       return;
@@ -417,6 +435,119 @@ class TcpBufferedReader {
   }
 }
 
+/**
+ * May the connection carry another request after this response?
+ * RFC 9112 §9.3: HTTP/1.1 persists unless "Connection: close"; HTTP/1.0 only
+ * with "keep-alive". The body must also be delimited by Content-Length or
+ * chunked coding, otherwise its end is the connection close (§6.3).
+ * @param {string} statusLine
+ * @param {Record<string,string>} headers lower-case names
+ */
+export function isReusableResponse(statusLine, headers) {
+  const tokens = (headers["connection"] || "").toLowerCase().split(",").map(x => x.trim());
+  if (tokens.includes("close")) return false;
+  const http11 = /^HTTP\/1\.1\s/.test(statusLine);
+  if (!http11 && !tokens.includes("keep-alive")) return false;
+  const te = (headers["transfer-encoding"] || "").toLowerCase();
+  return te.includes("chunked") || /^\d+$/.test((headers["content-length"] || "").trim());
+}
+
+/**
+ * Read one HTTP/1.x response (status line, headers, body) from `r`.
+ * @param {TcpBufferedReader} r
+ * @param {number} bodyLimit
+ * @param {string} [method]
+ * @returns {Promise<{ statusLine: string, statusCode: number, reason: string, headerText: string,
+ *                     headers: Record<string,string>, body: Uint8Array, reusable: boolean }>}
+ */
+export async function readHttpResponse(r, bodyLimit, method = "GET") {
+  const headerBlock = await r.readUntil(encodeUTF8("\r\n\r\n"), 2 * 1024 * 1024);
+  const headerText = decodeUTF8(headerBlock.subarray(0, headerBlock.length - 4));
+  const firstLineEnd = headerText.indexOf("\r\n");
+  const statusLine = firstLineEnd >= 0 ? headerText.slice(0, firstLineEnd) : headerText;
+
+  const m = /^HTTP\/\d+\.\d+\s+(\d{3})\s*(.*)$/.exec(statusLine);
+  const statusCode = m ? Number(m[1]) : 0;
+  const reason = m ? (m[2] || "").trim() : "";
+  const headers = parseHeaders(headerText);
+
+  const te = (headers["transfer-encoding"] || "").toLowerCase();
+  const cl = headers["content-length"];
+  /** @type {Uint8Array} */
+  let body = new Uint8Array(0);
+
+  // RFC 9112 §6.3: no body for HEAD, 1xx, 204, 304 whatever the headers say
+  const noBody = method === "HEAD" || statusCode === 204 || statusCode === 304 || (statusCode >= 100 && statusCode < 200);
+  if (noBody) {
+    // nothing to read
+  } else if (te.includes("chunked")) {
+    /** @type {Uint8Array[]} */
+    const out = [];
+    let total = 0;
+
+    while (true) {
+      const line = decodeUTF8(await r.readLine(64 * 1024)).trim();
+      const semi = line.indexOf(";");
+      const hex = (semi >= 0 ? line.slice(0, semi) : line).trim();
+
+      if (!/^[0-9a-fA-F]+$/.test(hex)) {
+        throw new Error(t("app.sparktail.err.chunkedInvalidChunkSize", { line }));
+      }
+      const size = parseInt(hex, 16);
+      if (!Number.isFinite(size) || size < 0) {
+        throw new Error(t("app.sparktail.err.chunkedInvalidSize", { hex }));
+      }
+
+      if (size === 0) {
+        // Trailer headers until empty line
+        while ((await r.readLine(64 * 1024)).length !== 0) { /* skip trailer */ }
+        break;
+      }
+
+      const chunk = await r.readExactly(size);
+      out.push(chunk);
+      total += chunk.length;
+      if (total > bodyLimit) throw new Error(t("app.sparktail.err.bodyLimitExceeded", { bodyLimit }));
+
+      const crlf = await r.readExactly(2);
+      if (crlf[0] !== 13 || crlf[1] !== 10) throw new Error(t("app.sparktail.err.chunkedMissingCrlf"));
+    }
+
+    body = concatChunks(out);
+  } else if (cl && /^\d+$/.test(cl.trim())) {
+    const want = Number(cl.trim());
+    if (!Number.isFinite(want) || want < 0) throw new Error(t("app.sparktail.err.invalidContentLength"));
+    if (want > bodyLimit) throw new Error(t("app.sparktail.err.bodyLimitExceeded", { bodyLimit }));
+    body = await r.readExactly(want);
+  } else {
+    // Fallback: no length known. Read until close.
+    body = await r.readToClose(bodyLimit + 256 * 1024);
+    if (body.length > bodyLimit) throw new Error(t("app.sparktail.err.bodyLimitExceeded", { bodyLimit }));
+  }
+
+  // copy: the reader hands out views into its buffer
+  return { statusLine, statusCode, reason, headerText, headers, body: body.slice(), reusable: isReusableResponse(statusLine, headers) };
+}
+
+/**
+ * A browser connection that may carry several requests (keep-alive).
+ * @typedef {{
+ *   origin: string,
+ *   key: string,
+ *   tls: TlsSession|null,
+ *   send: (d: Uint8Array) => void|Promise<void>,
+ *   reader: TcpBufferedReader,
+ *   peerCert: import("../net/models/TlsCertificate.js").TlsCertificate|null,
+ *   bypass: boolean,
+ *   requests: number,
+ * }} BrowserConn
+ */
+
+/** @param {string} scheme @param {string} host @param {number} port */
+function originKey(scheme, host, port) {
+  return `${scheme}://${host.toLowerCase()}:${port}`;
+}
+
 export class SparktailHTTPClientApp extends LoggedProcess {
   get title() {
     return t("app.sparktail.title");
@@ -435,6 +566,9 @@ export class SparktailHTTPClientApp extends LoggedProcess {
 
   /** @type {string|null} */
   connKey = null;
+
+  /** Idle keep-alive connections, one per origin (scheme://host:port). @type {Map<string, BrowserConn>} */
+  _pool = new Map();
 
   /** @type {HTMLInputElement|null} */
   urlEl = null;
@@ -662,7 +796,106 @@ export class SparktailHTTPClientApp extends LoggedProcess {
 
   destroy() {
     this._stop();
+    this._closePool();
     super.destroy();
+  }
+
+  // ── keep-alive connection pool ──────────────────────────────────────────────
+
+  /** @param {BrowserConn} conn */
+  _closeConn(conn) {
+    if (conn.tls) { try { conn.tls.close(); } catch { /* ignore */ } }
+    try { this.os.net.closeTCPConn(conn.key); } catch { /* ignore */ }
+  }
+
+  /**
+   * Park an idle connection for reuse. Replaces (closes) an older idle one
+   * for the same origin. When the server closes it later (keep-alive
+   * timeout), it is dropped and our side is closed as well.
+   * @param {BrowserConn} conn
+   */
+  _poolPut(conn) {
+    const old = this._pool.get(conn.origin);
+    if (old && old !== conn) this._closeConn(old);
+    this._pool.set(conn.origin, conn);
+    conn.reader.watchIdle(() => {
+      if (this._pool.get(conn.origin) !== conn) return;
+      this._pool.delete(conn.origin);
+      this._closeConn(conn);
+      this._appendLog(t("app.sparktail.log.connClosedByServer", { time: nowStamp(), origin: conn.origin, count: conn.requests }));
+    });
+  }
+
+  /** @param {string} origin @returns {BrowserConn|null} */
+  _poolTake(origin) {
+    const conn = this._pool.get(origin) ?? null;
+    if (conn) this._pool.delete(origin);
+    return conn;
+  }
+
+  _closePool() {
+    for (const conn of this._pool.values()) this._closeConn(conn);
+    this._pool.clear();
+  }
+
+  /**
+   * Open a TCP connection (plus TLS for https). Throws an Error with
+   * `stage` = "connect" | "tls"; for "tls" also `tls` (for the peer cert).
+   * @param {{ scheme: string, host: string, port: number, ip: IPAddress,
+   *           bypass: boolean, isCancelled: () => boolean }} o  bypass: "proceed anyway", no certificate check
+   * @returns {Promise<BrowserConn>}
+   */
+  async _openConn(o) {
+    const timeout = this._timeoutMs();
+    /** @type {string|undefined} */
+    let key;
+    try {
+      const conn = await withTimeout(this.os.net.connectTCPConn(o.ip, o.port), SimTimer.TCP_CONNECT_TIMEOUT_MS, t("app.sparktail.label.connect"));
+      key = conn?.key;
+      if (typeof key !== "string" || !key) throw new Error(t("app.sparktail.err.noConnKey"));
+    } catch (e) {
+      throw Object.assign(e instanceof Error ? e : new Error(String(e)), { stage: "connect" });
+    }
+    const k = key;
+
+    /** @type {(d: Uint8Array) => void|Promise<void>} */
+    let send = (d) => this.os.net.sendTCPConn(k, d);
+    /** @type {() => Promise<Uint8Array|null>} */
+    let recv = () => this.os.net.recvTCPConn(k);
+    /** @type {TlsSession|null} */
+    let tls = null;
+
+    if (o.scheme === "https") {
+      tls = new TlsSession({
+        send, recv, isServer: false,
+        trustStore: o.bypass ? undefined : (this.os.tls?.certStore ?? undefined),
+        timeoutMs: timeout,
+        sleepFn: (ms) => simTimer.sleep(ms),
+        now: () => this.os.clock.nowMs(),
+        serverName: o.host,
+      });
+      try {
+        await withTimeout(tls.handshake(), timeout, t("app.sparktail.label.tlsHandshake"));
+      } catch (e) {
+        try { tls.close(); } catch { /* ignore */ }
+        try { this.os.net.closeTCPConn(k); } catch { /* ignore */ }
+        throw Object.assign(e instanceof Error ? e : new Error(String(e)), { stage: "tls", tls });
+      }
+      const session = tls;
+      send = (d) => session.send(/** @type {Uint8Array<ArrayBuffer>} */ (d));
+      recv = () => session.recv();
+    }
+
+    return {
+      origin: originKey(o.scheme, o.host, o.port),
+      key: k,
+      tls,
+      send,
+      reader: new TcpBufferedReader({ recv, isCancelled: o.isCancelled, timeoutMs: timeout }),
+      peerCert: tls?.peerCert ?? null,
+      bypass: o.bypass,
+      requests: 0,
+    };
   }
 
   /** @param {string} text */
@@ -751,6 +984,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
   }
 
   _stop() {
+    this._closePool();
     const tls = this._activeTls;
     this._activeTls = null;
     if (tls) { try { tls.close(); } catch { /* ignore */ } }
@@ -858,7 +1092,6 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     }
 
     const { scheme, host, port, path } = parsed;
-    const timeout = this._timeoutMs();
     const bodyLimit = 1_048_576;
 
     /** @type {(name:string)=>Promise<import("../net/models/IPAddress.js").IPAddress|null>} */
@@ -902,76 +1135,13 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     }
 
 
-    /** @type {string|null} */
-    let key = null;
-
-    try {
-      const conn = await withTimeout(this.os.net.connectTCPConn(dstIP, /** @type {number} */ (port)), SimTimer.TCP_CONNECT_TIMEOUT_MS, t("app.sparktail.label.connect"));
-      key = conn?.key;
-      if (typeof key !== "string" || !key) throw new Error(t("app.sparktail.err.noConnKey"));
-      this.connKey = key;
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      this._appendLog(t("app.sparktail.log.connectError", { time: nowStamp(), ip: dstIP.toString(), port, msg }));
-      this._showInternalPage(
-        t("app.sparktail.page.socketError.title"),
-        t("app.sparktail.page.socketError.body", { host, port, msg })
-      );
-      this.loading = false;
-      this.connKey = null;
-      this._syncUI();
-      this._setStatus(t("app.sparktail.status.socketError", { host, port }));
-      return;
-    }
-
-    // sendFn / recvFn — rebind to TLS for https
-    let sendFn = /** @type {(d:Uint8Array<ArrayBufferLike>)=>void|Promise<void>} */
-      (data) => this.os.net.sendTCPConn(key, data);
-    let recvFn = /** @type {()=>Promise<Uint8Array|null>} */
-      () => this.os.net.recvTCPConn(key);
-
-    if (scheme === "https") {
-      this._appendLog(t("app.sparktail.log.tlsHandshaking", { time: nowStamp(), host }));
-      this._setStatus(t("app.sparktail.status.tlsHandshaking"));
-
-      const tls = new TlsSession({
-        send:       sendFn,
-        recv:       recvFn,
-        isServer:   false,
-        trustStore: bypassCert ? undefined : (this.os.tls?.certStore ?? undefined),
-        timeoutMs:  timeout,
-        sleepFn:    (ms) => simTimer.sleep(ms),
-        now:        () => this.os.clock.nowMs(),
-        serverName: host,
-      });
-      this._activeTls = tls;
-
-      try {
-        await withTimeout(tls.handshake(), timeout, t("app.sparktail.label.tlsHandshake"));
-        this._serverCert = tls.peerCert;
-        this._certTrusted = !bypassCert;
-        this._setLockState(bypassCert ? "insecure" : "secure");
-        this._appendLog(t("app.sparktail.log.tlsOk", { time: nowStamp(), host }));
-      } catch (e) {
-        if (e instanceof TlsCertNameMismatchError) {
-          this._showCertErrorPage(tls.peerCert, url, "nameMismatch", host);
-        } else if (e instanceof TlsCertUntrustedError) {
-          this._showCertErrorPage(tls.peerCert, url, "untrusted");
-        } else if (e instanceof TlsCertExpiredError) {
-          this._showCertErrorPage(tls.peerCert, url, e.reason);
-        } else {
-          const reason = e instanceof Error ? e.message : String(e);
-          this._appendLog(t("app.sparktail.log.tlsFailed", { time: nowStamp(), reason }));
-          this._showInternalPage(t("app.sparktail.page.tlsError.title"), reason);
-          this._setStatus(t("app.sparktail.status.tlsFailed"));
-        }
-        this._stop();
-        return;
-      }
-
-      sendFn = (data) => tls.send(/** @type {Uint8Array<ArrayBuffer>} */ (data));
-      recvFn = () => tls.recv();
-    }
+    const origin = originKey(/** @type {string} */ (scheme), /** @type {string} */ (host), /** @type {number} */ (port));
+    // Reuse an idle keep-alive connection to the same origin. A connection
+    // opened with "proceed anyway" (bypassCert) is only reused for the same
+    // decision, so the certificate check is not skipped behind the user's back.
+    /** @type {BrowserConn|null} */
+    let conn = this._poolTake(origin);
+    if (conn && conn.bypass !== bypassCert) { this._closeConn(conn); conn = null; }
 
     const defaultPort = scheme === "https" ? 443 : 80;
     const hostHeader = /** @type {string} */ (host).includes(":")
@@ -982,27 +1152,9 @@ export class SparktailHTTPClientApp extends LoggedProcess {
       `Host: ${hostHeader}\r\n` +
       `User-Agent: Sparktail/1.0\r\n` +
       `Accept: text/html, text/plain, */*\r\n` +
-      `Connection: close\r\n` +
+      `Connection: keep-alive\r\n` +
       `\r\n`;
-
     const reqBytes = encodeUTF8(request);
-    try {
-      await sendFn(reqBytes);
-      this._appendLog(t("app.sparktail.log.request", {
-        time: nowStamp(),
-        host,
-        port,
-        path,
-        len: reqBytes.length,
-        hex: hexPreview(reqBytes),
-      }));
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      this._appendLog(t("app.sparktail.log.sendError", { time: nowStamp(), msg }));
-      this._showInternalPage(t("app.sparktail.page.sendError.title"), msg);
-      this._stop();
-      return;
-    }
 
     /** @type {string} */
     let headerText = "";
@@ -1015,94 +1167,118 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     /** @type {string} */
     let reason = "";
 
-    try {
-      const r = new TcpBufferedReader({
-        recv: recvFn,
-        isCancelled: () => !this.loading || this.requestSeq !== seq || this.connKey !== key,
-        timeoutMs: timeout,
-      });
+    // At most two rounds: a reused connection the server has meanwhile
+    // closed fails before any response byte — then retry on a fresh one.
+    for (let attempt = 0; ; attempt++) {
+      const reused = conn !== null;
 
-      // 1) Read headers
-      const headerSep = encodeUTF8("\r\n\r\n");
-      const headerBlock = await r.readUntil(headerSep, 2 * 1024 * 1024);
-      const headerBytes = headerBlock.subarray(0, headerBlock.length - 4);
-
-      headerText = decodeUTF8(headerBytes);
-      const firstLineEnd = headerText.indexOf("\r\n");
-      const statusLine = firstLineEnd >= 0 ? headerText.slice(0, firstLineEnd) : headerText;
-
-      const m = /^HTTP\/\d+\.\d+\s+(\d{3})\s*(.*)$/.exec(statusLine);
-      statusCode = m ? Number(m[1]) : 0;
-      reason = m ? (m[2] || "").trim() : "";
-
-      headers = parseHeaders(headerText);
-      if (this.headersEl) this.headersEl.value = headerText;
-
-      // 2) Read body depending on headers
-      const te = (headers["transfer-encoding"] || "").toLowerCase();
-      const cl = headers["content-length"];
-
-      if (te.includes("chunked")) {
-        /** @type {Uint8Array[]} */
-        const out = [];
-        let total = 0;
-
-        while (true) {
-          const lineBytes = await r.readLine(64 * 1024);
-          const line = decodeUTF8(lineBytes).trim();
-          const semi = line.indexOf(";");
-          const hex = (semi >= 0 ? line.slice(0, semi) : line).trim();
-
-          if (!/^[0-9a-fA-F]+$/.test(hex)) {
-            throw new Error(t("app.sparktail.err.chunkedInvalidChunkSize", { line }));
-          }
-          const size = parseInt(hex, 16);
-          if (!Number.isFinite(size) || size < 0) {
-            throw new Error(t("app.sparktail.err.chunkedInvalidSize", { hex }));
-          }
-
-          if (size === 0) {
-            // Trailer headers until empty line
-            while (true) {
-              const tline = await r.readLine(64 * 1024);
-              if (tline.length === 0) break;
-            }
-            break;
-          }
-
-          const chunk = await r.readExactly(size);
-          out.push(chunk);
-          total += chunk.length;
-          if (total > bodyLimit) throw new Error(t("app.sparktail.err.bodyLimitExceeded", { bodyLimit }));
-
-          const crlf = await r.readExactly(2);
-          if (crlf[0] !== 13 || crlf[1] !== 10) throw new Error(t("app.sparktail.err.chunkedMissingCrlf"));
-        }
-
-        bodyBytes = concatChunks(out);
-      } else if (cl && /^\d+$/.test(cl.trim())) {
-        const want = Number(cl.trim());
-        if (!Number.isFinite(want) || want < 0) throw new Error(t("app.sparktail.err.invalidContentLength"));
-        if (want > bodyLimit) throw new Error(t("app.sparktail.err.bodyLimitExceeded", { bodyLimit }));
-
-        bodyBytes = await r.readExactly(want);
+      if (conn) {
+        this._appendLog(t("app.sparktail.log.connReused", { time: nowStamp(), origin, count: conn.requests }));
+        this._serverCert = conn.peerCert;
+        this._certTrusted = !conn.bypass;
+        if (scheme === "https") this._setLockState(conn.bypass ? "insecure" : "secure");
       } else {
-        // Fallback: no length known. Read until close.
-        bodyBytes = await r.readToClose(bodyLimit + 256 * 1024);
-        if (bodyBytes.length > bodyLimit) throw new Error(t("app.sparktail.err.bodyLimitExceeded", { bodyLimit }));
+        if (scheme === "https") {
+          this._appendLog(t("app.sparktail.log.tlsHandshaking", { time: nowStamp(), host }));
+          this._setStatus(t("app.sparktail.status.tlsHandshaking"));
+        }
+        try {
+          conn = await this._openConn({
+            scheme: /** @type {string} */ (scheme), host: /** @type {string} */ (host), port: /** @type {number} */ (port), ip: dstIP,
+            bypass: bypassCert,
+            isCancelled: () => !this.loading || this.requestSeq !== seq, // refined below
+          });
+        } catch (e) {
+          const err = /** @type {any} */ (e);
+          const msg = e instanceof Error ? e.message : String(e);
+          if (err?.stage === "tls") {
+            const tls = /** @type {TlsSession} */ (err.tls);
+            if (e instanceof TlsCertNameMismatchError) {
+              this._showCertErrorPage(tls.peerCert, url, "nameMismatch", host);
+            } else if (e instanceof TlsCertUntrustedError) {
+              this._showCertErrorPage(tls.peerCert, url, "untrusted");
+            } else if (e instanceof TlsCertExpiredError) {
+              this._showCertErrorPage(tls.peerCert, url, e.reason);
+            } else {
+              this._appendLog(t("app.sparktail.log.tlsFailed", { time: nowStamp(), reason: msg }));
+              this._showInternalPage(t("app.sparktail.page.tlsError.title"), msg);
+              this._setStatus(t("app.sparktail.status.tlsFailed"));
+            }
+            this._stop();
+            return;
+          }
+          this._appendLog(t("app.sparktail.log.connectError", { time: nowStamp(), ip: dstIP.toString(), port, msg }));
+          this._showInternalPage(
+            t("app.sparktail.page.socketError.title"),
+            t("app.sparktail.page.socketError.body", { host, port, msg })
+          );
+          this.loading = false;
+          this.connKey = null;
+          this._syncUI();
+          this._setStatus(t("app.sparktail.status.socketError", { host, port }));
+          return;
+        }
+        if (scheme === "https") {
+          this._serverCert = conn.peerCert;
+          this._certTrusted = !bypassCert;
+          this._setLockState(bypassCert ? "insecure" : "secure");
+          this._appendLog(t("app.sparktail.log.tlsOk", { time: nowStamp(), host }));
+        }
       }
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      this._appendLog(t("app.sparktail.log.recvError", { time: nowStamp(), msg }));
-      this._showInternalPage(t("app.sparktail.page.recvError.title"), msg);
-      this._stop();
-      return;
-    } finally {
-      const tls = this._activeTls;
-      this._activeTls = null;
-      if (tls) { try { tls.close(); } catch { /* ignore */ } }
-      if (key) { try { this.os.net.closeTCPConn(key); } catch { /* ignore */ } }
-      if (this.connKey === key) this.connKey = null;
+
+      const c = conn;
+      this.connKey = c.key;
+      this._activeTls = c.tls;
+      c.reader._isCancelled = () => !this.loading || this.requestSeq !== seq || this.connKey !== c.key;
+
+      try {
+        await c.send(reqBytes);
+        this._appendLog(t("app.sparktail.log.request", {
+          time: nowStamp(),
+          host,
+          port,
+          path,
+          len: reqBytes.length,
+          hex: hexPreview(reqBytes),
+        }));
+      } catch (e) {
+        this._closeConn(c);
+        this._activeTls = null;
+        this.connKey = null;
+        conn = null;
+        if (reused && attempt === 0) continue;
+        const msg = e instanceof Error ? e.message : String(e);
+        this._appendLog(t("app.sparktail.log.sendError", { time: nowStamp(), msg }));
+        this._showInternalPage(t("app.sparktail.page.sendError.title"), msg);
+        this._stop();
+        return;
+      }
+
+      try {
+        const res = await readHttpResponse(c.reader, bodyLimit);
+        ({ headerText, headers, statusCode, reason } = res);
+        bodyBytes = res.body;
+        c.requests++;
+        if (this.headersEl) this.headersEl.value = headerText;
+        this._activeTls = null;
+        if (this.connKey === c.key) this.connKey = null;
+        if (res.reusable) this._poolPut(c);
+        else this._closeConn(c);
+        break;
+      } catch (e) {
+        // nothing received on a reused connection: the server had closed it
+        const stale = reused && attempt === 0 && c.reader.closed && c.reader.buf.length === 0;
+        this._closeConn(c);
+        this._activeTls = null;
+        if (this.connKey === c.key) this.connKey = null;
+        conn = null;
+        if (stale) continue;
+        const msg = e instanceof Error ? e.message : String(e);
+        this._appendLog(t("app.sparktail.log.recvError", { time: nowStamp(), msg }));
+        this._showInternalPage(t("app.sparktail.page.recvError.title"), msg);
+        this._stop();
+        return;
+      }
     }
 
     // If cancelled, stop quietly
@@ -1315,6 +1491,8 @@ export class SparktailHTTPClientApp extends LoggedProcess {
 
   /**
    * Fetch a URL through the simulated network without touching UI state.
+   * Uses (and refills) the keep-alive pool, so the images and stylesheets
+   * of a page travel over the connection the page itself came on.
    * Returns null on any error or cancellation.
    * @param {string} url
    * @param {() => boolean} isCancelled
@@ -1323,98 +1501,70 @@ export class SparktailHTTPClientApp extends LoggedProcess {
   async _doGet(url, isCancelled) {
     const parsed = parseHttpUrl(url);
     if (!parsed.ok) return null;
-    const { scheme, host, port, path } = parsed;
-    const timeout = this._timeoutMs();
+    const scheme = /** @type {string} */ (parsed.scheme);
+    const host = /** @type {string} */ (parsed.host);
+    const port = /** @type {number} */ (parsed.port);
+    const path = /** @type {string} */ (parsed.path);
+    const origin = originKey(scheme, host, port);
 
-    let dstIP;
-    try {
-      dstIP = await withTimeout(
-        resolveHostToIP(/** @type {string} */ (host), (n) => this.os.dns.resolveIP(n)),
-        SimTimer.DNS_RESOLVE_TIMEOUT_MS, "dns"
-      );
-    } catch { return null; }
-    if (!dstIP || isCancelled()) return null;
-
-    /** @type {string|undefined} */
-    let key;
-    try {
-      const conn = await withTimeout(
-        this.os.net.connectTCPConn(dstIP, /** @type {number} */ (port)),
-        SimTimer.TCP_CONNECT_TIMEOUT_MS, "connect"
-      );
-      key = conn?.key;
-      if (typeof key !== "string" || !key) return null;
-    } catch { return null; }
-    if (isCancelled()) { try { this.os.net.closeTCPConn(key); } catch {} return null; }
-
-    let sendFn = /** @type {(d: Uint8Array) => void|Promise<void>} */ (d) => this.os.net.sendTCPConn(key, d);
-    let recvFn = /** @type {() => Promise<Uint8Array|null>} */ () => this.os.net.recvTCPConn(key);
-
-    /** @type {import("../net/TlsSession.js").TlsSession|null} */
-    let tls = null;
-    if (scheme === "https") {
-      tls = new TlsSession({
-        send: sendFn, recv: recvFn, isServer: false,
-        trustStore: this.os.tls?.certStore ?? null,
-        timeoutMs: timeout,
-        sleepFn: (ms) => simTimer.sleep(ms),
-        now: () => this.os.clock.nowMs(),
-        serverName: /** @type {string} */ (host),
-      });
+    let conn = this._poolTake(origin);
+    if (!conn) {
+      let dstIP;
       try {
-        await withTimeout(tls.handshake(), timeout, "tls");
-      } catch {
-        try { tls.close(); } catch {}
-        try { this.os.net.closeTCPConn(key); } catch {}
-        return null;
-      }
-      sendFn = (d) => /** @type {any} */ (tls).send(/** @type {any} */ (d));
-      recvFn = () => /** @type {any} */ (tls).recv();
+        dstIP = await withTimeout(
+          resolveHostToIP(host, (n) => this.os.dns.resolveIP(n)),
+          SimTimer.DNS_RESOLVE_TIMEOUT_MS, "dns"
+        );
+      } catch { return null; }
+      if (!dstIP || isCancelled()) return null;
+      conn = await this._openConn({
+        scheme, host, port, ip: dstIP,
+        bypass: false,
+        isCancelled,
+      }).catch(() => null);
+      if (!conn) return null;
+      if (isCancelled()) { this._closeConn(conn); return null; }
+      this._appendLog(t("app.sparktail.log.resourceNewConn", { time: nowStamp(), url }));
+      return this._requestOn(conn, path, host, port, scheme, isCancelled, false, url);
     }
+    this._appendLog(t("app.sparktail.log.resourceReused", { time: nowStamp(), url, count: conn.requests }));
+    return this._requestOn(conn, path, host, port, scheme, isCancelled, true, url);
+  }
+
+  /**
+   * One GET on `conn`. A reused connection that turns out to be closed
+   * before any response byte arrives is replaced by a fresh one (once).
+   * @param {BrowserConn} conn
+   * @param {string} path
+   * @param {string} host
+   * @param {number} port
+   * @param {string} scheme
+   * @param {() => boolean} isCancelled
+   * @param {boolean} reused
+   * @param {string} url
+   * @returns {Promise<{statusCode: number, headers: Record<string,string>, body: Uint8Array}|null>}
+   */
+  async _requestOn(conn, path, host, port, scheme, isCancelled, reused, url) {
+    const defaultPort = scheme === "https" ? 443 : 80;
+    const hostHdr = host.includes(":") ? `[${host}]` : host;
+    const portSuffix = port !== defaultPort ? `:${port}` : "";
+    const req = `GET ${path} HTTP/1.1\r\nHost: ${hostHdr}${portSuffix}\r\nUser-Agent: Sparktail/1.0\r\nConnection: keep-alive\r\n\r\n`;
+    conn.reader._isCancelled = isCancelled;
 
     try {
-      const defaultPort = scheme === "https" ? 443 : 80;
-      const hostHdr = /** @type {string} */ (host).includes(":") ? `[${host}]` : host;
-      const portSuffix = port !== defaultPort ? `:${port}` : "";
-      const req = `GET ${path} HTTP/1.1\r\nHost: ${hostHdr}${portSuffix}\r\nUser-Agent: Sparktail/1.0\r\nConnection: close\r\n\r\n`;
-      await sendFn(encodeUTF8(req));
-
-      const r = new TcpBufferedReader({ recv: recvFn, isCancelled, timeoutMs: timeout });
-      const headerBlock = await r.readUntil(encodeUTF8("\r\n\r\n"), 2 * 1024 * 1024);
-      const headerText = decodeUTF8(headerBlock.subarray(0, headerBlock.length - 4));
-      const m = /^HTTP\/\d+\.\d+\s+(\d{3})/.exec(headerText);
-      const statusCode = m ? Number(m[1]) : 0;
-      const headers = parseHeaders(headerText);
-
-      const bodyLimit = 1_048_576;
-      const te = (headers["transfer-encoding"] || "").toLowerCase();
-      const cl = headers["content-length"];
-      /** @type {Uint8Array} */
-      let body;
-
-      if (te.includes("chunked")) {
-        const out = [];
-        while (true) {
-          const lineBytes = await r.readLine(64 * 1024);
-          const hex = decodeUTF8(lineBytes).trim().split(";")[0].trim();
-          if (!hex) break;
-          const size = parseInt(hex, 16);
-          if (!Number.isFinite(size) || size <= 0) break;
-          out.push(await r.readExactly(size));
-          await r.readExactly(2);
-        }
-        body = concatChunks(out);
-      } else if (cl && /^\d+$/.test(cl.trim())) {
-        body = await r.readExactly(Number(cl.trim()));
-      } else {
-        body = await r.readToClose(bodyLimit);
-      }
-
-      return { statusCode, headers, body };
-    } catch { return null; }
-    finally {
-      try { if (tls) tls.close(); } catch {}
-      try { this.os.net.closeTCPConn(key); } catch {}
+      await conn.send(encodeUTF8(req));
+      const res = await readHttpResponse(conn.reader, 1_048_576);
+      conn.requests++;
+      if (res.reusable && !isCancelled()) this._poolPut(conn);
+      else this._closeConn(conn);
+      return { statusCode: res.statusCode, headers: res.headers, body: res.body };
+    } catch {
+      const stale = reused && conn.reader.closed && conn.reader.buf.length === 0;
+      this._closeConn(conn);
+      if (!stale || isCancelled()) return null;
+      // the server closed the idle connection meanwhile: one fresh attempt
+      this._appendLog(t("app.sparktail.log.connStale", { time: nowStamp(), origin: conn.origin }));
+      return this._doGet(url, isCancelled);
     }
   }
 

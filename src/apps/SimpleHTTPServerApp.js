@@ -12,6 +12,9 @@ import { TlsCertificate } from "../net/models/TlsCertificate.js";
 
 const CERT_DIR = "/etc/certs";
 
+/** Requests per persistent connection — Apache's MaxKeepAliveRequests default. */
+const MAX_KEEPALIVE_REQUESTS = 100;
+
 /**
  * @param {Uint8Array[]} chunks
  */
@@ -227,6 +230,9 @@ export class SimpleHTTPServerApp extends LoggedProcess {
   /** @type {string} */
   docRoot = "/var/www/";
 
+  /** Persistent connections: several requests per TCP connection (RFC 9112 §9.3). @type {boolean} */
+  keepAlive = true;
+
   /** @type {boolean} */
   running = false;
 
@@ -280,6 +286,9 @@ export class SimpleHTTPServerApp extends LoggedProcess {
 
   /** @type {HTMLInputElement|null} */
   rootEl = null;
+
+  /** @type {HTMLInputElement|null} */
+  keepAliveEl = null;
 
   /** @type {HTMLInputElement|null} */
   httpsEnabledEl = null;
@@ -360,10 +369,16 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     const rootInput = UI.input({ placeholder: t("app.simplehttpserver.placeholder.docRoot"), value: String(this.docRoot) });
     this.portEl = portInput;
     this.rootEl = rootInput;
+    const keepAliveInput = /** @type {HTMLInputElement} */ (UI.el("input", {
+      attrs: { type: "checkbox" },
+      init: (el) => { el.checked = this.keepAlive; },
+    }));
+    this.keepAliveEl = keepAliveInput;
 
     const httpPane = UI.el("div", { children: [
       UI.row(t("app.simplehttpserver.label.port"), portInput),
       UI.row(t("app.simplehttpserver.label.docRoot"), rootInput),
+      UI.row(t("app.simplehttpserver.label.keepAlive"), keepAliveInput),
     ]});
 
     // HTTPS tab
@@ -462,6 +477,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     this.logEl         = null;
     this.portEl        = null;
     this.rootEl        = null;
+    this.keepAliveEl   = null;
     this.httpsEnabledEl = null;
     this.httpsPortEl   = null;
     this._certSelectEl = null;
@@ -486,6 +502,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     if (this.stopBtn)       this.stopBtn.disabled        = !r;
     if (this.portEl)        this.portEl.disabled         = r;
     if (this.rootEl)        this.rootEl.disabled         = r;
+    if (this.keepAliveEl)   this.keepAliveEl.disabled    = r;
     if (this.httpsEnabledEl) this.httpsEnabledEl.disabled = r;
     if (this.httpsPortEl)   this.httpsPortEl.disabled    = r;
     if (this._certSelectEl) this._certSelectEl.disabled  = r;
@@ -578,6 +595,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     this.port         = port;
     this.docRoot      = rootStr || "/var/www/";
     this.httpsEnabled = httpsOn;
+    if (this.keepAliveEl) this.keepAlive = this.keepAliveEl.checked;
     this._saveConfig();
     this._start();
   }
@@ -834,6 +852,10 @@ export class SimpleHTTPServerApp extends LoggedProcess {
   }
 
   /**
+   * Serve one TCP (or TLS) connection. With keep-alive several requests are
+   * read one after another from the same connection (RFC 9112 §9.3); bytes
+   * after the end of one request stay buffered as the start of the next
+   * (pipelining).
    * @param {number} seq
    * @param {string} connKey
    * @param {boolean} isTls
@@ -846,38 +868,72 @@ export class SimpleHTTPServerApp extends LoggedProcess {
       ? (this.httpsRunning && this.httpsRunSeq === seq)
       : (this.running      && this.runSeq      === seq);
 
-    const timeout = this._timeoutMs();
-
     const headerNeedle = encodeUTF8("\r\n\r\n");
-    /** @type {Uint8Array[]} */
-    const chunks = [];
-    let total = 0;
     const limit = 64 * 1024;
+    /** @type {Uint8Array} */
+    let buf = new Uint8Array(0);
+    let served = 0;
 
-    while (isActive()) {
-      const part = await withTimeout(io.recv(), timeout, "recv");
-      if (part == null) break;
+    while (true) {
+      const first = served === 0;
+      // The first request gets the normal read timeout; between requests the
+      // shorter keep-alive idle timeout applies.
+      const timeout = first ? this._timeoutMs() : SimTimer.HTTP_KEEPALIVE_TIMEOUT_MS;
+      let idx = indexOfBytes(buf, headerNeedle);
+      let idle = false;
 
-      chunks.push(part);
-      total += part.length;
+      while (idx < 0 && buf.length <= limit && isActive()) {
+        /** @type {Uint8Array|null} */
+        let part;
+        if (first) {
+          part = await withTimeout(io.recv(), timeout, "recv");
+        } else {
+          try {
+            part = await withTimeout(io.recv(), timeout, "recv");
+          } catch {
+            idle = true;
+            break;
+          }
+        }
+        if (part == null) break;
+        buf = concatChunks([buf, part]);
+        idx = indexOfBytes(buf, headerNeedle);
+      }
 
-      if (total > limit) break;
+      if (idx < 0) {
+        // A persistent connection that simply ends (or idles out) between
+        // two requests is the normal end of keep-alive, not an error.
+        if (!first && buf.length === 0) {
+          if (idle) this._appendLog(t("app.simplehttpserver.log.keepAliveIdle", { time: nowStamp(), count: served }));
+          io.close();
+          return;
+        }
+        await this._sendError(io, 400, "Bad Request",
+          t("app.simplehttpserver.http.400.title"),
+          t("app.simplehttpserver.http.400.details"));
+        return;
+      }
 
-      const buf2 = concatChunks(chunks);
-      if (indexOfBytes(buf2, headerNeedle) >= 0) break;
+      const headerText = decodeUTF8(buf.slice(0, idx));
+      buf = buf.slice(idx + headerNeedle.length);
+      served++;
+
+      const keep = await this._serveRequest(io, headerText, isTls, served);
+      if (!keep) return;  // _serveRequest has closed the connection
+      if (!isActive()) { io.close(); return; }
     }
+  }
 
-    const buf = concatChunks(chunks);
-    const idx = indexOfBytes(buf, headerNeedle);
-
-    if (idx < 0) {
-      await this._sendError(io, 400, "Bad Request",
-        t("app.simplehttpserver.http.400.title"),
-        t("app.simplehttpserver.http.400.details"));
-      return;
-    }
-
-    const headerText = decodeUTF8(buf.slice(0, idx));
+  /**
+   * Answer one request. Returns true when the connection stays open for the
+   * next one; otherwise the connection has been closed.
+   * @param {{ send: (d: Uint8Array) => any, close: () => void, sni: string }} io
+   * @param {string} headerText request line + header fields (without the blank line)
+   * @param {boolean} isTls
+   * @param {number} served number of this request on the connection (1-based)
+   * @returns {Promise<boolean>}
+   */
+  async _serveRequest(io, headerText, isTls, served) {
     const lines = headerText.split("\r\n");
     const reqLine = lines[0] || "";
 
@@ -886,20 +942,43 @@ export class SimpleHTTPServerApp extends LoggedProcess {
       await this._sendError(io, 400, "Bad Request",
         t("app.simplehttpserver.http.400.title"),
         t("app.simplehttpserver.http.400.invalidRequestLine", { reqLine }));
-      return;
+      return false;
     }
 
     const method = m[1];
     const target = m[2];
+    const http11 = m[3] === "1";
 
     // RFC 9112 §3.2: an HTTP/1.1 request needs exactly one Host header, otherwise 400
     const hostLines = lines.slice(1).filter(l => /^host\s*:/i.test(l));
-    if (m[3] === "1" && hostLines.length !== 1) {
+    if (http11 && hostLines.length !== 1) {
       await this._sendError(io, 400, "Bad Request",
         t("app.simplehttpserver.http.400.title"),
         t("app.simplehttpserver.http.400.host"));
-      return;
+      return false;
     }
+
+    // Persistence (RFC 9112 §9.3): HTTP/1.1 stays open unless "close" is
+    // sent, HTTP/1.0 only with an explicit "keep-alive". A request body is
+    // never read by this server, so such a connection cannot be reused.
+    const headerValues = (/** @type {string} */ name) => lines.slice(1)
+      .filter(l => l.toLowerCase().startsWith(name + ":"))
+      .map(l => l.slice(name.length + 1).trim().toLowerCase());
+    const connTokens = headerValues("connection").flatMap(v => v.split(",").map(x => x.trim()));
+    const hasBody = headerValues("transfer-encoding").length > 0
+      || headerValues("content-length").some(v => v !== "0");
+    const keep = this.keepAlive
+      && !connTokens.includes("close")
+      && (http11 || connTokens.includes("keep-alive"))
+      && !hasBody
+      && served < MAX_KEEPALIVE_REQUESTS;
+    /** @type {Record<string,string>} */
+    const connHeaders = keep
+      ? {
+          "Connection": "keep-alive",
+          "Keep-Alive": `timeout=${Math.round(SimTimer.HTTP_KEEPALIVE_TIMEOUT_MS / 1000)}, max=${MAX_KEEPALIVE_REQUESTS - served}`,
+        }
+      : { "Connection": "close" };
 
     // Virtual host: chosen by the Host header; an HTTP/1.0 request without
     // one falls back to the TLS server name.
@@ -910,21 +989,22 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     // RFC 9110 §15.5.20: the TLS connection was set up for the SNI name (and
     // its certificate); a request for a different site on it is misdirected.
     if (isTls && this.vhostsEnabled && io.sni && reqHost && this._findVhost(io.sni) !== vhost) {
+      this._appendLog(t("app.simplehttpserver.log.misdirected", { time: nowStamp(), sni: io.sni, host: reqHost }));
       await this._sendError(io, 421, "Misdirected Request",
         t("app.simplehttpserver.http.421.title"),
-        t("app.simplehttpserver.http.421.details", { sni: io.sni, host: reqHost }));
-      this._appendLog(t("app.simplehttpserver.log.misdirected", { time: nowStamp(), sni: io.sni, host: reqHost }));
-      return;
+        t("app.simplehttpserver.http.421.details", { sni: io.sni, host: reqHost }),
+        connHeaders);
+      return keep;
     }
 
     if (method !== "GET" && method !== "HEAD") {
       // RFC 9110 §15.5.6: MUST list the supported methods
+      this._appendLog(t("app.simplehttpserver.log.methodNotAllowed", { time: nowStamp(), method, target }));
       await this._sendError(io, 405, "Method Not Allowed",
         t("app.simplehttpserver.http.405.title"),
         t("app.simplehttpserver.http.405.details", { method }),
-        { "Allow": "GET, HEAD" });
-      this._appendLog(t("app.simplehttpserver.log.methodNotAllowed", { time: nowStamp(), method, target }));
-      return;
+        { "Allow": "GET, HEAD", "Connection": "close" });
+      return false;
     }
 
     let norm = normalizeUrlPath(target);
@@ -936,13 +1016,16 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     const shown = this.vhostsEnabled
       ? `[${vhost ? vhost.host : t("app.simplehttpserver.vhost.defaultTag")}] ${norm}`
       : norm;
+    // with keep-alive, the log shows the request number on this connection
+    const shownReq = this.keepAlive && served > 1 ? `${shown} (#${served})` : shown;
 
     if (data == null) {
+      this._appendLog(t("app.simplehttpserver.log.notFound", { time: nowStamp(), method, norm: shownReq }));
       await this._sendError(io, 404, "Not Found",
         t("app.simplehttpserver.http.404.title"),
-        t("app.simplehttpserver.http.404.details", { norm, fsPath }));
-      this._appendLog(t("app.simplehttpserver.log.notFound", { time: nowStamp(), method, norm: shown }));
-      return;
+        t("app.simplehttpserver.http.404.details", { norm, fsPath }),
+        connHeaders, method === "HEAD");
+      return keep;
     }
 
     const ct   = contentTypeOf(fsPath);
@@ -953,35 +1036,40 @@ export class SimpleHTTPServerApp extends LoggedProcess {
       "Server": "SimpleHTTPServer/1.0",
       "Content-Type": ct,
       "Content-Length": String(data.length),
-      "Connection": "close",
+      ...connHeaders,
     }, body);
 
+    this._appendLog(t("app.simplehttpserver.log.ok", { time: nowStamp(), method, norm: shownReq, bytes: data.length }));
     await io.send(resp);
-    io.close();
-    this._appendLog(t("app.simplehttpserver.log.ok", { time: nowStamp(), method, norm: shown, bytes: data.length }));
+    if (!keep) io.close();
+    return keep;
   }
 
   /**
-   * Send an HTML error page and close the connection.
+   * Send an HTML error page. The connection is closed unless `extraHeaders`
+   * announce "Connection: keep-alive".
    * @param {{ send: (d: Uint8Array) => any, close: () => void }} io
    * @param {number} status
    * @param {string} reason
    * @param {string} title
    * @param {string} details
-   * @param {Record<string,string>} [extraHeaders]
+   * @param {Record<string,string>} [extraHeaders] may override "Connection"
+   * @param {boolean} [headOnly] HEAD request: headers only (RFC 9110 §9.3.2)
    */
-  async _sendError(io, status, reason, title, details, extraHeaders = {}) {
+  async _sendError(io, status, reason, title, details, extraHeaders = {}, headOnly = false) {
     const body = internalHtml(title, details);
+    const { Connection: connection = "close", ...rest } = extraHeaders;
     const resp = buildResponse(status, reason, {
       "Date": new Date().toUTCString(),
-      ...extraHeaders,
+      ...(rest.Allow ? { Allow: rest.Allow } : {}),
       "Server": "SimpleHTTPServer/1.0",
       "Content-Type": "text/html; charset=utf-8",
       "Content-Length": String(body.length),
-      "Connection": "close",
-    }, body);
+      "Connection": connection,
+      ...(rest["Keep-Alive"] ? { "Keep-Alive": rest["Keep-Alive"] } : {}),
+    }, headOnly ? new Uint8Array(0) : body);
     await io.send(resp);
-    io.close();
+    if (connection !== "keep-alive") io.close();
   }
 
   // ── HTTPS cert helpers ──────────────────────────────────────────────────────
@@ -1080,6 +1168,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
       const json = JSON.parse(fs.readFile("/etc/httpd.conf"));
       if (Number.isInteger(json.port) && json.port >= 1 && json.port <= 65535) this.port = json.port;
       if (typeof json.docRoot === "string" && json.docRoot) this.docRoot = json.docRoot;
+      if (typeof json.keepAlive === "boolean") this.keepAlive = json.keepAlive;
       if (typeof json.httpsEnabled === "boolean") this.httpsEnabled = json.httpsEnabled;
       if (Number.isInteger(json.httpsPort) && json.httpsPort >= 1 && json.httpsPort <= 65535) this.httpsPort = json.httpsPort;
       if (typeof json.certPath === "string") this.certPath = json.certPath;
@@ -1095,6 +1184,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
       fs.writeFile("/etc/httpd.conf", JSON.stringify({
         port: this.port,
         docRoot: this.docRoot,
+        keepAlive: this.keepAlive,
         httpsEnabled: this.httpsEnabled,
         httpsPort: this.httpsPort,
         certPath: this.certPath,

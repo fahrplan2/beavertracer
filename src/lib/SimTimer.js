@@ -95,6 +95,9 @@ export class SimTimer {
      *  above, this must stay well above the initial RTO (600ms) or a single
      *  retransmitted segment looks like a dead connection. */
     static HTTP_SERVER_TIMEOUT_MS   = 10_000;  // 2000 ticks
+    /** Idle time a web server keeps a persistent (keep-alive) connection
+     *  open waiting for the next request — Apache's KeepAliveTimeout default. */
+    static HTTP_KEEPALIVE_TIMEOUT_MS = 5_000;  // 1000 ticks
     /** Same as HTTP_SERVER_TIMEOUT_MS, client side (Sparktail). */
     static HTTP_CLIENT_TIMEOUT_MS   = 10_000;  // 2000 ticks
     /** Per-line read timeout of the mail client (SMTP/POP3/IMAP replies). */

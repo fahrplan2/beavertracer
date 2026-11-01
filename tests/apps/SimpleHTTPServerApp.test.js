@@ -190,15 +190,15 @@ async function readResponse(conn) {
 }
 
 function sendGet(conn, path) {
-  conn.send(enc.encode(`GET ${path} HTTP/1.1\r\nHost: localhost\r\n\r\n`));
+  conn.send(enc.encode(`GET ${path} HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n`));
 }
 
 function sendHead(conn, path) {
-  conn.send(enc.encode(`HEAD ${path} HTTP/1.1\r\nHost: localhost\r\n\r\n`));
+  conn.send(enc.encode(`HEAD ${path} HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n`));
 }
 
 function sendPost(conn, path, body = '') {
-  conn.send(enc.encode(`POST ${path} HTTP/1.1\r\nHost: localhost\r\nContent-Length: ${body.length}\r\n\r\n${body}`));
+  conn.send(enc.encode(`POST ${path} HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\nContent-Length: ${body.length}\r\n\r\n${body}`));
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -410,7 +410,7 @@ describe('SimpleHTTPServerApp – virtual hosts (HTTP)', () => {
 
   const get = async (/** @type {string} */ host) => {
     const c = vnet.connect();
-    c.send(enc.encode(`GET / HTTP/1.1\r\nHost: ${host}\r\n\r\n`));
+    c.send(enc.encode(`GET / HTTP/1.1\r\nHost: ${host}\r\nConnection: close\r\n\r\n`));
     return readResponse(c);
   };
 
@@ -522,7 +522,7 @@ describe('SimpleHTTPServerApp – virtual hosts (HTTPS / SNI)', () => {
       timeoutMs: 5000, serverName,
     });
     await tls.handshake();
-    await tls.send(enc.encode(`GET / HTTP/1.1\r\nHost: ${host}\r\n\r\n`));
+    await tls.send(enc.encode(`GET / HTTP/1.1\r\nHost: ${host}\r\nConnection: close\r\n\r\n`));
     /** @type {Uint8Array[]} */
     const chunks = [];
     let c;
@@ -564,5 +564,166 @@ describe('SimpleHTTPServerApp – virtual hosts (HTTPS / SNI)', () => {
     const r = await httpsGet('x.lan', 'y.lan');
     expect(r.status).toBe(200);
     expect(r.body).toBe('DEFAULT');
+  });
+});
+
+// ── Keep-Alive (RFC 9112 §9.3) ────────────────────────────────────────────────
+
+describe('SimpleHTTPServerApp – keep-alive', () => {
+  const FILES = {
+    '/var/www/index.html': 'INDEX',
+    '/var/www/a.css':      'body{}',
+  };
+  /** @type {ReturnType<typeof makeVirtualTCPNet>} */
+  let vnet;
+  /** @type {SimpleHTTPServerApp} */
+  let server;
+
+  /** @param {boolean} [keepAlive] */
+  function start(keepAlive = true) {
+    vnet = makeVirtualTCPNet();
+    server = new SimpleHTTPServerApp(makeOS(vnet.net, makeMockFS(FILES)));
+    server.keepAlive = keepAlive;
+    server._start();
+  }
+  afterEach(() => server._stop());
+
+  /**
+   * Response reader that frames by Content-Length, so several responses can
+   * be read from one connection. `closed` tells whether the server ended it.
+   */
+  function responses(/** @type {any} */ conn) {
+    let buf = new Uint8Array(0);
+    let closed = false;
+    const fill = async () => {
+      const c = await conn.recv();
+      if (c === null) { closed = true; return false; }
+      buf = concat([buf, c]);
+      return true;
+    };
+    return {
+      get closed() { return closed; },
+      /** @param {boolean} [head] HEAD request: no body follows */
+      async next(head = false) {
+        let sep;
+        while ((sep = dec.decode(buf).indexOf('\r\n\r\n')) < 0) if (!await fill()) return null;
+        const headerText = dec.decode(buf.slice(0, sep));
+        const [statusLine, ...lines] = headerText.split('\r\n');
+        /** @type {Record<string,string>} */
+        const headers = {};
+        for (const l of lines) { const i = l.indexOf(': '); headers[l.slice(0, i).toLowerCase()] = l.slice(i + 2); }
+        const len = head ? 0 : Number(headers['content-length'] ?? 0);
+        while (buf.length < sep + 4 + len) if (!await fill()) break;
+        const body = dec.decode(buf.slice(sep + 4, sep + 4 + len));
+        buf = buf.slice(sep + 4 + len);
+        return { status: Number(statusLine.split(' ')[1]), headers, body };
+      },
+      async waitClosed() { while (!closed) await fill(); return buf.length; },
+    };
+  }
+
+  const req = (/** @type {string} */ path, extra = '', ver = '1.1') =>
+    enc.encode(`GET ${path} HTTP/${ver}\r\nHost: localhost\r\n${extra}\r\n`);
+
+  it('serves several requests over one connection', async () => {
+    start();
+    const c = vnet.connect();
+    const r = responses(c);
+    c.send(req('/index.html'));
+    const r1 = await r.next();
+    expect(r1?.body).toBe('INDEX');
+    expect(r1?.headers.connection).toBe('keep-alive');
+    expect(r1?.headers['keep-alive']).toBe('timeout=5, max=99');
+    c.send(req('/a.css'));
+    const r2 = await r.next();
+    expect(r2?.body).toBe('body{}');
+    expect(r2?.headers['keep-alive']).toBe('timeout=5, max=98');
+    expect(r.closed).toBe(false);
+  });
+
+  it('answers pipelined requests in order', async () => {
+    start();
+    const c = vnet.connect();
+    const r = responses(c);
+    const both = concat([req('/a.css'), req('/index.html', 'Connection: close\r\n')]);
+    c.send(both);
+    expect((await r.next())?.body).toBe('body{}');
+    const last = await r.next();
+    expect(last?.body).toBe('INDEX');
+    expect(last?.headers.connection).toBe('close');
+    expect(await r.waitClosed()).toBe(0);
+  });
+
+  it('404 keeps the connection, a HEAD 404 carries no body', async () => {
+    start();
+    const c = vnet.connect();
+    const r = responses(c);
+    c.send(enc.encode('HEAD /missing HTTP/1.1\r\nHost: localhost\r\n\r\n'));
+    const r1 = await r.next(true);
+    expect(r1?.status).toBe(404);
+    expect(Number(r1?.headers['content-length'])).toBeGreaterThan(0);
+    c.send(req('/index.html'));
+    const r2 = await r.next();
+    expect(r2?.status).toBe(200);
+    expect(r2?.body).toBe('INDEX');
+  });
+
+  it('HTTP/1.0 closes by default, stays open with "Connection: keep-alive"', async () => {
+    start();
+    const c1 = vnet.connect();
+    const r1 = responses(c1);
+    c1.send(req('/index.html', '', '1.0'));
+    expect((await r1.next())?.headers.connection).toBe('close');
+    await r1.waitClosed();
+
+    const c2 = vnet.connect();
+    const r2 = responses(c2);
+    c2.send(req('/index.html', 'Connection: Keep-Alive\r\n', '1.0'));
+    expect((await r2.next())?.headers.connection).toBe('keep-alive');
+    expect(r2.closed).toBe(false);
+  });
+
+  it('switched off: every response closes the connection', async () => {
+    start(false);
+    const c = vnet.connect();
+    const r = responses(c);
+    c.send(req('/index.html'));
+    const r1 = await r.next();
+    expect(r1?.headers.connection).toBe('close');
+    expect(r1?.headers['keep-alive']).toBeUndefined();
+    await r.waitClosed();
+  });
+
+  it('a request with a body ends the connection', async () => {
+    start();
+    const c = vnet.connect();
+    const r = responses(c);
+    c.send(enc.encode('GET / HTTP/1.1\r\nHost: localhost\r\nContent-Length: 3\r\n\r\nabc'));
+    expect((await r.next())?.headers.connection).toBe('close');
+    await r.waitClosed();
+  });
+
+  it('the client closing between requests ends the connection quietly', async () => {
+    start();
+    const c = vnet.connect();
+    const r = responses(c);
+    c.send(req('/index.html'));
+    await r.next();
+    c.close();
+    expect(await r.waitClosed()).toBe(0);  // no 400 page after the last response
+  });
+
+  it('keepAlive is persisted, old configs default to on', () => {
+    /** @type {Record<string,string>} */
+    const files = { '/etc/httpd.conf': JSON.stringify({ port: 80 }) };
+    const fs = { ...makeMockFS(files), writeFile(/** @type {string} */ p, /** @type {string} */ d) { files[p] = d; } };
+    const app = new SimpleHTTPServerApp(makeOS(makeVirtualTCPNet().net, fs));
+    app._loadConfig();
+    expect(app.keepAlive).toBe(true);
+    app.keepAlive = false;
+    app._saveConfig();
+    const app2 = new SimpleHTTPServerApp(makeOS(makeVirtualTCPNet().net, fs));
+    app2._loadConfig();
+    expect(app2.keepAlive).toBe(false);
   });
 });
