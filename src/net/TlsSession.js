@@ -16,6 +16,22 @@ export const TLS_ALERT = Object.freeze({
   UNRECOGNIZED_NAME: 112,
 });
 
+/** Readable names for AlertDescription codes (RFC 5246 §7.2, RFC 6066 §3). */
+const TLS_ALERT_NAMES = Object.freeze({
+  0: "close_notify", 10: "unexpected_message", 20: "bad_record_mac",
+  22: "record_overflow", 40: "handshake_failure", 42: "bad_certificate",
+  43: "unsupported_certificate", 44: "certificate_revoked", 45: "certificate_expired",
+  46: "certificate_unknown", 47: "illegal_parameter", 48: "unknown_ca",
+  49: "access_denied", 50: "decode_error", 51: "decrypt_error",
+  70: "protocol_version", 71: "insufficient_security", 80: "internal_error",
+  90: "user_canceled", 110: "unsupported_extension", 112: "unrecognized_name",
+});
+
+/** @param {number} code */
+export function tlsAlertName(code) {
+  return /** @type {Record<number, string>} */ (TLS_ALERT_NAMES)[code] ?? `alert_${code}`;
+}
+
 export class TlsHandshakeError extends Error {
   /**
    * @param {string} msg
@@ -25,6 +41,26 @@ export class TlsHandshakeError extends Error {
     super(msg);
     this.name = "TlsHandshakeError";
     this.alert = alert;
+  }
+}
+
+/**
+ * The peer aborted the handshake with an alert. Unlike other handshake
+ * errors this one is never answered with an alert of our own (RFC 5246
+ * §7.2.2: both sides just close the connection).
+ */
+export class TlsAlertReceivedError extends TlsHandshakeError {
+  /**
+   * @param {number} level 1 = warning, 2 = fatal
+   * @param {number} description AlertDescription code
+   */
+  constructor(level, description) {
+    super(description === TLS_ALERT.CLOSE_NOTIFY
+      ? "Peer closed the connection during the handshake (close_notify)"
+      : `Peer aborted the handshake: ${tlsAlertName(description)} (${description})`, description);
+    this.name = "TlsAlertReceivedError";
+    this.level = level;
+    this.description = description;
   }
 }
 
@@ -462,7 +498,7 @@ export class TlsSession {
       this._state = "ESTABLISHED";
     } catch (e) {
       this._state = "CLOSED";
-      if (e instanceof TlsHandshakeError) {
+      if (e instanceof TlsHandshakeError && !(e instanceof TlsAlertReceivedError)) {
         // Once our ChangeCipherSpec is out, alerts go under the new keys too.
         // RFC 5246 §7.2: fatal alert; plaintext before our ChangeCipherSpec.
         try { await this._sendRecord(TLS_CT.ALERT, new Uint8Array([2, e.alert ?? TLS_ALERT.HANDSHAKE_FAILURE])); } catch { /* ignore */ }
@@ -954,10 +990,27 @@ export class TlsSession {
   }
 
   /**
-   * Like _readRecord but with a timeout. Throws TlsHandshakeError on timeout.
+   * Next handshake-phase record, with a timeout. Alerts are consumed here:
+   * a fatal one (or close_notify) aborts the handshake with
+   * {@link TlsAlertReceivedError}, a warning is skipped.
+   * Throws TlsHandshakeError on timeout.
    * @returns {Promise<TlsRecord|null>}
    */
   async _readRecordTimeout() {
+    while (true) {
+      const rec = await this._readOneRecordTimeout();
+      if (rec === null || rec.contentType !== TLS_CT.ALERT) return rec;
+      if (rec.payload.length !== 2) throw new TlsHandshakeError("Malformed alert", TLS_ALERT.DECODE_ERROR);
+      const [level, description] = rec.payload;
+      if (level === 2 || description === TLS_ALERT.CLOSE_NOTIFY) {
+        throw new TlsAlertReceivedError(level, description);
+      }
+      // warning alert (e.g. unrecognized_name as warning, RFC 6066 §3): ignore
+    }
+  }
+
+  /** @returns {Promise<TlsRecord|null>} */
+  _readOneRecordTimeout() {
     return new Promise((resolve, reject) => {
       let done = false;
       this._sleep(this._timeoutMs).then(() => {

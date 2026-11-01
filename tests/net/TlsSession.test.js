@@ -10,7 +10,7 @@
  *  - Untrusted certificate is rejected
  */
 import { describe, it, expect } from 'vitest';
-import { TlsSession, TlsHandshakeError, TlsCertUntrustedError, TlsCertExpiredError, TlsCertNameMismatchError, certMatchesName } from '../../src/net/TlsSession.js';
+import { TlsSession, TlsHandshakeError, TlsAlertReceivedError, tlsAlertName, TlsCertUntrustedError, TlsCertExpiredError, TlsCertNameMismatchError, certMatchesName } from '../../src/net/TlsSession.js';
 import { TlsCertificate, TlsTrustStore } from '../../src/net/models/TlsCertificate.js';
 import { TlsRecord, TLS_EXT, TlsDecodeError } from '../../src/net/pdu/TlsRecord.js';
 
@@ -651,13 +651,13 @@ describe('Server certificate selection by SNI (RFC 6066 §3)', () => {
     return null;
   }
 
-  async function handshakeWith(/** @type {any} */ selectCert, /** @type {string} */ serverName, clientTimeoutMs = 5000) {
+  async function handshakeWith(/** @type {any} */ selectCert, /** @type {string} */ serverName) {
     const q = makeQueues();
     /** @type {Uint8Array[]} */
     const s2c = [];
     const client = new TlsSession({
       send: q.clientSend, recv: q.clientRecv, isServer: false,
-      timeoutMs: clientTimeoutMs, serverName,
+      timeoutMs: 5000, serverName,
     });
     const server = new TlsSession({
       send: (d) => { s2c.push(d); q.serverSend(d); }, recv: q.serverRecv, isServer: true,
@@ -704,12 +704,106 @@ describe('Server certificate selection by SNI (RFC 6066 §3)', () => {
   });
 
   it('aborts with unrecognized_name when no certificate is available', async () => {
-    const { server, s2c, results } = await handshakeWith(() => null, 'x.lan', 50);
+    const { server, s2c, results } = await handshakeWith(() => null, 'x.lan');
     expect(results[1].status).toBe('rejected');
+    // the client fails fast on the fatal alert instead of running into its timeout
+    expect(results[0].status).toBe('rejected');
+    const clientErr = /** @type {PromiseRejectedResult} */ (results[0]).reason;
+    expect(clientErr).toBeInstanceOf(TlsAlertReceivedError);
+    expect(clientErr.description).toBe(112);
+    expect(clientErr.message).toContain('unrecognized_name');
     expect(server['_state']).toBe('CLOSED');
     const alerts = s2c.flatMap(c => TlsRecord.parseRecords(/** @type {any} */ (c)).records)
       .filter(r => r.contentType === 0x15);
     expect(alerts.length).toBe(1);
     expect(Array.from(alerts[0].payload)).toEqual([2, 112]);
+  });
+});
+
+describe('Receiving alerts during the handshake (RFC 5246 §7.2)', () => {
+  /**
+   * Feed a hand-made byte stream to one side; collect what it sends back.
+   * @param {boolean} isServer
+   * @param {Uint8Array[]} incoming
+   */
+  async function against(isServer, incoming) {
+    /** @type {Uint8Array[]} */
+    const sent = [];
+    const queue = [...incoming];
+    const tls = new TlsSession({
+      send: (d) => sent.push(d),
+      recv: async () => queue.shift() ?? new Promise(() => {}), // then silence
+      isServer,
+      cert: isServer ? await TlsCertificate.generate('s.lan') : undefined,
+      timeoutMs: 5000,
+    });
+    const err = await tls.handshake().then(() => null, (e) => e);
+    return { err, sent, tls };
+  }
+  const alert = (/** @type {number} */ level, /** @type {number} */ desc) =>
+    new TlsRecord(0x15, new Uint8Array([level, desc])).pack();
+  const alertsIn = (/** @type {Uint8Array[]} */ chunks) =>
+    chunks.flatMap(c => TlsRecord.parseRecords(/** @type {any} */ (c)).records).filter(r => r.contentType === 0x15);
+
+  it('client: fatal alert aborts immediately and is not answered', async () => {
+    const { err, sent, tls } = await against(false, [alert(2, 40)]);
+    expect(err).toBeInstanceOf(TlsAlertReceivedError);
+    expect(err).toBeInstanceOf(TlsHandshakeError); // existing catch sites keep working
+    expect(err.level).toBe(2);
+    expect(err.description).toBe(40);
+    expect(err.message).toContain('handshake_failure');
+    expect(tls['_state']).toBe('CLOSED');
+    expect(alertsIn(sent)).toEqual([]); // only our ClientHello went out
+  });
+
+  it('server: fatal alert instead of ClientHello aborts', async () => {
+    const { err, sent } = await against(true, [alert(2, 70)]);
+    expect(err).toBeInstanceOf(TlsAlertReceivedError);
+    expect(err.message).toContain('protocol_version');
+    expect(sent).toEqual([]);
+  });
+
+  it('close_notify during the handshake counts as abort', async () => {
+    const { err } = await against(true, [alert(1, 0)]);
+    expect(err).toBeInstanceOf(TlsAlertReceivedError);
+    expect(err.message).toContain('close_notify');
+  });
+
+  it('a warning alert is skipped and the handshake continues', async () => {
+    const q = makeQueues();
+    const cert = await TlsCertificate.generate('server.local');
+    const client = new TlsSession({ send: q.clientSend, recv: q.clientRecv, isServer: false, timeoutMs: 5000 });
+    const server = new TlsSession({ send: q.serverSend, recv: q.serverRecv, isServer: true, cert, timeoutMs: 5000 });
+    q.serverSend(alert(1, 112)); // warning-level unrecognized_name before the ServerHello
+    await Promise.all([client.handshake(), server.handshake()]);
+    expect(client['_state']).toBe('ESTABLISHED');
+  });
+
+  it('malformed alert -> decode_error', async () => {
+    const bad = new TlsRecord(0x15, new Uint8Array([2])).pack();
+    const { err, sent } = await against(true, [bad]);
+    expect(err).toBeInstanceOf(TlsHandshakeError);
+    expect(err).not.toBeInstanceOf(TlsAlertReceivedError);
+    expect(alertsIn(sent).map(r => Array.from(r.payload))).toEqual([[2, 50]]);
+  });
+
+  it('server learns quickly when the client rejects its certificate', async () => {
+    const q = makeQueues();
+    const cert = await TlsCertificate.generate('server.local');
+    const client = new TlsSession({
+      send: q.clientSend, recv: q.clientRecv, isServer: false,
+      trustStore: new TlsTrustStore(), timeoutMs: 5000,
+    });
+    const server = new TlsSession({ send: q.serverSend, recv: q.serverRecv, isServer: true, cert, timeoutMs: 5000 });
+    const [c, s] = await Promise.allSettled([client.handshake(), server.handshake()]);
+    expect(/** @type {PromiseRejectedResult} */ (c).reason).toBeInstanceOf(TlsCertUntrustedError);
+    const serverErr = /** @type {PromiseRejectedResult} */ (s).reason;
+    expect(serverErr).toBeInstanceOf(TlsAlertReceivedError);
+    expect(serverErr.description).toBe(42); // bad_certificate
+  });
+
+  it('tlsAlertName covers known and unknown codes', () => {
+    expect(tlsAlertName(112)).toBe('unrecognized_name');
+    expect(tlsAlertName(250)).toBe('alert_250');
   });
 });
