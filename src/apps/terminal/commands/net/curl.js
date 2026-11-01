@@ -11,10 +11,12 @@ import {
     openTlsTransport,
     httpRequest,
     http2Request,
+    http3Request,
     HttpError,
     utf8Encode,
     utf8Decode,
 } from "../../../../net/HttpClient.js";
+import { connectHttp3 } from "../../../../net/QuicTransport.js";
 
 /** @type {import("../types.js").Command} */
 export const curl = {
@@ -37,7 +39,7 @@ export const curl = {
         const extraHeaders = /** @type {string[]} */ ([]);
         let url    = /** @type {string|null} */ (null);
         /** "auto" = like curl with nghttp2: offer h2 over TLS, HTTP/1.1 in clear text */
-        let proto  = /** @type {"auto"|"http1.1"|"http2"|"prior"} */ ("auto");
+        let proto  = /** @type {"auto"|"http1.1"|"http2"|"prior"|"http3"|"http3only"} */ ("auto");
         /** TLS versions to offer: --tlsv1.3 sets the minimum, --tls-max the maximum */
         let tlsMin = "1.2", tlsMax = "1.3";
 
@@ -50,6 +52,8 @@ export const curl = {
             else if (a === "--http1.1") proto = "http1.1";
             else if (a === "--http2") proto = "http2";
             else if (a === "--http2-prior-knowledge") proto = "prior";
+            else if (a === "--http3") proto = "http3";
+            else if (a === "--http3-only") proto = "http3only";
             else if (a === "--tlsv1.2") tlsMin = "1.2";
             else if (a === "--tlsv1.3") tlsMin = "1.3";
             else if (a === "--tls-max" && i + 1 < args.length) tlsMax = args[++i];
@@ -75,6 +79,62 @@ export const curl = {
         } catch {
             ctx.signal.throwIfAborted();
             throw new CommandError(t("app.terminal.commands.curl.err.resolve", { host }));
+        }
+
+        const defaultPort = scheme === "https" ? 443 : 80;
+        const hostBare = host.includes(":") && !host.startsWith("[") ? `[${host}]` : host;
+        const hostHeader = port !== defaultPort ? `${hostBare}:${port}` : hostBare;
+        const reqBody = data != null ? utf8Encode(data) : null;
+        const contentType = data != null ? "application/x-www-form-urlencoded" : null;
+        const onRequestLine = verbose ? (/** @type {string} */ line) => ctx.println(line ? `> ${line}` : ">") : undefined;
+
+        /** @param {import("../../../../net/HttpClient.js").HttpResponse} res */
+        const output = (res) => {
+            if (verbose || headOnly) {
+                ctx.println(`< ${res.statusLine}`);
+                for (const line of res.headerLines) ctx.println(`< ${line}`);
+                ctx.println("<");
+            }
+            if (headOnly) return;
+            if (res.body.length > 0) ctx.println(utf8Decode(res.body));
+            else if (!verbose) ctx.println(res.statusLine); // show status at minimum
+        };
+
+        // ── HTTP/3 over QUIC (UDP); --http3 falls back to TCP like real curl ──
+        if (proto === "http3" || proto === "http3only") {
+            if (scheme !== "https") throw new CommandError(t("app.terminal.commands.curl.err.h3NeedsHttps"));
+            if (verbose) ctx.println(`* QUIC: connecting to ${ip}:${port} (UDP)…`);
+            /** @type {Awaited<ReturnType<typeof connectHttp3>>|null} */
+            let q = null;
+            try {
+                q = await abortable(connectHttp3(ctx.os, { ip, port, host, insecure }), ctx.signal, (late) => late.close());
+            } catch (e) {
+                ctx.signal.throwIfAborted();
+                const reason = e instanceof Error ? e.message : String(e);
+                if (proto === "http3only") throw new CommandError(t("app.terminal.commands.curl.err.quic", { reason }));
+                if (verbose) ctx.println(`* QUIC failed (${reason}), falling back to TCP`);
+            }
+            if (q) {
+                const quicConn = q;
+                ctx.onInterrupt(() => quicConn.close());
+                if (verbose) {
+                    ctx.println(`* QUIC connection established: ${quicConn.quic.tls.version.replace("TLS ", "TLSv")} / ${quicConn.quic.tls.cipherSuite}`);
+                    ctx.println("* using HTTP/3");
+                }
+                let res;
+                try {
+                    res = await http3Request({
+                        h3: quicConn.h3, method, scheme, authority: hostHeader, path,
+                        headers: extraHeaders, body: reqBody, contentType, userAgent: "curl/1.0", onRequestLine,
+                    });
+                } catch (e) {
+                    throw new CommandError(t("app.terminal.err.errorPrefix", { msg: e instanceof Error ? e.message : String(e) }));
+                } finally {
+                    quicConn.close();
+                }
+                output(res);
+                return;
+            }
         }
 
         // ── connect (TCP, or TLS for https) ───────────────────────────────
@@ -121,10 +181,6 @@ export const curl = {
             if (useH2) ctx.println("* using HTTP/2");
         }
 
-        const defaultPort = scheme === "https" ? 443 : 80;
-        const hostBare = host.includes(":") && !host.startsWith("[") ? `[${host}]` : host;
-        const hostHeader = port !== defaultPort ? `${hostBare}:${port}` : hostBare;
-
         // ── request / response ─────────────────────────────────────────────
         let res;
         try {
@@ -157,20 +213,6 @@ export const curl = {
             throw new CommandError(t("app.terminal.err.errorPrefix", { msg: e instanceof Error ? e.message : String(e) }));
         }
         conn.close();
-
-        if (verbose || headOnly) {
-            ctx.println(`< ${res.statusLine}`);
-            for (const line of res.headerLines) ctx.println(`< ${line}`);
-            ctx.println("<");
-        }
-
-        if (headOnly) return;
-
-        if (res.body.length > 0) {
-            ctx.println(utf8Decode(res.body));
-        } else if (!verbose) {
-            // show status at minimum so the user knows something happened
-            ctx.println(res.statusLine);
-        }
+        output(res);
     },
 };

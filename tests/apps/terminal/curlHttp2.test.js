@@ -18,14 +18,18 @@ const { curl } = await import('../../../src/apps/terminal/commands/net/curl.js')
 const { CommandError } = await import('../../../src/apps/terminal/commands/lib/errors.js');
 const { SimpleHTTPServerApp } = await import('../../../src/apps/SimpleHTTPServerApp.js');
 const { TlsCertificate } = await import('../../../src/net/models/TlsCertificate.js');
+const { simTimer } = await import('../../../src/lib/SimTimer.js');
 
 describe('curl and HTTP/2', () => {
   /** @type {any} */ let server;
-  afterEach(() => server?._stop());
+  /** @type {any} */ let ticker = null;
+  afterEach(() => { server?._stop(); if (ticker) clearInterval(ticker); ticker = null; });
+  /** simulated time must run for QUIC timeouts */
+  const runSimTime = () => { ticker = setInterval(() => { for (let i = 0; i < 40; i++) simTimer.tick(); }, 1); };
 
   /** @param {Record<string, any>} cfg */
   async function setup(cfg) {
-    const { net } = makeLinkedNet();
+    const { net, control } = makeLinkedNet();
     const os = {
       net, fs: makeFS({ '/var/www/index.html': 'hello h2' }), exit() {},
       dns: { resolveIP: async () => null }, clock: { nowMs: () => Date.now() },
@@ -41,7 +45,7 @@ describe('curl and HTTP/2', () => {
       os, cwd: '/', env: {}, onInterrupt: () => {}, signal: new AbortController().signal,
       println: (/** @type {string} */ s = '') => out.push(s),
     });
-    return { ctx, out };
+    return { ctx, out, control };
   }
 
   it('negotiates h2 by default over https when the server offers it', async () => {
@@ -113,5 +117,38 @@ describe('curl and HTTP/2', () => {
     expect(text).toContain('TLSv1.3');
     expect(text).toContain('< HTTP/2 200');
     expect(text).toContain('hello h2');
+  });
+
+  it('--http3 speaks HTTP/3 over QUIC', async () => {
+    const { ctx, out } = await setup({ http3Enabled: true });
+    await curl.run(ctx, ['-v', '--http3', 'https://10.0.0.1/']);
+    const text = out.join('\n');
+    expect(text).toContain('* QUIC connection established: TLSv1.3 / TLS_AES_128_GCM_SHA256');
+    expect(text).toContain('* using HTTP/3');
+    expect(text).toContain('> GET / HTTP/3');
+    expect(text).toContain('< HTTP/3 200');
+    expect(text).toContain('hello h2');
+  });
+
+  it('HTTPS responses announce HTTP/3 with Alt-Svc', async () => {
+    const { ctx, out } = await setup({ http3Enabled: true });
+    await curl.run(ctx, ['-I', 'https://10.0.0.1/']);
+    expect(out).toContain('< Alt-Svc: h3=":443"; ma=86400');
+  });
+
+  it('--http3 falls back to TCP when UDP is blocked; --http3-only fails', async () => {
+    const { ctx, out, control } = await setup({ http3Enabled: true });
+    control.blockUdp = true;
+    runSimTime();
+    await curl.run(ctx, ['-v', '--http3', 'https://10.0.0.1/']);
+    const text = out.join('\n');
+    expect(text).toMatch(/\* QUIC failed \(QUIC handshake timeout\), falling back to TCP/);
+    expect(text).toContain('< HTTP/1.1 200 OK');
+    await expect(curl.run(ctx, ['--http3-only', 'https://10.0.0.1/'])).rejects.toBeInstanceOf(CommandError);
+  }, 20_000);
+
+  it('--http3 needs https', async () => {
+    const { ctx } = await setup({});
+    await expect(curl.run(ctx, ['--http3', 'http://10.0.0.1/'])).rejects.toBeInstanceOf(CommandError);
   });
 });

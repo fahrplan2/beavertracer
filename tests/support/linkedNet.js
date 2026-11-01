@@ -37,7 +37,11 @@ export function makeLinkedNet() {
   const listeners = new Map(); // port -> accept queue
   /** @type {Map<string, { inbox: ReturnType<typeof makeQueue>, peer: string }>} */
   const ends = new Map();
-  const stats = { connects: 0 };
+  const stats = { connects: 0, udpSent: 0, udpDropped: 0 };
+  /** @type {Map<number, ReturnType<typeof makeQueue>>} */
+  const udp = new Map();
+  /** Set to true to simulate a firewall that drops all UDP. */
+  const control = { blockUdp: false };
 
   const net = {
     openTCPServerSocket(/** @type {any} */ _ip, /** @type {number} */ port) {
@@ -71,8 +75,23 @@ export function makeLinkedNet() {
       ends.delete(k);
     },
     getTCPConnInfo() { return null; },
+
+    // ── UDP: one shared port space, delivery by destination port ──
+    openUDPSocket(/** @type {any} */ _bind, /** @type {number} */ port) {
+      if (udp.has(port)) throw new Error('Port is in use');
+      udp.set(port, makeQueue());
+      return port;
+    },
+    sendUDPSocket(/** @type {number} */ port, /** @type {any} */ _dst, /** @type {number} */ dstPort, /** @type {Uint8Array} */ data) {
+      stats.udpSent++;
+      if (control.blockUdp) { stats.udpDropped++; return Promise.resolve(); }
+      udp.get(dstPort)?.push({ src: { toString: () => '10.0.0.2' }, srcPort: port, payload: data.slice() });
+      return Promise.resolve();
+    },
+    recvUDPSocket(/** @type {number} */ port) { return udp.get(port)?.next() ?? Promise.resolve(null); },
+    closeUDPSocket(/** @type {number} */ port) { udp.get(port)?.close(); udp.delete(port); },
   };
-  return { net, stats, openEnds: () => ends.size };
+  return { net, stats, control, openEnds: () => ends.size, udpPorts: () => [...udp.keys()] };
 }
 
 /** @param {Record<string,string>} files */

@@ -497,14 +497,7 @@ export async function http2Request(opts) {
         userAgent = "sim-http/1.0", accept = "*/*", onRequestLine,
     } = opts;
 
-    /** @type {Array<[string, string]>} */
-    const fields = [["user-agent", userAgent], ["accept", accept]];
-    for (const h of headers) {
-        const k = h.indexOf(":");
-        if (k > 0) fields.push([h.slice(0, k).trim().toLowerCase(), h.slice(k + 1).trim()]);
-    }
-    if (body && contentType && !fields.some(([n]) => n === "content-type")) fields.push(["content-type", contentType]);
-    if (body) fields.push(["content-length", String(body.length)]);
+    const fields = requestFields({ headers, body, contentType, userAgent, accept });
 
     if (onRequestLine) {
         // curl shows the request in HTTP/1-like notation, Host for :authority
@@ -517,22 +510,70 @@ export async function http2Request(opts) {
     const conn = new Http2Connection({ send: transport.send, recv: transport.recv, isServer: false });
     conn.start();
     try {
-        const r = await conn.request({ method, scheme, authority, path, headers: fields, body });
-        const headerLines = r.headers.map(([n, v]) => `${n}: ${v}`);
+        return await muxRequest(conn, "HTTP/2", { method, scheme, authority, path, fields, body });
+    } finally {
+        conn.goaway();
+    }
+}
+
+/**
+ * One request over an established HTTP/3 connection (see QuicTransport
+ * connectHttp3). Same result shape as {@link httpRequest}, status line
+ * "HTTP/3 <code>".
+ * @param {Omit<Parameters<typeof http2Request>[0], "transport"> & { h3: import("./Http3.js").Http3Connection }} opts
+ * @returns {Promise<HttpResponse>}
+ */
+export async function http3Request(opts) {
+    const { h3, method, scheme, authority, path, body = null, onRequestLine } = opts;
+    const fields = requestFields(opts);
+    if (onRequestLine) {
+        onRequestLine(`${method} ${path} HTTP/3`);
+        onRequestLine(`Host: ${authority}`);
+        for (const [n, v] of fields) onRequestLine(`${n}: ${v}`);
+        onRequestLine("");
+    }
+    return muxRequest(h3, "HTTP/3", { method, scheme, authority, path, fields, body });
+}
+
+/**
+ * Header fields of an HTTP/2 or HTTP/3 request (lower-case names).
+ * @param {{ headers?: string[], body?: Uint8Array|null, contentType?: string|null, userAgent?: string, accept?: string }} o
+ * @returns {Array<[string, string]>}
+ */
+function requestFields(o) {
+    /** @type {Array<[string, string]>} */
+    const fields = [["user-agent", o.userAgent ?? "sim-http/1.0"], ["accept", o.accept ?? "*/*"]];
+    for (const h of o.headers ?? []) {
+        const k = h.indexOf(":");
+        if (k > 0) fields.push([h.slice(0, k).trim().toLowerCase(), h.slice(k + 1).trim()]);
+    }
+    if (o.body && o.contentType && !fields.some(([n]) => n === "content-type")) fields.push(["content-type", o.contentType]);
+    if (o.body) fields.push(["content-length", String(o.body.length)]);
+    return fields;
+}
+
+/**
+ * @param {{ request: (r: any) => Promise<{ status: number, headers: Array<[string, string]>, body: Uint8Array }> }} mux
+ * @param {string} version "HTTP/2" | "HTTP/3"
+ * @param {{ method: string, scheme: string, authority: string, path: string, fields: Array<[string, string]>, body: Uint8Array|null }} r
+ * @returns {Promise<HttpResponse>}
+ */
+async function muxRequest(mux, version, r) {
+    try {
+        const res = await mux.request({ method: r.method, scheme: r.scheme, authority: r.authority, path: r.path, headers: r.fields, body: r.body });
+        const headerLines = res.headers.map(([n, v]) => `${n}: ${v}`);
         /** @type {Record<string, string>} */
         const hdrs = {};
-        for (const [n, v] of r.headers) hdrs[n] = hdrs[n] ? `${hdrs[n]}, ${v}` : v;
-        const statusLine = `HTTP/2 ${r.status}`;
+        for (const [n, v] of res.headers) hdrs[n] = hdrs[n] ? `${hdrs[n]}, ${v}` : v;
+        const statusLine = `${version} ${res.status}`;
         return {
-            statusLine, statusCode: r.status, reason: "",
+            statusLine, statusCode: res.status, reason: "",
             headers: hdrs, headerText: [statusLine, ...headerLines].join("\r\n"), headerLines,
-            body: r.body, truncated: false,
+            body: res.body, truncated: false,
         };
     } catch (e) {
         const msg = e instanceof Http2Error ? `HTTP/2 ${h2ErrorName(e.code)}: ${e.message}`
-            : e instanceof Error ? e.message : String(e);
+            : e instanceof Error ? `${version}: ${e.message}` : String(e);
         throw new HttpError("headers", msg);
-    } finally {
-        conn.goaway();
     }
 }

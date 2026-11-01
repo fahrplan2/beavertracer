@@ -995,7 +995,7 @@ export class PCapViewer {
 
       const filter = String(n.filter ?? "");
       const osiLayers = depth === 0 ? osiLayersFor(filter, insideTls) : null;
-      if (depth === 0 && /^(tls|ssl)$/i.test(filter)) insideTls = true;
+      if (depth === 0 && /^(tls|ssl|quic)$/i.test(filter)) insideTls = true;
       const rowOsi = depth === 0 ? osiLayers : osi;
 
       // Build children first so we know if any survive after computed filtering

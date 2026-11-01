@@ -862,3 +862,72 @@ describe('SimpleHTTPServerApp – HTTP/2', async () => {
     expect([app2.http2Enabled, app2.h2cEnabled, app2.tls13Enabled]).toEqual([true, true, true]);
   });
 });
+
+// ── HTTP/3 (QUIC over UDP) ────────────────────────────────────────────────────
+
+describe('SimpleHTTPServerApp – HTTP/3', async () => {
+  const { makeLinkedNet, makeFS } = await import('../support/linkedNet.js');
+  const { connectHttp3 } = await import('../../src/net/QuicTransport.js');
+  /** @type {any} */ let server;
+  afterEach(() => server?._stop());
+
+  /** @param {Record<string, any>} cfg */
+  async function start(cfg) {
+    const { net, udpPorts } = makeLinkedNet();
+    const os = { net, fs: makeFS({ '/var/www/index.html': 'H3!', '/var/www/a/index.html': 'SITE A' }), exit() {}, dns: null, clock: { nowMs: () => Date.now() } };
+    server = new SimpleHTTPServerApp(/** @type {any} */ (os));
+    server.httpsEnabled = true;
+    server._cert = await TlsCertificate.generate('server.lan');
+    Object.assign(server, cfg);
+    server._start();
+    return { os, udpPorts };
+  }
+
+  it('serves HTTP/3 on UDP 443 when switched on', async () => {
+    const { os, udpPorts } = await start({ http3Enabled: true });
+    expect(udpPorts()).toContain(443);
+    const c = await connectHttp3(os, { ip: /** @type {any} */ ({ toString: () => '10.0.0.1' }), port: 443, host: 'server.lan' });
+    expect(c.quic.alpn).toBe('h3');
+    expect(c.quic.tls.version).toBe('TLS 1.3');
+    const r = await c.h3.request({ scheme: 'https', authority: 'server.lan', path: '/' });
+    expect([r.status, dec.decode(r.body)]).toEqual([200, 'H3!']);
+    expect(r.headers).toContainEqual(['alt-svc', 'h3=":443"; ma=86400']);
+    expect(server.log.some((/** @type {string} */ l) => /HTTP\/3|h3Conn/.test(l))).toBe(true);
+    c.close();
+  });
+
+  it('announces HTTP/3 via Alt-Svc on HTTPS (TCP) responses only when it runs', async () => {
+    await start({ http3Enabled: true });
+    const res = server._resolveRequest({ method: 'GET', target: '/', reqHost: 'server.lan', sni: '', isTls: true, label: '' });
+    expect(res.headers['Alt-Svc']).toBe('h3=":443"; ma=86400');
+    const plain = server._resolveRequest({ method: 'GET', target: '/', reqHost: 'server.lan', sni: '', isTls: false, label: '' });
+    expect(plain.headers['Alt-Svc']).toBeUndefined();
+    server._stop();
+    await start({ http3Enabled: false });
+    expect(server._resolveRequest({ method: 'GET', target: '/', reqHost: '', sni: '', isTls: true, label: '' }).headers['Alt-Svc']).toBeUndefined();
+  });
+
+  it('no UDP socket without the switch; stopping closes it', async () => {
+    const off = await start({ http3Enabled: false });
+    expect(off.udpPorts()).not.toContain(443);
+    server._stop();
+    const on = await start({ http3Enabled: true });
+    server._stop();
+    await new Promise(r => setTimeout(r, 10));
+    expect(on.udpPorts()).not.toContain(443);
+  });
+
+  it('virtual hosts: :authority picks the site, SNI the certificate', async () => {
+    const aCert = await TlsCertificate.generate('a.lan');
+    const { os } = await start({
+      http3Enabled: true, vhostsEnabled: true,
+      vhosts: [{ host: 'a.lan', docRoot: '/var/www/a/', certPath: '' }],
+    });
+    server._vhostCerts = new Map([['a.lan', aCert]]);
+    const c = await connectHttp3(os, { ip: /** @type {any} */ ({ toString: () => '10.0.0.1' }), port: 443, host: 'a.lan' });
+    expect(c.quic.tls.peerCert?.subject).toBe('CN=a.lan');
+    const r = await c.h3.request({ scheme: 'https', authority: 'a.lan', path: '/' });
+    expect(dec.decode(r.body)).toBe('SITE A');
+    c.close();
+  });
+});

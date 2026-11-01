@@ -10,6 +10,7 @@ import { nowStamp, encodeUTF8, decodeUTF8 } from "../lib/helpers.js";
 import { TlsSession } from "../net/TlsSession.js";
 import { TlsCertificate } from "../net/models/TlsCertificate.js";
 import { Http2Connection, Http2Error, h2ErrorName } from "../net/Http2.js";
+import { listenHttp3 } from "../net/QuicTransport.js";
 
 const CERT_DIR = "/etc/certs";
 
@@ -277,6 +278,12 @@ export class SimpleHTTPServerApp extends LoggedProcess {
   /** HTTP/2 over plain TCP with prior knowledge ("h2c", RFC 9113 §3.3). @type {boolean} */
   h2cEnabled = false;
 
+  /** HTTP/3 over QUIC on the HTTPS port (UDP), announced with Alt-Svc (RFC 9114 §3.1.1). @type {boolean} */
+  http3Enabled = false;
+
+  /** Running HTTP/3 listener. @type {{ stop: () => void }|null} */
+  _h3 = null;
+
   // ── virtual hosts ───────────────────────────────────────────────────────────
 
   /** Name-based virtual hosting on (Host header / SNI pick the site). @type {boolean} */
@@ -325,6 +332,9 @@ export class SimpleHTTPServerApp extends LoggedProcess {
 
   /** @type {HTMLInputElement|null} */
   h2cEnabledEl = null;
+
+  /** @type {HTMLInputElement|null} */
+  http3EnabledEl = null;
 
   /** @type {HTMLTableSectionElement|null} */
   _vhostTbody = null;
@@ -470,9 +480,11 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     }));
     this.http2EnabledEl = checkbox(this.http2Enabled);
     this.h2cEnabledEl = checkbox(this.h2cEnabled);
+    this.http3EnabledEl = checkbox(this.http3Enabled);
     const protoPane = UI.el("div", { className: "proto-pane", children: [
       UI.row(t("app.simplehttpserver.proto.label.h2"), this.http2EnabledEl),
       UI.row(t("app.simplehttpserver.proto.label.h2c"), this.h2cEnabledEl),
+      UI.row(t("app.simplehttpserver.proto.label.h3"), this.http3EnabledEl),
       UI.el("div", { className: "hint", text: t("app.simplehttpserver.proto.hint") }),
     ]});
 
@@ -529,6 +541,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     this.vhostsEnabledEl = null;
     this.http2EnabledEl = null;
     this.h2cEnabledEl  = null;
+    this.http3EnabledEl = null;
     this._vhostTbody   = null;
     this._vhostAddBtn  = null;
     this._vhostRows    = [];
@@ -556,6 +569,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     if (this.vhostsEnabledEl) this.vhostsEnabledEl.disabled = r;
     if (this.http2EnabledEl) this.http2EnabledEl.disabled = r;
     if (this.h2cEnabledEl)  this.h2cEnabledEl.disabled   = r;
+    if (this.http3EnabledEl) this.http3EnabledEl.disabled = r;
     if (this._vhostAddBtn)  this._vhostAddBtn.disabled   = r;
     for (const row of this._vhostRows) {
       row.hostEl.disabled = r;
@@ -648,6 +662,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
     if (this.tls13El) this.tls13Enabled = this.tls13El.checked;
     if (this.http2EnabledEl) this.http2Enabled = this.http2EnabledEl.checked;
     if (this.h2cEnabledEl) this.h2cEnabled = this.h2cEnabledEl.checked;
+    if (this.http3EnabledEl) this.http3Enabled = this.http3EnabledEl.checked;
     if (this.http2Enabled && !this.httpsEnabled) {
       this._appendLog(t("app.simplehttpserver.log.h2NeedsHttps", { time: nowStamp() }));
     }
@@ -687,6 +702,10 @@ export class SimpleHTTPServerApp extends LoggedProcess {
         }
       }
       this._appendLog(t("app.simplehttpserver.log.httpsStopped", { time: nowStamp() }));
+    }
+    if (this._h3) {
+      this._h3.stop();
+      this._h3 = null;
     }
 
     this._syncUI();
@@ -808,6 +827,44 @@ export class SimpleHTTPServerApp extends LoggedProcess {
       const httpsSeq = ++this.httpsRunSeq;
       this._appendLog(t("app.simplehttpserver.log.httpsListen", { time: nowStamp(), port: this.httpsPort }));
       this._acceptLoop(httpsSeq, httpsRef, true);
+      if (this.http3Enabled) this._startHttp3();
+    }
+  }
+
+  /**
+   * HTTP/3: QUIC on UDP with the HTTPS port number; requests go through the
+   * same handling as HTTP/1.1 and HTTP/2. QUIC always uses TLS 1.3.
+   */
+  _startHttp3() {
+    try {
+      this._h3 = listenHttp3(this.os, {
+        port: this.httpsPort,
+        cert: this._cert,
+        selectCert: this.vhostsEnabled ? (sni) => this._selectCertForSni(sni) : undefined,
+        onConnection: (conn, peer) => {
+          conn.ready.then(() => {
+            const sniPart = conn.tls.sni ? ` (SNI: ${conn.tls.sni})` : "";
+            this._appendLog(t("app.simplehttpserver.log.h3Conn", { time: nowStamp(), peer: `${peer.ip}:${peer.port}` }) + sniPart);
+          }).catch((e) => {
+            this._appendLog(t("app.simplehttpserver.log.h3Error", { time: nowStamp(), reason: e instanceof Error ? e.message : String(e) }));
+          });
+        },
+        onRequest: async (req, res, conn) => {
+          const r = this._resolveRequest({
+            method: req.method,
+            target: req.path,
+            reqHost: hostFromHeader(req.authority),
+            sni: conn.tls.sni,
+            isTls: true,
+            label: ` (h3, stream ${req.streamId})`,
+          });
+          await res.respond(r.status, /** @type {Array<[string, string]>} */ (Object.entries(r.headers)), r.body);
+        },
+      });
+      this._appendLog(t("app.simplehttpserver.log.h3Listen", { time: nowStamp(), port: this.httpsPort }));
+    } catch (e) {
+      this._h3 = null;
+      this._appendLog(t("app.simplehttpserver.log.h3Error", { time: nowStamp(), reason: e instanceof Error ? e.message : String(e) }));
     }
   }
 
@@ -1140,6 +1197,19 @@ export class SimpleHTTPServerApp extends LoggedProcess {
    *             body: Uint8Array, close: boolean }} close: HTTP/1.1 must not reuse the connection
    */
   _resolveRequest(r) {
+    const res = this._resolveRequestCore(r);
+    // Alt-Svc (RFC 7838): tell HTTPS clients that HTTP/3 is available on UDP
+    if (r.isTls && this._h3) res.headers["Alt-Svc"] = `h3=":${this.httpsPort}"; ma=86400`;
+    return res;
+  }
+
+  /**
+   * @param {{ method: string, target: string, reqHost: string, sni: string,
+   *           isTls: boolean, label: string }} r
+   * @returns {{ status: number, reason: string, headers: Record<string,string>,
+   *             body: Uint8Array, close: boolean }}
+   */
+  _resolveRequestCore(r) {
     const { method, target, reqHost, sni, isTls, label } = r;
     const head = method === "HEAD";
     const vhost = this._findVhost(reqHost || sni);
@@ -1340,6 +1410,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
       if (typeof json.tls13Enabled === "boolean") this.tls13Enabled = json.tls13Enabled;
       if (typeof json.http2Enabled === "boolean") this.http2Enabled = json.http2Enabled;
       if (typeof json.h2cEnabled === "boolean") this.h2cEnabled = json.h2cEnabled;
+      if (typeof json.http3Enabled === "boolean") this.http3Enabled = json.http3Enabled;
       if (typeof json.httpsEnabled === "boolean") this.httpsEnabled = json.httpsEnabled;
       if (Number.isInteger(json.httpsPort) && json.httpsPort >= 1 && json.httpsPort <= 65535) this.httpsPort = json.httpsPort;
       if (typeof json.certPath === "string") this.certPath = json.certPath;
@@ -1359,6 +1430,7 @@ export class SimpleHTTPServerApp extends LoggedProcess {
         tls13Enabled: this.tls13Enabled,
         http2Enabled: this.http2Enabled,
         h2cEnabled: this.h2cEnabled,
+        http3Enabled: this.http3Enabled,
         httpsEnabled: this.httpsEnabled,
         httpsPort: this.httpsPort,
         certPath: this.certPath,

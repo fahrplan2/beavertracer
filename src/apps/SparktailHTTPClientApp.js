@@ -12,7 +12,8 @@ import { t } from "../i18n/index.js";
 import { IPAddress } from "../net/models/IPAddress.js";
 import { nowStamp, encodeUTF8, decodeUTF8 } from "../lib/helpers.js";
 import { TlsSession, TlsCertUntrustedError, TlsCertExpiredError, TlsCertNameMismatchError } from "../net/TlsSession.js";
-import { Http2Connection, Http2Error } from "../net/Http2.js";
+import { Http2Connection } from "../net/Http2.js";
+import { connectHttp3 } from "../net/QuicTransport.js";
 
 const startPage = startPageTemplate.replace("<!--SPARKTAIL_LOGO-->", logoSvg);
 
@@ -540,6 +541,10 @@ export async function readHttpResponse(r, bodyLimit, method = "GET") {
  *   send: (d: Uint8Array) => void|Promise<void>,
  *   reader: TcpBufferedReader,
  *   h2: Http2Connection|null,
+ *   h3: import("../net/Http3.js").Http3Connection|null,
+ *   mux: any,
+ *   closeH3: (() => void)|null,
+ *   quicDone: Promise<void>|null,
  *   proto: string,
  *   tlsVersion: string,
  *   peerCert: import("../net/models/TlsCertificate.js").TlsCertificate|null,
@@ -555,8 +560,15 @@ export async function readHttpResponse(r, bodyLimit, method = "GET") {
 /** Parallel HTTP/1.1 connections per origin, as in common browsers. */
 const MAX_CONNS_PER_ORIGIN = 6;
 
-/** "auto": HTTP/2 via ALPN for https (like browsers); "h2" over http:// is h2c with prior knowledge. */
-const PROTOCOL_MODES = /** @type {const} */ (["auto", "http1", "h2"]);
+/**
+ * "auto": HTTP/2 via ALPN for https and HTTP/3 after an Alt-Svc announcement
+ * (like browsers); "h2" over http:// is h2c with prior knowledge; "h3" tries
+ * QUIC right away without fallback.
+ */
+const PROTOCOL_MODES = /** @type {const} */ (["auto", "http1", "h2", "h3"]);
+
+/** After a failed QUIC attempt, stay on TCP for this long (sim ms). */
+const H3_BROKEN_MS = 5 * 60_000;
 
 const CONF_PATH = "/etc/sparktail.conf";
 
@@ -593,8 +605,14 @@ export class SparktailHTTPClientApp extends LoggedProcess {
   /** Connections being opened that may turn out to be HTTP/2. @type {Map<string, Promise<BrowserConn>>} */
   _opening = new Map();
 
-  /** @type {"auto"|"http1"|"h2"} */
+  /** @type {"auto"|"http1"|"h2"|"h3"} */
   protocolMode = "auto";
+
+  /** Alt-Svc announcements (RFC 7838): origin -> HTTP/3 port and expiry. @type {Map<string, { port: number, expires: number }>} */
+  _altSvc = new Map();
+
+  /** Origins where QUIC failed recently (UDP blocked?): origin -> retry time. @type {Map<string, number>} */
+  _h3Broken = new Map();
 
   /** TLS version and HTTP version of the current page, for the lock popup. */
   _connInfo = "";
@@ -868,6 +886,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
   /** @param {BrowserConn} conn */
   _closeConn(conn) {
     conn.closing = true;
+    if (conn.h3) { try { conn.closeH3?.(); } catch { /* ignore */ } return; }
     if (conn.h2) { try { conn.h2.goaway(); } catch { /* ignore */ } }
     if (conn.tls) { try { conn.tls.close(); } catch { /* ignore */ } }
     try { this.os.net.closeTCPConn(conn.key); } catch { /* ignore */ }
@@ -911,14 +930,13 @@ export class SparktailHTTPClientApp extends LoggedProcess {
   }
 
   /**
-   * Share an HTTP/2 connection for its origin until it ends (GOAWAY from the
-   * server after its idle timeout, or transport close).
+   * Share a multiplexed connection (HTTP/2 or HTTP/3) for its origin until
+   * it ends (GOAWAY from the server, idle timeout, transport close).
    * @param {BrowserConn} conn
    */
-  _registerH2(conn) {
+  _registerShared(conn) {
     const key = this._poolKey(conn.origin, conn.bypass);
     this._h2.set(key, conn);
-    const h2 = /** @type {Http2Connection} */ (conn.h2);
     const drop = () => {
       if (this._h2.get(key) !== conn) return;
       this._h2.delete(key);
@@ -927,8 +945,79 @@ export class SparktailHTTPClientApp extends LoggedProcess {
       }
       this._closeConn(conn);
     };
-    h2.onGoaway = () => { if (h2.activeStreams === 0) drop(); else h2.onIdle = drop; };
-    h2.done.then(drop);
+    if (conn.h2) {
+      const h2 = conn.h2;
+      h2.onGoaway = () => { if (h2.activeStreams === 0) drop(); else h2.onIdle = drop; };
+      h2.done.then(drop);
+    } else if (conn.quicDone) {
+      conn.quicDone.then(drop);
+    }
+  }
+
+  /**
+   * Remember an Alt-Svc announcement (RFC 7838 §3): `h3=":443"; ma=86400`.
+   * Only same-host alternatives are used; "clear" forgets them.
+   * @param {string} origin @param {string|undefined} value
+   */
+  _noteAltSvc(origin, value) {
+    if (!value || !origin.startsWith("https://")) return;
+    if (value.trim().toLowerCase() === "clear") { this._altSvc.delete(origin); return; }
+    for (const entry of value.split(",")) {
+      const m = /^\s*h3\s*=\s*"([^"]*)"(.*)$/i.exec(entry);
+      if (!m) continue;
+      const hp = /^([^:]*):(\d+)$/.exec(m[1]);
+      if (!hp || (hp[1] && hp[1].toLowerCase() !== new URL(origin).hostname.toLowerCase())) continue;
+      const ma = /;\s*ma\s*=\s*(\d+)/i.exec(m[2]);
+      const maxAge = ma ? Number(ma[1]) : 86400;
+      const known = this._altSvc.has(origin);
+      this._altSvc.set(origin, { port: Number(hp[2]), expires: this._now() + maxAge * 1000 });
+      if (!known) this._appendLog(t("app.sparktail.log.altSvc", { time: nowStamp(), origin, port: hp[2] }));
+      return;
+    }
+  }
+
+  /** Simulated time of this host (falls back to the browser clock). */
+  _now() {
+    return this.os.clock?.nowMs?.() ?? Date.now();
+  }
+
+  /**
+   * HTTP/3 port to try for this origin, or null: "h3" mode always (port of
+   * the URL), "auto" after an unexpired Alt-Svc and no recent QUIC failure.
+   * @param {string} scheme @param {string} origin @param {number} port
+   */
+  _h3PortFor(scheme, origin, port) {
+    if (scheme !== "https") return null;
+    if (this.protocolMode === "h3") return port;
+    if (this.protocolMode !== "auto") return null;
+    const alt = this._altSvc.get(origin);
+    if (!alt || alt.expires < this._now()) return null;
+    if ((this._h3Broken.get(origin) ?? 0) > this._now()) return null;
+    return alt.port;
+  }
+
+  /**
+   * Open QUIC + HTTP/3. Throws with `stage` = "h3".
+   * @param {{ host: string, ip: IPAddress, bypass: boolean }} o @param {string} origin @param {number} port
+   * @returns {Promise<BrowserConn>}
+   */
+  async _openH3Conn(o, origin, port) {
+    this._appendLog(t("app.sparktail.log.h3Try", { time: nowStamp(), origin, port }));
+    let c;
+    try {
+      c = await connectHttp3(this.os, { ip: o.ip, port, host: o.host, insecure: o.bypass });
+    } catch (e) {
+      throw Object.assign(e instanceof Error ? e : new Error(String(e)), { stage: "h3" });
+    }
+    const tls = c.quic.tls;
+    this._appendLog(t("app.sparktail.log.tlsOk", { time: nowStamp(), host: o.host }) + ` [${tls.version}, ${tls.cipherSuite}, QUIC]`);
+    this._appendLog(t("app.sparktail.log.protocol", { time: nowStamp(), origin, proto: "HTTP/3 (QUIC)" }));
+    return {
+      origin, key: `quic:${c.localPort}`, tls: null, send: () => {},
+      reader: new TcpBufferedReader({ recv: async () => null, isCancelled: () => true, timeoutMs: 0 }),
+      h2: null, h3: c.h3, mux: c.h3, closeH3: c.close, quicDone: c.quic.done,
+      proto: "HTTP/3 (QUIC)", tlsVersion: tls.version, peerCert: tls.peerCert, bypass: o.bypass, requests: 0, closing: false,
+    };
   }
 
   /**
@@ -944,7 +1033,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     const key = this._poolKey(origin, o.bypass);
     for (;;) {
       const shared = this._h2.get(key);
-      if (shared?.h2?.usable) return { conn: shared, reused: true };
+      if (shared?.mux?.usable) return { conn: shared, reused: true };
       const idle = this._pool.get(key)?.pop();
       if (idle) {
         if (this._pool.get(key)?.length === 0) this._pool.delete(key);
@@ -953,14 +1042,21 @@ export class SparktailHTTPClientApp extends LoggedProcess {
       const pending = this._opening.get(key);
       if (!pending) break;
       const c = await pending.catch(() => null);
-      if (!c?.h2) break;    // it became HTTP/1.1: open our own connection
+      if (!c?.mux) break;    // it became HTTP/1.1: open our own connection
     }
     const mayBeH2 = this.protocolMode !== "http1" && (o.scheme === "https" || this.protocolMode === "h2");
-    const p = this._openConn(o);
+    const h3Port = this._h3PortFor(o.scheme, origin, o.port);
+    const p = h3Port === null ? this._openConn(o) : this._openH3Conn(o, origin, h3Port).catch((e) => {
+      if (this.protocolMode === "h3") throw e;
+      // like browsers: QUIC failed (UDP blocked?) -> remember and use TCP
+      this._h3Broken.set(origin, this._now() + H3_BROKEN_MS);
+      this._appendLog(t("app.sparktail.log.h3Fallback", { time: nowStamp(), origin, reason: e instanceof Error ? e.message : String(e) }));
+      return this._openConn(o);
+    });
     if (mayBeH2) this._opening.set(key, p);
     try {
       const conn = await p;
-      if (conn.h2) this._registerH2(conn);
+      if (conn.mux) this._registerShared(conn);
       return { conn, reused: false };
     } finally {
       if (this._opening.get(key) === p) this._opening.delete(key);
@@ -972,8 +1068,8 @@ export class SparktailHTTPClientApp extends LoggedProcess {
    * @param {BrowserConn} conn @param {boolean} reusable
    */
   _release(conn, reusable) {
-    if (conn.h2) {
-      if (!conn.h2.usable && conn.h2.activeStreams === 0) this._closeConn(conn);
+    if (conn.mux) {
+      if (!conn.mux.usable && conn.mux.activeStreams === 0) this._closeConn(conn);
       return;
     }
     if (reusable) this._poolPut(conn);
@@ -1067,6 +1163,10 @@ export class SparktailHTTPClientApp extends LoggedProcess {
       // HTTP/2 owns the transport; the reader is only used for HTTP/1.1
       reader: new TcpBufferedReader({ recv: h2 ? async () => null : recv, isCancelled: o.isCancelled, timeoutMs: timeout }),
       h2,
+      h3: null,
+      mux: h2,
+      closeH3: null,
+      quicDone: null,
       proto,
       tlsVersion: tls?.version ?? "",
       peerCert: tls?.peerCert ?? null,
@@ -1083,33 +1183,36 @@ export class SparktailHTTPClientApp extends LoggedProcess {
    * @param {BrowserConn} conn
    * @param {{ path: string, hostHeader: string, scheme: string, accept: string,
    *           bodyLimit: number, isCancelled: () => boolean, reused: boolean,
-   *           onSent?: (info: { bytes: Uint8Array|null, streamId: number }) => void }} r
+   *           onSent?: (info: { bytes: Uint8Array|null, streamId: number, version: string }) => void }} r
    * @returns {Promise<BrowserResponse>}
    */
   async _exchange(conn, r) {
-    if (conn.h2) {
-      const h2 = conn.h2;
+    if (conn.mux) {
+      const mux = conn.mux;
+      const version = conn.h3 ? "HTTP/3" : "HTTP/2";
       try {
-        const p = h2.request({
+        const p = mux.request({
           scheme: r.scheme, authority: r.hostHeader, path: r.path,
           headers: [["user-agent", "Sparktail/1.0"], ["accept", r.accept]],
         });
-        r.onSent?.({ bytes: null, streamId: h2.lastStreamId });
+        r.onSent?.({ bytes: null, streamId: mux.lastStreamId, version });
+        /** @type {import("../net/Http2.js").Http2Response} */
         const res = await withTimeout(p, this._timeoutMs(), t("app.sparktail.label.recv"));
         conn.requests++;
         if (res.body.length > r.bodyLimit) throw new Error(t("app.sparktail.err.bodyLimitExceeded", { bodyLimit: r.bodyLimit }));
         /** @type {Record<string,string>} */
         const headers = {};
         for (const [n, v] of res.headers) headers[n] = headers[n] ? `${headers[n]}, ${v}` : v;
-        const statusLine = `HTTP/2 ${res.status}`;
+        const statusLine = `${version} ${res.status}`;
+        if (!conn.h3) this._noteAltSvc(conn.origin, headers["alt-svc"]);
         return {
           statusLine, statusCode: res.status, reason: "",
           headerText: [statusLine, ...res.headers.map(([n, v]) => `${n}: ${v}`)].join("\r\n"),
-          headers, body: res.body, reusable: h2.usable, streamId: res.streamId,
+          headers, body: res.body, reusable: mux.usable, streamId: res.streamId,
         };
       } catch (e) {
         // refused before processing (GOAWAY, closed connection): safe to retry
-        if (e instanceof Http2Error && e.retryable) throw Object.assign(new Error(e.message), { stale: true });
+        if (/** @type {any} */ (e)?.retryable) throw Object.assign(new Error(/** @type {Error} */ (e).message), { stale: true });
         throw e;
       }
     }
@@ -1128,10 +1231,11 @@ export class SparktailHTTPClientApp extends LoggedProcess {
     } catch (e) {
       throw Object.assign(e instanceof Error ? e : new Error(String(e)), { stale: r.reused, stage: "send" });
     }
-    r.onSent?.({ bytes, streamId: 0 });
+    r.onSent?.({ bytes, streamId: 0, version: "HTTP/1.1" });
     try {
       const res = await readHttpResponse(conn.reader, r.bodyLimit);
       conn.requests++;
+      this._noteAltSvc(conn.origin, res.headers["alt-svc"]);
       return { ...res, streamId: 0 };
     } catch (e) {
       // nothing received on a reused connection: the server had closed it
@@ -1454,29 +1558,29 @@ export class SparktailHTTPClientApp extends LoggedProcess {
         this._appendLog(t("app.sparktail.log.connReused", { time: nowStamp(), origin: c.origin, count: c.requests }));
       }
       if (scheme === "https") {
-        this._connInfo = [c.tlsVersion, c.h2 ? "HTTP/2" : "HTTP/1.1"].filter(Boolean).join(", ");
+        this._connInfo = [c.tlsVersion, c.h3 ? "HTTP/3 (QUIC)" : c.h2 ? "HTTP/2" : "HTTP/1.1"].filter(Boolean).join(", ");
         this._serverCert = c.peerCert;
         this._certTrusted = !c.bypass;
         this._setLockState(c.bypass ? "insecure" : "secure");
       }
 
       // an HTTP/2 connection is shared: Stop must not tear it down
-      this.connKey = c.h2 ? null : c.key;
-      this._activeTls = c.h2 ? null : c.tls;
+      this.connKey = c.mux ? null : c.key;
+      this._activeTls = c.mux ? null : c.tls;
       const conn = c;
 
       try {
         const res = await this._exchange(conn, {
           path: /** @type {string} */ (path), hostHeader, scheme: /** @type {string} */ (scheme),
           accept: "text/html, text/plain, */*", bodyLimit, reused,
-          isCancelled: () => !this.loading || this.requestSeq !== seq || (!conn.h2 && this.connKey !== conn.key),
-          onSent: ({ bytes, streamId }) => this._appendLog(bytes
+          isCancelled: () => !this.loading || this.requestSeq !== seq || (!conn.mux && this.connKey !== conn.key),
+          onSent: ({ bytes, streamId, version }) => this._appendLog(bytes
             ? t("app.sparktail.log.request", { time: nowStamp(), host, port, path, len: bytes.length, hex: hexPreview(bytes) })
-            : t("app.sparktail.log.requestH2", { time: nowStamp(), host, port, path, stream: streamId })),
+            : t(version === "HTTP/3" ? "app.sparktail.log.requestH3" : "app.sparktail.log.requestH2", { time: nowStamp(), host, port, path, stream: streamId })),
         });
         ({ headerText, headers, statusCode, reason } = res);
         bodyBytes = res.body;
-        protoLabel = conn.h2 ? "HTTP/2" : "HTTP/1.1";
+        protoLabel = conn.h3 ? "HTTP/3" : conn.h2 ? "HTTP/2" : "HTTP/1.1";
         if (this.headersEl) this.headersEl.value = headerText;
         this._activeTls = null;
         if (this.connKey === conn.key) this.connKey = null;
@@ -1486,7 +1590,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
         const err = /** @type {any} */ (e);
         this._activeTls = null;
         if (this.connKey === conn.key) this.connKey = null;
-        if (conn.h2) { if (!conn.h2.usable) this._closeConn(conn); }
+        if (conn.mux) { if (!conn.mux.usable) this._closeConn(conn); }
         else this._closeConn(conn);
         if (err?.stale && attempt === 0) {
           this._appendLog(t("app.sparktail.log.connStale", { time: nowStamp(), origin: conn.origin }));
@@ -1745,7 +1849,7 @@ export class SparktailHTTPClientApp extends LoggedProcess {
         acquired = await this._acquire({ scheme, host, port, ip: dstIP, bypass, isCancelled });
       } catch { return null; }
       const { conn, reused } = acquired;
-      if (isCancelled()) { if (!conn.h2) this._release(conn, true); return null; }
+      if (isCancelled()) { if (!conn.mux) this._release(conn, true); return null; }
       this._appendLog(reused
         ? t("app.sparktail.log.resourceReused", { time: nowStamp(), url, count: conn.requests })
         : t("app.sparktail.log.resourceNewConn", { time: nowStamp(), url }));
@@ -1756,8 +1860,8 @@ export class SparktailHTTPClientApp extends LoggedProcess {
         this._release(conn, res.reusable && !isCancelled());
         return { statusCode: res.statusCode, headers: res.headers, body: res.body };
       } catch (e) {
-        if (!conn.h2) this._closeConn(conn);
-        else if (!conn.h2.usable) this._closeConn(conn);
+        if (!conn.mux) this._closeConn(conn);
+        else if (!conn.mux.usable) this._closeConn(conn);
         if (!(/** @type {any} */ (e))?.stale || isCancelled()) return null;
         // the server closed the idle connection meanwhile: one fresh attempt
         this._appendLog(t("app.sparktail.log.connStale", { time: nowStamp(), origin: conn.origin }));
