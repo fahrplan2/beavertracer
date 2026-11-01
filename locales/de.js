@@ -1279,6 +1279,8 @@ export default {
   "pcap.btn.showtab": "Registerkarte anzeigen…",
   "pcap.btn.showhex": "Hex-Ansicht einblenden",
   "pcap.btn.hidehex": "Hex-Ansicht ausblenden",
+  "pcap.btn.reassemble.off": "TCP-Segmente zusammensetzen: aus",
+  "pcap.btn.reassemble.on": "TCP-Segmente zusammensetzen: an",
   "pcap.stream.title": "TCP-Stream",
   "pcap.stream.notcp": "Das ausgewählte Paket enthält kein TCP-Segment.",
   "pcap.stream.empty": "Keine Nutzdaten in diesem Stream.",

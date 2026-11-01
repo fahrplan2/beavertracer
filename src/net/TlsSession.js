@@ -561,9 +561,11 @@ export class TlsSession {
    *   alpn?: string[],
    *   versions?: Array<"1.2"|"1.3">,
    *   quic?: QuicTlsBinding,
-   * }} opts
+   *   keyLog?: (line: string) => void,
+   * }} opts  keyLog: receives the session secrets in NSS key log format
+   *   (what SSLKEYLOGFILE writes), so Wireshark can decrypt the capture
    */
-  constructor({ send, recv, isServer, cert, trustStore, timeoutMs = 400, sleepFn, now, serverName, selectCert, alpn, versions, quic }) {
+  constructor({ send, recv, isServer, cert, trustStore, timeoutMs = 400, sleepFn, now, serverName, selectCert, alpn, versions, quic, keyLog }) {
     this._sendRaw = send;
     this._recvRaw = recv;
     this._isServer = isServer;
@@ -607,6 +609,8 @@ export class TlsSession {
     // QUIC for packet protection. Always TLS 1.3, ALPN mandatory.
     /** @type {QuicTlsBinding|null} */
     this._quic = quic ?? null;
+    /** @type {((line: string) => void)|null} */
+    this._keyLog = keyLog ?? null;
     if (this._quic) this._versions = ["1.3"];
     /** @type {Record<"initial"|"handshake", Uint8Array>} */
     this._quicIn = { initial: new Uint8Array(0), handshake: new Uint8Array(0) };
@@ -938,6 +942,8 @@ export class TlsSession {
     const th = await sha256(this._transcript);
     this._hsSecretC = await deriveSecret(hs, "c hs traffic", th);
     this._hsSecretS = await deriveSecret(hs, "s hs traffic", th);
+    this._logSecret("CLIENT_HANDSHAKE_TRAFFIC_SECRET", this._hsSecretC);
+    this._logSecret("SERVER_HANDSHAKE_TRAFFIC_SECRET", this._hsSecretS);
     const derived2 = await deriveSecret(hs, "derived", await EMPTY_HASH_PROMISE);
     this._masterSecret = await hkdfExtract(derived2, zeros);
   }
@@ -946,10 +952,24 @@ export class TlsSession {
   async _deriveApplication13() {
     const th = await sha256(this._transcript);
     const master = /** @type {Uint8Array} */ (this._masterSecret);
-    return {
+    const app = {
       client: await deriveSecret(master, "c ap traffic", th),
       server: await deriveSecret(master, "s ap traffic", th),
     };
+    this._logSecret("CLIENT_TRAFFIC_SECRET_0", app.client);
+    this._logSecret("SERVER_TRAFFIC_SECRET_0", app.server);
+    return app;
+  }
+
+  /**
+   * One line of the NSS key log format (SSLKEYLOGFILE), keyed by the client
+   * random: `<LABEL> <client_random hex> <secret hex>`.
+   * @param {string} label @param {Uint8Array|null} secret
+   */
+  _logSecret(label, secret) {
+    if (!this._keyLog || !secret || !this._clientRandom) return;
+    const hex = (/** @type {Uint8Array} */ b) => Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
+    try { this._keyLog(`${label} ${hex(this._clientRandom)} ${hex(secret)}`); } catch { /* logging must never break TLS */ }
   }
 
   /** Finished verify_data (§4.4.4) over the current transcript. @param {Uint8Array} baseKey */
@@ -1570,6 +1590,7 @@ export class TlsSession {
       48,
     );
     this._masterSecret = masterSecret;
+    this._logSecret("CLIENT_RANDOM", masterSecret); // TLS 1.2: the master secret
 
     // key_block = PRF(master_secret, "key expansion", ServerRandom || ClientRandom, 40)
     // Layout (RFC 5246 §6.3 + RFC 5288):

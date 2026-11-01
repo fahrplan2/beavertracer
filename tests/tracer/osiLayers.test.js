@@ -35,3 +35,22 @@ describe("formatOsiLayers", () => {
     expect(formatOsiLayers([5, 7])).toBe("5–7");
   });
 });
+
+describe("osiLayersFor: HTTP bodies, reassembly, QUIC", () => {
+  it("HTTP message bodies are application data (5–7 inside TLS)", () => {
+    for (const f of ["data-text-lines", "media", "png", "image-jfif", "image-gif", "json", "xml", "urlencoded-form"]) {
+      expect(osiLayersFor(f, false), f).toEqual([7, 7]);
+      expect(osiLayersFor(f, true), f).toEqual([5, 7]);
+    }
+  });
+
+  it("the filter-less reassembly node counts as TCP (L4)", () => {
+    expect(osiLayersFor("", false, "3 Reassembled TCP Segments (2608 bytes): #2(1000), #3(1000), #4(608)")).toEqual([4, 4]);
+    expect(osiLayersFor("", false, "something else")).toBeNull();
+  });
+
+  it("QUIC is transport with built-in TLS (4/5), HTTP/3 inside it 5–7", () => {
+    expect(osiLayersFor("quic", false)).toEqual([4, 5]);
+    expect(osiLayersFor("http3", true)).toEqual([5, 7]);
+  });
+});

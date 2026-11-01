@@ -102,6 +102,14 @@ export class PCapViewer {
   // of the tracer for newcomers; it's one click (or a drag on the existing
   // splitter, which still works normally) away when actually needed.
   /** @type {boolean} */ #hexHidden = true;
+  /** @type {HTMLButtonElement|null} */ #reassembleBtn = null;
+  /**
+   * Wireshark's "Allow subdissector to reassemble TCP streams". Off by
+   * default: every packet then shows only the bytes it really carries,
+   * instead of the last segment showing the whole reassembled message.
+   * @type {boolean}
+   */
+  #reassemble = (() => { try { return localStorage.getItem("pcap_reassemble") === "1"; } catch { return false; } })();
 
   // Splitters (ratios + listener lifetime)
   /** @type {number|null} */ #hSplitRatio = null;
@@ -356,6 +364,7 @@ export class PCapViewer {
       <div class="pcapviewer-toolbar">
         <input class="pcapviewer-filter" placeholder="${t("pcap.filter.placeholder")}" />
         <span class="pcapviewer-status"></span>
+        <button type="button" class="pcapviewer-hex-toggle pcapviewer-reassemble-toggle"><i class="fas fa-puzzle-piece"></i></button>
         <button type="button" class="pcapviewer-hex-toggle" title="${t("pcap.btn.showhex")}"><i class="fas fa-code"></i></button>
       </div>
 
@@ -413,8 +422,41 @@ export class PCapViewer {
     this.#loadingOverlay = /** @type {HTMLElement} */ (root.querySelector(".pcapviewer-wg-overlay"));
     this.#treePane = /** @type {HTMLElement} */ (root.querySelector(".pcapviewer-treepane"));
     this.#rawPane = /** @type {HTMLElement} */ (root.querySelector(".pcapviewer-rawpane"));
-    this.#hexToggleBtn = /** @type {HTMLButtonElement} */ (root.querySelector(".pcapviewer-hex-toggle"));
+    this.#hexToggleBtn = /** @type {HTMLButtonElement} */ (root.querySelector(".pcapviewer-hex-toggle:not(.pcapviewer-reassemble-toggle)"));
+    this.#reassembleBtn = /** @type {HTMLButtonElement} */ (root.querySelector(".pcapviewer-reassemble-toggle"));
     this.#applyHexHidden();
+    this.#renderReassembleBtn();
+  }
+
+  #renderReassembleBtn() {
+    const b = this.#reassembleBtn;
+    if (!b) return;
+    b.classList.toggle("active", this.#reassemble);
+    b.setAttribute("aria-pressed", String(this.#reassemble));
+    b.title = t(this.#reassemble ? "pcap.btn.reassemble.on" : "pcap.btn.reassemble.off");
+  }
+
+  /** Push the reassembly switch into Wireshark's preferences. */
+  #applyReassemblePref() {
+    if (!this.#wg || !this.#wgInited) return;
+    try {
+      this.#wg.setPref("tcp", "desegment_tcp_streams", this.#reassemble ? "TRUE" : "FALSE");
+      this.#wg.applyPreferences();
+    } catch (e) {
+      console.warn("[PCapViewer] could not set TCP reassembly preference:", e);
+    }
+  }
+
+  /** Dissect the active capture again (after a preference change), keeping the selection. */
+  #redissectActive() {
+    const s = this.#active();
+    if (!s?.pcapBytes || !this.#wg || !this.#wgInited) return;
+    this.#loadPcapBytesIntoSession(s, s.pcapBytes);
+    this.#loadAndRenderFramesForActive();
+    if (typeof s.selectedNo === "number") {
+      this.#loadAndRenderFrameDetailsForActive(s.selectedNo);
+      this.#highlightSelectedRow(s.selectedNo);
+    }
   }
 
   #applyHexHidden() {
@@ -432,6 +474,14 @@ export class PCapViewer {
     this.#hexToggleBtn?.addEventListener("click", () => {
       this.#hexHidden = !this.#hexHidden;
       this.#applyHexHidden();
+    });
+
+    this.#reassembleBtn?.addEventListener("click", () => {
+      this.#reassemble = !this.#reassemble;
+      try { localStorage.setItem("pcap_reassemble", this.#reassemble ? "1" : "0"); } catch { /* storage blocked */ }
+      this.#renderReassembleBtn();
+      this.#applyReassemblePref();
+      this.#redissectActive();
     });
 
     this.#filterEl?.addEventListener("input", () => {
@@ -637,6 +687,7 @@ export class PCapViewer {
       if (!this.#wgInited) {
         this.#wg.init();
         this.#wgInited = true;
+        this.#applyReassemblePref();
       }
       this.#hideWgOverlay();
       return true;
@@ -994,7 +1045,7 @@ export class PCapViewer {
       const layerIdx = depth === 0 ? protoIdx++ : -1;
 
       const filter = String(n.filter ?? "");
-      const osiLayers = depth === 0 ? osiLayersFor(filter, insideTls) : null;
+      const osiLayers = depth === 0 ? osiLayersFor(filter, insideTls, String(n.label ?? "")) : null;
       if (depth === 0 && /^(tls|ssl|quic)$/i.test(filter)) insideTls = true;
       const rowOsi = depth === 0 ? osiLayers : osi;
 

@@ -440,7 +440,9 @@ export class QuicConnection {
    *   originalDcid?: Uint8Array,
    *   peerScid?: Uint8Array,
    *   onPacket?: (dir: "in"|"out", level: Level, pn: number, frames: string[]) => void,
-   * }} opts  originalDcid/peerScid: server side, from the client's first Initial
+   *   keyLog?: (line: string) => void,
+   * }} opts  originalDcid/peerScid: server side, from the client's first Initial;
+   *   keyLog: TLS secrets in NSS key log format (SSLKEYLOGFILE)
    */
   constructor(opts) {
     this.isServer = opts.isServer;
@@ -529,6 +531,7 @@ export class QuicConnection {
       isServer: this.isServer,
       cert: opts.cert, selectCert: opts.selectCert, trustStore: opts.trustStore,
       serverName: opts.serverName, alpn: opts.alpn,
+      keyLog: opts.keyLog,
       timeoutMs: opts.handshakeTimeoutMs ?? 10_000,
       sleepFn: (ms) => new Promise((r) => this._timer.schedule(() => r(undefined), ms)),
       now: opts.now,

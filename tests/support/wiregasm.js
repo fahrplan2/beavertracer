@@ -58,13 +58,87 @@ let fileNo = 0;
 
 /**
  * @param {Array<{ dir: 'c2s'|'s2c', bytes: Uint8Array }>} datagrams
- * @param {{ serverPort?: number }} [o] default 443 (QUIC); 53 for DNS
+ * @param {{ serverPort?: number, keylog?: string }} [o] default 443 (QUIC); 53 for DNS;
+ *   keylog: NSS key log (SSLKEYLOGFILE) contents for TLS/QUIC decryption
  * @returns {Promise<{ frames: string[][], summary: string[] }>}
  */
 export async function dissectUdp(datagrams, o = {}) {
+  return dissectPcap(pcapOf(datagrams, o.serverPort ?? 443), datagrams.length, o.keylog);
+}
+
+/** @param {number[]} src @param {number[]} dst @param {number} proto @param {Buffer} payload */
+function ipv4(src, dst, proto, payload) {
+  const ip = Buffer.alloc(20);
+  ip[0] = 0x45; ip.writeUInt16BE(20 + payload.length, 2); ip[8] = 64; ip[9] = proto;
+  ip.set(src, 12); ip.set(dst, 16);
+  let sum = 0;
+  for (let j = 0; j < 20; j += 2) sum += ip.readUInt16BE(j);
+  while (sum >> 16) sum = (sum & 0xffff) + (sum >> 16);
+  ip.writeUInt16BE(~sum & 0xffff, 10);
+  return Buffer.concat([ip, payload]);
+}
+
+/** @param {Buffer[]} packets raw IPv4 packets */
+function pcapOfPackets(packets) {
+  const gh = Buffer.alloc(24);
+  gh.writeUInt32LE(0xa1b2c3d4, 0); gh.writeUInt16LE(2, 4); gh.writeUInt16LE(4, 6);
+  gh.writeUInt32LE(65535, 16); gh.writeUInt32LE(101, 20);
+  const parts = [gh];
+  packets.forEach((p, i) => {
+    const rh = Buffer.alloc(16);
+    rh.writeUInt32LE(1700000000 + i, 0); rh.writeUInt32LE(p.length, 8); rh.writeUInt32LE(p.length, 12);
+    parts.push(rh, p);
+  });
+  return Buffer.concat(parts);
+}
+
+/**
+ * A TCP connection client 10.0.0.2:50000 <-> server 10.0.0.1:<serverPort>:
+ * three-way handshake, then each chunk as segments (max 1400 bytes) with
+ * consistent sequence numbers.
+ * @param {Array<{ dir: 'c2s'|'s2c', bytes: Uint8Array }>} chunks
+ * @param {{ serverPort?: number, keylog?: string }} [o]
+ */
+export async function dissectTcp(chunks, o = {}) {
+  const C = [10, 0, 0, 2], S = [10, 0, 0, 1], cp = 50000, sp = o.serverPort ?? 443;
+  let cseq = 1000, sseq = 5000;
+  /** @param {boolean} c2s @param {number} flags @param {Buffer} data */
+  const seg = (c2s, flags, data) => {
+    const h = Buffer.alloc(20);
+    h.writeUInt16BE(c2s ? cp : sp, 0); h.writeUInt16BE(c2s ? sp : cp, 2);
+    h.writeUInt32BE(c2s ? cseq : sseq, 4); h.writeUInt32BE(c2s ? sseq : cseq, 8);
+    h[12] = 0x50; h[13] = flags; h.writeUInt16BE(65535, 14);
+    return ipv4(c2s ? C : S, c2s ? S : C, 6, Buffer.concat([h, data]));
+  };
+  const packets = [seg(true, 0x02, Buffer.alloc(0))];
+  cseq++;
+  packets.push(seg(false, 0x12, Buffer.alloc(0)));
+  sseq++;
+  packets.push(seg(true, 0x10, Buffer.alloc(0)));
+  for (const ch of chunks) {
+    const c2s = ch.dir === 'c2s';
+    for (let off = 0; off < ch.bytes.length; off += 1400) {
+      const data = Buffer.from(ch.bytes.subarray(off, off + 1400));
+      packets.push(seg(c2s, 0x18, data));
+      if (c2s) cseq += data.length; else sseq += data.length;
+    }
+  }
+  return dissectPcap(pcapOfPackets(packets), packets.length, o.keylog);
+}
+
+/**
+ * @param {Buffer} pcap @param {number} count @param {string} [keylog]
+ * @returns {Promise<{ frames: string[][], summary: string[] }>}
+ */
+async function dissectPcap(pcap, count, keylog) {
   const wg = await wiregasm();
   const path = `/uploads/t${fileNo++}.pcap`;
-  wg.FS.writeFile(path, pcapOf(datagrams, o.serverPort ?? 443));
+  wg.FS.writeFile(path, pcap);
+  const keyPath = `/uploads/keys${fileNo}.log`;
+  if (keylog) wg.FS.writeFile(keyPath, keylog);
+  wg.setPref('tls', 'keylog_file', keylog ? keyPath : '');
+  wg.applyPreferences();
+  const datagrams = { length: count };
   const sess = new wg.DissectSession(path);
   try {
     const ret = sess.load();
@@ -96,5 +170,10 @@ export async function dissectUdp(datagrams, o = {}) {
   } finally {
     sess.delete?.();
     try { wg.FS.unlink(path); } catch { /* ignore */ }
+    if (keylog) {
+      wg.setPref('tls', 'keylog_file', '');
+      wg.applyPreferences();
+      try { wg.FS.unlink(keyPath); } catch { /* ignore */ }
+    }
   }
 }

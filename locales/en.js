@@ -1430,6 +1430,8 @@ export default {
   "pcap.btn.showtab": "Show a tab…",
   "pcap.btn.showhex": "Show hex view",
   "pcap.btn.hidehex": "Hide hex view",
+  "pcap.btn.reassemble.off": "Reassemble TCP segments: off",
+  "pcap.btn.reassemble.on": "Reassemble TCP segments: on",
   "pcap.col.no": "No.",
   "pcap.col.time": "Time",
   "pcap.col.source": "Source",
