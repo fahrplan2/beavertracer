@@ -96,6 +96,9 @@ export class NetworkInterface extends Observable {
     /** @type {IPAddress|null} */
     _slaacRouter = null;
 
+    /** Link state seen by the last update(); used to solicit an RA on link-up. */
+    _wasLinked = false;
+
     /** Whether to send periodic Router Advertisements and respond to RS on this interface */
     raEnabled = false;
 
@@ -335,6 +338,12 @@ export class NetworkInterface extends Observable {
     }
 
     update() {
+        // Cable just plugged in: ask for an RA right away (RFC 4861 §6.3.7)
+        // instead of waiting for the router's periodic one.
+        const linked = this.port.isLinked();
+        if (linked && !this._wasLinked && this.slaac) this._doRouterSolicitation();
+        this._wasLinked = linked;
+
         const frame = this.port.getNextIncomingFrame();
         if (frame == null) return;
 
