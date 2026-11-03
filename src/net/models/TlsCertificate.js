@@ -29,18 +29,86 @@ function derUtf8String(s) {
 }
 
 /**
- * Encode a Unix-ms timestamp as an ASCII decimal string under the given tag.
- * Real X.509 uses UTCTime (0x17) / GeneralizedTime (0x18) with a formatted
- * date string; we reuse those tag numbers but keep the content as a plain
- * decimal epoch-ms string — simpler to encode/parse and just as inspectable
- * in a hex dump, since this simulator never talks to a real TLS stack.
+ * Legacy validity encoding (certificates saved before strict X.509): the
+ * Unix-ms timestamp as an ASCII decimal string under the UTCTime (0x17) /
+ * GeneralizedTime (0x18) tag. Kept only so stored signatures still verify.
  * @param {number} tag
  * @param {number} ms
  */
-function derTimeField(tag, ms) {
+function derEpochTimeField(tag, ms) {
   const enc = new TextEncoder();
   return derTag(tag, enc.encode(String(Math.trunc(ms))));
 }
+
+/**
+ * RFC 5280 §4.1.2.5: UTCTime "YYMMDDHHMMSSZ" for the years 1950–2049,
+ * GeneralizedTime "YYYYMMDDHHMMSSZ" otherwise (whole seconds, UTC).
+ * @param {number} ms
+ */
+function derX509Time(ms) {
+  const d = new Date(Math.floor(ms / 1000) * 1000);
+  const p2 = (/** @type {number} */ n) => String(n).padStart(2, "0");
+  const y = d.getUTCFullYear();
+  const rest = `${p2(d.getUTCMonth() + 1)}${p2(d.getUTCDate())}${p2(d.getUTCHours())}${p2(d.getUTCMinutes())}${p2(d.getUTCSeconds())}Z`;
+  const enc = new TextEncoder();
+  return y >= 1950 && y < 2050
+    ? derTag(0x17, enc.encode(`${p2(y % 100)}${rest}`))
+    : derTag(0x18, enc.encode(`${String(y).padStart(4, "0")}${rest}`));
+}
+
+/**
+ * ECDSA signature P1363 (r || s, 64 bytes) → DER Ecdsa-Sig-Value
+ * SEQUENCE { INTEGER r, INTEGER s } (RFC 3279 §2.2.3).
+ * @param {Uint8Array} sig
+ */
+export function ecdsaP1363ToDer(sig) {
+  const int = (/** @type {Uint8Array} */ b) => {
+    let i = 0;
+    while (i < b.length - 1 && b[i] === 0) i++;
+    const v = b.slice(i);
+    return derTag(0x02, v[0] & 0x80 ? concatBytes(new Uint8Array([0]), v) : v);
+  };
+  const h = sig.length / 2;
+  return derTag(0x30, concatBytes(int(sig.slice(0, h)), int(sig.slice(h))));
+}
+
+/** Seconds precision (strict X.509 validity cannot carry milliseconds). @param {number} ms */
+function wholeSeconds(ms) { return Math.floor(ms / 1000) * 1000; }
+
+/** Name ::= SEQUENCE OF RDN — a single CN attribute. @param {string} dn */
+function derName(dn) {
+  return derTag(0x30, derTag(0x31, derTag(0x30, concatBytes(
+    derTag(0x06, new Uint8Array([0x55, 0x04, 0x03])),
+    derUtf8String(dn.replace(/^CN=/, "")),
+  ))));
+}
+
+/** Minimal positive DER INTEGER content. @param {number} n */
+function derUintContent(n) {
+  let v = Math.max(0, Math.trunc(n));
+  /** @type {number[]} */
+  const bytes = [];
+  do { bytes.unshift(v & 0xff); v = Math.floor(v / 256); } while (v > 0);
+  if (bytes[0] & 0x80) bytes.unshift(0x00);
+  return new Uint8Array(bytes);
+}
+
+/** @param {string} s @returns {Uint8Array|null} */
+function parseIPv4(s) {
+  const m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(s);
+  if (!m) return null;
+  const b = m.slice(1).map(Number);
+  return b.every(x => x <= 255) ? new Uint8Array(b) : null;
+}
+
+// AlgorithmIdentifier { id-ecPublicKey, prime256v1 } — SubjectPublicKeyInfo
+const ALG_EC_PUBLIC_KEY_P256 = derTag(0x30, concatBytes(
+  derTag(0x06, new Uint8Array([0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01])),
+  derTag(0x06, new Uint8Array([0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07])),
+));
+// AlgorithmIdentifier { ecdsa-with-SHA256 } (1.2.840.10045.4.3.2, no parameters, RFC 5758 §3.2)
+const ALG_ECDSA_WITH_SHA256 = derTag(0x30,
+  derTag(0x06, new Uint8Array([0x2a, 0x86, 0x48, 0xce, 0x3d, 0x04, 0x03, 0x02])));
 
 /** @param {Uint8Array[]} parts */
 function concatBytes(...parts) {
@@ -92,6 +160,26 @@ export class TlsCertificate {
   /** @type {boolean} – may act as a CA (sign other certificates) */
   isCA = false;
 
+  /**
+   * X.509 version of the encoding: 3 for every newly created certificate,
+   * 1 for legacy certificates loaded from JSON saved before the v3 layout
+   * (see _buildTbsBytes()).
+   * @type {1|3}
+   */
+  x509Version = 3;
+
+  /**
+   * Validity encoded as real UTCTime/GeneralizedTime (true for every newly
+   * created certificate). false = legacy decimal epoch-ms strings, for
+   * certificates saved before that change — their stored signatures cover
+   * those bytes. Only matters for x509Version 3 (v1 is always legacy).
+   * @type {boolean}
+   */
+  strictX509 = true;
+
+  /** @type {string[]|null} – subjectAltNames parsed from the wire (null = derive, see subjectAltNames()) */
+  _wireAltNames = null;
+
   /** @type {boolean} – private key is present (false for imported/re-signed certs) */
   hasPrivateKey = false;
 
@@ -128,37 +216,101 @@ export class TlsCertificate {
   /**
    * Build the DER-encoded TBSCertificate bytes — the data that gets signed.
    * Called by generate()/sign() to compute certSignature, and by toDer().
+   *
+   * Two layouts exist, selected by x509Version:
+   *  - 3 (all newly created certs, RFC 5280 §4.1): explicit version [0] = v3,
+   *    signature = ecdsa-with-SHA256 (same as the outer signatureAlgorithm),
+   *    extensions [3] with a critical basicConstraints (cA TRUE/FALSE) and,
+   *    for host certificates, a subjectAltName.
+   *  - 1 (legacy, certs saved before the v3 layout): byte-for-byte the old
+   *    encoding — no version, no extensions, and the SPKI algorithm id in the
+   *    signature field. Kept only so that certSignatures already stored in
+   *    save files / lesson sims keep verifying; such certs cannot prove cA on
+   *    the wire and are therefore never accepted as intermediate CAs.
    * @returns {Uint8Array}
    */
   _buildTbsBytes() {
-    const serial = derTag(0x02, new Uint8Array([this.serialNumber & 0x7f]));
-    const algId  = derTag(0x30, concatBytes(
-      derTag(0x06, new Uint8Array([0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01])),
-      derTag(0x06, new Uint8Array([0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07])),
-    ));
-    const issuerDn = derTag(0x30, derTag(0x31, derTag(0x30, concatBytes(
-      derTag(0x06, new Uint8Array([0x55, 0x04, 0x03])),
-      derUtf8String(this.issuer.replace(/^CN=/, "")),
-    ))));
-    const subjectDn = derTag(0x30, derTag(0x31, derTag(0x30, concatBytes(
-      derTag(0x06, new Uint8Array([0x55, 0x04, 0x03])),
-      derUtf8String(this.subject.replace(/^CN=/, "")),
-    ))));
+    const issuerDn = derName(this.issuer);
+    const subjectDn = derName(this.subject);
     // Validity ::= SEQUENCE { notBefore Time, notAfter Time } — part of the
     // signed TBS bytes so a validity period can't be forged/extended without
     // invalidating the signature (see TlsSession._parseSingleCertDer()).
-    const validity = derTag(0x30, concatBytes(
-      derTimeField(0x17, this.notBefore),
-      derTimeField(0x18, this.notAfter),
-    ));
+    const validity = derTag(0x30, this.x509Version === 3 && this.strictX509
+      ? concatBytes(derX509Time(this.notBefore), derX509Time(this.notAfter))
+      : concatBytes(derEpochTimeField(0x17, this.notBefore), derEpochTimeField(0x18, this.notAfter)));
     const pubKeyBytes = this.publicKeyRaw ?? (() => {
       const p = new Uint8Array(65); p[0] = 0x04; return p;
     })();
     const subjectPKI = derTag(0x30, concatBytes(
-      algId,
+      ALG_EC_PUBLIC_KEY_P256,
       derTag(0x03, concatBytes(new Uint8Array([0x00]), pubKeyBytes)),
     ));
-    return derTag(0x30, concatBytes(serial, algId, issuerDn, validity, subjectDn, subjectPKI));
+
+    if (this.x509Version !== 3) {
+      // legacy v1 layout — must stay unchanged (stored signatures cover it)
+      const serial = derTag(0x02, new Uint8Array([this.serialNumber & 0x7f]));
+      return derTag(0x30, concatBytes(serial, ALG_EC_PUBLIC_KEY_P256, issuerDn, validity, subjectDn, subjectPKI));
+    }
+
+    const version = derTag(0xA0, derTag(0x02, new Uint8Array([0x02])));     // [0] EXPLICIT v3
+    const serial  = derTag(0x02, derUintContent(this.serialNumber));
+    /** @type {Uint8Array[]} */
+    const exts = [
+      // basicConstraints (2.5.29.19), critical. cA DEFAULT FALSE is omitted
+      // in DER, so an end-entity cert carries an empty SEQUENCE.
+      derTag(0x30, concatBytes(
+        derTag(0x06, new Uint8Array([0x55, 0x1d, 0x13])),
+        derTag(0x01, new Uint8Array([0xff])),
+        derTag(0x04, derTag(0x30, this.isCA ? derTag(0x01, new Uint8Array([0xff])) : new Uint8Array(0))),
+      )),
+    ];
+    const san = this.subjectAltNames();
+    if (san.length > 0) {
+      const enc = new TextEncoder();
+      const names = san.map(n => {
+        const ip = parseIPv4(n);
+        return ip ? derTag(0x87, ip) : derTag(0x82, enc.encode(n)); // iPAddress / dNSName
+      });
+      exts.push(derTag(0x30, concatBytes(
+        derTag(0x06, new Uint8Array([0x55, 0x1d, 0x11])),               // subjectAltName
+        derTag(0x04, derTag(0x30, concatBytes(...names))),
+      )));
+    }
+    const extensions = derTag(0xA3, derTag(0x30, concatBytes(...exts)));
+    return derTag(0x30, concatBytes(
+      version, serial, ALG_ECDSA_WITH_SHA256, issuerDn, validity, subjectDn, subjectPKI, extensions,
+    ));
+  }
+
+  /**
+   * Switch a legacy certificate to the current encoding (v3, strict X.509
+   * validity, whole seconds) and sign it again with the issuer's key.
+   * Used by the save-file migration (CertMigration.js).
+   * @param {CryptoKey} issuerPrivateKey
+   */
+  async upgradeEncoding(issuerPrivateKey) {
+    this.x509Version = 3;
+    this.strictX509  = true;
+    this.notBefore   = wholeSeconds(this.notBefore);
+    this.notAfter    = wholeSeconds(this.notAfter);
+    await this.resignWith(issuerPrivateKey);
+  }
+
+  /** Current encoding (v3 + strict validity)? */
+  get isCurrentEncoding() { return this.x509Version === 3 && this.strictX509; }
+
+  /**
+   * subjectAltName entries written into v3 certificates: the CN of a
+   * non-CA certificate, if it is a host name (ASCII, optional "*." wildcard)
+   * or an IPv4 address. CA certificates get none.
+   * @returns {string[]}
+   */
+  subjectAltNames() {
+    if (this._wireAltNames) return this._wireAltNames;
+    if (this.x509Version !== 3 || this.isCA) return [];
+    const cn = this.subject.replace(/^CN=/i, "").trim();
+    if (parseIPv4(cn) || /^(\*\.)?([A-Za-z0-9-]+\.)*[A-Za-z0-9-]+$/.test(cn)) return [cn];
+    return [];
   }
 
   // ── static constructors ───────────────────────────────────────────────────
@@ -184,7 +336,7 @@ export class TlsCertificate {
     // notBefore is stamped from the issuing host's own (possibly skewed)
     // virtual clock, not the real browser clock — callers pass opts.nowMs
     // (e.g. os.clock.nowMs()); defaults to real time for callers that don't care.
-    cert.notBefore     = opts.nowMs ?? Date.now();
+    cert.notBefore     = wholeSeconds(opts.nowMs ?? Date.now());
     cert.notAfter      = cert.notBefore + (opts.validityDays ?? 365) * 24 * 3600 * 1000;
     cert.selfSigned    = !ca;
     cert.isCA          = opts.isCA ?? false;
@@ -218,7 +370,7 @@ export class TlsCertificate {
     signed.issuer        = ca.subject;
     signed.publicKeyId   = cert.publicKeyId;
     signed.serialNumber  = Math.floor(Math.random() * 0x7fffffff);
-    signed.notBefore     = opts.nowMs ?? Date.now();
+    signed.notBefore     = wholeSeconds(opts.nowMs ?? Date.now());
     signed.notAfter      = signed.notBefore + (opts.validityDays ?? 365) * 24 * 3600 * 1000;
     signed.selfSigned    = false;
     signed.isCA          = cert.isCA;
@@ -267,13 +419,12 @@ export class TlsCertificate {
    * @returns {Uint8Array}
    */
   toDer() {
-    const tbs = this._buildTbsBytes();
-    const sigAlg = derTag(0x30, concatBytes(
-      derTag(0x06, new Uint8Array([0x2a, 0x86, 0x48, 0xce, 0x3d, 0x04, 0x03, 0x02])),
-    ));
-    // P1363 ECDSA sig (64 bytes) wrapped in BIT STRING with leading 0x00 (unused bits)
+    // wire-parsed certs keep the exact bytes their signature covers
+    const tbs = this._tbsDer ?? this._buildTbsBytes();
+    const sigAlg = ALG_ECDSA_WITH_SHA256;
+    // BIT STRING (0 unused bits) holding the DER Ecdsa-Sig-Value
     const sigContent = this.certSignature
-      ? concatBytes(new Uint8Array([0x00]), this.certSignature)
+      ? concatBytes(new Uint8Array([0x00]), ecdsaP1363ToDer(this.certSignature))
       : new Uint8Array(72); // zero placeholder for certs without a real signature
     const sig = derTag(0x03, sigContent);
     return derTag(0x30, concatBytes(tbs, sigAlg, sig));
@@ -297,6 +448,8 @@ export class TlsCertificate {
       notAfter:          this.notAfter,
       selfSigned:        this.selfSigned,
       isCA:              this.isCA,
+      x509Version:       this.x509Version,
+      strictX509:        this.strictX509,
       hasPrivateKey:     this.hasPrivateKey,
       chain:             this.chain.map(c => c.toJSON()),
     };
@@ -331,6 +484,12 @@ export class TlsCertificate {
     cert.notAfter     = Number(obj.notAfter     ?? 0);
     cert.selfSigned   = Boolean(obj.selfSigned  ?? true);
     cert.isCA         = Boolean(obj.isCA        ?? false);
+    // Saved before the v3 layout existed → keep the legacy v1 encoding, so
+    // the stored certSignature (computed over those bytes) still verifies.
+    // isCA then only lives in this JSON field, not on the wire.
+    cert.x509Version  = Number(obj.x509Version) === 3 ? 3 : 1;
+    // saved before strict X.509 → keep the epoch-ms validity encoding
+    cert.strictX509   = obj.strictX509 === true;
     cert.chain        = Array.isArray(obj.chain)
       ? await Promise.all(obj.chain.map((/** @type {any} */ c) => TlsCertificate.fromJSON(c)))
       : [];
@@ -408,17 +567,21 @@ export class TlsTrustStore {
   trustedCAs = [];
 
   /**
-   * Chain-walking trust check.
-   * Trusted if cert itself is in the store, or if its issuer is trusted (recursively).
+   * Chain-walking trust check (RFC 5280 §6.1, simplified).
+   * Trusted if cert itself is in the store (trust anchor, matched by key), or
+   * if it carries a valid signature by an issuer that is trusted
+   * (recursively). Every issuer below the trust anchor must be a CA
+   * (basicConstraints cA=TRUE, §4.2.1.9 / §6.1.4(k)) and within its validity
+   * period at nowMs — otherwise any leaf certificate could sign further ones.
    * @param {TlsCertificate} cert
    * @param {TlsCertificate[]} [extraChain]
-   * @param {Set<string>} [_visited]
+   * @param {{ nowMs?: number, _visited?: Set<string> }} [opts]
    * @returns {Promise<boolean>}
    */
-  async isTrusted(cert, extraChain = [], _visited = new Set()) {
+  async isTrusted(cert, extraChain = [], { nowMs = Date.now(), _visited = new Set() } = {}) {
     if (_visited.has(cert.publicKeyId)) return false;
     _visited.add(cert.publicKeyId);
-    if (this.trustedCAs.some(ca => ca.publicKeyId === cert.publicKeyId)) return true;
+    if (this._isAnchor(cert)) return true;
     if (cert.selfSigned) return false;
     const pool = [...cert.chain, ...extraChain];
     const issuer = pool.find(c => c.subject === cert.issuer && c.subject !== cert.subject);
@@ -435,7 +598,16 @@ export class TlsTrustStore {
       tbsBytes,
     );
     if (!valid) return false;
-    return this.isTrusted(issuer, pool, _visited);
+    if (!this._isAnchor(issuer)) {
+      if (!issuer.isCA) return false;                              // a leaf can't issue certificates
+      if (issuer.validityStatus(nowMs) !== "valid") return false;  // expired/not-yet-valid intermediate
+    }
+    return this.isTrusted(issuer, pool, { nowMs, _visited });
+  }
+
+  /** @param {TlsCertificate} cert */
+  _isAnchor(cert) {
+    return this.trustedCAs.some(ca => ca.publicKeyId === cert.publicKeyId);
   }
 
   /** @param {TlsCertificate} cert */

@@ -8,6 +8,7 @@ import { DNSPacket } from "./../net/pdu/DNSPacket.js";
 import { IPAddress } from "../net/models/IPAddress.js";
 import { nowStamp } from "../lib/helpers.js";
 import { DNSResolver } from "./lib/DNSResolver.js";
+import { parseSvcParams } from "../net/pdu/Svcb.js";
 
 /** @param {*} name */
 function normalizeName(name) {
@@ -171,8 +172,8 @@ export class DNSServerApp extends LoggedProcess {
   /** @type {DNSResolver|null} */
   _resolver = null;
 
-  /** @type {{a:any[], aaaa:any[], cname:any[], mx:any[], ns:any[], mode:string, forwarderIp:string}} */
-  cfg = { a: [], aaaa: [], cname: [], mx: [], ns: [], mode: "authoritative", forwarderIp: "" };
+  /** @type {{a:any[], aaaa:any[], cname:any[], mx:any[], ns:any[], https:any[], mode:string, forwarderIp:string}} */
+  cfg = { a: [], aaaa: [], cname: [], mx: [], ns: [], https: [], mode: "authoritative", forwarderIp: "" };
 
   /** @type {HTMLButtonElement|null} */
   startBtn = null;
@@ -191,6 +192,8 @@ export class DNSServerApp extends LoggedProcess {
   mxEditor = null;
   /** @type {{root:HTMLElement,getRows:()=>any[],setRows:(rows:any[])=>void}|null} */
   nsEditor = null;
+  /** @type {{root:HTMLElement,getRows:()=>any[],setRows:(rows:any[])=>void}|null} */
+  httpsEditor = null;
 
   /** @type {HTMLSelectElement|null} */
   modeSelect = null;
@@ -222,6 +225,7 @@ export class DNSServerApp extends LoggedProcess {
         cname:      Array.isArray(obj.cname) ? obj.cname : [],
         mx:         Array.isArray(obj.mx)    ? obj.mx    : [],
         ns:         Array.isArray(obj.ns)    ? obj.ns    : [],
+        https:      Array.isArray(obj.https) ? obj.https : [],
         mode,
         forwarderIp: typeof obj.forwarderIp === "string" ? obj.forwarderIp : "",
       };
@@ -298,6 +302,19 @@ export class DNSServerApp extends LoggedProcess {
       () => ({ name: "", host: "", ttl: 300 })
     );
 
+    // HTTPS records (RFC 9460): tell browsers about HTTP/3, ports, addresses
+    this.httpsEditor = createTableEditor(
+      [
+        { key: "name", label: "Name", type: "text", placeholder: "www.example.com" },
+        { key: "priority", label: t("app.dnsd.https.col.priority"), type: "number", placeholder: "1", widthPx: 70 },
+        { key: "target", label: t("app.dnsd.https.col.target"), type: "text", placeholder: ".", widthPx: 120 },
+        { key: "params", label: t("app.dnsd.https.col.params"), type: "text", placeholder: "alpn=h3,h2 port=443" },
+        { key: "ttl", label: "TTL", type: "number", placeholder: "300", widthPx: 90 },
+      ],
+      onEdit,
+      () => ({ name: "", priority: 1, target: ".", params: "alpn=h3,h2", ttl: 300 })
+    );
+
     const start = UI.button(t("app.dnsd.button.start"), () => { this._rebuildConfigFromUI(); this._start(); }, { primary: true, icon: "fa-play" });
     const stop = UI.button(t("app.dnsd.button.stop"), () => this._stop(), { icon: "fa-stop" });
     const save = UI.button(t("app.dnsd.button.save"), () => this._saveConfigNow());
@@ -343,6 +360,7 @@ export class DNSServerApp extends LoggedProcess {
       { id: "cname",    label: "CNAME",                     pane: this.cnameEditor.root },
       { id: "mx",       label: "MX",                        pane: this.mxEditor.root    },
       { id: "ns",       label: "NS",                        pane: this.nsEditor.root    },
+      { id: "https",    label: "HTTPS",                     pane: this.httpsEditor.root },
       { id: "log",      label: t("app.dnsd.label.log"),      pane: logPane              },
       { id: "settings", label: t("app.dnsd.label.settings"), pane: settingsPane         },
     ]);
@@ -355,6 +373,7 @@ export class DNSServerApp extends LoggedProcess {
       this.cnameEditor.root,
       this.mxEditor.root,
       this.nsEditor.root,
+      this.httpsEditor.root,
       logPane,
       settingsPane,
       UI.buttonRow([save]),
@@ -409,6 +428,7 @@ export class DNSServerApp extends LoggedProcess {
         cname:      Array.isArray(obj.cname) ? obj.cname : [],
         mx:         Array.isArray(obj.mx)    ? obj.mx    : [],
         ns:         Array.isArray(obj.ns)    ? obj.ns    : [],
+        https:      Array.isArray(obj.https) ? obj.https : [],
         mode,
         forwarderIp: typeof obj.forwarderIp === "string" ? obj.forwarderIp : "",
       };
@@ -418,6 +438,7 @@ export class DNSServerApp extends LoggedProcess {
       this.cnameEditor?.setRows(this.cfg.cname);
       this.mxEditor?.setRows(this.cfg.mx);
       this.nsEditor?.setRows(this.cfg.ns);
+      this.httpsEditor?.setRows(this.cfg.https);
       if (this.modeSelect) {
         this.modeSelect.value = this.cfg.mode;
         if (this.rootDnsRow) this.rootDnsRow.style.display = this.cfg.mode === "recursive" ? "" : "none";
@@ -437,6 +458,7 @@ export class DNSServerApp extends LoggedProcess {
     const cnameRows = this.cnameEditor?.getRows() ?? [];
     const mxRows    = this.mxEditor?.getRows()    ?? [];
     const nsRows    = this.nsEditor?.getRows()    ?? [];
+    const httpsRows = this.httpsEditor?.getRows() ?? [];
 
     /** @type {{name:string, ip:string, ttl:number}[]} */
     const a = [];
@@ -494,9 +516,32 @@ export class DNSServerApp extends LoggedProcess {
       ns.push({ name, host, ttl: Number.isFinite(ttl) ? Math.max(0, ttl | 0) : 300 });
     }
 
+    /** @type {{name:string, priority:number, target:string, params:string, ttl:number}[]} */
+    const https = [];
+    for (const r of httpsRows) {
+      const name = normalizeName(r.name);
+      if (!name) continue;
+      const priority = Number(r.priority ?? 1);
+      const target = String(r.target ?? "").trim() || ".";
+      const params = String(r.params ?? "").trim();
+      const ttl = Number(r.ttl ?? 300);
+      try {
+        parseSvcParams(params);
+      } catch (e) {
+        this._appendLog(`[${nowStamp()}] HTTPS ${name}: ${e instanceof Error ? e.message : String(e)} — record ignored`);
+        continue;
+      }
+      https.push({
+        name,
+        priority: Number.isFinite(priority) ? Math.max(0, Math.min(65535, priority | 0)) : 1,
+        target, params,
+        ttl: Number.isFinite(ttl) ? Math.max(0, ttl | 0) : 300,
+      });
+    }
+
     const mode = (this.modeSelect?.value === "recursive") ? "recursive" : "authoritative";
     const forwarderIp = this.forwarderInput?.value.trim() ?? "";
-    this.cfg = { a, aaaa, cname, mx, ns, mode, forwarderIp };
+    this.cfg = { a, aaaa, cname, mx, ns, https, mode, forwarderIp };
   }
 
   _scheduleSave() {
@@ -611,6 +656,7 @@ export class DNSServerApp extends LoggedProcess {
     for (const r of this.cfg.cname) if (normalizeName(r.name) === n) return true;
     for (const r of this.cfg.mx)    if (normalizeName(r.name) === n) return true;
     for (const r of this.cfg.ns)    if (normalizeName(r.name) === n) return true;
+    for (const r of this.cfg.https ?? []) if (normalizeName(r.name) === n) return true;
     // For in-addr.arpa PTR queries, name "exists" if we have a matching A record
     const ptrIp = this._reverseArpaToIPv4(n);
     if (ptrIp) {
@@ -644,24 +690,100 @@ export class DNSServerApp extends LoggedProcess {
   }
 
   /**
-   * Synthesizes a minimal SOA for NODATA responses (RFC 2308 §2.1).
-   * @param {string} qname normalized
-   * @returns {import("../net/pdu/DNSPacket.js").DNSResourceRecord|null}
+   * Derives which zones this server is authoritative for and where its zone
+   * cuts (delegations) are. There is no explicit zone config, so:
+   *  - An NS owner name is a zone APEX if the server holds authoritative data
+   *    (A/AAAA/CNAME/MX, excluding glue = addresses of NS hosts) whose closest
+   *    enclosing NS owner is that name.
+   *  - Every other NS owner name is a DELEGATION (zone cut, RFC 1034 §4.2.1).
+   *  - Data not covered by any NS owner gets an implicit zone (the record name
+   *    minus its first label when it has ≥3 labels, else the name itself), so a
+   *    simple server without NS/SOA still answers authoritatively. A records also
+   *    yield an implicit reverse zone c.b.a.in-addr.arpa (PTR synthesis).
+   * @returns {{apexes: Set<string>, cuts: Map<string, any[]>}}
    */
-  _buildSOAForZone(qname) {
-    // Walk up the hierarchy to find the closest configured NS zone
-    let zone = qname;
-    let nsHost = null;
-    while (zone) {
-      for (const r of this.cfg.ns) {
-        if (normalizeName(r.name) === zone) { nsHost = normalizeName(r.host); break; }
-      }
-      if (nsHost) break;
-      const dot = zone.indexOf(".");
-      if (dot === -1) break;
-      zone = zone.slice(dot + 1);
+  _zoneModel() {
+    /** @type {Map<string, any[]>} */
+    const nsOwners = new Map();
+    for (const r of this.cfg.ns) {
+      const n = normalizeName(r.name);
+      if (!n) continue;
+      if (!nsOwners.has(n)) nsOwners.set(n, []);
+      /** @type {any[]} */ (nsOwners.get(n)).push(r);
     }
-    if (!zone) zone = qname;
+    const nsHosts = new Set(this.cfg.ns.map(r => normalizeName(r.host)).filter(Boolean));
+
+    /** @param {string} name */
+    const closestNSOwner = (name) => {
+      let z = name;
+      while (z) {
+        if (nsOwners.has(z)) return z;
+        const dot = z.indexOf(".");
+        if (dot === -1) return null;
+        z = z.slice(dot + 1);
+      }
+      return null;
+    };
+
+    /** @type {Set<string>} */
+    const apexes = new Set();
+    /** @param {string} n */
+    const addData = (n) => {
+      if (!n) return;
+      const owner = closestNSOwner(n);
+      if (owner) { apexes.add(owner); return; }
+      const labels = n.split(".");
+      apexes.add(labels.length >= 3 ? labels.slice(1).join(".") : n);
+    };
+
+    for (const r of [...this.cfg.a, ...this.cfg.aaaa]) {
+      const n = normalizeName(r.name);
+      if (nsHosts.has(n)) continue; // glue
+      addData(n);
+    }
+    for (const r of [...this.cfg.cname, ...this.cfg.mx, ...(this.cfg.https ?? [])]) addData(normalizeName(r.name));
+
+    for (const r of this.cfg.a) {
+      if (nsHosts.has(normalizeName(r.name))) continue;
+      const ip = parseIPv4(r.ip);
+      if (ip) apexes.add(`${ip[2]}.${ip[1]}.${ip[0]}.in-addr.arpa`);
+    }
+
+    /** @type {Map<string, any[]>} */
+    const cuts = new Map();
+    for (const [n, recs] of nsOwners) if (!apexes.has(n)) cuts.set(n, recs);
+    return { apexes, cuts };
+  }
+
+  /**
+   * Finds the closest enclosing own zone or delegation for qname.
+   * @param {string} qname normalized
+   * @returns {{kind: "auth", zone: string} | {kind: "referral", zone: string, ns: any[]} | {kind: "none"}}
+   */
+  _classify(qname) {
+    const { apexes, cuts } = this._zoneModel();
+    let z = qname;
+    while (z) {
+      if (apexes.has(z)) return { kind: "auth", zone: z };
+      const ns = cuts.get(z);
+      if (ns) return { kind: "referral", zone: z, ns };
+      const dot = z.indexOf(".");
+      if (dot === -1) break;
+      z = z.slice(dot + 1);
+    }
+    return { kind: "none" };
+  }
+
+  /**
+   * Synthesizes a minimal SOA for negative responses (RFC 2308 §3).
+   * @param {string} zone normalized zone apex
+   * @returns {import("../net/pdu/DNSPacket.js").DNSResourceRecord}
+   */
+  _buildSOAForZone(zone) {
+    let nsHost = null;
+    for (const r of this.cfg.ns) {
+      if (normalizeName(r.name) === zone) { nsHost = normalizeName(r.host); break; }
+    }
 
     return {
       name: zone,
@@ -669,7 +791,7 @@ export class DNSServerApp extends LoggedProcess {
       cls:  DNSPacket.CLASS_IN,
       ttl:  60,
       data: {
-        mname:   nsHost ?? `ns.${zone}`,
+        mname:   nsHost || `ns.${zone}`,
         rname:   `hostmaster.${zone}`,
         serial:  1,
         refresh: 3600,
@@ -678,6 +800,21 @@ export class DNSServerApp extends LoggedProcess {
         minimum: 60,
       },
     };
+  }
+
+  /**
+   * True if qname owns records or has descendants (empty non-terminal,
+   * RFC 1034 §4.3.2 / RFC 8020) inside the server's data.
+   * @param {string} qname normalized
+   * @param {string} zone normalized
+   */
+  _nameExistsInZone(qname, zone) {
+    if (qname === zone || this._nameExists(qname)) return true;
+    const suffix = "." + qname;
+    for (const list of [this.cfg.a, this.cfg.aaaa, this.cfg.cname, this.cfg.mx, this.cfg.ns, this.cfg.https ?? []]) {
+      for (const r of list) if (normalizeName(r.name).endsWith(suffix)) return true;
+    }
+    return false;
   }
 
   /** @param {number} sockPort @param {IPAddress} srcIp @param {number} srcPort @param {Uint8Array} payload */
@@ -704,7 +841,7 @@ export class DNSServerApp extends LoggedProcess {
       id: q.id,
       qr: 1,
       opcode: q.opcode,
-      aa: 1,
+      aa: 0, // set only for answers from our own zones (RFC 1035 §4.1.1)
       tc: 0,
       rd: q.rd,
       ra: isRecursive ? 1 : 0,
@@ -716,93 +853,49 @@ export class DNSServerApp extends LoggedProcess {
       additionals: [],
     });
 
-    let anyAnswered = false;
-    let anyNameExists = false;
+    // Only the first question is evaluated (QDCOUNT > 1 is not used in practice).
+    const qu = questions[0];
+    const qname = normalizeName(qu.name);
+    const qtype = qu.type & 0xffff;
+    const qcls = qu.cls & 0xffff;
 
-    for (const qu of questions) {
-      const qname = normalizeName(qu.name);
-      const qtype = qu.type & 0xffff;
-      const qcls = qu.cls & 0xffff;
-
-      if (qcls !== DNSPacket.CLASS_IN) {
-        resp.rcode = 4; // Not Implemented
-        continue;
+    if (qcls !== DNSPacket.CLASS_IN) {
+      resp.rcode = 4; // Not Implemented
+    } else {
+      const ctx = this._classify(qname);
+      const answers = this._lookup(qname, qtype);
+      // The zone apex owns the SOA record (RFC 1035 §3.3.13)
+      if (ctx.kind === "auth" && qname === ctx.zone && (qtype === DNSPacket.TYPE_SOA || qtype === 255)) {
+        answers.push(this._buildSOAForZone(ctx.zone));
       }
 
-      if (this._nameExists(qname)) anyNameExists = true;
-
-      const answersForThis = this._lookup(qname, qtype);
-      for (const rr of answersForThis) resp.answers.push(rr);
-
-      if (answersForThis.length > 0) anyAnswered = true;
-    }
-
-    if (!anyAnswered && isRecursive) {
-      try {
-        const resolver = this._resolver ?? new DNSResolver(this.os, this.cfg.forwarderIp);
-        for (const qu of questions) {
-          const qname = normalizeName(qu.name);
-          const qtype = qu.type & 0xffff;
-          const upstream = await resolver._query(qname, qtype);
-          if (upstream && (upstream.answers?.length ?? 0) > 0) {
-            for (const rr of upstream.answers) resp.answers.push(rr);
-            for (const rr of (upstream.authorities  ?? [])) resp.authorities.push(rr);
-            for (const rr of (upstream.additionals  ?? [])) resp.additionals.push(rr);
-            resp.rcode = upstream.rcode ?? 0;
-            anyAnswered = true;
-          } else if (upstream) {
-            resp.rcode = upstream.rcode ?? 3;
-          }
+      if (answers.length > 0) {
+        for (const rr of answers) resp.answers.push(rr);
+        // Data below a zone cut (glue) or outside our zones is not authoritative.
+        resp.aa = ctx.kind === "auth" ? 1 : 0;
+      } else if (ctx.kind === "auth") {
+        // Negative answer from our own zone: NXDOMAIN or NODATA, both carry
+        // the zone's SOA in the authority section (RFC 2308 §3).
+        resp.aa = 1;
+        resp.rcode = this._nameExistsInZone(qname, ctx.zone) ? 0 : 3;
+        resp.authorities.push(this._buildSOAForZone(ctx.zone));
+      } else if (isRecursive) {
+        await this._resolveUpstream(resp, qname, qtype);
+      } else if (ctx.kind === "referral") {
+        // Delegation below a zone cut (RFC 1034 §4.3.2 step 3b): non-authoritative referral.
+        for (const r of ctx.ns) {
+          const host = normalizeName(r.host);
+          if (!host) continue;
+          resp.authorities.push({
+            name: ctx.zone,
+            type: DNSPacket.TYPE_NS,
+            cls: DNSPacket.CLASS_IN,
+            ttl: r.ttl ?? 300,
+            data: host,
+          });
         }
-      } catch (e) {
-        const reason = (e instanceof Error ? e.message : String(e));
-        this._appendLog(`[${nowStamp()}] recursive resolve error: ${reason}`);
-        resp.rcode = 2; // SERVFAIL
-      }
-    }
-
-    if (!anyAnswered) {
-      // Check for NS delegation (referral): walk up the name hierarchy to find a
-      // parent zone for which we hold NS records. This is needed so that e.g. a
-      // root DNS with only a "com" NS entry correctly refers queries for
-      // "www.example.com" instead of returning NXDOMAIN.
-      let foundDelegation = false;
-      for (const qu of questions) {
-        const qn = normalizeName(qu.name);
-        let zone = qn;
-        while (true) {
-          const dot = zone.indexOf(".");
-          if (dot === -1) break;
-          zone = zone.slice(dot + 1);
-          if (!zone) break;
-          const delegNS = this.cfg.ns.filter(r => normalizeName(r.name) === zone);
-          if (delegNS.length > 0) {
-            resp.aa = 0;
-            for (const r of delegNS) {
-              const host = normalizeName(r.host);
-              if (!host) continue;
-              resp.authorities.push({
-                name: zone,
-                type: DNSPacket.TYPE_NS,
-                cls: DNSPacket.CLASS_IN,
-                ttl: r.ttl ?? 300,
-                data: host,
-              });
-            }
-            foundDelegation = true;
-            break;
-          }
-        }
-        if (foundDelegation) break;
-      }
-
-      if (!foundDelegation) {
-        resp.rcode = anyNameExists ? 0 : 3;
-        // NODATA: add SOA to authority section so clients can cache the negative (RFC 2308)
-        if (anyNameExists && questions.length > 0) {
-          const soa = this._buildSOAForZone(normalizeName(questions[0].name));
-          if (soa) resp.authorities.push(soa);
-        }
+      } else {
+        resp.rcode = 5; // REFUSED: not authoritative and no recursion
       }
     }
 
@@ -814,6 +907,38 @@ export class DNSServerApp extends LoggedProcess {
     } catch (e) {
       const reason = (e instanceof Error ? e.message : String(e));
       this._appendLog(`[${nowStamp()}] send error: ${reason}`);
+    }
+  }
+
+  /**
+   * Recursive resolution via forwarder/root; result is never authoritative.
+   * @param {DNSPacket} resp @param {string} qname @param {number} qtype
+   */
+  async _resolveUpstream(resp, qname, qtype) {
+    resp.aa = 0;
+    try {
+      const resolver = this._resolver ?? new DNSResolver(this.os, this.cfg.forwarderIp);
+      const upstream = await resolver._query(qname, qtype);
+      if (!upstream) {
+        resp.rcode = 2; // SERVFAIL: no upstream answer
+        return;
+      }
+      if ((upstream.answers?.length ?? 0) > 0) {
+        for (const rr of upstream.answers) resp.answers.push(rr);
+        for (const rr of (upstream.authorities ?? [])) resp.authorities.push(rr);
+        for (const rr of (upstream.additionals ?? [])) resp.additionals.push(rr);
+        resp.rcode = upstream.rcode ?? 0;
+      } else {
+        resp.rcode = upstream.rcode ?? 3;
+        // Pass on the negative-caching SOA only — never upstream referrals.
+        for (const rr of (upstream.authorities ?? [])) {
+          if ((rr.type & 0xffff) === DNSPacket.TYPE_SOA) resp.authorities.push(rr);
+        }
+      }
+    } catch (e) {
+      const reason = (e instanceof Error ? e.message : String(e));
+      this._appendLog(`[${nowStamp()}] recursive resolve error: ${reason}`);
+      resp.rcode = 2; // SERVFAIL
     }
   }
 
@@ -852,6 +977,21 @@ export class DNSServerApp extends LoggedProcess {
         const ip = parseIPv6(r.ip);
         if (!ip) continue;
         out.push(mkRR({ name: r.name, type: DNSPacket.TYPE_AAAA, ttl: r.ttl ?? 60, data: ip }));
+      }
+    }
+
+    // HTTPS (RFC 9460) — service parameters for https:// on this name
+    if (qtype === DNSPacket.TYPE_HTTPS || qtype === 255) {
+      const recs = (this.cfg.https ?? []).filter(r => normalizeName(r.name) === qname)
+        .sort((x, y) => (x.priority ?? 1) - (y.priority ?? 1));
+      for (const r of recs) {
+        let params;
+        try { params = parseSvcParams(r.params ?? ""); } catch { continue; }
+        const target = String(r.target ?? ".").trim();
+        out.push(mkRR({
+          name: r.name, type: DNSPacket.TYPE_HTTPS, ttl: r.ttl ?? 300,
+          data: { priority: r.priority ?? 1, target: target === "." || !target ? "." : normalizeName(target), params: (r.priority ?? 1) === 0 ? {} : params },
+        }));
       }
     }
 

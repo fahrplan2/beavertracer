@@ -202,8 +202,8 @@ describe('DNSServerApp – authoritative mode', () => {
       expect(resp.qr).toBe(1);
     });
 
-    it('returns NXDOMAIN (rcode 3) for unknown name', async () => {
-      const resp = await query(vnet, sockId, 'unknown.invalid', DNSPacket.TYPE_A);
+    it('returns NXDOMAIN (rcode 3) for unknown name inside the zone', async () => {
+      const resp = await query(vnet, sockId, 'unknown.example.com', DNSPacket.TYPE_A);
       expect(resp.rcode).toBe(3);
       expect(resp.answers).toHaveLength(0);
     });

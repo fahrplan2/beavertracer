@@ -18,7 +18,7 @@ import { PCapController } from "./tracer/PCapControler.js";
 import { UILib } from "./lib/UILib.js";
 import { SimDialog } from "./lib/SimDialog.js";
 import { buildLanguagePicker } from "./lib/LanguagePicker.js";
-import { choosePanelPlacement, segmentToRects } from "./lib/panelPlacement.js";
+import { choosePanelPlacement, segmentToRects, cascadePlacement } from "./lib/panelPlacement.js";
 import { WelcomeDialog } from "./lib/WelcomeDialog.js";
 import { LessonsPanel } from "./lib/LessonsPanel.js";
 import { GameHub } from "./game/GameHub.js";
@@ -28,7 +28,7 @@ import { version } from "./lib/version.js";
 import { isTauri } from "./tauri.js";
 import { Linux } from "./sim/Linux.js";
 import { RemoteBridge } from "./sim/RemoteBridge.js";
-import { migrateCertSignatures } from "./lib/CertMigration.js";
+import { migrateCertSignatures, upgradeCertEncodings } from "./lib/CertMigration.js";
 
 /**
  * @typedef {Object} PortDescriptor
@@ -65,14 +65,25 @@ const PLACE_TOOL_NAME_KEY = /** @type {Record<string, string>} */ ({
 });
 
 /** Speed toolbar presets: real ms per tick, in factor-4 steps around 1× = 400 ms.
- *  16× is below Link's 35 ms animation cutoff on purpose: it is for quick
- *  queries whose packets are inspected in the tracer, not on the canvas. */
+ *  16× and 64× are below Link's 35 ms animation cutoff on purpose: at 16×
+ *  packets only flash on their cable (quick queries, inspected in the tracer),
+ *  at 64× the cable just lights up (letting the network's behaviour play out). */
 const SPEED_PRESETS = [
     { label: "1/4×", ms: 1600 },
     { label: "1×",   ms: 400  },
     { label: "4×",   ms: 100  },
     { label: "16×",  ms: 25   },
+    { label: "64×",  ms: 6.25 },
 ];
+
+/** Shortest selectable tick; browsers clamp nested timers to ~4 ms anyway. */
+const MIN_TICK_MS = 4;
+
+/** Ticks shorter than this are paced by elapsed time (see scheduleNextStep). */
+const CATCH_UP_BELOW_MS = 16;
+
+/** Upper bound of steps run in one timer callback to catch up. */
+const MAX_CATCH_UP_STEPS = 8;
 
 /** Real ms per tick at 1×; also the fallback for missing/invalid stored ticks. */
 const DEFAULT_TICK_MS = 400;
@@ -109,6 +120,12 @@ export class SimControl {
 
     /** @type {number} simulation speed (time it takes to do one tick in ms) */
     static tick = DEFAULT_TICK_MS;
+
+    /** @type {number|null} start of the last catch-up timer callback (performance.now()) */
+    _stepAt = null;
+
+    /** @type {number} ms already elapsed towards the next step at catch-up speeds */
+    _stepLagMs = 0;
 
     /** @type {number} ID of the simulation step */
     tickId = 0;
@@ -670,6 +687,13 @@ export class SimControl {
     // ── Simulation loop ───────────────────────────────────────────────────────
 
     step() {
+        this._simulateStep();
+        this._requestRedrawLinks();
+        this.scheduleNextStep();
+    }
+
+    /** One simulation step without redraw/scheduling. */
+    _simulateStep() {
         // deliver in-flight packets first so simTimer.tick() sees them immediately
         this.wifiMedium.step2(this.simobjects);
         for (let i = 0; i < this.simobjects.length; i++) {
@@ -688,23 +712,41 @@ export class SimControl {
             }
         }
         this.tickId++;
-
-        this._requestRedrawLinks();
-        this.scheduleNextStep();
     }
 
     scheduleNextStep() {
         if (this.timeoutId !== null) window.clearTimeout(this.timeoutId);
         if (this.isPaused) return;
-        this.timeoutId = window.setTimeout(() => this.step(), SimControl.tick);
+        if (SimControl.tick >= CATCH_UP_BELOW_MS) {
+            this._stepLagMs = 0;
+            this._stepAt = null;
+            this.timeoutId = window.setTimeout(() => this.step(), SimControl.tick);
+            return;
+        }
+        // Timers fire late (≥ 4 ms, more under load), so at very high speeds
+        // a timer per step would fall well short of the chosen speed. Run as
+        // many steps as are due since the last callback instead, carrying the
+        // remainder over.
+        const now = performance.now();
+        const from = this._stepAt !== null && now - this._stepAt < 100 ? this._stepAt : now;
+        this.timeoutId = window.setTimeout(() => {
+            const tick = SimControl.tick;
+            const t0 = performance.now();
+            const elapsed = t0 - from + this._stepLagMs;
+            const n = Math.max(1, Math.min(MAX_CATCH_UP_STEPS, Math.floor(elapsed / tick)));
+            this._stepLagMs = Math.max(0, Math.min(tick, elapsed - n * tick));
+            this._stepAt = t0;
+            for (let i = 1; i < n; i++) this._simulateStep();
+            this.step();
+        }, SimControl.tick);
     }
 
     /** @param {number} ms */
     setTick(ms) {
         if (this.mode !== "run") return;
 
-        //Upper bound: 5000, lower bound: 16
-        SimControl.tick = Math.max(16, Math.min(5000, Math.round(ms)));
+        // Not rounded: 64× is 6.25 ms and must stay equal to its preset
+        SimControl.tick = Math.max(MIN_TICK_MS, Math.min(5000, ms));
 
         for(const o of this.simobjects) {
             if(o instanceof Link) {
@@ -863,14 +905,21 @@ export class SimControl {
             .filter((o) => o !== obj && o instanceof SimulatedObject && o.panelOpen && o.panelEl)
             .map((o) => rel(/** @type {HTMLElement} */ (o.panelEl).getBoundingClientRect()));
 
-        const place = choosePanelPlacement({
-            bounds: rel(boundsEl.getBoundingClientRect()),
+        const bounds = rel(boundsEl.getBoundingClientRect());
+        const chosen = choosePanelPlacement({
+            bounds,
             view: rel(viewEl.getBoundingClientRect()),
             size,
-            minSize: obj.panelResizable && !userSized ? { w: obj.panelMinWidth, h: obj.panelMinHeight } : null,
+            // always open at full size — shrinking makes a scaled OS screen
+            // look zoomed out
+            minSize: null,
             obstacles,
             avoid,
+            anchor: obj.iconEl ? rel(obj.iconEl.getBoundingClientRect()) : null,
         });
+        // exactly on top of another panel? offset it like a cascade so the
+        // new window is recognisable as a new one
+        const place = { ...chosen, ...cascadePlacement(chosen, avoid, bounds) };
 
         obj.px = place.x;
         obj.py = place.y;
@@ -1070,7 +1119,7 @@ export class SimControl {
 
     toJSON() {
         return {
-            version: 6,
+            version: 7,
             appVersion: version(),
             savedAt: new Date().toISOString(),
             tick: SimControl.tick,
@@ -1124,6 +1173,13 @@ export class SimControl {
             const result = await migrateCertSignatures(state);
             state = result.state;
             if (result.unresolved > 0) SimDialog.alert(t("sim.certMigration.unresolved", { count: result.unresolved }));
+        }
+
+        // v6 → v7: certificates use strict X.509 (UTCTime validity, DER
+        // signature) — re-signed where the issuer's key is in the file;
+        // the others keep the legacy encoding and still work.
+        if ((state.version ?? 0) <= 6) {
+            state = (await upgradeCertEncodings(state)).state;
         }
 
         this._clearScene();
@@ -2608,8 +2664,7 @@ export class SimControl {
 
     /** @param {import("./sim/Link.js").Link} link */
     _clearLinkPackets(link) {
-        for (const p of link._packets) p.el?.remove?.();
-        link._packets = [];
+        link.clearPackets();
     }
 
     // ── Port & link helpers ───────────────────────────────────────────────────

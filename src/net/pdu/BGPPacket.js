@@ -259,10 +259,8 @@ function buildPathAttrs(nextHop, asPath, localPref, med, mp6Reach, mp6Unreach) {
  * @returns {Uint8Array}
  */
 function buildASPath(asns) {
-    if (asns.length === 0) {
-        // Empty AS_SEQUENCE segment
-        return new Uint8Array([AS_SEQUENCE, 0]);
-    }
+    // Empty path (iBGP, locally originated): attribute length 0, no segment (RFC 4271 §5.1.2)
+    if (asns.length === 0) return new Uint8Array(0);
     const out = new Uint8Array(2 + asns.length * 2);
     out[0] = AS_SEQUENCE;
     out[1] = asns.length;

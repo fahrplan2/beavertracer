@@ -15,11 +15,13 @@ import { GameHub } from "../game/GameHub.js";
 /**
  * Info pages shown as sub-views (see StaticPages.js); routes without an
  * entry here (e.g. /license) get a generic icon and their route as title.
- * @type {Record<string, { icon: string, title: () => string }>}
+ * `large`: too much content for the start page's size — the dialog grows
+ * to (almost) full screen while the page is shown.
+ * @type {Record<string, { icon: string, title: () => string, large?: boolean }>}
  */
 const PAGE_VIEWS = {
-    "/help":      { icon: "fa-circle-question", title: () => t("sim.help") },
-    "/about":     { icon: "fa-circle-info",     title: () => t("sim.about") },
+    "/help":      { icon: "fa-circle-question", title: () => t("sim.help"), large: true },
+    "/about":     { icon: "fa-circle-info",     title: () => t("sim.about"), large: true },
     "/downloads": { icon: "fa-download",        title: () => t("sim.downloads") },
 };
 
@@ -179,12 +181,15 @@ export class WelcomeDialog {
         let opener = null;
         /** @type {HTMLElement[]} */
         const views = [];
+        /** Height of a (non-large) sub-view: the start page's room, measured while it was last shown. */
+        let subViewHeight = 0;
         /**
          * @param {string} icon
          * @param {string} title
          * @param {string} contentClass
+         * @param {{ large?: boolean }} [opts]
          */
-        const subView = (icon, title, contentClass) => {
+        const subView = (icon, title, contentClass, { large = false } = {}) => {
             const view = document.createElement("div");
             view.className = "welcome-subview";
             view.hidden = true;
@@ -197,7 +202,7 @@ export class WelcomeDialog {
             const back = () => {
                 view.hidden = true;
                 home.hidden = false;
-                body.closest(".welcome-dlg")?.classList.remove("welcome-dlg--subview");
+                body.closest(".welcome-dlg")?.classList.remove("welcome-dlg--subview", "welcome-dlg--large");
                 // Opened straight on this view: no button to return to, so
                 // focus lands where it would on a fresh start page.
                 (opener ?? /** @type {HTMLElement|null} */ (home.querySelector(".welcome-learn-primary:not(:disabled)") ?? home.querySelector(".welcome-sim-item")))?.focus();
@@ -219,22 +224,21 @@ export class WelcomeDialog {
             const show = (returnFocus, focus) => {
                 opener = returnFocus;
                 const dlg = body.closest(".welcome-dlg");
-                const header = /** @type {HTMLElement|null} */ (dlg?.querySelector(".welcome-header"));
                 const footer = /** @type {HTMLElement|null} */ (dlg?.querySelector(".welcome-footer"));
-                // Switching between sub-views (a link from one info page to
-                // another): keep the size of the one being replaced.
-                const current = views.find((v) => !v.hidden);
-                // Otherwise the footer (language, news, help …) and the
-                // header's logo row only belong to the start page; their room
-                // goes to the sub-view so the dialog keeps its size.
-                const total = home.hidden ? 0
-                    : (header?.offsetHeight ?? 0) + home.offsetHeight + (footer?.offsetHeight ?? 0);
+                // The footer (language, news, help …) and the header's logo
+                // row only belong to the start page; their room goes to the
+                // sub-view so the dialog keeps its size. Measured only while
+                // the start page is shown — switching between sub-views (a
+                // link from one info page to another) keeps that size.
+                if (!home.hidden) {
+                    subViewHeight = home.offsetHeight + (footer?.offsetHeight ?? 0);
+                }
                 // "[←] Title" takes the logo row's place in the header.
                 dlg?.querySelector(".welcome-header-sub")?.replaceChildren(head);
                 dlg?.classList.add("welcome-dlg--subview");
-                view.style.height = home.hidden && current
-                    ? current.style.height
-                    : `${total - (header?.offsetHeight ?? 0)}px`;
+                // Large views size via CSS (.welcome-dlg--large) instead.
+                dlg?.classList.toggle("welcome-dlg--large", large);
+                view.style.height = large ? "" : `${subViewHeight}px`;
                 for (const v of views) v.hidden = v !== view;
                 home.hidden = true;
                 (focus ?? backBtn).focus();
@@ -281,7 +285,7 @@ export class WelcomeDialog {
             let page = pages.get(route);
             if (!page) {
                 const meta = PAGE_VIEWS[route] ?? { icon: "fa-file-lines", title: () => route.slice(1) };
-                page = subView(meta.icon, meta.title(), `welcome-page-content welcome-page--${route.slice(1)}`);
+                page = subView(meta.icon, meta.title(), `welcome-page-content welcome-page--${route.slice(1)}`, { large: meta.large });
                 pages.set(route, page);
                 body.appendChild(page.view);
                 page.content.addEventListener("click", (ev) => {

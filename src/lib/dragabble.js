@@ -17,6 +17,7 @@
  * @property {HTMLElement=} handle
  * @property {BoundaryLike=} boundary
  * @property {boolean=} clampToViewport
+ * @property {number=} keepVisible  If set, the element may be dragged past the left, right and bottom edge of the boundary as long as this many px of it stay inside (so it can still be grabbed); the top edge still holds. Unset: only leaving west/north is prevented.
  * @property {boolean=} preventTextSelection
  * @property {boolean=} setCursor
  * @property {(state: { dragging: boolean, x: number, y: number, event: PointerEvent }) => void=} onMove
@@ -102,7 +103,8 @@ function applyTranslate(el, x, y) {
  * Compute clamped translate (x,y) so the element stays within boundary/viewport.
  * Coordinates are in viewport space using getBoundingClientRect.
  *
- * IMPORTANT: clamps only TOP/LEFT (west/north) like you wanted.
+ * Clamps only TOP/LEFT (west/north), unless `keepVisible` is given (see
+ * DraggableOptions.keepVisible).
  *
  * @param {HTMLElement} el
  * @param {{x:number, y:number}} proposed  translate values in element-local units (canvas space when scale != 1)
@@ -110,9 +112,10 @@ function applyTranslate(el, x, y) {
  * @param {BoundaryLike} boundaryLike
  * @param {boolean} clampToViewport
  * @param {number} scale  parent CSS scale factor; deltas are multiplied to convert to screen pixels for comparison
+ * @param {number|undefined} keepVisible
  * @returns {{x:number, y:number}}
  */
-function clampTranslate(el, proposed, current, boundaryLike, clampToViewport, scale = 1) {
+function clampTranslate(el, proposed, current, boundaryLike, clampToViewport, scale = 1, keepVisible = undefined) {
   const elRectNow = el.getBoundingClientRect();
 
   // Convert canvas-space delta to screen-space delta for boundary comparison
@@ -144,6 +147,12 @@ function clampTranslate(el, proposed, current, boundaryLike, clampToViewport, sc
     box = { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight };
   } else {
     return proposed;
+  }
+
+  if (keepVisible != null) {
+    const left = Math.min(Math.max(nextLeft, box.left - elRectNow.width + keepVisible), box.right - keepVisible);
+    const top = Math.min(Math.max(nextTop, box.top), box.bottom - keepVisible);
+    return { x: proposed.x + (left - nextLeft) / scale, y: proposed.y + (top - nextTop) / scale };
   }
 
   let clampedX = proposed.x;
@@ -199,6 +208,7 @@ export function makeDraggable(el, options = {}) {
     handle = el,
     boundary = null,
     clampToViewport = false,
+    keepVisible = undefined,
     preventTextSelection = true,
     setCursor = true,
     onMove,
@@ -325,7 +335,7 @@ export function makeDraggable(el, options = {}) {
     const dy = (dyPointer + scrollDy) / scale;
 
     let proposed = { x: startTranslate.x + dx, y: startTranslate.y + dy };
-    proposed = clampTranslate(el, proposed, currentTranslate, boundary, clampToViewport, scale);
+    proposed = clampTranslate(el, proposed, currentTranslate, boundary, clampToViewport, scale, keepVisible);
 
     currentTranslate = proposed;
     applyTranslate(el, currentTranslate.x, currentTranslate.y);
@@ -528,7 +538,7 @@ export function makeDraggable(el, options = {}) {
       const y = Number.isFinite(pos.y) ? /** @type {number} */ (pos.y) : currentTranslate.y;
 
       const proposed = { x, y };
-      const clamped = clampTranslate(el, proposed, currentTranslate, boundary, clampToViewport);
+      const clamped = clampTranslate(el, proposed, currentTranslate, boundary, clampToViewport, 1, keepVisible);
 
       currentTranslate = clamped;
       applyTranslate(el, currentTranslate.x, currentTranslate.y);

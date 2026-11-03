@@ -45,6 +45,8 @@ export class NatEngine {
     static UDP_IDLE_MS = 15_000;
     /** idle timeout for an ICMP echo mapping */
     static ICMP_IDLE_MS = 5_000;
+    /** how long an inbound fragment mapping waits for the rest of its datagram (RFC 791 reassembly timeout ballpark) */
+    static FRAG_IDLE_MS = 15_000;
     /** how often the expiry sweep runs */
     static SWEEP_MS = 2_000;
 
@@ -56,7 +58,7 @@ export class NatEngine {
     _icmpOut = new Map();
     /** @type {Map<number, {key:string, srcIpNum:number, origId:number, lastSeenTick:number}>} natId → mapping */
     _icmpIn = new Map();
-    /** @type {Map<number, number>} IPv4 identification → LAN IP for inbound non-first fragments */
+    /** @type {Map<string, {lanIpNum:number, lastSeenTick:number}>} `src:dst:proto:id` (as seen on the WAN) → LAN IP for inbound non-first fragments */
     _fragIn = new Map();
 
     _nextPort = 10000;
@@ -109,11 +111,23 @@ export class NatEngine {
         }
 
         const isUdp = proto === 17;
-        let srcPort, dstPort, tcp;
-        try {
-            if (isUdp) { const u = UDPPacket.fromBytes(packet.payload); srcPort = u.srcPort; dstPort = u.dstPort; }
-            else        { tcp = TCPPacket.fromBytes(packet.payload); srcPort = tcp.srcPort; dstPort = tcp.dstPort; }
-        } catch { return false; }
+        // First fragment of a fragmented datagram (RFC 3022 §4.1): the L4 header
+        // is there, but the datagram is not — UDPPacket/TCPPacket.fromBytes would
+        // reject it (UDP length > fragment length). Read ports from the raw bytes.
+        const isFirstFrag = (packet.flags & 0x01) !== 0;
+        let srcPort, tcp;
+        /** @type {number} */
+        let tcpFlags = 0;
+        if (isFirstFrag) {
+            if (!NatEngine._hasL4Header(packet)) return false;
+            srcPort = (packet.payload[0] << 8) | packet.payload[1];
+            if (!isUdp) tcpFlags = packet.payload[13];
+        } else {
+            try {
+                if (isUdp) { srcPort = UDPPacket.fromBytes(packet.payload).srcPort; }
+                else        { tcp = TCPPacket.fromBytes(packet.payload); srcPort = tcp.srcPort; tcpFlags = tcp.flags; }
+            } catch { return false; }
+        }
 
         const outKey = `${srcNum}:${srcPort}:${proto}`;
         let session = this._out.get(outKey);
@@ -128,9 +142,13 @@ export class NatEngine {
             this._in.set(`${allocated}:${proto}`, session);
         }
         session.lastSeenTick = simTimer.currentTick;
-        if (!isUdp && tcp && tcp.hasFlag(TCPPacket.FLAG_FIN | TCPPacket.FLAG_RST)) session.closing = true;
+        if (!isUdp && (tcpFlags & (TCPPacket.FLAG_FIN | TCPPacket.FLAG_RST))) session.closing = true;
 
         const natPort = session.natPort;
+        if (isFirstFrag) {
+            NatEngine._rewriteRaw(packet, "src", wanIpNum, natPort);
+            return true;
+        }
         packet.src = new IPAddress(4, wanIpNum);
         packet.headerChecksum = 0;
 
@@ -161,6 +179,15 @@ export class NatEngine {
         if (proto !== 6 && proto !== 17) return false;
 
         const isUdp = proto === 17;
+        if (packet.fragmentOffset !== 0) return false; // non-first fragments go through natInbound()
+        if ((packet.flags & 0x01) !== 0) {
+            // first fragment: rewrite in place, remember where the rest has to go
+            if (!NatEngine._hasL4Header(packet)) return false;
+            const fragKey = this._fragKey(packet);
+            NatEngine._rewriteRaw(packet, "dst", lanIpNum, lanPort);
+            this._fragIn.set(fragKey, { lanIpNum, lastSeenTick: simTimer.currentTick });
+            return true;
+        }
         packet.dst = new IPAddress(4, lanIpNum);
         packet.headerChecksum = 0;
 
@@ -213,35 +240,54 @@ export class NatEngine {
     natInbound(packet) {
         const proto = packet.protocol;
 
-        // Non-first fragment: no transport header, look up LAN host by identification
+        const isFrag = (packet.flags & 0x01) !== 0;
+        const fragKey = this._fragKey(packet); // computed before dst is rewritten
+
+        // Non-first fragment: no transport header; it belongs to the datagram
+        // whose first fragment we already translated (keyed by src, dst, proto, id).
         if (packet.fragmentOffset !== 0) {
-            const lanIpNum = this._fragIn.get(packet.identification);
-            if (lanIpNum === undefined) return null;
-            packet.dst = new IPAddress(4, lanIpNum);
+            const m = this._fragIn.get(fragKey);
+            if (m === undefined) return null;
+            m.lastSeenTick = simTimer.currentTick;
+            packet.dst = new IPAddress(4, m.lanIpNum);
             packet.headerChecksum = 0;
-            if ((packet.flags & 0x01) === 0) this._fragIn.delete(packet.identification);
-            return lanIpNum;
+            if (!isFrag) this._fragIn.delete(fragKey);
+            return m.lanIpNum;
         }
 
         if (proto === 1) {
             const result = this._inIcmp(packet);
-            if (result !== null && (packet.flags & 0x01) !== 0)
-                this._fragIn.set(packet.identification, result);
+            if (result !== null && isFrag)
+                this._fragIn.set(fragKey, { lanIpNum: result, lastSeenTick: simTimer.currentTick });
             return result;
         }
         if (proto !== 6 && proto !== 17) return null;
 
         const isUdp = proto === 17;
         let dstPort, tcp;
-        try {
-            if (isUdp) dstPort = UDPPacket.fromBytes(packet.payload).dstPort;
-            else        { tcp = TCPPacket.fromBytes(packet.payload); dstPort = tcp.dstPort; }
-        } catch { return null; }
+        /** @type {number} */
+        let tcpFlags = 0;
+        if (isFrag) {
+            if (!NatEngine._hasL4Header(packet)) return null;
+            dstPort = (packet.payload[2] << 8) | packet.payload[3];
+            if (!isUdp) tcpFlags = packet.payload[13];
+        } else {
+            try {
+                if (isUdp) dstPort = UDPPacket.fromBytes(packet.payload).dstPort;
+                else        { tcp = TCPPacket.fromBytes(packet.payload); dstPort = tcp.dstPort; tcpFlags = tcp.flags; }
+            } catch { return null; }
+        }
 
         const session = this._in.get(`${dstPort}:${proto}`);
         if (!session) return null;
         session.lastSeenTick = simTimer.currentTick;
-        if (!isUdp && tcp && tcp.hasFlag(TCPPacket.FLAG_FIN | TCPPacket.FLAG_RST)) session.closing = true;
+        if (!isUdp && (tcpFlags & (TCPPacket.FLAG_FIN | TCPPacket.FLAG_RST))) session.closing = true;
+
+        if (isFrag) {
+            NatEngine._rewriteRaw(packet, "dst", session.srcIpNum, session.srcPort);
+            this._fragIn.set(fragKey, { lanIpNum: session.srcIpNum, lastSeenTick: simTimer.currentTick });
+            return session.srcIpNum;
+        }
 
         packet.dst = new IPAddress(4, session.srcIpNum);
         packet.headerChecksum = 0;
@@ -256,9 +302,6 @@ export class NatEngine {
                 packet.payload = /** @type {TCPPacket} */ (tcp).pack({ srcIp: packet.src, dstIp: packet.dst });
             }
         } catch { return null; }
-
-        if ((packet.flags & 0x01) !== 0)
-            this._fragIn.set(packet.identification, session.srcIpNum);
 
         return session.srcIpNum;
     }
@@ -282,10 +325,15 @@ export class NatEngine {
         const inMapping = this._icmpIn.get(mapping.natId);
         if (inMapping) inMapping.lastSeenTick = simTimer.currentTick;
 
-        icmp.identifier = mapping.natId;
-        icmp.checksum = 0;
         p.src = new IPAddress(4, wanIpNum);
         p.headerChecksum = 0;
+        if ((p.flags & 0x01) !== 0) {
+            // fragmented echo: the ICMP checksum covers the whole message, adjust it (RFC 1624)
+            p.payload = NatEngine._patchIcmpId(p.payload, mapping.natId);
+            return true;
+        }
+        icmp.identifier = mapping.natId;
+        icmp.checksum = 0;
         p.payload = icmp.pack();
         return true;
     }
@@ -305,6 +353,10 @@ export class NatEngine {
 
         p.dst = new IPAddress(4, mapping.srcIpNum);
         p.headerChecksum = 0;
+        if ((p.flags & 0x01) !== 0) {
+            p.payload = NatEngine._patchIcmpId(p.payload, mapping.origId);
+            return mapping.srcIpNum;
+        }
         icmp.identifier = mapping.origId;
         icmp.checksum = 0;
         p.payload = icmp.pack();
@@ -329,6 +381,7 @@ export class NatEngine {
         const proto = q[9];
         const l4 = ihl;
 
+        const quotedSrc = ((q[12] << 24) | (q[13] << 16) | (q[14] << 8) | q[15]) >>> 0;
         let lanIpNum, origPortOrId;
         if (proto === 6 || proto === 17) {
             const natPort = (q[l4] << 8) | q[l4 + 1];
@@ -336,12 +389,29 @@ export class NatEngine {
             if (!session) return null;
             lanIpNum = session.srcIpNum; origPortOrId = session.srcPort;
             q[l4] = origPortOrId >> 8; q[l4 + 1] = origPortOrId & 0xff;
+            // RFC 5508 §4: also fix the quoted TCP/UDP checksum (pseudo-header src
+            // IP + src port changed), as far as it was quoted. UDP 0 = no checksum.
+            const csOff = l4 + (proto === 17 ? 6 : 16);
+            if (q.length >= csOff + 2) {
+                const cs = (q[csOff] << 8) | q[csOff + 1];
+                if (!(proto === 17 && cs === 0)) {
+                    let ncs = NatEngine._csumAdjust(cs,
+                        [quotedSrc >>> 16, quotedSrc & 0xffff, natPort],
+                        [lanIpNum >>> 16, lanIpNum & 0xffff, origPortOrId]);
+                    if (proto === 17 && ncs === 0) ncs = 0xffff;
+                    q[csOff] = ncs >> 8; q[csOff + 1] = ncs & 0xff;
+                }
+            }
         } else if (proto === 1) {
             const natId = (q[l4 + 4] << 8) | q[l4 + 5];
             const mapping = this._icmpIn.get(natId);
             if (!mapping) return null;
             lanIpNum = mapping.srcIpNum; origPortOrId = mapping.origId;
             q[l4 + 4] = origPortOrId >> 8; q[l4 + 5] = origPortOrId & 0xff;
+            // quoted ICMP checksum (no pseudo-header): only the identifier changed
+            const cs = (q[l4 + 2] << 8) | q[l4 + 3];
+            const ncs = NatEngine._csumAdjust(cs, [natId], [origPortOrId]);
+            q[l4 + 2] = ncs >> 8; q[l4 + 3] = ncs & 0xff;
         } else {
             return null;
         }
@@ -358,6 +428,88 @@ export class NatEngine {
         p.dst = new IPAddress(4, lanIpNum);
         p.headerChecksum = 0;
         return lanIpNum;
+    }
+
+    /**
+     * Fragment correlation key: (src, dst, proto, identification) as seen on the
+     * wire before translation — the identification alone is only unique per
+     * (src, dst, proto) (RFC 791).
+     * @param {import("./pdu/IPv4Packet.js").IPv4Packet} p
+     */
+    _fragKey(p) {
+        return `${this._ipNum(p.src)}:${this._ipNum(p.dst)}:${p.protocol}:${p.identification}`;
+    }
+
+    /**
+     * Does a first fragment carry enough of the L4 header to translate it?
+     * UDP: the full 8-byte header. TCP: ports, flags and checksum (≥ 20 bytes);
+     * shorter first fragments are the RFC 1858 tiny-fragment pattern.
+     * @param {import("./pdu/IPv4Packet.js").IPv4Packet} p
+     */
+    static _hasL4Header(p) {
+        return p.payload.length >= (p.protocol === 17 ? 8 : 20);
+    }
+
+    /**
+     * RFC 1624 incremental checksum update: HC' = ~(~HC + ~m + m') per 16-bit word.
+     * @param {number} cs old checksum
+     * @param {number[]} oldWords @param {number[]} newWords
+     * @returns {number}
+     */
+    static _csumAdjust(cs, oldWords, newWords) {
+        let sum = (~cs) & 0xffff;
+        for (let i = 0; i < oldWords.length; i++) {
+            sum += (~oldWords[i]) & 0xffff;
+            sum += newWords[i] & 0xffff;
+        }
+        while (sum >>> 16) sum = (sum & 0xffff) + (sum >>> 16);
+        return (~sum) & 0xffff;
+    }
+
+    /**
+     * Rewrite src (or dst) IP + port of a TCP/UDP packet in place, without
+     * parsing the L4 PDU — needed for first fragments, whose L4 checksum covers
+     * the whole (not present) datagram and so can only be patched incrementally
+     * (RFC 3022 §4.1, RFC 1624). UDP checksum 0 ("none") stays 0.
+     * @param {import("./pdu/IPv4Packet.js").IPv4Packet} p
+     * @param {"src"|"dst"} which
+     * @param {number} newIpNum @param {number} newPort
+     */
+    static _rewriteRaw(p, which, newIpNum, newPort) {
+        const isUdp = p.protocol === 17;
+        const b = new Uint8Array(p.payload);
+        const portOff = which === "src" ? 0 : 2;
+        const csOff = isUdp ? 6 : 16;
+        const oldIp = (/** @type {number} */ ((which === "src" ? p.src : p.dst).getNumber())) >>> 0;
+        const oldPort = (b[portOff] << 8) | b[portOff + 1];
+        const cs = (b[csOff] << 8) | b[csOff + 1];
+        if (!(isUdp && cs === 0)) {
+            let ncs = NatEngine._csumAdjust(cs,
+                [oldIp >>> 16, oldIp & 0xffff, oldPort],
+                [newIpNum >>> 16, newIpNum & 0xffff, newPort]);
+            if (isUdp && ncs === 0) ncs = 0xffff;
+            b[csOff] = ncs >> 8; b[csOff + 1] = ncs & 0xff;
+        }
+        b[portOff] = (newPort >> 8) & 0xff; b[portOff + 1] = newPort & 0xff;
+        p.payload = b;
+        if (which === "src") p.src = new IPAddress(4, newIpNum >>> 0);
+        else p.dst = new IPAddress(4, newIpNum >>> 0);
+        p.headerChecksum = 0;
+    }
+
+    /**
+     * Replace the identifier of an ICMP echo (bytes 4-5) and adjust its checksum
+     * incrementally — for fragmented echoes whose checksum spans all fragments.
+     * @param {Uint8Array} payload @param {number} newId @returns {Uint8Array}
+     */
+    static _patchIcmpId(payload, newId) {
+        const b = new Uint8Array(payload);
+        const oldId = (b[4] << 8) | b[5];
+        const cs = (b[2] << 8) | b[3];
+        const ncs = NatEngine._csumAdjust(cs, [oldId], [newId]);
+        b[2] = ncs >> 8; b[3] = ncs & 0xff;
+        b[4] = (newId >> 8) & 0xff; b[5] = newId & 0xff;
+        return b;
     }
 
     /** @param {number} proto @returns {number|null} null if the port pool is exhausted */
@@ -393,6 +545,11 @@ export class NatEngine {
 
             this._in.delete(inKey);
             this._out.delete(session.outKey);
+        }
+
+        const fragLimitTicks = SimTimer.toTicks(NatEngine.FRAG_IDLE_MS);
+        for (const [k, m] of this._fragIn) {
+            if (now - m.lastSeenTick >= fragLimitTicks) this._fragIn.delete(k);
         }
 
         const icmpLimitTicks = SimTimer.toTicks(NatEngine.ICMP_IDLE_MS);

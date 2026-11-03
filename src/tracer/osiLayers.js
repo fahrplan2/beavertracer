@@ -22,7 +22,13 @@
  *    OSPF and BGP land on different layers despite both being "routing protocols".
  *  - "data" (undissected payload — MCHAT, echo servers, raw TCP) is Anwendungsschicht
  *    (L7) by the same rule as above: whatever's left after all lower-layer processing
- *    is, by definition, application data.
+ *    is, by definition, application data. The same holds for the body of an HTTP
+ *    message, which Wireshark shows as its own node ("Line-based text data",
+ *    images, JSON, …).
+ *  - QUIC → 4/5 like TLS: a transport protocol (on UDP) with TLS 1.3 built in. The
+ *    HTTP/3 it carries is encrypted; Wireshark only sees it with the keys.
+ *  - Wireshark's "[n Reassembled TCP Segments]" node has no filter name — see
+ *    osiLayersFor() for the label-based fallback (→ L4, it is TCP's own work).
  * @type {Record<string, number|[number, number]>}
  */
 const OSI_LAYER_BY_FILTER = {
@@ -37,19 +43,28 @@ const OSI_LAYER_BY_FILTER = {
   // Transportschicht (L4)
   tcp: 4, udp: 4,
   tls: [4, 5], ssl: [4, 5],
+  // QUIC: transport with built-in TLS 1.3, carried in UDP
+  quic: [4, 5],
   // Anwendungsschicht (L7)
-  dns: 7, dhcp: 7, bootp: 7, dhcpv6: 7, http: 7,
+  dns: 7, dhcp: 7, bootp: 7, dhcpv6: 7, http: 7, http2: 7, http3: 7,
   smtp: 7, pop: 7, imap: 7, irc: 7, bitcoin: 7, rip: 7, ripng: 7, bgp: 7,
   ntp: 7, data: 7,
+  // HTTP message bodies, shown by Wireshark as separate nodes after "http"
+  "data-text-lines": 7, media: 7, png: 7, "image-gif": 7, "image-jfif": 7,
+  json: 7, xml: 7, "urlencoded-form": 7,
 };
 
 /**
  * OSI layer range of one top-level protocol node, or null if unmapped.
  * @param {string} filter dissector filter name, e.g. "eth"
  * @param {boolean} insideTls an earlier sibling in the same packet was TLS
+ * @param {string} [label] the node's text — fallback for nodes without a filter name
  * @returns {[number, number]|null}
  */
-export function osiLayersFor(filter, insideTls) {
+export function osiLayersFor(filter, insideTls, label = "") {
+  // "[3 Reassembled TCP Segments (2608 bytes): #2(1000), …]" carries no filter
+  // name; TCP put those bytes back together, so it belongs to L4
+  if (!filter && /Reassembled TCP Segments/i.test(label)) return [4, 4];
   const entry = OSI_LAYER_BY_FILTER[filter.toLowerCase()];
   if (entry === undefined) return null;
   const range = /** @type {[number, number]} */ (Array.isArray(entry) ? entry : [entry, entry]);

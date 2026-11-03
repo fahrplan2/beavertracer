@@ -244,7 +244,7 @@ export class VRRPDaemon {
                 vrid: g.vrid, priority: g.priority,
                 advInterval: advSec, virtualIPs: [g.virtualIP],
             });
-            this._net.sendOnInterface(g.ifIndex, this._vrrpMcast4, VRRP_PROTO, pkt.pack()).catch(() => {});
+            this._net.sendOnInterface(g.ifIndex, this._vrrpMcast4, VRRP_PROTO, pkt.pack(), null, 255).catch(() => {});
         }
         this._log(`${this._ifName(g)} VRID=${g.vrid}  Advertisement gesendet (prio=${g.priority})`);
     }

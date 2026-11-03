@@ -450,6 +450,17 @@
   margin-top: var(--pad-sm);
 }
 
+/* Help: with "Help" already in the sub-view header, its subtitle ("How to
+   use Beaver Tracer") becomes the page's heading. */
+.welcome-page--help .about-container > .subtitle:nth-child(2),
+.welcome-page--help .about-container > [dir] > .subtitle:nth-child(2) {
+  margin: var(--pad-sm) 0 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text);
+}
+
 /* About is the exception: its title ("Beaver Tracer") isn't the sub-view's
    ("About"), so it stays — with the logo the header now leaves out. */
 .welcome-page--about .about-container > h2:first-child,
@@ -988,4 +999,27 @@
   .welcome-footer {
     padding: var(--pad-xs) var(--pad-xl);
   }
+}
+
+/* ---- Large sub-views (help): the page needs more room than the start
+   page's size, so the dialog grows to almost full screen. ---- */
+
+.welcome-dlg--large {
+  max-width: 900px;
+  height: 90dvh;
+}
+
+.welcome-dlg--large .welcome-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.welcome-dlg--large .welcome-subview:not([hidden]) {
+  flex: 1;
+}
+
+/* The info pages cap their text at 700px (.about-container) for the
+   standalone pages; inside the large dialog that left wide empty margins. */
+.welcome-dlg--large .about-container {
+  max-width: none;
 }

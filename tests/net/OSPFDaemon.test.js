@@ -17,11 +17,12 @@ import { simTimer, SimTimer } from '../../src/lib/SimTimer.js';
 import {
     OspfPacket, OspfHello, OspfHeader,
     LsaHeader, RouterLSA, RouterLink, NetworkLSA, SummaryLSA, Lsa,
-    OSPF_TYPE_HELLO,
+    OSPF_TYPE_HELLO, OSPF_TYPE_LSU, OSPF_TYPE_LSACK,
+    OspfLSU, OspfLSAck,
     LSA_TYPE_ROUTER, LSA_TYPE_NETWORK, LSA_TYPE_SUMMARY,
     LINK_TYPE_STUB,
-    LSA_INIT_SEQ,
-    OSPF_PROTO,
+    LSA_INIT_SEQ, LSA_MAX_AGE,
+    OSPF_PROTO, OSPF_ALL_SPF, OSPF_ALL_DR,
 } from '../../src/net/pdu/OSPFPacket.js';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -82,8 +83,8 @@ function tick(n) {
 function makeHelloBytes({ routerId, areaId = 0, neighbors = [], dr = 0, bdr = 0 }) {
     const hello = new OspfHello({
         networkMask:    0xffffff00,
-        helloInterval:  0,   // matches Math.trunc(OSPF_HELLO_MS / 1000) = 0
-        deadInterval:   2,   // matches Math.trunc(OSPF_DEAD_MS  / 1000) = 2
+        helloInterval:  10,  // RFC 2328 default carried on the wire
+        deadInterval:   40,
         routerPriority: 1,
         dr, bdr, neighbors,
     });
@@ -158,6 +159,17 @@ describe('Hello transmission', () => {
         expect(pkt.header.areaId).toBe(0);
         daemon.stop();
     });
+
+    it('Hello carries non-zero whole-second intervals (RFC 2328 A.3.2)', () => {
+        const stack  = makeStack([{ ip: '10.0.0.1', prefix: 24 }]);
+        const daemon = new OSPFDaemon(stack);
+        daemon.setEnabled(true);
+        tick(1);
+        const pkt = OspfPacket.fromBytes(stack._sent[0].payload);
+        expect(pkt.body.helloInterval).toBe(10);
+        expect(pkt.body.deadInterval).toBe(40);
+        daemon.stop();
+    });
 });
 
 // ── Neighbor state machine (direct injection) ─────────────────────────────────
@@ -196,7 +208,7 @@ describe('neighbor state machine', () => {
     });
 
     it('ignores a Hello with a wrong network mask', () => {
-        const hello = new OspfHello({ networkMask: 0xffff0000, helloInterval: 0, deadInterval: 2 });
+        const hello = new OspfHello({ networkMask: 0xffff0000, helloInterval: 10, deadInterval: 40 });
         const hdr   = new OspfHeader({ type: OSPF_TYPE_HELLO, length: 0, routerId: NBR_RID, areaId: 0 });
         const bytes = new OspfPacket({ header: hdr, body: hello }).pack();
         daemon._handleOSPF({ src: IPAddress.fromString('10.0.0.2'), payload: bytes }, 0);
@@ -204,7 +216,7 @@ describe('neighbor state machine', () => {
     });
 
     it('ignores a Hello with a mismatched dead interval', () => {
-        const hello = new OspfHello({ networkMask: 0xffffff00, helloInterval: 0, deadInterval: 99 });
+        const hello = new OspfHello({ networkMask: 0xffffff00, helloInterval: 10, deadInterval: 99 });
         const hdr   = new OspfHeader({ type: OSPF_TYPE_HELLO, length: 0, routerId: NBR_RID, areaId: 0 });
         const bytes = new OspfPacket({ header: hdr, body: hello }).pack();
         daemon._handleOSPF({ src: IPAddress.fromString('10.0.0.2'), payload: bytes }, 0);
@@ -437,5 +449,224 @@ describe('persistence', () => {
         const daemon = new OSPFDaemon(stack);
         daemon.applyJSON({ enabled: false, passive: [], routerIdOverride: null });
         expect(daemon._running).toBe(false);
+    });
+});
+
+// ── Flooding (RFC 2328 §13) ──────────────────────────────────────────────────
+
+const ME      = 0x0a000001;   // 10.0.0.1 — daemon under test
+const DROTH_A = 0x0a000002;   // DROther that sends the LSU
+const DROTH_B = 0x0a000003;   // second DROther in the LAN
+const BDR_ID  = 0x0a000004;
+const REMOTE  = 0x0a000909;   // advertising router of the foreign LSA
+
+/** Fake a Full neighbor entry on the given interface. */
+function addFullNeighbor(daemon, ifIndex, routerId) {
+    const oif = daemon._ifaces.get(ifIndex);
+    const ip  = IPAddress.fromString(`10.0.${ifIndex}.${routerId & 0xff}`);
+    oif.neighbors.set(routerId, {
+        routerId, ip, ifIndex, state: 'Full', priority: 1, dr: 0, bdr: 0,
+        deadTimer: null, rxmtTimer: null, lastHelloTick: simTimer.currentTick,
+        ddSeqNum: 0, ddFlags: 0, isMaster: false, pendingLSRs: [], unackedLSUs: new Map(),
+    });
+}
+
+/**
+ * One daemon (10.0.0.1) on a broadcast LAN with DROther A, DROther B and a BDR.
+ * @param {'DR'|'BDR'} myRole
+ */
+function makeLan(myRole = 'DR') {
+    const stack  = makeStack([{ ip: '10.0.0.1', prefix: 24 }]);
+    const daemon = new OSPFDaemon(stack);
+    daemon.setEnabled(true);
+    const oif = daemon._ifaces.get(0);
+    if (oif.waitTimer != null) { simTimer.cancel(oif.waitTimer); oif.waitTimer = null; }
+    if (myRole === 'DR') { oif.state = 'DR';  oif.dr = ME;     oif.bdr = BDR_ID; }
+    else                 { oif.state = 'BDR'; oif.dr = BDR_ID; oif.bdr = ME;     }
+    for (const rid of [DROTH_A, DROTH_B, BDR_ID]) addFullNeighbor(daemon, 0, rid);
+    stack._sent.length = 0;
+    return { stack, daemon };
+}
+
+function routerLsa({ adv = REMOTE, seq = LSA_INIT_SEQ, age = 0, metric = 10 } = {}) {
+    const body = new RouterLSA({ links: [new RouterLink({ linkId: 0x0a090900, linkData: 0xffffff00, type: LINK_TYPE_STUB, metric })] });
+    const header = new LsaHeader({ age, type: LSA_TYPE_ROUTER, lsId: adv, advertisingRouter: adv, seqNum: seq, length: 0 });
+    return new Lsa({ header, body });
+}
+
+/** Inject an OSPF packet into the daemon as if received on ifIndex from routerId. */
+function inject(stack, { routerId, ifIndex = 0, type, body }) {
+    const hdr = new OspfHeader({ type, length: 0, routerId, areaId: 0 });
+    const payload = new OspfPacket({ header: hdr, body }).pack();
+    const src = IPAddress.fromString(`10.0.${ifIndex}.${routerId & 0xff}`);
+    stack._handlers.get(OSPF_PROTO)({ src, payload }, ifIndex);
+}
+
+const injectLSU = (stack, routerId, lsas, ifIndex = 0) =>
+    inject(stack, { routerId, ifIndex, type: OSPF_TYPE_LSU, body: new OspfLSU({ lsas }) });
+
+/** Decoded packets the daemon sent, optionally filtered by OSPF type. */
+function sentPackets(stack, type) {
+    return stack._sent
+        .map(s => ({ ...s, pkt: OspfPacket.fromBytes(s.payload) }))
+        .filter(s => type === undefined || s.pkt.header.type === type);
+}
+
+describe('flooding on the receiving interface (§13.3)', () => {
+    let daemon;
+    afterEach(() => daemon?.stop());
+
+    it('DR floods an LSU from a DROther back out the same interface to AllSPFRouters', () => {
+        const lan = makeLan('DR'); daemon = lan.daemon;
+        injectLSU(lan.stack, DROTH_A, [routerLsa()]);
+        const lsus = sentPackets(lan.stack, OSPF_TYPE_LSU);
+        expect(lsus).toHaveLength(1);
+        expect(lsus[0].ifIndex).toBe(0);
+        expect(lsus[0].dst.toString()).toBe(OSPF_ALL_SPF);
+        expect(lsus[0].pkt.body.lsas[0].header.advertisingRouter).toBe(REMOTE);
+        // sender is not put on a retransmission list, the other DROther and the BDR are
+        const oif = daemon._ifaces.get(0);
+        const key = `${LSA_TYPE_ROUTER}-${REMOTE}-${REMOTE}`;
+        expect(oif.neighbors.get(DROTH_A).unackedLSUs.has(key)).toBe(false);
+        expect(oif.neighbors.get(DROTH_B).unackedLSUs.has(key)).toBe(true);
+        // flooding back is an implied acknowledgement (§13.5)
+        expect(sentPackets(lan.stack, OSPF_TYPE_LSACK)).toHaveLength(0);
+    });
+
+    it('DR does not flood back an LSU received from the BDR', () => {
+        const lan = makeLan('DR'); daemon = lan.daemon;
+        injectLSU(lan.stack, BDR_ID, [routerLsa()]);
+        expect(sentPackets(lan.stack, OSPF_TYPE_LSU)).toHaveLength(0);
+        expect(sentPackets(lan.stack, OSPF_TYPE_LSACK)).toHaveLength(1);
+    });
+
+    it('BDR does not flood back an LSU received from a DROther', () => {
+        const lan = makeLan('BDR'); daemon = lan.daemon;
+        injectLSU(lan.stack, DROTH_A, [routerLsa()]);
+        expect(sentPackets(lan.stack, OSPF_TYPE_LSU)).toHaveLength(0);
+        expect(sentPackets(lan.stack, OSPF_TYPE_LSACK)).toHaveLength(1);
+    });
+
+    it('DROther treats the flood-back from the DR as implied ack', () => {
+        const stack  = makeStack([{ ip: '10.0.0.1', prefix: 24 }]);
+        daemon = new OSPFDaemon(stack);
+        daemon.setEnabled(true);
+        const oif = daemon._ifaces.get(0);
+        oif.state = 'DR-Other'; oif.dr = BDR_ID; oif.bdr = DROTH_B;
+        addFullNeighbor(daemon, 0, BDR_ID);
+        const lsa = routerLsa();
+        const key = lsa.key;
+        // pretend we flooded it earlier and are waiting for the DR's ack
+        daemon._lsdbFor(0).set(key, { header: lsa.header, body: lsa.body, rawBytes: lsa.pack(), ageTimer: null });
+        daemon._trackUnacked(oif.neighbors.get(BDR_ID), 0, key, lsa.pack());
+        injectLSU(stack, BDR_ID, [routerLsa({ age: 1 })]);
+        expect(oif.neighbors.get(BDR_ID).unackedLSUs.has(key)).toBe(false);
+    });
+});
+
+describe('flood destination address (§13.3)', () => {
+    let daemon;
+    afterEach(() => daemon?.stop());
+
+    it('uses AllSPFRouters on point-to-point and AllDRouters on a DR-Other broadcast interface', () => {
+        const stack = makeStack([
+            { ip: '10.0.0.1', prefix: 24 },
+            { ip: '10.0.1.1', prefix: 30 },
+            { ip: '10.0.2.1', prefix: 24 },
+        ]);
+        daemon = new OSPFDaemon(stack);
+        daemon.setP2P('eth1', true);
+        daemon.setEnabled(true);
+        for (const i of [0, 2]) {
+            const oif = daemon._ifaces.get(i);
+            if (oif.waitTimer != null) { simTimer.cancel(oif.waitTimer); oif.waitTimer = null; }
+            oif.state = 'DR-Other'; oif.dr = 0x0a0000fe; oif.bdr = 0x0a0000fd;
+        }
+        expect(daemon._ifaces.get(1).state).toBe('DR-Other');
+        addFullNeighbor(daemon, 0, DROTH_A);
+        addFullNeighbor(daemon, 1, 0x0a000102);
+        addFullNeighbor(daemon, 2, 0x0a000202);
+        stack._sent.length = 0;
+
+        injectLSU(stack, DROTH_A, [routerLsa()], 0);
+        const lsus = sentPackets(stack, OSPF_TYPE_LSU);
+        const byIf = Object.fromEntries(lsus.map(s => [s.ifIndex, s.dst.toString()]));
+        expect(byIf[1]).toBe(OSPF_ALL_SPF);
+        expect(byIf[2]).toBe(OSPF_ALL_DR);
+        expect(byIf[0]).toBeUndefined();
+    });
+});
+
+describe('self-originated LSAs (§13.4)', () => {
+    let daemon;
+    afterEach(() => daemon?.stop());
+
+    function ownRouterLsaSeq(d) {
+        return d._lsdbFor(0).get(`${LSA_TYPE_ROUTER}-${ME}-${ME}`).header.seqNum;
+    }
+
+    it('does not re-originate when its own current copy is flooded back', () => {
+        const lan = makeLan('DR'); daemon = lan.daemon;
+        daemon._originateRouterLSA(0, true);
+        const own = daemon._lsdbFor(0).get(`${LSA_TYPE_ROUTER}-${ME}-${ME}`);
+        const seq = own.header.seqNum;
+        lan.stack._sent.length = 0;
+        injectLSU(lan.stack, DROTH_A, [new Lsa({ header: new LsaHeader({ ...own.header, age: 2 }), body: own.body })]);
+        expect(ownRouterLsaSeq(daemon)).toBe(seq);
+        expect(sentPackets(lan.stack, OSPF_TYPE_LSU)).toHaveLength(0);
+    });
+
+    it('re-originates with received seq + 1 when a newer self-originated instance arrives', () => {
+        const lan = makeLan('DR'); daemon = lan.daemon;
+        daemon._originateRouterLSA(0, true);
+        const stale = (ownRouterLsaSeq(daemon) + 5) >>> 0;
+        injectLSU(lan.stack, DROTH_A, [routerLsa({ adv: ME, seq: stale })]);
+        expect(ownRouterLsaSeq(daemon)).toBe((stale + 1) >>> 0);
+    });
+});
+
+describe('LSA instance comparison and MaxAge flush (§13.1, §14)', () => {
+    let daemon;
+    afterEach(() => daemon?.stop());
+    const key = `${LSA_TYPE_ROUTER}-${REMOTE}-${REMOTE}`;
+
+    it('same seq: the instance with the larger checksum is newer', () => {
+        const lan = makeLan('DR'); daemon = lan.daemon;
+        const a = routerLsa({ metric: 10 }); a.pack();
+        const b = routerLsa({ metric: 20 }); b.pack();
+        const [lo, hi] = a.header.checksum < b.header.checksum ? [a, b] : [b, a];
+        injectLSU(lan.stack, DROTH_A, [lo]);
+        injectLSU(lan.stack, DROTH_A, [hi]);
+        expect(daemon._lsdbFor(0).get(key).header.checksum).toBe(hi.header.checksum);
+    });
+
+    it('installs, floods and then removes a MaxAge LSA with the same seq', () => {
+        const lan = makeLan('DR'); daemon = lan.daemon;
+        injectLSU(lan.stack, DROTH_A, [routerLsa()]);
+        expect(daemon._lsdbFor(0).has(key)).toBe(true);
+        lan.stack._sent.length = 0;
+
+        const flush = routerLsa({ age: LSA_MAX_AGE });
+        injectLSU(lan.stack, DROTH_A, [flush]);
+        const lsus = sentPackets(lan.stack, OSPF_TYPE_LSU);
+        expect(lsus).toHaveLength(1);
+        expect(lsus[0].pkt.body.lsas[0].header.age).toBe(LSA_MAX_AGE);
+        const entry = daemon._lsdbFor(0).get(key);
+        expect(entry.header.age).toBe(LSA_MAX_AGE);   // installed, waiting for acks
+
+        // ACKs from all neighbors that got the flush → entry removed from the LSDB
+        flush.pack();
+        for (const rid of [DROTH_B, BDR_ID]) {
+            inject(lan.stack, { routerId: rid, type: OSPF_TYPE_LSACK, body: new OspfLSAck({ lsaHeaders: [flush.header] }) });
+        }
+        expect(daemon._lsdbFor(0).has(key)).toBe(false);
+    });
+
+    it('acks and discards a MaxAge LSA that is not in the LSDB', () => {
+        const lan = makeLan('DR'); daemon = lan.daemon;
+        injectLSU(lan.stack, DROTH_A, [routerLsa({ age: LSA_MAX_AGE })]);
+        expect(daemon._lsdbFor(0).has(key)).toBe(false);
+        expect(sentPackets(lan.stack, OSPF_TYPE_LSU)).toHaveLength(0);
+        expect(sentPackets(lan.stack, OSPF_TYPE_LSACK)).toHaveLength(1);
     });
 });

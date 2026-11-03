@@ -35,24 +35,50 @@ class PortObserver extends Observable {
  *   dstIp: string,
  *   srcPort: number|null,
  *   dstPort: number|null,
+ *   frag?: { key: string, first: boolean },
+ *   drop?: string,
  * }} PacketInfo
+ *
+ * `frag` is set for fragmented TCP/UDP datagrams (key = src|dst|proto|id).
+ * `drop` names why an IP packet must be dropped before any rule is consulted
+ * (malformed, RFC 1858 tiny/overlapping fragment).
  */
+
+/** Minimum L4 bytes in a first fragment: UDP header, TCP header incl. flags (RFC 1858 §3.2). @param {number} proto */
+const minFirstFragL4 = (proto) => proto === 6 ? 20 : 8;
 
 /** @param {EthernetFrame} frame @returns {PacketInfo|null} */
 function parsePacketInfo(frame) {
-    try {
-        if (frame.etherType === 0x0800) {
-            const ip = IPv4Packet.fromBytes(frame.payload);
-            let srcPort = null, dstPort = null;
-            if (ip.protocol === 6 || ip.protocol === 17) {
-                const s = ip.protocol === 6
-                    ? TCPPacket.fromBytes(ip.payload)
-                    : UDPPacket.fromBytes(ip.payload);
-                srcPort = s.srcPort;
-                dstPort = s.dstPort;
-            }
-            return { version: 4, proto: ip.protocol, srcIp: ip.src.toString(), dstIp: ip.dst.toString(), srcPort, dstPort };
+    if (frame.etherType === 0x0800) {
+        let ip;
+        try { ip = IPv4Packet.fromBytes(frame.payload); } catch { return malformed(4); }
+        const base = { version: /** @type {4} */ (4), proto: ip.protocol, srcIp: ip.src.toString(), dstIp: ip.dst.toString() };
+        if (ip.protocol !== 6 && ip.protocol !== 17) return { ...base, srcPort: null, dstPort: null };
+
+        const mf = (ip.flags & 0x01) !== 0;
+        if (!mf && ip.fragmentOffset === 0) {
+            // unfragmented: full L4 parse
+            try {
+                const s = ip.protocol === 6 ? TCPPacket.fromBytes(ip.payload) : UDPPacket.fromBytes(ip.payload);
+                return { ...base, srcPort: s.srcPort, dstPort: s.dstPort };
+            } catch { return { ...base, srcPort: null, dstPort: null, drop: "malformed" }; }
         }
+
+        // Fragmented TCP/UDP (RFC 1858): only the first fragment carries the
+        // ports. Non-first fragments share its fate (key src|dst|proto|id).
+        const frag = { key: `${base.srcIp}|${base.dstIp}|${ip.protocol}|${ip.identification}`, first: ip.fragmentOffset === 0 };
+        if (frag.first) {
+            if (ip.payload.length < minFirstFragL4(ip.protocol))
+                return { ...base, srcPort: null, dstPort: null, frag, drop: "tiny fragment" };
+            // read ports from the raw bytes — the (truncated) L4 PDU can't be parsed whole
+            const b = ip.payload;
+            return { ...base, srcPort: (b[0] << 8) | b[1], dstPort: (b[2] << 8) | b[3], frag };
+        }
+        if (ip.fragmentOffset === 1) // would overwrite the TCP/UDP header of the first fragment
+            return { ...base, srcPort: null, dstPort: null, frag, drop: "overlapping fragment" };
+        return { ...base, srcPort: null, dstPort: null, frag };
+    }
+    try {
         if (frame.etherType === 0x86DD) {
             const ip = IPv6Packet.fromBytes(frame.payload);
             let srcPort = null, dstPort = null;
@@ -65,8 +91,13 @@ function parsePacketInfo(frame) {
             }
             return { version: 6, proto: ip.nextHeader, srcIp: ip.src.toString(), dstIp: ip.dst.toString(), srcPort, dstPort };
         }
-    } catch { /* malformed packet */ }
+    } catch { return malformed(6); }
     return null; // non-IP (ARP, etc.) — always pass through
+}
+
+/** An IP packet that couldn't be parsed: never let it bypass the rules. @param {4|6} version @returns {PacketInfo} */
+function malformed(version) {
+    return { version, proto: -1, srcIp: "?", dstIp: "?", srcPort: null, dstPort: null, drop: "malformed" };
 }
 
 /** Direction-independent key for a tracked connection (so return traffic finds the same entry). @param {PacketInfo} info */
@@ -277,6 +308,9 @@ export class Firewall extends SimulatedObject {
     /** @type {Map<string, StateEntry>} */
     _stateTable = new Map();
 
+    /** Verdicts of first fragments, for the rest of their datagram (src|dst|proto|id → allowed?). @type {Map<string, {allow: boolean, tick: number}>} */
+    _fragVerdicts = new Map();
+
     _stats = { passed: 0, dropped: 0 };
 
     /** @type {string[]} */
@@ -350,7 +384,14 @@ export class Firewall extends SimulatedObject {
             let allow;
             /** @type {"allow"|"deny"|"reject"} */
             let verdict = "allow";
-            if (this.statefulMode && this._isTrackable(info.proto) && this._touchState(info)) {
+            if (info.drop) {
+                allow = false;
+                verdict = "deny";
+            } else if (info.frag && !info.frag.first) {
+                // non-first fragment: no ports to match — follow its first fragment
+                allow = this._fragVerdicts.get(info.frag.key)?.allow === true;
+                verdict = allow ? "allow" : "deny";
+            } else if (this.statefulMode && this._isTrackable(info.proto) && this._touchState(info)) {
                 allow = true;
                 stateChanged = true;
             } else {
@@ -361,6 +402,7 @@ export class Firewall extends SimulatedObject {
                     stateChanged = true;
                 }
             }
+            if (info.frag?.first) this._rememberFragVerdict(info.frag.key, allow);
 
             if (allow) {
                 this._stats.passed++;
@@ -372,13 +414,26 @@ export class Firewall extends SimulatedObject {
                 this._appendLog(
                     `${reply ? "REJECT" : "DROP"} ${dir} ${info.srcIp}${info.srcPort != null ? `:${info.srcPort}` : ""} → ` +
                     `${info.dstIp}${info.dstPort != null ? `:${info.dstPort}` : ""} ` +
-                    `proto=${info.proto}`
+                    `proto=${info.proto}` +
+                    (info.drop ? ` (${info.drop})` : info.frag && !info.frag.first ? " (fragment)" : "")
                 );
             }
         }
 
         this._renderStats();
         if (stateChanged) this._renderStateTable();
+    }
+
+    /**
+     * Remember a first fragment's verdict for the rest of its datagram; entries
+     * older than the reassembly-ish timeout are pruned on the way.
+     * @param {string} key @param {boolean} allow
+     */
+    _rememberFragVerdict(key, allow) {
+        const now = simTimer.currentTick;
+        const limit = simTimer.toTicks(STATE_IDLE_TIMEOUT_MS);
+        for (const [k, v] of this._fragVerdicts) if (now - v.tick >= limit) this._fragVerdicts.delete(k);
+        this._fragVerdicts.set(key, { allow, tick: now });
     }
 
     /** @param {number} proto */

@@ -84,3 +84,47 @@ Zwei BeaverTracer-Instanzen per WebRTC verbinden (Idee, 2026-10-22)
   Offen: Server einrichten, coturn, Warnung bei doppelten MACs, Ping über zwei
   Instanzen im Browser ausprobieren, ~37 weitere Sprachen (nur de/en),
   Freigabe ohne ?debug=1, Lockstep (Stufe 2) falls nötig.
+
+RFC-Abweichungen, bewusst offen gelassen (Review 2026-10-30)
+- Bewertet: kommt in keiner Lektion vor bzw. ist nur beim freien Experimentieren
+  sichtbar. Bei Bedarf einzeln angehen.
+- L2: Keine Alterung der MAC-Tabelle (Einträge werden beim nächsten Frame der Quelle
+  ohnehin korrigiert; nur stumm verschwundene Geräte bleiben stehen). PCP/DEI gehen
+  beim Weiterleiten verloren, priority-getaggte Frames (VID 0) werden verworfen.
+  RSTP ohne Edge-Ports (Host-Port löst beim Einstecken eine TC aus). LLDP-TTL falsch
+  skaliert. LLDP/LACP mit Bridge-MAC statt Port-MAC als Quelle.
+- L3/ICMP: Keine ICMP-Fehler-Ausnahmen für Nicht-Erst-Fragmente und
+  Broadcast-/Multicast-Quellen (RFC 1122 §3.2.2). Redirect wird ohne Prüfung der
+  Quelle erzeugt (RFC 1812 §5.2.7.2). RAs werden nicht validiert, Router Lifetime 0
+  macht den Router trotzdem zum Gateway (RFC 4861 §6.1.2). Kein Port Unreachable
+  für IPv6-UDP. Fragmente/Reassembly verlieren DSCP und IP-Optionen.
+- TCP: Kein simultanes Öffnen. Keine SWS-Vermeidung beim Sender, kein Delayed ACK,
+  kein Window Scaling/SACK. Initial Window 1 MSS.
+- RIP: Versand per Broadcast statt an 224.0.0.9 (hängt am Multicast-Empfang im
+  IPStack). Triggered Updates nur beim Poisoning, keine Requests, kein Jitter.
+- OSPF: Altersbehandlung passt nicht zur Zeitskalierung (Age-Timer vs. _tickAge),
+  kein LSRefresh. Router-LSA ohne B-Bit (ABR), P2P-Stub-Link mit Metrik 0. DBD nur
+  ein Paket, ohne Retransmit.
+- BGP: Pfadwahl nur LOCAL_PREF → AS-Pfad → MED (ORIGIN, eBGP vor iBGP, Router-ID
+  fehlen; MED auch zwischen verschiedenen Nachbar-AS). LOCAL_PREF wird an eBGP
+  gesendet. Hold-Timeout schickt Cease statt Code 4. OPEN wird nicht validiert
+  (Peer-AS, Hold Time 1-2). Keine Collision Detection.
+- VRRP: Backup mit Preempt übernimmt sofort statt nach Master_Down. Kein
+  Priorität-0-Advertisement beim Stop. Quell-MAC ist die Interface-MAC. IPv4 nutzt
+  VRRPv2.
+- DHCPv4: Server prüft Server-ID (Option 54) nicht; abweichende angefragte IP ergibt
+  ACK statt NAK; Antworten immer per Broadcast; kein Relay/giaddr; DECLINE/INFORM
+  ignoriert; Client ignoriert Optionen 58/59. Relevant erst mit zwei DHCP-Servern.
+- DHCPv6: Request mit derselben Transaction-ID wie Solicit; IA_NA-Adresse als /64
+  statt /128; CONFIRM wird wie REQUEST behandelt; Client ohne Renew/Rebind.
+- DNS: Zonen werden heuristisch aus den Einträgen abgeleitet (siehe
+  DNSServerApp._zoneModel). Rekursion auch bei RD=0, kein NOTIMP, kein TC/TCP.
+  dig zeigt SOA als [object Object]. Resolver-Cache nutzt Date.now().
+- NTP: ntpdate prüft die Antwort nicht (Mode, Origin, Kiss-o'-Death).
+- TLS: ECDSA-Signaturen im P1363- statt DER-Format. Zeitfelder im Zertifikat als
+  Epoch-ms (Absicht). Mail-Client übergibt keinen serverName (kein SNI, keine
+  Hostname-Prüfung).
+- SIP: CANCEL ohne passende Transaktion bekommt 200 statt 481. Kein Timer K. Proxy
+  setzt received/rport nicht, Record-Route wird vom UA ignoriert.
+- Sonstiges: pcap-Header-LinkType 0x50000001 statt 1 (Wireshark ignoriert die
+  FCS-Bits). Empfangsseitig keine Prüfung von ICMP/TCP/UDP-Prüfsummen.

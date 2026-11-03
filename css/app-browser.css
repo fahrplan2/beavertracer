@@ -14,11 +14,17 @@
   display: flex;
   align-items: center;
   gap: var(--pad-md);
-  padding: 10px;
+  padding: var(--pad-sm) 10px;
 
   background: linear-gradient(180deg, var(--bg1), var(--bg2));
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
+}
+
+/* Same height for all chrome buttons (glyph labels like ⟳ otherwise vary) */
+.app-sparktail-http .sparktail-chrome .btn {
+  height: 34px;
+  justify-content: center;
 }
 
 /* Address bar */
@@ -26,7 +32,7 @@
   flex: 1;
   min-width: 120px;
 
-  padding: 10px 14px;
+  padding: 7px 14px;
   border-radius: 999px;
 
   background: white;
@@ -142,10 +148,10 @@
   z-index: 200;
   width: 300px;
 
-  background: var(--surface);
+  background: var(--bg-strong);
   border: 1px solid var(--border, #ccc);
   border-radius: 10px;
-  box-shadow: 0 4px 20px rgba(0,0,0,.25);
+  box-shadow: var(--shadow);
   padding: var(--pad-lg) 14px;
   font-size: 0.78125rem;
   line-height: 1.45;
@@ -202,4 +208,40 @@
     right: 4px;
     box-sizing: border-box;
   }
+}
+
+/* settings popup: opens at the right, below the gear button */
+.app-sparktail-http .sparktail-settings-popup {
+  left: auto;
+  right: 4px;
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--pad-sm);
+}
+
+.app-sparktail-http .sparktail-settings-popup[hidden] {
+  display: none;
+}
+
+.app-sparktail-http .sparktail-settings-popup .form-row {
+  margin-bottom: 0;
+}
+
+/* tab row: tabs left, protocol choice right */
+.app-sparktail-http .sparktail-tab-row {
+  display: flex;
+  align-items: center;
+  gap: var(--pad-sm);
+  flex-wrap: wrap;
+}
+
+.app-sparktail-http .sparktail-tab-row .ui-tabbar {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.app-sparktail-http .sparktail-proto {
+  width: 100%;
+  padding: var(--pad-xs) var(--pad-sm);
 }

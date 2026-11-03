@@ -31,6 +31,7 @@
 }
 
 .pcapviewer-toolbar {
+  position: relative;
   display: flex;
   gap: var(--pad-md);
   padding: 8px;
@@ -67,6 +68,48 @@
   border-color: var(--accent);
   color: var(--accent);
 }
+
+/* settings popup (gear): opens at the right, below the toolbar */
+.pcapviewer-settings-popup {
+  position: absolute;
+  top: calc(100% - 2px);
+  right: 8px;
+  z-index: 50;
+  width: 250px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--pad-sm);
+  background: var(--bg-strong);
+  border: 1px solid var(--border, #ccc);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  padding: var(--pad-lg) 14px;
+  font-size: 0.78125rem;
+  user-select: none;
+}
+.pcapviewer-settings-popup[hidden] { display: none; }
+.pcapviewer-settings-title {
+  font-weight: 600;
+  font-size: 0.8125rem;
+}
+.pcapviewer-settings-row {
+  display: flex;
+  align-items: center;
+  gap: var(--pad-sm);
+  cursor: pointer;
+}
+.pcapviewer-settings-keys {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  cursor: default;
+}
+.pcapviewer-settings-info {
+  color: var(--pv-dim);
+  font-size: 0.6875rem;
+  font-family: var(--font-mono);
+}
+.pcapviewer-settings-info:empty { display: none; }
 
 /* Hex/raw pane hidden by default (toggled via .pcapviewer-hex-toggle) —
    !important so it wins over SplitGrid's inline grid-template-columns

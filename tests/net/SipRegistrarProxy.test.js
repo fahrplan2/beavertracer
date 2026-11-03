@@ -191,3 +191,105 @@ describe('proxy call routing', () => {
     expect(wire.log.some(e => e.to === '10.0.0.1' && e.line.includes('200 OK'))).toBe(true);
   });
 });
+
+// ── RFC 3261 §16.11 / §17.1.1.3 / §9.1 via the stateless proxy ────────────
+
+describe('stateless proxy: INVITE / CANCEL / ACK share a branch (§16.11)', () => {
+  /** rng yielding a varying sequence so every branch is distinct */
+  function seqRng() { let x = 0.123; return () => { x = (x * 9301 + 0.49297) % 1; return x; }; }
+
+  beforeEach(() => {
+    // fresh stacks with distinct tokens (the default fixture rng repeats)
+    alice = new SipStack({
+      transport: wire.transportFor('10.0.0.1', 5060), timer, rng: seqRng(),
+      identity: { uri: 'sip:alice@example.com', contactIp: '10.0.0.1', contactPort: 5060 },
+    });
+    bob = new SipStack({
+      transport: wire.transportFor('10.0.0.2', 5060), timer, rng: seqRng(),
+      identity: { uri: 'sip:bob@example.com', contactIp: '10.0.0.2', contactPort: 5060 },
+    });
+    wire.attach('10.0.0.1', 5060, alice);
+    wire.attach('10.0.0.2', 5060, bob);
+    alice.register({ registrarIp: PROXY, expires: 3600 });
+    bob.register({ registrarIp: PROXY, expires: 3600 });
+    wire.log.length = 0;
+  });
+
+  function captureBob() {
+    const seen = [];
+    const orig = bob.receive.bind(bob);
+    bob.receive = (bytes, ip, port) => { seen.push(SIPMessage.parse(bytes)); orig(bytes, ip, port); };
+    return seen;
+  }
+
+  it('486 through the proxy: the ACK matches Bob\'s INVITE transaction, no 486 retransmits', () => {
+    const seen = captureBob();
+    bob.on('incomingCall', (c) => c.reject(486, 'Busy Here'));
+    const ended = [];
+    alice.on('ended', (_id, d) => ended.push(d.reason));
+    alice.call({
+      targetUri: 'sip:bob@example.com', peerIp: PROXY,
+      sdp: SdpMessage.audioOffer({ address: '10.0.0.1', port: 40000 }).toString(),
+    });
+    timer.advance(40_000); // past Timer H
+
+    const invite = seen.find(m => m.method === 'INVITE');
+    const ack = seen.find(m => m.method === 'ACK');
+    expect(ack).toBeTruthy();
+    expect(ack.topViaBranch).toBe(invite.topViaBranch);
+    const busyFromBob = wire.log.filter(e => e.from === '10.0.0.2' && e.line.includes('486'));
+    expect(busyFromBob.length).toBe(1);
+    expect(ended).toEqual(['busy']);
+  });
+
+  it('hangup while ringing: CANCEL after 180, 200/CANCEL, 487 ACKed with the INVITE branch', () => {
+    const seen = captureBob();
+    bob.on('incomingCall', () => { /* let it ring */ });
+    const aliceEnded = [];
+    alice.on('ended', (_id, d) => aliceEnded.push(d.reason));
+    const callId = alice.call({
+      targetUri: 'sip:bob@example.com', peerIp: PROXY,
+      sdp: SdpMessage.audioOffer({ address: '10.0.0.1', port: 40000 }).toString(),
+    });
+    expect(alice.getCall(callId).state).toBe('ringing');
+    alice.hangup(callId);
+    timer.advance(40_000);
+
+    const lines = wire.lines();
+    const i180 = lines.findIndex(l => l.startsWith(`${PROXY}->10.0.0.1`) && l.includes('180'));
+    const iCancel = lines.findIndex(l => l.startsWith('10.0.0.1->') && l.includes('CANCEL'));
+    expect(i180).toBeGreaterThanOrEqual(0);
+    expect(iCancel).toBeGreaterThan(i180);
+
+    const invite = seen.find(m => m.method === 'INVITE');
+    const cancel = seen.find(m => m.method === 'CANCEL');
+    const ack = seen.find(m => m.method === 'ACK');
+    expect(cancel.topViaBranch).toBe(invite.topViaBranch);
+    expect(ack).toBeTruthy();
+    expect(ack.topViaBranch).toBe(invite.topViaBranch);
+
+    expect(wire.log.filter(e => e.from === '10.0.0.2' && e.line.includes('487')).length).toBe(1);
+    expect(wire.log.some(e => e.to === '10.0.0.1' && e.line.includes('200 OK'))).toBe(true);
+    expect(aliceEnded).toEqual(['hangup']);
+    expect(bob.calls[0].state).toBe('ended');
+  });
+
+  it('a 2xx ACK (fresh UAC branch) gets a different proxy branch than the INVITE', () => {
+    const seen = captureBob();
+    bob.on('incomingCall', (c) => c.answer(SdpMessage.audioOffer({ address: '10.0.0.2', port: 41000 }).toString()));
+    alice.call({
+      targetUri: 'sip:bob@example.com', peerIp: PROXY,
+      sdp: SdpMessage.audioOffer({ address: '10.0.0.1', port: 40000 }).toString(),
+    });
+    const invite = seen.find(m => m.method === 'INVITE');
+    // forge the same ACK the UAC would send, but via the proxy
+    const ack = SIPMessage.request('ACK', 'sip:bob@example.com', [
+      ['Via', 'SIP/2.0/UDP 10.0.0.1:5060;branch=z9hG4bKfreshackbranch'],
+      ['From', invite.getHeader('From')], ['To', invite.getHeader('To')],
+      ['Call-ID', invite.getHeader('Call-ID')], ['CSeq', '1 ACK'],
+    ]);
+    proxy.receive(ack.pack(), '10.0.0.1', 5060);
+    const fwdAck = seen.filter(m => m.method === 'ACK').pop();
+    expect(fwdAck.topViaBranch).not.toBe(invite.topViaBranch);
+  });
+});

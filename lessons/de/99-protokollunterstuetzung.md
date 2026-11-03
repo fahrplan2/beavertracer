@@ -112,7 +112,7 @@ BeaverTracer ist ein Netzwerksimulator für den Unterricht. Er modelliert eine b
 <tr>
   <td>NAT / PAT</td><td>RFC 3022</td>
   <td><span class="badge badge-mostly">Größtenteils</span></td>
-  <td>Zustandsbehaftetes SNAT (LAN → WAN) für TCP, UDP und ICMP Echo: Quell-IP und Port/Identifier werden auf die WAN-IP umgeschrieben, Portbereich 10000–60000. Stateless DNAT (Port Forwarding) für TCP und UDP: eingehende Verbindungen auf konfigurierbare LAN-Ziele weitergeleitet; Rückpfad wird automatisch in der SNAT-Tabelle vorinstalliert. Fragmentierte Pakete werden per IPv4-Identification-Feld verfolgt. Nur IPv4 — kein NAT64, kein NPTv6.</td>
+  <td>Zustandsbehaftetes SNAT (LAN → WAN) für TCP, UDP und ICMP Echo: Quell-IP und Port/Identifier werden auf die WAN-IP umgeschrieben, Portbereich 10000–60000. Stateless DNAT (Port Forwarding) für TCP und UDP: eingehende Verbindungen auf konfigurierbare LAN-Ziele weitergeleitet; Rückpfad wird automatisch in der SNAT-Tabelle vorinstalliert. Bei fragmentierten Paketen wird das Erst-Fragment anhand seiner Ports übersetzt (L4-Prüfsumme inkrementell angepasst, RFC 1624); Folgefragmente werden über Quelle, Ziel, Protokoll und Identification zugeordnet. ICMP-Fehler werden samt eingebettetem Header zurückübersetzt (RFC 5508). Nur IPv4 — kein NAT64, kein NPTv6.</td>
 </tr>
 </tbody>
 </table>
@@ -161,9 +161,9 @@ BeaverTracer ist ein Netzwerksimulator für den Unterricht. Er modelliert eine b
 <thead><tr><th>Protokoll</th><th>RFC</th><th>Unterstützung</th><th>Anmerkungen &amp; Grenzen</th></tr></thead>
 <tbody>
 <tr>
-  <td>DNS</td><td>RFC 1035, RFC 1123, RFC 3596</td>
+  <td>DNS</td><td>RFC 1035, RFC 1123, RFC 2308, RFC 3596, RFC 9460</td>
   <td><span class="badge badge-mostly">Größtenteils</span></td>
-  <td><strong>Record-Typen:</strong> A, AAAA, CNAME, MX, NS, PTR, SOA, TXT. <strong>Modi:</strong> Autoritativ (Zonendaten) und Rekursiv (Forwarder). Name-Compression beim Parsen; keine Compression beim Packen von Antworten. Kein DNSSEC, kein EDNS0, kein AXFR/IXFR, kein SRV/CAA/TLSA, kein Caching.</td>
+  <td><strong>Record-Typen:</strong> A, AAAA, CNAME, MX, NS, PTR, SOA, TXT sowie <strong>HTTPS/SVCB</strong> (RFC 9460: <code>alpn</code>, <code>port</code>, <code>ipv4hint</code>/<code>ipv6hint</code>, <code>no-default-alpn</code>, <code>mandatory</code>) — Sparktail erkennt daran HTTP/3 schon beim ersten Besuch. <strong>Modi:</strong> Autoritativ (Zonendaten) und Rekursiv (Forwarder). <strong>Negative Antworten:</strong> NXDOMAIN und NODATA, jeweils mit SOA im Authority-Teil (RFC 2308); SOA-Abfragen an der Zonenspitze werden beantwortet. Der Resolver der Rechner speichert Antworten nach TTL, negative für min(SOA-TTL, MINIMUM). <code>dig</code> zeigt Status, Flags und alle Abschnitte wie das Original; <code>nslookup</code> unterscheidet „No answer“ (NODATA) von NXDOMAIN. Name-Compression beim Parsen; keine Compression beim Packen von Antworten. Kein DNSSEC, kein EDNS0, kein AXFR/IXFR, kein SRV/CAA/TLSA, kein Caching im DNS-Server selbst; HTTPS-Einträgen im AliasMode (Priorität 0) folgt Sparktail nicht.</td>
 </tr>
 <tr>
   <td>DHCP (v4)</td><td>RFC 2131, RFC 2132</td>
@@ -191,20 +191,40 @@ BeaverTracer ist ein Netzwerksimulator für den Unterricht. Er modelliert eine b
 </tbody>
 </table>
 
-### HTTP / HTTPS / TLS
+### HTTP / HTTPS / TLS / QUIC
 
 <table class="pt">
 <thead><tr><th>Protokoll</th><th>RFC</th><th>Unterstützung</th><th>Anmerkungen &amp; Grenzen</th></tr></thead>
 <tbody>
 <tr>
-  <td>HTTP/1.1</td><td>RFC 7230–7235</td>
+  <td>HTTP/1.1</td><td>RFC 9110, RFC 9112</td>
   <td><span class="badge badge-partial">Teilweise</span></td>
-  <td><strong>Server:</strong> GET und HEAD, statisches Dateiserving mit MIME-Erkennung, Verzeichnis-Index, konfigurierbarer Dokumentroot und Port, Dual-Stack (IPv4/IPv6). <strong>Client (Sparktail):</strong> GET mit DNS-Auflösung, IPv6-Bracket-Notation, Adressleiste mit History, Tabs (Vorschau/Quelltext/Header/Log), CSS- und Bild-Ressourcen inline eingebettet, Content-Length und Chunked-Transfer-Dekodierung. Kein POST/PUT/DELETE, keine persistenten Verbindungen, keine Authentifizierung, keine Cache-Header.</td>
+  <td><strong>Server:</strong> GET und HEAD, statisches Dateiserving mit MIME-Erkennung, Verzeichnis-Index, konfigurierbarer Dokumentroot und Port, Dual-Stack (IPv4/IPv6). <strong>Persistente Verbindungen</strong> (Keep-Alive, abschaltbar) inkl. Pipelining: 5 s Leerlauf, höchstens 100 Anfragen pro Verbindung (wie Apache). <strong>Virtual Hosts:</strong> Host-Header (bei HTTPS: SNI) wählt Webseite und Zertifikat, Standard-Host als Rückfall, <code>421 Misdirected Request</code> bei abweichender SNI. <strong>Client (Sparktail):</strong> GET mit DNS-Auflösung, IPv6-Bracket-Notation, Adressleiste mit History, Tabs (Vorschau/Quelltext/Header/Log), CSS- und Bild-Ressourcen parallel geladen (höchstens 6 Verbindungen pro Server) und inline eingebettet, Verbindungen werden wiederverwendet, Content-Length und Chunked-Transfer-Dekodierung. Kein POST/PUT/DELETE (Server antwortet 405), keine Authentifizierung, keine Cache-Header, keine Kompression.</td>
+</tr>
+<tr>
+  <td>HTTP/2</td><td>RFC 9113, RFC 7541</td>
+  <td><span class="badge badge-mostly">Größtenteils</span></td>
+  <td>Im HTTP-Server einschaltbar: über TLS per ALPN <code>h2</code> und unverschlüsselt als <code>h2c</code> (nur mit „prior knowledge“, kein Upgrade-Header). Binäres Framing mit SETTINGS, HEADERS/CONTINUATION, DATA, Flusskontrolle (WINDOW_UPDATE), PING, RST_STREAM und GOAWAY; mehrere Anfragen gleichzeitig als Streams über eine Verbindung. <strong>HPACK</strong> mit statischer und dynamischer Tabelle und Huffman-Kodierung. Sparktail nutzt HTTP/2 automatisch, wenn der Server es anbietet; <code>curl</code> mit <code>--http2</code> bzw. <code>--http2-prior-knowledge</code>. Gegen Node.js/nghttp2 getestet. Kein Server-Push, keine Stream-Prioritäten.</td>
+</tr>
+<tr>
+  <td>HTTP/3</td><td>RFC 9114, RFC 9204</td>
+  <td><span class="badge badge-partial">Teilweise</span></td>
+  <td>Im HTTP-Server einschaltbar (UDP, gleiche Portnummer wie HTTPS); HTTPS-Antworten kündigen es per <code>Alt-Svc</code> an (RFC 7838). Sparktail lernt das wie echte Browser und nutzt ab der nächsten Verbindung QUIC — ist UDP gesperrt, fällt es auf TCP zurück. <code>curl</code> mit <code>--http3</code> bzw. <code>--http3-only</code>. Anfragen als bidirektionale Streams, Control-Streams mit SETTINGS, GOAWAY. <strong>QPACK</strong> nur mit statischer Tabelle (dynamische Tabelle abgeschaltet, keine Encoder-/Decoder-Streams). Kein Server-Push, kein DNS-Eintrag vom Typ HTTPS/SVCB.</td>
+</tr>
+<tr>
+  <td>QUIC (v1)</td><td>RFC 9000, RFC 9001, RFC 9002</td>
+  <td><span class="badge badge-partial">Teilweise</span></td>
+  <td>Initial-, Handshake- und 1-RTT-Pakete (auch mehrere pro Datagramm), Paket- und Header-Schutz mit AES-128-GCM, TLS 1.3 in CRYPTO-Frames, Transportparameter, Streams mit Flusskontrolle, ACKs, Neusenden verlorener Pakete (Packet Threshold und PTO), HANDSHAKE_DONE, CONNECTION_CLOSE, Leerlauf-Timeout. Initial-Pakete werden von Wireshark entschlüsselt und dekodiert; spätere Pakete erscheinen im Trace verschlüsselt. Kein Retry, keine Versionsverhandlung, keine Verbindungsmigration, keine neuen Connection-IDs, kein Key Update, kein 0-RTT, keine Staukontrolle.</td>
 </tr>
 <tr>
   <td>TLS 1.2</td><td>RFC 5246</td>
   <td><span class="badge badge-mostly">Größtenteils</span></td>
-  <td><strong>Vollständiger Handshake simuliert:</strong> ClientHello → ServerHello → Certificate → ServerKeyExchange → ServerHelloDone → ClientKeyExchange → ChangeCipherSpec → Finished. <strong>Cipher Suite:</strong> TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 (0xC02B). <strong>Schlüsselaustausch:</strong> ECDHE mit secp256r1, Server signiert mit ECDSA. <strong>Schlüsselableitung:</strong> RFC-5246-PRF (P_SHA256) → master_secret (48 Byte) → key_block; AES-GCM-Records mit explizitem 8-Byte-Nonce und AAD (RFC 5288). <strong>Finished:</strong> PRF(master_secret, label, SHA-256(Handshake-Transcript), 12) — beide Seiten verifizieren gegenseitig. <strong>Zertifikate:</strong> Selbstsignierte und CA-signierte X.509-Zertifikate; Trust-Store-Validierung. Kein Session-Resumption, keine Client-Zertifikatsauthentifizierung, keine SNI-Durchsetzung serverseitig, kein OCSP/CRL, kein TLS 1.3.</td>
+  <td><strong>Vollständiger Handshake simuliert:</strong> ClientHello → ServerHello → Certificate → ServerKeyExchange → ServerHelloDone → ClientKeyExchange → ChangeCipherSpec → Finished. <strong>Cipher Suite:</strong> TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 (0xC02B). <strong>Schlüsselaustausch:</strong> ECDHE mit secp256r1, Server signiert mit ECDSA. <strong>Schlüsselableitung:</strong> RFC-5246-PRF (P_SHA256) → master_secret (48 Byte) → key_block; AES-GCM-Records mit explizitem 8-Byte-Nonce und AAD (RFC 5288). <strong>Finished:</strong> PRF(master_secret, label, SHA-256(Handshake-Transcript), 12) — beide Seiten verifizieren gegenseitig. <strong>Erweiterungen:</strong> SNI (RFC 6066, serverseitige Zertifikatswahl bei Virtual Hosts), ALPN (RFC 7301), renegotiation_info (RFC 5746). <strong>Zertifikate:</strong> Selbstsignierte und CA-signierte Zertifikate; Trust-Store-Validierung. Gegen OpenSSL getestet. Keine Session-Resumption, keine Client-Zertifikatsauthentifizierung, kein OCSP/CRL. Die erzeugten Zertifikate sind noch kein strenges X.509 (Gültigkeitszeiten, Signaturformat).</td>
+</tr>
+<tr>
+  <td>TLS 1.3</td><td>RFC 8446</td>
+  <td><span class="badge badge-partial">Teilweise</span></td>
+  <td>Clients bieten TLS 1.3 immer an, der HTTP-Server nur mit eingeschalteter Option (HTTPS-Tab); QUIC nutzt immer TLS 1.3. Handshake in einem Roundtrip: ClientHello mit <code>key_share</code> und <code>supported_versions</code>, ServerHello, danach verschlüsselt EncryptedExtensions, Certificate, CertificateVerify und Finished. <strong>Cipher Suite:</strong> TLS_AES_128_GCM_SHA256, Schlüsselaustausch secp256r1, HKDF-Schlüsselableitung, Downgrade-Schutz. Gegen OpenSSL getestet. Kein HelloRetryRequest, keine Session-Wiederaufnahme (PSK), kein 0-RTT, kein Key Update, keine Client-Zertifikate.</td>
 </tr>
 </tbody>
 </table>
@@ -380,5 +400,5 @@ Einige Einschränkungen gelten simulatorweit, unabhängig vom Protokoll:
 - **Eingeschränkte TCP-Options.** MSS wird beim SYN-Handshake ausgehandelt. Window Scaling, SACK und TCP Timestamps sind nicht implementiert; Fenstergrößen sind fest (kein Scaling).
 - **Kein IPv6-Multicast-Management via MLDv2.** MLDv1 (RFC 2710) und ein MLD-Querier (Switch sendet periodisch General Queries, Hosts antworten und erneuern ihre Einträge) sind implementiert; MLDv2 fehlt. IPv6-Multicast ohne registrierte Gruppe wird geflutet.
 - **Keine Routing-Protokoll-Authentifizierung.** MD5/SHA-Schlüsselketten für OSPF, BGP und RIPv2 sind strukturell vorhanden, werden aber nicht durchgesetzt.
-- **Keine echte Kryptographie außer bei TLS.** Bitcoin-Signaturen, DNSSEC-Records und ähnliche kryptographische Konstrukte werden gefälscht oder weggelassen.
+- **Keine echte Kryptographie außer bei TLS und QUIC.** Bitcoin-Signaturen, DNSSEC-Records und ähnliche kryptographische Konstrukte werden gefälscht oder weggelassen.
 - **Vereinfachte Timer.** Protokoll-Timer (OSPF Hello, BGP Hold Time, DHCP-Lease-Ablauf) laufen auf einer simulierten Tick-Uhr, die standardmäßig schneller als die Echtzeit läuft.

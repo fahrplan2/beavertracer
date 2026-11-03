@@ -288,3 +288,117 @@ describe('OPTIONS keepalive', () => {
     expect(reply.line).toContain('200 OK');
   });
 });
+
+// ── RFC 3261 §9.1 / §17.1.1: CANCEL timing, INVITE client transaction ─────
+
+describe('INVITE client transaction & CANCEL (RFC 3261 §9.1, §17.1.1)', () => {
+  /** Scripted UAS at 10.0.0.2: records requests, answers only when told. */
+  let rx, uas;
+  beforeEach(() => {
+    rx = [];
+    uas = {
+      receive(bytes) { rx.push(SIPMessage.parse(bytes)); },
+      /** send a response to the first request of `method` */
+      reply(method, code, reason, extra = []) {
+        const req = rx.find(m => m.method === method);
+        const resp = SIPMessage.response(code, reason);
+        for (const v of req.getHeaders('Via')) resp.addHeader('Via', v);
+        resp.setHeader('From', req.getHeader('From'));
+        const to = req.getHeader('To');
+        resp.setHeader('To', code > 100 ? `${to};tag=uas1` : to);
+        resp.setHeader('Call-ID', req.getHeader('Call-ID'));
+        resp.setHeader('CSeq', req.getHeader('CSeq'));
+        for (const [n, v] of extra) resp.setHeader(n, v);
+        alice.receive(resp.pack(), '10.0.0.2', 5060);
+      },
+      count(method) { return rx.filter(m => m.method === method).length; },
+    };
+    wire.attach('10.0.0.2', 5060, uas);
+  });
+  const call = () => alice.call({ targetUri: 'sip:bob@example.com', peerIp: '10.0.0.2', sdp: OFFER });
+
+  it('delays CANCEL until a provisional arrives, then ACKs the 487 on the INVITE branch', () => {
+    const callId = call();
+    alice.hangup(callId);
+    expect(uas.count('CANCEL')).toBe(0);                 // no 1xx yet → SHOULD NOT cancel
+    expect(events.find(e => e.who === 'alice' && e.ev === 'ended').args[1].reason).toBe('hangup');
+
+    uas.reply('INVITE', 180, 'Ringing');
+    expect(uas.count('CANCEL')).toBe(1);
+    const invite = rx.find(m => m.method === 'INVITE');
+    const cancel = rx.find(m => m.method === 'CANCEL');
+    expect(cancel.topViaBranch).toBe(invite.topViaBranch);
+
+    uas.reply('CANCEL', 200, 'OK');                      // must not be taken for the INVITE 2xx
+    expect(uas.count('ACK')).toBe(0);
+    expect(uas.count('BYE')).toBe(0);
+
+    uas.reply('INVITE', 487, 'Request Terminated');
+    const ack = rx.find(m => m.method === 'ACK');
+    expect(ack).toBeTruthy();
+    expect(ack.topViaBranch).toBe(invite.topViaBranch);
+    expect(ack.cseq).toEqual({ seq: 1, method: 'ACK' });
+    expect(SIPMessage.tagOf(ack.getHeader('To'))).toBe('uas1');
+
+    // retransmitted 487 while Completed → ACK again (§17.1.1.2), no new "ended"
+    uas.reply('INVITE', 487, 'Request Terminated');
+    expect(uas.count('ACK')).toBe(2);
+    expect(events.filter(e => e.who === 'alice' && e.ev === 'ended').length).toBe(1);
+  });
+
+  it('CANCEL after 1xx goes out immediately; INVITE transaction survives the hangup', () => {
+    const callId = call();
+    uas.reply('INVITE', 180, 'Ringing');
+    alice.hangup(callId);
+    expect(uas.count('CANCEL')).toBe(1);
+    uas.reply('INVITE', 487, 'Request Terminated');
+    expect(uas.count('ACK')).toBe(1);
+  });
+
+  it('a 200 OK racing the CANCEL is ACKed and followed by BYE', () => {
+    const callId = call();
+    uas.reply('INVITE', 180, 'Ringing');
+    alice.hangup(callId);
+    uas.reply('INVITE', 200, 'OK', [['Contact', '<sip:bob@10.0.0.2:5060>']]);
+    expect(uas.count('ACK')).toBe(1);
+    expect(uas.count('BYE')).toBe(1);
+    const bye = rx.find(m => m.method === 'BYE');
+    expect(SIPMessage.tagOf(bye.getHeader('To'))).toBe('uas1');
+    expect(events.some(e => e.who === 'alice' && e.ev === 'answered')).toBe(false);
+  });
+
+  it('a retransmitted 2xx is re-ACKed', () => {
+    call();
+    uas.reply('INVITE', 200, 'OK', [['Contact', '<sip:bob@10.0.0.2:5060>']]);
+    uas.reply('INVITE', 200, 'OK', [['Contact', '<sip:bob@10.0.0.2:5060>']]);
+    expect(uas.count('ACK')).toBe(2);
+    expect(events.filter(e => e.who === 'alice' && e.ev === 'answered').length).toBe(1);
+  });
+
+  it('a call ringing longer than Timer B does not end in "timeout"', () => {
+    const callId = call();
+    uas.reply('INVITE', 180, 'Ringing');
+    timer.advance(64 * 500 * 2);
+    expect(alice.getCall(callId).state).toBe('ringing');
+    expect(events.some(e => e.who === 'alice' && e.ev === 'ended')).toBe(false);
+    expect(uas.count('INVITE')).toBe(1);                 // no retransmits once Proceeding
+    uas.reply('INVITE', 200, 'OK', [['Contact', '<sip:bob@10.0.0.2:5060>']]);
+    expect(alice.getCall(callId).state).toBe('in-call');
+  });
+});
+
+describe('INVITE server transaction (RFC 3261 §17.2.1)', () => {
+  it('absorbs a retransmitted INVITE instead of answering it as a re-INVITE', () => {
+    let incoming = 0;
+    bob.on('incomingCall', () => { incoming++; });
+    const callId = alice.call({ targetUri: 'sip:bob@example.com', peerIp: '10.0.0.2', sdp: OFFER });
+    const invite = wire.log.find(e => e.line.startsWith('INVITE'));
+    expect(invite).toBeTruthy();
+    // replay the exact INVITE (same branch) at Bob
+    const tx = [...alice._clientTx.values()].find(t => t.method === 'INVITE');
+    bob.receive(tx.bytes, '10.0.0.1', 5060);
+    expect(incoming).toBe(1);
+    expect(wire.linesFrom('10.0.0.2').some(l => l.includes('200 OK'))).toBe(false);
+    expect(alice.getCall(callId).state).toBe('ringing');
+  });
+});

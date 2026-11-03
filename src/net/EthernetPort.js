@@ -46,6 +46,13 @@ export class EthernetPort extends Observable {
     svid = null;
 
     /**
+     * Control frames (e.g. BPDUs) queued with priority. They sit at the head of
+     * outBuffer, bypass the queue limit and survive discardQueuedData().
+     * @type {WeakSet<EthernetFrame>}
+     */
+    #priorityFrames = new WeakSet();
+
+    /**
      * 
      * @param {string} name 
      */
@@ -79,18 +86,27 @@ export class EthernetPort extends Observable {
     }
 
     /**
-     * 
-     * @param {EthernetFrame} frame 
+     *
+     * @param {EthernetFrame} frame
+     * @param {boolean} [priority] control frame: jump ahead of queued data, never dropped
      */
-    send(frame) {
+    send(frame, priority = false) {
         if (!(frame instanceof EthernetFrame)) {
             throw new Error("Can only send EthernetFrame");
         }
-        if(this.outBuffer.length > 100) {
+        if (priority) {
+            // Strict priority queue (like the control-plane CoS queue on real switches):
+            // behind earlier control frames, ahead of all data frames
+            let pos = this.outBuffer.findIndex(f => !this.#priorityFrames.has(f));
+            if (pos < 0) pos = this.outBuffer.length;
+            this.#priorityFrames.add(frame);
+            this.outBuffer.splice(pos, 0, frame);
+        } else if(this.outBuffer.length > 100) {
             //Skip packet if queue is too big
             return;
+        } else {
+            this.outBuffer.push(frame);
         }
-        this.outBuffer.push(frame);
         // Synthetic traffic from an active ":::task" check still gets
         // delivered (see below) — only its visibility in the capture log
         // is suppressed, so the check itself is unaffected. frameSeq must
@@ -134,6 +150,15 @@ export class EthernetPort extends Observable {
             return null;
         }
         return frame.pack();
+    }
+
+    /**
+     * Drop all queued data frames; priority (control) frames stay queued.
+     * Used when a port leaves the Forwarding state (IEEE 802.1D: a non-forwarding
+     * port must not transmit data frames, including ones queued earlier).
+     */
+    discardQueuedData() {
+        this.outBuffer = this.outBuffer.filter(f => this.#priorityFrames.has(f));
     }
 
     getNextIncomingFrame() {

@@ -216,10 +216,7 @@ export class SipRegistrarProxy {
     fwd.requestUri = binding.contact;
     fwd.setHeader("Max-Forwards", String(mf - 1));
 
-    // deterministic proxy branch (RFC 3261 §16.11): same input → same branch
-    const branch = "z9hG4bK" + hash32(
-      (req.topViaBranch ?? "") + "|" + req.requestUri + "|" + (req.getHeader("CSeq") ?? "")
-    ).toString(36);
+    const branch = this._statelessBranch(req);
     fwd.prependHeader("Via", `SIP/2.0/UDP ${this._self.ip}:${this._self.port};branch=${branch}`);
 
     if (this._recordRoute && (req.method === "INVITE")) {
@@ -232,6 +229,35 @@ export class SipRegistrarProxy {
       dstIp: binding.contactIp, dstPort: binding.contactPort,
     });
     this._send(fwd, binding.contactIp, binding.contactPort);
+  }
+
+  /**
+   * Deterministic outgoing branch for a stateless proxy (RFC 3261 §16.11).
+   * The INVITE, its CANCEL and the ACK for a non-2xx final must all leave with
+   * the SAME branch, or the downstream UAS cannot match CANCEL / ACK to its
+   * INVITE server transaction. So the CSeq METHOD must not enter the hash:
+   *   - received branch carries the magic cookie → hash that branch alone
+   *     (INVITE, CANCEL and non-2xx ACK share it; a 2xx ACK has its own);
+   *   - legacy (RFC 2543) branch → hash top Via, To-/From-tag, Call-ID,
+   *     CSeq NUMBER and Request-URI.
+   * @param {SIPMessage} req
+   */
+  _statelessBranch(req) {
+    const rcvd = req.topViaBranch ?? "";
+    let input;
+    if (rcvd.startsWith("z9hG4bK")) {
+      input = rcvd;
+    } else {
+      input = [
+        req.getHeader("Via") ?? "",
+        SIPMessage.tagOf(req.getHeader("To") ?? "") ?? "",
+        SIPMessage.tagOf(req.getHeader("From") ?? "") ?? "",
+        req.getHeader("Call-ID") ?? "",
+        String(req.cseq?.seq ?? ""),
+        req.requestUri,
+      ].join("|");
+    }
+    return "z9hG4bK" + hash32(input).toString(36);
   }
 
   // ── proxy: responses ──────────────────────────────────────────────

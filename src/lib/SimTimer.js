@@ -54,8 +54,10 @@ export class SimTimer {
 
     /** Initial delay before first unsolicited RA (after ip6 is activated). */
     static RA_INITIAL_DELAY_MS      =  100;  //  20 ticks
-    /** Interval between periodic unsolicited Router Advertisements. */
-    static RA_INTERVAL_MS           =  400;  //  80 ticks
+    /** Interval between periodic unsolicited Router Advertisements
+     *  (~RFC 4861 200–600 s real, simulation-scaled; solicited RAs are sent
+     *  immediately, so SLAAC doesn't wait for this). */
+    static RA_INTERVAL_MS           = 2_000;  // 400 ticks → 160 s @ 1×, 2.5 s @ 64×
 
     /** IPv4 fragment reassembly timeout: how long to hold incomplete datagrams. */
     static REASSEMBLY_TIMEOUT_MS      = 30000;  // 6000 ticks
@@ -85,23 +87,30 @@ export class SimTimer {
      *  Linux we use 200 ms — 1 s is ~20 s of real time at normal sim speed,
      *  far too long to watch a retransmission happen. */
     static TCP_MIN_RTO_MS           = 200;   //  40 ticks
+    /** Upper bound for the exponentially backed-off RTO and for the persist
+     *  timer between zero-window probes (RFC 6298 §2.5 allows ≥ 60 s; RFC
+     *  1122 §4.2.2.17 wants the probe interval to grow exponentially). */
+    static TCP_MAX_RTO_MS           = 60_000;  // 12000 ticks
     /** Per-chunk read timeout while a server waits for (more of) an HTTP
      *  request. Wraps TcpEngine.recv(), which has no timeout of its own and
      *  blocks until TCP actually delivers data — so like TCP_CONNECT_TIMEOUT_MS
      *  above, this must stay well above the initial RTO (600ms) or a single
      *  retransmitted segment looks like a dead connection. */
     static HTTP_SERVER_TIMEOUT_MS   = 10_000;  // 2000 ticks
+    /** Idle time a web server keeps a persistent (keep-alive) connection
+     *  open waiting for the next request — Apache's KeepAliveTimeout default. */
+    static HTTP_KEEPALIVE_TIMEOUT_MS = 5_000;  // 1000 ticks
     /** Same as HTTP_SERVER_TIMEOUT_MS, client side (Sparktail). */
     static HTTP_CLIENT_TIMEOUT_MS   = 10_000;  // 2000 ticks
     /** Per-line read timeout of the mail client (SMTP/POP3/IMAP replies). */
     static MAIL_CLIENT_TIMEOUT_MS   = 10_000;  // 2000 ticks
 
     /** STP Hello interval (IEEE default: 2 s). */
-    static STP_HELLO_MS             =    500;  // 100 ticks  → 10 s @ 1×,  2 s @ 8×
+    static STP_HELLO_MS             =    500;  // 100 ticks  → 40 s @ 1×,  2.5 s @ 16×
     /** STP Forward Delay per phase — Listening→Learning and Learning→Forwarding (IEEE default: 15 s). */
-    static STP_FORWARD_DELAY_MS     =    150;  //  30 ticks  →  3 s @ 1×,  0.6 s @ 8×
+    static STP_FORWARD_DELAY_MS     =    150;  //  30 ticks  → 12 s @ 1×,  0.75 s @ 16×
     /** STP Max Age — discard BPDU info not refreshed within this window (IEEE default: 20 s). */
-    static STP_MAX_AGE_MS           =  1_500;  // 300 ticks  → 30 s @ 1×,  6 s @ 8×
+    static STP_MAX_AGE_MS           =  1_500;  // 300 ticks  → 120 s @ 1×, 7.5 s @ 16×
 
     /** BGP connect-retry interval (~RFC 4271 ConnectRetry timer, simulation-scaled). */
     static BGP_CONNECT_RETRY_MS     =  1_000;  // 200 ticks
@@ -126,19 +135,19 @@ export class SimTimer {
     static OSPF_AGE_INTERVAL_MS     =     50;  //   10 ticks  (~1 s real)
 
     /** LLDP TX interval (~IEEE 802.1AB default 30 s real). */
-    static LLDP_TX_MS               =  1_500;  // 300 ticks  → 30 s @ 1×
+    static LLDP_TX_MS               =  1_500;  // 300 ticks  → 120 s @ 1×
     /** LLDP neighbor TTL — 3× TX interval; entry removed if no refresh. */
-    static LLDP_TTL_MS              =  4_500;  // 900 ticks  → 90 s @ 1×
+    static LLDP_TTL_MS              =  4_500;  // 900 ticks  → 360 s @ 1×
 
-    /** LACP TX interval (short timeout = 1 s real / ~10 s @ 1×). */
-    static LACP_TX_MS               =    500;  // 100 ticks  → 10 s @ 1×
+    /** LACP TX interval (short timeout = 1 s real / ~40 s @ 1×). */
+    static LACP_TX_MS               =    500;  // 100 ticks  → 40 s @ 1×
     /** LACP partner TTL — 3× TX (short timeout); port considered lost if silent. */
-    static LACP_PARTNER_TTL_MS      =  1_500;  // 300 ticks  → 30 s @ 1×
+    static LACP_PARTNER_TTL_MS      =  1_500;  // 300 ticks  → 120 s @ 1×
 
     /** IGMP/MLD General Query interval (~IGMPv2 125 s real, simulation-scaled). */
-    static IGMP_QUERY_MS            =  2_500;  // 500 ticks  → 50 s @ 1×
+    static IGMP_QUERY_MS            =  2_500;  // 500 ticks  → 200 s @ 1×
     /** IGMP/MLD member entry lifetime — 3× query interval (no re-report → expire). */
-    static IGMP_MEMBER_TTL_MS       =  7_500;  // 1500 ticks → 150 s @ 1×
+    static IGMP_MEMBER_TTL_MS       =  7_500;  // 1500 ticks → 600 s @ 1×
 
     /** Maximum TCP retransmit attempts before aborting the connection (RFC 793). */
     static TCP_MAX_REXMIT           = 8;

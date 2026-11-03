@@ -12,10 +12,12 @@
 @import "app-browser.css";
 @import "app-editor.css";
 @import "app-dns.css";
+@import "app-httpd.css";
 @import "app-mail.css";
 @import "app-irc.css";
 @import "app-softphone.css";
 @import "app-certmanager.css";
+@import "app-software.css";
 @import "app-ipconfig.css";
 @import "homerouter.css";
 
