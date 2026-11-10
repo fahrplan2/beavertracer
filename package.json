@@ -23,7 +23,7 @@
   "author": "Christian Klein",
   "license": "GPL-2.0-or-later",
   "devDependencies": {
-    "@anthropic-ai/sdk": "^0.120.0",
+    "@anthropic-ai/sdk": "^1.7.0",
     "@babel/parser": "^8.0.4",
     "@tauri-apps/cli": "^2.11.2",
     "markdown-it": "^15.0.0",
