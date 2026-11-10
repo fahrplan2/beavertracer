@@ -22,6 +22,7 @@ import { IPv4Packet } from '../../src/net/pdu/IPv4Packet.js';
 import { ICMPv6Packet } from '../../src/net/pdu/ICMPv6Packet.js';
 import { ICMPPacket } from '../../src/net/pdu/ICMPPacket.js';
 import { IPAddress } from '../../src/net/models/IPAddress.js';
+import { EthernetLink } from '../../src/net/EthernetLink.js';
 
 const ip = (/** @type {string} */ s) => IPAddress.fromString(s);
 const hexMac = (/** @type {Uint8Array} */ m) => Array.from(m).map(b => b.toString(16).padStart(2, '0')).join(':');
@@ -277,5 +278,37 @@ describe('_sendICMPv6Error: RFC 4443 §2.4(e) multicast exception', () => {
         const orig = new IPv6Packet({ src: ip('ff02::1'), dst: ip('2001:db8:2::10'), nextHeader: 17, hopLimit: 64, payload: new Uint8Array(8) });
         stack._sendICMPv6Error(orig, 2, 0, 1280);
         expect(spy).not.toHaveBeenCalled();
+    });
+});
+
+describe('SLAAC: Router Solicitation on link-up (RFC 4861 §6.3.7)', () => {
+    /** Router Solicitations among the frames a port sent. */
+    const rsOf = (/** @type {any[]} */ frames) => frames.filter(f => {
+        if (f.etherType !== 0x86DD) return false;
+        const v6 = IPv6Packet.fromBytes(f.payload);
+        return v6.nextHeader === 58 && ICMPv6Packet.fromBytes(v6.payload).type === 133;
+    });
+
+    it('solicits an RA when the cable is plugged in after SLAAC was enabled', () => {
+        const host = new NetworkInterface({ name: 'eth0' });
+        const peer = new NetworkInterface({ name: 'eth1' });
+        const frames = capturePort(host);
+        host.configure6({ slaac: true });
+        frames.length = 0; // RS sent into the void while unplugged
+
+        new EthernetLink(host.port, peer.port);
+
+        expect(rsOf(frames)).toHaveLength(1);
+        expect(IPv6Packet.fromBytes(rsOf(frames)[0].payload).dst.toString()).toBe(ip('ff02::2').toString());
+    });
+
+    it('sends nothing on link-up without SLAAC', () => {
+        const host = new NetworkInterface({ name: 'eth0' });
+        const peer = new NetworkInterface({ name: 'eth1' });
+        const frames = capturePort(host);
+
+        new EthernetLink(host.port, peer.port);
+
+        expect(rsOf(frames)).toHaveLength(0);
     });
 });

@@ -181,7 +181,10 @@ export const ping = {
       transmitted++;
 
       try {
+        // Fill with a readable test pattern (like Windows ping: "abcdefghijklmnopqrstuvw"
+        // repeated) so the data is recognisable in the packet viewer's ASCII column.
         const payload = new Uint8Array(payloadSize);
+        for (let i = 0; i < payloadSize; i++) payload[i] = 0x61 + (i % 23);
 
         const echoFn = dstIp.isV4() ? ipf.icmpEcho.bind(ipf) : ipf.icmpv6Echo?.bind(ipf);
         if (!echoFn) throw new Error("IPv6 not supported");

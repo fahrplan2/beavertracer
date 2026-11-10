@@ -10,6 +10,17 @@ import { makeDraggable } from "../lib/dragabble.js";
 
 /** @typedef {import("../net/EthernetPort.js").EthernetPort} EthernetPort */
 
+/** Below this step length (ms) a packet can't visibly travel along the cable;
+ *  it flashes on the cable instead (see _flash). */
+const ANIMATE_MIN_STEP_MS = 35;
+
+/** Real ms a flashed packet stays visible, independent of the sim speed. */
+const FLASH_MS = 300;
+
+/** Below this step length (ms, i.e. at 64×) single packets aren't worth
+ *  showing at all; the cable just lights up while traffic flows (see _glow). */
+const GLOW_MIN_STEP_MS = 16;
+
 /**
  * @typedef {Object} PortProvider
  * @property {(key: string) => EthernetPort|null} getPortByKey
@@ -88,6 +99,26 @@ export class Link extends SimulatedObject {
   _packets = [];
 
   /**
+   * Packets shown as a short flash on the cable at high speeds, at most one
+   * per direction. They outlive the tick (unlike _packets) so they are
+   * visible at all, and get re-triggered while traffic keeps flowing.
+   * @type {Array<{
+   *   el: HTMLDivElement,
+   *   dir: "AtoB"|"BtoA",
+   *   data: Uint8Array,
+   *   anim: Animation|null,
+   *   positioned: boolean
+   * }>}
+   */
+  _flashes = [];
+
+  /** @type {HTMLDivElement|null} overlay on the cable that lights up at 64× */
+  _glowEl = null;
+
+  /** @type {Animation|null} */
+  _glowAnim = null;
+
+  /**
    * @param {SimulatedObject} A
    * @param {any} portA
    * @param {string} portAKey
@@ -152,9 +183,15 @@ export class Link extends SimulatedObject {
       this._toggleFaultPanel(ev.clientX, ev.clientY);
     });
 
-    // hit catches clicks, line is only visual
+    const glow = document.createElement("div");
+    glow.className = "sim-link-glow";
+    this._glowAnim = null;
+    this._glowEl = glow;
+
+    // hit catches clicks, line and glow are only visual
     this.root.appendChild(hit);
     this.root.appendChild(line);
+    this.root.appendChild(glow);
 
     if (SimControl.portLabelsLayer) {
       this._labelA = document.createElement("div");
@@ -201,10 +238,7 @@ export class Link extends SimulatedObject {
     this.link.broken = fault;
     this.root?.classList.toggle("is-faulted", fault);
     // Flush any in-flight packets so they don't visually cross a broken link
-    if (fault) {
-      for (const p of this._packets) p.el.remove();
-      this._packets = [];
-    }
+    if (fault) this.clearPackets();
   }
 
   /**
@@ -512,8 +546,7 @@ export class Link extends SimulatedObject {
 
   destroy() {
     this._closeFaultPanel();
-    for (const p of this._packets) p.el.remove();
-    this._packets = [];
+    this.clearPackets();
     this._labelA?.remove();
     this._labelA = null;
     this._labelB?.remove();
@@ -551,6 +584,19 @@ export class Link extends SimulatedObject {
     }
   }
 
+  /** Removes all visible packets (moving and flashing) from the canvas. */
+  clearPackets() {
+    for (const p of this._packets) p.el.remove();
+    this._packets = [];
+    for (const f of this._flashes) {
+      f.anim?.cancel();
+      f.el.remove();
+    }
+    this._flashes = [];
+    this._glowAnim?.cancel();
+    this._glowAnim = null;
+  }
+
   step2() {
     this.link.step2();
     for (const p of this._packets) p.el.remove();
@@ -570,6 +616,22 @@ export class Link extends SimulatedObject {
     // only this visual representation is skipped.
     if (isTrafficSuppressed()) return;
 
+    if (this._stepMs < GLOW_MIN_STEP_MS) {
+      this._glow();
+      return;
+    }
+    if (this._stepMs < ANIMATE_MIN_STEP_MS) {
+      this._flash(dir, data);
+      return;
+    }
+
+    const el = this._createPacketEl(dir, data);
+    SimControl.packetsLayer?.appendChild(el);
+    this._packets.push({ el, dir, data, progress: 0, positioned: false });
+  }
+
+  /** @param {"AtoB"|"BtoA"} dir @param {*} data @returns {HTMLDivElement} */
+  _createPacketEl(dir, data) {
     const el = document.createElement("div");
     el.className = "sim-packet";
     el.style.display = "";
@@ -582,8 +644,53 @@ export class Link extends SimulatedObject {
 
     // Bug 1: hide until renderPacket() sets correct position (avoids flash at 0,0)
     el.style.visibility = "hidden";
-    SimControl.packetsLayer?.appendChild(el);
-    this._packets.push({ el, dir, data, progress: 0, positioned: false });
+    return el;
+  }
+
+  /**
+   * Lights up the whole cable and fades it out; further traffic restarts
+   * the fade, so a busy cable stays lit.
+   */
+  _glow() {
+    const el = this._glowEl;
+    if (!el || typeof el.animate !== "function") return;
+    this._glowAnim?.cancel();
+    this._glowAnim = el.animate(
+      [{ opacity: 1 }, { opacity: 1, offset: 0.3 }, { opacity: 0 }],
+      { duration: FLASH_MS, easing: "ease-in" },
+    );
+  }
+
+  /**
+   * Shows the packet briefly on the middle of the cable (slightly towards
+   * the receiver) and fades it out. A packet in the same direction while
+   * still visible restarts the fade, so steady traffic keeps it lit.
+   * @param {"AtoB"|"BtoA"} dir @param {*} data
+   */
+  _flash(dir, data) {
+    let f = this._flashes.find(x => x.dir === dir);
+    if (!f) {
+      const el = this._createPacketEl(dir, data);
+      SimControl.packetsLayer?.appendChild(el);
+      f = { el, dir, data, anim: null, positioned: false };
+      this._flashes.push(f);
+    }
+    f.data = data;
+    f.anim?.cancel();
+    // Web Animations instead of a CSS class: restarting needs no reflow,
+    // which matters at 64× where this runs on every tick.
+    if (typeof f.el.animate !== "function") return;
+    const anim = f.el.animate(
+      [{ opacity: 1 }, { opacity: 1, offset: 0.3 }, { opacity: 0 }],
+      { duration: FLASH_MS, easing: "ease-in", fill: "forwards" },
+    );
+    f.anim = anim;
+    const entry = f;
+    anim.onfinish = () => {
+      if (entry.anim !== anim) return;
+      entry.el.remove();
+      this._flashes = this._flashes.filter(x => x !== entry);
+    };
   }
 
   /** @param {number} dtMs */
@@ -591,13 +698,14 @@ export class Link extends SimulatedObject {
     if (this._paused) return;
     // Bug 2: at very high speeds (stepMs < ~2 frames), animation is physically
     // impossible to be smooth – packets stay at start position and just flash briefly
-    if (this._stepMs < 35) return;
+    if (this._stepMs < ANIMATE_MIN_STEP_MS) return;
     const dp = dtMs / this._stepMs;
     for (const p of this._packets) p.progress = Math.min(1, p.progress + dp);
   }
 
   renderPacket() {
-    if (!SimControl.packetsLayer || this._packets.length === 0) return;
+    if (!SimControl.packetsLayer) return;
+    if (this._packets.length === 0 && this._flashes.length === 0) return;
 
     const x1 = this._cx1, y1 = this._cy1;
     const x2 = this._cx2, y2 = this._cy2;
@@ -619,6 +727,19 @@ export class Link extends SimulatedObject {
       if (!p.positioned) {
         p.el.style.visibility = "";
         p.positioned = true;
+      }
+    }
+
+    for (const f of this._flashes) {
+      const t = f.dir === "AtoB" ? 0.6 : 0.4;
+
+      const x = x1 + dx * t + normX * off;
+      const y = y1 + dy * t + normY * off;
+
+      f.el.style.transform = `translate(${x - 27}px, ${y - 27}px)`;
+      if (!f.positioned) {
+        f.el.style.visibility = "";
+        f.positioned = true;
       }
     }
   }
