@@ -117,6 +117,96 @@ textarea.log {
   color: var(--ok);
 }
 
+/* ---- Bitcoin node ---- */
+.app-bitcoin > .panel { padding: var(--pad-sm) var(--pad-md); gap: var(--pad-sm); }
+.app-bitcoin .btc-toolbar { display: flex; align-items: center; gap: var(--pad-md); flex-wrap: wrap; padding: 0 0 var(--pad-sm); }
+.app-bitcoin { --btc-secret-bg: color-mix(in oklch, var(--warning), transparent 78%); }
+.app-bitcoin .btn.is-active {
+  background: var(--btc-secret-bg);
+  border-color: var(--warning-strong);
+  font-weight: 600;
+}
+/* The app has a log tab → fixed-height layout (.app:has(.log-pane)). The
+   active tab takes the remaining height and its tables shrink into it,
+   so nothing is cut off at the bottom of a small window. */
+.app-bitcoin > .panel > * { flex-shrink: 0; }
+.app-bitcoin > .panel > .btc-pane { flex: 1 1 auto; min-height: 0; }
+.app-bitcoin .btc-pane { display: flex; flex-direction: column; gap: var(--pad-sm); }
+.app-bitcoin .btc-pane > * { flex-shrink: 0; }
+.app-bitcoin .btc-pane > .router-scroll-hint-outer {
+  flex: 0 1 auto; min-height: 56px;
+  display: flex; flex-direction: column;
+}
+.app-bitcoin .btc-muted { color: var(--muted); font-size: 0.8125rem; }
+.app-bitcoin .btc-h { font-weight: 600; font-size: 0.8125rem; margin-top: var(--pad-xs); }
+.app-bitcoin .btc-addr { overflow: hidden; text-overflow: ellipsis; }
+.app-bitcoin .btc-stats { display: flex; gap: var(--pad-xl); flex-wrap: wrap; }
+.app-bitcoin .btc-stat-value { font-family: var(--font-mono); font-size: 1.25rem; font-weight: 600; }
+.app-bitcoin .btc-stat-small { font-size: 0.9375rem; font-weight: 400; color: var(--muted); }
+.app-bitcoin .btc-send,
+.app-bitcoin .btc-respend { display: flex; gap: var(--pad-sm); align-items: center; flex-wrap: wrap; }
+.app-bitcoin .btc-grow { flex: 1 1 180px; min-width: 0; }
+.app-bitcoin .btc-amount { width: 90px; }
+.app-bitcoin .btc-via { width: auto; max-width: 160px; }
+.app-bitcoin .btc-respend { padding: var(--pad-sm); background: var(--btc-secret-bg); border-radius: var(--radius-sm); flex-wrap: nowrap; }
+.app-bitcoin .btc-respend .btc-grow { flex-basis: 100px; }
+.app-bitcoin .btc-respend .btc-via { max-width: 130px; }
+.app-bitcoin .btc-respend .btc-muted { white-space: nowrap; }
+.app-bitcoin .sim-table-scroll.btc-scroll { max-height: none; flex: 0 1 auto; min-height: 0; background: var(--bg-strong); }
+.app-bitcoin .btc-scroll table { border-collapse: separate; border-spacing: 0; }
+.app-bitcoin .btc-scroll thead th {
+  position: sticky; top: 0; z-index: 1;
+  background: var(--bg-strong);
+  box-shadow: 0 -6px 0 var(--bg-strong);
+}
+.app-bitcoin .router-scroll-hint--top    { background: linear-gradient(var(--bg-strong) 60%, transparent); z-index: 2; }
+.app-bitcoin .router-scroll-hint--bottom { background: linear-gradient(transparent, var(--bg-strong) 60%); z-index: 2; }
+.app-bitcoin .btc-scroll .ledger-table th { padding-top: 4px; }
+.app-bitcoin .btc-scroll .btc-muted { padding: var(--pad-sm); }
+.app-bitcoin .btc-actions { width: 1%; white-space: nowrap; }
+.app-bitcoin .btc-actions .btn { padding: 0 6px; }
+.app-bitcoin td.btc-pos { color: var(--ok-strong); }
+.app-bitcoin td.btc-neg { color: var(--danger); }
+.app-bitcoin tr.btc-row-pending td { font-style: italic; }
+.app-bitcoin tr.btc-row-conflict td { color: var(--muted); text-decoration: line-through; }
+.app-bitcoin tr.btc-row-conflict td.btc-actions { text-decoration: none; }
+
+.app-bitcoin .btc-chip {
+  display: inline-block; padding: 1px 8px; border-radius: 999px;
+  font-size: 0.75rem; border: 1px solid var(--ui-border);
+}
+.app-bitcoin .btc-chip-main   { background: var(--primary-tint); border-color: var(--accent); }
+.app-bitcoin .btc-chip-stale  { border-style: dashed; color: var(--muted); }
+.app-bitcoin .btc-chip-secret { background: var(--btc-secret-bg); border-color: var(--warning-strong); border-style: dashed; }
+.app-bitcoin .btc-legend { display: flex; gap: var(--pad-sm); flex-wrap: wrap; }
+
+.app-bitcoin .btc-graph-outer { position: relative; }
+.app-bitcoin .btc-graph {
+  overflow-x: auto; padding: var(--pad-xs) 0;
+  background: var(--bg-strong); border: 1px solid var(--ui-border); border-radius: var(--radius-md);
+  scrollbar-width: thin;
+}
+.app-bitcoin .btc-hint-x {
+  display: none; position: absolute; top: 1px; bottom: 1px; width: 28px;
+  align-items: center; justify-content: center; pointer-events: none; user-select: none;
+  font-size: 13px; color: color-mix(in oklch, var(--text) 55%, transparent);
+}
+.app-bitcoin .btc-hint-x.is-visible { display: flex; }
+.app-bitcoin .btc-hint-left  { left: 1px;  border-radius: var(--radius-md) 0 0 var(--radius-md); background: linear-gradient(to right, var(--bg-strong) 55%, transparent); }
+.app-bitcoin .btc-hint-right { right: 1px; border-radius: 0 var(--radius-md) var(--radius-md) 0; background: linear-gradient(to left, var(--bg-strong) 55%, transparent); }
+.app-bitcoin .btc-graph svg { display: block; }
+.app-bitcoin .btc-link { fill: none; stroke: var(--ui-border-strong); stroke-width: 1.5; }
+.app-bitcoin .btc-blk rect { stroke-width: 1.5; }
+.app-bitcoin .btc-blk-main rect   { fill: var(--primary-tint); stroke: var(--accent); }
+.app-bitcoin .btc-blk-stale rect  { fill: var(--bg-strong); stroke: var(--ui-border-strong); stroke-dasharray: 4 3; }
+.app-bitcoin .btc-blk-secret rect { fill: var(--btc-secret-bg); stroke: var(--warning-strong); stroke-dasharray: 4 3; }
+.app-bitcoin .btc-blk-stale text  { fill: var(--muted); }
+.app-bitcoin .btc-blk text { fill: var(--text); font-size: 11px; }
+.app-bitcoin .btc-blk .btc-blk-h { font-weight: 700; font-size: 12px; }
+.app-bitcoin .btc-blk .btc-blk-hash { font-family: var(--font-mono); font-size: 10px; }
+.app-bitcoin .btc-blk .btc-blk-tx { fill: var(--muted); font-size: 10px; }
+.app-bitcoin .btc-blk .btc-blk-own-label { fill: var(--ok-strong); font-weight: 600; font-size: 10px; }
+
 .table-empty {
   text-align: center;
   color: var(--muted);
