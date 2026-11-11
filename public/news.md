@@ -1,3 +1,12 @@
+## Version 0.4.4
+
+- bitcoin client updated
+- minor fixes
+
+## Version 0.4.3 (2026-11-10)
+
+- technical update (we are now using wiregasm 2.0)
+
 ## Version 0.4.2 (2026-11-01)
 
 - fixed TLS 1.2, added TLS 1.3
